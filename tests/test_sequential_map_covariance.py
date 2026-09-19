@@ -746,13 +746,17 @@ def test_no_finite_start_fails_closed() -> None:
 
 
 def test_locator_uses_start_centered_standardized_coordinates() -> None:
-    visited = []
+    # Observe every eager or compiled callback without a host callback inside
+    # the numerical target. The original box-bound assertion is unchanged.
+    maximum_visited = tf.Variable(0.0, dtype=tf.float64)
+    start_tf = tf.constant([900.0, 0.9e-3], tf.float64)
 
     def target(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         theta = tf.convert_to_tensor(theta, tf.float64)
-        visited.append(np.asarray(theta.numpy(), dtype=float))
         mode = tf.constant([1000.0, 1.0e-3], tf.float64)
         scale = tf.constant([100.0, 1.0e-4], tf.float64)
+        maximum_visited.assign(tf.maximum(maximum_visited,
+            tf.reduce_max(tf.abs((theta - start_tf) / scale))))
         delta = (theta - mode) / scale
         return -0.5 * tf.reduce_sum(delta**2), -delta / scale
 
@@ -770,10 +774,7 @@ def test_locator_uses_start_centered_standardized_coordinates() -> None:
     assert result.diagnostics["locator"][0]["coordinate_system"] == (
         "start_centered_prior_standardized_smooth_box"
     )
-    start = np.array([900.0, 0.9e-3])
-    scale = np.array([100.0, 1.0e-4])
-    standardized = np.asarray([(row - start) / scale for row in visited])
-    assert np.max(np.abs(standardized)) <= 4.0 + 1.0e-12
+    assert 0.0 < float(maximum_visited) <= 4.0 + 1.0e-12
 
 
 def test_batched_cloud_route_matches_scalar_result() -> None:

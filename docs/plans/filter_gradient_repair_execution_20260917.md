@@ -3113,3 +3113,52 @@ coverage. Focused Ruff and whitespace checks pass. GPU qualification and
 terminal timing/memory evidence remain pending. Charges are 15,585.869 GPU /
 31,407.087 CPU seconds. Continue the sequential helper migration under the
 same plan; this is focused execution evidence, not campaign completion.
+
+## Native sequential preparation and GPU qualification, 01150--01161
+
+The sequential locator now maps scalar clouds with a native TensorFlow loop,
+generates orthogonal frames with the original frame seeds and compatible
+Philox words, and performs the unchanged 80/80 trust-region bracket/bisection
+inside XLA. Bounded caches use fixed signatures. The eigensolver follows the
+existing explicit binary64 Jacobi precision convention. The outer search,
+selection and fit lifecycle remains open; these are preparation kernels, not
+a NeuTra batch-training target or an artifact-authority HMC tuner.
+
+Run 01150 passes all 20 focused CPU checks (8.384 seconds), including original
+seed/order parity, independent SPD KKT conditions, boundary cases, complete
+cloud values/scores and enclosed derivatives, HLO and bounded graph growth.
+Run 01151 passes 39 consumer checks and catches one test's `.numpy()` recorder
+inside the target. Replacing only that recorder with a TensorFlow resource
+retains the original bound over every visited position; 01152 passes all
+40 checks (12.794 seconds).
+
+Run 01153 passes 37 block cases and exposes six invalid baseline compositions:
+the old block callback was using the new sequential dependency. The reference
+now pins both original modules; lower geometry dependencies remain shared and
+explicit. Run 01155 passes all 43 checks (20.162 seconds). Both failures and
+their repairs are preserved; no endpoint gate or tolerance was relaxed.
+
+| Run | GPU2 qualification | Passed | Driver seconds |
+| --- | --- | ---: | ---: |
+| 01156 | Sequential preparation kernels | 20 | 16.300 |
+| 01157 | Block-center consumers and original records | 43 | 39.153 |
+| 01158 | Existing sequential geometry consumers | 40 | 24.566 |
+| 01159 | Full quadratic initializer | 33 | 132.657 |
+| 01160 | Exact incumbent and joint center | 26 | 76.068 |
+
+All GPU workers record verified memory growth and pass contention checks.
+The earlier pending quadratic/joint qualifications are closed at this focused
+source checkpoint. The terminal driver now requires GPU for all five groups.
+Run 01161 passes all 61 policy/controller checks (8.383 seconds); partial static
+coverage is 179 sources / 1,183 exceptions. New kernels have no exemptions.
+New-file Ruff passes; existing import-order, closure and style warnings in the
+legacy sequential module/test were left outside this localized change.
+
+| Decision | Primary criterion | Veto status | Uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Retain native preparation repair | Pinned values, boundaries and actual CPU/GPU consumers pass | No focused numerical veto | Outer numerical control and terminal memory comparisons remain open | Continue remaining call-chain migration | No whole-initializer compilation claim |
+| Keep merge gated | Five focused GPU groups pass | TP residual, memory/slowdown investigations, source coverage and final repeats remain open | Final source/harness not frozen | Execute current master queue | No campaign completion or scientific admission |
+
+Charges through 01161 are 15,874.613 GPU / 31,491.637 CPU seconds; remaining
+allowances are 171,325.387 GPU / 83,708.363 CPU seconds under the same 52/32-hour
+caps. No worker remains running at this checkpoint.

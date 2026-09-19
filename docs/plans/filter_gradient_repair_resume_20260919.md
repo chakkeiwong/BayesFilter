@@ -15,9 +15,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01149,
-charges are 15,585.869 GPU / 31,407.087 CPU seconds, leaving 171,614.131 GPU /
-83,792.913 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01161,
+charges are 15,874.613 GPU / 31,491.637 CPU seconds, leaving 171,325.387 GPU /
+83,708.363 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.
@@ -310,3 +310,24 @@ exceptions. The whole ordered sweep remains uncovered and open alongside its
 sequential locator dependency. GPU qualification remains pending. Next migrate
 sequential cloud and trust-region helper loops without changing seeded streams,
 then qualify their actual consumers. No worker is running.
+
+Recovery through 01161: checkpoint `85219330` is committed and pushed.
+Sequential scalar-cloud mapping, orthogonal frames and trust-region solves now
+use fixed-signature XLA programs and the existing Philox compatibility helper.
+Run 01150 passes 20 CPU checks. Run 01151 catches a legacy test's host recording
+inside its target; a TensorFlow resource records every callback while preserving
+the same box-bound assertion. All 40 consumer checks pass in 01152.
+Run 01153 catches an invalid mixed baseline: its old block callback calls the
+new compiled sequential locator. Pinning both original modules repairs the
+reference; all 43 block checks pass in 01155. No numerical tolerance changed.
+
+GPUs became free. Runs 01156--01160 pass 20 sequential-preparation, 43 block,
+40 sequential, 33 quadratic-initializer and 26 joint-center checks on GPU2,
+with memory growth verified. These close the previously pending initializer
+and locator GPU qualifications. All five groups now require GPU for the final
+driver test gate; current focused runs are not final-source terminal evidence.
+Run 01161 passes all 61 policy/controller checks. The static guard is
+179 sources / 1,183 exact exceptions. New kernels have no numerical exceptions;
+the outer initializer/sweep/search lifecycles remain explicitly open. New-file
+Ruff checks pass; existing sequential import/closure/style warnings remain.
+No worker is running. Continue the master queue and keep main unmerged.

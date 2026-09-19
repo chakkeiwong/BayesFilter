@@ -1,7 +1,8 @@
 """Pinned block-center decisions and complete numerical callback compilation.
 
-The reference wrapper shares the current sequential locator. These checks do
-not certify the still host-controlled sweep or sequential refinement lifecycle.
+The reference owns its original wrapper and sequential locator; lower-level
+geometry dependencies are shared. These checks do not certify the still
+host-controlled sweep or sequential refinement lifecycle.
 """
 
 import importlib.util
@@ -25,9 +26,16 @@ D = tf.float64
 
 @pytest.fixture(scope="module")
 def baseline():
+    sequential = _pinned_module("sequential_map_covariance")
+    module = _pinned_module("block_coordinate_center")
+    module.estimate_sequential_map_covariance = sequential.estimate_sequential_map_covariance
+    return module
+
+
+def _pinned_module(name):
     source = subprocess.check_output(["git", "show",
-        "3582b4ac5fea67fb5da7fa60a1cbfaf19df35adf:bayesfilter/inference/block_coordinate_center.py"], text=True)
-    spec = importlib.util.spec_from_loader("block_center_pinned_reference", loader=None)
+        f"3582b4ac5fea67fb5da7fa60a1cbfaf19df35adf:bayesfilter/inference/{name}.py"], text=True)
+    spec = importlib.util.spec_from_loader(f"block_center_pinned_{name}", loader=None)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     exec(compile(source, spec.name, "exec"), module.__dict__)  # noqa: S102 - pinned diagnostic reference

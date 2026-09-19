@@ -4,41 +4,62 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh: source checkpoint `22485606` is committed and pushed,
-including quadratic preparation kernels and the locator GPU resource repair.
+September 19 refresh: source checkpoint `85219330` is committed and pushed,
+including block-center preparation and the preserved TP localization evidence.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01149, charges are 15,585.869 GPU / 31,407.087 CPU seconds;
-remaining allowances are 171,614.131 GPU / 83,792.913 CPU seconds. The earlier
+charge. Through run 01161, charges are 15,874.613 GPU / 31,491.637 CPU seconds;
+remaining allowances are 171,325.387 GPU / 83,708.363 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 178 sources with 1,183 exact
+The repair is incomplete. The static guard covers 179 sources with 1,183 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
 
-Recovery review through 01149 confirms no active worker, the unchanged frozen
+Recovery review through 01161 confirms no active worker, the unchanged frozen
 baseline, and the same cumulative budget (the extension is counted once).
 All six pending TT/preparation GPU groups pass 134 checks (01131--01136).
 The quadratic initializer migration passes 33 CPU checks (01139). Its GPU
 suite exposed the joint-locator int32 resource-placement failure; int64
 accounting repairs that reproducer (01141), and all 26 joint-center CPU
-checks pass (01142). Both approved GPUs then became occupied; full GPU
-initializer/joint-center reruns remain pending. All 61 policy/controller
-checks pass in 01143. Keep the 256 MiB host-memory investigation trigger and
+checks pass (01142). Full GPU initializer/joint-center reruns now pass all
+33/26 cases (01159/01160). All 61 policy/controller checks pass in 01161.
+Keep the 256 MiB host-memory investigation trigger and
 all numerical gates intact. Continue the remaining block-center and sequential
 preparation repair; their numerical loops cannot receive host exemptions.
 The first TP projection has exact parity with frozen features (01145), but
 unfrozen features still fail the raw-residual gate. The ineffective first-factor
-Cholesky trial in 01146 is reverted. GPU2/GPU3 remain occupied by unrelated
-allocations at recovery; resume bounded CPU preparation work meanwhile.
+Cholesky trial in 01146 is reverted. GPU2/GPU3 became available, permitting
+the focused GPU qualification below; every new run must recheck contention.
 Block-center preparation and complete callbacks now pass all 43 CPU checks
 (01148), including pinned public/private records and strict boundary decisions.
 All 61 policy/controller checks pass in 01149. The enclosing ordered sweep and
 sequential locator remain open; the guard excludes that numerical loop rather
-than granting a host exception. GPU block-center qualification is pending.
+than granting a host exception. With the original sequential dependency also
+pinned, block-center checks pass on CPU/GPU (01155/01157). Native scalar-cloud,
+orthogonal-frame and trust-region kernels pass 20 focused CPU/GPU checks
+(01150/01156), and all 40 sequential consumer cases pass on CPU/GPU
+(01152/01158). These five numerical groups now require GPU in the terminal
+driver gate. Their focused runs do not freeze the broader source/harness.
 
-Resume in this order, using the same bounded runner and versioned artifacts:
+Current execution queue, under the same runner, evidence contract and caps:
+
+1. Finish sequential search/fit/selection and the enclosing block/quadratic
+   numerical control. Include reachable exact-incumbent selection; host record
+   assembly must not hide row-wise numerical eligibility checks. Keep external
+   DZ5 callback compatibility explicit and qualify actual owned consumers.
+2. Resolve TP continuation-rounding localization and the unchanged raw-residual
+   failure before claiming complete value/gradient/history parity.
+3. Investigate remaining TT assembly and forecast-pool host-memory increases,
+   core-affine/higher-rank warm-time regressions, and centered qualification.
+4. Finish coverage/dispositions, then freeze source and harness for affected
+   suites and required paired three-process comparisons. Review exact outputs,
+   HLO, allocation stability, host/device peaks and warmed timings.
+5. Integrate remote changes and retest; merge only after every terminal gate.
+
+The following numbered entries preserve the earlier implementation sequence.
+Run-local pending notes are superseded by the current queue and results above:
 
 1. Continue localizing the P59 36-dimensional assembly memory regression before
    a broad retry. Rank-one fitter sharing passes 15 focused and 37 existing

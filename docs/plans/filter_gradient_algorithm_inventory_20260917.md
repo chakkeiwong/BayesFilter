@@ -6,6 +6,12 @@ implementation variants, score definitions, and reference code. A name such as
 or scientific admission. Findings and measured memory are in the
 [audit result](filter_gradient_policy_memory_result_20260917.md).
 
+This is the frozen pre-campaign inventory. Its execution dispositions describe
+the baseline, not current compliance. Follow the
+[active repair master](filter_gradient_repair_master_20260917.md) and
+[completion ledger](filter_gradient_repair_ledger_20260917.json) for subsequent
+repairs, qualification and still-open consumer coverage.
+
 The discovery pass covers all **2,695 tracked Python files**, including package
 code, executable benchmark scripts under `docs/benchmarks`, experiments, tests,
 archived harnesses and vendored sources. The compressed

@@ -179,6 +179,7 @@ TEST_GROUPS = {
     "fixed_geometry": ("tests/test_fixed_center_curvature.py", "tests/test_filter_repair_host_io.py", "tests/test_posterior_curvature_refinement.py"),
     "block_geometry": ("tests/test_block_score_geometry.py",),
     "sequential_geometry": ("tests/test_sequential_map_covariance.py",),
+    "sequential_preparation": ("tests/test_filter_repair_sequential_preparation.py",),
     "block_center": ("tests/test_block_coordinate_center.py", "tests/test_filter_repair_block_center.py"),
     "quadratic_geometry": ("tests/test_quadratic_geometry.py", "tests/test_filter_repair_geometry_parity.py"),
     "quadratic_initializer": ("tests/test_quadratic_map_covariance.py", "tests/test_filter_repair_quadratic_initializer.py"),
@@ -235,7 +236,9 @@ TEST_GROUPS = {
 FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
-TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU"}
+TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+    "sequential_preparation": "GPU", "sequential_geometry": "GPU", "block_center": "GPU",
+    "quadratic_initializer": "GPU", "joint_center": "GPU"}
 FIXTURES += ADDITIONAL_FIXTURES
 FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES

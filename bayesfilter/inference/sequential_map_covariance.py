@@ -26,6 +26,11 @@ from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
     fit_factor_correlation_score_geometry,
 )
+from bayesfilter.inference.sequential_preparation_tf import (
+    cloud_program,
+    evaluation_program,
+    trust_region_program,
+)
 from bayesfilter.ops.host_tensor_io import numeric_tensor
 from bayesfilter.ops.symmetric_matrix_tf import (
     symmetric_score_design as _symmetric_score_design,
@@ -1145,18 +1150,8 @@ def _refinement_movement_payload(
 def _antithetic_cloud(
     sample_count: int, dimension: int, radius: float, seed: tuple[int, int]
 ) -> tf.Tensor:
-    half = (sample_count + 1) // 2
-    directions = tf.random.stateless_normal(
-        [half, dimension], seed=tf.constant(seed, tf.int32), dtype=tf.float64
-    )
-    directions /= tf.maximum(tf.linalg.norm(directions, axis=1, keepdims=True), 1.0e-15)
-    radii = tf.linspace(
-        tf.constant(radius / float(half), tf.float64),
-        tf.constant(radius, tf.float64),
-        half,
-    )[:, None]
-    cloud = tf.concat([directions * radii, -directions * radii], axis=0)
-    return cloud[:sample_count]
+    return cloud_program(sample_count, dimension, False)(
+        tf.convert_to_tensor(radius, tf.float64), tf.convert_to_tensor(seed, tf.int32))
 
 
 def dimension_scaled_search_count(dimension: int) -> int:
@@ -1185,33 +1180,8 @@ def _orthogonal_antithetic_cloud(
     size = int(dimension)
     if count <= 0 or size <= 0:
         raise ValueError("sample_count and dimension must be positive")
-    pair_count = (count + 1) // 2
-    frame_count = (pair_count + size - 1) // size
-    directions = []
-    for frame in range(frame_count):
-        normal = tf.random.stateless_normal(
-            [size, size],
-            seed=tf.constant((seed[0], seed[1] + 7919 * frame), tf.int32),
-            dtype=tf.float64,
-        )
-        orthogonal, diagonal = tf.linalg.qr(normal)
-        signs = tf.where(
-            tf.linalg.diag_part(diagonal) >= 0.0,
-            tf.ones([size], tf.float64),
-            -tf.ones([size], tf.float64),
-        )
-        directions.append(tf.transpose(orthogonal * signs[None, :]))
-    positive = tf.concat(directions, axis=0)[:pair_count]
-    radii = tf.linspace(
-        tf.constant(radius / float(pair_count), tf.float64),
-        tf.constant(radius, tf.float64),
-        pair_count,
-    )[:, None]
-    cloud = tf.reshape(
-        tf.stack((positive * radii, -positive * radii), axis=1),
-        [-1, size],
-    )
-    return cloud[:count]
+    return cloud_program(count, size, True)(
+        tf.convert_to_tensor(radius, tf.float64), tf.convert_to_tensor(seed, tf.int32))
 
 
 def _structured_factor_fit_data(
@@ -1579,49 +1549,15 @@ def _evaluate_cloud(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     rows = tf.convert_to_tensor(points, tf.float64)
     row_count = int(rows.shape[0])
-    if batched_value_and_score_fn is not None:
-        values, scores = batched_value_and_score_fn(rows)
-        return (
-            tf.ensure_shape(tf.convert_to_tensor(values, tf.float64), [row_count]),
-            tf.ensure_shape(
-                tf.convert_to_tensor(scores, tf.float64), [row_count, dimension]
-            ),
-        )
-    values = []
-    scores = []
-    for point in tf.unstack(rows):
-        value, score = _scalar_value_score(scalar_function, point, dimension)
-        values.append(value)
-        scores.append(score)
-    return tf.stack(values), tf.stack(scores)
+    if row_count == 0 and batched_value_and_score_fn is None:
+        raise ValueError("scalar cloud must contain at least one row")
+    return evaluation_program(scalar_function, batched_value_and_score_fn, row_count, dimension)(rows)
 
 
 def _solve_trust_region_tf(precision: tf.Tensor, linear: tf.Tensor, radius: float) -> Mapping[str, Any]:
-    eigenvalues, eigenvectors = tf.linalg.eigh(precision)
-    projected = tf.linalg.matvec(eigenvectors, linear, transpose_a=True)
-    unconstrained = tf.linalg.matvec(eigenvectors, projected / eigenvalues)
-    unconstrained_norm = float(tf.linalg.norm(unconstrained).numpy())
-    boundary = unconstrained_norm > radius
-    if boundary:
-        lower = tf.constant(0.0, tf.float64)
-        upper = tf.constant(1.0, tf.float64)
-        for _ in range(80):
-            norm = tf.linalg.norm(tf.linalg.matvec(eigenvectors, projected / (eigenvalues + upper)))
-            if float(norm.numpy()) <= radius:
-                break
-            upper *= 2.0
-        for _ in range(80):
-            middle = 0.5 * (lower + upper)
-            norm = tf.linalg.norm(tf.linalg.matvec(eigenvectors, projected / (eigenvalues + middle)))
-            if float(norm.numpy()) > radius:
-                lower = middle
-            else:
-                upper = middle
-        step = tf.linalg.matvec(eigenvectors, projected / (eigenvalues + upper))
-    else:
-        step = unconstrained
-    predicted = tf.tensordot(linear, step, 1) - 0.5 * tf.tensordot(step, tf.linalg.matvec(precision, step), 1)
-    return {"step": step.numpy(), "boundary_active": boundary, "predicted_improvement": float(predicted.numpy())}
+    step, boundary, predicted = trust_region_program(int(linear.shape[0]))(
+        precision, linear, tf.convert_to_tensor(radius, tf.float64))
+    return {"step": step, "boundary_active": bool(boundary), "predicted_improvement": float(predicted)}
 
 
 def _proposal_score_gate(
