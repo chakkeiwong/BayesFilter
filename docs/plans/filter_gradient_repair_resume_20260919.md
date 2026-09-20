@@ -5,6 +5,45 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
+Current checkpoint through 01799: native lifecycle providers and six winner
+gathers are qualified in focused CPU/GPU scopes. Public outer loop remains
+unchanged. All current changes are ready for a partial checkpoint commit/push;
+cfbc32d2 is the preceding pushed checkpoint. No worker is active.
+
+Report transport passes all eight actual CPU/GPU records and policy
+(01777--01785). Renewed costs (01786--01791) preserve exact frozen/XLA complete
+records. Warm before/XLA medians: 60.330/70.028 ms D3, 175.411/195.831 ms D5.
+Cold host overhead remains 492.066/1320.527 MiB. D3 GPU peak 94,976/190,464 bytes
+crosses 2x; D5 is 230,912/417,280 bytes. Strict graph/XLA still fails 19 D5 fields.
+
+01794 attributes terminal precision gaps to the existing XLA eigensolver on
+identical matrices: residual 1.788e-10, graph/refined helper <=8.882e-16.
+01796 attributes the factor condition difference to fitted states, not the
+same-state diagnostic. Failed 01795 is preserved (diagnostic asked for position
+from OptimizerSummary); its repaired retry validates full dependency records.
+
+01792/01793 and 01797/01798 place the major host growth before reporting.
+Raw RSS agrees with smaps_rollup at 2.279/4.366 GB; peak counters disagree by
+37.9/27.9 MB, so do not describe endpoint VmHWM as an exact peak. The analysis
+lifecycle-memory-stage-disposition-01799.json checks full records against costs.
+All 67 policy/controller cases pass in 01799; guard 198 sources / 1,276 exact
+exceptions, partial. Focused Ruff and whitespace pass.
+
+Budget: CPU 41,166.158309666 / 115,200, GPU 36,678.672169596 / 187,200 seconds.
+Next: checkpoint commit/push, qualify existing refined eigenpairs in sequential
+terminal/trust kernels against original 3582b4ac and independent residuals;
+continue factor mode investigation, efficient public reporting, external process
+deadlines and broader controller repairs. Scratch regression draft:
+/tmp/filter_repair_eigen_consumers_draft.py (not installed or tested). Full
+actual lifecycle and changed-input/resource qualification precedes public wiring.
+
+No external source/pin changed. All terminal findings, DZ5 target-only and actual
+full-transition-block evidence, terminal repeats and merge remain open. Public
+progress review: filter_gradient_lifecycle_progress_review_20260921.md.
+
+Historical checkpoint details follow; active/no-worker statements below apply
+only to their own numbered checkpoints.
+
 Current checkpoint through 01720: ordered attempts are integrated and all
 focused CPU/GPU mechanics, actual two-factor public histories, original consumers
 and 67 policy/controller cases pass. Frozen/current XLA records are exactly equal.

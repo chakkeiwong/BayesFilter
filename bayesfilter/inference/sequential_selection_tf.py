@@ -31,7 +31,10 @@ def selection_numerics(positions, values, scores, *, keep_first=False):
         # enclosing locator supplies a finite incumbent; preserve its boundary.
         index = tf.where(tf.math.is_nan(values[0]), 0, index)
     return {'index': tf.where(count > 0, index, -1), 'finite_count': count,
-        'value': values[index], 'position': positions[index], 'score': scores[index]}
+        # Scalar StridedSlice indices force winner dependencies to compile-time
+        # constants in TF/XLA. Gather keeps these data-dependent rows dynamic.
+        'value': tf.gather(values, index), 'position': tf.gather(positions, index),
+        'score': tf.gather(scores, index)}
 
 
 @lru_cache(maxsize=64)

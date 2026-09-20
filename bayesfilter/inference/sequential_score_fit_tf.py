@@ -119,7 +119,7 @@ def score_fit_program(scalar, batched, sample_count, dimension, training_indices
         # frozen preparation contract inside the function, before an external
         # tape can request unavailable eigensolver derivatives.
         return tf.nest.map_structure(tf.stop_gradient,
-            {**result, "best_index": winner, "best_value": values[safe_winner],
-             "best_position": positions[safe_winner], "best_score": scores[safe_winner]})
+            {**result, "best_index": winner, "best_value": tf.gather(values, safe_winner),
+             "best_position": tf.gather(positions, safe_winner), "best_score": tf.gather(scores, safe_winner)})
 
     return fit

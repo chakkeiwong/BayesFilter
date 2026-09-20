@@ -63,6 +63,35 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"lifecycle_profile_{dimension}": (
+        f"tests/test_filter_repair_lifecycle_profile.py::test_lifecycle_compilation_memory_stages[{dimension}-{search_count}]",)
+        for dimension, search_count in ((3, 4), (5, 32))},
+    "lifecycle_terminal_modes": (
+        "tests/test_filter_repair_lifecycle_modes.py::test_terminal_mode_failure_source_and_eigensystem",),
+    "lifecycle_factor_modes": (
+        "tests/test_filter_repair_lifecycle_modes.py::test_factor_condition_failure_on_identical_optimizer_state",),
+    **{f"lifecycle_memory_{arm}_{dimension}": (
+        f"tests/test_filter_repair_lifecycle_memory.py::test_complete_lifecycle_memory[{arm}-{dimension}-{search_count}]",)
+        for arm in ("before", "graph", "xla") for dimension, search_count in ((3, 4), (5, 32))},
+    "lifecycle_specialization": ("tests/test_filter_repair_lifecycle_specialization.py", "-s"),
+    **{f"lifecycle_runtime_{dimension}_cpu": (
+        f"tests/test_filter_repair_lifecycle_runtime.py::test_actual_lifecycle_runtime_inputs_and_resource_lifetime[{dimension}]",)
+        for dimension in (3, 5)},
+    "lifecycle_runtime_gpu": ("tests/test_filter_repair_lifecycle_runtime.py",),
+    "lifecycle_actual_symmetric_cpu": ("tests/test_filter_repair_lifecycle_actual.py", "-k", "not factor"),
+    **{f"lifecycle_actual_{case}_{device}": (
+        f"tests/test_filter_repair_lifecycle_actual.py::test_actual_lifecycle_complete_records_and_calls[{case}]",)
+        for case in ("factor_one", "factor_two", "factor_two_reuse") for device in ("cpu", "gpu")},
+    "lifecycle_actual_symmetric_gpu": ("tests/test_filter_repair_lifecycle_actual.py", "-k", "not factor"),
+    "refinement_symmetric_cpu": ("tests/test_filter_repair_sequential_refinement.py", "-k", "symmetric"),
+    **{f"refinement_{case}_cpu": (
+        f"tests/test_filter_repair_sequential_refinement.py::test_complete_refinement_records[{case}]",)
+        for case in ("factor_one", "factor_two", "factor_two_reuse")},
+    "refinement_gpu": ("tests/test_filter_repair_sequential_refinement.py",),
+    "sequential_terminal_cpu": ("tests/test_filter_repair_sequential_terminal.py",),
+    "sequential_terminal_gpu": ("tests/test_filter_repair_sequential_terminal.py",),
+    "sequential_lifecycle_cpu": ("tests/test_filter_repair_sequential_lifecycle.py",),
+    "sequential_lifecycle_gpu": ("tests/test_filter_repair_sequential_lifecycle.py",),
     **{f"attempts_capacity_{arm}_{capacity}": (
         f"tests/test_filter_repair_attempts_memory.py::test_attempts_enclosure_capacity[{arm}-{capacity}]",)
         for arm in ("before", "xla") for capacity in (4, 32)},
@@ -394,6 +423,15 @@ TEST_GROUPS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"lifecycle_profile_{dimension}":
+        "Stage attribution of lifecycle host/allocator compilation growth; not comparative timing or terminal qualification."
+        for dimension in (3, 5)},
+    "lifecycle_terminal_modes": "Exact saved terminal inputs and frozen-source eigensystem attribution; strict mode failure remains open.",
+    "lifecycle_factor_modes": "Crossed actual optimizer states and frozen/current Jacobian diagnostics; no full-record tolerance waiver.",
+    **{f"lifecycle_memory_{arm}_{dimension}":
+        "Descriptive complete-lifecycle costs; original full records and terminal repeats remain separate mandatory gates."
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)},
+    "lifecycle_specialization": "Standalone terminal/refinement compiler operand localization; full runtime gate remains mandatory.",
     **{f"attempts_capacity_{arm}_{capacity}": "Descriptive compilation-capacity localization of enclosing second fit; no memory cap or terminal timing ranking."
         for arm in ("before", "xla") for capacity in (4, 32)},
     "attempts_dense_trust_modes": "Frozen/current source and eigensolver attribution of the D3 graph/XLA mismatch; failed numerical comparison is not waived.",
@@ -453,6 +491,24 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "lifecycle_profile": ("lifecycle_profile_3", "lifecycle_profile_5", "policy"),
+    "lifecycle_investigation": ("lifecycle_profile_3", "lifecycle_profile_5",
+        "lifecycle_terminal_modes", "lifecycle_factor_modes", "policy"),
+    "lifecycle_memory": (*(f"lifecycle_memory_{arm}_{dimension}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)), "policy"),
+    "lifecycle_runtime_post_index": ("lifecycle_runtime_3_cpu", "lifecycle_runtime_5_cpu", "lifecycle_runtime_gpu", "policy"),
+    "lifecycle_index_consumers": ("sequential_selection", "sequential_score_fit", "locator_completion",
+        "sequential_geometry", "block_center", "policy"),
+    "lifecycle_runtime": ("sequential_lifecycle_cpu", "sequential_lifecycle_gpu",
+        "lifecycle_runtime_3_cpu", "lifecycle_runtime_5_cpu", "lifecycle_runtime_gpu", "policy"),
+    "lifecycle_actual": ("lifecycle_actual_symmetric_cpu", "lifecycle_actual_factor_one_cpu",
+        "lifecycle_actual_factor_two_cpu", "lifecycle_actual_factor_two_reuse_cpu",
+        "lifecycle_actual_symmetric_gpu", "lifecycle_actual_factor_one_gpu",
+        "lifecycle_actual_factor_two_gpu", "lifecycle_actual_factor_two_reuse_gpu", "policy"),
+    "sequential_refinement": ("refinement_symmetric_cpu", "refinement_factor_one_cpu",
+        "refinement_factor_two_cpu", "refinement_factor_two_reuse_cpu", "refinement_gpu", "policy"),
+    "sequential_terminal": ("sequential_terminal_cpu", "sequential_terminal_gpu", "policy"),
+    "sequential_lifecycle": ("sequential_lifecycle_cpu", "sequential_lifecycle_gpu", "policy"),
     "attempts_capacity": tuple(f"attempts_capacity_{arm}_{capacity}"
         for arm in ("before", "xla") for capacity in (4, 32)),
     "attempts_cost_followup": ("attempts_dense_trust_modes", *(f"attempts_memory_{arm}_{dimension}"
@@ -513,6 +569,13 @@ TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU",
     "locator_completion": "GPU", "padded_factor": "GPU", "factor_runtime_inputs": "GPU",
     "factor_runtime_consumers": "GPU", "attempts_public_actual_gpu": "GPU",
     "attempts_dense_trust_modes": "GPU",
+    "sequential_lifecycle_gpu": "GPU",
+    "sequential_terminal_gpu": "GPU",
+    "refinement_gpu": "GPU",
+    "lifecycle_runtime_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["lifecycle_investigation"] if group != "policy"},
+    **{group: "GPU" for group in TEST_BATCHES["lifecycle_memory"] if group != "policy"},
+    **{group: "GPU" for group in TEST_BATCHES["lifecycle_actual"] if group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_BATCHES["attempts_capacity"]},
     **{group: "GPU" for group in TEST_BATCHES["attempts_memory"]},
     **{f"factor_memory_{arm}_{mode}": "GPU"

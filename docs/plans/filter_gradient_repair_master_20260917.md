@@ -4,6 +4,305 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+Checkpoint through 01799: reporting-record qualification, renewed costs,
+mode-attribution diagnostics and memory cross-checks are complete. All 67
+policy/controller cases pass in 01799; the partial guard remains 198 sources /
+1,276 exact exceptions. Focused Ruff and whitespace pass. No worker is active.
+Charged CPU 41,166.158309666 / 115,200 and GPU 36,678.672169596 / 187,200
+seconds. Preserve and push this partial checkpoint; main remains unmerged.
+
+01786--01791 preserve exact frozen/XLA records at both extents after bulk report
+transport. Warm before/XLA medians are 60.330/70.028 and 175.411/195.831 ms,
+with report medians reduced to 36.693/48.603 ms. Host peaks still increase
+492.066/1320.527 MiB; D3 GPU peak crosses 2x at 94,976/190,464 bytes. Strict
+D5 graph/XLA comparison still fails 19 fields. Both cost matrices are preserved.
+
+01796 localizes the factor condition gap to fitted coordinates: raw-state delta
+1.019e-10; same-state frozen/current graph/XLA condition values agree within
+3.6e-14. That rules out the diagnostic as the cause in this fixture, not upstream
+fitting/preparation. 01797/01798 verify raw compile-time RSS with smaps_rollup
+(2.279/4.366 GB); getrusage peak is lower by 37.9/27.9 MB. Record the counter
+disagreement, retain maximum observed RSS, and avoid an exact-peak claim. Full
+records equal the corresponding cost arms. Analysis is archived in
+lifecycle-memory-stage-disposition-01799.json. Native executable cache eviction,
+public integration and terminal memory/performance repeats remain open.
+
+Next qualify an execution-accuracy repair for the demonstrated sequential
+terminal/trust eigensolver defects using the existing refined helper. Compare
+against the original 3582b4ac graph/eager authority and independent residuals,
+not only the intermediate checkpoint that contains the defect. Preserve every
+seed, floor, acceptance gate, optimizer setting and derivative boundary. No
+runtime change is part of this checkpoint. Detailed evidence and limits are in
+filter_gradient_lifecycle_checkpoint_20260921.md.
+
+Stage-profile audit found an observability limitation: /proc/self/status VmHWM
+is lower after report materialization than immediately after raw execution
+(about 31--39 MiB here), although it is nominally a high-water field. Preserve
+those readings. They do not negate the much larger compile-time RSS increase,
+but quoting their endpoint as an exact process maximum is unjustified. Add
+getrusage(RUSAGE_SELF).ru_maxrss and /proc/self/smaps_rollup RSS/PSS/private
+fields to each existing profile stage and renew the two profiles under the same
+300-second bounds. This is a measurement-only cross-check; no OS, allocator,
+compiler, algorithm or public default changes. Report the maximum observed
+samples and their disagreement, not an invented exact peak.
+
+01792/01793 pass stage profiles at both extents. 01794 ties all saved terminal
+mode failures to the same frozen/current eigensolver behavior; the D5 matrix
+has raw XLA residual 1.788e-10 versus <=8.882e-16 in graph references and the
+existing refined-eigenpair helper. No runtime change has been installed.
+01795 preserves a diagnostic AttributeError: the compact fitted record contains
+OptimizerSummary, deliberately excluding raw optimizer coordinates. Repair only
+the diagnostic by evaluating the identical full factor dependency, require every
+retained field/count to match the enclosing record, then cross its raw state
+with graph/XLA diagnostics. Retry that single job before policy; same scientific
+inputs, bounds, tolerances and campaign budget. No runtime report expansion.
+
+After the renewed costs, run two bounded explanatory investigations without
+changing runtime numerics. First sample RSS/HWM, allocator current/peak and map
+counts after preparation, each factory, outer tracing, first synchronized raw
+execution, report materialization and twenty repeated complete calls. Use the
+same D3/search4 and D5/search32 fixtures and baseline namespace setup; serialize
+graphs and inspect HLO only after the samples. Explicit tracing changes timing
+boundaries, so these profiles explain memory and cannot replace paired costs.
+
+Second, attribute the exact D5 failed fields using preserved 01774/01776 inputs.
+Compare current and fully pinned cfbc32d2 terminal factories in both modes at
+all three saved centers/scales/seeds. Expose the frozen solve prefix's matrix
+before eigendecomposition and compare CPU/GPU graph, existing XLA and the already
+qualified refined-eigenpair helper on that identical matrix. The latter is a
+diagnostic only. For the factor condition field, reproduce both fitted states,
+then cross their identical raw coordinates/offsets with frozen/current graph/XLA
+Jacobian diagnostics. Preserve complete records and source/artifact hashes.
+Same-mode source parity explains inheritance only for the tested fields; it
+cannot waive the failed strict mode gate. A residual alone cannot establish that
+an optimizer trajectory or the enclosing algorithm is repaired.
+
+Review: the baseline is exact pinned source and existing measured inputs;
+thresholds, seeds, optimizer iterations and public behavior stay frozen. These
+four fresh GPU2 jobs reserve at most 300 seconds each, sequentially through the
+same driver, under idle preflight, growth verification and cumulative caps.
+Numerical mismatch, missing provenance or a timeout is preserved and investigated.
+A passing localization is explanatory, not terminal admission. The public outer
+loop and external watchdog compatibility remain open.
+
+01777--01784 pass all eight complete lifecycle records on CPU and GPU after
+bulk history-column transport; 01785 passes all 67 policy/controller checks.
+Renew the same six fresh-process lifecycle_memory arms at the same inputs,
+settings, bounds and output lifetime. The reporting trial changes no numerical
+source. Skeptical review: compare full records again, preserve the original
+cost matrix, and keep cold host growth and strict D5 mode failures independent
+of any measured reporting improvement. No proxy kernel-only speed admission.
+
+01771--01776 complete the six cost arms. Independent full-record comparison is
+exactly equal for frozen/current XLA at both extents, including changed inputs.
+Strict graph/XLA passes D3 but fails 19 D5 fields (terminal precision/covariance
+entries and a factor condition diagnostic) at the unchanged 1e-10 gates. Those
+remain failures; do not infer inherited causation without the specific tie-out.
+XLA host peak increases 503.934 MiB (D3) / 1321.027 MiB (D5); warm complete cost
+increases 62.0% / 32.4%. Both investigation triggers fire. GPU peaks rise below
+2x; changed-input costs drop from 3.05--3.62 seconds to .101--.246 seconds with
+under .23 MiB host growth in the candidate versus 41--50 MiB in the baseline.
+Preserve lifecycle-memory-comparison-01776.json and its independent analyzer.
+
+The diagnostic materializer dispatches an eager slice for every history field
+and consumes 66/86 ms per warm call. Repair only this report transport first:
+materialize each history column once on the host, then reconstruct tensor rows
+from those completed arrays. No NumPy numerical operation or target replay is
+introduced. Rerun all actual lifecycle records on CPU/GPU before renewing the
+same six cost arms. Do not attribute cold host overhead to reporting without
+measurement; its tracing/compilation-stage increase remains a separate open
+investigation. Runtime numerics and source stay unchanged in this report trial.
+
+01757--01764 pass all eight complete actual lifecycle records on each CPU/GPU
+after the gather repair. 01765 passes all 67 policy/controller checks; unchanged
+policy evidence is reused at the end of the second matrix. Affected GPU suites
+all pass: 20 selection, 17 score-fit, 33 locator, 40 sequential and 43 block
+cases (01766--01770). Proceed with the reviewed six-arm lifecycle_memory matrix
+under the unchanged 300-second sequential bounds. Preserve runtime/tests/driver
+sources during measurement. Public outer-loop integration remains pending.
+
+01753/01754 (CPU) and 01755 (GPU) pass complete changed-input/resource checks
+at D3/D5: all seven/eight operands, one trace, unchanged HLO, frozen records,
+execution after Python cache eviction and release of one/two actual validity
+resources. 01756 passes 67 policy/controller checks. Rerun lifecycle_actual,
+then lifecycle_index_consumers sequentially to qualify the shared winner-index
+change across original fitting, selected-row pullbacks, locators and public
+sequential/block consumers. Keep all original assertions and 300-second bounds.
+
+After those pass, measure the complete enclosing lifecycle in six fresh GPU2
+processes: frozen cfbc32d2 host recurrence, explicit graph reference and XLA at
+D3/search4 and D5/search32. Use actual one/two-factor targets, two attempts,
+unchanged full-200 fitting, seeds and thresholds, and all endpoint/progress
+records. Each arm uses its own numerical namespace. Include one cold and 20
+warm calls, then two changed same-shape centers with immediate repeats; compare
+all inputs and full records at unchanged 1e-10. Separate preparation, factory
+construction, synchronized numerical execution and complete diagnostic report
+construction. Record RSS/HWM and allocator current/peak at each stage/call;
+inspect HLO only after timing. Apply existing 256MiB/2x memory, 2x cold and 20%
+warm investigation triggers. Six sequential 300-second limits and unchanged
+budget/growth/idle preflight rules apply. Splitting is allowed if the ceiling
+is reached; shortening fitting or dropping failed comparison fields is not.
+
+Cost review: the original tail includes reporting, so comparing it with only
+a native scalar return would be unfair. Both measured arms return complete
+records, and construction time is included in cold totals. The test report
+materializer remains diagnostic; these results explain enclosure costs and
+cannot certify the final public interface. The common final mass helper stays
+in its original XLA mode outside the lifecycle boundary, explicitly recorded
+even for the graph-reference arm. Pure graph lifecycle IR must contain no XLA
+functions. Descriptive single-process costs are not final repeated evidence;
+inherited graph/XLA differences and external progress timing remain open gates.
+
+01752 restores all six terminal and all nine refinement HLO operands after the
+six gather replacements. The specialization cause is therefore confirmed in
+the exact-winner indexing. Proceed to actual D3/D5 changed-input/resource gates;
+then rerun full enclosing records and affected score-fit, selection, scalar/
+batched locator, sequential and block consumers before any checkpoint admission.
+No array values, fit settings or comparison tolerances are changed. Generated
+zero metadata can have multiple numeric suffixes in the deeper graph; normalize
+only that documented metadata, preserving every operation and literal value.
+
+01751 localizes specialization to both standalone dependencies: terminal has
+one of six runtime operands and refinement has two of nine. Both shared exact
+selection kernels still read winning rows with data-dependent scalar slicing.
+Trial tf.gather for exactly these six value/position/score reads in
+sequential_selection_tf and sequential_score_fit_tf. This changes indexing
+representation only, preserving winning indices and all numerical formulas.
+First rerun dependency HLO localization, then full changed-input/resource and
+frozen-record gates. Any numerical difference remains a repair trigger, not a
+tolerance waiver. Successful localization does not qualify the wider locator
+consumers; those must be rerun after the targeted tests pass.
+
+01748/01749 pass all 14 observation/mechanics cases. 01750 fails the actual
+D3 enclosing HLO guard: only four of seven user/captured inputs remain runtime
+operands. Center, scale and target precision become embedded constants, and
+changed center/scale changes the HLO although complete records still match.
+This is a compilation/memory blocker, not permission to relax the operand gate.
+Before any runtime change, inspect standalone actual terminal and refinement
+HLO arities and runtime argument names in a bounded CPU diagnostic. The HLO
+currently associates embedded scales with score-fit StridedSlice operations;
+the existing exact-winner scalar indexing is a candidate cause, not a proven
+attribution yet. Preserve full IR and source in a numbered run. A confirmed
+indexing cause permits an equivalent gather repair only; original formulas,
+selected rows, seeds and thresholds remain frozen. Enclosing memory work waits.
+
+01739--01746 pass all eight actual lifecycle cases on both CPU and GPU;
+01747 passes 67 policy/controller checks. Every endpoint/history/movement and
+progress record matches the fully pinned cfbc32d2 public recurrence; exact
+target rows and their evaluation order match. The final mass/reporting suffix
+is shared outside this tested numerical boundary. Terminal success, final-fit
+success after refinement, rejection/recentering and real two-factor escalation
+are all actually exercised. No public or external integration claim yet.
+
+Next install the changed-input/resource test at D3/D5 with actual one/two-factor
+fits. Change center, score, scale and evaluation count without changing shapes;
+compare full records to the frozen recurrence and require one trace, every
+user/captured operand in HLO and identical HLO apart from the already documented
+generated-zero metadata. Retain the concrete graph, clear only Python factory
+caches and verify execution still works, then drop the graph and require its
+actual validity resources to be released. Python cache eviction is not native
+executable eviction. No numerical or configuration changes. Rerun the 14 tiny
+lifecycle mechanics cases to qualify terminal_called observations, then D3/D5
+CPU separately, GPU together and policy, with 300-second sequential ceilings.
+Skeptical review: one trace alone missed earlier data specialization; resource
+liveness must be tested after eviction rather than inferred from cache size.
+
+01738 preserves a harness compilation failure: the new diagnostic point recorder
+constructed tf.range with a resource-dependent start/end. XLA requires constant
+range extents. Construct the same observation indices as static tf.range(count)
+plus the resource offset; runtime algorithms and numerical inputs are unchanged.
+Retry the same actual lifecycle matrix in fresh numbered artifacts, preserving
+the 300-second worker ceilings and campaign caps.
+
+Recovery through 01737: all six actual refinement CPU cases (01732--01735),
+all six GPU cases (01736) and 67 policy/controller checks (01737) pass.
+Charged CPU 40,350.360194407 / 115,200 and GPU 33,704.414416287 / 187,200
+process-seconds. No worker is active at this checkpoint.
+
+Next qualify the actual enclosing lifecycle against the exact cfbc32d2 public
+tail and its fully pinned numerical import closure. Preserve all fit settings,
+thresholds, seeds and strict 1e-10 comparisons; compare full endpoint records,
+complete histories, movement fields, progress event values/order and exact
+target-row counts. Add only an observation-only terminal_called history flag
+to distinguish successful fitting from a stop before fitting. Cover terminal
+success/rejection, symmetric refinement/recentering, budget stops, and actual
+one/two-factor escalation with reused rows. Bound each sequential worker at
+300 seconds; split heavy CPU/GPU groups rather than shorten the optimizer.
+Public integration remains gated on changed-input/resource and cost checks.
+
+Skeptical review: helper parity does not establish enclosing arithmetic; use
+the unmodified frozen public recurrence, not a rewritten baseline. Progress
+callbacks are not universally passive reporting: the external full-partition
+sweep raises its wall-time exception in a callback, and a second consumer has
+a semantic-progress watchdog. Buffered delivery needs explicit documentation
+and independently bounded process execution before those consumers can be
+admitted. No claim of identical live callback timing or external compatibility
+is made by this numerical test. Main stays unmerged.
+
+01729/01730 pass all 14 lifecycle cases including int64 budget boundaries;
+01731 passes 67 policy checks. Install the complete native refinement provider:
+existing seeded search, fresh symmetric/structured fit, fit-cloud incumbent
+promotion, rejected-fit contraction and qualified ordered proposals. Six actual
+cases compare every record/state/count against an exact cfbc32d2 public-step
+source excerpt, with the complete numerical closure pinned. Cover symmetric
+proposal/recenter/rejection, one factor, two factors and reused search rows.
+Both two-factor cases must actually evaluate the second proposal. Preserve
+seeds, target, fit settings, acceptance thresholds and 1e-10 field comparisons.
+Run symmetric CPU cases together, each factor CPU case in a fresh worker to
+respect the documented compiler mapping limit, all GPU cases together, then
+policy; sequential 300-second limits apply. No public replacement yet. After
+same-step records pass, require actual full lifecycle histories, changed inputs,
+runtime operands/resource lifetime and enclosing cost before public integration.
+Skeptical review: passing terminal and proposal helpers separately does not
+establish this enclosing search/fit callback's arithmetic or callback order.
+
+01726/01727 pass all seven actual terminal cases on CPU/GPU, including complete
+records, callback counts and enclosure; 01728 passes all 67 policy cases. Before
+binding refinement, preserve host budget integer range in the new lifecycle:
+use int64 cumulative evaluations with exact casts of bounded step counts.
+Add two boundary fixtures straddling 2^31 with equal/one-over remaining budgets;
+they execute only one tiny terminal callback, not large compute. Rerun all 14
+CPU/GPU lifecycle cases and policy. This repairs a representational narrowing
+in new code, not a budget or acceptance-rule change.
+
+01723/01724 pass all 12 lifecycle cases on CPU/GPU; 01725 passes all 67 policy
+checks after the test-resource placement repair. Qualify the actual terminal
+provider next against the full cfbc32d2 numerical import closure. Seven cases
+cover D3/D5 usable seeded fits, pair-disjoint holdout, both static insufficient
+support branches, numerical rank rejection and holdout rejection. Compare every
+public field at 1e-10, statuses/counts/seeds exactly, target callback row counts,
+standalone and enclosing XLA output, and one trace. The existing symmetric
+fitter, projection, optimizer controls and randomness remain unchanged. The
+provider exposes a fixed tensor record for the lifecycle; public wiring awaits
+actual refinement and complete history qualification. Same sequential CPU/GPU
+300-second bounds and policy check. A zero-radius diagnostic isolates the
+existing rank-rejection branch; it is not a new allowed production radius.
+
+01721 passes all 12 lifecycle mechanics cases on CPU. 01722 fails before GPU
+execution because TensorFlow puts the diagnostic int32 counter/seed variables
+on CPU. Change only these test-observation resources to int64, as already used
+by the qualified attempt tests; the kernel's state and seed types remain fixed.
+Preserve the failed launch and rerun CPU/GPU plus policy within the same bounds.
+This is a harness placement failure and establishes no lifecycle numerical
+failure or CPU-only runtime fallback.
+
+Pushed attempts checkpoint: `cfbc32d2`. Next install the reviewed native outer
+lifecycle, initially with explicit mechanics callbacks only. Twelve cases
+exercise terminal success/rejection/projection veto, terminal attempt limits,
+exact fit-cloud recentering before refinement, both original budget policies,
+final-fit retry after a radius stop, refinement stop before/after stationarity,
+and the original final-fit winner reporting without recentering. Assert exact
+callback order/counts, seed offsets 100003+attempt versus 200003, evaluations,
+selected values, statuses and a single trace. The existing asymmetric terminal
+budget check is preserved, not silently tightened. Configuration-time search
+count comes from the existing public selector. CPU then GPU, followed by policy,
+sequential 300-second bounds. Synthetic callbacks isolate controller decisions;
+they cannot qualify actual fitting, public records or end-to-end XLA execution.
+Only after mechanics pass bind actual refinement and terminal providers, test
+frozen complete records and compiled inputs/resources, then wire the public API.
+Skeptical review: the final fit deliberately omits recentering in the baseline;
+adding it would change the algorithm and is forbidden in this execution repair.
+
 Current checkpoint through 01720: ordered attempts are integrated and all
 focused CPU/GPU mechanics, actual two-factor public histories, original consumers
 and 67 policy/controller cases pass. Frozen/current XLA records are exactly equal.
