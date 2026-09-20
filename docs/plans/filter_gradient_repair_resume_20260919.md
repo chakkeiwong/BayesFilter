@@ -4,27 +4,34 @@ Worktree: `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`.
 Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
-September 20 continuation through run 01257: the complete block-score lifecycle
-passes 41 CPU/GPU checks and 121 affected GPU consumer checks. Numerical block,
-replicate, stability, consensus and qualification loops are native; public loops
-only build schemas and completed records. Position scaling is compiled. The
-shared precision comparison now reuses the binary64 eigensystem refinement.
-Runs 01239--01241 preserve the empty-training XLA failure and localization of a
-2.6535e-6 degree principal-angle mismatch; neither numerical gate was relaxed.
+September 20 continuation through run 01276: checkpoint `3ab315b5` is committed
+and pushed; it compiles complete block-score fitting/qualification and coordinate
+scaling. The next fixed-center family-stability dependency repair passes all
+39 CPU/GPU checks (01274/01260), 121 existing GPU consumer checks (01261),
+and 61 policy/controller checks (01275). Optional-cap None values, incomplete
+families, raw non-SPD reports, validation errors and replicate/pair order remain
+unchanged. Numerical eligibility combines separate presence/admissibility flags
+inside XLA. The enclosing family fit and shrinkage selector remain open.
 
-Two-extent measurements 01245--01256 preserve all compared outputs within
-1.101e-13. Public warm medians are 67.048/7.334 and 227.682/30.824 ms
-(before/after); device peaks fall and added host peaks are 111.645/116.535 MiB.
-The graph/XLA comparisons also have no new trigger. Node counts remain
-1,289/2,165 across both extents. These are single-process diagnostics, with
-terminal repeats pending. Analysis: `block-score-diagnostic-01256.json`.
-All 61 policy/controller checks pass (01257), with partial coverage of
-183 sources / 1,217 exact exceptions. No numerical worker remains running.
+Two-extent measurements pass with no new trigger. Block-score public warm
+medians are 67.048/7.334 and 227.682/30.824 ms (before/after), error <=1.101e-13.
+Fixed-family stability public medians are 5.388/2.928 and 27.713/9.144 ms,
+error <=2.221e-15. Both graph/XLA comparisons have bounded graph size and
+stable warm device allocations. These are single-process observations; final
+source-frozen repeats remain required. Analysis files are
+`block-score-diagnostic-01256.json` and `fixed-stability-diagnostic-01273.json`.
+Later source/harness edits make older measurements checkpoint observations,
+not terminal evidence. Failed runs and diagnostic localization are preserved.
 
-Next: fixed-center numerical family/replicate/stability/shrinkage selection,
-then the enclosing sequential/block/quadratic loops and external callbacks.
-Mass precision, selector, TT and forecast-pool performance investigations
-remain open. Canonical LEDH rebuilding remains out of scope. Main stays gated.
+The partial guard covers 184 sources / 1,228 exact exceptions. Syntax audit
+01276 discovers 2,852 Python files with one parse error in the unchanged
+external legacy vendor file; counts are search leads, not violation verdicts.
+No numerical worker remains running.
+
+Next: fixed-center family/replicate fitting and shrinkage selection; then the
+enclosing sequential/block/quadratic loops and external callbacks. Mass
+precision, selector, TT and forecast-pool timing/memory investigations remain
+open. Canonical LEDH rebuilding stays out of scope. Main remains gated.
 
 Artifacts remain under the primary checkout's
 `docs/plans/artifacts/filter-gradient-repair-20260917/`.
@@ -37,9 +44,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01257,
-charges are 18,323.631 GPU / 32,430.983 CPU seconds, leaving 168,876.369 GPU /
-82,769.017 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01276,
+charges are 18,472.515 GPU / 32,516.498 CPU seconds, leaving 168,727.485 GPU /
+82,683.502 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.

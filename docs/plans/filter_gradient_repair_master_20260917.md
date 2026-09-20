@@ -4,26 +4,28 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 20 refresh through run 01257: the complete block-score lifecycle
-now executes numerical replicate/block/pair loops, qualification and coordinate
-scaling in XLA. All 41 CPU/GPU checks and 121 affected GPU consumer checks pass.
-Two-extent public and graph/XLA comparisons preserve outputs within 1.101e-13,
-keep constant graph size and stable allocations, and trigger no new investigation.
-All 61 policy/controller cases pass. The shared eigensystem comparison now uses
-the already qualified binary64 residual refinement. Checkpoint `31a81b10`
-contains the prior mass-construction repair; its precision graph/XLA timing
-investigation remains open.
+September 20 refresh through run 01276: complete block-score fitting and
+qualification now use native numerical loops and XLA; fixed-center family
+stability also uses a native pair loop, with optional-cap and incomplete-fit
+semantics preserved. The block-score checkpoint `3ab315b5` is committed and
+pushed. Focused checks pass: 41 block-score CPU/GPU, 39 fixed-center stability
+CPU/GPU, 121 affected GPU consumers, and 61 policy/controller cases. Both new
+families have two-extent matched public and numerical comparisons with bounded
+graph size, stable allocations and no new investigation trigger. These remain
+single-process diagnostics pending the final source freeze and repeat gates.
 
 The owner has authorized **another 48 GPU / 24 CPU process-hours**, counted
 once. Active cumulative caps are **52 GPU / 32 CPU process-hours**. Through
-01257, charges are 18,323.631 GPU / 32,430.983 CPU seconds; remaining allowances
-are 168,876.369 GPU / 82,769.017 CPU seconds. The earlier 16 GPU / 12 CPU
+01276, charges are 18,472.515 GPU / 32,516.498 CPU seconds; remaining allowances
+are 168,727.485 GPU / 82,683.502 CPU seconds. The earlier 16 GPU / 12 CPU
 proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 183 sources with 1,217 exact
+The repair is incomplete. The static guard covers 184 sources with 1,228 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
-terminal decisions remain open. Focused passes are checkpoint evidence;
-terminal tests and comparisons must match the final source and harness.
+terminal decisions remain open. Refreshed syntax inventory 01276 discovers
+2,852 Python files; its single parse error is the unchanged external legacy
+vendor file. Syntax counts are search leads, not policy verdicts. Focused
+passes do not replace terminal tests/comparisons of final source and harness.
 
 Recovery review through 01199 confirms no active worker, the unchanged frozen
 baseline, and the same cumulative budget (the extension is counted once).
@@ -62,7 +64,8 @@ Current execution queue, under the same runner, evidence contract and caps:
    numerical control. Include reachable exact-incumbent selection; host record
    assembly must not hide row-wise numerical eligibility checks. Keep external
    DZ5 callback compatibility explicit and qualify actual owned consumers.
-   Include fixed-center replicate/family/stability/shrinkage selection. The complete
+   Include fixed-center replicate/family/shrinkage selection; its pair-stability
+   dependency is now compiled. The complete
    block-score lifecycle and mass construction are now compiled and focused
    consumer-qualified; their final source-frozen evidence remains pending.
 2. Retain the qualified TP continuation repair and converged derivative check;
@@ -458,7 +461,8 @@ two extents, three terminal repeats and memory/performance investigation gates.
 Recovery call-chain audit also confirms `sequential_map_covariance` and
 `quadratic_map_covariance` call `mass_matrix.covariance_from_precision`, whose
 eigendecomposition, floor selection and inversion currently execute eagerly.
-`structured_covariance_from_empirical` also loops over blocks numerically.
+Historical discovery at 01199 (superseded by the mass and stability results
+below): `structured_covariance_from_empirical` also loops over blocks numerically.
 `posterior_local_initializer` reaches `fit_fixed_center_curvature`, whose
 replicate, family, pair-stability and shrinkage loops remain host numerical
 control. `block_score_geometry` has analogous replicate/block/stability loops.
@@ -466,6 +470,39 @@ The static guard excludes iteration for the latter modules and does not cover
 mass_matrix; these are open F18/F19 dependencies, not source exemptions.
 Carry their original decisions, reports, thresholds and HMC authority boundary
 through the migration; removal of NumPy alone did not close XLA execution.
+
+### Fixed-center family stability after 01257
+
+Bounded fixed-center step, after checkpoint `3ab315b5`: compile the
+existing `_family_stability` all-replicate qualification and pair loop. This
+is a dependency of family selection, not closure of the enclosing fixed-center
+fitter. Keep its all-or-nothing usable-replicate rule, pair order, original
+replicate identifiers, optional-cap `None` reports and pass semantics. In
+particular, missing caps do not become failed caps. Rank, finite/symmetric
+matrix validation and non-SPD generalized-eigenvalue absence must retain the
+original exception/report behavior. Reuse `_precision_geometry_kernel`; do
+not substitute a new metric or another eigensolver.
+
+Skeptical review: testing only positive-definite accepted fits would miss
+optional caps, missing matrices, unusable fits and invalid comparisons.
+Pin the original fixed-center module and its comparison function, then compare
+complete family records for those cases and rotated separated eigenspaces.
+Use one native pair body, fixed-size reports and host schema reconstruction;
+host packing must not filter numerical eligibility. Check HLO, no callbacks,
+no hidden XLA in graph diagnostics, and graph-size independence from replicate
+count. Add a matched two-extent complete family-stability fixture, preserving
+actual baseline trace failure and the existing error/memory/time gates.
+Use the same driver/caps; no source edits during workers. Full family fitting,
+shrinkage selection and external/HMC qualification remain explicitly pending.
+
+Results: all 39 CPU/GPU checks pass (01274/01260) after preserving the
+constructor rejection for invalid principal-angle/rank field combinations.
+All 121 existing GPU consumers pass (01261). Two/four-replicate public timings
+are 5.388/2.928 and 27.713/9.144 ms (before/after); all compared values match
+within 2.221e-15, with no new trigger. Graph/XLA node counts are 355/1,231
+at both extents. See `fixed-stability-diagnostic-01273.json`; terminal repeats
+remain pending. The 61 policy checks pass (01275), and 01276 refreshes the
+syntax-only inventory. No numerical worker remains running.
 
 ### Complete block-score lifecycle after 01238
 

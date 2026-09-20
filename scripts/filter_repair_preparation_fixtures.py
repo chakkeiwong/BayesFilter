@@ -6,14 +6,66 @@ reference measurements. These fixtures do not grant scientific admission.
 """
 
 import inspect
+from types import SimpleNamespace
 
 FIXTURES = ("source_recenter", "gamma_preparation", "student_proposal",
             "ukf_initializer", "moment_teacher", "austria_preparation",
-            "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry")
+            "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry",
+            "fixed_stability")
 
 
 def fixture(tf, name, size, jit, *, public_boundary=False):
     dtype = tf.float64
+    if name == "fixed_stability":
+        from bayesfilter.inference import fixed_center_curvature as geometry
+
+        dimension, count = 3, 2 * size
+        precision = tf.linalg.diag(tf.constant([.8, 2.1, 3.3], dtype)) + .13
+        matrices = precision[None, :, :] * (1. + .04 * tf.cast(tf.range(count), dtype))[:, None, None]
+        thresholds = geometry.FixedCenterCurvatureThresholds(selection_holdout_relative_rmse_cap=.2,
+            audit_relative_rmse_cap=.2, projection_relative_frobenius_cap=.2,
+            generalized_eigenvalue_spread_cap=100., trace_normalized_frobenius_cap=1.,
+            trace_normalized_operator_cap=1., principal_angle_degrees_cap=90., principal_subspace_rank=2)
+        inputs = (matrices, tf.ones([count, 2], tf.bool), tf.constant([100., 1., 1., 90.], dtype),
+            tf.ones([4], tf.bool), tf.constant(2))
+        native = hasattr(geometry, "stability_native")
+        check_names = ("generalized_eigenvalue_spread", "trace_normalized_frobenius",
+            "trace_normalized_operator", "principal_angle_degrees")
+        if native and not public_boundary:
+            program = geometry.stability_native.stability_program(geometry._precision_geometry_kernel,
+                dimension, count, jit_compile=jit).python_function
+
+            def evaluate(*arguments):
+                result = program(*arguments)
+                reports = result["reports"]
+                reports = tf.concat([reports[:, :2 * dimension + 2], reports[:, 3 * dimension:]], 1)
+                return result["passed"], result["usable_count"], reports, result["checks"], result["pair_passed"]
+        else:
+            def evaluate(matrices, usable, caps, enabled, requested_rank):
+                fits = [SimpleNamespace(precision_z=matrix, replicate_index=index,
+                    diagnostics={"geometry_admissible": True}) for index, matrix in enumerate(tf.unstack(matrices))]
+                result = geometry._family_stability(fits, thresholds)
+                reports, checks = [], []
+                for pair in result["comparisons"]:
+                    metric = pair["metrics"]
+                    generalized = metric["generalized_eigenvalues"]
+                    reports.append([*metric["left_raw_eigenvalues"], *metric["right_raw_eigenvalues"],
+                        *metric["principal_angles_degrees"], metric["positive_subspace_rank"],
+                        generalized["minimum"], generalized["maximum"], generalized["spread"],
+                        metric["trace_normalized_frobenius"], metric["trace_normalized_operator"],
+                        metric["maximum_principal_angle_degrees"], metric["left_nonpositive_count"],
+                        metric["right_nonpositive_count"], 1.])
+                    checks.append([pair["checks"][field] for field in check_names])
+                return (tf.constant(result["passed"]), tf.constant(result["usable_count"]),
+                    tf.constant(reports, dtype), tf.constant(checks),
+                    tf.constant([pair["passed"] for pair in result["comparisons"]]))
+
+        evaluate.timing_scope = ("complete_tensor_family_stability" if native and not public_boundary
+            else "complete_public_family_stability_records")
+        evaluate.execution_backend = "tensorflow" if native else "legacy_numpy_geometry_comparison_diagnostic_only"
+        return evaluate, inputs, {"dimension": dimension, "replicates": count,
+            "boundary": "complete_fixed_center_family_stability", "random_inputs": False}
+
     if name == "block_score_geometry":
         from bayesfilter.inference import block_score_geometry as geometry
 

@@ -3428,3 +3428,65 @@ performance repeat scope, not the focused compilation marker.
 
 Through 01257 charges are 18,323.631 GPU / 32,430.983 CPU seconds, leaving
 168,876.369 GPU / 82,769.017 CPU seconds. No numerical worker remains running.
+
+## September 20 fixed-center pair-stability continuation after 01257
+
+Checkpoint `3ab315b5` is committed and pushed. The next repair encloses
+fixed-center family usability and all pairwise comparisons in a stable native
+program, reusing the shared precision metrics. Presence and numerical
+admissibility are separate input fields; their combination and counting happen
+inside XLA. The host packs every fit and reconstructs finished reports,
+preserving replicate IDs and optional-cap `None` semantics. This does not
+compile the enclosing family fitter or shrinkage selector.
+
+Run 01258 passes 28 cases and fails eleven invalid test configurations before
+execution: the inherited API requires the principal-angle cap and subspace
+rank together. The test now preserves those constructor rejections. Run 01259
+passes all 39 CPU cases. After moving flag combination into the numerical
+program, 01260 passes all 39 GPU cases in 27.277 seconds and 01261 passes
+all 121 existing consumer cases in 25.521 seconds. The guard covers 184
+sources / 1,228 exact exceptions, still explicitly partial.
+
+Fresh measurements 01262--01273 compare the complete family-stability endpoint
+at two/four replicates with the same dimension-three matrices. Baseline graph
+and XLA attempts fail at the original NumPy boundary, preserved as
+`baseline_host_operation_during_trace`; only its valid eager path is timed.
+The pure graph diagnostic has no nested XLA. All compared output fields match
+within 2.221e-15 and graph/XLA node counts stay at 355/1,231 at both extents.
+
+| Scope / replicate count | Before / after warm ms | Added host peak MiB | Before / after device peak bytes |
+| --- | ---: | ---: | ---: |
+| Public / 2 | 5.388 / 2.928 | 67.906 | 552960 / 26112 |
+| Public / 4 | 27.713 / 9.144 | 67.820 | 554240 / 28160 |
+| Numerical graph / XLA, 2 | 4.748 / 1.771 | 11.719 | 1100288 / 24064 |
+| Numerical graph / XLA, 4 | 15.116 / 7.876 | 5.086 | 1103616 / 25600 |
+
+All four comparisons have no new investigation trigger and stable warmed
+device allocation. These are single-process observations; terminal repeats
+remain required. Analysis, checksums and source checks are preserved in
+`artifacts/filter-gradient-repair-20260917/fixed-stability-diagnostic-01273.json`.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Retain native family-stability dependency | GPU parity, complete records and existing consumers pass | No focused mismatch | Enclosing family fit and selection still use host numerical control | Continue remaining fixed-center lifecycle | No whole-fitter compilation claim |
+| Retain descriptive comparison | Two extents pass with unchanged graph size | No new memory/time trigger or allocation growth | Single process per arm | Frozen-source three-process repeats later | No statistical performance ranking |
+| Keep all terminal dispositions open | Partial guard passes | Existing optimizer/callback and memory debt remains | Final source/harness not frozen | Continue master queue | No merge or HMC readiness |
+
+Post-run review: checking only accepted SPD fits would miss optional-cap and
+incomplete-family semantics. The focused cases cover all-or-nothing rejection,
+non-SPD metric absence, nonfinite/asymmetric errors, rank errors, original pair
+order, and omitted-threshold handling. This dependency consumes fitted
+precision matrices with a common declared shape; it does not independently
+qualify externally fabricated heterogeneous fit-record schemas.
+
+Final current-schema CPU run 01274 passes all 39 cases in 15.247 seconds;
+01275 passes all 61 policy/controller cases. Syntax audit 01276 discovers
+2,852 Python files, with 2,851 parsed and the sole error in the unchanged
+external `old_pt1_submission/filters.py` legacy file. Preserve the inventory
+as search evidence, not as an all-repository policy verdict.
+
+Through 01276 charges are 18,472.515 GPU / 32,516.498 CPU seconds, leaving
+168,727.485 GPU / 82,683.502 CPU seconds. No numerical worker remains running.
+Next work is the fixed-center family/replicate fit and shrinkage selector,
+followed by the outer sequential/block/quadratic lifecycles, callbacks and
+remaining memory investigations. All F01--F20 terminal dispositions stay open.

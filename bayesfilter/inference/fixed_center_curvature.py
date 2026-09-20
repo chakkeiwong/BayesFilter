@@ -22,6 +22,7 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.inference import fixed_center_stability_tf as stability_native
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
     fit_factor_correlation_score_geometry,
@@ -970,78 +971,53 @@ def _family_stability(
     fits: Sequence[FixedCenterCurvatureFit],
     thresholds: FixedCenterCurvatureThresholds,
 ) -> Mapping[str, Any]:
-    usable = [
-        fit
-        for fit in fits
-        if fit.precision_z is not None
-        and bool(fit.diagnostics.get("geometry_admissible"))
-    ]
-    if len(usable) != len(fits) or len(usable) < 2:
-        return {
-            "passed": False,
-            "reason": "fewer_than_two_usable_replicates",
-            "replicate_count": len(fits),
-            "usable_count": len(usable),
-            "comparisons": [],
-        }
+    # Pack every completed fit, including absent/unusable records. Eligibility
+    # counting and all pairwise numerical decisions occur in the native program.
+    dimension = next((int(fit.precision_z.shape[0]) for fit in fits
+        if fit.precision_z is not None), 1)
+    matrices = tuple(tf.zeros([dimension, dimension], tf.float64) if fit.precision_z is None
+        else numeric_tensor(fit.precision_z, tf.float64) for fit in fits)
+    usable = tf.reshape(tf.constant([(fit.precision_z is not None, bool(fit.diagnostics.get("geometry_admissible")))
+        for fit in fits], tf.bool), [len(fits), 2])
+    caps = tuple(getattr(thresholds, name) for name in stability_native.CAP_NAMES)
+    program = stability_native.stability_program(_precision_geometry_kernel, dimension, len(fits))
+    result = program(tf.stack(matrices) if matrices else tf.zeros([0, dimension, dimension], tf.float64),
+        usable, tf.constant([0. if cap is None else cap for cap in caps], tf.float64),
+        tf.constant([cap is not None for cap in caps], tf.bool),
+        tf.constant(dimension if thresholds.principal_subspace_rank is None
+            else thresholds.principal_subspace_rank, tf.int32))
+    report = {name: value.numpy().tolist() for name, value in result.items()}
+    if not report["complete"]:
+        return {"passed": False, "reason": "fewer_than_two_usable_replicates",
+            "replicate_count": len(fits), "usable_count": report["usable_count"], "comparisons": []}
+    if report["error"]:
+        messages = {1: "left must be a finite symmetric square matrix",
+            2: "right must be a finite symmetric square matrix", 3: "subspace_rank must lie in [1, dimension]"}
+        raise ValueError(messages[report["error"]])
     comparisons = []
-    all_passed = True
-    for left_index, left in enumerate(usable):
-        for right in usable[left_index + 1 :]:
-            metrics = dict(
-                compare_precision_geometry(
-                    left.precision_z,
-                    right.precision_z,
-                    subspace_rank=thresholds.principal_subspace_rank,
-                )
-            )
-            generalized = metrics["generalized_eigenvalues"]
-            checks = {
-                "generalized_eigenvalue_spread": (
-                    None
-                    if thresholds.generalized_eigenvalue_spread_cap is None
-                    else generalized is not None
-                    and generalized["spread"]
-                    <= thresholds.generalized_eigenvalue_spread_cap
-                ),
-                "trace_normalized_frobenius": (
-                    None
-                    if thresholds.trace_normalized_frobenius_cap is None
-                    else metrics["trace_normalized_frobenius"]
-                    <= thresholds.trace_normalized_frobenius_cap
-                ),
-                "trace_normalized_operator": (
-                    None
-                    if thresholds.trace_normalized_operator_cap is None
-                    else metrics["trace_normalized_operator"]
-                    <= thresholds.trace_normalized_operator_cap
-                ),
-                "principal_angle_degrees": (
-                    None
-                    if thresholds.principal_angle_degrees_cap is None
-                    else metrics["maximum_principal_angle_degrees"] is not None
-                    and metrics["maximum_principal_angle_degrees"]
-                    <= thresholds.principal_angle_degrees_cap
-                ),
-            }
-            passed = all(value is not False for value in checks.values())
-            all_passed = all_passed and passed
-            comparisons.append(
-                {
-                    "left_replicate": left.replicate_index,
-                    "right_replicate": right.replicate_index,
-                    "metrics": metrics,
-                    "checks": checks,
-                    "passed": passed,
-                }
-            )
-    return {
-        "passed": all_passed,
-        "thresholds_complete": thresholds.stability_caps_complete,
-        "replicate_count": len(fits),
-        "usable_count": len(usable),
-        "comparisons": comparisons,
-    }
+    pair_index = 0
+    for left in range(len(fits)):
+        for right in range(left + 1, len(fits)):
+            values = report["reports"][pair_index]
+            summary = values[3 * dimension:]
+            rank = int(summary[0])
+            metrics = {"left_raw_eigenvalues": values[:dimension],
+                "right_raw_eigenvalues": values[dimension:2 * dimension],
+                "left_nonpositive_count": int(summary[7]), "right_nonpositive_count": int(summary[8]),
+                "trace_normalized_frobenius": summary[4], "trace_normalized_operator": summary[5],
+                "positive_subspace_rank": rank,
+                "principal_angles_degrees": values[2 * dimension:2 * dimension + rank],
+                "maximum_principal_angle_degrees": summary[6] if rank else None,
+                "generalized_eigenvalues": {"minimum": summary[1], "maximum": summary[2],
+                    "spread": summary[3]} if bool(summary[9]) else None}
+            checks = {name: None if cap is None else passed for name, cap, passed in zip(
+                stability_native.CHECK_NAMES, caps, report["checks"][pair_index], strict=True)}
+            comparisons.append({"left_replicate": fits[left].replicate_index,
+                "right_replicate": fits[right].replicate_index, "metrics": metrics,
+                "checks": checks, "passed": report["pair_passed"][pair_index]})
+            pair_index += 1
+    return {"passed": report["passed"], "thresholds_complete": thresholds.stability_caps_complete,
+        "replicate_count": len(fits), "usable_count": report["usable_count"], "comparisons": comparisons}
 
 
 def _blocked_result(
