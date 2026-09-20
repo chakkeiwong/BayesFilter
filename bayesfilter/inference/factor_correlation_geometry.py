@@ -24,6 +24,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
+from bayesfilter.inference.mass_matrix_tf import _eigenpairs
 from bayesfilter.ops.host_tensor_io import numeric_tensor
 from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
 
@@ -305,12 +306,14 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
             train_response,
             weights,
             max_condition_number=cfg.max_condition_number,
+            jit_compile=jit_compile,
         )
         dense_covariance = tf.linalg.inv(dense_precision)
         initial_standard_deviations, initial_loadings, anchors = _initial_factor_state(
             dense_covariance,
             factor_count=cfg.factor_count,
             loading_margin=cfg.loading_margin,
+            jit_compile=jit_compile,
         )
         initial_raw = _encode_state(
             initial_standard_deviations,
@@ -318,7 +321,7 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
             anchors,
             cfg,
         )
-        int(initial_raw.shape[0])
+        parameter_count = int(initial_raw.shape[0])
 
         def loss(raw: tf.Tensor) -> tf.Tensor:
             covariance, _std, _loads = _decode_covariance(
@@ -331,6 +334,8 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
             per_row = tf.reduce_mean(tf.square(prediction - train_response), axis=1)
             return tf.reduce_sum(weights * per_row)
 
+        @tf.function(input_signature=[tf.TensorSpec([parameter_count], tf.float64)],
+            jit_compile=jit_compile, autograph=False)
         def value_and_gradient(raw: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
             return tfp.math.value_and_gradient(loss, raw)
 
@@ -382,7 +387,16 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
             config=cfg,
             jit_compile=jit_compile,
         )
-        return {"covariance": covariance, "precision": precision, "deviations": deviations, "loadings": loadings, "eigenvalues": eigenvalues, "finite": finite, "condition_number": condition_number, "train_rmse": train_rmse, "holdout_error": holdout_error, "holdout_relative": holdout_relative, "jacobian_rank": jacobian_rank, "jacobian_condition": jacobian_condition, "optimizer": optimizer, "anchors": tf.stack(anchors)}
+        # The original fit returned frozen host records. Keep its completed
+        # geometry disconnected from an external tape without changing the
+        # loss/gradient used by L-BFGS or the covariance constructor API.
+        return tf.nest.map_structure(tf.stop_gradient,
+            {"covariance": covariance, "precision": precision, "deviations": deviations,
+             "loadings": loadings, "eigenvalues": eigenvalues, "finite": finite,
+             "condition_number": condition_number, "train_rmse": train_rmse,
+             "holdout_error": holdout_error, "holdout_relative": holdout_relative,
+             "jacobian_rank": jacobian_rank, "jacobian_condition": jacobian_condition,
+             "optimizer": optimizer, "anchors": tf.stack(anchors)})
     return numerical
 
 
@@ -454,10 +468,11 @@ def _initial_factor_state(
     *,
     factor_count: int,
     loading_margin: float,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor, tuple[int, ...]]:
     deviations = tf.sqrt(tf.linalg.diag_part(covariance))
     correlation = covariance / (deviations[:, None] * deviations[None, :])
-    eigenvalues, eigenvectors = tf.linalg.eigh(correlation)
+    eigenvalues, eigenvectors = _eigenpairs(correlation, jit_compile)
     selected_values = eigenvalues[-factor_count:]
     selected_vectors = eigenvectors[:, -factor_count:]
     excess = tf.sqrt(tf.maximum(selected_values - 1.0, 1.0e-6))
@@ -540,11 +555,12 @@ def _weighted_dense_precision(
     weights: tf.Tensor,
     *,
     max_condition_number: float,
+    jit_compile: bool = True,
 ) -> tf.Tensor:
     root_weight = tf.sqrt(weights)[:, None]
     raw = complete_orthogonal_lstsq(offsets * root_weight, responses * root_weight)
     symmetric = 0.5 * (raw + tf.transpose(raw))
-    values, vectors = tf.linalg.eigh(symmetric)
+    values, vectors = _eigenpairs(symmetric, jit_compile)
     maximum = tf.maximum(tf.reduce_max(tf.abs(values)), 1.0)
     floor = maximum / max_condition_number
     projected = tf.maximum(values, floor)

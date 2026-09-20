@@ -78,6 +78,36 @@ def test_small_test_reserves_and_enforces_its_timeout_without_expanding_budget(t
         driver.run_job(args)
 
 
+@pytest.mark.parametrize("fixture,ceiling", [("fixed_fitting", 900), ("fixed_selection", 300)])
+def test_full_fit_measurement_ceiling_preserves_campaign_budget(tmp_path, monkeypatch, fixture, ceiling):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    monkeypatch.setattr(driver, "OUTPUT", tmp_path)
+    monkeypatch.setattr(driver, "records", list)
+    monkeypatch.setattr(driver, "charged_seconds", lambda *_: 100.)
+    monkeypatch.setattr(driver, "BUDGET_SECONDS", {"CPU": 1000})
+    monkeypatch.setattr(driver, "source_hashes", dict)
+    monkeypatch.setattr(driver, "git", lambda *_: "test")
+    monkeypatch.setattr(driver, "ensure_baseline", lambda: None)
+    waits = []
+
+    class Worker:
+        def wait(self, *, timeout):
+            waits.append(timeout)
+            return 0
+
+    monkeypatch.setattr(driver.subprocess, "Popen", lambda *_, **kwargs: Worker())
+    args = argparse.Namespace(action="measure", device="CPU", group="policy", arm="after",
+        fixture=fixture, jit="on", size=2, repeat=0)
+    assert driver.run_job(args) == 0
+    run = json.loads((tmp_path / "run-00001/run.json").read_text())
+    assert run["timeout_seconds"] == ceiling and waits == [ceiling]
+    monkeypatch.setattr(driver, "charged_seconds", lambda *_: 1001. - ceiling)
+    with pytest.raises(RuntimeError, match="budget exhausted"):
+        driver.run_job(args)
+
+
 def test_interrupt_stops_worker_and_finalizes_attempt(tmp_path, monkeypatch):
     import argparse
 

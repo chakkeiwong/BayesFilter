@@ -3558,3 +3558,184 @@ Run 01295 passes all 61 policy/controller cases. Refreshed syntax inventory
 external legacy parse error. Focused Ruff and whitespace checks pass.
 Through 01296 charges are 18,684.680 GPU / 32,657.437 CPU seconds, leaving
 168,515.320 GPU / 82,542.563 CPU seconds. No numerical worker remains running.
+
+## September 20 complete fixed-center lifecycle after 01296
+
+Checkpoint `22094f76` commits and pushes the selector. The next implementation
+encloses dense/one-factor replicate fits, optional two-factor escalation,
+family selection and audit/covariance/final status in one native program.
+The existing dense kernel and factor optimizer are reused, including stopping
+rules, initialized state and status precedence. Output reconstruction preserves
+the interleaved dense/one-factor records followed by attempted two-factor fits.
+The audit calculation is conditional on a selected candidate. Static partition
+and memory-independence validation remain outside the program.
+
+Run 01297 passes nine CPU cases against the pre-enclosure checkpoint, covering
+complete public records, dimensional rejection, raw-SPD/selection/audit vetoes,
+optional caps and graph/HLO growth. Expanded CPU run 01298 passes eleven cases
+in 128.923 seconds, adding real dimension-five two-factor escalation and explicit
+target cases. GPU qualification is run 01299, still pending at this note.
+Its structured optimizer compilation is materially heavier than dimension-two
+fixtures; compilation and warm timing require separate matched measurements.
+The partial guard now covers 186 sources / 1,273 exact exceptions. No numerical
+loop exemption is granted to the enclosing fitter. The registered `fixed_fitting`
+fixture compares complete numerical and public fit/selection/audit endpoints at
+two/four replicates with dimension three and frozen deterministic clouds.
+
+GPU run 01299 passes all eleven cases in 220.141 seconds; 01300 passes all 121
+affected GPU consumers. The original measurement 01301 fails tracing at NumPy
+as expected. Run 01302 was manually interrupted at 164.283 seconds after a
+misleading sandbox process listing; this did not establish a hang. Retry 01303
+passes in 294.135 seconds. The original eager public warm median is 13.533
+seconds. Both source arms of this fixture now reserve 900 seconds under unchanged
+cumulative accounting so the larger extent has an adequate comparison budget.
+
+The first candidate 01304 completes but fails baseline parity: maximum fit
+precision error 7.319e-8, selected precision error 4.019e-8 and dense projection
+burden error 1.002e-8. Enclosure parity against the current factor dependency
+had missed earlier numerical debt. Default XLA eigensystem localization 01305
+finds dense residual 2.784e-8, correlation residual 3.549e-11 and encoded-state
+error 9.677e-8. Using the existing refined mass eigensystem for the same matrices
+reduces these to 1.332e-15, 5.551e-16 and 3.997e-15. Loss/gradient at an identical
+state differ only by 5.421e-19 / 1.232e-16. This identifies an eigensystem
+accuracy defect rather than a changed optimizer objective.
+
+Dense projection, weighted dense initialization and correlation initialization
+now reuse that existing eigensystem on XLA. Explicit graph diagnostics retain
+ordinary TensorFlow eigensystems. No eigenproblem, floor, optimizer or tolerance
+changes. Candidate 01306 passes the unchanged original comparison with maximum
+error 7.321e-11 and dense projection error 1.201e-16. Its warm tensor-program
+median is 110.508 ms, but that is a different timing scope from the old public
+endpoint and is not yet a public timing ratio. Peak host RSS is 1,893,543,936
+bytes versus baseline 1,316,823,040 bytes, a 550 MiB investigation trigger.
+Device peak is 93,952 bytes and warm allocation is stable. Keep memory acceptance
+open; 01304's first failure and 01305 localization remain preserved.
+
+Run 01307 passes all eleven post-repair GPU enclosure cases in 235.153 seconds.
+The additional original-source full-record test 01308 fails by 3.800e-10;
+01309 localizes its sole mismatch to `fits[3].raw_eigenvalues[1]`. The structured
+precision eigenvalue report now also uses the existing refined eigensystem.
+Run 01310 passes every complete original-source record field in 41.647 seconds
+after removing only the new `jit_compile` provenance field for comparison.
+No optimizer count, status, selected family or gate difference is discarded.
+The enclosure-only reference explicitly shares these separately tested repaired
+fit primitives; original-source parity is checked separately to prevent a
+current-dependency comparison from hiding older debt again.
+
+Run 01311 passes all 223 affected GPU consumer checks in 243.714 seconds.
+The next bounded memory change shares the L-BFGS value/gradient callback graph
+across line-search branches. Original complete-record run 01312 still passes.
+Candidate 01313 matches original outputs within 7.321e-11 and shows 7,332 graph
+nodes, 1,772,199,936-byte host peak, 93,952-byte device peak, 112.787 ms warm
+median and stable warm allocation. Compared with 01306, the host peak falls by
+115.723 MiB. Precision-eigenvalue reporting also changed between these source
+snapshots, so this is not isolated causal attribution to sharing alone.
+The remaining increase over original eager is 434.281 MiB; retain it as an
+open investigation trigger pending matched graph/public measurements and final
+repeats. The measurement matrix resumes from 01314 under the reviewed ceiling.
+
+
+The recovered matrix finishes through 01322. Original eager size two passes in
+585.732 seconds. Both public before/after and native graph/XLA pairs pass at
+two/four replicates, with maximum difference 8.308e-11 across all comparisons.
+The original graph/XLA attempts fail at the expected NumPy tracing boundary.
+Analysis with current-source checks and manifest/result hashes is preserved in
+`artifacts/filter-gradient-repair-20260917/fixed-fitting-diagnostic-01322.json`.
+
+| Scope / replicates | Before / after warm seconds | Before / after host peak bytes | Before / after device peak bytes |
+| --- | ---: | ---: | ---: |
+| Public / 2 | 13.533257 / 0.132623 | 1316823040 / 1833644032 | 8546816 / 131584 |
+| Public / 4 | 27.528687 / 0.283776 | 1330528256 / 1832562688 | 8550144 / 144640 |
+| Numerical graph / XLA, 2 | 1.462809 / 0.112787 | 1518080000 / 1772199936 | 9042688 / 93952 |
+| Numerical graph / XLA, 4 | 2.919458 / 0.236275 | 1511497728 / 1771552768 | 9049600 / 96768 |
+
+Native graph sizes stay at 5,278 / 7,332 nodes at both extents. All candidate
+warmed device-current ranges are zero; late host growth is at most 45,056 bytes.
+The public host-peak increases still trigger investigation. Most candidate RSS
+appears during tracing/first execution; graph-to-XLA differences stay below
+256 MiB for these two single-process pairs. That stage association does not
+isolate a compiler/cache cause or accept the public memory tradeoff. The
+original eager size-one arm itself has continuing allocation growth, which is
+preserved in the report and does not justify a candidate leak.
+
+Late review identifies a missing derivative-contract check. New run 01323
+reproduces two failures when an external tape surrounds the fixed/factor
+preparation endpoint; both original source arms return disconnected geometry,
+whereas native returns expose unavailable `XlaSvd` gradients. Completed numerical
+fit records now use `tf.stop_gradient` inside their compiled functions, preserving
+the original frozen preparation boundary. Internal L-BFGS objective gradients
+and the explicitly differentiable covariance constructor are unchanged. The
+focused retry is 01324. All earlier candidate measurements now remain checkpoint
+evidence; current-source checks and measurements must be refreshed after this
+repair. No tolerance or algorithm change is used to bypass the failure.
+
+
+Run 01324 passes both frozen-boundary CPU checks. Full CPU run 01325 passes
+13 cases but fails the original complete-record case: Jacobian condition error
+3.908e-9 (relative 1.131e-10) and principal-angle error 4.494e-10 degrees. These
+exceed unchanged gates and remain a repair trigger. Runs 01326/01327 localize
+the first replicate: original and candidate both take 59 iterations / 174
+objective evaluations, with prediction-Jacobian rank five of six. Current
+precision differs by 4.728e-11 while nuisance raw coordinates differ by 1.994e-4.
+At identical raw coordinates, original/new Jacobian condition agrees within
+3e-14. Sharing the objective graph has no effect on this discrepancy. Supplying
+the identical original initializer in a diagnostic reduces the final precision
+error to 1.896e-12 and the condition difference to 1.639e-10 absolute. This
+points to initial-state rounding amplified near a saturated factor loading;
+it does not prove full-record CPU parity. Run 01328 evaluates explicit numerical
+stage boundaries as a same-algorithm localization. Failed fields are retained,
+and no report field, tolerance or optimizer setting is waived.
+
+
+Run 01328 is a diagnostic harness failure: this TensorFlow build exports the
+optimization barrier through `gen_xla_ops`, not `tf.raw_ops`. Corrected run
+01329 shows no change from initialization stage barriers; none is added to
+runtime. The CPU full-record discrepancy remains open. Run 01330 passes all
+14 GPU fitting cases in 264.433 seconds, including original complete records
+and frozen-derivative checks. Run 01331 passes all 223 affected GPU consumers in
+228.715 seconds. Run 01332 passes all 63 policy/controller cases. The diagnostic
+closure now explicitly binds its per-variant module; focused runtime/test Ruff
+and whitespace checks pass. Broader driver Ruff retains four pre-existing
+import/dictionary style findings; two pre-existing C408 findings also remain in
+its test module. These unrelated issues are not silently claimed as lint passes.
+
+Current-source comparisons 01333--01338 preserve original parity after the
+frozen-output repair. Original baseline runs 01303/01318 are reused only after
+source/harness/input provenance checks; no repeated expensive baseline is needed
+for this diagnostic refresh. Numerical output differences remain at most
+8.308e-11, and decisions/counts are unchanged. Analysis and checksums:
+`artifacts/filter-gradient-repair-20260917/fixed-fitting-diagnostic-01338.json`.
+
+| Scope / replicates | Before / after warm seconds | Before / after host peak bytes | Before / after device peak bytes |
+| --- | ---: | ---: | ---: |
+| Public / 2 | 13.533257 / 0.127088 | 1316823040 / 1837907968 | 8546816 / 131584 |
+| Public / 4 | 27.528687 / 0.267623 | 1330528256 / 1834913792 | 8550144 / 144640 |
+| Numerical graph / XLA, 2 | 1.335118 / 0.105161 | 1512550400 / 1774669824 | 8498688 / 93952 |
+| Numerical graph / XLA, 4 | 2.669448 / 0.224414 | 1512538112 / 1775001600 | 8506624 / 96768 |
+
+Graph/XLA node counts are 5,341/7,395 at both extents. Candidate warm device
+allocation is constant and late host growth is at most 36,864 bytes. Both public
+pairs still exceed the 256 MiB host-peak trigger; the graph/XLA pairs do not.
+Keep the public memory increase as an unresolved investigation. These are
+single-process observations, not terminal repeat evidence or an accepted
+performance/memory tradeoff.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Preserve complete native fitting as a branch checkpoint | 14 GPU fitting and 223 affected consumer cases pass | Original-record CPU parity still fails in two derived fields | Amplification of tiny initializer differences near saturation | Continue bounded initialization work; retain the exact tolerance | No complete CPU/GPU qualification |
+| Preserve frozen geometry contract | Both public preparation endpoints now execute under an outer tape and stay disconnected, matching original behavior | No new focused derivative failure | Other preparation wrappers need their own coverage | Continue call-chain review | No removal/replacement of analytical filtering scores |
+| Keep memory acceptance open | Two extents show constant graphs and stable warmed allocations | Added public host peaks exceed 256 MiB | Compiler/cache attribution and final repeats | Continue the existing investigation queue | No accepted regression waiver |
+| Keep merge gated | Controller and partial guard pass | All F01--F20 terminal decisions remain open | Unfinished outer lifecycles/callbacks and frozen-source tests | Continue master program on repair branch | No whole-repository completion or HMC admission |
+
+Post-run review: the earlier GPU-only full-record pass hid a CPU-sensitive
+nuisance-coordinate trajectory, and ordinary numerical calls hid the external
+tape failure. Both now have executable checks. The remaining CPU mismatch is a
+real failed comparison even though selected precisions pass; favorable GPU
+timing cannot overrule it. The isolated initializer experiment is diagnostic
+and does not justify using a frozen input-specific initializer in runtime.
+
+Syntax inventory 01339 discovers 2,857 working-tree Python files, 2,856 parsed
+and the unchanged external legacy parse error. Through 01339 charges are
+21,725.543 GPU / 33,230.249 CPU seconds; remaining allowances are 165,474.457
+GPU / 81,969.751 CPU seconds. No numerical worker remains active. Preserve
+this checkpoint and continue the next reviewed sequential selection dependency.

@@ -11,11 +11,77 @@ from types import SimpleNamespace
 FIXTURES = ("source_recenter", "gamma_preparation", "student_proposal",
             "ukf_initializer", "moment_teacher", "austria_preparation",
             "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry",
-            "fixed_stability", "fixed_selection")
+            "fixed_stability", "fixed_selection", "fixed_fitting")
 
 
 def fixture(tf, name, size, jit, *, public_boundary=False):
     dtype = tf.float64
+    if name == "fixed_fitting":
+        from bayesfilter.inference import fixed_center_curvature as geometry
+
+        dimension, count = 3, 2 * size
+        training_rows, selection_rows, audit_rows = 9, 6, 6
+        precision = tf.linalg.diag(tf.constant([1., 2., 3.], dtype)) + .13
+        center = tf.constant([-.2, .05, .3], dtype)
+
+        def cloud(rows, phase):
+            return .2 * tf.sin(.17 * tf.cast(tf.reshape(tf.range(rows * dimension), [rows, dimension]), dtype) ** 2 + phase)
+
+        training = tf.stack([cloud(training_rows, .1 + index) for index in range(count)])
+        selection = tf.stack([cloud(selection_rows, .4 + index) for index in range(count)])
+        audit = cloud(audit_rows, .8)
+        weights = (0., .5, 1.)
+        thresholds = geometry.FixedCenterCurvatureThresholds(selection_holdout_relative_rmse_cap=.1,
+            audit_relative_rmse_cap=.1, projection_relative_frobenius_cap=.1,
+            generalized_eigenvalue_spread_cap=2., trace_normalized_frobenius_cap=.1,
+            trace_normalized_operator_cap=.1, principal_angle_degrees_cap=90., principal_subspace_rank=1)
+        inputs = (center, training, center - training @ precision, selection, center - selection @ precision,
+            audit, center - audit @ precision, tf.constant([2., .1, .1, 90.], dtype),
+            tf.ones([4], tf.bool), tf.constant(1), tf.constant(weights, dtype),
+            tf.constant(1e-8, dtype), tf.constant(.1, dtype), tf.constant(True), tf.constant(.1, dtype))
+        native = hasattr(geometry, "fitting_native")
+        if native and not public_boundary:
+            program = geometry.fitting_native.fit_program(geometry._dense_fit_kernel,
+                geometry.fitting_native._structured_fit, geometry._precision_geometry_kernel,
+                geometry._score_error_kernel, dimension, count, training_rows, selection_rows, audit_rows,
+                1, 1e8, .1, None, len(weights), jit_compile=jit).python_function
+
+            def evaluate(*arguments):
+                result = program(*arguments)
+                fits = result["fits"]
+                return (result["status"], result["selection"]["family_code"], result["selection"]["precision"],
+                    result["covariance"], result["audit_error"], fits["precision"][:2],
+                    fits["covariance"][:2], fits["holdout"][:2], fits["projection"][:2], fits["flags"][:2])
+        else:
+            def evaluate(center, training, training_scores, selection, selection_scores, audit, audit_scores,
+                         caps, enabled, rank, shrinkage_weights, floor, projection_cap, raw_spd, audit_cap):
+                result = geometry.fit_fixed_center_curvature(tf.zeros([dimension], dtype), center,
+                    training, training_scores, selection, selection_scores, audit, audit_scores,
+                    thresholds=thresholds, factor_max=1, shrinkage_weights=weights)
+                if result.selected_precision_z is None:
+                    raise ValueError("Frozen complete fixed-center comparison rejected")
+                groups = [[fit for fit in result.fits if fit.family == family] for family in ("dense", "factor_1")]
+                statuses = {"geometry_readiness_blocked": 0, "eligible_for_exact_hmc_canary": 1,
+                    "diagnostic_only": 2, "audit_holdout_rejected": 3}
+                family_codes = {"factor_1": 1, "factor_2": 2, "consensus_diagonal_consensus": 3,
+                    "consensus_factor_1": 4, "consensus_factor_2": 5}
+                return (tf.constant(statuses[result.status]), tf.constant(family_codes[result.selected_family]),
+                    tf.convert_to_tensor(result.selected_precision_z, dtype), tf.convert_to_tensor(result.selected_covariance_z, dtype),
+                    tf.constant(result.audit_relative_rmse, dtype),
+                    tf.stack([tf.stack([fit.precision_z for fit in group]) for group in groups]),
+                    tf.stack([tf.stack([fit.covariance_z for fit in group]) for group in groups]),
+                    tf.constant([[fit.selection_holdout_relative_rmse for fit in group] for group in groups], dtype),
+                    tf.constant([[fit.projection_relative_frobenius for fit in group] for group in groups], dtype),
+                    tf.constant([[(fit.precision_z is not None, fit.diagnostics["geometry_admissible"], fit.accepted)
+                        for fit in group] for group in groups], tf.bool))
+
+        evaluate.timing_scope = ("complete_tensor_fixed_center_fit_selection_audit" if native and not public_boundary
+            else "complete_public_fixed_center_fit_selection_audit_records")
+        evaluate.execution_backend = "tensorflow" if native else "legacy_numpy_geometry_reporting_diagnostic_only"
+        return evaluate, inputs, {"dimension": dimension, "replicates": count, "training_rows": training_rows,
+            "selection_rows": selection_rows, "audit_rows": audit_rows,
+            "boundary": "complete_fixed_center_fit_selection_audit", "random_inputs": False}
+
     if name == "fixed_selection":
         from bayesfilter.inference import fixed_center_curvature as geometry
 

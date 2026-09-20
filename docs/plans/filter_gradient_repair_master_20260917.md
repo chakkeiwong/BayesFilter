@@ -4,28 +4,38 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 20 refresh through run 01296: checkpoint `638cbc8c` is committed
-and pushed. Complete fixed-center selection now uses native family/partition/
-shrinkage loops and XLA, with all 46 CPU/GPU and 121 affected GPU consumer
-checks passing (01280--01282). Two-extent comparisons (01283--01294) match
-within 3.470e-18, with constant graph size, stable allocations and no new
-investigation trigger. Public warm medians are 17.979/5.519 and 58.652/13.094 ms
-before/after; added host peaks are about 150 MiB. These remain single-process
-observations, pending source freeze and final repeat gates. Enclosing replicate
-fitting/escalation and audit control remain open.
+September 20 continuation through 01339, based on pushed selector checkpoint `22094f76`.
+The complete fixed-center replicate fitter, conditional factor escalation,
+selection and audit now share a compiled program. Default XLA eigenpair
+accuracy needed repair before original-source parity passed. The current-source two-extent
+measurement matrix through 01338 passes numerical gates; public warmed times
+are 13.533/0.127 and 27.529/0.268 seconds before/after. Added public host peaks
+of about 0.47--0.48 GiB remain an open investigation. Native graph/XLA nodes
+stay at 5,341/7,395 at both extents and warm candidate allocations are stable.
+These are single-process checkpoint observations, not final acceptance.
 
-The owner has authorized **another 48 GPU / 24 CPU process-hours**, counted
-once. Active cumulative caps are **52 GPU / 32 CPU process-hours**. Through
-01296, charges are 18,684.680 GPU / 32,657.437 CPU seconds; remaining allowances
-are 168,515.320 GPU / 82,542.563 CPU seconds. The earlier 16 GPU / 12 CPU
-proposal below is superseded, not an additional allocation.
+Late review restored the original frozen preparation derivative boundary:
+01323 reproduced external-tape failures; 01324 passes both focused repairs.
+Full CPU run 01325 passes 13 cases but fails original complete-record parity
+in two sensitive diagnostic fields. Localization 01326/01327 traces this to
+initializer rounding amplified by a saturated factor state. Keep this gate
+open and preserve the original tolerance. All 14 current GPU fitter checks (01330), 223 affected GPU consumers (01331),
+and 63 policy/controller cases (01332) pass. Details are in the execution record.
 
-The repair is incomplete. The static guard covers 185 sources with 1,254 exact
-exceptions; it explicitly does not cover the whole repository. All F01--F20
-terminal decisions remain open. Refreshed syntax inventory 01296 discovers
-2,854 Python files; its single parse error is the unchanged external legacy
-vendor file. Syntax counts are search leads, not policy verdicts. Focused
-passes do not replace terminal tests/comparisons of final source and harness.
+The owner-authorized cumulative caps remain **52 GPU / 32 CPU process-hours**.
+The extra 48 GPU / 24 CPU hours are counted once. Driver accounting includes
+all prior attempts, including failed/interrupted runs and supplemental charges.
+Through 01339, charges are 21,725.543 GPU / 33,230.249 CPU seconds; remaining
+allowances are 165,474.457 GPU / 81,969.751 CPU seconds. No broader compute or
+scientific scope has been requested. No numerical worker is active at this checkpoint.
+
+The repair is incomplete. The partial guard covers 186 sources / 1,273 exact
+exceptions; all F01--F20 terminal dispositions remain open. Syntax inventory
+01339 discovers 2,857 working-tree Python files, with 2,856 parsed and one
+unchanged external legacy parse error. These counts are search evidence. Sequential/block/quadratic
+control, external callbacks, and existing memory/timing investigations remain
+open. Main stays gated until source-frozen tests and three-process comparisons,
+remote integration, retesting and terminal review pass.
 
 Recovery review through 01199 confirms no active worker, the unchanged frozen
 baseline, and the same cumulative budget (the extension is counted once).
@@ -86,6 +96,79 @@ artifact corruption stops the affected attempt. This is preparation-helper
 qualification, not tuning authority, HMC admission, or terminal F01--F20 closure.
 The original baseline is an execution comparator, not a new scientific default.
 Artifacts use the next unique campaign run directories under the unchanged caps.
+
+The selector checkpoint is `22094f76`. Next enclose dense and structured fits
+across replicates, the one-factor stability/escalation decision, selector call,
+and the audit/inverse/final-status step in one stable program. Preserve the
+existing dense kernel and factor optimizer, initial state, stopping tolerances,
+failure priority and diagnostic fields. Dimensionally unidentified factor
+families remain absent fits; a skipped second-factor family must remain absent
+from reports. Keep audit computation behind the selected-candidate branch.
+The full wrapper retains partition/schema validation and report construction.
+
+Pre-run review identifies optimizer rounding/history drift and accidental
+execution of the skipped factor/audit branch as the main new risks. First compare
+the complete numerical fit records with the pre-enclosure checkpoint under the
+same XLA mode, plus the original pinned public endpoint on deterministic clouds.
+Exercise dimension rejection, raw-SPD/projection gates, incomplete stability
+caps, factor escalation, blocked selection, audit veto and unchanged selection
+under changed audit data. Existing Python fit-injection tests will be recast at
+the native tensor boundary or with real clouds; no production host fallback is
+authorized. Exceptions raised by backend compilation remain failures, never
+silent eager execution. Use focused 300-second checks and the existing larger
+ceiling only after observing compilation cost; record every failure. Compare
+two replicate extents before continuing. No numerical tolerances, seeded draws,
+optimization method, scientific target or compute cap changes are authorized.
+
+Measurement ceiling refinement after 01303: the original full fitter takes
+294.135 process-seconds at two replicates, with a 13.533-second warm median.
+Its four-replicate arm cannot reasonably fit the prior 300-second ceiling.
+Use 900 seconds for `fixed_fitting` measurements in both source arms and at both
+extents, retaining the same cumulative accounting, attempt budget, inputs,
+twenty warm calls and comparison criteria. Other measurements keep 300 seconds.
+Run 01302 was manually interrupted at 164.283 seconds and remains invalid; it
+was not a demonstrated hang or resource failure. Run 01303 is its valid retry.
+
+The 01303/01304 original-versus-compiled comparison fails: fitted precision
+differs by up to 7.319e-8 and dense projection burden by 1.002e-8; selected family
+and status agree. Current-checkpoint enclosure parity did not cover this older
+dependency drift. Localize weighted dense initialization, correlation
+eigensystems, encoding and identical-state loss/gradient arithmetic before
+another complete measurement. Default XLA eigensystem convergence is a concrete
+suspect given 01241's prior residual finding. Test the existing repository
+refined eigensystem on the same frozen inputs as a diagnostic; preserve the
+eigenproblem, floor, optimizer and thresholds. A repair is justified only by
+same-input residual/output evidence, then full CPU/GPU consumer checks.
+The 496.688 MiB added host peak is also an investigation trigger, independent of
+parity. Performance promotion remains blocked; do not spend the larger baseline
+repeat until these focused issues have been characterized.
+
+Bounded memory repair hypothesis: `_make_factor_program` supplies a Python
+value/gradient callback to TFP L-BFGS, which traces its complete loss separately
+inside multiple line-search branches. Share a stable-signature TensorFlow
+value/gradient function within that program. Preserve its captured training
+tensors, analytic objective, autodiff engine and optimizer configuration.
+Skeptical risk is a changed captured-input derivative or optimizer rounding;
+the complete original-record and same-mode pre-enclosure checks must still pass.
+Compare graph nodes, staged host peaks, cold time and warm allocation with 01306
+on the identical fixture, plus before/after public timing after qualification.
+This is explanatory memory localization, not authority to accept the 550 MiB
+increase or to change any numerical tolerance. Reject the sharing change if
+record parity fails, and retain the localized evidence for the next repair.
+
+Late enclosure review also checks the frozen preparation derivative boundary.
+The original public fixed-center/factor fit records were materialized through
+NumPy; a caller could not differentiate the fitted geometry through those
+records. Returning native tensors now may accidentally expose optimizer/eigen
+backpropagation. After the active matrix completes, test external-tape use
+against the original disconnected result. If it is exposed or raises an
+unsupported gradient error, freeze the completed native fit outputs inside the
+compiled function. This preserves internal loss/gradient computation and values,
+not a new derivative algorithm. Recheck full records, affected consumers and
+matched current-source measurements; retain the pre-fix evidence separately.
+No gradient of a filtering target or an explicitly differentiable covariance
+constructor may be removed. This is a local derivative-contract repair under
+the existing plan and caps.
 
 1. Finish sequential search/fit/selection and the enclosing block/quadratic
    numerical control. Include reachable exact-incumbent selection; host record
@@ -1208,3 +1291,51 @@ program were identified and addressed before launch:
 
 This is the primary agent's plan review. No independent-agent review is claimed.
 Terminal review must revisit these failure modes against executed evidence.
+
+
+### CPU full-record sensitivity investigation after 01325
+
+Run 01325 passes 13 cases but fails original full-record CPU parity in the
+prediction-Jacobian condition number (3.908e-9 absolute, 1.131e-10 relative)
+and a principal angle (4.494e-10 degrees). No tolerance changes are authorized.
+The focused diagnostic 01326 finds identical optimizer iteration/evaluation
+counts, rank five of six, fitted precision error 4.728e-11, and raw factor
+parameter error 1.994e-4. Evaluating the original Jacobian diagnostic at the
+current raw state agrees with the new diagnostic to 3e-14. Thus direct SVD
+accuracy does not explain this discrepancy; a nearly saturated factor state
+amplifies trajectory rounding into derived fields. Compare identical original
+initial states and shared/unshared loss graph arithmetic before changing the
+implementation. Use one bounded CPU localization and preserve complete report
+parity as the gate. The existing optimizer and stopping criteria remain frozen;
+rank deficiency is an explanatory diagnostic, not authority to drop fields or
+relax their comparison. GPU qualification remains separate.
+
+
+### Next sequential dependency: exact replay and search-cloud selection
+
+After the fitter checkpoint is measured and preserved, compile the sequential
+locator's initial exact replay, finite eligibility, and stable first-maximum
+selection, plus its analogous search-cloud selection. These are required
+numerical dependencies of the remaining enclosing optimizer/search lifecycle.
+Keep initial candidates in their original order and replay them with the scalar
+authority, as before; batched search uses the already supplied batch callback.
+Preserve target-row accounting and first-maximum ties, finite value/score rules,
+all-nonfinite rejection, and the selected diagnostic candidate on budget failure.
+The inherited selector did not independently reject a nonfinite position when
+its supplied value/score were finite; do not silently add a new eligibility rule.
+
+Skeptical review: selecting endpoints before exact scalar replay could change
+call counts or choose a surrogate value. Reusing the generic exact-incumbent
+selector could add position-finiteness semantics absent here. Preserve this
+specific selector's rules, compare frozen original records and pathological
+eligibility cases, and test an actual sequential consumer. Public result schemas
+and callback summaries stay at host reporting boundaries. Numerical gradients
+through a selected position/score remain gather derivatives; do not impose a new
+stop-gradient on those channels. Selection masks/counts remain nondifferentiable.
+
+Use focused CPU/GPU parity, all existing sequential consumers and enclosing
+HLO/trace-size checks, then register matched public and numerical graph/XLA
+measurements at two candidate extents. The original eager implementation is
+only the execution comparator. Host loops over optimizer starts and refinement
+attempts remain open, with no numerical exemptions granted. No new scientific
+claim, algorithmic objective, seeded stream, threshold or compute allocation.

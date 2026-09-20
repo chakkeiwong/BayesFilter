@@ -57,6 +57,9 @@ BASELINE_PARENT_PACKAGES = (
 # the original cumulative 8 CPU / 4 GPU hours; prior charges remain counted.
 BUDGET_SECONDS = {"CPU": 32 * 3600, "GPU": 52 * 3600}
 TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
+# The original eager full fitter takes 294 s for two replicates (run 01303).
+# Reserve the same bounded ceiling for both source arms at either extent.
+MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
     "public_pullbacks": ("tests/test_filter_repair_public_pullbacks.py",),
     "tensor_program": ("tests/test_compiled_tensor_program_tf.py",),
@@ -233,6 +236,15 @@ TEST_GROUPS = {
     "block_score_localization": ("tests/test_filter_repair_block_score_geometry.py::test_pair_eigensystem_localization", "-s"),
     "fixed_stability": ("tests/test_filter_repair_fixed_stability.py",),
     "fixed_selection": ("tests/test_filter_repair_fixed_selection.py",),
+    "fixed_fitting": ("tests/test_filter_repair_fixed_fitting.py",),
+    "fixed_fitting_consumers": ("tests/test_fixed_center_curvature.py", "tests/test_factor_correlation_geometry.py",
+        "tests/test_posterior_local_initializer.py", "tests/test_filter_repair_fixed_selection.py",
+        "tests/test_filter_repair_fixed_stability.py", "tests/test_filter_repair_host_io.py",
+        "tests/test_posterior_curvature_refinement.py"),
+    "fixed_fitting_original": ("tests/test_filter_repair_fixed_fitting.py::test_original_factor_and_dense_lifecycle_fields",),
+    "fixed_fitting_frozen": ("tests/test_filter_repair_fixed_fitting.py::test_public_fitted_geometry_preserves_frozen_derivative_boundary",),
+    "fixed_fitting_fields": ("tests/test_filter_repair_fixed_fitting_localization.py::test_original_fit_field_breakdown", "-s"),
+    "fixed_fitting_localization": ("tests/test_filter_repair_fixed_fitting_localization.py", "-s"),
     "joint_center": ("tests/test_exact_incumbent.py", "tests/test_joint_center.py"),
     "apf": ("tests/highdim/test_zhao_cui_frozen_proposal_apf_tf.py", "tests/highdim/test_c2_sv_frozen_proposal_apf_tf.py"),
     "preparation": ("tests/test_backend_readiness.py", "tests/highdim/test_bases.py", "tests/highdim/test_c2_hermite_basis.py", "tests/highdim/test_p86_lagrangep_mass_integral.py", "tests/highdim/test_retained_moments.py", "tests/test_filter_repair_primitives.py", "tests/test_filter_repair_consumers.py"),
@@ -253,7 +265,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "sequential_preparation": "GPU", "sequential_geometry": "GPU", "sequential_score_fit": "GPU", "block_center": "GPU",
     "quadratic_initializer": "GPU", "joint_center": "GPU", "predator_tp": "GPU", "exact_incumbent": "GPU",
-    "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU"}
+    "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU", "fixed_fitting": "GPU"}
 FIXTURES += ADDITIONAL_FIXTURES
 FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES
@@ -368,6 +380,8 @@ def run_job(args):
     rows = records()
     device = args.device
     timeout = getattr(args, "test_timeout_seconds", 900) if args.action == "test" else 300
+    if args.action == "measure":
+        timeout = MEASUREMENT_TIMEOUT_SECONDS.get(args.fixture, 300)
     if args.action == "test" and timeout not in TEST_TIMEOUT_SECONDS:
         raise ValueError("Test timeout must be one of the bounded registered limits")
     if charged_seconds(rows, device) + timeout > BUDGET_SECONDS[device]:
@@ -515,7 +529,7 @@ def measurement_modes(name):
         return ("eager",)
     return (("off", "on", "eager") if name in ("source_route_sequence", "source_guard_gates", "cpu_forecast_shard",
             "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry",
-            "fixed_stability", "fixed_selection")
+            "fixed_stability", "fixed_selection", "fixed_fitting")
             else ("off", "on"))
 
 

@@ -22,6 +22,7 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.inference import fixed_center_fitting_tf as fitting_native
 from bayesfilter.inference import fixed_center_selection_tf as selection_native
 from bayesfilter.inference import fixed_center_stability_tf as stability_native
 from bayesfilter.inference.factor_correlation_geometry import (
@@ -346,152 +347,100 @@ def fit_fixed_center_curvature(
         raise ValueError("factor_2 structured target requires factor_max=2")
     weights = _shrinkage_weights(shrinkage_weights)
 
-    fits = []
-    one_factor_fits = []
-    for replicate_index, (train, selection_partition) in enumerate(
-        zip(train_partitions, select_partitions, strict=True)
-    ):
-        train_z, train_scores = train
-        select_z, select_scores = selection_partition
-        fits.append(
-            _fit_dense_precision(
-                center_score,
-                train_z,
-                train_scores,
-                select_z,
-                select_scores,
-                replicate_index=replicate_index,
-                eigenvalue_floor=dense_eigenvalue_floor,
-                max_condition_number=max_condition_number,
-                holdout_cap=thresholds.selection_holdout_relative_rmse_cap,
-                projection_cap=thresholds.projection_relative_frobenius_cap,
-                require_raw_spd=thresholds.require_raw_spd,
-            )
-        )
-        one_factor = _fit_structured_precision(
-            center_score,
-            train_z,
-            train_scores,
-            select_z,
-            select_scores,
-            replicate_index=replicate_index,
-            factor_count=1,
-            max_condition_number=max_condition_number,
-            holdout_cap=thresholds.selection_holdout_relative_rmse_cap,
-        )
-        fits.append(one_factor)
-        one_factor_fits.append(one_factor)
-
-    one_factor_passed_all_replicates = all(fit.accepted for fit in one_factor_fits)
-    one_factor_stability = _family_stability(one_factor_fits, thresholds)
-    one_factor_adequate = one_factor_passed_all_replicates and bool(
-        one_factor_stability["passed"]
-    )
-    two_factor_attempted = factor_max == 2 and (
-        not one_factor_adequate or structured_target_family == "factor_2"
-    )
-    if two_factor_attempted:
-        for replicate_index, (train, selection_partition) in enumerate(
-            zip(train_partitions, select_partitions, strict=True)
-        ):
-            train_z, train_scores = train
-            select_z, select_scores = selection_partition
-            fits.append(
-                _fit_structured_precision(
-                    center_score,
-                    train_z,
-                    train_scores,
-                    select_z,
-                    select_scores,
-                    replicate_index=replicate_index,
-                    factor_count=2,
-                    max_condition_number=max_condition_number,
-                    holdout_cap=thresholds.selection_holdout_relative_rmse_cap,
-                )
-            )
-
-    selected, selection = _select_candidate(
-        fits,
-        center_score,
-        select_partitions,
-        thresholds=thresholds,
-        shrinkage_weights=weights,
-        structured_target_family=structured_target_family,
-    )
+    caps = tuple(getattr(thresholds, name) for name in stability_native.CAP_NAMES)
+    replicates = len(train_partitions)
+    training_rows, selection_rows = int(train_partitions[0][0].shape[0]), int(select_partitions[0][0].shape[0])
+    program = fitting_native.fit_program(_dense_fit_kernel, fitting_native._structured_fit, _precision_geometry_kernel, _score_error_kernel,
+        dimension, replicates, training_rows, selection_rows, int(audit_z.shape[0]), factor_max,
+        max_condition_number, thresholds.selection_holdout_relative_rmse_cap,
+        structured_target_family, len(weights))
+    result = program(center_score, tf.stack(tuple(rows for rows, _ in train_partitions)),
+        tf.stack(tuple(scores for _, scores in train_partitions)), tf.stack(tuple(rows for rows, _ in select_partitions)),
+        tf.stack(tuple(scores for _, scores in select_partitions)), audit_z, audit_scores,
+        tf.constant([0. if cap is None else cap for cap in caps], tf.float64),
+        tf.constant([cap is not None for cap in caps], tf.bool),
+        tf.constant(dimension if thresholds.principal_subspace_rank is None else thresholds.principal_subspace_rank, tf.int32),
+        tf.constant(weights, tf.float64), tf.constant(dense_eigenvalue_floor, tf.float64),
+        tf.constant(thresholds.projection_relative_frobenius_cap, tf.float64), tf.constant(thresholds.require_raw_spd),
+        tf.constant(thresholds.audit_relative_rmse_cap, tf.float64))
+    report = tf.nest.map_structure(lambda value: value.numpy().tolist(), result)
+    families = ("dense", "factor_1", "factor_2") if report["two_attempted"] else ("dense", "factor_1")
+    groups = tuple(tuple(_native_fit_record(family, index,
+        {name: values[family_index][index] for name, values in report["fits"].items()},
+        dimension, training_rows, selection_rows, thresholds.selection_holdout_relative_rmse_cap)
+        for index in range(replicates)) for family_index, family in enumerate(families))
+    fits = [fit for pair in zip(groups[0], groups[1], strict=True) for fit in pair]
+    if report["two_attempted"]:
+        fits.extend(groups[2])
+    # Raise the original one-factor stability error before selector errors.
+    one_report = _stability_report(groups[1], thresholds, report["one_stability"])
+    selected, selection = _selection_report(families, groups, thresholds, weights, structured_target_family,
+        result["selection"], report["selection"])
     selection["factor_escalation"] = {
-        "one_factor_passed_all_replicates": one_factor_passed_all_replicates,
-        "one_factor_stability_passed": bool(one_factor_stability["passed"]),
-        "two_factor_attempted": two_factor_attempted,
-        "reason": (
-            "explicit_factor_2_target"
-            if structured_target_family == "factor_2"
-            else "one_factor_fit_holdout_or_stability_rejected"
-            if two_factor_attempted
-            else "one_factor_fit_holdout_and_stability_passed"
-            if factor_max == 2
-            else "factor_max_one"
-        ),
+        "one_factor_passed_all_replicates": report["one_passed"],
+        "one_factor_stability_passed": one_report["passed"],
+        "two_factor_attempted": report["two_attempted"],
+        "reason": "explicit_factor_2_target" if structured_target_family == "factor_2"
+            else "one_factor_fit_holdout_or_stability_rejected" if report["two_attempted"]
+            else "one_factor_fit_holdout_and_stability_passed" if factor_max == 2 else "factor_max_one",
     }
     if selected is None:
-        return _blocked_result(
-            fixed_center,
-            center_score,
-            fits,
-            "geometry_readiness_blocked",
-            lineage=lineage,
-            extra={"selection": selection},
-        )
+        return _blocked_result(fixed_center, center_score, fits, "geometry_readiness_blocked",
+            lineage=lineage, extra={"selection": selection})
+    audit_error = report["audit_error"]
+    selection.update(audit_relative_rmse=audit_error, audit_row_count=int(audit_z.shape[0]),
+        audit_used_after_selection=True, audit_changed_selection=False)
+    return FixedCenterCurvatureResult(accepted=report["status"] == 1,
+        status=fitting_native.RESULT_STATUSES[report["status"]], center=fixed_center, center_score_z=center_score,
+        selected_family=selected["family"], selected_precision_z=result["selection"]["precision"],
+        selected_covariance_z=result["covariance"], audit_relative_rmse=audit_error, fits=tuple(fits),
+        diagnostics={"center_score_role": "explanatory_only", "center_stationarity_required": False,
+            "partition_contract": {"replicate_count": replicates,
+                "training_rows_per_replicate": [training_rows] * replicates,
+                "selection_rows_per_replicate": [selection_rows] * replicates,
+                "audit_rows": int(audit_z.shape[0]), "audit_used_after_selection": True,
+                "offset_overlap_check": "shared_memory_and_exact_float64_rows"},
+            "thresholds_complete": thresholds.stability_caps_complete,
+            "diagonal_only_cannot_be_automatically_eligible": report["selection"]["diagonal_only"],
+            "selection": selection, "lineage": {} if lineage is None else dict(lineage)})
 
-    selected_precision = numeric_tensor(selected["precision_z"], tf.float64)
-    audit_error = _score_relative_rmse(
-        selected_precision, center_score, audit_z, audit_scores
-    )
-    selection["audit_relative_rmse"] = audit_error
-    selection["audit_row_count"] = int(audit_z.shape[0])
-    selection["audit_used_after_selection"] = True
-    selection["audit_changed_selection"] = False
-    complete = thresholds.stability_caps_complete
-    audit_passed = audit_error <= thresholds.audit_relative_rmse_cap
-    diagonal_only = bool(selection.get("diagonal_only", False))
-    status = (
-        "eligible_for_exact_hmc_canary"
-        if complete and audit_passed and not diagonal_only
-        else "diagnostic_only"
-        if audit_passed
-        else "audit_holdout_rejected"
-    )
-    accepted = status == "eligible_for_exact_hmc_canary"
-    return FixedCenterCurvatureResult(
-        accepted=accepted,
-        status=status,
-        center=fixed_center,
-        center_score_z=center_score,
-        selected_family=str(selected["family"]),
-        selected_precision_z=selected_precision,
-        selected_covariance_z=_run_kernel(tf.linalg.inv, selected_precision),
-        audit_relative_rmse=audit_error,
-        fits=tuple(fits),
-        diagnostics={
-            "center_score_role": "explanatory_only",
-            "center_stationarity_required": False,
-            "partition_contract": {
-                "replicate_count": len(train_partitions),
-                "training_rows_per_replicate": [
-                    int(offsets.shape[0]) for offsets, _scores in train_partitions
-                ],
-                "selection_rows_per_replicate": [
-                    int(offsets.shape[0]) for offsets, _scores in select_partitions
-                ],
-                "audit_rows": int(audit_z.shape[0]),
-                "audit_used_after_selection": True,
-                "offset_overlap_check": "shared_memory_and_exact_float64_rows",
-            },
-            "thresholds_complete": complete,
-            "diagonal_only_cannot_be_automatically_eligible": diagonal_only,
-            "selection": selection,
-            "lineage": {} if lineage is None else dict(lineage),
-        },
-    )
+
+def _native_fit_record(family, index, row, dimension, training_rows, selection_rows, holdout_cap):
+    """Materialize the unchanged public schema from a completed native fit."""
+    present, admissible, accepted = row["flags"]
+    factor_count = None if family == "dense" else int(family[-1])
+    if factor_count is None:
+        diagnostics = {"precision_parameterization": "direct_symmetric_least_squares",
+            "geometry_admissible": admissible, "selection_holdout_passed": row["holdout_passed"]}
+    else:
+        count = 2 * dimension if factor_count == 1 else 3 * dimension - 1
+        anchors = row["anchors"][:factor_count] if present else ()
+        if present:
+            metrics = dict(zip(fitting_native.FACTOR_METRICS, row["factor_metrics"], strict=True))
+            for name in ("prediction_jacobian_rank", "optimizer_iterations", "optimizer_objective_evaluations"):
+                metrics[name] = int(metrics[name])
+            for name in ("second_factor_identified", "optimizer_converged", "optimizer_failed"):
+                metrics[name] = bool(metrics[name])
+            if not metrics["prediction_jacobian_rank"]:
+                metrics["prediction_jacobian_condition_number"] = None
+            diagnostics = {**metrics, "jit_compile": True, "training_row_count": training_rows,
+                "holdout_row_count": selection_rows, "training_score_equation_count": training_rows * dimension,
+                "holdout_score_equation_count": selection_rows * dimension, "parameter_count": count,
+                "holdout_score_relative_rmse_cap": holdout_cap, "covariance_eigenvalues": row["factor_eigenvalues"],
+                "loading_row_squared_norms": row["loading_norms"],
+                "covariance_parameterization": "D[diag(1-row_norm(L)^2)+LL^T]D",
+                "score_model": "center_score_minus_local_score_equals_precision_times_offset"}
+        else:
+            diagnostics = {"parameter_count": count, "symmetric_covariance_entry_count": dimension * (dimension + 1) // 2}
+        diagnostics.update(covariance_parameterized_precision_prediction=True, parameter_count=count,
+            anchor_indices=anchors, geometry_admissible=admissible, selection_holdout_passed=row["holdout_passed"])
+    return FixedCenterCurvatureFit(family=family, replicate_index=index, factor_count=factor_count,
+        accepted=accepted, status=fitting_native.FIT_STATUSES[row["status"]],
+        raw_precision_z=row["raw"] if present else None, precision_z=row["precision"] if present else None,
+        covariance_z=row["covariance"] if present else None, raw_eigenvalues=row["raw_values"] if present else None,
+        raw_nonpositive_count=row["nonpositive"] if present else None,
+        projection_relative_frobenius=row["projection"] if present else None,
+        selection_holdout_relative_rmse=row["holdout"] if present else None, diagnostics=diagnostics)
 
 
 def compare_precision_geometry(
@@ -609,6 +558,10 @@ def _scale_covariance(covariance, scale):
     return covariance * scale[:, None] * scale[None, :]
 
 
+def _precision_eigenvalues(precision):
+    return _eigenpairs(precision, True)[0]
+
+
 def _precision_geometry_kernel(first, second, tolerance, requested_rank, *, jit_compile=True):
     # Principal angles depend on eigenvectors as well as eigenvalues. The
     # backend's loose default stopping check can leave O(1e-7) residuals.
@@ -675,10 +628,10 @@ def _score_error_kernel(precision, center_score, offsets, scores):
 
 
 def _dense_fit_kernel(
-    center, train, scores, selection, selection_scores, eigenvalue_floor, condition_cap
+    center, train, scores, selection, selection_scores, eigenvalue_floor, condition_cap, *, jit_compile=True
 ):
     raw = fit_dense_score_precision_tf(center, train, scores)["raw_precision"]
-    values, vectors = tf.linalg.eigh(raw)
+    values, vectors = _eigenpairs(raw, jit_compile)
     floor = tf.maximum(eigenvalue_floor, tf.reduce_max(tf.abs(values)) / condition_cap)
     projected = tf.matmul(
         vectors * tf.maximum(values, floor)[None, :], vectors, transpose_b=True
@@ -795,7 +748,7 @@ def _fit_structured_precision(
         if result.precision_z is None
         else numeric_tensor(result.precision_z, tf.float64)
     )
-    values = None if precision is None else _run_kernel(tf.linalg.eigvalsh, precision)
+    values = None if precision is None else _run_kernel(_precision_eigenvalues, precision)
     return FixedCenterCurvatureFit(
         family=f"factor_{factor_count}",
         replicate_index=replicate_index,
@@ -870,6 +823,11 @@ def _select_candidate(
             else thresholds.principal_subspace_rank, tf.int32),
         tf.constant(shrinkage_weights, tf.float64), tf.constant(thresholds.selection_holdout_relative_rmse_cap, tf.float64))
     report = tf.nest.map_structure(lambda value: value.numpy().tolist(), result)
+    return _selection_report(families, family_fits, thresholds, shrinkage_weights, structured_target_family, result, report)
+
+
+def _selection_report(families, family_fits, thresholds, shrinkage_weights, structured_target_family, result, report):
+    """Reconstruct native selector output; no numerical decisions are repeated."""
     stability = {family: _stability_report(group, thresholds,
         {name: value[index] for name, value in report["stability"].items()})
         for index, (family, group) in enumerate(zip(families, family_fits, strict=True))}

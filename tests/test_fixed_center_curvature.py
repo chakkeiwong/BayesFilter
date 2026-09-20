@@ -438,7 +438,6 @@ def test_two_factor_fit_is_skipped_when_one_factor_is_adequate(
 ) -> None:
     import bayesfilter.inference.fixed_center_curvature as fixed
 
-    calls = []
     precision = np.diag([2.0, 3.0])
     center_score = np.zeros(2)
     train_z, train_scores = _clouds((precision, precision), center_score=center_score)
@@ -449,25 +448,17 @@ def test_two_factor_fit_is_skipped_when_one_factor_is_adequate(
         (precision,), center_score=center_score, seed_base=20260916
     )
 
-    def controlled_fit(*_args, replicate_index, factor_count, **_kwargs):
-        calls.append(factor_count)
-        return fixed.FixedCenterCurvatureFit(
-            family=f"factor_{factor_count}",
-            replicate_index=replicate_index,
-            factor_count=factor_count,
-            accepted=True,
-            status="usable",
-            raw_precision_z=precision,
-            precision_z=precision,
-            covariance_z=np.linalg.inv(precision),
-            raw_eigenvalues=np.linalg.eigvalsh(precision),
-            raw_nonpositive_count=0,
-            projection_relative_frobenius=0.0,
-            selection_holdout_relative_rmse=0.0,
-            diagnostics={"geometry_admissible": True},
-        )
+    def controlled_fit(*_args, config, **_kwargs):
+        from bayesfilter.inference.fixed_center_fitting_tf import empty_fit
 
-    monkeypatch.setattr(fixed, "_fit_structured_precision", controlled_fit)
+        accepted = True
+        return {**empty_fit(2), "raw": tf.constant(precision, tf.float64),
+            "precision": tf.constant(precision, tf.float64), "covariance": tf.constant(np.linalg.inv(precision), tf.float64),
+            "raw_values": tf.constant([2., 3.], tf.float64), "flags": tf.constant([True, True, accepted]),
+            "status": tf.constant(0 if accepted else 8), "holdout": tf.constant(0. if accepted else 1., tf.float64),
+            "holdout_passed": tf.constant(accepted)}
+
+    monkeypatch.setattr(fixed.fitting_native, "_structured_fit", controlled_fit)
     result = fit_fixed_center_curvature(
         np.zeros(2),
         center_score,
@@ -481,7 +472,7 @@ def test_two_factor_fit_is_skipped_when_one_factor_is_adequate(
         factor_max=2,
     )
 
-    assert calls == [1, 1]
+    assert [fit.family for fit in result.fits] == ["dense", "factor_1", "dense", "factor_1"]
     assert result.diagnostics["selection"]["factor_escalation"] == {
         "one_factor_passed_all_replicates": True,
         "one_factor_stability_passed": True,
@@ -495,7 +486,6 @@ def test_two_factor_fit_is_attempted_after_one_factor_rejection(
 ) -> None:
     import bayesfilter.inference.fixed_center_curvature as fixed
 
-    calls = []
     precision = np.diag([2.0, 3.0])
     center_score = np.zeros(2)
     train_z, train_scores = _clouds((precision, precision), center_score=center_score)
@@ -506,26 +496,17 @@ def test_two_factor_fit_is_attempted_after_one_factor_rejection(
         (precision,), center_score=center_score, seed_base=20260916
     )
 
-    def controlled_fit(*_args, replicate_index, factor_count, **_kwargs):
-        calls.append(factor_count)
-        accepted = factor_count == 2
-        return fixed.FixedCenterCurvatureFit(
-            family=f"factor_{factor_count}",
-            replicate_index=replicate_index,
-            factor_count=factor_count,
-            accepted=accepted,
-            status="usable" if accepted else "holdout_score_fit_rejected",
-            raw_precision_z=precision,
-            precision_z=precision,
-            covariance_z=np.linalg.inv(precision),
-            raw_eigenvalues=np.linalg.eigvalsh(precision),
-            raw_nonpositive_count=0,
-            projection_relative_frobenius=0.0,
-            selection_holdout_relative_rmse=0.0 if accepted else 1.0,
-            diagnostics={"geometry_admissible": True},
-        )
+    def controlled_fit(*_args, config, **_kwargs):
+        from bayesfilter.inference.fixed_center_fitting_tf import empty_fit
 
-    monkeypatch.setattr(fixed, "_fit_structured_precision", controlled_fit)
+        accepted = config.factor_count == 2
+        return {**empty_fit(2), "raw": tf.constant(precision, tf.float64),
+            "precision": tf.constant(precision, tf.float64), "covariance": tf.constant(np.linalg.inv(precision), tf.float64),
+            "raw_values": tf.constant([2., 3.], tf.float64), "flags": tf.constant([True, True, accepted]),
+            "status": tf.constant(0 if accepted else 8), "holdout": tf.constant(0. if accepted else 1., tf.float64),
+            "holdout_passed": tf.constant(accepted)}
+
+    monkeypatch.setattr(fixed.fitting_native, "_structured_fit", controlled_fit)
     result = fit_fixed_center_curvature(
         np.zeros(2),
         center_score,
@@ -539,7 +520,7 @@ def test_two_factor_fit_is_attempted_after_one_factor_rejection(
         factor_max=2,
     )
 
-    assert calls == [1, 1, 2, 2]
+    assert [fit.family for fit in result.fits] == ["dense", "factor_1", "dense", "factor_1", "factor_2", "factor_2"]
     assert result.selected_family == "factor_2"
     assert result.diagnostics["selection"]["factor_escalation"] == {
         "one_factor_passed_all_replicates": False,

@@ -4,27 +4,44 @@ Worktree: `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`.
 Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
-September 20 continuation through run 01296: recovered checkpoint `638cbc8c`
-is cleanly preserved and pushed. Fixed-center family/consensus/shrinkage
-selection now compiles as a whole program. All 46 CPU/GPU cases and 121 affected
-GPU consumers pass (01280--01282). New real-cloud selector tests replace the
-private Python callback injection. Unequal family/partition sizes, optional
-caps, first-error precedence, NaNs, strict caps and tie ordering are covered.
+September 20 continuation through 01339, based on selector checkpoint `22094f76`:
+complete fixed-center replicate fitting, conditional factor escalation, selection,
+and audit now compile. Refined XLA eigenpairs preserve the original GPU records;
+a shared L-BFGS loss/gradient graph bounds repeated tracing. The original frozen
+geometry derivative boundary is restored inside the program; both fitters now
+work under an outer tape without exposing unsupported optimizer derivatives.
 
-Two-extent measurements 01283--01294 pass within 3.470e-18, with constant
-791/1,667 graph/XLA nodes and stable warm allocation. Public before/after warm
-medians are 17.979/5.519 and 58.652/13.094 ms; added host peaks about 150 MiB
-remain below the 256 MiB trigger. No new trigger fires. These are single-process
-observations; source-frozen final repeats remain required. Analysis:
-`fixed-selection-diagnostic-01294.json`. Earlier failed collection/configuration
-fixtures (01277/01279) are preserved; they did not justify tolerance changes.
+All 14 GPU fitter cases (01330), 223 affected GPU consumers (01331), and 63
+policy/controller checks (01332) pass. Full CPU run 01325 passes 13 but fails
+one original-record case: Jacobian condition and principal-angle discrepancies
+slightly exceed their unchanged tolerance. Localization 01326/01327/01329 traces
+this to initializer rounding amplified near saturated factor loadings. Direct
+Jacobian diagnostics agree at identical state; callback sharing and explicit
+initialization stage barriers do not cause or repair it. No runtime barrier or
+input-specific initializer has been added. Keep CPU parity open.
 
-The partial guard covers 185 sources / 1,254 exact exceptions. Syntax inventory
-01296 remains the latest search evidence, not a whole-repository verdict.
-Next: compile enclosing fixed-center replicate fits, conditional second-factor
-escalation and final audit control. Then continue sequential/block/quadratic
-lifecycles, external callbacks and existing mass/selector/TT/forecast memory
-investigations. All F01--F20 dispositions remain open; main stays gated.
+Fresh two-extent comparisons 01333--01338 reuse valid original baseline runs
+01303/01318 after provenance checks. Maximum numerical error is 8.308e-11.
+Public warm seconds are 13.533/0.127 and 27.529/0.268 before/after; graph/XLA
+seconds are 1.335/0.105 and 2.669/0.224. Native graph sizes stay at 5,341/7,395,
+with stable warmed allocation. Public host peaks rise by about 0.47--0.49 GiB,
+still an investigation trigger. The graph/XLA pairs remain below 256 MiB added
+host peak. Analysis: `fixed-fitting-diagnostic-01338.json`. These are single-
+process observations, not final acceptance. Prior failed attempts are preserved.
+
+The partial guard covers 186 sources / 1,273 exact exceptions; no numerical
+loop exemption was added. Syntax inventory 01339 discovers 2,857 Python files,
+2,856 parsed and the unchanged external legacy parse error. Focused new/runtime
+Ruff and whitespace pass; the driver's four pre-existing style warnings and its
+test module's two pre-existing C408 warnings remain unrelated cleanup debt.
+
+Next: preserve this checkpoint and continue the compiled sequential candidate
+replay/search-selection dependency described in the master plan, then enclosing
+sequential/block/quadratic control and external callbacks. Draft only:
+`/tmp/sequential_selection_tf_draft.py` is not part of runtime or evidence.
+The CPU full-record sensitivity, fixed-fitting host memory, mass timing,
+exact-selector overhead, TT assembly and forecast-pool investigations remain
+open. All F01--F20 terminal decisions stay open; main remains gated.
 
 Artifacts remain under the primary checkout's
 `docs/plans/artifacts/filter-gradient-repair-20260917/`.
@@ -37,12 +54,13 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01296,
-charges are 18,684.680 GPU / 32,657.437 CPU seconds, leaving 168,515.320 GPU /
-82,542.563 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01339,
+charges are 21,725.543 GPU / 33,230.249 CPU seconds, leaving 165,474.457 GPU /
+81,969.751 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
-and supplemental charge files.
-No campaign worker remains running at this recovery checkpoint.
+and supplemental charge files. No campaign worker remains running at this
+checkpoint. Numerical jobs must remain sequential and source must remain fixed
+through active tests/measurement matrices.
 
 Latest recovery queue (supersedes historical pending notes below): TP now passes
 22 CPU/GPU cases (01173/01174), with its unchanged raw-residual gate and two
