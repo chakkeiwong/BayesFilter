@@ -63,6 +63,8 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "factor_decisions_cpu": ("tests/test_filter_repair_factor_decisions.py",),
+    "factor_decisions_gpu": ("tests/test_filter_repair_factor_decisions.py",),
     **{f"proposal_memory_{arm}_{dimension}": (f"tests/test_filter_repair_proposal_memory.py::test_proposal_memory[{arm}-{dimension}]",)
         for arm in ("before", "graph", "xla") for dimension in (3, 5)},
     "sequential_proposal_public_cpu": ("tests/test_filter_repair_sequential_proposal.py", "-k", "public_history"),
@@ -433,6 +435,7 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "factor_decisions": ("factor_decisions_cpu", "factor_decisions_gpu", "factor_guard_cpu_fixed", "fixed_fitting_consumers", "policy"),
     "proposal_final": ("sequential_proposal_cpu", "sequential_proposal_gpu", "policy"),
     "proposal_memory": tuple(f"proposal_memory_{arm}_{dimension}" for arm in ("before", "graph", "xla") for dimension in (3, 5)),
     "proposal_followup": ("sequential_proposal_public_cpu", "sequential_proposal_public_gpu", "block_center", "factor_geometry", "policy"),
@@ -457,7 +460,7 @@ def mandatory_test_groups():
 FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
-TEST_DEVICES = {**{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+TEST_DEVICES = {"factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "factor_guard_gpu_lifetime": "GPU", "fixed_fitting_consumers": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["factor_guard_memory"]},
     "factor_guard_qualification": "GPU",

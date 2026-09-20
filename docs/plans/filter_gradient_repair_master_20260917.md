@@ -4,6 +4,62 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+Factor-status checkpoint through 01679: all 40 CPU and 40 GPU synthetic
+precedence/boundary/enclosure cases pass (01675/01676), all 14 original/full
+fitter CPU records pass (01677), all 223 affected GPU consumers pass (01678),
+and all 67 policy/controller checks pass (01679). Invalid eigenvalue rejection
+matches frozen f3f47f76 on both CPU/GPU after making positive comparisons
+explicit; 01674's failed NaN reduction attempt remains preserved. No threshold,
+optimizer, covariance arithmetic, derivative or random stream changed. The
+public record now materializes a native tensor status and loading norms.
+
+No worker is active. Charged GPU 31,795.749108093 / 187,200 and CPU
+39,841.218343504 / 115,200 seconds. The partial policy guard covers 193 sources
+with 1,276 exact exceptions. This small status dependency has no standalone
+speed claim; its cost remains included in the forthcoming enclosing-factor and
+terminal comparisons. Commit/push before installing the ordered-attempt draft.
+Main and every terminal finding remain unmerged/open; the inherited structured
+D5 graph/XLA comparison is still unresolved.
+
+01675/01676 pass all 40 native-status cases on CPU/GPU, including mixed/all-
+NaN eigenvalue rejection, original NaN condition/holdout comparisons and exact
+nextafter boundary decisions. 01677 passes all 14 original full-fitter CPU
+records. The 223-case GPU consumer group is active in 01678; preserve sources.
+
+Next ordered-attempt draft is `/tmp/sequential_attempts_tf_draft.py`, with
+independent recurrence checks drafted in `/tmp/test_sequential_attempts_draft.py`.
+Neither is installed or tested. Its contract is unchanged first/second factor
+order, no second fit after first acceptance, one exact scalar callback per
+usable factor, last-proposal reporting when a later fit is unusable, best finite
+exact-incumbent promotion independently of acceptance, unchanged radius and
+stall updates, and ignored unused history rows. The second-fit callback must be
+native and later qualified with the actual padded fitter; synthetic controls
+alone cannot close that integration. No wrapper fallback to the host loop is
+allowed. Review the draft against the original recurrence before running it.
+Same focused CPU/GPU driver limits and remaining campaign budget apply.
+
+01674 passes 36 and fails two synthetic all-NaN eigenvalue records: XLA
+minimum can discard NaNs and yield +inf, unlike the frozen CPU rejection.
+Replace min(eigenvalues)>0 with all(eigenvalues>0), which is equivalent on
+finite inputs and rejects NaNs explicitly. Add mixed-NaN eigenvalues and
+check frozen CPU/GPU behavior before claiming preserved rejection semantics.
+No eigenvalue is repaired, no threshold changes, and valid fits are unchanged.
+The failure is preserved; proceed with the bounded CPU/GPU decision checks.
+
+Pushed proposal checkpoint: f3f47f76. Native factor-status implementation is
+now the next bounded dependency. Tests will compare every materialized field
+with f3f47f76 on synthetic healthy and conflicting-invalid fit records, including
+nextafter condition/holdout thresholds, nonpositive/NaN eigenvalues, missing
+Jacobian condition, both factor counts, and optimizer-failure precedence.
+CPU/GPU tests must also enclose the helper with changed runtime inputs and
+verify graph-reference equality. The unchanged original fitter and consumer
+suites still gate integration. Numerical status only moves into XLA; the public
+record stays host-side and has no numerical NumPy operations. No optimizer or
+covariance formula changes. Skeptical review preserves NaN comparison semantics
+instead of silently tightening the policy in an execution-only repair. Existing
+300/900-second bounds and total budgets apply; no standalone speed claim is
+needed for this small branch helper before enclosing escalation measurement.
+
 Proposal checkpoint through 01673: all 22 complete focused/history cases pass
 on each CPU/GPU; all 20 trust/preparation, 40 sequential, 43 block and 12 factor
 GPU consumers pass, plus 67 policy/controller checks. Six fresh cost processes

@@ -9,6 +9,32 @@ claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
 training/HMC capability and its obsolete admitted factory now fail closed.
 Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
+## September 21 native factor status
+
+Factor-status checkpoint through 01679: all 40 CPU and 40 GPU synthetic
+precedence/boundary/enclosure cases pass (01675/01676), all 14 original/full
+fitter CPU records pass (01677), all 223 affected GPU consumers pass (01678),
+and all 67 policy/controller checks pass (01679). Invalid eigenvalue rejection
+matches frozen f3f47f76 on both CPU/GPU after making positive comparisons
+explicit; 01674's failed NaN reduction attempt remains preserved. No threshold,
+optimizer, covariance arithmetic, derivative or random stream changed. The
+public record now materializes a native tensor status and loading norms.
+
+No worker is active. Charged GPU 31,795.749108093 / 187,200 and CPU
+39,841.218343504 / 115,200 seconds. The partial policy guard covers 193 sources
+with 1,276 exact exceptions. This small status dependency has no standalone
+speed claim; its cost remains included in the forthcoming enclosing-factor and
+terminal comparisons. Commit/push before installing the ordered-attempt draft.
+Main and every terminal finding remain unmerged/open; the inherited structured
+D5 graph/XLA comparison is still unresolved.
+
+Review: finite positivity is equivalent to the previous minimum test on valid
+spectra, while explicit comparisons retain the original all/mixed-NaN rejection
+that XLA's reduction lost. Original complete records and consumer decisions
+pass. This is execution and failure-behavior preservation, not a new numerical
+regularizer. Independent review was not used. The untested outer escalation and
+terminal resource comparisons remain outside this checkpoint.
+
 ## September 21 compiled proposal checkpoint
 
 Proposal checkpoint through 01673: all 22 complete focused/history cases pass

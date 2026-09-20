@@ -5,6 +5,23 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
+Factor-status checkpoint through 01679: all 40 CPU and 40 GPU synthetic
+precedence/boundary/enclosure cases pass (01675/01676), all 14 original/full
+fitter CPU records pass (01677), all 223 affected GPU consumers pass (01678),
+and all 67 policy/controller checks pass (01679). Invalid eigenvalue rejection
+matches frozen f3f47f76 on both CPU/GPU after making positive comparisons
+explicit; 01674's failed NaN reduction attempt remains preserved. No threshold,
+optimizer, covariance arithmetic, derivative or random stream changed. The
+public record now materializes a native tensor status and loading norms.
+
+No worker is active. Charged GPU 31,795.749108093 / 187,200 and CPU
+39,841.218343504 / 115,200 seconds. The partial policy guard covers 193 sources
+with 1,276 exact exceptions. This small status dependency has no standalone
+speed claim; its cost remains included in the forthcoming enclosing-factor and
+terminal comparisons. Commit/push before installing the ordered-attempt draft.
+Main and every terminal finding remain unmerged/open; the inherited structured
+D5 graph/XLA comparison is still unresolved.
+
 Proposal checkpoint through 01673: all 22 complete focused/history cases pass
 on each CPU/GPU; all 20 trust/preparation, 40 sequential, 43 block and 12 factor
 GPU consumers pass, plus 67 policy/controller checks. Six fresh cost processes

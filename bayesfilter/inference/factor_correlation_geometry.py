@@ -24,6 +24,10 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_optimization_barrier, xla_svd
 
+from bayesfilter.inference.factor_decisions_tf import (
+    STATUS_NAMES,
+    factor_decisions_program,
+)
 from bayesfilter.inference.mass_matrix_tf import _eigenpairs
 from bayesfilter.ops.host_tensor_io import numeric_tensor
 from bayesfilter.ops.qr_lstsq_tf import (
@@ -220,7 +224,12 @@ def fit_factor_correlation_score_geometry(
 def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_rows, jit_compile):
     """Materialize the existing public record after a completed numerical fit."""
     parameter_count = 2 * dimension if cfg.factor_count == 1 else 3 * dimension - 1
-    if int(computed["invalid_covariance_evaluations"]) > 0:
+    decision = factor_decisions_program(dimension, cfg, jit_compile=jit_compile)(
+        computed["invalid_covariance_evaluations"], computed["finite"], computed["eigenvalues"],
+        computed["condition_number"], computed["jacobian_rank"], computed["holdout_relative"],
+        computed["optimizer"].failed, computed["loadings"])
+    status_code = int(decision["status_code"])
+    if status_code == 1:
         return _rejected(
             cfg, dimension, "factor_optimizer_failed", parameter_count=parameter_count,
             anchors=tuple(computed["anchors"].numpy().tolist()),
@@ -233,7 +242,6 @@ def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_ro
     deviations = computed["deviations"]
     loadings = computed["loadings"]
     eigenvalues = computed["eigenvalues"]
-    finite = computed["finite"]
     condition_number = computed["condition_number"]
     train_rmse = computed["train_rmse"]
     holdout_error = computed["holdout_error"]
@@ -243,21 +251,9 @@ def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_ro
     optimizer = computed["optimizer"]
     anchors = tuple(computed["anchors"].numpy().tolist())
     jacobian_rank = int(jacobian_rank)
-    jacobian_condition = None if jacobian_rank == 0 else float(jacobian_condition)
-    second_factor_identified = bool(
-        cfg.factor_count == 1 or jacobian_rank == parameter_count
-    )
-    status = "usable"
-    if not bool(finite.numpy()) or not bool(tf.reduce_min(eigenvalues).numpy() > 0.0):
-        status = "nonfinite_or_non_spd_fit"
-    elif float(condition_number.numpy()) > cfg.max_condition_number * (1.0 + 1.0e-8):
-        status = "condition_number_above_cap"
-    elif cfg.factor_count == 2 and not second_factor_identified:
-        status = "second_factor_unidentified"
-    elif float(holdout_relative.numpy()) > cfg.holdout_score_relative_rmse:
-        status = "holdout_score_fit_rejected"
-    elif bool(optimizer.failed.numpy()):
-        status = "factor_optimizer_failed"
+    jacobian_condition = float(jacobian_condition) if bool(decision["jacobian_condition_available"]) else None
+    second_factor_identified = bool(decision["second_factor_identified"])
+    status = STATUS_NAMES[status_code]
 
     diagnostics = {
         "jit_compile": bool(jit_compile),
@@ -282,9 +278,7 @@ def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_ro
             optimizer.num_objective_evaluations.numpy()
         ),
         "final_loss": float(optimizer.objective_value.numpy()),
-        "loading_row_squared_norms": tf.reduce_sum(
-            tf.square(loadings), axis=1
-        ).numpy(),
+        "loading_row_squared_norms": decision["loading_row_squared_norms"].numpy(),
         "covariance_parameterization": (
             "D[diag(1-row_norm(L)^2)+LL^T]D"
         ),
