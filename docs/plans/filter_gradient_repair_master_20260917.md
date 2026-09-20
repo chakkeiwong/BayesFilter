@@ -4,26 +4,26 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 20 refresh through run 01276: complete block-score fitting and
-qualification now use native numerical loops and XLA; fixed-center family
-stability also uses a native pair loop, with optional-cap and incomplete-fit
-semantics preserved. The block-score checkpoint `3ab315b5` is committed and
-pushed. Focused checks pass: 41 block-score CPU/GPU, 39 fixed-center stability
-CPU/GPU, 121 affected GPU consumers, and 61 policy/controller cases. Both new
-families have two-extent matched public and numerical comparisons with bounded
-graph size, stable allocations and no new investigation trigger. These remain
-single-process diagnostics pending the final source freeze and repeat gates.
+September 20 refresh through run 01296: checkpoint `638cbc8c` is committed
+and pushed. Complete fixed-center selection now uses native family/partition/
+shrinkage loops and XLA, with all 46 CPU/GPU and 121 affected GPU consumer
+checks passing (01280--01282). Two-extent comparisons (01283--01294) match
+within 3.470e-18, with constant graph size, stable allocations and no new
+investigation trigger. Public warm medians are 17.979/5.519 and 58.652/13.094 ms
+before/after; added host peaks are about 150 MiB. These remain single-process
+observations, pending source freeze and final repeat gates. Enclosing replicate
+fitting/escalation and audit control remain open.
 
 The owner has authorized **another 48 GPU / 24 CPU process-hours**, counted
 once. Active cumulative caps are **52 GPU / 32 CPU process-hours**. Through
-01276, charges are 18,472.515 GPU / 32,516.498 CPU seconds; remaining allowances
-are 168,727.485 GPU / 82,683.502 CPU seconds. The earlier 16 GPU / 12 CPU
+01296, charges are 18,684.680 GPU / 32,657.437 CPU seconds; remaining allowances
+are 168,515.320 GPU / 82,542.563 CPU seconds. The earlier 16 GPU / 12 CPU
 proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 184 sources with 1,228 exact
+The repair is incomplete. The static guard covers 185 sources with 1,254 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
-terminal decisions remain open. Refreshed syntax inventory 01276 discovers
-2,852 Python files; its single parse error is the unchanged external legacy
+terminal decisions remain open. Refreshed syntax inventory 01296 discovers
+2,854 Python files; its single parse error is the unchanged external legacy
 vendor file. Syntax counts are search leads, not policy verdicts. Focused
 passes do not replace terminal tests/comparisons of final source and harness.
 
@@ -60,12 +60,39 @@ driver gate. Their focused runs do not freeze the broader source/harness.
 
 Current execution queue, under the same runner, evidence contract and caps:
 
+September 20 continuation after 01276: first enclose fixed-center family
+selection, consensus, ordered shrinkage and mean selection error in one native
+TensorFlow program. Then move replicate fitting/escalation into the enclosing
+lifecycle. This dependency order keeps optimizer failures separate from selector
+parity. The exact baseline remains 3582b4ac; current thresholds, family priority,
+weight tie ordering, report order, optional caps and audit separation are fixed.
+Static schema packing/report reconstruction may stay on the host; numerical
+eligibility and selection may not. Existing private monkeypatch selector tests
+will use real score clouds that produce their intended choices; no Python
+callback escape hatch will be introduced to preserve test-only injection.
+
+Skeptical pre-run review: mean reductions, asymmetric-but-tolerated matrices,
+incomplete families, first-error ordering and NaN comparison semantics can
+change branch decisions even when a final precision is close. Compare complete
+records against the pinned selector, exercise these cases and equal-error weight
+ties, and inspect enclosing HLO plus graph growth at two replicate/weight
+extents. Explicit graph mode is diagnostic only. Run focused CPU checks before
+GPU checks and affected consumers, with the existing 300-second worker ceiling
+(900 only if justified by measured compilation). Register matched numerical and
+public measurement scopes; failed baseline compilation remains evidence, not a
+zero-time comparator. Three-process final comparisons wait for source freeze.
+Any changed decision or tolerance failure is a repair trigger; resource or
+artifact corruption stops the affected attempt. This is preparation-helper
+qualification, not tuning authority, HMC admission, or terminal F01--F20 closure.
+The original baseline is an execution comparator, not a new scientific default.
+Artifacts use the next unique campaign run directories under the unchanged caps.
+
 1. Finish sequential search/fit/selection and the enclosing block/quadratic
    numerical control. Include reachable exact-incumbent selection; host record
    assembly must not hide row-wise numerical eligibility checks. Keep external
    DZ5 callback compatibility explicit and qualify actual owned consumers.
-   Include fixed-center replicate/family/shrinkage selection; its pair-stability
-   dependency is now compiled. The complete
+   Include fixed-center replicate fitting/escalation and audit control; its complete
+   family/shrinkage selector is now compiled. The complete
    block-score lifecycle and mass construction are now compiled and focused
    consumer-qualified; their final source-frozen evidence remains pending.
 2. Retain the qualified TP continuation repair and converged derivative check;

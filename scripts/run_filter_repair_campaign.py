@@ -232,6 +232,7 @@ TEST_GROUPS = {
     "block_score_geometry": ("tests/test_filter_repair_block_score_geometry.py", "tests/test_block_score_geometry.py"),
     "block_score_localization": ("tests/test_filter_repair_block_score_geometry.py::test_pair_eigensystem_localization", "-s"),
     "fixed_stability": ("tests/test_filter_repair_fixed_stability.py",),
+    "fixed_selection": ("tests/test_filter_repair_fixed_selection.py",),
     "joint_center": ("tests/test_exact_incumbent.py", "tests/test_joint_center.py"),
     "apf": ("tests/highdim/test_zhao_cui_frozen_proposal_apf_tf.py", "tests/highdim/test_c2_sv_frozen_proposal_apf_tf.py"),
     "preparation": ("tests/test_backend_readiness.py", "tests/highdim/test_bases.py", "tests/highdim/test_c2_hermite_basis.py", "tests/highdim/test_p86_lagrangep_mass_integral.py", "tests/highdim/test_retained_moments.py", "tests/test_filter_repair_primitives.py", "tests/test_filter_repair_consumers.py"),
@@ -252,7 +253,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "sequential_preparation": "GPU", "sequential_geometry": "GPU", "sequential_score_fit": "GPU", "block_center": "GPU",
     "quadratic_initializer": "GPU", "joint_center": "GPU", "predator_tp": "GPU", "exact_incumbent": "GPU",
-    "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU"}
+    "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU"}
 FIXTURES += ADDITIONAL_FIXTURES
 FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES
@@ -514,7 +515,7 @@ def measurement_modes(name):
         return ("eager",)
     return (("off", "on", "eager") if name in ("source_route_sequence", "source_guard_gates", "cpu_forecast_shard",
             "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry",
-            "fixed_stability")
+            "fixed_stability", "fixed_selection")
             else ("off", "on"))
 
 

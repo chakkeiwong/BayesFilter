@@ -3490,3 +3490,71 @@ Through 01276 charges are 18,472.515 GPU / 32,516.498 CPU seconds, leaving
 Next work is the fixed-center family/replicate fit and shrinkage selector,
 followed by the outer sequential/block/quadratic lifecycles, callbacks and
 remaining memory investigations. All F01--F20 terminal dispositions stay open.
+
+## September 20 fixed-center selection continuation after 01276
+
+Recovered checkpoint `638cbc8c` was clean and pushed, with no active worker.
+The selector now encloses family stability, accepted-replicate consensus,
+target choice, ordered shrinkage, equally weighted partition errors and winner
+selection in XLA. Static branches distinguish only family/partition extents.
+Completed reports preserve sorted family order, original replicate IDs,
+optional-cap `None`, first-error precedence, factor priority and `(error, weight)`
+ties. Audit inputs are absent from this selector. The enclosing replicate
+fitting/escalation and audit lifecycle remains to be migrated.
+
+The two former selector callback tests now use real deterministic score clouds
+whose optima are the same diagonal-only and half-weight structured choices.
+No host callback bypass was added. New tests compare complete pinned records,
+unequal family/partition counts, incomplete and rejected fits, one-dimensional
+matrices, strict holdout boundaries, NaN ordering and tiny admissible asymmetry.
+Enclosing graph/HLO checks verify native loops, no callbacks, bounded graph
+size and one trace at two sizes. Pure graph diagnostics contain no nested XLA.
+
+Run 01277 failed collection due to the new fixture import path; fixed without
+runtime changes. Run 01278 passed the first 36 cases. Expanded run 01279 passed
+37 and failed nine test configurations because the reused helper passed the
+holdout cap twice. Direct threshold construction repaired that fixture.
+Runs 01280/01281 pass all 46 CPU/GPU cases, and 01282 passes all 121 affected
+GPU consumer cases. The partial static guard covers 185 sources and 1,254 exact
+schema/report exceptions, with no numerical-loop exemption for this selector.
+Two-extent memory/timing diagnostics start at 01283; final evidence is pending.
+
+Runs 01283--01294 complete two/four-replicate comparisons with three/five
+shrinkage weights. The baseline graph/XLA calls retain their original NumPy
+tracing failures; its eager public endpoint supplies the valid before timing.
+All selected precisions, candidate errors, selected weights and family flags
+agree within 3.470e-18. The native graph/XLA programs have 791/1,667 nodes at
+both extents and stable warm allocator use.
+
+| Scope / replicate count | Before / after warm ms | Added host peak MiB | Before / after device peak bytes |
+| --- | ---: | ---: | ---: |
+| Public / 2 | 17.979 / 5.519 | 150.402 | 556032 / 36352 |
+| Public / 4 | 58.652 / 13.094 | 150.352 | 558336 / 40704 |
+| Numerical graph / XLA, 2 | 10.384 / 2.759 | 69.559 | 1107200 / 29952 |
+| Numerical graph / XLA, 4 | 27.174 / 9.372 | 75.027 | 1109248 / 31744 |
+
+No new investigation trigger fires. Source/harness verification, checksums,
+cold/trace timings and allocation summaries are in
+`artifacts/filter-gradient-repair-20260917/fixed-selection-diagnostic-01294.json`.
+These are single-process diagnostics; later source changes and terminal repeats
+must be evaluated before any final performance conclusion.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Retain compiled selector | 46 CPU/GPU and 121 GPU consumer checks pass | No focused decision/report mismatch | Enclosing replicate fits and audit are still separate | Compile enclosing lifecycle | No whole-fitter or HMC qualification |
+| Retain descriptive measurements | Matched scopes and two extents pass | No new threshold trigger; stable allocation | Single process per arm | Final repeats after source freeze | No statistical ranking |
+| Keep merge gated | Partial guard passes | Existing coverage and memory debt remain | All F01--F20 terminal decisions open | Continue master queue | No repository-wide completion |
+
+Post-run review: perfect quadratic clouds could hide branch drift. The pinned
+full-record tests additionally exercise rejected/partial families, non-SPD and
+invalid rank/matrix handling, NaN comparisons, unequal partitions, threshold
+equality and weight ties. This reduces that risk without certifying arbitrary
+malformed external fit schemas. The inherited baseline is a behavioral
+comparator; preserving its NaN comparison behavior does not establish that such
+inputs are scientifically admissible.
+
+Run 01295 passes all 61 policy/controller cases. Refreshed syntax inventory
+01296 discovers 2,854 working-tree Python files, 2,853 parsed and the unchanged
+external legacy parse error. Focused Ruff and whitespace checks pass.
+Through 01296 charges are 18,684.680 GPU / 32,657.437 CPU seconds, leaving
+168,515.320 GPU / 82,542.563 CPU seconds. No numerical worker remains running.

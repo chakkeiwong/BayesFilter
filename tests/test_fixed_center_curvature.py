@@ -353,9 +353,7 @@ def test_partition_views_fail_closed_and_audit_budget_is_enforced() -> None:
         )
 
 
-def test_diagonal_only_selector_marks_nonpromotable_branch(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_diagonal_only_selector_marks_nonpromotable_branch() -> None:
     import bayesfilter.inference.fixed_center_curvature as fixed
 
     fit = fixed.FixedCenterCurvatureFit(
@@ -374,15 +372,10 @@ def test_diagonal_only_selector_marks_nonpromotable_branch(
         diagnostics={"geometry_admissible": True},
     )
     fits = (fit, fixed.FixedCenterCurvatureFit(**{**fit.__dict__, "replicate_index": 1}))
-    monkeypatch.setattr(
-        fixed,
-        "_mean_selection_error",
-        lambda candidate, *_args: 0.0 if np.allclose(candidate, np.diag(np.diag(candidate))) else 1.0,
-    )
     selected, diagnostics = fixed._select_candidate(
         fits,
         np.zeros(2),
-        ((np.eye(2), -np.eye(2)),),
+        ((np.eye(2), -np.diag([2.0, 4.0])),),
         thresholds=_thresholds(selection_holdout_relative_rmse_cap=2.0),
         shrinkage_weights=(0.0, 1.0),
         structured_target_family=None,
@@ -394,9 +387,7 @@ def test_diagonal_only_selector_marks_nonpromotable_branch(
     assert diagnostics["diagonal_only"] is True
 
 
-def test_explicit_structured_target_uses_shrinkage_branch(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_explicit_structured_target_uses_shrinkage_branch() -> None:
     import bayesfilter.inference.fixed_center_curvature as fixed
 
     dense_precision = np.array([[2.0, 0.5], [0.5, 4.0]])
@@ -427,15 +418,10 @@ def test_explicit_structured_target_uses_shrinkage_branch(
         )
         for replicate in (0, 1)
     )
-    monkeypatch.setattr(
-        fixed,
-        "_mean_selection_error",
-        lambda candidate, *_args: abs(float(candidate[0, 0]) - 1.75),
-    )
     selected, diagnostics = fixed._select_candidate(
         fits,
         np.zeros(2),
-        ((np.eye(2), -np.eye(2)),),
+        ((np.eye(2), -0.5 * (dense_precision + factor_precision)),),
         thresholds=_thresholds(selection_holdout_relative_rmse_cap=2.0),
         shrinkage_weights=(0.0, 0.5, 1.0),
         structured_target_family="factor_1",

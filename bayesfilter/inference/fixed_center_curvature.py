@@ -22,6 +22,7 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.inference import fixed_center_selection_tf as selection_native
 from bayesfilter.inference import fixed_center_stability_tf as stability_native
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
@@ -842,100 +843,57 @@ def _select_candidate(
     shrinkage_weights: tuple[float, ...],
     structured_target_family: str | None,
 ) -> tuple[Mapping[str, Any] | None, dict[str, Any]]:
-    selection: dict[str, Any] = {
-        "order": ["factor_1", "factor_2", "consensus_structured", "consensus_diagonal"],
-        "audit_used_for_selection": False,
-        "requested_structured_target_family": structured_target_family,
-        "candidates": [],
-    }
-    families = sorted({fit.family for fit in fits})
-    stability: dict[str, Any] = {}
-    stable_families: set[str] = set()
-    for family in families:
-        family_fits = [fit for fit in fits if fit.family == family]
-        family_stability = _family_stability(family_fits, thresholds)
-        stability[family] = family_stability
-        if family_stability["passed"]:
-            stable_families.add(family)
-    selection["stability"] = stability
-
-    for family in (
-        () if structured_target_family is not None else ("factor_1", "factor_2")
-    ):
-        family_fits = [
-            fit
-            for fit in fits
-            if fit.family == family and fit.accepted and fit.precision_z is not None
-        ]
-        if family in stable_families and len(family_fits) >= 2:
-            consensus = tf.reduce_mean(
-                tf.stack([fit.precision_z for fit in family_fits], axis=0),
-                axis=0,
-            )
-            selection["candidates"].append({"family": family, "selected": True})
-            return {"family": family, "precision_z": consensus}, selection
-
-    admissible = [
-        fit
-        for fit in fits
-        if fit.precision_z is not None
-        and fit.family in stable_families
-        and bool(fit.diagnostics.get("geometry_admissible"))
-    ]
-    if not admissible:
+    families = tuple(sorted({fit.family for fit in fits}))
+    family_fits = tuple(tuple(fit for fit in fits if fit.family == family) for family in families)
+    counts = tuple(len(group) for group in family_fits)
+    capacity = max(counts, default=0)
+    center = numeric_tensor(center_score, tf.float64)
+    dimension = int(center.shape[0])
+    matrices = tuple(tf.stack(tuple(tf.zeros([dimension, dimension], tf.float64)
+        if fit.precision_z is None else numeric_tensor(fit.precision_z, tf.float64) for fit in group))
+        for group in family_fits)
+    packed = tf.stack(tuple(tf.pad(values, [[0, capacity - count], [0, 0], [0, 0]])
+        for values, count in zip(matrices, counts, strict=True))) if families else tf.zeros([0, 0, dimension, dimension], tf.float64)
+    flags = tuple(tf.constant([(fit.precision_z is not None,
+        bool(fit.diagnostics.get("geometry_admissible")), fit.accepted) for fit in group], tf.bool)
+        for group in family_fits)
+    flags = tf.stack(tuple(tf.pad(values, [[0, capacity - count], [0, 0]])
+        for values, count in zip(flags, counts, strict=True))) if families else tf.zeros([0, 0, 3], tf.bool)
+    offsets, scores, partition_rows = _pack_selection_partitions(selection_partitions, dimension)
+    caps = tuple(getattr(thresholds, name) for name in stability_native.CAP_NAMES)
+    program = selection_native.selection_program(_precision_geometry_kernel, _score_error_kernel,
+        dimension, families, counts, partition_rows, len(shrinkage_weights), structured_target_family)
+    result = program(packed, flags, center, offsets, scores,
+        tf.constant([0. if cap is None else cap for cap in caps], tf.float64),
+        tf.constant([cap is not None for cap in caps], tf.bool),
+        tf.constant(dimension if thresholds.principal_subspace_rank is None
+            else thresholds.principal_subspace_rank, tf.int32),
+        tf.constant(shrinkage_weights, tf.float64), tf.constant(thresholds.selection_holdout_relative_rmse_cap, tf.float64))
+    report = tf.nest.map_structure(lambda value: value.numpy().tolist(), result)
+    stability = {family: _stability_report(group, thresholds,
+        {name: value[index] for name, value in report["stability"].items()})
+        for index, (family, group) in enumerate(zip(families, family_fits, strict=True))}
+    if report["error"]:
+        raise ValueError("consensus shrinkage requires SPD inputs and target")
+    selection = {"order": ["factor_1", "factor_2", "consensus_structured", "consensus_diagonal"],
+        "audit_used_for_selection": False, "requested_structured_target_family": structured_target_family,
+        "candidates": [], "stability": stability}
+    code = report["family_code"]
+    if code in (1, 2):
+        family = f"factor_{code}"
+        selection["candidates"].append({"family": family, "selected": True})
+        return {"family": family, "precision_z": result["precision"]}, selection
+    target_family = "diagonal_consensus" if structured_target_family is None else structured_target_family
+    family = f"consensus_{target_family}"
+    selection["candidates"] = [{"family": family, "weight": weight,
+        "selection_holdout_relative_rmse": error, "selected": index == report["selected_index"]}
+        for index, (weight, error) in enumerate(zip(shrinkage_weights[:report["visited"]],
+            report["errors"][:report["visited"]], strict=True))]
+    if not code:
         return None, selection
-    dense_precisions = [fit.precision_z for fit in admissible if fit.family == "dense"]
-    if not dense_precisions:
-        return None, selection
-    consensus = tf.reduce_mean(tf.stack(dense_precisions), axis=0)
-    if structured_target_family is not None:
-        candidates_for_target = [
-            fit
-            for fit in admissible
-            if fit.family == structured_target_family and fit.accepted
-        ]
-        if structured_target_family not in stable_families or not candidates_for_target:
-            return None, selection
-        target = tf.reduce_mean(
-            tf.stack([fit.precision_z for fit in candidates_for_target]),
-            axis=0,
-        )
-        target_family = structured_target_family
-    else:
-        target = tf.linalg.diag(tf.linalg.diag_part(consensus))
-        target_family = "diagonal_consensus"
-    candidates = []
-    for weight in shrinkage_weights:
-        candidate = consensus_shrunk_precision(
-            dense_precisions, target=target, weight=weight
-        )
-        error = _mean_selection_error(candidate, center_score, selection_partitions)
-        candidates.append((error, weight, candidate))
-        selection["candidates"].append(
-            {
-                "family": f"consensus_{target_family}",
-                "weight": weight,
-                "selection_holdout_relative_rmse": error,
-                "selected": False,
-            }
-        )
-    error, weight, candidate = min(candidates, key=lambda row: (row[0], row[1]))
-    if error > thresholds.selection_holdout_relative_rmse_cap:
-        return None, selection
-    selected_index = min(
-        range(len(candidates)),
-        key=lambda index: (candidates[index][0], candidates[index][1]),
-    )
-    selection["candidates"][-len(candidates) + selected_index]["selected"] = True
-    selection["selected_weight"] = weight
-    selection["selected_target"] = target_family
-    selection["diagonal_only"] = bool(
-        target_family == "diagonal_consensus" and weight == 1.0
-    )
-    return {
-        "family": f"consensus_{target_family}",
-        "precision_z": candidate,
-    }, selection
+    selection.update(selected_weight=report["weight"], selected_target=target_family,
+        diagonal_only=report["diagonal_only"])
+    return {"family": family, "precision_z": result["precision"]}, selection
 
 
 def _score_relative_rmse(
@@ -960,11 +918,23 @@ def _mean_selection_error(
     center_score: tf.Tensor,
     partitions: Sequence[tuple[tf.Tensor, tf.Tensor]],
 ) -> float:
-    errors = [
-        _score_relative_rmse(precision, center_score, offsets, scores)
-        for offsets, scores in partitions
-    ]
-    return float(tf.reduce_mean(tf.convert_to_tensor(errors, tf.float64)).numpy())
+    center = numeric_tensor(center_score, tf.float64)
+    dimension = int(center.shape[0])
+    offsets, scores, partition_rows = _pack_selection_partitions(partitions, dimension)
+    program = selection_native.mean_error_program(_score_error_kernel, dimension, partition_rows)
+    return float(program(numeric_tensor(precision, tf.float64), center, offsets, scores))
+
+
+def _pack_selection_partitions(partitions, dimension):
+    """Pack static report/input schemas without evaluating their numerical scores."""
+    rows = tuple(int(offsets.shape[0]) for offsets, _scores in partitions)
+    extent = max(rows, default=0)
+    offsets = tuple(tf.pad(numeric_tensor(offsets, tf.float64), [[0, extent - count], [0, 0]])
+        for (offsets, _scores), count in zip(partitions, rows, strict=True))
+    scores = tuple(tf.pad(numeric_tensor(scores, tf.float64), [[0, extent - count], [0, 0]])
+        for (_offsets, scores), count in zip(partitions, rows, strict=True))
+    return (tf.stack(offsets) if rows else tf.zeros([0, 0, dimension], tf.float64),
+        tf.stack(scores) if rows else tf.zeros([0, 0, dimension], tf.float64), rows)
 
 
 def _family_stability(
@@ -987,6 +957,14 @@ def _family_stability(
         tf.constant(dimension if thresholds.principal_subspace_rank is None
             else thresholds.principal_subspace_rank, tf.int32))
     report = {name: value.numpy().tolist() for name, value in result.items()}
+    return _stability_report(fits, thresholds, report)
+
+
+def _stability_report(fits, thresholds, report):
+    """Reconstruct the completed native comparison records without reevaluation."""
+    dimension = next((int(fit.precision_z.shape[0]) for fit in fits
+        if fit.precision_z is not None), 1)
+    caps = tuple(getattr(thresholds, name) for name in stability_native.CAP_NAMES)
     if not report["complete"]:
         return {"passed": False, "reason": "fewer_than_two_usable_replicates",
             "replicate_count": len(fits), "usable_count": report["usable_count"], "comparisons": []}

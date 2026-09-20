@@ -11,11 +11,61 @@ from types import SimpleNamespace
 FIXTURES = ("source_recenter", "gamma_preparation", "student_proposal",
             "ukf_initializer", "moment_teacher", "austria_preparation",
             "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry",
-            "fixed_stability")
+            "fixed_stability", "fixed_selection")
 
 
 def fixture(tf, name, size, jit, *, public_boundary=False):
     dtype = tf.float64
+    if name == "fixed_selection":
+        from bayesfilter.inference import fixed_center_curvature as geometry
+
+        dimension, count, rows = 3, 2 * size, 4 * size
+        precision = tf.linalg.diag(tf.constant([.8, 2.1, 3.3], dtype)) + .13
+        matrices = precision[None, None, :, :] * (1. + .04 * tf.cast(tf.range(count), dtype))[None, :, None, None]
+        consensus = tf.reduce_mean(matrices[0], axis=0)
+        reference = .5 * (consensus + tf.linalg.diag(tf.linalg.diag_part(consensus)))
+        offsets = tf.reshape(tf.sin(.17 * tf.cast(tf.range(count * rows * dimension), dtype)), [count, rows, dimension])
+        center = tf.constant([.1, -.2, .3], dtype)
+        weights = tuple(i / (2 * size) for i in range(2 * size + 1))
+        thresholds = geometry.FixedCenterCurvatureThresholds(selection_holdout_relative_rmse_cap=.2,
+            audit_relative_rmse_cap=.2, projection_relative_frobenius_cap=.2,
+            generalized_eigenvalue_spread_cap=100., trace_normalized_frobenius_cap=1.,
+            trace_normalized_operator_cap=1., principal_angle_degrees_cap=90., principal_subspace_rank=2)
+        inputs = (matrices, tf.ones([1, count, 3], tf.bool), center, offsets, center - offsets @ reference,
+            tf.constant([100., 1., 1., 90.], dtype), tf.ones([4], tf.bool), tf.constant(2),
+            tf.constant(weights, dtype), tf.constant(.2, dtype))
+        native = hasattr(geometry, "selection_native")
+        if native and not public_boundary:
+            program = geometry.selection_native.selection_program(geometry._precision_geometry_kernel,
+                geometry._score_error_kernel, dimension, ("dense",), (count,), (rows,) * count,
+                len(weights), None, jit_compile=jit).python_function
+
+            def evaluate(*arguments):
+                result = program(*arguments)
+                return (result["family_code"], result["precision"], result["errors"],
+                    result["selected_index"], result["weight"], result["diagonal_only"], result["stability"]["passed"])
+        else:
+            def evaluate(matrices, flags, center, offsets, scores, caps, enabled, rank, _weights, holdout_cap):
+                fits = [SimpleNamespace(family="dense", precision_z=matrix, replicate_index=index,
+                    accepted=True, diagnostics={"geometry_admissible": True})
+                    for index, matrix in enumerate(tf.unstack(matrices[0]))]
+                partitions = tuple(zip(tf.unstack(offsets), tf.unstack(scores), strict=True))
+                selected, report = geometry._select_candidate(fits, center, partitions, thresholds=thresholds,
+                    shrinkage_weights=weights, structured_target_family=None)
+                if selected is None:
+                    raise ValueError("Frozen selector comparison rejected")
+                selected_index = next(index for index, row in enumerate(report["candidates"]) if row["selected"])
+                return (tf.constant(3), tf.convert_to_tensor(selected["precision_z"], dtype),
+                    tf.constant([row["selection_holdout_relative_rmse"] for row in report["candidates"]], dtype),
+                    tf.constant(selected_index), tf.constant(report["selected_weight"], dtype),
+                    tf.constant(report["diagonal_only"]), tf.constant([report["stability"]["dense"]["passed"]]))
+
+        evaluate.timing_scope = ("complete_tensor_family_and_shrinkage_selection" if native and not public_boundary
+            else "complete_public_family_and_shrinkage_selection_records")
+        evaluate.execution_backend = "tensorflow" if native else "legacy_numpy_geometry_comparison_diagnostic_only"
+        return evaluate, inputs, {"dimension": dimension, "replicates": count, "partition_rows": rows,
+            "weights": len(weights), "boundary": "complete_fixed_center_selection", "random_inputs": False}
+
     if name == "fixed_stability":
         from bayesfilter.inference import fixed_center_curvature as geometry
 
