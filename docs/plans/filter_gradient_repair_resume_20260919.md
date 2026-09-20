@@ -5,6 +5,43 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
+Current September 20 continuation through 01577, based on pushed `7d08c68e`:
+the active-row COD investigation is repaired by binding the CPQR loop to each
+compact input shape while sharing rank decisions, the complete-orthogonal
+stage and the original full-rank pullback. CPU slice-dot fusion caused the
+previous five padded-fitter failures. Isolated-dot and per-step branches failed;
+the compact CPQR loop preserves every tested fitter field and discrete count.
+
+Focused evidence: 01560/01562 pass all 32 CPU/GPU solver/derivative cases;
+01561/01563 pass all 18 CPU/GPU padded cases at 4/32 spare rows; 01573/01574
+pass all 14 CPU/GPU original/full fitter records. All 223 GPU consumer cases
+pass in 01575. All 63 policy/controller checks pass in 01576. No worker remains running.
+
+Resource evidence: `factor-cpqr-capacity-memory-comparison-01572.json` compares
+fresh processes. Full XLA 32-spare capacity adds 331.219 MiB host peak and
+96 KiB GPU peak (2x), cold 11.886/27.013 seconds and warm 166.146/169.506 ms
+compact/padded. Twenty warm calls show only 12--32 KiB host growth. At four
+iterations, all graph/XLA complete fields agree; graph/XLA warm times are
+87.864/30.899 ms compact and 100.031/30.736 ms padded. Graph device peaks are
+8.12/8.25 MiB versus XLA 96/192 KiB. Branch graph/compiler memory is explained
+at this extent, but the tradeoff and three-process terminal repeats remain open.
+
+New blocker: full graph arms 01567/01568 both hit the existing strict loading
+margin assertion during an optimizer trial; XLA ignores that assertion. No full
+graph steady timing exists. Do not remove the check, loosen the margin, clip
+the state or change optimizer settings to make this disappear. The guard needs
+an explicit TensorFlow/XLA validity representation and a no-fire check on
+healthy original records. Padded fitting remains unwired into preparation.
+
+Static guard now has one exact fixed-schema row-shape binder exception, for
+189 sources / 1,275 exceptions. No Python numerical loop is exempted. Only the
+two preapproved geometry initializers may change RNG streams; canonical LEDH
+rebuilding remains excluded. Main is unmerged; all F01--F20 terminal decisions,
+outer lifecycles, external callbacks and other recorded investigations remain.
+The fetched remote repair branch is aligned and origin/main is an ancestor.
+
+The older checkpoints below are historical.
+
 September 20 current checkpoint through 01545, based on pushed `375e7257`:
 weight normalization and weighted-loss arithmetic now remain runtime operations
 inside enclosing XLA calls. One optimization barrier on input weights repairs
@@ -522,3 +559,9 @@ Run 01161 passes all 61 policy/controller checks. The static guard is
 the outer initializer/sweep/search lifecycles remain explicitly open. New-file
 Ruff checks pass; existing sequential import/closure/style warnings remain.
 No worker is running. Continue the master queue and keep main unmerged.
+
+September 20 checkpoint accounting through 01577: 27,876.007 GPU /
+35,838.542 CPU process-seconds, leaving 159,323.993 GPU / 79,361.458 CPU
+seconds under unchanged 52/32-hour caps. Inventory 01577 finds 2,879 working
+Python files, 2,878 parsed and the one unchanged external legacy error. Focused
+Ruff and whitespace checks pass. No worker is active; main remains unmerged.

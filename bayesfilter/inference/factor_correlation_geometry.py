@@ -26,7 +26,10 @@ from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_optimization_barrier,
 
 from bayesfilter.inference.mass_matrix_tf import _eigenpairs
 from bayesfilter.ops.host_tensor_io import numeric_tensor
-from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
+from bayesfilter.ops.qr_lstsq_tf import (
+    complete_orthogonal_lstsq,
+    complete_orthogonal_lstsq_active_rows,
+)
 
 FACTOR_CORRELATION_GEOMETRY_NONCLAIMS = (
     "structured local score geometry diagnostic only",
@@ -323,6 +326,7 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
             weights,
             max_condition_number=cfg.max_condition_number,
             jit_compile=jit_compile,
+            active_training_rows=active_training_rows,
         )
         dense_covariance = tf.linalg.inv(dense_precision)
         initial_standard_deviations, initial_loadings, anchors = _initial_factor_state(
@@ -574,9 +578,15 @@ def _weighted_dense_precision(
     *,
     max_condition_number: float,
     jit_compile: bool = True,
+    active_training_rows: tf.Tensor | None = None,
 ) -> tf.Tensor:
     root_weight = tf.sqrt(weights)[:, None]
-    raw = complete_orthogonal_lstsq(offsets * root_weight, responses * root_weight)
+    if active_training_rows is None:
+        raw = complete_orthogonal_lstsq(offsets * root_weight, responses * root_weight)
+    else:
+        raw = complete_orthogonal_lstsq_active_rows(
+            offsets * root_weight, responses * root_weight, active_training_rows
+        )
     symmetric = 0.5 * (raw + tf.transpose(raw))
     values, vectors = _eigenpairs(symmetric, jit_compile)
     maximum = tf.maximum(tf.reduce_max(tf.abs(values)), 1.0)

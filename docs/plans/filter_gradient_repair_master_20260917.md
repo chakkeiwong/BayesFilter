@@ -4,6 +4,236 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+Current through 01577: compact-shape CPQR repairs the padded-fitter failure.
+All 32 solver/derivative, 18 padded-fitter and 14 original/full fitter cases
+pass independently on CPU and GPU. All 223 GPU consumer cases pass in 01575. The
+32-spare representation costs 331 MiB extra host peak at the measured extent;
+fresh graph/XLA controls explain branch graph/compiler overhead and show stable
+warm allocations. Full graph runs reveal an existing loading-margin assertion
+that XLA ignores, now a separate open correctness finding. Do not integrate
+structured preparation or merge until its disposition and remaining gates are
+complete. Detailed evidence and recovery are below and in the resume document.
+
+Recovery after 01554: the enlarged CPU padded suite passes 13/18 cases, with
+five complete-record failures at dimension five/two factors. The small- and
+large-capacity partial occupancies differ in optimizer counts and covariance
+(up to 5.478e-6). Passing standalone solver tests does not qualify the enclosing
+fit. Preserve the uncommitted active-row implementation as an investigation;
+do not integrate it into structured sequential preparation or allowlist it yet.
+
+Next compare compact initialization, the pinned 7d08c68e shared-body diagnostic,
+and the runtime active solver on identical frozen clouds at reused counts
+0/1/4 and capacities 4/32. Observe initial raw state, normalized inputs and the
+original objective/gradient; repeat the objective comparison with the compact
+initial state supplied identically. This separates initializer changes from
+shape-dependent loss arithmetic and from the runtime wrapper/sanitation.
+Record every observation in a fresh numbered artifact through the sequential
+CPU diagnostic driver (300-second bound), then inspect the first divergent
+operation before proposing a repair. No formula, derivative, random stream,
+optimizer setting, or tolerance changes. These are explanatory diagnostics,
+not complete-record qualification. Skeptical review: observing intermediate
+outputs can change fusion; any proposed execution-boundary repair must pass
+the uninstrumented complete fitter on CPU and GPU and the original record gate.
+
+Charges at recovery through 01554: GPU 26,948.367 seconds, CPU 35,200.426
+seconds, under unchanged 52/32 process-hour caps. No worker is active.
+
+01555: all four explanatory cases complete. Pinned shared-body and runtime
+active initializer agree with each other but differ from compact by up to
+1.599e-14 in the encoded state. At the same supplied state, gradients agree
+exactly; a 2.168e-19 loss difference remains at the larger capacity. Localize
+the compact/shared CPQR steps using identical predecessors. In particular,
+the shared branch receives already-squared values whereas the compact reduction
+can fuse multiplication and accumulation. Observe the first divergent norm,
+reflector, product and update; compare a diagnostic-only branch that computes
+squares inside its compact reduction. Capture optimized HLO. This is a bounded
+120-second CPU explanatory diagnostic, not permission to change arithmetic or
+qualify a fitter from intermediate observations.
+
+01556 localizes the first discrepancy to the branch matrix-vector product,
+not the squared norms: at identical predecessor state the RHS product differs
+by 1.388e-17, followed by a matrix product difference of 6.939e-18. Moving
+squaring into the branch has no effect. Optimized CPU HLO emits standalone dots
+for compact operands and slice-dot fusions for the shared branch. Test an XLA
+optimization barrier immediately after the branch's compact slices to preserve
+the standalone dot boundary. Require exact same-predecessor step agreement,
+then uninstrumented full-record CPU/GPU checks, without changing formulas or
+adding a backend-specific branch. Same 120-second diagnostic limit and caps.
+
+01557: the barrier is removed before CPU slice-dot fusion and does not repair
+the discrepancy. Do not install it. Next bind the complete CPQR Householder
+step to compact row shapes, while sharing the enclosing factorization loop,
+rank decision, complete-orthogonal stage and pullback. This uses the original
+formula/body inside each branch and avoids dispatching isolated sliced dot
+operands. Compare the uninstrumented complete fitter at every failing CPU
+occupancy plus full occupancy, six cases, within 300 seconds. Preserve branch
+ordering, settings and exact discrete counts; a passing CPU trial still needs
+GPU, solver/derivative, compiler-input and fresh-memory qualification.
+
+01558: the single-step branch still changes four of six CPU complete records;
+keep it diagnostic only. Widen the compact boundary to the CPQR loop while
+sharing the size-independent complete-orthogonal stage, rank decision and
+pullback. The loop's compact tensor arguments prevent sliced operands inside
+its repeated products. This is the intermediate granularity between rejected
+isolated-step sharing and the expensive full-COD branch. Repeat the same six
+CPU records within 300 seconds; only a passing candidate proceeds to GPU and
+fresh-memory measurement. Preserve failed attempts and unchanged tolerances.
+
+01559 passes all six complete CPU records and exact optimizer counts with the
+compact CPQR loop boundary. Install that execution structure, retaining the
+two-tensor public API and the active-count entry's original full-rank pullback.
+Preserve the rejected shared-dot source as a test-only historical reference;
+later runtime edits must not silently rewrite the diagnostic experiments.
+Run solver/pullback checks and the full padded suite on CPU/GPU before further
+integration; then measure fresh compact/padded processes and input reuse.
+The previous 01548/01549 pair is now analyzed in
+`factor-shared-cod-memory-comparison-01549.json`: complete fields agree, warm
+ratio 1.013, extra host peak 109,260,800 bytes and device peak ratio 1.663.
+It describes the earlier diagnostic and cannot establish the new CPQR cost.
+
+01560/01562 pass all 32 CPU/GPU solver tests; 01561/01563 pass all 18
+CPU/GPU padded tests, including the larger capacity and exact optimizer records.
+Fresh GPU XLA processes 01564/01565 preserve the records but show a new host
+memory investigation trigger: peaks 1,545,408,512/1,892,716,544 bytes for
+compact/32-spare (347,308,032 bytes extra), with cold calls 11.886/27.013 seconds.
+Graphs contain 4,847/10,116 nodes and HLO 3,995,140/6,265,944 bytes. Device peaks
+are 98,304/196,352 bytes. Do not call this an accepted cost yet.
+
+Next measure four-spare XLA and compact/32-spare explicit graph-reference
+processes with the same frozen cloud, cold plus 20 warm calls, output lifetimes
+and memory stages. Retain complete numerical fields and compare within each
+mode and across modes; a graph/XLA field discrepancy is evidence, not grounds
+to drop a field. Register graph diagnostics separately and label their
+non-default status. Use 300-second bounds for graph optimization and 120 for
+the four-spare XLA arm, unchanged cumulative caps and GPU preflight. Inspect
+static branch/node growth against post-cold allocation stability. The 256 MiB
+rule is an investigation trigger, not permission to skip parity or accept a
+general memory bound; record the actual cost and rejected lower-cost variants
+before deciding whether this compact-shape representation can be integrated.
+
+01566 four-spare XLA peak is 1,609,523,200 bytes (64,114,688 extra versus
+compact), cold 13.538 seconds and warm 165.776 ms. The 0/4/32 capacities have
+32/20/12 KiB post-cold host growth, consistent with compilation cost increasing
+with static shape branches rather than continuing fixed-input allocation.
+01567 compact graph reference fails the existing strict loading-row assertion:
+an L-BFGS trial reaches 0.99999900000000019 against the frozen 0.999999 bound.
+XLA logs that it ignores this assertion. Preserve the failure and report no
+graph steady timing; do not disable the assertion, clip the state, alter the
+optimizer or reinterpret it as a passing graph comparison. Complete the matched
+padded graph arm to determine whether this is a capacity-specific failure.
+Record the graph/XLA assertion-semantics gap separately from the active-row
+repair; it remains an open consistency finding in the enclosing fitter.
+
+01568 padded graph has the identical strict loading-margin failure as compact;
+the failure is not introduced by padding. Retain both failed runs with no
+steady graph timing. The diagnostic collector now records a numerical failure
+artifact and an explicit expected-failure marker for this full graph arm;
+XLA and all qualification tests still fail on any numerical exception.
+For causal compiler-memory comparison add a separate four-iteration diagnostic
+fixture at the same dimension/cloud/capacities, in fresh graph and XLA processes.
+Four iterations are a predeclared measurement extent, not a change to the
+runtime optimizer or its full-record gates. Record that extent in the artifacts
+and never substitute its outputs for the failed complete graph comparison.
+Use cold plus 20 warm calls, 120-second XLA / 300-second graph bounds and
+unchanged cumulative caps. Require same-extent graph/XLA numerical comparisons.
+
+The exact static row-shape binder is now allowlisted as fixed schema, supported
+by 01560--01563; no Python numerical iteration is exempted. The memory cost and
+graph assertion-semantics issue remain separate open integration findings.
+
+01569--01572 four-iteration controls pass every field comparison within and
+across graph/XLA modes at the unchanged 1e-10 gate. XLA compact/padded warm
+medians are 30.899/30.736 ms versus graph 87.864/100.031 ms. GPU peaks are
+96/192 KiB for XLA versus 8.12/8.25 MiB for graph. Padded-minus-compact host
+peak is 169,861,120 bytes in graph mode and 349,372,416 bytes in XLA, showing
+both graph branch overhead and additional compiler cost. Full-iteration XLA
+records also agree and warm overhead is 2.02%; peak-device overhead is exactly
+2x (196,608 versus 98,304 bytes), including the largest sampled temporary.
+Analysis: `factor-cpqr-capacity-memory-comparison-01572.json`.
+
+The extra static branch memory is explained at this extent, with 12--32 KiB
+post-cold growth across 20 warm calls; this is no general allocation bound.
+The cheaper isolated-operation and per-step candidates failed full records,
+so compact CPQR is the current parity-preserving candidate. Retain the 331 MiB
+host / 96 KiB device cost explicitly for terminal review and three-process
+repeats; do not silently waive it or claim all memory investigations complete.
+Run the original full fitter and downstream regression groups after this solver
+change before checkpointing. Structured preparation remains unwired while the
+newly observed graph/XLA assertion-semantics defect is investigated.
+
+Continuation from pushed `7d08c68e`: test a diagnostic-only COD clone that shares
+its CPQR/COD loops and dispatches only the active row shapes for column norms,
+reflector norm and transposed matrix-vector products. Keep every pivot, rank
+threshold, Householder update, projection, initializer, loss and optimizer rule.
+The earlier full-solver shape clone 01536 is the explanatory parity/cost
+comparator; compact current runtime remains the numerical authority. At the
+same five-dimensional 11-active/42-capacity fixture, record complete public
+fields/counts, cold time, host/device allocations and graph/HLO sizes. Reject
+the clone as a runtime proposal if it loses parity. A passing primal diagnostic
+does not qualify derivatives or the public COD API; those require explicit
+checks before runtime migration. This trial is confined to the frozen
+initializer, whose external derivative was already absent. Use the existing
+300-second GPU ceiling, memory-growth/idle controls and cumulative caps.
+Skeptical review: compiler fusion can cross branch boundaries; compare complete
+records, not only solver residuals. Same-process RSS is explanatory and cannot
+replace fresh-process resource qualification. No numerical tolerances or
+algorithmic direction change is authorized, and no runtime source is modified.
+
+Run 01546 stops before numerical execution because the diagnostic rewrite's
+return anchor matches both full-rank and COD functions. Narrow the checked
+anchor to the COD return before the appended helper, preserving the separate
+full-rank routine. Retry this harness-only repair under the same ceiling and
+budget; the failed run is not parity or memory evidence.
+
+Run 01547 preserves every complete record/count using the shared-body clone.
+Its graph has 6,392 nodes / 4,615,457 HLO bytes, versus compact 4,839 nodes /
+3,994,045 bytes. Cold calls are 20.497/11.975 seconds; same-process memory is
+still insufficient to classify the overhead. Measure compact/shared clones in
+two fresh GPU processes on these exact frozen inputs, one cold and 20 warm calls,
+with full-field comparisons and stage-wise host/device memory. Use 120-second
+per-worker bounds and the unchanged 256 MiB investigation trigger. A passing
+pair only nominates runtime migration; CPU/GPU occupancy and derivative checks
+still precede any integration. The original full-COD-clone resource trigger is
+not waived by this narrower design's descriptive timing.
+
+Fresh processes 01548/01549 show compact/shared cold calls 11.828/20.912 seconds,
+warm medians 167.136/169.254 ms, and about 104.199 MiB added host peak. Post-cold
+host growth is 24/16 KiB. The shared-body candidate is below the unchanged
+256 MiB investigation trigger at this extent. Install the optional active-row
+representation in the shared COD routine, preserving its full-rank pullback;
+inactive rows and their gradients must be zero, and invalid active counts must
+not produce an accepted fit. Keep ordinary two-argument behavior unchanged.
+Test CPU/GPU compact/padded values, rank thresholds, same-active-row gradients,
+finite differences and HLO reuse, then factor records across occupancies and
+the 32-row capacity. Runtime integration remains gated until those checks and
+fresh-process costs pass. Pin the explanatory source clones to 7d08c68e so later
+runtime changes cannot silently rewrite the comparison. No derivative removal
+or rank-tolerance change is authorized.
+
+Run 01550 passes 20/32 CPU cases including all six new active-row checks, but
+direct `tf.function(complete_orthogonal_lstsq)` calls fail: TensorFlow expands
+the optional None into a custom-gradient tensor operand. Keep the public
+dispatcher plain and supply two tensor-only custom-gradient signatures to one
+shared implementation body. This restores ordinary direct tracing and retains
+the active-count gradient as None. Rerun the entire focused CPU group before
+GPU or fitter qualification; no numerical formula or baseline is changed.
+
+Run 01551 passes 31/32; compiler-IR inspection still requires the new optional
+None argument. Preserve the existing public two-tensor signature exactly and
+add a three-tensor active-row entry to the same implementation body instead.
+This avoids changing downstream compiler-introspection calls. Both entries
+retain custom pullbacks; the new active-row tests use the explicit entry.
+
+Runs 01552/01553 pass all 32 CPU/GPU solver cases, including compact/active
+values and pullbacks, inactive-NaN sanitation/zero gradients, rank changes,
+invalid-count rejection, finite-difference derivatives and HLO reuse. Expand
+the padded full-record suite to both four and 32 spare rows before accepting
+the active initializer. Preserve zero/partial/full small-capacity occupancy
+cases and the existing one/two-factor settings. Use 300 seconds CPU and the
+existing 900-second GPU ceiling for the enlarged suite (the prior 12-case GPU
+suite takes 152.6 seconds; six new factor cases include more shape branches).
+This is an attempt reservation within the same cumulative cap, not new compute.
+
 September 20 current checkpoint through 01545, based on pushed `375e7257`:
 weight normalization and weighted-loss arithmetic now remain runtime operations
 inside enclosing XLA calls. One optimization barrier on input weights repairs
@@ -1756,3 +1986,9 @@ growth/idle preflight and a 300-second ceiling each. The question is whether
 data specialization causes changed-input recompilation and host growth; unchanged
 warm timings alone cannot answer it. Do not describe a bounded cache or these
 tiny extents as a general memory cap or whole-program qualification.
+
+September 20 checkpoint accounting through 01577: 27,876.007 GPU /
+35,838.542 CPU process-seconds, leaving 159,323.993 GPU / 79,361.458 CPU
+seconds under unchanged 52/32-hour caps. Inventory 01577 finds 2,879 working
+Python files, 2,878 parsed and the one unchanged external legacy error. Focused
+Ruff and whitespace checks pass. No worker is active; main remains unmerged.

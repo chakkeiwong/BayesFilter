@@ -63,6 +63,15 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "active_cod_compact_step": ("tests/test_filter_repair_active_cod.py::test_compact_cod_step_complete_fit", "-k", "step and not cpqr", "-s"),
+    "active_cod_compact_cpqr": ("tests/test_filter_repair_active_cod.py::test_compact_cod_step_complete_fit", "-k", "cpqr", "-s"),
+    "active_cod_steps": ("tests/test_filter_repair_active_cod.py::test_active_cod_step_localization", "-s"),
+    "active_cod_enclosure": ("tests/test_filter_repair_active_cod.py::test_active_cod_enclosure_localization", "-s"),
+    "active_cod_runtime": ("tests/test_filter_repair_active_cod_runtime.py", "tests/test_filter_repair_qr.py"),
+    "factor_capacity_shared_cod": ("tests/test_filter_repair_active_cod.py::test_shared_cod_row_arithmetic_localization", "-s"),
+    **{f"factor_shared_memory_{arm}": (
+        f"tests/test_filter_repair_active_cod.py::test_shared_cod_fresh_process_memory[{arm}]", "-s")
+        for arm in ("compact", "shared")},
     "factor_enclosure_localization": ("tests/test_filter_repair_factor_enclosure.py", "-s"),
     "padded_jacobian_localization": ("tests/test_filter_repair_padded_jacobian.py::test_partial_occupancy_jacobian_factorization_localization", "-s"),
     "padded_dynamic_qr_localization": ("tests/test_filter_repair_padded_jacobian.py::test_bounded_dynamic_qr_localization", "-s"),
@@ -74,6 +83,12 @@ TEST_GROUPS = {
     **{f"factor_capacity_{capacity}": (
         f"tests/test_filter_repair_factor_capacity.py::test_factor_capacity_memory_and_records[{capacity}]", "-s")
         for capacity in (0, 4, 32)},
+    **{f"factor_capacity_graph_{capacity}": (
+        f"tests/test_filter_repair_factor_capacity.py::test_factor_capacity_graph_memory_and_records[{capacity}]", "-s")
+        for capacity in (0, 32)},
+    **{f"factor_capacity_short_{mode}_{capacity}": (
+        f"tests/test_filter_repair_factor_capacity.py::test_factor_capacity_short_memory_and_records[{mode == 'xla'}-{capacity}]", "-s")
+        for mode in ("graph", "xla") for capacity in (0, 32)},
     "public_pullbacks": ("tests/test_filter_repair_public_pullbacks.py",),
     "tensor_program": ("tests/test_compiled_tensor_program_tf.py",),
     "source_sequential_captures": ("tests/test_filter_repair_source_sequential.py::test_repeated_transport_keeps_all_captured_core_frame_and_callback_derivatives",),
@@ -263,7 +278,7 @@ TEST_GROUPS = {
     "fixed_fitting_initializer": ("tests/test_filter_repair_initializer_rounding.py", "-s"),
     "fixed_fitting_initializer_stages": ("tests/test_filter_repair_initializer_stages.py", "-s"),
     "padded_factor": ("tests/test_filter_repair_padded_factor.py", "-k", "not localization", "-s"),
-    "padded_factor_full": ("tests/test_filter_repair_padded_factor.py::test_padded_fit_keeps_complete_public_numerics[4-5-2]", "-s"),
+    "padded_factor_full": ("tests/test_filter_repair_padded_factor.py::test_padded_fit_keeps_complete_public_numerics[4-4-5-2]", "-s"),
     "padded_factor_localization": ("tests/test_filter_repair_padded_factor.py::test_full_occupancy_initializer_and_same_state_loss_localization", "-s"),
     "padded_factor_arithmetic": ("tests/test_filter_repair_padded_factor.py::test_full_occupancy_loss_arithmetic_localization", "-s"),
     "factor_specialization": ("tests/test_filter_repair_padded_factor.py::test_factor_compiler_input_specialization_localization", "-s"),
@@ -300,7 +315,13 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+    "active_cod_runtime": "GPU",
+    "factor_capacity_shared_cod": "GPU",
+    **{f"factor_shared_memory_{arm}": "GPU" for arm in ("compact", "shared")},
     **{f"factor_capacity_{capacity}": "GPU" for capacity in (0, 4, 32)},
+    **{f"factor_capacity_graph_{capacity}": "GPU" for capacity in (0, 32)},
+    **{f"factor_capacity_short_{mode}_{capacity}": "GPU"
+       for mode in ("graph", "xla") for capacity in (0, 32)},
     **{group: "GPU" for group in ("padded_jacobian_localization", "padded_dynamic_qr_localization",
         "padded_dynamic_qr_output", "padded_shape_dispatch", "factor_capacity_initial",
         "factor_capacity_initial_fixed", "factor_capacity_cod")},

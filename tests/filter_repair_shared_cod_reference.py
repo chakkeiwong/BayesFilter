@@ -1,4 +1,9 @@
-"""Rank-aware least squares without forming normal equations.
+"""Historical diagnostic snapshot of the unqualified 01554 active-row solver.
+
+Independent test reference only; never import this module in a runtime route.
+The isolated sliced-dot branches below fail complete fitter parity on CPU.
+
+Rank-aware least squares without forming normal equations.
 
 The primal uses pivoted Householder QR and complete orthogonal decomposition.
 Its full-rank pullback
@@ -86,13 +91,24 @@ def _active_row_operation(operation, active_rows, minimum_rows, capacity):
     return tf.switch_case(index, branches)
 
 
-def _reflector(vector, pivot, active):
+def _active_sum(values, active_rows, minimum_rows):
+    return _active_row_operation(lambda rows: tf.reduce_sum(values[:rows], axis=0),
+        active_rows, minimum_rows, int(values.shape[0]))
+
+
+def _active_matvec(matrix, vector, active_rows, minimum_rows):
+    return _active_row_operation(lambda rows: tf.linalg.matvec(matrix[:rows], vector[:rows], transpose_a=True),
+        active_rows, minimum_rows, int(matrix.shape[0]))
+
+
+def _reflector(vector, pivot, active, active_rows=None, minimum_rows=None):
     # StridedSlice requires data-dependent bounds as compile-time constants
     # on TF/XLA. Gather keeps the pivot and its upstream matrix at runtime.
     first = tf.gather(vector, pivot)
     length = vector.shape[0] if vector.shape[0] is not None else tf.shape(vector)[0]
     tail = tf.where(active & (tf.range(length) != pivot), vector, tf.zeros_like(vector))
-    square = tf.reduce_sum(tail * tail)
+    square = (tf.reduce_sum(tail * tail) if active_rows is None
+              else _active_sum(tail * tail, active_rows, minimum_rows))
     beta = tf.where(
         first >= 0, -tf.sqrt(first * first + square), tf.sqrt(first * first + square)
     )
@@ -114,7 +130,7 @@ def complete_orthogonal_lstsq(matrix, rhs):
 
 @tf.custom_gradient
 def complete_orthogonal_lstsq_active_rows(matrix, rhs, active_rows):
-    """Compact CPQR with shared COD for a runtime active-row count."""
+    """Shared COD for padded tall systems, with a runtime active-row count."""
     return _complete_orthogonal_lstsq(matrix, rhs, active_rows)
 
 
@@ -127,11 +143,10 @@ def _complete_orthogonal_lstsq(matrix, rhs, active_rows=None):
     original wrapper's full-rank gradient formula is intentionally preserved.
 
     Optional active rows support fixed-capacity overdetermined systems with
-    at least twice as many active rows as columns. The CPQR loop retains its
-    compact operand shapes; rank decisions, the complete-orthogonal stage and
-    pullback are shared. Inactive rows and their pullbacks are zero. Invalid
-    active counts produce nonfinite results rather than an accepted clipped
-    system.
+    at least twice as many active rows as columns. Row reductions use the
+    compact operand shape, with shared factorization control. Inactive rows
+    and their pullbacks are zero; invalid active counts produce nonfinite
+    results rather than a silently accepted clipped system.
     """
     rows, cols = matrix.shape
     if cols is None:
@@ -150,55 +165,44 @@ def _complete_orthogonal_lstsq(matrix, rhs, active_rows=None):
         rhs = tf.where(active_mask[:, None], rhs, tf.zeros_like(rhs))
     rows = tf.shape(matrix)[0] if dynamic_rows else rows
     diagonal_size = tf.minimum(rows, cols) if dynamic_rows else min(rows, cols)
-    col_indices = tf.range(cols)
+    row_indices, col_indices = tf.range(rows), tf.range(cols)
 
-    def compact_cpqr(matrix, rhs):
-        row_count = matrix.shape[0] if matrix.shape[0] is not None else tf.shape(matrix)[0]
-        row_indices = tf.range(row_count)
-
-        def factor(k, a, b, permutation):
-            norms = tf.reduce_sum(
-                tf.where(row_indices[:, None] >= k, a * a, tf.zeros_like(a)), axis=0
-            )
-            pivot = tf.argmax(
-                tf.where(
-                    col_indices >= k, norms, tf.fill([cols], tf.constant(-1.0, a.dtype))
-                ),
-                output_type=tf.int32,
-            )
-            swap = tf.tensor_scatter_nd_update(
-                col_indices, tf.stack((k, pivot))[:, None], tf.stack((pivot, k))
-            )
-            a, permutation = tf.gather(a, swap, axis=1), tf.gather(permutation, swap)
-            v, tau = _reflector(tf.gather(a, k, axis=1), k, row_indices >= k)
-            a = a - tau * v[:, None] * tf.linalg.matvec(a, v, transpose_a=True)[None, :]
-            # Exact structural zeros avoid rounded residuals entering pivot norms.
-            a = tf.where(
-                (row_indices[:, None] > k) & (col_indices[None, :] == k),
-                tf.zeros_like(a),
-                a,
-            )
-            b = b - tau * v[:, None] * tf.linalg.matvec(b, v, transpose_a=True)[None, :]
-            return k + 1, a, b, permutation
-
-        _, upper, transformed, permutation = tf.while_loop(
-            lambda k, *_: k < diagonal_size,
-            factor,
-            (tf.constant(0), matrix, rhs, col_indices),
-            maximum_iterations=diagonal_size,
-            parallel_iterations=1,
+    def factor(k, a, b, permutation):
+        squared = tf.where(row_indices[:, None] >= k, a * a, tf.zeros_like(a))
+        norms = (tf.reduce_sum(squared, axis=0) if active_rows is None
+                 else _active_sum(squared, active_rows, 2 * cols))
+        pivot = tf.argmax(
+            tf.where(
+                col_indices >= k, norms, tf.fill([cols], tf.constant(-1.0, a.dtype))
+            ),
+            output_type=tf.int32,
         )
-        return upper[:diagonal_size], transformed[:diagonal_size], permutation
-
-    if active_rows is None:
-        upper, transformed, permutation = compact_cpqr(matrix, rhs)
-    else:
-        # Slicing only individual dot operands changes CPU slice-dot fusion and
-        # GPU reduction rounding. Bind the loop inputs to their original compact
-        # shapes so every Householder update retains its arithmetic boundary.
-        upper, transformed, permutation = _active_row_operation(
-            lambda count: compact_cpqr(matrix[:count], rhs[:count]), active_rows, 2 * cols, rows
+        swap = tf.tensor_scatter_nd_update(
+            col_indices, tf.stack((k, pivot))[:, None], tf.stack((pivot, k))
         )
+        a, permutation = tf.gather(a, swap, axis=1), tf.gather(permutation, swap)
+        v, tau = _reflector(tf.gather(a, k, axis=1), k, row_indices >= k, active_rows, 2 * cols)
+        product_a = (tf.linalg.matvec(a, v, transpose_a=True) if active_rows is None
+                     else _active_matvec(a, v, active_rows, 2 * cols))
+        a = a - tau * v[:, None] * product_a[None, :]
+        # Exact structural zeros avoid rounded residuals entering pivot norms.
+        a = tf.where(
+            (row_indices[:, None] > k) & (col_indices[None, :] == k),
+            tf.zeros_like(a),
+            a,
+        )
+        product_b = (tf.linalg.matvec(b, v, transpose_a=True) if active_rows is None
+                     else _active_matvec(b, v, active_rows, 2 * cols))
+        b = b - tau * v[:, None] * product_b[None, :]
+        return k + 1, a, b, permutation
+
+    _, upper, transformed, permutation = tf.while_loop(
+        lambda k, *_: k < diagonal_size,
+        factor,
+        (tf.constant(0), matrix, rhs, col_indices),
+        maximum_iterations=diagonal_size,
+        parallel_iterations=1,
+    )
     upper = tf.pad(upper[:diagonal_size], [[0, cols - diagonal_size], [0, 0]])
     transformed = tf.pad(
         transformed[:diagonal_size], [[0, cols - diagonal_size], [0, 0]]
@@ -264,13 +268,9 @@ def _complete_orthogonal_lstsq(matrix, rhs, active_rows=None):
             ), z
 
         def overdetermined():
-            if active_rows is None:
-                _, upper = tf.linalg.qr(matrix, full_matrices=False)
-            else:
-                upper = _active_row_operation(
-                    lambda count: tf.linalg.qr(matrix[:count], full_matrices=False)[1],
-                    active_rows, 2 * cols, rows,
-                )
+            upper = (tf.linalg.qr(matrix, full_matrices=False)[1] if active_rows is None
+                else _active_row_operation(lambda count: tf.linalg.qr(matrix[:count], full_matrices=False)[1],
+                    active_rows, 2 * cols, rows))
             if dynamic_rows:
                 upper = tf.pad(upper, [[0, cols - tf.shape(upper)[0]], [0, 0]])
             intermediate = tf.linalg.triangular_solve(
@@ -284,11 +284,8 @@ def _complete_orthogonal_lstsq(matrix, rhs, active_rows=None):
 
         if active_rows is not None:
             grad_matrix, grad_rhs = overdetermined()
-            return (
-                tf.where(active_mask[:, None], grad_matrix, tf.zeros_like(grad_matrix)),
-                tf.where(active_mask[:, None], grad_rhs, tf.zeros_like(grad_rhs)),
-                None,
-            )
+            return (tf.where(active_mask[:, None], grad_matrix, tf.zeros_like(grad_matrix)),
+                tf.where(active_mask[:, None], grad_rhs, tf.zeros_like(grad_rhs)), None)
         if dynamic_rows:
             return tf.cond(rows < cols, underdetermined, overdetermined)
         return underdetermined() if rows < cols else overdetermined()

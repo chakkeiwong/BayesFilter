@@ -51,15 +51,16 @@ def _public_numerics(result):
 
 @pytest.mark.parametrize("dimension,factors", [(3, 1), (5, 2)])
 @pytest.mark.parametrize("reused", [0, 1, 4])
-def test_padded_fit_keeps_complete_public_numerics(dimension, factors, reused):
-    compact, padded = _data(dimension, reused, 4)
+@pytest.mark.parametrize("capacity", [4, 32])
+def test_padded_fit_keeps_complete_public_numerics(dimension, factors, reused, capacity):
+    compact, padded = _data(dimension, reused, capacity)
     config = factor.FactorCorrelationGeometryConfig(factor_count=factors)
     before = factor._make_factor_program(dimension, 2 * dimension + reused, 2 * dimension,
         config, True, factor._prediction_jacobian_diagnostics)(*compact)
-    after = factor._make_factor_program(dimension, 2 * dimension + 4, 2 * dimension,
+    after = factor._make_factor_program(dimension, 2 * dimension + capacity, 2 * dimension,
         config, True, factor._prediction_jacobian_diagnostics, padded_training=True)(*padded)
     print("PADDED_FACTOR_DIAGNOSTIC " + json.dumps({"dimension": dimension, "factors": factors,
-        "reused": reused, "raw_optimizer_discrepancy": float(tf.reduce_max(tf.abs(
+        "reused": reused, "capacity": capacity, "raw_optimizer_discrepancy": float(tf.reduce_max(tf.abs(
             before["optimizer"].position - after["optimizer"].position))),
         "jacobian_condition": [float(before["jacobian_condition"]), float(after["jacobian_condition"])],
         "iterations": [int(before["optimizer"].num_iterations), int(after["optimizer"].num_iterations)],

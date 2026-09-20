@@ -11980,6 +11980,14 @@
       "ast_sha256": "49a58db35ff12c580f6612bc19ac7a90ec31159992b8bd3b420c279eaffd2903",
       "role": "fixed_schema",
       "reason": "Bind the finite QR operand-shape variants from configuration before execution. XLA tf.switch_case executes exactly one compact QR at runtime; Jacobian formation, SVD, rank threshold and optimizer stay shared tensor operations. Runs 01529/01530 verify exact compact arithmetic, bounded graph growth, unchanged HLO across active counts and complete GPU records; realistic capacity costs remain a separate integration gate."
+    },
+    {
+      "path": "bayesfilter/ops/qr_lstsq_tf.py",
+      "function": "_active_row_operation",
+      "kind": "python_iteration",
+      "ast_sha256": "49a58db35ff12c580f6612bc19ac7a90ec31159992b8bd3b420c279eaffd2903",
+      "role": "fixed_schema",
+      "reason": "Bind static compact row shapes from configuration. TensorFlow switch_case chooses one branch at execution; CPQR numerical iteration remains in tf.while_loop, and rank/COD/pullback operations stay tensor-native. Runs 01560/01562 verify primal and pullback parity and executable reuse; 01561/01563 verify complete CPU/GPU padded fitter records. This is no numerical-loop exemption. The 32-row branch compilation memory cost remains an explicit investigation."
     }
   ]
 }

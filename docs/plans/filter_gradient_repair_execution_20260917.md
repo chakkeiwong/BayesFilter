@@ -9,6 +9,52 @@ claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
 training/HMC capability and its obsolete admitted factory now fail closed.
 Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
+## September 20 compact CPQR continuation through 01577
+
+Recovered 01554's five padded-record CPU failures without changing numerical
+formulas, tolerances, optimizer settings, derivatives or RNG streams. 01555
+shows pinned diagnostic and runtime shared-dot solvers agree, but their initial
+states differ from compact; same-state gradients agree. 01556/01557 identify
+CPU slice-dot fusion as the first discrepancy; an optimization barrier does
+not survive to prevent it. 01558's compact single-step branch still fails four
+records. 01559's compact CPQR loop with shared COD passes all six sensitive
+complete CPU records. Rejected variants remain test-only references.
+
+Runtime qualification: 01560/01562 pass 32 CPU/GPU solver cases, including
+full-rank pullbacks, finite differences, rank changes, invalid active counts,
+inactive NaN sanitation/zero gradients and input/HLO reuse. 01561/01563 pass
+18 CPU/GPU padded-fitter cases at four and 32 spare rows. 01573/01574 pass all
+14 original/full CPU/GPU fitter records. All 223 GPU consumer cases pass in
+01575.
+The new fixed-schema exception only binds shapes for TensorFlow switch_case;
+CPQR iteration remains a native while loop. Guard scope stays partial.
+
+Fresh-process measurements 01564--01566 preserve all complete XLA records.
+At 0/4/32 spare capacity, host peaks are 1,545,408,512 / 1,609,523,200 /
+1,892,716,544 bytes and warm medians 166.146 / 165.776 / 169.506 ms. Largest
+GPU temporary peaks are 98,304 / 118,016 / 196,608 bytes. The 32-spare host
+increase triggers investigation, and GPU peak is exactly twice compact.
+Post-cold host growth is 32/20/12 KiB over twenty warm calls.
+
+Both full graph references, 01567/01568, fail at the frozen loading-margin
+assertion when a line-search trial has squared row norm 0.99999900000000019
+against 0.999999. XLA ignores Assert. These failed arms have no valid steady
+timing and establish an additional open graph/XLA domain-check discrepancy.
+No threshold, assertion, state, optimizer or comparison field was changed.
+
+Separate four-iteration controls 01569--01572 preserve every measured field
+within and across graph/XLA under 1e-10. Compact/padded graph warm times are
+87.864/100.031 ms versus XLA 30.899/30.736 ms; graph GPU peaks are 8.12/8.25 MiB
+versus XLA 96/192 KiB. Padded host overhead is 169,861,120 bytes in graph and
+349,372,416 in XLA, identifying both branch graph and additional compiler cost.
+This explains the measured mechanism, not a general memory bound or accepted
+terminal tradeoff. Three-process comparisons and larger-route coverage remain.
+
+Preserved analyses: `factor-shared-cod-memory-comparison-01549.json` (earlier
+diagnostic, not current runtime qualification) and
+`factor-cpqr-capacity-memory-comparison-01572.json`. Padded fitting is not yet
+integrated into sequential preparation. F01--F20 and main merge remain gated.
+
 ## Focused execution and repairs
 
 - Run 00009: 45 preparation/consumer tests pass. It covers TF quadrature,
@@ -4458,3 +4504,9 @@ misclassified a comparison-shape exception. Both are preserved and corrected in
 later unique runs, not reused as causal evidence. Review was local; no independent
 agent review is claimed. The driver routes new GPU-specific diagnostics to GPU
 in its terminal matrix. All original tolerances and numerical budgets remain.
+
+September 20 checkpoint accounting through 01577: 27,876.007 GPU /
+35,838.542 CPU process-seconds, leaving 159,323.993 GPU / 79,361.458 CPU
+seconds under unchanged 52/32-hour caps. Inventory 01577 finds 2,879 working
+Python files, 2,878 parsed and the one unchanged external legacy error. Focused
+Ruff and whitespace checks pass. No worker is active; main remains unmerged.
