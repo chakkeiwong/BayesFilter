@@ -385,7 +385,9 @@
       ]
     },
     "bayesfilter/inference/sequential_preparation_tf.py": null,
-    "bayesfilter/inference/sequential_score_fit_tf.py": null
+    "bayesfilter/inference/sequential_score_fit_tf.py": null,
+    "bayesfilter/inference/mass_matrix.py": null,
+    "bayesfilter/inference/mass_matrix_tf.py": null
   },
   "exceptions": [
     {
@@ -11198,6 +11200,78 @@
       "ast_sha256": "bc75fe643859d3afd3461894739f98047f34df956892f24e05adb93f29120f76",
       "role": "fixed_schema",
       "reason": "Construct public immutable records and provenance indices from completed tensor rows; no numerical eligibility or ranking."
+    },
+    {
+      "path": "bayesfilter/inference/mass_matrix.py",
+      "function": "structured_covariance_from_empirical",
+      "line": 106,
+      "kind": "python_iteration",
+      "ast_sha256": "7a36c19bbaa4b09ac8e3c5eb2b0d0dc21b6daeee08250c6e703a25a6d4fcd68d",
+      "role": "fixed_schema",
+      "reason": "Name the immutable one-coordinate block partition before tracing; no numerical tensor operations."
+    },
+    {
+      "path": "bayesfilter/inference/mass_matrix.py",
+      "function": "structured_covariance_from_empirical",
+      "line": 114,
+      "kind": "python_iteration",
+      "ast_sha256": "c804adc802fb95f83a34dca2483a370aae19694513e60b6cc42cf7f59e34aaba",
+      "role": "host_validation",
+      "reason": "Validate caller-supplied ordered contiguous block metadata before tracing; tensor blocks execute in the native compiled loop."
+    },
+    {
+      "path": "bayesfilter/inference/mass_matrix.py",
+      "function": "structured_covariance_from_empirical",
+      "line": 131,
+      "kind": "python_iteration",
+      "ast_sha256": "3204ae107e89969b770dc839ece24c14f91df0ec23523b696b8f73da0c59a92d",
+      "role": "fixed_schema",
+      "reason": "Pack validated start/stop block metadata for the native loop."
+    },
+    {
+      "path": "bayesfilter/inference/mass_matrix.py",
+      "function": "_normalize_eigen_summary",
+      "line": 326,
+      "kind": "python_iteration",
+      "ast_sha256": "2a14f0f97eb28239a7ace6b8efe91584b47fc51cf7b213ad44af696355f0c4ed",
+      "role": "host_reporting",
+      "reason": "Normalize serialized historical summary scalars only; active summaries are computed in XLA."
+    },
+    {
+      "path": "bayesfilter/inference/mass_matrix_tf.py",
+      "function": "structured_program",
+      "line": 188,
+      "kind": "python_iteration",
+      "ast_sha256": "2eeb635afb001b908dd0c7edf9ca981ae6a2161926b12b756e499b9b99814552",
+      "role": "fixed_schema",
+      "reason": "Discover distinct fixed block widths to build one tensor branch per shape, not per numerical block."
+    },
+    {
+      "path": "bayesfilter/inference/mass_matrix_tf.py",
+      "function": "structured_program",
+      "line": 189,
+      "kind": "python_iteration",
+      "ast_sha256": "43fdd27afcda1c3fdbc8becbc69f59b9604bddbac675bc4473d64e632e784edf",
+      "role": "fixed_schema",
+      "reason": "Map immutable block widths to branch indices before numerical execution."
+    },
+    {
+      "path": "bayesfilter/inference/mass_matrix_tf.py",
+      "function": "structured_program",
+      "line": 190,
+      "kind": "python_iteration",
+      "ast_sha256": "01ac070479c77919dab1e9324e227674490141dc8ae1962a08e800afb02b7d3d",
+      "role": "fixed_schema",
+      "reason": "Pack immutable block offsets before tracing the native block loop."
+    },
+    {
+      "path": "bayesfilter/inference/mass_matrix_tf.py",
+      "function": "structured_program.compute.step",
+      "line": 220,
+      "kind": "python_iteration",
+      "ast_sha256": "706f1ad4a922d291d073b5a246dd64a251935cd005463eb5d7c6206003616d46",
+      "role": "fixed_schema",
+      "reason": "Build distinct-width branch callables for tf.switch_case; numerical blocks execute in one tf.while_loop body."
     }
   ]
 }

@@ -4,16 +4,19 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 19 refresh through run 01199: the current checkpoint adds TP
-continuation parity, compiled exact selection and complete sequential score
-fitting, with the consumer qualifications and open measurements below.
+September 20 refresh through run 01238: mass construction now has stable XLA
+programs with preserved floor derivatives and numerical block loops. All 83
+CPU/GPU checks, 40 sequential and 33 quadratic GPU consumers, and 61 policy
+checks pass. Two-extent public comparisons pass with stable allocation; the
+precision graph/XLA timing trigger remains open. Earlier TP/selector/score-fit
+repairs are committed and pushed as `9a658d9f`.
 The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
 cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01199, charges are 17,412.882 GPU / 32,151.953 CPU seconds;
-remaining allowances are 169,787.118 GPU / 83,048.047 CPU seconds. The earlier
+charge. Through run 01238, charges are 17,907.769 GPU / 32,206.383 CPU seconds;
+remaining allowances are 169,292.231 GPU / 82,993.617 CPU seconds. The earlier
 16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
 
-The repair is incomplete. The static guard covers 180 sources with 1,189 exact
+The repair is incomplete. The static guard covers 182 sources with 1,197 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
@@ -56,8 +59,8 @@ Current execution queue, under the same runner, evidence contract and caps:
    assembly must not hide row-wise numerical eligibility checks. Keep external
    DZ5 callback compatibility explicit and qualify actual owned consumers.
    Include fixed-center replicate/family/shrinkage selection, block-score
-   replicate/stability loops, and mass-matrix construction reached by the
-   sequential/quadratic initializers; these dependencies are not fully compiled.
+   replicate/stability loops. Mass construction is now compiled and focused
+   consumer-qualified; its larger-scope terminal evidence remains pending.
 2. Retain the qualified TP continuation repair and converged derivative check;
    run terminal current-source TP tests and paired measurements after freezing.
 3. Investigate remaining TT assembly and forecast-pool host-memory increases,
@@ -459,6 +462,63 @@ The static guard excludes iteration for the latter modules and does not cover
 mass_matrix; these are open F18/F19 dependencies, not source exemptions.
 Carry their original decisions, reports, thresholds and HMC authority boundary
 through the migration; removal of NumPy alone did not close XLA execution.
+
+### Complete mass construction dependency repair after 01199
+
+Checkpoint `9a658d9f` is committed and pushed. Recovery verified the runner's
+1,199 records and cumulative caps; the additional allocation is counted once.
+Next compile mass construction reached by both initializers. Preserve symmetric
+projection, jitter, eigenvalue floors, dense/diagonal inversion, structural
+shrinkage, block ordering and every report/validation field. Block partitions
+are fixed schemas; numerical repetition must use one native loop with branches
+only for distinct block widths. Summary statistics and floor decisions execute
+inside XLA. Host work validates configuration and serializes completed results.
+
+Skeptical review: the existing floor is materialized and frozen before matrix
+reconstruction, so migrating it must not introduce a derivative through floor
+selection. Preserve derivatives through the matrices and the existing
+TensorFlow eigensystem pullback; a raw XLA eigensolver without a derivative is
+insufficient. Inspect TensorFlow 2.19.1's `SelfAdjointEigV2` pullback, retain its
+gap treatment, and qualify first-order derivatives away from repeated spectra
+against the pinned source and independent identities. Use the existing binary64
+Jacobi precision, not TensorFlow's loose default XLA eigensolver tolerance.
+Nonfinite/empty/no-positive-eigenvalue cases, conditioning clamps, signed
+threshold equalities, asymmetric matrices and heterogeneous blocks must retain
+their status and ordered metadata. Do not adjust floors or permit reflection.
+
+The interface reference and capability registry were re-read. These are mass
+preparation helpers, not tuners; their repair issues no HMC authority and runs
+no posterior chains. Compare public records with baseline `3582b4ac`, verify
+matrix/whitening identities, VJPs, complete HLO, no callbacks, one-trace reuse
+and bounded block-graph growth. Then qualify existing mass and affected
+initializer/locator consumers on CPU/GPU. Register matched public and tensor
+measurements at two dimensions/block counts, preserve true baseline tracing
+failures, and apply the existing 20-call/three-process terminal comparison
+contract. No runtime/harness editing during workers; same driver, hardware,
+900-second focused ceiling and cumulative budget. The known selector, TT and
+forecast-pool regressions remain separate open investigations.
+
+Run 01200 passes 55/57 CPU cases. The regularization VJP fixture's primal
+differs by 2.0045e-10 in two entries at the unchanged 1e-10 gate; dense/diagonal
+primal and pullback checks pass. Localize the eigensystem residual at the fixed
+binary64 epsilon and its square before changing the eigensolver control. Both
+use the same 100-iteration bound and matrix; compare residual and projected
+matrix with the pinned eager source. This tests internal solver accuracy, not
+a change to mass floors or acceptance thresholds. The other failure is the
+shared pullback helper's Boolean output handling; encode the internal validity
+flag as a numerical scalar, preserving the public rejection and all outputs.
+
+Run 01201 localizes a 2.0421e-10 eigensystem residual, unchanged when the
+Jacobi epsilon is squared. A smaller requested tolerance therefore does not
+repair this backend result. Add bounded Jacobi refinement of the same symmetric
+eigenproblem in the returned eigenbasis, using explicit off-diagonal residuals
+and stable two-coordinate rotations. Stop at binary64 relative roundoff with
+at most 100*n*n rotations; return sorted eigenpairs and retain the inspected
+TensorFlow pullback. This improves the implementation of the existing spectral
+operation, without changing its floors or target. Test residual, orthogonality,
+reconstruction and derivatives for distinct/repeated/clustered, indefinite and
+scaled spectra at dimensions 1, 2, 3, 6 and 12; preserve the failing raw-XLA
+observation as explanatory output. The unchanged parity gate remains decisive.
 
 ### Active quadratic and block-center preparation migration
 

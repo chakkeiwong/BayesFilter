@@ -9,11 +9,62 @@ import inspect
 
 FIXTURES = ("source_recenter", "gamma_preparation", "student_proposal",
             "ukf_initializer", "moment_teacher", "austria_preparation",
-            "exact_incumbent", "sequential_score_fit")
+            "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured")
 
 
 def fixture(tf, name, size, jit, *, public_boundary=False):
     dtype = tf.float64
+    if name in ("mass_precision", "mass_structured"):
+        from bayesfilter.inference import mass_matrix as mass
+
+        dimension = 6 * size
+        matrix = tf.linalg.diag(tf.linspace(tf.constant(.2, dtype), 3., dimension)) + .03
+        inputs = (matrix, tf.constant(.1, dtype), tf.constant(.25, dtype), tf.constant(8., dtype))
+        blocks = tuple({"name": str(i), "start": 3 * i, "stop": 3 * i + 3} for i in range(2 * size))
+        native = hasattr(mass, "native")
+        precision_fields = ("effective_eigenvalue_floor", "raw_min_eigenvalue", "raw_max_eigenvalue",
+            "regularized_min_eigenvalue", "regularized_max_eigenvalue", "raw_nonpositive_eigenvalue_count",
+            "clipped_eigenvalue_count", "input_asymmetry_max_abs")
+        structured_fields = ("raw_min_block_eigenvalue", "regularized_min_block_eigenvalue",
+            "regularized_max_block_eigenvalue")
+
+        if native and not public_boundary:
+            if name == "mass_precision":
+                program = mass.native.precision_program(dimension, dense=True, jit_compile=jit).python_function
+            else:
+                program = mass.native.structured_program(dimension,
+                    tuple((block["start"], block["stop"]) for block in blocks), jit_compile=jit).inline_function
+            summary = mass.native.summary_program(dimension, jit_compile=jit).python_function
+
+            def evaluate(matrix, weight, floor, cap):
+                if name == "mass_precision":
+                    precision, covariance, diagnostics, _flags, _valid = program(matrix, tf.constant(1e-9, dtype), floor, cap)
+                    return precision, covariance, diagnostics, *summary(precision)[:2], *summary(covariance)[:2]
+                covariance, diagnostics, _valid = program(matrix, weight, floor, cap)
+                return covariance, diagnostics, *summary(covariance)[:2]
+        else:
+            def summary(matrix_summary):
+                return (tf.constant(matrix_summary["eigenvalues"], dtype),
+                    tf.constant([matrix_summary[field] for field in ("min", "max", "condition_number")], dtype))
+
+            def evaluate(matrix, weight, floor, cap):
+                if name == "mass_precision":
+                    result = mass.covariance_from_precision(matrix, source="comparison", jitter=1e-9,
+                        eigenvalue_floor=.25, max_condition_number=8.)
+                    diagnostics = tf.constant([result.regularization_report[field] for field in precision_fields], dtype)
+                    return (result.regularized_precision, result.covariance, diagnostics,
+                        *summary(result.precision_eigen_summary), *summary(result.covariance_eigen_summary))
+                result = mass.structured_covariance_from_empirical(matrix, blocks=blocks,
+                    shrinkage=.1, eigenvalue_floor=.25, max_condition_number=8.)
+                diagnostics = tf.constant([result.regularization_report[field] for field in structured_fields], dtype)
+                return result.covariance, diagnostics, *summary(result.covariance_eigen_summary)
+
+        evaluate.timing_scope = ("complete_tensor_mass_and_spectral_summaries" if native and not public_boundary
+            else "complete_public_mass_and_records")
+        evaluate.execution_backend = "tensorflow" if native else "legacy_tensorflow_eager_diagnostic_only"
+        return evaluate, inputs, {"dimension": dimension, "blocks": 2 * size,
+            "boundary": "complete_mass_preparation_and_spectral_reports", "random_inputs": False}
+
     if name == "exact_incumbent":
         from bayesfilter.inference import _exact_incumbent as selector
 

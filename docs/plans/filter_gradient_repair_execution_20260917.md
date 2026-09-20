@@ -3295,3 +3295,63 @@ Through 01199 the authoritative driver charges 17,412.882 GPU and 32,151.953
 CPU seconds. Remaining allowances are 169,787.118 GPU / 83,048.047 CPU seconds
 under the same 52/32-hour cumulative caps. The extension is counted once.
 No numerical worker remains running at this checkpoint.
+
+## September 20 mass-construction dependency repair, 01200--01235
+
+Recovered checkpoint `9a658d9f` is committed and pushed. The mass constructors
+reached by sequential/quadratic initializers now run spectral projection,
+frozen floor decisions, inversion, summaries, and structural block repetition
+inside stable XLA programs. Block shape/schema iteration remains on the host;
+the numerical loop is native. Eight exact schema/validation/reporting exceptions
+extend the partial guard to 182 sources / 1,197 exceptions. The constructors
+retain the original floors, jitter conversion, rejection rules and reports.
+
+Run 01200 passes 55/57 CPU cases. One new VJP fixture exposes a 2.0044e-10
+primal discrepancy; localization 01201 finds a 2.0420e-10 eigensystem residual
+unchanged by squaring the backend epsilon. Bounded Jacobi refinement solves the
+same eigenproblem using explicit off-diagonal residuals and retains TensorFlow
+2.19.1's eigensystem pullback. Floor selection remains detached exactly as at
+the original host boundary. The second failure comes from the shared pullback
+helper's Boolean result handling; the internal validity flag now uses a
+numeric scalar without changing public semantics. All 83 checks pass on CPU
+(01202, 32.587 seconds) and GPU (01204, 57.482 seconds), including pinned
+complete records, frozen-floor VJPs, an independent inverse derivative and
+finite difference, spectral residual/orthogonality checks through dimension 12,
+heterogeneous blocks, graph growth and existing mass-artifact consumers.
+Run 01203 preserves a diagnostic-only static-argument binding failure (82 pass);
+the bounded callback factory repairs it, with no runtime source change.
+
+The new fixtures measure complete public endpoints and complete numerical
+programs separately. Runs 01205--01211 are preliminary and superseded: a
+fixture scalar conversion intercepted baseline tracing before its source.
+After binding the frozen configuration correctly, runs 01212--01235 reach
+the original source and preserve its real `.numpy()` tracing failures. The
+baseline has valid eager measurements only; no compiled baseline is invented.
+
+| Fixture / dimension | Public before / after warm ms | Maximum absolute difference | Added host peak MiB | Before / after GPU allocator peak bytes |
+| --- | ---: | ---: | ---: | ---: |
+| Precision / 6 | 14.816 / 4.226 | 5.3291e-15 | 48.094 | 572160 / 15872 |
+| Precision / 12 | 16.156 / 8.166 | 3.2863e-14 | 49.414 | 616192 / 26624 |
+| Structural / 6 | 12.667 / 2.620 | 7.1054e-15 | 49.539 | 573184 / 13312 |
+| Structural / 12 | 21.148 / 3.603 | 3.5528e-15 | 51.992 | 616448 / 18688 |
+
+Every public pair has no new investigation trigger and stable warm device
+allocation. The equivalent graph/XLA numerical kernels match values; graph
+diagnostics contain no nested/raw XLA. Structural warm timings improve from
+3.993/4.619 to 1.384/2.408 ms. Precision XLA takes 2.510/6.338 ms versus graph
+2.042/2.329 ms, exceeding the 20% trigger at both extents. Keep this open for
+causal localization; public improvement does not waive a graph/XLA regression.
+Graph node counts are constant across these extents: precision 178/1054,
+structural 185/769 (graph/XLA). Preserve the descriptive comparisons, source
+checks and hashes in `artifacts/filter-gradient-repair-20260917/mass-construction-diagnostic-01235.json`.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Retain mass numerical repair for qualification | 83 CPU/GPU cases and two-extent parity pass | No focused correctness failure | Actual initializer consumers and terminal repeats pending | Qualify consumers and preserve checkpoint | No HMC or campaign admission |
+| Investigate precision XLA timing | Correctness and allocator stability pass | Both graph/XLA warm ratios exceed 20% | Spectral refinement versus GPU backend overhead | Isolate stages at unchanged precision | No accepted performance tradeoff |
+| Continue broader master queue | Mass execution dependency repaired locally | Other numerical lifecycles and memory regressions remain | Final source/harness unfrozen | Continue ordered lifecycle repair | No merge readiness |
+
+GPU consumers 01236/01237 pass all 40 sequential and 33 quadratic-initializer
+cases in 113.017/50.727 seconds. All 61 policy/controller checks pass in
+01238. Through 01238 charges are 17,907.769 GPU / 32,206.383 CPU seconds,
+leaving 169,292.231 GPU / 82,993.617 CPU seconds. No numerical worker remains.
