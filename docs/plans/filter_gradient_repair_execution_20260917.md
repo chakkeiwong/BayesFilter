@@ -3833,3 +3833,72 @@ but they do not address the outer optimizer's numerical and diagnostic lifecycle
 Through 01399 cumulative charges are 22,702.050 GPU / 33,316.018 CPU seconds;
 remaining allowances are 164,497.950 GPU / 81,883.982 CPU seconds. No worker is
 active at this checkpoint. All terminal dispositions remain open.
+
+## September 20 ordered scalar locator continuation
+
+Checkpoint `d91a1268` is committed and pushed. The scalar multistart L-BFGS,
+endpoint replay, ordered eligible-candidate replay and selection now have a
+single enclosing native program. The original smooth-box transform, optimizer
+settings and exact scalar authority are preserved. Reporting iterates only over
+completed diagnostic arrays. Batched locator and outer refinement remain open.
+Backend/compilation errors surface without an eager fallback; finite/nonfinite
+optimizer outcomes retain their existing rejection and accounting semantics.
+
+Run 01400 passes 13 focused CPU cases, including complete optimizer and consumer
+records, graph/HLO checks, empty starts and unsupported-callback rejection. Its
+call-order test expected one optimizer call for a NaN start, but TFP actually
+rechecks it in the initial failed line search. The test now runs the pinned
+pre-enclosure implementation with the same resource counters and requires exact
+agreement with its complete order/count; no runtime accounting rule is changed.
+Remove unused eager start-list slicing from the scalar path before the retry.
+
+Run 01401 passes all 14 CPU locator cases, including exact baseline call order
+and accounting for the nonfinite start. Run 01402 passes all 14 on GPU; 01403
+passes all 40 sequential GPU consumers and 01404 all 43 block-center consumers.
+No tolerance, optimizer setting or exception fallback was introduced. A remote
+fetch confirms `origin/main` is an ancestor of checkpoint `d91a1268` (34 commits
+ahead, zero behind); terminal integration/retest remains gated. Factor consumers
+and matched scalar-locator measurements follow under the existing driver.
+
+Run 01405 passes all 12 factor GPU consumers. Measurement 01406 preserves the
+original graph-tracing failure. Original eager attempt 01407 then fails in the
+measurement engine's output-copy step because its selected point is a NumPy
+array. Normalize the measured point to a TensorFlow tensor in both public arms,
+as required by the shared timing engine; do not modify either runtime source
+arm. Preserve the failed attempt and retry with the new fixture hash.
+
+Matched scalar-locator measurements 01408--01419 now pass at both extents with
+exactly equal outputs. Provenance-checked analysis and hashes are in
+`sequential-scalar-locator-diagnostic-01419.json`. Original graph/XLA tracing
+failures remain explicit; the eager public endpoint is the comparison authority.
+The public route stops at its original budget rejection after the complete
+locator. These measurements do not include outer refinement or batched starts.
+
+| Scope / starts | Before / after warm ms | Before / after host peak bytes | Before / after device peak bytes |
+| --- | ---: | ---: | ---: |
+| Public / 2 | 482.254 / 5.516 | 1056194560 / 1206030336 | 27904 / 35840 |
+| Public / 4 | 961.428 / 9.151 | 1054760960 / 1207812096 | 28928 / 35840 |
+| Graph / XLA, 2 | 51.017 / 3.884 | 1175408640 / 1201856512 | 39936 / 34816 |
+| Graph / XLA, 4 | 103.620 / 7.403 | 1175601152 / 1201676288 | 41984 / 34816 |
+
+Both graph modes have 2,181 nodes at both extents. Candidate warm device-current
+range and late device growth are zero; late host growth is at most 12,288 bytes.
+No memory/time trigger fires. The public cold call is descriptively slower
+(2.485/3.423 and 2.960/3.418 seconds before/after), and added host peak is about
+143--146 MiB. Retain those costs; faster warm calls do not make compilation free.
+All 63 policy/controller checks pass in 01420; focused Ruff and whitespace pass.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Preserve ordered scalar locator checkpoint | 14 CPU/GPU cases and 95 affected GPU consumers pass | No focused numerical or call-order failure | Remaining batched and outer control | Continue those explicit dependencies | No complete initializer/repository claim |
+| Retain matched diagnostic measurements | Two extents have exact outputs and bounded graphs | No new memory/time trigger | Single process per source arm | Require terminal three-process comparisons after source freeze | No statistically supported speed ranking |
+| Keep merge gated | Partial guard/controller passes | CPU fitter parity and earlier memory/time investigations stay open | External callback and scope completion | Continue master program | No HMC, posterior or scientific admission |
+
+Post-run review: endpoint-only parity could hide extra target work. The resource
+counter test checks every optimizer, endpoint and eligible replay call against
+the pinned source, including TFP's extra nonfinite-start evaluation. Exceptions
+from unsupported host callbacks surface instead of silently falling back. This
+qualifies the explicit tensor-callback scalar route; it does not establish the
+external DZ5 callbacks' eligibility. Fresh source-frozen repeats remain pending.
+
+Inventory 01421 finds 2,863 working-tree Python files (2,862 parsed, one unchanged external legacy error). The guard covers 188 sources / 1,273 exact exceptions; no new numerical exemption. Through 01421 charges are 23,288.629 GPU / 33,454.492 CPU seconds, leaving 163,911.371 GPU / 81,745.508 CPU seconds. No worker is active at this checkpoint.

@@ -36,6 +36,7 @@ from bayesfilter.inference.sequential_score_fit_tf import (
     score_fit_program,
 )
 from bayesfilter.inference.sequential_selection_tf import replay_program, search_program
+from bayesfilter.inference.sequential_locator_tf import scalar_locator_program
 from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS = (
@@ -299,9 +300,11 @@ def estimate_sequential_map_covariance(
         locator_policy=cfg.locator_policy,
         locator_stopping_condition=cfg.locator_stopping_condition,
     )
-    candidates: list[tf.Tensor] = [starts[index] for index in range(start_count)]
+    candidates: list[tf.Tensor] = []
     locator_rows: list[Mapping[str, Any]] = []
+    selected_candidate = None
     if cfg.locator_policy == "center_first":
+        candidates.append(starts[0])
         locator_rows.append(
             {
                 "finite": True,
@@ -318,6 +321,7 @@ def estimate_sequential_map_covariance(
             start_count=start_count,
         )
     elif batched_locator_value_and_score_fn is not None and start_count > 1:
+        candidates.extend(tf.unstack(starts))
         locator_calls = 0
 
         def batched_standardized_objective(u: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
@@ -396,89 +400,33 @@ def estimate_sequential_map_covariance(
             stopping_condition=cfg.locator_stopping_condition,
         )
     else:
-        for start in tuple(candidates):
-            def standardized_objective(z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-                unconstrained = tf.reshape(tf.convert_to_tensor(z, tf.float64), [-1])
-                box_radius = tf.constant(
-                    cfg.locator_standardized_box_radius, tf.float64
-                )
-                z = box_radius * tf.math.tanh(unconstrained / box_radius)
-                value, score = _scalar_value_score(
-                    value_and_score_fn, start + scale_tf * z, dimension
-                )
-                transform_derivative = 1.0 - tf.square(z / box_radius)
-                return -value, -(scale_tf * score * transform_derivative)
+        located = scalar_locator_program(value_and_score_fn, start_count, dimension,
+            cfg.locator_standardized_box_radius, cfg.locator_gradient_tolerance,
+            cfg.locator_max_iterations, cfg.locator_max_line_search_iterations,
+            cfg.locator_stopping_condition)(starts, scale_tf)
+        selected_candidate = located["selected"]
+        evaluations += int(located["exact_evaluations"])
+        locator_objective_evaluations += int(located["objective_evaluations"])
+        # Native arrays already contain every numerical decision. This loop
+        # reconstructs the existing per-start reporting schema only.
+        for finite, diagnostic, norm in zip(located["endpoint_finite"].numpy().tolist(),
+                located["optimizer_diagnostics"].numpy().tolist(),
+                located["endpoint_standardized_norm"].numpy().tolist(), strict=True):
+            converged, failed, iterations, objective_evaluations = diagnostic
+            locator_rows.append({
+                "finite": finite, "converged": bool(converged), "failed": bool(failed),
+                "iterations": iterations, "objective_evaluations": objective_evaluations,
+                "coordinate_system": "start_centered_prior_standardized_smooth_box",
+                "standardized_box_radius": cfg.locator_standardized_box_radius,
+                "gradient_tolerance": cfg.locator_gradient_tolerance,
+                "stopping_condition": cfg.locator_stopping_condition,
+                "endpoint_standardized_norm": norm,
+            })
 
-            try:
-                optimizer = tfp.optimizer.lbfgs_minimize(
-                    standardized_objective,
-                    initial_position=tf.zeros([dimension], tf.float64),
-                    tolerance=tf.constant(
-                        cfg.locator_gradient_tolerance, tf.float64
-                    ),
-                    max_iterations=cfg.locator_max_iterations,
-                    max_line_search_iterations=cfg.locator_max_line_search_iterations,
-                    parallel_iterations=1,
-                    stopping_condition=(
-                        tfp.optimizer.converged_all
-                        if cfg.locator_stopping_condition == "converged_all"
-                        else tfp.optimizer.converged_any
-                    ),
-                )
-                endpoint_unconstrained = tf.reshape(
-                    tf.convert_to_tensor(optimizer.position), [-1]
-                )
-                box_radius = tf.constant(
-                    cfg.locator_standardized_box_radius, tf.float64
-                )
-                endpoint_z = box_radius * tf.math.tanh(
-                    endpoint_unconstrained / box_radius
-                )
-                endpoint = start + scale_tf * endpoint_z
-                objective_evaluations = int(
-                    optimizer.num_objective_evaluations.numpy()
-                )
-                locator_objective_evaluations += objective_evaluations
-                value, score = _scalar_value_score(
-                    value_and_score_fn, endpoint, dimension
-                )
-                evaluations += 1
-                finite = bool(
-                    (
-                        tf.math.is_finite(value)
-                        & tf.reduce_all(tf.math.is_finite(score))
-                    ).numpy()
-                )
-                if finite:
-                    candidates.append(endpoint)
-                locator_rows.append(
-                    {
-                        "finite": finite,
-                        "converged": bool(optimizer.converged.numpy()),
-                        "failed": bool(optimizer.failed.numpy()),
-                        "iterations": int(optimizer.num_iterations.numpy()),
-                        "objective_evaluations": objective_evaluations,
-                        "coordinate_system": (
-                            "start_centered_prior_standardized_smooth_box"
-                        ),
-                        "standardized_box_radius": (
-                            cfg.locator_standardized_box_radius
-                        ),
-                        "gradient_tolerance": cfg.locator_gradient_tolerance,
-                        "stopping_condition": cfg.locator_stopping_condition,
-                        "endpoint_standardized_norm": float(
-                            tf.linalg.norm(endpoint_z).numpy()
-                        ),
-                    }
-                )
-            except Exception as exc:  # noqa: BLE001 - starts remain candidates.
-                locator_rows.append(
-                    {"finite": False, "exception_type": type(exc).__name__}
-                )
-
-    selected_candidate = _replay_locator_candidates(value_and_score_fn,
-        tf.stack(candidates) if candidates else tf.zeros([0, dimension], tf.float64))
-    evaluations += len(candidates)
+    if selected_candidate is None:
+        selected_candidate = _replay_locator_candidates(value_and_score_fn,
+            tf.stack(candidates) if candidates else tf.zeros([0, dimension], tf.float64))
+        evaluations += len(candidates)
     finite_candidate_count = int(selected_candidate["finite_count"])
     if finite_candidate_count == 0:
         return _rejected(

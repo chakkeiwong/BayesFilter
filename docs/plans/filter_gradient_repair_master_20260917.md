@@ -4,6 +4,41 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+September 20 continuation through 01421, following pushed checkpoint `d91a1268`:
+ordered scalar multistart L-BFGS, endpoint replay, eligible exact replay and
+selection now execute in one native XLA program. Original optimizer settings,
+smooth-box transform, scalar authority, first ties and target-call order/counts
+are preserved. Unsupported host callbacks fail without an eager retry. The
+batched locator and outer refinement remain explicitly open.
+
+All 14 focused CPU/GPU locator cases pass (01401/01402), as do 40 sequential,
+43 block-center and 12 factor GPU consumer cases (01403--01405), and 63 policy/
+controller cases (01420). Current two-/four-start measurements 01408--01419 have
+exactly equal outputs. Warm public times are 482.254/5.516 and 961.428/9.151 ms
+before/after; graph/XLA times are 51.017/3.884 and 103.620/7.403 ms. Graphs remain
+2,181 nodes at both extents; warm device allocation is constant and late host
+growth is at most 12,288 bytes. No new trigger fires. Public host peaks rise by
+143--146 MiB and cold calls are slower; these costs remain in the analysis.
+`sequential-scalar-locator-diagnostic-01419.json` is single-process checkpoint
+evidence, not terminal acceptance or a statistically supported timing ranking.
+
+Through 01421 charged time is 23,288.629 GPU / 33,454.492 CPU seconds, leaving
+163,911.371 GPU / 81,745.508 CPU seconds under the unchanged caps. No worker is
+active at this checkpoint. The partial guard covers 188 sources / 1,273 exact
+exceptions. Inventory 01421 finds 2,863 working-tree Python files, 2,862 parsed
+and one unchanged external legacy error (2,859 tracked plus four new files).
+Focused new-file Ruff and whitespace pass. Remote refs were fetched; main was
+an ancestor of `d91a1268`, with no remote divergence to resolve at that point.
+
+Next localize the existing CPU fitter initializer rounding, then continue
+batched/outer sequential, block and quadratic control. The explicit bounded
+initializer diagnostic and locator measurement contracts are in the master.
+External DZ5 callbacks, CPU original-record parity and previous memory/timing
+investigations remain open. No F01--F20 terminal disposition is closed. Source-
+frozen repeats, full integration/retest and terminal review still gate merge.
+
+Earlier recovery checkpoints follow for historical context.
+
 September 20 continuation through 01399, on fixed-fitting checkpoint `8f334b96`:
 initial exact replay and seeded search selection now execute in enclosing native
 XLA programs. Eligibility, first-maximum ties, row order, seeded draws and gather
@@ -1421,3 +1456,33 @@ Python loops and an explicit non-XLA fit. Its integration scripts call the publi
 initializer directly; its diagnostic nonclaims do not repair that execution debt.
 Include this file explicitly in the remaining quadratic lifecycle audit before
 F18/F19 closure. Existing partial-guard success does not cover it.
+
+Scalar-locator measurement contract: compare the original public endpoint with
+the new public endpoint under its unchanged budget-rejection boundary, before
+any refinement. Use two/four starts, dimension two, a fixed SPD quadratic target,
+four optimizer iterations and seven line-search iterations; retain the original
+box radius, tolerance and stopping rule. These reduced iteration counts are
+bounded diagnostic settings, not proposed defaults or optimization-quality
+evidence. Return the selected point, exact evaluation count and every optimizer
+diagnostic. Also compare the new complete graph versus XLA program at the same
+settings. Preserve original tracing failures, fixed inputs and source/harness
+identities; report public and numerical timing separately. Dedicated fixture
+`sequential_scalar_locator` uses the existing 300-second ceiling and two extents.
+Gate numerical equality, actual target-call order/accounting, no Python callbacks,
+bounded graphs and original consumer behavior before interpreting memory/time.
+The three-process terminal requirement and all earlier open findings remain.
+
+Bounded follow-up for the still-open CPU fitter comparison: after the scalar
+locator checkpoint, inspect the weighted initializer's least-squares rounding
+separately from its eigensystem and inverse. On the existing frozen failed
+fixture, compare original Eigen COD, native COD and one residual-correction
+solve for the same least-squares problem. A high-precision independent Decimal
+solve may assess rounding on this tiny full-rank diagnostic only; it must not
+enter runtime or define a new target. If residual correction is tested, keep
+the same rank rule, projection, optimizer, stopping tolerances and initial
+parameterization. Assess initializer error and original complete fitted records;
+closer baseline agreement alone does not establish greater numerical accuracy.
+This is explanatory localization under the existing 300-second CPU limit. Do
+not add a runtime correction unless it reduces a demonstrated arithmetic error
+and then passes the unchanged full CPU/GPU records and consumers. No input-
+specific initializer, tolerance relaxation or field omission is authorized.
