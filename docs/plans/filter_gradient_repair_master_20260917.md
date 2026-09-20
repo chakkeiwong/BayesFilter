@@ -4,19 +4,23 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 20 refresh through run 01238: mass construction now has stable XLA
-programs with preserved floor derivatives and numerical block loops. All 83
-CPU/GPU checks, 40 sequential and 33 quadratic GPU consumers, and 61 policy
-checks pass. Two-extent public comparisons pass with stable allocation; the
-precision graph/XLA timing trigger remains open. Earlier TP/selector/score-fit
-repairs are committed and pushed as `9a658d9f`.
-The owner has authorized **another 48 GPU / 24 CPU process-hours**. The active
-cumulative caps are **52 GPU / 32 CPU process-hours**, retaining every prior
-charge. Through run 01238, charges are 17,907.769 GPU / 32,206.383 CPU seconds;
-remaining allowances are 169,292.231 GPU / 82,993.617 CPU seconds. The earlier
-16 GPU / 12 CPU proposal below is superseded, not an additional allocation.
+September 20 refresh through run 01257: the complete block-score lifecycle
+now executes numerical replicate/block/pair loops, qualification and coordinate
+scaling in XLA. All 41 CPU/GPU checks and 121 affected GPU consumer checks pass.
+Two-extent public and graph/XLA comparisons preserve outputs within 1.101e-13,
+keep constant graph size and stable allocations, and trigger no new investigation.
+All 61 policy/controller cases pass. The shared eigensystem comparison now uses
+the already qualified binary64 residual refinement. Checkpoint `31a81b10`
+contains the prior mass-construction repair; its precision graph/XLA timing
+investigation remains open.
 
-The repair is incomplete. The static guard covers 182 sources with 1,197 exact
+The owner has authorized **another 48 GPU / 24 CPU process-hours**, counted
+once. Active cumulative caps are **52 GPU / 32 CPU process-hours**. Through
+01257, charges are 18,323.631 GPU / 32,430.983 CPU seconds; remaining allowances
+are 168,876.369 GPU / 82,769.017 CPU seconds. The earlier 16 GPU / 12 CPU
+proposal below is superseded, not an additional allocation.
+
+The repair is incomplete. The static guard covers 183 sources with 1,217 exact
 exceptions; it explicitly does not cover the whole repository. All F01--F20
 terminal decisions remain open. Focused passes are checkpoint evidence;
 terminal tests and comparisons must match the final source and harness.
@@ -58,9 +62,9 @@ Current execution queue, under the same runner, evidence contract and caps:
    numerical control. Include reachable exact-incumbent selection; host record
    assembly must not hide row-wise numerical eligibility checks. Keep external
    DZ5 callback compatibility explicit and qualify actual owned consumers.
-   Include fixed-center replicate/family/shrinkage selection, block-score
-   replicate/stability loops. Mass construction is now compiled and focused
-   consumer-qualified; its larger-scope terminal evidence remains pending.
+   Include fixed-center replicate/family/stability/shrinkage selection. The complete
+   block-score lifecycle and mass construction are now compiled and focused
+   consumer-qualified; their final source-frozen evidence remains pending.
 2. Retain the qualified TP continuation repair and converged derivative check;
    run terminal current-source TP tests and paired measurements after freezing.
 3. Investigate remaining TT assembly and forecast-pool host-memory increases,
@@ -462,6 +466,62 @@ The static guard excludes iteration for the latter modules and does not cover
 mass_matrix; these are open F18/F19 dependencies, not source exemptions.
 Carry their original decisions, reports, thresholds and HMC authority boundary
 through the migration; removal of NumPy alone did not close XLA execution.
+
+### Complete block-score lifecycle after 01238
+
+Question: can the existing block score regression, replicate comparison,
+consensus, selection/audit checks and coordinate scaling execute in a complete
+GPU/XLA program with the same public records and first-failure behavior?
+The comparator is commit `3582b4ac5fea67fb5da7fa60a1cbfaf19df35adf`, including
+its original `fixed_center_curvature.compare_precision_geometry` dependency;
+loading that wrapper with the repaired dependency would be a contaminated
+baseline. The current checkpoint is an additional localization comparator.
+The owned public function has no discovered runtime caller beyond its export;
+passing it does not establish an external consumer or HMC qualification.
+
+Preserve symmetric least squares with the existing ridge, rank thresholds,
+raw-SPD/condition rejection, declared block order, replicate order, pair order,
+principal-angle snapping, all configuration thresholds and final status
+precedence. No random stream or model changes. Native replicate/block/pair
+loops carry fixed-size numerical records; host loops only reconstruct reports
+and static block schemas. Specialize branches by distinct block widths, not
+by replicate or block count. The graph diagnostic must have no nested XLA.
+Preserve the dimension-one public rank exception when all fits succeed, and
+earlier fit rejection when they do not. Preserve rejected report truncation.
+These initializers do not compute a claim-bearing target gradient.
+
+Skeptical review: a compiled block fit alone would miss the remaining Python
+selection and stability arithmetic; compare complete endpoints. Verify rank,
+nonfinite inputs, heterogeneous blocks, first failures after usable replicates,
+selection versus stability versus audit precedence, strict caps, coordinate
+scale rejection, independent exact-block identities, graph growth and HLO.
+Pin both baseline modules. Use the unchanged FP64 `atol=rtol=1e-10` gate and
+exact discrete decisions. Degenerate eigenspaces can rotate without changing
+matrices; use separated spectra for orientation-sensitive comparison and keep
+degenerate-spectrum outcomes explicit rather than relaxing tolerances.
+
+Run focused CPU then GPU checks through the existing driver. Register matched
+public and complete numerical fixtures at two block/replicate extents; retain
+the baseline's actual tracing failures. Compare graph/XLA and public timings,
+host/device peaks and at least 20 warm allocations under the existing 20%,
+2x and 256 MiB investigation triggers. Tests reserve at most 900 seconds and
+each measurement 300 seconds within the unchanged cumulative caps. Preserve
+all results in the numbered campaign artifacts. No source/harness edits while
+a numerical worker runs. A failed parity or threshold check triggers repair;
+budget exhaustion, contention or invalid evidence stops the affected launch.
+Passing focused tests does not close F01--F20, terminal repeats, external
+callbacks, memory investigations, canonical LEDH work or merge readiness.
+
+Runs 01239--01241 localize two issues without changing gates. The empty training
+design has rank zero but XLA's zero-extent SVD cannot lower; a static zero-row
+case now returns the original rank rejection. The new rotating-subspace fixture
+shows a 2.6535e-6 degree angle discrepancy. Diagnostic 01241 finds default XLA
+eigensystem residual 4.4172e-7 versus eager 4.4409e-15; the already qualified
+mass eigensystem/refinement gives residual 5.9825e-16 and restores the angle
+within 3.2e-14 degrees. Reuse that same-eigenproblem helper in the shared
+precision comparison, including generalized eigenvalues. Graph-only diagnostics
+explicitly use ordinary TensorFlow eigensystems. Qualify the existing
+fixed-center consumers as well as block-score checks after this dependency edit.
 
 ### Complete mass construction dependency repair after 01199
 

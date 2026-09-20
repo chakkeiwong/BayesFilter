@@ -4,21 +4,27 @@ Worktree: `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`.
 Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
-September 20 continuation: checkpoint `9a658d9f` is committed and pushed.
-The mass-construction dependency repair passes all 83 CPU/GPU cases
-(01202/01204). It preserves frozen-floor derivatives, spectral projection,
-inversion, reports and validation, and replaces numerical block iteration with
-a native loop. A bounded same-eigenproblem refinement resolves the backend's
-2.0421e-10 residual. Runs 01200/01201 preserve the numerical failures; 01203's
-remaining failure was only the localization callback's static argument binding.
-The guard now covers 182 sources / 1,197 exact schema/reporting exceptions.
-Two-extent mass comparisons pass; all 40 sequential/33 quadratic GPU consumer
-cases and 61 policy cases pass (01236--01238). Public comparisons have no new
-trigger; precision numerical graph/XLA timing remains an open investigation.
-Preserved analysis: `mass-construction-diagnostic-01235.json`. runs 01205--01211 are preliminary
-and superseded after repairing a fixture conversion that failed before the
-baseline source was reached. Terminal repeats and
-the broader queue remain open. Do not count the resource extension again.
+September 20 continuation through run 01257: the complete block-score lifecycle
+passes 41 CPU/GPU checks and 121 affected GPU consumer checks. Numerical block,
+replicate, stability, consensus and qualification loops are native; public loops
+only build schemas and completed records. Position scaling is compiled. The
+shared precision comparison now reuses the binary64 eigensystem refinement.
+Runs 01239--01241 preserve the empty-training XLA failure and localization of a
+2.6535e-6 degree principal-angle mismatch; neither numerical gate was relaxed.
+
+Two-extent measurements 01245--01256 preserve all compared outputs within
+1.101e-13. Public warm medians are 67.048/7.334 and 227.682/30.824 ms
+(before/after); device peaks fall and added host peaks are 111.645/116.535 MiB.
+The graph/XLA comparisons also have no new trigger. Node counts remain
+1,289/2,165 across both extents. These are single-process diagnostics, with
+terminal repeats pending. Analysis: `block-score-diagnostic-01256.json`.
+All 61 policy/controller checks pass (01257), with partial coverage of
+183 sources / 1,217 exact exceptions. No numerical worker remains running.
+
+Next: fixed-center numerical family/replicate/stability/shrinkage selection,
+then the enclosing sequential/block/quadratic loops and external callbacks.
+Mass precision, selector, TT and forecast-pool performance investigations
+remain open. Canonical LEDH rebuilding remains out of scope. Main stays gated.
 
 Artifacts remain under the primary checkout's
 `docs/plans/artifacts/filter-gradient-repair-20260917/`.
@@ -31,9 +37,9 @@ their random stream. Other seeded draws remain unchanged.
 
 September 19 owner authorization adds 48 GPU / 24 CPU process-hours to the
 original 4 GPU / 8 CPU caps. Active cumulative caps are **52 GPU / 32 CPU
-hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01238,
-charges are 17,907.769 GPU / 32,206.383 CPU seconds, leaving 169,292.231 GPU /
-82,993.617 CPU seconds. No further compute approval is needed within these
+hours**; the earlier 16 GPU / 12 CPU proposal is superseded. Through 01257,
+charges are 18,323.631 GPU / 32,430.983 CPU seconds, leaving 168,876.369 GPU /
+82,769.017 CPU seconds. No further compute approval is needed within these
 caps. Use the driver for authoritative accounting, including interrupted runs
 and supplemental charge files.
 No campaign worker remains running at this recovery checkpoint.

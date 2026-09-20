@@ -9,11 +9,99 @@ import inspect
 
 FIXTURES = ("source_recenter", "gamma_preparation", "student_proposal",
             "ukf_initializer", "moment_teacher", "austria_preparation",
-            "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured")
+            "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry")
 
 
 def fixture(tf, name, size, jit, *, public_boundary=False):
     dtype = tf.float64
+    if name == "block_score_geometry":
+        from bayesfilter.inference import block_score_geometry as geometry
+
+        dimension, replicates = 4 * size, 2 * size
+        training_rows, selection_rows, audit_rows = 12 * size, 9 * size, 11 * size
+        blocks = tuple(geometry.ScoreGeometryBlock(str(index), 2 * index, 2 * index + 2)
+            for index in range(dimension // 2))
+        config = geometry.BlockScoreGeometryConfig(ridge=1e-12, principal_subspace_rank=2)
+        controls = (config.ridge, config.max_condition_number, config.selection_relative_rmse_cap,
+            config.audit_relative_rmse_cap, config.unexplained_response_fraction_cap,
+            config.generalized_eigenvalue_spread_cap, config.trace_normalized_frobenius_cap,
+            config.trace_normalized_operator_cap, config.principal_angle_degrees_cap)
+        coordinate = tf.range(dimension)
+        precision = tf.linalg.diag(tf.linspace(tf.constant(1., dtype), 4., dimension)) + .15 * tf.cast(
+            coordinate[:, None] // 2 == coordinate[None, :] // 2, dtype)
+        center = tf.linspace(tf.constant(-.2, dtype), .3, dimension)
+
+        def offsets(shape, count, phase):
+            indices = tf.cast(tf.range(count), dtype)
+            return tf.reshape(.2 * tf.sin(.17 * indices ** 2 + phase), shape)
+
+        training = offsets([replicates, training_rows, dimension], replicates * training_rows * dimension, .1)
+        selection = offsets([replicates, selection_rows, dimension], replicates * selection_rows * dimension, .3)
+        audit = offsets([audit_rows, dimension], audit_rows * dimension, .7)
+        scale = tf.linspace(tf.constant(.5, dtype), 2., dimension)
+        inputs = (center, training, center - training @ precision, selection, center - selection @ precision,
+            audit, center - audit @ precision, tf.constant(controls, dtype),
+            tf.constant(config.principal_subspace_rank, tf.int32), scale)
+        native = hasattr(geometry, "native")
+        rank = min(config.principal_subspace_rank, dimension - 1)
+        block_fields = ("design_rank", "offset_rank", "raw_minimum_eigenvalue", "raw_maximum_eigenvalue",
+            "raw_nonpositive_eigenvalue_count", "raw_condition_number")
+        selection_fields = ("selection_relative_rmse", "selection_unexplained_response_fraction")
+        summary_fields = ("consensus_selection_relative_rmse", "consensus_selection_unexplained_response_fraction",
+            "audit_relative_rmse", "audit_unexplained_response_fraction", "precision_covariance_identity_max_abs")
+        check_fields = ("generalized_eigenvalue_spread", "trace_normalized_frobenius", "trace_normalized_operator",
+            "principal_angle_degrees")
+        if native and not public_boundary:
+            program = geometry.native.fit_program(dimension, replicates, training_rows, selection_rows,
+                audit_rows, tuple((block.start, block.stop) for block in blocks), jit_compile=jit).python_function
+            physical = geometry.native.position_program(dimension, jit_compile=jit).python_function
+
+            def evaluate(*arguments):
+                result = program(*arguments[:-1])
+                pairs = result["pairs"]
+                reported_pairs = tf.concat([pairs[:, :2 * dimension + rank], pairs[:, 3 * dimension:]], 1)
+                return (result["status"], result["precision"], result["covariance"], result["blocks"],
+                    result["selection"], reported_pairs, result["checks"], result["summary"],
+                    *physical(result["precision"], result["covariance"], arguments[-1])[:3])
+        else:
+            def evaluate(center, training, training_scores, selection, selection_scores,
+                         audit, audit_scores, _controls, _rank, scale):
+                result = geometry.fit_block_diagonal_score_geometry(center_score_z=center,
+                    training_offsets_z=training, training_scores_z=training_scores,
+                    selection_offsets_z=selection, selection_scores_z=selection_scores,
+                    audit_offsets_z=audit, audit_scores_z=audit_scores, blocks=blocks, config=config)
+                if not result.accepted:
+                    raise ValueError("Frozen block-score comparison rejected: " + result.status)
+                report = result.diagnostics
+                block_reports = [[[block[field] for field in block_fields] + [0.]
+                    for block in replicate["blocks"]] for replicate in report["replicates"]]
+                selections = [[replicate[field] for field in selection_fields] for replicate in report["replicates"]]
+                pairs, checks = [], []
+                for pair in report["stability"]["comparisons"]:
+                    metric = pair["metrics"]
+                    generalized = metric["generalized_eigenvalues"]
+                    pairs.append([*metric["left_raw_eigenvalues"], *metric["right_raw_eigenvalues"],
+                        *metric["principal_angles_degrees"], metric["positive_subspace_rank"],
+                        generalized["minimum"], generalized["maximum"], generalized["spread"],
+                        metric["trace_normalized_frobenius"], metric["trace_normalized_operator"],
+                        metric["maximum_principal_angle_degrees"], metric["left_nonpositive_count"],
+                        metric["right_nonpositive_count"], 1.])
+                    checks.append([pair["checks"][field] for field in check_fields])
+                physical = result.position_geometry(scale)
+                return (tf.constant(0, tf.int32), tf.convert_to_tensor(result.precision_z, dtype),
+                    tf.convert_to_tensor(result.covariance_z, dtype), tf.constant(block_reports, dtype),
+                    tf.constant(selections, dtype), tf.constant(pairs, dtype), tf.constant(checks, tf.bool),
+                    tf.constant([report[field] for field in summary_fields], dtype),
+                    *(tf.convert_to_tensor(physical[field], dtype) for field in ("precision", "covariance", "factor")))
+
+        evaluate.timing_scope = ("complete_tensor_block_fit_stability_qualification_and_scaling"
+            if native and not public_boundary else "complete_public_block_fit_records_and_scaling")
+        evaluate.execution_backend = "tensorflow" if native else "legacy_numpy_geometry_reporting_diagnostic_only"
+        return evaluate, inputs, {"dimension": dimension, "replicates": replicates, "block_width": 2,
+            "blocks": dimension // 2, "training_rows": training_rows, "selection_rows": selection_rows,
+            "audit_rows": audit_rows, "boundary": "complete_block_score_geometry_and_position_scaling",
+            "random_inputs": False}
+
     if name in ("mass_precision", "mass_structured"):
         from bayesfilter.inference import mass_matrix as mass
 

@@ -27,6 +27,7 @@ from bayesfilter.inference.factor_correlation_geometry import (
     fit_factor_correlation_score_geometry,
 )
 from bayesfilter.inference.hmc import PrecomputedMassArtifact
+from bayesfilter.inference.mass_matrix_tf import _eigenpairs
 from bayesfilter.inference.score_curvature_tf import fit_dense_score_precision_tf
 from bayesfilter.ops.host_tensor_io import (
     buffer_byte_regions,
@@ -606,9 +607,11 @@ def _scale_covariance(covariance, scale):
     return covariance * scale[:, None] * scale[None, :]
 
 
-def _precision_geometry_kernel(first, second, tolerance, requested_rank):
-    first_values, first_vectors = tf.linalg.eigh(first)
-    second_values, second_vectors = tf.linalg.eigh(second)
+def _precision_geometry_kernel(first, second, tolerance, requested_rank, *, jit_compile=True):
+    # Principal angles depend on eigenvectors as well as eigenvalues. The
+    # backend's loose default stopping check can leave O(1e-7) residuals.
+    first_values, first_vectors = _eigenpairs(first, jit_compile)
+    second_values, second_vectors = _eigenpairs(second, jit_compile)
     rank = tf.minimum(
         requested_rank,
         tf.minimum(
@@ -638,7 +641,7 @@ def _precision_geometry_kernel(first, second, tolerance, requested_rank):
         transformed = tf.transpose(
             tf.linalg.triangular_solve(chol, tf.transpose(solved))
         )
-        values = tf.linalg.eigvalsh(0.5 * (transformed + tf.transpose(transformed)))
+        values, _ = _eigenpairs(0.5 * (transformed + tf.transpose(transformed)), jit_compile)
         minimum, maximum = tf.reduce_min(values), tf.reduce_max(values)
         return tf.stack((minimum, maximum, maximum / minimum))
 

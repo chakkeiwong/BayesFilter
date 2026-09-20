@@ -3355,3 +3355,76 @@ GPU consumers 01236/01237 pass all 40 sequential and 33 quadratic-initializer
 cases in 113.017/50.727 seconds. All 61 policy/controller checks pass in
 01238. Through 01238 charges are 17,907.769 GPU / 32,206.383 CPU seconds,
 leaving 169,292.231 GPU / 82,993.617 CPU seconds. No numerical worker remains.
+
+## September 20 complete block-score lifecycle, continuing after 01238
+
+Recovered `31a81b10` on the separate repair branch with a clean worktree and
+no numerical worker. The existing 52 GPU / 32 CPU process-hour authorization
+remains active and is counted once. The master now records the complete
+block-score plan, original two-module baseline and skeptical review.
+
+The candidate encloses fitting, native replicate/block/pair iteration,
+selection and consensus, stability gates, audit and inverse checks. Public
+records decode fixed-size numerical reports, including first-failure truncation.
+Coordinate scaling and Cholesky have a stable compiled boundary. Only distinct
+block widths select separate fit branches. No threshold, RNG, target or tuning
+authority changes. The policy guard now covers 183 sources with 1,217 exact
+exceptions; the 20 new entries cover schema construction and finished reports.
+
+Run 01239 passes 35 checks and preserves one XLA failure on an empty training
+matrix. Its static zero-row case now emits the original zero-rank rejection.
+Run 01240 passes 36 checks but fails all four newly added stability-cap tests
+on the same 2.6535e-6 degree principal-angle discrepancy, despite matching
+accept/reject outcomes. Localization 01241 shows an XLA eigenvector residual
+of 4.4172e-7 versus eager 4.4409e-15. The previously qualified binary64
+eigensystem/refinement produces a 5.9825e-16 residual and an angle only
+3.2e-14 degrees from eager. The shared precision comparison now uses this
+helper; graph diagnostics explicitly use the ordinary non-XLA solver.
+
+Run 01242 passes all 41 CPU cases in 98.936 seconds, including full original
+records, independent exact-block and scaling identities, heterogeneous widths,
+ordered failures, nonfinite/empty inputs, dimension-one behavior, four cap
+boundaries, complete HLO and bounded graph growth. GPU, affected fixed-center
+consumers and two-extent timing/memory checks are pending at this entry.
+All F01--F20 terminal dispositions remain open and main remains unmerged.
+
+Run 01243 passes all 41 GPU cases in 253.918 seconds. The shared eigensystem
+dependency's existing fixed-center/host-boundary/posterior-curvature group
+passes all 121 GPU cases in 24.371 seconds (01244). All 61 policy/controller
+cases pass in 01257. Focused Ruff and whitespace checks pass.
+
+The registered complete comparison covers dimension/block/replicate counts
+4/2/2 and 8/4/4. Both baseline graph and XLA attempts fail at the original
+`.numpy()` boundary (01245/01248/01251/01254); they have no invented compiled
+timing. Successful baseline eager, candidate public, candidate graph and XLA
+results have matching inputs, numerical output scopes, source and harness
+provenance. Descriptive measurements:
+
+| Scope / dimension | Before / after warm ms | Added host peak MiB | Before / after device peak bytes | Maximum absolute error |
+| --- | ---: | ---: | ---: | ---: |
+| Public / 4 | 67.048 / 7.334 | 111.645 | 8408576 / 50432 | 9.215e-14 |
+| Public / 8 | 227.682 / 30.824 | 116.535 | 8435712 / 88832 | 1.1003e-13 |
+| Numerical graph / XLA, 4 | 32.331 / 5.177 | 46.293 | 8422912 / 51200 | 9.193e-14 |
+| Numerical graph / XLA, 8 | 117.360 / 26.395 | 49.215 | 8460288 / 89600 | 1.0994e-13 |
+
+All four pairs have no new investigation trigger and stable warmed device
+allocations. Graph/XLA node counts remain 1,289/2,165 at both extents. Preserve
+analysis, checksums and baseline failure classifications in
+`artifacts/filter-gradient-repair-20260917/block-score-diagnostic-01256.json`.
+Cold calls include compilation and remain separate from the warmed figures.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Retain complete block-score repair | 41 CPU/GPU and 121 affected consumer cases pass | No focused numerical mismatch | Final broader source is unfrozen | Continue fixed-center and outer lifecycle repairs | No HMC or whole-repository qualification |
+| Keep performance observation descriptive | Matched public and graph/XLA scopes pass at two extents | No new time/memory trigger or allocation growth | Single process per arm and extent | Three-process comparisons after source freeze | No statistical superiority or terminal acceptance |
+| Keep merge gated | Policy/controller checks pass | F01--F20 dispositions and existing investigations remain open | Call-chain coverage and terminal evidence | Continue current master queue | No merge readiness |
+
+Post-run review: matching exact-Gaussian fits alone could hide orientation or
+threshold defects; the rotating-subspace cap fixtures caught a real eigensystem
+accuracy failure before qualification. Pinned full-record, nonfinite, empty,
+first-failure and independent identity cases constrain that alternative. The
+weakest remaining evidence is broader consumer/callback coverage and final
+performance repeat scope, not the focused compilation marker.
+
+Through 01257 charges are 18,323.631 GPU / 32,430.983 CPU seconds, leaving
+168,876.369 GPU / 82,769.017 CPU seconds. No numerical worker remains running.

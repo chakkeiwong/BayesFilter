@@ -172,9 +172,7 @@
     "bayesfilter/highdim/zhao_cui_moment_teacher_nonlinear_tf.py": null,
     "bayesfilter/independent_score/sir_observation_simulator_tf.py": null,
     "bayesfilter/inference/_exact_incumbent.py": null,
-    "bayesfilter/inference/block_score_geometry.py": {
-      "python_iteration": []
-    },
+    "bayesfilter/inference/block_score_geometry.py": null,
     "bayesfilter/inference/cpu_value_score_pool.py": {
       "python_iteration": []
     },
@@ -387,7 +385,8 @@
     "bayesfilter/inference/sequential_preparation_tf.py": null,
     "bayesfilter/inference/sequential_score_fit_tf.py": null,
     "bayesfilter/inference/mass_matrix.py": null,
-    "bayesfilter/inference/mass_matrix_tf.py": null
+    "bayesfilter/inference/mass_matrix_tf.py": null,
+    "bayesfilter/inference/block_score_geometry_tf.py": null
   },
   "exceptions": [
     {
@@ -11272,6 +11271,186 @@
       "ast_sha256": "706f1ad4a922d291d073b5a246dd64a251935cd005463eb5d7c6206003616d46",
       "role": "fixed_schema",
       "reason": "Build distinct-width branch callables for tf.switch_case; numerical blocks execute in one tf.while_loop body."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "BlockScoreGeometryConfig.__post_init__",
+      "line": 80,
+      "kind": "python_iteration",
+      "ast_sha256": "f944d1eb806b6c2a29e91444fb39975248a54e5bab96a20abc9ec9363b2d1183",
+      "role": "host_validation",
+      "reason": "Validate fixed user configuration fields and contiguous named block schema before tracing."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "BlockScoreGeometryConfig.payload",
+      "line": 107,
+      "kind": "python_iteration",
+      "ast_sha256": "88ad9dd0238f7ac6cdcba7b7ec96e1f458f78a608011f84cad0d068219a102a2",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor diagnostics into ordered public records. Truncation, status, comparison values and pass flags are issued by the complete XLA fit program."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "BlockScoreGeometryResult.__post_init__",
+      "line": 126,
+      "kind": "python_iteration",
+      "ast_sha256": "859109af5f7bba91704c08a8b2cfb045be9109dc491fd71d19d92a0ed0b0f47e",
+      "role": "fixed_schema",
+      "reason": "Convert the two completed matrix fields to the public tensor record; no numerical iteration."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "BlockScoreGeometryResult.payload",
+      "line": 157,
+      "kind": "python_iteration",
+      "ast_sha256": "fb24a025119ca95efea794b359550bc6ee670ddd45833d99169ce9854b547617",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor diagnostics into ordered public records. Truncation, status, comparison values and pass flags are issued by the complete XLA fit program."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "fit_block_diagonal_score_geometry",
+      "line": 213,
+      "kind": "python_iteration",
+      "ast_sha256": "a584f1ec4faa120a1ba0a65edea957ff8ff526441e48758a4dca733acec51dfc",
+      "role": "fixed_schema",
+      "reason": "Bind fixed block bounds and named scalar configuration, or report the declared coefficient count; no iteration over data."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "fit_block_diagonal_score_geometry",
+      "line": 216,
+      "kind": "python_iteration",
+      "ast_sha256": "d598d26de39ef1c1178ccf37484b47dc518a56dae4ee8d07ec7862b48a3ac294",
+      "role": "fixed_schema",
+      "reason": "Bind fixed block bounds and named scalar configuration, or report the declared coefficient count; no iteration over data."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "fit_block_diagonal_score_geometry",
+      "line": 219,
+      "kind": "python_iteration",
+      "ast_sha256": "9e6c3b006dd9c60a4b1697c98ec6cb7a030e91a1549fd6f4c2e59a86387e879d",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor diagnostics into ordered public records. Truncation, status, comparison values and pass flags are issued by the complete XLA fit program."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "fit_block_diagonal_score_geometry",
+      "line": 236,
+      "kind": "python_iteration",
+      "ast_sha256": "f8210f0273df475c412377d7b52dbda32d8b5daa596996350fbff6e5b0417d79",
+      "role": "fixed_schema",
+      "reason": "Bind fixed block bounds and named scalar configuration, or report the declared coefficient count; no iteration over data."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "_replicate_reports",
+      "line": 262,
+      "kind": "python_iteration",
+      "ast_sha256": "9bc8c26df1dabec2058c88ac442dbebb048dbf5f8c6025ad1653fe6ec64a8307",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor diagnostics into ordered public records. Truncation, status, comparison values and pass flags are issued by the complete XLA fit program."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "_replicate_reports",
+      "line": 265,
+      "kind": "python_iteration",
+      "ast_sha256": "6cfc81eec4b183400a98e7147da411e448db2c68aab51d69e2c03b2a4bc69ea0",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor diagnostics into ordered public records. Truncation, status, comparison values and pass flags are issued by the complete XLA fit program."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "_stability_report",
+      "line": 293,
+      "kind": "python_iteration",
+      "ast_sha256": "2aa8d3881b74fe658b4e1214d70931745afbedc1f65fe174093a307d8b82033f",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor diagnostics into ordered public records. Truncation, status, comparison values and pass flags are issued by the complete XLA fit program."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "_stability_report",
+      "line": 294,
+      "kind": "python_iteration",
+      "ast_sha256": "5dcc3987d279e75ab2f50354cf1c56284422fc03cd703a47a24303c85a7f4a64",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor diagnostics into ordered public records. Truncation, status, comparison values and pass flags are issued by the complete XLA fit program."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "_validate_blocks",
+      "line": 325,
+      "kind": "python_iteration",
+      "ast_sha256": "0fe05c143350bf668de69f49b4e3bf4ea4ed9aaa51a905ecbf764b4f09a74437",
+      "role": "host_validation",
+      "reason": "Validate fixed user configuration fields and contiguous named block schema before tracing."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "_validate_blocks",
+      "line": 329,
+      "kind": "python_iteration",
+      "ast_sha256": "b5bed84ac2da8e330038ebcbc19cbaa7f6c35f8b1f512872ccadac085d74c232",
+      "role": "host_validation",
+      "reason": "Validate fixed user configuration fields and contiguous named block schema before tracing."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "_json_ready",
+      "line": 374,
+      "kind": "python_iteration",
+      "ast_sha256": "e460f848320769a5bda98dcd7ebbeb370ced498dbbf69c789f86d6c6c2dd7302",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor diagnostics into ordered public records. Truncation, status, comparison values and pass flags are issued by the complete XLA fit program."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry.py",
+      "function": "_json_ready",
+      "line": 376,
+      "kind": "python_iteration",
+      "ast_sha256": "96b9284fad5890760b7067cdf758fab51b8fab3d06a20054a3fc5f2d58b8ec37",
+      "role": "host_reporting",
+      "reason": "Serialize completed tensor diagnostics into ordered public records. Truncation, status, comparison values and pass flags are issued by the complete XLA fit program."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry_tf.py",
+      "function": "fit_program",
+      "line": 119,
+      "kind": "python_iteration",
+      "ast_sha256": "2eeb635afb001b908dd0c7edf9ca981ae6a2161926b12b756e499b9b99814552",
+      "role": "fixed_schema",
+      "reason": "Static partition widths, starts and one fit branch per distinct width; replicate, block and pair arithmetic use native loops with bounded graph growth."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry_tf.py",
+      "function": "fit_program",
+      "line": 120,
+      "kind": "python_iteration",
+      "ast_sha256": "43fdd27afcda1c3fdbc8becbc69f59b9604bddbac675bc4473d64e632e784edf",
+      "role": "fixed_schema",
+      "reason": "Static partition widths, starts and one fit branch per distinct width; replicate, block and pair arithmetic use native loops with bounded graph growth."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry_tf.py",
+      "function": "fit_program",
+      "line": 121,
+      "kind": "python_iteration",
+      "ast_sha256": "01ac070479c77919dab1e9324e227674490141dc8ae1962a08e800afb02b7d3d",
+      "role": "fixed_schema",
+      "reason": "Static partition widths, starts and one fit branch per distinct width; replicate, block and pair arithmetic use native loops with bounded graph growth."
+    },
+    {
+      "path": "bayesfilter/inference/block_score_geometry_tf.py",
+      "function": "fit_program.compute.replicate_step.block_step",
+      "line": 162,
+      "kind": "python_iteration",
+      "ast_sha256": "706f1ad4a922d291d073b5a246dd64a251935cd005463eb5d7c6206003616d46",
+      "role": "fixed_schema",
+      "reason": "Static partition widths, starts and one fit branch per distinct width; replicate, block and pair arithmetic use native loops with bounded graph growth."
     }
   ]
 }
