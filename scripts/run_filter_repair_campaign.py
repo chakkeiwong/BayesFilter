@@ -63,6 +63,19 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"attempts_capacity_{arm}_{capacity}": (
+        f"tests/test_filter_repair_attempts_memory.py::test_attempts_enclosure_capacity[{arm}-{capacity}]",)
+        for arm in ("before", "xla") for capacity in (4, 32)},
+    "attempts_dense_trust_modes": ("tests/test_filter_repair_attempts_modes.py",),
+    **{f"attempts_memory_{arm}_{dimension}": (
+        f"tests/test_filter_repair_attempts_memory.py::test_attempts_memory[{arm}-{dimension}-{capacity}]",)
+        for arm in ("before", "graph", "xla") for dimension, capacity in ((3, 4), (5, 32))},
+    "attempts_public_actual_cpu": ("tests/test_filter_repair_attempts_public.py",),
+    "attempts_public_actual_gpu": ("tests/test_filter_repair_attempts_public.py",),
+    "sequential_attempts_edges": ("tests/test_filter_repair_sequential_attempts.py", "-k", "single_factor or better_first"),
+    "sequential_attempts_inputs": ("tests/test_filter_repair_sequential_attempts.py::test_single_factor_skips_second_callback_and_retains_graph_inputs",),
+    "sequential_attempts_cpu": ("tests/test_filter_repair_sequential_attempts.py",),
+    "sequential_attempts_gpu": ("tests/test_filter_repair_sequential_attempts.py",),
     "factor_decisions_cpu": ("tests/test_filter_repair_factor_decisions.py",),
     "factor_decisions_gpu": ("tests/test_filter_repair_factor_decisions.py",),
     **{f"proposal_memory_{arm}_{dimension}": (f"tests/test_filter_repair_proposal_memory.py::test_proposal_memory[{arm}-{dimension}]",)
@@ -381,6 +394,11 @@ TEST_GROUPS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"attempts_capacity_{arm}_{capacity}": "Descriptive compilation-capacity localization of enclosing second fit; no memory cap or terminal timing ranking."
+        for arm in ("before", "xla") for capacity in (4, 32)},
+    "attempts_dense_trust_modes": "Frozen/current source and eigensolver attribution of the D3 graph/XLA mismatch; failed numerical comparison is not waived.",
+    **{f"attempts_memory_{arm}_{dimension}": "Single-process exact attempt-block cost; comparison and terminal repeated evidence remain separate."
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)},
     **{f"proposal_memory_{arm}_{dimension}": "Single-process proposal dependency cost; full endpoint comparisons and terminal repeats remain required."
         for arm in ("before", "graph", "xla") for dimension in (3, 5)},
     "structured_inherited_modes": "Frozen-source attribution of a failed compiler comparison; no parity threshold is waived.",
@@ -435,6 +453,18 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "attempts_capacity": tuple(f"attempts_capacity_{arm}_{capacity}"
+        for arm in ("before", "xla") for capacity in (4, 32)),
+    "attempts_cost_followup": ("attempts_dense_trust_modes", *(f"attempts_memory_{arm}_{dimension}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)), "policy"),
+    "attempts_reporting": ("sequential_proposal_public_cpu", "sequential_proposal_public_gpu",
+        "attempts_public_actual_cpu", "attempts_public_actual_gpu", "policy"),
+    "attempts_memory": tuple(f"attempts_memory_{arm}_{dimension}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)),
+    "attempts_public_actual": ("attempts_public_actual_cpu", "attempts_public_actual_gpu", "policy"),
+    "attempts_public": ("sequential_proposal_public_cpu", "sequential_proposal_public_gpu", "factor_geometry", "sequential_geometry", "block_center", "policy"),
+    "sequential_attempts_expanded": ("sequential_attempts_edges", "sequential_attempts_gpu", "policy"),
+    "sequential_attempts": ("sequential_attempts_cpu", "sequential_attempts_gpu", "policy"),
     "factor_decisions": ("factor_decisions_cpu", "factor_decisions_gpu", "factor_guard_cpu_fixed", "fixed_fitting_consumers", "policy"),
     "proposal_final": ("sequential_proposal_cpu", "sequential_proposal_gpu", "policy"),
     "proposal_memory": tuple(f"proposal_memory_{arm}_{dimension}" for arm in ("before", "graph", "xla") for dimension in (3, 5)),
@@ -460,7 +490,7 @@ def mandatory_test_groups():
 FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
-TEST_DEVICES = {"factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "factor_guard_gpu_lifetime": "GPU", "fixed_fitting_consumers": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["factor_guard_memory"]},
     "factor_guard_qualification": "GPU",
@@ -481,7 +511,10 @@ TEST_DEVICES = {"factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST
     "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU", "fixed_fitting": "GPU",
     "sequential_selection": "GPU", "sequential_locator": "GPU", "batched_locator": "GPU", "locator_frozen": "GPU",
     "locator_completion": "GPU", "padded_factor": "GPU", "factor_runtime_inputs": "GPU",
-    "factor_runtime_consumers": "GPU",
+    "factor_runtime_consumers": "GPU", "attempts_public_actual_gpu": "GPU",
+    "attempts_dense_trust_modes": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["attempts_capacity"]},
+    **{group: "GPU" for group in TEST_BATCHES["attempts_memory"]},
     **{f"factor_memory_{arm}_{mode}": "GPU"
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla")},
     **{f"locator_memory_{count}_{capacity}": "GPU"

@@ -25,9 +25,14 @@ from bayesfilter.inference.factor_correlation_geometry import (
     _rejected as _rejected_factor_fit,
 )
 from bayesfilter.inference.mass_matrix import covariance_from_precision
+from bayesfilter.inference.sequential_attempts_tf import attempts_program
 from bayesfilter.inference.sequential_batched_locator_tf import (
     batched_locator_program,
     buffered_batched_locator_program,
+)
+from bayesfilter.inference.sequential_factor_attempt_tf import (
+    empty_second_program,
+    second_factor_program,
 )
 from bayesfilter.inference.sequential_locator_tf import scalar_locator_program
 from bayesfilter.inference.sequential_preparation_tf import (
@@ -35,7 +40,6 @@ from bayesfilter.inference.sequential_preparation_tf import (
     evaluation_program,
     trust_region_program,
 )
-from bayesfilter.inference.sequential_proposal_tf import proposal_program
 from bayesfilter.inference.sequential_score_fit_tf import (
     partition_schema,
     score_fit_program,
@@ -690,135 +694,69 @@ def estimate_sequential_map_covariance(
                 break
             continue
 
-        proposal_rows: list[Mapping[str, Any]] = []
-        accepted = False
-        evaluated_proposal: tf.Tensor | None = None
-        evaluated_proposal_value: float | None = None
-        evaluated_proposal_score: tf.Tensor | None = None
-        best_proposal: tf.Tensor | None = None
-        best_proposal_value = center_value
-        best_proposal_score: tf.Tensor | None = None
+        first_usable = fit["status"] == "usable"
+        first_precision = (tf.convert_to_tensor(fit["projected_precision_z"], tf.float64)
+            if first_usable else tf.zeros([dimension, dimension], tf.float64))
+        if cfg.refinement_geometry_policy == "factor_correlation" and cfg.structured_max_factors == 2:
+            numerical = structured_data["_native_factor_data"]
+            second = second_factor_program(dimension, int(numerical["training_offsets_z"].shape[0]),
+                int(numerical["holdout_offsets_z"].shape[0]), cfg)
+            second_inputs = (numerical["center_score_z"], numerical["training_offsets_z"], numerical["training_scores_z"],
+                numerical["holdout_offsets_z"], numerical["holdout_scores_z"], numerical["training_weights"],
+                numerical["active_training_rows"])
+        else:
+            second, second_inputs = empty_second_program(dimension), ()
+        proposals = attempts_program(value_and_score_fn, second, dimension, cfg)(
+            center, tf.constant(center_value, tf.float64), center_score, scale_tf,
+            tf.constant(radius, tf.float64), tf.constant(stalled), tf.constant(first_usable),
+            first_precision, second_inputs)
+        attempted = int(proposals["attempted"])
+        evaluations += int(proposals["evaluations"])
         selected_fit = fit
-        actual = float("-inf")
-        predicted = float("-inf")
-        rho = float("-inf")
-        old_norm = float(tf.linalg.norm(scale_tf * center_score).numpy())
-        new_norm = old_norm
-        step_info: Mapping[str, Any] = {"boundary_active": False}
-        proposal_score_gate: Mapping[str, Any] = {
-            "policy": cfg.proposal_score_acceptance_policy,
-            "active": cfg.require_proposal_score_reduction,
-            "passed": not cfg.require_proposal_score_reduction,
-        }
-        factor_candidates = [1]
-        if (
-            cfg.refinement_geometry_policy == "factor_correlation"
-            and cfg.structured_max_factors == 2
-        ):
-            factor_candidates.append(2)
-        for factor_count in factor_candidates:
-            if factor_count == 2:
-                if accepted:
-                    break
-                selected_fit = _fit_factor_from_data(
-                    structured_data, factor_count=2, config=cfg
-                )
-                if selected_fit["status"] != "usable":
-                    proposal_rows.append(
-                        {
-                            "factor_count": 2,
-                            "fit_status": selected_fit["status"],
-                            "proposal_evaluated": False,
-                        }
-                    )
-                    continue
-            if selected_fit["status"] != "usable":
-                proposal_rows.append(
-                    {
-                        "factor_count": factor_count,
-                        "fit_status": selected_fit["status"],
-                        "proposal_evaluated": False,
-                    }
-                )
+        if attempted == 2:
+            factor_config = FactorCorrelationGeometryConfig(factor_count=2,
+                max_condition_number=cfg.max_condition_number,
+                holdout_score_relative_rmse=cfg.structured_holdout_score_relative_rmse)
+            second_result = _factor_result_from_native(proposals["second_fit"]["computed"], factor_config,
+                dimension, int(numerical["active_training_rows"]), int(numerical["holdout_offsets_z"].shape[0]))
+            selected_fit = _factor_fit_payload(second_result, structured_data)
+        last = proposals["last"]
+        accepted = bool(proposals["accepted"])
+        evaluated = bool(proposals["last_evaluated"])
+        evaluated_proposal = last["position"] if evaluated else None
+        evaluated_proposal_value = float(last["value"]) if evaluated else None
+        evaluated_proposal_score = last["score"] if evaluated else None
+        actual, predicted, rho = float(last["actual"]), float(last["predicted"]), float(last["rho"])
+        old_norm, new_norm = float(last["old_norm"]), float(last["new_norm"])
+        step_info = {"boundary_active": bool(last["boundary"])}
+        proposal_score_gate = (_proposal_gate_payload(last, cfg) if evaluated else {
+            "policy": cfg.proposal_score_acceptance_policy, "active": cfg.require_proposal_score_reduction,
+            "passed": not cfg.require_proposal_score_reduction})
+        # Restore reporting rows only after all numerical attempts, decisions,
+        # incumbent selection and radius/stall updates have completed in XLA.
+        # Transfer each completed column once; indexing these host records must
+        # not dispatch one eager TensorFlow slicing kernel for every field.
+        history_values = {key: values.numpy().tolist() for key, values in proposals["histories"].items()}
+        evaluated_rows = proposals["evaluated"].numpy().tolist()
+        proposal_rows = []
+        for index in range(attempted):
+            row_fit = fit if index == 0 else selected_fit
+            if not evaluated_rows[index]:
+                proposal_rows.append({"factor_count": index + 1,
+                    "fit_status": row_fit["status"], "proposal_evaluated": False})
                 continue
-            proposed = proposal_program(value_and_score_fn, dimension,
-                cfg.proposal_score_acceptance_policy, cfg.require_proposal_score_reduction)(
-                center, tf.constant(center_value, tf.float64), center_score, scale_tf,
-                tf.convert_to_tensor(selected_fit["projected_precision_z"], tf.float64),
-                tf.constant(radius, tf.float64), tf.constant(cfg.score_reduction_factor, tf.float64),
-                tf.constant(cfg.acceptance_ratio, tf.float64))
-            proposal, proposal_score = proposed["position"], proposed["score"]
-            step_info = {"boundary_active": bool(proposed["boundary"])}
-            evaluations += 1
-            proposal_value = float(proposed["value"])
-            evaluated_proposal = proposal
-            evaluated_proposal_value = proposal_value
-            evaluated_proposal_score = proposal_score
-            actual, predicted, rho = float(proposed["actual"]), float(proposed["predicted"]), float(proposed["rho"])
-            old_norm, new_norm = float(proposed["old_norm"]), float(proposed["new_norm"])
-            finite = bool(proposed["finite"])
-            if finite and proposal_value > best_proposal_value:
-                best_proposal = proposal
-                best_proposal_value = proposal_value
-                best_proposal_score = proposal_score
-            score_reduction_passed = bool(proposed["score_passed"])
-            proposal_score_gate = {
-                "policy": cfg.proposal_score_acceptance_policy,
-                "active": cfg.require_proposal_score_reduction,
-                "passed": score_reduction_passed,
-                "legacy_fractional_passed": bool(proposed["legacy_passed"]),
-                "required_score_norm_max": (float(proposed["required_norm_max"])
-                    if cfg.require_proposal_score_reduction else None),
-                "numerical_resolution_floor": (float(proposed["resolution_floor"])
-                    if cfg.require_proposal_score_reduction
-                    and cfg.proposal_score_acceptance_policy == "resolvable_decrease" else None),
-            }
-            accepted = bool(proposed["accepted"])
-            proposal_rows.append(
-                {
-                    "factor_count": (
-                        factor_count
-                        if cfg.refinement_geometry_policy == "factor_correlation"
-                        else None
-                    ),
-                    "fit_status": selected_fit["status"],
-                    "proposal_evaluated": True,
-                    "actual_improvement": actual,
-                    "predicted_improvement": predicted,
-                    "rho": rho,
-                    "score_norm_before": old_norm,
-                    "score_norm_after": new_norm,
-                    "score_reduction_passed": score_reduction_passed,
-                    "proposal_score_gate": proposal_score_gate,
-                    "accepted": accepted,
-                }
-            )
-            if accepted:
-                break
-        incumbent_promoted_without_model_acceptance = bool(
-            best_proposal is not None
-            and best_proposal_score is not None
-            and (
-                not accepted
-                or evaluated_proposal_value is None
-                or best_proposal_value > evaluated_proposal_value
-            )
-        )
-        if best_proposal is not None and best_proposal_score is not None:
-            center_value = best_proposal_value
-            center = best_proposal
-            center_score = best_proposal_score
-            stalled = 0
-        else:
-            stalled += 1
-        if rho < cfg.shrink_threshold or not accepted:
-            radius *= cfg.shrink_factor
-            radius_action = "contract"
-        elif rho >= cfg.expansion_threshold and bool(step_info["boundary_active"]):
-            radius = min(cfg.maximum_radius, radius * cfg.expansion_factor)
-            radius_action = "expand"
-        else:
-            radius_action = "retain"
+            row = {key: values[index] for key, values in history_values.items()}
+            proposal_rows.append({"factor_count": index + 1 if cfg.refinement_geometry_policy == "factor_correlation" else None,
+                "fit_status": row_fit["status"], "proposal_evaluated": True,
+                "actual_improvement": float(row["actual"]), "predicted_improvement": float(row["predicted"]),
+                "rho": float(row["rho"]), "score_norm_before": float(row["old_norm"]),
+                "score_norm_after": float(row["new_norm"]), "score_reduction_passed": bool(row["score_passed"]),
+                "proposal_score_gate": _proposal_gate_payload(row, cfg), "accepted": bool(row["accepted"])})
+        incumbent_promoted_without_model_acceptance = bool(proposals["promoted_without_acceptance"])
+        center_value, center, center_score = float(proposals["center_value"]), proposals["center"], proposals["center_score"]
+        stalled = int(proposals["stalled"])
+        radius = float(proposals["radius_after"])
+        radius_action = ("contract", "expand", "retain")[int(proposals["radius_action"])]
         history.append({
             **row_diag,
             "fit": selected_fit,
@@ -1148,20 +1086,30 @@ def _fit_factor_from_data(
         computed = program(numerical["center_score_z"], numerical["training_offsets_z"], numerical["training_scores_z"],
             numerical["holdout_offsets_z"], numerical["holdout_scores_z"], numerical["training_weights"],
             numerical["active_training_rows"])
-        input_status = int(computed["input_status"])
-        if input_status == 1:
-            count = 2 * dimension if factor_count == 1 else 3 * dimension - 1
-            result = _rejected_factor_fit(factor_config, dimension,
-                "factor_parameterization_dimensionally_unidentified", parameter_count=count,
-                diagnostics={"parameter_count": count,
-                    "symmetric_covariance_entry_count": dimension * (dimension + 1) // 2})
-        elif input_status == 2:
-            result = _rejected_factor_fit(factor_config, dimension, "nonfinite_fit_inputs")
-        elif input_status in (3, 4):
-            raise ValueError("prepared training rows and active weights must be valid")
-        else:
-            result = _factor_result_from_computed(computed["fit"], factor_config, dimension,
-                int(numerical["active_training_rows"]), holdout_rows, True)
+        result = _factor_result_from_native(computed, factor_config, dimension,
+            int(numerical["active_training_rows"]), holdout_rows)
+    return _factor_fit_payload(result, data)
+
+
+def _factor_result_from_native(computed, factor_config, dimension, active_rows, holdout_rows):
+    """Materialize the native input gate and complete fit without refitting."""
+    input_status = int(computed["input_status"])
+    if input_status == 1:
+        count = 2 * dimension if factor_config.factor_count == 1 else 3 * dimension - 1
+        return _rejected_factor_fit(factor_config, dimension,
+            "factor_parameterization_dimensionally_unidentified", parameter_count=count,
+            diagnostics={"parameter_count": count,
+                "symmetric_covariance_entry_count": dimension * (dimension + 1) // 2})
+    if input_status == 2:
+        return _rejected_factor_fit(factor_config, dimension, "nonfinite_fit_inputs")
+    if input_status in (3, 4):
+        raise ValueError("prepared training rows and active weights must be valid")
+    return _factor_result_from_computed(computed["fit"], factor_config, dimension,
+        active_rows, holdout_rows, True)
+
+
+def _factor_fit_payload(result, data):
+    """Restore existing reporting metadata after numerical completion."""
     payload = dict(result.payload())
     payload.update(
         {
@@ -1319,6 +1267,17 @@ def _solve_trust_region_tf(precision: tf.Tensor, linear: tf.Tensor, radius: floa
     step, boundary, predicted = trust_region_program(int(linear.shape[0]))(
         precision, linear, tf.convert_to_tensor(radius, tf.float64))
     return {"step": step, "boundary_active": bool(boundary), "predicted_improvement": float(predicted)}
+
+
+def _proposal_gate_payload(row, config):
+    """Restore optional reporting fields from a completed native decision."""
+    return {"policy": config.proposal_score_acceptance_policy,
+        "active": config.require_proposal_score_reduction,
+        "passed": bool(row["score_passed"]), "legacy_fractional_passed": bool(row["legacy_passed"]),
+        "required_score_norm_max": float(row["required_norm_max"]) if config.require_proposal_score_reduction else None,
+        "numerical_resolution_floor": (float(row["resolution_floor"])
+            if config.require_proposal_score_reduction and config.proposal_score_acceptance_policy == "resolvable_decrease"
+            else None)}
 
 
 def _proposal_score_gate(

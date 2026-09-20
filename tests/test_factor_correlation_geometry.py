@@ -330,6 +330,28 @@ def test_structured_policy_escalates_from_rejected_one_factor_to_two_factors(
         }
 
     monkeypatch.setattr(sequential, "_fit_factor_from_data", controlled_fit)
+
+    def controlled_second_program(dimension, capacity, holdout_rows, config):
+        from bayesfilter.inference.sequential_structured_fit_tf import _empty_result
+
+        @tf.function(input_signature=[tf.TensorSpec([dimension], tf.float64),
+            tf.TensorSpec([capacity, dimension], tf.float64), tf.TensorSpec([capacity, dimension], tf.float64),
+            tf.TensorSpec([holdout_rows, dimension], tf.float64), tf.TensorSpec([holdout_rows, dimension], tf.float64),
+            tf.TensorSpec([capacity], tf.float64), tf.TensorSpec([], tf.int32)], jit_compile=True, autograph=False)
+        def fit(*args):
+            result = _empty_result(dimension, 2)
+            result.update(covariance=tf.eye(dimension, dtype=tf.float64), precision=tf.eye(dimension, dtype=tf.float64),
+                eigenvalues=tf.ones([dimension], tf.float64), deviations=tf.ones([dimension], tf.float64),
+                finite=tf.constant(True), condition_number=tf.constant(1., tf.float64),
+                jacobian_rank=tf.constant(3 * dimension - 1), jacobian_condition=tf.constant(1., tf.float64))
+            return {"usable": tf.constant(True), "precision": result["precision"],
+                "computed": {"input_status": tf.constant(0), "fit": result}}
+
+        return fit
+
+    # Keep the same synthetic rejected-first/identity-second geometry at the
+    # native escalation boundary; all original result assertions stay fixed.
+    monkeypatch.setattr(sequential, "second_factor_program", controlled_second_program)
     result = estimate_sequential_map_covariance(
         scalar,
         [np.zeros(dimension)],

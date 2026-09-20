@@ -4,6 +4,176 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+Current checkpoint through 01720: ordered attempts are integrated and all
+focused CPU/GPU mechanics, actual two-factor public histories, original consumers
+and 67 policy/controller cases pass. Frozen/current XLA records are exactly equal.
+Reporting overhead is repaired. D5 host compilation overhead remains observed
+and investigated (191 MiB at capacity4, about 291 MiB at capacity32); warm memory
+is stable in the tested scope. Strict graph/XLA numerical gates remain failed,
+including the inherited D3 XLA eigensystem residual. See the complete
+[checkpoint result](filter_gradient_attempts_checkpoint_20260921.md).
+
+No worker is active. Charged GPU 33,426.027247090 / 187,200 and CPU
+40,127.291836184 / 115,200 seconds. Commit/push this partial execution checkpoint;
+main stays unmerged. Next install and qualify the scratch outer lifecycle before
+binding actual refinement/terminal callbacks and public reporting. Drafts:
+`/tmp/sequential_lifecycle_tf_draft.py`, `/tmp/sequential_terminal_tf_draft.py`,
+`/tmp/test_filter_repair_sequential_lifecycle_draft.py`; none is installed/tested.
+They are not completion evidence. All broader controller, external DZ5 actual
+full-transition-block, F01--F20 terminal, repeat and merge gates remain open.
+
+Historical progress records follow; any active-session statements below refer
+only to the earlier numbered checkpoint.
+
+Corrected comparison 01714 retains exact frozen/XLA records. Reporting cost is
+3.668/3.804 ms at D3 and effectively unchanged at D5 (ratio 1.003), so its warm
+trigger is resolved. D5 host overhead persists at 287.000 MiB after correcting
+setup namespace; reject duplicate-cache ownership as its main explanation.
+Graph/XLA still fails six/16 fields; 01708 attributes D3 to the existing XLA
+eigensolver (7.684e-9 residual vs near-machine-precision graph references).
+No tolerance changes or terminal admission. Policy passes 67 cases in 01715.
+
+Next bounded memory localization: four fresh GPU2 runs, original/current
+attempt blocks at D5 capacities4/32, exact same active-row count and full-200
+optimizer. Record one cold/three warm calls, before/prepared/built/measured
+RSS/HWM/allocator snapshots, plus standalone frozen second-fit versus enclosing
+XLA graph/HLO after timing. Check every before/after result/input hash at the
+unchanged gates; compare overhead with active-shape dispatch counts to locate
+whether the enclosing conditional compilation scales with capacity. Do not call
+three warm repetitions a terminal speed comparison. This tests rather than
+assumes compilation expansion; unexplained overhead remains open. Same four
+sequential 300-second limits and caps. Budget through 01715: GPU 33,200.974601072
+and CPU 40,127.291836184 seconds; 153,999.025398928 GPU and 75,072.708163816 CPU
+seconds remain. Runtime source is frozen during these measurements.
+
+01703--01707 pass all ten complete public histories (five each CPU/GPU,
+including real two-factor escalation) and 67 policy/controller checks after
+column-wise reporting materialization. Run the reviewed six fresh cost arms
+with corrected setup ownership. Precede them with one D3 dense-trust diagnostic:
+identical actual one-factor precision and proposal inputs, frozen/current
+proposal graph/XLA, explicit CPU graph reference, and independent eigensystem
+residuals. Record every field, the full frozen source closure and strict 1e-10
+differences. Same-mode frozen/current parity is mandatory; cross-mode failure
+remains a recorded open gate. This locates an inherited/backend error without
+altering solver arithmetic or thresholds. Driver batch `attempts_cost_followup`
+runs this diagnostic, all six cost arms and policy sequentially, 300 seconds
+per worker, existing GPU2 idle/growth rules and unchanged cumulative caps.
+
+01702 comparison: complete frozen/XLA records are exactly equal at D3/5.
+Graph/XLA fails six D3 and 16 D5 fields at unchanged 1e-10; keep these open.
+Warm D3 cost rises 3.739 to 7.130 ms; D5 host peak rises 281.605 MiB, crossing
+investigation triggers. Preserve `attempts-memory-comparison-01702.json` and
+its analysis. Reporting currently dispatches an eager tensor slice per history
+field. Materialize each finished column once and index only Python records;
+no numerical recurrence changes. Recheck complete public CPU/GPU histories and
+the actual two-factor public case, then repeat the six fresh cost arms.
+Skeptical harness review also finds candidate setup traced frozen first-fit
+helpers and then distinct current second-fit helpers, unfairly duplicating
+helper caches. Use each arm's own namespace for shared preparation/first fitting,
+as its actual public endpoint does, and continue requiring exact cross-arm input
+and first-fit hashes. Retain old measured costs as diagnostic harness evidence.
+The next comparison must distinguish this setup correction from reporting cost;
+neither hypothesis excuses the graph/XLA failed numerical fields. No optimizer,
+seed, threshold, device or campaign budget changes; same sequential driver.
+
+01694/01695 pass real two-factor escalation with complete public records on
+CPU/GPU; 01696 passes all 67 policy/controller cases. Proceed with six fresh
+GPU2 attempt-cost processes: frozen 93c8e419 host controller, candidate explicit
+graph reference and candidate XLA at D3/capacity4 and D5/capacity32. Each consumes
+the same pinned prepared cloud and actual first-factor fit; shared setup is
+reported separately. D5 uses the same .001 fixture holdout cap to require actual
+second fitting. Extract the exact original/current attempt block including
+complete reporting, without rewriting the baseline recurrence. Freeze its entire
+BayesFilter numerical import closure; preserve the extracted source and hashes.
+Use unchanged full 200-iteration fitting, one cold and 20 synchronized warm calls.
+Record RSS/HWM, allocator current/peak, trace/graph and HLO after timing, all input
+hashes and complete returned records. Candidate graph must contain no nested XLA
+functions; its final reporting status uses the same explicit graph mode.
+Require exact decisions/counts and every number at 1e-10; record inherited
+graph/XLA differences as failed gates without threshold changes. Apply existing
+256MiB/2x memory, 2x cold and 20% warm investigation triggers. Single-process
+costs are descriptive and cannot close final repeated comparisons or outer
+refinement. Six sequential 300-second ceilings remain inside the campaign caps.
+Skeptical audit: comparing an abbreviated or synthetic second fit would be
+misleading; these arms execute the original full fitter and public attempt
+records, and report the shared first-fit compilation separately.
+
+Recovery through 01693: all six public-integration groups pass: four frozen
+public histories on each CPU/GPU, 12 factor, 40 sequential and 43 block cases,
+and 67 policy/controller checks. No numerical worker remains active. Charged
+GPU 32,412.134358780 / 187,200 and CPU 39,989.416153080 / 115,200 seconds.
+Next consumer gate uses a real D5 two-factor covariance and complete public
+history against 93c8e419, with the entire numerical import closure loaded from
+Git into isolated diagnostic modules. No synthetic fit or callback substitution.
+A predeclared .001 holdout cap rejects inadequate one-factor geometry in this
+fixture; runtime defaults and all fitter optimizer settings remain unchanged.
+Require actual usable second fitting/proposal, every public field at 1e-10 and
+every decision/count exactly. CPU then GPU, 300 seconds per worker. If the
+fixture fails to reach escalation, preserve it as harness evidence and repair
+the fixture before timing. Skeptical review: existing single-factor histories
+and synthetic escalation cannot qualify this actual consumer boundary.
+
+01685 passes both CPU edge controls and 01686 all 16 expanded GPU cases,
+including actual full two-factor fit records at capacities4/32, 17 runtime HLO
+operands, post-eviction execution and actual graph/resource release. All 67
+policy/controller checks pass (01687). Wire the qualified numerical attempt
+loop into public sequential refinement, leaving only completed-history record
+construction on the host. First-fit computation stays in its prior place;
+second-fit evaluation now occurs conditionally inside the XLA loop. Reuse the
+same result materializer without refitting. Exact incumbent, radius and stall
+updates come from the compiled result. The original controlled escalation
+fixture moves its same identity second fit to the native callback boundary;
+no existing assertions change. Run pinned complete-history CPU/GPU plus all
+factor, sequential and block consumers. Outer refinement and terminal-fit
+lifecycle remain open. No new guard exception or numerical tolerance change.
+
+01684 preserves both HLOs and proves every operation, literal and all ten
+input operands identical; only Grappler-generated `zeros[_N]/_N` op-name
+metadata suffixes differ. `attempts-hlo-metadata-disposition-01684.json` records
+both hashes and a narrowly anchored normalization. The test now normalizes only
+those demonstrated generated suffixes, retains all other annotations, requires
+all ten operands/one trace, and compares the changed-input outputs to the oracle.
+No numerical or compiler-operand gate is relaxed. Add a scripted controller
+case where the first proposal has a better exact value but fails its score gate,
+then the second accepts; the first must remain the incumbent. Tensor counters
+record exactly two ordered scalar callbacks and one conditional second fit.
+These outputs are mechanics fixtures, not a valid-gradient scientific target.
+Run the two small CPU edges, all expanded GPU cases, then policy; unchanged
+successful actual-fitter CPU tests need no repeat.
+
+01683 passes 14 expanded CPU cases, including actual second-factor records,
+17 runtime HLO inputs and consumer/resource release at capacities4/32. The
+single-factor unchanged-HLO assertion fails after changing numerical inputs;
+its reported diff begins with generated zeros metadata. Preserve both HLOs and
+compare parameters/constants/operations before deciding whether this is input
+specialization or nondeterministic metadata. No equality gate is weakened and
+no public integration is allowed yet. Run only the bounded input diagnostic
+first; do not repeat the expensive successful fitter cases without a fix.
+
+01680/01681 pass all 12 ordered-attempt mechanics cases on CPU/GPU; all 67
+policy/controller cases pass in 01682. Expand with the single-factor skip and
+unchanged-HLO case, then the actual full-200-iteration two-factor padded callback
+at D=5/capacities4/32. Compare all factor and recurrence outputs against frozen
+preparation/fit records, require all numerical HLO operands, exercise calls after
+cache eviction, and require actual consumer-graph/resource collection. This
+qualifies the second-fit provider before public integration; scalar/best-first
+edge cases and full controller wiring remain separate. No runtime fallback or
+optimizer change. Same 300-second CPU/GPU limits; actual large-capacity compiler
+cost and domain validity stay visible in the artifacts.
+
+Ordered-attempt implementation follows qualified checkpoint 93c8e419. Install
+the reviewed scratch kernel and its independent frozen-helper recurrence tests.
+The first focused matrix uses two sequential factors with all combinations of
+fit usability, early acceptance, rejection followed by acceptance, and both
+score policies. Counter resources check conditional second-fit evaluation; the
+oracle checks exact incumbent, radius, stall, history and target-evaluation
+semantics. Static history initialization is also a native bounded loop. After
+these controls, expand to scalar callback order, best-first retention, graph/
+HLO/lifetime and actual padded-fitter integration before public wiring. No
+acceptance, target formula or factor optimizer change. Synthetic controls are
+mechanics diagnostics and do not qualify the actual second fit. The existing
+300-second CPU/GPU worker bound and cumulative budget apply.
+
 Factor-status checkpoint through 01679: all 40 CPU and 40 GPU synthetic
 precedence/boundary/enclosure cases pass (01675/01676), all 14 original/full
 fitter CPU records pass (01677), all 223 affected GPU consumers pass (01678),

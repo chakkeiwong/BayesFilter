@@ -5,6 +5,30 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
+Current checkpoint through 01720: ordered attempts are integrated and all
+focused CPU/GPU mechanics, actual two-factor public histories, original consumers
+and 67 policy/controller cases pass. Frozen/current XLA records are exactly equal.
+Reporting overhead is repaired. D5 host compilation overhead remains observed
+and investigated (191 MiB at capacity4, about 291 MiB at capacity32); warm memory
+is stable in the tested scope. Strict graph/XLA numerical gates remain failed,
+including the inherited D3 XLA eigensystem residual. See the complete
+[checkpoint result](filter_gradient_attempts_checkpoint_20260921.md).
+
+No worker is active. Charged GPU 33,426.027247090 / 187,200 and CPU
+40,127.291836184 / 115,200 seconds. Commit/push this partial execution checkpoint;
+main stays unmerged. Next install and qualify the scratch outer lifecycle before
+binding actual refinement/terminal callbacks and public reporting. Drafts:
+`/tmp/sequential_lifecycle_tf_draft.py`, `/tmp/sequential_terminal_tf_draft.py`,
+`/tmp/test_filter_repair_sequential_lifecycle_draft.py`; none is installed/tested.
+They are not completion evidence. All broader controller, external DZ5 actual
+full-transition-block, F01--F20 terminal, repeat and merge gates remain open.
+
+Historical progress records follow; any active-session statements below refer
+only to the earlier numbered checkpoint.
+
+Historical checkpoint details follow; their active/no-worker statements refer
+only to the numbered checkpoints below.
+
 Factor-status checkpoint through 01679: all 40 CPU and 40 GPU synthetic
 precedence/boundary/enclosure cases pass (01675/01676), all 14 original/full
 fitter CPU records pass (01677), all 223 affected GPU consumers pass (01678),
