@@ -4,6 +4,109 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+Proposal checkpoint through 01673: all 22 complete focused/history cases pass
+on each CPU/GPU; all 20 trust/preparation, 40 sequential, 43 block and 12 factor
+GPU consumers pass, plus 67 policy/controller checks. Six fresh cost processes
+pass: original/XLA outputs are exactly equal at D=3/5, graph/XLA maximum error
+2.221e-16. Warm original/XLA medians are 3.875/1.820 and 4.126/1.685 ms;
+XLA host peaks are 11.535/12.031 MiB lower, and GPU peaks rise from 15,104 to
+21,504 bytes. No declared cost trigger fires. Graphs remain 264 nodes at both
+sizes, with one trace and eight unchanged runtime operands; twenty warm calls
+retain constant device allocations and at most 24 KiB host growth. The exact
+analysis and `proposal-memory-comparison-01673.json` are preserved beside runs.
+These are descriptive single-process dependency costs, not final repeats.
+
+No worker is active. Charged through 01673: GPU 31,544.737419723 / 187,200 and
+CPU 39,670.321654545 / 115,200 seconds; remaining GPU 155,655.262580277 and CPU
+75,529.678345455. Runtime sources did not change during cost measurement. The
+partial guard passes 192 sources / 1,276 exact exceptions, with no new exception.
+Focused Ruff and whitespace checks pass. This checkpoint can be committed/pushed;
+main remains unmerged. The structured D5 graph/XLA comparison remains open.
+
+Next dependency is native factor-fit rejection precedence and numerical report
+fields, enabling factor escalation to consume tensor status. A scratch draft
+at `/tmp/filter_repair_factor_decisions_tf_draft.py` is not installed. Preserve
+original invalid-domain precedence, finite/SPD/condition/rank/holdout/optimizer
+status order, boundary comparisons, and missing-condition semantics, including
+original NaN behavior; no numerical safeguard or threshold change is authorized.
+Compare synthetic conflicting failures/nearest floats to frozen materialization,
+then all original records/consumers before enclosing escalation. A status helper
+alone will not complete the outer controller.
+
+Earlier checkpoints follow.
+
+Proposal qualification through 01667 passes: all 22 focused/full-history cases
+on CPU and GPU against the completely pinned b3334646 dependency (01665/01666),
+20 original trust/preparation, 40 sequential, 43 block and 12 factor GPU cases
+(01658/01659/01662/01663), and 67 policy/controller checks (01667). No failed or
+skipped cases. The six-arm `proposal_memory` matrix is active from 01668; keep
+runtime/tests/driver frozen until it completes. The graph/XLA structured-fitter
+blocker and all broader terminal work remain open. Main is unmerged.
+
+01660/01661 pass all four complete public-history cases on CPU/GPU. Original
+block and factor consumers pass all 43/12 GPU cases (01662/01663), and all 67
+policy/controller tests pass (01664), including invalid-batch preflight. Final
+baseline review pins b3334646's trust solver source too; its changed candidate
+signature had retained identical default arithmetic, but the oracle should not
+import that touched dependency. Rerun the 22 focused/public cases on CPU/GPU
+against the fully pinned dependency, then the six cost arms. No other runtime
+code changed after the consumer checks. Source guard: 192/1,276, partial scope.
+
+Proposal cost contract, conditional on unchanged public-history and consumer
+checks: six fresh GPU2 processes compare the complete b3334646 proposal
+subprogram against candidate graph-reference and XLA at D=3/5. The original
+trust solver remains XLA as in the frozen source; classify that arm as its
+original mixed host/compiled route, not a non-XLA baseline. Candidate graph must
+have no nested XLA functions. Use the identical deterministic nonlinear target,
+center/score/scales/precision, radius .2 and original acceptance parameters.
+Measure one cold and 20 synchronized warm calls with every output materialized,
+separate construction/RSS/HWM and allocator snapshots, plus trace/HLO after
+measurement. Compare all numerical fields at 1e-10 and every boolean exactly;
+thresholds, 80/80 trust iterations, and target formula remain fixed. Memory
+256MiB/2x and timing triggers retain their roles. This small dependency comparison
+is descriptive and cannot replace final whole-controller/repeated evidence.
+Skeptical review: duplicate after/XLA arms would measure the same program, so use
+three genuinely distinct routes; freeze the original trust dependency as well
+as its host wrapper before execution. Same 300-second bounds and total caps.
+
+01658 passes all 20 original preparation/independent trust checks on GPU;
+01659 passes all 40 sequential GPU consumers including the unchanged
+transactional score-policy assertions. The new batch accidentally used
+`factor` instead of registered `factor_geometry`; pause allowed 01659 to finish
+before any unknown-group dispatch. Correct that name and validate every selected
+batch group before launching any worker. A focused regression enforces this.
+No numerical worker failed and no numerical tolerance changed. Continue the
+remaining public-history CPU/GPU, block/factor GPU and policy groups without
+repeating the unchanged completed consumers. The four pinned-history cases
+must actually evaluate a proposal and compare every final/history field.
+
+01656/01657 pass all 18 focused proposal cases on CPU/GPU, including exact
+near-boundary decisions, ordered scalar callback counts, graph-reference parity,
+and eight unchanged runtime HLO operands. Integrate the native proposal into
+the existing public refinement loop, preserving every reported field and None
+marker. The original transactional test's fixed .01 step / .00995 prediction
+now enters at the native solve factory; its assertions and numerical fixture
+are unchanged. Outer radius/incumbent and factor-escalation logic are still
+open. Recheck all original trust, sequential, block and factor consumers plus
+policy, then compare complete frozen/public histories before cost measurement.
+
+Pushed execution checkpoint: b3334646. Next independent dependency is native
+trust-region proposal and exact acceptance; the inherited fitter graph/XLA
+blocker remains open and does not authorize a tolerance change. Before public
+integration, compare the new stable-signature program with b3334646 across
+D=1/3/5, boundary/interior steps, fractional/resolvable/disabled score gates,
+nonfinite callbacks and nearest-representable score/ratio boundaries. Record
+exact scalar callback count/order, fail without eager retry, and require all
+eight numerical inputs in unchanged enclosing HLO after changed values. The
+explicit graph reference uses tf.linalg.eigh; default XLA retains the existing
+binary64 Jacobi eigensolver. No trust radius, thresholds or solver iterations
+change. Existing independent trust-region tests remain required. Run CPU then
+GPU under the existing 300-second focused limits; only then wire the public
+proposal, rerun its full history/consumer tests and measure matching costs.
+Skeptical review: scalar target fusion and score-boundary rounding could alter
+acceptance, so decisions must match exactly; numerical field tolerance stays
+1e-10. A helper alone does not close factor escalation or outer refinement.
+
 Checkpoint review through 01655: all 66 policy/controller tests pass after
 registering the cost diagnostics. The source guard passes 191 sources / 1,276
 exact exceptions; no numerical-loop exception was added. New runtime/tests and

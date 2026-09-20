@@ -705,3 +705,18 @@ def test_investigation_review_requires_current_runs_and_cannot_waive_growth(tmp_
         assert comparison.reviewed_investigations([finding],[bad],tmp_path)[0] == [finding]
     growth = {**finding,"reasons":["continuing_device_allocation_growth"]}
     assert comparison.reviewed_investigations([growth],[{**review,**growth}],tmp_path)[0] == [growth]
+
+
+def test_batch_group_names_validate_before_any_worker_launch(monkeypatch):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    for groups in driver.TEST_BATCHES.values():
+        assert set(groups) <= driver.TEST_GROUPS.keys()
+    monkeypatch.setitem(driver.TEST_BATCHES, "invalid", ("policy", "misspelled"))
+    monkeypatch.setattr(driver, "source_hashes", dict)
+    launched = []
+    monkeypatch.setattr(driver, "run_job", lambda args: launched.append(args))
+    with pytest.raises(ValueError, match="Unknown test groups"):
+        driver.run_matrix(argparse.Namespace(stage="tests", test_batch="invalid"))
+    assert launched == []

@@ -63,6 +63,12 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"proposal_memory_{arm}_{dimension}": (f"tests/test_filter_repair_proposal_memory.py::test_proposal_memory[{arm}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)},
+    "sequential_proposal_public_cpu": ("tests/test_filter_repair_sequential_proposal.py", "-k", "public_history"),
+    "sequential_proposal_public_gpu": ("tests/test_filter_repair_sequential_proposal.py", "-k", "public_history"),
+    "sequential_proposal_cpu": ("tests/test_filter_repair_sequential_proposal.py",),
+    "sequential_proposal_gpu": ("tests/test_filter_repair_sequential_proposal.py",),
     "structured_inherited_modes": (
         "tests/test_filter_repair_structured_memory.py::test_inherited_structured_fitter_modes",),
     **{f"structured_eligibility_{arm}": (
@@ -373,6 +379,8 @@ TEST_GROUPS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"proposal_memory_{arm}_{dimension}": "Single-process proposal dependency cost; full endpoint comparisons and terminal repeats remain required."
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)},
     "structured_inherited_modes": "Frozen-source attribution of a failed compiler comparison; no parity threshold is waived.",
     **{f"structured_eligibility_{arm}": "Single-process changing active-size cost; no terminal performance claim."
         for arm in ("before", "after")},
@@ -425,6 +433,10 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "proposal_final": ("sequential_proposal_cpu", "sequential_proposal_gpu", "policy"),
+    "proposal_memory": tuple(f"proposal_memory_{arm}_{dimension}" for arm in ("before", "graph", "xla") for dimension in (3, 5)),
+    "proposal_followup": ("sequential_proposal_public_cpu", "sequential_proposal_public_gpu", "block_center", "factor_geometry", "policy"),
+    "proposal_consumers": ("sequential_preparation", "sequential_geometry", "block_center", "factor_geometry", "policy"),
     "structured_cost_investigation": ("structured_inherited_modes", "structured_eligibility_before", "structured_eligibility_after"),
     "structured": ("structured_preparation_cpu", "structured_fit_cpu", "structured_preparation_gpu",
         "structured_fit_gpu", "fixed_fitting_consumers", "sequential_geometry", "factor_guard_cpu_fixed", "policy"),
@@ -445,7 +457,7 @@ def mandatory_test_groups():
 FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
-TEST_DEVICES = {**{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+TEST_DEVICES = {**{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "factor_guard_gpu_lifetime": "GPU", "fixed_fitting_consumers": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["factor_guard_memory"]},
     "factor_guard_qualification": "GPU",
@@ -778,6 +790,9 @@ def run_matrix(args):
     if args.stage == "tests":
         batch = getattr(args, "test_batch", "all")
         groups = mandatory_test_groups() if batch == "all" else TEST_BATCHES[batch]
+        unknown = set(groups) - TEST_GROUPS.keys()
+        if unknown:
+            raise ValueError(f"Unknown test groups in batch {batch}: {sorted(unknown)}")
         for group in groups:
             check_matrix_state(frozen)
             device = TEST_DEVICES.get(group, "CPU")

@@ -9,6 +9,49 @@ claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
 training/HMC capability and its obsolete admitted factory now fail closed.
 Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
+## September 21 compiled proposal checkpoint
+
+Proposal checkpoint through 01673: all 22 complete focused/history cases pass
+on each CPU/GPU; all 20 trust/preparation, 40 sequential, 43 block and 12 factor
+GPU consumers pass, plus 67 policy/controller checks. Six fresh cost processes
+pass: original/XLA outputs are exactly equal at D=3/5, graph/XLA maximum error
+2.221e-16. Warm original/XLA medians are 3.875/1.820 and 4.126/1.685 ms;
+XLA host peaks are 11.535/12.031 MiB lower, and GPU peaks rise from 15,104 to
+21,504 bytes. No declared cost trigger fires. Graphs remain 264 nodes at both
+sizes, with one trace and eight unchanged runtime operands; twenty warm calls
+retain constant device allocations and at most 24 KiB host growth. The exact
+analysis and `proposal-memory-comparison-01673.json` are preserved beside runs.
+These are descriptive single-process dependency costs, not final repeats.
+
+No worker is active. Charged through 01673: GPU 31,544.737419723 / 187,200 and
+CPU 39,670.321654545 / 115,200 seconds; remaining GPU 155,655.262580277 and CPU
+75,529.678345455. Runtime sources did not change during cost measurement. The
+partial guard passes 192 sources / 1,276 exact exceptions, with no new exception.
+Focused Ruff and whitespace checks pass. This checkpoint can be committed/pushed;
+main remains unmerged. The structured D5 graph/XLA comparison remains open.
+
+Next dependency is native factor-fit rejection precedence and numerical report
+fields, enabling factor escalation to consume tensor status. A scratch draft
+at `/tmp/filter_repair_factor_decisions_tf_draft.py` is not installed. Preserve
+original invalid-domain precedence, finite/SPD/condition/rank/holdout/optimizer
+status order, boundary comparisons, and missing-condition semantics, including
+original NaN behavior; no numerical safeguard or threshold change is authorized.
+Compare synthetic conflicting failures/nearest floats to frozen materialization,
+then all original records/consumers before enclosing escalation. A status helper
+alone will not complete the outer controller.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Limit |
+|---|---|---|---|---|---|
+| Retain native proposal | Complete frozen histories and exact gate decisions pass | No new correctness or cost veto | Finite target coverage | Native factor status/escalation | No full-controller completion |
+| Retain measured costs | All proposal output fields agree | No declared trigger | One process per route/size | Terminal repeats at complete endpoint | No statistical performance ranking |
+
+Primary-agent review inspected the actual public call site, unchanged acceptance
+conjunction, absent eager retry and moved fixture boundary. The strongest risk
+is untested callback arithmetic sensitivity; pinned full histories and separate
+near-threshold cases reduce it without claiming arbitrary-target equivalence.
+No independent reviewer was used. The batch-name typo was caught before its
+launch; preflight now rejects an unknown selected group before any worker.
+
 ## September 21 structured cost disposition
 
 Recovery through 01654: no numerical worker is active. The 441 focused

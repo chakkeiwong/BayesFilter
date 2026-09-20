@@ -35,6 +35,7 @@ from bayesfilter.inference.sequential_preparation_tf import (
     evaluation_program,
     trust_region_program,
 )
+from bayesfilter.inference.sequential_proposal_tf import proposal_program
 from bayesfilter.inference.sequential_score_fit_tf import (
     partition_schema,
     score_fit_program,
@@ -740,49 +741,39 @@ def estimate_sequential_map_covariance(
                     }
                 )
                 continue
-            step_info = _solve_trust_region_tf(
+            proposed = proposal_program(value_and_score_fn, dimension,
+                cfg.proposal_score_acceptance_policy, cfg.require_proposal_score_reduction)(
+                center, tf.constant(center_value, tf.float64), center_score, scale_tf,
                 tf.convert_to_tensor(selected_fit["projected_precision_z"], tf.float64),
-                scale_tf * center_score,
-                radius,
-            )
-            step = tf.convert_to_tensor(step_info["step"], tf.float64)
-            proposal = center + scale_tf * step
-            proposal_value_tf, proposal_score = _scalar_value_score(
-                value_and_score_fn, proposal, dimension
-            )
+                tf.constant(radius, tf.float64), tf.constant(cfg.score_reduction_factor, tf.float64),
+                tf.constant(cfg.acceptance_ratio, tf.float64))
+            proposal, proposal_score = proposed["position"], proposed["score"]
+            step_info = {"boundary_active": bool(proposed["boundary"])}
             evaluations += 1
-            proposal_value = float(proposal_value_tf.numpy())
+            proposal_value = float(proposed["value"])
             evaluated_proposal = proposal
             evaluated_proposal_value = proposal_value
             evaluated_proposal_score = proposal_score
-            actual = proposal_value - center_value
-            predicted = float(step_info["predicted_improvement"])
-            rho = actual / predicted if predicted > 0.0 else float("-inf")
-            old_norm = float(tf.linalg.norm(scale_tf * center_score).numpy())
-            new_norm = float(tf.linalg.norm(scale_tf * proposal_score).numpy())
-            finite = bool(
-                (tf.math.is_finite(proposal_value_tf) & tf.reduce_all(tf.math.is_finite(proposal_score))).numpy()
-            )
+            actual, predicted, rho = float(proposed["actual"]), float(proposed["predicted"]), float(proposed["rho"])
+            old_norm, new_norm = float(proposed["old_norm"]), float(proposed["new_norm"])
+            finite = bool(proposed["finite"])
             if finite and proposal_value > best_proposal_value:
                 best_proposal = proposal
                 best_proposal_value = proposal_value
                 best_proposal_score = proposal_score
-            proposal_score_gate = _proposal_score_gate(
-                old_norm,
-                new_norm,
-                policy=cfg.proposal_score_acceptance_policy,
-                fractional_factor=cfg.score_reduction_factor,
-                active=cfg.require_proposal_score_reduction,
-            )
-            score_reduction_passed = bool(proposal_score_gate["passed"])
-            accepted = _proposal_is_accepted(
-                finite,
-                actual=actual,
-                predicted=predicted,
-                rho=rho,
-                acceptance_ratio=cfg.acceptance_ratio,
-                score_gate_passed=score_reduction_passed,
-            )
+            score_reduction_passed = bool(proposed["score_passed"])
+            proposal_score_gate = {
+                "policy": cfg.proposal_score_acceptance_policy,
+                "active": cfg.require_proposal_score_reduction,
+                "passed": score_reduction_passed,
+                "legacy_fractional_passed": bool(proposed["legacy_passed"]),
+                "required_score_norm_max": (float(proposed["required_norm_max"])
+                    if cfg.require_proposal_score_reduction else None),
+                "numerical_resolution_floor": (float(proposed["resolution_floor"])
+                    if cfg.require_proposal_score_reduction
+                    and cfg.proposal_score_acceptance_policy == "resolvable_decrease" else None),
+            }
+            accepted = bool(proposed["accepted"])
             proposal_rows.append(
                 {
                     "factor_count": (
@@ -1338,7 +1329,7 @@ def _proposal_score_gate(
     fractional_factor: float,
     active: bool,
 ) -> Mapping[str, Any]:
-    """Evaluate the exact standardized-score safeguard for one proposal."""
+    """Legacy diagnostic authority; runtime uses the native proposal program."""
 
     old = float(old_norm)
     new = float(new_norm)
@@ -1389,7 +1380,7 @@ def _proposal_is_accepted(
     acceptance_ratio: float,
     score_gate_passed: bool,
 ) -> bool:
-    """Preserve the exact trust-region acceptance conjunction."""
+    """Legacy diagnostic authority for the native acceptance conjunction."""
 
     return bool(
         finite

@@ -79,17 +79,21 @@ def cloud_program(sample_count, dimension, orthogonal):
 
 
 @lru_cache(maxsize=64)
-def trust_region_program(dimension):
+def trust_region_program(dimension, *, jit_compile=True):
     """Original SPD bracket/bisection with the unchanged 80/80 iteration caps."""
 
     @tf.function(input_signature=[tf.TensorSpec([dimension, dimension], tf.float64),
         tf.TensorSpec([dimension], tf.float64), tf.TensorSpec([], tf.float64)],
-        jit_compile=True, autograph=False)
+        jit_compile=jit_compile, autograph=False)
     def solve(precision, linear, radius):
         # tf.linalg.eigh's default XLA stopping tolerance is too loose for the
         # existing binary64 gate. Use the project's explicit Jacobi precision.
-        eigenvalues, eigenvectors = xla_self_adjoint_eig(
-            precision, lower=True, max_iter=100, epsilon=math.ulp(1.0))
+        if jit_compile:
+            eigenvalues, eigenvectors = xla_self_adjoint_eig(
+                precision, lower=True, max_iter=100, epsilon=math.ulp(1.0))
+        else:
+            # Explicit graph-reference exception; the default is GPU/XLA.
+            eigenvalues, eigenvectors = tf.linalg.eigh(precision)
         eigenvalues = tf.ensure_shape(eigenvalues, [dimension])
         eigenvectors = tf.ensure_shape(eigenvectors, [dimension, dimension])
         projected = tf.linalg.matvec(eigenvectors, linear, transpose_a=True)

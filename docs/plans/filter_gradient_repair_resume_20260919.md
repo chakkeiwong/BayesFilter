@@ -5,6 +5,45 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
+Proposal checkpoint through 01673: all 22 complete focused/history cases pass
+on each CPU/GPU; all 20 trust/preparation, 40 sequential, 43 block and 12 factor
+GPU consumers pass, plus 67 policy/controller checks. Six fresh cost processes
+pass: original/XLA outputs are exactly equal at D=3/5, graph/XLA maximum error
+2.221e-16. Warm original/XLA medians are 3.875/1.820 and 4.126/1.685 ms;
+XLA host peaks are 11.535/12.031 MiB lower, and GPU peaks rise from 15,104 to
+21,504 bytes. No declared cost trigger fires. Graphs remain 264 nodes at both
+sizes, with one trace and eight unchanged runtime operands; twenty warm calls
+retain constant device allocations and at most 24 KiB host growth. The exact
+analysis and `proposal-memory-comparison-01673.json` are preserved beside runs.
+These are descriptive single-process dependency costs, not final repeats.
+
+No worker is active. Charged through 01673: GPU 31,544.737419723 / 187,200 and
+CPU 39,670.321654545 / 115,200 seconds; remaining GPU 155,655.262580277 and CPU
+75,529.678345455. Runtime sources did not change during cost measurement. The
+partial guard passes 192 sources / 1,276 exact exceptions, with no new exception.
+Focused Ruff and whitespace checks pass. This checkpoint can be committed/pushed;
+main remains unmerged. The structured D5 graph/XLA comparison remains open.
+
+Next dependency is native factor-fit rejection precedence and numerical report
+fields, enabling factor escalation to consume tensor status. A scratch draft
+at `/tmp/filter_repair_factor_decisions_tf_draft.py` is not installed. Preserve
+original invalid-domain precedence, finite/SPD/condition/rank/holdout/optimizer
+status order, boundary comparisons, and missing-condition semantics, including
+original NaN behavior; no numerical safeguard or threshold change is authorized.
+Compare synthetic conflicting failures/nearest floats to frozen materialization,
+then all original records/consumers before enclosing escalation. A status helper
+alone will not complete the outer controller.
+
+Earlier checkpoints follow.
+
+Proposal qualification through 01667 passes: all 22 focused/full-history cases
+on CPU and GPU against the completely pinned b3334646 dependency (01665/01666),
+20 original trust/preparation, 40 sequential, 43 block and 12 factor GPU cases
+(01658/01659/01662/01663), and 67 policy/controller checks (01667). No failed or
+skipped cases. The six-arm `proposal_memory` matrix is active from 01668; keep
+runtime/tests/driver frozen until it completes. The graph/XLA structured-fitter
+blocker and all broader terminal work remain open. Main is unmerged.
+
 Checkpoint review through 01655: all 66 policy/controller tests pass after
 registering the cost diagnostics. The source guard passes 191 sources / 1,276
 exact exceptions; no numerical-loop exception was added. New runtime/tests and
