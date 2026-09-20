@@ -213,6 +213,13 @@ def fit_factor_correlation_score_geometry(
     except (tf.errors.OpError, ValueError) as exc:
         return _rejected(cfg, dimension, "factor_optimizer_failed", parameter_count=parameter_count,
                          diagnostics={"exception_type": type(exc).__name__, "jit_compile": bool(jit_compile)})
+    return _factor_result_from_computed(computed, cfg, dimension, row_count,
+        int(holdout_z.shape[0]), bool(jit_compile))
+
+
+def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_rows, jit_compile):
+    """Materialize the existing public record after a completed numerical fit."""
+    parameter_count = 2 * dimension if cfg.factor_count == 1 else 3 * dimension - 1
     if int(computed["invalid_covariance_evaluations"]) > 0:
         return _rejected(
             cfg, dimension, "factor_optimizer_failed", parameter_count=parameter_count,
@@ -255,9 +262,9 @@ def fit_factor_correlation_score_geometry(
     diagnostics = {
         "jit_compile": bool(jit_compile),
         "training_row_count": row_count,
-        "holdout_row_count": int(holdout_z.shape[0]),
+        "holdout_row_count": holdout_rows,
         "training_score_equation_count": row_count * dimension,
-        "holdout_score_equation_count": int(holdout_z.shape[0]) * dimension,
+        "holdout_score_equation_count": holdout_rows * dimension,
         "parameter_count": parameter_count,
         "train_score_rmse": float(train_rmse.numpy()),
         "holdout_score_rmse": float(holdout_error.numpy()),

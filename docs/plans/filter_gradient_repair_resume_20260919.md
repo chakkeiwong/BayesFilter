@@ -5,6 +5,76 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
+Checkpoint review through 01655: all 66 policy/controller tests pass after
+registering the cost diagnostics. The source guard passes 191 sources / 1,276
+exact exceptions; no numerical-loop exception was added. New runtime/tests and
+analysis scripts pass focused Ruff; whitespace checks pass. No numerical source
+changed after the 441-case qualification. The inherited graph/XLA comparison
+remains explicitly open. Commit/push preserves this execution checkpoint and
+its unresolved terminal evidence; main stays unmerged.
+
+Recovery through 01654: no numerical worker is active. The 441 focused
+qualification cases remain passing. Default XLA before/after and standalone/
+enclosed records pass at D=3 and D=5. The eight-arm comparison is preserved in
+`structured-memory-comparison-01650.json`; D=5 graph/XLA fails 23 numeric fields
+at the unchanged 1e-10 tolerance and is **not accepted**. 01651 crosses prepared
+clouds with both fitter modes; 01652 proves the same eight numeric fitter gaps
+on identical data in frozen f06fd505 and current compact source. Same-mode
+before/after records pass. No tolerance, optimizer or method is changed.
+
+The D=5 resource trigger is explained by two 33-branch compact-shape dispatches
+(CPQR initializer and Jacobian QR), versus two five-branch dispatches at D=3.
+Fixed-input public host overhead is 446.820 MiB, GPU peak 97,024/195,840 bytes,
+and cold 13.883/30.541 seconds. Over six changing active sizes, 01653/01654
+retain all records while old/new first-sequence times are 70.215/29.857 seconds
+and host peaks roughly 2.79/1.97 GiB. New sizes cost about 11 seconds each in
+original compact fitting and about 0.11 seconds in the repaired fixed-capacity
+path after the first call. Second-sequence host growth stays below 0.1 MiB.
+`structured-eligibility-cost-disposition-01654.json` and its exact analysis
+script preserve inputs, source hashes, HLO branch counts and full comparisons.
+This is a bounded, explained compilation tradeoff, subject to final repeats;
+it does not establish a statistical ranking or arbitrary-capacity memory bound.
+
+Budget through 01654: GPU 30,927.589910224 / 187,200 and CPU
+39,575.574552332 / 115,200 seconds (remaining GPU 156,272.410089776 and CPU
+75,624.425447668). The extension is counted once. Commit/push the execution
+checkpoint with the graph/XLA blocker explicit; continue independent proposal/
+outer-controller repair without calling the checkpoint terminal-qualified.
+Main remains unmerged. No F01--F20 terminal disposition is closed.
+
+Earlier checkpoint details follow.
+
+Latest September 21 continuation, based on pushed **f06fd505**: preserve the
+uncommitted structured-preparation repair. All 441 current qualification cases
+pass: 26 preparation and 23 integration on each CPU/GPU (01635--01638), 223 GPU
+consumers (01639), 40 sequential GPU cases (01640), 14 original/full fitter CPU
+cases (01641), and 66 policy/controller cases (01642). No failed/skipped JUnit
+cases in those passing groups. The partial guard covers 191 sources and 1,276
+exact exceptions; no numerical-loop exception was added.
+
+Active driver: `matrix --stage tests --test-batch structured_memory
+--test-timeout-seconds 300`, beginning with 01643. Recover this sequential eight-
+arm GPU matrix before another worker or source edit. The compact public view
+and three-row reuse are qualified. Preserve source files through cost runs.
+
+Earlier full-record discrepancies are repaired: two native stages preserve
+separately rounded multiplication/addition. The exact affine pullback avoids
+XLA TensorList boundary failure; tracing it in its own resource-free graph
+avoids TensorFlow's process-level custom-gradient registry retaining the
+consuming optimizer graph. 01628 passes derivative, unchanged HLO, lifetime and
+release checks. No tolerances, optimizer settings or random streams changed.
+All failed attempts 01616--01627 remain preserved with diagnosis in the master.
+
+The active measurement matrix is the reviewed eight-arm `structured_memory` batch with 300-second per-worker bounds.
+Numerical jobs stay sequential, same approved driver prefix, idle GPU preflight
+and verified growth. The benchmark-only baseline setup bias is repaired before
+measurements. Independent analysis draft is `/tmp/analyze_structured_memory_20260921.py`;
+it is not evidence until the eight matching arms pass and are compared. Keep
+both script and output beside versioned runs. Broader controllers and terminal
+three-process comparisons remain open; main is unmerged.
+
+Historical qualified guard checkpoint follows.
+
 September 21 active continuation (after pushed `085baaaa`): covariance domain
 checks propagate invalid optimizer evaluations through XLA and reject public/
 native fits without geometry. CPU/GPU focused checks pass; the ownership repair

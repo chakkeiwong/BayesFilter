@@ -1,5 +1,50 @@
 # Host-memory observation limits
 
+Recovery through 01654: no numerical worker is active. The 441 focused
+qualification cases remain passing. Default XLA before/after and standalone/
+enclosed records pass at D=3 and D=5. The eight-arm comparison is preserved in
+`structured-memory-comparison-01650.json`; D=5 graph/XLA fails 23 numeric fields
+at the unchanged 1e-10 tolerance and is **not accepted**. 01651 crosses prepared
+clouds with both fitter modes; 01652 proves the same eight numeric fitter gaps
+on identical data in frozen f06fd505 and current compact source. Same-mode
+before/after records pass. No tolerance, optimizer or method is changed.
+
+The D=5 resource trigger is explained by two 33-branch compact-shape dispatches
+(CPQR initializer and Jacobian QR), versus two five-branch dispatches at D=3.
+Fixed-input public host overhead is 446.820 MiB, GPU peak 97,024/195,840 bytes,
+and cold 13.883/30.541 seconds. Over six changing active sizes, 01653/01654
+retain all records while old/new first-sequence times are 70.215/29.857 seconds
+and host peaks roughly 2.79/1.97 GiB. New sizes cost about 11 seconds each in
+original compact fitting and about 0.11 seconds in the repaired fixed-capacity
+path after the first call. Second-sequence host growth stays below 0.1 MiB.
+`structured-eligibility-cost-disposition-01654.json` and its exact analysis
+script preserve inputs, source hashes, HLO branch counts and full comparisons.
+This is a bounded, explained compilation tradeoff, subject to final repeats;
+it does not establish a statistical ranking or arbitrary-capacity memory bound.
+
+Budget through 01654: GPU 30,927.589910224 / 187,200 and CPU
+39,575.574552332 / 115,200 seconds (remaining GPU 156,272.410089776 and CPU
+75,624.425447668). The extension is counted once. Commit/push the execution
+checkpoint with the graph/XLA blocker explicit; continue independent proposal/
+outer-controller repair without calling the checkpoint terminal-qualified.
+Main remains unmerged. No F01--F20 terminal disposition is closed.
+
+Earlier checkpoint details follow.
+
+September 21 structured preparation: resource lifetime has a separate graph
+retention mechanism. TensorFlow 2.19.1's
+`python/ops/custom_gradient.py:487--524` registers a process-level closure that
+retains the custom operation's graph tensors. Defining the affine preparation
+pullback directly in the consuming fit graph kept that graph and its covariance
+guard alive after cache eviction/collection (01626/01627). Tracing the small,
+resource-free affine operation in its own stable function before caller tracing
+repairs the tested ownership boundary (01628; expanded CPU/GPU checks in
+01636/01638). Exact preparation derivatives, geometry-only frozen derivatives,
+post-eviction execution and subsequent consumer/guard release all pass. This
+addresses those Python graph/resource references, not TensorFlow's distinct
+native executable cache. Cost measurements for the structured integration are
+pending at this checkpoint.
+
 September 21 guard-cost results (01608--01615): matching healthy inputs and
 full optimizer settings yield exactly equal original before/after fields in
 graph-reference and XLA. XLA host peak increases are 7,630,848 and 6,250,496

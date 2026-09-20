@@ -9,6 +9,70 @@ claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
 training/HMC capability and its obsolete admitted factory now fail closed.
 Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
+## September 21 structured cost disposition
+
+Recovery through 01654: no numerical worker is active. The 441 focused
+qualification cases remain passing. Default XLA before/after and standalone/
+enclosed records pass at D=3 and D=5. The eight-arm comparison is preserved in
+`structured-memory-comparison-01650.json`; D=5 graph/XLA fails 23 numeric fields
+at the unchanged 1e-10 tolerance and is **not accepted**. 01651 crosses prepared
+clouds with both fitter modes; 01652 proves the same eight numeric fitter gaps
+on identical data in frozen f06fd505 and current compact source. Same-mode
+before/after records pass. No tolerance, optimizer or method is changed.
+
+The D=5 resource trigger is explained by two 33-branch compact-shape dispatches
+(CPQR initializer and Jacobian QR), versus two five-branch dispatches at D=3.
+Fixed-input public host overhead is 446.820 MiB, GPU peak 97,024/195,840 bytes,
+and cold 13.883/30.541 seconds. Over six changing active sizes, 01653/01654
+retain all records while old/new first-sequence times are 70.215/29.857 seconds
+and host peaks roughly 2.79/1.97 GiB. New sizes cost about 11 seconds each in
+original compact fitting and about 0.11 seconds in the repaired fixed-capacity
+path after the first call. Second-sequence host growth stays below 0.1 MiB.
+`structured-eligibility-cost-disposition-01654.json` and its exact analysis
+script preserve inputs, source hashes, HLO branch counts and full comparisons.
+This is a bounded, explained compilation tradeoff, subject to final repeats;
+it does not establish a statistical ranking or arbitrary-capacity memory bound.
+
+Budget through 01654: GPU 30,927.589910224 / 187,200 and CPU
+39,575.574552332 / 115,200 seconds (remaining GPU 156,272.410089776 and CPU
+75,624.425447668). The extension is counted once. Commit/push the execution
+checkpoint with the graph/XLA blocker explicit; continue independent proposal/
+outer-controller repair without calling the checkpoint terminal-qualified.
+Main remains unmerged. No F01--F20 terminal disposition is closed.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Limit |
+|---|---|---|---|---|---|
+| Retain execution repair | Frozen/current XLA full records pass | D5 graph/XLA still fails | Inherited rounding sensitivity | Preserve blocker and repair remaining controllers | No terminal admission |
+| Explain capacity cost | Six changing-size records agree | No accumulating warm trend in these calls | Finite capacity, one process | Final repeats at complete endpoint | No speed ranking |
+
+Review: the main alternative explanation for graph/XLA differences is tiny
+backend rounding amplified by an unchanged finite optimizer, supported by
+crossed-data and frozen-source controls. No source change to the optimizer is
+justified by these measurements. A new same-mode record failure would overturn
+checkpoint retention. The weakest cost evidence remains one process per arm.
+No independent reviewer was used. HMC interface and capability registry were
+consulted; geometry preparation does not issue tuning authority.
+
+## September 21 structured preparation continuation
+
+Through 01633, preparation and integration pass on both CPU and GPU, including
+all original optimizer fields. Numerical enclosure exposed FMA contraction of
+the original separate displacement multiplication and center addition: 01621
+isolates preparation scores, 01623 isolates positions, and 01624's two native
+stages restore exact stage outputs. The exact affine pullback preserves original
+preparation derivatives and avoids XLA TensorList export. Installed TensorFlow's
+custom-gradient registry retained the caller graph; isolating the small affine
+function before caller tracing repairs graph/resource release (01628).
+
+01629/01631 pass 22 CPU/GPU preparation cases; 01630/01632 pass all 19 CPU/GPU
+integration cases. 01633 passes 222 consumers but the original compact-array
+assertion fails because the new wrapper returned padded arrays. Preserve the
+original compact view and keep fixed-capacity tensors private to the numerical
+fit. The original assertion is unchanged. Add three-row reuse to cover
+non-power-of-two weighting. Cost runs wait for qualification. The public before
+benchmark arm no longer builds an unused candidate graph during setup. No
+checkpoint or whole-campaign completion claim follows yet.
+
 ## September 21 guard qualification and cost
 
 September 21 qualified guard checkpoint through 01615: all 66 policy/controller,

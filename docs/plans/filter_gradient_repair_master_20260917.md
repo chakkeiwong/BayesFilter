@@ -4,6 +4,263 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+Checkpoint review through 01655: all 66 policy/controller tests pass after
+registering the cost diagnostics. The source guard passes 191 sources / 1,276
+exact exceptions; no numerical-loop exception was added. New runtime/tests and
+analysis scripts pass focused Ruff; whitespace checks pass. No numerical source
+changed after the 441-case qualification. The inherited graph/XLA comparison
+remains explicitly open. Commit/push preserves this execution checkpoint and
+its unresolved terminal evidence; main stays unmerged.
+
+Recovery through 01654: no numerical worker is active. The 441 focused
+qualification cases remain passing. Default XLA before/after and standalone/
+enclosed records pass at D=3 and D=5. The eight-arm comparison is preserved in
+`structured-memory-comparison-01650.json`; D=5 graph/XLA fails 23 numeric fields
+at the unchanged 1e-10 tolerance and is **not accepted**. 01651 crosses prepared
+clouds with both fitter modes; 01652 proves the same eight numeric fitter gaps
+on identical data in frozen f06fd505 and current compact source. Same-mode
+before/after records pass. No tolerance, optimizer or method is changed.
+
+The D=5 resource trigger is explained by two 33-branch compact-shape dispatches
+(CPQR initializer and Jacobian QR), versus two five-branch dispatches at D=3.
+Fixed-input public host overhead is 446.820 MiB, GPU peak 97,024/195,840 bytes,
+and cold 13.883/30.541 seconds. Over six changing active sizes, 01653/01654
+retain all records while old/new first-sequence times are 70.215/29.857 seconds
+and host peaks roughly 2.79/1.97 GiB. New sizes cost about 11 seconds each in
+original compact fitting and about 0.11 seconds in the repaired fixed-capacity
+path after the first call. Second-sequence host growth stays below 0.1 MiB.
+`structured-eligibility-cost-disposition-01654.json` and its exact analysis
+script preserve inputs, source hashes, HLO branch counts and full comparisons.
+This is a bounded, explained compilation tradeoff, subject to final repeats;
+it does not establish a statistical ranking or arbitrary-capacity memory bound.
+
+Budget through 01654: GPU 30,927.589910224 / 187,200 and CPU
+39,575.574552332 / 115,200 seconds (remaining GPU 156,272.410089776 and CPU
+75,624.425447668). The extension is counted once. Commit/push the execution
+checkpoint with the graph/XLA blocker explicit; continue independent proposal/
+outer-controller repair without calling the checkpoint terminal-qualified.
+Main remains unmerged. No F01--F20 terminal disposition is closed.
+
+Earlier checkpoint details follow.
+
+Recovery through 01650: the eight cost workers pass individually, but the
+independent complete-record comparison rejects D=5 graph/XLA: 23 fields exceed
+the unchanged atol=rtol=1e-10 gate. Before/after XLA and public/enclosed XLA
+pass at both dimensions. Preserve the failed comparison; do not call this
+checkpoint cost-qualified. D=5 public host peak grows by 468,525,056 bytes,
+device peak by 2.018x and cold time by 2.200x, so resource investigation also
+remains open. Charged GPU 30,697.813371662 / 187,200 and CPU
+39,575.574552332 / 115,200 seconds. No worker is active at recovery.
+
+Next bounded diagnostic separates graph/XLA preparation from same-input fitting.
+At the identical D=5/capacity32 measurement inputs, retain both complete prepared
+records, cross both prepared inputs with graph/XLA fitters, and compare the
+original compact fit using identical active tensors. Preserve all 200 optimizer
+iterations, seeds, dimensions and tolerances. The artifact records every fit
+field and first differences; instrumented results only locate the discrepancy
+and cannot replace uninstrumented qualification. A 300-second GPU worker uses
+the existing driver, growth/idle checks and cumulative budget. Skeptical review:
+same seeds do not guarantee identical rounded QR clouds across compilers, and
+optimizer sensitivity can amplify tiny preparation or factorization changes.
+This crossed-input diagnostic distinguishes those explanations without changing
+the required final record gate. No algorithm/optimizer repair is assumed yet.
+
+01651 localizes both preparation and fitter effects. Same-mode compact/padded
+records agree; graph/XLA also differ on identical prepared inputs. Verify the
+same fields against frozen f06fd505 graph/XLA code before attributing the gap to
+this repair. The failed total comparison remains mandatory and unwaived.
+
+Resource follow-up: two fresh GPU2 processes compare original/current public
+preparation and fitting at D=5/capacity32 over eligible-row counts 1,0,3,8,16,32,
+then repeat that exact sequence. Repeated copies of the same nonzero eligible
+row isolate shape/compilation effects while retaining original half-cloud
+weighting and all 200 iterations. Compare every public field/count and input
+hash at unchanged gates. Record first-use/reuse times and allocator/RSS/HWM at
+each call. No fixture rejection is hidden; any changed record triggers repair.
+The question is whether the upfront branch graph cost avoids repeated compact
+shape compilation; stable warm memory alone cannot answer it. Run the bounded
+`structured_cost_investigation` matrix at 300 seconds per worker, sequentially
+under existing caps. These finite/single-process observations cannot establish
+statistical speed ranking, unrestricted capacity, or terminal acceptance.
+Skeptical review: repeated rows are an explanatory shape control, not additional
+scientific coverage; all original qualification fixtures remain mandatory.
+
+Prior qualification through 01642: all 441 expanded qualification cases pass, including
+26 preparation/23 integration CPU and GPU, 223 GPU consumers, 40 sequential GPU,
+14 original/full fitter CPU, and 66 policy/controller cases. No failed/skipped
+JUnit cases in these groups. The reviewed eight-arm memory batch is active from
+01643; runtime/test sources remain fixed. Charged through 01642: GPU
+30465.160898087 / 187200 and CPU 39575.574552332 / 115200 seconds.
+The compact-record adapter and non-power-of-two reuse are qualified. No main
+merge or terminal F01--F20 acceptance follows from this dependency checkpoint.
+
+01638 passes all 23 expanded GPU integration cases; 01639 passes all 223
+GPU consumers, including the unchanged compact-array assertion. An independent
+100-digit Decimal reconstruction in
+`structured-position-rounding-disposition-01638.json` checks all 36 coordinates
+from 01623: originals equal separately rounded multiply/add, while the old
+candidate equals a single final rounding of the exact product-plus-add. Six
+coordinates differ. This supports contraction as the mechanism without claiming
+machine-code inspection; 01624's native two-stage repair restores all outputs.
+
+01634 passes all five focused GPU boundary/three-row checks. The refreshed
+qualification matrix is active through 01638: 01635 passes 26 preparation CPU
+cases, 01636 passes 23 integration CPU cases, and 01637 passes all 26 preparation
+GPU cases. Preserve sources until the current matrix and planned cost batch
+finish. The compact public view is separated from fixed-capacity runtime data;
+no pre-existing array-shape assertion was weakened.
+
+Next dependency after qualification and cost: the factor proposal/escalation
+and outer sequential controller still use host numerical decisions. A scratch
+proposal-only draft at `/tmp/filter_repair_sequential_proposal_tf_draft.py` is
+not installed or validated. Before using it, compare frozen trust-region steps,
+exact callback order/counts, finite/acceptance/score-resolution boundaries,
+radius changes and best-exact-incumbent promotion independently of model
+acceptance; include nonpositive predicted improvement and optional score gates.
+Use original shape/seed/tolerance/derivative rules and diagnose any changed
+rounding. Keep scalar exact proposal callbacks distinct from batched training.
+The full outer loop, terminal-fit attempts/budgets/history and block/quadratic
+controllers remain separate required work; a compiled proposal alone does not
+close them. Review found no target, tuning, or sampler-policy change in this
+next preparation dependency.
+
+01629/01631 pass 22 CPU/GPU preparation cases; 01630/01632 pass all 19
+CPU/GPU integration cases. Consumer 01633 passes 222 and fails the unchanged
+compact-record boundary assertion. Preserve its original compact arrays via
+host record views while passing the raw fixed-capacity tensor record directly
+to the compiled fitter; numerical decisions never use those views. This fixes
+the interface, not the test. Add non-power-of-two reuse (three rows) to exercise
+runtime 0.5/count weighting. Requalify full records and consumers. Benchmark
+review also removes an unused candidate graph from the original public arm's
+setup before any timing is collected; no baseline work may be inflated.
+
+01628 passes enclosing HLO/runtime inputs, changed-occupancy parity, original
+preparation pullbacks, frozen fitted derivatives, post-eviction use and graph/
+resource release. Run `matrix --stage tests --test-batch structured` sequentially
+with sources frozen: all preparation and full-fit CPU/GPU cases, 223 GPU
+consumers, 14 full fitter CPU records, and policy/controller checks.
+
+Structured cost contract, conditional on correctness: eight fresh GPU2 workers
+compare f06fd505/current public preparation-plus-fit and current enclosing
+graph-reference/XLA at D=3/capacity4 and D=5/capacity32. Use identical healthy
+factor-covariance inputs, one eligible reused row, unchanged seeds and all 200
+optimizer iterations. Record all public fields, evaluation counts, same input
+and source hashes, host RSS/HWM and allocator bytes at construction and one
+cold plus twenty complete warm calls. Inspect HLO/trace counts after timing.
+Graph-reference is explicitly non-default. Before/after and graph/XLA records
+must pass unchanged 1e-10 gates, discrete counts exactly; only the recorded JIT
+mode is an expected field difference. Same-mode repeated results must be exact.
+Investigate 256 MiB/2x memory or timing triggers and growing warm allocations.
+Use `matrix --stage tests --test-batch structured_memory --test-timeout-seconds
+300` under unchanged cumulative caps. These are descriptive checkpoint costs;
+three-process terminal repeats and enclosing outer-controller comparisons
+remain required. Review: frozen original methods, equal synchronization/output
+lifetimes, no optimizer shortcuts or withheld failed arms; padding cost remains
+in total overhead. No independent reviewer or statistical ranking is claimed.
+
+01627 excludes the test tape as the retention cause. Installed TensorFlow
+`python/ops/custom_gradient.py:487--524` registers a process-level gradient
+closure that retains the traced result and custom pullback. The affine custom
+gradient was traced inside the resource-owning consumer. Bind that small,
+resource-free affine map in its own fixed-signature function under init_scope,
+before consumer tracing; keep its numerical two-stage loop and exact pullback.
+Remove the unhelpful identity-barrier trial. Require the same consumer graph
+and resource to release, while original derivatives/records and HLO stay fixed.
+This addresses graph ownership, not TensorFlow's separate executable cache.
+
+01626 passes original preparation pullbacks, no-optimizer derivative, all
+runtime HLO inputs and changed-occupancy reuse. The final consumer-graph release
+check fails after an external tape was used. First release the test's tape
+object and repeat; if retained, inspect native custom-gradient registration and
+scope its identity/affine pullback graphs outside resource-owning consumers.
+The lifetime gate remains mandatory; successful cache-eviction calls alone do
+not prove resource release.
+
+01624 restores exact preparation stages. 01625 passes all 18 complete/rejection
+CPU cases, including healthy D=3/5 records, but returning differentiable
+preparation under an external tape exposes XLA TensorList boundary support.
+Use the exact pullback of positions = center + fresh*scale around the two native
+rounding stages: dFresh=upstream*scale, dCenter=sum(upstream),
+dScale=sum(upstream*fresh). This preserves the same mathematical derivative and
+avoids retaining a loop history for a two-operation affine map. Qualify against
+original preparation pullbacks, plus the geometry-only frozen derivative and
+resource lifetime/HLO checks. No optimizer AD or algorithm derivative is changed.
+
+01623 identifies position construction as the first discrepancy (5.55e-17).
+At identical positions, inlined/standalone callback scores and score scaling
+are exact. The original separately rounded multiply/add became contracted;
+barriers alone did not preserve rounding. Test two native loop stages for the
+same multiply and add, keeping arithmetic, derivative and fixed shape unchanged.
+This trial must restore full records and retain runtime operands; do not add
+backend flags or alter tolerances to accept fused arithmetic.
+
+01622 retains the same two condition-number discrepancies; the first barrier
+trial does not repair them. It also exposes missing AD registration on the raw
+XLA barrier when differentiable preparation is returned. Wrap that mathematical
+identity in an exact identity pullback; do not freeze previously differentiable
+preparation. Next compare original/candidate positions, standalone versus
+inlined callback scores at identical positions, and score standardization to
+identify the first differing operation. Keep this instrumentation diagnostic.
+
+01621 isolates the discrepancy to recomputed scores (maximum 2.22e-16):
+padding the exact original data preserves all fit fields. Native preparation
+had fused across the original host displacement/addition and target-output
+boundaries. Introduce numerical no-op XLA barriers at those boundaries, then
+rerun complete record gates without tolerance changes. Preserve frozen exact
+winner outputs and the fit's post-validation derivative boundary. The frozen
+D=5 fixture is an invalid-trial rejection, not a healthy fit; apply the already
+qualified rejection-count semantics and add healthy one-/two-factor fixtures.
+
+01620 passes seven CPU cases but complete integration is not qualified. The
+new D=5 precision fixture also rejects in frozen source (invalid optimizer
+trials), so its healthy-geometry assumption was false; retain rejection checks
+using the already reviewed count semantics. Two D=3 Jacobian condition records
+near 1e14 differ beyond the unchanged tolerance although fit status and optimizer
+counts agree. Localize with original inputs padded directly versus recomputed
+preparation, preserving full 200-iteration settings and all field gates. The
+combined graph returns differentiable preparation beside frozen fitted geometry;
+its tape returns a zero through those extra outputs. Check geometry-only output
+separately and retain the original no-optimizer-derivative contract. No numerical
+threshold or failed record is waived; memory qualification waits for resolution.
+
+01618/01619 pass all 21 GPU/CPU preparation checks. Tensor gathers preserve
+all seven runtime inputs and changed-data HLO; the callback counter repair
+passes original ordered scalar/batched call counts. Integrate the padded fit
+with an explicit native finite-input/active-weight gate and shared public-record
+materializer. Keep the compact internal-schema adapter for existing prepared
+callers; it still uses the existing XLA fitter. New preparation uses fixed
+capacity and tensor active count. Test complete fresh/reused fit records,
+nonfinite and dimension rejection, frozen derivatives, combined preparation/fit
+HLO and resource lifetime. Do not claim the enclosing outer controller repaired.
+
+01617 identifies specialized center/scale/radius operands at data-dependent
+winner slicing. Use tensor gathers for that same index, as in the earlier
+factor-input repair. Verify all seven inputs plus changed center, score, scale,
+radius, seed and search data reuse unchanged HLO. The selected values and
+finite/first-tie policy must remain identical to frozen compact preparation.
+
+01616 ran on GPU (manual CLI defaults to GPU despite the group name). It
+passes 18 preparation cases and exposes two harness errors plus a compiler
+input issue: the int32 callback counter was placed on CPU; use int64 for the
+GPU-compatible diagnostic counter. HLO has four operands instead of seven,
+so input-specialization qualification fails even though changing reuse rows
+preserves numerical results. Preserve HLO and identify missing operands before
+integration; one trace alone is insufficient. CPU retries must explicitly pass
+`--device CPU`. No runtime numerical tolerance or source algorithm changes.
+
+September 21 continuation after pushed f06fd505: start structured preparation
+qualification. The frozen compact oracle is f06fd505; it preserves the prior
+cloud/target semantics while including the just-qualified domain guard. Compare
+all preparation fields at capacities 4/32 and dimensions 3/5, zero/partial/full
+reuse, scalar/batched callbacks, nonfinite rows and exact radius boundaries.
+Explicit call counters check ordered scalar calls and one batched callback;
+nontraceable callbacks must fail without eager retry. Changed eligibility must
+reuse one trace with all seven data operands in unchanged HLO. Only then wire
+the padded fitter and compare complete records. Skeptical review: a fixed-capacity
+cloud alone could mask row reordering or altered fresh/reused weights; compare
+the compact active prefix and every count, and test inactive sanitation. The
+unchanged 300/900-second worker bounds and cumulative campaign caps apply.
+
 September 21 qualified guard checkpoint through 01615: all 66 policy/controller,
 38 combined GPU, 223 GPU consumer, two CPU and two GPU lifetime checks pass.
 All 38 original CPU cases pass in three sequential fresh processes (14/18/6).

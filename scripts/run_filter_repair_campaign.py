@@ -63,6 +63,28 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "structured_inherited_modes": (
+        "tests/test_filter_repair_structured_memory.py::test_inherited_structured_fitter_modes",),
+    **{f"structured_eligibility_{arm}": (
+        f"tests/test_filter_repair_structured_memory.py::test_structured_changing_eligibility_memory[{arm}]",)
+        for arm in ("before", "after")},
+    "structured_graph_xla_localization": (
+        "tests/test_filter_repair_structured_memory.py::test_structured_graph_xla_localization",),
+    "structured_record_boundary": (
+        "tests/test_factor_correlation_geometry.py::test_reuse_filter_includes_radius_boundary_and_rejects_zero_outside_nonfinite",
+        "tests/test_filter_repair_structured_fit.py", "-k", "three or radius_boundary"),
+    **{f"structured_memory_{arm}_{dimension}": (
+        f"tests/test_filter_repair_structured_memory.py::test_structured_preparation_fit_memory[{arm}-{dimension}-{capacity}]",)
+        for arm in ("before", "after", "graph", "xla") for dimension, capacity in ((3, 4), (5, 32))},
+    "structured_fit_enclosure": ("tests/test_filter_repair_structured_fit.py::test_enclosing_preparation_fit_has_runtime_inputs_and_frozen_geometry",
+        "tests/test_filter_repair_structured_preparation.py::test_preparation_pullbacks_preserve_original_tensors"),
+    "structured_preparation_stages": ("tests/test_filter_repair_structured_fit.py::test_preparation_stage_localization",),
+    "structured_fit_arithmetic": ("tests/test_filter_repair_structured_fit.py::test_structured_preparation_arithmetic_localization",),
+    "structured_fit_cpu": ("tests/test_filter_repair_structured_fit.py", "-k", "not localization"),
+    "structured_fit_gpu": ("tests/test_filter_repair_structured_fit.py", "-k", "not localization"),
+    "structured_preparation_inputs": ("tests/test_filter_repair_structured_preparation.py::test_runtime_eligibility_keeps_one_trace_all_operands_and_same_hlo",),
+    "structured_preparation_cpu": ("tests/test_filter_repair_structured_preparation.py",),
+    "structured_preparation_gpu": ("tests/test_filter_repair_structured_preparation.py",),
     "factor_guard_cpu_fixed": ("tests/test_filter_repair_fixed_fitting.py",),
     "factor_guard_cpu_padded": ("tests/test_filter_repair_padded_factor.py", "-k", "not localization"),
     "factor_guard_cpu_domain": ("tests/test_filter_repair_factor_domain.py", "-k", "runtime"),
@@ -351,6 +373,15 @@ TEST_GROUPS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "structured_inherited_modes": "Frozen-source attribution of a failed compiler comparison; no parity threshold is waived.",
+    **{f"structured_eligibility_{arm}": "Single-process changing active-size cost; no terminal performance claim."
+        for arm in ("before", "after")},
+    "structured_graph_xla_localization": "Crossed prepared inputs isolate a failed graph/XLA comparison; complete record gates remain unchanged.",
+    **{f"structured_memory_{arm}_{dimension}":
+        "Single-process checkpoint memory/performance observation; complete comparisons and terminal repeats required separately."
+        for arm in ("before", "after", "graph", "xla") for dimension in (3, 5)},
+    "structured_preparation_stages": "Instrumented arithmetic boundaries only; no runtime record gate is replaced.",
+    "structured_fit_arithmetic": "Instrumented preparation versus same-input padding breakdown; complete runtime records remain mandatory.",
     "factor_guard_mapping_probe": "01598 CPU LLVM mapping exhaustion reproducer; required coverage is CPU modules plus combined GPU qualification.",
     "factor_guard_mapping_release": "01599 rejected cache-release trial; TensorFlow retains device executables without eviction.",
     "factor_guard_native_stack": "01597 native failure localization, not a runtime acceptance suite.",
@@ -394,6 +425,11 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "structured_cost_investigation": ("structured_inherited_modes", "structured_eligibility_before", "structured_eligibility_after"),
+    "structured": ("structured_preparation_cpu", "structured_fit_cpu", "structured_preparation_gpu",
+        "structured_fit_gpu", "fixed_fitting_consumers", "sequential_geometry", "factor_guard_cpu_fixed", "policy"),
+    "structured_memory": tuple(f"structured_memory_{arm}_{dimension}"
+        for arm in ("before", "after", "graph", "xla") for dimension in (3, 5)),
     "factor_guard": ("factor_guard_gpu_lifetime", "factor_guard_qualification",
         "fixed_fitting_consumers", "factor_guard_resource_lifetime", "factor_guard_cpu_fixed",
         "factor_guard_cpu_padded", "factor_guard_cpu_domain", "policy"),
@@ -409,7 +445,7 @@ def mandatory_test_groups():
 FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
-TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+TEST_DEVICES = {**{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "factor_guard_gpu_lifetime": "GPU", "fixed_fitting_consumers": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["factor_guard_memory"]},
     "factor_guard_qualification": "GPU",

@@ -16,15 +16,20 @@ from typing import Any
 
 import tensorflow as tf
 
-from bayesfilter.inference._exact_incumbent import (
-    candidates_from_rows,
-    select_exact_incumbent,
-)
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
+    _factor_result_from_computed,
     fit_factor_correlation_score_geometry,
 )
+from bayesfilter.inference.factor_correlation_geometry import (
+    _rejected as _rejected_factor_fit,
+)
 from bayesfilter.inference.mass_matrix import covariance_from_precision
+from bayesfilter.inference.sequential_batched_locator_tf import (
+    batched_locator_program,
+    buffered_batched_locator_program,
+)
+from bayesfilter.inference.sequential_locator_tf import scalar_locator_program
 from bayesfilter.inference.sequential_preparation_tf import (
     cloud_program,
     evaluation_program,
@@ -35,9 +40,11 @@ from bayesfilter.inference.sequential_score_fit_tf import (
     score_fit_program,
 )
 from bayesfilter.inference.sequential_selection_tf import replay_program, search_program
-from bayesfilter.inference.sequential_locator_tf import scalar_locator_program
-from bayesfilter.inference.sequential_batched_locator_tf import (
-    batched_locator_program, buffered_batched_locator_program,
+from bayesfilter.inference.sequential_structured_fit_tf import (
+    structured_fit_data_program,
+)
+from bayesfilter.inference.sequential_structured_preparation_tf import (
+    structured_data_program,
 )
 from bayesfilter.ops.host_tensor_io import numeric_tensor
 
@@ -1099,98 +1106,31 @@ def _structured_factor_fit_data(
 ) -> tuple[Mapping[str, Any], int]:
     """Build independent fresh train/holdout frames plus eligible reused rows."""
 
-    if fresh_sample_count < 4 * dimension or fresh_sample_count % 2:
-        raise ValueError("structured fresh sample count must be even and at least 4N")
-    fresh_train_count = fresh_sample_count // 2
-    fresh_holdout_count = fresh_sample_count - fresh_train_count
-    train_z = _orthogonal_antithetic_cloud(
-        fresh_train_count, dimension, radius, seed
-    )
-    holdout_z = _orthogonal_antithetic_cloud(
-        fresh_holdout_count,
-        dimension,
-        radius,
-        (seed[0], seed[1] + 104729),
-    )
-    fresh_z = tf.concat((train_z, holdout_z), axis=0)
-    fresh_theta = center[None, :] + fresh_z * scale[None, :]
-    fresh_values, fresh_scores = _evaluate_cloud(
-        function,
-        fresh_theta,
-        dimension,
-        batched_value_and_score_fn=batched_value_and_score_fn,
-    )
-    evaluations += fresh_sample_count
-    fresh_train_scores = fresh_scores[:fresh_train_count]
-    holdout_scores = fresh_scores[fresh_train_count:]
-
-    reused_z = tf.zeros([0, dimension], tf.float64)
-    reused_scores = tf.zeros([0, dimension], tf.float64)
-    if reuse_search_scores:
-        translated = (search_theta - center[None, :]) / scale[None, :]
-        finite = tf.reduce_all(
-            tf.math.is_finite(translated) & tf.math.is_finite(search_scores), axis=1
-        )
-        nearby = tf.linalg.norm(translated, axis=1) <= radius * (1.0 + 1.0e-12)
-        nonzero = tf.linalg.norm(translated, axis=1) > 1.0e-12
-        eligible = finite & nearby & nonzero
-        reused_z = tf.boolean_mask(translated, eligible)
-        reused_scores = tf.boolean_mask(search_scores, eligible)
-
-    reused_count = int(tf.shape(reused_z)[0].numpy())
-    fresh_candidates = candidates_from_rows(
-        fresh_theta,
-        fresh_values,
-        fresh_scores,
-        start_index=int(evaluations - fresh_sample_count),
-        source_role="structured_fit_cloud",
-    )
-    fresh_incumbent = select_exact_incumbent(fresh_candidates)
-    training_z = tf.concat((train_z, reused_z), axis=0)
-    training_scores = tf.concat((fresh_train_scores, reused_scores), axis=0)
-    if reused_count:
-        weights = tf.concat(
-            (
-                tf.fill(
-                    [fresh_train_count],
-                    tf.constant(0.5 / fresh_train_count, tf.float64),
-                ),
-                tf.fill(
-                    [reused_count],
-                    tf.constant(0.5 / reused_count, tf.float64),
-                ),
-            ),
-            axis=0,
-        )
-    else:
-        weights = tf.fill(
-            [fresh_train_count],
-            tf.constant(1.0 / fresh_train_count, tf.float64),
-        )
+    result = structured_data_program(function, batched_value_and_score_fn, dimension,
+        fresh_sample_count, int(search_theta.shape[0]), reuse_search_scores)(
+        center, center_score, scale, tf.convert_to_tensor(radius, tf.float64),
+        tf.convert_to_tensor(seed, tf.int32), search_theta, search_scores)
+    has_winner = int(result["best_index"]) >= 0
+    # Preserve the historical compact record at this host boundary. The
+    # optimizer consumes the fixed-capacity tensors directly, never these views.
+    active_rows = int(result["active_training_rows"])
     return {
-        "center_score_z": scale * center_score,
-        "training_offsets_z": training_z,
-        "training_scores_z": training_scores * scale[None, :],
-        "holdout_offsets_z": holdout_z,
-        "holdout_scores_z": holdout_scores * scale[None, :],
-        "training_weights": weights,
-        "fresh_training_count": fresh_train_count,
-        "fresh_holdout_count": fresh_holdout_count,
-        "reused_training_count": reused_count,
+        "center_score_z": result["center_score_z"],
+        "training_offsets_z": result["training_offsets_z"][:active_rows],
+        "training_scores_z": result["training_scores_z"][:active_rows],
+        "holdout_offsets_z": result["holdout_offsets_z"],
+        "holdout_scores_z": result["holdout_scores_z"],
+        "training_weights": result["training_weights"][:active_rows],
+        "_native_factor_data": result,
+        "fresh_training_count": int(result["fresh_training_count"]),
+        "fresh_holdout_count": int(result["fresh_holdout_count"]),
+        "reused_training_count": int(result["reused_training_count"]),
         "unique_fresh_evaluations": fresh_sample_count,
-        "best_exact_value": (
-            None if fresh_incumbent is None else fresh_incumbent.value
-        ),
-        "best_exact_position": (
-            None if fresh_incumbent is None else fresh_incumbent.position
-        ),
-        "best_exact_score": (
-            None if fresh_incumbent is None else fresh_incumbent.score
-        ),
-        "best_exact_source": (
-            None if fresh_incumbent is None else fresh_incumbent.source_role
-        ),
-    }, evaluations
+        "best_exact_value": float(result["best_value"]) if has_winner else None,
+        "best_exact_position": result["best_position"].numpy().tolist() if has_winner else None,
+        "best_exact_score": result["best_score"].numpy().tolist() if has_winner else None,
+        "best_exact_source": "structured_fit_cloud" if has_winner else None,
+    }, evaluations + fresh_sample_count
 
 
 def _fit_factor_from_data(
@@ -1201,21 +1141,36 @@ def _fit_factor_from_data(
 ) -> Mapping[str, Any]:
     if data is None:
         return {"status": "missing_structured_fit_data"}
-    result = fit_factor_correlation_score_geometry(
-        data["center_score_z"],
-        data["training_offsets_z"],
-        data["training_scores_z"],
-        data["holdout_offsets_z"],
-        data["holdout_scores_z"],
-        training_weights=data["training_weights"],
-        config=FactorCorrelationGeometryConfig(
-            factor_count=factor_count,
-            max_condition_number=config.max_condition_number,
-            holdout_score_relative_rmse=(
-                config.structured_holdout_score_relative_rmse
-            ),
-        ),
-    )
+    factor_config = FactorCorrelationGeometryConfig(factor_count=factor_count,
+        max_condition_number=config.max_condition_number,
+        holdout_score_relative_rmse=config.structured_holdout_score_relative_rmse)
+    if "_native_factor_data" not in data:
+        result = fit_factor_correlation_score_geometry(data["center_score_z"],
+            data["training_offsets_z"], data["training_scores_z"], data["holdout_offsets_z"],
+            data["holdout_scores_z"], training_weights=data["training_weights"], config=factor_config)
+    else:
+        numerical = data["_native_factor_data"]
+        dimension = int(numerical["center_score_z"].shape[0])
+        rows = int(numerical["training_offsets_z"].shape[0])
+        holdout_rows = int(numerical["holdout_offsets_z"].shape[0])
+        program = structured_fit_data_program(dimension, rows, holdout_rows, factor_config)
+        computed = program(numerical["center_score_z"], numerical["training_offsets_z"], numerical["training_scores_z"],
+            numerical["holdout_offsets_z"], numerical["holdout_scores_z"], numerical["training_weights"],
+            numerical["active_training_rows"])
+        input_status = int(computed["input_status"])
+        if input_status == 1:
+            count = 2 * dimension if factor_count == 1 else 3 * dimension - 1
+            result = _rejected_factor_fit(factor_config, dimension,
+                "factor_parameterization_dimensionally_unidentified", parameter_count=count,
+                diagnostics={"parameter_count": count,
+                    "symmetric_covariance_entry_count": dimension * (dimension + 1) // 2})
+        elif input_status == 2:
+            result = _rejected_factor_fit(factor_config, dimension, "nonfinite_fit_inputs")
+        elif input_status in (3, 4):
+            raise ValueError("prepared training rows and active weights must be valid")
+        else:
+            result = _factor_result_from_computed(computed["fit"], factor_config, dimension,
+                int(numerical["active_training_rows"]), holdout_rows, True)
     payload = dict(result.payload())
     payload.update(
         {
