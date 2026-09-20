@@ -4,9 +4,10 @@ import math
 from functools import lru_cache
 
 import tensorflow as tf
-from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_self_adjoint_eig, xla_svd
+from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
 from bayesfilter.inference._exact_incumbent import _incumbent_selection
+from bayesfilter.inference.mass_matrix_tf import eigenpair_program
 from bayesfilter.inference.sequential_preparation_tf import (
     cloud_program,
     evaluation_program,
@@ -71,9 +72,7 @@ def fit_numerics(z, scores, center_score, scale, ridge, floor, condition_cap,
         holdout_error = tf.sqrt(tf.reduce_mean((holdout_prediction - holdout_response_rows) ** 2))
         holdout_scale = tf.maximum(tf.sqrt(tf.reduce_mean(holdout_response_rows ** 2)), 1e-15)
         relative = holdout_error / holdout_scale
-        eigenvalues, vectors = (xla_self_adjoint_eig(
-            precision, lower=True, max_iter=100, epsilon=math.ulp(1.0))
-            if jit_compile else tf.linalg.eigh(precision))
+        eigenvalues, vectors = eigenpair_program(dimension)(precision) if jit_compile else tf.linalg.eigh(precision)
         eigenvalues = tf.ensure_shape(eigenvalues, [dimension])
         vectors = tf.ensure_shape(vectors, [dimension, dimension])
         effective_floor = tf.maximum(floor, tf.reduce_max(eigenvalues) / condition_cap)

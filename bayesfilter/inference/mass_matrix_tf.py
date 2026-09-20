@@ -102,6 +102,22 @@ def _eigenpairs(matrix, jit_compile):
     return _eigh(matrix) if jit_compile else tf.linalg.eigh(matrix)
 
 
+@lru_cache(maxsize=64)
+def eigenpair_program(dimension):
+    """Trace the spectral custom derivative without retaining a caller graph."""
+    # The custom-gradient registry retains its traced tensor closure. Creating
+    # that closure in a resource-owning caller also retains its factor guards.
+    # Keep this graph independent, as for the shared fresh-position program.
+    with tf.init_scope():
+        @tf.function(input_signature=[tf.TensorSpec([dimension, dimension], D)],
+                     jit_compile=True, autograph=False)
+        def eigenpairs(matrix):
+            return _eigh(matrix)
+
+        eigenpairs.get_concrete_function()
+    return eigenpairs
+
+
 @tf.function(input_signature=[tf.TensorSpec([None, None], D)], jit_compile=True, autograph=False)
 def finite_matrix(matrix):
     return tf.reduce_all(tf.math.is_finite(matrix))

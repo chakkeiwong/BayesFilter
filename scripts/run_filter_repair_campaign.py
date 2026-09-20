@@ -63,6 +63,23 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "factor_row_decode": ("tests/test_filter_repair_factor_row_decode.py",),
+    "lifecycle_factor_initial": ("tests/test_filter_repair_lifecycle_factor_initial.py",),
+    "lifecycle_factor_inputs": ("tests/test_filter_repair_lifecycle_factor_inputs.py",),
+    **{f"lifecycle_original_runtime_{dimension}_cpu": (
+        f"tests/test_filter_repair_lifecycle_original_runtime.py::test_original_lifecycle_runtime_inputs_and_resource_lifetime[{dimension}]",)
+        for dimension in (3, 5)},
+    "lifecycle_original_runtime_gpu": ("tests/test_filter_repair_lifecycle_original_runtime.py",),
+    **{f"lifecycle_original_symmetric_{device}": (
+        "tests/test_filter_repair_lifecycle_original.py", "-k", "not factor")
+        for device in ("cpu", "gpu")},
+    **{f"lifecycle_original_{case}_{device}": (
+        f"tests/test_filter_repair_lifecycle_original.py::test_original_full_lifecycle_records_and_target_order[{case}]",)
+        for case in ("factor_one", "factor_two", "factor_two_reuse") for device in ("cpu", "gpu")},
+    "terminal_original_cpu": ("tests/test_filter_repair_terminal_original.py",),
+    "terminal_original_gpu": ("tests/test_filter_repair_terminal_original.py",),
+    "sequential_eigen_consumers_cpu": ("tests/test_filter_repair_eigen_consumers.py",),
+    "sequential_eigen_consumers_gpu": ("tests/test_filter_repair_eigen_consumers.py",),
     **{f"lifecycle_profile_{dimension}": (
         f"tests/test_filter_repair_lifecycle_profile.py::test_lifecycle_compilation_memory_stages[{dimension}-{search_count}]",)
         for dimension, search_count in ((3, 4), (5, 32))},
@@ -423,6 +440,9 @@ TEST_GROUPS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "factor_row_decode": "Native translation of original per-row decoder as a diagnostic injection; full-record gates still required before runtime use.",
+    "lifecycle_factor_initial": "Frozen original initializer intervention and identical-state objectives; diagnostic only, no runtime substitute or tolerance waiver.",
+    "lifecycle_factor_inputs": "Crossed original/current prepared inputs and fitters; attribution cannot waive original full-record numerical failure.",
     **{f"lifecycle_profile_{dimension}":
         "Stage attribution of lifecycle host/allocator compilation growth; not comparative timing or terminal qualification."
         for dimension in (3, 5)},
@@ -491,6 +511,18 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "sequential_eigen_public": ("sequential_preparation", "sequential_score_fit", "sequential_geometry",
+        "block_center", "locator_completion", "policy"),
+    "lifecycle_original_runtime": ("lifecycle_original_runtime_3_cpu", "lifecycle_original_runtime_5_cpu",
+        "lifecycle_original_runtime_gpu", "sequential_geometry", "block_center", "locator_completion", "policy"),
+    "lifecycle_original": ("lifecycle_original_symmetric_cpu", "lifecycle_original_factor_one_cpu",
+        "lifecycle_original_factor_two_cpu", "lifecycle_original_factor_two_reuse_cpu",
+        "lifecycle_original_symmetric_gpu", "lifecycle_original_factor_one_gpu",
+        "lifecycle_original_factor_two_gpu", "lifecycle_original_factor_two_reuse_gpu", "policy"),
+    "terminal_original": ("terminal_original_cpu", "terminal_original_gpu", "policy"),
+    "sequential_eigen_dependencies": ("sequential_preparation", "sequential_score_fit",
+        "sequential_terminal_cpu", "sequential_terminal_gpu", "policy"),
+    "sequential_eigen_consumers": ("sequential_eigen_consumers_cpu", "sequential_eigen_consumers_gpu", "policy"),
     "lifecycle_profile": ("lifecycle_profile_3", "lifecycle_profile_5", "policy"),
     "lifecycle_investigation": ("lifecycle_profile_3", "lifecycle_profile_5",
         "lifecycle_terminal_modes", "lifecycle_factor_modes", "policy"),
@@ -573,6 +605,10 @@ TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU",
     "sequential_terminal_gpu": "GPU",
     "refinement_gpu": "GPU",
     "lifecycle_runtime_gpu": "GPU",
+    "lifecycle_original_runtime_gpu": "GPU",
+    "sequential_eigen_consumers_gpu": "GPU",
+    "terminal_original_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["lifecycle_original"] if group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_BATCHES["lifecycle_investigation"] if group != "policy"},
     **{group: "GPU" for group in TEST_BATCHES["lifecycle_memory"] if group != "policy"},
     **{group: "GPU" for group in TEST_BATCHES["lifecycle_actual"] if group.endswith("_gpu")},

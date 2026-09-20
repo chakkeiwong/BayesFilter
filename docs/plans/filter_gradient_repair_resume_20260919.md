@@ -5,41 +5,55 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
-Current checkpoint through 01799: native lifecycle providers and six winner
-gathers are qualified in focused CPU/GPU scopes. Public outer loop remains
-unchanged. All current changes are ready for a partial checkpoint commit/push;
-cfbc32d2 is the preceding pushed checkpoint. No worker is active.
+Qualified partial checkpoint through 01839 is ready to commit/push, based on
+pushed ee2d455f. No worker is active. The public outer lifecycle is unchanged;
+main remains unmerged. Full result/review:
+[sequential eigenpair checkpoint](filter_gradient_eigen_checkpoint_20260921.md).
 
-Report transport passes all eight actual CPU/GPU records and policy
-(01777--01785). Renewed costs (01786--01791) preserve exact frozen/XLA complete
-records. Warm before/XLA medians: 60.330/70.028 ms D3, 175.411/195.831 ms D5.
-Cold host overhead remains 492.066/1320.527 MiB. D3 GPU peak 94,976/190,464 bytes
-crosses 2x; D5 is 230,912/417,280 bytes. Strict graph/XLA still fails 19 D5 fields.
+The two sequential eigensystem consumers now use the existing refined helper
+inside an independent stable-signature XLA graph. Directly tracing its custom
+derivative retained a factor guard through evaluate's graph-owned resource
+dictionary (01823). Isolation releases all actual consumer graphs and tracked
+validity variables on CPU/GPU (01825/01828), while preserving HLO inputs, one
+trace and execution after factory eviction. Native executable eviction and
+broader leak freedom are not established.
 
-01794 attributes terminal precision gaps to the existing XLA eigensolver on
-identical matrices: residual 1.788e-10, graph/refined helper <=8.882e-16.
-01796 attributes the factor condition difference to fitted states, not the
-same-state diagnostic. Failed 01795 is preserved (diagnostic asked for position
-from OptimizerSummary); its repaired retry validates full dependency records.
+Eight focused numerical/gradient cases pass on each CPU/GPU (01824/01827).
+All 153 affected GPU consumers pass (01830--01834), and all 67 policy/controller
+checks pass (01839). Earlier three-way terminal and complete original lifecycle
+qualification is preserved in the checkpoint note. Intermediate cfbc32d2 has a
+demonstrated eigensystem defect; original 3582b4ac is the numerical authority.
 
-01792/01793 and 01797/01798 place the major host growth before reporting.
-Raw RSS agrees with smaps_rollup at 2.279/4.366 GB; peak counters disagree by
-37.9/27.9 MB, so do not describe endpoint VmHWM as an exact peak. The analysis
-lifecycle-memory-stage-disposition-01799.json checks full records against costs.
-All 67 policy/controller cases pass in 01799; guard 198 sources / 1,276 exact
-exceptions, partial. Focused Ruff and whitespace pass.
+D5 changed-input original-source records still fail 66 CPU / 53 GPU fields at
+unchanged atol=rtol=1e-10. D3 GPU records pass. All 66 CPU failures predate the
+eigenpair repair, as archived attribution against 01754 shows. Crossed-data fits
+in 01826 reproduce the original failure: 4/2/66 failed fields for current fit on
+original data, original fit on current data, and current/current relative to
+original/original. Prepared differences are <=1.1883e-16; all use 73 iterations /
+217 evaluations. Original-initial-state injection does not fix this (01829).
+Native-row decoding passes value/VJP checks but its ForwardAccumulator composition
+fails (01836); an objective-only diagnostic with the unchanged vector Jacobian
+still fails full records (01837). No diagnostic injection is installed in runtime.
 
-Budget: CPU 41,166.158309666 / 115,200, GPU 36,678.672169596 / 187,200 seconds.
-Next: checkpoint commit/push, qualify existing refined eigenpairs in sequential
-terminal/trust kernels against original 3582b4ac and independent residuals;
-continue factor mode investigation, efficient public reporting, external process
-deadlines and broader controller repairs. Scratch regression draft:
-/tmp/filter_repair_eigen_consumers_draft.py (not installed or tested). Full
-actual lifecycle and changed-input/resource qualification precedes public wiring.
+The fresh 01838 inventory covers 2920 working Python files, 2919 parsed, and the
+same vendored legacy parse error. Guard coverage remains partial: 198 sources /
+1276 exact exceptions. New numerical source/tests pass focused Ruff; the driver
+retains its pre-existing import-order, duplicate-key and dict-style warnings.
+Whitespace checks pass. No package, OS, external source or source-pin change.
 
-No external source/pin changed. All terminal findings, DZ5 target-only and actual
-full-transition-block evidence, terminal repeats and merge remain open. Public
-progress review: filter_gradient_lifecycle_progress_review_20260921.md.
+Charged totals through 01839: CPU 41913.46378235762/115200 seconds;
+GPU 37772.45033208291/187200 seconds. Do not count the extension again.
+
+Next: preserve this branch checkpoint; continue original-source D5 optimizer
+rounding qualification without retuning/tolerance changes; give obsolete
+intermediate lifecycle/refinement comparisons an explicit original-authority
+disposition; renew original complete costs after numerical runtime qualification;
+finish public reporting/outer wiring and independent external watchdogs; repair
+broader block/quadratic controllers and qualify actual DZ5 target/full-transition
+blocks. All F01--F20 terminal decisions, repeated comparisons and merge remain open.
+The original-source cost harness draft at
+/tmp/filter_repair_lifecycle_original_memory_draft.py is not installed/tested.
+The native-row decoder is diagnostic-only under tests, not a proposed runtime fix.
 
 Historical checkpoint details follow; active/no-worker statements below apply
 only to their own numbered checkpoints.

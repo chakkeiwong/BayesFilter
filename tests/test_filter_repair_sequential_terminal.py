@@ -42,7 +42,10 @@ def _payload(result, cfg):
 
 @pytest.mark.parametrize('case', ['healthy3', 'healthy5', 'paired', 'insufficient', 'paired_insufficient', 'rank', 'holdout'])
 def test_actual_terminal_seeded_records_and_enclosure(case, request):
-    checkpoint = FrozenCheckpoint('cfbc32d2', 'terminal')
+    # The intermediate cfbc32d2 XLA eigensystem has demonstrated residual error.
+    # The separate three-way test preserves it; precision is checked against
+    # the original source with every field and the same tolerance retained.
+    checkpoint = FrozenCheckpoint('3582b4ac', 'terminal')
     frozen = checkpoint.load('bayesfilter.inference.sequential_map_covariance')
     dimension = 5 if case == 'healthy5' else 10 if case == 'insufficient' else 3
     count = 2 if case == 'insufficient' else 4 if case == 'paired_insufficient' else 24

@@ -4,12 +4,11 @@ Cloud mapping here is independent preparation, not a batch-native NeuTra
 training target. The enclosing locator's host search lifecycle is separate.
 """
 
-import math
 from functools import lru_cache
 
 import tensorflow as tf
-from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_self_adjoint_eig
 
+from bayesfilter.inference.mass_matrix_tf import eigenpair_program
 from bayesfilter.ops.stateless_random_tf import philox_normal_float64
 
 
@@ -86,11 +85,10 @@ def trust_region_program(dimension, *, jit_compile=True):
         tf.TensorSpec([dimension], tf.float64), tf.TensorSpec([], tf.float64)],
         jit_compile=jit_compile, autograph=False)
     def solve(precision, linear, radius):
-        # tf.linalg.eigh's default XLA stopping tolerance is too loose for the
-        # existing binary64 gate. Use the project's explicit Jacobi precision.
+        # The backend can stop with unresolved rotations even at binary64
+        # epsilon. Reuse the residual refinement of the same eigenproblem.
         if jit_compile:
-            eigenvalues, eigenvectors = xla_self_adjoint_eig(
-                precision, lower=True, max_iter=100, epsilon=math.ulp(1.0))
+            eigenvalues, eigenvectors = eigenpair_program(dimension)(precision)
         else:
             # Explicit graph-reference exception; the default is GPU/XLA.
             eigenvalues, eigenvectors = tf.linalg.eigh(precision)

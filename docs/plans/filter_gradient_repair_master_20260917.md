@@ -4,6 +4,239 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+Current checkpoint through 01839: the sequential eigenpair accuracy and graph
+resource repairs pass focused CPU/GPU checks and all 153 affected GPU consumers;
+all 67 policy/controller checks pass. No worker is active. The D5 changed-input
+full-record numerical mismatch remains open (66 CPU / 53 GPU failed fields),
+and neither original-initial-state injection nor the native-row objective trial
+closes it. Those trials remain diagnostic-only. Full cost renewal, public outer
+wiring, broader controller/external integration and terminal decisions remain
+open. See [checkpoint and review](filter_gradient_eigen_checkpoint_20260921.md).
+
+Inventory 01838 refreshes 2,920 working Python files (2,919 parsed, one inherited
+external-reference parse error). The guard is still partial: 198 sources /
+1,276 exact exceptions. Charged budget through 01839: CPU
+41913.46378235762/115200 seconds; GPU 37772.45033208291/187200 seconds.
+Preserve this qualified partial checkpoint and continue the remaining queue;
+main stays unmerged. Earlier numbered notes below retain their historical run
+state and contracts; this paragraph and the recovery ledger govern resumption.
+
+01836 passes the native-row decoder value/VJP check but cannot trace its
+nested Cond under the Jacobian diagnostic's ForwardAccumulator. Preserve the
+failed attempt. Limit the explanatory injection to the optimizer objective and
+final covariance: bind the unchanged vector decoder in the existing Jacobian
+diagnostic's exact function namespace. This separates objective arithmetic
+from the unsupported diagnostic composition and leaves all reported fields in
+the comparison. It is not a production fallback or qualification of the failed
+ForwardAccumulator composition. Retry once under the same 300-second ceiling;
+runtime source remains unchanged.
+
+01830--01834 pass all 153 affected GPU preparation, score-fit, sequential,
+block and locator cases. 01835 passes all 67 policy/controller checks.
+The localized eigenpair/resource correction is consumer-qualified; the D5
+full-record numerical gate still blocks public outer-loop integration.
+
+Next one bounded execution-arithmetic trial translates the original two-factor
+decoder's row order into `tf.while_loop` instead of the current vector/scatter
+implementation. This is an isolated diagnostic injection, not a runtime edit.
+Check its values and pullback against the original decoder at saved start/end
+states, then complete both prepared-input fits with unchanged optimizer settings
+and record every field difference. Keep the existing domain-violation guard.
+Run `test --group factor_row_decode --device CPU --test-timeout-seconds 300`.
+Skeptical review: a native loop may change compiler arithmetic and derivatives;
+the independent decoder check precedes interpretation of fit records. It is
+not a repair merely because one error decreases; complete original parity and
+consumer/resource/performance checks remain required for installation. No
+threshold, data, initial state or acceptance-rule changes are permitted.
+
+01829 reproduces the original records but freezing the original initial state
+does not close the D5 fitter gap: 23 failed fields on original prepared data,
+77 on current data relative to its own original fitter. Same-state objective
+gradient differences are <=3.134e-17. The result rules out original-initial-state
+injection as a repair and leaves full optimizer rounding sensitivity open.
+No injection was installed in runtime. Next qualify the repaired eigensystem's
+existing public consumers in bounded sequential GPU workers, batch
+`sequential_eigen_public` (20 preparation, 17 score-fit, 40 sequential, 43 block,
+33 locator checks, then policy). These checks validate the localized correction;
+they cannot waive the failed enclosing original-source numerical comparison.
+
+01826 reproduces both archived own-data fits. Crossing original/current data
+and fitters gives 4 failed fields for current fitting on original data, 2 for
+original fitting on current data, and 66 for current/current. Prepared-array
+differences are at most 1.1883e-16; all fits take 73 iterations/217 evaluations.
+This is combined preparation/optimizer sensitivity, not evidence of a direct
+Jacobian-condition implementation defect. Next use the existing original-initial
+state intervention from the earlier initializer investigation on this exact D5
+fixture. Record identical-state objectives/gradients at the original start/end,
+complete injected-fit records, and original reproduction. No runtime method,
+optimizer setting or tolerance changes; instrumented results remain explanatory.
+Run `test --group lifecycle_factor_initial --device CPU
+--test-timeout-seconds 300` in one fresh worker. Skeptical review: the source
+record reproduction is mandatory, and a frozen initializer is forbidden as a
+runtime repair or promotion shortcut.
+
+01827 passes all eight GPU eigenconsumer/gradient cases. 01828 releases graph
+and validity resources for both GPU dimensions, passes all D3 comparisons and
+fails the D5 original numerical comparison. All compiler-input/reuse checks
+pass before that numerical assertion. Public integration remains blocked.
+
+01824 passes all eight eigenconsumer/gradient CPU checks after graph isolation.
+01825 releases both actual validity resources and the enclosing graph, preserves
+all runtime HLO operands/one trace/cache-eviction execution, and then fails the
+unchanged original-source numerical gate. Resource retention is repaired in
+this CPU scope; GPU qualification remains pending. The 66 factor-fit failures
+remain unchanged.
+
+Next bounded diagnostic: cross original/current preparation with original/
+current two-factor fitting for precisely the archived changed center and scale,
+without changing seeds or optimizer settings. Save full prepared arrays and
+four full records, and require own-data fits to reproduce the archived failing
+records before attribution. This distinguishes preparation rounding from fitter
+arithmetic. The passing diagnostic itself cannot waive full-record parity.
+Use `test --group lifecycle_factor_inputs --device CPU
+--test-timeout-seconds 300`; artifacts remain in a fresh campaign directory.
+Skeptical review: the archived step has no recenter and no reused rows, so its
+unused search inputs may be zeros here; both facts are asserted and original
+record reproduction remains mandatory. No runtime edit is included in this
+diagnostic. Budget through 01825: CPU 41773.909243325455/115200 seconds,
+GPU 37117.78282084687/187200 seconds; original caps remain unchanged.
+
+01823 identifies the owner: `evaluate` FuncGraph's
+`bayesfilter_factor_domain_resources` attribute retains the validity variable.
+Apply the existing isolated-custom-gradient pattern from `_position_program`
+to the eigenpair helper: one bounded cached, stable-signature XLA graph traced
+under `tf.init_scope`. Call that graph at the two sequential sites, retaining
+the exact eigenpair arithmetic and spectral pullback. Do not inline its
+`python_function`. Qualify the eight eigenconsumer/gradient cases and then
+repeat D5 runtime/resource observations. A numerical failure still vetoes
+integration even if resource release passes.
+
+Archived attribution `lifecycle-changed-input-attribution-01822.json` shows all
+66 changed-input failed fields already existed in 01754; the repair introduces
+no new failed field. All 31 above-tolerance eigenpair changes are outside that
+first factor-fit record. This identifies a separate pre-existing fitter gap;
+it does not waive it or prove its cause.
+
+Recovery: 01822 finishes with the same resource-release failure. Its sole
+strong owner is an id-keyed dictionary, consistent with the factor guard's
+explicit graph ownership dictionary. The observation inspected direct graph
+owners but missed graph attribute dictionaries. Extend observation through that
+one attribute layer and repeat D5 CPU once under the same 300-second bound.
+Skeptical review: ownership must be demonstrated before changing graph lifetime;
+the diagnostic returns strings only and must not itself retain graph objects.
+Also compare archived 01754 and 01821 records using standard-library analysis
+to attribute the changed-scale mismatch without another numerical execution.
+All original numerical/resource vetoes remain mandatory; no public integration.
+
+01821 preserves the D5 numerical differences and additionally fails resource
+release: enclosing graph is released but at least one covariance validity
+resource remains alive. HLO inputs, unchanged HLO, one trace and execution after
+Python cache eviction pass. Before a runtime retention fix, add observation-only
+resource-owner types/graph names before the unchanged release assertion and
+repeat D5 CPU once. The likely custom-gradient closure retention must be checked,
+not assumed. The original-reference numerical discrepancy remains separate.
+No numerical source, baseline or gate changes in this ownership diagnostic.
+
+01819 passes D3 original-reference runtime inputs, HLO reuse and resource
+release. 01820 fails the D5 changed-input original comparison by 3.158e-10 at
+the unchanged gate. Preserve this new failure; do not assume it is the already
+repaired eigensystem. Improve only diagnostic observation: save complete original
+and candidate records and path-aware differences, then perform compiler/resource
+checks before raising the same numerical failure. This permits localizing the
+mismatch while retaining the exact veto; it cannot turn the run into a pass.
+Retry D5 CPU alone, same inputs/settings/300-second ceiling, before costs or
+public integration. Unchanged checks that passed stay valid in their stated scope.
+
+01810--01817 pass all eight original-source full lifecycle cases on both
+CPU/GPU. 01818 passes policy. The archived
+lifecycle-eigen-correction-01818.json preserves differences from the earlier
+cfbc32d2 records: six corrected endpoint fields in each D5 structured case,
+projection/matrix fields in symmetric cases, and no target-row changes beyond
+unchanged 1e-10 tolerance or call-count changes. Every corrected full record
+passes the original source at the same gate. No intermediate numerical field
+has been silently omitted. Original record checks exclude only the added
+factor execution-mode metadata from the older schema.
+
+After changed-input/resource and public-consumer checks, renew six fresh GPU2
+cost arms against original 3582b4ac, explicit current graph and repaired XLA.
+Reuse the identical complete-lifecycle measurement harness, D3/search4 and
+D5/search32 inputs, full-200 optimizer settings, twenty warm calls and changed
+centers/scales. Preserve both earlier cfbc32d2 cost matrices as defect-bearing
+intermediate evidence. The new baseline actually executes the original helper;
+report its true record and timing. Explicitly handle only absent/new jit_compile
+metadata; compare every numerical field at 1e-10 and retain any optimizer-state
+mode gap. Fixed 300-second workers; 256 MiB, 2x memory/cold and 20 percent warm
+triggers retain their meaning. These costs cannot qualify public integration or
+replace terminal three-process comparisons.
+
+After the full original-record comparison, repeat actual D3/D5 changed-input,
+unchanged-HLO, trace-count and resource-release checks with the identical
+observation harness and original 3582b4ac numerical authority. The precise
+intermediate-reference failures stay archived; all operand, callback, lifecycle
+and lifetime assertions remain mandatory. CPU dimensions run separately and GPU
+together under 300-second bounds. Re-run the 40 public sequential, 43 block and
+33 locator/derivative-boundary consumers after resource qualification. No claims
+about native executable-cache eviction or external watchdog timing follow.
+
+01807/01808 pass all seven three-way terminal cases on CPU/GPU; 01809 passes
+policy. All repaired direct/enclosed fields match original 3582b4ac. The
+intermediate healthy3/holdout records have three failed original-reference
+fields each; other cases agree. Repoint the existing terminal qualification to
+the original authority, retaining every assertion and threshold and preserving
+the three-way intermediate evidence. This removes an invalid precision baseline,
+not a failed numerical field.
+
+Next execute the complete original 3582b4ac lifecycle recurrence with its full
+frozen numerical closure, using the existing eight-case record/target-order
+harness. Only the explicitly added factor jit_compile metadata is excluded from
+the original schema comparison; no numerical field or event is excluded. Original
+eager full fitting can exceed 300 seconds; the bounded original lifecycle groups
+use the already authorized 900-second focused-test ceiling, sequential fresh
+CPU/GPU workers and unchanged total caps. First run the five symmetric CPU
+cases, then one-factor and each two-factor case in separate CPU workers, then
+the corresponding GPU groups. Preserve every failure and do not weaken the
+intermediate checks to make this pass. No public integration yet.
+
+01801/01802 pass all seven new original-reference regressions on CPU/GPU;
+01803 passes policy. Original preparation (20 cases, 01804) and score fitting
+(17 cases, 01805) pass. 01806 preserves two intermediate-reference failures:
+healthy3 and holdout projection_relative_frobenius changes from 6.525e-9 to
+7.189e-16 after eigenpair refinement. Leave that test intact while qualifying a
+three-way original 3582b4ac / intermediate cfbc32d2 / repaired comparison for all
+seven actual terminal cases. Preserve every field, target-row count and direct/
+enclosed record before assertions; original-source precision authority and
+unchanged 1e-10 comparisons decide the correction. Intermediate discrepancy is
+recorded, never silently dropped. Same sequential CPU/GPU 300-second bounds.
+
+01800 preserves four failing new regressions with the pre-repair source:
+unconstrained trust step error up to 1.976e-9, constrained stationarity residual
+1.124e-10, and two D5 terminal precision failures of 1.780e-10/2.154e-10 against
+original 3582b4ac. Three companion cases pass. Install the existing _eigh helper
+at the two documented XLA sites and rerun all seven CPU/GPU regressions. The
+policy guard remains clean with no new exception. No settings or thresholds
+changed; the demonstrated intermediate errors are explicitly preserved.
+
+Post-checkpoint eigenpair repair contract: use mass_matrix_tf._eigh at exactly
+the existing XLA eigendecomposition sites in sequential score-fit projection and
+trust-region solving. Graph-reference calls remain tf.linalg.eigh. The helper
+solves the same symmetric eigenproblem and is already qualified for residuals,
+orthogonality and the original TensorFlow spectral derivative. No eigenvalue
+floor, clipping/ridge, iteration budget, acceptance gate, seed or optimizer
+setting changes. This corrects the demonstrated backend convergence residual;
+it is not a new statistical method.
+
+First record the two exposed failures against the original 3582b4ac helper and
+independent stationarity identities at unchanged 1e-10 field tolerances. Then
+install the equivalent refined eigenpairs and recheck the same seven cases on
+CPU/GPU, all existing sequential preparation and score-fit cases, complete
+lifecycle records, HLO runtime operands and resource lifetime. Stage costs and
+complete comparisons must be refreshed after a qualified runtime change.
+The intermediate cfbc32d2 baseline contains this demonstrated numerical defect;
+retain and explicitly attribute any expected defect correction. Do not delete
+or loosen its full-record tests to hide a changed result. New failures require
+localization before public integration. The factor state discrepancy remains a
+separate open gate. Sequential 300-second workers and existing caps apply.
+
 Checkpoint through 01799: reporting-record qualification, renewed costs,
 mode-attribution diagnostics and memory cross-checks are complete. All 67
 policy/controller cases pass in 01799; the partial guard remains 198 sources /

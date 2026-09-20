@@ -94,6 +94,33 @@ def test_actual_lifecycle_runtime_inputs_and_resource_lifetime(dimension, reques
     _compare(current._json_ready(repeated), current._json_ready(result))
     del graph, concrete
     gc.collect()
+    living = []
+    for resource in resources:
+        variable = resource()
+        if variable is None:
+            continue
+        owners = []
+        for owner in gc.get_referrers(variable):
+            description = {'type': type(owner).__name__}
+            if isinstance(owner, dict):
+                description['keys'] = [str(key) for key in owner if isinstance(key, (str, int))][:12]
+                description['owners'] = [{'type': type(parent).__name__,
+                    'name': getattr(parent, 'name', None)} for parent in gc.get_referrers(owner)
+                    if type(parent).__name__.endswith('Graph')]
+                description['attribute_owners'] = [
+                    {'attributes': [str(key) for key, item in parent.items() if item is owner],
+                     'objects': [{'type': type(ancestor).__name__,
+                         'name': getattr(ancestor, 'name', None)}
+                         for ancestor in gc.get_referrers(parent)
+                         if type(ancestor).__name__.endswith('Graph')]}
+                    for parent in gc.get_referrers(owner) if isinstance(parent, dict)]
+            owners.append(description)
+        living.append({'name': variable.name, 'owners': owners})
+    del variable, resource
+    with (directory / f'lifecycle-resource-release-{dimension}.json').open('x') as handle:
+        json.dump({'graph_released': graph_ref() is None, 'resource_count': len(resources),
+            'living_resources': living}, handle, indent=2)
+        handle.write('\n')
     assert graph_ref() is None
     assert all(ref() is None for ref in resources)
     with (directory / f'lifecycle-runtime-{dimension}.json').open('x') as handle:
