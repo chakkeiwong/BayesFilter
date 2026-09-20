@@ -22,7 +22,7 @@ from typing import Any
 
 import tensorflow as tf
 import tensorflow_probability as tfp
-from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
+from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_optimization_barrier, xla_svd
 
 from bayesfilter.inference.mass_matrix_tf import _eigenpairs
 from bayesfilter.ops.host_tensor_io import numeric_tensor
@@ -308,6 +308,11 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
             train_z = tf.where(active[:, None], train_z, tf.zeros_like(train_z))
             train_score = tf.where(active[:, None], train_score, center[None, :])
             weights = tf.where(active, weights, tf.zeros_like(weights))
+        if jit_compile:
+            # Enclosing callers can construct uniform weights as constants.
+            # Keep normalization and weighted loss arithmetic the same as a
+            # standalone call that receives those weights at runtime.
+            weights = xla_optimization_barrier(input=[weights])[0]
         weights /= tf.reduce_sum(weights)
         train_response = center[None, :] - train_score
         holdout_response = center[None, :] - holdout_score
@@ -580,6 +585,26 @@ def _weighted_dense_precision(
     return tf.matmul(vectors * projected[None, :], vectors, transpose_b=True)
 
 
+def _active_shape_jacobian_qr(jacobian, active_training_rows, dimension):
+    """Select the original compact QR shape inside the compiled program.
+
+    Zero rows can change QR rounding near the fixed Jacobian rank threshold.
+    Each branch binds an operand shape; only one branch performs numerical work
+    at runtime. SVD and the active-equation rank threshold remain shared.
+    """
+    minimum_rows = 2 * dimension
+    capacity = int(jacobian.shape[0]) // dimension
+
+    def shape_case(rows):
+        def qr():
+            return tf.linalg.qr(jacobian[:rows * dimension], full_matrices=False)[1]
+        return qr
+
+    branches = tuple(shape_case(rows) for rows in range(minimum_rows, capacity + 1))
+    branch = tf.clip_by_value(active_training_rows, minimum_rows, capacity) - minimum_rows
+    return tf.switch_case(branch, branches)
+
+
 def _prediction_jacobian_diagnostics(
     raw: tf.Tensor,
     offsets: tf.Tensor,
@@ -602,7 +627,8 @@ def _prediction_jacobian_diagnostics(
                                maximum_iterations=parameter_count, parallel_iterations=1)
     jacobian = tf.transpose(columns.stack())
     if jit_compile:
-        upper = tf.linalg.qr(jacobian, full_matrices=False)[1]
+        upper = (tf.linalg.qr(jacobian, full_matrices=False)[1] if active_training_rows is None
+                 else _active_shape_jacobian_qr(jacobian, active_training_rows, dimension))
         singular = xla_svd(upper, max_iter=100, epsilon=sys.float_info.epsilon, precision_config="").s
     else:
         singular = tf.linalg.svd(jacobian, compute_uv=False)

@@ -4,57 +4,59 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 20 current checkpoint through 01516, based on pushed `1e9afd2c`:
-the candidate replaces data-dependent factor-anchor and COD rank/pivot slices
-with TensorFlow gathers. Actual HLO previously embedded training inputs as
-constants despite one TensorFlow trace. Compact/padded fitters now retain all
-six/seven runtime inputs and unchanged HLO when training data changes. No solver,
-optimizer, tolerance, derivative or random-stream setting changed.
+September 20 current checkpoint through 01545, based on pushed `375e7257`:
+weight normalization and weighted-loss arithmetic now remain runtime operations
+inside enclosing XLA calls. One optimization barrier on input weights repairs
+all full CPU record failures without changing formulas, optimizer settings,
+thresholds, derivatives or random streams. Full fitter suites pass all 14 CPU
+and all 14 GPU cases (01521/01522), including the original 3582b4ac record gate.
+All 223 affected GPU consumers pass (01541).
 
-The four fresh GPU processes 01511--01514 establish a concrete changed-data
-compilation/memory defect at dimension three and four optimizer iterations.
-Checkpoint XLA takes a median 6.423 seconds for each new training cloud and
-adds 335,155,200 host bytes after the cold call. Candidate XLA takes 10.135 ms
-and adds 61,440 bytes over the same sequence; warm repeated calls remain about
-10 ms. Graph-reference modes add about 0.2 MiB and take about 62/67 ms before/
-after. All measured numerical records pass unchanged 1e-10 comparisons.
-Analysis: `factor-compilation-memory-comparison-01514.json`. These are bounded
-single-process diagnostics, not terminal repeats or a general memory cap.
+Small-capacity padded fitting also passes all 12 CPU/GPU cases (01542/01530).
+Active Jacobian entries had been identical; zero padding changed QR rounding
+near the rank threshold. A fixed-shape QR branch selected inside XLA preserves
+the original compact factorization. Six/seven runtime HLO inputs and changed-data
+executable reuse remain checked. The one new exact allowlist entry covers only
+static QR shape binding; the numerical work stays inside TensorFlow/XLA.
 
-All 12 padded/runtime-input CPU checks pass (01505), as do 26 CPU solver checks
-(01506) and 38 GPU solver/factor consumers (01510). GPU padded tests pass 11/12
-(01507): optimizer states and counts are exact, but the nearly singular
-partial-occupancy Jacobian condition differs by 0.1885%. The complete CPU fitter
-suite passes 11/14 (01508): two five-dimensional enclosure comparisons fail in
-addition to the existing original-record gate. The ineffective normalized-weight
-barrier (01509) is removed. Neither the complete fitter nor padded integration
-is qualified. Preserve all original fields/tolerances; do not merge.
+The larger default 32-row reuse capacity remains blocked. Runs 01531--01533
+show stable warm allocation and about 63 MiB added host peak, but optimizer
+counts/records differ. Same-state gradients agree (01535), localizing the
+problem to initializer shape rounding. A diagnostic-only compact COD dispatch
+restores all records (01536), but its 32.055-second cold call and approximately
+847 MiB added same-process RSS trigger further investigation. That COD clone
+is not installed. Padded fitting is not wired into sequential preparation.
+Next reduce duplicated COD compilation by sharing its control/body and binding
+only row-dependent operations, or establish its actual bounded cost with fresh
+processes. Preserve every field and tolerance.
 
-Earlier initializer diagnostic 01487 finds no demonstrated arithmetic defect;
-no residual correction is installed. Corrected locator-capacity runs
-01492--01495 preserve exact events and stable allocation; the observed optional
-reporting cost is accepted only for those extents, subject to terminal repeats.
-The scalar/batched locator checkpoint and its original evidence remain intact.
+Fresh changed-data memory comparison 01537--01540 confirms the compact repair:
+checkpoint/candidate XLA median new-cloud calls are 6.403 seconds/9.911 ms;
+post-cold host growth is 335,212,544/57,344 bytes. Cold XLA calls are 8.745/8.546
+seconds; final GPU current allocations are identical at 10,496 bytes. All
+measured public fields pass unchanged 1e-10 comparisons, including graph/XLA.
+Artifacts: `factor-compilation-memory-comparison-01540.json` and
+`factor-capacity-comparison-01533.json`. One process per arm gives descriptive
+mechanism evidence; terminal source-frozen three-process comparisons remain.
 
-All 63 policy/controller checks pass (01515). The partial guard covers 189
-sources / 1,273 exact exceptions, with no additions. Inventory 01516 finds
-2,873 working-tree Python files, 2,872 parsed and one unchanged external legacy
-error. Focused changed-runtime/new-test Ruff and whitespace checks pass; the
-driver's existing style warnings remain unrelated cleanup debt.
+All 63 policy/controller checks pass (01545). The partial guard covers 189
+sources / 1,274 exact exceptions. Inventory 01544 finds 2,876 working-tree
+Python files, 2,875 parsed and one unchanged external legacy parse error.
+Focused changed-runtime/new-test Ruff and whitespace checks pass.
 
-Next localize the newly exposed enclosure and padded-Jacobian reports, qualify
-the GPU full fitter, then continue structured reuse preparation, outer
-sequential/block/quadratic control and the uncovered batched quadratic route.
-External DZ5 callbacks remain unqualified. All F01--F20 terminal dispositions,
-earlier memory/time investigations, final source-frozen tests/three-process
-comparisons, remote integration/retest and terminal review remain open.
+Charges through 01545: 26,812.952 GPU / 35,037.820 CPU process-seconds, leaving
+160,387.048 GPU / 80,162.180 CPU seconds under the unchanged 52/32-hour caps.
+No numerical worker is active at this checkpoint. Continue with the existing
+runner prefix, sequential numerical jobs and fresh versioned artifact paths.
 
-Through 01516 charges are 25,412.794 GPU / 34,550.959 CPU seconds, leaving
-161,787.206 GPU / 80,649.041 CPU seconds under the unchanged 52/32
-process-hour caps. No numerical worker is active at this checkpoint. Use the
-existing driver prefix and sequential execution; count the extension once.
+Structured reuse and outer sequential/block/quadratic control, external DZ5
+callbacks, prior memory/timing investigations, all F01--F20 terminal dispositions,
+final frozen-source tests/repeats, remote integration/retest and terminal review
+remain open. Main stays unmerged. Canonical LEDH rebuilding remains excluded.
 
 The older checkpoints below are historical context.
+
+
 
 
 September 20 continuation through 01421, following pushed checkpoint `d91a1268`:

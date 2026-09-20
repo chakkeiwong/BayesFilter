@@ -11972,6 +11972,14 @@
       "ast_sha256": "39b928d6361054ffa440dd2c3e4dea723c8a5e76248b67cb7e31cbf11438d9ba",
       "role": "fixed_schema",
       "reason": "Construct static input/configuration schemas; all fitting, optimizer decisions, replicate iteration, selection and audit calculations execute in the enclosing native program."
+    },
+    {
+      "path": "bayesfilter/inference/factor_correlation_geometry.py",
+      "function": "_active_shape_jacobian_qr",
+      "kind": "python_iteration",
+      "ast_sha256": "49a58db35ff12c580f6612bc19ac7a90ec31159992b8bd3b420c279eaffd2903",
+      "role": "fixed_schema",
+      "reason": "Bind the finite QR operand-shape variants from configuration before execution. XLA tf.switch_case executes exactly one compact QR at runtime; Jacobian formation, SVD, rank threshold and optimizer stay shared tensor operations. Runs 01529/01530 verify exact compact arithmetic, bounded graph growth, unchanged HLO across active counts and complete GPU records; realistic capacity costs remain a separate integration gate."
     }
   ]
 }

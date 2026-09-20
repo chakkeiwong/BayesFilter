@@ -63,6 +63,17 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "factor_enclosure_localization": ("tests/test_filter_repair_factor_enclosure.py", "-s"),
+    "padded_jacobian_localization": ("tests/test_filter_repair_padded_jacobian.py::test_partial_occupancy_jacobian_factorization_localization", "-s"),
+    "padded_dynamic_qr_localization": ("tests/test_filter_repair_padded_jacobian.py::test_bounded_dynamic_qr_localization", "-s"),
+    "padded_dynamic_qr_output": ("tests/test_filter_repair_padded_jacobian.py::test_bounded_dynamic_qr_localization[True]", "-s"),
+    "padded_shape_dispatch": ("tests/test_filter_repair_padded_jacobian.py::test_active_shape_qr_dispatch_localization", "-s"),
+    "factor_capacity_initial": ("tests/test_filter_repair_factor_capacity.py::test_capacity_initial_arithmetic_localization", "-s"),
+    "factor_capacity_initial_fixed": ("tests/test_filter_repair_factor_capacity.py::test_capacity_initial_arithmetic_localization[True]", "-s"),
+    "factor_capacity_cod": ("tests/test_filter_repair_factor_capacity.py::test_compact_initialization_dispatch_localization", "-s"),
+    **{f"factor_capacity_{capacity}": (
+        f"tests/test_filter_repair_factor_capacity.py::test_factor_capacity_memory_and_records[{capacity}]", "-s")
+        for capacity in (0, 4, 32)},
     "public_pullbacks": ("tests/test_filter_repair_public_pullbacks.py",),
     "tensor_program": ("tests/test_compiled_tensor_program_tf.py",),
     "source_sequential_captures": ("tests/test_filter_repair_source_sequential.py::test_repeated_transport_keeps_all_captured_core_frame_and_callback_derivatives",),
@@ -289,6 +300,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+    **{f"factor_capacity_{capacity}": "GPU" for capacity in (0, 4, 32)},
+    **{group: "GPU" for group in ("padded_jacobian_localization", "padded_dynamic_qr_localization",
+        "padded_dynamic_qr_output", "padded_shape_dispatch", "factor_capacity_initial",
+        "factor_capacity_initial_fixed", "factor_capacity_cod")},
     "sequential_preparation": "GPU", "sequential_geometry": "GPU", "sequential_score_fit": "GPU", "block_center": "GPU",
     "quadratic_initializer": "GPU", "joint_center": "GPU", "predator_tp": "GPU", "exact_incumbent": "GPU",
     "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU", "fixed_fitting": "GPU",

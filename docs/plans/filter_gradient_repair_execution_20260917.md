@@ -4219,3 +4219,242 @@ checks pass (01515). Guard: 189 sources / 1,273 unchanged exact exceptions.
 Inventory 01516 parses 2,872 of 2,873 working-tree Python files; the one external
 legacy parse error is unchanged. Focused runtime/new-test Ruff and whitespace
 checks pass. Charges: 25,412.794 GPU / 34,550.959 CPU seconds. No worker remains.
+
+
+## September 20 continuation through 01545
+
+Continuation after 01517: the complete GPU fitter passes all 14 cases in
+239.690 process-seconds; the CPU and padded-Jacobian blockers below remain.
+Before further arithmetic changes, compare normalized weights, initial raw
+state and same-state objective/gradient in standalone and enclosing XLA calls
+on the existing three-/five-dimensional fixtures. The enclosing path constructs
+uniform weights as a constant; the standalone path receives them at runtime.
+Constant-folding of normalization is a hypothesis, not an established cause.
+This is an explanatory diagnostic under the existing 300-second ceiling and
+cumulative caps, recorded by `factor_enclosure_localization` in the next unique
+run directory. Optimizer instrumentation does not qualify full-fit parity.
+Only a localized difference justifies an execution-only repair trial; unchanged
+complete-record tolerances and CPU/GPU consumer checks still gate adoption.
+Skeptical review: use identical frozen inputs, expose observations from inside
+the actual fitter, preserve failed evidence, and do not infer absence of a
+compiler effect solely from an instrumented result. No scientific setting,
+algorithm, seeded stream, or budget is changed.
+
+The first observation run 01518 passed but pytest capture discarded its printed
+arithmetic; it is test-only evidence. Run 01519 adds an exclusive JSON output
+and retained console output. In three dimensions, constant/runtime normalized
+weights differ by 2.776e-17 and initial states by up to 1.354e-14. In five
+dimensions weights and initial states agree exactly, while one initial loss
+differs by 2.168e-19. Thus normalization affects some contexts but is not yet
+the established cause of the two-factor record failures. Try one barrier on
+the input weights before normalization, preserving runtime arithmetic throughout
+the enclosing call. Compare the instrumented stages and the two failing full
+CPU enclosure cases first. Retain this trial only if it repairs those complete
+records, then run the complete CPU/GPU gates; otherwise remove it. No tolerance
+or optimizer change is permitted.
+
+Run 01520 passes both previously failing CPU two-factor enclosure cases with
+the barrier before normalization. Retain the candidate while checking complete
+CPU/GPU records and runtime HLO inputs. Separately, the padded diagnostic will
+record the actual Jacobian, QR factor, singular values and rank threshold at
+identical fitted raw states, both inside the fit and in detached XLA calls.
+Compare active rows exactly and verify zero inactive rows. This explanatory
+`padded_jacobian_localization` run uses the existing GPU/300-second controls;
+recorded matrices do not establish full-fit parity or authorize altered ranks,
+tolerances, or factorization algorithms. Instrumentation can change fusion,
+so retain both enclosed and detached observations before choosing a repair.
+
+Full fitter suites 01521/01522 now pass all 14 CPU/GPU cases, including the
+original CPU complete-record gate, at unchanged tolerances. Padded GPU 01523
+still passes 11/12. Run 01524 proves its active Jacobian entries are exactly
+equal and inactive entries zero; QR factors differ by 1.317e-7, with singular
+values differing by at most 3.553e-15. Detached and enclosed calculations show
+the same discrepancy. The sensitive retained singular values lie near the
+unchanged 2.940e-14 rank threshold. This is shape-dependent QR/SVD rounding,
+not evidence of different fitted states or Jacobian derivatives. Next test
+bounded dynamic row metadata on the preserved identical Jacobian, with the
+same QR/SVD operations and active-row threshold. Record unsupported compilation
+explicitly, without an eager fallback. Use a 120-second GPU diagnostic under
+the same caps. A successful compile is explanatory only; exact active-shape
+arithmetic and complete padded records are required before any runtime change.
+
+Run 01525's dynamic-QR diagnostic produced incompatible output shapes during
+comparison. Its broad exception handler mislabeled that downstream subtraction
+as a compile failure, so the failure stage is not established. Repair the
+diagnostic to record output shapes before comparisons and archive HLO. Generate
+the identical Jacobian from the deterministic fitter inside the test, removing
+its dependency on a previous local artifact. Do not change runtime QR or rely
+on the previous diagnostic's `compiled=false` label. This is one bounded
+harness repair/retry under the same 120-second ceiling.
+
+Corrected 01526 compiles but returns QR output shape [55,14], despite the HLO
+bound [<=14,14]. The input's dynamic row size has reached the smaller QR output.
+This candidate is invalid. One diagnostic-only follow-up removes that dynamic
+annotation from the square QR output before SVD, where its shape must be fixed
+[14,14]. Compare the resulting static-shaped QR/singular values with compact
+reference values. If parity remains wrong, reject this dynamic-dimension route;
+do not mask the discrepancy or install it in the fitter. The same 120-second
+limit applies; no runtime change or broader dynamic-QR claim is authorized.
+
+Run 01527 repairs output dimensions diagnostically but produces exactly the
+padded QR/singular values, so it does not restore compact arithmetic. Reject
+dynamic dimensions as this parity repair and leave the padded fitter
+unintegrated. No QR/SVD, rank-threshold or tolerance change is installed.
+Continue compact-fitter consumer qualification and the existing changed-data
+memory protocol with the weight-input barrier in place. Its full CPU/GPU record
+tests already pass; repeat the four fresh checkpoint/candidate graph/XLA arms
+to check that the barrier preserves the removed specialization and its memory
+benefit. Same fixture/settings/sequences and 120/300-second per-run controls;
+the original complete-campaign baseline and terminal repeat requirement remain.
+
+The next representation candidate is bounded static-shape dispatch for QR only:
+build a branch for each permitted active row count at configuration/tracing time,
+then select exactly one QR inside XLA from the runtime count. Jacobian formation,
+SVD, rank thresholds and optimizer remain shared. This preserves the original
+compact QR shape and algorithm, but may enlarge compile graphs. A diagnostic
+must first establish exact QR/singular parity, unchanged HLO across active counts,
+and graph-size growth at capacities 14/18. Branch construction is static shape
+binding, not permission for host numerical iteration; no allowlist exception is
+added during the diagnostic. Only if parity passes, evaluate complete records
+and realistic capacity memory/compile costs before runtime adoption. Excessive
+compile cost or hidden per-input specialization rejects this candidate. Use the
+same 120-second GPU bound and cumulative budget; no new numerical method or
+rank policy is proposed.
+
+Run 01529 passes: both capacities reproduce compact QR and singular values
+exactly, retain one trace and identical HLO as the active count changes. The
+shape-binding graphs have 39/63 nodes and 157,531/182,932 HLO bytes for five/nine
+branches. Apply this indexing/shape dispatch only to the internal padded
+diagnostic, then run complete CPU/GPU padded records and consumers. This remains
+a candidate until realistic capacity compile/host/device costs are measured.
+The static branch factory is the only proposed new allowlist entry: it binds
+fixed QR operand shapes, with numerical execution solely in `tf.switch_case`.
+Do not exempt the optimizer, derivative recurrence, or row reductions. No
+numerical settings or default compact route are changed by this QR trial.
+
+GPU run 01530 passes all 12 padded/runtime-input cases, with exactly equal
+condition reports in all six occupancy comparisons. Before integration, compare
+three fresh GPU processes at dimension five/two factors and the same 11 active
+training rows: compact, four-row spare capacity, and 32-row spare capacity
+(the sequential default search count). Preserve all 200-iteration optimizer
+settings, one cold plus 20 warm calls, complete public fields, and memory
+snapshots before construction, after cold execution and after warmed calls.
+Measure graph/HLO size after sampling. A complete-record/count discrepancy is
+a repair trigger; added host peak above 256 MiB or unstable warm allocation
+requires explanation before adoption. These single-process diagnostics use
+300-second ceilings and the existing budget. They cannot certify all capacities
+or replace final paired repeats. The 32-row case is required because small
+fixture parity alone does not justify sequential integration.
+
+Runs 01531--01533 complete all measurements. Four spare rows preserve complete
+records, but 32 spare rows fail: optimizer counts change from 140/385 to
+141/386 and precision differs by 6.375e-7. Warm allocation is stable and added
+host peak is about 63 MiB, below the memory trigger; this does not waive the
+numerical failure. The small-capacity QR repair is valid only at its measured
+scope and padded integration stays blocked. First capture normalized weights,
+initial raw state and initial objective/gradient across these same capacities,
+using optimizer instrumentation and a 120-second GPU diagnostic. Preserve
+counts/tolerances and record instrumentation limits. Do not expand shape
+dispatch or change reduction algorithms before localizing this new mismatch.
+
+Run 01534 finds exact normalized weights/active inputs but a 1.155e-14 initial
+raw-state discrepancy at capacity 32 (four spare rows remain exact). Compare
+the loss/gradient at a common initial raw state to separate initialization
+from repeated loss arithmetic. Then a diagnostic-only source clone may bind
+the original compact operand shape at the COD initializer, leaving projection,
+eigensystem, inverse, optimizer, loss and Jacobian unchanged. Measure complete
+records and cold time under 300 seconds. This is a narrow shape-representation
+trial, not a new solver; if complete records still differ, localize the
+remaining loss arithmetic before widening the change. No runtime COD dispatch
+or broader branch exception is installed until its cost and parity qualify.
+
+Run 01535 has exactly equal initial loss/gradient when the initial raw state is
+fixed, supporting initializer shape rounding. Diagnostic clone 01536 restores
+every complete public field and optimizer count at 32-row capacity by dispatching
+only COD shapes. Its cold call is 32.055 seconds versus 11.786 seconds compact;
+the same process grows from 1.456 to 2.283 GiB host RSS. That crosses the memory
+investigation trigger and cannot yet establish the separate-process overhead.
+Do not install the cloned COD dispatch. Next investigate sharing the COD body
+and dispatching only its row reductions/dot products, or establish a justified
+bounded cost with fresh-process measurements. The compact fitter barrier and
+small-capacity QR repair remain independently qualified; larger padded
+integration remains blocked on this resource question and broader occupancy
+checks. Finish the already planned changed-data memory comparison before
+another runtime change.
+
+Current checkpoint:
+
+September 20 current checkpoint through 01545, based on pushed `375e7257`:
+weight normalization and weighted-loss arithmetic now remain runtime operations
+inside enclosing XLA calls. One optimization barrier on input weights repairs
+all full CPU record failures without changing formulas, optimizer settings,
+thresholds, derivatives or random streams. Full fitter suites pass all 14 CPU
+and all 14 GPU cases (01521/01522), including the original 3582b4ac record gate.
+All 223 affected GPU consumers pass (01541).
+
+Small-capacity padded fitting also passes all 12 CPU/GPU cases (01542/01530).
+Active Jacobian entries had been identical; zero padding changed QR rounding
+near the rank threshold. A fixed-shape QR branch selected inside XLA preserves
+the original compact factorization. Six/seven runtime HLO inputs and changed-data
+executable reuse remain checked. The one new exact allowlist entry covers only
+static QR shape binding; the numerical work stays inside TensorFlow/XLA.
+
+The larger default 32-row reuse capacity remains blocked. Runs 01531--01533
+show stable warm allocation and about 63 MiB added host peak, but optimizer
+counts/records differ. Same-state gradients agree (01535), localizing the
+problem to initializer shape rounding. A diagnostic-only compact COD dispatch
+restores all records (01536), but its 32.055-second cold call and approximately
+847 MiB added same-process RSS trigger further investigation. That COD clone
+is not installed. Padded fitting is not wired into sequential preparation.
+Next reduce duplicated COD compilation by sharing its control/body and binding
+only row-dependent operations, or establish its actual bounded cost with fresh
+processes. Preserve every field and tolerance.
+
+Fresh changed-data memory comparison 01537--01540 confirms the compact repair:
+checkpoint/candidate XLA median new-cloud calls are 6.403 seconds/9.911 ms;
+post-cold host growth is 335,212,544/57,344 bytes. Cold XLA calls are 8.745/8.546
+seconds; final GPU current allocations are identical at 10,496 bytes. All
+measured public fields pass unchanged 1e-10 comparisons, including graph/XLA.
+Artifacts: `factor-compilation-memory-comparison-01540.json` and
+`factor-capacity-comparison-01533.json`. One process per arm gives descriptive
+mechanism evidence; terminal source-frozen three-process comparisons remain.
+
+All 63 policy/controller checks pass (01545). The partial guard covers 189
+sources / 1,274 exact exceptions. Inventory 01544 finds 2,876 working-tree
+Python files, 2,875 parsed and one unchanged external legacy parse error.
+Focused changed-runtime/new-test Ruff and whitespace checks pass.
+
+Charges through 01545: 26,812.952 GPU / 35,037.820 CPU process-seconds, leaving
+160,387.048 GPU / 80,162.180 CPU seconds under the unchanged 52/32-hour caps.
+No numerical worker is active at this checkpoint. Continue with the existing
+runner prefix, sequential numerical jobs and fresh versioned artifact paths.
+
+Structured reuse and outer sequential/block/quadratic control, external DZ5
+callbacks, prior memory/timing investigations, all F01--F20 terminal dispositions,
+final frozen-source tests/repeats, remote integration/retest and terminal review
+remain open. Main stays unmerged. Canonical LEDH rebuilding remains excluded.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Retain compact input-weight barrier | All 14 CPU/GPU full records and 223 GPU consumers pass | No numerical veto in these checks | Final broader-source and changed target coverage | Commit/push checkpoint; continue queue | No whole-campaign closure |
+| Retain internal active-shape QR | Complete small-capacity CPU/GPU records pass | Larger-capacity initializer still differs | Shape-dependent COD reductions | Investigate shared-body active arithmetic | No padded integration admission |
+| Reject dynamic QR as parity repair | Dynamic metadata does not restore compact QR arithmetic | Invalid output annotation and unchanged singular discrepancy | Backend dynamic-shape behavior beyond tested scope | Keep diagnostic evidence; no runtime use | No general dynamic-shape conclusion |
+| Leave full COD shape clone diagnostic | Complete large-capacity records match | Host/compiler memory trigger fires | Fresh-process overhead and possible body sharing | Bounded lower-memory localization | No adopted solver/default change |
+
+| Inference status | Result |
+| --- | --- |
+| Hard veto screen | Larger-capacity runtime record parity fails; full COD clone resource trigger remains |
+| Statistically supported ranking | None; one fresh process per measurement arm |
+| Descriptive differences | Changed-input XLA compilation and host growth removed; capacity costs recorded |
+| Default readiness | Whole campaign incomplete; no merge or HMC/scientific admission |
+| Next evidence | Larger-capacity implementation/cost repair and final frozen-source tests/repeats |
+
+Post-run review: the weight barrier has broad full-record evidence, while the
+initializer and QR diagnostics are narrower. Inspecting one TensorFlow trace is
+insufficient to establish reuse; HLO inputs and changed data remain required.
+The default-capacity check prevented a small fixture from incorrectly admitting
+padded fitting. Run 01518 discarded its successful captured output; run 01525
+misclassified a comparison-shape exception. Both are preserved and corrected in
+later unique runs, not reused as causal evidence. Review was local; no independent
+agent review is claimed. The driver routes new GPU-specific diagnostics to GPU
+in its terminal matrix. All original tolerances and numerical budgets remain.
