@@ -4,6 +4,39 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+September 20 continuation through 01399, on fixed-fitting checkpoint `8f334b96`:
+initial exact replay and seeded search selection now execute in enclosing native
+XLA programs. Eligibility, first-maximum ties, row order, seeded draws and gather
+pullbacks are preserved. Optional movement reporting is repaired; its legacy
+zero-cloud fixture now enters at the native TensorFlow boundary. All 20 focused
+CPU/GPU selection checks, 40 sequential GPU, 43 block-center GPU, 12 factor GPU
+and 63 policy/controller cases pass (01344/01346--01348/01373/01398).
+
+Corrected matched comparisons 01374--01397 pass at two extents. Public warm
+replay is 4.676/0.408 and 9.087/0.410 ms before/after; search selection is
+11.250/0.702 and 16.815/0.800 ms. Maximum compared error is 4.441e-16. Graph
+sizes remain 93 replay / 346 search nodes at both extents, with constant warm
+device allocation and late candidate host growth at most 12,288 bytes. No new
+memory/time trigger fires. These are single-process checkpoint observations;
+final three-process evidence remains required. Earlier 01349--01372 measurements
+are superseded because the extracted baseline did extra tensor packing.
+
+Current charged time: 22,702.050 GPU / 33,316.018 CPU seconds, leaving
+164,497.950 GPU / 81,883.982 CPU seconds under the unchanged 52/32 process-hour
+caps. No worker is active at this checkpoint. The guard covers 187 sources /
+1,273 exact exceptions and remains partial. Inventory 01399 discovers 2,859
+working-tree Python files (2,858 parsed and one unchanged external legacy error;
+its tracked-file count of 2,857 excludes the two new files).
+
+Next compile ordered scalar locator starts, then batched locator and outer
+refinement/block/quadratic control, under the reviewed plan below. Include the
+uncovered `batched_quadratic_center.py` chunk/round loops and non-XLA fit in that
+audit. External DZ5 callbacks, CPU fitter parity (01325), and all existing
+memory/timing investigations stay open. All F01--F20 terminal dispositions remain
+open; no merge, HMC admission or whole-repository compliance is established.
+
+Earlier recovery checkpoints follow for historical context.
+
 September 20 continuation through 01339, based on pushed selector checkpoint `22094f76`.
 The complete fixed-center replicate fitter, conditional factor escalation,
 selection and audit now share a compiled program. Default XLA eigenpair
@@ -1339,3 +1372,52 @@ measurements at two candidate extents. The original eager implementation is
 only the execution comparator. Host loops over optimizer starts and refinement
 attempts remain open, with no numerical exemptions granted. No new scientific
 claim, algorithmic objective, seeded stream, threshold or compute allocation.
+
+
+Sequential selection measurement contract: register `sequential_replay`
+(four/eight candidate rows) and `sequential_search_selection` (eight/sixteen
+seeded search rows), both dimension two with a fixed quadratic target. The
+before executable extracts the unchanged original endpoint's replay/finite/sort
+block using the pinned module's scalar/cloud helpers; it is explicitly a legacy
+Python diagnostic comparator. It does not claim to time the enclosing optimizer.
+The after public helper and complete tensor graph/XLA programs implement that
+same bounded block. Exact wrapper/consumer tests constrain extraction risk.
+Report output parity, cold/warm time, graph size, host/device peaks, allocator
+stability, and imported-source/harness identity at the existing thresholds.
+Keep pure graph/XLA and host-wrapper comparisons separate. The existing 300-second
+measurement ceiling and cumulative caps apply. No terminal performance claim
+follows from these single-process qualification pairs.
+
+### Next enclosing dependency: ordered scalar locator starts
+
+After preserving the replay/search checkpoint, enclose the sequential locator's
+scalar multistart L-BFGS lifecycle, endpoint replay, candidate replay and selection
+in one stable TensorFlow program. Preserve start order, smooth-box transform,
+TFP optimizer settings and stopping condition, exact scalar target authority,
+all endpoint/initial replay calls, first-maximum selection and evaluation counts.
+Use native loops with a fixed candidate mask so invalid endpoints are skipped
+without a dynamic host-selected shape or extra target calls. Host loops may only
+reconstruct the existing locator report. The batched locator and outer refinement
+remain separate open dependencies; no claim of complete locator compilation yet.
+
+Skeptical review: sharing the loss graph can alter floating-point trajectories;
+masked replay can accidentally evaluate ineligible endpoints or reorder calls;
+wrapping TFP can expose captured-input derivatives or unsupported callbacks.
+Compare complete records with the pre-enclosure source and original optimizer
+settings, test finite/nonfinite starts, mixed eligible endpoints, zero starts,
+ties, budget rejection, exact target-call order/counts, and enclosing HLO/graph
+growth at two start counts. Preserve all numerical tolerances. Compilation or
+backend exceptions must surface as failures; do not silently retry eager or
+remove a start after an unsupported callback fails tracing. Python callbacks
+that require host materialization remain migration debt, not eligible targets.
+CPU diagnostics precede GPU checks, affected consumers and matched memory/time
+qualification. Use the existing run driver, 300-second focused ceiling, unique
+outputs and cumulative caps. An observed compilation cost may justify the already
+reviewed 900-second ceiling, not a new allocation or numerical relaxation.
+
+Recovery call-chain review also confirms that
+`inference/batched_quadratic_center.py` retains numerical cloud-chunk/fit-round
+Python loops and an explicit non-XLA fit. Its integration scripts call the public
+initializer directly; its diagnostic nonclaims do not repair that execution debt.
+Include this file explicitly in the remaining quadratic lifecycle audit before
+F18/F19 closure. Existing partial-guard success does not cover it.

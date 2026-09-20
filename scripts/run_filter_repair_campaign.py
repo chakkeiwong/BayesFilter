@@ -244,6 +244,7 @@ TEST_GROUPS = {
     "fixed_fitting_original": ("tests/test_filter_repair_fixed_fitting.py::test_original_factor_and_dense_lifecycle_fields",),
     "fixed_fitting_frozen": ("tests/test_filter_repair_fixed_fitting.py::test_public_fitted_geometry_preserves_frozen_derivative_boundary",),
     "fixed_fitting_fields": ("tests/test_filter_repair_fixed_fitting_localization.py::test_original_fit_field_breakdown", "-s"),
+    "sequential_selection": ("tests/test_filter_repair_sequential_selection.py",),
     "fixed_fitting_localization": ("tests/test_filter_repair_fixed_fitting_localization.py", "-s"),
     "joint_center": ("tests/test_exact_incumbent.py", "tests/test_joint_center.py"),
     "apf": ("tests/highdim/test_zhao_cui_frozen_proposal_apf_tf.py", "tests/highdim/test_c2_sv_frozen_proposal_apf_tf.py"),
@@ -265,7 +266,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "sequential_preparation": "GPU", "sequential_geometry": "GPU", "sequential_score_fit": "GPU", "block_center": "GPU",
     "quadratic_initializer": "GPU", "joint_center": "GPU", "predator_tp": "GPU", "exact_incumbent": "GPU",
-    "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU", "fixed_fitting": "GPU"}
+    "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU", "fixed_fitting": "GPU",
+    "sequential_selection": "GPU"}
 FIXTURES += ADDITIONAL_FIXTURES
 FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES
@@ -529,7 +531,7 @@ def measurement_modes(name):
         return ("eager",)
     return (("off", "on", "eager") if name in ("source_route_sequence", "source_guard_gates", "cpu_forecast_shard",
             "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry",
-            "fixed_stability", "fixed_selection", "fixed_fitting")
+            "fixed_stability", "fixed_selection", "fixed_fitting", "sequential_replay", "sequential_search_selection")
             else ("off", "on"))
 
 

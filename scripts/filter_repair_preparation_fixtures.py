@@ -11,11 +11,83 @@ from types import SimpleNamespace
 FIXTURES = ("source_recenter", "gamma_preparation", "student_proposal",
             "ukf_initializer", "moment_teacher", "austria_preparation",
             "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry",
-            "fixed_stability", "fixed_selection", "fixed_fitting")
+            "fixed_stability", "fixed_selection", "fixed_fitting", "sequential_replay", "sequential_search_selection")
 
 
 def fixture(tf, name, size, jit, *, public_boundary=False):
     dtype = tf.float64
+    if name in ("sequential_replay", "sequential_search_selection"):
+        from bayesfilter.inference import sequential_map_covariance as geometry
+
+        dimension = 2
+        count = (4 if name == "sequential_replay" else 8) * size
+        precision = tf.constant([[2., .3], [.3, 3.]], dtype)
+
+        def scalar(point):
+            score = -tf.linalg.matvec(precision, point)
+            return .5 * tf.reduce_sum(point * score), score
+
+        def batch(points):
+            scores = -points @ precision
+            return .5 * tf.reduce_sum(points * scores, axis=1), scores
+
+        def pack(value):
+            return value["index"], value["finite_count"], value["value"], value["position"], value["score"]
+
+        def original_selection(accepted):
+            # Original stable sort; extra index/count fields report the selected
+            # block without changing eligibility or any target evaluation.
+            accepted.sort(key=lambda item: item[0], reverse=True)
+            value, row, score, index = accepted[0]
+            return (tf.constant(index), tf.constant(len(accepted)), tf.constant(value, dtype), row, score)
+
+        native = hasattr(geometry, "replay_program")
+        if name == "sequential_replay":
+            positions = tf.reshape(tf.linspace(tf.constant(-.8, dtype), tf.constant(.4, dtype), count * dimension), [count, dimension])
+            inputs = (positions,)
+            if native:
+                program = geometry.replay_program(scalar, count, dimension, jit_compile=jit).python_function
+
+                def evaluate(rows):
+                    return pack(geometry._replay_locator_candidates(scalar, rows) if public_boundary else program(rows))
+            else:
+                def evaluate(rows):
+                    accepted = []
+                    for index, row in enumerate(tf.unstack(rows)):
+                        value, score = geometry._scalar_value_score(scalar, row, dimension)
+                        if bool((tf.math.is_finite(value) & tf.reduce_all(tf.math.is_finite(score))).numpy()):
+                            accepted.append((float(value.numpy()), row, score, index))
+                    return original_selection(accepted)
+        else:
+            center, scale = tf.constant([.3, -.4], dtype), tf.constant([.5, 1.2], dtype)
+            value, score = scalar(center)
+            inputs = (center, value, score, scale, tf.constant(.35, dtype), tf.constant([2026, 734]))
+            if native:
+                program = geometry.search_program(scalar, batch, count, dimension, True, jit_compile=jit).python_function
+
+                def evaluate(*arguments):
+                    result = (geometry._search_exact_candidates(scalar, batch, *arguments,
+                        sample_count=count, orthogonal=True) if public_boundary else program(*arguments))
+                    return (*pack(result), result["search_positions"], result["search_values"], result["search_scores"])
+            else:
+                def evaluate(center, value, score, scale, radius, seed):
+                    cloud = geometry._orthogonal_antithetic_cloud(count, dimension, float(radius), tuple(seed.numpy().tolist()))
+                    positions = center[None, :] + cloud * scale[None, :]
+                    values, scores = geometry._evaluate_cloud(scalar, positions, dimension, batched_value_and_score_fn=batch)
+                    accepted = [(float(value.numpy()), center, score, 0)]
+                    for index, (row, row_value, row_score) in enumerate(zip(
+                            tf.unstack(positions), tf.unstack(values), tf.unstack(scores), strict=True), start=1):
+                        if bool((tf.math.is_finite(row_value) & tf.reduce_all(tf.math.is_finite(row_score))).numpy()):
+                            accepted.append((float(row_value.numpy()), row, row_score, index))
+                    selected = original_selection(accepted)
+                    return (*selected, positions, values, scores)
+
+        evaluate.timing_scope = ("complete_tensor_" if native and not public_boundary else "complete_host_wrapper_") + name
+        evaluate.execution_backend = "tensorflow" if native else "legacy_python_selection_diagnostic_only"
+        return evaluate, inputs, {"dimension": dimension, "rows": count, "boundary": name,
+            "before_scope": "extracted_original_endpoint_block_using_pinned_helpers",
+            "random_inputs": name == "sequential_search_selection"}
+
     if name == "fixed_fitting":
         from bayesfilter.inference import fixed_center_curvature as geometry
 

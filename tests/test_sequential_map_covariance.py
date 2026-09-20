@@ -9,6 +9,7 @@ import pytest
 import tensorflow as tf
 
 import bayesfilter.inference.sequential_map_covariance as sequential
+import bayesfilter.inference.sequential_selection_tf as sequential_selection
 from bayesfilter.inference import (
     SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS,
     SequentialMapCovarianceConfig,
@@ -419,13 +420,16 @@ def test_policy_switch_preserves_transactional_center_and_radius(
         delta = values - 1.0
         return -0.5 * delta**2, (-delta)[:, None]
 
-    monkeypatch.setattr(
-        sequential,
-        "_antithetic_cloud",
-        lambda sample_count, dimension, radius, seed: tf.zeros(
-            [sample_count, dimension], tf.float64
-        ),
-    )
+    def zero_cloud_program(sample_count, dimension, orthogonal):
+        @tf.function(input_signature=[tf.TensorSpec([], tf.float64), tf.TensorSpec([2], tf.int32)],
+                     jit_compile=True, autograph=False)
+        def cloud(radius, seed):
+            return tf.zeros([sample_count, dimension], tf.float64)
+
+        return cloud
+
+    # Keep the same zero-cloud acceptance fixture at the native search boundary.
+    monkeypatch.setattr(sequential_selection, "cloud_program", zero_cloud_program)
     monkeypatch.setattr(
         sequential,
         "_solve_trust_region_tf",

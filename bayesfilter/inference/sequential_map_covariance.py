@@ -35,6 +35,7 @@ from bayesfilter.inference.sequential_score_fit_tf import (
     partition_schema,
     score_fit_program,
 )
+from bayesfilter.inference.sequential_selection_tf import replay_program, search_program
 from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS = (
@@ -475,15 +476,11 @@ def estimate_sequential_map_covariance(
                     {"finite": False, "exception_type": type(exc).__name__}
                 )
 
-    finite_candidates: list[tuple[float, tf.Tensor, tf.Tensor]] = []
-    for candidate in candidates:
-        value, score = _scalar_value_score(value_and_score_fn, candidate, dimension)
-        evaluations += 1
-        if bool(
-            (tf.math.is_finite(value) & tf.reduce_all(tf.math.is_finite(score))).numpy()
-        ):
-            finite_candidates.append((float(value.numpy()), candidate, score))
-    if not finite_candidates:
+    selected_candidate = _replay_locator_candidates(value_and_score_fn,
+        tf.stack(candidates) if candidates else tf.zeros([0, dimension], tf.float64))
+    evaluations += len(candidates)
+    finite_candidate_count = int(selected_candidate["finite_count"])
+    if finite_candidate_count == 0:
         return _rejected(
             "no_finite_locator_candidate",
             evaluations + locator_objective_evaluations,
@@ -493,7 +490,6 @@ def estimate_sequential_map_covariance(
     # Rank every exact replay before any rejection branch.  A budget failure
     # still exposes the best finite candidate as a diagnostic; returning the
     # first row here would make the reported incumbent depend on start order.
-    finite_candidates.sort(key=lambda row: row[0], reverse=True)
     evaluations += locator_objective_evaluations
     if evaluations > cfg.max_exact_evaluations:
         return _rejected(
@@ -501,9 +497,10 @@ def estimate_sequential_map_covariance(
             evaluations,
             locator_rows,
             cfg,
-            map_candidate=finite_candidates[0][1].numpy(),
+            map_candidate=selected_candidate["position"].numpy(),
         )
-    center_value, center, center_score = finite_candidates[0]
+    center_value = float(selected_candidate["value"])
+    center, center_score = selected_candidate["position"], selected_candidate["score"]
     refinement_origin = center if cfg.record_refinement_movement_diagnostics else None
     refinement_movement_initial = (
         {
@@ -517,7 +514,7 @@ def estimate_sequential_map_covariance(
     _emit_progress(
         progress_callback,
         "candidate_selected",
-        finite_candidate_count=len(finite_candidates),
+        finite_candidate_count=finite_candidate_count,
         selected_log_posterior=center_value,
         selected_max_abs_scaled_score=float(
             tf.reduce_max(tf.abs(scale_tf * center_score)).numpy()
@@ -659,35 +656,15 @@ def estimate_sequential_map_covariance(
                     ),
                 },
             )
-        cloud_builder = (
-            _orthogonal_antithetic_cloud
-            if cfg.orthogonal_antithetic_search
-            else _antithetic_cloud
-        )
-        search_z = cloud_builder(
-            search_sample_count, dimension, radius,
-            (cfg.seed[0], cfg.seed[1] + 1000 + attempt),
-        )
-        search_theta = center[None, :] + search_z * scale_tf[None, :]
-        search_rows = [(center_value, center, center_score)]
-        search_values, search_scores = _evaluate_cloud(
-            value_and_score_fn,
-            search_theta,
-            dimension,
-            batched_value_and_score_fn=batched_value_and_score_fn,
-        )
+        search = _search_exact_candidates(value_and_score_fn, batched_value_and_score_fn,
+            center, tf.constant(center_value, tf.float64), center_score, scale_tf,
+            tf.constant(radius, tf.float64), tf.constant((cfg.seed[0], cfg.seed[1] + 1000 + attempt), tf.int32),
+            sample_count=search_sample_count, orthogonal=cfg.orthogonal_antithetic_search)
         evaluations += search_sample_count
-        for row, value, score in zip(
-            tf.unstack(search_theta),
-            tf.unstack(search_values),
-            tf.unstack(search_scores),
-            strict=True,
-        ):
-            if bool((tf.math.is_finite(value) & tf.reduce_all(tf.math.is_finite(score))).numpy()):
-                search_rows.append((float(value.numpy()), row, score))
-        search_rows.sort(key=lambda item: item[0], reverse=True)
-        selected_value, selected_center, selected_score = search_rows[0]
-        recentered = selected_value > center_value
+        search_theta, search_scores = search["search_positions"], search["search_scores"]
+        recentered = bool(search["recentered"])
+        selected_value = float(search["value"])
+        selected_center, selected_score = search["position"], search["score"]
         center_value, center, center_score = selected_value, selected_center, selected_score
 
         structured_data: Mapping[str, Any] | None = None
@@ -1405,6 +1382,18 @@ def _fit_score_curvature(
             "training_sample_count": len(training_indices),
             "holdout_sample_count": len(holdout_indices)} if config.pair_disjoint_score_holdout else {}),
     }, evaluations
+
+
+def _replay_locator_candidates(function, positions):
+    """Replay every locator candidate with the scalar authority and select."""
+    return replay_program(function, int(positions.shape[0]), int(positions.shape[1]))(positions)
+
+
+def _search_exact_candidates(scalar, batched, center, value, score, scale, radius, seed,
+                             *, sample_count, orthogonal):
+    """Enclose seeded search, exact values/scores and stable incumbent choice."""
+    return search_program(scalar, batched, sample_count, int(center.shape[0]), orthogonal)(
+        center, value, score, scale, radius, seed)
 
 
 def _fit_best_exact_candidate(

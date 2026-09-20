@@ -3739,3 +3739,97 @@ and the unchanged external legacy parse error. Through 01339 charges are
 21,725.543 GPU / 33,230.249 CPU seconds; remaining allowances are 165,474.457
 GPU / 81,969.751 CPU seconds. No numerical worker remains active. Preserve
 this checkpoint and continue the next reviewed sequential selection dependency.
+
+
+## September 20 sequential exact replay and search selection after 01339
+
+Checkpoint `8f334b96` is committed and pushed. Initial scalar replay and seeded
+search-cloud selection now have enclosing native programs with bounded input
+signatures. Their eligibility remains finite value/score only, preserving the
+original absence of a separate position-finiteness gate and stable first ties.
+Target row counts and replay order are unchanged. Scalar and batched search
+callbacks use the existing native evaluation helper; no callback fallback is
+introduced. Optimizer-start and refinement-attempt control remain open.
+
+Run 01340 passes 15 cases and fails five test assertions that compare a Tensor
+scalar directly through NumPy's object equality helper. Materializing only the
+diagnostic assertion operand fixes these without runtime or tolerance changes.
+Run 01341 passes all 20 CPU cases, including original full consumer records,
+empty/all-invalid inputs, ties, NaN/negative-infinite incumbents, nonfinite
+positions, replay order/counts, fixed seeded cloud order, enclosing HLO, bounded
+graphs and the selected position/score gather pullback. GPU run 01342 follows.
+The partial guard covers 187 sources with the same 1,273 exact exceptions;
+there is no numerical-loop exception for either new program.
+
+Run 01342 passes all 20 GPU cases. Existing sequential consumers in 01343
+pass 39 cases and fail the optional movement-report branch with a `NameError`:
+the enclosing search replacement did not retain its selected center/value/score
+names for the later report. Restore those exact search-stage values before the
+proposal stage mutates the incumbent. This is an implementation defect, not a
+fixture or numerical-tolerance issue. The original-record comparison now also
+enables movement diagnostics. Retry the focused selection and existing consumer
+groups under the unchanged contract before measurements; no worker was active
+while making this repair. No algorithm, seed, eligibility rule or gate changes.
+
+Run 01344 passes all 20 GPU selection cases with movement diagnostics enabled.
+Run 01345 passes 39 existing cases but reaches a stale fixture injection in the
+remaining acceptance-policy case: replacing the Python cloud wrapper no longer
+alters the enclosing search's cloud. Supply that identical zero cloud at the
+native factory boundary instead. Keep every existing acceptance, center, radius
+and movement assertion. This test-only repair does not restore a host callback
+or change the runtime search. Recheck all 40 sequential cases before measurements.
+
+Run 01346 passes all 40 sequential GPU cases; 01347 passes all 43 affected
+block-center cases; 01348 passes all 12 factor-geometry cases. Both two-size
+measurement matrices (01349--01372) pass numerical comparisons, and 01373
+passes all 20 current CPU selection checks. Post-run review finds avoidable
+packing in the extracted before comparator: initial replay stacks then unstacks
+all values/scores before eligibility checks, and search concatenates the initial
+incumbent into its row arrays. The original endpoint checked scalar eligibility
+immediately and started its search list with the incumbent. Restore that exact
+ordering and avoid the extra packing. Keep 01360/01372 diagnostic analyses as
+superseded harness evidence; rerun both matrices under the corrected shared
+harness hash. This affects measurement fidelity only, not runtime or tolerances.
+
+Corrected measurements 01374--01397 pass at both extents. Their current-source
+and harness identities are checked in `sequential-replay-diagnostic-01385.json`
+and `sequential-search-selection-diagnostic-01397.json` under the artifact root.
+The original graph/XLA attempts fail at their real host materialization boundary;
+only the successful eager reference supplies before outputs. Public timing is
+kept separate from numerical graph/XLA timing. Maximum error is 4.441e-16.
+
+| Scope / rows | Before / after warm ms | Before / after host peak bytes | Before / after device peak bytes |
+| --- | ---: | ---: | ---: |
+| Public replay / 4 | 4.676 / 0.408 | 1026535424 / 1029222400 | 7424 / 6912 |
+| Public replay / 8 | 9.087 / 0.410 | 1027284992 / 1029713920 | 9472 / 6912 |
+| Replay graph / XLA, 4 | 2.565 / 0.397 | 1065803776 / 1028780032 | 7168 / 6912 |
+| Replay graph / XLA, 8 | 3.939 / 0.401 | 1067560960 / 1029390336 | 9216 / 6912 |
+| Public search / 8 | 11.250 / 0.702 | 1050800128 / 1086058496 | 14080 / 9216 |
+| Public search / 16 | 16.815 / 0.800 | 1051385856 / 1087004672 | 20224 / 9216 |
+| Search graph / XLA, 8 | 4.156 / 0.672 | 1095581696 / 1085853696 | 10496 / 8960 |
+| Search graph / XLA, 16 | 6.006 / 0.829 | 1094369280 / 1086533632 | 11008 / 8960 |
+
+Graph sizes remain 93 replay / 346 search nodes at both extents in both modes.
+Candidate warmed device allocation is constant; late host growth is at most
+12,288 bytes. No memory/time investigation trigger fires for these pairs. This
+does not close earlier exact-incumbent, fitting, mass, TT or forecast findings.
+All 63 policy/controller cases pass (01398); focused Ruff and whitespace pass.
+The partial guard covers 187 sources / 1,273 exact exceptions, with no new
+numerical-loop exemption. Inventory 01399 discovers 2,859 working-tree Python
+files, 2,858 parsed and one unchanged external legacy error. Its tracked count
+is 2,857 because the two new selection files are not yet staged.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Preserve compiled replay/search checkpoint | 20 focused CPU/GPU plus 95 affected GPU consumer cases pass | No remaining selection failure | Remaining outer numerical control and external callbacks | Compile ordered scalar starts next | No complete locator/repository compliance |
+| Retain corrected measurement evidence | Same-source/harness two-extent comparisons pass | No new memory/time trigger | Single process per arm and small fixture sizes | Freeze full source before three-process terminal comparisons | No statistically supported timing ranking |
+| Keep merge gated | Partial policy/controller checks pass | CPU fitter parity and previous memory/timing findings remain open | F01--F20 dispositions and integration coverage | Continue the master program | No HMC/scientific/default admission |
+
+Post-run review: the first comparison included redundant baseline packing; its
+favorable times did not make that valid timing evidence. The corrected matrix
+preserves original order and avoids that extra work. Both versions are retained
+with distinct harness identities. The new programs preserve gather gradients,
+but they do not address the outer optimizer's numerical and diagnostic lifecycle.
+Through 01399 cumulative charges are 22,702.050 GPU / 33,316.018 CPU seconds;
+remaining allowances are 164,497.950 GPU / 81,883.982 CPU seconds. No worker is
+active at this checkpoint. All terminal dispositions remain open.

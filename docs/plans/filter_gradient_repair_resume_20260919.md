@@ -4,6 +4,39 @@ Worktree: `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`.
 Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
+September 20 continuation through 01399, on fixed-fitting checkpoint `8f334b96`:
+initial exact replay and seeded search selection now execute in enclosing native
+XLA programs. Eligibility, first-maximum ties, row order, seeded draws and gather
+pullbacks are preserved. Optional movement reporting is repaired; its legacy
+zero-cloud fixture now enters at the native TensorFlow boundary. All 20 focused
+CPU/GPU selection checks, 40 sequential GPU, 43 block-center GPU, 12 factor GPU
+and 63 policy/controller cases pass (01344/01346--01348/01373/01398).
+
+Corrected matched comparisons 01374--01397 pass at two extents. Public warm
+replay is 4.676/0.408 and 9.087/0.410 ms before/after; search selection is
+11.250/0.702 and 16.815/0.800 ms. Maximum compared error is 4.441e-16. Graph
+sizes remain 93 replay / 346 search nodes at both extents, with constant warm
+device allocation and late candidate host growth at most 12,288 bytes. No new
+memory/time trigger fires. These are single-process checkpoint observations;
+final three-process evidence remains required. Earlier 01349--01372 measurements
+are superseded because the extracted baseline did extra tensor packing.
+
+Current charged time: 22,702.050 GPU / 33,316.018 CPU seconds, leaving
+164,497.950 GPU / 81,883.982 CPU seconds under the unchanged 52/32 process-hour
+caps. No worker is active at this checkpoint. The guard covers 187 sources /
+1,273 exact exceptions and remains partial. Inventory 01399 discovers 2,859
+working-tree Python files (2,858 parsed and one unchanged external legacy error;
+its tracked-file count of 2,857 excludes the two new files).
+
+Next compile ordered scalar locator starts, then batched locator and outer
+refinement/block/quadratic control, under the reviewed plan below. Include the
+uncovered `batched_quadratic_center.py` chunk/round loops and non-XLA fit in that
+audit. External DZ5 callbacks, CPU fitter parity (01325), and all existing
+memory/timing investigations stay open. All F01--F20 terminal dispositions remain
+open; no merge, HMC admission or whole-repository compliance is established.
+
+Earlier recovery checkpoints follow for historical context.
+
 September 20 continuation through 01339, based on selector checkpoint `22094f76`:
 complete fixed-center replicate fitting, conditional factor escalation, selection,
 and audit now compile. Refined XLA eigenpairs preserve the original GPU records;
