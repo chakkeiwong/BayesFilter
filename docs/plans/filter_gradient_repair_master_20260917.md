@@ -4,6 +4,49 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+September 20 current checkpoint through 01486: scalar and batched L-BFGS
+localization, endpoint checks, ordered scalar exact replay and stable selection
+execute in enclosing XLA programs. Both preserve the original frozen public
+derivative boundary. Optional batched objective progress is buffered and delivered
+after execution, with explicit overflow failure and a four-program cache.
+External host-mutating DZ5 target callbacks remain unqualified.
+
+The final combined locator suite passes all 33 CPU/GPU cases (01456/01457).
+Current-source GPU consumers pass 20 preparation, 40 sequential and 43 block
+cases (01483--01485); 63 policy/controller checks pass (01482). The guard passes
+for 189 sources / 1,273 exact exceptions, with no new numerical-loop exception.
+Inventory 01486 finds 2,869 working-tree Python files, 2,868 parsed and one
+unchanged external legacy parse error. Focused new-file Ruff and whitespace pass.
+
+Current-source two-extent measurements have exact baseline outputs:
+unbuffered batched public warm time is 276.042/3.994 and 277.522/4.337 ms;
+buffered public time is 279.489/6.988 and 294.315/8.694 ms; scalar public time is
+523.036/5.543 and 999.783/9.013 ms before/after. Graphs remain 2,367 unbuffered,
+3,010 buffered and 2,191 scalar nodes at both extents. Candidate warm device
+allocation is constant. Public cold calls and host peaks increase; retain those
+costs. Buffered public device peaks of 1,023,488/2,097,408 bytes trigger the 2x
+investigation. Analyses are the locator diagnostic artifacts ending in
+01463, 01469 and 01481. These are single-process observations; three-process
+terminal comparisons remain required.
+
+Run 01422 shows that residual correction improves least-squares accuracy but
+does not repair complete CPU fitter records. No runtime correction is installed.
+Next isolate projection/inversion/encoding and measure optional trace capacity
+costs under the bounded contracts below, then continue structured fit preparation,
+outer sequential refinement, block-coordinate and quadratic numerical control.
+The uncovered batched quadratic initializer and external DZ5 callbacks remain
+in that queue. All F01--F20 terminal dispositions and earlier memory/time
+investigations stay open. No merge, HMC or scientific admission is established.
+
+Through 01486, charges are 25,008.772 GPU / 33,922.904 CPU seconds, leaving
+162,191.228 GPU / 81,277.096 CPU seconds under the unchanged 52/32 process-hour
+caps. No worker is active at this checkpoint. Remote refs were fetched;
+origin/main is an ancestor of dcfaa15d, with no divergence to resolve. Preserve
+this tested locator checkpoint on the repair branch before the next diagnostics.
+
+The older checkpoints below are historical context.
+
+
 September 20 continuation through 01421, following pushed checkpoint `d91a1268`:
 ordered scalar multistart L-BFGS, endpoint replay, eligible exact replay and
 selection now execute in one native XLA program. Original optimizer settings,
@@ -1486,3 +1529,123 @@ This is explanatory localization under the existing 300-second CPU limit. Do
 not add a runtime correction unless it reduces a demonstrated arithmetic error
 and then passes the unchanged full CPU/GPU records and consumers. No input-
 specific initializer, tolerance relaxation or field omission is authorized.
+
+September 20 pre-run review at pushed scalar checkpoint `dcfaa15d`: register
+`fixed_fitting_initializer` as a CPU-only explanatory diagnostic, with the
+existing two frozen 9-by-3 training replicas. Compare Eigen COD, native COD in
+graph/XLA and one residual correction in graph/XLA against independent Decimal
+normal equations at 60/90 digits. Require agreement below 1e-50 between Decimal
+precisions and a singular-value ratio above 0.01 before using that reference.
+The high-precision normal equations are diagnostic only. Preserve full original,
+native and corrected fit records, including all existing 1e-10 comparisons;
+record their failures rather than weakening them. Each injected solver clears
+the enclosing caches so an old graph cannot masquerade as a different arm.
+The diagnostic pass means reference validity and finite execution, not CPU
+parity closure or authorization to install a runtime correction. No source
+changes while the sequential driver runs; use the 300-second ceiling.
+
+Run 01422 validates the independent reference and improves solve accuracy with
+one correction, but full-record parity worsens slightly. Keep the correction
+diagnostic-only and the CPU gate open; preserve all original thresholds.
+
+### Batched locator enclosure and progress delivery
+
+Enclose the existing batched TFP L-BFGS, batched endpoint check, scalar exact
+candidate replay and stable selection. Preserve the exact optimizer settings,
+start order, scalar authority, invalid-endpoint exclusion and conservative row
+accounting. No batch-to-scalar optimizer substitution is allowed.
+
+The existing objective emits Python progress with host materialization on every
+call. Inspecting its consumers confirms these events report values, scaled
+scores, transformed gradients and standardized positions. Retain every event
+in order by collecting numeric rows in device variables during the compiled
+call and delivering them afterwards. Label deferred delivery explicitly. This
+cannot preserve real-time callback cancellation; document that timing boundary.
+External DZ5 callbacks additionally mutate host diagnostic state and remain
+ineligible until migrated; deferred events must not imply those counters are
+qualified. Callbacks that inspect tensors on the host must still fail tracing.
+
+Use no telemetry resources when no progress callback is requested. For progress,
+use a per-program lock, reset storage inside each invocation, capture immutable
+result tensors and synchronize before releasing the lock. Bound optional trace
+storage to at most 16 MiB and 4,096 events, with at least one event. The maximum
+line-search iteration setting is not an evaluation-count bound: TFP's internal
+Hager-Zhang bisection has a separate loop. Therefore report total calls and an
+explicit overflow flag; reject incomplete telemetry before emitting any saved
+objective event. Never overwrite earlier events or silently truncate. This is
+an observation-storage limit, not a changed optimization stopping rule. Limit
+the optional-program cache to four entries and measure the extra host/device
+cost. No numerical target is re-evaluated to reconstruct telemetry.
+
+Skeptical review: compare full original records and event arrays on quadratic,
+nonlinear, nonfinite and tied targets with both stopping rules; use resource
+counters to verify original callback order/counts. Check repeated/concurrent
+invocations, overflow rejection, unsupported callbacks, two start counts,
+HLO/no Python callbacks, graph-mode diagnostics without hidden XLA and downstream
+consumers. Preserve frozen derivatives and unchanged numerical tolerances.
+CPU focused diagnostics precede GPU checks and matched public/numerical
+measurements, both with and without telemetry. Use the existing sequential
+driver, 300/900-second limits and cumulative budget. This review authorizes no
+runtime least-squares correction or whole-initializer compliance claim.
+
+Batched-locator measurements use separate fixtures/worker so the already-frozen
+scalar measurement harness remains intact. Use the same two/four starts, SPD
+quadratic target, dimension two, four optimizer iterations and seven line-search
+iterations as the scalar diagnostic; preserve all other original settings.
+Measure public before/after with and without progress delivery, and current
+graph/XLA numerical scopes separately. Progress numerical scope includes reset
+and every trace write; public scope includes delivery of every objective row.
+Return common point/accounting/optimizer/endpoint fields, total observed calls
+and overflow status. Full trace values are checked against the pinned original
+by focused tests; no target is replayed for measurement. Preserve original
+tracing failures, 20 warm calls, two extents and the 300-second ceiling. These
+single-process diagnostics do not replace source-frozen terminal repeats.
+
+Late checkpoint review adds the explicit original-public derivative-boundary
+check (`locator_frozen`) for scalar, batched and buffered localization: watch
+both starts and scale in an external tape, compare full records with frozen
+3582b4ac and require disconnected returned geometry. Numerical value/score
+parity alone does not check whether wrapping the optimizer accidentally asks
+XLA to compile its derivative. Preserve the existing public boundary; no new
+optimizer differentiation is authorized. Use the 300-second focused ceiling.
+
+### Initializer arithmetic isolation after 01422
+
+The residual-correction diagnostic improves the linear solve but fails the
+unchanged complete-record gate. Next compare the symmetric projection,
+covariance inversion, initial factor state and encoding on identical inputs,
+using both existing frozen training replicas. Capture each intermediate from
+the original 3582b4ac initializer and the candidate XLA initializer; report both
+end-to-end differences and single-operation differences after supplying the
+same predecessor. This distinguishes propagated rounding from a faulty local
+operation. Preserve the original eigenvalue floor, correlation extraction,
+anchor/sign rules and encoding bounds.
+
+Use independent 60/90-digit Decimal matrix inversion only on these tiny
+well-conditioned matrices, with reference agreement below 1e-50. Report inverse
+residuals, symmetry and eigensystem residuals; compare initial encoded states
+before attempting another full optimizer run. Record complete numerical arrays
+and the actual command/environment through the existing CPU-only driver and a
+new numbered artifact. The 300-second ceiling and cumulative caps apply.
+
+Skeptical review: replacing only the initial vector can diagnose sensitivity
+but cannot qualify a runtime fix. A match to the rounded baseline is not an
+independent accuracy criterion. Do not install a projection, inverse, solver or
+encoding change until a demonstrated arithmetic defect justifies it and the
+unchanged full records and consumers pass. No tolerance relaxation, input-
+specific initializer, changed optimizer setting or omitted field is allowed.
+
+Optional progress memory investigation remains separate. At two/four starts,
+the 4,096-event buffer contains 327,680/655,360 numerical bytes before allocator
+rounding and temporary/output copies. Original public progress streamed events
+to the host, so retaining them on device necessarily changes that allocation.
+The measured 1,023,488/2,097,408-byte public peaks trigger the existing 2x rule;
+graph and XLA versions with identical buffers have similar peaks. Before
+accepting this cost, measure the same fixed inputs with 128 and 4,096 event
+capacities, verify identical saved events and optimizer records, and inspect
+allocator current/peak values after construction, cold execution and repeated
+calls. Clear neither arm's compiler caches selectively. This is a CPU/GPU
+resource diagnostic using the normal sequential driver, 300-second ceiling,
+verified GPU growth and cumulative budget. It cannot replace final repeats or
+establish a process-wide memory cap; the four-entry cache bounds retained
+programs, while caller-held snapshots have their own lifetimes.

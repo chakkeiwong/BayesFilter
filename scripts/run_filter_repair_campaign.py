@@ -35,6 +35,7 @@ from filter_repair_training_fixtures import FIXTURES as TRAINING_FIXTURES
 from filter_repair_stochastic_fixtures import FIXTURES as STOCHASTIC_FIXTURES
 from filter_repair_source_fixtures import FIXTURES as SOURCE_FIXTURES
 from filter_repair_locator_fixtures import FIXTURES as LOCATOR_FIXTURES
+from filter_repair_batched_locator_fixtures import FIXTURES as BATCHED_LOCATOR_FIXTURES
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -245,8 +246,13 @@ TEST_GROUPS = {
     "fixed_fitting_original": ("tests/test_filter_repair_fixed_fitting.py::test_original_factor_and_dense_lifecycle_fields",),
     "fixed_fitting_frozen": ("tests/test_filter_repair_fixed_fitting.py::test_public_fitted_geometry_preserves_frozen_derivative_boundary",),
     "fixed_fitting_fields": ("tests/test_filter_repair_fixed_fitting_localization.py::test_original_fit_field_breakdown", "-s"),
+    "fixed_fitting_initializer": ("tests/test_filter_repair_initializer_rounding.py", "-s"),
     "sequential_selection": ("tests/test_filter_repair_sequential_selection.py",),
     "sequential_locator": ("tests/test_filter_repair_sequential_locator.py",),
+    "batched_locator": ("tests/test_filter_repair_batched_locator.py",),
+    "locator_frozen": ("tests/test_filter_repair_locator_frozen.py",),
+    "locator_completion": ("tests/test_filter_repair_sequential_locator.py",
+        "tests/test_filter_repair_batched_locator.py", "tests/test_filter_repair_locator_frozen.py"),
     "fixed_fitting_localization": ("tests/test_filter_repair_fixed_fitting_localization.py", "-s"),
     "joint_center": ("tests/test_exact_incumbent.py", "tests/test_joint_center.py"),
     "apf": ("tests/highdim/test_zhao_cui_frozen_proposal_apf_tf.py", "tests/highdim/test_c2_sv_frozen_proposal_apf_tf.py"),
@@ -269,7 +275,8 @@ TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_prepara
     "sequential_preparation": "GPU", "sequential_geometry": "GPU", "sequential_score_fit": "GPU", "block_center": "GPU",
     "quadratic_initializer": "GPU", "joint_center": "GPU", "predator_tp": "GPU", "exact_incumbent": "GPU",
     "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU", "fixed_fitting": "GPU",
-    "sequential_selection": "GPU", "sequential_locator": "GPU"}
+    "sequential_selection": "GPU", "sequential_locator": "GPU", "batched_locator": "GPU", "locator_frozen": "GPU",
+    "locator_completion": "GPU"}
 FIXTURES += ADDITIONAL_FIXTURES
 FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES
@@ -280,6 +287,7 @@ FIXTURES += INITIALIZATION_FIXTURES
 FIXTURES += CENTERED_TRAINING_FIXTURES
 FIXTURES += SOURCE_FIXTURES
 FIXTURES += LOCATOR_FIXTURES
+FIXTURES += BATCHED_LOCATOR_FIXTURES
 
 
 def sha(path):
@@ -314,6 +322,8 @@ def measurement_harness(fixture):
         names += ("filter_repair_source_worker.py", "filter_repair_source_fixtures.py")
     if fixture in LOCATOR_FIXTURES:
         names += ("filter_repair_locator_worker.py", "filter_repair_locator_fixtures.py")
+    if fixture in BATCHED_LOCATOR_FIXTURES:
+        names += ("filter_repair_batched_locator_worker.py", "filter_repair_batched_locator_fixtures.py")
     return {name: sha(ROOT / "scripts" / name) for name in names}
 
 
@@ -438,6 +448,8 @@ def run_job(args):
             worker = "filter_repair_source_worker.py"
         if args.fixture in LOCATOR_FIXTURES:
             worker = "filter_repair_locator_worker.py"
+        if args.fixture in BATCHED_LOCATOR_FIXTURES:
+            worker = "filter_repair_batched_locator_worker.py"
         command = [sys.executable, str(ROOT / "scripts" / worker), "--source-root", str(source), "--fixture", args.fixture, "--jit", args.jit, "--size", str(args.size), "--device", device, "--output", str(result)]
     elif args.action == "audit":
         command = [sys.executable, "scripts/audit_filter_gradient_policy.py", "--output", str(directory / "audit.json.gz"), "--markdown", str(directory / "audit.md")]
@@ -539,7 +551,7 @@ def measurement_modes(name):
     return (("off", "on", "eager") if name in ("source_route_sequence", "source_guard_gates", "cpu_forecast_shard",
             "exact_incumbent", "sequential_score_fit", "mass_precision", "mass_structured", "block_score_geometry",
             "fixed_stability", "fixed_selection", "fixed_fitting", "sequential_replay", "sequential_search_selection",
-            "sequential_scalar_locator")
+            "sequential_scalar_locator", "sequential_batched_locator", "sequential_batched_locator_progress")
             else ("off", "on"))
 
 

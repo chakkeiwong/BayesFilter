@@ -3902,3 +3902,131 @@ qualifies the explicit tensor-callback scalar route; it does not establish the
 external DZ5 callbacks' eligibility. Fresh source-frozen repeats remain pending.
 
 Inventory 01421 finds 2,863 working-tree Python files (2,862 parsed, one unchanged external legacy error). The guard covers 188 sources / 1,273 exact exceptions; no new numerical exemption. Through 01421 charges are 23,288.629 GPU / 33,454.492 CPU seconds, leaving 163,911.371 GPU / 81,745.508 CPU seconds. No worker is active at this checkpoint.
+
+## September 20 initializer rounding diagnostic
+
+The scalar checkpoint is committed and pushed as `dcfaa15d`. CPU run 01422
+passes the diagnostic reference-validity checks in 40.259 seconds. The two
+weighted systems have condition numbers 1.509 and 1.876; independent 60/90-digit
+Decimal solutions agree within 2.186e-59. Native XLA solution errors are
+2.059e-16 and 1.693e-15, versus 7.581e-16 and 3.608e-16 for Eigen COD. One
+residual correction reduces the native errors to 1.301e-16 and 8.330e-17.
+
+That arithmetic improvement does not repair full CPU record parity. The corrected
+Jacobian condition is 34.54860942152496 versus 34.548609417264736 originally;
+the corrected principal angle is 2.926248173473727 versus 2.926248172980293.
+Both discrepancies are slightly larger than the uncorrected candidate's.
+Complete original/native/corrected records and every failed comparison are in
+run-01422/process.log. No correction is installed in runtime. Further CPU
+localization must separate symmetric projection, covariance inversion and
+factor encoding; closer baseline rounding alone is not an accuracy criterion.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Keep correction diagnostic-only | Least-squares arithmetic improves | Full original-record parity still fails | Projection/inverse/encoding and optimizer sensitivity | Localize those boundaries on frozen inputs | No CPU parity closure |
+| Continue independent batched-locator repair | Scalar checkpoint is preserved | Existing CPU and memory findings remain | Buffered telemetry compatibility | Preserve target calls and all reported objective rows | No terminal acceptance |
+
+Post-run review: the baseline is itself rounded; this experiment rules out
+simple least-squares refinement as a sufficient parity repair. The diagnostic
+test passing cannot be substituted for the failing complete-record gate.
+Through 01422 charges are 23,288.629 GPU / 33,494.751 CPU seconds; remaining
+allowances are 163,911.371 GPU / 81,705.249 CPU seconds. No worker is active.
+
+Initial batched-locator CPU run 01423 passes 14 cases and fails two nonfinite
+progress comparisons; complete numerical records pass in both failed cases.
+XLA reduces an all-NaN score row to the max-reduction identity (-infinity), while
+the original diagnostic reports NaN. Restore explicit NaN propagation only in
+the saved maximum-absolute-score observations. No optimizer value, derivative,
+stopping rule, target invocation or comparison threshold changes. The retry
+must keep every objective-event comparison, including nonfinite rows.
+
+Run 01424 passes all 16 CPU batched-locator cases. GPU run 01425 passes the five
+unbuffered cases but rejects all 11 buffered cases because TensorFlow places
+int32 variables on CPU, making the objective counter inaccessible from XLA on
+GPU. Use an int64 observation counter on the same device as its buffer; retain
+the original TFP optimizer/accounting dtypes. Add explicit same-device checking
+to the buffered test. This repairs storage placement, not numerical execution.
+
+All 16 batched-locator GPU checks pass in 01426 and the final CPU version passes
+all 16 in 01427. Consumer run 01428 passes 39/40; its sole failure is the old
+no-op-optimizer fixture accessing the now-unused `sequential.tfp` import. Move
+that identical fixture to `sequential_locator_tf.tfp.optimizer`; preserve every
+candidate/budget assertion. The initializer rounding result is also extracted
+with run/log/JUnit hashes to `fixed-fitting-initializer-rounding-diagnostic-01422.json`.
+
+Runs 01429/01430 pass all 40 sequential and 43 block-center GPU consumers.
+Matched matrices 01431--01454 have exact outputs at both extents. Analyses are
+`sequential-batched-locator-diagnostic-01442.json` and
+`sequential-batched-locator-progress-diagnostic-01454.json`. Public warm ms are
+276.042/3.874 and 277.522/4.129 without progress, 279.489/7.552 and 294.315/8.190
+with progress. Graphs stay at 2,354 unbuffered / 2,994 buffered nodes. Warm XLA
+allocation is constant and late candidate RSS growth is at most 24,576 bytes.
+Progress device peaks (1,023,488 / 2,097,408 bytes) exceed twice baseline and
+remain an explicit investigation; graph/XLA with the same buffer has similar
+peaks. These single-process observations are not terminal acceptance.
+
+The late derivative-boundary test 01455 fails all three scalar/batched/buffered
+CPU cases: native execution under an outer tape tries to differentiate the
+optimizer, causing unsupported dynamic TensorLists or resource gradients. The
+original public records are frozen. Apply `tf.stop_gradient` to completed
+native locator outputs inside their compiled boundaries, retaining internal
+scores/optimizer calculations. This is the same original preparation contract
+already restored for fitting; it does not introduce a new derivative target.
+Require combined full locator/record/frozen-boundary CPU/GPU checks and refresh
+candidate measurements after this source repair. Preserve previous evidence
+as checkpoint observations, including the device-memory trigger.
+
+## September 20 recovered locator qualification through 01486
+
+Recovered the completed matrix session without changing source. The final
+derivative-boundary repair passes all 33 combined locator cases on CPU/GPU
+(01456/01457). Refreshed source/harness-qualified comparisons are preserved in
+`sequential-batched-locator-diagnostic-01463.json`,
+`sequential-batched-locator-progress-diagnostic-01469.json`, and
+`sequential-scalar-locator-diagnostic-01481.json`. Every compared output is
+exactly equal to the original execution comparator at both extents. Original
+graph/XLA tracing failures are preserved; eager original timing is compared
+only with the matching current public boundary.
+
+| Public scope | Starts | Before warm ms | After warm ms | Current graph nodes |
+| --- | --- | --- | --- | --- |
+| Scalar locator | 2 | 523.036 | 5.543 | 2,191 |
+| Scalar locator | 4 | 999.783 | 9.013 | 2,191 |
+| Batched locator | 2 | 276.042 | 3.994 | 2,367 |
+| Batched locator | 4 | 277.522 | 4.337 | 2,367 |
+| Batched locator with progress | 2 | 279.489 | 6.988 | 3,010 |
+| Batched locator with progress | 4 | 294.315 | 8.694 | 3,010 |
+
+These are descriptive single-process measurements, not timing rankings or
+terminal acceptance. Candidate warm XLA device allocation is constant, with
+late host growth at most 24,576 bytes. Public cold calls and host peaks are
+higher and remain in the underlying analysis. Optional progress public device
+peaks remain 1,023,488/2,097,408 bytes against 27,136/28,672 originally. Matching
+buffered graph/XLA peaks are similar, so storage is a supported explanation;
+the 2x trigger is still open pending capacity isolation and terminal repeats.
+
+Current-source checks pass 63 policy/controller cases (01482), 20 preparation
+GPU cases (01483), 40 sequential GPU consumers (01484) and 43 block-center GPU
+consumers (01485). The partial guard passes 189 sources / 1,273 exact exceptions;
+no numerical-loop exception was added. Inventory 01486 finds 2,869 working-tree
+Python files, 2,868 parsed and one unchanged external legacy parse error.
+Focused Ruff and whitespace pass. Remote fetch finds origin/main is an ancestor
+of dcfaa15d; no integration conflict is present at this checkpoint.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Preserve the locator repair | Exact values, call order, records and frozen public derivatives; focused CPU/GPU and consumers pass | No locator numerical failure | External host-mutating callbacks remain uncovered | Commit/push the tested repair branch | No complete initializer or repository compliance |
+| Continue progress-memory investigation | All saved events and optimizer semantics retained | Public device peak exceeds 2x original | Resource, temporary and returned-buffer allocation | Compare two capacities under the recorded contract | No accepted memory tradeoff yet |
+| Continue CPU initialization localization | Independent solve reference is valid | Complete original-record parity still fails | Projection, inversion, factor encoding and trajectory sensitivity | Isolate operations on identical predecessors | No tolerance or algorithm change |
+| Keep merge gated | All F01--F20 terminal dispositions remain open | Outer numerical control and previous investigations | Complete call-chain coverage and frozen-source evidence | Execute the remaining master queue | No HMC, posterior, canonical LEDH or scientific admission |
+
+Post-run review inspected numerical and reporting boundaries, optional resource
+locking, overflow behavior, full event comparisons, measurement timing scopes
+and the late external-tape repair. The graph-mode diagnostic contains no hidden
+XLA requirement. One process per arm cannot establish a timing distribution;
+the final three-process requirement is unchanged. No independent-agent review
+is claimed. Additional bounded arithmetic and buffer-capacity diagnostics are
+recorded in the master before their execution.
+
+Through 01486 charges are 25,008.772 GPU / 33,922.904 CPU seconds, leaving
+162,191.228 GPU / 81,277.096 CPU seconds. No numerical worker remains active.

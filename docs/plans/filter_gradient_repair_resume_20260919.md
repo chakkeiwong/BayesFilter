@@ -4,6 +4,49 @@ Worktree: `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`.
 Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
+
+September 20 current checkpoint through 01486: scalar and batched L-BFGS
+localization, endpoint checks, ordered scalar exact replay and stable selection
+execute in enclosing XLA programs. Both preserve the original frozen public
+derivative boundary. Optional batched objective progress is buffered and delivered
+after execution, with explicit overflow failure and a four-program cache.
+External host-mutating DZ5 target callbacks remain unqualified.
+
+The final combined locator suite passes all 33 CPU/GPU cases (01456/01457).
+Current-source GPU consumers pass 20 preparation, 40 sequential and 43 block
+cases (01483--01485); 63 policy/controller checks pass (01482). The guard passes
+for 189 sources / 1,273 exact exceptions, with no new numerical-loop exception.
+Inventory 01486 finds 2,869 working-tree Python files, 2,868 parsed and one
+unchanged external legacy parse error. Focused new-file Ruff and whitespace pass.
+
+Current-source two-extent measurements have exact baseline outputs:
+unbuffered batched public warm time is 276.042/3.994 and 277.522/4.337 ms;
+buffered public time is 279.489/6.988 and 294.315/8.694 ms; scalar public time is
+523.036/5.543 and 999.783/9.013 ms before/after. Graphs remain 2,367 unbuffered,
+3,010 buffered and 2,191 scalar nodes at both extents. Candidate warm device
+allocation is constant. Public cold calls and host peaks increase; retain those
+costs. Buffered public device peaks of 1,023,488/2,097,408 bytes trigger the 2x
+investigation. Analyses are the locator diagnostic artifacts ending in
+01463, 01469 and 01481. These are single-process observations; three-process
+terminal comparisons remain required.
+
+Run 01422 shows that residual correction improves least-squares accuracy but
+does not repair complete CPU fitter records. No runtime correction is installed.
+Next isolate projection/inversion/encoding and measure optional trace capacity
+costs under the bounded contracts below, then continue structured fit preparation,
+outer sequential refinement, block-coordinate and quadratic numerical control.
+The uncovered batched quadratic initializer and external DZ5 callbacks remain
+in that queue. All F01--F20 terminal dispositions and earlier memory/time
+investigations stay open. No merge, HMC or scientific admission is established.
+
+Through 01486, charges are 25,008.772 GPU / 33,922.904 CPU seconds, leaving
+162,191.228 GPU / 81,277.096 CPU seconds under the unchanged 52/32 process-hour
+caps. No worker is active at this checkpoint. Remote refs were fetched;
+origin/main is an ancestor of dcfaa15d, with no divergence to resolve. Preserve
+this tested locator checkpoint on the repair branch before the next diagnostics.
+
+The older checkpoints below are historical context.
+
 September 20 continuation through 01421, following pushed checkpoint `d91a1268`:
 ordered scalar multistart L-BFGS, endpoint replay, eligible exact replay and
 selection now execute in one native XLA program. Original optimizer settings,

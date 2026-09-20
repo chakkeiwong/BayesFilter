@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from typing import Any
 
 import tensorflow as tf
-import tensorflow_probability as tfp
 
 from bayesfilter.inference._exact_incumbent import (
     candidates_from_rows,
@@ -37,6 +36,9 @@ from bayesfilter.inference.sequential_score_fit_tf import (
 )
 from bayesfilter.inference.sequential_selection_tf import replay_program, search_program
 from bayesfilter.inference.sequential_locator_tf import scalar_locator_program
+from bayesfilter.inference.sequential_batched_locator_tf import (
+    batched_locator_program, buffered_batched_locator_program,
+)
 from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS = (
@@ -269,7 +271,12 @@ def estimate_sequential_map_covariance(
     config: SequentialMapCovarianceConfig | None = None,
     progress_callback: Callable[[Mapping[str, Any]], None] | None = None,
 ) -> SequentialMapCovarianceResult:
-    """Locate an exact stationary point and fit independent terminal geometry."""
+    """Locate an exact stationary point and fit independent terminal geometry.
+
+    Batched locator objective progress is buffered during XLA execution and
+    delivered in order afterwards; callbacks cannot interrupt individual calls.
+    Incomplete buffered telemetry fails explicitly before event delivery.
+    """
 
     cfg = SequentialMapCovarianceConfig() if config is None else config
     starts = tf.convert_to_tensor(initial_positions, dtype=tf.float64)
@@ -321,84 +328,47 @@ def estimate_sequential_map_covariance(
             start_count=start_count,
         )
     elif batched_locator_value_and_score_fn is not None and start_count > 1:
-        candidates.extend(tf.unstack(starts))
-        locator_calls = 0
-
-        def batched_standardized_objective(u: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-            nonlocal locator_calls
-            unconstrained = tf.convert_to_tensor(u, tf.float64)
-            box_radius = tf.constant(cfg.locator_standardized_box_radius, tf.float64)
-            z = box_radius * tf.math.tanh(unconstrained / box_radius)
-            values, scores = batched_locator_value_and_score_fn(starts + scale_tf[None, :] * z)
-            values = tf.ensure_shape(tf.convert_to_tensor(values, tf.float64), [start_count])
-            scores = tf.ensure_shape(tf.convert_to_tensor(scores, tf.float64), [start_count, dimension])
-            derivative = 1.0 - tf.square(z / box_radius)
-            locator_calls += 1
-            _emit_progress(
-                progress_callback,
-                "locator_objective_completed",
-                locator_objective_calls=locator_calls,
-                log_posterior=values.numpy(),
-                max_abs_scaled_score=tf.reduce_max(
-                    tf.abs(scores * scale_tf[None, :]), axis=1
-                ).numpy(),
-                max_abs_transformed_gradient=tf.reduce_max(
-                    tf.abs(scores * scale_tf[None, :] * derivative), axis=1
-                ).numpy(),
-                standardized_position=z.numpy(),
-            )
-            return -values, -(scores * scale_tf[None, :] * derivative)
-
-        stopping_condition = (
-            tfp.optimizer.converged_all
-            if cfg.locator_stopping_condition == "converged_all"
-            else tfp.optimizer.converged_any
-        )
-        optimizer = tfp.optimizer.lbfgs_minimize(
-            batched_standardized_objective,
-            initial_position=tf.zeros([start_count, dimension], tf.float64),
-            tolerance=tf.constant(cfg.locator_gradient_tolerance, tf.float64),
-            max_iterations=cfg.locator_max_iterations,
-            max_line_search_iterations=cfg.locator_max_line_search_iterations,
-            parallel_iterations=1,
-            stopping_condition=stopping_condition,
-        )
-        objective_calls = int(optimizer.num_objective_evaluations.numpy())
-        locator_objective_evaluations += objective_calls * start_count
-        box_radius = tf.constant(cfg.locator_standardized_box_radius, tf.float64)
-        endpoints_z = box_radius * tf.math.tanh(tf.convert_to_tensor(optimizer.position) / box_radius)
-        endpoints = starts + scale_tf[None, :] * endpoints_z
-        values, scores = batched_locator_value_and_score_fn(endpoints)
-        locator_objective_evaluations += start_count
-        for index in range(start_count):
-            finite = bool(
-                (tf.math.is_finite(values[index]) & tf.reduce_all(tf.math.is_finite(scores[index]))).numpy()
-            )
-            if finite:
-                candidates.append(endpoints[index])
+        arguments = (value_and_score_fn, batched_locator_value_and_score_fn,
+            start_count, dimension, cfg.locator_standardized_box_radius,
+            cfg.locator_gradient_tolerance, cfg.locator_max_iterations,
+            cfg.locator_max_line_search_iterations, cfg.locator_stopping_condition)
+        program = (batched_locator_program(*arguments) if progress_callback is None else
+            buffered_batched_locator_program(*arguments, device=starts.device))
+        located = program(starts, scale_tf)
+        selected_candidate = located["selected"]
+        evaluations += int(located["exact_evaluations"])
+        locator_objective_evaluations += int(located["objective_evaluations"])
+        objective_calls = int(located["objective_calls"])
+        iterations = int(located["iterations"])
+        if progress_callback is not None:
+            # All decisions and observations were computed in the enclosing
+            # program. These loops serialize completed reports only.
+            trace = located["trace"][:int(located["trace_count"])].numpy().tolist()
+            for call, rows in enumerate(trace, start=1):
+                values, scaled, transformed, positions = zip(
+                    *((row[0], row[1], row[2], row[3:]) for row in rows), strict=True)
+                _emit_progress(progress_callback, "locator_objective_completed",
+                    locator_objective_calls=call, log_posterior=values,
+                    max_abs_scaled_score=scaled, max_abs_transformed_gradient=transformed,
+                    standardized_position=positions,
+                    delivery_mode="buffered_after_compiled_locator")
+        for finite, converged, failed, norm in zip(located["endpoint_finite"].numpy().tolist(),
+                located["converged"].numpy().tolist(), located["failed"].numpy().tolist(),
+                located["endpoint_standardized_norm"].numpy().tolist(), strict=True):
             locator_rows.append({
-                "finite": finite,
-                "converged": bool(optimizer.converged.numpy()[index]),
-                "failed": bool(optimizer.failed.numpy()[index]),
-                "iterations": int(optimizer.num_iterations.numpy()),
-                "objective_calls": objective_calls,
+                "finite": finite, "converged": converged, "failed": failed,
+                "iterations": iterations, "objective_calls": objective_calls,
                 "conservative_row_evaluations": objective_calls * start_count,
                 "coordinate_system": "start_centered_prior_standardized_smooth_box",
                 "standardized_box_radius": cfg.locator_standardized_box_radius,
                 "gradient_tolerance": cfg.locator_gradient_tolerance,
                 "stopping_condition": cfg.locator_stopping_condition,
-                "endpoint_standardized_norm": float(tf.linalg.norm(endpoints_z[index]).numpy()),
-                "native_batched_locator": True,
+                "endpoint_standardized_norm": norm, "native_batched_locator": True,
             })
-        _emit_progress(
-            progress_callback,
-            "locator_completed",
-            locator_objective_calls=objective_calls,
-            iterations=int(optimizer.num_iterations.numpy()),
-            converged=optimizer.converged.numpy(),
-            failed=optimizer.failed.numpy(),
-            stopping_condition=cfg.locator_stopping_condition,
-        )
+        _emit_progress(progress_callback, "locator_completed",
+            locator_objective_calls=objective_calls, iterations=iterations,
+            converged=located["converged"].numpy(), failed=located["failed"].numpy(),
+            stopping_condition=cfg.locator_stopping_condition)
     else:
         located = scalar_locator_program(value_and_score_fn, start_count, dimension,
             cfg.locator_standardized_box_radius, cfg.locator_gradient_tolerance,

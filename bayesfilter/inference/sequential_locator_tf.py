@@ -94,10 +94,13 @@ def scalar_locator_program(scalar, count, dimension, box_radius, tolerance,
         else:
             values, scores = tf.zeros([0], D), tf.zeros([0, dimension], D)
 
-        return {"selected": selection_numerics(positions, values, scores),
+        # Public preparation originally returned frozen host records. Stop an
+        # outer tape before it builds unavailable optimizer-loop derivatives.
+        return tf.nest.map_structure(tf.stop_gradient,
+            {"selected": selection_numerics(positions, values, scores),
                 "endpoint_finite": valid, "optimizer_diagnostics": diagnostics,
                 "endpoint_standardized_norm": norms,
                 "exact_evaluations": count + tf.math.count_nonzero(eligible, dtype=tf.int32),
-                "objective_evaluations": tf.reduce_sum(diagnostics[:, 3])}
+                "objective_evaluations": tf.reduce_sum(diagnostics[:, 3])})
 
     return locate

@@ -612,6 +612,8 @@ def test_budget_rejection_reports_highest_exact_candidate(
 ) -> None:
     """A rejected locator run still reports the exact incumbent, not start 0."""
 
+    from bayesfilter.inference import sequential_locator_tf as locator
+
     def no_op_locator(function, initial_position, **_kwargs):
         del function
         initial = tf.convert_to_tensor(initial_position, tf.float64)
@@ -624,7 +626,7 @@ def test_budget_rejection_reports_highest_exact_candidate(
         )
 
     monkeypatch.setattr(
-        sequential.tfp.optimizer, "lbfgs_minimize", no_op_locator
+        locator.tfp.optimizer, "lbfgs_minimize", no_op_locator
     )
 
     def target(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
