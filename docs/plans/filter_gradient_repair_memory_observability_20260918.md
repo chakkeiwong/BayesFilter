@@ -1,5 +1,17 @@
 # Host-memory observation limits
 
+September 20 continuation: one TensorFlow trace and stable repeated-input warm
+memory do not establish bounded XLA compilation. The factor/COD diagnostic
+`factor-compilation-memory-comparison-01514.json` records only two runtime HLO
+inputs where six were expected: training tensors became compiler constants.
+Four changed same-shape clouds added 335,155,200 host bytes and each took about
+6.4 seconds despite one trace. Replacing data-dependent scalar slices with
+gathers retains all six inputs; the same sequence adds 61,440 bytes and each
+new cloud takes about 10 ms. Graph-reference modes stay near 0.2 MiB growth.
+Final compiler/memory checks must include changed numerical inputs and explicit
+runtime-input HLO inspection for this path. This bounded diagnostic does not
+close complete-fitter numerical gates or establish a general memory limit.
+
 The campaign reports the maximum sampled `/proc/self/status` `VmHWM`, plus
 per-phase `VmRSS` and TensorFlow allocator current/peak bytes. These are separate
 metrics. The sampled host high-water field is approximate on this host; it is

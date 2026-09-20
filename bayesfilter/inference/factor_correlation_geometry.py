@@ -287,7 +287,8 @@ def fit_factor_correlation_score_geometry(
 
 
 @lru_cache(maxsize=16)
-def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compile, diagnosis):
+def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compile, diagnosis,
+                         *, padded_training=False):
     """One stable numerical boundary, including preparation and optimizer."""
     signature = [tf.TensorSpec([dimension], tf.float64),
         tf.TensorSpec([training_rows, dimension], tf.float64),
@@ -295,8 +296,18 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
         tf.TensorSpec([holdout_rows, dimension], tf.float64),
         tf.TensorSpec([holdout_rows, dimension], tf.float64),
         tf.TensorSpec([training_rows], tf.float64)]
+    if padded_training:
+        if training_rows < 2 * dimension:
+            raise ValueError("padded structured training requires capacity for at least 2D fresh rows")
+        signature.append(tf.TensorSpec([], tf.int32))
     @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
-    def numerical(center, train_z, train_score, holdout_z, holdout_score, weights):
+    def numerical(center, train_z, train_score, holdout_z, holdout_score, weights,
+                  active_training_rows=None):
+        if padded_training:
+            active = tf.range(training_rows) < active_training_rows
+            train_z = tf.where(active[:, None], train_z, tf.zeros_like(train_z))
+            train_score = tf.where(active[:, None], train_score, center[None, :])
+            weights = tf.where(active, weights, tf.zeros_like(weights))
         weights /= tf.reduce_sum(weights)
         train_response = center[None, :] - train_score
         holdout_response = center[None, :] - holdout_score
@@ -379,14 +390,14 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
             & tf.reduce_all(tf.math.is_finite(deviations))
             & tf.reduce_all(tf.math.is_finite(loadings))
         )
-        jacobian_rank, jacobian_condition = diagnosis(
-            fitted_raw,
-            train_z,
-            dimension=dimension,
-            anchors=anchors,
-            config=cfg,
-            jit_compile=jit_compile,
-        )
+        diagnosis_arguments = {"dimension": dimension, "anchors": anchors, "config": cfg,
+                               "jit_compile": jit_compile}
+        if padded_training:
+            finite &= (active_training_rows >= 2 * dimension) & (active_training_rows <= training_rows)
+            jacobian_rank, jacobian_condition = diagnosis(fitted_raw, train_z,
+                active_training_rows=active_training_rows, **diagnosis_arguments)
+        else:
+            jacobian_rank, jacobian_condition = diagnosis(fitted_raw, train_z, **diagnosis_arguments)
         # The original fit returned frozen host records. Keep its completed
         # geometry disconnected from an external tape without changing the
         # loss/gradient used by L-BFGS or the covariance constructor API.
@@ -451,9 +462,10 @@ def _decode_covariance(
             tf.gather(remaining, tf.minimum(indices-tf.cast(indices > omitted, tf.int32), 2*dimension-2)))
         unconstrained = tf.reshape(full, [dimension, 2])
         loadings = bound * unconstrained / tf.sqrt(1.0 + tf.reduce_sum(tf.square(unconstrained), axis=1, keepdims=True))
-        first_radius = bound * tf.math.sigmoid(unconstrained[anchor_a, 0])
-        second_radius = bound * tf.math.sigmoid(unconstrained[anchor_b, 0])
-        angle = tf.constant(math.pi, tf.float64) * tf.math.sigmoid(unconstrained[anchor_b, 1])
+        anchor_rows = tf.gather(unconstrained, tf.stack((anchor_a, anchor_b)))
+        first_radius = bound * tf.math.sigmoid(anchor_rows[0, 0])
+        second_radius = bound * tf.math.sigmoid(anchor_rows[1, 0])
+        angle = tf.constant(math.pi, tf.float64) * tf.math.sigmoid(anchor_rows[1, 1])
         loadings = tf.tensor_scatter_nd_update(loadings, tf.reshape(tf.stack((anchor_a, anchor_b)), [2, 1]),
             tf.stack((tf.stack((first_radius, tf.constant(0., tf.float64))),
                       second_radius * tf.stack((tf.cos(angle), tf.sin(angle))))))
@@ -486,7 +498,7 @@ def _initial_factor_state(
     if factor_count == 1:
         anchor = tf.argmax(tf.abs(loadings[:, 0]), output_type=tf.int32)
         sign = tf.where(
-            loadings[anchor, 0] >= 0.0,
+            tf.gather(loadings[:, 0], anchor) >= 0.0,
             tf.constant(1.0, tf.float64),
             tf.constant(-1.0, tf.float64),
         )
@@ -494,7 +506,7 @@ def _initial_factor_state(
         return deviations, loadings, (anchor,)
 
     anchor_a = tf.argmax(tf.linalg.norm(loadings, axis=1), output_type=tf.int32)
-    first = loadings[anchor_a]
+    first = tf.gather(loadings, anchor_a)
     first_norm = tf.maximum(tf.linalg.norm(first), 1.0e-15)
     cosine, sine = first[0] / first_norm, first[1] / first_norm
     rotation = tf.stack(
@@ -507,7 +519,7 @@ def _initial_factor_state(
     )
     anchor_b = tf.argmax(second_abs, output_type=tf.int32)
     second_sign = tf.where(
-        loadings[anchor_b, 1] >= 0.0,
+        tf.gather(loadings[:, 1], anchor_b) >= 0.0,
         tf.constant(1.0, tf.float64),
         tf.constant(-1.0, tf.float64),
     )
@@ -532,16 +544,17 @@ def _encode_state(
         anchor = anchors[0]
         ratio = tf.clip_by_value(loadings[:, 0] / bound, -0.999999, 0.999999)
         raw_loadings = tf.tensor_scatter_nd_update(tf.atanh(ratio), tf.reshape(anchor, [1, 1]),
-            tf.reshape(_logit(tf.clip_by_value(ratio[anchor], 1.0e-6, 1.0-1.0e-6)), [1]))
+            tf.reshape(_logit(tf.clip_by_value(tf.gather(ratio, anchor), 1.0e-6, 1.0-1.0e-6)), [1]))
     else:
         anchor_a, anchor_b = anchors
         radius_ratio = tf.clip_by_value(tf.linalg.norm(loadings, axis=1)/bound, 1.0e-6, 1.0-1.0e-6)
         ratio = loadings/bound
         rows = ratio/tf.sqrt(tf.maximum(1.0-tf.reduce_sum(tf.square(ratio), axis=1, keepdims=True), 1.0e-12))
-        angle_ratio = tf.clip_by_value(tf.atan2(loadings[anchor_b, 1], loadings[anchor_b, 0])/math.pi, 1.0e-6, 1.0-1.0e-6)
+        second = tf.gather(loadings, anchor_b)
+        angle_ratio = tf.clip_by_value(tf.atan2(second[1], second[0])/math.pi, 1.0e-6, 1.0-1.0e-6)
         rows = tf.tensor_scatter_nd_update(rows, tf.reshape(tf.stack((anchor_a, anchor_b)), [2, 1]),
-            tf.stack((tf.stack((_logit(radius_ratio[anchor_a]), tf.constant(0., tf.float64))),
-                      tf.stack((_logit(radius_ratio[anchor_b]), _logit(angle_ratio))))))
+            tf.stack((tf.stack((_logit(tf.gather(radius_ratio, anchor_a)), tf.constant(0., tf.float64))),
+                      tf.stack((_logit(tf.gather(radius_ratio, anchor_b)), _logit(angle_ratio))))))
         flat = tf.reshape(rows, [-1])
         omitted = 2*anchor_a+1
         indices = tf.range(2*int(loadings.shape[0])-1)
@@ -575,6 +588,7 @@ def _prediction_jacobian_diagnostics(
     anchors: tuple[int, ...],
     config: FactorCorrelationGeometryConfig,
     jit_compile: bool = True,
+    active_training_rows: tf.Tensor | None = None,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     parameter_count = int(raw.shape[0])
     columns = tf.TensorArray(tf.float64, parameter_count, element_shape=[int(offsets.shape[0])*dimension])
@@ -593,9 +607,11 @@ def _prediction_jacobian_diagnostics(
     else:
         singular = tf.linalg.svd(jacobian, compute_uv=False)
     largest = tf.reduce_max(singular)
+    equation_count = (tf.shape(jacobian)[0] if active_training_rows is None
+                      else active_training_rows * dimension)
     tolerance = (
         largest
-        * tf.cast(tf.maximum(tf.shape(jacobian)[0], tf.shape(jacobian)[1]), tf.float64)
+        * tf.cast(tf.maximum(equation_count, tf.shape(jacobian)[1]), tf.float64)
         * sys.float_info.epsilon
     )
     positive = singular > tolerance

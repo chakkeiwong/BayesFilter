@@ -5,45 +5,55 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
-September 20 current checkpoint through 01486: scalar and batched L-BFGS
-localization, endpoint checks, ordered scalar exact replay and stable selection
-execute in enclosing XLA programs. Both preserve the original frozen public
-derivative boundary. Optional batched objective progress is buffered and delivered
-after execution, with explicit overflow failure and a four-program cache.
-External host-mutating DZ5 target callbacks remain unqualified.
+September 20 current checkpoint through 01516, based on pushed `1e9afd2c`:
+the candidate replaces data-dependent factor-anchor and COD rank/pivot slices
+with TensorFlow gathers. Actual HLO previously embedded training inputs as
+constants despite one TensorFlow trace. Compact/padded fitters now retain all
+six/seven runtime inputs and unchanged HLO when training data changes. No solver,
+optimizer, tolerance, derivative or random-stream setting changed.
 
-The final combined locator suite passes all 33 CPU/GPU cases (01456/01457).
-Current-source GPU consumers pass 20 preparation, 40 sequential and 43 block
-cases (01483--01485); 63 policy/controller checks pass (01482). The guard passes
-for 189 sources / 1,273 exact exceptions, with no new numerical-loop exception.
-Inventory 01486 finds 2,869 working-tree Python files, 2,868 parsed and one
-unchanged external legacy parse error. Focused new-file Ruff and whitespace pass.
+The four fresh GPU processes 01511--01514 establish a concrete changed-data
+compilation/memory defect at dimension three and four optimizer iterations.
+Checkpoint XLA takes a median 6.423 seconds for each new training cloud and
+adds 335,155,200 host bytes after the cold call. Candidate XLA takes 10.135 ms
+and adds 61,440 bytes over the same sequence; warm repeated calls remain about
+10 ms. Graph-reference modes add about 0.2 MiB and take about 62/67 ms before/
+after. All measured numerical records pass unchanged 1e-10 comparisons.
+Analysis: `factor-compilation-memory-comparison-01514.json`. These are bounded
+single-process diagnostics, not terminal repeats or a general memory cap.
 
-Current-source two-extent measurements have exact baseline outputs:
-unbuffered batched public warm time is 276.042/3.994 and 277.522/4.337 ms;
-buffered public time is 279.489/6.988 and 294.315/8.694 ms; scalar public time is
-523.036/5.543 and 999.783/9.013 ms before/after. Graphs remain 2,367 unbuffered,
-3,010 buffered and 2,191 scalar nodes at both extents. Candidate warm device
-allocation is constant. Public cold calls and host peaks increase; retain those
-costs. Buffered public device peaks of 1,023,488/2,097,408 bytes trigger the 2x
-investigation. Analyses are the locator diagnostic artifacts ending in
-01463, 01469 and 01481. These are single-process observations; three-process
-terminal comparisons remain required.
+All 12 padded/runtime-input CPU checks pass (01505), as do 26 CPU solver checks
+(01506) and 38 GPU solver/factor consumers (01510). GPU padded tests pass 11/12
+(01507): optimizer states and counts are exact, but the nearly singular
+partial-occupancy Jacobian condition differs by 0.1885%. The complete CPU fitter
+suite passes 11/14 (01508): two five-dimensional enclosure comparisons fail in
+addition to the existing original-record gate. The ineffective normalized-weight
+barrier (01509) is removed. Neither the complete fitter nor padded integration
+is qualified. Preserve all original fields/tolerances; do not merge.
 
-Run 01422 shows that residual correction improves least-squares accuracy but
-does not repair complete CPU fitter records. No runtime correction is installed.
-Next isolate projection/inversion/encoding and measure optional trace capacity
-costs under the bounded contracts below, then continue structured fit preparation,
-outer sequential refinement, block-coordinate and quadratic numerical control.
-The uncovered batched quadratic initializer and external DZ5 callbacks remain
-in that queue. All F01--F20 terminal dispositions and earlier memory/time
-investigations stay open. No merge, HMC or scientific admission is established.
+Earlier initializer diagnostic 01487 finds no demonstrated arithmetic defect;
+no residual correction is installed. Corrected locator-capacity runs
+01492--01495 preserve exact events and stable allocation; the observed optional
+reporting cost is accepted only for those extents, subject to terminal repeats.
+The scalar/batched locator checkpoint and its original evidence remain intact.
 
-Through 01486, charges are 25,008.772 GPU / 33,922.904 CPU seconds, leaving
-162,191.228 GPU / 81,277.096 CPU seconds under the unchanged 52/32 process-hour
-caps. No worker is active at this checkpoint. Remote refs were fetched;
-origin/main is an ancestor of dcfaa15d, with no divergence to resolve. Preserve
-this tested locator checkpoint on the repair branch before the next diagnostics.
+All 63 policy/controller checks pass (01515). The partial guard covers 189
+sources / 1,273 exact exceptions, with no additions. Inventory 01516 finds
+2,873 working-tree Python files, 2,872 parsed and one unchanged external legacy
+error. Focused changed-runtime/new-test Ruff and whitespace checks pass; the
+driver's existing style warnings remain unrelated cleanup debt.
+
+Next localize the newly exposed enclosure and padded-Jacobian reports, qualify
+the GPU full fitter, then continue structured reuse preparation, outer
+sequential/block/quadratic control and the uncovered batched quadratic route.
+External DZ5 callbacks remain unqualified. All F01--F20 terminal dispositions,
+earlier memory/time investigations, final source-frozen tests/three-process
+comparisons, remote integration/retest and terminal review remain open.
+
+Through 01516 charges are 25,412.794 GPU / 34,550.959 CPU seconds, leaving
+161,787.206 GPU / 80,649.041 CPU seconds under the unchanged 52/32
+process-hour caps. No numerical worker is active at this checkpoint. Use the
+existing driver prefix and sequential execution; count the extension once.
 
 The older checkpoints below are historical context.
 

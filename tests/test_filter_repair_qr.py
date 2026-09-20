@@ -1,5 +1,7 @@
 """Independent diagnostic tests for the compiled rank-aware solver."""
 
+import re
+
 import numpy as np
 import pytest
 import tensorflow as tf
@@ -9,6 +11,23 @@ from bayesfilter.ops.qr_lstsq_tf import (
     condition_number,
     full_rank_lstsq,
 )
+
+
+def test_cod_retains_matrix_and_rhs_as_runtime_inputs_across_ranks():
+    call = tf.function(complete_orthogonal_lstsq, autograph=False, jit_compile=True,
+        input_signature=[tf.TensorSpec([4, 3], tf.float64), tf.TensorSpec([4, 1], tf.float64)])
+    rhs = tf.constant([[.7], [.3], [.2], [.4]], tf.float64)
+    compiler_outputs = []
+    for small in (0., 1e-16, 1e-12, .05):
+        matrix = tf.constant([[0., 1., .1], [1., 0., .2], [0., 0., small], [0., 0., 0.]], tf.float64)
+        np.testing.assert_allclose(call(matrix, rhs), tf.linalg.lstsq(matrix, rhs, fast=False),
+            atol=1e-10, rtol=1e-10)
+        hlo = call.experimental_get_compiler_ir(matrix, rhs)(stage="hlo")
+        entry = hlo[hlo.rfind("\nENTRY "):]
+        assert len(re.findall(r"\bparameter\(\d+\)", entry)) == 2
+        compiler_outputs.append(hlo)
+    assert all(hlo == compiler_outputs[0] for hlo in compiler_outputs)
+    assert call.experimental_get_tracing_count() == 1
 
 
 @pytest.mark.parametrize("jit", [False, True])

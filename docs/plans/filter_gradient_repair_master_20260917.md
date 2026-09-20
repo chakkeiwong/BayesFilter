@@ -4,45 +4,55 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-September 20 current checkpoint through 01486: scalar and batched L-BFGS
-localization, endpoint checks, ordered scalar exact replay and stable selection
-execute in enclosing XLA programs. Both preserve the original frozen public
-derivative boundary. Optional batched objective progress is buffered and delivered
-after execution, with explicit overflow failure and a four-program cache.
-External host-mutating DZ5 target callbacks remain unqualified.
+September 20 current checkpoint through 01516, based on pushed `1e9afd2c`:
+the candidate replaces data-dependent factor-anchor and COD rank/pivot slices
+with TensorFlow gathers. Actual HLO previously embedded training inputs as
+constants despite one TensorFlow trace. Compact/padded fitters now retain all
+six/seven runtime inputs and unchanged HLO when training data changes. No solver,
+optimizer, tolerance, derivative or random-stream setting changed.
 
-The final combined locator suite passes all 33 CPU/GPU cases (01456/01457).
-Current-source GPU consumers pass 20 preparation, 40 sequential and 43 block
-cases (01483--01485); 63 policy/controller checks pass (01482). The guard passes
-for 189 sources / 1,273 exact exceptions, with no new numerical-loop exception.
-Inventory 01486 finds 2,869 working-tree Python files, 2,868 parsed and one
-unchanged external legacy parse error. Focused new-file Ruff and whitespace pass.
+The four fresh GPU processes 01511--01514 establish a concrete changed-data
+compilation/memory defect at dimension three and four optimizer iterations.
+Checkpoint XLA takes a median 6.423 seconds for each new training cloud and
+adds 335,155,200 host bytes after the cold call. Candidate XLA takes 10.135 ms
+and adds 61,440 bytes over the same sequence; warm repeated calls remain about
+10 ms. Graph-reference modes add about 0.2 MiB and take about 62/67 ms before/
+after. All measured numerical records pass unchanged 1e-10 comparisons.
+Analysis: `factor-compilation-memory-comparison-01514.json`. These are bounded
+single-process diagnostics, not terminal repeats or a general memory cap.
 
-Current-source two-extent measurements have exact baseline outputs:
-unbuffered batched public warm time is 276.042/3.994 and 277.522/4.337 ms;
-buffered public time is 279.489/6.988 and 294.315/8.694 ms; scalar public time is
-523.036/5.543 and 999.783/9.013 ms before/after. Graphs remain 2,367 unbuffered,
-3,010 buffered and 2,191 scalar nodes at both extents. Candidate warm device
-allocation is constant. Public cold calls and host peaks increase; retain those
-costs. Buffered public device peaks of 1,023,488/2,097,408 bytes trigger the 2x
-investigation. Analyses are the locator diagnostic artifacts ending in
-01463, 01469 and 01481. These are single-process observations; three-process
-terminal comparisons remain required.
+All 12 padded/runtime-input CPU checks pass (01505), as do 26 CPU solver checks
+(01506) and 38 GPU solver/factor consumers (01510). GPU padded tests pass 11/12
+(01507): optimizer states and counts are exact, but the nearly singular
+partial-occupancy Jacobian condition differs by 0.1885%. The complete CPU fitter
+suite passes 11/14 (01508): two five-dimensional enclosure comparisons fail in
+addition to the existing original-record gate. The ineffective normalized-weight
+barrier (01509) is removed. Neither the complete fitter nor padded integration
+is qualified. Preserve all original fields/tolerances; do not merge.
 
-Run 01422 shows that residual correction improves least-squares accuracy but
-does not repair complete CPU fitter records. No runtime correction is installed.
-Next isolate projection/inversion/encoding and measure optional trace capacity
-costs under the bounded contracts below, then continue structured fit preparation,
-outer sequential refinement, block-coordinate and quadratic numerical control.
-The uncovered batched quadratic initializer and external DZ5 callbacks remain
-in that queue. All F01--F20 terminal dispositions and earlier memory/time
-investigations stay open. No merge, HMC or scientific admission is established.
+Earlier initializer diagnostic 01487 finds no demonstrated arithmetic defect;
+no residual correction is installed. Corrected locator-capacity runs
+01492--01495 preserve exact events and stable allocation; the observed optional
+reporting cost is accepted only for those extents, subject to terminal repeats.
+The scalar/batched locator checkpoint and its original evidence remain intact.
 
-Through 01486, charges are 25,008.772 GPU / 33,922.904 CPU seconds, leaving
-162,191.228 GPU / 81,277.096 CPU seconds under the unchanged 52/32 process-hour
-caps. No worker is active at this checkpoint. Remote refs were fetched;
-origin/main is an ancestor of dcfaa15d, with no divergence to resolve. Preserve
-this tested locator checkpoint on the repair branch before the next diagnostics.
+All 63 policy/controller checks pass (01515). The partial guard covers 189
+sources / 1,273 exact exceptions, with no additions. Inventory 01516 finds
+2,873 working-tree Python files, 2,872 parsed and one unchanged external legacy
+error. Focused changed-runtime/new-test Ruff and whitespace checks pass; the
+driver's existing style warnings remain unrelated cleanup debt.
+
+Next localize the newly exposed enclosure and padded-Jacobian reports, qualify
+the GPU full fitter, then continue structured reuse preparation, outer
+sequential/block/quadratic control and the uncovered batched quadratic route.
+External DZ5 callbacks remain unqualified. All F01--F20 terminal dispositions,
+earlier memory/time investigations, final source-frozen tests/three-process
+comparisons, remote integration/retest and terminal review remain open.
+
+Through 01516 charges are 25,412.794 GPU / 34,550.959 CPU seconds, leaving
+161,787.206 GPU / 80,649.041 CPU seconds under the unchanged 52/32
+process-hour caps. No numerical worker is active at this checkpoint. Use the
+existing driver prefix and sequential execution; count the extension once.
 
 The older checkpoints below are historical context.
 
@@ -1649,3 +1659,98 @@ resource diagnostic using the normal sequential driver, 300-second ceiling,
 verified GPU growth and cumulative budget. It cannot replace final repeats or
 establish a process-wide memory cap; the four-entry cache bounds retained
 programs, while caller-held snapshots have their own lifetimes.
+
+### Structured fit fixed-capacity dependency
+
+Before enclosing structured sequential refinement, qualify a fixed-capacity
+representation for its variable eligible reused rows. Preserve the original
+fresh/reused order, the 1/2 fresh plus 1/2 reused weighting when reuse is nonempty,
+uniform fresh weights otherwise, and disjoint holdout data. Inactive rows must
+have zero offsets, zero responses and zero weights and must not affect input
+eligibility, fitting, score errors or active-row diagnostics. The fresh block
+always has at least twice the parameter dimension, so adding zero rows cannot
+change the original COD epsilon*min(rows, columns) threshold. The prediction
+Jacobian rank threshold must still use the active equation count, not capacity.
+
+First extend only the internal fitter signature with explicit active-row
+metadata and test padded versus compact fits under identical existing settings.
+Current compact TensorFlow fits isolate representation changes; the frozen
+3582b4ac full-record gate remains separate and unchanged. Compare every public
+fit field, optimizer iteration/evaluation counts, rejection and identification
+decisions at zero, partial and full reused-row occupancy, and inspect enclosing
+HLO/trace counts as the active count changes. Include weighted-loss and active
+Jacobian-rank reference checks. No additional runtime solver, new RNG stream,
+ridge, optimizer setting or comparison tolerance is introduced.
+
+Skeptical review: padded zeros can alter floating-point reduction order, while
+using capacity in rank thresholds changes the actual numerical decision.
+Sanitize only inactive rows, never a nonfinite eligible observation. A new
+complete-record discrepancy blocks this representation and triggers localization
+before wiring it into sequential preparation. Internal unidentifiable raw
+optimizer coordinates are explanatory; the original complete public fields and
+discrete optimization counts remain the comparison authority. Use focused CPU
+then GPU checks, the sequential driver, 300/900-second bounds and cumulative
+caps. Only after these checks pass, integrate preparation and fit consumption;
+host-side row-count selection must not be admitted as an XLA replacement.
+
+September 20 arithmetic localization after 01498: the full-occupancy inputs,
+initial raw vectors and first objective values match exactly, but the initial
+gradients differ by 2.168404344971009e-19. The same diagnostic frozen initial
+vector still gives different optimizer counts and fitted records. Before any
+further runtime trial, capture normalized weights, offsets, responses, anchors,
+loss intermediates and their pullbacks from each initializer observation, and
+archive unoptimized/optimized HLO beside the new numbered CPU run. Instrumented
+outputs can alter fusion, so compare the independently observed gradient with
+the original objective gradient and preserve any discrepancy. These arrays and
+compiler artifacts explain arithmetic only; a passing diagnostic does not close
+the padded-fit or original-record gates. Use the unchanged 300-second limit,
+sequential driver and cumulative budget; install no arithmetic correction based
+only on agreement with a rounded baseline.
+
+Run 01500 reveals an additional compiler-specialization risk: the observed
+two-factor HLO has only the two holdout arrays as runtime parameters; training
+data and initial-state dependencies are embedded constants. Before changing the
+runtime, inspect the actual four-iteration compact fitter HLO in both one- and
+two-factor modes. Expected input arity is six. Record parameter lines and graph
+trace counts separately: one TensorFlow trace does not prove one XLA executable.
+This is a bounded CPU compiler diagnostic, not a performance comparison. If
+confirmed, replace data-dependent scalar slicing in differentiated code with
+TensorFlow gathers, preserving every formula, then rerun specialization and
+complete-record checks. An arithmetic or public-record discrepancy remains a
+repair trigger; no changed optimizer settings or tolerances are authorized.
+
+After the gather trial, 01507 exposes one GPU padded condition-report mismatch
+despite identical optimizer states. The padded representation stays unintegrated.
+CPU consumer suite 01508 exposes two additional pre-enclosure two-factor field
+differences and retains the original CPU-record failure. Test a single XLA
+optimization barrier on normalized weights to isolate constant folding of
+uniform enclosing-loop weights from dynamic standalone weights. This is an
+execution-only hypothesis based on the 01500 gradient HLO; it changes no formula
+or setting. Run only the two new failing cases first under the 300-second CPU
+limit, and remove the barrier if it fails. A passing local check still requires
+full CPU/GPU records, input-specialization guards and consumer qualification.
+
+### Changed-data compilation memory diagnostic
+
+The static TensorFlow trace guard missed XLA value specialization. Compare
+checkpoint 1e9afd2c with the indexing repair in fresh GPU processes, separately
+in XLA and explicit graph-reference mode. Pin both the factor and COD source in
+the checkpoint arm; use the same current unchanged eigensystem dependency.
+Use the existing deterministic dimension-three, ten-row cloud, one factor and
+four L-BFGS iterations. Record one cold call, three identical warm calls, four
+distinct but same-shape training clouds (each first call and immediate repeat),
+then ten repetitions of the last cloud. No RNG, optimizer or tolerance changes.
+
+Record complete public numerical fields, synchronized call-plus-materialization
+times, `/proc` RSS/high-water, allocator current/peak, one TensorFlow trace and
+the first/last HLO parameter arity/hash. Inspect HLO only after timed memory
+sampling, since inspection can compile. Candidate XLA must retain six runtime
+parameters and identical HLO across changed inputs. Numerical discrepancies are
+reported against unchanged 1e-10 gates; this experiment only explains resource
+behavior and cannot waive the existing complete-record failures. Single-process
+timings are descriptive; terminal repeats still compare original 3582b4ac.
+Use one fresh process per arm/mode through the sequential driver, verified GPU
+growth/idle preflight and a 300-second ceiling each. The question is whether
+data specialization causes changed-input recompilation and host growth; unchanged
+warm timings alone cannot answer it. Do not describe a bounded cache or these
+tiny extents as a general memory cap or whole-program qualification.

@@ -75,7 +75,9 @@ def full_rank_lstsq(matrix, rhs):
 
 
 def _reflector(vector, pivot, active):
-    first = vector[pivot]
+    # StridedSlice requires data-dependent bounds as compile-time constants
+    # on TF/XLA. Gather keeps the pivot and its upstream matrix at runtime.
+    first = tf.gather(vector, pivot)
     length = vector.shape[0] if vector.shape[0] is not None else tf.shape(vector)[0]
     tail = tf.where(active & (tf.range(length) != pivot), vector, tf.zeros_like(vector))
     square = tf.reduce_sum(tail * tail)
@@ -125,7 +127,7 @@ def complete_orthogonal_lstsq(matrix, rhs):
             col_indices, tf.stack((k, pivot))[:, None], tf.stack((pivot, k))
         )
         a, permutation = tf.gather(a, swap, axis=1), tf.gather(permutation, swap)
-        v, tau = _reflector(a[:, k], k, row_indices >= k)
+        v, tau = _reflector(tf.gather(a, k, axis=1), k, row_indices >= k)
         a = a - tau * v[:, None] * tf.linalg.matvec(a, v, transpose_a=True)[None, :]
         # Exact structural zeros avoid rounded residuals entering pivot norms.
         a = tf.where(
@@ -160,7 +162,7 @@ def complete_orthogonal_lstsq(matrix, rhs):
     # dynamic-size slicing. Padded identity rows preserve a static solve shape.
     def complete(i, upper, right):
         k = rank - 1 - i
-        v, tau = _reflector(upper[k], k, (col_indices == k) | (col_indices >= rank))
+        v, tau = _reflector(tf.gather(upper, k), k, (col_indices == k) | (col_indices >= rank))
         upper = upper - tau * tf.linalg.matvec(upper, v)[:, None] * v[None, :]
         right = right - tau * tf.linalg.matvec(right, v)[:, None] * v[None, :]
         return i + 1, upper, right

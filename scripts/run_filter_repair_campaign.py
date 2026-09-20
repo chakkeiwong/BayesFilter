@@ -244,9 +244,26 @@ TEST_GROUPS = {
         "tests/test_filter_repair_fixed_stability.py", "tests/test_filter_repair_host_io.py",
         "tests/test_posterior_curvature_refinement.py"),
     "fixed_fitting_original": ("tests/test_filter_repair_fixed_fitting.py::test_original_factor_and_dense_lifecycle_fields",),
+    "fixed_fitting_two_factor": (
+        "tests/test_filter_repair_fixed_fitting.py::test_complete_fit_records_preserve_pre_enclosure[5-2-holdout]",
+        "tests/test_filter_repair_fixed_fitting.py::test_complete_fit_records_preserve_pre_enclosure[5-2-explicit_second]"),
     "fixed_fitting_frozen": ("tests/test_filter_repair_fixed_fitting.py::test_public_fitted_geometry_preserves_frozen_derivative_boundary",),
     "fixed_fitting_fields": ("tests/test_filter_repair_fixed_fitting_localization.py::test_original_fit_field_breakdown", "-s"),
     "fixed_fitting_initializer": ("tests/test_filter_repair_initializer_rounding.py", "-s"),
+    "fixed_fitting_initializer_stages": ("tests/test_filter_repair_initializer_stages.py", "-s"),
+    "padded_factor": ("tests/test_filter_repair_padded_factor.py", "-k", "not localization", "-s"),
+    "padded_factor_full": ("tests/test_filter_repair_padded_factor.py::test_padded_fit_keeps_complete_public_numerics[4-5-2]", "-s"),
+    "padded_factor_localization": ("tests/test_filter_repair_padded_factor.py::test_full_occupancy_initializer_and_same_state_loss_localization", "-s"),
+    "padded_factor_arithmetic": ("tests/test_filter_repair_padded_factor.py::test_full_occupancy_loss_arithmetic_localization", "-s"),
+    "factor_specialization": ("tests/test_filter_repair_padded_factor.py::test_factor_compiler_input_specialization_localization", "-s"),
+    "factor_runtime_inputs": ("tests/test_filter_repair_padded_factor.py::test_complete_fitter_retains_runtime_inputs",),
+    "factor_runtime_consumers": ("tests/test_filter_repair_qr.py", "tests/test_factor_correlation_geometry.py"),
+    **{f"factor_memory_{arm}_{mode}": (
+        f"tests/test_filter_repair_factor_compilation_memory.py::test_changing_training_cloud_compilation_memory[{mode == 'xla'}-{arm}]", "-s")
+        for arm in ("checkpoint", "candidate") for mode in ("graph", "xla")},
+    **{f"locator_memory_{count}_{capacity}": (
+        f"tests/test_filter_repair_locator_memory.py::test_buffer_capacity_memory_and_complete_observations[{count}-{capacity}]", "-s")
+        for count, capacity in ((2, 128), (2, 4096), (4, 128), (4, 4096))},
     "sequential_selection": ("tests/test_filter_repair_sequential_selection.py",),
     "sequential_locator": ("tests/test_filter_repair_sequential_locator.py",),
     "batched_locator": ("tests/test_filter_repair_batched_locator.py",),
@@ -276,7 +293,12 @@ TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_prepara
     "quadratic_initializer": "GPU", "joint_center": "GPU", "predator_tp": "GPU", "exact_incumbent": "GPU",
     "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU", "fixed_fitting": "GPU",
     "sequential_selection": "GPU", "sequential_locator": "GPU", "batched_locator": "GPU", "locator_frozen": "GPU",
-    "locator_completion": "GPU"}
+    "locator_completion": "GPU", "padded_factor": "GPU", "factor_runtime_inputs": "GPU",
+    "factor_runtime_consumers": "GPU",
+    **{f"factor_memory_{arm}_{mode}": "GPU"
+        for arm in ("checkpoint", "candidate") for mode in ("graph", "xla")},
+    **{f"locator_memory_{count}_{capacity}": "GPU"
+        for count, capacity in ((2, 128), (2, 4096), (4, 128), (4, 4096))}}
 FIXTURES += ADDITIONAL_FIXTURES
 FIXTURES += FORECAST_FIXTURES
 FIXTURES += PREPARATION_FIXTURES

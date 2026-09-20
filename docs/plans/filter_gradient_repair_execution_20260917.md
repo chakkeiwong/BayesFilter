@@ -4030,3 +4030,192 @@ recorded in the master before their execution.
 
 Through 01486 charges are 25,008.772 GPU / 33,922.904 CPU seconds, leaving
 162,191.228 GPU / 81,277.096 CPU seconds. No numerical worker remains active.
+
+Checkpoint `1e9afd2c` is committed and pushed. CPU initializer-stage diagnostic
+01487 passes in 9.937 seconds. On identical predecessor matrices, inverse
+differences are at most 3.331e-16, encoding-only differences at most 2.220e-16,
+and factor-state differences at most 8.660e-15. The complete exposed initial
+vector differs by at most 1.443e-14. Decimal inverse comparisons show both
+implementations are rounded and neither is uniformly more accurate. These
+observations do not demonstrate a local arithmetic defect or repair the
+existing fitted-record discrepancy. Preserve the CPU gate and continue the
+independent execution dependencies; no runtime arithmetic changes are justified
+by these results alone. Full arrays and provenance are in
+`initializer-stages-diagnostic-01487.json`.
+
+Fresh-process GPU capacity tests 01488--01491 pass. At two starts, increasing
+capacity from 128 to 4,096 increases numerical buffer bytes by 317,440,
+retained allocation by exactly 317,440, live-output allocation by 634,880 and
+peak by 952,320. At four starts the corresponding increments are 634,880,
+634,880, 1,269,760 and 1,996,288 bytes. All objective observations are preserved
+across repeated calls and warm allocation is stable. The larger four-start peak
+has an additional 91,648 bytes above three buffer increments; allocator
+temporaries/rounding are not individually attributed by these counters.
+
+Review found an observability defect in this new diagnostic: its field named
+`host_hwm_bytes` used `getrusage().ru_maxrss`, which here can be lower than the
+simultaneously reported `/proc` RSS. The original campaign benchmark correctly
+records `/proc` VmHWM and is unaffected. Preserve the old raw readings and label
+their source here. Add separate `/proc` high-water and resource high-water
+fields to the diagnostic, then repeat the four bounded capacity processes.
+This changes reporting only; settings, target, buffers and limits are fixed.
+
+Corrected capacity runs 01492--01495 pass with the same device allocations.
+Source-matched analysis `locator-capacity-comparison-01495.json` verifies exact
+events across capacities, constant 3,033-node graphs, one retained buffer and
+one additional live returned buffer, with stable 20-call allocation. The observed
+roughly 1/2 MiB peaks are accepted as a bounded optional reporting cost for
+these extents, subject to terminal public repeats. The remaining four-start
+91,648-byte peak remainder is preserved without claiming individual allocator
+attribution. No process-wide hard cap or general large-shape acceptance follows.
+The ordinary benchmark's existing `/proc` peak policy is retained.
+
+Initial padded-factor CPU run 01496 passes five cases and fails all three
+five-dimensional/two-factor complete-record comparisons. This includes full
+occupancy, where there are no inactive rows and compact/padded shapes match.
+Reported optimizer iteration/evaluation counts differ, and covariance errors
+reach 2.106e-7. The representation is blocked from sequential integration.
+First test a compiler optimization barrier after input masking on the unchanged
+full-occupancy reproducer. This can isolate mask-related fusion without changing
+rows, weights, solver, parameters or tolerances. If it does not restore that
+case, inspect initial states and same-state loss/gradient arithmetic before
+further optimizer retries. The existing CPU original-record failure remains a
+separate open issue; neither failure permits relaxed comparison criteria.
+
+Run 01497 repeats the full-occupancy failure exactly after an input optimization
+barrier. Remove that ineffective barrier. The next bounded diagnostic verifies
+identical actual inputs, captures each initializer and its first loss/gradient,
+then compares the loss/gradient and complete optimizer records from the same
+frozen initial state. The initializer injection is diagnostic only and is
+cleared from all caches before the process exits. No full-occupancy shortcut,
+input-specific initializer or runtime algorithm change is authorized by it.
+
+Run 01498 passes the explanatory initializer diagnostic. Actual inputs, initial
+vectors and objective values match exactly. The first gradient differs by
+2.168404344971009e-19. Injecting the same vector diagnostically still gives
+158/160 iterations, 454/465 evaluations, covariance error 1.5094e-8 and Jacobian
+conditions 6.773233975798884e12/4.943894551686588e12. This rules out mismatched
+initial vectors as a sufficient explanation. No runtime injection is installed;
+`padded-initializer-diagnostic-01498.json` preserves the full records. Next
+inspect the loss intermediates and compiler output under the master contract.
+
+Run 01499 fails at diagnostic HLO export because TensorFlow's compiler-inspection
+API requires the compact program's optional `active_training_rows=None`
+argument explicitly. Runtime execution itself reaches the observation. Repair
+only that diagnostic argument binding and repeat in a fresh run directory.
+
+Run 01500 passes. Prepared weights/offsets/responses/anchors and all forward loss
+intermediates match exactly. The first difference is the residual pullback
+(2.168404344971009e-19); covariance pullbacks differ by at most 1.734723475976807e-18.
+Instrumentation agrees exactly with the original objective gradients in both
+arms. Optimized HLO folds compact weight scaling into a constant, while the
+masked arm multiplies weights by 0.4 at runtime. Both HLO entry signatures also
+embed training inputs as constants, a possible input-dependent recompilation
+defect. Next inspect the real optimizer's one/two-factor signatures before
+attempting a gather-based indexing repair. Full arrays and HLO paths are in
+`padded-arithmetic-diagnostic-01500.json`; padded integration remains blocked.
+
+Run 01501 confirms only two HLO runtime parameters in the real compact fitter
+for both one- and two-factor cases, despite one TensorFlow trace. Localize the
+constant requirement with diagnostic-only omission of optimizer and/or Jacobian
+report computation, preserving the original six input tensors and initializer.
+This avoids attributing the requirement to indexing before identifying its
+actual consuming graph. The same 300-second CPU bound applies; no omitted
+computation is a runtime candidate.
+
+Run 01502 localizes the constant requirement to initialization: omitting either
+or both optimizer/Jacobian computations still embeds every training input.
+Trial TensorFlow gather for data-dependent anchor access in initializer,
+encoder and decoder. This preserves the selected coordinates and all numerical
+formulas; the pre-trial source is retained under `/tmp` for localization. First
+check compiler parameter arity, then unchanged full records. Revert the trial
+if it does not repair the specialization.
+
+Run 01503 partially repairs specialization: center and training scores reappear
+as runtime parameters, while offsets/weights are still constants. The native
+COD's rank-dependent scalar slices have exactly those remaining dependencies.
+Extend the same indexing-only trial to reflector/pivot/row access in COD; retain
+its pre-trial source. Check the real complete fitter's HLO and dynamic changed
+inputs before parity and affected solver/consumer regression tests. This is no
+solver, rank-threshold or optimizer change; all prior numerical gates remain.
+
+Run 01504 restores all six runtime parameters in both factor modes under every
+diagnostic omission. Add the complete-optimizer guard for compact and padded
+programs: require six/seven HLO parameters, identical HLO with changed training
+scores, one TensorFlow trace and changed finite fitted output. Then run the
+existing full padded comparisons and solver/consumer tests, keeping every
+original tolerance and counting all attempts. The specialization finding also
+requires renewed host-memory measurement; identical-input warm loops could not
+detect compilation per new training cloud.
+
+Run 01505 passes all 12 focused CPU cases. All six zero/partial/full-occupancy
+comparisons now have exactly equal optimizer states and iteration/evaluation
+counts; complete public fields meet unchanged 1e-10 tolerances. Complete compact
+and padded HLOs retain all six/seven parameters and remain byte-identical after
+changing training scores; returned fits change and each TensorFlow trace count
+stays one. Add the same compiler-input guard to COD across its rank thresholds,
+then run existing solver checks and GPU fitter/consumer checks. Original CPU
+complete-record parity remains a separate open gate pending rerun.
+
+Run 01506 passes all 26 CPU COD checks, including rank changes, underdetermined
+solutions, total derivatives and the new runtime-input guard. GPU run 01507
+passes 11/12 cases: every optimizer state/count matches exactly, but the
+five-dimensional partial-occupancy Jacobian condition differs by 0.1885%
+(6.39610334549166e13 versus 6.384045510682077e13). Integration remains blocked.
+
+CPU consumer run 01508 passes 11/14. Two five-dimensional pre-enclosure records
+now fail (one observed field differs by 3.27947536e-9), and the original
+three-dimensional record retains its condition/principal-angle failures.
+These prohibit promoting the indexing repair as a qualified complete fitter.
+The next localized trial isolates normalized-weight constant folding with one
+compiler barrier, as specified in the master. No gate or field is relaxed.
+
+The weight barrier fails both targeted cases in 01509 and increases the observed
+field discrepancy to 2.63906634e-8. Remove the ineffective barrier. The gather
+trial remains an unqualified complete fitter despite repairing specialization.
+Proceed with its bounded changed-data memory explanation and shared solver/
+factor consumer checks; retain CPU enclosure and GPU padded-report blockers.
+
+GPU run 01510 passes all 38 shared COD/factor consumer checks, including the
+runtime-input guard, derivatives and structured sequential consumers. New test
+files and the solver pass focused Ruff. Replace the padded fitter's static
+diagnostic keyword `dict()` with a literal to clear its sole lint finding;
+this has no numerical effect. Proceed to the four reviewed memory processes.
+
+Fresh GPU processes 01511--01514 pass and preserve complete measured numerical
+records at unchanged 1e-10 tolerances. Analysis and hashes are preserved in
+`factor-compilation-memory-comparison-01514.json`. The paired baseline is pushed
+checkpoint 1e9afd2c with both factor and COD modules pinned; original 3582b4ac
+remains the terminal baseline. These four processes isolate a compiler defect,
+not complete-fitter acceptance or an optimizer-quality comparison.
+
+| Scope | Changed-data first-call median | Post-cold host growth | Peak device bytes | Runtime HLO inputs |
+| --- | ---: | ---: | ---: | ---: |
+| Checkpoint XLA | 6.423 s | 335,155,200 | 76,288 | 2; HLO changes with data |
+| Candidate XLA | 10.135 ms | 61,440 | 76,544 | 6; identical HLO across data |
+| Checkpoint graph reference | 61.627 ms | 200,704 | 8,476,416 | N/A |
+| Candidate graph reference | 66.837 ms | 237,568 | 8,475,904 | N/A |
+
+Cold XLA calls remain about 8.7 seconds; repeated identical-input XLA calls
+remain about 10 ms. All four routes report one TensorFlow trace. The baseline
+training constants cause new XLA programs for each changed cloud; a graph trace
+count and identical-input warm loop miss this defect. Candidate device current
+allocation after sampling equals the checkpoint's 10,496 bytes. This result
+supports the indexing repair at the measured scope, while full-iteration CPU
+enclosure and padded GPU diagnostics still veto complete-fitter promotion.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Retain the indexing candidate for continued repair | Six/seven runtime HLO inputs; solver and targeted GPU consumers pass | Complete fitter still has 01507/01508 failures | Optimizer enclosure arithmetic and near-singular Jacobian reporting | Localize those full-record failures; qualify full GPU fitter | No complete-fitter or padded integration admission |
+| Record the memory mechanism | Changing-data XLA recompilation and host growth removed in the diagnostic | No measured numerical or memory regression | Four clouds, dimension three, four iterations and one process per arm | Add changed-data checks to final memory qualification | No general memory bound or timing ranking |
+| Keep merge gated | All F01--F20 dispositions still open | Outer control, callbacks and prior investigations remain | Whole-call-chain coverage and final frozen source | Continue the master queue | No HMC, posterior or canonical LEDH admission |
+
+Post-run review checks the pinned two-module source closure, identical argument
+sequence, full-field materialization and HLO inspection outside timed sampling.
+Graph-mode host growth is small, supporting XLA value specialization as the
+specific mechanism here. Repeated measurements at the final source are still
+required; no independent-agent review is claimed. All 63 policy/controller
+checks pass (01515). Guard: 189 sources / 1,273 unchanged exact exceptions.
+Inventory 01516 parses 2,872 of 2,873 working-tree Python files; the one external
+legacy parse error is unchanged. Focused runtime/new-test Ruff and whitespace
+checks pass. Charges: 25,412.794 GPU / 34,550.959 CPU seconds. No worker remains.
