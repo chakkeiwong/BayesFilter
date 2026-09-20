@@ -63,6 +63,41 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "factor_guard_cpu_fixed": ("tests/test_filter_repair_fixed_fitting.py",),
+    "factor_guard_cpu_padded": ("tests/test_filter_repair_padded_factor.py", "-k", "not localization"),
+    "factor_guard_cpu_domain": ("tests/test_filter_repair_factor_domain.py", "-k", "runtime"),
+    "factor_guard_gpu_lifetime": ("tests/test_filter_repair_factor_resource_lifetime.py", "-s"),
+    **{f"factor_guard_memory_{arm}_{mode}_{dimension}": (
+        f"tests/test_filter_repair_factor_guard_memory.py::test_factor_guard_memory[{arm}-{mode == 'xla'}-{dimension}]", "-s")
+        for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
+    "factor_guard_mapping_release": ("tests/test_filter_repair_fixed_fitting.py",
+        "tests/test_filter_repair_padded_factor.py",
+        "tests/test_filter_repair_factor_domain.py", "-k", "not localization and not comparison and not guard_trial and not evaluations_trial",
+        "-s", "-p", "no:faulthandler", "-p", "tests.filter_repair_memory_plugin"),
+    "factor_guard_mapping_probe": ("tests/test_filter_repair_fixed_fitting.py",
+        "tests/test_filter_repair_padded_factor.py",
+        "tests/test_filter_repair_factor_domain.py", "-k", "not localization and not comparison and not guard_trial and not evaluations_trial",
+        "-s", "-p", "no:faulthandler"),
+    "factor_guard_resource_lifetime": ("tests/test_filter_repair_factor_resource_lifetime.py", "-s"),
+    "factor_guard_crash_replay": ("tests/test_filter_repair_padded_factor.py",
+        "tests/test_filter_repair_factor_domain.py::test_runtime_fixed_fitter_blocks_any_invalid_covariance_evaluation",
+        "-k", "not localization", "-s"),
+    "factor_guard_fixed_replay": ("tests/test_filter_repair_fixed_fitting.py",
+        "tests/test_filter_repair_factor_domain.py", "-k", "not comparison and not trial", "-s"),
+    "factor_guard_native_stack": ("tests/test_filter_repair_fixed_fitting.py",
+        "tests/test_filter_repair_padded_factor.py",
+        "tests/test_filter_repair_factor_domain.py", "-k", "not localization and not comparison and not guard_trial and not evaluations_trial",
+        "-s", "-p", "no:faulthandler"),
+    "factor_guard_qualification": ("tests/test_filter_repair_fixed_fitting.py",
+        "tests/test_filter_repair_padded_factor.py",
+        "tests/test_filter_repair_factor_domain.py::test_runtime_covariance_guard_rejects_invalid_xla_inputs",
+        "tests/test_filter_repair_factor_domain.py::test_runtime_factor_rejects_invalid_trial_and_resets_checked_state",
+        "tests/test_filter_repair_factor_domain.py::test_runtime_fixed_fitter_blocks_any_invalid_covariance_evaluation",
+        "-k", "not localization"),
+    "factor_domain_runtime": ("tests/test_filter_repair_factor_domain.py", "-k", "runtime", "-s"),
+    "factor_domain_localization": ("tests/test_filter_repair_factor_domain.py", "-k", "comparison", "-s"),
+    "factor_domain_guard_trial": ("tests/test_filter_repair_factor_domain.py::test_factor_domain_guard_trial", "-s"),
+    "factor_domain_events": ("tests/test_filter_repair_factor_domain.py::test_factor_domain_all_evaluations_trial", "-s"),
     "active_cod_compact_step": ("tests/test_filter_repair_active_cod.py::test_compact_cod_step_complete_fit", "-k", "step and not cpqr", "-s"),
     "active_cod_compact_cpqr": ("tests/test_filter_repair_active_cod.py::test_compact_cod_step_complete_fit", "-k", "cpqr", "-s"),
     "active_cod_steps": ("tests/test_filter_repair_active_cod.py::test_active_cod_step_localization", "-s"),
@@ -311,10 +346,75 @@ TEST_GROUPS = {
     "consumers": ("tests/test_filter_repair_consumers.py",),
     "policy": ("tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py"),
 }
+# These exact jobs explain preserved failures or compare diagnostic source
+# trials. They are callable, but never substitutes for current runtime gates.
+# New/unlisted groups remain mandatory; names and historical pass/fail outcomes
+# do not classify a job. See the master program's terminal-role review.
+EXPLANATORY_TEST_GROUPS = {
+    "factor_guard_mapping_probe": "01598 CPU LLVM mapping exhaustion reproducer; required coverage is CPU modules plus combined GPU qualification.",
+    "factor_guard_mapping_release": "01599 rejected cache-release trial; TensorFlow retains device executables without eviction.",
+    "factor_guard_native_stack": "01597 native failure localization, not a runtime acceptance suite.",
+    "factor_guard_crash_replay": "Subset of padded/domain qualification used only to localize call history.",
+    "factor_guard_fixed_replay": "Subset of fixed/domain qualification used only to localize call history.",
+    "factor_domain_localization": "Frozen 085baaaa eager/graph/XLA domain disagreement; actual guard checks remain mandatory.",
+    "factor_domain_guard_trial": "Rejected frozen-source final-value-only guard; it misses invalid intermediate evaluations.",
+    "factor_domain_events": "Frozen-source instrumentation used to design the guard; runtime reset/concurrency checks remain mandatory.",
+    "active_cod_compact_step": "Rejected pinned solver trial; actual compact CPQR primal/pullback and enclosing fit tests remain mandatory.",
+    "active_cod_compact_cpqr": "Pinned candidate experiment superseded by active_cod_runtime and padded_factor runtime gates.",
+    "active_cod_steps": "Intermediate arithmetic observation of pinned candidate solvers, not enclosing fit qualification.",
+    "active_cod_enclosure": "Instrumented initializer/loss localization; complete uninstrumented fitter is mandatory.",
+    "factor_capacity_shared_cod": "Rejected shared-body solver arithmetic trial; no runtime admission.",
+    "factor_shared_memory_compact": "Pinned solver-comparison resource diagnostic; not terminal before/after evidence.",
+    "factor_shared_memory_shared": "Rejected shared-body solver resource diagnostic; not terminal before/after evidence.",
+    "factor_enclosure_localization": "Instrumented initial weights/loss breakdown; full records and input reuse remain mandatory.",
+    "padded_jacobian_localization": "Pinned compact/padded QR discrepancy observation; actual padded Jacobian regression remains mandatory.",
+    "padded_dynamic_qr_localization": "Rejected bounded dynamic-shape QR trial with preserved compilation failure.",
+    "padded_dynamic_qr_output": "Rejected dynamic-shape output-metadata variant, not implemented runtime.",
+    "padded_shape_dispatch": "Pinned shape-dispatch trial; runtime shape dispatch and complete records remain mandatory.",
+    "factor_capacity_initial": "Instrumented initializer arithmetic across capacities; uninstrumented records remain mandatory.",
+    "factor_capacity_initial_fixed": "Instrumented same-initial-state arithmetic diagnostic.",
+    "factor_capacity_cod": "Pinned full-COD cloning trial, not the accepted compact-CPQR implementation.",
+    "factor_capacity_0": "Single-process descriptive capacity cost on an invalid full-optimizer trajectory; not admission evidence.",
+    "factor_capacity_4": "Single-process descriptive capacity cost on an invalid full-optimizer trajectory; not admission evidence.",
+    "factor_capacity_32": "Single-process descriptive capacity cost on an invalid full-optimizer trajectory; not admission evidence.",
+    "factor_capacity_graph_0": "Preserved original graph-domain assertion failure; no valid warm timing exists.",
+    "factor_capacity_graph_32": "Preserved original graph-domain assertion failure; no valid warm timing exists.",
+    "factor_capacity_short_graph_0": "Four-iteration explanatory control, not full-optimizer qualification.",
+    "factor_capacity_short_graph_32": "Four-iteration explanatory control, not full-optimizer qualification.",
+    "factor_capacity_short_xla_0": "Four-iteration explanatory control, not full-optimizer qualification.",
+    "factor_capacity_short_xla_32": "Four-iteration explanatory control, not full-optimizer qualification.",
+    "fixed_fitting_fields": "Instrumented frozen fitter field breakdown; current full-record checks remain mandatory.",
+    "fixed_fitting_initializer": "Decimal/COD and rejected correction-trial comparison; runtime solver/record checks remain mandatory.",
+    "fixed_fitting_initializer_stages": "Instrumented identical-predecessor arithmetic, not fitter admission.",
+    "padded_factor_localization": "Instrumented initial-state and loss breakdown; padded_factor remains mandatory.",
+    "padded_factor_arithmetic": "Instrumented loss/pullback stages, not uninstrumented fitter qualification.",
+    "factor_specialization": "Instrumented compiler-input localization; factor_runtime_inputs remains mandatory.",
+    **{f"factor_guard_memory_{arm}_{mode}_{dimension}":
+        "Fresh-process descriptive guard overhead; comparisons and ledger disposition required separately."
+        for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
+}
+TEST_BATCHES = {
+    "factor_guard": ("factor_guard_gpu_lifetime", "factor_guard_qualification",
+        "fixed_fitting_consumers", "factor_guard_resource_lifetime", "factor_guard_cpu_fixed",
+        "factor_guard_cpu_padded", "factor_guard_cpu_domain", "policy"),
+    "factor_guard_memory": tuple(f"factor_guard_memory_{arm}_{mode}_{dimension}"
+        for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)),
+}
+
+
+def mandatory_test_groups():
+    return tuple(group for group in TEST_GROUPS if group not in EXPLANATORY_TEST_GROUPS)
+
+
 FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
 TEST_DEVICES = {"random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+    "factor_guard_gpu_lifetime": "GPU", "fixed_fitting_consumers": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["factor_guard_memory"]},
+    "factor_guard_qualification": "GPU",
+    "factor_domain_runtime": "GPU", "factor_domain_localization": "GPU",
+    "factor_domain_guard_trial": "GPU", "factor_domain_events": "GPU",
     "active_cod_runtime": "GPU",
     "factor_capacity_shared_cod": "GPU",
     **{f"factor_shared_memory_{arm}": "GPU" for arm in ("compact", "shared")},
@@ -482,6 +582,14 @@ def run_job(args):
             ensure_baseline()
             env["FILTER_REPAIR_SOURCE_ROOT"] = str(BASELINE_ROOT)
         command = [sys.executable, "scripts/filter_repair_test_worker.py", "-q", *TEST_GROUPS[args.group], f"--junitxml={directory / 'junit.xml'}"]
+        if args.group == "factor_guard_native_stack":
+            if device != "CPU":
+                raise ValueError("The factor crash stack diagnostic is CPU-only")
+            command = ["gdb", "-batch", "-return-child-result", "-ex", "set debuginfod enabled off",
+                "-ex", "set auto-solib-add off", "-ex", "set auto-load python-scripts off",
+                "-ex", "set pagination off", "-ex", "run",
+                "-ex", "sharedlibrary libtensorflow", "-ex", "thread apply all bt 24",
+                "--args", *command]
     elif args.action == "measure":
         ensure_baseline()
         source = BASELINE_ROOT if args.arm == "before" else ROOT
@@ -526,7 +634,13 @@ def run_job(args):
     with (directory / "process.log").open("x") as log:
         process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         try:
-            code = process.wait(timeout=timeout)
+            if args.action == "test" and args.group in (
+                    "factor_guard_mapping_probe", "factor_guard_mapping_release"):
+                from filter_repair_process_memory import wait_observing_memory
+
+                code = wait_observing_memory(process, timeout, directory)
+            else:
+                code = process.wait(timeout=timeout)
         except (subprocess.TimeoutExpired, KeyboardInterrupt) as exc:
             try:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -562,7 +676,7 @@ def gate():
     rows = records()
     current = source_hashes()
     missing = []
-    for group in TEST_GROUPS:
+    for group in mandatory_test_groups():
         candidates = [row for row in rows if row["key"][:3] == ["test", group, "after"]
                       and row["state"] == "passed" and row["source_sha256"] == current
                       and row["device"] == TEST_DEVICES.get(group, "CPU")
@@ -626,7 +740,9 @@ def run_matrix(args):
 
     frozen = source_hashes()
     if args.stage == "tests":
-        for group in TEST_GROUPS:
+        batch = getattr(args, "test_batch", "all")
+        groups = mandatory_test_groups() if batch == "all" else TEST_BATCHES[batch]
+        for group in groups:
             check_matrix_state(frozen)
             device = TEST_DEVICES.get(group, "CPU")
             if any(row["key"][:3] == ["test", group, "after"] and row["state"] == "passed"
@@ -707,6 +823,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("status", "test", "measure", "matrix", "pause", "audit", "compare", "gate"))
     parser.add_argument("--stage", choices=("qualify", "repeat", "tests"), default="qualify")
+    parser.add_argument("--test-batch", choices=("all", *TEST_BATCHES), default="all")
     parser.add_argument("--selection", choices=("fixture", "new", "additional", "all"), default="all")
     parser.add_argument("--group", choices=tuple(TEST_GROUPS), default="policy")
     parser.add_argument("--fixture", choices=FIXTURES, default="covariance")
@@ -722,6 +839,8 @@ def main():
     parser.add_argument("--measurement-gpu-index", type=int, choices=(2, 3), default=2,
                         help="Physical GPU for fresh matched before/after groups; never mix repeat devices")
     args = parser.parse_args()
+    if args.test_batch != "all" and not (args.action == "matrix" and args.stage == "tests"):
+        parser.error("--test-batch is only available for a test matrix")
     if args.test_timeout_seconds != 900 and not (args.action == "test" or
                                                (args.action == "matrix" and args.stage == "tests")):
         parser.error("--test-timeout-seconds is only available for correctness tests")

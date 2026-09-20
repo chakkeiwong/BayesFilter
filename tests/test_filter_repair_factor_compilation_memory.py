@@ -14,7 +14,11 @@ import tensorflow as tf
 
 from bayesfilter.inference import factor_correlation_geometry as current
 from bayesfilter.ops import qr_lstsq_tf
-from tests.test_filter_repair_padded_factor import _data, _public_numerics
+from tests.test_filter_repair_padded_factor import (
+    _assert_runtime_parameters,
+    _data,
+    _public_numerics,
+)
 
 CHECKPOINT = "1e9afd2c"
 
@@ -89,9 +93,12 @@ def test_changing_training_cloud_compilation_memory(arm, jit, request):
             with path.open("x") as handle:
                 handle.write(hlo)
             compiler.append({"path": str(path), "sha256": hashlib.sha256(hlo.encode()).hexdigest(),
-                "runtime_parameters": len(re.findall(r"\bparameter\(\d+\)", entry))})
+                "runtime_parameters": len(re.findall(r"\bparameter\(\d+\)", entry)),
+                "internal_guard_resources": 1 if arm == "candidate" else 0})
+            if arm == "candidate":
+                _assert_runtime_parameters(program, arguments, hlo)
         if arm == "candidate":
-            assert all(row["runtime_parameters"] == 6 for row in compiler)
+            assert all(row["runtime_parameters"] == 7 for row in compiler)
             assert compiler[0]["sha256"] == compiler[1]["sha256"]
     assert program.experimental_get_tracing_count() == 1
     report = {"role": "explanatory_changed_input_compilation_memory_only", "arm": arm,

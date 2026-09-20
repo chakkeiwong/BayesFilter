@@ -5,6 +5,68 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
+September 21 active continuation (after pushed `085baaaa`): covariance domain
+checks propagate invalid optimizer evaluations through XLA and reject public/
+native fits without geometry. CPU/GPU focused checks pass; the ownership repair
+keeps each int64 guard alive through enclosing graph use and releases it with
+the graph. No bounds, optimizer, derivative or old parity tolerance changed.
+
+CPU combined crashes 01588/01595 are localized by 01597 to LLVM executable
+mapped allocation ENOMEM. 01598 samples 65,021 mappings against limit 65,530,
+with ample RAM and unlimited process/cgroup memory. 01599 confirms clearing
+Python factory caches and collecting cycles frees no mappings (33,801 and
+64,785 unchanged); it crashes again. TensorFlow 2.19.1's installed
+`device_compilation_cache.h` explicitly documents unbounded executable retention
+without eviction. Evidence: `factor-executable-allocation-disposition-01599.json`.
+Do not mutate OS limits/packages or treat Python cache bounds as compiler bounds.
+
+Reviewed qualification profile: all 38 original CPU cases in three fresh
+sequential workers, the unchanged combined GPU suite, CPU/GPU lifetime tests,
+and all 223 GPU consumers. Long-lived CPU runs across arbitrary distinct
+compiled signatures are not admitted by this profile. The rejected combined
+CPU stress job remains preserved as explanatory failure.
+
+Current-source qualification completed: 01600 passes 66 controller/policy
+checks; 01601/01604 pass two GPU/CPU lifetime cases each; 01602 passes all 38
+combined GPU cases; 01603 passes all 223 GPU consumers; 01605/01606/01607 pass
+14/18/six CPU cases in bounded fresh processes.
+
+No campaign worker is active. All eight fresh-process cost arms 01608--01615
+pass, including frozen 085baaaa and candidate graph/XLA at D=3/5. Every
+original before/after field is exactly equal; all healthy invalid counts are
+zero, and graph/XLA records pass unchanged atol=rtol=1e-10. Default XLA adds
+7.28/5.96 MiB host peak at D=3/5 with warm times 22.090/21.847 and
+92.201/93.585 ms before/after. No cost trigger fires and warm allocation shows
+no accumulating trend over twenty calls. This is descriptive single-process
+evidence, not terminal repeats. Analysis and identical script are preserved
+beside the runs as `factor-guard-cost-comparison-01615.json` and
+`analyze_filter_guard_memory_20260921.py` (SHA-256
+`989038392ffc0ff99cd142351323e5b5048b8c7c7aa4611b6435cc31b8e3fec5`).
+
+Through 01615 the charges are 29,038.68574661859 GPU / 38,711.01263819063
+CPU seconds; remaining budgets are 158,161.3142533814 GPU / 76,488.98736180937
+CPU seconds. Total caps remain 52 GPU / 32 CPU process-hours. Finalize review
+and commit/push the qualified checkpoint before the next runtime changes.
+
+Draft next dependency (not installed or tested):
+`/tmp/filter_repair_structured_preparation_tf.py`. The master records its
+intended fresh/reused-row preparation contract. Review and qualify it against
+frozen compact records before integration; it is not runtime evidence.
+
+The driver now excludes only exact reviewed explanatory jobs from terminal
+mandatory tests, with individual reasons and regression checks. New groups
+remain required by default. Current runtime/consumer/compiler checks remain
+mandatory, including localization groups that are actual regressions. The
+source guard passes 189 sources / 1,276 exact exceptions; its new exception is
+static graph ownership, never numerical iteration. This is still partial scope.
+
+Main is unmerged. Remote fetch completed; origin/main remains 3582b4ac and the
+repair remote remains 085baaaa. Continue structured preparation/refinement,
+block/quadratic lifecycles, external callbacks, remaining resource issues,
+frozen-source terminal suites/repeats and all F01–F20 dispositions afterward.
+
+The older checkpoints below remain historical.
+
 Current September 20 continuation through 01577, based on pushed `7d08c68e`:
 the active-row COD investigation is repaired by binding the CPQR loop to each
 compact input shape while sharing rank decisions, the complete-orthogonal

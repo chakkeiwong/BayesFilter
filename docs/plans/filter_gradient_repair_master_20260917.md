@@ -4,6 +4,220 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
+September 21 qualified guard checkpoint through 01615: all 66 policy/controller,
+38 combined GPU, 223 GPU consumer, two CPU and two GPU lifetime checks pass.
+All 38 original CPU cases pass in three sequential fresh processes (14/18/6).
+Eight fresh-process guard-cost arms pass at D=3/5 in graph-reference and XLA
+modes. Every original same-mode field is exactly equal before/after; invalid
+counts are zero on these healthy inputs. Graph/XLA complete records pass the
+unchanged atol=rtol=1e-10 comparison. Analysis and its exact script are preserved
+as `factor-guard-cost-comparison-01615.json` and
+`analyze_filter_guard_memory_20260921.py` in the campaign artifact root.
+
+Default XLA warm medians before/after are 22.090/21.847 ms (D=3) and
+92.201/93.585 ms (D=5); added host peaks are 7,630,848/6,250,496 bytes and
+GPU peaks are 80,896/84,224 and 100,352/102,912 bytes, respectively.
+No guard-cost resource/timing trigger fires. Twenty warm calls show bounded
+observed allocation fluctuations and one trace. These are single-process
+mechanism/cost observations, not terminal repeats or performance rankings.
+CPU executable retention across arbitrary distinct signatures remains an
+explicit limitation, supported by the diagnosis below; no OS/package repair
+or unlimited-process claim is made. No worker is active at this checkpoint.
+
+Charged through 01615: GPU 29,038.68574661859 / 187,200 seconds; CPU
+38,711.01263819063 / 115,200 seconds. Remaining: GPU 158,161.3142533814;
+CPU 76,488.98736180937 seconds. Commit/push this qualified checkpoint, then
+continue structured reuse preparation, enclosing controllers and the remaining
+master gates. Main remains unmerged; no F01--F20 terminal disposition is closed.
+
+Historical investigation sequence (preserved):
+
+September 21 recovery through 01597: the native failure is LLVM executable
+section allocation (`allocateMappedMemory: Cannot allocate memory`), before
+any final-test numerical result. No worker is active. The host has about
+200 GiB available and vm.max_map_count=65530 at recovery; these facts do not
+alone establish the cause at the earlier failure. Next run the identical
+38-case CPU sequence with one-second external /proc observations: mapping
+count and anonymous executable mapping count, RSS/HWM, address space, threads,
+system available/committed memory, process limits and cgroup memory limits.
+Preserve observations in its numbered run directory even if the worker dies.
+The comparator is 01595/01597's unmodified runtime/test sequence; the sampler
+is explanatory and cannot qualify timing or waive a failing test. The run has
+the existing 900-second ceiling and unchanged 32/52 CPU/GPU-hour caps. No OS
+limit, package, numerical, optimizer or backend-default changes are authorized
+by this diagnostic. A map count reaching the kernel limit at the same failure
+would support map exhaustion; otherwise investigate the actual limiting
+resource. Skeptical review: parent sampling survives a native worker crash,
+avoids GDB overhead, and records resource limits rather than assuming that
+ENOMEM means physical OOM. Required combined qualification remains blocking.
+
+01598 repeats the failure after 276.738 seconds. Last live snapshot contains
+65,021 mappings (limit 65,530), including 20,097 anonymous executable mappings,
+with 194.8 GiB system available memory, unlimited address/data/RSS limits and
+no cgroup memory cap/OOM events. The one-second sampler cannot capture the
+instantaneous limit; this strongly supports executable-map exhaustion rather
+than physical OOM. Next repeat all 38 cases, same order and process, releasing
+the five factor/fitting/selection/stability factory caches and collecting Python
+cycles only after each completed test module. Record maps immediately before
+and after each release and external samples throughout. This tests whether
+ordinary ownership release recovers compiler maps without an OS-limit change,
+backend flag, numerical change or split process. Pass requires all original
+tests plus demonstrable map release; otherwise the cleanup is not a repair.
+This diagnostic has the unchanged 900-second bound. It says nothing about
+runtime cache capacity adequacy; that remains a separate resource question.
+
+01599 falsifies Python-cache cleanup as a repair: releasing all five factories
+and collecting cycles changes neither 33,801 nor 64,785 mappings at the two
+module boundaries; LLVM then fails again. Installed TensorFlow's
+`include/tensorflow/compiler/jit/device_compilation_cache.h:62` explicitly says
+the device cache owns executables, has no eviction policy, and grows without
+bound. This matches the native stack, incremental mapping growth and failed
+Python cleanup. Classify the combined CPU job as a compiler-resource stress
+failure, preserved without waiver. Ordinary Python cache bounds do not bound
+this backend cache. No system limit, compiler flag or package will be changed.
+
+Qualification now requires the same 38 CPU cases in three fresh sequential
+workers (14 full fitter, 18 padded, six domain), both CPU/GPU lifetime checks,
+all 38 cases together in one default GPU/XLA process without cache cleanup,
+and 223 actual GPU consumer checks. This is a bounded CPU reference profile
+in response to a localized resource limit, not permission to omit a failed
+numerical case. Long-lived CPU execution across arbitrarily many distinct
+compiled signatures remains unsupported by this evidence. The full GPU test
+and each CPU module are mandatory terminal jobs. No numerical/runtime source
+changes follow from the allocation investigation. If any original case fails
+under these profiles, repair it before interpreting cost. Run the fixed batch
+with `matrix --stage tests --test-batch factor_guard`, default 900-second
+per-worker ceiling; then `matrix --stage tests --test-batch factor_guard_memory
+--test-timeout-seconds 300` for the eight already specified fresh GPU arms.
+Both use the same approved driver prefix, idle preflight and verified growth.
+
+Terminal-role review: `EXPLANATORY_TEST_GROUPS` in the driver lists exact
+diagnostic jobs and their individual reasons. It covers only the factor-domain,
+rejected solver, instrumented arithmetic and descriptive resource investigations
+just reviewed against their test bodies and preserved outcomes. It does not
+classify by name pattern, outcome, or the word localization. Current runtime,
+complete-record, derivative, consumer and compiler-reuse gates remain required;
+all new/unlisted jobs default to mandatory. Resource results still require the
+ledger's explicit disposition and the independent terminal before/after matrix.
+Regression tests verify this distinction, ensure new runtime failures stop the
+matrix, and retain explicit execution of explanatory batches when requested.
+This is the primary agent's review, with no independent review claimed.
+
+Next numerical dependency after the guard checkpoint: enclose
+`sequential_map_covariance._structured_factor_fit_data` and its reuse packing
+with the qualified padded fitter. Generate the same two disjoint fresh clouds
+with the unchanged `seed[1]+104729` holdout offset; preserve fresh callback row
+order/counts, finite/nearby/nonzero reuse predicates, stable reused-row order,
+and half-fresh/half-reused weights (all fresh when none are eligible). Carry the
+active count as a tensor at fixed capacity; inactive NaNs must not enter a loss.
+Keep strict finite exact-incumbent selection and first ties. Compare all original
+preparation fields and complete fitter records to frozen compact execution at
+zero/partial/full occupancy, including invalid reused rows and radius boundary
+cases. Require one trace, runtime data operands and unchanged HLO when eligibility
+changes. No new seeded stream, eligibility criterion, optimizer setting or
+fitted-output derivative is permitted. GPU/CPU focused checks precede consumer
+checks and matched fresh-process cost measurements at capacities 4/32. Outer
+refinement, block sweeps and quadratic successive fits remain separate open
+controllers; a compiled preparation helper cannot close them. The existing
+bounded driver, fresh artifacts, 300/900-second ceilings and cumulative caps
+apply. This dependency review found no sampler/tuner change; the HMC interface
+and capability registry were consulted again during recovery.
+
+Continuation through 01585: focused runtime guard checks pass on CPU/GPU
+(01582/01583). Native fixed-center records now carry the rejected fit's anchors
+and invalid-evaluation count. The new record check in 01584/01585 confirms the
+same rejection status, empty geometry and all existing fields; its assumption
+of equal new invalid counts across standalone/enclosing compilation is false
+(216/225). These counts describe the continued, already-invalid optimizer
+trajectory; neither route may expose its geometry. Check each count against its
+own native result and compare all other rejection fields exactly. This changes
+no pre-existing numerical gate or healthy-record criterion. Next qualify
+compiler-input reuse, full original/healthy records, padded records and actual
+consumers, then measure guard overhead. Main remains unmerged.
+
+Guard resource diagnostic contract: compare frozen pre-guard 085baaaa and the
+candidate in fresh GPU processes, separately for graph-reference and default
+XLA, on healthy three-/five-dimensional one-/two-factor clouds. Use the same
+deterministic inputs and full default optimizer settings, one cold call and 20
+warm calls, with identical complete-record materialization and lifetimes. The
+new invalid-evaluation count must be zero and is reported separately; compare
+every pre-existing numerical field at the unchanged 1e-10 tolerance and discrete
+counts exactly. Record input/source checksums, host RSS/HWM and allocator
+current/peak before construction, after construction and after each call, then
+inspect trace count and HLO after timing. Verify six tensor operands plus the
+candidate's one int64 resource and changed-input reuse through the independent
+qualification suite. Reserve at most 300 seconds per arm, sequentially under
+the existing GPU idle/growth policy and cumulative caps. The ordinary 256 MiB,
+2x memory and timing triggers remain investigation triggers. These eight
+single-process observations explain guard cost, not terminal repeats or a
+comparison against the original campaign baseline. A healthy-record mismatch
+blocks this repair; no clip, tolerance, optimizer or RNG change is allowed.
+
+01586 observes six/seven data operands plus one scalar int64 resource; the
+compiler guard now checks exact types/shapes and capture identity while keeping
+changed-data HLO equality. 01587 passes the six updated CPU domain checks.
+Combined CPU qualification 01588 crashes inside TensorFlow execution of the
+last enclosing-domain test after 37 completed checks (SIGSEGV, 274.048 seconds).
+No passing suite claim follows. Before GPU qualification or resource timing,
+replay the padded suite followed by that enclosing test in one CPU process to
+isolate reuse/cache interactions. The 300-second ceiling and unchanged caps
+apply. A process split cannot waive this crash; require a reproducer/cause or
+record it as an unresolved blocker.
+
+01589 passes all 19 padded-plus-enclosing-domain checks. The fixed-center
+suite plus domain cases is the next independent call-history replay. Also
+test a tiny enclosing fitter after evicting the 16-entry inner factory cache:
+TensorFlow FuncGraph documents weak references to captured variables, so
+resource lifetime is an explicit hypothesis. Inspect the enclosing variables
+before and after collection, then require identical repeated outputs; CPU-only,
+120-second bound, no numerical source change for this diagnostic. A reproduced
+lifetime defect needs ownership tied to the enclosing callable, not an
+unbounded global cache or a process-isolation workaround.
+
+01590 passes all 19 fixed-center-plus-domain cases. The tiny 01591 lifetime
+check fails deterministically: the enclosing graph's guard variable is deleted
+after factory-cache eviction. Repair ownership at graph binding, retaining the
+int64 resource in each enclosing FuncGraph's ordinary collection, never the
+process default graph; keep the existing 16-entry factory limit. This Python
+graph traversal is static ownership setup, not numerical iteration. Require
+successful post-eviction calls, unchanged counts/values, one trace and release
+after the enclosing graph is collected. Then repeat the original combined
+CPU suite; the separate lifetime cause alone does not explain away its SIGSEGV.
+
+01592 preserves the variable and post-eviction outputs but exposes the expected
+two initial traces when TensorFlow creates a variable during first tracing.
+01593 verifies stable one/two trace counts for prebound/lazy construction, but
+the collection trial retains resources after deleting the consumer. Collections
+are inherited by subsequently traced nested functions; replace them with a
+namespaced owner attribute only on the outermost function graph. Require both
+post-eviction survival and release of graph/resource after consumer deletion.
+No global collection or numerical execution policy change is allowed.
+
+Program review also found terminal-driver debt: `gate` and the tests matrix
+currently require every registered explanatory trial to pass, including rejected
+historical solver trials and deliberately failing full graph domain references.
+Before terminal execution, classify those jobs explicitly as explanatory with
+their preserved outcomes, while retaining current runtime, complete-record,
+consumer and compiler-reuse tests as mandatory gates. Do not blanket-exclude
+names containing "localization": several such groups are actual regression
+checks. A reviewed exact classification plus controller regression is needed;
+this is a harness repair, never permission to waive numerical failures.
+
+01594 passes both resource-lifetime/release cases, but 01595 repeats the
+SIGSEGV after 37 checks. Resource ownership is repaired independently; it has
+not resolved the combined crash. Capture a native GDB backtrace of the same
+CPU sequence under the existing 900-second full-suite ceiling and caps, with
+network symbol fetching disabled and pytest's signal stack timer disabled to
+let GDB observe the native fault. This is a debugging wrapper around the same
+sequential worker, with no environment mutation or numerical change. Preserve
+missing JUnit as failed evidence. GPU/performance work remains paused.
+
+01596 was interrupted after 642 seconds because GDB spent about 97% CPU
+loading shared-library symbols during every XLA compilation. The sampled stack
+is compilation, not the reported crash. 01597 disables automatic shared-library
+and Python symbol loading until the inferior stops, then loads TensorFlow symbols
+for the native backtrace. Same numerical sequence and 900-second ceiling.
+
 Current through 01577: compact-shape CPQR repairs the padded-fitter failure.
 All 32 solver/derivative, 18 padded-fitter and 14 original/full fitter cases
 pass independently on CPU and GPU. All 223 GPU consumer cases pass in 01575. The
@@ -13,6 +227,73 @@ warm allocations. Full graph runs reveal an existing loading-margin assertion
 that XLA ignores, now a separate open correctness finding. Do not integrate
 structured preparation or merge until its disposition and remaining gates are
 complete. Detailed evidence and recovery are below and in the resume document.
+
+Next after pushed `085baaaa`: localize domain-check semantics using the frozen
+3582b4ac eager public fitter versus current graph and XLA on the exact failing
+five-dimensional cloud. Preserve returned status, all diagnostics, covariance
+and loadings; graph exceptions are observed failures, not timing evidence.
+Also compare the public covariance constructor on healthy, exact-margin,
+outside-margin and negative-scale inputs in all three modes. This tiny GPU
+diagnostic has a 120-second bound, unchanged inputs/settings and cumulative
+budget. It determines the required failure contract before a guard repair;
+no assertions are bypassed, bounds relaxed or states clipped.
+
+Skeptical review: an invalid optimizer trial can be followed by a valid final
+state, so checking only final loadings does not reproduce the eager rejection
+contract. A future XLA repair must propagate any forbidden evaluation to the
+returned status and preserve all healthy original records and derivatives.
+Do not change objective values or stopping rules simply to make parity pass.
+
+01578 confirms the defect: original eager and current graph return
+factor_optimizer_failed, while XLA continues and returns second_factor_unidentified
+with finite matrices. The constructor's exact-margin, out-of-margin and negative
+scale cases throw in eager/graph but return finite matrices in XLA. Test a
+diagnostic-only covariance guard that returns a nonfinite tensor on the original
+invalid domain, retaining the exact healthy value and pullback. Observe the
+full trial's optimizer status rather than assuming poisoning one evaluation
+records every invalid trial. No runtime change until healthy regression and
+failure-propagation behavior are known. Same 120-second GPU bound and caps.
+
+01579: the diagnostic constructor guard makes invalid direct calls nonfinite
+and leaves healthy value/pullbacks exact. However the fitter still returns
+second_factor_unidentified, confirming that poisoning one trial does not
+preserve the original fail-on-any-invalid-evaluation contract. Do not install
+that incomplete repair. Next observe every covariance evaluation with reset
+int64 TensorFlow counters inside one XLA invocation, on the dimension-three
+healthy fixture and dimension-five violating fixture. Preserve original
+arithmetic and compare full instrumented versus uninstrumented records; repeat
+each call to check reset/trace behavior. These resource counters are diagnostic
+only pending evidence; they may not become a shared concurrent runtime state
+by inference. Same 120-second GPU bound and cumulative budget.
+
+01580's reset counters observe zero invalid evaluations out of 180 on the
+healthy three-dimensional fit and 102 out of 400 on the violating five-dimensional
+fit. Complete records remain exact and repeat resets/one trace pass. Before
+using state for a runtime guard, check same-program concurrent invocations on
+a healthy five-dimensional two-factor cloud and the violating cloud, plus
+alternating sequential calls. The scientific target remains unchanged; this is
+a tiny resource-isolation diagnostic, not parallel campaign workers. Runtime
+int64 resource capture would be justified only if every invocation returns its
+own reset count and records. Same 120-second GPU ceiling and caps.
+
+01581 passes same-program healthy/violating concurrent and alternating calls:
+counts reset per XLA invocation, complete records remain exact, one trace is
+retained. Install an int64 invalid-evaluation counter in the compiled fitter
+factory, reset at entry, observing the original covariance domain in each loss
+and final evaluation. Preserve raw optimizer arithmetic; any recorded violation
+must make public and fixed-center consumers return the original optimizer-failure
+classification without exposing an admitted geometry. Graph reference keeps
+immediate assertions. The public covariance constructor gains a nonfinite data
+guard for invalid XLA calls while retaining eager/graph assertions. This is a
+Class B failure guard, not clipping or a new numerical setting.
+
+Before acceptance, test healthy exact values and pullbacks, direct invalid
+inputs, failing public status, fixed-center rejection, alternating/concurrent
+calls, original full records and compiler input reuse. Resource capture may add
+one internal compiler operand; no data may become a specialized constant. A
+healthy-record drift blocks this trial. The frozen diagnostic clones now read
+085baaaa so future runtime changes cannot rewrite observed failure evidence.
+Use 120/300-second focused checks and existing full-suite ceilings and caps.
 
 Recovery after 01554: the enlarged CPU padded suite passes 13/18 cases, with
 five complete-record failures at dimension five/two factors. The small- and

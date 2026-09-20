@@ -16,6 +16,22 @@ from tests.test_filter_repair_fixed_stability import _compare
 D = tf.float64
 
 
+def _assert_runtime_parameters(program, arguments, hlo):
+    """All user tensors stay runtime inputs; one int64 guard is internal state."""
+    inputs = tuple(value for value in arguments if value is not None)
+    expected = {index: ("f64" if value.dtype == D else "s32",
+        ",".join(str(size) for size in value.shape)) for index, value in enumerate(inputs)}
+    expected[len(inputs)] = ("s64", "")
+    entry = hlo[hlo.rfind("\nENTRY "):]
+    actual = {int(index): (dtype, shape) for dtype, shape, index in re.findall(
+        r"= ([a-z]\d+)\[([^\]]*)\][^\n]*?\bparameter\((\d+)\)", entry)}
+    assert actual == expected
+    concrete = program.get_concrete_function(*arguments)
+    assert len(concrete.captured_inputs) == 1
+    assert concrete.captured_inputs[0].dtype == tf.resource
+    assert len(concrete.variables) == 1 and concrete.variables[0].dtype == tf.int64
+
+
 def _data(dimension, reused, capacity):
     fresh = 2 * dimension
     active = fresh + reused
@@ -289,7 +305,8 @@ def test_complete_fitter_retains_runtime_inputs(dimension, factors, masked):
     hlo = program.experimental_get_compiler_ir(*arguments)(stage="hlo")
     entry = hlo[hlo.rfind("\nENTRY "):]
     parameters = [line for line in entry.splitlines() if re.search(r"\bparameter\(\d+\)", line)]
-    assert len(parameters) == (7 if masked else 6)
+    print("FACTOR_RUNTIME_INPUTS " + json.dumps({"masked": masked, "parameters": parameters}))
+    _assert_runtime_parameters(program, arguments, hlo)
     # Different training data must use the same executable and affect the fit.
     changed = (*arguments[:2], arguments[2] * 1.03, *arguments[3:])
     second = program(*changed)

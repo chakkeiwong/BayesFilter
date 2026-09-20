@@ -213,6 +213,14 @@ def fit_factor_correlation_score_geometry(
     except (tf.errors.OpError, ValueError) as exc:
         return _rejected(cfg, dimension, "factor_optimizer_failed", parameter_count=parameter_count,
                          diagnostics={"exception_type": type(exc).__name__, "jit_compile": bool(jit_compile)})
+    if int(computed["invalid_covariance_evaluations"]) > 0:
+        return _rejected(
+            cfg, dimension, "factor_optimizer_failed", parameter_count=parameter_count,
+            anchors=tuple(computed["anchors"].numpy().tolist()),
+            diagnostics={"exception_type": "InvalidArgumentError", "jit_compile": bool(jit_compile),
+                         "invalid_covariance_evaluations": int(computed["invalid_covariance_evaluations"]),
+                         "failure_reason": "factor_covariance_domain_violation"},
+        )
     covariance = computed["covariance"]
     precision = computed["precision"]
     deviations = computed["deviations"]
@@ -289,9 +297,27 @@ def fit_factor_correlation_score_geometry(
     )
 
 
-@lru_cache(maxsize=16)
 def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compile, diagnosis,
                          *, padded_training=False):
+    program = _cached_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compile,
+        diagnosis, padded_training=padded_training)
+    if jit_compile and tf.inside_function():
+        # FuncGraph captures variables weakly. An enclosing compiled consumer
+        # must own this resource even after the bounded factory cache evicts it.
+        # Own it on the enclosing function graph only. Graph collections are
+        # inherited by later nested functions and can retain it unnecessarily.
+        graph = tf.compat.v1.get_default_graph()
+        while graph.outer_graph.building_function:
+            graph = graph.outer_graph
+        if not hasattr(graph, "bayesfilter_factor_domain_resources"):
+            graph.bayesfilter_factor_domain_resources = {}
+        graph.bayesfilter_factor_domain_resources[id(program.factor_domain_state)] = program.factor_domain_state
+    return program
+
+
+@lru_cache(maxsize=16)
+def _cached_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compile, diagnosis,
+                           *, padded_training=False):
     """One stable numerical boundary, including preparation and optimizer."""
     signature = [tf.TensorSpec([dimension], tf.float64),
         tf.TensorSpec([training_rows, dimension], tf.float64),
@@ -303,9 +329,20 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
         if training_rows < 2 * dimension:
             raise ValueError("padded structured training requires capacity for at least 2D fresh rows")
         signature.append(tf.TensorSpec([], tf.int32))
+    # XLA discards Assert. Track the original fail-on-any-invalid-evaluation
+    # contract without changing any objective value, derivative or optimizer
+    # setting. Reset inside the compiled invocation; no prior count is consumed.
+    # Graph-reference execution retains its original immediate assertions.
+    if jit_compile:
+        with tf.init_scope():
+            domain_violations = tf.Variable(0, dtype=tf.int64, trainable=False)
+    else:
+        domain_violations = None
     @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
     def numerical(center, train_z, train_score, holdout_z, holdout_score, weights,
                   active_training_rows=None):
+        if domain_violations is not None:
+            domain_violations.assign(0)
         if padded_training:
             active = tf.range(training_rows) < active_training_rows
             train_z = tf.where(active[:, None], train_z, tf.zeros_like(train_z))
@@ -345,7 +382,8 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
 
         def loss(raw: tf.Tensor) -> tf.Tensor:
             covariance, _std, _loads = _decode_covariance(
-                raw, dimension=dimension, anchors=anchors, config=cfg
+                raw, dimension=dimension, anchors=anchors, config=cfg,
+                domain_violations=domain_violations,
             )
             precision = tf.linalg.cholesky_solve(
                 tf.linalg.cholesky(covariance), tf.eye(dimension, dtype=tf.float64)
@@ -368,7 +406,8 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
         )
         fitted_raw = tf.convert_to_tensor(optimizer.position, tf.float64)
         covariance, deviations, loadings = _decode_covariance(
-            fitted_raw, dimension=dimension, anchors=anchors, config=cfg
+            fitted_raw, dimension=dimension, anchors=anchors, config=cfg,
+            domain_violations=domain_violations,
         )
         chol = tf.linalg.cholesky(covariance)
         precision = tf.linalg.cholesky_solve(
@@ -416,8 +455,15 @@ def _make_factor_program(dimension, training_rows, holdout_rows, cfg, jit_compil
              "condition_number": condition_number, "train_rmse": train_rmse,
              "holdout_error": holdout_error, "holdout_relative": holdout_relative,
              "jacobian_rank": jacobian_rank, "jacobian_condition": jacobian_condition,
-             "optimizer": optimizer, "anchors": tf.stack(anchors)})
+             "optimizer": optimizer, "anchors": tf.stack(anchors),
+             "invalid_covariance_evaluations": (domain_violations.read_value()
+                 if domain_violations is not None else tf.constant(0, tf.int64))})
+    numerical.factor_domain_state = domain_violations
     return numerical
+
+
+_make_factor_program.cache_clear = _cached_factor_program.cache_clear
+_make_factor_program.cache_info = _cached_factor_program.cache_info
 
 
 def factor_correlation_covariance(
@@ -438,10 +484,20 @@ def factor_correlation_covariance(
     row_norm_squared = tf.reduce_sum(tf.square(factors), axis=1)
     tf.debugging.assert_positive(deviations)
     tf.debugging.assert_less(row_norm_squared, 1.0 - margin)
+    covariance, valid = _covariance_with_domain(deviations, factors, margin)
+    # Eager/graph assertions retain their exception behavior. The data guard
+    # also makes invalid compiled calls unusable when XLA drops those asserts.
+    return tf.where(valid, covariance, tf.constant(float("nan"), covariance.dtype))
+
+
+def _covariance_with_domain(deviations, factors, margin):
+    row_norm_squared = tf.reduce_sum(tf.square(factors), axis=1)
     correlation = tf.linalg.diag(1.0 - row_norm_squared) + tf.matmul(
         factors, factors, transpose_b=True
     )
-    return deviations[:, None] * correlation * deviations[None, :]
+    covariance = deviations[:, None] * correlation * deviations[None, :]
+    valid = tf.reduce_all(deviations > 0.) & tf.reduce_all(row_norm_squared < 1. - margin)
+    return covariance, valid
 
 
 def _decode_covariance(
@@ -450,6 +506,7 @@ def _decode_covariance(
     dimension: int,
     anchors: tuple[int, ...],
     config: FactorCorrelationGeometryConfig,
+    domain_violations=None,
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     vector = tf.reshape(tf.convert_to_tensor(raw, tf.float64), [-1])
     deviations = config.standard_deviation_floor + tf.nn.softplus(
@@ -478,9 +535,19 @@ def _decode_covariance(
         loadings = tf.tensor_scatter_nd_update(loadings, tf.reshape(tf.stack((anchor_a, anchor_b)), [2, 1]),
             tf.stack((tf.stack((first_radius, tf.constant(0., tf.float64))),
                       second_radius * tf.stack((tf.cos(angle), tf.sin(angle))))))
-    covariance = factor_correlation_covariance(
-        deviations, loadings, loading_margin=config.loading_margin
-    )
+    if domain_violations is None:
+        covariance = factor_correlation_covariance(
+            deviations, loadings, loading_margin=config.loading_margin
+        )
+    else:
+        covariance, valid = _covariance_with_domain(
+            deviations, loadings, tf.constant(config.loading_margin, tf.float64)
+        )
+        # The completed fit rejects any forbidden evaluation. Keeping its raw
+        # covariance arithmetic unchanged preserves the original valid path.
+        update = domain_violations.assign_add(tf.cast(~valid, tf.int64))
+        with tf.control_dependencies([update]):
+            covariance = tf.identity(covariance)
     return covariance, deviations, loadings
 
 

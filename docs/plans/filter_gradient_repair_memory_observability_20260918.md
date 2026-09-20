@@ -1,5 +1,39 @@
 # Host-memory observation limits
 
+September 21 guard-cost results (01608--01615): matching healthy inputs and
+full optimizer settings yield exactly equal original before/after fields in
+graph-reference and XLA. XLA host peak increases are 7,630,848 and 6,250,496
+bytes at dimensions three and five; GPU peak increases are 3,328 and 2,560
+bytes. Graph host increases are 12,185,600 and 819,200 bytes. No declared guard
+cost trigger fires. Twenty warm calls have only a few KiB host growth and small
+returning device fluctuations, including D=5 candidate peak 102,912 returning
+to 101,888 bytes. One trace holds in all arms. This is finite observation,
+not a general leak proof or terminal repeated comparison. See
+`factor-guard-cost-comparison-01615.json` and its preserved analysis script.
+
+September 21 continuation: executable mapping count is a separate resource
+from host bytes. Combined CPU qualification fails in LLVM's mapped executable
+section allocator (01597). The external observer in 01598 records 65,021 maps
+just before failure against vm.max_map_count=65,530, despite about 194.8 GiB
+available RAM, unlimited address/data/RSS limits and no cgroup memory cap/OOM.
+Its one-second samples do not capture the instantaneous limit. CPU test-module
+cache clearing in 01599 frees no mappings at 33,801 and 64,785 and the run fails
+again. TensorFlow 2.19.1's installed
+`include/tensorflow/compiler/jit/device_compilation_cache.h:62` states that its
+device cache owns compiled executables and has no eviction policy. Bounded
+Python factory caches and successful FuncGraph/resource garbage collection
+therefore do not imply bounded native compiler retention.
+
+The preserved analysis is
+`artifacts/filter-gradient-repair-20260917/factor-executable-allocation-disposition-01599.json`
+under the main checkout's artifact root, with header/evidence checksums and
+parent-owned samples that survive native failure. Qualification uses all 38
+cases in three bounded fresh CPU reference processes and the unchanged combined
+GPU/XLA process, plus lifetime and consumer gates. This does not repair or
+admit indefinite CPU compilation across distinct signatures, change OS limits,
+or turn the failed cleanup into a passing result. Fixed-signature reuse and
+changed-data HLO checks remain necessary for numerical runtime.
+
 September 20 continuation: one TensorFlow trace and stable repeated-input warm
 memory do not establish bounded XLA compilation. The factor/COD diagnostic
 `factor-compilation-memory-comparison-01514.json` records only two runtime HLO

@@ -332,6 +332,62 @@ def test_matrix_test_failure_stops_remaining_groups(tmp_path, monkeypatch):
     assert executed == ["first"]
 
 
+def test_test_roles_exclude_only_reviewed_explanatory_jobs():
+    driver = load("run_filter_repair_campaign")
+    assert set(driver.EXPLANATORY_TEST_GROUPS) <= set(driver.TEST_GROUPS)
+    assert all(driver.EXPLANATORY_TEST_GROUPS.values())
+    required = set(driver.mandatory_test_groups())
+    assert not required.intersection(driver.EXPLANATORY_TEST_GROUPS)
+    assert required | set(driver.EXPLANATORY_TEST_GROUPS) == set(driver.TEST_GROUPS)
+    assert {"factor_domain_runtime", "factor_guard_qualification", "factor_guard_cpu_fixed",
+        "factor_guard_cpu_padded", "factor_guard_cpu_domain", "factor_guard_resource_lifetime",
+        "factor_guard_gpu_lifetime", "active_cod_runtime", "padded_factor", "factor_runtime_inputs",
+        "fixed_fitting", "fixed_fitting_consumers", "source_guard_localization",
+        "source_preparation_localization", "quadratic_initializer_localization"} <= required
+    for batch in driver.TEST_BATCHES.values():
+        assert set(batch) <= set(driver.TEST_GROUPS)
+        assert len(batch) == len(set(batch))
+    assert set(driver.TEST_BATCHES["factor_guard"]) <= required
+    assert driver.TEST_DEVICES["factor_guard_qualification"] == "GPU"
+    assert all(driver.TEST_DEVICES.get(group, "CPU") == "CPU" for group in
+        ("factor_guard_cpu_fixed", "factor_guard_cpu_padded", "factor_guard_cpu_domain"))
+
+
+def test_test_matrix_skips_exact_explanations_but_fails_new_runtime_group(tmp_path, monkeypatch):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    monkeypatch.setattr(driver, "OUTPUT", tmp_path)
+    monkeypatch.setattr(driver, "TEST_GROUPS", {"factor_domain_guard_trial": (), "new_runtime": ()})
+    monkeypatch.setattr(driver, "source_hashes", dict)
+    monkeypatch.setattr(driver, "records", list)
+    executed = []
+
+    def execute(job):
+        executed.append(job.group)
+        return 4
+
+    monkeypatch.setattr(driver, "run_job", execute)
+    assert driver.run_matrix(argparse.Namespace(stage="tests")) == 4
+    assert executed == ["new_runtime"]
+
+
+def test_explicit_test_batch_executes_registered_diagnostics(tmp_path, monkeypatch):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    group = "factor_domain_guard_trial"
+    monkeypatch.setattr(driver, "OUTPUT", tmp_path)
+    monkeypatch.setattr(driver, "TEST_BATCHES", {"diagnostic": (group,)})
+    monkeypatch.setattr(driver, "TEST_DEVICES", {})
+    monkeypatch.setattr(driver, "source_hashes", dict)
+    monkeypatch.setattr(driver, "records", list)
+    executed = []
+    monkeypatch.setattr(driver, "run_job", lambda job: executed.append(job.group) or 0)
+    assert driver.run_matrix(argparse.Namespace(stage="tests", test_batch="diagnostic")) == 0
+    assert executed == [group]
+
+
 def test_matrix_stops_when_source_changes(tmp_path, monkeypatch):
     import argparse
     driver = load("run_filter_repair_campaign")

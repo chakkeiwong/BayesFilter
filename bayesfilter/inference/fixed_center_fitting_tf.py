@@ -34,7 +34,8 @@ def empty_fit(dimension):
         "flags": tf.zeros([3], tf.bool), "status": tf.constant(4), "projection": tf.constant(0., D),
         "holdout": tf.constant(0., D), "holdout_passed": tf.constant(False), "nonpositive": tf.constant(0, tf.int64),
         "factor_metrics": tf.zeros([len(FACTOR_METRICS)], D), "factor_eigenvalues": tf.zeros([dimension], D),
-        "loading_norms": tf.zeros([dimension], D), "anchors": tf.zeros([2], tf.int32)}
+        "loading_norms": tf.zeros([dimension], D), "anchors": tf.zeros([2], tf.int32),
+        "invalid_covariance_evaluations": tf.constant(0, tf.int64)}
 
 
 def _dense_fit(kernel, center, training, scores, offsets, selection_scores,
@@ -71,7 +72,7 @@ def _structured_fit(center, training, scores, offsets, selection_scores, *, conf
         value["condition_number"], tf.cast(value["jacobian_rank"], D), value["jacobian_condition"],
         tf.cast(optimizer.converged, D), tf.cast(optimizer.failed, D), tf.cast(optimizer.num_iterations, D),
         tf.cast(optimizer.num_objective_evaluations, D), optimizer.objective_value, tf.cast(identified, D)])
-    return {**empty_fit(dimension), "raw": value["precision"], "precision": value["precision"],
+    completed = {**empty_fit(dimension), "raw": value["precision"], "precision": value["precision"],
         "covariance": value["covariance"], "raw_values": raw_values,
         "flags": tf.stack([True, admissible, status == 0]), "status": status,
         "holdout": value["holdout_relative"], "holdout_passed": value["holdout_relative"] <= config.holdout_score_relative_rmse,
@@ -79,6 +80,10 @@ def _structured_fit(center, training, scores, offsets, selection_scores, *, conf
         "factor_metrics": metrics, "factor_eigenvalues": value["eigenvalues"],
         "loading_norms": tf.reduce_sum(tf.square(value["loadings"]), axis=1),
         "anchors": tf.pad(tf.cast(value["anchors"], tf.int32), [[0, 2 - config.factor_count]])}
+    return tf.cond(value["invalid_covariance_evaluations"] > 0,
+        lambda: {**empty_fit(dimension), "status": tf.constant(9),
+            "anchors": completed["anchors"],
+            "invalid_covariance_evaluations": value["invalid_covariance_evaluations"]}, lambda: completed)
 
 
 @lru_cache(maxsize=32)

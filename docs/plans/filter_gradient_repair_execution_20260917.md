@@ -9,6 +9,52 @@ claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
 training/HMC capability and its obsolete admitted factory now fail closed.
 Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
+## September 21 guard qualification and cost
+
+September 21 qualified guard checkpoint through 01615: all 66 policy/controller,
+38 combined GPU, 223 GPU consumer, two CPU and two GPU lifetime checks pass.
+All 38 original CPU cases pass in three sequential fresh processes (14/18/6).
+Eight fresh-process guard-cost arms pass at D=3/5 in graph-reference and XLA
+modes. Every original same-mode field is exactly equal before/after; invalid
+counts are zero on these healthy inputs. Graph/XLA complete records pass the
+unchanged atol=rtol=1e-10 comparison. Analysis and its exact script are preserved
+as `factor-guard-cost-comparison-01615.json` and
+`analyze_filter_guard_memory_20260921.py` in the campaign artifact root.
+
+Default XLA warm medians before/after are 22.090/21.847 ms (D=3) and
+92.201/93.585 ms (D=5); added host peaks are 7,630,848/6,250,496 bytes and
+GPU peaks are 80,896/84,224 and 100,352/102,912 bytes, respectively.
+No guard-cost resource/timing trigger fires. Twenty warm calls show bounded
+observed allocation fluctuations and one trace. These are single-process
+mechanism/cost observations, not terminal repeats or performance rankings.
+CPU executable retention across arbitrary distinct signatures remains an
+explicit limitation, supported by the diagnosis below; no OS/package repair
+or unlimited-process claim is made. No worker is active at this checkpoint.
+
+Charged through 01615: GPU 29,038.68574661859 / 187,200 seconds; CPU
+38,711.01263819063 / 115,200 seconds. Remaining: GPU 158,161.3142533814;
+CPU 76,488.98736180937 seconds. Commit/push this qualified checkpoint, then
+continue structured reuse preparation, enclosing controllers and the remaining
+master gates. Main remains unmerged; no F01--F20 terminal disposition is closed.
+
+Candidate graph/XLA warm medians are 214.721/21.847 ms at D=3 and
+955.093/93.585 ms at D=5. Graph peaks are 8,485,888/8,521,984 device bytes;
+XLA peaks are 84,224/102,912 bytes. XLA pays more host/cold compilation cost.
+Same-mode maximum field error is zero; the largest graph/XLA absolute error is
+2.326743242520024e-10, within unchanged relative-plus-absolute tolerance.
+The full 200-iteration settings, input hashes, GPU2, output materialization and
+source hashes match. No runtime/test changes followed qualification.
+
+Primary-agent terminal review of this checkpoint found the original strict
+covariance validity and optimizer arithmetic preserved; the resource is owned
+by its enclosing graph after bounded cache eviction and releases on collection.
+The allowlist's single new entry covers static graph ownership only. Exact
+explanatory test roles preserve required runtime groups and default new groups
+to mandatory. No independent reviewer was used. The weakest cost evidence is
+one process per arm; it cannot establish a timing ranking or whole-campaign
+completion. Prior 32-row CPQR capacity tradeoffs and other investigations remain
+open. No new geometry, HMC, source-faithfulness or scientific claim follows.
+
 ## September 20 compact CPQR continuation through 01577
 
 Recovered 01554's five padded-record CPU failures without changing numerical
@@ -4510,3 +4556,71 @@ September 20 checkpoint accounting through 01577: 27,876.007 GPU /
 seconds under unchanged 52/32-hour caps. Inventory 01577 finds 2,879 working
 Python files, 2,878 parsed and the one unchanged external legacy error. Focused
 Ruff and whitespace checks pass. No worker is active; main remains unmerged.
+# September 21 covariance-domain continuation (through 01595)
+
+The guard investigation continues from pushed `085baaaa`; it is not qualified
+for merge. Original eager/graph domain rejection is restored at public/native
+XLA boundaries without clipping, changed margins or optimizer settings. Native
+rejection records preserve anchors, cause and observed invalid count. New counts
+describe rejected trajectories, so standalone/enclosing counts 216/225 differ;
+all pre-existing rejection fields match. Focused six-case CPU/GPU runs
+01582/01583 and updated CPU record run 01587 pass.
+
+01586 confirms the expected one extra int64 resource operand. Compiler tests
+now check every user input's dtype/shape, captured resource identity, one trace
+and equal HLO after changed values; no input-specialization exemption is added.
+
+Combined CPU run 01588 crashes in TensorFlow on the final enclosing consumer
+after 37 cases. Padded/domain and fixed/domain sequences separately pass 19
+checks each (01589/01590). Tiny 01591 shows the guard variable is deleted when
+the inner factory cache is evicted. The graph-collection trial 01592/01593 keeps
+execution alive but leaks ownership into later nested graphs. The revised
+factory binds ownership to the outermost function graph only; 01594 verifies
+post-eviction execution, stable prebound/lazy tracing and graph/resource release.
+The original combined run still crashes in 01595, so lifetime is a distinct
+fixed defect and cannot explain away the remaining crash. Native-stack run
+01596 is the next bounded CPU diagnostic. GPU qualification and performance
+measurement are paused until this is resolved.
+
+| Decision | Criterion | Veto | Uncertainty | Next action | Nonclaim |
+|---|---|---|---|---|---|
+| Keep domain guard under investigation | Focused rejection and healthy pullbacks pass | Combined CPU crash persists | Native fault not yet localized | Capture GDB stack; repair and rerun original suite | No completed repair or merge readiness |
+| Keep revised resource ownership | Post-eviction values and release pass | Rejected collection implementation retained memory | Needs GPU and enclosing-suite coverage | Include lifetime regression in qualification | No global memory bound |
+| Preserve all comparison gates | Original fields/tolerances unchanged | Missing terminal evidence | Final source remains unfrozen | Resume broad campaign after this repair | No repository-wide compliance or performance ranking |
+
+The full campaign retains all other master blockers, unchanged 52 GPU / 32 CPU
+process-hour caps and sequential numbered runs. No package/environment change,
+RNG change, canonical LEDH rebuild or main merge occurred.
+
+September 21 recovery through 01598: native run 01597 identifies LLVM CPU
+executable-section mapped allocation failure. 01596 was interrupted during
+excessive debugger symbol loading and provides no fault diagnosis. External
+observations in 01598 reproduce the failure in 276.738 seconds, with the last
+live map count 65,021 against vm.max_map_count=65,530. It contains 20,097
+anonymous executable mappings plus corresponding data sections; host HWM is
+10,867,112 KiB. About 194.8 GiB of system memory remains available, process
+address/data/RSS limits are unlimited, and cgroups report no memory cap or OOM.
+The instantaneous limit was not sampled, so map exhaustion is strongly supported
+rather than proven by an exact count. Parent-owned process-memory.jsonl and
+process-memory-limits.json survive the failure. Next test ordinary cache release
+between modules in the same process; all 38 original checks remain required.
+
+
+Qualification continuation: 01600 passes 66 controller/policy checks after
+exact explanatory-job classification. Unlisted jobs remain mandatory; actual
+localization regressions are not excluded by a name pattern. The static guard
+passes 189 sources / 1,276 exact exceptions, including reviewed FuncGraph
+ownership setup. It remains an explicitly partial repository guard.
+
+01601 passes both GPU lifetime/release cases. 01602 passes all 38 combined
+GPU/XLA fitter, padded-input and domain cases in 503.591 seconds, with no cache
+cleanup. 01603 passes all 223 GPU consumers in 240.425 seconds. Both use GPU2
+with verified memory growth. 01604 passes both CPU lifetime cases. All sources
+are unchanged across this qualification batch; CPU full/padded/domain workers
+and the eight-process guard-cost comparison are still executing or pending.
+
+| Decision | Primary criterion | Veto | Uncertainty | Next action | Nonclaim |
+|---|---|---|---|---|---|
+| Use bounded CPU reference scopes | Same cases retained; combined GPU passes | Combined many-signature CPU job exhausts compiler mapping resources | Instantaneous map limit not directly sampled; backend has no executable eviction | Fresh CPU module qualification | No indefinite CPU compilation guarantee |
+| Reject Python cache cleanup | Neither boundary releases executable maps | LLVM ENOMEM repeats | Backend lifetime outside Python ownership | Preserve failed trial and installed-source anchor | No claimed native-cache repair |
+| Retain guard pending cost review | 38 combined GPU and 223 consumer cases pass | No GPU numerical veto | Current CPU groups and complete-record guard cost | Finish sequential batch and matched memory/time arms | No whole-campaign closure or main merge |

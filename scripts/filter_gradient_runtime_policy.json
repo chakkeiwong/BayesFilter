@@ -11988,6 +11988,15 @@
       "ast_sha256": "49a58db35ff12c580f6612bc19ac7a90ec31159992b8bd3b420c279eaffd2903",
       "role": "fixed_schema",
       "reason": "Bind static compact row shapes from configuration. TensorFlow switch_case chooses one branch at execution; CPQR numerical iteration remains in tf.while_loop, and rank/COD/pullback operations stay tensor-native. Runs 01560/01562 verify primal and pullback parity and executable reuse; 01561/01563 verify complete CPU/GPU padded fitter records. This is no numerical-loop exemption. The 32-row branch compilation memory cost remains an explicit investigation."
+    },
+    {
+      "path": "bayesfilter/inference/factor_correlation_geometry.py",
+      "function": "_make_factor_program",
+      "line": 310,
+      "kind": "python_iteration",
+      "ast_sha256": "93e527b95787d88c1f5b1a6a3e5c1a3542407509f50c34fa97873690fae33856",
+      "role": "fixed_schema",
+      "reason": "Traverse static enclosing FuncGraph ownership during tracing so the domain-check resource survives bounded factory-cache eviction. This loop does not inspect tensor values or implement numerical iteration. The resource is owned only by the outermost compiled consumer and released with it; run 01594 covers prebound/lazy construction, eviction, stable tracing and release. Full runtime/consumer qualification remains independently mandatory."
     }
   ]
 }

@@ -414,7 +414,8 @@ def _native_fit_record(family, index, row, dimension, training_rows, selection_r
             "geometry_admissible": admissible, "selection_holdout_passed": row["holdout_passed"]}
     else:
         count = 2 * dimension if factor_count == 1 else 3 * dimension - 1
-        anchors = row["anchors"][:factor_count] if present else ()
+        domain_violations = row["invalid_covariance_evaluations"]
+        anchors = row["anchors"][:factor_count] if present or domain_violations else ()
         if present:
             metrics = dict(zip(fitting_native.FACTOR_METRICS, row["factor_metrics"], strict=True))
             for name in ("prediction_jacobian_rank", "optimizer_iterations", "optimizer_objective_evaluations"):
@@ -430,6 +431,10 @@ def _native_fit_record(family, index, row, dimension, training_rows, selection_r
                 "loading_row_squared_norms": row["loading_norms"],
                 "covariance_parameterization": "D[diag(1-row_norm(L)^2)+LL^T]D",
                 "score_model": "center_score_minus_local_score_equals_precision_times_offset"}
+        elif domain_violations:
+            diagnostics = {"exception_type": "InvalidArgumentError", "jit_compile": True,
+                "invalid_covariance_evaluations": domain_violations,
+                "failure_reason": "factor_covariance_domain_violation"}
         else:
             diagnostics = {"parameter_count": count, "symmetric_covariance_entry_count": dimension * (dimension + 1) // 2}
         diagnostics.update(covariance_parameterized_precision_prediction=True, parameter_count=count,

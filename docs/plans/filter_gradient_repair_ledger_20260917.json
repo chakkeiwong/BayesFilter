@@ -180,6 +180,62 @@
     },
     "based_on_commit": "7d08c68e",
     "prior_shared_analysis": "factor-shared-cod-memory-comparison-01549.json",
-    "capacity_memory_result": "Full 200-iteration XLA: compact/padded host peaks 1545408512/1892716544 bytes; GPU peaks 98304/196608 bytes; cold 11.886/27.013 seconds, warm 166.146/169.506 ms. Stable over 20 warm calls. Four-iteration graph/XLA controls pass all fields, showing graph and compiler overhead; full graph arms fail the strict existing assertion."
+    "capacity_memory_result": "Full 200-iteration XLA: compact/padded host peaks 1545408512/1892716544 bytes; GPU peaks 98304/196608 bytes; cold 11.886/27.013 seconds, warm 166.146/169.506 ms. Stable over 20 warm calls. Four-iteration graph/XLA controls pass all fields, showing graph and compiler overhead; full graph arms fail the strict existing assertion.",
+    "status": "Historical through 01577; superseded for guard status by active_guard_investigation."
+  },
+  "active_guard_investigation": {
+    "through_run": 1615,
+    "checkpoint": "085baaaa",
+    "terminal_acceptance": false,
+    "domain_guard": "Invalid covariance trials are counted inside XLA; public and fixed-center fits reject without geometry. Strict original domain and healthy arithmetic remain unchanged.",
+    "checks": {
+      "focused_CPU_GPU": "01582/01583: six passed each",
+      "native_record_CPU": "01587: six passed",
+      "combined_CPU": "All original 38 cases pass in three bounded CPU processes (01605/01606/01607). Combined many-signature stress failures 01598/01599 remain explained by native executable-cache retention and mapping pressure, not silently replaced.",
+      "padded_then_domain_CPU": "01589: 19 passed",
+      "fixed_then_domain_CPU": "01590: 19 passed",
+      "resource_lifetime_CPU": "01604: two passed, including graph release",
+      "combined_GPU": "01602: all 38 passed in one process without cache cleanup",
+      "resource_lifetime_GPU": "01601: two passed, including graph release",
+      "GPU_consumers": "01603: all 223 passed",
+      "policy_controller": "01600: all 66 passed",
+      "full_fitter_CPU": "01605: all 14 passed",
+      "padded_CPU": "01606: all 18 passed",
+      "domain_CPU": "01607: all six passed",
+      "guard_cost": "01608--01615: all eight fresh-process arms pass; all original before/after fields exactly equal, invalid count zero, graph/XLA complete records within unchanged 1e-10 tolerance."
+    },
+    "failures_preserved": {
+      "01584_01585": "New invalid-trial count differs across rejected compiler contexts (225/216); all prior rejection fields match. Compare counts with own source observation.",
+      "01586": "HLO includes one new int64 resource in addition to all user tensors; checks now verify types/shapes and unchanged-input reuse.",
+      "01591": "Inner cache eviction deletes resource captured weakly by enclosing graph.",
+      "01592_01593": "Graph-collection ownership preserves execution but retains memory; rejected in favor of outermost graph attribute.",
+      "01596": "Interrupted after 642 seconds of GDB symbol-loading overhead; not native fault evidence.",
+      "01597_01598": "LLVM executable mmap allocation failure. Last sampled map count within 509 of kernel limit; physical-memory OOM unsupported. Same-process cleanup trial completed in 01599 and did not release mappings.",
+      "01599": "Clearing five Python factory caches and collecting cycles leaves 33801/64785 maps unchanged; LLVM allocation fails again. Do not install cache cleanup as a repair."
+    },
+    "ownership": "Bounded 16-entry factory cache; enclosing graph holds its guard until graph collection. Survival, stable prebound/lazy trace count and release pass.",
+    "remaining": [
+      "qualified checkpoint commit/push",
+      "structured reused-row preparation and enclosing controllers",
+      "broader master work and terminal gates"
+    ],
+    "allocation_disposition": "factor-executable-allocation-disposition-01599.json",
+    "cost_analysis": "factor-guard-cost-comparison-01615.json",
+    "analysis_script": "analyze_filter_guard_memory_20260921.py",
+    "cost_result": "XLA D3/D5 warm before/after 22.090/21.847 and 92.201/93.585 ms; host increases 7630848/6250496 bytes; GPU peaks 80896/84224 and 100352/102912 bytes. No cost trigger. One process per arm; terminal repeats remain.",
+    "charged_seconds": {
+      "CPU": 38711.01263819063,
+      "GPU": 29038.68574661859
+    },
+    "budget_seconds": {
+      "CPU": 115200,
+      "GPU": 187200
+    },
+    "worker_active": false,
+    "guard": {
+      "sources": 189,
+      "exceptions": 1276,
+      "partial": true
+    }
   }
 }
