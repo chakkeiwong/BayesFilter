@@ -13,6 +13,18 @@ from bayesfilter.ops.qr_lstsq_tf import (
 )
 
 
+@pytest.mark.parametrize("jit", [False, True])
+def test_repeated_columns_preserve_rank_one_minimum_norm(jit):
+    matrix = tf.ones([33, 3], tf.float64)
+    rhs = tf.broadcast_to(tf.constant([[1.3175, 2.2075, 3.135]], tf.float64), [33, 3])
+    solve = tf.function(complete_orthogonal_lstsq, autograph=False, jit_compile=jit,
+        input_signature=[tf.TensorSpec([33, 3], tf.float64), tf.TensorSpec([33, 3], tf.float64)])
+    actual = solve(matrix, rhs)
+    expected = tf.linalg.lstsq(matrix, rhs, fast=False)
+    np.testing.assert_allclose(actual, expected, atol=1e-12, rtol=1e-12)
+    np.testing.assert_allclose(actual, np.broadcast_to(rhs.numpy()[0] / 3., (3, 3)), atol=1e-12, rtol=1e-12)
+
+
 def test_cod_retains_matrix_and_rhs_as_runtime_inputs_across_ranks():
     call = tf.function(complete_orthogonal_lstsq, autograph=False, jit_compile=True,
         input_signature=[tf.TensorSpec([4, 3], tf.float64), tf.TensorSpec([4, 1], tf.float64)])

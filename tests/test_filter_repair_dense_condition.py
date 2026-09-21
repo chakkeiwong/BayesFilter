@@ -18,6 +18,7 @@ from tests.test_filter_repair_quadratic_numerics import (
     program,
     serializable,
 )
+from tests.test_filter_repair_quadratic_rounds import compare_public_records
 
 D = tf.float64
 
@@ -134,6 +135,4 @@ def test_uniform_quadratic_complete_original_records(dimension, case, request):
     with (directory / f'dense-uniform-{case}-{dimension}.json').open('x') as handle:
         json.dump({'records': records, 'source_sha256': original()[0].hashes()}, handle, indent=2)
         handle.write('\n')
-    actual = copy.deepcopy(records['current'])
-    assert actual['diagnostics'].pop('jit_compile_fit') is False
-    _compare(actual, records['original'])
+    compare_public_records(copy.deepcopy(records['current']), copy.deepcopy(records['original']), jit=False)

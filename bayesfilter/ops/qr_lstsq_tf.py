@@ -106,6 +106,19 @@ def _reflector(vector, pivot, active):
     return tf.one_hot(pivot, length, dtype=vector.dtype) + essential, tau
 
 
+def _apply_householder_left(matrix, vector, tau, pivot):
+    """Preserve Eigen's essential-tail dot followed by its leading-row add.
+
+    Combining both in one reduction creates a spurious second pivot above
+    the original rank threshold for a 33x3 all-ones design. This is the same
+    reflector, with the arithmetic order in Eigen Householder.h:114--120.
+    """
+    rows = matrix.shape[0] if matrix.shape[0] is not None else tf.shape(matrix)[0]
+    essential = tf.where(tf.range(rows) > pivot, vector, tf.zeros_like(vector))
+    temporary = tf.linalg.matvec(matrix, essential, transpose_a=True) + tf.gather(matrix, pivot)
+    return matrix - tau * vector[:, None] * temporary[None, :]
+
+
 @tf.custom_gradient
 def complete_orthogonal_lstsq(matrix, rhs):
     """Native CPQR/COD with the original two-tensor tracing signature."""
@@ -171,14 +184,14 @@ def _complete_orthogonal_lstsq(matrix, rhs, active_rows=None):
             )
             a, permutation = tf.gather(a, swap, axis=1), tf.gather(permutation, swap)
             v, tau = _reflector(tf.gather(a, k, axis=1), k, row_indices >= k)
-            a = a - tau * v[:, None] * tf.linalg.matvec(a, v, transpose_a=True)[None, :]
+            a = _apply_householder_left(a, v, tau, k)
             # Exact structural zeros avoid rounded residuals entering pivot norms.
             a = tf.where(
                 (row_indices[:, None] > k) & (col_indices[None, :] == k),
                 tf.zeros_like(a),
                 a,
             )
-            b = b - tau * v[:, None] * tf.linalg.matvec(b, v, transpose_a=True)[None, :]
+            b = _apply_householder_left(b, v, tau, k)
             return k + 1, a, b, permutation
 
         _, upper, transformed, permutation = tf.while_loop(

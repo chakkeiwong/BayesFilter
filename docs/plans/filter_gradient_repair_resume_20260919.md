@@ -1,46 +1,59 @@
 # Filter and gradient repair recovery
 
-Active continuation from pushed **415eaa8f**, on
-`repair/filter-gradient-xla-validation-20260918`. The owner-approved factor-output,
-deficient-rank condition and extreme-precision comparison contracts remain in
-force. No approval is pending. Main remains unmerged.
+Active continuation from pushed **96e15e9d** on
+`repair/filter-gradient-xla-validation-20260918`. Main remains unmerged.
+The cumulative caps remain **32 CPU / 52 GPU process-hours**.
 
-The native uniform-cloud controller and binary64 SVD repair pass complete CPU/GPU
-original-record, derivative, callback/cache and resource checks. Complete GPU
-matrix02287--02293 adds111 passed cases. SixCPU/GPU capacity1/4/8 checks each
-pass3000 alternating-input calls, stable HLO and one trace; final1000-call RSS
-growth is0--12KiB and GPU live allocation stays7168bytes.
+The internal fixed-center posterior-curvature controller uses native TensorFlow
+loops and stable XLA signatures. Its public endpoint remains eager because the
+rejected ill-conditioned D3 precision comparison still fails the unchanged
+criterion. The [fixture-specific comparison proposal](filter_gradient_rejected_dense_precision_decision_20260922.md)
+remains pending and is not installed. Canonical LEDH rebuilding remains outside
+this execution-repair campaign.
 
-Native original/graph/XLA warm ms: CPU D3 436.89/45.96/25.68, D5
-446.79/57.00/34.91; GPU D3 618.14/178.85/37.30,D5 627.65/204.19/54.98.
-These single-process costs retain extra host RSS518MiB CPU and267/266MiB GPU,
-and cold2x triggers. Renewed dense dependency02305--02340 comprises36 processes
-with full original/changed records preserved. D5 standalone warm increases
-8.5%CPU/69.4%GPU; accurate SVD/eigen/COD costs explain the local penalty and
-remain explicit. The original33-row SVD failure cannot be restored for speed.
+The shared COD rank-one arithmetic repair preserves the original threshold and
+minimum-norm solution. It passes 159 focused CPU checks (02382--02388), 276
+renewed CPU consumer checks (02390--02402), and 132 public uniform/quadratic/
+paired/batch GPU checks (02403--02406). GPU3 renewal passes 34 solver/active-row, 28 dense-consumer and 14
+boundary checks (02477--02479). The matrix then stopped before launching the
+next worker because GPU3 became busy again. No numerical worker is active.
+Runtime, tests and driver stay frozen during workers. GPU3 keeps the existing two idle checks and verified memory
+growth; CPU reference workers hide GPUs.
 
-Public uniform wiring is now installed for qualification: it calls the shared
-native controller and uses completed host-list diagnostics while retaining all
-top-level tensors and payload numerical fields. The source guard covers the
-whole public module with configuration/reporting exceptions only. Partial guard:
-204sources/1292exact exceptions. Focused lint and whitespace pass. CPU public
-original-record/cache/consumer matrix02341--02345 passes204checks. GPU public
-preflight declined before launch;all18CPU public cost workers02346--02363 pass.
-GPU qualification and repeated costs remain pending;no numerical worker is active.
-Inventory02364 covers2959Python files/2958parsed/one unchanged vendor error. Runtime,
-tests and driver stay frozen while a worker is active. Exact active session/job:
+The posterior zero-design GPU discrepancy was one ULP between vector and batch
+score projections. A shared multiply/reduce contraction restores the exact
+original record without a residual floor or tolerance change (02418--02420).
+The repaired matrices pass 78 numerical checks per device plus 72 CPU policy
+checks in each matrix (02421--02428 and 02435--02442). Twelve native CPU/GPU
+cost processes pass complete initial and changed-input records. All six
+3,000-call capacity checks at 2/4/8 replicates pass, with 4--12 KiB final-interval
+RSS growth and stable GPU allocation. Cold-time and CPU host-memory triggers
+remain explicit; bounded reuse does not establish executable eviction or general
+leak freedom.
+
+All 18 renewed public uniform CPU cost processes pass (02458--02475): three
+fresh-process repeats of original/graph/XLA at D3/D5. Median original/XLA warm
+times are 441.018/26.440 ms and 446.886/35.477 ms. XLA adds 521.6/524.6 MiB
+observed host RSS and cold calls rise to 4.387/4.411 seconds; those triggers remain
+recorded. Matching GPU costs are next after shared-solver renewal. The strict
+rejected-design failure is preserved in 02456. Its independent high-precision
+reference covers captured CPU inputs only; GPU needs its own captured-input
+reference. See the [checkpoint review](filter_gradient_posterior_checkpoint_20260922.md).
+
+Recovered audit **02476** passes: 2,969 working Python files, 2,968 parsed and
+one unchanged vendor-reference parse error. The static guard remains explicitly
+partial at **206 sources / 1,298 exact exceptions**, with no violations or stale
+entries. New posterior numerical code has no Python-loop exemption. Charges
+through 02480 are **51,000.71724355132 CPU / 48,325.1067211973 GPU seconds**.
+Policy/controller 02480 passes all 72 checks; focused Ruff and whitespace pass.
+
+Next finish shared-solver GPU renewal and uniform GPU costs, preserve the strict
+ill-conditioned comparison, and continue independent enclosing-controller
+repairs. Public sequential lifecycle/reporting, block/iterative controllers,
+external deadlines, actual DZ5 targets/transitions and F01--F20 terminal
+dispositions remain open. No external consumer source/pin, package or environment
+change is authorized. Commands and charges are in the
 [ledger](filter_gradient_repair_ledger_20260917.json).
-
-Broader sequential outer/reporting and block/iterative controllers, external
-watchdog/DZ5 target and transition evidence, and F01--F20 terminal checks remain.
-Main stays unmerged. Continue one numerical worker, GPU3 idle preflight, verified
-memory growth and CPU references with GPUs hidden. Through02364 charges are
-CPU48907.31598352069/115200 and GPU46001.71196921611/187200seconds; caps remain
-32CPU/52GPU process-hours. No external consumer source/pin or environment changes.
-Original3582b4ac dependency closure with graph-mode trust remains authority.
-See [uniform checkpoint/review](filter_gradient_uniform_checkpoint_20260922.md) and
-[execution contract](filter_gradient_uniform_rounds_20260921.md).
-
 
 ## Previous checkpoint record
 

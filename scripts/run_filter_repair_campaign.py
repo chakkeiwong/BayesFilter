@@ -63,6 +63,43 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"posterior_curvature_ill_conditioned_{device}": (
+        "tests/test_filter_repair_posterior_curvature_extras.py::test_deficient_design_preserves_full_rejection[ill_conditioned]",)
+        for device in ("cpu", "gpu")},
+    **{f"posterior_curvature_growth_{replicates}_{device}": (
+        f"tests/test_filter_repair_posterior_growth.py::test_native_posterior_capacity_and_warm_memory[{replicates}]",)
+        for replicates in (2, 4, 8) for device in ("cpu", "gpu")},
+    "posterior_curvature_zero_diagnostic_gpu": ("tests/test_filter_repair_posterior_zero_diagnostic.py",),
+    "posterior_curvature_zero_gpu": (
+        "tests/test_filter_repair_posterior_curvature_extras.py::test_deficient_design_preserves_full_rejection[zero]",),
+    **{f"posterior_curvature_numerical_vetoes_{device}": (
+        "tests/test_filter_repair_posterior_numerical_vetoes.py",) for device in ("cpu", "gpu")},
+    **{f"posterior_curvature_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_posterior_curvature_memory.py::test_complete_native_posterior_costs[{arm}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"posterior_curvature_extras_qualified_{device}": (
+        "tests/test_filter_repair_posterior_curvature_extras.py", "-k", "not ill_conditioned") for device in ("cpu", "gpu")},
+    "posterior_curvature_condition_diagnostic": ("tests/test_filter_repair_posterior_condition_diagnostic.py",),
+    "cod_tail_cpu": ("tests/test_filter_repair_qr.py", "tests/test_filter_repair_active_cod_runtime.py"),
+    "cod_tail_gpu": ("tests/test_filter_repair_qr.py", "tests/test_filter_repair_active_cod_runtime.py"),
+    "posterior_curvature_rank_one_cpu": (
+        "tests/test_filter_repair_posterior_curvature_extras.py::test_deficient_design_preserves_full_rejection[rank_one]",),
+    "posterior_curvature_rank_diagnostic": ("tests/test_filter_repair_posterior_rank_diagnostic.py",),
+    **{f"posterior_curvature_extras_{device}": ("tests/test_filter_repair_posterior_curvature_extras.py",)
+        for device in ("cpu", "gpu")},
+    "posterior_curvature_streams_cpu": ("tests/test_filter_repair_posterior_curvature.py", "-k", "streams or consensus"),
+    "posterior_curvature_streams_gpu": ("tests/test_filter_repair_posterior_curvature.py", "-k", "streams or consensus"),
+    "posterior_curvature_smoke_cpu": ("tests/test_filter_repair_posterior_curvature.py::test_complete_original_controller_records[gaussian-3]",),
+    "posterior_curvature_smoke_gpu": ("tests/test_filter_repair_posterior_curvature.py::test_complete_original_controller_records[gaussian-3]",),
+    **{f"posterior_curvature_{dimension}_{device}": tuple(
+        f"tests/test_filter_repair_posterior_curvature.py::test_complete_original_controller_records[{case}-{dimension}]"
+        for case in ("gaussian", "nonquadratic", "nonspd", "transformed", "nonfinite_position",
+            "ineligible_center", "ineligible_training", "ineligible_selection", "ineligible_audit", "ineligible_proposal",
+            "value_center", "score_training", "score_selection", "value_audit", "score_proposal", "reject_audit", "reject_proposal"))
+        for dimension in (1, 3, 5) for device in ("cpu", "gpu")},
+    **{f"posterior_curvature_operands_{device}": (
+        "tests/test_filter_repair_posterior_curvature.py::test_ball_replicates_and_changed_inputs_keep_runtime_operands",)
+        for device in ("cpu", "gpu")},
     **{f"uniform_public_{device}": ("tests/test_filter_repair_uniform_public.py",) for device in ("cpu", "gpu")},
     **{f"uniform_public_memory_{arm}_{dimension}_{device}": (
         f"tests/test_filter_repair_uniform_public_memory.py::test_public_uniform_refinement_costs[{arm}-{dimension}]",)
@@ -562,6 +599,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "posterior_curvature_zero_diagnostic_gpu": "Isolated vector-versus-row center projection attribution for a rejected zero design; full runtime record checks remain mandatory.",
+    "posterior_curvature_condition_diagnostic": "Rejected ill-conditioned dense records, original one-ULP sensitivity and100/160-digit reference; explanatory only, no tolerance waiver.",
+    "posterior_curvature_rank_diagnostic": "Isolated COD pivot/threshold and source-order attribution; not a numerical gate waiver or runtime admission.",
     **{f"dense_components_{device}": "Separate component timings explain the preserved whole-D5 trigger; mandatory numerical and full-controller gates remain separate."
         for device in ("cpu", "gpu")},
     **{f"dense_extreme_{device}": "Original one-ULP self-sensitivity is explanatory; approved complete spectral comparison plus independent references remain mandatory."
@@ -658,6 +698,27 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"posterior_curvature_growth_{device}": tuple(f"posterior_curvature_growth_{replicates}_{device}"
+        for replicates in (2, 4, 8)) for device in ("cpu", "gpu")},
+    **{f"posterior_curvature_qualified_{device}": (f"posterior_curvature_streams_{device}",
+        f"posterior_curvature_1_{device}", f"posterior_curvature_3_{device}", f"posterior_curvature_5_{device}",
+        f"posterior_curvature_operands_{device}", f"posterior_curvature_extras_qualified_{device}",
+        f"posterior_curvature_numerical_vetoes_{device}", "policy") for device in ("cpu", "gpu")},
+    "cod_tail_followup_gpu": ("cod_tail_gpu", "dense_condition_gpu", "dense_boundaries_gpu",
+        "dense_derivatives_gpu", "factor_equivalence_gpu", "lifecycle_original_runtime_gpu",
+        "fixed_fitting_consumers", "policy"),
+    **{f"posterior_curvature_memory_{device}": tuple(f"posterior_curvature_memory_{arm}_{dimension}_{device}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)) for device in ("cpu", "gpu")},
+    "cod_tail_consumer_cpu": ("posterior_curvature_1_cpu", "posterior_curvature_3_cpu", "posterior_curvature_5_cpu",
+        "posterior_curvature_operands_cpu", "posterior_curvature_extras_qualified_cpu",
+        "uniform_public_cpu", "quadratic_center_public_cpu", "quadratic_paired_public_cpu", "quadratic_batches_cpu",
+        "lifecycle_original_runtime_3_cpu", "lifecycle_original_runtime_5_cpu", "fixed_fitting_original", "policy"),
+    "cod_tail_cpu": ("cod_tail_cpu", "posterior_curvature_rank_one_cpu", "dense_condition", "dense_boundaries_cpu",
+        "dense_derivatives_cpu", "factor_equivalence", "policy"),
+    **{f"posterior_curvature_{device}": (f"posterior_curvature_streams_{device}",
+        f"posterior_curvature_1_{device}", f"posterior_curvature_3_{device}",
+        f"posterior_curvature_5_{device}", f"posterior_curvature_operands_{device}", f"posterior_curvature_extras_{device}")
+        for device in ("cpu", "gpu")},
     **{f"uniform_public_{device}": (f"uniform_public_{device}",
         "quadratic_center_public_cpu" if device == "cpu" else "quadratic_center_public",
         "quadratic_paired_public_cpu" if device == "cpu" else "quadratic_paired_public",
@@ -808,6 +869,15 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+    "cod_tail_gpu": "GPU",
+    "posterior_curvature_smoke_gpu": "GPU",
+    "posterior_curvature_numerical_vetoes_gpu": "GPU",
+    "posterior_curvature_zero_diagnostic_gpu": "GPU", "posterior_curvature_zero_gpu": "GPU",
+    "posterior_curvature_ill_conditioned_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["posterior_curvature_growth_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["posterior_curvature_gpu"]},
+    "posterior_curvature_extras_qualified_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["posterior_curvature_memory_gpu"]},
     "factor_equivalence_gpu": "GPU", "dense_condition_gpu": "GPU",
     **{f"uniform_rounds_{dimension}_gpu": "GPU" for dimension in (1, 3, 5)},
     "uniform_extras_gpu": "GPU", "uniform_public_gpu": "GPU",
