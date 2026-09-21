@@ -159,9 +159,11 @@ def test_quadratic_anchor_release_masks_direct_external_and_chunk_routes():
             if route == "external":
                 return trainer.train_step_with_external_value_score(_Z, values, scores)
             return trainer.train_step_with_external_value_score_chunks(
-                (_Z[:1], _Z[1:]),
-                (values[:1], values[1:]),
-                (scores[:1], scores[1:]),
+                # Two real rows form one update; each fixed-shape tail has
+                # padding excluded by row_counts, preserving the same gradient.
+                (tf.repeat(_Z[:1], 2, axis=0), tf.repeat(_Z[1:], 2, axis=0)),
+                (tf.repeat(values[:1], 2, axis=0), tf.repeat(values[1:], 2, axis=0)),
+                (tf.repeat(scores[:1], 2, axis=0), tf.repeat(scores[1:], 2, axis=0)),
                 (1, 1),
             )
 

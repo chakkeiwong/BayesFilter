@@ -217,7 +217,7 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     root.mkdir(parents=True, exist_ok=True)
     scenario = design.scenario
     target = ValidationTarget(scenario.target, scenario.parameters, data,
-        control=scenario.control if scenario.control in {"ignore_data","wrong_score","omit_jacobian"} else "baseline",
+        control=scenario.control if scenario.control in {"ignore_data","wrong_score","omit_jacobian","location_shift"} else "baseline",
         jit_compile=design.device=="gpu")
     starts = initial_starts(target, scenario.start)
     seed = seed_for(design.seed, design.design_id, dataset_id, fit_id, "tuning")

@@ -12,7 +12,7 @@ from ..storage import write_json
 def run(design, root, deadline=None):
     data = design.options.get("data")
     target=ValidationTarget(design.scenario.target,design.scenario.parameters,data,
-        control=design.scenario.control if design.scenario.control in {"wrong_score","omit_jacobian"} else "baseline",
+        control=design.scenario.control if design.scenario.control in {"wrong_score","omit_jacobian","location_shift"} else "baseline",
         jit_compile=design.device=="gpu")
     rng=np.random.default_rng(seed_for(design.seed,design.design_id,"probes"))
     probes=rng.normal(size=(design.replications,target.parameter_dim))

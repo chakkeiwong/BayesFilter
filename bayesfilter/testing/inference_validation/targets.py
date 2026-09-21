@@ -25,6 +25,11 @@ class ValidationTarget:
         self.data = list(data) if data is not None else None
         self.control = control
         self.parameter_dim = self.spec.dimension
+        if control == "location_shift":
+            severity = self.parameters.get("location_shift_posterior_sd")
+            if (target_id != "normal_conjugate" or not self.data
+                    or type(severity) not in (int, float) or not math.isfinite(severity)):
+                raise ValueError("location_shift requires normal-conjugate data and explicit finite severity")
         if control == "ignore_data" and not self.spec.generative:
             raise ValueError("ignored-data mutation requires a generative target")
         if control == "omit_jacobian" and self.spec.support not in {"positive", "unit_interval", "simplex3"}:
@@ -99,6 +104,13 @@ class ValidationTarget:
 
     def log_density(self, q):
         kind = self.target_id
+        if self.control == "location_shift":
+            # Deliberately translate BOTH prior and likelihood. Completing the
+            # square gives posterior variance 1/(tau^-2 + n*sigma^-2), so this
+            # changes the posterior mean by the declared number of its SDs.
+            variance = 1. / (self._number("tau", 2.)**-2
+                             + len(self.data) * self._number("sigma", 1.)**-2)
+            q = q - self._number("location_shift_posterior_sd", 0.) * tf.sqrt(variance)
         if kind in {"gaussian", "rotated_gaussian"}:
             if kind == "rotated_gaussian":
                 angle = self._number("angle", .6)

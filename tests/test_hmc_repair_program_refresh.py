@@ -29,10 +29,34 @@ def test_phase_refresh_continues_after_candidate_failure(tmp_path):
     record = refresh(progress, "M14", **kwargs)
     updated = json.loads(progress.read_text())
     assert updated["active_phase"] == "M15"
+    assert updated["status"] == "active"
     assert updated["phases"]["M15"]["status"] == "ready_to_execute"
     assert record["remaining_worker_seconds"]["gpu"] == 100
     assert not record["scientific_gaps_closed"]
     assert not record["candidate_failure_is_continuation_veto"]
+
+
+def test_phase_refresh_replaces_stale_completion_status(tmp_path):
+    progress, kwargs = fixture(tmp_path)
+    data = json.loads(progress.read_text())
+    data.update(status="bounded_execution_complete", completed_utc="historical",
+                completion_local_date="historical")
+    progress.write_text(json.dumps(data))
+    refresh(progress, "M14", **kwargs)
+    updated = json.loads(progress.read_text())
+    assert updated["status"] == "active"
+    assert "completed_utc" not in updated
+    assert "completion_local_date" not in updated
+
+
+def test_terminal_refresh_closes_only_bounded_execution(tmp_path):
+    progress, kwargs = fixture(tmp_path)
+    kwargs.update(next_phase=None, next_design_path=None)
+    refresh(progress, "M14", **kwargs)
+    updated = json.loads(progress.read_text())
+    assert updated["active_phase"] is None
+    assert updated["status"] == "bounded_execution_complete"
+    assert not updated["phases"]["M14"]["scientific_gaps_closed"]
 
 
 @pytest.mark.parametrize("failure", ["integrity", "running", "budget", "missing_design"])

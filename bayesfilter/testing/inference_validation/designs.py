@@ -14,7 +14,7 @@ ENGINES = ("mechanics", "invariance", "search", "sbc", "accuracy", "stopping", "
 ROUTES = ("frozen", "ordinary", "prepared", "fixed_transport", "reference", "controller", "external")
 CONTROLS = ("baseline", "noop", "wrong_score", "wrong_metric", "omit_jacobian", "ignore_data",
             "identity", "two_cycle", "wrong_energy", "duplicate_stream", "warmup_leak",
-            "drop_candidate", "cross_l_epsilon", "lost_chunk")
+            "drop_candidate", "cross_l_epsilon", "lost_chunk", "location_shift")
 
 
 def digest(payload: Any) -> str:
@@ -205,17 +205,22 @@ class ValidationDesign:
                         or sorted(set(rungs)) != list(rungs)):
                     raise ValueError("declare strictly increasing evidence_rungs from one")
         supported_controls = {
-            "mechanics": {"baseline", "noop", "wrong_score", "wrong_metric", "wrong_energy", "omit_jacobian"},
+            "mechanics": {"baseline", "noop", "wrong_score", "wrong_metric", "wrong_energy", "omit_jacobian", "location_shift"},
             "invariance": {"baseline", "noop", "wrong_score", "omit_jacobian", "identity", "two_cycle", "wrong_energy", "duplicate_stream"},
             "search": {"baseline", "noop", "drop_candidate", "cross_l_epsilon", "lost_chunk"},
-            "accuracy": {"baseline", "noop", "ignore_data", "omit_jacobian", "warmup_leak", "lost_chunk", "duplicate_stream"},
+            "accuracy": {"baseline", "noop", "ignore_data", "omit_jacobian", "warmup_leak", "lost_chunk", "duplicate_stream", "location_shift"},
             "stopping": {"baseline", "noop", "warmup_leak", "lost_chunk"},
-            "sbc": {"baseline", "noop", "ignore_data", "omit_jacobian"},
+            "sbc": {"baseline", "noop", "ignore_data", "omit_jacobian", "location_shift"},
             "power": {"baseline"},
             "acceptance": {"baseline", "noop"},
         }
         if self.scenario.control not in supported_controls[self.engine]:
             raise ValueError("control is not implemented by this experiment engine")
+        if self.scenario.control == "location_shift":
+            severity = self.scenario.parameters.get("location_shift_posterior_sd")
+            if (self.scenario.target != "normal_conjugate" or self.scenario.route == "reference"
+                    or type(severity) not in (int, float) or not math.isfinite(severity)):
+                raise ValueError("location_shift requires a numerical normal_conjugate target and explicit finite severity")
         sequential = self.options.get("sequential")
         if "sequential" in self.options:
             if (self.engine != "invariance" or not isinstance(sequential, dict)

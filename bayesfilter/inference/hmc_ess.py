@@ -104,5 +104,3 @@ def _cross_chain_ess_impl(sample_major: Any) -> Any:
     valid = tf.logical_and(variance_plus > 0.0,
         tf.reduce_all(tf.math.is_finite(values), axis=(0, 1)))
     return tf.where(valid, ess, tf.fill([parameter_count], tf.constant(float("nan"), tf.float64)))
-
-

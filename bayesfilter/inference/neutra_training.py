@@ -20,6 +20,7 @@ import tensorflow as tf
 from bayesfilter.inference.neutra_artifacts import (
     finalize_dense_iaf_neutra_artifact_payload,
 )
+from bayesfilter.inference.neutra_training_graphs import FixedShapeTrainingProgram
 
 # The plain dense-IAF campaign API is retained in a separate compatibility
 # module for existing end-to-end and PP-UKF lanes.  The current trainer above
@@ -396,6 +397,7 @@ class NeuTraTrainerConfig:
                         "learning_rate": 0.01,
                         "learning_rate_schedule": "paper_piecewise",
                         "gradient_clip_norm": 10.0,
+                        "gradient_clip_mode": "per_variable",
                     }
                 )
             actual = {
@@ -1745,31 +1747,27 @@ class NeuTraReverseKLTrainer:
                 for index, variable in enumerate(self.variables)
             )
         batch_program = self._train_step_impl
-        self._compiled_train_step = tf.function(
+        self._compiled_train_step = FixedShapeTrainingProgram(
             batch_program,
             jit_compile=bool(config.jit_compile),
-            reduce_retracing=True,
         )
-        self._compiled_validation = tf.function(
+        self._compiled_validation = FixedShapeTrainingProgram(
             self._validation_impl,
             jit_compile=bool(config.jit_compile),
-            reduce_retracing=True,
         )
         # The process-parallel target route evaluates values/scores outside
         # this process.  This parent-only program keeps the transport update
         # on the selected GPU while accepting detached worker outputs.
-        self._compiled_external_train_step = tf.function(
+        self._compiled_external_train_step = FixedShapeTrainingProgram(
             self._external_train_step_impl,
             jit_compile=bool(config.jit_compile),
-            reduce_retracing=True,
         )
         # The chunked bridge keeps target evaluation and reverse-KL gradient
         # graphs at a bounded static shape. The Python caller aggregates raw
         # gradients before one optimizer update, preserving full-batch means.
-        self._compiled_external_gradients = tf.function(
+        self._compiled_external_gradients = FixedShapeTrainingProgram(
             self._external_gradients_impl,
             jit_compile=bool(config.jit_compile),
-            reduce_retracing=True,
         )
 
     def forward_and_logdet(self, z: Any) -> tuple[tf.Tensor, tf.Tensor]:
@@ -1785,7 +1783,7 @@ class NeuTraReverseKLTrainer:
         return outputs[0], outputs[1]
 
     def train_step(self, z: Any) -> NeuTraTrainStep:
-        values = _rank2(z, dimension=self.config.dimension, name="z")
+        values = _training_batch(z, dimension=self.config.dimension, name="z")
         rows = self._compiled_train_step(values)
         if not bool(rows[-1].numpy()):
             raise NeuTraTrainingError(
@@ -1807,7 +1805,7 @@ class NeuTraReverseKLTrainer:
         custom-gradient payload, matching the DSGE-HMC worker bridge.
         """
 
-        values = _rank2(z, dimension=self.config.dimension, name="z")
+        values = _training_batch(z, dimension=self.config.dimension, name="z")
         value_tensor = tf.convert_to_tensor(target_value, tf.float64)
         score_tensor = tf.convert_to_tensor(target_score, tf.float64)
         if value_tensor.shape != (values.shape[0],):
@@ -1848,6 +1846,8 @@ class NeuTraReverseKLTrainer:
         if any(count <= 0 for count in counts):
             raise ValueError("row_counts must be positive")
         total_rows = sum(counts)
+        if total_rows < 2:
+            raise ValueError("NeuTra optimizer updates require at least two real rows; padding does not count")
         raw_outputs = []
         for z, target_value, target_score, count in zip(
             z_chunks,
@@ -1856,7 +1856,7 @@ class NeuTraReverseKLTrainer:
             counts,
             strict=True,
         ):
-            values = _rank2(z, dimension=self.config.dimension, name="z chunk")
+            values = _training_batch(z, dimension=self.config.dimension, name="z chunk")
             value_tensor = tf.convert_to_tensor(target_value, tf.float64)
             score_tensor = tf.convert_to_tensor(target_score, tf.float64)
             if value_tensor.shape != (values.shape[0],):
@@ -2775,6 +2775,13 @@ def _rank2(value: Any, *, dimension: int, name: str) -> tf.Tensor:
         raise ValueError(f"{name} must have rank 2")
     if tensor.shape[-1] != int(dimension):
         raise ValueError(f"{name} trailing dimension mismatch")
+    return tensor
+
+
+def _training_batch(value: Any, *, dimension: int, name: str) -> tf.Tensor:
+    tensor = _rank2(value, dimension=dimension, name=name)
+    if tensor.shape[0] is None or tensor.shape[0] < 2:
+        raise ValueError("NeuTra optimizer inputs require a static batch with at least two rows")
     return tensor
 
 

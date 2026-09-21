@@ -62,7 +62,10 @@ def refresh(progress_path, phase, *, ledger_path, result_path, next_phase=None,
         result_file=str(result_path), ledger_file=str(ledger_path), refresh_file=str(output_path))
     progress["opening_ledger"] = str(ledger_path)
     progress["active_phase"] = next_phase
+    progress["status"] = "active" if next_phase is not None else "bounded_execution_complete"
     if next_phase is not None:
+        progress.pop("completed_utc", None)
+        progress.pop("completion_local_date", None)
         progress["phases"][next_phase].update(status="ready_to_execute", design_file=str(next_design_path))
     temporary = progress_path.with_suffix(".tmp")
     with temporary.open("x") as handle:
