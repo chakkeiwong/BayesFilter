@@ -133,4 +133,5 @@ def test_complete_public_records_against_original_source(method, case, request):
         json.dump({"before": expected, "after": actual, "baseline": "3582b4ac",
                    "original_source_sha256": checkpoint.hashes()}, handle, allow_nan=False, indent=2)
         handle.write("\n")
+    assert actual["diagnostics"].pop("jit_compile_fit") == (method == "paired_local")
     _equal_records(actual, expected)

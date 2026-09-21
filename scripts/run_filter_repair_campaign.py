@@ -63,6 +63,17 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"quadratic_numerics_memory_{arm}_{kind}_{dimension}_{device}": (
+        f"tests/test_filter_repair_quadratic_numerics_memory.py::test_numerical_dependency_costs[{arm}-{kind}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for kind in ("paired", "trust")
+        for dimension in (3, 5) for device in ("cpu", "gpu")},
+    "quadratic_numerics": ("tests/test_filter_repair_quadratic_numerics.py",),
+    "quadratic_trust_paired": ("tests/test_filter_repair_quadratic_numerics.py", "-k", "not dense"),
+    "quadratic_trust_paired_gpu": ("tests/test_filter_repair_quadratic_numerics.py", "-k", "not dense"),
+    "quadratic_trust_paired_cpu": ("tests/test_filter_repair_quadratic_numerics.py", "-k", "not dense"),
+    "quadratic_center_public_cpu": ("tests/test_batched_quadratic_center.py",),
+    "quadratic_paired_public_cpu": ("tests/test_paired_score_pilot.py",),
+    "quadratic_batches_cpu": ("tests/test_filter_repair_quadratic_batches.py",),
     **{f"quadratic_batch_long_growth_{device}": (
         "tests/test_filter_repair_quadratic_batch_growth.py::test_long_sparse_xla_allocation_growth",)
         for device in ("cpu", "gpu")},
@@ -474,6 +485,10 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"quadratic_numerics_memory_{arm}_{kind}_{dimension}_{device}":
+        "Fresh-process paired/trust dependency costs; mandatory numerical groups and complete terminal comparisons remain separate."
+        for arm in ("before", "graph", "xla") for kind in ("paired", "trust")
+        for dimension in (3, 5) for device in ("cpu", "gpu")},
     **{f"quadratic_batch_long_growth_{device}":
         "Bounded 10,000-call XLA allocator follow-up to small continued CPU RSS growth; not timing or general leak-freedom evidence."
         for device in ("cpu", "gpu")},
@@ -559,6 +574,13 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "quadratic_numerics_consumers": ("quadratic_trust_paired_gpu", "quadratic_center_public",
+        "quadratic_paired_public", "quadratic_batches", "quadratic_center_public_cpu",
+        "quadratic_paired_public_cpu", "quadratic_batches_cpu", "policy"),
+    **{f"quadratic_numerics_memory_{device}": tuple(
+        f"quadratic_numerics_memory_{arm}_{kind}_{dimension}_{device}"
+        for arm in ("before", "graph", "xla") for kind in ("paired", "trust") for dimension in (3, 5))
+        for device in ("cpu", "gpu")},
     "quadratic_batch_long_growth": ("quadratic_batch_long_growth_cpu", "quadratic_batch_long_growth_gpu"),
     "quadratic_batch_growth": tuple(f"quadratic_batch_growth_{arm}_{device}"
         for arm in ("before", "xla") for device in ("cpu", "gpu")),
@@ -657,6 +679,9 @@ TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU",
         "padded_dynamic_qr_output", "padded_shape_dispatch", "factor_capacity_initial",
         "factor_capacity_initial_fixed", "factor_capacity_cod")},
     "quadratic_batches": "GPU", "quadratic_center_public": "GPU", "quadratic_paired_public": "GPU",
+    "quadratic_numerics": "GPU", "quadratic_trust_paired": "GPU",
+    "quadratic_trust_paired_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["quadratic_numerics_memory_gpu"]},
     "quadratic_batch_long_growth_gpu": "GPU",
     **{f"quadratic_batch_growth_{arm}_gpu": "GPU" for arm in ("before", "xla")},
     **{group: "GPU" for group in TEST_BATCHES["quadratic_batch_memory"]},

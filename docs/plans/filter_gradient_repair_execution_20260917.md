@@ -9,6 +9,35 @@ claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
 training/HMC capability and its obsolete admitted factory now fail closed.
 Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
+## September 21 paired quadratic fitting and trust accuracy
+
+Checkpoint through 01953 follows pushed 51bc753a. Full details, exact source
+authority, failed trials, comparison tables and review are in
+[quadratic numerical kernels](filter_gradient_quadratic_numerics_20260921.md).
+The paired fitter now defaults to a stable XLA program and uses a native
+finite-input reduction. Refined eigenpairs correct demonstrated trust and
+paired raw/generalized spectrum errors. All 43 focused/full-record checks
+pass per CPU/GPU, plus 51 quadratic-center, 38 paired-pilot and 25 batch-history
+checks per device; 68 policy/controller checks pass. The partial guard covers
+201 sources with 1281 exact exceptions, including four immutable-schema checks.
+
+Final source costs 01923--01946 match complete initial and changed-input
+records. D5 GPU's first >20% warm regression trigger is preserved and resolved
+descriptively by two additional fresh repeats per arm (01948--01953): process
+medians are 3.123 ms original, 2.962 graph, 2.961 XLA, with overlapping ranges.
+CPU paired XLA observed RSS adds 224/231 MiB at D3/5. These are dependency
+costs; complete initializer costs, general memory stability and terminal
+repeated evidence remain unproved. Earlier paired costs 01886--01909 precede
+the final eigensystem repair and cannot describe the final source.
+
+The singular dense-design condition diagnostic still fails at D3/5 on both
+devices, so the uniform-cloud fitter remains non-XLA debt. Original D5 lifecycle
+failures, fit-round/probe/controller loops, broader blocks, external watchdogs,
+actual DZ5 evidence and terminal F01--F20 work remain open. Main is unmerged.
+Inventory 01947 covers 2928 working Python files, 2927 parsed, with the same
+vendor-reference parse error. Through 01953, CPU charge is 42695.82916168675
+of 115200 seconds; GPU 38888.51101641379 of 187200. No worker is active.
+
 ## September 21 quadratic batches and reference disposition
 
 Through 01879, fixed-batch quadratic evaluation/selection now compiles as one

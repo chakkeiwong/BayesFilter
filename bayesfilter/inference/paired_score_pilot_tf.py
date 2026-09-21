@@ -9,8 +9,8 @@ An independent rotated design may veto but cannot change the fitted matrix.
 This TF kernel never evaluates a target, moves a center or mutates a guide.
 The caller owns eligibility, fixed-batch padding/replay and the position
 factor with covariance F K^-1 F'. Probe width is not covariance scaling.
-Ordinary-graph localization is the reviewed non-XLA exception; this module
-does not qualify an enclosing target, initializer, transport or HMC path.
+The fixed-signature factory defaults to XLA. This numerical dependency does
+not qualify an enclosing target, initializer, transport or HMC path.
 """
 
 from __future__ import annotations
@@ -18,6 +18,9 @@ from __future__ import annotations
 import math
 
 import tensorflow as tf
+
+from bayesfilter.inference.mass_matrix_tf import eigenpair_program
+from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
 
 
 def validate_paired_steps(steps):
@@ -96,8 +99,7 @@ def fit_paired_score_precision_tf(center_score, first_scores, second_scores,
     if any(tensor.shape != (2 * dimension, dimension) for tensor in tensors[1:]):
         raise ValueError("paired score matrices must have shape [2D,D]")
     finite_input = tf.reduce_all(tf.math.is_finite(center))
-    for tensor in tensors[1:]:
-        finite_input &= tf.reduce_all(tf.math.is_finite(tensor))
+    finite_input &= tf.reduce_all(tf.math.is_finite(tf.stack((first, second, offsets, checks))))
     raw_first = tf.transpose((first[dimension:] - first[:dimension]) / (2 * steps[0]))
     raw_second = tf.transpose((second[dimension:] - second[:dimension]) / (2 * steps[1]))
     raw = tf.stack((raw_first, raw_second))
@@ -107,7 +109,15 @@ def fit_paired_score_precision_tf(center_score, first_scores, second_scores,
     normalized = symmetric / tf.where(finite_fit & (scale > 0), scale, 1.)[:, None, None]
     identity = tf.eye(dimension, batch_shape=[2], dtype=tf.float64)
     safe_normalized = tf.where(finite_fit[:, None, None], normalized, identity)
-    eigenvalues = tf.linalg.eigvalsh(safe_normalized)
+    if in_xla_context():
+        # These are the two fixed probe widths, not a sample-wise map.
+        # Both spectra need the same residual refinement as the consistency
+        # congruence, especially for nearly repeated eigenvalues.
+        eigenpairs = eigenpair_program(dimension)
+        eigenvalues = tf.stack((eigenpairs(safe_normalized[0])[0],
+                                eigenpairs(safe_normalized[1])[0]))
+    else:
+        eigenvalues = tf.linalg.eigvalsh(safe_normalized)
     condition = tf.where(eigenvalues[:, 0] > 0, eigenvalues[:, -1] / eigenvalues[:, 0],
                          tf.constant(math.inf, tf.float64))
     spd = finite_fit & tf.reduce_all(eigenvalues > 0, axis=1)
@@ -119,7 +129,9 @@ def fit_paired_score_precision_tf(center_score, first_scores, second_scores,
     cholesky = tf.linalg.cholesky(safe_precision[1])
     left = tf.linalg.triangular_solve(cholesky, safe_precision[0])
     congruence = tf.transpose(tf.linalg.triangular_solve(cholesky, tf.transpose(left)))
-    generalized = tf.linalg.eigvalsh(0.5 * congruence + 0.5 * tf.transpose(congruence))
+    generalized_matrix = 0.5 * congruence + 0.5 * tf.transpose(congruence)
+    generalized = (eigenpair_program(dimension)(generalized_matrix)[0]
+                   if in_xla_context() else tf.linalg.eigvalsh(generalized_matrix))
     consistent = tf.reduce_all(tf.math.is_finite(generalized) & (generalized >= 1 / 1.05) & (generalized <= 1.05))
     response = center[None, :] - checks
     prediction = tf.matmul(offsets, symmetric[1], transpose_b=True)
@@ -139,3 +151,27 @@ def fit_paired_score_precision_tf(center_score, first_scores, second_scores,
             "covariance_unit_error": tf.where(preliminary, covariance_error, diagnostic_nan),
             "design_rank": tf.constant(dimension, tf.int32),
             "design_condition": tf.constant(1., tf.float64)}
+
+
+def make_paired_score_precision_program(dimension, *, steps=(0.001, 0.0001),
+                                       precision_condition_cap=1e10,
+                                       model_relative_rmse_cap=0.20, jit_compile=True):
+    """Bind immutable fit controls; all five score/design arrays stay operands.
+
+    Explicit graph mode is a reference/debug exception. The caller checks the
+    returned acceptance flag before using geometry, including nonfinite inputs.
+    """
+    validate_paired_steps(steps)
+    if dimension < 1:
+        raise ValueError("dimension must be positive")
+    signature = [tf.TensorSpec([dimension], tf.float64)] + [
+        tf.TensorSpec([2 * dimension, dimension], tf.float64)] * 4
+
+    @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
+    def fit(center, first, second, check_offsets, check_scores):
+        return fit_paired_score_precision_tf(
+            center, first, second, check_offsets, check_scores, steps=steps,
+            precision_condition_cap=precision_condition_cap,
+            model_relative_rmse_cap=model_relative_rmse_cap)
+
+    return fit

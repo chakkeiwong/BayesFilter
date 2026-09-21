@@ -414,11 +414,45 @@
     "bayesfilter/inference/sequential_terminal_tf.py": null,
     "bayesfilter/inference/sequential_refinement_tf.py": null,
     "bayesfilter/inference/quadratic_batch_evaluation_tf.py": null,
+    "bayesfilter/inference/paired_score_pilot_tf.py": null,
     "bayesfilter/inference/batched_quadratic_center.py": [
-      "refine_batched_quadratic_center.evaluate"
+      "refine_batched_quadratic_center.evaluate",
+      "solve_spd_quadratic_trust_region_tf"
     ]
   },
   "exceptions": [
+    {
+      "path": "bayesfilter/inference/paired_score_pilot_tf.py",
+      "function": "validate_paired_steps",
+      "kind": "python_iteration",
+      "ast_sha256": "f12a4e51f9b87af60f50f3013082a24af55dc032a2e690bca99964985ea6a66d",
+      "role": "fixed_schema",
+      "reason": "Validate the two immutable configured probe widths before tracing; no tensor numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/inference/paired_score_pilot_tf.py",
+      "function": "fit_paired_score_precision_tf",
+      "kind": "python_iteration",
+      "ast_sha256": "822de0d90c2493c332c679d604d359e2091bb563fcdbf5ed2b8b0c2778bafeb6",
+      "role": "fixed_schema",
+      "reason": "Convert the five named input arrays to tensors; all finite checks, numerical fits and decisions execute in tensor operations."
+    },
+    {
+      "path": "bayesfilter/inference/paired_score_pilot_tf.py",
+      "function": "fit_paired_score_precision_tf",
+      "kind": "python_iteration",
+      "ast_sha256": "1f261350a043528f8d60489fc1bb372c2e08f996d5445e6d9b4c087eefa12927",
+      "role": "fixed_schema",
+      "reason": "Validate static dtypes of the five named input arrays before graph construction."
+    },
+    {
+      "path": "bayesfilter/inference/paired_score_pilot_tf.py",
+      "function": "fit_paired_score_precision_tf",
+      "kind": "python_iteration",
+      "ast_sha256": "763d6553e74ccdd19abd4e8cedd16a3eeef649e56cef1b3b7ea7bcddbc2d26e6",
+      "role": "fixed_schema",
+      "reason": "Validate static matrix shapes of the four named paired-design arrays before tracing."
+    },
     {
       "path": "bayesfilter/highdim/source_route.py",
       "function": "p72_guard_line_points",

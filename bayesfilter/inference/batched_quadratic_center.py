@@ -8,8 +8,8 @@ covariance, whitening, HMC, GPU or whole-initializer XLA claim follows.
 
 The fit-round controller remains bounded and eager. Ordered fixed-batch target
 evaluation and selection now execute in one stable TF/XLA program. The trust
-kernel is reusable TF/XLA; the enclosing fitter and round loop remain execution
-repair debt, so this module makes no whole-initializer XLA claim.
+kernel and paired fitter use stable TF/XLA programs. Uniform-cloud fitting and
+the round loop remain execution repair debt; whole-initializer XLA is unproved.
 """
 
 from __future__ import annotations
@@ -24,8 +24,9 @@ from bayesfilter.inference.batched_local_center import (
     BatchedLocalCenterConfig,
     locate_batched_local_center,
 )
+from bayesfilter.inference.mass_matrix_tf import eigenpair_program
 from bayesfilter.inference.paired_score_pilot_tf import (
-    fit_paired_score_precision_tf,
+    make_paired_score_precision_program,
     paired_score_probe_designs_tf,
     validate_paired_steps,
 )
@@ -33,6 +34,7 @@ from bayesfilter.inference.quadratic_batch_evaluation_tf import (
     make_quadratic_batch_evaluator,
 )
 from bayesfilter.inference.score_curvature_tf import fit_dense_score_precision_tf
+from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
 
 
 def _norm(vector):
@@ -62,7 +64,8 @@ def solve_spd_quadratic_trust_region_tf(precision, linear, radius):
     finite &= tf.math.is_finite(scale) & (scale > 0)
     safe_scale = tf.where(finite, scale, 1.0)
     safe_matrix = tf.where(finite, symmetric / safe_scale, tf.eye(dimension, dtype=tf.float64))
-    eigenvalues, eigenvectors = tf.linalg.eigh(safe_matrix)
+    eigenvalues, eigenvectors = (eigenpair_program(dimension)(safe_matrix)
+                                if in_xla_context() else tf.linalg.eigh(safe_matrix))
     valid = finite & tf.reduce_all(eigenvalues > 0) & tf.reduce_all(tf.math.is_finite(eigenvalues))
     safe_eigenvalues = tf.where(valid, eigenvalues, tf.ones_like(eigenvalues))
     projected = tf.linalg.matvec(eigenvectors, tf.where(valid, vector / safe_scale, 0.0), transpose_a=True)
@@ -205,6 +208,7 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
                "invalid_rows": 0, "planned_physical_rows": planned, "selected_evaluation_index": -1,
                "rounds": [], "candidate_batches": [], "full_initializer_xla": False,
                "jit_compile_trust": cfg.jit_compile_trust, "seed": cfg.seed,
+               "jit_compile_fit": cfg.pilot_method == "paired_local",
                "pilot_method": cfg.pilot_method, "paired_steps": cfg.paired_steps}
     incumbent = [center, tf.constant(-math.inf, tf.float64), tf.zeros_like(center)]
     evaluate_batches = make_quadratic_batch_evaluator(callback, dimension, cfg.batch_size, rows)
@@ -268,15 +272,18 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
     fit_signature = [tf.TensorSpec([dimension], tf.float64)] + [tf.TensorSpec([rows, dimension], tf.float64)] * 4
 
     def fit(center_score, offsets, scores, check_offsets, check_scores):
-        if cfg.pilot_method == "paired_local":
-            return fit_paired_score_precision_tf(
-                center_score, offsets, scores, check_offsets, check_scores, steps=cfg.paired_steps,
-                precision_condition_cap=cfg.precision_condition_cap,
-                model_relative_rmse_cap=cfg.model_relative_rmse_cap)
         return fit_dense_score_precision_tf(center_score, offsets, scores,
                                             selection_offsets=check_offsets, selection_scores=check_scores)
 
-    fitted = tf.function(fit, input_signature=fit_signature, autograph=False, jit_compile=False)
+    if cfg.pilot_method == "paired_local":
+        fitted = make_paired_score_precision_program(
+            dimension, steps=cfg.paired_steps, precision_condition_cap=cfg.precision_condition_cap,
+            model_relative_rmse_cap=cfg.model_relative_rmse_cap)
+    else:
+        # Singular-design condition reporting still fails original-source XLA
+        # parity. Preserve this explicitly recorded migration debt, with no
+        # fallback from a failed compiled fit.
+        fitted = tf.function(fit, input_signature=fit_signature, autograph=False, jit_compile=False)
     radius = tf.constant(cfg.initial_trust_radius, tf.float64)
     for round_index in range(cfg.max_fit_rounds):
         if not replay():

@@ -5,44 +5,46 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
-Current checkpoint through 01879 follows pushed `bd36a89b`; no worker is active.
-Main remains unmerged. The native quadratic batch evaluator is integrated and
-passes 25 focused + 51 public + 38 paired-pilot checks on each CPU/GPU. Full
-records preserve padding, exact selection, rejection and accounting. Its outer
-fit-round/partition loops and forced non-XLA fitter remain open. Results/review:
-[quadratic batch evaluation](filter_gradient_quadratic_batches_20260921.md).
+Current checkpoint through **01953** follows pushed `51bc753a`. The paired
+quadratic fitter now uses a stable XLA program; its finite-input reduction has
+no Python numerical loop. Residual-refined eigenpairs correct demonstrated
+trust, generalized-consistency and nearly repeated raw-spectrum errors.
+All 43 focused/full-record checks pass on CPU/GPU, plus 51 quadratic-center,
+38 paired-pilot and 25 batch-history checks on each device. All 68 policy/
+controller checks pass. See [contract, results and review](filter_gradient_quadratic_numerics_20260921.md).
 
-Twelve corrected fresh cost processes 01851--01862 match all fields against
-the original evaluator. Preliminary 01847--01850 had a reference output-lifetime
-mismatch and are excluded. CPU XLA adds about 161 MiB host footprint; GPU
-adds 7.3/0.2 MiB at 32/128 rows. Warm GPU times are 34.262/133.473 ms before,
-1.261/2.328 ms after. These are single-process dependency measurements, not
-terminal repeated/complete endpoint costs. Sparse follow-ups 01871--01876 show
-CPU/GPU host plateaus within 10,021 calls and constant GPU current allocations.
+The original `3582b4ac` dependency closure remains the numerical authority.
+Two mandatory singular dense-design tests still fail only `design_condition`
+at D3/5 on CPU/GPU. The uniform-cloud fitter therefore remains explicitly
+non-XLA migration debt. The separate D5 sequential lifecycle mismatch remains
+66 CPU / 53 GPU fields at unchanged atol=rtol=1e-10. No failing field, rejection
+rule, threshold, seed or optimizer setting has been removed or relaxed.
 
-Reference authority is now explicit: all 16 intermediate cfbc32d2 precision
-groups retain their tests/artifacts as historical comparisons and have mandatory
-original-source replacements. 01863's old-source excerpt mismatch is repaired;
-all six original refinement cases pass CPU/GPU (01864--01869). The D5 original
-changed-input mismatch remains a mandatory veto: 66 CPU / 53 GPU fields at
-unchanged atol=rtol=1e-10. Neither earlier diagnostic intervention fixes it.
+Final source costs 01923--01946 match every initial and changed-input field.
+XLA paired fitting adds 224/231 MiB observed CPU RSS and about 18/19 MiB GPU
+host RSS at D3/5; GPU allocator peaks fall to 19,712/22,272 bytes. A D5 GPU
+warm-time trigger was investigated with three process repeats per arm
+(01948--01953 plus the first matrix): medians 3.123 ms original, 2.962 ms graph,
+2.961 ms XLA. No repeat-median >20% trigger remains; ranges overlap and there
+is no statistical speed claim. Earlier 01886--01909 costs predate the final
+eigensystem correction and are superseded for the paired candidate. Full
+initializer costs and terminal repeated evidence remain open.
 
-01877 passes the final 25 GPU evaluator checks. 01878 passes all 68 policy/
-controller checks. Inventory 01879 covers 2926 working Python files, 2925 parsed,
-one unchanged vendored-reference parse error. Guard: 200 sources / 1277 exact
-exceptions, still partial. Focused runtime/test Ruff and whitespace pass;
-repository-wide lint success is not claimed. No package, OS or external edits.
+Inventory 01947 covers 2,928 working Python files, 2,927 parsed and one
+unchanged vendor-reference parse error. Partial guard: 201 sources / 1,281
+exact exceptions; the four new exceptions only validate immutable input
+schemas. No worker is active. Charged CPU 42695.82916168675/115200 seconds;
+GPU 38888.51101641379/187200 seconds. Caps are unchanged. Remote was fetched,
+repair branch has no divergence and remote main is an ancestor. Main remains
+unmerged. Focused Ruff and whitespace pass; no repository-wide lint claim.
 
-Charged totals: CPU 42222.57046740262/115200 seconds and GPU
-38271.52031297689/187200 seconds. Do not count the extension again. Remote was
-fetched; its repair branch is unchanged and remote main is an ancestor.
-
-Next: remaining quadratic fitter/fit-round and block-controller repairs; D5
-numerical qualification; original complete lifecycle costs; public outer/reporting
-wiring; independently bounded external progress consumers; actual DZ5 target and
-full-transition blocks; all F01--F20 terminal decisions/repeated comparisons.
-No merge until those gates pass. The original-source cost draft remains
-`/tmp/filter_repair_lifecycle_original_memory_draft.py`, uninstalled/untested.
+Next: compiled probe generation and fit-round/design-partition controllers;
+resolve singular dense-condition and original D5 equivalence; broader block
+controllers; complete original lifecycle costs; public sequential outer/
+reporting integration; external watchdogs and actual DZ5 target/transition
+blocks; terminal F01--F20 dispositions and repeated evidence. No merge until
+all gates pass. Historical numbered instructions below apply only to their
+own checkpoints.
 
 Historical checkpoint notes follow. Their worker/next-action statements apply
 only to their own numbered checkpoints.
