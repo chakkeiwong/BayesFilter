@@ -9,6 +9,33 @@ claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
 training/HMC capability and its obsolete admitted factory now fail closed.
 Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
+## September 21 quadratic batches and reference disposition
+
+Through 01879, fixed-batch quadratic evaluation/selection now compiles as one
+stable XLA program. Complete original records and 25 focused, 51 public and
+38 paired-pilot cases pass on each CPU/GPU. The partial guard adds this module
+and the public evaluator scope; its sole new exception formats completed
+candidate-batch history. Outer fit-round/partition and non-XLA fitter debt stays
+explicit. [Plan, costs and review](filter_gradient_quadratic_batches_20260921.md)
+records twelve corrected cost runs, the preserved output-lifetime harness error,
+descriptive CPU/GPU costs and 10,021-call allocation observations.
+
+All six complete original refinement cases pass on both devices. Sixteen
+intermediate cfbc32d2 precision comparisons now have explicit mandatory
+original-source replacements, enforced against missing or waived replacements.
+Historical artifacts remain preserved. The [authority disposition](filter_gradient_eigen_checkpoint_20260921.md)
+retains the failed D5 changed-input gate: 66 CPU / 53 GPU numerical fields.
+This independent repair does not close that failure or qualify public outer
+lifecycle integration. All 68 policy/controller checks pass in 01878.
+
+Inventory 01879 covers 2,926 Python files, 2,925 parsed and one inherited
+external-reference parse error. Guard coverage remains partial at 200 sources /
+1,277 exact exceptions. No worker is active. Charges are CPU
+42,222.570467403 / 115,200 and GPU 38,271.520312977 / 187,200 seconds.
+Caps and scientific gates are unchanged; main remains unmerged.
+
+Earlier sections below are historical checkpoints, not current worker state.
+
 ## September 21 native factor status
 
 Factor-status checkpoint through 01679: all 40 CPU and 40 GPU synthetic

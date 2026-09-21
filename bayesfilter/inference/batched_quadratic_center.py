@@ -6,9 +6,10 @@ The final factor satisfies LL'=diag(s) K^-1 diag(s); it is not momentum mass.
 An exact incumbent change invalidates the fitted anchor. No MAP, posterior
 covariance, whitening, HMC, GPU or whole-initializer XLA claim follows.
 
-Orchestration is bounded and eager; target calls remain fixed-batch and the
-trust kernel is reusable TF/XLA. Robust score fitting is compiled without XLA
-because MatrixSolveLs(fast=False) is not an admitted whole-XLA path.
+The fit-round controller remains bounded and eager. Ordered fixed-batch target
+evaluation and selection now execute in one stable TF/XLA program. The trust
+kernel is reusable TF/XLA; the enclosing fitter and round loop remain execution
+repair debt, so this module makes no whole-initializer XLA claim.
 """
 
 from __future__ import annotations
@@ -27,6 +28,9 @@ from bayesfilter.inference.paired_score_pilot_tf import (
     fit_paired_score_precision_tf,
     paired_score_probe_designs_tf,
     validate_paired_steps,
+)
+from bayesfilter.inference.quadratic_batch_evaluation_tf import (
+    make_quadratic_batch_evaluator,
 )
 from bayesfilter.inference.score_curvature_tf import fit_dense_score_precision_tf
 
@@ -203,6 +207,7 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
                "jit_compile_trust": cfg.jit_compile_trust, "seed": cfg.seed,
                "pilot_method": cfg.pilot_method, "paired_steps": cfg.paired_steps}
     incumbent = [center, tf.constant(-math.inf, tf.float64), tf.zeros_like(center)]
+    evaluate_batches = make_quadratic_batch_evaluator(callback, dimension, cfg.batch_size, rows)
 
     def finish(status, factor=None, precision=None):
         accepted = status == "local_center_candidate"
@@ -211,38 +216,34 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
                                            precision if accepted else None, details)
 
     def evaluate(points, role, record=True):
-        collected = []
-        for start in range(0, int(points.shape[0]), cfg.batch_size):
-            chunk = points[start:start + cfg.batch_size]
-            padding = cfg.batch_size - int(chunk.shape[0])
-            chunk = tf.concat((chunk, tf.repeat(chunk[-1:], padding, axis=0)), axis=0)
-            first_index = details["physical_rows"]
-            details["physical_rows"] += cfg.batch_size
-            details["padded_rows"] += padding
-            if not bool(tf.reduce_all(tf.math.is_finite(chunk))):
-                return None
-            details["callback_batches"] += 1
-            values, scores, eligible = (tf.convert_to_tensor(item) for item in callback(chunk))
-            if values.dtype != tf.float64 or scores.dtype != tf.float64 or eligible.dtype != tf.bool:
-                raise TypeError("callback must return float64 values/scores and bool eligibility")
-            if values.shape != (cfg.batch_size,) or scores.shape != chunk.shape or eligible.shape != values.shape:
-                raise ValueError("callback returned an invalid fixed-batch shape")
-            valid = eligible & tf.math.is_finite(values) & tf.reduce_all(tf.math.is_finite(scores), axis=1)
-            details["invalid_rows"] += int(tf.reduce_sum(tf.cast(~valid, tf.int32)))
-            details["candidate_batches"].append({"role": role, "first_index": first_index,
-                                                "positions": chunk, "values": values,
-                                                "scores": scores, "valid": valid})
-            if record:
-                masked = tf.where(valid, values, tf.constant(-math.inf, tf.float64))
-                selected = tf.argmax(masked, output_type=tf.int32)
-                if bool(masked[selected] > incumbent[1]):
-                    incumbent[:] = [chunk[selected], values[selected], scores[selected]]
-                    details["selected_evaluation_index"] = first_index + int(selected)
-            if not bool(tf.reduce_all(valid)):
-                return None
-            count = cfg.batch_size - padding if record else cfg.batch_size
-            collected.append((values[:count], scores[:count]))
-        return tf.concat([item[0] for item in collected], 0), tf.concat([item[1] for item in collected], 0)
+        count = int(points.shape[0])
+        if count < 1 or count > rows:
+            raise ValueError("point count exceeds the fixed evaluation capacity")
+        first_index = details["physical_rows"]
+        result = evaluate_batches(
+            tf.pad(points, [[0, rows - count], [0, 0]]), count, record,
+            *incumbent, tf.constant(first_index, tf.int64),
+            tf.constant(details["selected_evaluation_index"], tf.int64),
+        )
+        details["physical_rows"] += int(result["physical_rows"])
+        details["padded_rows"] += int(result["padded_rows"])
+        details["invalid_rows"] += int(result["invalid_rows"])
+        called = int(result["callback_batches"])
+        details["callback_batches"] += called
+        details["selected_evaluation_index"] = int(result["selected_index"])
+        incumbent[:] = [result["center"], result["center_value"], result["center_score"]]
+        # Reporting completed batches never calls the target or selects a point.
+        for index in range(called):
+            details["candidate_batches"].append({
+                "role": role, "first_index": first_index + index * cfg.batch_size,
+                "positions": result["positions"][index], "values": result["values"][index],
+                "scores": result["scores"][index], "valid": result["valid"][index],
+            })
+        if not bool(result["ok"]):
+            return None
+        returned = count if record else called * cfg.batch_size
+        return (tf.reshape(result["values"], [-1])[:returned],
+                tf.reshape(result["scores"], [-1, dimension])[:returned])
 
     def replay():
         result = evaluate(incumbent[0][None, :], "replay", record=False)

@@ -353,6 +353,25 @@ def test_test_roles_exclude_only_reviewed_explanatory_jobs():
         ("factor_guard_cpu_fixed", "factor_guard_cpu_padded", "factor_guard_cpu_domain"))
 
 
+def test_intermediate_authority_disposition_keeps_original_numerical_vetoes(monkeypatch):
+    driver = load("run_filter_repair_campaign")
+    mandatory = set(driver.mandatory_test_groups())
+    replacements = driver.ORIGINAL_AUTHORITY_REPLACEMENTS
+    assert len(replacements) == 16
+    assert set(replacements.values()) <= mandatory
+    assert set(replacements) <= set(driver.EXPLANATORY_TEST_GROUPS)
+    assert {"lifecycle_original_runtime_5_cpu", "lifecycle_original_runtime_gpu",
+            "terminal_original_cpu", "terminal_original_gpu", "refinement_original_gpu"} <= mandatory
+    group, original = next(iter(replacements.items()))
+    monkeypatch.setattr(driver, "TEST_GROUPS", {group: ()})
+    with pytest.raises(ValueError, match="mandatory original-source"):
+        driver.mandatory_test_groups()
+    monkeypatch.setattr(driver, "TEST_GROUPS", {group: (), original: ()})
+    monkeypatch.setattr(driver, "EXPLANATORY_TEST_GROUPS", {group: "historical", original: "waived"})
+    with pytest.raises(ValueError, match="mandatory original-source"):
+        driver.mandatory_test_groups()
+
+
 def test_test_matrix_skips_exact_explanations_but_fails_new_runtime_group(tmp_path, monkeypatch):
     import argparse
 

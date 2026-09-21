@@ -1,7 +1,7 @@
 # Sequential eigensystem and resource checkpoint
 
 Through run 01839 on `repair/filter-gradient-xla-validation-20260918`, based on
-`ee2d455f`. This checkpoint repairs two sequential XLA eigensystem consumers
+`ee2d455f`, committed and pushed as `bd36a89b`. This checkpoint repairs two sequential XLA eigensystem consumers
 and the resource retention exposed by that repair. The campaign is incomplete;
 main is unmerged and the public outer lifecycle still uses its existing loop.
 
@@ -107,3 +107,52 @@ disposition of obsolete intermediate precision comparisons, renewed original
 costs, public outer/reporting integration, external watchdog compatibility,
 broader block/quadratic controller repairs, actual DZ5 target/transition-block
 evidence and terminal F01--F20 decisions with repeated comparisons.
+
+## Original-source authority disposition, September 21 continuation
+
+The exact intermediate-reference groups `lifecycle_actual_*`,
+`lifecycle_runtime_*` and `refinement_*` compare numerical records against
+`cfbc32d2`. That source has the measured eigensolver error preserved in
+01800--01808; requiring repaired precision to equal that error is the wrong
+numerical authority. Preserve the tests and their artifacts as explicit
+historical comparisons. They cannot replace the original-source gates or be
+silently relabeled as successful numerical qualification.
+
+Mandatory replacements retain the same complete records, cases, target-call
+order, changed-input/resource assertions and `atol=rtol=1e-10`. The existing
+`lifecycle_original_*` and `lifecycle_original_runtime_*` supply these checks
+for outer recurrence and resource use. Add `refinement_original_*` using the
+exact same refinement harness with the entire `3582b4ac` dependency closure.
+Only added `jit_compile` metadata is normalized using the existing original
+schema rule. No numerical field is omitted, and the D5 changed-input failure
+stays a mandatory promotion veto.
+
+The driver must bind every retired group to a named mandatory replacement,
+with enforcement against missing or explanatory-only replacements. It must
+continue to require the terminal original-source and three-way tests. Run all
+six original refinement cases on CPU/GPU under the existing limits, then the
+policy/controller checks. Preserve a failed original comparison as a blocker;
+do not waive it because the corresponding intermediate comparison passed.
+
+Skeptical review: changing an authority after observing failure risks hiding a
+regression. Here the independent original authority predates all repairs, the
+intermediate error is reproduced and archived, every current field remains
+checked, and the known D5 numerical veto remains in force. This is an explicit
+correction of reference authority, not relaxed precision or a completion claim.
+
+01863 catches a reference-harness extraction error before numerical execution:
+the original source inlines its search cloud/selection while the intermediate
+excerpt starts at a later `_search_exact_candidates` call. Bind the exact
+original body from `cloud_builder` through the same pre-progress boundary,
+retaining its original namespace and all arithmetic. Assert the fixture's
+unscaled search count and disabled movement-report option used by this step
+harness; complete lifecycle tests separately retain movement reports. Retry
+under the unchanged 300-second focused ceiling.
+
+01864/01865 pass the three original symmetric cases. 01866--01868 pass the
+three original factor cases on CPU, and 01869 passes all six cases on GPU2.
+01870 passes all 68 policy/controller checks, including missing or waived
+replacement rejection. All 16 intermediate groups now have explicit mandatory
+original-source replacements; the historical tests/artifacts remain available.
+This resolves reference disposition only. D5 changed-input complete-record
+parity, public outer integration and original complete cost renewal remain open.

@@ -4,22 +4,39 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-Current checkpoint through 01839: the sequential eigenpair accuracy and graph
-resource repairs pass focused CPU/GPU checks and all 153 affected GPU consumers;
-all 67 policy/controller checks pass. No worker is active. The D5 changed-input
-full-record numerical mismatch remains open (66 CPU / 53 GPU failed fields),
-and neither original-initial-state injection nor the native-row objective trial
-closes it. Those trials remain diagnostic-only. Full cost renewal, public outer
-wiring, broader controller/external integration and terminal decisions remain
-open. See [checkpoint and review](filter_gradient_eigen_checkpoint_20260921.md).
+Current checkpoint through 01879 follows pushed `bd36a89b`. Fixed-batch
+quadratic-center evaluation, padding, selection and invalid-row stopping now
+execute in one stable XLA program. All 25 focused, 51 public and 38 paired-pilot
+checks pass on CPU/GPU. Twelve fresh cost processes match every field; GPU
+warm evaluator medians are 34.262/133.473 ms before and 1.261/2.328 ms after at
+32/128 rows. CPU XLA adds about 161 MiB observed host footprint. No declared
+cost-ratio trigger fires; longer 10,021-call CPU/GPU checks show fixed-shape
+host plateaus and constant GPU allocations. These are dependency observations,
+not complete endpoint costs or terminal repeats. Contract, failures, limits and
+review: [quadratic evaluation](filter_gradient_quadratic_batches_20260921.md).
 
-Inventory 01838 refreshes 2,920 working Python files (2,919 parsed, one inherited
-external-reference parse error). The guard is still partial: 198 sources /
-1,276 exact exceptions. Charged budget through 01839: CPU
-41913.46378235762/115200 seconds; GPU 37772.45033208291/187200 seconds.
-Preserve this qualified partial checkpoint and continue the remaining queue;
-main stays unmerged. Earlier numbered notes below retain their historical run
-state and contracts; this paragraph and the recovery ledger govern resumption.
+Six complete original-source refinement cases pass on each CPU/GPU. Sixteen
+obsolete intermediate precision groups retain their historical tests/artifacts
+and have explicit mandatory original-source replacements. All 68 policy/
+controller checks pass. This resolves reference disposition; the D5
+changed-input mismatch still fails 66 CPU / 53 GPU fields at unchanged
+atol=rtol=1e-10. Original-initial-state and native-row trials remain rejected
+diagnostics. See [eigenpair checkpoint](filter_gradient_eigen_checkpoint_20260921.md).
+
+Inventory 01879 covers 2,926 working Python files (2,925 parsed, one inherited
+external-reference parse error). The guard remains partial: 200 sources /
+1,277 exact exceptions; the new exception only assembles completed reports.
+No worker is active. Charged budget: CPU 42222.57046740262/115200 seconds;
+GPU 38271.52031297689/187200 seconds. Caps are unchanged; do not count the
+extension again. Remote branch is unchanged and remote main is an ancestor.
+
+Next repair the quadratic fit-round/design-partition and forced non-XLA fitter
+dependencies, broader block controllers, and D5 numerical equivalence; renew
+complete original costs after qualification, then public sequential outer/
+reporting integration, external watchdogs, actual DZ5 target/transition blocks
+and terminal F01--F20 repeated evidence. Main remains unmerged. Earlier
+numbered notes below are historical; this paragraph and the ledger govern
+resumption.
 
 01836 passes the native-row decoder value/VJP check but cannot trace its
 nested Cond under the Jacobian diagnostic's ForwardAccumulator. Preserve the

@@ -5,8 +5,50 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
-Qualified partial checkpoint through 01839 is ready to commit/push, based on
-pushed ee2d455f. No worker is active. The public outer lifecycle is unchanged;
+Current checkpoint through 01879 follows pushed `bd36a89b`; no worker is active.
+Main remains unmerged. The native quadratic batch evaluator is integrated and
+passes 25 focused + 51 public + 38 paired-pilot checks on each CPU/GPU. Full
+records preserve padding, exact selection, rejection and accounting. Its outer
+fit-round/partition loops and forced non-XLA fitter remain open. Results/review:
+[quadratic batch evaluation](filter_gradient_quadratic_batches_20260921.md).
+
+Twelve corrected fresh cost processes 01851--01862 match all fields against
+the original evaluator. Preliminary 01847--01850 had a reference output-lifetime
+mismatch and are excluded. CPU XLA adds about 161 MiB host footprint; GPU
+adds 7.3/0.2 MiB at 32/128 rows. Warm GPU times are 34.262/133.473 ms before,
+1.261/2.328 ms after. These are single-process dependency measurements, not
+terminal repeated/complete endpoint costs. Sparse follow-ups 01871--01876 show
+CPU/GPU host plateaus within 10,021 calls and constant GPU current allocations.
+
+Reference authority is now explicit: all 16 intermediate cfbc32d2 precision
+groups retain their tests/artifacts as historical comparisons and have mandatory
+original-source replacements. 01863's old-source excerpt mismatch is repaired;
+all six original refinement cases pass CPU/GPU (01864--01869). The D5 original
+changed-input mismatch remains a mandatory veto: 66 CPU / 53 GPU fields at
+unchanged atol=rtol=1e-10. Neither earlier diagnostic intervention fixes it.
+
+01877 passes the final 25 GPU evaluator checks. 01878 passes all 68 policy/
+controller checks. Inventory 01879 covers 2926 working Python files, 2925 parsed,
+one unchanged vendored-reference parse error. Guard: 200 sources / 1277 exact
+exceptions, still partial. Focused runtime/test Ruff and whitespace pass;
+repository-wide lint success is not claimed. No package, OS or external edits.
+
+Charged totals: CPU 42222.57046740262/115200 seconds and GPU
+38271.52031297689/187200 seconds. Do not count the extension again. Remote was
+fetched; its repair branch is unchanged and remote main is an ancestor.
+
+Next: remaining quadratic fitter/fit-round and block-controller repairs; D5
+numerical qualification; original complete lifecycle costs; public outer/reporting
+wiring; independently bounded external progress consumers; actual DZ5 target and
+full-transition blocks; all F01--F20 terminal decisions/repeated comparisons.
+No merge until those gates pass. The original-source cost draft remains
+`/tmp/filter_repair_lifecycle_original_memory_draft.py`, uninstalled/untested.
+
+Historical checkpoint notes follow. Their worker/next-action statements apply
+only to their own numbered checkpoints.
+
+Qualified partial checkpoint through 01839 is committed and pushed as
+bd36a89b (following ee2d455f). No worker is active. The public outer lifecycle is unchanged;
 main remains unmerged. Full result/review:
 [sequential eigenpair checkpoint](filter_gradient_eigen_checkpoint_20260921.md).
 

@@ -412,7 +412,11 @@
     "bayesfilter/inference/sequential_factor_attempt_tf.py": null,
     "bayesfilter/inference/sequential_lifecycle_tf.py": null,
     "bayesfilter/inference/sequential_terminal_tf.py": null,
-    "bayesfilter/inference/sequential_refinement_tf.py": null
+    "bayesfilter/inference/sequential_refinement_tf.py": null,
+    "bayesfilter/inference/quadratic_batch_evaluation_tf.py": null,
+    "bayesfilter/inference/batched_quadratic_center.py": [
+      "refine_batched_quadratic_center.evaluate"
+    ]
   },
   "exceptions": [
     {
@@ -12006,6 +12010,15 @@
       "ast_sha256": "93e527b95787d88c1f5b1a6a3e5c1a3542407509f50c34fa97873690fae33856",
       "role": "fixed_schema",
       "reason": "Traverse static enclosing FuncGraph ownership during tracing so the domain-check resource survives bounded factory-cache eviction. This loop does not inspect tensor values or implement numerical iteration. The resource is owned only by the outermost compiled consumer and released with it; run 01594 covers prebound/lazy construction, eviction, stable tracing and release. Full runtime/consumer qualification remains independently mandatory."
+    },
+    {
+      "path": "bayesfilter/inference/batched_quadratic_center.py",
+      "function": "refine_batched_quadratic_center.evaluate",
+      "line": 236,
+      "kind": "python_iteration",
+      "ast_sha256": "24d4eccc251615a4bc802676a76dcacde7e1ddb79c3ad396440ccc290f129214",
+      "role": "host_reporting",
+      "reason": "Assemble completed candidate-batch reports only; target calls, selection and invalid-row stopping execute in make_quadratic_batch_evaluator. Outer fit-round and partition loops remain uncovered debt."
     }
   ]
 }

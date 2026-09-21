@@ -63,6 +63,26 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"quadratic_batch_long_growth_{device}": (
+        "tests/test_filter_repair_quadratic_batch_growth.py::test_long_sparse_xla_allocation_growth",)
+        for device in ("cpu", "gpu")},
+    **{f"quadratic_batch_growth_{arm}_{device}": (
+        f"tests/test_filter_repair_quadratic_batch_growth.py::test_sparse_fixed_shape_allocation_growth[{arm}]",)
+        for arm in ("before", "xla") for device in ("cpu", "gpu")},
+    "refinement_original_symmetric_cpu": ("tests/test_filter_repair_refinement_original.py", "-k", "symmetric"),
+    **{f"refinement_original_{case}_cpu": (
+        f"tests/test_filter_repair_refinement_original.py::test_original_complete_refinement_records[{case}]",)
+        for case in ("factor_one", "factor_two", "factor_two_reuse")},
+    "refinement_original_gpu": ("tests/test_filter_repair_refinement_original.py",),
+    **{f"quadratic_batch_memory_{arm}_{dimension}_cpu": (
+        f"tests/test_filter_repair_quadratic_batch_memory.py::test_ordered_batch_costs[{arm}-{dimension}-{capacity}]",)
+        for arm in ("before", "graph", "xla") for dimension, capacity in ((3, 32), (5, 128))},
+    **{f"quadratic_batch_memory_{arm}_{dimension}": (
+        f"tests/test_filter_repair_quadratic_batch_memory.py::test_ordered_batch_costs[{arm}-{dimension}-{capacity}]",)
+        for arm in ("before", "graph", "xla") for dimension, capacity in ((3, 32), (5, 128))},
+    "quadratic_batches": ("tests/test_filter_repair_quadratic_batches.py",),
+    "quadratic_center_public": ("tests/test_batched_quadratic_center.py",),
+    "quadratic_paired_public": ("tests/test_paired_score_pilot.py",),
     "factor_row_decode": ("tests/test_filter_repair_factor_row_decode.py",),
     "lifecycle_factor_initial": ("tests/test_filter_repair_lifecycle_factor_initial.py",),
     "lifecycle_factor_inputs": ("tests/test_filter_repair_lifecycle_factor_inputs.py",),
@@ -435,11 +455,39 @@ TEST_GROUPS = {
     "consumers": ("tests/test_filter_repair_consumers.py",),
     "policy": ("tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py"),
 }
+# Exact intermediate comparisons remain callable historical diagnostics. Each
+# has the same-scope original-source authority as a mandatory replacement.
+# cfbc32d2's demonstrated eigensystem error is preserved, not a precision gate.
+ORIGINAL_AUTHORITY_REPLACEMENTS = {
+    **{f"lifecycle_actual_{case}_{device}": f"lifecycle_original_{case}_{device}"
+       for case in ("symmetric", "factor_one", "factor_two", "factor_two_reuse")
+       for device in ("cpu", "gpu")},
+    **{f"lifecycle_runtime_{dimension}_cpu": f"lifecycle_original_runtime_{dimension}_cpu"
+       for dimension in (3, 5)},
+    "lifecycle_runtime_gpu": "lifecycle_original_runtime_gpu",
+    **{f"refinement_{case}_cpu": f"refinement_original_{case}_cpu"
+       for case in ("symmetric", "factor_one", "factor_two", "factor_two_reuse")},
+    "refinement_gpu": "refinement_original_gpu",
+}
 # These exact jobs explain preserved failures or compare diagnostic source
 # trials. They are callable, but never substitutes for current runtime gates.
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"quadratic_batch_long_growth_{device}":
+        "Bounded 10,000-call XLA allocator follow-up to small continued CPU RSS growth; not timing or general leak-freedom evidence."
+        for device in ("cpu", "gpu")},
+    **{f"quadratic_batch_growth_{arm}_{device}":
+        "Sparse fixed-shape allocation observations after 20 warm calls; no runtime cleanup, performance ranking or general leak-freedom claim."
+        for arm in ("before", "xla") for device in ("cpu", "gpu")},
+    **{historical: f"Historical cfbc32d2 precision comparison; complete original-source replacement {original} remains mandatory at unchanged tolerance."
+       for historical, original in ORIGINAL_AUTHORITY_REPLACEMENTS.items()},
+    **{f"quadratic_batch_memory_{arm}_{dimension}_cpu":
+        "Explicit CPU reference costs of the fixed-batch dependency; no default-GPU or complete-outer claim."
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)},
+    **{f"quadratic_batch_memory_{arm}_{dimension}":
+        "Descriptive fixed-batch dependency cost at a source-pinned checkpoint; complete outer costs and terminal repeats remain required."
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)},
     "factor_row_decode": "Native translation of original per-row decoder as a diagnostic injection; full-record gates still required before runtime use.",
     "lifecycle_factor_initial": "Frozen original initializer intervention and identical-state objectives; diagnostic only, no runtime substitute or tolerance waiver.",
     "lifecycle_factor_inputs": "Crossed original/current prepared inputs and fitters; attribution cannot waive original full-record numerical failure.",
@@ -511,6 +559,17 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "quadratic_batch_long_growth": ("quadratic_batch_long_growth_cpu", "quadratic_batch_long_growth_gpu"),
+    "quadratic_batch_growth": tuple(f"quadratic_batch_growth_{arm}_{device}"
+        for arm in ("before", "xla") for device in ("cpu", "gpu")),
+    "refinement_original": ("refinement_original_symmetric_cpu", "refinement_original_factor_one_cpu",
+        "refinement_original_factor_two_cpu", "refinement_original_factor_two_reuse_cpu",
+        "refinement_original_gpu", "policy"),
+    "quadratic_batch_consumers": ("quadratic_paired_public", "policy"),
+    "quadratic_batch_memory": tuple(f"quadratic_batch_memory_{arm}_{dimension}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)),
+    "quadratic_batch_memory_cpu": tuple(f"quadratic_batch_memory_{arm}_{dimension}_cpu"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)),
     "sequential_eigen_public": ("sequential_preparation", "sequential_score_fit", "sequential_geometry",
         "block_center", "locator_completion", "policy"),
     "lifecycle_original_runtime": ("lifecycle_original_runtime_3_cpu", "lifecycle_original_runtime_5_cpu",
@@ -572,6 +631,9 @@ TEST_BATCHES = {
 
 
 def mandatory_test_groups():
+    for historical, original in ORIGINAL_AUTHORITY_REPLACEMENTS.items():
+        if historical in TEST_GROUPS and (original not in TEST_GROUPS or original in EXPLANATORY_TEST_GROUPS):
+            raise ValueError(f"Missing mandatory original-source replacement for {historical}: {original}")
     return tuple(group for group in TEST_GROUPS if group not in EXPLANATORY_TEST_GROUPS)
 
 
@@ -594,6 +656,10 @@ TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU",
     **{group: "GPU" for group in ("padded_jacobian_localization", "padded_dynamic_qr_localization",
         "padded_dynamic_qr_output", "padded_shape_dispatch", "factor_capacity_initial",
         "factor_capacity_initial_fixed", "factor_capacity_cod")},
+    "quadratic_batches": "GPU", "quadratic_center_public": "GPU", "quadratic_paired_public": "GPU",
+    "quadratic_batch_long_growth_gpu": "GPU",
+    **{f"quadratic_batch_growth_{arm}_gpu": "GPU" for arm in ("before", "xla")},
+    **{group: "GPU" for group in TEST_BATCHES["quadratic_batch_memory"]},
     "sequential_preparation": "GPU", "sequential_geometry": "GPU", "sequential_score_fit": "GPU", "block_center": "GPU",
     "quadratic_initializer": "GPU", "joint_center": "GPU", "predator_tp": "GPU", "exact_incumbent": "GPU",
     "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU", "fixed_fitting": "GPU",
@@ -604,6 +670,7 @@ TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU",
     "sequential_lifecycle_gpu": "GPU",
     "sequential_terminal_gpu": "GPU",
     "refinement_gpu": "GPU",
+    "refinement_original_gpu": "GPU",
     "lifecycle_runtime_gpu": "GPU",
     "lifecycle_original_runtime_gpu": "GPU",
     "sequential_eigen_consumers_gpu": "GPU",
