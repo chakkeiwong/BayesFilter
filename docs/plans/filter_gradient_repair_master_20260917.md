@@ -1,5 +1,51 @@
 # Complete filter and gradient execution repair
 
+Active continuation from pushed **c7eba61b** on
+`repair/filter-gradient-xla-validation-20260918`. Remote main remains **c7adbda7**;
+main is unmerged. Caps remain **32 CPU / 52 GPU process-hours**.
+
+New internal XLA preparation covers direction normalization/ordered compaction,
+exact scalar or batch-native design evaluation, and finite training/holdout
+partitioning. Fixed capacities carry explicit counts and reject malformed
+permutations. **02583 passes all 51 CPU checks**, including full-original
+partition/early-exit checks and one enclosing design/partition XLA program.
+Review exposed a real underflow mismatch in 02581: TensorFlow discarded tiny
+directions retained by original 3582b4ac. Exact integer rounding of subnormal
+squares repairs it; 2,092 products also match an independent integer reference.
+No predicate, tolerance or RNG stream changed. Public wrappers remain unchanged.
+
+All **30 fresh CPU cost processes** pass (02557--02580, then renewed directions
+02584--02589). Scalar design warm times are about 1.9--2.5 ms with XLA versus
+24 ms originally. Standalone normalization/partition are slower and retain their
+warm/cold triggers. XLA adds 98--131 MiB observed RSS; no 256 MiB host trigger
+fires. All four **3,000-call changing-input checks** pass (02590--02593), with
+0--4 KiB RSS growth in their last 1,000 calls. Reporting dominates the measured
+standalone costs; this neither waives their regressions nor proves leak freedom.
+[Preparation contract and result review](filter_gradient_geometry_preparation_20260922.md).
+
+**02594 passes 72 policy/controller checks; audit 02595 passes.** Inventory is
+2,986 working Python files / 2,985 parsed / one unchanged vendor-reference error.
+The static guard remains partial at **213 sources / 1,306 exact exceptions**;
+new preparation code needs no numerical-loop exemptions. Focused Ruff and
+whitespace pass.
+
+GPU3 remains busy at 8,675 MiB / roughly 99% utilization. No worker is active.
+Charges through 02595 are **52,204.53416347386 CPU / 48,325.1067211973 GPU
+seconds**, under unchanged caps. Preserve one numerical worker, source freeze,
+CPU GPU hiding, GPU3's existing idle gate and verified memory growth.
+
+Next qualify GPU controllers/costs and consume active preparation counts inside
+full geometry and iterative control. Dynamic batch extents and post-evaluation
+permutation generation remain explicit enclosure obligations; padding may not
+change target calls or fitting rows. Shared COD GPU renewal, uniform GPU costs,
+public sequential lifecycle/reporting, block control, external deadlines, actual
+DZ5 transitions and F01--F20 terminal dispositions remain open. The rejected
+posterior precision proposal remains **pending and uninstalled**. No external
+source/pin, package or environment changes. Canonical LEDH rebuilding remains
+outside this execution repair. Final merge remains gated on complete qualification.
+
+## Previous pilot checkpoint
+
 Active continuation from pushed **3f3f07ee** on
 `repair/filter-gradient-xla-validation-20260918`. Main remains unmerged; remote
 main **c7adbda7** still needs integration and qualification. Caps remain

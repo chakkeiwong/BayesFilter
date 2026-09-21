@@ -63,6 +63,18 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"geometry_preparation_reuse_{kind}_{dimension}_{device}": (
+        f"tests/test_filter_repair_geometry_preparation_memory.py::test_preparation_components_and_changing_input_reuse[{kind}-{dimension}]",)
+        for kind in ("directions", "partition") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"geometry_preparation_boundary_{device}": (
+        "tests/test_filter_repair_geometry_preparation.py::test_extreme_direction_and_holdout_rounding_boundaries",)
+        for device in ("cpu", "gpu")},
+    **{f"geometry_preparation_memory_{kind}_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_geometry_preparation_memory.py::test_preparation_costs[{kind}-{arm}-{dimension}]",)
+        for kind in ("directions", "partition", "design_scalar", "design_batch") for arm in ("before", "graph", "xla")
+        for dimension in (3, 5) for device in ("cpu", "gpu")},
+    "geometry_preparation_smoke": ("tests/test_filter_repair_geometry_preparation.py::test_original_finite_partition[ordinary-3]",),
+    **{f"geometry_preparation_{device}": ("tests/test_filter_repair_geometry_preparation.py",) for device in ("cpu", "gpu")},
     **{f"geometry_pilot_memory_{lane}_{arm}_{dimension}_{device}": (
         f"tests/test_filter_repair_geometry_pilot_memory.py::test_complete_pilot_costs[{batched}-{arm}-{dimension}]",)
         for lane, batched in (("scalar", False), ("batch", True)) for arm in ("before", "graph", "xla")
@@ -645,6 +657,13 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"geometry_preparation_reuse_{kind}_{dimension}_{device}":
+        "Native/report component attribution and 3000 alternating-input calls; no original raw-kernel ranking or general memory bound."
+        for kind in ("directions", "partition") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"geometry_preparation_memory_{kind}_{arm}_{dimension}_{device}":
+        "Matched original direction/design/partition dependency with common complete outputs; enclosing initializer and terminal costs remain open."
+        for kind in ("directions", "partition", "design_scalar", "design_batch") for arm in ("before", "graph", "xla")
+        for dimension in (3, 5) for device in ("cpu", "gpu")},
     **{f"geometry_pilot_memory_{lane}_{arm}_{dimension}_{device}":
         "Matched prepared-direction pilot and full records; normalization/prefix and whole-initializer/terminal evidence remain open."
         for lane in ("scalar", "batch") for arm in ("before", "graph", "xla")
@@ -756,6 +775,14 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"geometry_preparation_followup_{device}": (
+        *(f"geometry_preparation_memory_directions_{arm}_{dimension}_{device}"
+          for arm in ("before", "graph", "xla") for dimension in (3, 5)),
+        *(f"geometry_preparation_reuse_{kind}_{dimension}_{device}"
+          for kind in ("directions", "partition") for dimension in (3, 5))) for device in ("cpu", "gpu")},
+    **{f"geometry_preparation_memory_{device}": tuple(f"geometry_preparation_memory_{kind}_{arm}_{dimension}_{device}"
+        for kind in ("directions", "partition", "design_scalar", "design_batch") for arm in ("before", "graph", "xla")
+        for dimension in (3, 5)) for device in ("cpu", "gpu")},
     **{f"geometry_pilot_memory_{device}": tuple(f"geometry_pilot_memory_{lane}_{arm}_{dimension}_{device}"
         for lane in ("scalar", "batch") for arm in ("before", "graph", "xla")
         for dimension in (3, 5)) for device in ("cpu", "gpu")},
@@ -938,6 +965,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["geometry_preparation_followup_gpu"]},
+    "geometry_preparation_boundary_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["geometry_preparation_memory_gpu"]},
+    "geometry_preparation_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["geometry_pilot_memory_gpu"]},
     "geometry_pilot_extras_gpu": "GPU",
     **{f"geometry_pilot_{dimension}_gpu": "GPU" for dimension in (1, 3, 5)},
