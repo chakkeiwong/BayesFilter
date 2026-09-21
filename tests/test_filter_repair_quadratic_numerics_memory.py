@@ -1,4 +1,4 @@
-"""Fresh-process diagnostic costs of the paired fit and SPD trust solver."""
+"""Fresh-process diagnostic costs of dense/paired fits and the SPD trust solver."""
 
 import hashlib
 import json
@@ -18,7 +18,7 @@ from tests.test_filter_repair_quadratic_numerics import (
 
 
 @pytest.mark.parametrize("dimension", [3, 5])
-@pytest.mark.parametrize("kind", ["paired", "trust"])
+@pytest.mark.parametrize("kind", ["dense", "paired", "trust"])
 @pytest.mark.parametrize("arm", ["before", "graph", "xla"])
 def test_numerical_dependency_costs(arm, kind, dimension, request):
     gpu = bool(tf.config.list_logical_devices("GPU"))

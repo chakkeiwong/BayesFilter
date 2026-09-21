@@ -1,5 +1,10 @@
 # Singular design-condition diagnostic decision
 
+Owner approved on 2026-09-21: "I approve. Continue the execution", in response
+to the checkpoint naming both pending numerical-contract decisions. Implement
+the definition below and retain every required numerical and consumer check.
+The proposal text and its pre-approval evidence follow for provenance.
+
 The uniform-cloud XLA fitter is blocked by one field on exact duplicate-column
 fixtures: `design_condition`. The original and XLA raw precision, design rank
 and rejection agree at the existing 1e-10 tolerance, but the condition ratios do

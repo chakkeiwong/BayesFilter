@@ -95,6 +95,14 @@ def equal_fields(actual, expected):
             np.testing.assert_array_equal(actual[key], value, err_msg=key)
 
 
+def equal_dense_fields(actual, expected, dimension):
+    """Keep the approved rank-policy definition separate from the raw archive."""
+    if int(expected['design_rank']) < dimension:
+        assert np.isposinf(float(actual['design_condition']))
+        expected = {**expected, 'design_condition': tf.constant(float('inf'), D)}
+    equal_fields(actual, expected)
+
+
 def serializable(record):
     def clean(value):
         if isinstance(value, list):
@@ -124,7 +132,10 @@ def test_all_fields_against_original_graph(kind, case, dimension, request):
             "baseline": "3582b4ac", "source_sha256": original()[0].hashes()}, handle, indent=2, allow_nan=False)
         handle.write("\n")
     for result in results.values():
-        equal_fields(result, reference)
+        if kind == 'dense':
+            equal_dense_fields(result, reference, dimension)
+        else:
+            equal_fields(result, reference)
     result = results["xla"]
     if kind == "dense":
         coefficient = np.linalg.lstsq(arguments[1], arguments[0][None, :] - arguments[2], rcond=None)[0]

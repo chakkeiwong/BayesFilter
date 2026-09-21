@@ -1,7 +1,9 @@
 # Iterative factor-fit equivalence decision
 
-Status: proposal only. No runtime setting, mandatory test tolerance, field, or
-gate has changed. The original full-record D5 gate still fails.
+Status: owner approved on 2026-09-21: "I approve. Continue the execution", in
+response to the checkpoint naming both pending numerical-contract decisions.
+Implement and qualify the bounded comparison below. Runtime optimizer settings
+remain unchanged; approval does not itself establish numerical qualification.
 
 The current all-field FP64 comparison uses `atol=rtol=1e-10`, while the original
 factor fitter stops L-BFGS at a raw-gradient tolerance of `1e-9`. The latter
@@ -44,7 +46,7 @@ value/score, rejection, or other controller field is among those failures.
 This is evidence of amplified arithmetic sensitivity, not proof that all
 compiler defects have been excluded.
 
-## Proposed bounded change
+## Approved bounded change
 
 For comparisons of **iterative factor-fit outputs only**, use
 `abs(candidate-original) <= 1e-8 + 1e-8*abs(original)` for:

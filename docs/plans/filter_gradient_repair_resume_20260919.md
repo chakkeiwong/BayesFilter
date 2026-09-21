@@ -1,9 +1,66 @@
-# Filter execution repair recovery, September 19
+# Filter and gradient repair recovery
+
+Status: executing on `repair/filter-gradient-xla-validation-20260918`, based on
+pushed `2710e16f`; main remains unmerged. The owner approved both numerical
+proposals on 2026-09-21. No further approval is needed for those changes.
+
+Current implementation: schema-scoped factor-output comparison at `1e-8` for
+exactly the approved fields, and infinite dense design condition when the
+unchanged numerical rank check is deficient. Optimizer settings, algorithms,
+seeds, rank thresholds, decisions, and other `1e-10` comparisons are preserved.
+The old strict discrepancies remain in artifacts.
+
+Qualification through **02135**: all 495 checks pass (157 CPU / 338 GPU3),
+including both approved contracts, analytic factor geometry, dense rank/consumer
+boundaries, D3/D5 complete original lifecycles/resources, refinement/terminal
+records and 223 affected GPU consumers. Same-state objective/gradient comparisons
+remain `1e-10`. The separately wrapped fixed-center records pass without changing
+their strict comparator. Policy/controller 02123 passes all 72 checks.
+
+The initial GPU contention cleared before launch; all GPU workers recorded idle
+preflights and verified memory growth. All 36 fresh-process dense costs (02136--02171) pass full initial/changed
+record comparisons. D5 warm-time penalties persist at +27% CPU/+38% GPU versus
+the original, so that cost gate remains open. No memory trigger fires; CPU XLA
+adds about189 MiB observed RSS and GPU allocator peaks fall to24/35KB. Localize
+components and qualify dense spectral boundaries before public uniform XLA.
+Inventory02172 covers2945 working Python files,2944 parsed and one unchanged
+vendor-reference parse error. Source guard remains partial at204 files/1289
+exceptions. Charged CPU46170.48012962168/115200 and GPU43466.31901954695/187200
+seconds. No numerical worker is active at this checkpoint. The uniform shared-controller draft is still outside
+the worktree at `/tmp/filter_uniform_stage_20260921`; it is not installed or
+qualified. Review and execution contract:
+[uniform round controller](filter_gradient_uniform_rounds_20260921.md).
+
+Active contract and results:
+[approved numerical qualification](filter_gradient_approved_numerics_qualification_20260921.md).
+Next investigate dense D5 costs and spectral boundaries, then qualify enclosing
+uniform/public sequential integration. The approved corrections are numerically
+qualified; the complete repair remains unfinished. Broader block and
+iterative controllers, external process deadlines, actual DZ5 transitions,
+full original lifecycle costs and terminal F01--F20 evidence remain open.
+Do not merge before the terminal gates pass.
+
+Budgets remain **32 CPU / 52 GPU process-hours**, including the approved
+extension. The driver records exact charges and launch provenance. Use the
+existing stable driver prefix, a single numerical worker, GPU memory growth,
+GPU3 idle preflight, and frozen runtime/tests/driver during execution. Do not
+edit external consumer source pins or package/environment settings.
+
+## Historical checkpoint notes
+
+Statements below about pending approvals or current blockers describe the
+numbered checkpoints when written. The active state above supersedes them.
 
 Worktree: `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`.
 Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
+
+Owner approved both listed proposals on 2026-09-21 and requested execution.
+Resume from pushed `2710e16f`. Implement and qualify the bounded factor-output
+comparator and dense deficient-rank condition correction, then continue public
+sequential/uniform controllers and remaining master work. The pending-decision
+statements below are historical; do not request these approvals again.
 
 Current checkpoint through **02105**, based on pushed `5ab4d21c`. No runtime
 source or mandatory tolerance changed. No numerical worker is active.

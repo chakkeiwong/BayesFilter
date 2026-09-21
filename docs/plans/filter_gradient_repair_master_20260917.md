@@ -1,8 +1,75 @@
 # Complete filter and gradient execution repair
 
+Status: executing on `repair/filter-gradient-xla-validation-20260918`, based on
+pushed `2710e16f`; main remains unmerged. The owner approved both numerical
+proposals on 2026-09-21. No further approval is needed for those changes.
+
+Current implementation: schema-scoped factor-output comparison at `1e-8` for
+exactly the approved fields, and infinite dense design condition when the
+unchanged numerical rank check is deficient. Optimizer settings, algorithms,
+seeds, rank thresholds, decisions, and other `1e-10` comparisons are preserved.
+The old strict discrepancies remain in artifacts.
+
+Qualification through **02135**: all 495 checks pass (157 CPU / 338 GPU3),
+including both approved contracts, analytic factor geometry, dense rank/consumer
+boundaries, D3/D5 complete original lifecycles/resources, refinement/terminal
+records and 223 affected GPU consumers. Same-state objective/gradient comparisons
+remain `1e-10`. The separately wrapped fixed-center records pass without changing
+their strict comparator. Policy/controller 02123 passes all 72 checks.
+
+The initial GPU contention cleared before launch; all GPU workers recorded idle
+preflights and verified memory growth. All 36 fresh-process dense costs (02136--02171) pass full initial/changed
+record comparisons. D5 warm-time penalties persist at +27% CPU/+38% GPU versus
+the original, so that cost gate remains open. No memory trigger fires; CPU XLA
+adds about189 MiB observed RSS and GPU allocator peaks fall to24/35KB. Localize
+components and qualify dense spectral boundaries before public uniform XLA.
+Inventory02172 covers2945 working Python files,2944 parsed and one unchanged
+vendor-reference parse error. Source guard remains partial at204 files/1289
+exceptions. Charged CPU46170.48012962168/115200 and GPU43466.31901954695/187200
+seconds. No numerical worker is active at this checkpoint. The uniform shared-controller draft is still outside
+the worktree at `/tmp/filter_uniform_stage_20260921`; it is not installed or
+qualified. Review and execution contract:
+[uniform round controller](filter_gradient_uniform_rounds_20260921.md).
+
+Active contract and results:
+[approved numerical qualification](filter_gradient_approved_numerics_qualification_20260921.md).
+Next investigate dense D5 costs and spectral boundaries, then qualify enclosing
+uniform/public sequential integration. The approved corrections are numerically
+qualified; the complete repair remains unfinished. Broader block and
+iterative controllers, external process deadlines, actual DZ5 transitions,
+full original lifecycle costs and terminal F01--F20 evidence remain open.
+Do not merge before the terminal gates pass.
+
+Budgets remain **32 CPU / 52 GPU process-hours**, including the approved
+extension. The driver records exact charges and launch provenance. Use the
+existing stable driver prefix, a single numerical worker, GPU memory growth,
+GPU3 idle preflight, and frozen runtime/tests/driver during execution. Do not
+edit external consumer source pins or package/environment settings.
+
+## Historical checkpoint notes
+
+Statements below about pending approvals or current blockers describe the
+numbered checkpoints when written. The active state above supersedes them.
+
 Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is gated.
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
+
+Active continuation from pushed `2710e16f`: on 2026-09-21 the owner approved
+both numerical-contract proposals and requested continued execution. Implement
+the exact factor-output comparison allowance and dense deficient-rank condition
+definition; validate malformed/changed records, analytic geometry and gradient
+references first, then complete original CPU/GPU lifecycles and dense consumers.
+Retain old discrepancies in artifacts. Enable enclosing XLA only after the
+numerical/cost checks pass. Existing budgets, GPU3 scheduling, memory-growth
+rules, source freeze during workers, and final merge gates are unchanged.
+
+Pre-run review: the two approvals change different quantities. The factor
+proposal changes listed comparison tolerances only; the dense proposal changes
+one reported diagnostic only when the unchanged rank check rejects the design.
+Neither permits changing runtime optimizer settings, filter/score tolerances,
+rank thresholds, decisions, missing-field handling, or numerical algorithms.
+Use a schema-scoped comparator to avoid accidentally relaxing unrelated fields.
 
 Current recovery checkpoint: **02105**, based on pushed `5ab4d21c`. The paired
 XLA runtime is unchanged. New D5 attribution passes complete instrumentation

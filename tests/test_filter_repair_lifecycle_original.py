@@ -10,7 +10,7 @@ from types import FunctionType
 import pytest
 
 from tests.filter_repair_frozen_checkpoint import FrozenCheckpoint
-from tests.test_filter_repair_fixed_stability import _compare
+from tests.filter_repair_record_comparison import compare_records
 from tests.test_filter_repair_lifecycle_actual import (
     CASES,
 )
@@ -39,7 +39,7 @@ def _without_new_execution_metadata(value):
 
 
 def _compare_original(actual, expected):
-    _compare(_without_new_execution_metadata(actual), _without_new_execution_metadata(expected))
+    compare_records(_without_new_execution_metadata(actual), _without_new_execution_metadata(expected))
 
 
 @pytest.mark.parametrize('case', CASES)

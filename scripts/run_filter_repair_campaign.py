@@ -63,6 +63,14 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "factor_record_comparison": ("tests/test_filter_repair_record_comparison.py",),
+    "factor_equivalence": ("tests/test_filter_repair_factor_equivalence.py",),
+    "dense_condition": ("tests/test_filter_repair_dense_condition.py",),
+    "factor_equivalence_gpu": ("tests/test_filter_repair_factor_equivalence.py",),
+    "dense_condition_gpu": ("tests/test_filter_repair_dense_condition.py",),
+    **{f"dense_numerics_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_quadratic_numerics_memory.py::test_numerical_dependency_costs[{arm}-dense-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
     **{f"quadratic_public_memory_{arm}_{dimension}_{device}": (
         f"tests/test_filter_repair_quadratic_public_memory.py::test_public_paired_refinement_costs[{arm}-{dimension}]",)
         for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -611,6 +619,23 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "approved_numerics_cpu": (
+        "factor_trajectory_original", "factor_trajectory_current",
+        "lifecycle_original_symmetric_cpu", "lifecycle_original_factor_one_cpu",
+        "lifecycle_original_factor_two_cpu", "lifecycle_original_factor_two_reuse_cpu",
+        "refinement_original_symmetric_cpu", "refinement_original_factor_one_cpu",
+        "refinement_original_factor_two_cpu", "refinement_original_factor_two_reuse_cpu",
+        "terminal_original_cpu", "fixed_fitting_original", "policy"),
+    "approved_numerics_gpu": (
+        "factor_equivalence_gpu", "dense_condition_gpu", "quadratic_numerics",
+        "lifecycle_original_runtime_gpu", "lifecycle_original_symmetric_gpu",
+        "lifecycle_original_factor_one_gpu", "lifecycle_original_factor_two_gpu",
+        "lifecycle_original_factor_two_reuse_gpu", "refinement_original_gpu",
+        "terminal_original_gpu", "factor_geometry", "fixed_fitting_consumers", "policy"),
+    **{f"dense_numerics_memory_{device}": tuple(
+        f"dense_numerics_memory_{arm}_{dimension}_{device}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5))
+        for device in ("cpu", "gpu")},
     "quadratic_public_memory": tuple(f"quadratic_public_memory_{arm}_{dimension}_{device}"
         for device in ("cpu", "gpu") for arm in ("before", "graph", "xla") for dimension in (3, 5)),
     "quadratic_round_consumers": ("quadratic_probes_cpu", "quadratic_probes_gpu",
@@ -719,6 +744,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+    "factor_equivalence_gpu": "GPU", "dense_condition_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["dense_numerics_memory_gpu"]},
     "factor_guard_gpu_lifetime": "GPU", "fixed_fitting_consumers": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["factor_guard_memory"]},
     "factor_guard_qualification": "GPU",

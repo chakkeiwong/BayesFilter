@@ -82,6 +82,11 @@ def fit_dense_score_precision_tf(
     is not the exact symmetry-constrained optimum for nonquadratic scores.
     Callers that require a position factor
     must reject a non-SPD raw result rather than silently manufacture one.
+
+    ``design_condition`` is infinite when the existing numerical rank policy
+    (singular values greater than 1e-12 times the largest) finds deficient rank.
+    Otherwise it is the largest/smallest singular-value ratio. Infinity under
+    that policy does not assert exact algebraic singularity.
     """
 
     center = _as_float64(center_score, "center_score")
@@ -103,16 +108,16 @@ def fit_dense_score_precision_tf(
     singular_values = tf.linalg.svd(offsets, compute_uv=False)
     largest_singular = tf.reduce_max(singular_values)
     smallest_singular = tf.reduce_min(singular_values)
-    design_condition = tf.where(
-        smallest_singular > 0.0,
-        largest_singular / smallest_singular,
-        tf.constant(float("inf"), tf.float64),
-    )
     design_rank = tf.reduce_sum(
         tf.cast(
             singular_values > largest_singular * tf.constant(1.0e-12, tf.float64),
             tf.int32,
         )
+    )
+    design_condition = tf.where(
+        design_rank == dimension,
+        largest_singular / smallest_singular,
+        tf.constant(float("inf"), tf.float64),
     )
     eigenvalues = tf.linalg.eigvalsh(raw_precision)
     minimum_eigenvalue = tf.reduce_min(eigenvalues)

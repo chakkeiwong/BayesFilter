@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_optimization_barrier
@@ -142,6 +143,7 @@ def test_crossed_factor_objective_trajectories(data_name, monkeypatch, request):
                 prepared['training_scores_z'], prepared['training_weights'],
                 tf.constant(arm['record']['anchor_indices'], tf.int32))
             assert bool(tf.reduce_all(tf.math.is_finite(replay)))
+            np.testing.assert_allclose(replay, trajectory[:, 14:], atol=1e-10, rtol=1e-10)
             errors = tf.abs(replay - trajectory[:, 14:])
             arm['current_standalone_replay'] = replay.numpy().tolist()
             arm['replay_value_abs_error'] = errors[:, 0].numpy().tolist()
