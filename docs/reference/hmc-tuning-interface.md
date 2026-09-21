@@ -715,6 +715,10 @@ error comparisons do not grant posterior or default-readiness claims.
 Earlier `HMCKernelTuningResult`, fixed-transport selection results, and typed
 `TensorFlowHMCKernelTuningResult` archives retain their original identities.
 Their readers and low-level diagnostics are preserved for historical inspection.
+The private ordinary campaign checkpoint helper also remains for historical
+diagnostics. Public tuning rejects its `campaign_checkpoint_dir`,
+`campaign_time_budget_s`, and `campaign_interrupted_elapsed_s` options. Use the
+shared candidate checkpoint/resume API and shared search budgets described above.
 The single-kernel `build_retained_*_from_tuning_result` and
 `build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload` interfaces
 are historical compatibility readers. They do not define the new candidate-set

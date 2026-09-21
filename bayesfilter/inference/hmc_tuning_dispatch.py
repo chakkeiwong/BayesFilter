@@ -39,6 +39,9 @@ def tune_hmc_kernel(
     verification_checkpoint_writer_config: Any | None = None,
     runner_binding: HMCTuningRunnerBinding | None = None,
     candidate_set_adapter: Any | None = None,
+    campaign_checkpoint_dir: str | Path | None = None,
+    campaign_time_budget_s: float | None = None,
+    campaign_interrupted_elapsed_s: float | None = None,
     _candidate_set_route_kind: str = "ordinary",
     search_config: HMCControllerConfig | None = None,
     execution_config: Any | None = None,
@@ -52,6 +55,19 @@ def tune_hmc_kernel(
     """
 
     require_active_hmc_tuning_route("tune_hmc_kernel")
+    if any(
+        item is not None
+        for item in (
+            campaign_checkpoint_dir,
+            campaign_time_budget_s,
+            campaign_interrupted_elapsed_s,
+        )
+    ):
+        raise ValueError(
+            "legacy campaign recovery options are retired; shared tuning writes "
+            "checkpoints to output_dir; use resume_hmc_candidate_set_tuning "
+            "and shared search budgets"
+        )
     if isinstance(config, HMCControllerConfig):
         extras = {"search_config": search_config, "execution_config": execution_config,
                   "target_lineage": target_lineage, "source_paths": source_paths or None}

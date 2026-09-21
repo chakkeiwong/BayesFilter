@@ -41,7 +41,9 @@ def _check_rank(tensor: tf.Tensor, rank: int, name: str) -> None:
     tf.debugging.assert_rank(tensor, rank, message=f"{name} must have rank {rank}")
 
 
-def _check_last_dim(tensor: tf.Tensor, expected: tf.Tensor, name: str) -> None:
+def _check_last_dim(tensor: tf.Tensor, expected: int, name: str) -> None:
+    if tensor.shape[-1] is not None and tensor.shape[-1] != expected:
+        raise ValueError(f"{name} has incompatible trailing shape")
     tf.debugging.assert_equal(
         tf.shape(tensor)[-1],
         expected,
@@ -51,6 +53,8 @@ def _check_last_dim(tensor: tf.Tensor, expected: tf.Tensor, name: str) -> None:
 
 def _check_square_batch_matrix(tensor: tf.Tensor, dim: tf.Tensor, name: str) -> None:
     _check_rank(tensor, 3, name)
+    if not tensor.shape[-2:].is_compatible_with((dim, dim)):
+        raise ValueError(f"{name} has incompatible matrix shape")
     tf.debugging.assert_equal(
         tf.shape(tensor)[-2:],
         tf.stack([dim, dim]),
@@ -72,15 +76,19 @@ def _check_batched_value_shapes(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     _check_rank(observations, 2, "observations")
     _check_rank(initial_state_mean, 2, "initial_state_mean")
-    batch_dim = tf.shape(initial_state_mean)[0]
-    state_dim = tf.shape(initial_state_mean)[1]
-    obs_dim = tf.shape(observations)[1]
+    batch_dim = initial_state_mean.shape[0]
+    state_dim = initial_state_mean.shape[1]
+    obs_dim = observations.shape[1]
+    if batch_dim is None or state_dim is None or obs_dim is None:
+        raise ValueError("batch, state and observation shape must be fixed before XLA tracing")
 
     for name, tensor in (
         ("transition_offset", transition_offset),
         ("observation_offset", observation_offset),
     ):
         _check_rank(tensor, 2, name)
+        if tensor.shape[0] is not None and tensor.shape[0] != batch_dim:
+            raise ValueError(f"{name} has incompatible batch shape")
         tf.debugging.assert_equal(
             tf.shape(tensor)[0],
             batch_dim,
@@ -95,6 +103,8 @@ def _check_batched_value_shapes(
         ("initial_state_covariance", initial_state_covariance),
     ):
         _check_square_batch_matrix(tensor, state_dim, name)
+        if tensor.shape[0] is not None and tensor.shape[0] != batch_dim:
+            raise ValueError(f"{name} has incompatible batch shape")
         tf.debugging.assert_equal(
             tf.shape(tensor)[0],
             batch_dim,
@@ -102,14 +112,16 @@ def _check_batched_value_shapes(
         )
 
     _check_rank(observation_matrix, 3, "observation_matrix")
+    if not observation_matrix.shape.is_compatible_with((batch_dim, obs_dim, state_dim)):
+        raise ValueError("observation_matrix has incompatible shape")
+    if observation_covariance.shape[0] is not None and observation_covariance.shape[0] != batch_dim:
+        raise ValueError("observation_covariance has incompatible batch shape")
     tf.debugging.assert_equal(
         tf.shape(observation_matrix),
         tf.stack([batch_dim, obs_dim, state_dim]),
         message="observation_matrix must have shape [B, observation_dim, state_dim]",
     )
-    _check_square_batch_matrix(
-        observation_covariance, obs_dim, "observation_covariance"
-    )
+    _check_square_batch_matrix(observation_covariance, obs_dim, "observation_covariance")
     tf.debugging.assert_equal(
         tf.shape(observation_covariance)[0],
         batch_dim,
@@ -133,21 +145,17 @@ def _check_batched_derivative_shapes(
     d_observation_covariance: tf.Tensor,
 ) -> tf.Tensor:
     _check_rank(d_initial_state_mean, 3, "d_initial_state_mean")
-    parameter_dim = tf.shape(d_initial_state_mean)[1]
-    expected_vector_state = tf.stack([batch_dim, parameter_dim, state_dim])
-    expected_matrix_state = tf.stack([batch_dim, parameter_dim, state_dim, state_dim])
-    expected_vector_obs = tf.stack([batch_dim, parameter_dim, obs_dim])
-    expected_observation_matrix = tf.stack(
-        [batch_dim, parameter_dim, obs_dim, state_dim]
-    )
-    expected_matrix_obs = tf.stack([batch_dim, parameter_dim, obs_dim, obs_dim])
+    parameter_dim = d_initial_state_mean.shape[1]
+    if parameter_dim is None:
+        raise ValueError("parameter shape must be fixed before XLA tracing")
+    expected_vector_state = (batch_dim, parameter_dim, state_dim)
+    expected_matrix_state = (batch_dim, parameter_dim, state_dim, state_dim)
+    expected_vector_obs = (batch_dim, parameter_dim, obs_dim)
+    expected_observation_matrix = (batch_dim, parameter_dim, obs_dim, state_dim)
+    expected_matrix_obs = (batch_dim, parameter_dim, obs_dim, obs_dim)
     expected_shapes = (
         ("d_initial_state_mean", d_initial_state_mean, expected_vector_state),
-        (
-            "d_initial_state_covariance",
-            d_initial_state_covariance,
-            expected_matrix_state,
-        ),
+        ("d_initial_state_covariance", d_initial_state_covariance, expected_matrix_state),
         ("d_transition_offset", d_transition_offset, expected_vector_state),
         ("d_transition_matrix", d_transition_matrix, expected_matrix_state),
         ("d_transition_covariance", d_transition_covariance, expected_matrix_state),
@@ -156,6 +164,8 @@ def _check_batched_derivative_shapes(
         ("d_observation_covariance", d_observation_covariance, expected_matrix_obs),
     )
     for name, tensor, expected in expected_shapes:
+        if not tensor.shape.is_compatible_with(expected):
+            raise ValueError(f"{name} has incompatible batched derivative shape")
         tf.debugging.assert_equal(
             tf.shape(tensor),
             expected,
@@ -168,7 +178,7 @@ def _batched_cholesky_solve(chol: tf.Tensor, rhs: tf.Tensor) -> tf.Tensor:
     return tf.linalg.cholesky_solve(chol, rhs)
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=True)
 def tf_batched_covariance_kalman_value_and_score(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -248,7 +258,7 @@ def tf_batched_covariance_kalman_value_and_score(
     log_likelihood = tf.zeros([batch_dim], dtype=tf.float64)
     score = tf.zeros([batch_dim, parameter_dim], dtype=tf.float64)
 
-    for t in tf.range(tf.shape(y)[0]):
+    def time_step(t, covariance, d_covariance, d_mean, log_likelihood, mean, score):
         tf.autograph.experimental.set_loop_options(
             shape_invariants=[
                 (mean, tf.TensorShape([None, None])),
@@ -481,6 +491,13 @@ def tf_batched_covariance_kalman_value_and_score(
                 d_gain,
             )
         )
+        return t + 1, covariance, d_covariance, d_mean, log_likelihood, mean, score
+
+    _, covariance, d_covariance, d_mean, log_likelihood, mean, score = tf.while_loop(
+        lambda t, covariance, d_covariance, d_mean, log_likelihood, mean, score: t < tf.shape(y)[0],
+        time_step, (tf.constant(0, tf.int32), covariance, d_covariance, d_mean, log_likelihood, mean, score), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     return log_likelihood, score
 

@@ -3068,7 +3068,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
 )
 
 
-_G1A_BAYESFILTER_ROOT = Path("/home/ubuntu/python/BayesFilter")
+_G1A_BAYESFILTER_ROOT = Path(__file__).resolve().parents[1]
 _G1A_SOURCE_COVERAGE_MANIFEST = Path(
     "/home/ubuntu/python/MacroFinance/docs/reviews/"
     "daily_asset_midas_identifiable_multi_asset_expansion_phase_14_"

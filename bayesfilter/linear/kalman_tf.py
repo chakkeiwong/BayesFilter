@@ -13,7 +13,6 @@ from bayesfilter.linear.types_tf import TFLinearGaussianStateSpace
 from bayesfilter.results_tf import TFFilterValueResult
 from bayesfilter.structural import FilterRunMetadata
 
-
 TFLinearValueBackend = Literal["tf_cholesky", "tf_masked_cholesky"]
 
 
@@ -353,6 +352,10 @@ def _checked_masked_step(
 
 
 def _validate_mask_shape(observations: tf.Tensor, observation_mask: tf.Tensor) -> None:
+    if not observations.shape.is_compatible_with(observation_mask.shape):
+        raise tf.errors.InvalidArgumentError(
+            None, None, "Observation mask shape must match observations shape."
+        )
     tf.debugging.assert_equal(
         tf.shape(observation_mask),
         tf.shape(observations),
@@ -422,7 +425,7 @@ def _validate_checked_batched_static_shapes(
     return time_steps, batch_size, state_dim, observation_dim
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_masked_kalman_filter_checked_batched_static_with_diagnostics(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -494,7 +497,7 @@ def tf_masked_kalman_filter_checked_batched_static_with_diagnostics(
     maximum_condition = tf.zeros([batch_size], tf.float64)
     log_two_pi = tf.math.log(tf.constant(2.0 * math.pi, tf.float64))
 
-    for time_index in range(time_steps):
+    def time_step(time_index, active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue):
         predicted_mean = transition_offset + tf.linalg.matvec(
             transition_matrix, mean
         )
@@ -588,6 +591,13 @@ def tf_masked_kalman_filter_checked_batched_static_with_diagnostics(
         )
         maximum_condition = tf.maximum(maximum_condition, condition)
         active = step_valid
+        return time_index + 1, active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue
+
+    _, active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue = tf.while_loop(
+        lambda time_index, active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue: time_index < time_steps,
+        time_step, (tf.constant(0, tf.int32), active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     return (
         log_likelihood,
@@ -597,7 +607,7 @@ def tf_masked_kalman_filter_checked_batched_static_with_diagnostics(
     )
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_masked_kalman_filter_checked_batched_static_value(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -631,7 +641,7 @@ def tf_masked_kalman_filter_checked_batched_static_value(
     return value, valid
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -662,7 +672,7 @@ def tf_kalman_log_likelihood(
     return value
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_masked_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -695,7 +705,7 @@ def tf_masked_kalman_log_likelihood(
     return value
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -729,7 +739,7 @@ def tf_kalman_filter(
     means = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
     covariances = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
 
-    for t in tf.range(tf.shape(y)[0]):
+    def time_step(t, covariance, covariances, log_likelihood, mean, means):
         mean, covariance, contribution = _dense_step(
             time_index=t,
             row=y[t],
@@ -748,13 +758,20 @@ def tf_kalman_filter(
         if return_filtered:
             means = means.write(t, mean)
             covariances = covariances.write(t, covariance)
+        return t + 1, covariance, covariances, log_likelihood, mean, means
+
+    _, covariance, covariances, log_likelihood, mean, means = tf.while_loop(
+        lambda t, covariance, covariances, log_likelihood, mean, means: t < tf.shape(y)[0],
+        time_step, (tf.constant(0, tf.int32), covariance, covariances, log_likelihood, mean, means), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     filtered_means = means.stack() if return_filtered else None
     filtered_covariances = covariances.stack() if return_filtered else None
     return log_likelihood, filtered_means, filtered_covariances
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_masked_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -797,7 +814,7 @@ def tf_masked_kalman_filter(
     means = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
     covariances = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
 
-    for t in tf.range(tf.shape(y)[0]):
+    def time_step(t, covariance, covariances, log_likelihood, mean, means):
         mean, covariance, contribution, _, _ = _masked_step(
             time_index=t,
             row=y[t],
@@ -817,13 +834,20 @@ def tf_masked_kalman_filter(
         if return_filtered:
             means = means.write(t, mean)
             covariances = covariances.write(t, covariance)
+        return t + 1, covariance, covariances, log_likelihood, mean, means
+
+    _, covariance, covariances, log_likelihood, mean, means = tf.while_loop(
+        lambda t, covariance, covariances, log_likelihood, mean, means: t < tf.shape(y)[0],
+        time_step, (tf.constant(0, tf.int32), covariance, covariances, log_likelihood, mean, means), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     filtered_means = means.stack() if return_filtered else None
     filtered_covariances = covariances.stack() if return_filtered else None
     return log_likelihood, filtered_means, filtered_covariances
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_masked_kalman_filter_with_diagnostics(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -859,7 +883,7 @@ def tf_masked_kalman_filter_with_diagnostics(
     log_likelihood = tf.constant(0.0, dtype=tf.float64)
     min_eigenvalues = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
     condition_estimates = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
-    for t in tf.range(tf.shape(y)[0]):
+    def time_step(t, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues):
         mean, covariance, contribution, min_eigenvalue, condition_estimate = _masked_step(
             time_index=t, row=y[t], row_mask=observation_mask[t], mean=mean,
             covariance=covariance, transition_offset=transition_offset,
@@ -871,6 +895,13 @@ def tf_masked_kalman_filter_with_diagnostics(
         log_likelihood += contribution
         min_eigenvalues = min_eigenvalues.write(t, min_eigenvalue)
         condition_estimates = condition_estimates.write(t, condition_estimate)
+        return t + 1, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues
+
+    _, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues = tf.while_loop(
+        lambda t, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues: t < tf.shape(y)[0],
+        time_step, (tf.constant(0, tf.int32), condition_estimates, covariance, log_likelihood, mean, min_eigenvalues), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
     return (
         log_likelihood,
         min_eigenvalues.stack(),
@@ -916,13 +947,10 @@ def _tf_masked_kalman_filter_checked_static(
         )
     log_likelihood = tf.constant(0.0, dtype=tf.float64)
     active = tf.constant(True)
-    min_eigenvalues: list[tf.Tensor] = []
-    condition_estimates: list[tf.Tensor] = []
-    validity: list[tf.Tensor] = []
-    # The horizon is part of the frozen target signature. Static unrolling
-    # avoids TensorFlow's while_grad TemporaryVariable collision, which makes
-    # a symbolically looped score fail from the third period onward.
-    for t in range(int(time_steps)):
+    min_eigenvalues = tf.TensorArray(tf.float64, size=int(time_steps))
+    condition_estimates = tf.TensorArray(tf.float64, size=int(time_steps))
+    validity = tf.TensorArray(tf.bool, size=int(time_steps))
+    def time_step(t, active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity):
         (
             mean,
             covariance,
@@ -949,12 +977,19 @@ def _tf_masked_kalman_filter_checked_static(
         log_likelihood += contribution
         active = step_valid
         if collect_diagnostics:
-            min_eigenvalues.append(min_eigenvalue)
-            condition_estimates.append(condition_estimate)
-            validity.append(step_valid)
+            min_eigenvalues = min_eigenvalues.write(t, min_eigenvalue)
+            condition_estimates = condition_estimates.write(t, condition_estimate)
+            validity = validity.write(t, step_valid)
+        return t + 1, active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity
+
+    _, active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity = tf.while_loop(
+        lambda t, active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity: t < int(time_steps),
+        time_step, (tf.constant(0, tf.int32), active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
     diagnostics = None
     if collect_diagnostics:
-        diagnostics = (min_eigenvalues, condition_estimates, validity)
+        diagnostics = (min_eigenvalues.stack(), condition_estimates.stack(), validity.stack())
     return log_likelihood, active, mean, covariance, diagnostics
 
 
@@ -1006,9 +1041,9 @@ def tf_masked_kalman_filter_checked_with_diagnostics(
     min_eigenvalues, condition_estimates, validity = diagnostics
     return (
         log_likelihood,
-        tf.stack(min_eigenvalues),
-        tf.stack(condition_estimates),
-        tf.stack(validity),
+        min_eigenvalues,
+        condition_estimates,
+        validity,
         mean,
         covariance,
     )

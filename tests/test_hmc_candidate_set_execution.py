@@ -109,11 +109,20 @@ def test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence(tuned):
         assert tuple(evidence["seed"]) not in seen_seeds
         seen_seeds.add(tuple(evidence["seed"]))
         samples = _tensor_from_payload(evidence["samples"])
-        work = next(w for w in result.work_items if w.work_item_id == evidence["work"]["work_item_id"])
-        expected = (binding.config.num_warmup_steps
-                    + binding.config.verification_num_results * work.evidence_multiplier)
-        assert samples.shape == (expected, 4, 2)
-        assert receipt.draw_range == (binding.config.num_warmup_steps, expected)
+        work = evidence["work"]
+        issued_work = next(w for w in result.work_items if w.work_item_id == work["work_item_id"])
+        assert work["stage"] == receipt.stage
+        multiplier = result.config.evidence_rungs[work["evidence_rung"]]
+        assert work["evidence_multiplier"] == multiplier
+        assert issued_work.evidence_multiplier == multiplier
+        base_draws = {
+            "measurement": binding.config.measurement_num_results,
+            "verification": binding.config.verification_num_results,
+        }[receipt.stage]
+        warmup = binding.config.num_warmup_steps
+        expected_count = warmup + base_draws * multiplier
+        assert samples.shape == (expected_count, 4, 2)
+        assert receipt.draw_range == (warmup, expected_count)
     assert len(result.verified_candidate_ids) >= 2
 
 

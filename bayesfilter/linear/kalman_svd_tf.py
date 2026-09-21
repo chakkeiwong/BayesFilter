@@ -19,7 +19,6 @@ from bayesfilter.linear.types_tf import TFLinearGaussianStateSpace
 from bayesfilter.results_tf import TFFilterValueResult
 from bayesfilter.structural import FilterRunMetadata
 
-
 TFSVDLinearValueBackend = Literal["tf_svd", "tf_masked_svd"]
 
 
@@ -67,7 +66,7 @@ def _static_num_timesteps(observations: tf.Tensor) -> int:
     return int(n_timesteps)
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_svd_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -100,7 +99,7 @@ def tf_svd_kalman_log_likelihood(
     return value, floor_count_value, residual, implemented_covariance
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_svd_masked_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -137,7 +136,7 @@ def tf_svd_masked_kalman_log_likelihood(
     return value, floor_count_value, residual, implemented_covariance
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_svd_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -181,10 +180,10 @@ def tf_svd_kalman_filter(
     max_floor_count = tf.constant(0, dtype=tf.int32)
     max_projection_residual = tf.constant(0.0, dtype=tf.float64)
     last_implemented_covariance = tf.zeros((obs_dim, obs_dim), dtype=tf.float64)
-    means = []
-    covariances = []
+    means = tf.TensorArray(tf.float64, size=n_timesteps, clear_after_read=False)
+    covariances = tf.TensorArray(tf.float64, size=n_timesteps, clear_after_read=False)
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means):
         c = _vector_at_time(transition_offset, t)
         T = _matrix_at_time(transition_matrix, t)
         Q = _matrix_at_time(transition_covariance, t)
@@ -231,8 +230,15 @@ def tf_svd_kalman_filter(
         max_projection_residual = tf.maximum(max_projection_residual, residual)
         last_implemented_covariance = implemented_covariance
         if return_filtered:
-            means.append(filtered_mean)
-            covariances.append(filtered_covariance)
+            means = means.write(t, filtered_mean)
+            covariances = covariances.write(t, filtered_covariance)
+        return t + 1, covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means
+
+    _, covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means = tf.while_loop(
+        lambda t, covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means: t < n_timesteps,
+        time_step, (tf.constant(0, tf.int32), covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     return (
         log_likelihood,
@@ -242,7 +248,7 @@ def tf_svd_kalman_filter(
     )
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_svd_masked_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -285,10 +291,10 @@ def tf_svd_masked_kalman_filter(
     max_floor_count = tf.constant(0, dtype=tf.int32)
     max_projection_residual = tf.constant(0.0, dtype=tf.float64)
     last_implemented_covariance = tf.zeros((obs_dim, obs_dim), dtype=tf.float64)
-    means = []
-    covariances = []
+    means = tf.TensorArray(tf.float64, size=n_timesteps, clear_after_read=False)
+    covariances = tf.TensorArray(tf.float64, size=n_timesteps, clear_after_read=False)
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means):
         c = _vector_at_time(transition_offset, t)
         T = _matrix_at_time(transition_matrix, t)
         Q = _matrix_at_time(transition_covariance, t)
@@ -350,8 +356,15 @@ def tf_svd_masked_kalman_filter(
         max_projection_residual = tf.maximum(max_projection_residual, residual)
         last_implemented_covariance = implemented_covariance
         if return_filtered:
-            means.append(filtered_mean)
-            covariances.append(filtered_covariance)
+            means = means.write(t, filtered_mean)
+            covariances = covariances.write(t, filtered_covariance)
+        return t + 1, covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means
+
+    _, covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means = tf.while_loop(
+        lambda t, covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means: t < n_timesteps,
+        time_step, (tf.constant(0, tf.int32), covariance, covariances, last_implemented_covariance, log_likelihood, max_floor_count, max_projection_residual, mean, means), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     return (
         log_likelihood,

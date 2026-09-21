@@ -354,18 +354,23 @@ class _DenseAutoregressiveIAFComponent:
         return output, tf.reduce_sum(scale_log, axis=-1)
 
     def inverse(self, output: tf.Tensor) -> tf.Tensor:
-        values = tf.zeros_like(output)
-        for index in range(self.dim):
+        """Solve x_i=(y_i-shift_i(x_<i))*exp(-scale_i(x_<i)).
+
+        Strict autoregressive masks make earlier coordinates sufficient for
+        each solve. A TensorFlow while loop keeps the graph size independent
+        of dimension; Python unrolling duplicated the complete network D times.
+        The original row-batched network and solve arithmetic are unchanged.
+        """
+        def solve(index, values):
             scale_log, shift, _, _ = self._network(values)
-            solved = (output[..., index] - shift[..., index]) * tf.exp(
-                -scale_log[..., index]
-            )
-            delta = solved - values[..., index]
-            values = values + delta[..., tf.newaxis] * tf.one_hot(
-                index,
-                self.dim,
-                dtype=values.dtype,
-            )
+            solved = (output[..., index]-shift[..., index])*tf.exp(-scale_log[..., index])
+            delta = solved-values[..., index]
+            values = values+delta[..., tf.newaxis]*tf.one_hot(index, self.dim, dtype=values.dtype)
+            return index+1, values
+
+        _, values = tf.while_loop(lambda index, values: index < self.dim,
+            solve, (tf.constant(0), tf.zeros_like(output)), parallel_iterations=1,
+            maximum_iterations=self.dim)
         return values
 
     def pullback_score(

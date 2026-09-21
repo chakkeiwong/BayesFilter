@@ -3185,7 +3185,7 @@ def test_sequential_rhat_failure_is_explanatory_only() -> None:
     )
 
     assert status == "passed"
-    assert role == "dependence_aware_fixed_kernel_verification_passed"
+    assert role == "acceptance_health_fixed_kernel_verification_passed"
     assert hard_vetoes == ()
     assert repair_triggers == ()
     assert diagnostics["all_finite_rhat_at_or_below_threshold"] is False
@@ -3223,7 +3223,7 @@ def test_sequential_verification_passes_with_valid_in_band_evidence() -> None:
     )
 
     assert status == "passed"
-    assert role == "dependence_aware_fixed_kernel_verification_passed"
+    assert role == "acceptance_health_fixed_kernel_verification_passed"
     assert hard_vetoes == ()
     assert repair_triggers == ()
 
@@ -5945,7 +5945,7 @@ def test_legacy_shared_epsilon_outer_loop_accepts_fallback_and_reserved_repair(
             callback_result=FixedMassHMCTuningBudgetCallbackResult(),
             final_status="passed" if repaired else "repair_or_retry",
             diagnostic_role=(
-                "dependence_aware_fixed_kernel_verification_passed"
+                "acceptance_health_fixed_kernel_verification_passed"
                 if repaired
                 else "verification_acceptance_repair_trigger"
             ),

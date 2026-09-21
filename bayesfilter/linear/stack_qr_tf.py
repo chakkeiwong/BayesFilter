@@ -10,7 +10,6 @@ from typing import Any
 
 import tensorflow as tf
 
-
 DEFAULT_RELATIVE_PIVOT_TOLERANCE = 1.0e-12
 
 
@@ -146,21 +145,17 @@ def batched_stack_qr_lower(
             raise ValueError("d_stack spatial dimensions do not match stack")
         tf.debugging.assert_all_finite(d_stack, "d_stack contains NaN or Inf")
         d_matrix = tf.linalg.matrix_transpose(d_stack)
-        d_r_rows = []
-        for parameter_index in range(int(d_stack.shape[1])):
-            d_a = d_matrix[:, parameter_index, :, :]
-            d_a_t = tf.linalg.matrix_transpose(d_a)
-            solved_t = tf.linalg.triangular_solve(
-                tf.linalg.matrix_transpose(r),
-                d_a_t,
-                lower=True,
-            )
-            solved = tf.linalg.matrix_transpose(solved_t)
-            e = tf.einsum("bki,bkj->bij", q, solved)
-            lower = tf.linalg.band_part(e, -1, 0) - tf.linalg.diag(tf.linalg.diag_part(e))
-            omega = lower - tf.linalg.matrix_transpose(lower)
-            d_r_rows.append(tf.einsum("bij,bjk->bik", e - omega, r))
-        d_r = tf.stack(d_r_rows, axis=1)
+        # Independent derivative directions are a batch axis, not traced copies
+        # of the solve (ch12_factor_derivatives, eq:bf-factor-qr-r-first).
+        solved = tf.linalg.matrix_transpose(tf.linalg.triangular_solve(
+            tf.linalg.matrix_transpose(r)[:, None, :, :],
+            tf.linalg.matrix_transpose(d_matrix),
+            lower=True,
+        ))
+        e = tf.einsum("bki,bpkj->bpij", q, solved)
+        lower = tf.linalg.band_part(e, -1, 0) - tf.linalg.diag(tf.linalg.diag_part(e))
+        omega = lower - tf.linalg.matrix_transpose(lower)
+        d_r = tf.einsum("bpij,bjk->bpik", e - omega, r)
         d_factor = tf.linalg.matrix_transpose(d_r)
         tf.debugging.assert_all_finite(d_factor, "QR derivative contains NaN or Inf")
 

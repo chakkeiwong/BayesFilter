@@ -8,13 +8,7 @@ from typing import Mapping, Protocol, Sequence
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-from bayesfilter.highdim.diagnostics import (
-    HighDimStatus,
-    MeasureConvention,
-    assert_density_matches_mass,
-    assert_tf_float64,
-    freeze_mapping,
-)
+from bayesfilter.highdim.bases import BoundedInterval, LegendreBasis1D, ProductBasis
 from bayesfilter.highdim.derivatives import (
     FiniteDifferenceTable,
     FixedBranchDerivativeConfig,
@@ -28,13 +22,26 @@ from bayesfilter.highdim.derivatives import (
     squared_tt_log_normalizer_derivative,
     tt_evaluation_derivative,
 )
+from bayesfilter.highdim.diagnostics import (
+    HighDimStatus,
+    MeasureConvention,
+    assert_density_matches_mass,
+    assert_tf_float64,
+    freeze_mapping,
+)
+from bayesfilter.highdim.fitting import (
+    FixedTTFitConfig,
+    FixedTTFitSampleBatch,
+    FixedTTFitter,
+)
 from bayesfilter.highdim.fixed_branch import BranchIdentity, BranchManifest
-from bayesfilter.highdim.bases import BoundedInterval, LegendreBasis1D, ProductBasis
-from bayesfilter.highdim.fitting import FixedTTFitConfig, FixedTTFitSampleBatch, FixedTTFitter
 from bayesfilter.highdim.models import LinearGaussianSSM, TFHighDimStateSpaceModel
-from bayesfilter.highdim.squared_tt import SquaredTTDensity, TensorProductReferenceDensity
+from bayesfilter.highdim.squared_tt import (
+    SquaredTTDensity,
+    TensorProductReferenceDensity,
+)
 from bayesfilter.highdim.tt import TTCore
-
+from bayesfilter.linear.compiled_recurrence_tf import compiled_tensor_recurrence
 
 MULTISTATE_RETAINED_GRID_ROUTE_ROLE = "diagnostic_historical_retained_grid"
 MULTISTATE_RETAINED_GRID_LEADERBOARD_ADMISSION = (
@@ -612,38 +619,15 @@ class FixedBranchSquaredTTFilter:
         if theta_tensor.shape.rank != 2 or theta_tensor.shape[1] != model.parameter_dim():
             raise ValueError(f"theta: {HighDimStatus.INVALID_SHAPE.value}")
         observation_matrix = _as_observation_matrix(observations, model.observation_dim())
-        mean = model.initial_mean
-        covariance = model.initial_covariance
+        means, covariances, increments = _compiled_linear_gaussian_moment_history(model, observation_matrix)
         steps: list[FixedBranchFilterStepResult] = []
         log_terms = []
+        # The Kalman recurrence has finished. This loop builds per-date TT
+        # artifacts/manifests from its tensor histories; it cannot alter the filter.
         for time_index in range(int(observation_matrix.shape[0])):
-            if time_index > 0:
-                mean = model.transition_offset + tf.linalg.matvec(model.transition_matrix, mean)
-                covariance = _symmetrize(
-                    model.transition_matrix @ covariance @ tf.transpose(model.transition_matrix)
-                    + model.transition_covariance
-                )
-            innovation = observation_matrix[time_index] - (
-                model.observation_offset + tf.linalg.matvec(model.observation_matrix, mean)
-            )
-            innovation_covariance = _symmetrize(
-                model.observation_matrix @ covariance @ tf.transpose(model.observation_matrix)
-                + model.observation_covariance
-            )
-            log_increment = _mvn_log_prob(
-                innovation[tf.newaxis, :],
-                tf.zeros([1, model.observation_dim()], dtype=tf.float64),
-                innovation_covariance,
-            )[0]
-            gain_rhs = covariance @ tf.transpose(model.observation_matrix)
-            chol = tf.linalg.cholesky(innovation_covariance)
-            kalman_gain = tf.transpose(tf.linalg.cholesky_solve(chol, tf.transpose(gain_rhs)))
-            mean = mean + tf.linalg.matvec(kalman_gain, innovation)
-            left = tf.eye(model.state_dim(), dtype=tf.float64) - kalman_gain @ model.observation_matrix
-            covariance = _symmetrize(
-                left @ covariance @ tf.transpose(left)
-                + kalman_gain @ model.observation_covariance @ tf.transpose(kalman_gain)
-            )
+            mean = means[time_index]
+            covariance = covariances[time_index]
+            log_increment = increments[time_index]
             tt_artifacts = self._fit_current_filtering_density_artifacts(
                 time_index=time_index,
                 mean=mean,
@@ -2015,6 +1999,50 @@ def multistate_nonlinear_fixed_design_tt_value_path(
             ),
         },
     )
+
+
+def _compiled_linear_gaussian_moment_history(model, observation_matrix):
+    """Compiled Kalman moments consumed by the retained-density report wrapper."""
+    dates, n = int(observation_matrix.shape[0]), model.state_dim()
+    means = tf.zeros([dates, n], tf.float64)
+    covariances = tf.zeros([dates, n, n], tf.float64)
+    increments = tf.zeros([dates], tf.float64)
+
+    def body(time_index, mean, covariance, means, covariances, increments):
+        def predict():
+            return (model.transition_offset + tf.linalg.matvec(model.transition_matrix, mean),
+                    _symmetrize(model.transition_matrix @ covariance @ tf.transpose(model.transition_matrix)
+                                + model.transition_covariance))
+        mean, covariance = tf.cond(time_index > 0, predict, lambda: (mean, covariance))
+        innovation = observation_matrix[time_index] - (
+            model.observation_offset + tf.linalg.matvec(model.observation_matrix, mean)
+        )
+        innovation_covariance = _symmetrize(
+            model.observation_matrix @ covariance @ tf.transpose(model.observation_matrix)
+            + model.observation_covariance
+        )
+        log_increment = _mvn_log_prob(
+            innovation[tf.newaxis, :],
+            tf.zeros([1, model.observation_dim()], dtype=tf.float64),
+            innovation_covariance,
+        )[0]
+        gain_rhs = covariance @ tf.transpose(model.observation_matrix)
+        chol = tf.linalg.cholesky(innovation_covariance)
+        kalman_gain = tf.transpose(tf.linalg.cholesky_solve(chol, tf.transpose(gain_rhs)))
+        mean = mean + tf.linalg.matvec(kalman_gain, innovation)
+        left = tf.eye(model.state_dim(), dtype=tf.float64) - kalman_gain @ model.observation_matrix
+        covariance = _symmetrize(
+            left @ covariance @ tf.transpose(left)
+            + kalman_gain @ model.observation_covariance @ tf.transpose(kalman_gain)
+        )
+        index = tf.reshape(time_index, [1, 1])
+        return (time_index + 1, mean, covariance,
+                tf.tensor_scatter_nd_update(means, index, mean[None]),
+                tf.tensor_scatter_nd_update(covariances, index, covariance[None]),
+                tf.tensor_scatter_nd_update(increments, index, log_increment[None]))
+
+    result = compiled_tensor_recurrence(body, (model.initial_mean, model.initial_covariance, means, covariances, increments), dates)
+    return result[3:]
 
 
 def gaussian_retained_filter(

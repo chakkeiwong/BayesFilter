@@ -13,8 +13,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 import tensorflow as tf
 
-
-FIXED_SGQF_RUNTIME_MODE = "eager_only_python_branch_records"
+FIXED_SGQF_RUNTIME_MODE = "xla_tensor_recurrence_python_branch_records"
 
 
 @dataclass(frozen=True)
@@ -973,6 +972,32 @@ def _branch_failure_result(
     )
 
 
+def _fixed_sgqf_tensor_step_diagnostics(history, time_index, config):
+    minima = history["minimum_eigenvalues"][time_index]
+    return {name: {"min_eigenvalue": minima[index], "epsilon": tf.constant(epsilon, tf.float64),
+                   "symmetrized_matrix": history[matrix][time_index]}
+            for index, name, epsilon, matrix in (
+                (0, "previous_covariance_diagnostics", config.predictive_epsilon, "previous_covariance"),
+                (1, "predictive_covariance_diagnostics", config.predictive_epsilon, "predicted_covariance"),
+                (2, "innovation_covariance_diagnostics", config.innovation_epsilon, "innovation_covariance"),
+                (3, "filtered_covariance_diagnostics", config.predictive_epsilon, "filtered_covariance"))}
+
+
+def _fixed_sgqf_tensor_failure(numeric, config):
+    """Materialize only the finished tensor status at the reporting boundary."""
+    code = int(numeric["status_code"].numpy())
+    if code == 0:
+        return None
+    time_index = int(numeric["attempted_steps"].numpy()) - 1
+    stages = ("previous_covariance", "predictive_covariance", "innovation_covariance", "carried_covariance", "numerical_output")
+    keys = ("previous_covariance_diagnostics", "predictive_covariance_diagnostics",
+            "innovation_covariance_diagnostics", "filtered_covariance_diagnostics")
+    diagnostics = (_fixed_sgqf_tensor_step_diagnostics(numeric["history"], time_index, config)[keys[code - 1]]
+                   if code <= 4 else {"status_code": numeric["status_code"]})
+    return TFFixedSGQFStepFailure(time_index=time_index, stage=stages[code - 1],
+        reason="positive_definiteness_veto" if code <= 4 else "nonfinite_output_veto", diagnostics=diagnostics)
+
+
 def tf_fixed_sgqf_filter(
     observations: tf.Tensor,
     model: TFFixedSGQFNonGaussianModel | TFFixedSGQFNonlinearModel | TFFixedSGQFAffineModel,
@@ -981,8 +1006,13 @@ def tf_fixed_sgqf_filter(
     branch_config: TFFixedSGQFBranchConfig | None = None,
     branch_identity: TFFixedSGQFBranchIdentity | None = None,
     return_filtered: bool = True,
+    jit_compile: bool = True,
 ) -> TFFixedSGQFValueResult:
-    """Evaluate the p47 Fixed-SGQF value recursion on a fixed branch."""
+    """Run the XLA recurrence and assemble the existing Python step report.
+
+    Compiled consumers use ``fixed_sgqf_tensor_result`` directly. The explicit
+    ``jit_compile=False`` option is for independent reference/autodiff checks.
+    """
 
     y = _as_observation_matrix(observations)
     branch_config = branch_config or TFFixedSGQFBranchConfig()
@@ -1023,246 +1053,43 @@ def tf_fixed_sgqf_filter(
             failure=failure,
         )
 
-    mean = tf.convert_to_tensor(model.initial_mean, dtype=tf.float64)
-    covariance = _symmetrize(model.initial_covariance)
-    process_covariance = _symmetrize(model.process_covariance)
-    observation_covariance = _symmetrize(model.observation_covariance)
-    state_dim = int(mean.shape[0])
-    observation_dim = int(observation_covariance.shape[0])
-    weights = tf.convert_to_tensor(cloud.weights, dtype=tf.float64)
-    log_likelihood = tf.constant(0.0, dtype=tf.float64)
-    step_results: list[TFFixedSGQFStepResult] = []
-    filtered_means = []
-    filtered_covariances = []
-    accepted_steps = 0
+    from bayesfilter.nonlinear.fixed_sgqf_compiled_tf import fixed_sgqf_tensor_result
 
-    for time_index in range(int(y.shape[0])):
-        previous_factor, previous_diag, previous_failure = _cholesky_factor_or_failure(
-            covariance,
-            epsilon=branch_config.predictive_epsilon,
-            time_index=time_index,
-            stage="previous_covariance",
-        )
-        if previous_failure is not None:
-            step = _branch_failure_result(
-                branch_identity=branch_identity,
-                time_index=time_index,
-                failure=previous_failure,
-                diagnostics={
-                    "branch_hash": branch_identity.hash.value,
-                    "previous_covariance_diagnostics": previous_diag,
-                },
-            )
-            step_results.append(step)
-            return TFFixedSGQFValueResult(
-                log_likelihood=None,
-                filtered_means=None,
-                filtered_covariances=None,
-                step_results=tuple(step_results),
-                branch_identity=branch_identity,
-                diagnostics=_common_result_diagnostics(
-                    branch_identity=branch_identity,
-                    branch_config=branch_config,
-                    cloud=cloud,
-                    accepted_steps=accepted_steps,
-                    failure=previous_failure,
-                ),
-                failure=previous_failure,
-            )
-
-        previous_points = mean[tf.newaxis, :] + cloud.points @ tf.transpose(previous_factor)
-        transition_values = model.transition(previous_points)
-        predicted_mean = _weighted_mean(transition_values, weights)
-        centered_predicted = transition_values - predicted_mean[tf.newaxis, :]
-        predicted_covariance = _symmetrize(process_covariance + _weighted_covariance(centered_predicted, weights))
-        predicted_factor, predictive_diag, predictive_failure = _cholesky_factor_or_failure(
-            predicted_covariance,
-            epsilon=branch_config.predictive_epsilon,
-            time_index=time_index,
-            stage="predictive_covariance",
-        )
-        if predictive_failure is not None:
-            step = _branch_failure_result(
-                branch_identity=branch_identity,
-                time_index=time_index,
-                failure=predictive_failure,
-                diagnostics={
-                    "branch_hash": branch_identity.hash.value,
-                    "previous_covariance_diagnostics": previous_diag,
-                    "predictive_covariance_diagnostics": predictive_diag,
-                    "predicted_mean": predicted_mean,
-                },
-            )
-            step_results.append(step)
-            return TFFixedSGQFValueResult(
-                log_likelihood=None,
-                filtered_means=None,
-                filtered_covariances=None,
-                step_results=tuple(step_results),
-                branch_identity=branch_identity,
-                diagnostics=_common_result_diagnostics(
-                    branch_identity=branch_identity,
-                    branch_config=branch_config,
-                    cloud=cloud,
-                    accepted_steps=accepted_steps,
-                    failure=predictive_failure,
-                ),
-                failure=predictive_failure,
-            )
-
-        predictive_points = predicted_mean[tf.newaxis, :] + cloud.points @ tf.transpose(predicted_factor)
-        observation_values = model.observe(predictive_points)
-        observation_mean = _weighted_mean(observation_values, weights)
-        centered_observation = observation_values - observation_mean[tf.newaxis, :]
-        innovation_covariance = _symmetrize(observation_covariance + _weighted_covariance(centered_observation, weights))
-        innovation_factor, innovation_diag, innovation_failure = _cholesky_factor_or_failure(
-            innovation_covariance,
-            epsilon=branch_config.innovation_epsilon,
-            time_index=time_index,
-            stage="innovation_covariance",
-        )
-        cross_covariance = tf.transpose(predictive_points - predicted_mean[tf.newaxis, :]) @ (
-            centered_observation * weights[:, tf.newaxis]
-        )
-        innovation = y[time_index] - observation_mean
-        if innovation_failure is not None:
-            step = _branch_failure_result(
-                branch_identity=branch_identity,
-                time_index=time_index,
-                failure=innovation_failure,
-                diagnostics={
-                    "branch_hash": branch_identity.hash.value,
-                    "predicted_mean": predicted_mean,
-                    "predicted_covariance": predicted_covariance,
-                    "observation_mean": observation_mean,
-                    "innovation_covariance_diagnostics": innovation_diag,
-                    "cross_covariance": cross_covariance,
-                },
-            )
-            step_results.append(step)
-            return TFFixedSGQFValueResult(
-                log_likelihood=None,
-                filtered_means=None,
-                filtered_covariances=None,
-                step_results=tuple(step_results),
-                branch_identity=branch_identity,
-                diagnostics=_common_result_diagnostics(
-                    branch_identity=branch_identity,
-                    branch_config=branch_config,
-                    cloud=cloud,
-                    accepted_steps=accepted_steps,
-                    failure=innovation_failure,
-                ),
-                failure=innovation_failure,
-            )
-
-        innovation_solve = tf.linalg.cholesky_solve(innovation_factor, innovation[:, tf.newaxis])[:, 0]
-        innovation_precision = tf.linalg.cholesky_solve(
-            innovation_factor,
-            tf.eye(observation_dim, dtype=tf.float64),
-        )
-        log_det = 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(innovation_factor)))
-        log_likelihood_increment = -0.5 * (
-            tf.cast(observation_dim, tf.float64) * tf.math.log(tf.constant(2.0 * math.pi, dtype=tf.float64))
-            + log_det
-            + tf.reduce_sum(innovation * innovation_solve)
-        )
-        gain = cross_covariance @ innovation_precision
-        filtered_mean = predicted_mean + tf.linalg.matvec(gain, innovation)
-        filtered_covariance = _symmetrize(
-            predicted_covariance - gain @ innovation_covariance @ tf.transpose(gain)
-        )
-        _carried_factor, carried_diag, carried_failure = _cholesky_factor_or_failure(
-            filtered_covariance,
-            epsilon=branch_config.predictive_epsilon,
-            time_index=time_index,
-            stage="carried_covariance",
-        )
-        if carried_failure is not None:
-            step = _branch_failure_result(
-                branch_identity=branch_identity,
-                time_index=time_index,
-                failure=carried_failure,
-                diagnostics={
-                    "branch_hash": branch_identity.hash.value,
-                    "predicted_mean": predicted_mean,
-                    "predicted_covariance": predicted_covariance,
-                    "observation_mean": observation_mean,
-                    "innovation_covariance": innovation_covariance,
-                    "cross_covariance": cross_covariance,
-                    "innovation": innovation,
-                    "gain": gain,
-                    "filtered_covariance_diagnostics": carried_diag,
-                },
-            )
-            step_results.append(step)
-            return TFFixedSGQFValueResult(
-                log_likelihood=None,
-                filtered_means=None,
-                filtered_covariances=None,
-                step_results=tuple(step_results),
-                branch_identity=branch_identity,
-                diagnostics=_common_result_diagnostics(
-                    branch_identity=branch_identity,
-                    branch_config=branch_config,
-                    cloud=cloud,
-                    accepted_steps=accepted_steps,
-                    failure=carried_failure,
-                ),
-                failure=carried_failure,
-            )
-
-        step = TFFixedSGQFStepResult(
-            accepted=True,
-            time_index=time_index,
-            log_likelihood_increment=log_likelihood_increment,
-            predicted_mean=predicted_mean,
-            predicted_covariance=predicted_covariance,
-            predicted_factor=predicted_factor,
-            observation_mean=observation_mean,
-            innovation_covariance=innovation_covariance,
-            innovation_factor=innovation_factor,
-            cross_covariance=cross_covariance,
-            innovation=innovation,
-            innovation_solve=innovation_solve,
-            gain=gain,
-            filtered_mean=filtered_mean,
-            filtered_covariance=filtered_covariance,
-            branch_identity=branch_identity,
-            diagnostics={
-                "branch_hash": branch_identity.hash.value,
-                "previous_covariance_diagnostics": previous_diag,
-                "predictive_covariance_diagnostics": predictive_diag,
-                "innovation_covariance_diagnostics": innovation_diag,
-                "cloud_point_count": tf.convert_to_tensor(cloud.point_count, dtype=tf.int32),
-                "weight_total": tf.convert_to_tensor(cloud.weight_total, dtype=tf.float64),
-                "negative_weight_count": tf.convert_to_tensor(cloud.negative_weight_count, dtype=tf.int32),
-            },
-        )
-        step_results.append(step)
-        log_likelihood = log_likelihood + log_likelihood_increment
-        accepted_steps += 1
-        mean = filtered_mean
-        covariance = filtered_covariance
-        if return_filtered:
-            filtered_means.append(filtered_mean)
-            filtered_covariances.append(filtered_covariance)
-
+    numeric = fixed_sgqf_tensor_result(y, model, cloud, branch_config, jit_compile=jit_compile)
+    failure = _fixed_sgqf_tensor_failure(numeric, branch_config)
+    accepted_steps = int(numeric["accepted_steps"].numpy())
+    history = numeric["history"]
+    fields = ("log_likelihood_increment", "predicted_mean", "predicted_covariance", "predicted_factor",
+              "observation_mean", "innovation_covariance", "innovation_factor", "cross_covariance",
+              "innovation", "innovation_solve", "gain", "filtered_mean", "filtered_covariance")
+    step_results = []
+    # Reporting only: all numerical recurrences and branch decisions completed above.
+    for time_index in range(int(numeric["attempted_steps"].numpy())):
+        diagnostic = _fixed_sgqf_tensor_step_diagnostics(history, time_index, branch_config)
+        diagnostic.update({"branch_hash": branch_identity.hash.value,
+                           "cloud_point_count": tf.constant(cloud.point_count),
+                           "weight_total": tf.constant(cloud.weight_total, tf.float64),
+                           "negative_weight_count": tf.constant(cloud.negative_weight_count)})
+        if failure is not None and time_index == failure.time_index:
+            step_results.append(_branch_failure_result(branch_identity=branch_identity,
+                time_index=time_index, failure=failure, diagnostics=diagnostic))
+        else:
+            payload = {name: history[name][time_index] for name in fields}
+            step_results.append(TFFixedSGQFStepResult(accepted=True, time_index=time_index,
+                branch_identity=branch_identity, diagnostics=diagnostic, **payload))
+    diagnostics = dict(_common_result_diagnostics(
+        branch_identity=branch_identity, branch_config=branch_config, cloud=cloud,
+        accepted_steps=accepted_steps, failure=failure))
+    diagnostics.update({"jit_compile": jit_compile, "numerical_runtime": "fixed_sgqf_tensor_result",
+                        "status_code": numeric["status_code"]})
     return TFFixedSGQFValueResult(
-        log_likelihood=log_likelihood,
-        filtered_means=tf.stack(filtered_means, axis=0) if return_filtered else None,
-        filtered_covariances=tf.stack(filtered_covariances, axis=0) if return_filtered else None,
-        step_results=tuple(step_results),
-        branch_identity=branch_identity,
-        diagnostics=_common_result_diagnostics(
-            branch_identity=branch_identity,
-            branch_config=branch_config,
-            cloud=cloud,
-            accepted_steps=accepted_steps,
-            failure=None,
-        ),
-        failure=None,
+        log_likelihood=numeric["log_likelihood"] if failure is None else None,
+        filtered_means=history["filtered_mean"] if failure is None and return_filtered else None,
+        filtered_covariances=history["filtered_covariance"] if failure is None and return_filtered else None,
+        step_results=tuple(step_results), branch_identity=branch_identity,
+        diagnostics=diagnostics, failure=failure,
     )
+
 
 
 def tf_fixed_sgqf_p47_one_step_oracle() -> tuple[TFFixedSGQFOneStepOracle, TFFixedSGQFCloud]:

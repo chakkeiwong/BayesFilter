@@ -10,7 +10,7 @@ import resource
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 
 _TARGET: Any | None = None
@@ -32,11 +32,13 @@ def _worker_environment(cores: int) -> Mapping[str, str]:
     threads = str(int(cores))
     return {
         "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "RAYON_NUM_THREADS": "1",
         "TF_CPP_MIN_LOG_LEVEL": "3",
         "OMP_NUM_THREADS": threads,
-        "OPENBLAS_NUM_THREADS": threads,
-        "MKL_NUM_THREADS": threads,
-        "NUMEXPR_NUM_THREADS": threads,
+        "OPENBLAS_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
         "TF_NUM_INTRAOP_THREADS": threads,
         "TF_NUM_INTEROP_THREADS": "1",
     }
@@ -48,7 +50,7 @@ def _worker_init(
     cores: int,
     batch_sizes: tuple[int, ...],
     barrier: Any,
-    assigned_cpu: int | None,
+    assigned_cpu: int | tuple[int, ...] | None,
 ) -> None:
     global _TARGET, _READY_BARRIER, _METADATA, _STATUS_CALLS
 
@@ -58,11 +60,13 @@ def _worker_init(
     }
     if mismatched:
         raise RuntimeError("batch worker environment mismatch: " + ", ".join(sorted(mismatched)))
-    assigned_cpu = None if assigned_cpu is None else int(assigned_cpu)
-    if assigned_cpu is not None:
-        # Pin before importing TensorFlow so lazily created native threads
-        # inherit the worker's single-core affinity.
-        os.sched_setaffinity(0, {assigned_cpu})
+    cpu_group = (() if assigned_cpu is None else (assigned_cpu,) if isinstance(assigned_cpu, int)
+                 else tuple(assigned_cpu))
+    assigned_cpu = cpu_group[0] if len(cpu_group) == 1 else None
+    if cpu_group:
+        # Pin before importing TensorFlow so all new native threads inherit
+        # the declared disjoint physical-core group.
+        os.sched_setaffinity(0, set(cpu_group))
     # Thread counts are supplied through the environment before TensorFlow is
     # imported; changing them after import can initialize the context too
     # early and raises in spawned workers.
@@ -76,8 +80,8 @@ def _worker_init(
     target = factory(dict(factory_config))
     if getattr(target, "evaluation_policy", None) not in _ADMITTED_EVALUATION_POLICIES:
         raise RuntimeError("worker target is not an admitted batch-native route")
-    if assigned_cpu is not None:
-        _bind_process_threads_to_cpu(assigned_cpu)
+    if cpu_group:
+        _bind_process_threads_to_cpus(cpu_group)
     _TARGET = target
     status_method = getattr(target, "neutra_batch_log_prob_and_grad_status", None)
     status_jit_compile = bool(getattr(target, "_jit_compile", False))
@@ -100,6 +104,8 @@ def _worker_init(
     _METADATA = {
         "pid": os.getpid(),
         "assigned_cpu": assigned_cpu,
+        "assigned_cpus": list(cpu_group),
+        "environment": expected,
         "thread_affinity": _thread_affinity_snapshot(),
         "worker_backend": "batch_native_value_score",
         "evaluation_policy": target.evaluation_policy,
@@ -148,6 +154,7 @@ def _worker_evaluate(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     rows = tf.io.parse_tensor(payload["rows"], out_type=tf.float64)
     rows = tf.ensure_shape(rows, [int(payload["row_count"]), int(_TARGET.parameter_dim)])
     started = time.perf_counter()
+    usage_before = resource.getrusage(resource.RUSAGE_SELF)
     preserve_status = bool(payload.get("preserve_status", False))
     if preserve_status:
         status_call = _STATUS_CALLS.get(int(payload["row_count"]))
@@ -169,8 +176,8 @@ def _worker_evaluate(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         value, score = _TARGET.batch_value_and_score(rows)
         status = {}
     assigned_cpu = _METADATA.get("assigned_cpu")
-    if assigned_cpu is not None:
-        _bind_process_threads_to_cpu(int(assigned_cpu))
+    if _METADATA.get("assigned_cpus"):
+        _bind_process_threads_to_cpus(tuple(_METADATA["assigned_cpus"]))
     if not preserve_status:
         tf.debugging.assert_all_finite(value, "batch-native worker value")
         tf.debugging.assert_all_finite(score, "batch-native worker score")
@@ -191,50 +198,40 @@ def _worker_evaluate(payload: Mapping[str, Any]) -> Mapping[str, Any]:
             for key, tensor in status.items()
         },
         "runtime_seconds": time.perf_counter() - started,
+        "cpu_seconds": (resource.getrusage(resource.RUSAGE_SELF).ru_utime
+                        + resource.getrusage(resource.RUSAGE_SELF).ru_stime
+                        - usage_before.ru_utime - usage_before.ru_stime),
+        "status_trace_counts": {str(size): call.experimental_get_tracing_count() for size, call in _STATUS_CALLS.items()},
         "ru_maxrss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024),
         "metadata": dict(_METADATA),
     }
 
 
 def _bind_process_threads_to_cpu(cpu_id: int) -> None:
-    """Bind all current worker threads to one logical CPU.
+    """Compatibility entry point for a worker assigned one physical core."""
+    _bind_process_threads_to_cpus((int(cpu_id),))
 
-    TensorFlow creates housekeeping threads even with one configured compute
-    thread. Binding every existing task keeps those native threads on the
-    worker's assigned core instead of turning them into additional compute
-    capacity.
-    """
 
-    cpu = int(cpu_id)
-    if cpu < 0:
-        raise ValueError("assigned CPU must be nonnegative")
+def _bind_process_threads_to_cpus(cpu_ids: tuple[int, ...]) -> None:
+    """Apply and verify the declared affinity on every existing native thread."""
+    cpus = set(cpu_ids)
+    if not cpus or min(cpus) < 0:
+        raise ValueError("nonempty nonnegative worker CPU group required")
     task_root = f"/proc/{os.getpid()}/task"
     for _attempt in range(2):
-        task_ids = tuple(
-            int(name)
-            for name in os.listdir(task_root)
-            if str(name).isdigit()
-        )
-        for task_id in task_ids:
+        for name in os.listdir(task_root):
+            if name.isdigit():
+                try:
+                    os.sched_setaffinity(int(name), cpus)
+                except ProcessLookupError:
+                    continue
+    for name in os.listdir(task_root):
+        if name.isdigit():
             try:
-                os.sched_setaffinity(task_id, {cpu})
+                if os.sched_getaffinity(int(name)) != cpus:
+                    raise RuntimeError("worker thread affinity differs from declared group")
             except ProcessLookupError:
                 continue
-    disallowed = []
-    for name in os.listdir(task_root):
-        if not str(name).isdigit():
-            continue
-        task_id = int(name)
-        try:
-            affinity = os.sched_getaffinity(task_id)
-        except ProcessLookupError:
-            continue
-        if affinity != {cpu}:
-            disallowed.append({"tid": task_id, "affinity": sorted(affinity)})
-    if disallowed:
-        raise RuntimeError(
-            f"worker thread affinity did not bind to CPU {cpu}: {disallowed}"
-        )
 
 
 @dataclass(frozen=True)
@@ -247,6 +244,7 @@ class TFBatchValueScorePoolConfig:
     batch_sizes: tuple[int, ...] = (1, 2, 8, 12, 13, 32)
     batch_per_worker: int | None = None
     worker_cpu_ids: tuple[int, ...] = ()
+    worker_cpu_groups: tuple[tuple[int, ...], ...] = ()
     timeout_seconds: float = 900.0
 
     def __post_init__(self) -> None:
@@ -269,6 +267,15 @@ class TFBatchValueScorePoolConfig:
             unavailable = sorted(set(cpu_ids) - set(os.sched_getaffinity(0)))
             if unavailable:
                 raise ValueError(f"worker_cpu_ids are outside the current CPU affinity: {unavailable}")
+        groups = self.worker_cpu_groups
+        if groups:
+            flattened = tuple(cpu for group in groups for cpu in group)
+            if self.worker_cpu_ids or len(groups) != self.worker_count or any(not g for g in groups):
+                raise ValueError("declare exactly one nonempty CPU group per worker, without worker_cpu_ids")
+            if len(set(flattened)) != len(flattened) or not set(flattened) <= os.sched_getaffinity(0):
+                raise ValueError("worker CPU groups must be disjoint and available")
+            if any(len(g) < self.cores_per_worker for g in groups):
+                raise ValueError("worker affinity is smaller than its configured compute thread count")
 
 
 class TFBatchValueScorePool:
@@ -279,6 +286,9 @@ class TFBatchValueScorePool:
         self._executor: concurrent.futures.ProcessPoolExecutor | None = None
         self._pinned_executors: tuple[concurrent.futures.ProcessPoolExecutor, ...] = ()
         self._startup: Mapping[str, Any] | None = None
+        self._state_lock = threading.RLock()
+        self._aborted = False
+        self._dispatch_cursor = 0
 
     def __enter__(self) -> "TFBatchValueScorePool":
         return self
@@ -295,21 +305,24 @@ class TFBatchValueScorePool:
         self._pinned_executors = ()
 
     def abort(self) -> None:
-        executors = (
-            self._pinned_executors
-            if self._pinned_executors
-            else (() if self._executor is None else (self._executor,))
-        )
-        self._executor = None
-        self._pinned_executors = ()
-        if not executors:
-            return
+        """Stop owned workers within a bounded grace period; never respawn."""
+        with self._state_lock:
+            self._aborted = True
+            executors = self._pinned_executors or (() if self._executor is None else (self._executor,))
+            self._executor = None
+            self._pinned_executors = ()
+        processes = [p for executor in executors for p in tuple(getattr(executor, "_processes", {}).values())]
+        for process in processes:
+            if process.is_alive():
+                process.terminate()
+        deadline = time.monotonic()+5.0
+        for process in processes:
+            process.join(timeout=max(0., deadline-time.monotonic()))
+            if process.is_alive():
+                process.kill()
+                process.join(timeout=1.)
         for executor in executors:
-            processes = getattr(executor, "_processes", {})
-            for process in tuple(processes.values()):
-                if process.is_alive():
-                    process.terminate()
-            executor.shutdown(wait=True, cancel_futures=True)
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def evaluate(
         self, rows: Any, *, request_id: str
@@ -320,7 +333,9 @@ class TFBatchValueScorePool:
         return values, scores, metadata
 
     def evaluate_with_status(
-        self, rows: Any, *, request_id: str
+        self, rows: Any, *, request_id: str,
+        on_submit: Callable[[int, int], None] | None = None,
+        on_result: Callable[[Mapping[str, Any]], None] | None = None,
     ) -> tuple[Any, Any, Mapping[str, Any], Mapping[str, Any]]:
         """Return raw target outputs and per-row status without finite asserts.
 
@@ -329,12 +344,14 @@ class TFBatchValueScorePool:
         """
 
         values, scores, status, metadata = self._evaluate(
-            rows, request_id=request_id, preserve_status=True
+            rows, request_id=request_id, preserve_status=True, on_submit=on_submit, on_result=on_result
         )
         return values, scores, status, metadata
 
     def _evaluate(
-        self, rows: Any, *, request_id: str, preserve_status: bool
+        self, rows: Any, *, request_id: str, preserve_status: bool,
+        on_submit: Callable[[int, int], None] | None = None,
+        on_result: Callable[[Mapping[str, Any]], None] | None = None,
     ) -> tuple[Any, Any, Mapping[str, Any], Mapping[str, Any]]:
         import tensorflow as tf
 
@@ -350,7 +367,8 @@ class TFBatchValueScorePool:
         request = str(request_id)
         if not request:
             raise ValueError("request_id must be nonempty")
-        self._ensure_started()
+        with self._state_lock:
+            self._ensure_started()
         if self._executor is None and not self._pinned_executors:
             raise RuntimeError("batch-native worker pool failed to start")
         if self.config.batch_per_worker is None:
@@ -370,35 +388,79 @@ class TFBatchValueScorePool:
                 for start in range(0, int(row_count), shard)
             ]
         futures = []
-        for task_index, (start, stop) in enumerate(bounds):
-            shard_size = stop - start
-            if shard_size not in set(int(size) for size in self.config.batch_sizes):
-                raise ValueError(f"undeclared batch-native shard size {shard_size}")
-            serialized = bytes(tf.io.serialize_tensor(matrix[start:stop]).numpy())
-            executor = (
-                self._pinned_executors[task_index % len(self._pinned_executors)]
-                if self._pinned_executors
-                else self._executor
-            )
-            assert executor is not None
-            futures.append(
-                executor.submit(
-                    _worker_evaluate,
-                    {
-                        "worker_index": task_index,
-                        "item_start": start,
-                        "item_stop": stop,
-                        "row_count": shard_size,
-                        "request_id": request,
-                        "rows": serialized,
-                        "preserve_status": bool(preserve_status),
-                    },
-                )
-            )
+        results = []
+        seen = set()
+        future_bounds = {}
+
+        def receive(future):
+            seen.add(future)
+            row = future.result()
+            start, stop = future_bounds[future]
+            if (row["request_id"] != request or row["item_start"] != start or row["item_stop"] != stop
+                    or row["worker_index"] != bounds.index((start, stop))):
+                raise RuntimeError("worker response identity/order mismatch")
+            if on_result is not None:
+                on_result(row)
+            results.append(row)
+
         try:
-            results = [future.result(timeout=self.config.timeout_seconds) for future in futures]
+            for task_index, (start, stop) in enumerate(bounds):
+                shard_size = stop - start
+                if shard_size not in set(int(size) for size in self.config.batch_sizes):
+                    raise ValueError(f"undeclared batch-native shard size {shard_size}")
+                serialized = bytes(tf.io.serialize_tensor(matrix[start:stop]).numpy())
+                # Share the cursor across callers. Restarting at worker zero
+                # for every short batch overloads the same workers when
+                # independent trainers submit simultaneously. Logical shard
+                # indices and returned row order remain unchanged.
+                with self._state_lock:
+                    if self._aborted:
+                        raise RuntimeError("aborted target pool cannot submit")
+                    executor = (
+                        self._pinned_executors[self._dispatch_cursor % len(self._pinned_executors)]
+                        if self._pinned_executors else self._executor
+                    )
+                    self._dispatch_cursor += 1
+                assert executor is not None
+                if on_submit is not None:
+                    on_submit(start, stop)
+                future = executor.submit(
+                        _worker_evaluate,
+                        {
+                            "worker_index": task_index,
+                            "item_start": start,
+                            "item_stop": stop,
+                            "row_count": shard_size,
+                            "request_id": request,
+                            "rows": serialized,
+                            "preserve_status": bool(preserve_status),
+                        },
+                    )
+                futures.append(future)
+                future_bounds[future] = (start, stop)
         except BaseException:
             self.abort()
+            for future in futures:
+                if future.done() and not future.cancelled():
+                    try:
+                        receive(future)
+                    except Exception:
+                        pass
+            raise
+        try:
+            # Persist completed shards immediately, then assemble by row order.
+            for future in concurrent.futures.as_completed(futures, timeout=self.config.timeout_seconds):
+                receive(future)
+        except BaseException:
+            self.abort()
+            # A failed sibling must not hide already-returned results. Preserve
+            # those independently, retaining the original failure as the veto.
+            for future in futures:
+                if future not in seen and future.done() and not future.cancelled():
+                    try:
+                        receive(future)
+                    except Exception:
+                        pass
             raise
         results.sort(key=lambda row: int(row["item_start"]))
         values = tf.concat(
@@ -442,6 +504,8 @@ class TFBatchValueScorePool:
         return values, scores, status, metadata
 
     def _ensure_started(self) -> None:
+        if self._aborted:
+            raise RuntimeError("aborted target pool cannot restart automatically")
         if self._executor is not None or self._pinned_executors:
             return
         environment = _worker_environment(self.config.cores_per_worker)
@@ -452,8 +516,9 @@ class TFBatchValueScorePool:
             barrier = context.Barrier(
                 int(self.config.worker_count), timeout=float(self.config.timeout_seconds)
             )
-            if self.config.worker_cpu_ids:
-                # One single-process executor per CPU makes shard-to-core
+            assignments = self.config.worker_cpu_groups or self.config.worker_cpu_ids
+            if assignments:
+                # One single-process executor per CPU group makes shard-to-core
                 # assignment deterministic instead of relying on pool scheduling.
                 self._pinned_executors = tuple(
                     concurrent.futures.ProcessPoolExecutor(
@@ -466,10 +531,10 @@ class TFBatchValueScorePool:
                             int(self.config.cores_per_worker),
                             tuple(int(size) for size in self.config.batch_sizes),
                             barrier,
-                            int(cpu_id),
+                            cpu_id,
                         ),
                     )
-                    for cpu_id in self.config.worker_cpu_ids
+                    for cpu_id in assignments
                 )
                 readiness = [executor.submit(_worker_ready) for executor in self._pinned_executors]
             else:
@@ -520,6 +585,11 @@ class TFBatchValueScorePool:
             if realized != set(int(value) for value in self.config.worker_cpu_ids):
                 self.abort()
                 raise RuntimeError("persistent worker CPU assignment is incomplete")
+        if self.config.worker_cpu_groups:
+            actual = {tuple(row["assigned_cpus"]) for row in metadata}
+            if actual != set(self.config.worker_cpu_groups):
+                self.abort()
+                raise RuntimeError("persistent worker CPU group assignment is incomplete")
         self._startup = {
             "startup_worker_pids": pids,
             "startup_worker_metadata": metadata,
@@ -561,8 +631,11 @@ class TFBatchValueScorePool:
                 for row in results
             ],
             "active_worker_ru_maxrss_sum_bytes": sum(
-                int(row["ru_maxrss_bytes"]) for row in results
+                max(int(r["ru_maxrss_bytes"]) for r in results if r["worker_pid"] == pid)
+                for pid in {r["worker_pid"] for r in results}
             ),
+            "worker_cpu_seconds": [float(row["cpu_seconds"]) for row in results],
+            "worker_status_trace_counts": [row["status_trace_counts"] for row in results],
             **self._startup,
         }
 

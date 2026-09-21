@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Mapping
+from typing import Any
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
@@ -712,6 +714,7 @@ def test_sequential_verifier_private_retained_health_is_phase7_opt_in(
     if mode == "public_default":
         assert result.passed is False
         assert result.cap_hit is True
+        assert diagnostics["all_finite_rhat_at_or_below_threshold"] is False
         assert diagnostics["retained_target_health_policy"] == "disabled"
         assert diagnostics["target_score_health_passed"] is None
         assert diagnostics["retained_target_health_evaluated_draw_count"] == 0
