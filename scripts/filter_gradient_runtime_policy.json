@@ -414,9 +414,13 @@
     "bayesfilter/inference/sequential_terminal_tf.py": null,
     "bayesfilter/inference/sequential_refinement_tf.py": null,
     "bayesfilter/inference/quadratic_batch_evaluation_tf.py": null,
+    "bayesfilter/inference/quadratic_probe_evaluation_tf.py": null,
     "bayesfilter/inference/paired_score_pilot_tf.py": null,
     "bayesfilter/inference/batched_quadratic_center.py": [
       "refine_batched_quadratic_center.evaluate",
+      "refine_batched_quadratic_center.retain_summary",
+      "refine_batched_quadratic_center.retain_batches",
+      "refine_batched_quadratic_center.retain_probes",
       "solve_spd_quadratic_trust_region_tf"
     ]
   },
@@ -12047,12 +12051,21 @@
     },
     {
       "path": "bayesfilter/inference/batched_quadratic_center.py",
-      "function": "refine_batched_quadratic_center.evaluate",
+      "function": "refine_batched_quadratic_center.retain_batches",
       "line": 236,
       "kind": "python_iteration",
-      "ast_sha256": "24d4eccc251615a4bc802676a76dcacde7e1ddb79c3ad396440ccc290f129214",
+      "ast_sha256": "5380ecbe7d1c52827aa2659791fa36a22021286a1f65cb57f580a7f10652a4af",
       "role": "host_reporting",
-      "reason": "Assemble completed candidate-batch reports only; target calls, selection and invalid-row stopping execute in make_quadratic_batch_evaluator. Outer fit-round and partition loops remain uncovered debt."
+      "reason": "Assemble completed candidate-batch reports only; target calls, selection and invalid-row stopping execute in make_quadratic_batch_evaluator. Outer fit-round and uniform-partition loops remain uncovered debt."
+    },
+    {
+      "path": "bayesfilter/inference/batched_quadratic_center.py",
+      "function": "refine_batched_quadratic_center.retain_probes",
+      "line": 246,
+      "kind": "python_iteration",
+      "ast_sha256": "ddc8cb59c375e72b47500957106f9814c179c09939bf228d003633a62804753b",
+      "role": "host_reporting",
+      "reason": "Format already-completed partition histories in original role order. The loop cannot call the target, select points or change numerical decisions; these execute inside make_paired_probe_evaluator."
     }
   ]
 }

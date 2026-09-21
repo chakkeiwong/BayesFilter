@@ -9,6 +9,48 @@ claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
 training/HMC capability and its obsolete admitted factory now fail closed.
 Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
+## September 21 compiled paired probe preparation and evaluation
+
+Current checkpoint through **01987** follows pushed `7f8f3013`. Paired
+probe generation and the ordered three-design evaluation now compile through
+the public initializer. Four equivalent gather reads repair demonstrated XLA
+specialization: all eight seed/round/scale/incumbent/accounting inputs remain
+runtime operands, with one trace and unchanged HLO. The original Philox/QR
+stream, including negative seeds, complete histories, callback ordering,
+padding, invalid stopping and anchor identity are preserved.
+
+01959--01969 pass 432 focused/public/consumer/policy checks. The final public
+list-width compatibility correction passes all 26 probe cases on CPU (01983)
+and GPU3 (01987); policy/controller 01984 passes 68. Costs 01970--01981 match
+all original/graph/XLA initial and changed-input fields. At D3/5, observed warm
+times are 31.69/40.76 ms original versus .639/.684 ms XLA on CPU, and
+49.06/63.38 versus 1.614/1.671 ms on GPU3. CPU XLA adds 173/174 MiB observed
+RSS; GPU3 adds 42/46 MiB. Cold compile/tracing costs increase. These are
+descriptive dependency costs, not complete initializer or statistical claims.
+
+Sparse follow-ups 01982 CPU / 01986 GPU3 alternate inputs for 5000 calls;
+records, one trace and HLO are unchanged. CPU/GPU host growth slows to 4 KiB
+over the final 2000 calls. GPU live allocation stays at 14080 bytes. This
+disposes the observed bounded warm-growth question, not general leak freedom.
+GPU2 contention paused measurement twice before launch; all six matched GPU
+cost arms used idle-preflighted GPU3, the same RTX 4090 hardware class. No gate,
+budget or unrelated process changed. Details, caveats and result review:
+[paired numerical/probe evidence](filter_gradient_quadratic_numerics_20260921.md).
+
+Inventory 01985 covers 2931 working Python files, 2930 parsed and one unchanged
+vendor-reference parse error. Guard coverage remains partial: 202 sources /
+1282 exact exceptions; the added exception only formats completed histories.
+Focused Ruff and whitespace pass. No numerical worker is active. Charged CPU
+42967.85348514379/115200 seconds; GPU 39305.498132360735/187200 seconds.
+
+Next execute [the complete paired fit-round controller contract](filter_gradient_quadratic_rounds_20260921.md).
+The uniform dense-condition failure, original D5 sequential mismatch, broader
+block/outer controllers, complete lifecycle costs, external watchdogs/actual
+DZ5 target and transition-block evidence, and F01--F20 terminal qualification
+remain open. No source pin, environment, method, seed, threshold or tolerance
+changed. Main remains unmerged. Older checkpoint statements below apply only
+to their own numbered evidence.
+
 ## September 21 paired quadratic fitting and trust accuracy
 
 Checkpoint through 01953 follows pushed 51bc753a. Full details, exact source

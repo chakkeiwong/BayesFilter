@@ -63,6 +63,15 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"quadratic_probe_growth_{device}": (
+        "tests/test_filter_repair_quadratic_probe_memory.py::test_paired_probe_sparse_allocation_growth",)
+        for device in ("cpu", "gpu")},
+    **{f"quadratic_probe_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_quadratic_probe_memory.py::test_paired_probe_costs[{arm}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    "quadratic_probes_cpu": ("tests/test_filter_repair_quadratic_probes.py",),
+    "quadratic_probes_gpu": ("tests/test_filter_repair_quadratic_probes.py",),
+    "quadratic_probe_operands": ("tests/test_filter_repair_quadratic_probes.py::test_changed_probe_inputs_remain_runtime_operands",),
     **{f"quadratic_numerics_memory_{arm}_{kind}_{dimension}_{device}": (
         f"tests/test_filter_repair_quadratic_numerics_memory.py::test_numerical_dependency_costs[{arm}-{kind}-{dimension}]",)
         for arm in ("before", "graph", "xla") for kind in ("paired", "trust")
@@ -574,6 +583,12 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "quadratic_probe_consumers": ("quadratic_probes_cpu", "quadratic_probes_gpu",
+        "quadratic_trust_paired_cpu", "quadratic_trust_paired_gpu",
+        "quadratic_center_public_cpu", "quadratic_center_public", "quadratic_paired_public_cpu",
+        "quadratic_paired_public", "quadratic_batches_cpu", "quadratic_batches", "policy"),
+    "quadratic_probe_memory": tuple(f"quadratic_probe_memory_{arm}_{dimension}_{device}"
+        for device in ("cpu", "gpu") for arm in ("before", "graph", "xla") for dimension in (3, 5)),
     "quadratic_numerics_consumers": ("quadratic_trust_paired_gpu", "quadratic_center_public",
         "quadratic_paired_public", "quadratic_batches", "quadratic_center_public_cpu",
         "quadratic_paired_public_cpu", "quadratic_batches_cpu", "policy"),
@@ -681,6 +696,9 @@ TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU",
     "quadratic_batches": "GPU", "quadratic_center_public": "GPU", "quadratic_paired_public": "GPU",
     "quadratic_numerics": "GPU", "quadratic_trust_paired": "GPU",
     "quadratic_trust_paired_gpu": "GPU",
+    "quadratic_probes_gpu": "GPU",
+    "quadratic_probe_growth_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["quadratic_probe_memory"] if group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_BATCHES["quadratic_numerics_memory_gpu"]},
     "quadratic_batch_long_growth_gpu": "GPU",
     **{f"quadratic_batch_growth_{arm}_gpu": "GPU" for arm in ("before", "xla")},

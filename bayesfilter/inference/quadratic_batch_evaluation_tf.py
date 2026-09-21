@@ -71,14 +71,15 @@ def make_quadratic_batch_evaluator(callback, dimension, batch_size, capacity, *,
                 valid = eligible & tf.math.is_finite(values) & tf.reduce_all(tf.math.is_finite(scores), axis=1)
                 masked = tf.where(valid, values, tf.constant(-float("inf"), tf.float64))
                 selected = tf.argmax(masked, output_type=tf.int32)
-                improve = record & (masked[selected] > state["center_value"])
+                # Scalar tensor slicing can make XLA specialize on the winner.
+                improve = record & (tf.gather(masked, selected) > state["center_value"])
                 output = dict(next_state)
                 output["ok"] = tf.reduce_all(valid)
                 output["callback_batches"] += 1
                 output["invalid_rows"] += tf.reduce_sum(tf.cast(~valid, tf.int64))
-                output["center"] = tf.where(improve, chunk[selected], state["center"])
-                output["center_value"] = tf.where(improve, values[selected], state["center_value"])
-                output["center_score"] = tf.where(improve, scores[selected], state["center_score"])
+                output["center"] = tf.where(improve, tf.gather(chunk, selected), state["center"])
+                output["center_value"] = tf.where(improve, tf.gather(values, selected), state["center_value"])
+                output["center_score"] = tf.where(improve, tf.gather(scores, selected), state["center_score"])
                 output["selected_index"] = tf.where(
                     improve, first_index + state["physical_rows"] + tf.cast(selected, tf.int64),
                     state["selected_index"],

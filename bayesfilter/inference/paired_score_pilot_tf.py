@@ -16,11 +16,13 @@ not qualify an enclosing target, initializer, transport or HMC path.
 from __future__ import annotations
 
 import math
+from functools import lru_cache
 
 import tensorflow as tf
 
 from bayesfilter.inference.mass_matrix_tf import eigenpair_program
 from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
+from bayesfilter.ops.stateless_random_tf import philox_normal_float64
 
 
 def validate_paired_steps(steps):
@@ -38,13 +40,25 @@ def paired_score_probe_designs_tf(dimension, *, seed, round_index, steps=(0.001,
     The check frame uses [seed,7000+round_index], never the fitting responses.
     Padding belongs to the caller and is excluded from all fitted matrices.
     """
+    return make_paired_score_probe_program(dimension, steps=tuple(steps))(seed, round_index)
+
+
+@lru_cache(maxsize=64)
+def make_paired_score_probe_program(dimension, *, steps=(0.001, 0.0001), jit_compile=True):
+    """Preserve the original Philox/QR probe frame with runtime seed and round."""
     validate_paired_steps(steps)
-    axes = tf.eye(dimension, dtype=tf.float64)
-    normal = tf.random.stateless_normal([dimension, dimension], [seed, 7000 + round_index], dtype=tf.float64)
-    frame, _ = tf.linalg.qr(normal)
-    return (tf.concat((steps[0] * axes, -steps[0] * axes), axis=0),
-            tf.concat((steps[1] * axes, -steps[1] * axes), axis=0),
-            tf.concat((steps[0] * frame, -steps[0] * frame), axis=0))
+
+    @tf.function(input_signature=[tf.TensorSpec([], tf.int32), tf.TensorSpec([], tf.int32)],
+                 autograph=False, jit_compile=jit_compile)
+    def design(seed, round_index):
+        axes = tf.eye(dimension, dtype=tf.float64)
+        normal = philox_normal_float64([dimension, dimension], tf.stack((seed, 7000 + round_index)))
+        frame, _ = tf.linalg.qr(normal)
+        return (tf.concat((steps[0] * axes, -steps[0] * axes), axis=0),
+                tf.concat((steps[1] * axes, -steps[1] * axes), axis=0),
+                tf.concat((steps[0] * frame, -steps[0] * frame), axis=0))
+
+    return design
 
 
 def _norm(tensor):
