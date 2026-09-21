@@ -1,5 +1,54 @@
 # Filter and gradient repair recovery
 
+Active continuation from pushed **813eed67** on
+`repair/filter-gradient-xla-validation-20260918`. Main remains unmerged.
+The cumulative caps remain **32 CPU / 52 GPU process-hours**.
+
+The posterior controller and shared COD repair checkpoint is committed and
+pushed. Native posterior public admission still awaits the unwaived rejected
+ill-conditioned comparison; its proposal is pending and uninstalled. Shared
+COD GPU renewal passes 76 checks in 02477--02479before renewed GPU3 contention.
+Derivative/factor/lifecycle/remaining-consumer renewal and public uniform GPU
+costs remain pending. Prior CPU/public costs and bounded posterior reuse are in
+the [posterior checkpoint](filter_gradient_posterior_checkpoint_20260922.md).
+
+Independent F18/F19 work now encloses quadratic center proposal, target evaluation,
+acceptance and exact incumbent replay in stable native functions. Their public
+helpers remain unchanged while qualification proceeds. Original-source tests
+exposed a real inherited trust eigensystem error: raw eigen residual 1.62e-8
+becomes 3.25e-17 using the existing refined eigensystem, restoring the original
+strict record without threshold changes. Preserved failures and local compilation
+repairs are in 02481--02487.
+
+**02488 passes 48 CPU checks**, including full D1/D3/D5 original records, nextafter
+acceptance boundaries, singular/duplicate/permuted/tiny solve statuses, exact
+callback counts, changed inputs/resources, one trace, six runtime inputs,
+enclosing HLO and cache release. All six CPU cost processes 02489--02494 pass.
+Original/XLA warm times at D3/D5 are 1.432/0.752 ms and1.386/0.802 ms. Cold XLA is
+0.802/0.847 seconds and additional observed RSS 214.3/217.2 MiB; the cold trigger
+remains recorded. These are dependency costs, not whole-initializer evidence.
+02495 passes 22 existing geometry/reference checks and02496 passes 72 policy checks.
+[Control repair contract and result review](filter_gradient_quadratic_geometry_control_20260922.md).
+
+The source guard remains partial at **208 sources / 1,300 exact exceptions**;
+new numerical code has no loop exemption. GPU3 remains occupied well above the
+unchanged idle threshold. CPU references hide GPUs. Audit 02497 passes with 2,973 working Python files, 2,972 parsed
+and one unchanged vendor-reference parse error. No worker is active. Charges
+through 02497 are 51,226.57090895319 CPU / 48,325.1067211973 GPU seconds.
+Runtime/tests/driver remain frozen during every worker; caps are unchanged.
+
+Next qualify the new controller on GPU and resolve its public callback-error
+compatibility, then continue enclosing geometry/iterative control. Preserve the
+pending posterior comparison and renew shared-solver GPU evidence when GPU3 is
+idle. Public sequential lifecycle/reporting, block-coordinate control, external
+deadlines, actual DZ5 targets/transitions and all F01--F20 terminal dispositions
+remain open. Canonical LEDH rebuilding remains outside this execution repair;
+unsupported canonical claims stay blocked. No external source/pin, package or
+environment change is authorized. Commands and charges are in the
+[ledger](filter_gradient_repair_ledger_20260917.json).
+
+## Prior posterior recovery record
+
 Active continuation from pushed **96e15e9d** on
 `repair/filter-gradient-xla-validation-20260918`. Main remains unmerged.
 The cumulative caps remain **32 CPU / 52 GPU process-hours**.

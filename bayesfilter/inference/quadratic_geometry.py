@@ -1084,11 +1084,14 @@ def _solve_spd_quadratic_trust_region(precision, linear, *, radius):
     }
 
 
-def _trust_region_kernel(matrix, vector, radius):
+def _trust_region_kernel(matrix, vector, radius, *, eigenpairs=None):
     symmetric = 0.5 * (matrix + tf.transpose(matrix))
-    eigenvalues, eigenvectors = xla_self_adjoint_eig(
-        symmetric, lower=True, max_iter=100, epsilon=math.ulp(1.0)
-    )
+    if eigenpairs is None:
+        eigenvalues, eigenvectors = xla_self_adjoint_eig(
+            symmetric, lower=True, max_iter=100, epsilon=math.ulp(1.0)
+        )
+    else:
+        eigenvalues, eigenvectors = eigenpairs(symmetric)
     eigenvalues = tf.ensure_shape(eigenvalues, vector.shape)
     eigenvectors = tf.ensure_shape(eigenvectors, matrix.shape)
     spd = tf.reduce_all(tf.math.is_finite(eigenvalues)) & (

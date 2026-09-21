@@ -63,6 +63,20 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"geometry_control_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_geometry_control_memory.py::test_complete_center_proposal_costs[{arm}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    "geometry_control_scalar_operands": (
+        "tests/test_filter_repair_geometry_control.py::test_full_center_proposal_records_against_original[interior-1]",
+        "tests/test_filter_repair_geometry_control.py::test_changed_inputs_are_runtime_operands_and_enclosing_xla"),
+    "geometry_control_scalar_attribution": (
+        "tests/test_filter_repair_geometry_control.py::test_scalar_graph_and_lu_attribution",),
+    "geometry_control_eigen_attribution": (
+        "tests/test_filter_repair_geometry_control.py::test_trust_eigensystem_attribution",),
+    "geometry_control_smoke": (
+        "tests/test_filter_repair_geometry_control.py::test_full_center_proposal_records_against_original[interior-3]",),
+    **{f"geometry_control_{device}": ("tests/test_filter_repair_geometry_control.py", "-k", "not attribution")
+        for device in ("cpu", "gpu")},
     **{f"posterior_curvature_ill_conditioned_{device}": (
         "tests/test_filter_repair_posterior_curvature_extras.py::test_deficient_design_preserves_full_rejection[ill_conditioned]",)
         for device in ("cpu", "gpu")},
@@ -599,6 +613,11 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"geometry_control_memory_{arm}_{dimension}_{device}":
+        "Complete proposal dependency costs; public full-initializer and terminal repeated evidence remain required."
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    "geometry_control_eigen_attribution": "Localize inherited raw eigensystem error; original full-record tests remain mandatory.",
+    "geometry_control_scalar_attribution": "Localize scalar graph empty outputs and check native LU compatibility; no runtime gate waiver.",
     "posterior_curvature_zero_diagnostic_gpu": "Isolated vector-versus-row center projection attribution for a rejected zero design; full runtime record checks remain mandatory.",
     "posterior_curvature_condition_diagnostic": "Rejected ill-conditioned dense records, original one-ULP sensitivity and100/160-digit reference; explanatory only, no tolerance waiver.",
     "posterior_curvature_rank_diagnostic": "Isolated COD pivot/threshold and source-order attribution; not a numerical gate waiver or runtime admission.",
@@ -698,6 +717,8 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"geometry_control_memory_{device}": tuple(f"geometry_control_memory_{arm}_{dimension}_{device}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)) for device in ("cpu", "gpu")},
     **{f"posterior_curvature_growth_{device}": tuple(f"posterior_curvature_growth_{replicates}_{device}"
         for replicates in (2, 4, 8)) for device in ("cpu", "gpu")},
     **{f"posterior_curvature_qualified_{device}": (f"posterior_curvature_streams_{device}",
@@ -868,7 +889,9 @@ def mandatory_test_groups():
 FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
-TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
+TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["geometry_control_memory_gpu"]},
+    "geometry_control_gpu": "GPU","sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "cod_tail_gpu": "GPU",
     "posterior_curvature_smoke_gpu": "GPU",
     "posterior_curvature_numerical_vetoes_gpu": "GPU",
