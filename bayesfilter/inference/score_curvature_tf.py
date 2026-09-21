@@ -13,6 +13,8 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.inference.mass_matrix_tf import eigenpair_program
+from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
 from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
 
 
@@ -105,7 +107,12 @@ def fit_dense_score_precision_tf(
     response = center[tf.newaxis, :] - scores
     coefficient = complete_orthogonal_lstsq(offsets, response)
     raw_precision = _symmetric(coefficient)
-    singular_values = tf.linalg.svd(offsets, compute_uv=False)
+    # Q has orthonormal columns, so A and the reduced R have the same singular
+    # values. Avoid XLA's much costlier tall Jacobi SVD without forming A'A.
+    design_for_svd = offsets
+    if in_xla_context() and offsets.shape[0] is not None and offsets.shape[0] > dimension:
+        design_for_svd = tf.linalg.qr(offsets, full_matrices=False)[1]
+    singular_values = tf.linalg.svd(design_for_svd, compute_uv=False)
     largest_singular = tf.reduce_max(singular_values)
     smallest_singular = tf.reduce_min(singular_values)
     design_rank = tf.reduce_sum(
@@ -119,7 +126,11 @@ def fit_dense_score_precision_tf(
         largest_singular / smallest_singular,
         tf.constant(float("inf"), tf.float64),
     )
-    eigenvalues = tf.linalg.eigvalsh(raw_precision)
+    # The XLA backend can stop before resolving nearly repeated eigenvalues.
+    # Reuse the same residual-refined eigensystem as the paired score fitter;
+    # graph execution retains TensorFlow's original reference operation.
+    eigenvalues = (eigenpair_program(dimension)(raw_precision)[0]
+                   if in_xla_context() else tf.linalg.eigvalsh(raw_precision))
     minimum_eigenvalue = tf.reduce_min(eigenvalues)
     maximum_eigenvalue = tf.reduce_max(eigenvalues)
     precision_condition = tf.where(

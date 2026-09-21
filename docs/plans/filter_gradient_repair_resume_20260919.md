@@ -1,5 +1,34 @@
 # Filter and gradient repair recovery
 
+Active continuation from pushed **d263830c**. On 2026-09-21 the owner approved
+[the extreme-precision comparison](filter_gradient_extreme_precision_decision_20260921.md)
+and requested execution. It applies only to `raw_precision` in the huge D3/D5
+stress fixtures, at matrix-relative error <=1e-12, with independent 100/160-digit
+reference and response-residual checks. All other comparisons remain unchanged.
+The previous factor-output and deficient-rank approvals also remain in force.
+
+Recovered matrix02190--02194 passed all140 checks:28 dense rank/consumer and6
+analytical derivative cases on each of CPU/GPU3, plus72 policy/controller checks.
+The near-identity spectral repair and QR-reduced SVD completed36 fresh
+original/graph/XLA cost workers02195--02230 with full record parity. D5 warm
+triggers remain+24.2% CPU/+60.0% GPU; no memory trigger fires. The approved
+extreme comparator passes22 mutation and14 spectral cases per device through
+02234; independent references pass02235/02236. Dense/quadratic numerical, analytical derivative and policy checks all pass
+through02244 (296 cases, including2 CPU component diagnostics). GPU attribution
+is pending contention. Inventory02245 covers2951 Python files,2950 parsed, and
+one unchanged vendor error. No numerical worker is active. Preserve02231's repaired
+mutation-fixture failure. Results and next action:
+[dense spectral checkpoint](filter_gradient_dense_spectral_checkpoint_20260921.md).
+
+The uniform-controller draft remains in `/tmp/filter_uniform_stage_20260921`.
+Public uniform, sequential outer/reporting and broader block/iterative controllers,
+full lifecycle costs, external watchdog/DZ5 evidence and terminal F01--F20 checks
+remain open. Main remains unmerged. Use one numerical worker, GPU3 idle preflight,
+verified memory growth and the unchanged32 CPU/52 GPU process-hour caps.
+No external consumer source/pin or environment changes are authorized.
+
+## Previous checkpoint record
+
 Status: executing on `repair/filter-gradient-xla-validation-20260918`, based on
 pushed `2710e16f`; main remains unmerged. The owner approved both numerical
 proposals on 2026-09-21. No further approval is needed for those changes.

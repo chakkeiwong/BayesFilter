@@ -129,10 +129,10 @@
       "scope": "Indirect NumPy static-control reduction"
     }
   ],
-  "latest_syntax_inventory": "docs/plans/artifacts/filter-gradient-repair-20260917/run-02172/audit.json.gz",
+  "latest_syntax_inventory": "docs/plans/artifacts/filter-gradient-repair-20260917/run-02245/audit.json.gz",
   "current_checkpoint": {
-    "through_run": 2172,
-    "based_on_commit": "2710e16f",
+    "through_run": 2245,
+    "based_on_commit": "d263830c",
     "related_findings": [
       "F18",
       "F19"
@@ -141,12 +141,12 @@
     "runtime_unchanged_in_continuation": false,
     "active_driver_session": null,
     "active_job": null,
-    "status": "Approved numerical corrections qualified by495 checks;36 dense costs pass parity but D5+27% CPU/+38% GPU timing trigger remains open. Main unmerged.",
+    "status": "Dense spectral repair and approved extreme comparison qualified through2244:296 checks pass. D5 cost trigger remains; GPU component diagnostic pending contention. Uniform candidate next.",
     "checks": {
       "factor_trajectories": "02098/02099 CPU and 02100/02102 GPU3: all complete instrumented records preserved; 217 evaluations each",
       "original_sensitivity": "02101 CPU / 02103 GPU3: six original one-ULP perturbations; 1--50 / 9--53 fields fail strict comparison, decisions and counts unchanged",
       "analytic_reference": "Declared covariance/precision/loadings reconstruct archived score responses within 1.12e-16; fitted covariance errors about 9.19e-7",
-      "policy": "02123:72 passed",
+      "policy": "02244:72 passed",
       "preserved_failure": "02097 replay barrier import mismatch; corrected in diagnostic only",
       "comparator": "02106 CPU passed",
       "factor_equivalence": "02107 CPU: 2 passed",
@@ -155,15 +155,23 @@
       "original_CPU_consumers": "02111--02122 all passed",
       "original_GPU_consumers": "02124--02135:338 passed, including223 combined consumers",
       "qualification_total": "02106--02135:157 CPU +338 GPU3 passed",
-      "dense_costs": "02136--02171:36 passed; every initial/changed field at1e-10;one trace;3 fresh repeats/arm/device/dimension"
+      "dense_costs": "02195--02230:36 fresh-process repeats passed full initial/changed records; D5 triggers +24.2% CPU/+60.0% GPU",
+      "dense_spectral": "02233/02234:14 per device passed, including approved huge comparison",
+      "dense_derivatives": "02237/02238:6 per device passed",
+      "dense_consumers": "02239/02240:28 per device passed",
+      "reduced_svd": "02190--02194:28 dense consumers and6 independent derivatives per CPU/GPU,72 policy checks, all passed",
+      "quadratic_numerics": "02241/02242:50 per device passed",
+      "extreme_comparator": "02232:22 mutation checks passed;02231 fixture mistake preserved",
+      "extreme_reference": "02235/02236:2 per device passed",
+      "dense_components": "02243:2 CPU diagnostic cases passed; GPU pending contention"
     },
     "guarded_sources": 204,
     "exact_exceptions": 1289,
     "guard_coverage": "partial; unchanged",
     "syntax_inventory": {
-      "run": 2172,
-      "working_tree_python_files": 2945,
-      "parsed_files": 2944,
+      "run": 2245,
+      "working_tree_python_files": 2951,
+      "parsed_files": 2950,
       "parse_errors": 1
     },
     "numerical_blockers": {
@@ -173,20 +181,24 @@
       },
       "current_D5_CPU": "Passed approved comparison in02110; original strict differences archived",
       "current_D5_GPU": "Approved comparison passed02127/02130/02131; strict discrepancies preserved",
-      "dense_condition": "CPU/GPU correction qualified;D5 dense costs +27.1% CPU/+37.8% GPU remain open",
-      "comparison_tolerance": "1e-8 only for approved named iterative factor outputs; 1e-10 elsewhere; exact discrete fields/shapes"
+      "dense_condition": "Correction qualified; repeated D5 warm-cost trigger remains +24.2% CPU/+60.0% GPU",
+      "comparison_tolerance": "1e-8 only for approved named iterative factor outputs; 1e-10 elsewhere; exact discrete fields/shapes",
+      "dense_near_identity": "Fixed; full spectral, derivative, consumer and quadratic checks passed",
+      "dense_extreme": "Owner-approved scoped comparator plus independent references qualified; historical strict failures preserved"
     },
     "charged_seconds": {
-      "CPU": 46170.48012962168,
-      "GPU": 43466.31901954695
+      "CPU": 46542.280774255734,
+      "GPU": 43955.581166660864
     },
-    "record": "filter_gradient_approved_numerics_qualification_20260921.md",
-    "next": "Localize dense numerical dependency costs and qualify dense spectral boundaries; then uniform/sequential controllers and remaining terminal work.",
+    "record": "filter_gradient_dense_spectral_checkpoint_20260921.md",
+    "next": "Install/review native uniform controller and qualify CPU while GPU3 busy; complete GPU attribution/controller and full costs before public integration.",
     "approved_owner_decisions": [
       "2026-09-21 approved: exact named iterative factor-fit outputs at atol=rtol=1e-8; all other numerical fields 1e-10 and discrete fields exact.",
-      "2026-09-21 approved: dense design condition infinite at deficient existing numerical rank; all other outputs, thresholds and decisions preserved."
+      "2026-09-21 approved: dense design condition infinite at deficient existing numerical rank; all other outputs, thresholds and decisions preserved.",
+      "2026-09-21 approved: raw_precision matrix-relative error<=1e-12 only for huge D3/D5 stress fixtures; independent100/160-digit references and response residuals required; every other comparison unchanged."
     ],
-    "owner_approval": "2026-09-21: I approve. Continue the execution; both proposals named in preceding final response."
+    "owner_approval": "2026-09-21: I approve. Continue the execution; both proposals named in preceding final response.",
+    "pending_owner_decisions": []
   },
   "historical_quadratic_batch_checkpoint": {
     "through_run": 1879,

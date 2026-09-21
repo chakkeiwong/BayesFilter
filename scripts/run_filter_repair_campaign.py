@@ -63,6 +63,16 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "dense_extreme_comparison": ("tests/test_filter_repair_dense_extreme_comparison.py",),
+    "quadratic_numerics_cpu": ("tests/test_filter_repair_quadratic_numerics.py",),
+    "dense_boundaries_cpu": ("tests/test_filter_repair_dense_boundaries.py",),
+    "dense_boundaries_gpu": ("tests/test_filter_repair_dense_boundaries.py",),
+    "dense_components_cpu": ("tests/test_filter_repair_dense_cost_components.py",),
+    "dense_components_gpu": ("tests/test_filter_repair_dense_cost_components.py",),
+    "dense_extreme_cpu": ("tests/test_filter_repair_dense_extreme_diagnostic.py",),
+    "dense_extreme_gpu": ("tests/test_filter_repair_dense_extreme_diagnostic.py",),
+    "dense_derivatives_cpu": ("tests/test_filter_repair_dense_derivatives.py",),
+    "dense_derivatives_gpu": ("tests/test_filter_repair_dense_derivatives.py",),
     "factor_record_comparison": ("tests/test_filter_repair_record_comparison.py",),
     "factor_equivalence": ("tests/test_filter_repair_factor_equivalence.py",),
     "dense_condition": ("tests/test_filter_repair_dense_condition.py",),
@@ -619,6 +629,14 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "dense_complete_numerics": ("dense_extreme_comparison", "dense_boundaries_cpu", "dense_boundaries_gpu",
+        "dense_extreme_cpu", "dense_extreme_gpu", "dense_derivatives_cpu", "dense_derivatives_gpu",
+        "dense_condition", "dense_condition_gpu", "quadratic_numerics_cpu", "quadratic_numerics",
+        "dense_components_cpu", "dense_components_gpu", "policy"),
+    "dense_reduced_svd": ("dense_condition", "dense_condition_gpu", "dense_derivatives_cpu",
+        "dense_derivatives_gpu", "policy"),
+    "dense_investigation": ("dense_extreme_gpu", "dense_components_cpu", "dense_components_gpu",
+        "dense_derivatives_cpu", "dense_derivatives_gpu", "dense_condition", "dense_condition_gpu", "policy"),
     "approved_numerics_cpu": (
         "factor_trajectory_original", "factor_trajectory_current",
         "lifecycle_original_symmetric_cpu", "lifecycle_original_factor_one_cpu",
@@ -745,6 +763,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "factor_equivalence_gpu": "GPU", "dense_condition_gpu": "GPU",
+    "dense_boundaries_gpu": "GPU",
+    "dense_components_gpu": "GPU",
+    "dense_extreme_gpu": "GPU",
+    "dense_derivatives_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["dense_numerics_memory_gpu"]},
     "factor_guard_gpu_lifetime": "GPU", "fixed_fitting_consumers": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["factor_guard_memory"]},
