@@ -9921,6 +9921,15 @@ def _operational_windowed_mass_capture(
         boundary: str,
         _completed_windows: tuple[Mapping[str, Any], ...],
     ) -> Mapping[str, Any] | None:
+        # Save each completed decision before another window or a timeout can
+        # fail. Payloads expose diagnostics/signatures, not adaptation draws.
+        if _completed_windows:
+            _emit_windowed_mass_progress(
+                progress_callback, "windowed_mass_operational_window_completed",
+                attempt_index=attempt_index, route_category=route_decision.algorithm_id,
+                route_decision=route_decision, completed=True,
+                operational_progress={"completed_window": _completed_windows[-1]},
+            )
         timeout = _windowed_mass_public_timeout_preflight(
             config,
             stage=f"operational_{boundary}",
@@ -10399,6 +10408,7 @@ def run_hmc_windowed_mass_stage(
     _checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
     _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
+    _windowed_config: WindowedMassAdaptationConfig | None = None,
 ) -> HMCWindowedMassStageResult:
     """Capture retained diagnostic draws and run windowed mass adaptation.
 
@@ -10469,10 +10479,19 @@ def run_hmc_windowed_mass_stage(
         attempt_state=_attempt_state,
     )
 
-    windowed_config = _windowed_mass_stage_internal_config(
-        _attempt_budget_policy,
-        mass_policy=cfg.mass_policy,
+    windowed_config = (
+        _windowed_mass_stage_internal_config(_attempt_budget_policy, mass_policy=cfg.mass_policy)
+        if _windowed_config is None else _windowed_config
     )
+    # Public preparation constructs this explicit schedule. Validate its
+    # identity against the budget consumed by the actual operational runner.
+    if not isinstance(windowed_config, WindowedMassAdaptationConfig):
+        raise TypeError("windowed schedule must be WindowedMassAdaptationConfig")
+    if windowed_config.mass_policy != cfg.mass_policy:
+        raise ValueError("windowed schedule mass policy mismatch")
+    if (_windowed_config is not None and _attempt_budget_policy is not None
+            and windowed_config.warmup_steps != _attempt_budget_policy.phase4_warmup_steps):
+        raise ValueError("windowed schedule and warmup budget disagree")
     draw_capture_policy = _windowed_stage_draw_capture_policy(windowed_config)
     stage_seed: tuple[int, int] | None = None
     diagnostic_config: FullChainHMCConfig | None = None

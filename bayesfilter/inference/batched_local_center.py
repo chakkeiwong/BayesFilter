@@ -214,13 +214,17 @@ def locate_batched_local_center(
     best_values = variable(tf.fill([batch_size], negative_infinity), tf.float64)
     best_positions = variable(initial, tf.float64)
     best_scores = variable(tf.zeros_like(initial), tf.float64)
-    best_indices = variable(tf.fill([batch_size], -1), tf.int32)
-    calls = variable(0, tf.int32)
-    attempts = variable(0, tf.int32)
-    optimizer_calls = variable(0, tf.int32)
-    round_calls = variable(0, tf.int32)
-    replays = variable(0, tf.int32)
-    invalid_rows = variable(0, tf.int32)
+    # TensorFlow pins int32 resource variables to the host even inside a GPU
+    # device scope. Int64 counters/indices allow the complete XLA optimizer
+    # and its resource state to remain on the caller-selected accelerator.
+    index_dtype = tf.int64
+    best_indices = variable(tf.fill([batch_size], tf.constant(-1, index_dtype)), index_dtype)
+    calls = variable(0, index_dtype)
+    attempts = variable(0, index_dtype)
+    optimizer_calls = variable(0, index_dtype)
+    round_calls = variable(0, index_dtype)
+    replays = variable(0, index_dtype)
+    invalid_rows = variable(0, index_dtype)
     capped = variable(False, tf.bool)
     mismatch = variable(False, tf.bool)
     endpoint_positions = variable(initial, tf.float64)
@@ -261,7 +265,7 @@ def locate_batched_local_center(
                 & tf.reduce_all(tf.math.is_finite(scores), axis=1)
                 & tf.reduce_all(tf.math.is_finite(positions), axis=1)
             )
-            invalid_rows.assign_add(tf.reduce_sum(tf.cast(~valid, tf.int32)))
+            invalid_rows.assign_add(tf.reduce_sum(tf.cast(~valid, index_dtype)))
         return (
             tf.where(valid, values, negative_infinity),
             tf.where(valid[:, None], scores, tf.zeros_like(scores)),
@@ -272,7 +276,7 @@ def locate_batched_local_center(
         positions: tf.Tensor, values: tf.Tensor, scores: tf.Tensor, valid: tf.Tensor
     ) -> tf.Tensor:
         improve = valid & (values > best_values.read_value())
-        indices = (calls.read_value() - 1) * batch_size + tf.range(batch_size)
+        indices = (calls.read_value() - 1) * batch_size + tf.range(batch_size, dtype=index_dtype)
         updates = (
             best_values.assign(tf.where(improve, values, best_values)),
             best_positions.assign(

@@ -98,12 +98,14 @@ def test_public_mass_preparation_owns_adequate_standard_budget(
     bootstrap = SimpleNamespace(
         artifact_hash="bootstrap-hash",
         final_status="passed",
+        payload=lambda: {"artifact_hash": "bootstrap-hash", "final_status": "passed"},
     )
     operational = SimpleNamespace(operational_metric_update_count=1)
     windowed = SimpleNamespace(
         passed=True,
         final_status="passed",
         operational_warmup_result=operational,
+        payload=lambda: {"passed": True, "final_status": "passed"},
     )
     observed: dict[str, Any] = {}
 

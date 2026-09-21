@@ -7,9 +7,22 @@ from __future__ import annotations
 
 import json
 import math
+import operator
+from dataclasses import replace
 from pathlib import Path
 import time
 from typing import Any, Callable, Mapping
+
+
+def _diagnostic_json(value):
+    """Preserve rejected-window NaN/inf as named JSON diagnostics, never numerics."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return str(value)
+    if isinstance(value, Mapping):
+        return {key: _diagnostic_json(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_diagnostic_json(item) for item in value]
+    return value
 
 
 class HMCPreparationBudgetExceeded(TimeoutError):
@@ -43,7 +56,7 @@ class HMCPreparationProgress:
             "artifact_authority": False,
             "resume_policy": "retry failed preparation in a fresh directory; numerical resume requires a frozen scope"}
         temporary = self.path.with_suffix(".tmp")
-        temporary.write_text(json.dumps(payload, indent=2, default=str, allow_nan=False) + "\n")
+        temporary.write_text(json.dumps(_diagnostic_json(payload), indent=2, default=str, allow_nan=False) + "\n")
         temporary.replace(self.path)
 
     def phase(self, stage, payload=None):
@@ -77,6 +90,7 @@ def prepare_operational_windowed_mass_handoff(
     negative_hessian: Any | None = None,
     initial_covariance: Any | None = None,
     parameter_scales: Any | None = None,
+    metric_window_size: int | None = None,
     progress_callback: Callable[[str, Mapping[str, Any]], None] | None = None,
 ) -> Mapping[str, Any]:
     """Prepare one public operational mass and post-warmup start-bank handoff.
@@ -87,6 +101,11 @@ def prepare_operational_windowed_mass_handoff(
     lineage checks.  It intentionally stops before fixed-step or trajectory
     selection so callers that already own a reviewed fixed-kernel comparison
     do not have to run a second candidate campaign.
+
+    ``metric_window_size`` is an explicit experimental one-window schedule:
+    keep the preset's fast buffers and collect exactly this many consecutive
+    positions in one slow window. It changes the allocation, not covariance
+    adequacy gates or defaults. The schedule and all decisions are recorded.
 
     All warmup draws are discarded.  The returned mapping contains live
     BayesFilter adapters plus the public geometry, bootstrap, windowed-stage,
@@ -99,6 +118,7 @@ def prepare_operational_windowed_mass_handoff(
         _bootstrap_preflight_passed, _public_budget_policy_factory, _HMCAttemptBudgetPolicy,
         _public_loop_config, _phase7_windowed_stage_config, stable_config_hash,
         run_hmc_windowed_mass_stage, build_operational_fixed_mass_hmc_adapter,
+        _windowed_mass_stage_internal_config,
     )
 
 
@@ -109,6 +129,12 @@ def prepare_operational_windowed_mass_handoff(
         raise ValueError(
             "operational windowed mass preparation requires mass_policy='windowed_adaptive'"
         )
+    if metric_window_size is not None:
+        if isinstance(metric_window_size, bool):
+            raise TypeError("metric_window_size must be an integer count")
+        metric_window_size = operator.index(metric_window_size)
+        if metric_window_size < 2:
+            raise ValueError("metric_window_size must be at least two")
     position = _validate_position(initial_position)
     scope = cfg.target_scope or str(getattr(adapter, "target_scope", ""))
     if not scope:
@@ -144,7 +170,13 @@ def prepare_operational_windowed_mass_handoff(
         adapter=adapter,
         geometry=geometry,
         config=_public_bootstrap_config(cfg, geometry=geometry),
+        progress_callback=(
+            None if progress_callback is None
+            else lambda stage, payload: progress(f"bootstrap.{stage}", payload)
+        ),
     )
+    # Keep round diagnostics and any first-failure record before the veto gate.
+    progress("bootstrap_result", {"result": bootstrap.payload()})
     progress(
         "bootstrap_completed",
         {
@@ -163,6 +195,18 @@ def prepare_operational_windowed_mass_handoff(
     budget_policy = budget_factory(geometry.target_dimension, 0)
     if not isinstance(budget_policy, _HMCAttemptBudgetPolicy):
         raise TypeError("public operational warmup budget policy is invalid")
+    schedule_options = {}
+    if metric_window_size is not None:
+        # Preserve all canonical numerical settings. Only consolidate the slow
+        # draws into one explicit window; later fast draws must use any update.
+        standard = _windowed_mass_stage_internal_config(budget_policy)
+        schedule = replace(
+            standard, first_window_size=metric_window_size,
+            warmup_steps=standard.initial_buffer + metric_window_size + standard.final_buffer,
+        )
+        budget_policy = replace(budget_policy, phase4_warmup_steps=schedule.warmup_steps)
+        schedule_options["_windowed_config"] = schedule
+        progress("explicit_metric_window_schedule", {"schedule": schedule.payload()})
     loop_config = _public_loop_config(cfg)
     windowed_config = _phase7_windowed_stage_config(loop_config, attempt_index=0)
     progress(
@@ -183,7 +227,11 @@ def prepare_operational_windowed_mass_handoff(
             if progress_callback is None
             else lambda stage, payload: progress(f"windowed_mass.{stage}", payload)
         ),
+        **schedule_options,
     )
+    # Persist the public decisions before either rejection gate raises. A
+    # completed but unaccepted window is evidence, not an absent result.
+    progress("windowed_mass_result", {"result": windowed.payload()})
     operational = windowed.operational_warmup_result
     if not windowed.passed or operational is None:
         raise RuntimeError(

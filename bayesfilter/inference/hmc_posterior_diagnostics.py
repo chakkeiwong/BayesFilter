@@ -17,6 +17,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 
@@ -134,7 +135,13 @@ def _average_rank_one(values: Any) -> Any:
 
 
 def _rank_normalize(sample_major: Any) -> Any:
-    """Apply pooled rank normalization independently to each parameter."""
+    """Apply Blom normal scores, Phi^-1((r - 3/8)/(S + 1/4)).
+
+    Ranks are one-based pooled average ranks. The denominator S - 2a + 1
+    with a = 3/8 makes complementary ranks sum to probability one, preserving
+    reflection symmetry; a minus quarter incorrectly skews both tail scores.
+    See Chapter 26b's convergence and scientific diagnostics specification.
+    """
 
     import tensorflow as tf
     import tensorflow_probability as tfp
@@ -150,7 +157,7 @@ def _rank_normalize(sample_major: Any) -> Any:
     ranks = tf.transpose(ranks_by_parameter)
     total = tf.cast(tf.shape(flat, out_type=tf.int32)[0], tf.float64)
     probability = (ranks - tf.constant(3.0 / 8.0, tf.float64)) / (
-        total - tf.constant(1.0 / 4.0, tf.float64)
+        total + tf.constant(1.0 / 4.0, tf.float64)
     )
     normal = tfp.distributions.Normal(
         loc=tf.constant(0.0, tf.float64),
@@ -174,70 +181,119 @@ def _sample_sd(values: Any, *, axis: Any) -> Any:
     return tf.sqrt(squared / (count - 1.0))
 
 
+@lru_cache(maxsize=32)
+def _compiled_ess(shape: tuple[int, ...]) -> Any:
+    """Cache one XLA recursion per static input shape, not per coordinate/call."""
+    import tensorflow as tf
+
+    return tf.function(_cross_chain_ess_impl,
+        input_signature=[tf.TensorSpec(shape, tf.float64)],
+        autograph=False, jit_compile=True)
+
+
 def _cross_chain_ess(sample_major: Any) -> Any:
-    """Vehtari cross-chain ESS with a warning-free real FFT covariance.
-
-    TFP 0.25 computes the same autocovariance through a complex FFT and then
-    casts ``complex128`` to ``float64``.  The mathematical result is real, but
-    that cast emits a lossy-conversion warning for every ESS call.  Using
-    ``rfft``/``irfft`` preserves the real-valued contract directly.
-    """
-
+    """Run the standard ESS recursion in its cached, fixed-shape XLA graph."""
     import tensorflow as tf
 
     values = tf.cast(tf.convert_to_tensor(sample_major), tf.float64)
     if values.shape.rank != 3 or any(dim is None for dim in values.shape):
         raise ValueError("cross-chain ESS requires static [draw, chain, parameter]")
-    draw_count, chain_count, _ = (int(dim) for dim in values.shape)
+    return _compiled_ess(tuple(int(dim) for dim in values.shape))(values)
+
+
+def _cross_chain_ess_impl(sample_major: Any) -> Any:
+    r"""Geyer initial-positive/monotone ESS for [draw, chain, parameter].
+
+    This follows Vehtari et al. (2021) and the Stan posterior/ArviZ estimator:
+    biased lag autocovariances, unbiased within-chain variance, monotone paired
+    autocorrelations and the final even-lag improvement. The finite-sample
+    safeguard tau >= 1/log10(S) prevents unstable negative estimates; it is not
+    a theoretical upper bound on the true ESS of antithetic chains. No lag
+    weights are applied to the between-chain variance correction.
+
+    One chain is supported for per-chain MCSE. Constant pooled samples return
+    NaN, keeping them non-promotable rather than assigning spurious precision.
+    """
+    import tensorflow as tf
+
+    values = tf.cast(tf.convert_to_tensor(sample_major), tf.float64)
+    if values.shape.rank != 3 or any(dim is None for dim in values.shape):
+        raise ValueError("cross-chain ESS requires static [draw, chain, parameter]")
+    draw_count, chain_count, parameter_count = (int(dim) for dim in values.shape)
+    if draw_count < 2 or chain_count < 1 or parameter_count < 1:
+        raise ValueError("ESS requires at least two draws, one chain and one parameter")
     rotated = tf.transpose(values, (1, 2, 0))
     centered = rotated - tf.reduce_mean(rotated, axis=-1, keepdims=True)
-    fft_length = 1 << int(math.ceil(math.log2(2 * draw_count)))
+    fft_length = 1 << math.ceil(math.log2(2 * draw_count))
     padded = tf.pad(centered, ((0, 0), (0, 0), (0, fft_length - draw_count)))
     spectrum = tf.signal.rfft(padded)
-    autocov_rotated = tf.signal.irfft(
+    autocov = tf.transpose(tf.signal.irfft(
         spectrum * tf.math.conj(spectrum), fft_length=(fft_length,)
-    )[..., :draw_count]
-    denominators = tf.cast(
-        tf.range(draw_count, 0, -1), tf.float64
-    )
-    autocov = tf.transpose(
-        autocov_rotated / denominators[tf.newaxis, tf.newaxis, :],
-        (2, 0, 1),
-    )
-
-    chain_means = tf.reduce_mean(values, axis=0)
-    between_div_n = tf.math.reduce_variance(chain_means, axis=0) * (
-        tf.cast(chain_count, tf.float64)
-        / tf.cast(chain_count - 1, tf.float64)
-    )
-    biased_within = tf.reduce_mean(autocov[0], axis=0)
-    variance_plus = biased_within + between_div_n
+    )[..., :draw_count] / tf.cast(draw_count, tf.float64), (2, 0, 1))
     mean_autocov = tf.reduce_mean(autocov, axis=1)
-    autocorrelation = 1.0 - (
-        biased_within[tf.newaxis, :] - mean_autocov
-    ) / variance_plus[tf.newaxis, :]
-    lag_weight = tf.cast(
-        tf.range(draw_count, 0, -1), tf.float64
-    ) / tf.cast(draw_count, tf.float64)
-    weighted = autocorrelation * lag_weight[:, tf.newaxis]
+    within = mean_autocov[0] * draw_count / (draw_count - 1.0)
+    variance_plus = mean_autocov[0]
+    if chain_count > 1:
+        chain_means = tf.reduce_mean(values, axis=0)
+        variance_plus += tf.math.reduce_variance(chain_means, axis=0) * (
+            chain_count / (chain_count - 1.0)
+        )
+    rho = tf.concat((tf.ones_like(mean_autocov[:1]),
+        1.0 - (within[tf.newaxis, :] - mean_autocov[1:]) /
+        variance_plus[tf.newaxis, :]), axis=0)
 
-    even_count = draw_count - draw_count % 2
-    pair_shape = (even_count // 2, 2, int(values.shape[2]))
-    pair_correlation = tf.reduce_sum(
-        tf.reshape(autocorrelation[:even_count], pair_shape), axis=1
-    )
-    positive_mask = tf.maximum(
-        1.0
-        - tf.cumsum(tf.cast(pair_correlation < 0.0, tf.float64), axis=0),
-        0.0,
-    )
-    weighted_pairs = tf.reduce_sum(
-        tf.reshape(weighted[:even_count], pair_shape), axis=1
-    ) * positive_mask
-    return (
-        tf.cast(chain_count * draw_count, tf.float64)
-        / (-1.0 + 2.0 * tf.reduce_sum(weighted_pairs, axis=0))
-    )
+    # The terminal pair contributes only its even lag. This preserves the
+    # reference end-of-array rule as well as the first nonpositive-pair stop.
+    # Each parameter stops separately; the TF loop accumulates only vectors.
+    pair_count = max(1, (draw_count - 3) // 2 + 1)
+    pairs = tf.reduce_sum(tf.reshape(rho[:2 * pair_count],
+        [pair_count, 2, parameter_count]), axis=1)
+    nonpositive = pairs <= 0.0
+    stop = tf.where(tf.reduce_any(nonpositive, axis=0),
+        tf.argmax(tf.cast(nonpositive, tf.int32), axis=0, output_type=tf.int32),
+        tf.fill([parameter_count], pair_count - 1))
+
+    def accumulate(index, previous_pair, total):
+        monotone_pair = tf.minimum(previous_pair, pairs[index])
+        return index + 1, monotone_pair, total + tf.where(
+            index < stop, monotone_pair, tf.zeros_like(monotone_pair))
+
+    _, _, pair_sum = tf.while_loop(
+        lambda index, previous_pair, total: index < pair_count - 1,
+        accumulate, (tf.constant(0),
+            tf.fill([parameter_count], tf.constant(float("inf"), tf.float64)),
+            tf.zeros([parameter_count], tf.float64)), parallel_iterations=1)
+    indices = tf.stack((2 * stop, tf.range(parameter_count)), axis=1)
+    even = tf.gather_nd(rho, indices)
+    terminal_pair = tf.gather_nd(pairs, tf.stack((stop, tf.range(parameter_count)), axis=1))
+    last_even = tf.where(terminal_pair >= 0.0, even, tf.maximum(even, 0.0))
+    total_draws = tf.cast(chain_count * draw_count, tf.float64)
+    tau_bound = tf.math.log(tf.constant(10.0, tf.float64)) / tf.math.log(total_draws)
+    tau = tf.maximum(-1.0 + 2.0 * pair_sum + last_even, tau_bound)
+    ess = total_draws / tau
+    valid = tf.logical_and(variance_plus > 0.0,
+        tf.reduce_all(tf.math.is_finite(values), axis=(0, 1)))
+    return tf.where(valid, ess, tf.fill([parameter_count], tf.constant(float("nan"), tf.float64)))
+
+
+def _pooled_percentile(samples: Any, probability: float) -> Any:
+    """Pooled linear quantile preserving repeated endpoints exactly.
+
+    Rejected HMC states create ties. Rounding an interpolated equal endpoint
+    can change an entire tie group's indicator and hence its tail ESS. Sort
+    over draw/chain axes; retain parameter axes and choose exact endpoints
+    when equal. The caller supplies fixed probabilities in [0, 1].
+    """
+    import tensorflow as tf
+
+    count = int(samples.shape[0]) * int(samples.shape[1])
+    ordered = tf.sort(tf.reshape(samples, [count, int(samples.shape[2])]), axis=0)
+    position = probability * (count - 1)
+    lower_index, upper_index = math.floor(position), math.ceil(position)
+    lower, upper = ordered[lower_index], ordered[upper_index]
+    weight = tf.constant(position - lower_index, tf.float64)
+    interpolated = lower + weight * (upper - lower)
+    return tf.where(tf.equal(lower, upper), lower, interpolated)
 
 
 def _split_rhat_from_sample_major(sample_major: Any) -> Any:
@@ -259,15 +315,11 @@ def rank_normalized_split_rhat(samples: Any) -> Mapping[str, Any]:
     """Compute bulk, folded, and maximum rank-normalized split R-hat."""
 
     import tensorflow as tf
-    import tensorflow_probability as tfp
-
     tensor = _sample_tensor(samples)
     tf.debugging.assert_all_finite(tensor, "samples must be finite")
     split = _split_sample_major(tensor)
     bulk = _rank_normalize(split)
-    pooled_median = tfp.stats.percentile(
-        split, 50.0, axis=(0, 1), interpolation="midpoint"
-    )
+    pooled_median = _pooled_percentile(split, 0.5)
     folded = _rank_normalize(tf.abs(split - pooled_median))
     bulk_rhat = _split_rhat_from_sample_major(bulk)
     folded_rhat = _split_rhat_from_sample_major(folded)
@@ -282,20 +334,16 @@ def rank_normalized_bulk_tail_ess(samples: Any) -> Mapping[str, Any]:
     """Compute pooled rank-normalized bulk and 5%/95% tail ESS."""
 
     import tensorflow as tf
-    import tensorflow_probability as tfp
-
     tensor = _sample_tensor(samples)
     tf.debugging.assert_all_finite(tensor, "samples must be finite")
     split = _split_sample_major(tensor)
     bulk = _cross_chain_ess(_rank_normalize(split))
-    lower = tfp.stats.percentile(
-        tensor, 5.0, axis=(0, 1), interpolation="linear"
-    )
-    upper = tfp.stats.percentile(
-        tensor, 95.0, axis=(0, 1), interpolation="linear"
-    )
+    lower = _pooled_percentile(tensor, 0.05)
+    upper = _pooled_percentile(tensor, 0.95)
     lower_ess = _cross_chain_ess(tf.cast(split <= lower, tf.float64))
-    upper_ess = _cross_chain_ess(tf.cast(split >= upper, tf.float64))
+    # Quantile ESS uses the CDF indicator at both cutoffs. Its complement is
+    # x > q95; x >= q95 differs when rejected proposals tie at the boundary.
+    upper_ess = _cross_chain_ess(tf.cast(split <= upper, tf.float64))
     return {
         "bulk": bulk,
         "lower_5pct": lower_ess,
@@ -305,10 +353,14 @@ def rank_normalized_bulk_tail_ess(samples: Any) -> Mapping[str, Any]:
 
 
 def posterior_mean_diagnostics(samples: Any) -> Mapping[str, Any]:
-    """Return pooled/per-chain means, SDs, ESS, and mean MCSE."""
+    """Return pooled/per-chain means, SDs, ESS, and mean MCSE.
+
+    Mean ESS preserves this API's unsplit-chain convention. Bulk/tail ESS
+    separately splits chains. Per-chain and pooled MCSE share the repaired
+    estimator; an antithetic chain must not retain the unbounded TFP formula.
+    """
 
     import tensorflow as tf
-    import tensorflow_probability as tfp
 
     tensor = _sample_tensor(samples)
     tf.debugging.assert_all_finite(tensor, "samples must be finite")
@@ -320,12 +372,8 @@ def posterior_mean_diagnostics(samples: Any) -> Mapping[str, Any]:
     sample_major = tf.transpose(tensor, perm=(1, 0, 2))
     pooled_mean_ess = _cross_chain_ess(sample_major)
     pooled_mcse = pooled_sd / tf.sqrt(pooled_mean_ess)
-    per_chain_ess = tfp.mcmc.effective_sample_size(
-        sample_major,
-        filter_threshold=None,
-        filter_beyond_positive_pairs=True,
-        cross_chain_dims=None,
-    )
+    per_chain_ess = tf.reshape(_cross_chain_ess(tf.reshape(
+        sample_major, [draws, 1, chains * parameters])), [chains, parameters])
     per_chain_sd = _sample_sd(tensor, axis=1)
     per_chain_mcse = per_chain_sd / tf.sqrt(per_chain_ess)
     ratio = tf.where(
@@ -390,7 +438,14 @@ def initialization_memory_statistics(samples: Any) -> Mapping[str, Any]:
         tf.maximum(mcse_square_sum - tf.square(mcse), 0.0)
     ) / (chains - 1.0)
     combined = tf.sqrt(tf.square(mcse) + tf.square(leave_one_out_mcse))
-    difference = means - leave_one_out_mean
+    # Subtract a shared observed anchor before averaging. Direct subtraction
+    # of almost equal level means amplifies CPU/GPU reduction rounding when
+    # the posterior mean is large relative to its Monte Carlo uncertainty.
+    # The anchor cancels algebraically in the leave-one-chain-out difference.
+    centered_means = tf.reduce_mean(tensor - tensor[0, 0, :], axis=1)
+    centered_leave_one_out = (tf.reduce_sum(centered_means, axis=0)
+                             - centered_means) / (chains - 1.0)
+    difference = centered_means - centered_leave_one_out
     standardized = tf.where(
         combined > 0.0,
         difference / combined,
