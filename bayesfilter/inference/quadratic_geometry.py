@@ -847,7 +847,7 @@ def _thin_qr(matrix):
     return tf.linalg.qr(matrix, full_matrices=False)[0]
 
 
-def _pilot_sketch_kernel(directions, plus, minus, scale, h):
+def _pilot_sketch_kernel(directions, plus, minus, scale, h, *, eigenpairs=None):
     curvature = tf.reduce_sum((minus * scale - plus * scale) * directions, axis=1) / (
         2.0 * h
     )
@@ -872,10 +872,12 @@ def _pilot_sketch_kernel(directions, plus, minus, scale, h):
     positive = tf.math.count_nonzero(valid)
 
     def fitted():
-        values, vectors = xla_self_adjoint_eig(
-            0.5 * (sketch + tf.transpose(sketch)), lower=True,
-            max_iter=100, epsilon=math.ulp(1.0),
-        )
+        symmetric = .5 * (sketch + tf.transpose(sketch))
+        if eigenpairs is None:
+            values, vectors = xla_self_adjoint_eig(
+                symmetric, lower=True, max_iter=100, epsilon=math.ulp(1.0))
+        else:
+            values, vectors = eigenpairs(symmetric)
         return vectors[:, ::-1], values
 
     vectors, values = tf.cond(

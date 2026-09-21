@@ -424,7 +424,9 @@
     "bayesfilter/inference/quadratic_geometry_control_tf.py": null,
     "bayesfilter/inference/quadratic_geometry_control_report.py": null,
     "bayesfilter/inference/quadratic_geometry_fit_tf.py": null,
-    "bayesfilter/inference/quadratic_geometry_fit_report.py": null
+    "bayesfilter/inference/quadratic_geometry_fit_report.py": null,
+    "bayesfilter/inference/quadratic_geometry_pilot_tf.py": null,
+    "bayesfilter/inference/quadratic_geometry_pilot_report.py": null
   },
   "exceptions": [
     {
@@ -12216,22 +12218,6 @@
       "reason": "Format the completed proposed-center record and its already computed reason mask; no runtime numerical control."
     },
     {
-      "path": "bayesfilter/inference/quadratic_geometry_control_tf.py",
-      "function": "_callback_program",
-      "kind": "python_iteration",
-      "ast_sha256": "8bf74211960615051e0186d550040b18982c5d83433da7ce1534008b50682e5f",
-      "role": "host_validation",
-      "reason": "Inspect traced callback operation metadata once at program construction; no data-dependent numerical work or Python callback executes here."
-    },
-    {
-      "path": "bayesfilter/inference/quadratic_geometry_control_tf.py",
-      "function": "_callback_program",
-      "kind": "python_iteration",
-      "ast_sha256": "0958e6781cb5011ac23725e434fbd051a403a07abe9f31a0c8ff3c2697b8ff58",
-      "role": "host_validation",
-      "reason": "Inspect traced callback operation metadata once at program construction; no data-dependent numerical work or Python callback executes here."
-    },
-    {
       "path": "bayesfilter/inference/quadratic_geometry_fit_report.py",
       "function": "geometry_fit_report",
       "kind": "python_iteration",
@@ -12262,6 +12248,22 @@
       "ast_sha256": "05462a25c69946f47cf7f56c1f561a79082a531971ea3fe8e2a0ecee7395d54d",
       "role": "host_reporting",
       "reason": "Copy completed native results into the original result/diagnostic/array schema; no numerical decision or repeated eigenvalue calculation."
+    },
+    {
+      "path": "bayesfilter/inference/quadratic_geometry_control_tf.py",
+      "function": "validate_callback_graph",
+      "kind": "python_iteration",
+      "ast_sha256": "8bf74211960615051e0186d550040b18982c5d83433da7ce1534008b50682e5f",
+      "role": "host_validation",
+      "reason": "Inspect traced callback operation metadata once at construction; no data-dependent numerical work or Python callback executes here."
+    },
+    {
+      "path": "bayesfilter/inference/quadratic_geometry_control_tf.py",
+      "function": "validate_callback_graph",
+      "kind": "python_iteration",
+      "ast_sha256": "0958e6781cb5011ac23725e434fbd051a403a07abe9f31a0c8ff3c2697b8ff58",
+      "role": "host_validation",
+      "reason": "Inspect traced callback operation metadata once at construction; no data-dependent numerical work or Python callback executes here."
     }
   ]
 }

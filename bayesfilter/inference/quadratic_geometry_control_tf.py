@@ -53,7 +53,13 @@ def _callback_program(callback, dimension, jit_compile):
     with tf.init_scope():
         target = tf.function(lambda point: _target(callback, point),
             input_signature=[tf.TensorSpec([dimension], D)], autograph=False, jit_compile=jit_compile)
-        graph = target.get_concrete_function().graph.as_graph_def()
+        validate_callback_graph(target, jit_compile=jit_compile)
+    return target
+
+
+def validate_callback_graph(program, *, jit_compile=True):
+    """Inspect callback metadata only; numerical execution remains native."""
+    graph = program.get_concrete_function().graph.as_graph_def()
     forbidden = {"PyFunc", "PyFuncStateless", "EagerPyFunc"}
     if jit_compile:
         forbidden.update(("Assert", "CheckNumerics", "CheckNumericsV2"))
@@ -63,7 +69,6 @@ def _callback_program(callback, dimension, jit_compile):
     if unsafe:
         raise ValueError("Scalar geometry target requires native outputs with explicit validity; "
                          f"unsupported callback operations: {', '.join(unsafe)}")
-    return target
 
 
 def _finite(value):

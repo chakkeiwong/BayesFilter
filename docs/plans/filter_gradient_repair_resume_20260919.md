@@ -1,5 +1,49 @@
 # Filter and gradient repair recovery
 
+Active continuation from pushed **3f3f07ee** on
+`repair/filter-gradient-xla-validation-20260918`. Main remains unmerged; remote
+main **c7adbda7** still needs integration and qualification. Caps remain
+**32 CPU / 52 GPU process-hours**.
+
+The internal native pilot/cloud program now encloses ordered target calls,
+curvature accumulation, refined eigensystem, QR and complete candidate records.
+**02534--02538 pass 57 CPU checks**, covering complete original D1/D3/D5 records,
+empty/rank-zero/failure cases, changed runtime inputs, HLO and resource release.
+The original authority remains isolated **3582b4ac**; no numerical tolerance
+changed. The inherited checkpoint empty-pilot compilation error is preserved in
+02533 and is not claimed repaired in the public helper.
+
+All twelve matched CPU cost processes **02539--02550** pass original and changed
+records. D3/D5 scalar original/XLA warm medians are 24.178/3.178 and 25.355/3.857 ms;
+batch medians are 3.174/3.208 and 4.063/4.114 ms. Cold XLA costs .710--.791 seconds
+and adds 209.1--213.6 MiB observed RSS. The cold trigger remains open; twenty
+warm calls do not establish leak freedom. These are prepared-direction pilot
+costs, not whole-initializer costs. The already recorded fit-suffix host/cold
+triggers also remain open.
+[Pilot contract and result review](filter_gradient_geometry_pilot_control_20260922.md).
+
+**02551 passes 21 shared callback checks; 02552 passes 22 existing geometry
+checks; 02553 passes 72 policy/controller checks.** Audit 02554 covers 2,983
+working Python files, 2,982 parsed and one unchanged vendor-reference error.
+The static guard remains partial at **212 sources / 1,306 exact exceptions**.
+No numerical-loop exemption was added; focused Ruff and whitespace pass.
+
+GPU3 remains occupied at 8,675 MiB and high utilization. No numerical worker is
+active. Charges through 02554 are **51,944.10993168222 CPU / 48,325.1067211973 GPU
+seconds**. Keep one worker, frozen runtime/tests/driver during workers, CPU GPU
+hiding, GPU3's unchanged idle gate and verified memory growth.
+
+Next compile direction normalization and finite-row preparation, then enclose
+geometry/iterative control and qualify default-GPU consumers and costs. Public
+helpers remain unchanged. The rejected posterior D3 precision comparison proposal
+is still **pending and uninstalled**; CPU high-precision inputs do not qualify
+different GPU bytes. Shared COD GPU renewal, uniform GPU costs, public sequential
+lifecycle/reporting, block control, external deadlines, actual DZ5 transitions
+and F01--F20 terminal dispositions remain open. No external source/pin, package
+or environment changes. Canonical LEDH rebuilding remains outside this repair.
+
+## Previous fit checkpoint
+
 Active continuation from pushed **0ecf4775** on
 `repair/filter-gradient-xla-validation-20260918`. Main remains unmerged; remote
 main advanced to **c7adbda7** and must be integrated/qualified before final merge.

@@ -63,6 +63,19 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"geometry_pilot_memory_{lane}_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_geometry_pilot_memory.py::test_complete_pilot_costs[{batched}-{arm}-{dimension}]",)
+        for lane, batched in (("scalar", False), ("batch", True)) for arm in ("before", "graph", "xla")
+        for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"geometry_pilot_extras_{device}": (
+        "tests/test_filter_repair_geometry_pilot.py", "-k", "resources or failure") for device in ("cpu", "gpu")},
+    "geometry_pilot_smoke": (
+        "tests/test_filter_repair_geometry_pilot.py::test_original_pilot_records[gaussian-False-3]",),
+    **{f"geometry_pilot_{dimension}_{device}": (
+        "tests/test_filter_repair_geometry_pilot.py", "-k", f"original_pilot and {dimension}")
+        for dimension in (1, 3, 5) for device in ("cpu", "gpu")},
+    **{f"geometry_pilot_operands_{device}": (
+        "tests/test_filter_repair_geometry_pilot.py", "-k", "runtime_inputs") for device in ("cpu", "gpu")},
     **{f"geometry_fit_lifetime_{device}": (
         "tests/test_filter_repair_geometry_fit.py::test_fit_target_changes_and_resource_ownership",)
         for device in ("cpu", "gpu")},
@@ -632,6 +645,10 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"geometry_pilot_memory_{lane}_{arm}_{dimension}_{device}":
+        "Matched prepared-direction pilot and full records; normalization/prefix and whole-initializer/terminal evidence remain open."
+        for lane in ("scalar", "batch") for arm in ("before", "graph", "xla")
+        for dimension in (3, 5) for device in ("cpu", "gpu")},
     **{f"geometry_fit_memory_{arm}_{dimension}_{device}":
         "Matched original suffix body and complete result/hash/report costs; whole-initializer and final repeated evidence remain required."
         for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -739,6 +756,11 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"geometry_pilot_memory_{device}": tuple(f"geometry_pilot_memory_{lane}_{arm}_{dimension}_{device}"
+        for lane in ("scalar", "batch") for arm in ("before", "graph", "xla")
+        for dimension in (3, 5)) for device in ("cpu", "gpu")},
+    **{f"geometry_pilot_{device}": (f"geometry_pilot_1_{device}", f"geometry_pilot_3_{device}",
+        f"geometry_pilot_5_{device}", f"geometry_pilot_operands_{device}") for device in ("cpu", "gpu")},
     **{f"geometry_fit_memory_{device}": tuple(f"geometry_fit_memory_{arm}_{dimension}_{device}"
         for arm in ("before", "graph", "xla") for dimension in (3, 5)) for device in ("cpu", "gpu")},
     **{f"geometry_fit_{device}": (f"geometry_fit_1_{device}", f"geometry_fit_3_{device}",
@@ -916,6 +938,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["geometry_pilot_memory_gpu"]},
+    "geometry_pilot_extras_gpu": "GPU",
+    **{f"geometry_pilot_{dimension}_gpu": "GPU" for dimension in (1, 3, 5)},
+    "geometry_pilot_operands_gpu": "GPU",
     "geometry_fit_lifetime_gpu": "GPU",
     "geometry_fit_cache_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["geometry_fit_memory_gpu"]},
