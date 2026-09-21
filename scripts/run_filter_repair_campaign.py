@@ -63,6 +63,25 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"geometry_fit_lifetime_{device}": (
+        "tests/test_filter_repair_geometry_fit.py::test_fit_target_changes_and_resource_ownership",)
+        for device in ("cpu", "gpu")},
+    **{f"geometry_fit_cache_{device}": (
+        "tests/test_filter_repair_geometry_fit.py::test_fit_cache_binds_identity_numerical_settings_and_releases_old_target",)
+        for device in ("cpu", "gpu")},
+    **{f"geometry_fit_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_geometry_fit_memory.py::test_complete_geometry_fit_costs[{arm}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    "geometry_fit_smoke": (
+        "tests/test_filter_repair_geometry_fit.py::test_full_original_geometry_fit_suffix[gaussian-3]",),
+    **{f"geometry_fit_{dimension}_{device}": (
+        "tests/test_filter_repair_geometry_fit.py", "-k", f"full_original and {dimension}")
+        for dimension in (1, 3, 5) for device in ("cpu", "gpu")},
+    **{f"geometry_fit_operands_{device}": (
+        "tests/test_filter_repair_geometry_fit.py", "-k", "not full_original") for device in ("cpu", "gpu")},
+    **{f"geometry_control_callbacks_{device}": (
+        "tests/test_filter_repair_geometry_callback_contract.py",)
+        for device in ("cpu", "gpu")},
     **{f"geometry_control_memory_{arm}_{dimension}_{device}": (
         f"tests/test_filter_repair_geometry_control_memory.py::test_complete_center_proposal_costs[{arm}-{dimension}]",)
         for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -613,6 +632,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"geometry_fit_memory_{arm}_{dimension}_{device}":
+        "Matched original suffix body and complete result/hash/report costs; whole-initializer and final repeated evidence remain required."
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
     **{f"geometry_control_memory_{arm}_{dimension}_{device}":
         "Complete proposal dependency costs; public full-initializer and terminal repeated evidence remain required."
         for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -717,6 +739,10 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"geometry_fit_memory_{device}": tuple(f"geometry_fit_memory_{arm}_{dimension}_{device}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)) for device in ("cpu", "gpu")},
+    **{f"geometry_fit_{device}": (f"geometry_fit_1_{device}", f"geometry_fit_3_{device}",
+        f"geometry_fit_5_{device}", f"geometry_fit_operands_{device}") for device in ("cpu", "gpu")},
     **{f"geometry_control_memory_{device}": tuple(f"geometry_control_memory_{arm}_{dimension}_{device}"
         for arm in ("before", "graph", "xla") for dimension in (3, 5)) for device in ("cpu", "gpu")},
     **{f"posterior_curvature_growth_{device}": tuple(f"posterior_curvature_growth_{replicates}_{device}"
@@ -890,6 +916,12 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "geometry_fit_lifetime_gpu": "GPU",
+    "geometry_fit_cache_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["geometry_fit_memory_gpu"]},
+    **{f"geometry_fit_{dimension}_gpu": "GPU" for dimension in (1, 3, 5)},
+    "geometry_fit_operands_gpu": "GPU",
+    "geometry_control_callbacks_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["geometry_control_memory_gpu"]},
     "geometry_control_gpu": "GPU","sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "cod_tail_gpu": "GPU",

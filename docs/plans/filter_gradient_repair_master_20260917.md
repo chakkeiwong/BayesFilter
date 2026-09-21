@@ -1,5 +1,60 @@
 # Complete filter and gradient execution repair
 
+Active continuation from pushed **0ecf4775** on
+`repair/filter-gradient-xla-validation-20260918`. Main remains unmerged; remote
+main advanced to **c7adbda7** and must be integrated/qualified before final merge.
+The cumulative caps remain **32 CPU / 52 GPU process-hours**.
+
+Recovered and pushed the previous quadratic proposal checkpoint. The new
+callback adapter preserves original invalid-evaluation records for construction/
+conversion failures and rejects Python callbacks or XLA-unsafe runtime assertion
+operations at construction. **02499 passes 21 callback checks; 02500 renews all
+48 original proposal/replay checks.** Public helpers remain unchanged.
+Six renewed proposal costs and 3,000-call reuse checks pass in 02501--02506;
+late XLA RSS growth is 0/4 KiB. The prior callback failures remain in 02498.
+
+New internal `quadratic_geometry_fit_tf.py` encloses constrained score fitting,
+covariance/holdout diagnostics, center proposal, exact incumbent update/replay
+and final acceptance. **33 complete original D1/D3/D5 suffixes pass in
+02510--02512**, plus changed operands, enclosing HLO, failed-fit/no-call, exact
+ties, resource changes/release and identity-cache checks (02513/02520/02527/02528).
+The numerical authority remains isolated **3582b4ac**, with identical frozen
+basis/cloud/partition inputs. No threshold or numerical tolerance changed.
+
+Twelve fresh CPU fit-cost processes pass complete payload comparisons in
+02514--02519/02521--02526. The baseline extracts the unchanged original suffix
+body and is checked against the original full initializer. Original/XLA D3/D5
+warm medians in the extended run are 5.418/6.147 ms and 7.014/7.457 ms; XLA cold
+is 2.180/2.343 seconds and extra RSS 306.5/313.4 MiB. These exceed the cold/host
+investigation triggers. Most allocation occurs at first execution; all six arms
+pass 3,000 additional calls, with zero late XLA RSS growth. That bounded reuse
+does not prove native executable eviction or whole-initializer costs.
+[Fit-controller contract and review](filter_gradient_geometry_fit_control_20260922.md).
+
+**02529 passes all 72 policy checks; audit 02530 passes.** Inventory is 2,979
+working Python files / 2,978 parsed / one unchanged vendor-reference error.
+The static guard remains partial at **210 sources / 1,306 exact exceptions**.
+New fit numerics have no Python-loop exemption; exact exceptions inspect callback
+metadata or format completed records. Focused Ruff and whitespace pass.
+
+GPU3 remains occupied at 8,675 MiB and near 100% utilization. Its unchanged
+idle gate prevents launches; CPU references hide GPUs. No worker is active.
+Charges through 02530 are **51,724.668491946984 CPU / 48,325.1067211973 GPU
+seconds**, under unchanged caps. Runtime/tests/driver stay frozen during workers.
+
+Next enclose pilot/design preparation and iterative control, qualify new
+controllers/default-GPU costs, repair the known public raw trust eigenvector
+error, and complete affected consumers. The posterior rejected ill-conditioned
+comparison proposal remains **pending and uninstalled**; an explicit owner
+question was renewed this continuation, with no answer yet. CPU high-precision
+reference does not qualify the distinct GPU input bytes. Shared COD GPU renewal,
+public uniform GPU costs, public sequential lifecycle/reporting, block control,
+external deadlines, actual DZ5 transitions and all F01--F20 terminal dispositions
+remain open. No external source/pin, package or environment changes. Canonical
+LEDH rebuilding stays outside the authorized execution repair.
+
+## Previous proposal checkpoint
+
 Active continuation from pushed **813eed67** on
 `repair/filter-gradient-xla-validation-20260918`. Main remains unmerged.
 The cumulative caps remain **32 CPU / 52 GPU process-hours**.

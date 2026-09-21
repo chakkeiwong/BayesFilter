@@ -148,3 +148,66 @@ Audit 02497 passes: 2,973 working Python files, 2,972 parsed and one unchanged
 external-reference parse error. Charges through 02497 are 51,226.57090895319
 CPU and 48,325.1067211973 GPU seconds. No numerical worker is active; the
 32 CPU / 52 GPU process-hour caps are unchanged.
+
+## Callback boundary continuation from 0ecf4775
+
+The checkpoint is committed and pushed. Remote main has advanced to c7adbda7;
+it remains separate until qualification. GPU3 is still busy. Continue the
+unchanged CPU reference lane and preserve original 3582b4ac and checkpoint
+0ecf4775 records before repairing callback compatibility. At most three
+120-second attempts per unchanged job remain enforced by the campaign driver.
+
+Question: can the native center proposal and replay preserve rejection records
+for callback construction/conversion errors without a Python numerical callback
+or an eager retry? Test exceptions, wrong return arity, nonscalar values,
+incompatible dtypes, flattened valid scores, and malformed score sizes. Use full
+original records and resource counters where they can measure execution.
+Original malformed score broadcasting is outside the documented same-dimension
+score contract; any new fail-closed shape guard must be recorded explicitly,
+not counted as original numerical parity. No callback may be evaluated eagerly
+to qualify it. Construction errors may become NaN/status outputs in the native
+adapter, preserving the original invalid-evaluation boundary.
+
+Skeptical review also identifies dynamic Assert/CheckNumerics operations: XLA
+may discard their runtime vetoes. Such callbacks must be rejected at native
+program construction until they express validity through numerical outputs;
+merely catching Python tracing errors does not solve that problem. Inspect the
+whole traced callback graph, including nested functions, and reject host Python
+callback operations as well. This is configuration validation, not a numerical
+loop exemption. Preserve a direct assertion reproducer as explanatory evidence.
+Do not generalize this limited admission check to arbitrary callback correctness
+or claim full public exception compatibility. No public wiring, tolerance,
+optimizer, RNG, HMC authority or external consumer changes occur in this step.
+
+02498 preserves ten callback-compatibility failures and two passing flattened
+score cases. The repair catches construction/conversion errors inside the
+native adapter and emits the original invalid-evaluation values; it does not
+catch arbitrary runtime/compiler errors or retry the callback eagerly. A
+configuration-only scan rejects Python callback operations and (for XLA)
+Assert/CheckNumerics throughout the traced function closure. Wrong score sizes
+are explicitly rejected under the documented same-dimension score contract;
+the original's scalar broadcasting is recorded outside parity. Resource counters
+verify that adapter construction and skipped numerical branches perform no
+target evaluation. Renew full healthy records and graph ownership after this
+boundary change, then renew costs on the resulting implementation.
+
+02499 passes all 21 callback/shape/admission/resource checks. 02500 renews all
+48 original-record, nextafter, runtime-input and graph-release checks after the
+adapter change. Renew the six CPU cost arms and add 3,000 alternating
+initial/changed-input calls per arm at D3/D5, observing memory every 1,000 calls.
+Keep the 21 timed calls, original authority and existing investigation triggers.
+This answers the previously unmeasured warm-reuse question; it does not test
+arbitrary callback turnover or prove a general allocation bound. Run one
+numerical worker at a time, at most 120 seconds each, with sources frozen.
+
+02501--02506 pass all six renewed costs and 3,000 additional alternating calls
+per arm. D3/D5 original versus XLA warm medians are 1.398/0.772 ms and
+1.352/0.801 ms; XLA cold is 0.812/0.884 seconds and extra observed RSS is
+213.8/216.8 MiB. XLA has 692 nodes at both extents. Its final 1,000-call intervals
+add 0/4 KiB; bounded reuse shows no large continuing growth here. The cold
+trigger remains explicit. Analysis: `geometry-control-cpu-costs-02506.json`.
+
+02507 catches an invalid allow-list role label (`configuration`). Correcting
+those two exact metadata-scan exceptions to the existing `host_validation` role
+repairs the policy schema; 02508 passes all 72 policy checks. No numerical loop
+was exempted. Public helper integration and GPU qualification remain pending.

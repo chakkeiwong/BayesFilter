@@ -34,9 +34,36 @@ REJECTION_REASONS = (
 
 
 def _target(callback, point):
-    value, score = callback(point)
-    return (tf.reshape(tf.convert_to_tensor(value, D), []),
-            tf.ensure_shape(tf.reshape(tf.convert_to_tensor(score, D), [-1]), point.shape))
+    try:
+        value, score = callback(point)
+        return (tf.reshape(tf.convert_to_tensor(value, D), []),
+                tf.ensure_shape(tf.reshape(tf.convert_to_tensor(score, D), [-1]), point.shape))
+    except Exception:  # noqa: BLE001 - original invalid callback/conversion boundary, at tracing only.
+        nan = tf.constant(float("nan"), D)
+        return nan, tf.fill(point.shape, nan)
+
+
+def _callback_program(callback, dimension, jit_compile):
+    """Validate a traced target without executing it or weakening XLA vetoes.
+
+    Python construction/conversion errors retain the original invalid-target
+    result. Runtime errors still propagate; there is no eager numerical retry.
+    Assertions/check-numerics cannot be relied on as XLA runtime validity gates.
+    """
+    with tf.init_scope():
+        target = tf.function(lambda point: _target(callback, point),
+            input_signature=[tf.TensorSpec([dimension], D)], autograph=False, jit_compile=jit_compile)
+        graph = target.get_concrete_function().graph.as_graph_def()
+    forbidden = {"PyFunc", "PyFuncStateless", "EagerPyFunc"}
+    if jit_compile:
+        forbidden.update(("Assert", "CheckNumerics", "CheckNumericsV2"))
+    operations = {node.op for nodes in (graph.node, *(function.node_def for function in graph.library.function))
+                  for node in nodes}
+    unsafe = sorted(operations & forbidden)
+    if unsafe:
+        raise ValueError("Scalar geometry target requires native outputs with explicit validity; "
+                         f"unsupported callback operations: {', '.join(unsafe)}")
+    return target
 
 
 def _finite(value):
@@ -99,6 +126,7 @@ def make_center_refinement_program(callback, dimension, config, *, jit_compile=T
         raise ValueError("dimension must be positive")
     constrained = bool(config.constrain_center_refinement_to_trust_region)
     eigenpairs = eigenpair_program(dimension) if jit_compile else tf.linalg.eigh
+    target = _callback_program(callback, dimension, jit_compile)
 
     @tf.function(input_signature=[tf.TensorSpec([dimension], D), tf.TensorSpec([dimension], D),
         tf.TensorSpec([dimension, dimension], D), tf.TensorSpec([dimension], D),
@@ -141,7 +169,7 @@ def make_center_refinement_program(callback, dimension, config, *, jit_compile=T
 
         def replay():
             refined = center + step["step"] * scale
-            value, score = _target(callback, refined)
+            value, score = target(refined)
             finite = tf.math.is_finite(value) & _finite(score)
             z_norm = tf.linalg.norm(step["step"])
             score_norm = tf.linalg.norm(score * scale)
@@ -174,12 +202,13 @@ def make_exact_replay_program(callback, dimension, *, jit_compile=True):
     """Replay an incumbent without changing its original provenance or values."""
     if dimension < 1:
         raise ValueError("dimension must be positive")
+    target = _callback_program(callback, dimension, jit_compile)
 
     @tf.function(input_signature=[tf.TensorSpec([dimension], D), tf.TensorSpec([], D),
         tf.TensorSpec([dimension], D), tf.TensorSpec([], tf.bool)], autograph=False, jit_compile=jit_compile)
     def replay(point, incumbent_value, incumbent_score, has_incumbent):
         def evaluate():
-            value, score = _target(callback, point)
+            value, score = target(point)
             valid = tf.math.is_finite(value) & _finite(score)
             matches = (valid & (tf.abs(value - incumbent_value) <= 1e-12 + 1e-10 * tf.abs(incumbent_value))
                 & tf.reduce_all(tf.abs(score - incumbent_score) <= 1e-11 + 1e-9 * tf.abs(incumbent_score)))

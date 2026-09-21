@@ -66,6 +66,21 @@ def test_complete_center_proposal_costs(arm, dimension, request):
     stages['measured'] = _memory(gpu)
     changed = (args[0] + .03, args[1] * 1.1, args[2] * 1.03, args[3] * .9, args[4] - .1, args[5] * 1.1)
     second, changed_cost = execute(changed)
+    # Sparse observation after identical fixed-signature workloads. This is a
+    # bounded plateau diagnostic, not proof of arbitrary executable eviction.
+    growth = [{'additional_calls': 0, 'memory': _memory(gpu)}]
+    if gpu:
+        tf.config.experimental.reset_memory_stats('GPU:0')
+    for block in range(3):
+        for index in range(1000):
+            inputs, expected_record = (args, first) if index % 2 == 0 else (changed, second)
+            if program is None:
+                actual = reference(baseline, callback, cfg, inputs)
+            else:
+                actual = center_refinement_report(program(*inputs), cfg, inputs[4], inputs[5])
+            assert clean(actual) == expected_record
+        growth.append({'additional_calls': (block + 1) * 1000, 'memory': _memory(gpu)})
+    stages['after_warm_reuse'] = _memory(gpu)
     nodes, hlo, traces = None, '', None
     if program is not None:
         graph = program.get_concrete_function().graph.as_graph_def()
@@ -86,6 +101,7 @@ def test_complete_center_proposal_costs(arm, dimension, request):
         'original_source_sha256': checkpoint.hashes(),
         'input_sha256': [hashlib.sha256(tf.io.serialize_tensor(value).numpy()).hexdigest() for value in args],
         'build_seconds': build, 'trace_seconds': trace, 'stages': stages, 'samples': samples,
+        'growth_observations': growth,
         'result': first, 'changed_result': second, 'changed_cost': changed_cost,
         'original_result': expected, 'original_changed_result': expected_changed,
         'trace_count': traces, 'graph_nodes': nodes, 'hlo_bytes': len(hlo.encode()),
