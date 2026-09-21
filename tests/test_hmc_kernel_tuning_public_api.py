@@ -87,8 +87,12 @@ def test_public_ordinary_config_rejects_typed_runner_binding() -> None:
         )
 
 
+@pytest.mark.parametrize("metric_window_size", [None, 400])
+@pytest.mark.parametrize("metric_evidence_policy", ["temporal_information", "finite_window"])
 def test_public_mass_preparation_owns_adequate_standard_budget(
     monkeypatch: pytest.MonkeyPatch,
+    metric_window_size: int | None,
+    metric_evidence_policy: str,
 ) -> None:
     geometry = SimpleNamespace(
         target_dimension=9,
@@ -98,6 +102,7 @@ def test_public_mass_preparation_owns_adequate_standard_budget(
     bootstrap = SimpleNamespace(
         artifact_hash="bootstrap-hash",
         final_status="passed",
+        payload=lambda: {"artifact_hash": "bootstrap-hash", "final_status": "passed"},
     )
     operational = SimpleNamespace(operational_metric_update_count=1,
                                   metric_adaptation_status="metric_updated")
@@ -105,6 +110,7 @@ def test_public_mass_preparation_owns_adequate_standard_budget(
         passed=True,
         final_status="passed",
         operational_warmup_result=operational,
+        payload=lambda: {"passed": True, "final_status": "passed"},
     )
     observed: dict[str, Any] = {}
 
@@ -128,6 +134,16 @@ def test_public_mass_preparation_owns_adequate_standard_budget(
         observed["metric_update_requirement"] = kwargs[
             "config"
         ].metric_update_requirement
+        if metric_window_size is not None:
+            schedule = kwargs["_windowed_config"]
+            assert schedule.first_window_size == metric_window_size
+            assert schedule.warmup_steps == 44 + metric_window_size
+            assert schedule.metric_evidence_policy == metric_evidence_policy
+            assert schedule.metric_probe_num_results == 16
+            assert schedule.preparation_max_restarts == 3
+            assert schedule.mass_policy == "windowed_adaptive"
+        else:
+            assert "_windowed_config" not in kwargs
         return windowed
 
     monkeypatch.setattr(
@@ -157,11 +173,15 @@ def test_public_mass_preparation_owns_adequate_standard_budget(
             target_scope="mass-preparation-fixture",
             use_xla=False,
             metric_update_requirement="require_operational_update",
+            metric_evidence_policy=metric_evidence_policy,
+            metric_probe_num_results=16,
+            preparation_max_restarts=3,
         ),
+        metric_window_size=metric_window_size,
     )
 
     assert observed == {
-        "warmup_steps": 225,
+        "warmup_steps": 225 if metric_window_size is None else 444,
         "metric_update_requirement": "require_operational_update",
     }
     assert result["windowed_stage"] is windowed

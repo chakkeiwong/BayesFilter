@@ -116,6 +116,7 @@ def test_automatic_preparation_calls_the_extracted_stage_and_handoff(monkeypatch
     monkeypatch.setattr(hmc_geometry, "initialize_hmc_kernel_geometry", lambda **kwargs: geometry)
     monkeypatch.setattr(hmc_bootstrap, "run_hmc_bootstrap_screen", lambda **kwargs: bootstrap)
     stage_result = SimpleNamespace(passed=True, final_status="passed",
+        payload=lambda: {"passed": True, "final_status": "passed"},
         operational_warmup_result=SimpleNamespace(operational_metric_update_count=1,
                                                  metric_adaptation_status="metric_updated"))
     seen = []

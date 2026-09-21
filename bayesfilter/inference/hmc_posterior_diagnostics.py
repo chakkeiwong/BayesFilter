@@ -126,8 +126,28 @@ def _sample_sd(values: Any, *, axis: Any) -> Any:
 
 
 def _cross_chain_ess(sample_major: Any) -> Any:
-    from bayesfilter.inference.hmc_diagnostic_math import _cross_chain_ess as implementation
-    return implementation(sample_major)
+    from bayesfilter.inference.hmc_ess import stan_cross_chain_ess
+    return stan_cross_chain_ess(sample_major)
+
+
+def _pooled_percentile(samples: Any, probability: float) -> Any:
+    """Pooled linear quantile preserving repeated endpoints exactly.
+
+    Rejected HMC states create ties. Rounding an interpolated equal endpoint
+    can change an entire tie group's indicator and hence its tail ESS. Sort
+    over draw/chain axes; retain parameter axes and choose exact endpoints
+    when equal. The caller supplies fixed probabilities in [0, 1].
+    """
+    import tensorflow as tf
+
+    count = int(samples.shape[0]) * int(samples.shape[1])
+    ordered = tf.sort(tf.reshape(samples, [count, int(samples.shape[2])]), axis=0)
+    position = probability * (count - 1)
+    lower_index, upper_index = math.floor(position), math.ceil(position)
+    lower, upper = ordered[lower_index], ordered[upper_index]
+    weight = tf.constant(position - lower_index, tf.float64)
+    interpolated = lower + weight * (upper - lower)
+    return tf.where(tf.equal(lower, upper), lower, interpolated)
 
 
 def _split_rhat_from_sample_major(sample_major: Any) -> Any:
@@ -139,15 +159,11 @@ def rank_normalized_split_rhat(samples: Any) -> Mapping[str, Any]:
     """Compute bulk, folded, and maximum rank-normalized split R-hat."""
 
     import tensorflow as tf
-    import tensorflow_probability as tfp
-
     tensor = _sample_tensor(samples)
     tf.debugging.assert_all_finite(tensor, "samples must be finite")
     split = _split_sample_major(tensor)
     bulk = _rank_normalize(split)
-    pooled_median = tfp.stats.percentile(
-        split, 50.0, axis=(0, 1), interpolation="midpoint"
-    )
+    pooled_median = _pooled_percentile(split, 0.5)
     folded = _rank_normalize(tf.abs(split - pooled_median))
     bulk_rhat = _split_rhat_from_sample_major(bulk)
     folded_rhat = _split_rhat_from_sample_major(folded)
@@ -162,20 +178,16 @@ def rank_normalized_bulk_tail_ess(samples: Any) -> Mapping[str, Any]:
     """Compute pooled rank-normalized bulk and 5%/95% tail ESS."""
 
     import tensorflow as tf
-    import tensorflow_probability as tfp
-
     tensor = _sample_tensor(samples)
     tf.debugging.assert_all_finite(tensor, "samples must be finite")
     split = _split_sample_major(tensor)
     bulk = _cross_chain_ess(_rank_normalize(split))
-    lower = tfp.stats.percentile(
-        tensor, 5.0, axis=(0, 1), interpolation="linear"
-    )
-    upper = tfp.stats.percentile(
-        tensor, 95.0, axis=(0, 1), interpolation="linear"
-    )
+    lower = _pooled_percentile(tensor, 0.05)
+    upper = _pooled_percentile(tensor, 0.95)
     lower_ess = _cross_chain_ess(tf.cast(split <= lower, tf.float64))
-    upper_ess = _cross_chain_ess(tf.cast(split >= upper, tf.float64))
+    # Quantile ESS uses the CDF indicator at both cutoffs. Its complement is
+    # x > q95; x >= q95 differs when rejected proposals tie at the boundary.
+    upper_ess = _cross_chain_ess(tf.cast(split <= upper, tf.float64))
     return {
         "bulk": bulk,
         "lower_5pct": lower_ess,
@@ -185,10 +197,14 @@ def rank_normalized_bulk_tail_ess(samples: Any) -> Mapping[str, Any]:
 
 
 def posterior_mean_diagnostics(samples: Any) -> Mapping[str, Any]:
-    """Return pooled/per-chain means, SDs, ESS, and mean MCSE."""
+    """Return pooled/per-chain means, SDs, ESS, and mean MCSE.
+
+    Mean ESS preserves this API's unsplit-chain convention. Bulk/tail ESS
+    separately splits chains. Per-chain and pooled MCSE share the repaired
+    estimator; an antithetic chain must not retain the unbounded TFP formula.
+    """
 
     import tensorflow as tf
-    import tensorflow_probability as tfp
 
     tensor = _sample_tensor(samples)
     tf.debugging.assert_all_finite(tensor, "samples must be finite")
@@ -200,12 +216,8 @@ def posterior_mean_diagnostics(samples: Any) -> Mapping[str, Any]:
     sample_major = tf.transpose(tensor, perm=(1, 0, 2))
     pooled_mean_ess = _cross_chain_ess(sample_major)
     pooled_mcse = pooled_sd / tf.sqrt(pooled_mean_ess)
-    per_chain_ess = tfp.mcmc.effective_sample_size(
-        sample_major,
-        filter_threshold=None,
-        filter_beyond_positive_pairs=True,
-        cross_chain_dims=None,
-    )
+    per_chain_ess = tf.reshape(_cross_chain_ess(tf.reshape(
+        sample_major, [draws, 1, chains * parameters])), [chains, parameters])
     per_chain_sd = _sample_sd(tensor, axis=1)
     per_chain_mcse = per_chain_sd / tf.sqrt(per_chain_ess)
     ratio = tf.where(
@@ -270,7 +282,14 @@ def initialization_memory_statistics(samples: Any) -> Mapping[str, Any]:
         tf.maximum(mcse_square_sum - tf.square(mcse), 0.0)
     ) / (chains - 1.0)
     combined = tf.sqrt(tf.square(mcse) + tf.square(leave_one_out_mcse))
-    difference = means - leave_one_out_mean
+    # Subtract a shared observed anchor before averaging. Direct subtraction
+    # of almost equal level means amplifies CPU/GPU reduction rounding when
+    # the posterior mean is large relative to its Monte Carlo uncertainty.
+    # The anchor cancels algebraically in the leave-one-chain-out difference.
+    centered_means = tf.reduce_mean(tensor - tensor[0, 0, :], axis=1)
+    centered_leave_one_out = (tf.reduce_sum(centered_means, axis=0)
+                             - centered_means) / (chains - 1.0)
+    difference = centered_means - centered_leave_one_out
     standardized = tf.where(
         combined > 0.0,
         difference / combined,

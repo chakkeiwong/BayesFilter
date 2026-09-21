@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import json
 import math
+import operator
+from dataclasses import replace
 from pathlib import Path
 import time
 from typing import Any, Callable, Mapping
@@ -150,6 +152,7 @@ def prepare_operational_windowed_mass_handoff(
     negative_hessian: Any | None = None,
     initial_covariance: Any | None = None,
     parameter_scales: Any | None = None,
+    metric_window_size: int | None = None,
     progress_callback: Callable[[str, Mapping[str, Any]], None] | None = None,
     initialize_bootstrap: bool = False,
     bootstrap_execution: Any | None = None,
@@ -163,6 +166,11 @@ def prepare_operational_windowed_mass_handoff(
     selection so callers that already own a reviewed fixed-kernel comparison
     do not have to run a second candidate campaign.
 
+    ``metric_window_size`` is an explicit experimental one-window schedule:
+    keep the preset's fast buffers and collect exactly this many consecutive
+    positions in one slow window. It changes the allocation, not covariance
+    adequacy gates or defaults. The schedule and all decisions are recorded.
+
     All warmup draws are discarded.  The returned mapping contains live
     BayesFilter adapters plus the public geometry, bootstrap, windowed-stage,
     and budget records needed to audit the handoff.  It is not posterior or
@@ -174,7 +182,7 @@ def prepare_operational_windowed_mass_handoff(
     from bayesfilter.inference.hmc_bootstrap import run_hmc_bootstrap_screen
     from bayesfilter.inference.hmc_mass_adaptation import (
         _bootstrap_preflight_passed, run_hmc_windowed_mass_stage,
-        build_operational_fixed_mass_hmc_adapter,
+        build_operational_fixed_mass_hmc_adapter, _windowed_mass_stage_internal_config,
     )
     from bayesfilter.inference.hmc_configuration import (
         HMCKernelTuningConfig,
@@ -192,6 +200,12 @@ def prepare_operational_windowed_mass_handoff(
         raise ValueError(
             "operational windowed mass preparation requires mass_policy='windowed_adaptive'"
         )
+    if metric_window_size is not None:
+        if isinstance(metric_window_size, bool):
+            raise TypeError("metric_window_size must be an integer count")
+        metric_window_size = operator.index(metric_window_size)
+        if metric_window_size < 2:
+            raise ValueError("metric_window_size must be at least two")
     position = _validate_position(initial_position)
     scope = cfg.target_scope or str(getattr(adapter, "target_scope", ""))
     if not scope:
@@ -233,7 +247,6 @@ def prepare_operational_windowed_mass_handoff(
     bootstrap_config = _public_bootstrap_config(cfg, geometry=geometry)
     execution_kwargs = {}
     if bootstrap_execution is not None:
-        from dataclasses import replace
         from bayesfilter.inference.hmc_bootstrap_checkpoint import CheckpointedBootstrapRunner
         if not isinstance(bootstrap_execution, CheckpointedBootstrapRunner):
             raise TypeError("bootstrap execution must use the repository checkpointed runner")
@@ -247,6 +260,8 @@ def prepare_operational_windowed_mass_handoff(
         progress_callback=lambda stage, payload: progress("bootstrap." + stage, payload),
         **execution_kwargs,
     )
+    # Keep round diagnostics and any first-failure record before the veto gate.
+    progress("bootstrap_result", {"result": bootstrap.payload()})
     progress(
         "bootstrap_completed",
         {
@@ -276,6 +291,22 @@ def prepare_operational_windowed_mass_handoff(
     budget_policy = budget_factory(geometry.target_dimension, 0)
     if not isinstance(budget_policy, _HMCAttemptBudgetPolicy):
         raise TypeError("public operational warmup budget policy is invalid")
+    schedule_options = {}
+    if metric_window_size is not None:
+        # Preserve all canonical numerical settings. Only consolidate the slow
+        # draws into one explicit window; later fast draws must use any update.
+        standard = _windowed_mass_stage_internal_config(
+            budget_policy, mass_policy=cfg.mass_policy,
+            metric_evidence_policy=cfg.metric_evidence_policy,
+            metric_probe_num_results=cfg.metric_probe_num_results,
+            preparation_max_restarts=cfg.preparation_max_restarts)
+        schedule = replace(
+            standard, first_window_size=metric_window_size,
+            warmup_steps=standard.initial_buffer + metric_window_size + standard.final_buffer,
+        )
+        budget_policy = replace(budget_policy, phase4_warmup_steps=schedule.warmup_steps)
+        schedule_options["_windowed_config"] = schedule
+        progress("explicit_metric_window_schedule", {"schedule": schedule.payload()})
     loop_config = _public_loop_config(cfg)
     windowed_config = _phase7_windowed_stage_config(loop_config, attempt_index=0)
     if bootstrap_execution is not None:
@@ -298,7 +329,11 @@ def prepare_operational_windowed_mass_handoff(
             if progress_callback is None
             else lambda stage, payload: progress(f"windowed_mass.{stage}", payload)
         ),
+        **schedule_options,
     )
+    # Persist the public decisions before either rejection gate raises. A
+    # completed but unaccepted window is evidence, not an absent result.
+    progress("windowed_mass_result", {"result": windowed.payload()})
     operational = windowed.operational_warmup_result
     if not windowed.passed or operational is None:
         details = _failure_details("windowed_mass", windowed)

@@ -298,11 +298,18 @@ def test_member_sequential_checkpoint_replays_without_native_calls(overall_membe
         replay = run_hmc_posterior(member=member, config=config, parameter_names=('x','y'), checkpoint_store=store)
     np.testing.assert_array_equal(first['private_retained_raw'], replay['private_retained_raw'])
     assert replay['precision_status'] == 'precision_not_requested'
+    assert config.payload()['bulk_tail_ess_method'] == neutra_hmc.STAN_ESS_VERSION
+    assert replay['config']['bulk_tail_ess_method'] == neutra_hmc.STAN_ESS_VERSION
     with DurableTensorCheckpoint(tmp_path/'chunks', {'member': member.member_hash}) as store:
         from bayesfilter.runtime.durable_tensor_checkpoint import CheckpointError
         with pytest.raises(CheckpointError):
             run_hmc_posterior(member=member, config=replace(config, assessment_policy=HMCPosteriorAssessmentPolicy(
                 warmup_consecutive_checks=2)), parameter_names=('x','y'), checkpoint_store=store)
+    with monkeypatch.context() as changed:
+        changed.setattr(neutra_hmc, 'STAN_ESS_VERSION', 'different-diagnostic-method')
+        with DurableTensorCheckpoint(tmp_path/'chunks', {'member': member.member_hash}) as store:
+            with pytest.raises(CheckpointError):
+                run_hmc_posterior(member=member, config=config, parameter_names=('x','y'), checkpoint_store=store)
 
 
 def test_compact_shared_exports_cache_and_corruption(overall_member, tmp_path, monkeypatch):

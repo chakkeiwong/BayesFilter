@@ -12,6 +12,7 @@ import tensorflow as tf
 
 from bayesfilter.inference.hmc_precision import HMCPrecisionPolicy, mean_precision, precision_report
 from bayesfilter.inference.hmc_posterior_diagnostics import rank_normalized_bulk_tail_ess
+from bayesfilter.inference.hmc_ess import STAN_ESS_VERSION
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,7 @@ class HMCPosteriorAssessmentPolicy:
 
     def payload(self):
         return {"schema": "bayesfilter.hmc_posterior_assessment.v1", **asdict(self),
+                "bulk_tail_ess_method": STAN_ESS_VERSION,
                 "precision": None if self.precision is None else self.precision.payload(),
                 "warmup_interpretation": "declared checks only; no stationarity proof",
                 "defaults_provenance": "inherited R-hat-only policy; additional requirements explicitly configured"}
@@ -98,6 +100,7 @@ def assess_posterior(samples, names, *, policy, stage, rhat, extra=None, quantit
             "passed": bool(rhat["passed"] and information and precision["passed"]
                            and (extra is None or (extra["passed"] and not extra.get("hard_vetoes")))),
             "modern_rhat": rhat, "information_passed": information,
+            "bulk_tail_ess_method": STAN_ESS_VERSION,
             "quantity_names": names, "bulk_ess": safe_array(ess["bulk"]), "tail_ess": safe_array(ess["tail"]),
             "mean_mcse": safe_array(mean["mcse"]), "mean_ess": safe_array(mean["mean_ess"]),
             "mcse_sd_ratio": safe_array(mean["mcse_sd_ratio"]),

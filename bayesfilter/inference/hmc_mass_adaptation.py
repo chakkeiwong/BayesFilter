@@ -2112,6 +2112,7 @@ def run_hmc_windowed_mass_stage(
     _checkpoint_writer_config: SequentialRHatCheckpointWriterConfig | None = None,
     _private_diagnostic_callback: PrivateTuningDiagnosticCallback | None = None,
     _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
+    _windowed_config: WindowedMassAdaptationConfig | None = None,
 ) -> HMCWindowedMassStageResult:
     """Capture retained diagnostic draws and run windowed mass adaptation.
 
@@ -2182,13 +2183,23 @@ def run_hmc_windowed_mass_stage(
         attempt_state=_attempt_state,
     )
 
-    windowed_config = _windowed_mass_stage_internal_config(
+    expected_windowed_config = _windowed_mass_stage_internal_config(
         _attempt_budget_policy,
         mass_policy=cfg.mass_policy,
         metric_evidence_policy=cfg.metric_evidence_policy,
         metric_probe_num_results=cfg.metric_probe_num_results,
         preparation_max_restarts=cfg.preparation_max_restarts,
     )
+    windowed_config = expected_windowed_config if _windowed_config is None else _windowed_config
+    if not isinstance(windowed_config, WindowedMassAdaptationConfig):
+        raise TypeError("windowed schedule must be WindowedMassAdaptationConfig")
+    for name in ("mass_policy", "metric_evidence_policy", "metric_probe_num_results",
+                 "preparation_max_restarts"):
+        if getattr(windowed_config, name) != getattr(expected_windowed_config, name):
+            raise ValueError(f"windowed schedule {name} mismatch")
+    if (_windowed_config is not None and _attempt_budget_policy is not None
+            and windowed_config.warmup_steps != _attempt_budget_policy.phase4_warmup_steps):
+        raise ValueError("windowed schedule and warmup budget disagree")
     draw_capture_policy = _windowed_stage_draw_capture_policy(windowed_config)
     stage_seed: tuple[int, int] | None = None
     diagnostic_config: FullChainHMCConfig | None = None

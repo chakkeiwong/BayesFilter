@@ -17,6 +17,7 @@ import tensorflow_probability as tfp
 from bayesfilter.inference.hmc_posterior_assessment import (
     HMCPosteriorAssessmentPolicy, assess_posterior, validate_sequential_seeds,
 )
+from bayesfilter.inference.hmc_ess import STAN_ESS_VERSION
 from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
 from bayesfilter.inference.hmc_convergence import (
     rank_normalized_split_rhat_summary,
@@ -269,6 +270,7 @@ class _SharedSequentialNeuTraHMCConfig:
         return {
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
             "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+            "bulk_tail_ess_method": STAN_ESS_VERSION,
             "step_size": float(self.step_size),
             "num_leapfrog_steps": int(self.num_leapfrog_steps),
             "warmup_seed": self.warmup_seed,
@@ -376,6 +378,7 @@ class SequentialExactTransitionConfig:
         return {
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
             "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+            "bulk_tail_ess_method": STAN_ESS_VERSION,
             **asdict(self),
             "assessment_policy": None if self.assessment_policy is None else self.assessment_policy.payload(),
             "chain_count": None if chain_count is None else int(chain_count),
@@ -1793,6 +1796,7 @@ class _ArchivedSequentialNeuTraHMCConfig:
         return {
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
             "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+            "bulk_tail_ess_method": STAN_ESS_VERSION,
             **asdict(self),
             "assessment_policy": None if self.assessment_policy is None else self.assessment_policy.payload(),
         }
@@ -3200,6 +3204,7 @@ def _run_archived_sequential_neutra_hmc(
         metadata={
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
             "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+            "bulk_tail_ess_method": STAN_ESS_VERSION,
             "wall_seconds": time.perf_counter() - started,
             "use_xla": config.use_xla,
             "warmup_excluded_from_posterior": True,
