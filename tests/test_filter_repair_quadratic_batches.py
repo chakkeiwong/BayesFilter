@@ -133,5 +133,10 @@ def test_complete_public_records_against_original_source(method, case, request):
         json.dump({"before": expected, "after": actual, "baseline": "3582b4ac",
                    "original_source_sha256": checkpoint.hashes()}, handle, allow_nan=False, indent=2)
         handle.write("\n")
-    assert actual["diagnostics"].pop("jit_compile_fit") == (method == "paired_local")
-    _equal_records(actual, expected)
+    if method == "paired_local":
+        from tests.test_filter_repair_quadratic_rounds import compare_public_records
+
+        compare_public_records(actual, expected, jit=True)
+    else:
+        assert actual["diagnostics"].pop("jit_compile_fit") is False
+        _equal_records(actual, expected)

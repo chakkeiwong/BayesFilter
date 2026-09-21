@@ -6,10 +6,10 @@ The final factor satisfies LL'=diag(s) K^-1 diag(s); it is not momentum mass.
 An exact incumbent change invalidates the fitted anchor. No MAP, posterior
 covariance, whitening, HMC, GPU or whole-initializer XLA claim follows.
 
-The fit-round controller remains bounded and eager. Ordered fixed-batch target
-evaluation and selection now execute in one stable TF/XLA program. Paired
-probe preparation/evaluation, trust and fitting use stable TF/XLA programs. Uniform-cloud fitting and
-the round loop remain execution repair debt; whole-initializer XLA is unproved.
+Paired-local refinement executes as one stable TF/XLA program with a native
+round loop. The host validates inputs and formats completed histories. Uniform-
+cloud fitting and its round loop remain execution repair debt; whole-initializer
+XLA is unproved.
 """
 
 from __future__ import annotations
@@ -26,15 +26,13 @@ from bayesfilter.inference.batched_local_center import (
 )
 from bayesfilter.inference.mass_matrix_tf import eigenpair_program
 from bayesfilter.inference.paired_score_pilot_tf import (
-    make_paired_score_precision_program,
     validate_paired_steps,
 )
 from bayesfilter.inference.quadratic_batch_evaluation_tf import (
     make_quadratic_batch_evaluator,
 )
-from bayesfilter.inference.quadratic_probe_evaluation_tf import (
-    make_paired_probe_evaluator,
-)
+from bayesfilter.inference.quadratic_round_report import paired_quadratic_result
+from bayesfilter.inference.quadratic_rounds_tf import paired_quadratic_controller
 from bayesfilter.inference.score_curvature_tf import fit_dense_score_precision_tf
 from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
 
@@ -188,7 +186,7 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
     fixed-center regional curvature/audit must use independent streams.
     """
     if not tf.executing_eagerly():
-        raise RuntimeError("bounded initializer orchestration requires eager execution")
+        raise RuntimeError("initializer validation and reporting require eager execution")
     cfg = BatchedQuadraticCenterConfig() if config is None else config
     center = tf.convert_to_tensor(center, tf.float64)
     scale = tf.convert_to_tensor(scale, tf.float64)
@@ -203,19 +201,26 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
     planned = cfg.planned_rows(dimension)
     if planned > cfg.max_physical_rows:
         raise ValueError("whole refinement exceeds max_physical_rows before target calls")
-    rows = max(32, 4 * dimension) if cfg.rows_per_cloud is None else cfg.rows_per_cloud
     if cfg.pilot_method == "paired_local":
-        rows = 2 * dimension
+        # The explicit non-JIT option selects a complete graph reference; no
+        # runtime failure silently falls back from the default XLA program.
+        program = paired_quadratic_controller(callback, dimension, cfg, jit_compile=cfg.jit_compile_trust)
+        value, score = ((tf.constant(0., tf.float64), tf.zeros_like(center))
+                        if _initial_evidence is None else _initial_evidence)
+        computed = program(center, scale, tf.convert_to_tensor(cfg.seed, tf.int32),
+            tf.constant(_initial_evidence is not None), tf.convert_to_tensor(value, tf.float64),
+            tf.convert_to_tensor(score, tf.float64))
+        return paired_quadratic_result(computed, cfg, dimension, jit_compile=cfg.jit_compile_trust,
+            trace_count=program.experimental_get_tracing_count())
+    rows = max(32, 4 * dimension) if cfg.rows_per_cloud is None else cfg.rows_per_cloud
     details = {"physical_rows": 0, "callback_batches": 0, "padded_rows": 0,
                "invalid_rows": 0, "planned_physical_rows": planned, "selected_evaluation_index": -1,
                "rounds": [], "candidate_batches": [], "full_initializer_xla": False,
                "jit_compile_trust": cfg.jit_compile_trust, "seed": cfg.seed,
-               "jit_compile_fit": cfg.pilot_method == "paired_local",
+               "jit_compile_fit": False,
                "pilot_method": cfg.pilot_method, "paired_steps": cfg.paired_steps}
     incumbent = [center, tf.constant(-math.inf, tf.float64), tf.zeros_like(center)]
     evaluate_batches = make_quadratic_batch_evaluator(callback, dimension, cfg.batch_size, rows)
-    evaluate_probes = (make_paired_probe_evaluator(callback, dimension, cfg.batch_size, steps=cfg.paired_steps)
-                       if cfg.pilot_method == "paired_local" else None)
 
     def finish(status, factor=None, precision=None):
         accepted = status == "local_center_candidate"
@@ -239,14 +244,6 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
                 "positions": positions[index], "values": values[index],
                 "scores": scores[index], "valid": valid[index],
             })
-
-    def retain_probes(result):
-        retain_summary(result)
-        roles = ("paired_fit_large", "paired_fit_small", "model_check")
-        for partition in range(int(result["partitions"])):
-            retain_batches(roles[partition], int(result["partition_first_index"][partition]),
-                int(result["partition_batches"][partition]), result["positions"][partition],
-                result["values"][partition], result["scores"][partition], result["valid"][partition])
 
     def evaluate(points, role, record=True):
         count = int(points.shape[0])
@@ -294,39 +291,23 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
         return fit_dense_score_precision_tf(center_score, offsets, scores,
                                             selection_offsets=check_offsets, selection_scores=check_scores)
 
-    if cfg.pilot_method == "paired_local":
-        fitted = make_paired_score_precision_program(
-            dimension, steps=cfg.paired_steps, precision_condition_cap=cfg.precision_condition_cap,
-            model_relative_rmse_cap=cfg.model_relative_rmse_cap)
-    else:
-        # Singular-design condition reporting still fails original-source XLA
-        # parity. Preserve this explicitly recorded migration debt, with no
-        # fallback from a failed compiled fit.
-        fitted = tf.function(fit, input_signature=fit_signature, autograph=False, jit_compile=False)
+    # Singular-design condition reporting still fails original-source XLA
+    # parity. Preserve this recorded migration debt without a runtime fallback.
+    fitted = tf.function(fit, input_signature=fit_signature, autograph=False, jit_compile=False)
     radius = tf.constant(cfg.initial_trust_radius, tf.float64)
     for round_index in range(cfg.max_fit_rounds):
         if not replay():
             return finish("replay_mismatch")
         anchor, anchor_value, anchor_score = incumbent
         partitions = []
-        if cfg.pilot_method == "paired_local":
-            probes = evaluate_probes(cfg.seed, round_index, scale, *incumbent,
-                tf.constant(details["physical_rows"], tf.int64),
-                tf.constant(details["selected_evaluation_index"], tf.int64))
-            retain_probes(probes)
-            if not bool(probes["ok"]):
+        for partition in range(2):
+            offsets = tf.random.stateless_uniform([rows, dimension], [cfg.seed, 2 * round_index + partition],
+                                                  minval=-cfg.fit_half_width, maxval=cfg.fit_half_width,
+                                                  dtype=tf.float64)
+            evaluated = evaluate(anchor[None, :] + offsets * scale, "fit" if partition == 0 else "model_check")
+            if evaluated is None:
                 return finish("curvature_target_invalid")
-            partitions = (probes["scaled_scores"][0], probes["scaled_scores"][1],
-                          probes["check_offsets"], probes["scaled_scores"][2])
-        else:
-            for partition in range(2):
-                offsets = tf.random.stateless_uniform([rows, dimension], [cfg.seed, 2 * round_index + partition],
-                                                      minval=-cfg.fit_half_width, maxval=cfg.fit_half_width,
-                                                      dtype=tf.float64)
-                evaluated = evaluate(anchor[None, :] + offsets * scale, "fit" if partition == 0 else "model_check")
-                if evaluated is None:
-                    return finish("curvature_target_invalid")
-                partitions.extend((offsets, evaluated[1] * scale))
+            partitions.extend((offsets, evaluated[1] * scale))
         center_score = anchor_score * scale
         if not bool(tf.reduce_all(tf.math.is_finite(center_score))) or not all(
             bool(tf.reduce_all(tf.math.is_finite(value))) for value in partitions
@@ -341,8 +322,6 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
         good_model &= tf.reduce_all(tf.math.is_finite(precision))
         good_model &= model["precision_condition"] <= cfg.precision_condition_cap
         good_model &= model["selection_relative_rmse"] <= cfg.model_relative_rmse_cap
-        if cfg.pilot_method == "paired_local":
-            good_model &= model["accepted"]
         report = {"anchor": anchor, "anchor_value": anchor_value, "radius": radius,
                   "model": model, "cloud_changed_incumbent": tf.reduce_any(incumbent[0] != anchor)}
         details["rounds"].append(report)

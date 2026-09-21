@@ -5,6 +5,48 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
+Qualified paired-refinement checkpoint through **02096**, based on pushed
+`c289b0c7`: the public paired-local round controller and completed-history
+reporter now execute through the stable XLA program. Single-entry callback
+reuse avoids rebuilding on repeated calls; seed/center/scale/evidence remain
+runtime inputs. Explicit graph reference is recorded truthfully. Default
+uniform-cloud mode still has separate execution debt.
+
+All 102 complete public/raw/original CPU/GPU cases, HLO/enclosure, six expanded
+cache cases, 280 public consumer cases and 72 policy/controller tests pass.
+The driver now distinguishes requested repeats. Three fresh-process repeats of
+all original/graph/XLA public costs pass (02060--02095). Warm median original
+versus XLA at D3/5: CPU 379.58/428.84 versus 15.79/28.84 ms; GPU 3 497.89/569.49
+versus 25.97/42.87 ms. Descriptive only; no statistical superiority claim.
+
+Cold XLA is 4.81/5.36s CPU and 8.64/9.26s GPU 3. Extra observed host RSS is
+518/528 MiB CPU and 277/280 MiB GPU 3; the >256 MiB trigger is preserved. Real compile
+allocation and near-flat warm growth are documented. Eight fresh controllers
+retain >1 GiB extra host RSS despite collectible Python graphs/resources; the
+single-target cache fixes repeated reconstruction, but multi-target/native
+executable eviction remains unproved. These costs are not whole multistart or
+DZ5 evidence. See [result/review](filter_gradient_quadratic_rounds_checkpoint_20260921.md)
+and [API semantics](../reference/paired-quadratic-refinement.md).
+
+Inventory 02096:2,939 working Python files, 2,938 parsed, one unchanged vendor parse
+error. Partial source guard:204 files / 1,289 exact exceptions; new exceptions only
+format completed reports. Focused Ruff and whitespace pass. Two pre-existing
+C408 warnings remain in the campaign test file. No numerical worker is active.
+Charged CPU 45398.626980266694/115200 seconds; GPU 42122.65920439076/187200 seconds.
+The 32 CPU / 52 GPU-hour caps are unchanged. Main remains unmerged.
+
+Next: commit/push this checkpoint, then the uniform dense-condition blocker
+(awaiting the user's diagnostic-definition decision), original D5 sequential
+parity (66 CPU / 53 GPU fields at unchanged 1e-10), broader block/iterative/quadratic
+controllers, full lifecycle/DZ5 costs and transitions, external watchdogs, and
+F01--F20 terminal qualification. No source pin, environment, method, seed,
+threshold or tolerance changed. Dense proposal:
+[reviewable definition correction](filter_gradient_dense_condition_decision_20260921.md).
+Do not change that reported field or waive its tests without the pending answer.
+
+Historical checkpoint notes follow; active-session/next-action statements below
+apply only to their numbered evidence.
+
 Current checkpoint through **01987** follows pushed `7f8f3013`. Paired
 probe generation and the ordered three-design evaluation now compile through
 the public initializer. Four equivalent gather reads repair demonstrated XLA

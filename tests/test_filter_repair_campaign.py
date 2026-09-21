@@ -739,3 +739,27 @@ def test_batch_group_names_validate_before_any_worker_launch(monkeypatch):
     with pytest.raises(ValueError, match="Unknown test groups"):
         driver.run_matrix(argparse.Namespace(stage="tests", test_batch="invalid"))
     assert launched == []
+
+@pytest.mark.parametrize("recorded,requested,launch", [(0, 0, False), (0, 1, True), (1, 1, False), (1, 2, True)])
+def test_test_matrix_resumes_each_requested_repeat_independently(monkeypatch, recorded, requested, launch):
+    from types import SimpleNamespace
+
+    driver = load("run_filter_repair_campaign")
+    rows = [{"key": ["test", "fixture", "after", "dns", "on", 1, recorded, "CPU"],
+        "state": "passed", "source_sha256": {}, "device": "CPU"}]
+    monkeypatch.setattr(driver, "TEST_BATCHES", {"fixture": ("fixture",)})
+    monkeypatch.setattr(driver, "TEST_GROUPS", {"fixture": ()})
+    monkeypatch.setattr(driver, "TEST_DEVICES", {"fixture": "CPU"})
+    monkeypatch.setattr(driver, "source_hashes", dict)
+    monkeypatch.setattr(driver, "check_matrix_state", lambda _: None)
+    monkeypatch.setattr(driver, "records", lambda: rows)
+    monkeypatch.setattr(driver, "test_evidence", lambda _: {"passed": True})
+    launched = []
+
+    def execute(job):
+        launched.append(job.repeat)
+        return 0
+
+    monkeypatch.setattr(driver, "run_job", execute)
+    assert driver.run_matrix(SimpleNamespace(stage="tests", test_batch="fixture", repeat=requested)) == 0
+    assert launched == ([requested] if launch else [])

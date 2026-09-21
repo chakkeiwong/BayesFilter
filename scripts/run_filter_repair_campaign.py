@@ -63,6 +63,27 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"quadratic_public_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_quadratic_public_memory.py::test_public_paired_refinement_costs[{arm}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    "quadratic_round_cache_cpu": ("tests/test_filter_repair_quadratic_round_cache.py",),
+    "quadratic_round_cache_gpu": ("tests/test_filter_repair_quadratic_round_cache.py",),
+    "quadratic_round_lifetime_cpu": ("tests/test_filter_repair_quadratic_round_lifetime.py",),
+    "quadratic_round_lifetime_gpu": ("tests/test_filter_repair_quadratic_round_lifetime.py",),
+    **{f"quadratic_round_growth_{rounds}_{device}": (
+        f"tests/test_filter_repair_quadratic_round_growth.py::test_complete_controller_capacity_and_warm_allocations[{rounds}]",)
+        for rounds in (1, 4, 8) for device in ("cpu", "gpu")},
+    **{f"quadratic_round_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_quadratic_round_memory.py::test_complete_paired_controller_costs[{arm}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    "quadratic_rounds_smoke": ("tests/test_filter_repair_quadratic_rounds.py::test_complete_original_round_records[move-3]",),
+    "quadratic_rounds_operands": ("tests/test_filter_repair_quadratic_rounds.py::test_round_controller_changed_inputs_and_enclosing_xla",),
+    **{f"quadratic_rounds_{dimension}_{device}": tuple(
+        f"tests/test_filter_repair_quadratic_rounds.py::test_complete_original_round_records[{case}-{dimension}]"
+        for case in ("centered", "move", "nonquadratic", "round_limit", "invalid_initial", "invalid_replay",
+            "invalid_large", "invalid_small", "invalid_check", "invalid_proposal", "invalid_final_replay",
+            "replay_value", "initial_evidence", "bad_evidence", "nonspd", "nonfinite_scaled_score", "factor_failure"))
+        for dimension in (1, 3, 5) for device in ("cpu", "gpu")},
     **{f"quadratic_probe_growth_{device}": (
         "tests/test_filter_repair_quadratic_probe_memory.py::test_paired_probe_sparse_allocation_growth",)
         for device in ("cpu", "gpu")},
@@ -583,6 +604,19 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "quadratic_public_memory": tuple(f"quadratic_public_memory_{arm}_{dimension}_{device}"
+        for device in ("cpu", "gpu") for arm in ("before", "graph", "xla") for dimension in (3, 5)),
+    "quadratic_round_consumers": ("quadratic_probes_cpu", "quadratic_probes_gpu",
+        "quadratic_center_public_cpu", "quadratic_center_public", "quadratic_paired_public_cpu",
+        "quadratic_paired_public", "quadratic_batches_cpu", "quadratic_batches", "policy"),
+    "quadratic_round_cache": ("quadratic_round_cache_cpu", "quadratic_round_cache_gpu"),
+    "quadratic_round_lifetime": ("quadratic_round_lifetime_cpu", "quadratic_round_lifetime_gpu"),
+    "quadratic_round_growth": tuple(f"quadratic_round_growth_{rounds}_{device}"
+        for device in ("cpu", "gpu") for rounds in (1, 4, 8)),
+    "quadratic_round_memory": tuple(f"quadratic_round_memory_{arm}_{dimension}_{device}"
+        for device in ("cpu", "gpu") for arm in ("before", "graph", "xla") for dimension in (3, 5)),
+    "quadratic_rounds": ("quadratic_rounds_1_cpu", "quadratic_rounds_3_cpu", "quadratic_rounds_5_cpu",
+        "quadratic_rounds_operands", "quadratic_rounds_1_gpu", "quadratic_rounds_3_gpu", "quadratic_rounds_5_gpu", "policy"),
     "quadratic_probe_consumers": ("quadratic_probes_cpu", "quadratic_probes_gpu",
         "quadratic_trust_paired_cpu", "quadratic_trust_paired_gpu",
         "quadratic_center_public_cpu", "quadratic_center_public", "quadratic_paired_public_cpu",
@@ -697,6 +731,12 @@ TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU",
     "quadratic_numerics": "GPU", "quadratic_trust_paired": "GPU",
     "quadratic_trust_paired_gpu": "GPU",
     "quadratic_probes_gpu": "GPU",
+    "quadratic_rounds_1_gpu": "GPU", "quadratic_rounds_3_gpu": "GPU", "quadratic_rounds_5_gpu": "GPU",
+    "quadratic_round_lifetime_gpu": "GPU",
+    "quadratic_round_cache_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["quadratic_public_memory"] if group.endswith("_gpu")},
+    **{group: "GPU" for group in TEST_BATCHES["quadratic_round_memory"] if group.endswith("_gpu")},
+    **{group: "GPU" for group in TEST_BATCHES["quadratic_round_growth"] if group.endswith("_gpu")},
     "quadratic_probe_growth_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["quadratic_probe_memory"] if group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_BATCHES["quadratic_numerics_memory_gpu"]},
@@ -1043,6 +1083,7 @@ def run_matrix(args):
             device = TEST_DEVICES.get(group, "CPU")
             if any(row["key"][:3] == ["test", group, "after"] and row["state"] == "passed"
                    and row["source_sha256"] == frozen and row["device"] == device
+                   and row["key"][6] == getattr(args, "repeat", 0)
                    and test_evidence(row)["passed"] for row in records()):
                 continue
             job = argparse.Namespace(**vars(args))

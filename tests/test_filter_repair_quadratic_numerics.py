@@ -13,7 +13,6 @@ from bayesfilter.inference import batched_quadratic_center as trust
 from bayesfilter.inference import paired_score_pilot_tf as paired
 from bayesfilter.inference import score_curvature_tf as dense
 from tests.filter_repair_frozen_checkpoint import FrozenCheckpoint
-from tests.test_filter_repair_quadratic_batches import _equal_records
 
 D = tf.float64
 KINDS = ("dense", "paired", "trust")
@@ -203,8 +202,7 @@ def test_paired_public_complete_original_graph_records(dimension, case, request)
             "original_trust_jit_compile": False, "reason": "graph precision authority; original trust XLA has demonstrated errors",
             "source_sha256": original()[0].hashes()}, handle, indent=2, allow_nan=False)
         handle.write("\n")
-    assert actual["diagnostics"].pop("jit_compile_fit") is True
-    assert actual["diagnostics"]["jit_compile_trust"] is True
+    from tests.test_filter_repair_quadratic_rounds import compare_public_records
+
     assert expected["diagnostics"]["jit_compile_trust"] is False
-    actual["diagnostics"]["jit_compile_trust"] = False
-    _equal_records(actual, expected)
+    compare_public_records(actual, expected, jit=True)

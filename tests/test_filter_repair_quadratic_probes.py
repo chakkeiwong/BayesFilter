@@ -143,8 +143,6 @@ def test_public_paired_steps_accept_original_list_schema():
         BatchedQuadraticCenterConfig,
         refine_batched_quadratic_center,
     )
-    from tests.test_filter_repair_quadratic_batches import _equal_records
-
     baseline = original()[1]["trust"]
     callback = _target(4, 3)
     options = {"pilot_method": "paired_local", "paired_steps": [.001, .0001]}
@@ -152,5 +150,6 @@ def test_public_paired_steps_accept_original_list_schema():
         config=baseline.BatchedQuadraticCenterConfig(**options)).payload()
     actual = refine_batched_quadratic_center(callback, tf.zeros([3], D), tf.ones([3], D),
         config=BatchedQuadraticCenterConfig(**options)).payload()
-    assert actual["diagnostics"].pop("jit_compile_fit") is True
-    _equal_records(actual, expected)
+    from tests.test_filter_repair_quadratic_rounds import compare_public_records
+
+    compare_public_records(actual, expected, jit=True)
