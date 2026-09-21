@@ -4,8 +4,38 @@ Status: executing on `repair/filter-gradient-xla-validation-20260918`; merge is 
 Owner request: repair all findings in the September 17 audit, compare memory
 and performance before/after, review this program, and merge only when tested.
 
-Qualified paired-refinement checkpoint through **02096**, based on pushed
-`c289b0c7`: the public paired-local round controller and completed-history
+Current recovery checkpoint: **02105**, based on pushed `5ab4d21c`. The paired
+XLA runtime is unchanged. New D5 attribution passes complete instrumentation
+checks on CPU/GPU3: all 217 objective evaluations are recorded and reproduced;
+same-state gradient discrepancies remain below 7.28e-17. Original one-ULP input
+perturbations independently produce 1--50 failed fields on CPU and 9--53 on GPU
+under the unchanged 1e-10 comparison. All retain 73 iterations, 217 evaluations
+and the same decisions. The analytic fixture separates these arithmetic
+differences from the roughly 9.19e-7 finite-fit covariance error.
+
+Two concrete decisions remain pending: [factor-output equivalence](filter_gradient_factor_equivalence_decision_20260921.md)
+and [singular dense conditioning](filter_gradient_dense_condition_decision_20260921.md).
+Neither proposal is installed and neither failing gate is waived. If approved,
+qualify the bounded changes and all affected consumers before public integration.
+Otherwise preserve the existing gates. Broader block/iterative controllers,
+external deadlines, actual DZ5 transitions, complete costs and F01--F20 terminal
+qualification remain open; main remains unmerged.
+
+02097 is a preserved diagnostic replay-import failure, repaired without changing
+runtime. 02098--02103 pass the six diagnostic CPU/GPU workers; 02104 passes all
+72 policy/controller checks. Inventory 02105 covers 2941 working Python files,
+2940 parsed, with the same one vendored-reference parse error. The guard remains
+partial at 204 sources / 1289 exact exceptions; no exception was added. Focused
+Ruff and whitespace pass. No worker is active. Charged CPU is
+45559.148274362655/115200 seconds and GPU 42326.25997808475/187200 seconds;
+caps remain 32 CPU / 52 GPU hours. Remote repair branch is synchronized and
+remote main remains an ancestor. Details: [trajectory contract/results](filter_gradient_factor_trajectory_20260921.md).
+
+Earlier checkpoints follow; their next-action statements apply to their own
+numbered evidence.
+
+Qualified paired-refinement checkpoint through **02096**, committed and pushed
+as `5ab4d21c`: the public paired-local round controller and completed-history
 reporter now execute through the stable XLA program. Single-entry callback
 reuse avoids rebuilding on repeated calls; seed/center/scale/evidence remain
 runtime inputs. Explicit graph reference is recorded truthfully. Default
@@ -34,7 +64,7 @@ C408 warnings remain in the campaign test file. No numerical worker is active.
 Charged CPU 45398.626980266694/115200 seconds; GPU 42122.65920439076/187200 seconds.
 The 32 CPU / 52 GPU-hour caps are unchanged. Main remains unmerged.
 
-Next: commit/push this checkpoint, then the uniform dense-condition blocker
+Next: continue the original D5 sequential numerical attribution, then the uniform dense-condition blocker
 (awaiting the user's diagnostic-definition decision), original D5 sequential
 parity (66 CPU / 53 GPU fields at unchanged 1e-10), broader block/iterative/quadratic
 controllers, full lifecycle/DZ5 costs and transitions, external watchdogs, and
@@ -42,6 +72,12 @@ F01--F20 terminal qualification. No source pin, environment, method, seed,
 threshold or tolerance changed. Dense proposal:
 [reviewable definition correction](filter_gradient_dense_condition_decision_20260921.md).
 Do not change that reported field or waive its tests without the pending answer.
+
+Active continuation: [D5 objective trajectory attribution](filter_gradient_factor_trajectory_20260921.md).
+Recovering `5ab4d21c` confirmed clean source and no worker. Capture both prepared
+input arms with unchanged optimizer settings; validate instrumentation against
+the archived complete records before interpreting amplification. This work is
+independent of the pending dense diagnostic definition decision.
 
 Historical checkpoint notes follow; active-session/next-action statements below
 apply only to their numbered evidence.

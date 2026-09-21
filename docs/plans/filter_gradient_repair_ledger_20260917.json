@@ -129,53 +129,51 @@
       "scope": "Indirect NumPy static-control reduction"
     }
   ],
-  "latest_syntax_inventory": "docs/plans/artifacts/filter-gradient-repair-20260917/run-01985/audit.json.gz",
+  "latest_syntax_inventory": "docs/plans/artifacts/filter-gradient-repair-20260917/run-02105/audit.json.gz",
   "current_checkpoint": {
-    "through_run": 2096,
-    "based_on_commit": "c289b0c7",
+    "through_run": 2105,
+    "based_on_commit": "5ab4d21c",
     "related_findings": [
       "F18",
       "F19"
     ],
     "terminal_acceptance": false,
-    "public_paired_round_wiring": true,
-    "uniform_cloud_round_wiring": false,
+    "runtime_unchanged_in_continuation": true,
     "active_driver_session": null,
     "active_job": null,
-    "status": "Paired public XLA refinement and single-target reuse qualified; large compile RSS/cold cost retained, multi-target native memory remains unproved. Main unmerged.",
+    "status": "D5 trajectory and original roundoff sensitivity diagnosed on CPU/GPU3. Two owner decisions pending; no tolerance or runtime change. Main unmerged.",
     "checks": {
-      "complete_public_original": "02040--02046:102 cases + one HLO/enclosing check, no failures/skips",
-      "cache": "02048/02049:6 cases including floating target state, identity and resource lifetime",
-      "consumers": "02050--02057:280 CPU/GPU3 cases, no failures/skips",
-      "policy": "02059:72 cases including requested repeat resume",
-      "public_costs": "02060--02095:36 fresh processes,3 repeats each, complete original and changed-input parity",
-      "growth": "02029--02034:capacities1/4/8 CPU/GPU3,3000 changing-input calls each; stable runtime HLO",
-      "construction": "02035/02036:eight fresh controllers pass original fields and Python resource release but host RSS rises >1GiB"
+      "factor_trajectories": "02098/02099 CPU and 02100/02102 GPU3: all complete instrumented records preserved; 217 evaluations each",
+      "original_sensitivity": "02101 CPU / 02103 GPU3: six original one-ULP perturbations; 1--50 / 9--53 fields fail strict comparison, decisions and counts unchanged",
+      "analytic_reference": "Declared covariance/precision/loadings reconstruct archived score responses within 1.12e-16; fitted covariance errors about 9.19e-7",
+      "policy": "02104: 72 pass",
+      "preserved_failure": "02097 replay barrier import mismatch; corrected in diagnostic only"
     },
     "guarded_sources": 204,
     "exact_exceptions": 1289,
-    "guard_coverage": "partial; new exceptions format completed reports only",
+    "guard_coverage": "partial; unchanged",
     "syntax_inventory": {
-      "run": 2096,
-      "working_tree_python_files": 2939,
-      "parsed_files": 2938,
+      "run": 2105,
+      "working_tree_python_files": 2941,
+      "parsed_files": 2940,
       "parse_errors": 1
     },
-    "cost_analysis": "docs/plans/artifacts/filter-gradient-repair-20260917/quadratic-public-repeated-costs-02095.json",
-    "cost_limitations": "High cold/host compile cost; native executable eviction, arbitrary target turnover, larger dimensions, whole initializer/DZ5 costs unproved.",
     "numerical_blockers": {
       "CPU_changed_input_failed_fields": 66,
       "GPU_changed_input_failed_fields": 53,
       "dense_singular_design_condition": "01881 CPU / 01882 GPU: D3 and D5 fail only this diagnostic; mandatory quadratic_numerics group retained",
       "comparison_tolerance": "atol=1e-10, rtol=1e-10 unchanged"
     },
-    "pending_owner_decision": "filter_gradient_dense_condition_decision_20260921.md diagnostic definition proposal; existing gate retained",
+    "pending_owner_decisions": [
+      "filter_gradient_factor_equivalence_decision_20260921.md: proposed 1e-8 for listed finite iterative-factor outputs only; all existing gates retained pending answer",
+      "filter_gradient_dense_condition_decision_20260921.md: rank-deficient design condition proposal; previous question remains unanswered"
+    ],
     "charged_seconds": {
-      "CPU": 45398.626980266694,
-      "GPU": 42122.65920439076
+      "CPU": 45559.148274362655,
+      "GPU": 42326.25997808475
     },
-    "record": "filter_gradient_quadratic_rounds_checkpoint_20260921.md",
-    "next": "Commit/push paired checkpoint; continue dense/D5/broader/external/DZ5/terminal work with all gates unchanged."
+    "record": "filter_gradient_factor_trajectory_20260921.md",
+    "next": "Resolve respective owner decisions before dependent changes; qualify full original lifecycles/consumers, broader controllers, external watchdog/DZ5/cost and terminal F01--F20 evidence."
   },
   "historical_quadratic_batch_checkpoint": {
     "through_run": 1879,
@@ -740,11 +738,11 @@
     }
   },
   "active_continuation": {
-    "through_run": 2096,
+    "through_run": 2105,
     "active_driver_session": null,
     "active_job": null,
-    "status": "Qualified paired checkpoint ready for commit/push; no numerical worker active.",
-    "record": "filter_gradient_quadratic_rounds_checkpoint_20260921.md"
+    "status": "Diagnostic checkpoint completed; no worker active. Runtime unchanged; pending factor-equivalence and dense-condition decisions. Main unmerged.",
+    "record": "filter_gradient_factor_trajectory_20260921.md"
   },
   "historical_quadratic_probe_checkpoint": {
     "through_run": 1987,
@@ -795,5 +793,52 @@
       "parse_errors": 1,
       "classification": "Syntax leads only; unchanged vendored legacy reference parse error."
     }
+  },
+  "historical_quadratic_round_checkpoint": {
+    "through_run": 2096,
+    "based_on_commit": "5ab4d21c",
+    "related_findings": [
+      "F18",
+      "F19"
+    ],
+    "terminal_acceptance": false,
+    "public_paired_round_wiring": true,
+    "uniform_cloud_round_wiring": false,
+    "active_driver_session": null,
+    "active_job": null,
+    "status": "Paired public XLA refinement and single-target reuse qualified; large compile RSS/cold cost retained, multi-target native memory remains unproved. Main unmerged.",
+    "checks": {
+      "complete_public_original": "02040--02046:102 cases + one HLO/enclosing check, no failures/skips",
+      "cache": "02048/02049:6 cases including floating target state, identity and resource lifetime",
+      "consumers": "02050--02057:280 CPU/GPU3 cases, no failures/skips",
+      "policy": "02059:72 cases including requested repeat resume",
+      "public_costs": "02060--02095:36 fresh processes,3 repeats each, complete original and changed-input parity",
+      "growth": "02029--02034:capacities1/4/8 CPU/GPU3,3000 changing-input calls each; stable runtime HLO",
+      "construction": "02035/02036:eight fresh controllers pass original fields and Python resource release but host RSS rises >1GiB"
+    },
+    "guarded_sources": 204,
+    "exact_exceptions": 1289,
+    "guard_coverage": "partial; new exceptions format completed reports only",
+    "syntax_inventory": {
+      "run": 2096,
+      "working_tree_python_files": 2939,
+      "parsed_files": 2938,
+      "parse_errors": 1
+    },
+    "cost_analysis": "docs/plans/artifacts/filter-gradient-repair-20260917/quadratic-public-repeated-costs-02095.json",
+    "cost_limitations": "High cold/host compile cost; native executable eviction, arbitrary target turnover, larger dimensions, whole initializer/DZ5 costs unproved.",
+    "numerical_blockers": {
+      "CPU_changed_input_failed_fields": 66,
+      "GPU_changed_input_failed_fields": 53,
+      "dense_singular_design_condition": "01881 CPU / 01882 GPU: D3 and D5 fail only this diagnostic; mandatory quadratic_numerics group retained",
+      "comparison_tolerance": "atol=1e-10, rtol=1e-10 unchanged"
+    },
+    "pending_owner_decision": "filter_gradient_dense_condition_decision_20260921.md diagnostic definition proposal; existing gate retained",
+    "charged_seconds": {
+      "CPU": 45398.626980266694,
+      "GPU": 42122.65920439076
+    },
+    "record": "filter_gradient_quadratic_rounds_checkpoint_20260921.md",
+    "next": "Paired checkpoint pushed as 5ab4d21c; continue original D5 attribution, dense/broader/external/DZ5/terminal work with all gates unchanged."
   }
 }

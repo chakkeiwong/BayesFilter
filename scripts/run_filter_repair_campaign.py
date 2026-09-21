@@ -124,6 +124,10 @@ TEST_GROUPS = {
     "quadratic_batches": ("tests/test_filter_repair_quadratic_batches.py",),
     "quadratic_center_public": ("tests/test_batched_quadratic_center.py",),
     "quadratic_paired_public": ("tests/test_paired_score_pilot.py",),
+    "factor_input_sensitivity": ("tests/test_filter_repair_factor_sensitivity.py",),
+    **{f"factor_trajectory_{data}": (
+        f"tests/test_filter_repair_factor_trajectory.py::test_crossed_factor_objective_trajectories[{data}]",)
+        for data in ("original", "current")},
     "factor_row_decode": ("tests/test_filter_repair_factor_row_decode.py",),
     "lifecycle_factor_initial": ("tests/test_filter_repair_lifecycle_factor_initial.py",),
     "lifecycle_factor_inputs": ("tests/test_filter_repair_lifecycle_factor_inputs.py",),
@@ -533,6 +537,9 @@ EXPLANATORY_TEST_GROUPS = {
     **{f"quadratic_batch_memory_{arm}_{dimension}":
         "Descriptive fixed-batch dependency cost at a source-pinned checkpoint; complete outer costs and terminal repeats remain required."
         for arm in ("before", "graph", "xla") for dimension in (3, 5)},
+    "factor_input_sensitivity": "Frozen original one-ULP sensitivity and analytic fixture reference; diagnostic only, no tolerance waiver.",
+    **{f"factor_trajectory_{data}": "Diagnostic objective trajectory attribution; instrumentation must preserve all archived public fields; full-record gates remain unchanged."
+        for data in ("original", "current")},
     "factor_row_decode": "Native translation of original per-row decoder as a diagnostic injection; full-record gates still required before runtime use.",
     "lifecycle_factor_initial": "Frozen original initializer intervention and identical-state objectives; diagnostic only, no runtime substitute or tolerance waiver.",
     "lifecycle_factor_inputs": "Crossed original/current prepared inputs and fitters; attribution cannot waive original full-record numerical failure.",

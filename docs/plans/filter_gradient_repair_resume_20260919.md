@@ -5,8 +5,40 @@ Branch: `repair/filter-gradient-xla-validation-20260918`.
 Master: [repair program](filter_gradient_repair_master_20260917.md).
 Detailed evidence: [execution record](filter_gradient_repair_execution_20260917.md).
 
-Qualified paired-refinement checkpoint through **02096**, based on pushed
-`c289b0c7`: the public paired-local round controller and completed-history
+Current checkpoint through **02105**, based on pushed `5ab4d21c`. No runtime
+source or mandatory tolerance changed. No numerical worker is active.
+
+02098--02103 pass six CPU/GPU3 diagnostic workers: complete objective histories
+reproduce uninstrumented fits; one-ULP perturbations make the original fitter
+itself fail 1--50 CPU / 9--53 GPU fields at 1e-10, with identical decisions and
+73 iterations / 217 evaluations. Same-state gradient discrepancies are below
+7.28e-17. Analytic geometry checks separate those small arithmetic differences
+from roughly 9.19e-7 finite-fit covariance error. Preserve the 02097 harness
+failure and its repair. [Contract/results](filter_gradient_factor_trajectory_20260921.md).
+
+Pending owner decisions, neither implemented:
+
+- [Factor-fit equivalence](filter_gradient_factor_equivalence_decision_20260921.md):
+  an explicit 1e-8 comparison for listed fitted outputs only, with all other
+  fields/gradients and exact decisions/counts preserved. Async question sent.
+- [Dense design condition](filter_gradient_dense_condition_decision_20260921.md):
+  infinity under the existing deficient-rank policy. Earlier question unanswered.
+
+Keep both original failing gates until their respective answers arrive. After
+approval, validate the narrowly scoped correction/comparator and full consumers
+before wiring public sequential/uniform XLA. Broader controllers, full lifecycle
+and DZ5 costs/transition blocks, independent external deadlines, terminal
+F01--F20 dispositions and merge remain open.
+
+02104 passes 72 policy/controller checks. Inventory 02105: 2941 working Python
+files, 2940 parsed, one unchanged vendor error; partial guard 204 sources / 1289
+exceptions, unchanged. Focused Ruff and whitespace pass. CPU charged
+45559.148274362655/115200 seconds; GPU 42326.25997808475/187200 seconds. Do not
+add the extension again. Remote fetched, repair branch synchronized and main an
+ancestor. Main remains unmerged. Historical next-action notes follow.
+
+Qualified paired-refinement checkpoint through **02096**, committed and pushed
+as `5ab4d21c`: the public paired-local round controller and completed-history
 reporter now execute through the stable XLA program. Single-entry callback
 reuse avoids rebuilding on repeated calls; seed/center/scale/evidence remain
 runtime inputs. Explicit graph reference is recorded truthfully. Default
@@ -35,7 +67,7 @@ C408 warnings remain in the campaign test file. No numerical worker is active.
 Charged CPU 45398.626980266694/115200 seconds; GPU 42122.65920439076/187200 seconds.
 The 32 CPU / 52 GPU-hour caps are unchanged. Main remains unmerged.
 
-Next: commit/push this checkpoint, then the uniform dense-condition blocker
+Next: continue the original D5 sequential numerical attribution, then the uniform dense-condition blocker
 (awaiting the user's diagnostic-definition decision), original D5 sequential
 parity (66 CPU / 53 GPU fields at unchanged 1e-10), broader block/iterative/quadratic
 controllers, full lifecycle/DZ5 costs and transitions, external watchdogs, and
