@@ -1,4 +1,4 @@
-"""Host reconstruction of already-completed paired refinement records."""
+"""Host reconstruction of already-completed quadratic refinement records."""
 
 import tensorflow as tf
 

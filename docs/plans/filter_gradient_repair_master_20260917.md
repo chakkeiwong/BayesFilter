@@ -1,31 +1,46 @@
 # Complete filter and gradient execution repair
 
-Active continuation from pushed **d263830c**. On 2026-09-21 the owner approved
-[the extreme-precision comparison](filter_gradient_extreme_precision_decision_20260921.md)
-and requested execution. It applies only to `raw_precision` in the huge D3/D5
-stress fixtures, at matrix-relative error <=1e-12, with independent 100/160-digit
-reference and response-residual checks. All other comparisons remain unchanged.
-The previous factor-output and deficient-rank approvals also remain in force.
+Active continuation from pushed **415eaa8f**, on
+`repair/filter-gradient-xla-validation-20260918`. The owner-approved factor-output,
+deficient-rank condition and extreme-precision comparison contracts remain in
+force. No approval is pending. Main remains unmerged.
 
-Recovered matrix02190--02194 passed all140 checks:28 dense rank/consumer and6
-analytical derivative cases on each of CPU/GPU3, plus72 policy/controller checks.
-The near-identity spectral repair and QR-reduced SVD completed36 fresh
-original/graph/XLA cost workers02195--02230 with full record parity. D5 warm
-triggers remain+24.2% CPU/+60.0% GPU; no memory trigger fires. The approved
-extreme comparator passes22 mutation and14 spectral cases per device through
-02234; independent references pass02235/02236. Dense/quadratic numerical, analytical derivative and policy checks all pass
-through02244 (296 cases, including2 CPU component diagnostics). GPU attribution
-is pending contention. Inventory02245 covers2951 Python files,2950 parsed, and
-one unchanged vendor error. No numerical worker is active. Preserve02231's repaired
-mutation-fixture failure. Results and next action:
-[dense spectral checkpoint](filter_gradient_dense_spectral_checkpoint_20260921.md).
+The native uniform-cloud controller and binary64 SVD repair pass complete CPU/GPU
+original-record, derivative, callback/cache and resource checks. Complete GPU
+matrix02287--02293 adds111 passed cases. SixCPU/GPU capacity1/4/8 checks each
+pass3000 alternating-input calls, stable HLO and one trace; final1000-call RSS
+growth is0--12KiB and GPU live allocation stays7168bytes.
 
-The uniform-controller draft remains in `/tmp/filter_uniform_stage_20260921`.
-Public uniform, sequential outer/reporting and broader block/iterative controllers,
-full lifecycle costs, external watchdog/DZ5 evidence and terminal F01--F20 checks
-remain open. Main remains unmerged. Use one numerical worker, GPU3 idle preflight,
-verified memory growth and the unchanged32 CPU/52 GPU process-hour caps.
-No external consumer source/pin or environment changes are authorized.
+Native original/graph/XLA warm ms: CPU D3 436.89/45.96/25.68, D5
+446.79/57.00/34.91; GPU D3 618.14/178.85/37.30,D5 627.65/204.19/54.98.
+These single-process costs retain extra host RSS518MiB CPU and267/266MiB GPU,
+and cold2x triggers. Renewed dense dependency02305--02340 comprises36 processes
+with full original/changed records preserved. D5 standalone warm increases
+8.5%CPU/69.4%GPU; accurate SVD/eigen/COD costs explain the local penalty and
+remain explicit. The original33-row SVD failure cannot be restored for speed.
+
+Public uniform wiring is now installed for qualification: it calls the shared
+native controller and uses completed host-list diagnostics while retaining all
+top-level tensors and payload numerical fields. The source guard covers the
+whole public module with configuration/reporting exceptions only. Partial guard:
+204sources/1292exact exceptions. Focused lint and whitespace pass. CPU public
+original-record/cache/consumer matrix02341--02345 passes204checks. GPU public
+preflight declined before launch;all18CPU public cost workers02346--02363 pass.
+GPU qualification and repeated costs remain pending;no numerical worker is active.
+Inventory02364 covers2959Python files/2958parsed/one unchanged vendor error. Runtime,
+tests and driver stay frozen while a worker is active. Exact active session/job:
+[ledger](filter_gradient_repair_ledger_20260917.json).
+
+Broader sequential outer/reporting and block/iterative controllers, external
+watchdog/DZ5 target and transition evidence, and F01--F20 terminal checks remain.
+Main stays unmerged. Continue one numerical worker, GPU3 idle preflight, verified
+memory growth and CPU references with GPUs hidden. Through02364 charges are
+CPU48907.31598352069/115200 and GPU46001.71196921611/187200seconds; caps remain
+32CPU/52GPU process-hours. No external consumer source/pin or environment changes.
+Original3582b4ac dependency closure with graph-mode trust remains authority.
+See [uniform checkpoint/review](filter_gradient_uniform_checkpoint_20260922.md) and
+[execution contract](filter_gradient_uniform_rounds_20260921.md).
+
 
 ## Previous checkpoint record
 

@@ -1,7 +1,7 @@
-"""Complete paired quadratic refinement as a bounded TensorFlow/XLA program.
+"""Complete quadratic refinement as a bounded TensorFlow/XLA program.
 
-The paired-local public initializer calls this controller after validating its
-inputs and row budget. The callback supplies the unchanged analytical score;
+The public initializer validates inputs and row budgets before this controller.
+The callback supplies the unchanged analytical score;
 no optimizer, curvature model, acceptance threshold or random stream is added.
 """
 
@@ -18,6 +18,7 @@ from bayesfilter.inference.quadratic_batch_evaluation_tf import (
 )
 from bayesfilter.inference.quadratic_probe_evaluation_tf import (
     make_paired_probe_evaluator,
+    make_uniform_probe_evaluator,
 )
 
 D = tf.float64
@@ -27,12 +28,12 @@ STATUS = (
     "quadratic_model_rejected", "pilot_factorization_failed", "nonfinite_centeredness",
     "trust_solve_failed", "refinement_round_limit", "local_center_candidate",
 )
-ROLES = ("initial", "replay", "paired_fit_large", "paired_fit_small", "model_check", "proposal")
+ROLES = ("initial", "replay", "paired_fit_large", "paired_fit_small", "model_check", "proposal", "fit")
 _CONTROLLER_LOCK = RLock()
 _LAST_CONTROLLER = None
 
 
-def paired_quadratic_controller(callback, dimension, config, *, jit_compile=True):
+def quadratic_controller(callback, dimension, config, *, jit_compile=True):
     """Reuse the most recent target/configuration; keep seed a runtime operand.
 
     One retained program bounds Python target ownership. Replacing this entry
@@ -48,7 +49,7 @@ def paired_quadratic_controller(callback, dimension, config, *, jit_compile=True
             return previous[4]
         _LAST_CONTROLLER = None
         del previous
-        program = make_paired_quadratic_controller(callback, dimension, static, jit_compile=jit_compile)
+        program = make_quadratic_controller(callback, dimension, static, jit_compile=jit_compile)
         _LAST_CONTROLLER = (callback, dimension, static, jit_compile, program)
         return program
 
@@ -60,13 +61,13 @@ def clear_paired_quadratic_controller_cache():
         _LAST_CONTROLLER = None
 
 
-def make_paired_quadratic_controller(callback, dimension, config, *, jit_compile=True):
+def make_quadratic_controller(callback, dimension, config, *, jit_compile=True):
     """Bind static capacities; seed, anchor, scale and initial evidence are inputs.
 
     The wrapper must validate finite center, positive finite scale, dimensions
     and the whole planned physical-row budget before invoking this program.
     ``jit_compile=False`` is an explicit graph-reference exception for the
-    complete controller, including trust solving and paired fitting.
+    complete controller, including trust solving and the selected fitter.
     """
     from bayesfilter.inference.batched_quadratic_center import (
         _norm,
@@ -74,19 +75,37 @@ def make_paired_quadratic_controller(callback, dimension, config, *, jit_compile
     )
 
     cfg = config
-    if cfg.pilot_method != "paired_local":
-        raise ValueError("paired controller requires paired_local")
+    if cfg.pilot_method not in ("paired_local", "uniform_cloud"):
+        raise ValueError("unknown pilot_method")
+    paired = cfg.pilot_method == "paired_local"
     planned = cfg.planned_rows(dimension)
     if dimension < 1 or planned > cfg.max_physical_rows:
         raise ValueError("invalid dimension or whole refinement physical-row budget")
     batch, rounds = cfg.batch_size, cfg.max_fit_rounds
     capacity = planned // batch
-    probe_batches = (2 * dimension + batch - 1) // batch
+    rows = (2 * dimension if paired else
+            max(32, 4 * dimension) if cfg.rows_per_cloud is None else cfg.rows_per_cloud)
+    probe_batches = (rows + batch - 1) // batch
     single = make_quadratic_batch_evaluator(callback, dimension, batch, 1, jit_compile=jit_compile)
-    probes = make_paired_probe_evaluator(callback, dimension, batch, steps=cfg.paired_steps, jit_compile=jit_compile)
-    fitted = make_paired_score_precision_program(dimension, steps=cfg.paired_steps,
-        precision_condition_cap=cfg.precision_condition_cap,
-        model_relative_rmse_cap=cfg.model_relative_rmse_cap, jit_compile=jit_compile)
+    if paired:
+        probes = make_paired_probe_evaluator(callback, dimension, batch, steps=cfg.paired_steps, jit_compile=jit_compile)
+        fitted = make_paired_score_precision_program(dimension, steps=cfg.paired_steps,
+            precision_condition_cap=cfg.precision_condition_cap,
+            model_relative_rmse_cap=cfg.model_relative_rmse_cap, jit_compile=jit_compile)
+    else:
+        from bayesfilter.inference.score_curvature_tf import (
+            fit_dense_score_precision_tf,
+        )
+
+        probes = make_uniform_probe_evaluator(callback, dimension, batch, rows,
+            half_width=cfg.fit_half_width, jit_compile=jit_compile)
+
+        def fit(center_score, offsets, scores, checks, check_scores):
+            return fit_dense_score_precision_tf(center_score, offsets, scores,
+                selection_offsets=checks, selection_scores=check_scores)
+
+        fitted = tf.function(fit, autograph=False, jit_compile=jit_compile,
+            input_signature=[tf.TensorSpec([dimension], D)] + [tf.TensorSpec([rows, dimension], D)] * 4)
     model_template = fitted.get_concrete_function().structured_outputs
     trust = tf.function(solve_spd_quadratic_trust_region_tf, autograph=False, jit_compile=jit_compile,
         input_signature=[tf.TensorSpec([dimension, dimension], D), tf.TensorSpec([dimension], D), tf.TensorSpec([], D)])
@@ -181,7 +200,7 @@ def make_paired_quadratic_controller(callback, dimension, config, *, jit_compile
                     state["physical_rows"], state["selected_index"])
                 state = retain(state, result, tf.reshape(result["positions"], [-1, batch, dimension]),
                     tf.reshape(result["values"], [-1, batch]), tf.reshape(result["scores"], [-1, batch, dimension]),
-                    tf.reshape(result["valid"], [-1, batch]), tf.repeat(tf.constant([2, 3, 4]), probe_batches))
+                    tf.reshape(result["valid"], [-1, batch]), tf.repeat(tf.constant([2, 3, 4] if paired else [6, 4]), probe_batches))
                 center_score = anchor_score * scale
                 finite = tf.reduce_all(tf.math.is_finite(center_score))
                 finite &= tf.reduce_all(tf.math.is_finite(result["scaled_scores"]))
@@ -189,14 +208,19 @@ def make_paired_quadratic_controller(callback, dimension, config, *, jit_compile
                 state = {**state, "status": tf.where(~result["ok"], 4, tf.where(finite, 0, 5))}
 
                 def fit_model(state):
-                    model = fitted(center_score, result["scaled_scores"][0], result["scaled_scores"][1],
-                        result["check_offsets"], result["scaled_scores"][2])
+                    if paired:
+                        model = fitted(center_score, result["scaled_scores"][0], result["scaled_scores"][1],
+                            result["check_offsets"], result["scaled_scores"][2])
+                    else:
+                        model = fitted(center_score, result["fit_offsets"], result["scaled_scores"][0],
+                            result["check_offsets"], result["scaled_scores"][1])
                     precision = model["raw_precision"]
                     good = model["raw_spd"] & (model["design_rank"] == dimension)
                     good &= tf.reduce_all(tf.math.is_finite(precision))
                     good &= model["precision_condition"] <= cfg.precision_condition_cap
                     good &= model["selection_relative_rmse"] <= cfg.model_relative_rmse_cap
-                    good &= model["accepted"]
+                    if paired:
+                        good &= model["accepted"]
                     changed = tf.reduce_any(state["center"] != anchor)
                     report = {**state["rounds"],
                         "anchor": put(state["rounds"]["anchor"], index, anchor),
@@ -276,3 +300,17 @@ def make_paired_quadratic_controller(callback, dimension, config, *, jit_compile
         return {**state, "status": tf.where(state["status"] == 0, 10, state["status"])}
 
     return execute
+
+
+def paired_quadratic_controller(callback, dimension, config, *, jit_compile=True):
+    """Compatibility entry point for the paired family of the shared controller."""
+    if config.pilot_method != "paired_local":
+        raise ValueError("paired controller requires paired_local")
+    return quadratic_controller(callback, dimension, config, jit_compile=jit_compile)
+
+
+def make_paired_quadratic_controller(callback, dimension, config, *, jit_compile=True):
+    """Construct a fresh paired controller with the existing API."""
+    if config.pilot_method != "paired_local":
+        raise ValueError("paired controller requires paired_local")
+    return make_quadratic_controller(callback, dimension, config, jit_compile=jit_compile)

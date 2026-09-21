@@ -49,3 +49,26 @@ def test_dense_precision_and_spectral_pullback(dimension,case):
         np.zeros_like(checks),np.zeros_like(check_scores)))
     for left,right in zip(tf.nest.flatten(actual),tf.nest.flatten(independent),strict=True):
         np.testing.assert_allclose(left,right,atol=1e-10,rtol=1e-10)
+
+
+@pytest.mark.parametrize('dimension', [3, 5])
+def test_dense_design_condition_derivative_includes_qr(dimension):
+    arguments = inputs('dense', dimension)
+    kernel = program('dense', dimension, jit=True)
+
+    @tf.function(input_signature=kernel.input_signature, autograph=False, jit_compile=True)
+    def derivative(*values):
+        with tf.GradientTape() as tape:
+            tape.watch(values)
+            condition = kernel(*values)['design_condition']
+        return condition, tape.gradient(condition, values,
+            unconnected_gradients=tf.UnconnectedGradients.ZERO)
+
+    actual, gradients = derivative(*arguments)
+    left, singular, right = np.linalg.svd(arguments[1].numpy(), full_matrices=False)
+    expected = (np.outer(left[:, 0], right[0]) / singular[-1]
+        - singular[0] * np.outer(left[:, -1], right[-1]) / singular[-1] ** 2)
+    np.testing.assert_allclose(actual, singular[0] / singular[-1], atol=1e-10, rtol=1e-10)
+    for index, gradient in enumerate(gradients):
+        reference = expected if index == 1 else np.zeros(arguments[index].shape)
+        np.testing.assert_allclose(gradient, reference, atol=1e-10, rtol=1e-10)

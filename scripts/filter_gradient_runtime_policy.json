@@ -417,12 +417,7 @@
     "bayesfilter/inference/quadratic_probe_evaluation_tf.py": null,
     "bayesfilter/inference/quadratic_rounds_tf.py": null,
     "bayesfilter/inference/paired_score_pilot_tf.py": null,
-    "bayesfilter/inference/batched_quadratic_center.py": [
-      "refine_batched_quadratic_center.evaluate",
-      "refine_batched_quadratic_center.retain_summary",
-      "refine_batched_quadratic_center.retain_batches",
-      "solve_spd_quadratic_trust_region_tf"
-    ],
+    "bayesfilter/inference/batched_quadratic_center.py": null,
     "bayesfilter/inference/quadratic_round_report.py": null
   },
   "exceptions": [
@@ -12051,15 +12046,6 @@
       "reason": "Traverse static enclosing FuncGraph ownership during tracing so the domain-check resource survives bounded factory-cache eviction. This loop does not inspect tensor values or implement numerical iteration. The resource is owned only by the outermost compiled consumer and released with it; run 01594 covers prebound/lazy construction, eviction, stable tracing and release. Full runtime/consumer qualification remains independently mandatory."
     },
     {
-      "path": "bayesfilter/inference/batched_quadratic_center.py",
-      "function": "refine_batched_quadratic_center.retain_batches",
-      "line": 236,
-      "kind": "python_iteration",
-      "ast_sha256": "5380ecbe7d1c52827aa2659791fa36a22021286a1f65cb57f580a7f10652a4af",
-      "role": "host_reporting",
-      "reason": "Assemble completed candidate-batch reports only; target calls, selection and invalid-row stopping execute in make_quadratic_batch_evaluator. Outer fit-round and uniform-partition loops remain uncovered debt."
-    },
-    {
       "path": "bayesfilter/inference/quadratic_round_report.py",
       "function": "paired_quadratic_result",
       "kind": "python_iteration",
@@ -12122,6 +12108,42 @@
       "ast_sha256": "082034eb2afc6ca9814ad5465beaa6cbbf501ff6c906c508e64b19ffbd458af2",
       "role": "host_reporting",
       "reason": "Format completed paired-refinement histories and static field schemas only; no target call, numerical selection or recurrence occurs after the compiled controller returns."
+    },
+    {
+      "path": "bayesfilter/inference/batched_quadratic_center.py",
+      "function": "BatchedQuadraticCenterConfig.__post_init__",
+      "line": 127,
+      "kind": "python_iteration",
+      "ast_sha256": "8f5e039e2c7742398ab0f79766e2baae1d6e185e30b0d66f14f65621d594a35d",
+      "role": "host_validation",
+      "reason": "Validate the fixed list of configuration scalars before constructing a TensorFlow numerical program."
+    },
+    {
+      "path": "bayesfilter/inference/batched_quadratic_center.py",
+      "function": "BatchedQuadraticCenterResult.payload.ready",
+      "line": 164,
+      "kind": "python_iteration",
+      "ast_sha256": "0eef502fc24d82ca6911244720f5790341578eb54b8e346ff5e9b310f78e18d9",
+      "role": "host_reporting",
+      "reason": "Recursively serialize completed result records; no numerical decision or callback is executed."
+    },
+    {
+      "path": "bayesfilter/inference/batched_quadratic_center.py",
+      "function": "BatchedQuadraticCenterResult.payload.ready",
+      "line": 166,
+      "kind": "python_iteration",
+      "ast_sha256": "220ca6a139d5d549f47e549826f5d49e17344364ade9ebc6afe86145f82b3b6f",
+      "role": "host_reporting",
+      "reason": "Recursively serialize completed result records; no numerical decision or callback is executed."
+    },
+    {
+      "path": "bayesfilter/inference/batched_quadratic_center.py",
+      "function": "BatchedQuadraticCenterResult.payload",
+      "line": 171,
+      "kind": "python_iteration",
+      "ast_sha256": "118e1d95b977a682c1040643dc9f1569e67bde8c01a74f7b150aeb1f35b09c8f",
+      "role": "host_reporting",
+      "reason": "Enumerate the fixed dataclass fields only when serializing an already completed result."
     }
   ]
 }

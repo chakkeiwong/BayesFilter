@@ -10,6 +10,7 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.inference.mass_matrix_tf import eigenpair_program
+from bayesfilter.inference.score_curvature_tf import _singular_value_program
 from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
 from tests.test_filter_repair_quadratic_numerics import inputs, original
 
@@ -28,6 +29,8 @@ def test_dense_dependency_component_costs(dimension,request):
         'design_svd':(lambda matrix: tf.linalg.svd(matrix,compute_uv=False),(offsets,)),
         'reduced_design_svd':(lambda matrix: tf.linalg.svd(
             tf.linalg.qr(matrix, full_matrices=False)[1], compute_uv=False),(offsets,)),
+        'precise_reduced_design_svd':(lambda matrix: _singular_value_program(dimension)(
+            tf.linalg.qr(matrix, full_matrices=False)[1]),(offsets,)),
         'precision_eigh':(tf.linalg.eigvalsh,(precision,)),
         'refined_precision_eigh':(lambda matrix: eigenpair_program(dimension)(matrix)[0],(precision,)),
     }
@@ -36,6 +39,8 @@ def test_dense_dependency_component_costs(dimension,request):
         modes={}
         for jit in (False,True):
             numerical = tf.linalg.eigvalsh if name == 'refined_precision_eigh' and not jit else function
+            if name == 'precise_reduced_design_svd' and not jit:
+                numerical = cases['design_svd'][0]
             kernel=tf.function(numerical,input_signature=[tf.TensorSpec(v.shape,v.dtype) for v in values],
                 autograph=False,jit_compile=jit)
             times=[]

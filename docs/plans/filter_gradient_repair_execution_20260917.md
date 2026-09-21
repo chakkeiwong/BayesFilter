@@ -9,6 +9,20 @@ claims. A full canonical algorithm rebuild is excluded. GenUT's shared NeuTra
 training/HMC capability and its obsolete admitted factory now fail closed.
 Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
+## Active checkpoint and continuation
+
+Pushed415eaa8f qualifies the dense spectral repair and owner-approved huge-scale
+comparison. Through02244,296 focused numerical/derivative/consumer/policy checks
+pass, and36 fresh dense cost workers preserve all records. D5 warm-time triggers
+remain+24.2% CPU/+60.0% GPU; GPU attribution is pending device availability.
+See [dense checkpoint](filter_gradient_dense_spectral_checkpoint_20260921.md).
+
+The shared uniform/paired native controller is now installed for direct
+qualification. CPU original full-record cases02247--02249 pass48/48 at D1/D3/D5;
+changed-input, cache and paired-regression checks are running. Public uniform
+wiring remains unchanged until full qualification/costs. The current master,
+resume memo and JSON ledger supersede the historical checkpoint sections below.
+
 ## September 21 compiled paired probe preparation and evaluation
 
 Current checkpoint through **01987** follows pushed `7f8f3013`. Paired
@@ -4855,3 +4869,13 @@ and the eight-process guard-cost comparison are still executing or pending.
 | Use bounded CPU reference scopes | Same cases retained; combined GPU passes | Combined many-signature CPU job exhausts compiler mapping resources | Instantaneous map limit not directly sampled; backend has no executable eviction | Fresh CPU module qualification | No indefinite CPU compilation guarantee |
 | Reject Python cache cleanup | Neither boundary releases executable maps | LLVM ENOMEM repeats | Backend lifetime outside Python ownership | Preserve failed trial and installed-source anchor | No claimed native-cache repair |
 | Retain guard pending cost review | 38 combined GPU and 223 consumer cases pass | No GPU numerical veto | Current CPU groups and complete-record guard cost | Finish sequential batch and matched memory/time arms | No whole-campaign closure or main merge |
+
+
+Recovery continuation after415eaa8f: session97853 finished111 GPU complete-record,
+probe and cache checks in02287--02293. Source remained frozen. Native GPU cost
+matrix42063 completed02294--02299 with every original/changed record preserved.
+Warm original/XLA D3 618.14/37.30ms; D5 627.65/54.98ms. Extra host RSS~267/266MiB
+triggers bounded memory follow-up; lower allocator peaks do not erase host cost.
+The GPU capacity4/3000-call worker02300 is active under session17345. Public
+integration and consumer adaptations remain uninstalled in scratch. No tolerance,
+scientific algorithm, source pin or budget changed; no merge readiness claim.

@@ -125,7 +125,7 @@ def test_complete_public_records_against_original_source(method, case, request):
             return values, scores, eligible & tf.reduce_all(tf.abs(points) < 1e-8, axis=1)
 
     expected = original.refine_batched_quadratic_center(
-        callback, center, [1., 1.], config=original.BatchedQuadraticCenterConfig(**options)).payload()
+        callback, center, [1., 1.], config=original.BatchedQuadraticCenterConfig(**options, jit_compile_trust=False)).payload()
     actual = runtime.refine_batched_quadratic_center(
         callback, center, [1., 1.], config=runtime.BatchedQuadraticCenterConfig(**options)).payload()
     directory = Path(request.config.getoption("xmlpath")).parent
@@ -133,10 +133,7 @@ def test_complete_public_records_against_original_source(method, case, request):
         json.dump({"before": expected, "after": actual, "baseline": "3582b4ac",
                    "original_source_sha256": checkpoint.hashes()}, handle, allow_nan=False, indent=2)
         handle.write("\n")
-    if method == "paired_local":
-        from tests.test_filter_repair_quadratic_rounds import compare_public_records
+    from tests.test_filter_repair_quadratic_rounds import compare_public_records
 
-        compare_public_records(actual, expected, jit=True)
-    else:
-        assert actual["diagnostics"].pop("jit_compile_fit") is False
-        _equal_records(actual, expected)
+    assert expected["diagnostics"]["jit_compile_trust"] is False
+    compare_public_records(actual, expected, jit=True)

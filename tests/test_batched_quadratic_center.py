@@ -185,7 +185,7 @@ def test_new_incumbent_at_last_round_cannot_reuse_old_factor():
     assert not result.accepted and result.pilot_factor is None
     assert float(result.center_value) > -2.5
     report = result.diagnostics["rounds"][0]
-    assert np.any(result.center.numpy() != report["anchor"].numpy())
+    assert np.any(result.center.numpy() != report["anchor"])
 
 
 def test_composed_initializer_and_cap_veto():
@@ -247,7 +247,10 @@ def test_malformed_callback_is_programming_error(defect):
 
 
 def test_rank_deficient_probe_design_rejects(monkeypatch):
-    monkeypatch.setattr(tf.random, "stateless_uniform", lambda shape, seed, **kwargs: tf.zeros(shape, tf.float64))
+    import bayesfilter.inference.quadratic_probe_evaluation_tf as probes
+
+    monkeypatch.setattr(probes, "philox_uniform_float64",
+                        lambda shape, seed: tf.fill(shape, tf.constant(.5, tf.float64)))
     result = refine_batched_quadratic_center(gaussian([0., 0.], np.eye(2)), [0., 0.], [1., 1.])
     assert not result.accepted and result.pilot_factor is None
 

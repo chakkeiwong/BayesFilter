@@ -9,13 +9,46 @@ be used by accepted TensorFlow inference paths.
 
 from __future__ import annotations
 
+import math
+from functools import lru_cache
 from typing import Any
 
 import tensorflow as tf
+from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
 from bayesfilter.inference.mass_matrix_tf import eigenpair_program
 from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
 from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
+
+
+@tf.custom_gradient
+def _singular_values_xla(matrix):
+    """Binary64 singular values with TensorFlow's values-only SVD pullback.
+
+    The backend's default tolerance can leave a 5e-10 condition error even
+    for a well-conditioned D5 design. Match the binary64 tolerance used by
+    the repository condition-number kernel. For A=U diag(s) V', the pullback
+    is U diag(ds) V', as in TF 2.19 linalg_grad.py::_SvdGrad(compute_uv=False).
+    """
+    decomposition = xla_svd(matrix, max_iter=100, epsilon=math.ulp(1.), precision_config="")
+    values = tf.ensure_shape(decomposition.s, matrix.shape[:-1])
+    left = tf.ensure_shape(decomposition.u, matrix.shape)
+    right = tf.ensure_shape(decomposition.v, matrix.shape)
+
+    def pullback(upstream):
+        return tf.matmul(left * upstream[None, :], right, transpose_b=True)
+
+    return values, pullback
+
+
+@lru_cache(maxsize=64)
+def _singular_value_program(dimension):
+    # Keep the custom-gradient closure independent of resource-owning callers.
+    with tf.init_scope():
+        program = tf.function(_singular_values_xla, autograph=False, jit_compile=True,
+            input_signature=[tf.TensorSpec([dimension, dimension], tf.float64)])
+        program.get_concrete_function()
+    return program
 
 
 def _as_float64(value: Any, name: str) -> tf.Tensor:
@@ -112,7 +145,9 @@ def fit_dense_score_precision_tf(
     design_for_svd = offsets
     if in_xla_context() and offsets.shape[0] is not None and offsets.shape[0] > dimension:
         design_for_svd = tf.linalg.qr(offsets, full_matrices=False)[1]
-    singular_values = tf.linalg.svd(design_for_svd, compute_uv=False)
+    singular_values = (_singular_value_program(dimension)(design_for_svd)
+        if in_xla_context() and design_for_svd.shape == (dimension, dimension)
+        else tf.linalg.svd(design_for_svd, compute_uv=False))
     largest_singular = tf.reduce_max(singular_values)
     smallest_singular = tf.reduce_min(singular_values)
     design_rank = tf.reduce_sum(

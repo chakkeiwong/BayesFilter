@@ -63,6 +63,31 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"uniform_public_{device}": ("tests/test_filter_repair_uniform_public.py",) for device in ("cpu", "gpu")},
+    **{f"uniform_public_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_uniform_public_memory.py::test_public_uniform_refinement_costs[{arm}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"uniform_extras_{device}": ("tests/test_filter_repair_uniform_rounds_extras.py",) for device in ("cpu", "gpu")},
+    **{f"uniform_round_growth_{rounds}_{device}": (
+        f"tests/test_filter_repair_uniform_round_growth.py::test_complete_controller_capacity_and_warm_allocations[{rounds}]",)
+        for rounds in (1, 4, 8) for device in ("cpu", "gpu")},
+    "dense_svd_cpu": ("tests/test_filter_repair_dense_svd.py",),
+    "dense_svd_gpu": ("tests/test_filter_repair_dense_svd.py",),
+    **{f"uniform_resources_{device}": ("tests/test_filter_repair_uniform_resources.py",) for device in ("cpu", "gpu")},
+    "uniform_rounds_smoke": ("tests/test_filter_repair_uniform_rounds.py::test_complete_uniform_original_records[move-3]",),
+    **{f"uniform_rounds_{dimension}_{device}": tuple(
+        f"tests/test_filter_repair_uniform_rounds.py::test_complete_uniform_original_records[{case}-{dimension}]"
+        for case in ("centered", "move", "nonquadratic", "round_limit", "invalid_initial", "invalid_replay",
+            "invalid_fit", "invalid_check", "invalid_proposal", "invalid_final_replay", "replay_value",
+            "initial_evidence", "bad_evidence", "nonspd", "nonfinite_scaled_score", "factor_failure"))
+        for dimension in (1, 3, 5) for device in ("cpu", "gpu")},
+    **{f"uniform_operands_{device}": (
+        "tests/test_filter_repair_uniform_rounds.py::test_uniform_changed_inputs_partial_batches_and_hlo",
+        "tests/test_filter_repair_uniform_rounds.py::test_uniform_cache_keeps_seed_dynamic_and_configuration_distinct")
+        for device in ("cpu", "gpu")},
+    **{f"uniform_round_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_uniform_round_memory.py::test_complete_uniform_controller_costs[{arm}-{dimension}]",)
+        for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
     "dense_extreme_comparison": ("tests/test_filter_repair_dense_extreme_comparison.py",),
     "quadratic_numerics_cpu": ("tests/test_filter_repair_quadratic_numerics.py",),
     "dense_boundaries_cpu": ("tests/test_filter_repair_dense_boundaries.py",),
@@ -537,6 +562,10 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"dense_components_{device}": "Separate component timings explain the preserved whole-D5 trigger; mandatory numerical and full-controller gates remain separate."
+        for device in ("cpu", "gpu")},
+    **{f"dense_extreme_{device}": "Original one-ULP self-sensitivity is explanatory; approved complete spectral comparison plus independent references remain mandatory."
+        for device in ("cpu", "gpu")},
     **{f"quadratic_numerics_memory_{arm}_{kind}_{dimension}_{device}":
         "Fresh-process paired/trust dependency costs; mandatory numerical groups and complete terminal comparisons remain separate."
         for arm in ("before", "graph", "xla") for kind in ("paired", "trust")
@@ -629,6 +658,23 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"uniform_public_{device}": (f"uniform_public_{device}",
+        "quadratic_center_public_cpu" if device == "cpu" else "quadratic_center_public",
+        "quadratic_paired_public_cpu" if device == "cpu" else "quadratic_paired_public",
+        "quadratic_batches_cpu" if device == "cpu" else "quadratic_batches", "policy")
+        for device in ("cpu", "gpu")},
+    **{f"uniform_public_memory_{device}": tuple(f"uniform_public_memory_{arm}_{dimension}_{device}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)) for device in ("cpu", "gpu")},
+    "uniform_cpu_finish": ("uniform_extras_cpu", "dense_derivatives_cpu", "dense_components_cpu", "quadratic_numerics_cpu", "policy"),
+    "uniform_svd_cpu": ("dense_svd_cpu", "uniform_operands_cpu", "uniform_resources_cpu", "dense_boundaries_cpu", "dense_derivatives_cpu", "dense_condition", "policy"),
+    "uniform_svd_gpu": ("uniform_extras_gpu", "dense_svd_gpu", "uniform_operands_gpu", "uniform_resources_gpu", "dense_boundaries_gpu", "dense_derivatives_gpu", "dense_condition_gpu", "dense_components_gpu", "policy"),
+    **{f"uniform_native_{device}": (f"uniform_rounds_1_{device}", f"uniform_rounds_3_{device}",
+        f"uniform_rounds_5_{device}", f"uniform_operands_{device}",
+        f"quadratic_rounds_3_{device}", f"quadratic_rounds_5_{device}",
+        f"quadratic_probes_{device}", f"quadratic_round_cache_{device}", "policy")
+        for device in ("cpu", "gpu")},
+    **{f"uniform_round_memory_{device}": tuple(f"uniform_round_memory_{arm}_{dimension}_{device}"
+        for arm in ("before", "graph", "xla") for dimension in (3, 5)) for device in ("cpu", "gpu")},
     "dense_complete_numerics": ("dense_extreme_comparison", "dense_boundaries_cpu", "dense_boundaries_gpu",
         "dense_extreme_cpu", "dense_extreme_gpu", "dense_derivatives_cpu", "dense_derivatives_gpu",
         "dense_condition", "dense_condition_gpu", "quadratic_numerics_cpu", "quadratic_numerics",
@@ -763,6 +809,12 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 TEST_DEVICES = {"sequential_attempts_gpu": "GPU", "factor_decisions_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["proposal_memory"]}, "sequential_proposal_public_gpu": "GPU", "factor_geometry": "GPU", "sequential_proposal_gpu": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_cost_investigation"]}, "structured_record_boundary": "GPU", "sequential_geometry": "GPU", **{group: "GPU" for group in TEST_BATCHES["structured_memory"]}, "structured_fit_gpu": "GPU", "structured_preparation_gpu": "GPU", "random_gpu": "GPU", "gamma_random_gpu": "GPU", "austria_preparation": "GPU", "centered_gpu": "GPU",
     "factor_equivalence_gpu": "GPU", "dense_condition_gpu": "GPU",
+    **{f"uniform_rounds_{dimension}_gpu": "GPU" for dimension in (1, 3, 5)},
+    "uniform_extras_gpu": "GPU", "uniform_public_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["uniform_public_memory_gpu"]},
+    **{f"uniform_round_growth_{rounds}_gpu": "GPU" for rounds in (1, 4, 8)},
+    "uniform_operands_gpu": "GPU", "uniform_resources_gpu": "GPU", "dense_svd_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["uniform_round_memory_gpu"]},
     "dense_boundaries_gpu": "GPU",
     "dense_components_gpu": "GPU",
     "dense_extreme_gpu": "GPU",

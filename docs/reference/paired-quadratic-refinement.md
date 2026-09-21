@@ -1,10 +1,10 @@
-# Paired quadratic refinement execution
+# Quadratic refinement execution
 
-`refine_batched_quadratic_center(..., config=BatchedQuadraticCenterConfig(pilot_method="paired_local"))`
-runs the complete numerical refinement in one TensorFlow/XLA program. Inputs
+`refine_batched_quadratic_center(...)`, with either the default `uniform_cloud`
+or `paired_local` pilot method, runs the complete numerical refinement in one TensorFlow/XLA program. Inputs
 and the planned row budget are checked before target evaluation. The host then
 formats completed histories; returned center, score, precision and factor remain
-TensorFlow tensors. Entries in the paired diagnostic dictionary use ordinary
+TensorFlow tensors. Entries in the diagnostic dictionary use ordinary
 Python values and lists. `payload()` preserves the serialized numerical schema.
 
 The analytical callback consumes a fixed `[batch_size, dimension]` batch and
@@ -23,10 +23,11 @@ seed, center, scale and optional initial evidence remain runtime tensor inputs;
 changing the seed does not require another trace. Cache replacement releases
 its Python ownership; native TensorFlow/XLA executable eviction and memory
 reclamation are not guaranteed. For explicit prepared execution, the uncached
-`make_paired_quadratic_controller` factory returns the tensor program. It requires
+`make_quadratic_controller` factory returns the tensor program for either family.
+The existing paired factory remains a compatibility entry point. It requires
 the same input and row-budget validation described in its docstring.
 
-`jit_compile_trust=False` selects the complete graph reference for paired mode.
+`jit_compile_trust=False` selects the complete graph reference for either pilot method.
 The diagnostic fields `jit_compile_refinement`, `jit_compile_fit` and
 `jit_compile_trust` record that setting. No XLA failure automatically falls back
 to graph execution. `fit_calls` and `trust_calls` count executed operations;
@@ -34,7 +35,10 @@ trace counts describe graph construction, including conditional branches that
 were traced but not executed. `full_initializer_xla` remains false because
 composition with the initial multistart locator is a separate qualification.
 
-Uniform-cloud fitting has separate execution debt and retains its existing
-behavior. The paired route's tests do not establish uniform-cloud, DZ5, HMC,
-posterior or whole-repository readiness. Current evidence and unresolved costs
-are recorded in [the controller repair plan](../plans/filter_gradient_quadratic_rounds_20260921.md).
+The uniform route preserves the original float64 Philox seed-to-cloud mapping.
+Uniform diagnostic tensor leaves now use the completed host-list representation
+already used by paired mode; callers should use the top-level tensors for
+numerical results or payload() for serialization. Compilation of refinement does
+not establish DZ5, HMC, posterior or whole-repository readiness. Evidence and
+cost limitations are recorded in the [uniform controller plan](../plans/filter_gradient_uniform_rounds_20260921.md)
+and [paired controller plan](../plans/filter_gradient_quadratic_rounds_20260921.md).
