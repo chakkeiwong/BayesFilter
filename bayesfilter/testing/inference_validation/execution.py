@@ -54,7 +54,10 @@ def plan_suite(suite):
                      "availability":"ready" if available else "unavailable","reason":reason})
     return {"schema":"bayesfilter.inference_validation_plan.v1","suite_id":suite["suite_id"],
             "suite_identity":digest(suite),"profile":suite["profile"],"jobs":jobs,
-            "required_coverage":suite.get("required_coverage",[j["coverage"] for j in jobs]),
+            # Inferred requirements describe every planned cell. An explicit
+            # category requirement may intentionally ask for any matching cell.
+            "required_coverage":suite.get("required_coverage",[
+                {**j["coverage"], "design_id": j["design"]["design_id"]} for j in jobs]),
             "aggregate_groups":suite.get("aggregate_groups",[]),
             "maximum_worker_seconds":sum(d.budget_seconds for d in designs),
             "budget_by_device":{device:sum(d.budget_seconds for d in designs if d.device==device)
@@ -85,6 +88,7 @@ def configure_worker(design):
 def worker(design_file,root,budget,attempt=1):
     root=Path(root); design=ValidationDesign.from_payload(read_json(design_file))
     started=time.monotonic()
+    profile = None
     try:
         runtime=configure_worker(design)
         manifest={"design":design.payload(),"runtime":runtime,
@@ -94,6 +98,10 @@ def worker(design_file,root,budget,attempt=1):
             "result_file":str(root/f"attempt-{attempt:03d}-result.json")}
         write_json(root/f"attempt-{attempt:03d}-manifest.json",manifest)
         deadline=started+budget
+        if design.options.get("profile_execution", False):
+            import cProfile
+            profile = cProfile.Profile()
+            profile.enable()
         if design.scenario.route=="external":
             from .references.external import load_reference
             from .engines.statistics import accuracy_assessment
@@ -115,6 +123,9 @@ def worker(design_file,root,budget,attempt=1):
         elif design.engine=="power":
             from .engines.power import run
             assessment=run(design,root,deadline)
+        elif design.engine=="acceptance":
+            from .engines.acceptance import run
+            assessment=run(design,root,deadline)
         elif design.engine=="stopping" and design.scenario.route=="reference":
             from .engines.diagnostics import run
             assessment=run(design,root,deadline)
@@ -134,6 +145,16 @@ def worker(design_file,root,budget,attempt=1):
             "reason":str(exc),"traceback":traceback.format_exc(),"elapsed_seconds":time.monotonic()-started})
         traceback.print_exc()
         return 1
+    finally:
+        if profile is not None:
+            profile.disable()
+            try:
+                profile.dump_stats(str(root/f"attempt-{attempt:03d}-host.prof"))
+            except OSError as exc:
+                # Profiling is explanatory. Preserve the engine outcome and its
+                # failure record when a profile cannot be written.
+                import warnings
+                warnings.warn(f"host profile unavailable: {exc}", RuntimeWarning)
 
 
 def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):

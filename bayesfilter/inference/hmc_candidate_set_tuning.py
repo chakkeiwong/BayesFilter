@@ -20,7 +20,8 @@ from typing import Any, Literal
 
 from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision
 from bayesfilter.inference.hmc_candidate_proposals import (
-    DirectionalEpsilonEvidence, directional_proposal, unresolved_interiors,
+    DirectionalEpsilonEvidence, RejectedEpsilonBoundary, directional_proposal,
+    rejected_boundary_interiors, unresolved_interiors,
 )
 
 
@@ -55,6 +56,15 @@ def _finite_positive(value: Any, name: str) -> float:
 
 
 def _stable_payload(value: Any) -> Any:
+    # Numerical evidence contains many built-in scalar leaves. Handle these
+    # before the generic Mapping check without changing subclass precedence.
+    kind = type(value)
+    if kind is float:
+        if not math.isfinite(value):
+            raise ValueError("hash payload contains a non-finite float")
+        return value
+    if value is None or kind in (str, int, bool):
+        return value
     if isinstance(value, Mapping):
         return {str(key): _stable_payload(value[key]) for key in sorted(value, key=str)}
     if isinstance(value, (tuple, list)):
@@ -576,6 +586,7 @@ class HMCControllerConfig:
     max_candidates: int = 100
     max_gradient_work: int | None = None
     max_wall_time_seconds: float | None = None
+    explore_failed_intervals: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "primary_l_grid", _tuple_ints(self.primary_l_grid, "primary_l_grid"))
@@ -609,6 +620,8 @@ class HMCControllerConfig:
             raise ValueError("allow_repair_from_free_pool must be boolean")
         if type(self.pilot_enabled) is not bool:
             raise ValueError("pilot_enabled must be boolean")
+        if type(self.explore_failed_intervals) is not bool:
+            raise ValueError("explore_failed_intervals must be boolean")
         if self.candidate_reserve_units < 2 + int(self.pilot_enabled):
             raise ValueError("candidate_reserve_units must cover pilot, measurement and verification")
         rungs = _tuple_ints(self.evidence_rungs, "evidence_rungs")
@@ -620,8 +633,8 @@ class HMCControllerConfig:
         if self.max_candidates < sum(len(e) for _, e in self.epsilon_by_l):
             raise ValueError("primary cohort exceeds max_candidates")
         for name in ("refinement_l_grid", "expansion_l_grid"):
-            if getattr(self, name):
-                object.__setattr__(self, name, _tuple_ints(getattr(self, name), name))
+            values = getattr(self, name)
+            object.__setattr__(self, name, _tuple_ints(values, name) if values else ())
         factors = tuple(_finite_positive(v, "epsilon_refinement_factor") for v in self.epsilon_refinement_factors)
         if len(set(factors)) != len(factors) or 1.0 in factors:
             raise ValueError("refinement factors must be distinct and change epsilon")
@@ -643,7 +656,8 @@ class HMCControllerConfig:
             **{name: getattr(self, name) for name in (
                 "initial_epsilon", "pilot_enabled", "evidence_rungs", "refinement_rounds",
                 "epsilon_refinement_factors", "refinement_l_grid", "expansion_l_grid",
-                "max_candidates", "max_gradient_work", "max_wall_time_seconds")},
+                "max_candidates", "max_gradient_work", "max_wall_time_seconds",
+                "explore_failed_intervals")},
         }
 
     @classmethod
@@ -662,7 +676,8 @@ class HMCControllerConfig:
             **{name: payload[name] for name in (
                 "initial_epsilon", "pilot_enabled", "evidence_rungs", "refinement_rounds",
                 "epsilon_refinement_factors", "refinement_l_grid", "expansion_l_grid",
-                "max_candidates", "max_gradient_work", "max_wall_time_seconds") if name in payload},
+                "max_candidates", "max_gradient_work", "max_wall_time_seconds",
+                "explore_failed_intervals") if name in payload},
         )
 
 
@@ -1135,20 +1150,48 @@ class HMCTuningCandidateSetController:
             visited = {c.epsilon for c in self.candidates if c.leapfrog_steps == steps}
             for epsilon, parents in unresolved_interiors(self._directional_evidence(steps), visited):
                 proposals.setdefault((steps, epsilon), []).extend(parents)
-        added = False
+        added = self._refine_failed_intervals() if self.config.explore_failed_intervals else False
         lo, hi = self.scope.epsilon_domain
-        for (steps, epsilon), parents in proposals.items():
-            if not lo <= epsilon <= hi or self._find_pair(steps, epsilon) is not None:
-                continue
+        eligible = [(pair, parents) for pair, parents in proposals.items()
+                    if lo <= pair[1] <= hi and self._find_pair(*pair) is None]
+        for index, ((steps, epsilon), parents) in enumerate(eligible):
             if len(self._candidates) >= self.config.max_candidates:
                 self._accounting.append({"event": "refinement_cap_reached", "round": self._refinement_round,
-                                         "reason": "max_candidates", "remaining_proposals": len(proposals)})
+                                         "reason": "max_candidates", "remaining_proposals": len(eligible) - index})
                 break
             cid = self.add_exploration_candidate(steps, epsilon)
             self._accounting.append({"event": "refinement_proposed", "candidate_id": cid,
                                      "requesting_parents": tuple(parents), "round": self._refinement_round})
             added = True
         return added
+
+    def _refine_failed_intervals(self) -> bool:
+        # Only proposal-local nonfiniteness may supply an exploration endpoint.
+        # Missing status, invalid retained/initial states and unknown failures
+        # must not be reinterpreted as a step-size problem.
+        numerical_rejections = {
+            "nonfinite_log_accept_ratio", "nonfinite_proposal",
+            "nonfinite_proposal_displacement", "nonfinite_proposed_target_log_prob",
+            "nonfinite_final_momentum", "nonfinite_log_acceptance_correction",
+            "nonfinite_target_score",
+        }
+        latest = {receipt.candidate_id: receipt for receipt in self._receipts}
+        boundaries = [RejectedEpsilonBoundary(c.epsilon, c.candidate_id, c.parent_candidate_id)
+                      for c in self.candidates if c.parent_candidate_id is not None
+                      and c.candidate_id in latest
+                      and latest[c.candidate_id].evidence_validity == "candidate_data_invalid"
+                      and latest[c.candidate_id].hard_vetoes
+                      and set(latest[c.candidate_id].hard_vetoes) <= numerical_rejections]
+        count = len(self._candidates)
+        for steps in dict.fromkeys(c.leapfrog_steps for c in self.candidates):
+            visited = {c.epsilon for c in self.candidates if c.leapfrog_steps == steps}
+            endpoints = [row for row in boundaries if self._candidates[row.candidate_id].leapfrog_steps == steps]
+            for epsilon, parent_id, rejected_id in rejected_boundary_interiors(
+                    self._directional_evidence(steps), endpoints, visited):
+                self._request_repair(self._candidates[parent_id], latest[parent_id],
+                    exploration_epsilon=epsilon, rejected_endpoint=latest[rejected_id])
+                visited.add(epsilon)
+        return len(self._candidates) > count
 
     def _new_candidate(
         self,
@@ -1442,23 +1485,34 @@ class HMCTuningCandidateSetController:
             diagnostic_alerts=tuple(observation.get("diagnostic_alerts", ())),
         )
 
-    def _request_repair(self, candidate: HMCTuningCandidateRecord, receipt: HMCVerificationReceipt) -> None:
+    def _request_repair(self, candidate: HMCTuningCandidateRecord, receipt: HMCVerificationReceipt,
+                        *, exploration_epsilon: float | None = None,
+                        rejected_endpoint: HMCVerificationReceipt | None = None) -> None:
         direction = receipt.decision
         count = self._repair_counts[candidate.candidate_family_id]
         if count >= self.scope.max_repairs_per_family:
             self._states[candidate.candidate_id] = "promotion_failed"
-            self._accounting.append({"event": "repair_limit_exhausted", "candidate_id": candidate.candidate_id, "candidate_family_id": candidate.candidate_family_id})
+            self._accounting.append({"event": "repair_limit_exhausted", "candidate_id": candidate.candidate_id,
+                "candidate_family_id": candidate.candidate_family_id, "reason": "max_repairs_per_family"})
             return
         lo, hi = self.scope.epsilon_domain
-        new_epsilon = directional_proposal(epsilon=candidate.epsilon, direction=direction,
+        new_epsilon = exploration_epsilon if exploration_epsilon is not None else directional_proposal(epsilon=candidate.epsilon, direction=direction,
             evidence=self._directional_evidence(candidate.leapfrog_steps),
             visited={c.epsilon for c in self.candidates if c.leapfrog_steps == candidate.leapfrog_steps},
             domain=self.scope.epsilon_domain, factor=self.scope.repair_factor)
-        if (new_epsilon is None or not lo <= new_epsilon <= hi or new_epsilon == candidate.epsilon
-                or self._find_pair(candidate.leapfrog_steps, new_epsilon) is not None
-                or len(self._candidates) >= self.config.max_candidates):
+        reason = None
+        if len(self._candidates) >= self.config.max_candidates:
+            reason = "max_candidates"
+        elif new_epsilon is None:
+            boundary = hi if direction == "repair_step_higher" else lo
+            reason = "epsilon_domain" if candidate.epsilon == boundary else "no_unvisited_epsilon"
+        elif not lo <= new_epsilon <= hi:
+            reason = "epsilon_domain"
+        elif new_epsilon == candidate.epsilon or self._find_pair(candidate.leapfrog_steps, new_epsilon) is not None:
+            reason = "duplicate_epsilon"
+        if reason is not None:
             self._states[candidate.candidate_id] = "promotion_failed"
-            self._accounting.append({"event": "repair_limit_exhausted", "candidate_id": candidate.candidate_id, "reason": "epsilon_domain"})
+            self._accounting.append({"event": "repair_limit_exhausted", "candidate_id": candidate.candidate_id, "reason": reason})
             return
         self._creation_ordinal += 1
         child = HMCTuningCandidateRecord.create(
@@ -1492,11 +1546,28 @@ class HMCTuningCandidateSetController:
         self._deferred_repairs.append(action_id)
         self._states[candidate.candidate_id] = "promotion_failed"
         self._accounting.append({"event": "repair_proposed", "repair_action_id": action_id, "parent_candidate_id": candidate.candidate_id, "child_candidate_id": child.candidate_id})
+        if rejected_endpoint is not None:
+            self._accounting.append({"event": "rejected_interval_proposed", "repair_action_id": action_id,
+                "candidate_id": child.candidate_id, "valid_parent_id": candidate.candidate_id,
+                "rejected_endpoint_id": rejected_endpoint.candidate_id,
+                "parent_receipt_hash": _sha256(receipt.payload()),
+                "rejected_endpoint_receipt_hash": _sha256(rejected_endpoint.payload()),
+                "round": self._refinement_round, "qualification_transferred": False})
 
     def _apply_observation(self, work: HMCWorkItem, observation: Mapping[str, Any]) -> None:
         candidate = self._candidates[work.candidate_id]
-        parsed = self._parse_observation(observation)
+        record = {"work_item_id": work.work_item_id, "candidate_id": candidate.candidate_id,
+                  "stage": work.stage, "observation": observation}
+        try:
+            parsed = self._parse_observation(observation)
+        except HMCSharedInvalidity:
+            # A valid shared failure is terminal evidence even without a
+            # candidate receipt. Malformed provider data remains an execution
+            # error and must not become a duplicate observation on retry.
+            self._observations.append(record)
+            raise
         receipt = self._receipt(work, candidate, parsed)
+        self._observations.append(record)
         self._receipts.append(receipt)
         action_id = work.repair_action_id
         decision = parsed["decision"]
@@ -1649,8 +1720,6 @@ class HMCTuningCandidateSetController:
                     work_started = time.monotonic()
                     try:
                         observation = dict(outcome_provider(work, candidate))
-                        self._observations.append({"work_item_id": work_id, "candidate_id": candidate.candidate_id,
-                                                   "stage": work.stage, "observation": observation})
                         self._apply_observation(work, observation)
                     except (HMCSharedInvalidity, HMCInfrastructureFailure) as exc:
                         self._scope_invalid = isinstance(exc, HMCSharedInvalidity)

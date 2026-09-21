@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="1.457" timestamp="2026-09-17T01:38:45.140978+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_campaign_pipeline" name="test_mode_quantity_interval_uses_the_declared_mixture_law" time="0.003"><failure message="ValueError: tuple.index(x): x not in tuple">design = &lt;function design.&lt;locals&gt;.make at 0x748f1feb4040&gt;
+
+    def test_mode_quantity_interval_uses_the_declared_mixture_law(design):
+        from scipy.special import ndtr
+        from bayesfilter.testing.inference_validation.engines.pipeline import stopped_intervals
+        params = {"separation": 2., "weight": .25}
+        truth = .25 * ndtr(2.) + .75 * ndtr(-2.)
+        member = {"posterior": {"passed": True, "warmup_cap_hit": False, "retained_cap_hit": False,
+            "retained_checks": [{"diagnostic_role": "assessment", "assessment": {"precision": {"targets": [
+                {"name": "left_mode_probability", "kind": "mean", "estimate": truth,
+                 "mcse": .02, "valid": True}]}}}]}}
+&gt;       stopped = stopped_intervals(member, get_target("mixture"), params, None)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/inference_validation/test_campaign_pipeline.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+member = {'posterior': {'passed': True, 'retained_cap_hit': False, 'retained_checks': [{'assessment': {'precision': {'targets': [...]}}, 'diagnostic_role': 'assessment'}], 'warmup_cap_hit': False}}
+spec = TargetSpec(target_id='mixture', family='multimodal', dimension=2, support='R2', parameters=('x', 'y'), reference=Refer...nite_variance=True, available=True, unavailable_reason=None, pipeline_available=True, pipeline_unavailable_reason=None)
+params = {'separation': 2.0, 'weight': 0.25}, data = None
+
+    def stopped_intervals(member, spec, params, data):
+        """Evaluate the actual final controller check, including unfavorable stops."""
+        from scipy import stats
+        references=analytic.exact_functionals(spec.target_id,params,data)
+        checks=member["posterior"]["retained_checks"]
+        final=checks[-1] if checks else {}
+        diagnostic=final.get(final.get("diagnostic_role","modern_rhat")) or {}
+        estimates=diagnostic.get("precision",{}).get("targets",())
+        rows=[]
+        for estimate in estimates:
+&gt;           index=spec.parameters.index(estimate["name"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           ValueError: tuple.index(x): x not in tuple
+
+bayesfilter/testing/inference_validation/engines/pipeline.py:26: ValueError</failure></testcase><testcase classname="tests.inference_validation.test_campaign_pipeline" name="test_missing_mode_posteriors_keep_the_mode_quantity_denominator" time="0.001"><failure message="KeyError: 'left_mode_probability:mean'">design = &lt;function design.&lt;locals&gt;.make at 0x748f1fe8ec00&gt;
+
+    def test_missing_mode_posteriors_keep_the_mode_quantity_denominator(design):
+        d = design("stopping", "mixture", "prepared", replications=2,
+            options={"global_quantities": ["left_mode_probability"]})
+&gt;       counts = summarize_replications(d, [])["interval_coverage_at_stop"]["left_mode_probability:mean"]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'left_mode_probability:mean'
+
+tests/inference_validation/test_campaign_pipeline.py:57: KeyError</failure></testcase><testcase classname="tests.inference_validation.test_campaign_pipeline" name="test_inventory_allows_terminal_shared_failure_observation" time="0.014"><failure message="AssertionError: assert ['missing_or_..._observation'] == []&#10;  &#10;  Left contains one more item: 'missing_or_duplicated_observation'&#10;  Use -v to get more diff">def test_inventory_allows_terminal_shared_failure_observation():
+        from bayesfilter.testing.inference_validation.engines.pipeline import check_inventory
+        from tests.test_hmc_candidate_set_tuning import _scope, _config, _pass
+        from bayesfilter.inference.hmc_candidate_set_tuning import HMCTuningCandidateSetController
+        from bayesfilter.inference.hmc_candidate_set_artifacts import candidate_set_result_payload
+        def observe(work, candidate):
+            return ({"decision":"failed", "evidence_validity":"shared_execution_invalid"}
+                if work.stage == "verification" and candidate.leapfrog_steps == 5 else _pass(work, candidate))
+        result = HMCTuningCandidateSetController(_scope(), _config()).run(observe)
+        payload = candidate_set_result_payload(result)
+        assert result.completion_status == "shared_invalidity"
+&gt;       assert check_inventory(payload)["failures"] == []
+E       AssertionError: assert ['missing_or_..._observation'] == []
+E         
+E         Left contains one more item: 'missing_or_duplicated_observation'
+E         Use -v to get more diff
+
+tests/inference_validation/test_campaign_pipeline.py:73: AssertionError</failure></testcase></testsuite></testsuites>

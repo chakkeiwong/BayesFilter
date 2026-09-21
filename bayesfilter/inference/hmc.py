@@ -44,6 +44,7 @@ from bayesfilter.inference.hmc_verification import (
     summarize_hmc_tuning_telemetry,
 )
 from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
+from bayesfilter.inference.hmc_status import cache_hmc_target_status, cached_target_status
 from bayesfilter.inference.posterior_adapter import value_score_capability
 from bayesfilter.inference.tuning_contract import HMC_TUNING_ORDINARY_RHAT_THRESHOLD
 
@@ -2966,6 +2967,12 @@ class ReusableFullChainHMCRunner:
             )
             if config.tuning_policy.uses_dual_averaging:
                 kernel = _hmc_dual_averaging_kernel(kernel, config, step_size)
+            if (config.capture_candidate_health and config.target_status_trace_policy == "per_chain_step"
+                    and self._failure_recorder is None):
+                kernel = cache_hmc_target_status(
+                    kernel, self.adapter.target_status_telemetry,
+                    uses_dual_averaging=config.tuning_policy.uses_dual_averaging,
+                )
             if config.require_finite_transitions:
                 kernel = guard_finite_transitions(
                     kernel, uses_dual_averaging=config.tuning_policy.uses_dual_averaging
@@ -3024,6 +3031,11 @@ class ReusableFullChainHMCRunner:
         return {
             "runtime": "tfp.mcmc.sample_chain",
             "reusable_runner": True,
+            "target_status_reuse": (
+                "accepted_status_from_tfp_metropolis_mask_v1"
+                if config.capture_candidate_health and config.target_status_trace_policy == "per_chain_step" and not config.capture_first_failure
+                else "none"
+            ),
             **({"first_failure_capture": "bayesfilter.traced_hmc_first_failure.v1",
                 "failure_capture_role": config.failure_capture_role}
                if config.capture_first_failure else {}),
@@ -3064,6 +3076,11 @@ class ReusableFullChainHMCRunner:
                     "initial_state_dtype": self._state_dtype.name,
                     "dynamic_inputs": dynamic_inputs,
                     "dynamic_num_leapfrog_steps": self.dynamic_num_leapfrog_steps,
+                    "target_status_reuse": (
+                        "accepted_status_from_tfp_metropolis_mask_v1"
+                        if config.capture_candidate_health and config.target_status_trace_policy == "per_chain_step" and not config.capture_first_failure
+                        else "none"
+                    ),
                 }
             ),
             "initial_state_shape": self._state_shape,
@@ -6623,7 +6640,9 @@ def _trace_fn_for_config(
             trace["initial_momentum"] = initial_momentum[0]
             trace["final_momentum"] = final_momentum[0]
             if config.target_status_trace_policy == "per_chain_step":
-                telemetry = adapter.target_status_telemetry(results.proposed_state)
+                telemetry = cached_target_status(results, proposed=True)
+                if telemetry is None:
+                    telemetry = adapter.target_status_telemetry(results.proposed_state)
                 if any(key not in telemetry for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS):
                     raise ValueError("proposed target-status telemetry is incomplete")
                 trace["proposed_target_status_telemetry"] = {
@@ -6685,7 +6704,9 @@ def _trace_fn_for_config(
 def _standard_trace_fn_with_target_status(adapter: Any) -> Callable[[Any, Any], Mapping[str, Any]]:
     def trace_fn(state: Any, kernel_results: Any) -> Mapping[str, Any]:
         trace = dict(_standard_trace_fn(state, kernel_results))
-        telemetry = adapter.target_status_telemetry(state)
+        telemetry = cached_target_status(kernel_results)
+        if telemetry is None:
+            telemetry = adapter.target_status_telemetry(state)
         # TFP's trace_scan stacks every returned field.  Keep only the declared
         # tensor telemetry fields here; explanatory metadata (for example a
         # string diagnostic-limits note) belongs in the adapter API, not in a
@@ -6726,7 +6747,9 @@ def _standard_trace_fn(_state: Any, kernel_results: Any) -> Mapping[str, Any]:
 def _adaptive_standard_trace_fn_with_target_status(adapter: Any) -> Callable[[Any, Any], Mapping[str, Any]]:
     def trace_fn(state: Any, kernel_results: Any) -> Mapping[str, Any]:
         trace = dict(_adaptive_standard_trace_fn(state, kernel_results))
-        telemetry = adapter.target_status_telemetry(state)
+        telemetry = cached_target_status(kernel_results.inner_results)
+        if telemetry is None:
+            telemetry = adapter.target_status_telemetry(state)
         missing = tuple(
             key for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS if key not in telemetry
         )

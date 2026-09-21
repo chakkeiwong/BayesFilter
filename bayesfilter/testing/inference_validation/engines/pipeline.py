@@ -16,18 +16,24 @@ from .statistics import accuracy_assessment,binomial_interval
 def stopped_intervals(member, spec, params, data):
     """Evaluate the actual final controller check, including unfavorable stops."""
     from scipy import stats
-    references=analytic.exact_functionals(spec.target_id,params,data)
+    references={(spec.parameters[index], kind): truth for (kind, index), truth in
+                analytic.exact_functionals(spec.target_id,params,data).items()}
+    if spec.target_id == "mixture":
+        # P(X < 0) for w N(-a,1) + (1-w) N(a,1), in model coordinates.
+        a, w = params.get("separation", 5.), params.get("weight", .3)
+        references[("left_mode_probability", "mean")] = float(
+            w * stats.norm.cdf(a) + (1-w) * stats.norm.cdf(-a))
     checks=member["posterior"]["retained_checks"]
     final=checks[-1] if checks else {}
     diagnostic=final.get(final.get("diagnostic_role","modern_rhat")) or {}
     estimates=diagnostic.get("precision",{}).get("targets",())
     rows=[]
     for estimate in estimates:
-        index=spec.parameters.index(estimate["name"])
-        truth=references.get((estimate["kind"],index))
+        truth=references.get((estimate["name"], estimate["kind"]))
         se=estimate["mcse"]
         available=truth is not None and estimate["valid"] and se is not None
-        error=estimate["estimate"]-truth if truth is not None else None
+        error=estimate["estimate"]-truth if truth is not None and estimate["estimate"] is not None else None
+        available=available and error is not None
         rows.append({"name":estimate["name"],"kind":estimate["kind"],"reference":truth,
             "estimate":estimate["estimate"],"error_at_stop":error,"reported_mcse":se,
             "available":available,"covered":available and abs(error)<=stats.norm.ppf(.975)*se})
@@ -83,9 +89,19 @@ def check_inventory(payload):
         expected={cid for cid,state in states.items() if state=="verified"}
         if verified!=expected: failures.append("verified_set_incomplete")
         if verified != successful_receipts: failures.append("passing_receipts_not_retained")
-    completed = {w["work_item_id"] for w in payload.get("work_items", ()) if w["status"] == "completed"}
+    works = {w["work_item_id"]: w for w in payload.get("work_items", ())}
+    completed = {key for key, work in works.items() if work["status"] == "completed"}
+    terminal_shared = set()
+    if payload.get("completion_status") == "shared_invalidity":
+        for observation in observations:
+            work = works.get(observation["work_item_id"], {})
+            if (work.get("status") == "interrupted"
+                    and observation["candidate_id"] == work.get("candidate_id")
+                    and observation["stage"] == work.get("stage")
+                    and observation["observation"].get("evidence_validity") == "shared_execution_invalid"):
+                terminal_shared.add(observation["work_item_id"])
     observed = [o["work_item_id"] for o in observations]
-    if completed != set(observed) or len(observed) != len(set(observed)):
+    if completed | terminal_shared != set(observed) or len(observed) != len(set(observed)):
         failures.append("missing_or_duplicated_observation")
     return {"finding":"inventory_passed" if not failures else "inventory_discrepancy",
             "failures":failures,"candidate_count":len(candidates),"verified_count":len(verified),
@@ -212,6 +228,8 @@ def summarize_replications(design, records):
     interval_groups={name+":"+kind:{"covered":0,"available":0}
                      for name in spec.parameters
                      for kind in (("quantile","mean") if spec.finite_variance else ("quantile",))}
+    interval_groups.update({name+":mean": {"covered":0,"available":0}
+                            for name in design.options.get("global_quantities", ())})
     for rep in records:
         group=sorted((m for m in rep["members"] if design.options.get("member_rule","declared_l_first")=="first_verified"
                       or m.get("L")==design.member_l),key=lambda m:m["candidate_id"])

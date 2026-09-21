@@ -42,6 +42,10 @@ def test_parallel_sbc_shards_preserve_complete_and_missing_denominators(design,t
     result=aggregate_groups(tmp_path/"run")[0]
     assert result["completed"]==4 and result["planned"]==8
     assert result["finding"]=="calibration_incomplete" and result["conditional_tests_only"]
+    assert result["missing_dataset_records"] == 4
+    assert result["unstarted_datasets"] is None
+    assert result["known_unstarted_datasets"] == 0
+    assert result["missing_records_from_incomplete_shards"] == 4
     first=next(iter(index["jobs"].values()))
     from pathlib import Path
     result_path=Path(first["result"])

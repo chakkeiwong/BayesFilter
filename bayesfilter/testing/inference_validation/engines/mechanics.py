@@ -72,6 +72,37 @@ def run(design, root, deadline=None):
             independent_map_symplectic_error=float(np.max(abs(power.T@np.block([[np.zeros((2,2)),eye],[-eye,np.zeros((2,2))]])@power-np.block([[np.zeros((2,2)),eye],[-eye,np.zeros((2,2))]])))),
             energy_change=(.5*tf.reduce_sum((q1*q1-q*q)/scale**2+p1*tf.linalg.matvec(tf.constant(inverse),p1)-p*tf.linalg.matvec(tf.constant(inverse),p),axis=-1)).numpy().tolist(),
             trace_count=compiled.experimental_get_tracing_count())
+        if design.scenario.control in {"baseline", "noop", "wrong_energy"}:
+            from ..procedures import FrozenTransition
+            transition = FrozenTransition(target, chains=design.replications,
+                step_size=eps, leapfrog_steps=length, control=design.scenario.control,
+                jit_compile=design.device=="gpu")
+            observed = transition.audit_step(q, tf.constant(
+                seed_for(design.seed, design.design_id, "metropolis-energy"), tf.int32))
+            proposal = observed["proposed_state"].numpy()
+            p0 = observed["initial_momentum"].numpy()
+            p1 = observed["final_momentum"].numpy()
+            # Independent scalar Hamiltonian calculation: log pi(q')-log pi(q)
+            # + (||p||^2-||p'||^2)/2 for this identity-mass TFP transition.
+            expected = (analytic.log_density(target.target_id, proposal, target.parameters, data)
+                        - analytic.log_density(target.target_id, probes, target.parameters, data)
+                        + .5 * (np.sum(p0*p0, axis=-1) - np.sum(p1*p1, axis=-1)))
+            reported = observed["log_accept_ratio"].numpy()
+            energy_scale = (1. + np.abs(reference)
+                            + np.abs(analytic.log_density(target.target_id, proposal, target.parameters, data))
+                            + .5 * (np.sum(p0*p0, axis=-1) + np.sum(p1*p1, axis=-1)))
+            # Rounding allowance for differences of endpoint energies, using
+            # the same diagnostic 1e-10 scale as the independent density check.
+            tolerance = 1.e-10 * energy_scale
+            accepted = observed["is_accepted"].numpy()
+            state = observed["state"].numpy()
+            results.update(metropolis_log_ratio_passed=bool(np.all(np.abs(reported-expected) <= tolerance)),
+                metropolis_state_selection_passed=bool(np.array_equal(state, np.where(accepted[:, None], proposal, probes))),
+                metropolis_log_ratio_expected=expected.tolist(), metropolis_log_ratio_observed=reported.tolist(),
+                metropolis_log_ratio_tolerance=tolerance.tolist(),
+                metropolis_log_ratio_max_error=float(np.max(np.abs(reported-expected))),
+                metropolis_oracle="independent target density and actual TFP endpoint momenta; identity mass",
+                metropolis_oracle_role="engineering correctness only; not distributional test power")
     results["finding"]="mechanics_passed" if all(v for k,v in results.items() if k.endswith("passed")) else "mechanics_discrepancy"
     results["accuracy_established"]=False
     write_json(root/"mechanics.json",results)

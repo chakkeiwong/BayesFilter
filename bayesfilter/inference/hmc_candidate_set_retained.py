@@ -63,6 +63,13 @@ def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecut
     for digest, evidence in binding._evidence.items():
         if _sha256(evidence) != digest or evidence.get("binding_hash") != binding.binding_hash:
             raise ValueError("corrupt numerical evidence inventory")
+        analysis = binding.evidence_analysis(evidence)
+        if _json_copy(analysis) != evidence["analysis"]:
+            raise ValueError("numerical evidence recomputation mismatch")
+        # The binding may have advanced beyond the supplied result. A known
+        # shared failure disables even members verified before that failure.
+        if analysis["evidence_validity"] == "shared_execution_invalid":
+            raise ValueError("shared-invalid numerical evidence disables scope replay")
     payload = _result_payload(result)
     record = require_verified_member(payload, scope_id=binding.scope.scope_id,
         candidate_id=candidate_id, expected_scope=_json_copy(binding.scope.payload()))

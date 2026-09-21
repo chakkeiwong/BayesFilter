@@ -11,6 +11,80 @@ from bayesfilter.testing.inference_validation.catalog import get_target
 from bayesfilter.testing.inference_validation.storage import read_tensor, read_json
 
 
+def test_global_mode_quantity_vetoes_false_precision(design):
+    import tensorflow as tf
+    from bayesfilter.inference.hmc_convergence import rank_normalized_split_rhat_summary
+    from bayesfilter.inference.hmc_posterior_assessment import HMCPosteriorAssessmentPolicy, assess_posterior
+    from bayesfilter.inference.hmc_precision import HMCPrecisionPolicy, HMCPrecisionTarget
+    from bayesfilter.testing.inference_validation.procedures import posterior_quantities
+    d = design("stopping", "mixture", "prepared", options={"global_quantities":["left_mode_probability"]})
+    identity, quantities = posterior_quantities(d)
+    draws = tf.constant(np.random.default_rng(67).normal(size=(2048,4,2)) + [5.,0.], tf.float64)
+    rhat = rank_normalized_split_rhat_summary(draws, rhat_max=1.01)
+    assert rhat["passed"]
+    policy = HMCPosteriorAssessmentPolicy(quantities_id=identity,
+        precision=HMCPrecisionPolicy((HMCPrecisionTarget("left_mode_probability", mcse_absolute_max=.1),),
+                                     method="lugsail", jit_compile=False))
+    result = assess_posterior(draws, ("x","y"), policy=policy, stage="retained", rhat=rhat, quantities_fn=quantities)
+    assert not result["passed"] and not result["precision"]["passed"]
+    assert "left_mode_probability" in result["quantity_names"]
+
+
+def test_mode_quantity_interval_uses_the_declared_mixture_law(design):
+    from scipy.special import ndtr
+    from bayesfilter.testing.inference_validation.engines.pipeline import stopped_intervals
+    params = {"separation": 2., "weight": .25}
+    truth = .25 * ndtr(2.) + .75 * ndtr(-2.)
+    member = {"posterior": {"passed": True, "warmup_cap_hit": False, "retained_cap_hit": False,
+        "retained_checks": [{"diagnostic_role": "assessment", "assessment": {"precision": {"targets": [
+            {"name": "left_mode_probability", "kind": "mean", "estimate": truth,
+             "mcse": .02, "valid": True}]}}}]}}
+    stopped = stopped_intervals(member, get_target("mixture"), params, None)
+    assert stopped["quantities"][0]["reference"] == pytest.approx(truth)
+    assert stopped["quantities"][0]["covered"]
+    d = design("stopping", "mixture", "prepared", replications=2,
+        options={"global_quantities": ["left_mode_probability"]})
+    row = {"candidate_id": "a", "L":3, "assessment":{"finding":"within_descriptive_tolerance"},
+        "warmup_exclusion_matches":True, "duplicate_chains":False, "stopped_intervals": stopped}
+    result = summarize_replications(d, [{"inventory":{"failures":[]}, "members":[row], "tuning_completion":"complete"}])
+    counts = result["interval_coverage_at_stop"]["left_mode_probability:mean"]
+    assert counts["covered"] == counts["available"] == counts["unavailable"] == 1
+
+
+def test_missing_mode_posteriors_keep_the_mode_quantity_denominator(design):
+    d = design("stopping", "mixture", "prepared", replications=2,
+        options={"global_quantities": ["left_mode_probability"]})
+    counts = summarize_replications(d, [])["interval_coverage_at_stop"]["left_mode_probability:mean"]
+    assert counts["planned"] == counts["unavailable"] == 2
+    assert counts["available"] == 0
+
+
+def test_inventory_allows_terminal_shared_failure_observation():
+    from bayesfilter.testing.inference_validation.engines.pipeline import check_inventory
+    from tests.test_hmc_candidate_set_tuning import _scope, _config, _pass
+    from bayesfilter.inference.hmc_candidate_set_tuning import HMCTuningCandidateSetController
+    from bayesfilter.inference.hmc_candidate_set_artifacts import candidate_set_result_payload
+    def observe(work, candidate):
+        return ({"decision":"failed", "evidence_validity":"shared_execution_invalid"}
+            if work.stage == "verification" and candidate.leapfrog_steps == 5 else _pass(work, candidate))
+    result = HMCTuningCandidateSetController(_scope(), _config()).run(observe)
+    payload = candidate_set_result_payload(result)
+    assert result.completion_status == "shared_invalidity"
+    assert check_inventory(payload)["failures"] == []
+    payload["observations"] = (*payload["observations"], payload["observations"][-1])
+    assert "missing_or_duplicated_observation" in check_inventory(payload)["failures"]
+
+
+def test_mode_dispersed_starts_require_chain_bank_preserving_route(design):
+    from bayesfilter.testing.inference_validation.designs import ScenarioSpec
+    from bayesfilter.testing.inference_validation.targets import ValidationTarget
+    from bayesfilter.testing.inference_validation.procedures import initial_starts
+    with pytest.raises(ValueError, match="preserves"):
+        ScenarioSpec("mixture", "ordinary", start="mode_dispersed")
+    starts = initial_starts(ValidationTarget("mixture", jit_compile=False), "mode_dispersed").numpy()
+    assert np.all(starts[:2,0] < -4.) and np.all(starts[2:,0] > 4.)
+
+
 def test_selection_depends_on_tuning_id_and_keeps_scope_explicit(design):
     candidates=[SimpleNamespace(candidate_id=cid,leapfrog_steps=l) for cid,l in (("b",3),("a",5))]
     assert selected_member_ids(design(),candidates)==("b",)
@@ -70,6 +144,18 @@ def test_entire_missing_stopping_cohort_keeps_declared_quantities(design):
     assert "x:mean" in quantities
     assert all(q["arms"]["fixed"]["unavailable"]==3 for q in quantities.values())
     assert not result["comparison_complete"]
+
+
+def test_stopping_coverage_distinguishes_missing_from_uncovered_intervals():
+    # One covered interval, one missed interval, and two unavailable fits.
+    pairs = [{"stopped":{"x:mean":{"available":True,"covered":covered,"error":error}}}
+             for covered,error in ((True,.01),(False,.3))]
+    result = summarize_pairs(pairs,4,declared_names=("x:mean",))
+    arms = result["quantities"]["x:mean"]["arms"]
+    assert arms["stopped"]["covered"] == 1
+    assert arms["stopped"]["available"] == arms["stopped"]["unavailable"] == 2
+    assert arms["stopped"]["conditional_coverage_interval"] != arms["stopped"]["coverage_interval"]
+    assert arms["fixed"]["conditional_coverage_interval"] is None
 
 
 def test_real_simplex_member_and_fixed_comparator(design,tmp_path,monkeypatch):

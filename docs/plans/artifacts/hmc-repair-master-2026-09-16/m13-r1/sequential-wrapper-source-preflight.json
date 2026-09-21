@@ -1,0 +1,20 @@
+{
+  "read_only_source_audit": true,
+  "commit": "9e3fd08e41c1d4cd19664e95d2baf646286a2b88",
+  "source": ".localresources/mcunit-20260921/R/expect_mc.R",
+  "sha256": "bfb4fc98ba0d9969d1ff0ed5968fa6c1bffc477b5a5919ed639b0b65a4917d42",
+  "paper_sections_checked": [
+    "3, Algorithm 3, Theorem 3.1",
+    "Appendix A theorem proof",
+    "Appendix B parameter experiment"
+  ],
+  "operation": "beta=alpha/k; gamma=beta**(1/k); fresh p vector each look; q=d*min(p); reject q<=beta; stop q>gamma+beta; beta/=gamma; sample size multiplied once after look one",
+  "requirements": [
+    "fresh independent p vectors between looks",
+    "each component super-uniform under the null",
+    "dimension fixed and Bonferroni correction exactly once"
+  ],
+  "source_defect": "Only error-message construction refers to act$p.values instead of act$p.value; rejection arithmetic uses the correct field. Do not copy diagnostic typo.",
+  "status": "source dependency obtained and inspected; implementation and size/power evidence pending M16",
+  "plan": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md"
+}

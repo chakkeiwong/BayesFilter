@@ -99,7 +99,8 @@ def test_public_mass_preparation_owns_adequate_standard_budget(
         artifact_hash="bootstrap-hash",
         final_status="passed",
     )
-    operational = SimpleNamespace(operational_metric_update_count=1)
+    operational = SimpleNamespace(operational_metric_update_count=1,
+                                  metric_adaptation_status="metric_updated")
     windowed = SimpleNamespace(
         passed=True,
         final_status="passed",
@@ -108,18 +109,15 @@ def test_public_mass_preparation_owns_adequate_standard_budget(
     observed: dict[str, Any] = {}
 
     monkeypatch.setattr(
-        hmc_kernel_tuning_module,
-        "initialize_hmc_kernel_geometry",
+        "bayesfilter.inference.hmc_geometry.initialize_hmc_kernel_geometry",
         lambda **_kwargs: geometry,
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning_module,
-        "run_hmc_bootstrap_screen",
+        "bayesfilter.inference.hmc_bootstrap.run_hmc_bootstrap_screen",
         lambda **_kwargs: bootstrap,
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning_module,
-        "_bootstrap_preflight_passed",
+        "bayesfilter.inference.hmc_mass_adaptation._bootstrap_preflight_passed",
         lambda _bootstrap: True,
     )
 
@@ -133,13 +131,11 @@ def test_public_mass_preparation_owns_adequate_standard_budget(
         return windowed
 
     monkeypatch.setattr(
-        hmc_kernel_tuning_module,
-        "run_hmc_windowed_mass_stage",
+        "bayesfilter.inference.hmc_mass_adaptation.run_hmc_windowed_mass_stage",
         run_windowed,
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning_module,
-        "build_operational_fixed_mass_hmc_adapter",
+        "bayesfilter.inference.hmc_mass_adaptation.build_operational_fixed_mass_hmc_adapter",
         lambda **_kwargs: {
             "adapted_mass_artifact": object(),
             "adapted_mass_artifact_signature": "mass-hash",

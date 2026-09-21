@@ -5,6 +5,7 @@ search requires a fresh output directory; resume replaces only its checkpoint.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Mapping
@@ -17,6 +18,19 @@ from bayesfilter.inference.hmc_candidate_set_tuning import (
 )
 
 CHECKPOINT_SCHEMA = "bayesfilter.hmc_numerical_tuning_checkpoint.v1"
+
+
+def _json_native_sha256(payload: Mapping[str, Any]) -> str:
+    """Hash a record already normalized by the execution binding's JSON copy.
+
+    These records contain string-key dictionaries, lists and JSON scalars only.
+    Recheck their current contents on every call, without repeating the generic
+    arbitrary-object normalization. General candidate identity hashing must
+    continue to use _sha256.
+    """
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"),
+                         allow_nan=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _persist_once(binding, payload, path):
@@ -49,18 +63,18 @@ def _write(payload: Mapping[str, Any], path: Path, *, replace: bool = False) -> 
 
 def write_numerical_tuning_checkpoint(binding: Any, result: Any, output_dir: str | Path) -> Path:
     root = Path(output_dir)
-    if _sha256(binding._spec) != binding.binding_hash:
+    if _json_native_sha256(binding._spec) != binding.binding_hash:
         raise ValueError("corrupt execution specification")
     _persist_once(binding, {"execution": binding._spec, "binding_hash": binding.binding_hash}, root / "execution_spec.json")
     for digest, evidence in binding._evidence.items():
-        if _sha256(evidence) != digest:
+        if _json_native_sha256(evidence) != digest:
             raise ValueError("corrupt live numerical evidence")
         _persist_once(binding, evidence, root / "numerical_evidence" / (digest + ".json"))
     partial = {}
     for work_id, chunks in binding._partial.items():
         partial[work_id] = []
         for chunk in chunks:
-            digest = _sha256(chunk)
+            digest = _json_native_sha256(chunk)
             _persist_once(binding, chunk, root / "numerical_chunks" / (digest + ".json"))
             partial[work_id].append(digest)
     body = {"schema": CHECKPOINT_SCHEMA, "binding_hash": binding.binding_hash,

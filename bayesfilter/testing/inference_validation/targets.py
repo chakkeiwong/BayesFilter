@@ -70,6 +70,8 @@ class ValidationTarget:
             f"z{i}" for i in range(self.parameter_dim))
 
     def to_model(self, q):
+        if self.target_id == "funnel_noncentered":
+            return tf.concat([q[..., :1], tf.exp(q[..., :1] / 2) * q[..., 1:]], -1)
         if self.spec.support == "positive":
             return tf.exp(q)
         if self.spec.support == "unit_interval":
@@ -111,6 +113,11 @@ class ValidationTarget:
         if kind == "funnel":
             return self._normal(q[..., 0], self._number("scale", 3.)) + tf.reduce_sum(
                 self._normal(q[..., 1:], tf.exp(q[..., :1] / 2)), -1)
+        if kind == "funnel_noncentered":
+            # x_i = exp(v/2) z_i for two children: log |J| = v cancels
+            # the two centered conditional scale terms exactly.
+            return self._normal(q[..., 0], self._number("scale", 3.)) + tf.reduce_sum(
+                self._normal(q[..., 1:], 1.), -1)
         if kind in {"student_t", "cauchy"}:
             df = self._number("df", 5.) if kind == "student_t" else tf.constant(1., tf.float64)
             const = tf.math.lgamma((df+1)/2) - tf.math.lgamma(df/2) - .5*tf.math.log(df*math.pi)

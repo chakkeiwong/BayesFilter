@@ -10,7 +10,7 @@ from typing import Any
 
 from .catalog import get_target
 
-ENGINES = ("mechanics", "invariance", "search", "sbc", "accuracy", "stopping", "power")
+ENGINES = ("mechanics", "invariance", "search", "sbc", "accuracy", "stopping", "power", "acceptance")
 ROUTES = ("frozen", "ordinary", "prepared", "fixed_transport", "reference", "controller", "external")
 CONTROLS = ("baseline", "noop", "wrong_score", "wrong_metric", "omit_jacobian", "ignore_data",
             "identity", "two_cycle", "wrong_energy", "duplicate_stream", "warmup_leak",
@@ -40,8 +40,10 @@ class ScenarioSpec:
         get_target(self.target)
         if self.route not in ROUTES or self.control not in CONTROLS:
             raise ValueError("unknown procedure or control")
-        if self.start not in {"dispersed", "remote", "single_mode", "reference"}:
+        if self.start not in {"dispersed", "remote", "single_mode", "mode_dispersed", "reference"}:
             raise ValueError("unknown start regime")
+        if self.start == "mode_dispersed" and (self.target != "mixture" or self.route not in {"prepared", "fixed_transport"}):
+            raise ValueError("mode_dispersed requires a mixture route that preserves the supplied chain bank")
         digest(self.parameters)  # finite, serializable, stable experiment identity
 
 
@@ -77,6 +79,26 @@ class ValidationDesign:
             raise ValueError("invalid design identity/engine")
         if self.device not in {"gpu", "cpu_reference"} or self.phase not in {"development", "confirmation"}:
             raise ValueError("explicit supported device and phase required")
+        kernel_power = self.options.get("kernel_power", 1)
+        if (type(kernel_power) is not int or not 1 <= kernel_power < 2**31
+                or ("kernel_power" in self.options and self.engine != "invariance")):
+            raise ValueError("kernel_power is a positive int32 count for frozen invariance only")
+        if type(self.options.get("profile_execution", False)) is not bool:
+            raise ValueError("profile_execution must be a boolean")
+        energy = self.options.get("gaussian_energy_test", False)
+        if (type(energy) is not bool or (energy and
+                (self.engine != "invariance" or self.scenario.target != "gaussian"))):
+            raise ValueError("gaussian_energy_test requires frozen Gaussian invariance")
+        selected = self.options.get("invariance_quantities")
+        if selected is not None:
+            width = len(get_target(self.scenario.target).parameters)
+            allowed = {"bounded_radius", *(f"parameter_{i}" for i in range(width))}
+            if width > 1:
+                allowed.add("product")
+            if (self.engine != "invariance" or not isinstance(selected, list) or not selected
+                    or any(not isinstance(q, str) for q in selected)
+                    or len(set(selected)) != len(selected) or not set(selected) <= allowed):
+                raise ValueError("declare distinct available invariance_quantities before execution")
         for name in ("replications", "draws", "null_draws", "rank_draws", "leapfrog_steps",
                      "member_l", "measurement_draws", "posterior_cap", "multiplicity"):
             value = getattr(self, name)
@@ -102,6 +124,22 @@ class ValidationDesign:
             raise ValueError("native_search requires ordinary preparation without a search override")
         if native and self.l_grid!=(3,5,9,13,18,25):
             raise ValueError("native_search records the native broad L grid")
+        expansion = self.options.get("preparation_bound_expansion_steps", 0)
+        if type(expansion) is not int or not 0 <= expansion <= 5 or (expansion and self.scenario.route != "ordinary"):
+            raise ValueError("preparation_bound_expansion_steps requires ordinary preparation and an integer in [0,5]")
+        quantities = self.options.get("global_quantities", [])
+        for key, minimum in (("bootstrap_initialization_rounds", 0), ("preparation_max_restarts", 0),
+                             ("metric_probe_num_results", 1)):
+            if key in self.options and (type(self.options[key]) is not int or self.options[key] < minimum
+                                        or self.scenario.route != "ordinary"):
+                raise ValueError(f"{key} requires ordinary preparation and an integer >= {minimum}")
+        if "metric_evidence_policy" in self.options and (self.scenario.route != "ordinary"
+                or self.options["metric_evidence_policy"] not in ("temporal_information", "finite_window")):
+            raise ValueError("metric_evidence_policy requires an ordinary preparation policy")
+        if (not isinstance(quantities, list) or len(set(quantities)) != len(quantities)
+                or any(q != "left_mode_probability" for q in quantities)
+                or (quantities and self.scenario.target != "mixture")):
+            raise ValueError("global_quantities supports declared mixture left_mode_probability only")
         count_options = {"warmup_chunk_results", "warmup_min_results", "warmup_check_window_results",
                          "warmup_max_results", "retained_chunk_results", "retained_min_results", "retained_max_results"}
         posterior = self.options.get("posterior_settings", {})
@@ -139,17 +177,58 @@ class ValidationDesign:
                 nested = ValidationDesign.from_payload(child)
                 if (nested.scenario.target,nested.scenario.route,nested.device) != (self.scenario.target,self.scenario.route,self.device):
                     raise ValueError("power scenario must match the experiment it repeats")
+        if self.engine == "acceptance":
+            if self.scenario.route in {"frozen", "prepared"}:
+                if self.scenario.target != "gaussian":
+                    raise ValueError("actual-HMC acceptance calibration currently requires the Gaussian target")
+                if self.scenario.control not in {"baseline", "noop"}:
+                    raise ValueError("unsupported actual-HMC acceptance control")
+            elif self.scenario.route != "controller" or self.device != "cpu_reference":
+                raise ValueError("synthetic acceptance calibration requires the CPU diagnostic controller route")
+            if self.scenario.route == "prepared":
+                count = self.options.get("reference_anchors")
+                if type(count) is not int or count < 2:
+                    raise ValueError("reference_anchors must declare at least two independent Gaussian anchors")
+            if self.scenario.route == "frozen" and self.scenario.start != "reference":
+                raise ValueError("frozen acceptance requires declared reference starts")
+            if self.scenario.route == "prepared" and self.scenario.start == "reference":
+                raise ValueError("prepared acceptance reference must not supply tuning starts")
+            if self.scenario.route == "controller":
+                mean = self.options.get("acceptance_mean", float("nan"))
+                concentration = self.options.get("acceptance_concentration", float("nan"))
+                persistence = self.options.get("acceptance_persistence", float("nan"))
+                if not 0 < mean < 1 or not math.isfinite(concentration) or concentration <= 0 or not 0 <= persistence < 1:
+                    raise ValueError("declare finite Beta mean/concentration and persistence in [0,1)")
+            if self.scenario.route in {"controller", "prepared"}:
+                rungs = self.options.get("evidence_rungs", [])
+                if (not rungs or rungs[0] != 1 or any(type(r) is not int or r < 1 for r in rungs)
+                        or sorted(set(rungs)) != list(rungs)):
+                    raise ValueError("declare strictly increasing evidence_rungs from one")
         supported_controls = {
-            "mechanics": {"baseline", "noop", "wrong_score", "wrong_metric", "omit_jacobian"},
+            "mechanics": {"baseline", "noop", "wrong_score", "wrong_metric", "wrong_energy", "omit_jacobian"},
             "invariance": {"baseline", "noop", "wrong_score", "omit_jacobian", "identity", "two_cycle", "wrong_energy", "duplicate_stream"},
             "search": {"baseline", "noop", "drop_candidate", "cross_l_epsilon", "lost_chunk"},
             "accuracy": {"baseline", "noop", "ignore_data", "omit_jacobian", "warmup_leak", "lost_chunk", "duplicate_stream"},
             "stopping": {"baseline", "noop", "warmup_leak", "lost_chunk"},
             "sbc": {"baseline", "noop", "ignore_data", "omit_jacobian"},
             "power": {"baseline"},
+            "acceptance": {"baseline", "noop"},
         }
         if self.scenario.control not in supported_controls[self.engine]:
             raise ValueError("control is not implemented by this experiment engine")
+        sequential = self.options.get("sequential")
+        if "sequential" in self.options:
+            if (self.engine != "invariance" or not isinstance(sequential, dict)
+                    or set(sequential) != {"max_looks", "sample_multiplier"}
+                    or selected is None):
+                raise ValueError("sequential invariance requires explicit quantities, max_looks and sample_multiplier")
+            looks, multiplier = sequential["max_looks"], sequential["sample_multiplier"]
+            if (type(looks) is not int or looks < 1 or type(multiplier) not in (int, float)
+                    or not math.isfinite(multiplier) or multiplier < 1):
+                raise ValueError("invalid sequential count or sample multiplier")
+            family = max(self.multiplicity, 2*len(selected) + int(energy))
+            if 1/(self.null_draws+1) > self.alpha/(looks*family):
+                raise ValueError("insufficient null resolution for the first sequential rejection threshold")
         if self.scenario.control == "omit_jacobian" and get_target(self.scenario.target).support not in {"positive", "unit_interval", "simplex3"}:
             raise ValueError("omitted Jacobian requires constrained coordinates")
         if self.scenario.control == "ignore_data" and not get_target(self.scenario.target).generative:
@@ -158,6 +237,8 @@ class ValidationDesign:
             raise ValueError("two-cycle control requires the symmetric Gaussian law")
         if self.scenario.control == "wrong_metric" and self.scenario.target != "gaussian":
             raise ValueError("metric oracle currently uses the Gaussian target")
+        if self.scenario.control == "wrong_energy" and self.engine == "mechanics" and self.scenario.target != "gaussian":
+            raise ValueError("Metropolis energy oracle currently uses the Gaussian target")
         if self.scenario.route == "reference" and self.engine == "sbc" and self.scenario.control not in {"baseline", "noop", "ignore_data"}:
             raise ValueError("unsupported reference SBC control")
         if self.scenario.route == "reference" and self.engine == "stopping":
@@ -170,7 +251,7 @@ class ValidationDesign:
             raise ValueError("external observations support reference accuracy only")
         if self.engine in {"search", "accuracy", "stopping"} and self.scenario.route not in {"ordinary", "prepared", "fixed_transport", "controller", "external"} and not (self.engine=="stopping" and self.scenario.route=="reference"):
             raise ValueError("pipeline experiment requires an explicit numerical/contract route")
-        if self.scenario.route == "controller" and self.engine != "search":
+        if self.scenario.route == "controller" and self.engine not in {"search", "acceptance"}:
             raise ValueError("controller double cannot establish posterior/numerical coverage")
         if self.engine in {"sbc", "invariance", "power"} and 1 / (self.null_draws + 1) > self.alpha / self.multiplicity:
             raise ValueError("Monte Carlo null resolution exceeds adjusted test threshold")
@@ -179,7 +260,8 @@ class ValidationDesign:
         # Primitive null resolution includes every declared test quantity.
         width = len(get_target(self.scenario.target).parameters)
         quantities = width + 1 + int(width > 1) + int(self.engine == "sbc")
-        required_family = 2 * quantities if self.engine == "invariance" else quantities
+        required_family = (2 * (len(selected) if selected is not None else quantities) + int(energy)
+                           if self.engine == "invariance" else quantities)
         if self.engine in {"sbc", "invariance"} and 1 / (self.null_draws + 1) > self.alpha / max(self.multiplicity, required_family):
             raise ValueError("null resolution insufficient for all declared quantities")
 

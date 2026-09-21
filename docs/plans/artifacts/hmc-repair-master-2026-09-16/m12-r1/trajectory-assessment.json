@@ -1,0 +1,70 @@
+{
+  "created_utc": "2026-09-20T12:03:57.167403+00:00",
+  "diagnostic_only": true,
+  "baseline": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m11-r1/regression-bounded-boundary-fresh-2-gpu-r1/preparation/preparation_progress.json",
+  "completed_windows_equal_except_runtime": true,
+  "retained_health_finite": true,
+  "transitions": [
+    {
+      "transition": 30,
+      "epsilon": 0.7976724541524423,
+      "first_nonfinite": null,
+      "endpoint_equal_including_nan": true,
+      "path": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m12-r1/fresh-2-trajectory-replay-gpu-r2/trajectory_diagnostics/window-03/transition-0030/trajectory.json",
+      "sha256": "ed0b094f0092ec0408d3c04896a223e0d6c5f79befe58d2f6fe73ba0ab2a830c"
+    },
+    {
+      "transition": 31,
+      "epsilon": 1.2237080256119226,
+      "first_nonfinite": {
+        "field": "target",
+        "leapfrog_index": 18
+      },
+      "endpoint_equal_including_nan": true,
+      "path": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m12-r1/fresh-2-trajectory-replay-gpu-r2/trajectory_diagnostics/window-03/transition-0031/trajectory.json",
+      "sha256": "dfab70727fe54f52746593bfd08c5fb9b8912fb7823495c27f2f65bc1b0e766a",
+      "theta_at_first_invalid_value": [
+        -2.7391350600201783e+49,
+        -2.380989515451276e+50,
+        8.011138522125883e+48,
+        -1.7577784437738123e+50,
+        -1.8591796921186762e+50,
+        -4.941752224375142e+53
+      ],
+      "likelihood_scale_exponent": 9.883504448750284e+53,
+      "log_fp64_max": 709.782712893384,
+      "exponential_overflow": true,
+      "accepted": false,
+      "previous_target": -2.747719287015211e+55
+    },
+    {
+      "transition": 153,
+      "epsilon": 1.2237080256119226,
+      "first_nonfinite": {
+        "field": "target",
+        "leapfrog_index": 20
+      },
+      "endpoint_equal_including_nan": true,
+      "path": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m12-r1/fresh-2-trajectory-replay-gpu-r2/trajectory_diagnostics/window-03/transition-0153/trajectory.json",
+      "sha256": "9af495a8b70b2754a5d929fcbacfe29cc71682098c666756ec59cc21b5fe7d22",
+      "theta_at_first_invalid_value": [
+        -3.1074144543281756e+26,
+        -2.701115890160827e+27,
+        9.088243950663733e+25,
+        -1.9941134788910308e+27,
+        -2.1091482244911365e+27,
+        -5.606175655908915e+30
+      ],
+      "likelihood_scale_exponent": 1.121235131181783e+31,
+      "log_fp64_max": 709.782712893384,
+      "exponential_overflow": true,
+      "accepted": false,
+      "previous_target": -3.117152839058793e+32
+    }
+  ],
+  "diagnosis": "rejected proposal trajectories overflow exp(-2 log_sigma); no retained invalidity observed",
+  "tfp_source": "installed hmc.py one_step and SimpleLeapfrogIntegrator._one_step; hashes in instrumentation.json",
+  "next_hypothesis": "longer fixed-step probes before a metric handoff; no invalid window recovery",
+  "default_promoted": false,
+  "statistical_ranking_supported": false
+}

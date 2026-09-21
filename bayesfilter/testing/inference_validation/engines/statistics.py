@@ -65,6 +65,30 @@ def two_sample_test(left,right,*,seed,permutations,alpha,multiplicity=1):
             "accuracy_established":False,"independence_requirement":"independent sample rows; no consecutive MCMC draws"}
 
 
+def gaussian_energy_test(endpoints, *, scale, alpha, multiplicity=1):
+    """Exact iid Gaussian null for independent stationary-anchor endpoints.
+
+    If n independent rows each have d iid N(0, scale**2) coordinates, their
+    total squared standardized norm is chi-square(nd). This test is invalid
+    for consecutive MCMC draws or anchors taken from a shared fitted chain.
+    """
+    q = np.asarray(endpoints)
+    if (q.ndim != 2 or min(q.shape) < 1 or not np.isfinite(q).all()
+            or not math.isfinite(scale) or scale <= 0):
+        raise ValueError("independent finite Gaussian endpoints and positive scale required")
+    statistic = float(np.sum((q / scale)**2))
+    if not math.isfinite(statistic):
+        raise ValueError("nonfinite Gaussian energy statistic")
+    degrees = q.size
+    p = float(min(1., 2*min(stats.chi2.cdf(statistic, degrees), stats.chi2.sf(statistic, degrees))))
+    return {"kind": "independent_gaussian_energy", "statistic": statistic,
+            "degrees_of_freedom": degrees, "p_value": p, "threshold": alpha/multiplicity,
+            "finding": "discrepancy_detected" if p <= alpha/multiplicity else "no_discrepancy_detected",
+            "null": "sum of squared standardized iid Gaussian endpoint coordinates",
+            "independence_requirement": "one endpoint from each independently anchored trajectory",
+            "accuracy_established": False}
+
+
 def accuracy_assessment(draws, reference, *, tolerance, finite_variance=True, reference_iid=True):
     """Bounded-function posterior discrepancies and replicate-chain uncertainty.
 

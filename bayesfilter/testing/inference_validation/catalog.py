@@ -51,6 +51,7 @@ TARGETS = {
         TargetSpec("rotated_gaussian", "quadratic", 2, "R2", ("x", "y"), _EXACT),
         TargetSpec("banana", "nonlinear_transform", 2, "R2", ("x", "y"), _DRAW),
         TargetSpec("funnel", "hierarchical", 3, "R3", ("scale", "x", "y"), _DRAW),
+        TargetSpec("funnel_noncentered", "hierarchical", 3, "R3", ("scale", "x", "y"), _DRAW),
         TargetSpec("student_t", "heavy_tail", 2, "R2", ("x", "y"), _EXACT),
         TargetSpec("cauchy", "heavy_tail", 2, "R2", ("x", "y"),
                    ReferenceSpec("analytic_and_iid", ("density", "score", "draws", "cdf"),

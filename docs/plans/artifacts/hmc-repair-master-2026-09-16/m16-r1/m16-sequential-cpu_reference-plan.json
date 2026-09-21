@@ -1,0 +1,141 @@
+{
+  "aggregate_groups": [],
+  "budget_by_device": {
+    "cpu_reference": 1800,
+    "gpu": 0
+  },
+  "jobs": [
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "cpu_reference",
+        "engine": "power",
+        "family": "quadratic",
+        "phase": "development",
+        "route": "frozen",
+        "start": "dispersed",
+        "target": "gaussian",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1800,
+        "design_id": "m16-sequential-cpu_reference",
+        "device": "cpu_reference",
+        "draws": 128,
+        "engine": "power",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m16-design-2026-09-21.md",
+        "options": {
+          "calibration_design": {
+            "accuracy_tolerance": 0.25,
+            "alpha": 0.05,
+            "budget_seconds": 1800,
+            "design_id": "m16-sequential-cpu_reference-kernel",
+            "device": "cpu_reference",
+            "draws": 128,
+            "engine": "invariance",
+            "l_grid": [
+              3,
+              5,
+              9,
+              13,
+              18,
+              25
+            ],
+            "leapfrog_steps": 5,
+            "mcse_tolerance": 0.1,
+            "measurement_draws": 128,
+            "member_l": 3,
+            "multiplicity": 1,
+            "null_draws": 1999,
+            "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m16-design-2026-09-21.md",
+            "options": {
+              "gaussian_energy_test": true,
+              "invariance_quantities": [
+                "bounded_radius"
+              ],
+              "kernel_power": 32,
+              "plan_file": "docs/plans/bayesfilter-hmc-repair-m16-design-2026-09-21.md",
+              "sequential": {
+                "max_looks": 3,
+                "sample_multiplier": 2
+              }
+            },
+            "phase": "development",
+            "posterior_cap": 1024,
+            "purpose": "M16 bounded operating characteristics; all failures and uncertainty retained",
+            "rank_draws": 7,
+            "replications": 16384,
+            "scenario": {
+              "control": "baseline",
+              "parameters": {},
+              "route": "frozen",
+              "start": "dispersed",
+              "target": "gaussian"
+            },
+            "seed": 569239386,
+            "step_size": 0.3
+          },
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m16-design-2026-09-21.md",
+          "power_controls": [
+            "baseline",
+            "noop",
+            "wrong_energy"
+          ]
+        },
+        "phase": "development",
+        "posterior_cap": 1024,
+        "purpose": "M16 bounded operating characteristics; all failures and uncertainty retained",
+        "rank_draws": 7,
+        "replications": 128,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {},
+          "route": "frozen",
+          "start": "dispersed",
+          "target": "gaussian"
+        },
+        "seed": 418664922,
+        "step_size": 0.4
+      },
+      "identity": "cf56f71d903596758daa77c4c40274df50b7ece5432d1f777cc06520edc22258",
+      "reason": null
+    }
+  ],
+  "maximum_worker_seconds": 1800,
+  "no_numerical_execution": true,
+  "profile": "master",
+  "required_coverage": [
+    {
+      "control": "baseline",
+      "design_id": "m16-sequential-cpu_reference",
+      "device": "cpu_reference",
+      "engine": "power",
+      "family": "quadratic",
+      "phase": "development",
+      "route": "frozen",
+      "start": "dispersed",
+      "target": "gaussian",
+      "transport": "none"
+    }
+  ],
+  "schema": "bayesfilter.inference_validation_plan.v1",
+  "suite_id": "m16-sequential-cpu_reference",
+  "suite_identity": "6ba220f553258157af15476a0a3438e374a62bc925fcbe3926675300336d2966"
+}

@@ -1,5 +1,8 @@
 # Inference validation continuation: prerequisites and statistical evidence
 
+Active continuation: [HMC repair master program](bayesfilter-hmc-repair-master-program-2026-09-16.md).
+The records below preserve the preceding campaign and its historical budgets.
+
 Date: 2026-09-16. Status: active continuation of the
 [infrastructure plan](bayesfilter-inference-validation-infrastructure-plan-2026-09-15.md).
 The [first execution result](bayesfilter-inference-validation-infrastructure-execution-result-2026-09-16.md)

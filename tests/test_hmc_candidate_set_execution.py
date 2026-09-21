@@ -360,6 +360,13 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
     assert bound["coordinate_signature"] == final.transform.signature
     assert bound["metric_signature"] == final.momentum_metric.signature
     assert binding.scope.epsilon_domain[1] == bound["upper"]
+    expanded = bind_hmc_candidate_set_execution_from_preparation(**kwargs, preparation_bound_expansion_steps=1)
+    assert expanded.scope.epsilon_domain[1] == pytest.approx(bound["upper"] * kwargs["repair_factor"])
+    assert expanded.scope.search_id != binding.scope.search_id
+    assert expanded.scope.mass_signature == binding.scope.mass_signature
+    assert expanded.scope.start_bank_signature == binding.scope.start_bank_signature
+    assert not expanded._evidence
+    assert expanded._spec["preparation"]["search_domain_policy"]["expansion_steps"] == 1
     epsilons = tuple(bound["upper"] * factor for factor in (.6, .8, 1.))
     result = run_typed_hmc_candidate_set(binding.typed_adapter,
         HMCControllerConfig(primary_l_grid=(2,3), epsilon_by_l=((2,epsilons),(3,epsilons)),

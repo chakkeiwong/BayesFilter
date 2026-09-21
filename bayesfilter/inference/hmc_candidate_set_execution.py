@@ -174,7 +174,8 @@ class HMCCandidateExecutionConfig:
 def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping[str, str]:
     # Include numerical, coordinate, evidence and replay implementations. The
     # consumer must include data/preparation dependencies beyond its adapter file.
-    names = ("hmc", "hmc_budget_ladder", "hmc_kernel_tuning", "hmc_artifact_identity",
+    names = ("hmc", "hmc_status", "hmc_budget_ladder", "hmc_kernel_tuning", "hmc_geometry", "hmc_artifact_identity",
+             "hmc_bootstrap", "hmc_bootstrap_initialization", "hmc_bootstrap_checkpoint", "hmc_mass_adaptation", "hmc_configuration", "hmc_preparation_common", "hmc_preparation_recovery",
              "mass_matrix", "hmc_tuning", "fixed_l_finite_bracket", "hmc_coordinates",
              "hmc_warmup", "hmc_tuning_state", "hmc_kernel_selection", "hmc_diagnostics",
              "hmc_candidate_set_execution", "hmc_candidate_set_retained",
@@ -219,7 +220,7 @@ def _rebuild_geometry(adapter: Any, layers: Sequence[Mapping[str, Any]], target_
             mass = PrecomputedMassArtifact.from_payload(
                 layer["artifact"], expected_adapter_signature=stable_adapter_signature(adapter))
             if kind == "bootstrap_mass":
-                from bayesfilter.inference.hmc_kernel_tuning import _build_bootstrap_fixed_mass_adapter
+                from bayesfilter.inference.hmc_bootstrap import _build_bootstrap_fixed_mass_adapter
                 adapter = _build_bootstrap_fixed_mass_adapter(
                     adapter=adapter, mass_artifact=mass,
                     mass_signature=mass_artifact_signature(mass), target_scope=target_scope)
@@ -756,11 +757,11 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
         target_lineage: Mapping[str, Any], config: HMCCandidateExecutionConfig,
         source_paths: Sequence[str | Path], scope_id: str, search_id: str,
         epsilon_domain: tuple[float, float], repair_factor: float,
-        max_repairs_per_family: int) -> HMCCandidateExecutionBinding:
+        max_repairs_per_family: int, preparation_bound_expansion_steps: int = 0) -> HMCCandidateExecutionBinding:
     """Revalidate an operational windowed handoff and preserve both affine layers."""
-    from bayesfilter.inference.hmc_kernel_tuning import (
-        build_operational_fixed_mass_hmc_adapter, _fixed_mass_step_upper_bound,
-    )
+    from bayesfilter.inference.hmc_mass_adaptation import build_operational_fixed_mass_hmc_adapter
+    from bayesfilter.inference.hmc_configuration import _fixed_mass_step_upper_bound
+    from bayesfilter.inference.hmc_preparation import expanded_preparation_bound
 
     _runtime_policy()
     geometry, windowed = preparation["geometry"], preparation["windowed_stage"]
@@ -774,7 +775,14 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
     upper = _fixed_mass_step_upper_bound(windowed)
     if upper is None:
         raise ValueError("operational preparation requires a final-metric epsilon bound")
-    domain = (epsilon_domain[0], min(epsilon_domain[1], upper))
+    expanded = expanded_preparation_bound(upper, factor=repair_factor, steps=preparation_bound_expansion_steps)
+    domain = (epsilon_domain[0], min(epsilon_domain[1], expanded))
+    exploration = {"schema": "bayesfilter.hmc_preparation_search_domain.v1",
+        "preparation_upper": upper, "expansion_steps": preparation_bound_expansion_steps,
+        "factor": repair_factor, "exploration_upper": expanded, "resolved_domain": domain,
+        "role": "finite_exploration_cap; each pair requires measurement and fresh verification"}
+    if preparation_bound_expansion_steps:
+        search_id = _sha256({"parent_search_id": search_id, "domain_policy": exploration})[:20]
     final = windowed.operational_warmup_result.final_kernel_state
     binding = _issue_binding(adapter=adapter,
         layers=[{"kind": "bootstrap_mass", "artifact": geometry.mass_artifact.to_payload(include_arrays=True)},
@@ -783,7 +791,8 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
         target_lineage=target_lineage,
         preparation={"source": "operational_windowed_handoff", "geometry_hash": geometry.artifact_hash,
                      "start_lineage": checked["start_lineage"], "final_adapter_signature": checked["final_adapter_signature"],
-                     "epsilon_proposal_bound": {"upper": upper, "role": "proposal_safety_only",
+                     "search_domain_policy": exploration,
+                     "epsilon_proposal_bound": {"upper": upper, "role": "preparation_probe_bound_only",
                          "coordinate_signature": final.transform.signature,
                          "metric_signature": final.momentum_metric.signature}},
         config=config, source_paths=source_paths, scope_id=scope_id, search_id=search_id,

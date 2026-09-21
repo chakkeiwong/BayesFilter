@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from bayesfilter.inference.hmc_preparation_recovery import validate_preparation_max_restarts
+
 import time
 import math
 from collections.abc import Mapping
@@ -481,6 +483,22 @@ class FixedMassStepTuningResult:
         }
 
 
+def _validate_metric_evidence_policy(value: Any, *, mass_policy: str) -> str:
+    if value not in ("temporal_information", "finite_window"):
+        raise ValueError("metric_evidence_policy must be temporal_information or finite_window")
+    if value != "temporal_information" and mass_policy != "windowed_adaptive":
+        raise ValueError("finite_window metric evidence requires windowed_adaptive mass")
+    return value
+
+
+def _validate_metric_probe_num_results(value: Any, *, mass_policy: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError("metric_probe_num_results must be a positive integer")
+    if value != 1 and mass_policy != "windowed_adaptive":
+        raise ValueError("longer metric probes require windowed adaptation")
+    return value
+
+
 @dataclass(frozen=True)
 class WindowedMassAdaptationConfig:
     """Non-default warmup-window semantics for mass adaptation diagnostics."""
@@ -498,6 +516,9 @@ class WindowedMassAdaptationConfig:
     step_size_ceiling: float = 10.0
     step_adaptation_rate: float = 0.05
     mass_policy: str = "windowed_adaptive"
+    metric_evidence_policy: str = "temporal_information"
+    metric_probe_num_results: int = 1
+    preparation_max_restarts: int = 0
 
     def __post_init__(self) -> None:
         for name in (
@@ -568,6 +589,12 @@ class WindowedMassAdaptationConfig:
         object.__setattr__(self, "step_size_ceiling", step_ceiling)
         object.__setattr__(self, "step_adaptation_rate", step_rate)
         object.__setattr__(self, "mass_policy", mass_policy)
+        object.__setattr__(self, "metric_evidence_policy", _validate_metric_evidence_policy(
+            self.metric_evidence_policy, mass_policy=mass_policy))
+        object.__setattr__(self, "metric_probe_num_results", _validate_metric_probe_num_results(
+            self.metric_probe_num_results, mass_policy=mass_policy))
+        object.__setattr__(self, "preparation_max_restarts", validate_preparation_max_restarts(
+            self.preparation_max_restarts, mass_policy=mass_policy))
 
     def payload(self) -> Mapping[str, Any]:
         return {
@@ -584,6 +611,9 @@ class WindowedMassAdaptationConfig:
             "step_size_ceiling": self.step_size_ceiling,
             "step_adaptation_rate": self.step_adaptation_rate,
             "mass_policy": self.mass_policy,
+            "metric_evidence_policy": self.metric_evidence_policy,
+            "metric_probe_num_results": self.metric_probe_num_results,
+            "preparation_max_restarts": self.preparation_max_restarts,
         }
 
 

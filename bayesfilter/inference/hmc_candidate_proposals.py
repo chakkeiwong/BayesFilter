@@ -13,6 +13,35 @@ class DirectionalEpsilonEvidence:
     candidate_id: str
 
 
+@dataclass(frozen=True)
+class RejectedEpsilonBoundary:
+    """A numerical rejection, never directional acceptance evidence."""
+
+    epsilon: float
+    candidate_id: str
+    parent_candidate_id: str
+
+
+def rejected_boundary_interiors(evidence, rejected, visited):
+    """Explore toward each valid parent's nearest rejected child.
+
+    The rejection marks a tested endpoint only; it asserts neither low
+    acceptance nor monotonicity of the interval. Every proposal needs fresh
+    measurement and verification.
+    """
+    for parent in evidence:
+        higher = parent.decision == "repair_step_higher"
+        children = [row for row in rejected if row.parent_candidate_id == parent.candidate_id
+                    and (row.epsilon > parent.epsilon if higher else row.epsilon < parent.epsilon)]
+        if not children:
+            continue
+        endpoint = min(children, key=lambda row: abs(math.log(row.epsilon / parent.epsilon)))
+        proposal = unvisited_interior(min(parent.epsilon, endpoint.epsilon),
+                                      max(parent.epsilon, endpoint.epsilon), visited)
+        if proposal is not None:
+            yield proposal, parent.candidate_id, endpoint.candidate_id
+
+
 def unvisited_interior(low: float, high: float, visited: Iterable[float]) -> float | None:
     """Bisect the largest unvisited log interval, breaking ties by lower bound."""
     points = sorted({low, high, *(value for value in visited if low < value < high)})

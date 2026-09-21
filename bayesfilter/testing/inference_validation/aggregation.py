@@ -53,10 +53,17 @@ def aggregate_groups(root):
     for group in groups:
         records=[]
         workers=[]
+        known_unstarted = 0
+        missing_from_started = 0
         for name in group["design_ids"]:
             job=index["jobs"].get(name,{"status":"not_run"})
             workers.append({"design_id":name,"status":job["status"]})
             if job["status"]!="complete":
+                count = jobs[name]["design"]["replications"]
+                if job["status"] in {"not_run", "unfunded"} and not job.get("attempts"):
+                    known_unstarted += count
+                else:
+                    missing_from_started += count
                 continue
             result_path=Path(job["result"])
             if file_hash(result_path)!=job["result_sha256"]:
@@ -72,9 +79,13 @@ def aggregate_groups(root):
                     or [r["dataset_id"] for r in rows]!=list(range(len(rows)))):
                 raise ValueError("SBC shard has duplicated, missing or reordered dataset identities")
             records.extend({**r,"shard_id":name} for r in rows)
+            known_unstarted += jobs[name]["design"]["replications"] - len(rows)
         base=ValidationDesign.from_payload(jobs[group["design_ids"][0]]["design"])
         design=replace(base,design_id=group["group_id"],replications=group["replications"])
-        result=summarize_datasets(design,records)
+        result=summarize_datasets(design,records,
+            unstarted_datasets=known_unstarted if missing_from_started == 0 else None)
+        result.update(known_unstarted_datasets=known_unstarted,
+                      missing_records_from_incomplete_shards=missing_from_started)
         result.update(group_id=group["group_id"],workers=workers,source_identity=index["source"]["identity"],
                       aggregation="predeclared independent dataset shards; no cross-version or retry pooling")
         write_json(root/(group["group_id"]+"-aggregate.json"),result)

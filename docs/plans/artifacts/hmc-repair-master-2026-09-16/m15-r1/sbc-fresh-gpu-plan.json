@@ -1,0 +1,950 @@
+{
+  "aggregate_groups": [
+    {
+      "design_ids": [
+        "m15-sbc-fresh-gpu-normal_conjugate-000",
+        "m15-sbc-fresh-gpu-normal_conjugate-001",
+        "m15-sbc-fresh-gpu-normal_conjugate-002",
+        "m15-sbc-fresh-gpu-normal_conjugate-003"
+      ],
+      "group_id": "m15-sbc-fresh-gpu-normal_conjugate",
+      "replications": 4
+    },
+    {
+      "design_ids": [
+        "m15-sbc-fresh-gpu-beta_binomial-000",
+        "m15-sbc-fresh-gpu-beta_binomial-001",
+        "m15-sbc-fresh-gpu-beta_binomial-002",
+        "m15-sbc-fresh-gpu-beta_binomial-003",
+        "m15-sbc-fresh-gpu-beta_binomial-004",
+        "m15-sbc-fresh-gpu-beta_binomial-005"
+      ],
+      "group_id": "m15-sbc-fresh-gpu-beta_binomial",
+      "replications": 6
+    }
+  ],
+  "budget_by_device": {
+    "cpu_reference": 0,
+    "gpu": 12000
+  },
+  "jobs": [
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "normal_conjugate",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-normal_conjugate-000",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "n": 6,
+            "sigma": 1.0,
+            "tau": 2.0
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "normal_conjugate"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "5a0978a6c24be554246b46d30706f849c198c80a55e75d51d8c9388b6fa997d6",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "normal_conjugate",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-normal_conjugate-001",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "n": 6,
+            "sigma": 1.0,
+            "tau": 2.0
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "normal_conjugate"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "16e52a6ae88df7b74a87ebdf430510487f1c166a2803dadcb08b9e4a3f2331dc",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "normal_conjugate",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-normal_conjugate-002",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "n": 6,
+            "sigma": 1.0,
+            "tau": 2.0
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "normal_conjugate"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "e2d3147e26ab8ff3388d5a430e4ebf5db587af5a5090472e7f5308a357af722f",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "normal_conjugate",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-normal_conjugate-003",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "n": 6,
+            "sigma": 1.0,
+            "tau": 2.0
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "normal_conjugate"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "4e8bb807283533416ce79e5097ed21c8a52d574e486f62fbfc96e56b4d743332",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "beta_binomial",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-beta_binomial-000",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "alpha": 2.0,
+            "beta": 3.0,
+            "n": 12
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "beta_binomial"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "25e62264ef5b547abd1e888ceaafaeaa5fa57edf3b39cfd83f3545b37b08afba",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "beta_binomial",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-beta_binomial-001",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "alpha": 2.0,
+            "beta": 3.0,
+            "n": 12
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "beta_binomial"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "e252ea45857489ded64c4db55daaa5e144afea5b386731999e856a84a003cdd2",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "beta_binomial",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-beta_binomial-002",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "alpha": 2.0,
+            "beta": 3.0,
+            "n": 12
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "beta_binomial"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "3ae4558912610aeeac84d779f78b32466c35017bc9f5219737a7900f26a4e7bd",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "beta_binomial",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-beta_binomial-003",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "alpha": 2.0,
+            "beta": 3.0,
+            "n": 12
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "beta_binomial"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "b9ce47ec16666f349300cf0f4be5c4b758a35efac3db3c85df33b70baf898c0a",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "beta_binomial",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-beta_binomial-004",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "alpha": 2.0,
+            "beta": 3.0,
+            "n": 12
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "beta_binomial"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "b5b0889946e5344469b901826ec2af650ddd6ceb522237630cf25ea7b17bcfdf",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "beta_binomial",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1200,
+        "design_id": "m15-sbc-fresh-gpu-beta_binomial-005",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "sbc",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+        "options": {
+          "bootstrap_initialization_rounds": 20,
+          "member_rule": "first_verified",
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "native_search": true,
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m15-design-2026-09-21.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          },
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard"
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "whole-fit SBC on fresh independent datasets; all missingness retained",
+        "rank_draws": 3,
+        "replications": 1,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {
+            "alpha": 2.0,
+            "beta": 3.0,
+            "n": 12
+          },
+          "route": "ordinary",
+          "start": "dispersed",
+          "target": "beta_binomial"
+        },
+        "seed": 2026092192,
+        "step_size": 0.4
+      },
+      "identity": "01a26f3a89602108e617bcf5cffa3196bbc93d44e4e43b9e10f4db4672da2311",
+      "reason": null
+    }
+  ],
+  "maximum_worker_seconds": 12000,
+  "no_numerical_execution": true,
+  "profile": "master",
+  "required_coverage": [
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-normal_conjugate-000",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "normal_conjugate",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-normal_conjugate-001",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "normal_conjugate",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-normal_conjugate-002",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "normal_conjugate",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-normal_conjugate-003",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "normal_conjugate",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-beta_binomial-000",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "beta_binomial",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-beta_binomial-001",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "beta_binomial",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-beta_binomial-002",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "beta_binomial",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-beta_binomial-003",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "beta_binomial",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-beta_binomial-004",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "beta_binomial",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "design_id": "m15-sbc-fresh-gpu-beta_binomial-005",
+      "device": "gpu",
+      "engine": "sbc",
+      "family": "conjugate",
+      "phase": "development",
+      "route": "ordinary",
+      "start": "dispersed",
+      "target": "beta_binomial",
+      "transport": "none"
+    }
+  ],
+  "schema": "bayesfilter.inference_validation_plan.v1",
+  "suite_id": "sbc-fresh-gpu",
+  "suite_identity": "49e1796c92e40f0ac0ff5fec5f1f465373ec7547939e93d993c2f855baea8467"
+}

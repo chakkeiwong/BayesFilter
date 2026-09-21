@@ -24,6 +24,7 @@ from bayesfilter.inference.batched_value_score import (
     reviewed_value_score_target_fn,
 )
 from bayesfilter.inference.posterior_adapter import value_score_capability
+from bayesfilter.inference.hmc_status import cache_hmc_target_status, cached_target_status
 
 
 @dataclass(frozen=True)
@@ -551,6 +552,8 @@ def build_fixed_transport_one_step_transition(
         num_leapfrog_steps=leapfrog,
         state_gradients_are_stopped=True,
     )
+    if capture_health:
+        kernel = cache_hmc_target_status(kernel, adapter.target_status_telemetry)
 
     @tf.function(
         input_signature=(
@@ -587,8 +590,8 @@ def build_fixed_transport_one_step_transition(
                        next_results.accepted_results.grads_target_log_prob[0])
             healthy = tf.reduce_all(tf.stack([
                 tf.reduce_all(tf.math.is_finite(x)) for x in numeric]))
-            for position in (state, next_state, next_results.proposed_state):
-                status = adapter.target_status_telemetry(position)
+            for status in (cached_target_status(results), cached_target_status(next_results),
+                           cached_target_status(next_results, proposed=True)):
                 healthy &= (tf.reduce_all(status["status_code"] == 0)
                             & tf.reduce_all(status["valid_pre_regularized_score"])
                             & tf.reduce_all(status["floor_count_value"] >= 0))

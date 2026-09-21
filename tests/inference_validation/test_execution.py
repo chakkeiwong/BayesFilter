@@ -54,3 +54,82 @@ def test_old_saved_empty_posteriors_do_not_count_as_complete_assessment():
     from bayesfilter.testing.inference_validation.reporting import assessment_complete
     assert not assessment_complete({"finding":"pipeline_assessed", "planned":1,
         "replications":[{"members":[{"assessment":{"finding":"unavailable"}}]}]})
+
+
+@pytest.mark.parametrize("explicit_category_requirement", [False, True])
+def test_planned_cells_do_not_borrow_completion_from_the_same_category(
+        design, tmp_path, monkeypatch, explicit_category_requirement):
+    from bayesfilter.testing.inference_validation import execution
+    from bayesfilter.testing.inference_validation.storage import write_json, file_hash
+    first = design(step_size=.3)
+    second = replace(first, design_id="second-epsilon", step_size=.6)
+    suite = dict(schema="bayesfilter.inference_validation_suite.v1", suite_id="coverage",
+                 profile="fast", profiles={"fast": ["mechanics"]},
+                 designs=[first.payload(), second.payload()])
+    if explicit_category_requirement:
+        suite["required_coverage"] = [first.coverage_key()]
+    monkeypatch.setattr(execution, "source_state", lambda: {"identity": "fixture"})
+    index = {"source": execution.source_state(), "plan": execution.plan_suite(suite), "jobs": {}}
+
+    def complete(d):
+        result = write_json(tmp_path/d.design_id/"result.json", {
+            "design_identity": d.identity, "assessment": {"finding": "mechanics_passed"}})
+        index["jobs"][d.design_id] = {"status": "complete", "result": str(result),
+                                      "result_sha256": file_hash(result), "attempts": []}
+        write_json(tmp_path/"run_index.json", index)
+        return result
+
+    complete(first)
+    partial = report(tmp_path)
+    assert partial["rows"][1]["execution_status"] == "not_run"
+    assert partial["all_required_executed"] is explicit_category_requirement
+    assert partial["all_required_assessed"] is explicit_category_requirement
+    second_result = complete(second)
+    assert report(tmp_path)["all_required_assessed"]
+    second_result.write_text("{}")
+    corrupt = report(tmp_path)
+    assert corrupt["rows"][1]["execution_status"] == "invalid_artifact"
+    assert corrupt["all_required_executed"] is explicit_category_requirement
+    assert corrupt["all_required_assessed"] is explicit_category_requirement
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_opt_in_host_profile_survives_success_and_failure(design, tmp_path, monkeypatch, fail):
+    import pstats
+    from bayesfilter.testing.inference_validation import execution
+    from bayesfilter.testing.inference_validation.engines import mechanics
+    from bayesfilter.testing.inference_validation.storage import write_json
+    d = design(options={"profile_execution": True})
+    path = write_json(tmp_path/"design.json", d.payload())
+    monkeypatch.setattr(execution, "configure_worker", lambda _: {"device_scope": "cpu_reference"})
+    monkeypatch.setattr(execution, "source_state", lambda: {"identity": "fixture"})
+    def run(*args):
+        if fail:
+            raise RuntimeError("deliberate engine failure")
+        return {"finding": "mechanics_passed"}
+    monkeypatch.setattr(mechanics, "run", run)
+    assert execution.worker(path, tmp_path, 10.) == int(fail)
+    profile = pstats.Stats(str(tmp_path/"attempt-001-host.prof"))
+    assert profile.total_calls > 0
+    if fail:
+        assert read_json(tmp_path/"attempt-001-failure.json")["reason"] == "deliberate engine failure"
+
+
+def test_profile_write_failure_preserves_the_original_engine_failure(design, tmp_path, monkeypatch):
+    import cProfile
+    from bayesfilter.testing.inference_validation import execution
+    from bayesfilter.testing.inference_validation.engines import mechanics
+    from bayesfilter.testing.inference_validation.storage import write_json
+    class UnwritableProfile:
+        def enable(self): pass
+        def disable(self): pass
+        def dump_stats(self, path): raise OSError("profile volume full")
+    monkeypatch.setattr(cProfile, "Profile", UnwritableProfile)
+    monkeypatch.setattr(execution, "configure_worker", lambda _: {"device_scope": "cpu_reference"})
+    monkeypatch.setattr(execution, "source_state", lambda: {"identity": "fixture"})
+    def fail(*args): raise RuntimeError("original engine failure")
+    monkeypatch.setattr(mechanics, "run", fail)
+    path = write_json(tmp_path/"design.json", design(options={"profile_execution": True}).payload())
+    with pytest.warns(RuntimeWarning, match="host profile unavailable"):
+        assert execution.worker(path, tmp_path, 10.) == 1
+    assert read_json(tmp_path/"attempt-001-failure.json")["reason"] == "original engine failure"

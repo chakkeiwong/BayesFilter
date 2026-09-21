@@ -19,9 +19,11 @@ import pytest
 import tensorflow as tf
 
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
+import bayesfilter.inference.hmc_mass_adaptation as hmc_mass_adaptation
 import bayesfilter.inference.hmc_warmup as hmc_warmup
 from bayesfilter.inference.hmc_tuning import build_windowed_warmup_schedule
 from bayesfilter.hmc_route_contract import (
+    HMC_ROUTE_CONTRACT_VERSION,
     LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
     OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
     UnsupportedHMCAlgorithmRoute,
@@ -56,7 +58,7 @@ from bayesfilter.inference.hmc_warmup import (
 
 _G1A_NO_HMC_TESTS = frozenset(
     {
-        "test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site",
+        "test_g1a_historical_manifest_preserves_its_named_seed_sites",
         "test_g1a_registry_counts_logical_leaves_not_interface_hops",
         "test_g1a_metric_boundary_seed_collision_is_repaired_before_terminal_consumer",
         "test_g1a_v1_proposal_record_is_rejected_by_v2_contract",
@@ -582,9 +584,7 @@ def test_windowed_mass_stage_private_progress_callback_is_allowlisted() -> None:
         assert payload["hmc_mechanics_exposed"] is False
         assert payload["route_category"] == "injected_runner"
         assert payload["algorithm_id"] == LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
-        assert payload["route_contract_version"] == (
-            "bayesfilter.hmc_algorithm_route.v1"
-        )
+        assert payload["route_contract_version"] == HMC_ROUTE_CONTRACT_VERSION
         assert payload["algorithm_route"]["algorithm_id"] == payload["algorithm_id"]
         assert payload["reports_posterior_convergence"] is False
         assert payload["reports_sampler_superiority"] is False
@@ -670,12 +670,12 @@ def test_windowed_mass_public_timeout_uses_segmented_chunk_runner(
         return _ScriptedChunkRunner(adapter, initial_state, config)
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_WINDOWED_MASS_SEGMENT_SIZE",
         5,
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "build_fixed_size_hmc_chunk_runner",
         fake_builder,
     )
@@ -770,9 +770,9 @@ def test_windowed_mass_segmented_timeout_between_chunks_returns_closeout(
             )
 
     monkeypatch.setattr(hmc_kernel_tuning.time, "perf_counter", lambda: clock["now"])
-    monkeypatch.setattr(hmc_kernel_tuning, "_WINDOWED_MASS_SEGMENT_SIZE", 5)
+    monkeypatch.setattr(hmc_mass_adaptation, "_WINDOWED_MASS_SEGMENT_SIZE", 5)
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "build_fixed_size_hmc_chunk_runner",
         lambda adapter, initial_state, config: _SlowChunkRunner(adapter, initial_state, config),
     )
@@ -875,9 +875,9 @@ def test_windowed_mass_segmented_staged_timeout_enlargement_allows_next_chunk(
             )
 
     monkeypatch.setattr(hmc_kernel_tuning.time, "perf_counter", lambda: clock["now"])
-    monkeypatch.setattr(hmc_kernel_tuning, "_WINDOWED_MASS_SEGMENT_SIZE", 5)
+    monkeypatch.setattr(hmc_mass_adaptation, "_WINDOWED_MASS_SEGMENT_SIZE", 5)
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "build_fixed_size_hmc_chunk_runner",
         lambda adapter, initial_state, config: _SlowChunkRunner(
             adapter,
@@ -953,9 +953,9 @@ def test_windowed_mass_segmented_soft_deadline_skips_first_chunk(
             raise AssertionError("soft deadline should close out before segment 0")
 
     monkeypatch.setattr(hmc_kernel_tuning.time, "perf_counter", lambda: clock["now"])
-    monkeypatch.setattr(hmc_kernel_tuning, "_WINDOWED_MASS_SEGMENT_SIZE", 5)
+    monkeypatch.setattr(hmc_mass_adaptation, "_WINDOWED_MASS_SEGMENT_SIZE", 5)
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "build_fixed_size_hmc_chunk_runner",
         lambda adapter, initial_state, config: _UnexpectedChunkRunner(
             adapter,
@@ -1055,7 +1055,7 @@ def test_windowed_mass_injected_tf_function_run_does_not_build_reusable_runner(
         return _runtime_shaped_result(warmup_steps=int(config.num_results))
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "build_reusable_full_chain_tfp_hmc_runner",
         fail_if_built,
     )
@@ -1083,7 +1083,7 @@ def test_runner_identity_cannot_select_a_different_windowed_algorithm(
         raise AssertionError("blocked route must not construct a runner")
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "build_reusable_full_chain_tfp_hmc_runner",
         fake_builder,
     )
@@ -1268,9 +1268,9 @@ def test_windowed_mass_segmented_constant_runtime_acceptance_uses_decision_count
                 },
             )
 
-    monkeypatch.setattr(hmc_kernel_tuning, "_WINDOWED_MASS_SEGMENT_SIZE", 5)
+    monkeypatch.setattr(hmc_mass_adaptation, "_WINDOWED_MASS_SEGMENT_SIZE", 5)
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "build_fixed_size_hmc_chunk_runner",
         lambda adapter, initial_state, config: _AllAcceptedChunkRunner(
             adapter,
@@ -1673,7 +1673,7 @@ def test_real_operational_route_with_generous_timeout_never_uses_legacy() -> Non
     assert all(
         payload["algorithm_id"] == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
         and payload["route_contract_version"]
-        == "bayesfilter.hmc_algorithm_route.v1"
+        == HMC_ROUTE_CONTRACT_VERSION
         and payload["route_category"] == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
         for _stage, payload in events
     )
@@ -1688,7 +1688,7 @@ def test_legacy_projection_failure_cannot_change_operational_handoff(
         raise RuntimeError("forced non-operational compatibility failure")
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "run_windowed_mass_adaptation_diagnostic",
         fail_legacy_projection,
     )
@@ -1767,7 +1767,7 @@ def test_operational_retry_consumes_carried_transform_endpoint_step_and_l(
         return real_runner(**kwargs)
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "run_operational_windowed_warmup",
         capture_inputs,
     )
@@ -1823,7 +1823,7 @@ def test_operational_route_runtime_error_is_fail_closed(
         )
         raise error
 
-    monkeypatch.setattr(hmc_kernel_tuning, "run_operational_windowed_warmup", fail)
+    monkeypatch.setattr(hmc_mass_adaptation, "run_operational_windowed_warmup", fail)
 
     result = run_hmc_windowed_mass_stage(
         adapter=_ToyGaussianAdapter(),
@@ -1875,7 +1875,7 @@ def test_operational_start_bank_failure_survives_real_windowed_stage_catch(
         events.append((event, json.loads(json.dumps(payload))))
         payload["start_bank_qualification"]["interpretation"] = "mutated"
 
-    monkeypatch.setattr(hmc_kernel_tuning, "run_operational_windowed_warmup", fail)
+    monkeypatch.setattr(hmc_mass_adaptation, "run_operational_windowed_warmup", fail)
     result = run_hmc_windowed_mass_stage(
         adapter=_ToyGaussianAdapter(),
         geometry=_geometry(),
@@ -1914,7 +1914,7 @@ def test_start_bank_diagnostic_callback_failure_remains_fatal_after_decision(
     def callback(_event: str, _payload: Mapping[str, Any]) -> None:
         raise RuntimeError("diagnostic writer failed")
 
-    monkeypatch.setattr(hmc_kernel_tuning, "run_operational_windowed_warmup", fail)
+    monkeypatch.setattr(hmc_mass_adaptation, "run_operational_windowed_warmup", fail)
     with pytest.raises(RuntimeError, match="diagnostic writer failed"):
         run_hmc_windowed_mass_stage(
             adapter=_ToyGaussianAdapter(),
@@ -2715,7 +2715,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_derivation.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_bootstrap.py",
         "run_hmc_bootstrap_screen",
         "Call",
         ("_round_seed(root_seed, round_index)",),
@@ -2727,7 +2727,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_gate.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_bootstrap.py",
         "run_hmc_bootstrap_screen",
         "Call",
         ("_g2_seed_use_registry.consume(", "_G2_BOOTSTRAP_ROUND_SEED_GATE_SITE_ID"),
@@ -2739,7 +2739,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning.run_hmc_bootstrap_screen.screen_config_seed_pass_through.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_bootstrap.py",
         "run_hmc_bootstrap_screen",
         "keyword",
         ("seed=screen_seed",),
@@ -2751,7 +2751,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning._bootstrap_screen_config.seed_pass_through.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_bootstrap.py",
         "_bootstrap_screen_config",
         "keyword",
         ("seed=seed",),
@@ -2775,7 +2775,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning.run_hmc_bootstrap_screen.reusable_runner_config_pass_through.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_bootstrap.py",
         "run_hmc_bootstrap_screen",
         "Call",
         ("build_reusable_full_chain_tfp_hmc_runner(", "screen_config"),
@@ -2787,7 +2787,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning.run_hmc_bootstrap_screen.reusable_runner_seed_pass_through.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_bootstrap.py",
         "run_hmc_bootstrap_screen",
         "keyword",
         ("seed=screen_config.seed",),
@@ -2875,7 +2875,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.stage_seed_derivation.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_mass_adaptation.py",
         "_run_p4_windowed_boundary_attempt",
         "Call",
         ("_derive_seed(config.seed, stage_index=0)",),
@@ -2887,7 +2887,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.stage_seed_gate.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_mass_adaptation.py",
         "_run_p4_windowed_boundary_attempt",
         "Call",
         ("registry.consume(", "_G2_WINDOWED_STAGE_SEED_GATE_SITE_ID"),
@@ -2899,7 +2899,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.diagnostic_config_seed_pass_through.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_mass_adaptation.py",
         "_run_p4_windowed_boundary_attempt",
         "keyword",
         ("seed=stage_seed",),
@@ -2911,7 +2911,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning._windowed_stage_diagnostic_run_config.seed_pass_through.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_mass_adaptation.py",
         "_windowed_stage_diagnostic_run_config",
         "keyword",
         ("seed=seed",),
@@ -2935,7 +2935,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning._operational_windowed_mass_capture.seed_pass_through.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_mass_adaptation.py",
         "_run_p4_windowed_boundary_attempt",
         "keyword",
         ("stage_seed=stage_seed",),
@@ -2947,7 +2947,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning._operational_windowed_mass_capture.engineering_config_seed_pass_through.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_mass_adaptation.py",
         "_operational_windowed_mass_capture",
         "keyword",
         ("root_seed=stage_seed",),
@@ -2971,7 +2971,7 @@ _G1A_SOURCE_SITE_SPECS_RAW = (
     ),
     (
         "hmc_kernel_tuning._operational_windowed_mass_capture.warmup_seed_pass_through.v1",
-        "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_mass_adaptation.py",
         "_operational_windowed_mass_capture",
         "keyword",
         ("seed=stage_seed",),
@@ -3096,7 +3096,9 @@ def _g1a_owner_by_node(tree: ast.AST) -> dict[ast.AST, str]:
     return owners
 
 
-def _g1a_manifest_sites_from_final_sources() -> tuple[dict[str, object], ...]:
+def _g1a_manifest_sites_from_final_sources(
+    *, historical_preparation_locations: bool = False,
+) -> tuple[dict[str, object], ...]:
     trees: dict[str, ast.AST] = {}
     owners: dict[str, dict[ast.AST, str]] = {}
     rows: list[dict[str, object]] = []
@@ -3121,8 +3123,12 @@ def _g1a_manifest_sites_from_final_sources() -> tuple[dict[str, object], ...]:
         owner_map = owners.setdefault(relative_path, _g1a_owner_by_node(tree))
         node_type = getattr(ast, node_type_name)
         candidates = []
+        physical_qualname = owner_qualname
+        if relative_path.endswith("/hmc_warmup.py") and owner_qualname.startswith("run_operational_windowed_warmup"):
+            # M13 preserves seed-site identities inside the one-attempt implementation.
+            physical_qualname = owner_qualname.replace("run_operational_windowed_warmup", "_run_operational_windowed_warmup_attempt", 1)
         for node in ast.walk(tree):
-            if type(node) is not node_type or owner_map[node] != owner_qualname:
+            if type(node) is not node_type or owner_map[node] != physical_qualname:
                 continue
             expression = " ".join(ast.unparse(node).split())
             if all(fragment in expression for fragment in fragments):
@@ -3135,6 +3141,21 @@ def _g1a_manifest_sites_from_final_sources() -> tuple[dict[str, object], ...]:
         )
         assert occurrence < len(candidates), (site_id, candidates)
         node = candidates[occurrence]
+        if historical_preparation_locations and relative_path.endswith((
+            "/hmc_bootstrap.py", "/hmc_mass_adaptation.py",
+        )):
+            # Compare the original seed operations across a physical relocation.
+            # Only the registry owner filename changed within the moved function.
+            physical_owner = Path(relative_path).name
+            relative_path = "bayesfilter/inference/hmc_kernel_tuning.py"
+            if site_id.endswith((".round_seed_gate.v1", ".stage_seed_gate.v1")):
+                import copy
+
+                node = copy.deepcopy(node)
+                owner = next(kw for kw in node.keywords if kw.arg == "owner_file")
+                assert isinstance(owner.value, ast.Constant)
+                assert owner.value.value == physical_owner
+                owner.value = ast.Constant(value="hmc_kernel_tuning.py")
         node_digest = hashlib.sha256(
             ast.dump(
                 node,
@@ -3167,7 +3188,7 @@ def _g1a_canonical_json_bytes(payload: Mapping[str, object]) -> bytes:
     ).encode("ascii")
 
 
-def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> None:
+def test_g1a_historical_manifest_preserves_its_named_seed_sites() -> None:
     retained = _G1A_SOURCE_COVERAGE_MANIFEST.read_bytes()
     assert retained == retained.rstrip(b"\n")
     payload = json.loads(retained.decode("ascii"))
@@ -3210,21 +3231,30 @@ def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> Non
         str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_coordinates.py"):
             "read_only_seed_domain_repair",
     }
-    expected_source_files = tuple(
-        sorted(
-            (
-                {
-                    "path": path,
-                    "sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest(),
-                    "write_scope": write_scope,
-                }
-                for path, write_scope in source_paths.items()
-            ),
-            key=lambda row: row["path"],
-        )
-    )
-    assert tuple(payload["source_files"]) == expected_source_files
-    assert tuple(payload["sites"]) == _g1a_manifest_sites_from_final_sources()
+    # Preserve the dated source manifest. Later numerical repairs change file
+    # hashes; matching it to the live checkout would falsely upgrade history.
+    # The named seed operations are still compared against current ASTs below,
+    # and live candidate bindings independently hash their complete source list.
+    assert {row["path"]: row["write_scope"] for row in payload["source_files"]} == source_paths
+    assert all(len(row["sha256"]) == 64 for row in payload["source_files"])
+    current_sites = _g1a_manifest_sites_from_final_sources(historical_preparation_locations=True)
+    for archived, current in zip(payload["sites"], current_sites, strict=True):
+        if archived["site_id"] == (
+            "hmc.bootstrap.ReusableFullChainHMCRunner.sample_chain_rng_call.v1"
+        ):
+            # The later failure recorder adds parallel_iterations to sample_chain.
+            # Preserve the historical whole-call digest, but compare its named
+            # routing identity rather than pinning unrelated call arguments.
+            # The separate sample_chain_seed_pass_through site below still pins
+            # the exact seed=seed AST in this same owner, like all other sites.
+            assert archived["node_ast_sha256"] == (
+                "815eebb72503366add43911b36c940ba27aa9445035977e677868dcc82f2fa9f"
+            )
+            assert {k: v for k, v in archived.items() if k != "node_ast_sha256"} == {
+                k: v for k, v in current.items() if k != "node_ast_sha256"
+            }
+        else:
+            assert archived == current
 
     historical_bytes = _G1A_HISTORICAL_SOURCE_COVERAGE_MANIFEST.read_bytes()
     assert hashlib.sha256(historical_bytes).hexdigest() == (
@@ -3305,6 +3335,8 @@ def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> Non
     for relative_path in (
         "bayesfilter/inference/hmc_warmup.py",
         "bayesfilter/inference/hmc_kernel_tuning.py",
+        "bayesfilter/inference/hmc_bootstrap.py",
+        "bayesfilter/inference/hmc_mass_adaptation.py",
     ):
         tree = ast.parse(
             (_G1A_BAYESFILTER_ROOT / relative_path).read_text(encoding="utf-8")
@@ -3356,7 +3388,7 @@ def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> Non
         node
         for node in ast.walk(warmup_tree)
         if isinstance(node, ast.Call)
-        and warmup_owners[node] == "run_operational_windowed_warmup"
+        and warmup_owners[node] == "_run_operational_windowed_warmup_attempt"
         and isinstance(node.func, ast.Attribute)
         and node.func.attr in forwarding_nodes
     )
@@ -3389,29 +3421,8 @@ def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -> Non
 
 
 def test_g1a_registry_counts_logical_leaves_not_interface_hops() -> None:
-    manifest_bytes = _G1A_SOURCE_COVERAGE_MANIFEST.read_bytes()
-    manifest = json.loads(manifest_bytes.decode("ascii"))
-    contracts = {
-        row["site_id"]: {
-            name: row[name]
-            for name in (
-                "site_id",
-                "source_path",
-                "owner_qualname",
-                "site_kind",
-                "terminal_consumer",
-                "registry_key_template",
-                "upstream_gate_site_id",
-            )
-        }
-        for row in manifest["sites"]
-    }
-    registry = hmc_warmup.G2PreboundarySeedUseRegistry(
-        source_coverage_artifact_sha256=hashlib.sha256(
-            manifest_bytes
-        ).hexdigest(),
-        source_site_contracts=contracts,
-    )
+    # Use current physical source locations; dated manifests stay historical.
+    registry = hmc_kernel_tuning._build_public_p4_seed_use_registry()
     logical_leaf_count = 0
 
     bootstrap_root = (101, 1000)
@@ -3425,7 +3436,7 @@ def test_g1a_registry_counts_logical_leaves_not_interface_hops() -> None:
                 hmc_kernel_tuning._G2_BOOTSTRAP_ROUND_SEED_GATE_SITE_ID
             ),
             key=f"bootstrap/round/{round_index:02d}",
-            owner_file="hmc_kernel_tuning.py",
+            owner_file="hmc_bootstrap.py",
             owner_qualname="run_hmc_bootstrap_screen",
             terminal_consumer="hmc_runner_interface",
             derivation={
@@ -3450,7 +3461,7 @@ def test_g1a_registry_counts_logical_leaves_not_interface_hops() -> None:
             hmc_kernel_tuning._G2_WINDOWED_STAGE_SEED_GATE_SITE_ID
         ),
         key="phase4/stage",
-        owner_file="hmc_kernel_tuning.py",
+        owner_file="hmc_mass_adaptation.py",
         owner_qualname="_run_p4_windowed_boundary_attempt",
         terminal_consumer="hmc_runner_interface",
         derivation={
@@ -3930,7 +3941,7 @@ def _g1a_stage_seed_registry(
     contracts: dict[str, dict[str, object]] = {
         derivation_id: {
             "site_id": derivation_id,
-            "source_path": "bayesfilter/inference/hmc_kernel_tuning.py",
+            "source_path": "bayesfilter/inference/hmc_mass_adaptation.py",
             "owner_qualname": "_run_p4_windowed_boundary_attempt",
             "site_kind": "derivation",
             "terminal_consumer": None,
@@ -3941,7 +3952,7 @@ def _g1a_stage_seed_registry(
     if include_stage_gate:
         contracts[gate_id] = {
             "site_id": gate_id,
-            "source_path": "bayesfilter/inference/hmc_kernel_tuning.py",
+            "source_path": "bayesfilter/inference/hmc_mass_adaptation.py",
             "owner_qualname": "_run_p4_windowed_boundary_attempt",
             "site_kind": "terminal_consumption_gate",
             "terminal_consumer": "hmc_runner_interface",
@@ -3958,7 +3969,7 @@ def _g1a_stage_seed_registry(
                     if hop_id.startswith("hmc_coordinates.")
                     else "bayesfilter/inference/hmc_warmup.py"
                     if hop_id.startswith("hmc_warmup.")
-                    else "bayesfilter/inference/hmc_kernel_tuning.py"
+                    else "bayesfilter/inference/hmc_mass_adaptation.py"
                 ),
                 "owner_qualname": "read_only_seed_pass_through",
                 "site_kind": "read_only_pass_through",
@@ -4079,10 +4090,10 @@ def test_p4_multiplier_is_explicit_private_and_propagates_without_hmc() -> None:
             with pytest.raises(ValueError, match="positive and finite"):
                 config_type(engineering_probe_covariance_multiplier=invalid)
 
-    top = HMCKernelTuningConfig.diagnostic(
-        engineering_probe_covariance_multiplier=2.125
-    )
-    loop = hmc_kernel_tuning._public_loop_config(top)
+    with pytest.raises(ValueError, match="not a public ordinary tuning mode"):
+        HMCKernelTuningConfig.diagnostic(engineering_probe_covariance_multiplier=2.125)
+    loop = hmc_kernel_tuning.HMCTuneVerifyRepairLoopConfig(
+        engineering_probe_covariance_multiplier=2.125)
     propagated_stage = hmc_kernel_tuning._phase7_windowed_stage_config(
         loop,
         attempt_index=0,
@@ -4092,10 +4103,7 @@ def test_p4_multiplier_is_explicit_private_and_propagates_without_hmc() -> None:
         2.125
     )
 
-    for config_type in (
-        hmc_kernel_tuning.HMCTuneVerifyRepairLoopConfig,
-        HMCKernelTuningConfig,
-    ):
+    for config_type in (hmc_kernel_tuning.HMCTuneVerifyRepairLoopConfig,):
         configured_payload = config_type(
             seed=(987654321, 123456789),
             engineering_probe_covariance_multiplier=2.125,
@@ -4413,10 +4421,12 @@ def test_g1a_p4_stage_payload_recursively_redacts_seed_and_exception_details() -
     )
 
 
-def test_g1a_p4_compatibility_failure_is_static_and_exception_redacted() -> None:
+def test_g1a_p4_compatibility_failure_reports_type_without_exception_details() -> None:
     source = inspect.getsource(hmc_kernel_tuning._operational_windowed_mass_capture)
     assert "legacy_v1_compatibility_projection_unavailable" in source
-    assert "type(exc).__name__" not in source
+    assert '"error_type": type(exc).__name__' in source
+    assert '"error_message": None' in source
+    assert '"exception_details_exposed": False' in source
     assert "str(exc)" not in source
 
 
@@ -4859,7 +4869,7 @@ def test_g1a_p4_attempt_try_redacts_each_preboundary_failure(
 
     if failure_site == "diagnostic_config":
         monkeypatch.setattr(
-            hmc_kernel_tuning,
+            hmc_mass_adaptation,
             "_windowed_stage_diagnostic_run_config",
             lambda *_args, **_kwargs: (_ for _ in ()).throw(
                 RuntimeError("SENTINEL_CONFIG_SECRET /private/config")
@@ -4867,7 +4877,7 @@ def test_g1a_p4_attempt_try_redacts_each_preboundary_failure(
         )
     elif failure_site == "signature_payload":
         monkeypatch.setattr(
-            hmc_kernel_tuning,
+            hmc_mass_adaptation,
             "_windowed_stage_diagnostic_run_config",
             lambda *_args, **_kwargs: BrokenSignatureConfig(),
         )
@@ -4878,7 +4888,7 @@ def test_g1a_p4_attempt_try_redacts_each_preboundary_failure(
         raise RuntimeError("SENTINEL_CAPTURE_SECRET /private/capture")
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_operational_windowed_mass_capture",
         capture_entry,
     )
@@ -5011,57 +5021,57 @@ def test_g1a_complete_windowed_stage_bypasses_generic_classifier(
         seed_report: Mapping[str, Any] = {}
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "HMCGeometryInitializationResult",
         FakeGeometry,
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "HMCBootstrapScreenResult",
         FakeBootstrap,
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_validate_windowed_stage_inputs",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_resolve_windowed_stage_target_scope",
         lambda *_args, **_kwargs: "p4_phase7_fixture",
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_mass_artifact_signature",
         lambda _artifact: "mass-signature",
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_build_bootstrap_fixed_mass_adapter",
         lambda **_kwargs: object(),
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "stable_adapter_signature",
         lambda _adapter: "hmc-adapter-signature",
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_windowed_stage_initial_mass_artifact",
         lambda **_kwargs: object(),
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_active_bootstrap_handoff_kernel_payload",
         lambda **_kwargs: {"step_size": 0.1, "num_leapfrog_steps": 3},
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_active_bootstrap_handoff_kernel_hash",
         lambda **_kwargs: "selected-hash",
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_phase7_windowed_mass_seed_kernel_payload",
         lambda **_kwargs: {"step_size": 0.1, "num_leapfrog_steps": 3},
     )
@@ -5073,12 +5083,12 @@ def test_g1a_complete_windowed_stage_bypasses_generic_classifier(
         raise AssertionError("P4 carrier must bypass the generic classifier")
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_classify_windowed_stage_capture",
         forbidden_classifier,
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "_run_p4_windowed_boundary_attempt",
         lambda **_kwargs: (
             None,
@@ -5139,7 +5149,7 @@ def test_phase7_initial_state_consumes_only_p4_bank_with_rowwise_lineage(
     def forbidden_hmc(*_args: Any, **_kwargs: Any) -> Any:
         raise AssertionError("deterministic P4-E lineage test must not run HMC")
 
-    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+    monkeypatch.setattr(hmc_mass_adaptation, "run_full_chain_tfp_hmc", forbidden_hmc)
     operational = _p4_operational_fixture()
     stage = SimpleNamespace(
         config=HMCWindowedMassStageConfig(
@@ -5188,7 +5198,7 @@ def test_phase7_initial_state_preserves_ordinary_legacy_bank_without_hmc(
     def forbidden_hmc(*_args: Any, **_kwargs: Any) -> Any:
         raise AssertionError("ordinary start-bank route test must not run HMC")
 
-    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+    monkeypatch.setattr(hmc_mass_adaptation, "run_full_chain_tfp_hmc", forbidden_hmc)
     operational = _p4_operational_fixture(
         policy_id="bayesfilter.greedy_four_start_bank.v1"
     )
@@ -5221,15 +5231,23 @@ def test_phase7_initial_state_preserves_ordinary_legacy_bank_without_hmc(
         atol=1.0e-10,
     )
     assert lineage == {
-        "source": "operational_warmup_private_start_bank",
+        "source": "operational_post_warmup_start_bank_v2",
+        "policy_id": operational.private_start_bank_policy_id,
         "source_signature": "legacy-start-bank-signature",
         "active_signature": lineage["active_signature"],
+        "target_scope": operational.target_scope,
+        "final_transform_signature": operational.final_kernel_state.transform.signature,
+        "phase4_adapter_signature": "p4-phase4-adapter",
+        "verification_adapter_signature": "p4-verification-adapter",
         "count": 4,
         "frozen_post_warmup_bank_consumed": True,
         "canonical_round_trip_passed": True,
         "final_coordinate_match_passed": True,
         "raw_values_exposed": False,
         "reports_operational_start_lineage": True,
+        "evidence_role": "tuning_handoff",
+        "promotion_role": "phase5_candidate_start_only",
+        "reports_posterior_convergence": False,
     }
 
 
@@ -5239,7 +5257,7 @@ def test_phase7_initial_state_rejects_legacy_bank_when_p4_is_configured(
     def forbidden_hmc(*_args: Any, **_kwargs: Any) -> Any:
         raise AssertionError("configured P4-E route test must not run HMC")
 
-    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+    monkeypatch.setattr(hmc_mass_adaptation, "run_full_chain_tfp_hmc", forbidden_hmc)
     operational = _p4_operational_fixture(policy_id="bayesfilter.greedy_four_start_bank.v1")
     stage = SimpleNamespace(
         config=HMCWindowedMassStageConfig(
@@ -5266,7 +5284,7 @@ def test_phase7_initial_state_rejects_p4_bank_without_explicit_config(
     def forbidden_hmc(*_args: Any, **_kwargs: Any) -> Any:
         raise AssertionError("unconfigured P4-E route test must not run HMC")
 
-    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+    monkeypatch.setattr(hmc_mass_adaptation, "run_full_chain_tfp_hmc", forbidden_hmc)
     operational = _p4_operational_fixture()
     stage = SimpleNamespace(
         config=HMCWindowedMassStageConfig(

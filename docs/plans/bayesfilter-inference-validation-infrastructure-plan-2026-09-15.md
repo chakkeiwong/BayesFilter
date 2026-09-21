@@ -1,5 +1,9 @@
 # Inference validation infrastructure, starting with the HMC pipeline
 
+The active implementation and validation continuation is the
+[HMC repair master program](bayesfilter-hmc-repair-master-program-2026-09-16.md).
+It consolidates the remaining findings, dependencies and completion evidence.
+
 Date: 2026-09-15. Status: revised after independent architecture review;
 implementation authorized by the owner. The bounded execution specification is
 [recorded separately](bayesfilter-inference-validation-execution-2026-09-15.md).

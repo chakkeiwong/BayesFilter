@@ -1,5 +1,49 @@
 # Inference validation suites
 
+The active continuation is the
+[HMC repair master program](../plans/bayesfilter-hmc-repair-master-program-2026-09-16.md).
+Its [M0--M6 result](../plans/bayesfilter-hmc-repair-master-result-2026-09-17.md)
+records the earlier bounded repairs. The [M7 execution note](../plans/bayesfilter-hmc-repair-m7-result-2026-09-17.md)
+records verification, frozen GPU results, remaining work and cumulative budget.
+The [M15 result](../plans/bayesfilter-hmc-repair-m15-result-2026-09-21.md),
+[M16 result](../plans/bayesfilter-hmc-repair-m16-result-2026-09-21.md) and
+[M17 result](../plans/bayesfilter-hmc-repair-m17-result-2026-09-21.md) contain the
+latest replicated fits, diagnostic sensitivity and geometry/route/reference
+matrix. The machine-readable `program-progress.json` beside the phase artifacts
+records each terminal ledger and reviewed next design. Phase completion and
+scientific-gap closure are separate fields.
+`scripts/prepare_hmc_repair_suites.py` resolves the initial development suites
+archived as `suites-r1`. The measured GPU continuation uses the master program's
+`suites-r2/fresh-gpu.json`; the initial resource caps are historical allocations.
+Both use this same executor. The `acceptance` engine's `controller` route uses
+synthetic marks. Its `frozen` route measures stationary TFP-HMC acceptance;
+`prepared` executes repeated public single-pair tuning searches with fresh
+verification and an independent stationary-acceptance reference. These routes
+answer different questions and must not be pooled.
+Mixture designs can declare `global_quantities: ["left_mode_probability"]` and
+use `mode_dispersed` starts when the supplied chain bank is preserved.
+Stopped-interval reports compare that probability with the independent mixture
+CDF and keep missing posterior outputs in its denominator.
+Ordinary designs expose the optional `preparation_bound_expansion_steps` setting.
+SBC summaries distinguish `missing_dataset_records` from known unstarted work;
+`unstarted_datasets` is null when incomplete shards prevent determining it.
+
+The September 18 continuation is M8 within that same master program, with the
+additional 48 CPU and 24 GPU hours reconciled against all earlier costs.
+`scripts/prepare_hmc_m8_suites.py --output <fresh-directory>` resolves its
+centered/noncentered funnel, repeated public acceptance, defect-power and
+stopped/fixed calibration designs. Versioned suites and immutable package
+snapshots live under `docs/plans/artifacts/hmc-repair-master-2026-09-16/m8-r1/`.
+The script resolves plans only; launches follow the master's pilot cost checks.
+
+For the earlier M7 continuation,
+`scripts/prepare_hmc_repair_suites.py --stage m7 --output <fresh-directory>`
+resolves its energy checks, fixed-look kernel-power experiments and four
+automatic-pipeline cost pilots. It launches no workers. The pilots use
+beta-binomial, LGSSM location, funnel and rotated Gaussian targets, select one
+member by identity before posterior draws, and keep all unassessed siblings.
+One pilot per target supplies cost and failure information, not calibration.
+
 These suites exercise distinct questions through shared target definitions,
 independent references, the public HMC tuners, saved observations, and common
 reports. Tuning retains every verified candidate; R-hat, ESS, and MCSE remain
@@ -12,8 +56,9 @@ process is not necessarily a complete statistical experiment, and neither
 status grants default readiness. A profile name describes execution scope, not
 strength of scientific evidence.
 
-Current completion, missing evidence and the next execution order are recorded
-in the [continuation plan](../plans/bayesfilter-inference-validation-phase2-plan-2026-09-16.md).
+The [phase-two plan](../plans/bayesfilter-inference-validation-phase2-plan-2026-09-16.md)
+preserves the earlier continuation. Current completion, missing evidence and
+execution order belong to the master program linked above.
 The completed [funded campaign](../plans/bayesfilter-inference-validation-24h-campaign-2026-09-16.md)
 used 21.80 charged CPU hours and 11.17 GPU worker-hours within separate 24-hour
 allowances. Its [results](../plans/bayesfilter-inference-validation-24h-result-2026-09-16.md)
@@ -47,6 +92,13 @@ completion charges the reserved budget conservatively. An ordinary advisory lock
 prevents accidental concurrent coordinators. GPU runs require trusted execution;
 workers verify memory growth before initialization. CPU profiles deliberately
 hide GPU devices and use a documented non-XLA diagnostic exception.
+
+When a suite omits `required_coverage`, every planned design has its own
+requirement. Completing one epsilon or kernel-power cell cannot complete another
+cell in the same category. An explicit category-level requirement asks for any
+matching executed and assessed design. Historical plans without design IDs
+retain that category-level meaning; inspect their individual design rows to
+determine whether the whole planned suite completed.
 
 `--max-workers N` supervises up to N separate worker processes with one index
 writer. Budgets count summed worker wall time, including failed and cancelled
@@ -87,6 +139,25 @@ Identity and sign-flip two-cycle kernels preserve the symmetric Gaussian law;
 their lack of exploration illustrates why invariance cannot establish mixing.
 A position-only wrong score can still give an invariant Metropolis-corrected
 kernel; the density/score oracle, rather than invariance alone, must detect it.
+
+For frozen invariance, `options.kernel_power=s` composes s complete MH
+transitions of the same frozen kernel. The default 1 preserves the original
+transition stream. Powers use a stable TensorFlow signature, `tf.while_loop`,
+independent stateless substep seeds and the declared XLA policy. Every substep's
+state and log ratio must be finite; a failure remains invalid evidence rather
+than a detected distributional discrepancy. The recorded log ratio is the last
+substep's ratio, not a ratio for the composition. The experiment is the fixed-look
+K^s extension in Gandy–Scott section 2.2; posterior/SBC draws are unaffected and
+no sequential-testing guarantee is implied.
+
+Gaussian mechanics additionally checks the actual MH log ratio using independent
+analytic density and observed TFP endpoint momenta. Baseline, no-op and reversed
+energy controls separate correct arithmetic from an activated mutation. Passing
+this numerical oracle does not establish distributional sensitivity.
+`options.profile_execution=true` writes `attempt-NNN-host.prof` on engine success
+or failure. Inspect it with Python's `pstats`; missing profiles are reported
+without masking the engine outcome. Host time includes framework compilation
+and execution where they are not separately measured.
 
 The reference SBC engine uses proper generative normal-normal, beta-binomial
 and LGSSM-location models. The last model has one unknown location with a normal
@@ -185,15 +256,52 @@ Only a bundle explicitly declaring `sampling_structure: "iid"` receives an iid
 reference standard error; MCMC or unknown dependence leaves that combined error
 unavailable. Mean reporting additionally requires `finite_variance: true`.
 
-Current limits that remain visible in coverage include external/consumer fits,
-complete large replicated automatic full-procedure SBC, nonlinear
-learned-transport preparation, and conditional position-field mechanics beyond
-existing repository tests. Dirichlet posterior reporting now supports three
+The M8 campaign also has two explicit TensorFlow adapters in
+`posteriordb_targets.py`: noncentered eight-schools and `sblrc-blr` regression.
+They match the pinned posteriordb Stan laws, observations and coordinate
+Jacobians. Their separate campaign runner calls the public ordinary tuner and
+posterior controller, preserving the full candidate set and preselecting one
+member before sampling. The ten-chain Stan reference is used only afterward;
+the comparison includes both samples' lugsail uncertainty. These adapters do
+not activate the generic `external-consumer.json` cells or supply a matched
+MacroFinance target. Commands, exact upstream hashes, limits and results are in
+the [M8 execution note](../plans/bayesfilter-hmc-repair-m8-result-2026-09-18.md).
+
+M15 completed 246 fresh whole fits over 82 datasets with all outputs available,
+using three independent fits per dataset. This extends automatic full-procedure
+SBC beyond tiny mechanics tests, but its nonrejection is weak evidence against
+subtle errors: M16's analytic normal controls at 32 datasets/three rank draws
+detect quarter-SD and half-SD location shifts in 27/256 and 64/256 experiments.
+That is statistic-level sensitivity, not whole-HMC defect power. M16 also
+completed 576 numerical boundary searches and 128 complete three-arm sequential
+validation experiments per device. The reversed-ratio defect is detected in
+all trials; three null-control intervals remain too wide for the predeclared
+size-precision screen. No default is promoted by these outcomes.
+
+M17 completed 21 geometry/route cells: rotated Gaussian, centered/noncentered
+funnel, Cauchy, mixtures with two start regimes, affine Gaussian/banana,
+fixed dense-IAF banana/Dirichlet, and CPU Student-t. Eleven selected members
+pass the full posterior checks; empty candidate sets and warmup/precision caps
+remain reported. All six repaired conditional field cells reach independent
+measurement/verification: Gaussian and beta-binomial on CPU/GPU, plus CPU LGSSM
+and banana. They remain conditional mechanics and cannot issue exact-score
+retained members. Three of four pinned regression/eight-schools fits pass the
+full reference/posterior screen; CPU eight-schools passes all mean comparisons
+but reaches the precision cap. These development cases do not resolve the
+missing exact original MacroFinance reference, learned-transport training,
+unknown-mode discovery, nominal stopping coverage or subtle whole-fit defect
+power. Fixed nonlinear maps are not training evidence.
+
+Dirichlet posterior reporting supports three
 named probabilities from its two active coordinates. The CPU campaign pilot
 assessed all 23 verified simplex members; a capped all-member GPU pilot remains
 incomplete and cannot receive the CPU result's credit. A separate GPU subset
 experiment assessed two selected members across two replications and retained
 all 44 verified members; the other 42 remain unassessed for posterior accuracy.
-The fixed-look rank design does not implement Gandy--Scott's optional sequential
-testing wrapper. None of these cells is satisfied by counting additional pytest
-cases or by an architectural review verdict.
+Frozen invariance designs can now enable the separate Gandy--Scott Algorithm 3
+wrapper with `options.sequential`. Each look uses a fresh complete experiment,
+and sample count increases once after the first look. Its type-I bound is
+conditional on independent look vectors and superuniform component p-values;
+it does not cover tuning acceptance or posterior stopping. Fixed-look designs
+remain available. None of the missing numerical cells is satisfied by counting
+additional pytest cases or by an architectural review verdict.

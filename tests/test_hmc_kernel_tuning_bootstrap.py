@@ -242,7 +242,7 @@ def test_bootstrap_config_use_xla_propagates_to_full_chain_config() -> None:
 def test_bootstrap_default_tf_function_route_uses_reusable_runner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from bayesfilter.inference import hmc_kernel_tuning as module
+    from bayesfilter.inference import hmc_bootstrap as module
 
     acceptances = [0.80, 0.70]
     build_calls: list[Mapping[str, Any]] = []
@@ -355,7 +355,7 @@ def test_bootstrap_uses_configured_step_repair_factor() -> None:
 def test_bootstrap_injected_tf_function_runner_does_not_use_reusable_route(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from bayesfilter.inference import hmc_kernel_tuning as module
+    from bayesfilter.inference import hmc_bootstrap as module
 
     def fail_builder(*_args: Any, **_kwargs: Any) -> None:
         raise AssertionError("injected run_full_chain must bypass reusable runner")
@@ -387,7 +387,7 @@ def test_bootstrap_injected_tf_function_runner_does_not_use_reusable_route(
 def test_bootstrap_reusable_route_builds_distinct_runner_for_leapfrog_contract(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from bayesfilter.inference import hmc_kernel_tuning as module
+    from bayesfilter.inference import hmc_bootstrap as module
 
     acceptances = [0.95, 0.70]
     build_calls: list[Mapping[str, Any]] = []

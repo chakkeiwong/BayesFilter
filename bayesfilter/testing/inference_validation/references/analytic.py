@@ -51,6 +51,8 @@ def kalman_log_likelihood(location, params, data):
 
 def model_coordinates(target, raw):
     raw = np.asarray(raw)
+    if target == "funnel_noncentered":
+        return np.concatenate([raw[..., :1], np.exp(raw[..., :1]/2)*raw[..., 1:]], -1)
     if target == "gamma":
         return np.exp(raw)
     if target in {"beta", "beta_binomial"}:
@@ -62,6 +64,8 @@ def model_coordinates(target, raw):
 
 def active_coordinates(target, values):
     x = np.asarray(values)
+    if target == "funnel_noncentered":
+        return np.concatenate([x[..., :1], np.exp(-x[..., :1]/2)*x[..., 1:]], -1)
     if target == "gamma":
         return np.log(x)
     if target in {"beta", "beta_binomial"}:
@@ -89,6 +93,9 @@ def log_density(target, q, params=None, data=None):
         return stats.norm.logpdf(q[...,0])+stats.norm.logpdf(q[...,1]-p.get("bend",.5)*(q[...,0]**2-1))
     if target == "funnel":
         return stats.norm.logpdf(q[...,0],scale=p.get("scale",3.))+stats.norm.logpdf(q[...,1:],scale=np.exp(q[...,:1]/2)).sum(-1)
+    if target == "funnel_noncentered":
+        # Independent centered density plus the change-of-variable Jacobian.
+        return log_density("funnel", x, p) + q[..., 0]
     if target in {"student_t", "cauchy"}:
         return stats.t.logpdf(q, df=p.get("df",5.) if target=="student_t" else 1).sum(-1)
     if target == "mixture":
@@ -119,7 +126,7 @@ def draw(target, count, seed, params=None, data=None):
     elif target == "rotated_gaussian": x=rng.multivariate_normal([0.,0.],covariance(p),count)
     elif target == "banana":
         x=rng.normal(size=(count,2)); x[:,1]+=p.get("bend",.5)*(x[:,0]**2-1)
-    elif target == "funnel":
+    elif target in {"funnel", "funnel_noncentered"}:
         v=rng.normal(scale=p.get("scale",3.),size=count)
         x=np.column_stack([v, rng.normal(size=(count,2))*np.exp(v[:,None]/2)])
     elif target in {"student_t","cauchy"}: x=rng.standard_t(p.get("df",5.) if target=="student_t" else 1,size=(count,2))
@@ -173,6 +180,10 @@ def test_quantities(target, raw, params=None, data=None):
 def exact_functionals(target, params=None, data=None):
     """Available model-coordinate means/medians; absent entries stay unavailable."""
     p=params or {}
+    if target in {"funnel", "funnel_noncentered"}:
+        # A positive lognormal scale times an independent centered normal has
+        # zero mean and median; all moments here are finite.
+        return {(kind, i): 0. for i in range(3) for kind in ("mean", "quantile")}
     if target in {"normal_conjugate", "lgssm_location"}:
         m,_=conjugate(target,p,data)
         return {("mean",0):m,("quantile",0):m}

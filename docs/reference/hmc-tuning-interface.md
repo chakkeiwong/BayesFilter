@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-09-16. This reference describes the common candidate-set
+Last checked: 2026-09-21. This reference describes the common candidate-set
 procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
 HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
 classifies public tuners, preparation helpers, chain runners, and historical
@@ -85,11 +85,180 @@ hypotheses, not target-specific defaults. Multiple epsilons at one L remain
 separate candidates. No descriptive acceptance distance, ESS, runtime or R-hat
 ranking removes a viable member.
 
-The final-metric epsilon bound from operational preparation is a proposal safety
-bound. The binding must preserve the final mass/coordinate identity that produced
-it. Direct preparation bindings intersect the requested domain with the bound.
-It never transfers acceptance qualification from one L to another. A directional
-repair crossing the domain can measure its unvisited boundary before stopping.
+A multiplicative epsilon repair can jump from high acceptance directly to
+nonfinite trajectories. The nonfinite result supplies no valid acceptance
+direction, so it cannot form the opposing-evidence interval used by refinement.
+`HMCControllerConfig(explore_failed_intervals=True, refinement_rounds=2)`
+optionally explores unvisited geometric interiors between a valid directional
+parent and its numerically rejected same-L child. Two rounds are an explicit
+example, not a calibrated default. The nearest rejected child bounds only an
+exploration interval; it is not evidence of monotone acceptance or stability.
+Each proposal is a new same-family child of the valid parent. Both source
+receipts are recorded, the failed endpoint remains rejected, and fresh
+measurement and verification are required. Missing telemetry, unknown failures,
+invalid retained states and shared corruption cannot supply these endpoints.
+Family, candidate, cohort and work budgets still apply. The option defaults to
+false; without it, an explicit intermediate grid can investigate that gap under
+a fresh scope.
+Completion of the declared search does not establish that the unexplored
+epsilon interval contains no useful setting.
+
+The final-metric epsilon from operational preparation supplies a starting step
+and, by default, the search ceiling. The short preparation probe does not prove
+a stability limit or that this ceiling contains a suitable pair for every L.
+`HMCKernelTuningConfig(candidate_search_bound_expansion_steps=1)` explicitly
+widens the exploration cap by the existing `step_repair_factor`, retaining the
+same final geometry. Zero preserves the inherited ceiling; larger counts must
+not exceed `max_attempts`. This is an optional search hypothesis, not a newly
+calibrated default. Every proposed pair still needs numerical health checks,
+measurement and fresh verification.
+
+Direct preparation bindings accept `preparation_bound_expansion_steps` and
+intersect the requested domain with the resolved finite cap. They record the
+original bound, expansion, final metric/coordinate signatures and new search
+identity. Existing scopes and receipts are immutable. A directional repair
+crossing the domain can measure its unvisited boundary before stopping.
+Failed geometry preparation writes its stage and available veto/repair causes
+to `preparation_progress.json` before raising `HMCPreparationFailure`.
+Nonfinite diagnostic numbers are explicitly marked in that JSON record so
+reporting preserves the original numerical failure instead of masking it with
+a serialization error.
+
+Ordinary preparation consumes an optional `negative_hessian`,
+`initial_covariance`, or `parameter_scales` in the active coordinates. It does
+not estimate the target Hessian when these inputs are absent: it starts from
+identity geometry and unit curvature frequencies. A finite density or a
+near-zero score at the initial point says little about a usable step size on
+a strongly scaled target. Inspect a preparation failure before enlarging the
+candidate budget; candidate search cannot repair a bootstrap that never
+reaches its handoff. A checked local geometry hint is an available preparation
+input, and still requires subsequent adaptation and candidate verification.
+
+Check `operational_metric_update_count` separately from preparation success.
+The existing `allow_valid_incumbent` policy permits zero empirical metric
+updates; a successful preparation can therefore preserve an unsuitable initial
+scale. The M9 regression diagnosis found exactly this behavior without a hint.
+Operational preparation runs one chain and constructs the four-chain candidate
+bank afterwards. Its temporal covariance assessment receives the original
+draw/coordinate array. Explicit multi-chain inputs to `assess_metric_covariance`
+retain time within each chain for the temporal information estimate; covariance
+uses the pooled N-1 centered second moment with correlation shrinkage. This is
+a finite-window geometry proposal, not an unbiased posterior covariance claim.
+Split R-hat is reporting-only, including undefined values or computation errors;
+it cannot reject or delay metric adaptation.
+
+`preparation_progress.json` records `windowed_mass_metric_schedule` and
+`windowed_mass_metric_decision` events for ordinary preparation. The schedule
+report says whether any slow window can meet the dense and diagonal state-count
+floors. Each completed window preserves the metric decision, individual failed
+checks, and any transform, affine-parity or reasonable-epsilon rejection stage.
+Metric changes start their fresh epsilon probe from the old coordinate system's
+bounded dual-averaging average, clipping before exponentiation. The old bound
+limits only that starting hypothesis: the probe may expand in the new
+coordinates and must independently qualify its step. The unconstrained average
+can grow extremely large while executed steps remain capped; it must not be
+used directly as the next search's starting step. Rejected probes preserve the
+starting value and available attempts. A nonfinite warmup trace reports the
+failed fields, counts and first indices while retaining the numerical veto.
+`metric_adaptation_status` distinguishes an applied update from a retained
+incumbent. State-count and temporal-information floors, rank, condition and
+shrinkage-discrepancy checks remain heuristic preparation requirements; they
+are separate from posterior ESS and candidate admission.
+
+`HMCKernelTuningConfig(metric_evidence_policy="finite_window")` optionally
+allows a numerically qualified finite-window covariance proposal before the
+temporal-information floor is met. The default, `"temporal_information"`,
+retains that floor. Both policies record temporal ESS and preserve all count,
+within-chain movement, rank, condition, shrinkage and boundary checks. The
+option changes the role of ESS, not the covariance formula. It can help escape
+poor initial scaling, but may also propose poor geometry; it remains experimental.
+Its first matched no-hint regression run applied two updates and later failed
+a nonfinite warmup trace. A short reasonable-step probe is not a global
+stability guarantee. R-hat is reporting-only under both policies, and the
+final frozen candidate still needs independent measurement and verification.
+The option requires windowed adaptation and cannot be combined with fixed identity.
+For automatic preparation with this option, the slow-window schedule preserves
+the total transition budget and both buffers, while allocating windows large
+enough for the inherited dense state-count floor when affordable. If only the
+diagonal floor is affordable, it uses that floor. An undersized final remainder
+is merged into the preceding window. When neither floor fits, the schedule
+reports insufficient capacity. This removes avoidable count failures; temporal
+dependence, conditioning, covariance discrepancy and target-health checks still
+matter. Directly supplied schedules and the default `temporal_information`
+schedule retain their declared window lengths.
+
+`HMCKernelTuningConfig(metric_probe_num_results=16)` optionally tests each
+metric-boundary epsilon using four independent short chains of sixteen
+transitions. The default is one transition per probe. Longer probes visit
+evolving positions and check every proposed and retained endpoint, score,
+momentum and energy correction before the existing acceptance bracket can
+qualify the step. Probe length is recorded with the evidence. Retained-state
+inconsistency or unclassified execution failure stops preparation; a failed
+proposal rejects that probe. The allocation is experimental and does not
+guarantee global stability. Every later warmup window must still pass its
+numerical checks, followed by candidate measurement and fresh verification.
+This option changes preparation only; it does not add R-hat admission or
+automatically retry a failed warmup window.
+
+`HMCKernelTuningConfig(preparation_max_restarts=3)` enables a separate bounded
+recovery hypothesis; the default is zero. A rejected nonfinite proposal can
+discard its entire preparation attempt only after retained states, targets,
+scores, acceptance-state consistency and declared telemetry pass independent
+checks. Preparation then restarts its full schedule from the failed window's
+validated starting checkpoint, retaining its qualified coordinate transform.
+Covariance and dual-averaging statistics reset. Failed and earlier discarded
+draws remain archived and never enter posterior estimates or the new statistics.
+Fresh streams qualify a step no larger than half the consumed failing step;
+that probe cannot expand beyond its contracted ceiling. High acceptance may
+nominate this conservative preparation step, while final candidate measurement
+and verification retain their unchanged acceptance requirements. Metric changes
+still require fresh qualification in the new coordinates. Attempt limits,
+cumulative transition/probe accounting and the existing wall budget apply.
+Retained/shared corruption, unknown execution errors and invalid telemetry are
+fatal. The option is currently limited to ordinary operational preparation.
+Three restarts is a development allocation, not a calibrated universal default.
+
+The `standard` preset is a local diagnostic allocation. With its default metric
+policy, six dimensions use 150 preparation transitions and slow windows of 30, 60 and 30, all below
+the inherited dense minimum of 64. More candidate-search budget does not enlarge
+those windows. Use the explicit `serious` preset when its larger preparation
+allocation is intended, and inspect its actual window decisions too: a larger
+budget alone does not guarantee an update or posterior equilibration.
+Candidate-set membership remains based on separate exact-pair evidence;
+posterior assessment is still required.
+
+The preparation helper accepts `initialize_bootstrap=True` for an optional
+finite startup search before bootstrap. It keeps the supplied affine mass and
+target, tests four batched momentum proposals at each epsilon/L pair, and
+decreases epsilon when proposals are invalid or acceptance is too low. It
+preserves the first invalid proposal and uses a separate seed stream. The
+subsequent bootstrap and operational mass checks still run; startup nomination
+cannot issue a tuning artifact. The q20 pricing and classical tuning consumers
+explicitly enable this repair; unrelated consumers retain their existing policy.
+
+The ordinary public config also exposes `bootstrap_initialization_rounds`.
+Zero, its default, preserves the existing preparation policy. A positive integer
+enables the same probe with that finite round cap and uses the existing
+`warmup_startup_only` bootstrap role before ordinary adaptation. For example,
+`HMCKernelTuningConfig(bootstrap_initialization_rounds=20)` permits at most twenty
+probe rounds; this is a bounded startup hypothesis, not an automatic geometry
+estimate. The probe obeys `target_status_trace_policy`: `none` still checks
+finite retained/proposed states, values and scores but does not fabricate target
+status; `per_chain_step` requires complete valid telemetry. Initial or retained
+invalidity stops preparation. A rejected proposal may trigger shrinking and
+remains in the record. Startup's lower acceptance floor only nominates work for
+adaptation; final candidate acceptance requirements remain unchanged.
+
+q20 preparation additionally uses checkpointed four-transition bootstrap chunks.
+Its explicit `warmup_startup_only` role requires the inherited lower repair floor
+and finite retained/proposed state, score, target and status throughout startup;
+high acceptance does not trigger upward pre-adaptation refinement. This role does
+not declare the startup epsilon a stability ceiling: operational warmup performs
+its existing reasonable-step search. Final candidate measurement, verification,
+metric-update and posterior requirements still apply. The master estimates cost
+before each chunk and before complete mass adaptation, preserving an unaffordable
+stage as deferred. Checkpoints resume only with matching sources, target, starts
+and numerical configuration, into a fresh output directory.
 
 ## Evidence roles
 
@@ -133,6 +302,21 @@ rejected setting. Writers and readers preserve it; a verified member still
 requires its own fresh verification with valid evidence and no veto.
 
 ## Public imports and execution
+
+Initial geometry is implemented in `hmc_geometry.py`; bootstrap configuration,
+screening and bounded epsilon repair are implemented in `hmc_bootstrap.py`.
+Windowed preparation, its timeout policy and the frozen-mass/start-bank handoff
+are implemented in `hmc_mass_adaptation.py`.
+Public imports and historical `hmc_kernel_tuning` aliases resolve to the same
+definitions. Automatic preparation calls these implementations directly;
+public presets, configuration translation and geometry-scaled budgets live in
+`hmc_configuration.py`. The old module retains historical orchestration and
+readers, with aliases for the extracted definitions.
+These preparation helpers do not issue candidate-set tuning authority.
+Numerical bindings hash these implementations and their shared preparation
+helpers; seed records keep their existing identifiers while recording the
+current physical source locations. Old source-bound results retain their
+original provenance.
 
 ```python
 from bayesfilter.inference import (
@@ -196,6 +380,9 @@ A new run requires a fresh output directory. Complete results are written to
 `tuning_checkpoint.json` is atomically updated, alongside `execution_spec.json`,
 immutable numerical evidence files, and completed numerical chunks. Failed and
 zero-verified searches preserve observations and explanations too.
+Malformed provider data is recorded as an execution error before it can become
+an observation eligible for replay. An unchanged-scope retry retains its prior
+cost. Valid shared-failure observations remain in the checkpoint.
 
 Before frozen candidate execution exists, `preparation_progress.json` records
 phases, elapsed time and any failure. Ordinary preparation checks deadlines
@@ -244,7 +431,10 @@ verified members. `shared_invalidity` disables all replay.
 
 `complete` means that all work allowed by the declared search policy reached a
 terminal disposition. It can coexist with an empty verified set and does not
-prove that no viable kernel exists. `HMCTuningScopeCollection` resolves members
+prove that no viable kernel exists. Inspect the recorded limiting reason:
+`max_candidates`, `max_repairs_per_family`, `epsilon_domain`, or exhaustion of
+representable unvisited proposals. Refinement-cap counts include only eligible
+pairs still unadmitted in that round. `HMCTuningScopeCollection` resolves members
 across scope/search identities; its completeness requires all included searches
 to be complete and all explicitly expected scopes to be present.
 
@@ -287,6 +477,9 @@ Numerical analyses are cached by their current content hash, while live source,
 geometry, target and evidence mutation checks remain active. Predecessor archive
 validation uses an iterative walk. History hashing and target-scale memory costs
 remain; the implementation does not claim constant-cost restart.
+The entire live evidence inventory is checked for shared invalidity, including
+evidence recorded after the supplied result. An earlier result cannot restore
+membership after the same binding records a shared transition failure.
 
 `runner.run(..., previous_archive=...)` writes a fixed mechanics block from the
 verified/predecessor endpoint. It excludes tuning draws, checks numerical health
@@ -373,7 +566,7 @@ calibrated z tests. These extra drift criteria are not part of the common
 posterior assessment policy.
 
 See [the posterior example](../examples/hmc_posterior_precision.py) and
-[the combined repair and evidence plan](../plans/bayesfilter-hmc-overall-repair-plan-2026-09-15.md).
+[the active repair master program](../plans/bayesfilter-hmc-repair-master-program-2026-09-16.md).
 
 ## Testing the procedure and its diagnostics
 
@@ -384,6 +577,11 @@ accuracy, stopping and defect-detection experiments. The
 records actual target, route and device scope, including unavailable and
 incomplete work. A model listed in the target catalog is not automatically a
 tested model.
+
+Inferred suite requirements identify every planned design. A completed step-size
+or kernel-power cell cannot cover an unrun peer. Explicit category requirements
+can instead request any matching assessed design. Older saved plans lacking
+design IDs require inspection of individual rows for whole-suite completion.
 
 Automatic preparation, supplied geometry, and frozen transport have distinct
 coverage. Small complete-path cases assess every verified member. Full SBC uses
@@ -404,6 +602,37 @@ comparison denominator. Larger replicated experiments can assess a member
 selected by tuning identity before sampling, while retaining all unassessed
 siblings explicitly.
 
+An invariance design may set `options.kernel_power` to a positive integer s.
+Each experimental transition then composes s complete Metropolis transitions
+of the same frozen kernel, using separately derived substep seeds. This is the
+K^s extension in Gandy–Scott section 2.2, which preserves reversibility under
+the null. Power one preserves the original transition and stream. The engine
+checks finite states and log ratios across every substep and checks deadlines
+between graph calls; an invalid substep is missing numerical evidence, never
+statistical defect detection. The option is restricted to frozen invariance
+experiments. It provides no independence claim for posterior draws.
+
+An invariance design may separately enable `options.sequential` with
+`max_looks` and `sample_multiplier`. This implements Gandy–Scott Algorithm 3:
+each look runs a fresh, independently seeded complete experiment; sample count
+increases once after the first look. The declared family dimension is fixed and
+Bonferroni adjustment is applied once to the raw component p-values. Theorem 3.1
+bounds type-I error only when look vectors are independent and each component
+p-value is superuniform under the null. The wrapper cannot establish those
+assumptions for arbitrary callbacks. Numerical failures are invalid evidence,
+never statistical defect detection. This diagnostic option changes neither
+tuning membership nor posterior stopping and supplies no repeated-look coverage
+guarantee for their separate rules.
+
+The Gaussian mechanics experiment independently reconstructs the Metropolis
+log ratio from the analytic density and actual TFP endpoint momenta, and checks
+the selected state against the accepted mask. This directly tests the energy
+calculation, including the reversed-ratio defect. It does not measure the power
+of distributional tests. `options.profile_execution=true` saves an attempt's
+host profile, including engine failures. Profile time can include TensorFlow
+compilation and execution; it is not a separate GPU kernel timing. An unwritable
+profile is reported without hiding the numerical outcome.
+
 Validation of native automatic initialization passes no supplied search
 configuration. A fixed epsilon declared before preparation is a different
 experiment and can exceed the prepared metric's bound. Even with native
@@ -418,6 +647,63 @@ passed. For multimodal targets, include relevant mode or other global quantities
 in posterior assessment and examine sensitivity to starting locations. A small
 MCSE within one visited mode does not quantify error relative to the full
 posterior.
+
+Validation designs can declare `global_quantities: ["left_mode_probability"]`
+for the mixture. The indicator then participates in posterior R-hat, ESS and
+mean precision under a stable quantity identity. Constant or unobserved events
+cannot grant precision. Stopped-interval reports use the independent mixture
+CDF and preserve this quantity's planned denominator when retained draws are
+unavailable. `mode_dispersed` is an explicit start regime for mixture
+routes preserving a supplied four-chain bank; it does not alter automatic
+preparation or guarantee unknown-mode discovery. The diagnostic `acceptance`
+engine measures the actual candidate screen with known-mean independent or
+persistent acceptance marks, retaining its measurement/verification/rung logic.
+Its results describe that screen, not HMC transitions or posterior convergence.
+
+The same `acceptance` engine now has explicitly separate numerical routes.
+`frozen` measures stationary TFP-HMC acceptance and requires exact reference
+starts; it does not test public qualification. `prepared` calls the public
+`tune_hmc_kernel` on one declared identity-metric Gaussian pair, with fixed
+tuning starts, fresh measurement/verification streams, declared evidence rungs
+and no repair children. Separate iid exact anchors and an independent endpoint
+energy calculation supply a stationary acceptance reference. They do not
+supply tuning starts or decisions. Whole searches are the independent units;
+their qualification rates do not certify sequential coverage or automatic
+preparation. Acceptance may be nonmonotonic in epsilon at fixed L.
+
+For frozen Gaussian invariance, `options.gaussian_energy_test=true` adds the
+exact chi-square test for the sum of squared standardized independent
+endpoints. `options.invariance_quantities` can predeclare a subset of the
+available rank/KS quantities. Multiplicity includes every declared test,
+including energy. Adjacent chain states do not qualify as iid endpoints.
+Stopped/fixed reports give both all-planned and available-interval coverage;
+conditional repeated fits of one dataset are distinct from prior-predictive
+SBC. A finite MCSE or a posterior runtime-check pass does not certify coverage.
+
+The active repair sequence, budgets and remaining evidence requirements are in
+the [master program](../plans/bayesfilter-hmc-repair-master-program-2026-09-16.md).
+
+The validation adapters for noncentered eight-schools and `sblrc-blr` regression
+match pinned posteriordb Stan laws, data and coordinate Jacobians. Their campaign
+calls the same public ordinary tuner and assesses a predeclared member against
+ten-chain Stan references afterward. Combined lugsail uncertainty accounts for
+both finite samples. These case-specific comparisons cannot establish nominal
+coverage or validate a different consumer; the generic external-reference cells
+still require their own matched inputs. See the
+[M8 execution note](../plans/bayesfilter-hmc-repair-m8-result-2026-09-18.md).
+
+The [M15--M17 results](../plans/bayesfilter-hmc-repair-master-program-2026-09-16.md)
+extend the evidence to 246 complete fresh fits over 82 datasets, 576 numerical
+acceptance-boundary searches, 128 sequential defect experiments per device,
+21 geometry/route cells and four matched-reference fits. Their limits remain
+material: the small-rank SBC design has weak sensitivity to subtle bias;
+several sequential null intervals are too wide; centered funnels and mixtures
+can fail the bounded procedure; precision caps remain possible even when
+reference means agree. Frozen nonlinear transport and conditional position-field
+checks exercise replay and verification, not learned-transport training.
+The exact original MacroFinance reference is still unavailable. See the
+[M17 result](../plans/bayesfilter-hmc-repair-m17-result-2026-09-21.md) for each
+model, device, denominator and failure classification.
 
 These are development validation tools. They preserve tuning qualification:
 R-hat, ESS and MCSE do not reject, rank, repair or delay tuning candidates.

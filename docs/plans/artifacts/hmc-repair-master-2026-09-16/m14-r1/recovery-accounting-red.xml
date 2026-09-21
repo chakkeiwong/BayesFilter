@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="11.044" timestamp="2026-09-21T03:02:16.153443+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_reader_reconstructs_probe_work[-1]" time="4.073"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x738c47b3aea0&gt;
+delta = -1
+
+    @pytest.mark.parametrize("delta", [-1, 1])
+    def test_recovery_reader_reconstructs_probe_work(monkeypatch, delta):
+        _inject(monkeypatch)
+        result = warmup.run_operational_windowed_warmup(**_kwargs())
+        payload = json.loads(json.dumps(result.public_payload()))
+        _validate_operational_warmup_payload(payload)
+        payload["preparation_recovery"]["charged_probe_transition_bound"] += delta
+&gt;       with pytest.raises(ValueError, match="probe.*work|work.*probe"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests/test_hmc_preparation_recovery.py:233: Failed</failure></testcase><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_reader_reconstructs_probe_work[1]" time="3.848"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x738c47b3b820&gt;
+delta = 1
+
+    @pytest.mark.parametrize("delta", [-1, 1])
+    def test_recovery_reader_reconstructs_probe_work(monkeypatch, delta):
+        _inject(monkeypatch)
+        result = warmup.run_operational_windowed_warmup(**_kwargs())
+        payload = json.loads(json.dumps(result.public_payload()))
+        _validate_operational_warmup_payload(payload)
+        payload["preparation_recovery"]["charged_probe_transition_bound"] += delta
+&gt;       with pytest.raises(ValueError, match="probe.*work|work.*probe"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests/test_hmc_preparation_recovery.py:233: Failed</failure></testcase></testsuite></testsuites>

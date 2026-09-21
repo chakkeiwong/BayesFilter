@@ -75,15 +75,18 @@ def run(design,root,deadline=None):
                 "status":"complete" if ranks else "missing_fit","output_rule":"last_retained_transition_first_chain",
                 "fit_independence":"fresh full fit randomness conditional on dataset"}
         write_json(path,record); records.append(record)
-    result=summarize_datasets(design,records)
+    result=summarize_datasets(design,records,unstarted_datasets=design.replications-len(records))
     write_json(root/"sbc.json",result)
     return result
 
 
-def summarize_datasets(design,records):
+def summarize_datasets(design,records,*,unstarted_datasets=None):
     """The same predeclared test for a single worker or an independent shard group."""
     if len(records)>design.replications:
         raise ValueError("more SBC dataset records than planned")
+    missing = design.replications-len(records)
+    if unstarted_datasets is not None and (type(unstarted_datasets) is not int or not 0 <= unstarted_datasets <= missing):
+        raise ValueError("unstarted count must be known and no greater than missing records")
     available=[r for r in records if r["status"]=="complete"]
     for row in available:
         if (len(row["fits"])!=design.rank_draws or len(row["fit_outputs_active"])!=design.rank_draws
@@ -98,7 +101,8 @@ def summarize_datasets(design,records):
             alpha=design.alpha,multiplicity=family) for key in available[0]["ranks"]}
     complete=len(available)==design.replications
     result={"datasets":records,"tests":tests,"planned":design.replications,"completed":len(available),
-            "unstarted_datasets":design.replications-len(records),
+            "missing_dataset_records":missing,
+            "unstarted_datasets":unstarted_datasets,
             "planned_fits":design.replications*design.rank_draws,
             "missing_fit_policy":"conditional ranks are descriptive only; incomplete SBC cannot establish unconditional calibration",
             "availability_interval":binomial_interval(len(available),design.replications),

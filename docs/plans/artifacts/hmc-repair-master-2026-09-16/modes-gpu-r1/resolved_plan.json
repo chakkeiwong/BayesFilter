@@ -1,0 +1,181 @@
+{
+  "aggregate_groups": [],
+  "budget_by_device": {
+    "cpu_reference": 0,
+    "gpu": 3600.0
+  },
+  "jobs": [
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "stopping",
+        "family": "multimodal",
+        "phase": "development",
+        "route": "prepared",
+        "start": "single_mode",
+        "target": "mixture",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1800.0,
+        "design_id": "master-mode-single-mode",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "stopping",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+        "options": {
+          "global_quantities": [
+            "left_mode_probability"
+          ],
+          "member_rule": "first_verified",
+          "plan_file": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          }
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "mode-aware posterior assessment under two predeclared start regimes",
+        "rank_draws": 2,
+        "replications": 2,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {},
+          "route": "prepared",
+          "start": "single_mode",
+          "target": "mixture"
+        },
+        "seed": 2026091622,
+        "step_size": 0.6
+      },
+      "identity": "ede6cc94ea430bc3b89f3b5a1533d373669b96557113b3f0717c62648674fa71",
+      "reason": null
+    },
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "stopping",
+        "family": "multimodal",
+        "phase": "development",
+        "route": "prepared",
+        "start": "mode_dispersed",
+        "target": "mixture",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 1800.0,
+        "design_id": "master-mode-mode-dispersed",
+        "device": "gpu",
+        "draws": 500,
+        "engine": "stopping",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+        "options": {
+          "global_quantities": [
+            "left_mode_probability"
+          ],
+          "member_rule": "first_verified",
+          "plan_file": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+          "posterior_members": "selected",
+          "posterior_settings": {
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000,
+            "retained_min_results": 1000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "warmup_min_results": 2000
+          }
+        },
+        "phase": "development",
+        "posterior_cap": 10000,
+        "purpose": "mode-aware posterior assessment under two predeclared start regimes",
+        "rank_draws": 2,
+        "replications": 2,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {},
+          "route": "prepared",
+          "start": "mode_dispersed",
+          "target": "mixture"
+        },
+        "seed": 2026091622,
+        "step_size": 0.6
+      },
+      "identity": "4aa2c421016f161bd7f0cf95c52da750331707acacec2fd6b17f8444fef8af48",
+      "reason": null
+    }
+  ],
+  "maximum_worker_seconds": 3600.0,
+  "no_numerical_execution": true,
+  "profile": "master",
+  "required_coverage": [
+    {
+      "control": "baseline",
+      "device": "gpu",
+      "engine": "stopping",
+      "family": "multimodal",
+      "phase": "development",
+      "route": "prepared",
+      "start": "single_mode",
+      "target": "mixture",
+      "transport": "none"
+    },
+    {
+      "control": "baseline",
+      "device": "gpu",
+      "engine": "stopping",
+      "family": "multimodal",
+      "phase": "development",
+      "route": "prepared",
+      "start": "mode_dispersed",
+      "target": "mixture",
+      "transport": "none"
+    }
+  ],
+  "schema": "bayesfilter.inference_validation_plan.v1",
+  "suite_id": "master-modes-gpu",
+  "suite_identity": "25bb88fe8359bee75e262856a37b40959e2b920e2d01b2f52ab19e0e7c6613e8"
+}

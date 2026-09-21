@@ -58,6 +58,8 @@ def summarize_pairs(records, planned, *, declared_names=()):
             errors = [r["error"] for r in rows if r.get("error") is not None]
             arms[arm] = {"available":available,"covered":covered,"planned":planned,
                          "unavailable":planned-available,"coverage_interval":binomial_interval(covered,planned),
+                         "conditional_coverage_interval":binomial_interval(covered,available) if available else None,
+                         "coverage_denominator":"all planned fits; unavailable intervals do not count as covered",
                          "mean_absolute_error":float(np.mean(np.abs(errors))) if errors else None}
         differences = [abs(p["stopped"][name]["error"])-abs(p["fixed"][name]["error"])
                        for p in records if name in p.get("stopped",{}) and name in p.get("fixed",{})

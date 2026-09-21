@@ -57,6 +57,122 @@ next is tried; with fallback disabled, it is a hard error.  The explicit fixed-
 identity policy ignores all hints.  Identity is a useful mechanics baseline,
 not evidence that an anisotropic posterior has identity geometry.
 
+When no hint is supplied, the initializer uses unit curvature frequencies;
+it does not estimate the target Hessian. A finite density or a near-zero score
+at the initial point therefore does not establish a stable initial step.
+Strongly scaled targets can fail the bootstrap before windowed adaptation or
+candidate search begins. Inspect that preparation failure and supply checked
+geometry in the active coordinates when available. Increasing the subsequent
+candidate budget does not repair a bootstrap that never reaches its handoff.
+
+An optional finite startup probe is available through
+\path{HMCKernelTuningConfig(bootstrap_initialization_rounds=20)}. Zero is the
+default; a positive integer bounds the number of rounds. Each round tests four
+independent momentum proposals and shrinks the step when proposals are invalid
+or acceptance is below the configured lower repair floor. The probe preserves
+the target, affine mass, failed proposals and separate seed stream. Its selected
+pair must still pass fresh bootstrap and operational adaptation. In this mode,
+bootstrap uses its \path{warmup_startup_only} role: high acceptance does not
+trigger upward refinement before adaptation, and the starting step is not
+declared a stability ceiling.
+
+The probe follows the declared target-status policy. With \path{none}, it checks
+finite retained and proposed states, values and scores without manufacturing
+status data. With \path{per_chain_step}, complete valid telemetry is also
+required. Invalid initial or retained states stop preparation. A finite startup
+nomination neither qualifies a final candidate nor establishes convergence.
+
+Preparation success need not mean that the mass changed. The
+\path{allow_valid_incumbent} policy permits zero empirical updates; inspect
+\path{operational_metric_update_count} when the initial geometry is poorly
+scaled. A regression diagnosis retained identity geometry throughout preparation
+and subsequently failed posterior equilibration despite verified tuning
+candidates. Ordinary operational preparation runs one chain; it constructs the
+four-chain bank for candidate verification afterwards. Its metric assessment
+preserves temporal order. For explicitly supplied multiple chains, temporal
+information is estimated separately within each chain. Split R-hat is reported
+when available and never vetoes or delays a metric proposal.
+
+The proposed position covariance is the finite-window centered second moment,
+divided by $N-1$, with correlations shrunk toward zero while preserving marginal
+variances. It is a geometry hypothesis during adaptation, not an unbiased
+posterior covariance estimate. State-count and temporal-information floors,
+numerical rank, condition and regularization-discrepancy checks screen this
+hypothesis. Positive-definiteness, coordinate reconstruction, target value/score
+parity and a fresh reasonable-step check are required before using its transform.
+
+Ordinary preparation records each completed window's metric decision and failed
+checks in \path{preparation_progress.json}. It also reports whether the scheduled
+windows can meet the state-count floors. The \path{standard} preset is a local
+diagnostic allocation: with the default metric policy, its 150 transitions in six dimensions contain slow
+windows of 30, 60 and 30, each shorter than the dense minimum of 64. The explicit
+\path{serious} preset funds a larger preparation. Inspect its actual decisions
+as well; neither a larger allocation nor an accepted metric update establishes
+posterior equilibration. Rejections preserve the incumbent and identify whether
+evidence, transform construction, affine parity or step qualification failed.
+
+At a metric change, the fresh step search starts from the previous coordinate
+system's bounded dual-averaging average. Clipping in log space before
+exponentiation prevents a large unconstrained adaptation proposal from
+exhausting the search before any usable step is tested. This old bound limits
+only the initial hypothesis: the search may expand in the new coordinates and
+must independently qualify its step. Rejected probes preserve their starting
+value and attempts. A nonfinite warmup trace identifies its failed fields and
+first indices; the failure still vetoes preparation.
+
+The optional \path{metric_evidence_policy="finite_window"} keeps the same
+covariance formula and numerical checks while treating temporal ESS as
+explanatory. The default \path{temporal_information} retains the ESS floor.
+With the optional policy, automatic preparation allocates slow windows large
+enough to reach the existing dense state-count floor when the declared budget
+permits, or the diagonal floor when only that is affordable. It preserves the
+total transitions and initial/final buffers, merging an undersized final slow
+remainder. Insufficient total capacity remains visible. This schedule change
+removes avoidable count failures; it does not establish adequate covariance
+information or posterior equilibration. Directly supplied schedules and the
+default policy retain their declared window lengths.
+This option permits an early geometry proposal before the chain has explored
+well enough to estimate posterior covariance precisely. For any fixed
+nonsingular affine factor $A$, $\theta=c+Az$ has transformed score
+$A^{\mathsf T}\nabla_\theta\ell$; exact-score Metropolis-adjusted sampling in
+the transformed coordinates does not require $AA^{\mathsf T}$ to equal the
+posterior covariance. Its usefulness still depends on exploration and numerical
+health. Adaptation must finish before candidate verification and retained draws.
+
+The option remains experimental. Its first matched regression preparation
+applied two updates and later failed a nonfinite warmup trace. The existing
+reasonable-step probe checks a few momenta at one state and cannot guarantee
+stability everywhere visited later. Preparation failures remain failures,
+and neither policy turns metric qualification into posterior convergence.
+
+The optional \path{metric_probe_num_results} extends each of the four independent
+metric-boundary probes to a short chain at fixed epsilon and fixed leapfrog
+count. Its default is one transition. A larger allocation, for example sixteen,
+tests evolving positions and checks every proposed and retained endpoint,
+score, momentum and energy correction before the existing acceptance bracket
+can qualify the step. The evidence records the probe length. Retained-state
+inconsistency or unclassified execution failure stops preparation; a failed
+proposal rejects that probe. This remains an experimental preparation option:
+short chains cannot guarantee global stability. Later warmup windows, candidate
+measurement and independent verification still require their own numerical
+checks. It neither adds R-hat admission nor retries an invalid warmup window.
+
+The separate optional \path{preparation_max_restarts} bounds recovery from
+rejected nonfinite proposals; its default is zero. Recovery requires finite
+retained states, values and scores, consistent acceptance decisions and valid
+declared telemetry. The entire failed preparation attempt is archived and its
+adaptation statistics discarded. A full new schedule starts from the failed
+window's independently validated starting state and qualified transform, with
+fresh streams and reset covariance and dual-averaging statistics. A new probe
+may only shrink from half the consumed failing step. High acceptance can
+nominate this conservative preparation step; it does not relax final candidate
+acceptance or independent verification. A changed metric still requires fresh
+qualification in its new coordinates. All discarded work and probe work counts
+toward finite attempt and execution budgets. Retained or shared invalidity and
+unclassified execution errors remain fatal. This ordinary-preparation option
+is experimental: three restarts is a development allocation, not a universal
+robustness guarantee.
+
 \lstinputlisting[language=Python,caption={Binding a local covariance estimate in the target coordinates.}]{examples/hmc_tuning_covariance_first.py}
 
 
@@ -99,9 +215,39 @@ the applicable maximum. An explicit \path{epsilon_by_l} may supply several propo
 at each $L$; \path{initial_epsilon} is a warm start when no grid is supplied.
 Every pair is measured independently. A shared numeric proposal at two values
 of $L$ transfers no acceptance evidence between them. The final-metric epsilon
-bound from operational preparation is a proposal safety bound, not cross-$L$
-qualification. Its final coordinate and metric signatures are retained with the
-bound, and direct preparation bindings intersect the requested domain with it.
+from operational preparation supplies the starting step and the inherited search
+ceiling. The short probe does not establish a stability limit or guarantee a
+suitable pair below that ceiling for every $L$. An explicit
+\path{candidate_search_bound_expansion_steps=1} widens the exploration cap by
+the existing repair factor, preserving the final metric and coordinates.
+Zero retains the inherited ceiling. Every explored pair still requires its own
+health checks, measurement and fresh verification. This optional setting is a
+search hypothesis whose calibration remains separate from its implementation.
+
+Direct preparation bindings expose \path{preparation_bound_expansion_steps}.
+They intersect the requested domain with the finite expanded cap, save the
+original bound and final metric/coordinate identities, and issue a new search
+identity. Existing scopes and verification receipts are immutable. Preparation
+failures preserve their stage and available veto causes in
+\path{preparation_progress.json} before raising an exception.
+Nonfinite diagnostic values are marked explicitly in the JSON record, preserving
+the original failure even when its numerical summaries cannot be finite.
+
+A multiplicative repair can jump from high acceptance directly to nonfinite
+trajectories. That nonfinite result supplies no valid acceptance direction,
+so it cannot form the opposing-evidence interval used by refinement. The optional
+\path{explore_failed_intervals=True} controller setting allows funded refinement
+rounds to explore the unvisited geometric interior between a valid directional
+parent and its nearest numerically rejected same-$L$ child. Each proposal is a
+new same-family child of the valid parent; both source receipts are recorded,
+and the failed endpoint stays rejected. This interval is an exploration
+hypothesis, not a stability bound or an assertion of monotone acceptance.
+Missing telemetry, unknown invalidity, invalid retained states and shared
+corruption cannot supply such endpoints. Family, candidate and work limits
+still apply, and every proposed pair needs measurement and independent
+verification. The option is disabled by default. An explicit intermediate grid
+in a fresh scope remains available. Neither procedure exhausts the continuous
+epsilon domain.
 
 The automatic preparation translation enables one pilot per $L$ and one bounded
 refinement round. A direct controller config can disable these optional stages
@@ -304,6 +450,10 @@ and zero-verified searches, are retained. Complete results use
 \path{candidate_set_result.json} and are never overwritten. Resource failures
 pause with their reason; unexpected exceptions preserve state and propagate.
 Optional diagnostic errors cannot erase completed numerical evidence.
+Malformed provider data is recorded as an execution error before it enters the
+observation history; retry retains the attempted cost. Valid shared-failure
+observations remain recorded. If the same live binding later records shared
+invalidity, even a member verified earlier becomes unavailable for replay.
 
 \path{resume_hmc_candidate_set_tuning} reconstructs the same geometry, policy,
 evidence, candidates and work queue using the original target. It checks source
@@ -359,7 +509,10 @@ adaptation, discarded equilibration and retained precision.
 
 The status \path{complete} means the declared search reached terminal
 dispositions; its verified set may be empty. It does not prove the absence of a
-useful kernel. Reporting collections resolve explicit scope/search/member
+useful kernel. The recorded limiting reason distinguishes the candidate cap,
+the family repair count, the epsilon domain and exhaustion of representable
+unvisited proposals. At a refinement cap, the remaining count includes only
+eligible pairs not yet admitted in that round. Reporting collections resolve explicit scope/search/member
 identities and require every included search to complete, independently of
 their ordering.
 
@@ -397,6 +550,44 @@ with independent calculations. Frozen-kernel experiments test invariance using
 independent reference draws and a reversible random-position construction.
 The latter uses Algorithm 2 and Proposition 2.3 of
 \citet{gandy2021mcmctesting}; it applies to frozen reversible kernels.
+An experiment may replace its kernel $K$ by $K^s$, composing $s$ complete
+Metropolis transitions with independent randomness at each substep. Repeated
+composition of this same reversible kernel preserves reversibility; section 2.2
+of that paper proposes this extension to improve sensitivity to subtle errors.
+Sensitivity still needs measurement for the chosen alternative. The option
+\path{kernel_power} applies only to the frozen invariance experiment. It does
+not make posterior draws independent. Finite states and log acceptance ratios are checked at every
+substep, including earlier substeps when the final one is finite.
+
+A separate optional wrapper implements Algorithm 3 of
+\citet{gandy2021mcmctesting}. Each look uses an independently seeded complete
+experiment, with the sample count increased once after the first look. For
+overall level $\alpha$, at most $k$ looks and a fixed family of $d$ component
+tests, initialize $\beta=\alpha/k$ and $\gamma=\beta^{1/k}$. At each look,
+set $q=d\min_j p_j$. Reject when $q\leq\beta$, stop without rejection when
+$q>\gamma+\beta$, and otherwise continue with $\beta\leftarrow\beta/\gamma$.
+Theorem 3.1 bounds the probability of rejection under the null by $\alpha$
+when the look vectors are independent and each component p-value is
+superuniform. Fresh experiments are essential: repeatedly testing cumulative
+posterior draws would not satisfy that independence condition. Numerical
+failures invalidate the affected experiment; they do not count as defect
+detection. This wrapper is a validation experiment and does not alter the
+tuning acceptance screen, warmup checks or posterior precision stopping.
+
+The Gaussian mechanics experiment also reconstructs the Metropolis log ratio
+from an independent analytic density and the actual TFP endpoint momenta. It
+checks that the returned state agrees with the recorded accept/reject decision.
+This arithmetic check can expose a reversed energy correction even when a short
+distributional experiment has little power to detect its effect.
+For an identity-metric Gaussian, an additional fixed-look test uses the sum
+of squared standardized endpoint coordinates. Starting from independent exact
+Gaussian draws makes the endpoints independent under the correct frozen
+kernel, so this sum has a chi-squared distribution with degrees of freedom
+equal to the number of draws times the dimension. The experiment adjusts for
+all declared radius, rank and energy tests. Adjacent states from one chain
+cannot replace independent endpoints in this calculation. Null controls and
+complete repeated experiments measure size and power for the declared defect;
+one detected error does not establish broad sensitivity.
 Controller tests check that every qualified pair is retained, each repair keeps
 its own L, and fresh verification and restart preserve the numerical record.
 Full-procedure experiments then call the public tuner and run the separate
@@ -418,6 +609,18 @@ independent calibration replications.
 The rank argument follows \citet{talts2020sbc}; the likelihood quantities follow
 the sensitivity analysis of \citet{modrak2023sbcquantities}.
 
+The later M15 experiment obtained all 246 planned fitted outputs over 82 fresh
+datasets, using three independently fitted outputs per dataset. Its rank tests
+did not reject, but three rank draws give a coarse test. Independent analytic
+controls in M16 showed that the 32-dataset normal design detected a shift of
+one quarter of a posterior standard deviation in only 27 of 256 experiments,
+and a half-standard-deviation shift in 64 of 256. The corresponding
+nonrejection therefore supplies little evidence against those errors. These
+controls measure the rank statistic's sensitivity; they do not measure defect
+power of the complete HMC procedure. The full denominators, uncertainty and
+source versions are recorded in the M15 and M16 result notes under
+\path{docs/plans/}.
+
 An invariant kernel can remain motionless or revisit only a few states.
 Identity and two-cycle controls therefore accompany the distributional tests.
 Similarly, an MCSE estimator can perform adequately on fixed-length stationary
@@ -431,6 +634,11 @@ may miss. Missing arms remain in the comparison denominator; pointwise
 uncertainty intervals from a small number of replications do not establish a
 ranking or nominal sequential coverage. No R-hat, ESS or MCSE assessment changes
 tuning membership.
+Coverage is reported both over all planned fits and conditional on an available
+interval. Repeating a fit to one fixed dataset measures conditional behavior;
+it is distinct from prior-predictive simulation-based calibration. A longer
+fixed-count arm can also have inaccurate uncertainty estimates, so disagreement
+with nominal coverage does not by itself identify optional stopping as the cause.
 
 The September 2026 campaign observed this distinction directly. A Gaussian
 mixture run passed its local posterior checks after 6,500 discarded and 2,000
@@ -441,6 +649,38 @@ to the full posterior. Target-specific posterior assessment should include
 relevant mode or other global quantities and examine sensitivity to starting
 locations. The saved result and its limited replication evidence are documented
 in \path{docs/plans/bayesfilter-inference-validation-24h-result-2026-09-16.md}.
+Validation designs may now declare the mixture probability $P(x<0)$ as a
+monitored posterior mean. It receives the same diagnostic and precision checks
+as the other declared quantities; a constant event indicator supplies no usable
+precision estimate. A separate experiment starts chains in both known modes.
+These checks address the saved failure mechanism without establishing discovery
+of unknown modes. Synthetic acceptance calibration separately measures the
+candidate screen near its practical and repair boundaries, including repeated
+evidence allocations. It does not establish posterior validity.
+The separate numerical acceptance experiment calls the public tuner on a
+declared identity-metric Gaussian pair. Every repeated search measures that
+exact pair from the fixed tuning starts, with no repair children. Each
+measurement survivor receives its own fresh verification. Independent exact
+Gaussian anchors supply a stationary acceptance
+reference using actual Metropolis transitions and a separate endpoint-energy
+check. That reference neither supplies tuning starts nor determines qualification.
+Stationary acceptance and acceptance over a finite window from fixed starts
+are different quantities; their difference is part of the experiment.
+Observed qualification rates therefore describe the operational compatibility
+screen, not nominal sequential coverage or automatic-preparation reliability.
+The M16 experiment completed 384 CPU-reference and 192 GPU/XLA searches around
+stationary acceptance values from .64 to .76. Pairs on both sides of the
+nominal [.65,.75] band could qualify. This is consistent with the implemented
+uncertainty-aware compatibility rule, whose finite-start evidence measures a
+different quantity from the independent stationary reference. Separately, 128
+complete sequential validation experiments per device detected the declared
+reversed-Metropolis-ratio defect every time. Three of the four baseline/no-op
+null intervals were still too wide for the declared size-precision screen.
+That result supports detection of this defect while leaving null-size
+precision and sensitivity to other defects unresolved.
+Stopped-interval reporting compares the monitored mode probability with its
+independent mixture CDF. That quantity remains in the planned denominator when
+warmup ends without retained draws.
 
 Automatic initialization and supplied epsilon proposals are distinct subjects
 of validation. A supplied proposal can exceed the final prepared metric's bound;
@@ -450,6 +690,38 @@ calibration experiment must preserve those missing fits, even when all observed
 ranks among successful fits look uniform. Parallel dataset groups are combined
 only when declared together with identical settings and frozen source; pilot and
 repaired experiments remain separate.
+
+Matched consumer comparisons use the same public ordinary tuner and posterior
+controller. The explicit noncentered eight-schools and Bayesian regression
+adapters reproduce the pinned posteriordb Stan laws, observations and coordinate
+Jacobians. A member is selected by tuning identity before posterior sampling;
+every other verified member remains recorded. The ten-chain Stan reference is
+used only for the subsequent comparison, with lugsail uncertainty from both
+finite samples. Agreement within a declared practical margin is a
+target-specific accuracy screen. It neither makes the reference exact nor
+establishes calibration for another dataset or consumer. Exact inputs, commands
+and results are recorded in
+\path{docs/plans/bayesfilter-hmc-repair-m8-result-2026-09-18.md}.
+
+The later M17 matrix completed 21 model/route fits and four matched-reference
+fits. Eleven matrix members and three reference members passed their full
+declared posterior checks. Centered funnels produced no verified member;
+mixtures reached the warmup cap; rotated Gaussian, noncentered funnel and CPU
+eight-schools fits reached retained precision caps. Their verified kernels
+remain in the tuning set. All four reference fits met the declared mean
+agreement margins, illustrating why reference mean agreement and requested
+precision must be reported separately. Six conditional position-field cases
+also exercised fresh verification and durable restart. Fixed nonlinear maps
+in this matrix were not trained. Exact model/device outcomes and source versions
+are recorded in \path{docs/plans/bayesfilter-hmc-repair-m17-result-2026-09-21.md}.
+The original MacroFinance target and matched posterior reference remain a
+separate missing comparison.
+
+Cost pilots can save a host profile of automatic preparation, candidate search,
+export/reload and posterior assessment. The profile includes failed attempts;
+a framework call may include both compilation and execution time. Such a pilot
+identifies costs to investigate before funding more replications. It does not
+establish statistical calibration or rank the viable kernels by efficiency.
 
 The executable suite definitions are documented in
 \path{docs/validation/README.md}. The following table is generated from their
@@ -463,9 +735,35 @@ Each experiment declares its evidence scope. Incomplete confirmation cannot
 establish calibration; statistical uncertainty and unresolved coverage are
 reported with the underlying observations.
 
+The table covers suite reports. Separately executed phase diagnostics, including
+the matched posteriordb comparisons above, are recorded in their phase results.
+An unavailable external eight-schools row refers to that original suite's
+missing reference bundle; it does not negate the later explicitly bound
+eight-schools comparison. Neither supplies the absent MacroFinance reference.
+
+Automatically inferred suite requirements identify each planned design, so a
+completed step-size or kernel-power setting cannot cover an unrun setting in
+the same category. Explicit category requirements may request any matching
+assessed design. Older saved plans without design identifiers retain that
+category-level meaning; their individual rows determine whole-suite completion.
+
 \input{generated/inference_validation_coverage}
 
 \section{Historical readers and complete interface inventory}
+
+Initial geometry and bootstrap screening are implemented in
+\path{hmc_geometry.py} and \path{hmc_bootstrap.py}, respectively.
+Windowed preparation, its timeout policy and the frozen-mass/start-bank handoff
+are implemented in \path{hmc_mass_adaptation.py}.
+Public imports and historical \path{hmc_kernel_tuning} aliases resolve to the
+same definitions. Automatic preparation calls these implementations directly;
+public presets, configuration translation and geometry-scaled budgets live in
+\path{hmc_configuration.py}. The old module retains historical orchestration and
+readers, with aliases for the extracted definitions.
+These helpers do not issue candidate-set tuning authority. Numerical bindings
+include their source files and shared preparation helpers. Seed identifiers
+remain stable, while live seed records name the current implementation files.
+Historical results retain their original source provenance.
 \label{sec:bf-hmc-complete-interface-inventory}
 
 Earlier single-kernel ordinary, fixed-transport and typed TensorFlow results

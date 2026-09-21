@@ -54,6 +54,70 @@ class FrozenTransition:
             return out, kr.log_accept_ratio
         self.step = tf.function(step, input_signature=[tf.TensorSpec([chains,target.parameter_dim],tf.float64),
             tf.TensorSpec([2],tf.int32)], autograph=False, jit_compile=jit_compile)
+        self._powered_steps = {1: self.step}
+        self._powered_steps_with_health = {}
+        self._signature = self.step.input_signature
+        self._jit_compile = jit_compile
+
+        def audit_step(q, seed):
+            out, results = kernel.one_step(q, kernel.bootstrap_results(q), seed=seed)
+            proposal = results.proposed_results
+            return {"state": out, "proposed_state": results.proposed_state,
+                    "initial_momentum": proposal.initial_momentum[0],
+                    "final_momentum": proposal.final_momentum[0],
+                    "log_accept_ratio": results.log_accept_ratio,
+                    "is_accepted": results.is_accepted}
+
+        # Inspect actual TFP proposal/momentum evidence for the independent
+        # Metropolis-energy oracle. This diagnostic has no tuning authority.
+        self.audit_step = tf.function(audit_step, input_signature=self._signature,
+                                      autograph=False, jit_compile=jit_compile)
+
+    def powered_step(self, power, *, with_health=False):
+        """Compose the same complete MH transition K a fixed number of times.
+
+        Gandy--Scott section 2.2 permits K^s in its random-position experiment.
+        The second return is the LAST substep's log ratio, never an acceptance
+        ratio for the composition. Power one preserves the original stream.
+        With health enabled, a third return checks finite states and log ratios
+        over every substep, including those preceding a finite final substep.
+        """
+        if type(power) is not int or not 1 <= power < 2**31:
+            raise ValueError("kernel power must be a positive int32 count")
+        if with_health:
+            if power not in self._powered_steps_with_health:
+                def composed_with_health(q, seed):
+                    def body(index, state, last_ratio, healthy):
+                        sub_seed = (seed if power == 1 else
+                                    tf.random.experimental.stateless_fold_in(seed, index))
+                        state, last_ratio = self.step(state, sub_seed)
+                        healthy = (healthy & tf.reduce_all(tf.math.is_finite(state))
+                                   & tf.reduce_all(tf.math.is_finite(last_ratio)))
+                        return index + 1, state, last_ratio, healthy
+                    _, state, last_ratio, healthy = tf.while_loop(
+                        lambda index, *_: index < power, body,
+                        (tf.constant(0), q, tf.zeros(q.shape[:1], q.dtype),
+                         tf.reduce_all(tf.math.is_finite(q))), parallel_iterations=1)
+                    return state, last_ratio, healthy
+                self._powered_steps_with_health[power] = tf.function(
+                    composed_with_health, input_signature=self._signature,
+                    autograph=False, jit_compile=self._jit_compile)
+            return self._powered_steps_with_health[power]
+        if power not in self._powered_steps:
+            def composed(q, seed):
+                def body(index, state, last_ratio):
+                    sub_seed = tf.random.experimental.stateless_fold_in(seed, index)
+                    state, last_ratio = self.step(state, sub_seed)
+                    return index + 1, state, last_ratio
+                _, state, last_ratio = tf.while_loop(
+                    lambda index, *_: index < power, body,
+                    (tf.constant(0), q, tf.zeros(q.shape[:1], q.dtype)),
+                    parallel_iterations=1)
+                return state, last_ratio
+            self._powered_steps[power] = tf.function(
+                composed, input_signature=self._signature,
+                autograph=False, jit_compile=self._jit_compile)
+        return self._powered_steps[power]
 
 
 def initial_starts(target, regime):
@@ -63,7 +127,13 @@ def initial_starts(target, regime):
     starts = tf.broadcast_to(shifts, [4,d])
     if regime == "remote": starts += tf.constant(8., tf.float64)
     if regime == "single_mode": starts += tf.constant(-5., tf.float64)
+    if regime == "mode_dispersed":
+        centers = tf.constant([-1., -1., 1., 1.], tf.float64) * target.parameters.get("separation", 5.)
+        starts = tf.concat([(centers + shifts[:, 0])[..., None], starts[:, 1:]], axis=1)
     if regime == "reference": raise ValueError("reference starts are only for invariance")
+    if target.target_id == "funnel_noncentered":
+        # Preserve the centered fixture's model starts before changing coordinates.
+        starts = tf.concat([starts[:, :1], tf.exp(-starts[:, :1]/2)*starts[:, 1:]], -1)
     return starts
 
 
@@ -73,6 +143,18 @@ def selected_member_ids(design, candidates):
     if design.options.get("member_rule", "declared_l_first") == "declared_l_first":
         rows = [(cid, steps) for cid, steps in rows if steps == design.member_l]
     return tuple(cid for cid, _ in sorted(rows)[:1])
+
+
+def posterior_quantities(design):
+    """Only predeclared functions enter stopping; exact truth stays assessor-only."""
+    names = design.options.get("global_quantities", [])
+    if not names:
+        return None, None
+    if names != ["left_mode_probability"] or design.scenario.target != "mixture":
+        raise ValueError("unsupported posterior quantity definition")
+    def quantities(draws):
+        return {"left_mode_probability": tf.cast(draws[..., 0] < 0., tf.float64)}
+    return "validation.mixture.left_of_zero.v1", quantities
 
 
 def run_fixed_comparator(member, target, settings, directory, seed_parts, deadline):
@@ -177,6 +259,11 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     elif scenario.route == "ordinary":
         cfg = HMCKernelTuningConfig(preset=design.options.get("preparation_preset","standard"),
             use_xla=design.device=="gpu", target_scope="inference_validation", seed=seed,
+            candidate_search_bound_expansion_steps=design.options.get("preparation_bound_expansion_steps", 0),
+            bootstrap_initialization_rounds=design.options.get("bootstrap_initialization_rounds", 0),
+            metric_evidence_policy=design.options.get("metric_evidence_policy", "temporal_information"),
+            metric_probe_num_results=design.options.get("metric_probe_num_results", 1),
+            preparation_max_restarts=design.options.get("preparation_max_restarts", 0),
             target_accept_prob=acceptance_policy.target, acceptance_band=acceptance_policy.practical_region,
             repair_band=acceptance_policy.repair_region)
         # Automatic preparation accepts one model position and constructs its
@@ -255,8 +342,11 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         if target.spec.finite_variance:
             precision_targets.extend(HMCPrecisionTarget(name, kind="mean", mcse_absolute_max=design.mcse_tolerance)
                                      for name in target.spec.parameters)
+        quantities_id, quantities_fn = posterior_quantities(design)
+        precision_targets.extend(HMCPrecisionTarget(name, kind="mean", mcse_absolute_max=design.mcse_tolerance)
+                                 for name in design.options.get("global_quantities", []))
         policy=HMCPosteriorAssessmentPolicy(precision=HMCPrecisionPolicy(tuple(precision_targets),
-            method="lugsail",jit_compile=design.device=="gpu"))
+            method="lugsail",jit_compile=design.device=="gpu"), quantities_id=quantities_id)
         counts = dict(warmup_chunk_results=count,warmup_min_results=count,warmup_check_window_results=count,
             warmup_max_results=design.posterior_cap,retained_chunk_results=count,retained_min_results=count,
             retained_max_results=design.posterior_cap)
@@ -267,10 +357,11 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
             **counts,assessment_policy=policy)
         posterior_started = time.monotonic()
         with DurableTensorCheckpoint(directory/"posterior_chunks",{
-            "member":member.member_hash,"policy":policy.payload(),"quantities":"model_coordinates.v1",
+            "member":member.member_hash,"policy":policy.payload(),"quantities":quantities_id or "model_coordinates.v1",
             "parameters":target.spec.parameters}) as store:
             posterior=run_hmc_posterior(member=member,config=config,parameter_names=target.spec.parameters,
                 model_transform=target.to_model,checkpoint_store=store,
+                quantities_fn=quantities_fn,
                 budget_check=lambda _: deadline is None or time.monotonic() < deadline)
         posterior_seconds = time.monotonic() - posterior_started
         raw=posterior["private_retained_raw"]
