@@ -1,19 +1,23 @@
 # HMC Tuning Interface
 
-Last checked: 2026-08-29. The prose contract is exercised by
+Last checked: 2026-09-05. The prose contract is exercised by
 `tests/test_hmc_tuning_documentation_contract.py`; the route table is generated
 from the executable capability registry.
 
-Read this before changing an HMC consumer. Exactly two routes are active and
-may issue BayesFilter tuning artifacts. Several diagnostic or historical
-records also have `interface_kind="public_tuner"`; that field alone does not
-confer active status or artifact authority. A chain runner or stage helper is
-not a complete tuner.
+Read this before changing an HMC consumer. There are exactly two public tuners:
+`tune_hmc_kernel` and `tune_fixed_transport_hmc_kernel`. Diagnostic and
+historical procedures have explicit helper kinds and no artifact authority. A
+chain runner or stage helper is not a complete tuner. Replayable artifact
+authority is distinct from scientific/promotion authority: the ordinary
+runtime currently carries a known NumPy-policy blocker, so its public result is
+explicitly non-admitting for claims, default promotion, and posterior admission
+until that debt is repaired or a reviewed exception is recorded.
 
-At this revision, the only canonical artifact-authority entry points are
-`tune_hmc_kernel` and `tune_fixed_transport_hmc_kernel`. Exported discovery,
-refinement, campaign, runner, and stage helpers remain diagnostics unless the
-capability registry and active route table explicitly say otherwise.
+Use the package imports shown below. Implementation modules do not define a
+second ordinary tuner. Exported discovery, refinement, campaign, runner, and
+stage helpers remain diagnostics; they are not additional tuning choices.
+The generated capability table is an audit inventory, not a menu of supported
+tuning procedures.
 
 Import and compare the schemas rather than copying their values:
 
@@ -26,31 +30,27 @@ from bayesfilter.inference import (
 ```
 
 At this revision the capability-registry schema is
-`bayesfilter.hmc_tuning_capability_registry.v1`, the runner-binding schema is
+`bayesfilter.hmc_tuning_capability_registry.v2`, the runner-binding schema is
 `bayesfilter.hmc_tuning_runner_binding.v2`, and the ordinary fixed-kernel
 handoff threshold is defined by `HMC_TUNING_ORDINARY_RHAT_THRESHOLD`.
 
 ## Route Decision
 
-1. Identify the exact log target, matching score, and coordinates.
-2. For an ordinary adapter target, use `tune_hmc_kernel` and
-   `HMCKernelTuningConfig`.
-3. For one genuine frozen nonlinear transport with the Jacobian-corrected
-   transformed value and matching score, use
-   `tune_fixed_transport_hmc_kernel` and
-   `FixedTransportHMCKernelTuningConfig`.
-4. For a raw-coordinate frozen position-only proposal field, create a
-   repository binding with `bind_neural_force_hmc_tuning_runner` and pass that
-   binding to `tune_hmc_kernel`. The binding must supply the exact endpoint
-   potential and must label the proposal field honestly; this branch does not
-   relabel a non-gradient field as the exact adapter score.
-5. Stop when none of those prerequisites holds. Do not relabel a chain runner
-   or historical helper as a tuner.
+First identify the target measure, score or proposal field, and coordinate
+system. Then use this table. Each row has one primary instruction and at most
+one weaker conditional alternative.
 
-This choice is conditional on what the supplied field actually computes. If it
-is the exact score used by ordinary HMC, the default ordinary runner is the
-right mechanism. If it is a different deterministic position-only proposal
-field, it must be labeled as such and use the typed endpoint-corrected binding.
+| Situation | Primary instruction | Conditional alternative or stop |
+| --- | --- | --- |
+| Ordinary coordinates with an exact log target and matching exact score | Call `tune_hmc_kernel` with `HMCKernelTuningConfig`. This is the canonical broad-first ordinary procedure. | Reuse a previously admitted result only when its complete tuning scope is unchanged; otherwise retune. |
+| One frozen nonlinear transport with the exact Jacobian-corrected transformed value and matching score | Call `tune_fixed_transport_hmc_kernel` with `FixedTransportHMCKernelTuningConfig` and the measured joint-grid policy. | Use the legacy directional policy only for mechanics debugging. It cannot issue a verified handoff. |
+| A deterministic position-only proposal field that is not the exact score, with an exact endpoint potential in the same coordinates | Build a repository binding with `bind_neural_force_hmc_tuning_runner`, then call `tune_hmc_kernel` with `TensorFlowHMCKernelTuningConfig`. | This is mechanics/candidate evidence only. If artifact-authoritative tuning is required, stop: no supported alternative currently exists. |
+| A chain-mechanics smoke or historical replay | Call the specific runner or helper named by that test or replay record. | Never use its output as a tuning handoff. |
+| None of the contracts above applies | Stop. | Do not relabel a runner, helper, arbitrary force, or partial derivative as a supported tuner. |
+
+If the supplied field is the exact ordinary score, use the first row and do not
+construct a runner binding. If it is a different deterministic proposal field,
+use the third row and retain its mechanics-only authority boundary.
 
 The registry is queryable without running a chain:
 
@@ -73,6 +73,94 @@ The generated complete table is
 is `HMC_TUNING_INTERFACE_CAPABILITIES`, and
 `scripts/render_hmc_tuning_interface_docs.py --check` rejects drift.
 
+## Downstream Static Audit
+
+Before changing a consumer, run the bounded standard-library audit and inspect
+its branch, consumer-role, NumPy, and provenance ledgers:
+
+```bash
+python scripts/audit_ordinary_hmc_migration_surface.py \
+  --downstream-root /home/ubuntu/python/MacroFinance \
+  --downstream-root /home/ubuntu/python/dsge_hmc
+```
+
+The report is a source-classification aid, not numerical evidence. A row marked
+`unknown_dynamic_import`, `unresolved_dynamic_attribute`, or
+`mixed_public_and_lower_level` requires manual role classification before a
+claim-adjacent consumer can be admitted. Generated reports belong under the
+ignored plan-artifact root; the authored execution note records the command
+and the unresolved rows.
+
+## Ordinary Default Policy
+
+For `tune_hmc_kernel` with `HMCKernelTuningConfig` or an omitted config, the
+resolved variant is `ordinary_hmc` with algorithm ID
+`ordinary_broad_fixed_metric_selection_v1`. After windowed mass warm-up, the
+tuner evaluates the complete primary grid `L=(3, 5, 9, 13, 18, 25)` and tunes
+epsilon independently for every `L`. It then evaluates one refinement barrier
+containing every untested floor/ceiling integer midpoint adjacent to a surviving
+primary value, again with an independent epsilon tune for every `L`. The
+geometry-derived trajectory target orders viable candidates for fresh
+verification; it does not construct or truncate the grid.
+
+The public config fixes the upper bound at `L=25` so the primary grid cannot be
+silently truncated. It exposes neither a caller-selected grid nor the private
+P4-E covariance-multiplier switch. The former shared-epsilon
+`operational_paired_fixed_trajectory_selection_v3` route and the internal
+`joint_l_epsilon_grid_fixed_mass_hmc` route remain readable compatibility
+identities, but both fail the public artifact-authority guard.
+
+The package also retains
+`run_fixed_mass_step_tuning_diagnostic`,
+`run_windowed_mass_adaptation_diagnostic`,
+`run_fixed_trajectory_tuning_diagnostic`,
+`run_gaussian_dual_averaging_diagnostic`, and
+`run_hmc_start_bank_diagnostic` for focused diagnostics and historical tests.
+Every one is registry-classified as `diagnostic_helper`, has no artifact
+authority, and names `tune_hmc_kernel` as its replacement. Do not assemble
+them into another ordinary tuning procedure.
+
+Fresh verification consumes the eligible measured pairs directly, in a
+deterministic order, and starts at most two candidates from that queue in one
+attempt. A passing candidate ends tuning. If neither candidate passes, a
+consistent acceptance-direction signal may seed the next complete attempt,
+but it does not skip mass adaptation or either broad-grid barrier; conflicting
+signals do not mutate epsilon. The public config fixes
+`operational_verification_bracket_policy="single_repair"` as a compatibility
+field. Supplying `one_verified_log_midpoint` fails at construction because that
+procedure belongs only to the explicitly selected historical shared-epsilon
+helper route.
+
+The route payload reports three separate roles: `operational_authority` for a
+stage route, `artifact_authority` for a replayable route artifact, and
+`scientific_promotion_authority` for a scientific/default claim. The first two
+are not evidence of the third. Inspect `result.payload()["resolved_policy"]`
+and require `claim_bearing_artifact_authority=True` only after the backend and
+target-specific evidence gates have passed; the current ordinary result sets
+it to `False` with blocker `ordinary_runtime_numpy_policy_pending`.
+
+The route can be inspected without constructing a chain:
+
+```python
+from bayesfilter.inference import HMCKernelTuningConfig
+from bayesfilter.hmc_route_contract import (
+    HMC_TOP_LEVEL_SELECTION_STAGE,
+    resolve_hmc_algorithm_route,
+)
+
+config = HMCKernelTuningConfig.standard()
+route = resolve_hmc_algorithm_route(
+    algorithm_id=config.algorithm_id,
+    stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+    chain_execution_mode=config.chain_execution_mode,
+    use_xla=config.use_xla,
+)
+print({"config_variant": "ordinary_hmc", "preset": config.preset, **route.payload()})
+```
+
+This is a construction-only inspection. It does not tune, initialize an HMC
+runner, or establish numerical validity.
+
 ## Exact Public Imports
 
 Ordinary target:
@@ -89,26 +177,31 @@ Frozen transport:
 ```python
 from bayesfilter.inference import (
     FixedTransportHMCKernelTuningConfig,
+    FIXED_TRANSPORT_HMC_MEASURED_POLICY,
     tune_fixed_transport_hmc_kernel,
 )
 ```
 
-Typed neural-force mechanics inside the ordinary ladder:
+Typed deterministic proposal-field mechanics:
 
 ```python
 from bayesfilter.inference import (
+    BoundRetainedHMCArchiveConfig,
     FrozenPositionOnlyForce,
     FrozenTargetPotential,
+    TensorFlowHMCKernelTuningConfig,
     bind_neural_force_hmc_tuning_runner,
+    build_retained_bound_hmc_archive_runner_from_tuning_result,
     tune_hmc_kernel,
 )
 ```
 
-`tune_hmc_kernel(..., runner_binding=binding)` accepts only a repository-issued
-`HMCTuningRunnerBinding`; a bare callable is invalid. The binding does not own
-tuning authority. It makes the ordinary tuner use the bound runner throughout
-mass adaptation, epsilon tuning, leapfrog-count selection, screening, fresh
-verification, and repair.
+`tune_hmc_kernel(..., config=tf_config, runner_binding=binding)` accepts the
+binding only when `tf_config` is a `TensorFlowHMCKernelTuningConfig`; a bare
+callable is invalid. Conversely, `HMCKernelTuningConfig` rejects any runner
+binding and always uses the exact adapter score with BayesFilter's default TFP
+runner. This typed dispatch rule prevents a deterministic non-score field from
+silently entering canonical ordinary HMC.
 
 The default ordinary runner requires an exact log target and matching score.
 The v2 typed deterministic-field branch instead requires an exact endpoint
@@ -123,8 +216,22 @@ claimed target. That equality still requires a target-specific check.
 The caller and tuner have different geometry responsibilities. The caller
 supplies a center and may supply a local geometry hypothesis. The tuner
 validates that input, constructs the affine fixed-mass adapter, performs
-windowed mass adaptation by default, tunes epsilon and `L`, screens candidates,
-runs fresh verification, and applies bounded repair.
+windowed mass adaptation by default, freezes the adapted metric and checked
+four-chain start bank, evaluates the complete primary `L` barrier with an
+independent epsilon ladder per value, evaluates one survivor-midpoint barrier,
+and sends eligible measured pairs directly to fresh verification. It does not
+perform a second local `L` search after broad selection.
+
+There is no second ordinary entry point hidden in an implementation module.
+`bayesfilter.inference.tune_hmc_kernel` is the same function object as
+`bayesfilter.inference.hmc_tuning_dispatch.tune_hmc_kernel`; the implementation
+module provides only the private canonical executor. The fixed-transport tuner
+likewise has one implementation, re-exported by the package.
+
+Each candidate binds the mass-artifact signature, target scope, coordinates, and
+metric signature. A mass-signature change invalidates the selection and its
+calibration; the stage emits a hard veto and no final handoff, so the caller
+must perform fresh tuning under the new geometry.
 
 For `mass_policy="windowed_adaptive"`, geometry hints are tried in this order:
 
@@ -170,21 +277,35 @@ ESS are disabled for ordinary tuning admission; retained posterior ESS is a
 separate check. Neither acceptance nor tuning R-hat proves retained posterior
 convergence.
 
-The legacy ordinary ladder currently imports NumPy and uses host numerical and
+The ordinary ladder currently imports NumPy and uses host numerical and
 serialization paths. This is BayesFilter-owned backend migration debt under
-`AGENTS.md`. A TensorFlow-only diagnostic prototype exercises typed mechanics,
-but it serializes `artifact_authority=False` and
-`admission_supported=False`. It has neither the ordinary fresh-R-hat handoff
-gate nor XLA qualification, so its acceptance and metric screens cannot issue a
-retained-kernel handoff or close a downstream TensorFlow/XLA requirement. Its
-screen role is named `diagnostic_candidate_screen`. Its exposed tuning
-hyperparameters have no numeric constructor defaults, but the implementation
-still fixes four chains, `float64`, four identical zero states in the current
-affine coordinates, `L=1` in metric windows, a powers-of-two trajectory grid,
-and a stateless seed-offset scheme. It also inherits TensorFlow Probability's
-internal dual-averaging defaults except for the explicit adaptation count and
-target acceptance. These are unqualified diagnostic choices, not admitted-route
-defaults.
+`AGENTS.md`; until repaired, the ordinary public result is non-admitting for
+claim-bearing use. The separate TensorFlow-only proposal-field branch has two
+evidence roles. `diagnostic_only` can never hand off. `candidate`
+may hand the same frozen transition to a retained pilot only when it selected a
+predeclared trajectory length, performed a rank-eligible valid metric update,
+recorded zero final-verification divergences, and passed the declared four-chain
+acceptance screen. Its artifact still serializes `artifact_authority=False`,
+`posterior_admission_authority=False`, and `admission_supported=False`: the
+handoff is mechanics authority, not posterior or scientific admission.
+
+Fresh retained R-hat and ESS are explanatory posterior diagnostics and do not
+enter this tuning handoff. The ordinary config currently defaults to
+`use_xla=False`, which is a documented policy mismatch under `AGENTS.md`, not
+an implicit qualification. A claim-adjacent consumer must wait for an XLA-on
+default or a scope-bound reviewed exception. That typed branch's exposed tuning
+hyperparameters have no numeric constructor defaults. The implementation fixes
+four chains and `float64`. A
+`candidate` must supply an explicit initial-position bank with shape `[4,d]`.
+The tuner preserves caller row order, uses the equal-row mean as the initial
+affine center, and maps each raw row into that chart. A `diagnostic_only` call
+may still supply one `[d]` position; BayesFilter replicates it deliberately and
+records `initial_position_was_replicated=True`. The remaining fixed policies are
+`L=1` in metric windows, a powers-of-two trajectory grid, and a stateless
+seed-offset scheme. The route also inherits TensorFlow Probability's internal
+dual-averaging defaults except for the explicit adaptation count and target
+acceptance. These are interface policies rather than evidence of posterior
+convergence or default readiness.
 
 ## Fixed Transport
 
@@ -201,21 +322,92 @@ ordinary ESS-disabled status and `1.01` R-hat threshold do not transfer to this
 route. Read the selected fixed-transport configuration and result schema rather
 than borrowing ordinary-tuner thresholds.
 
-### Keep the operational layers separate
+### Fixed-transport tuning policy
 
-BayesFilter exposes fixed-transport diagnostic procedures in addition to the
-public tuner. They solve different problems and their artifacts are not
-interchangeable:
+The artifact-authoritative fixed-transport policy is
+`measured_joint_grid_v1`. A configuration under this policy must explicitly
+declare `step_size_candidates` and at least two distinct values in
+`leapfrog_grid`; the dataclass does not invent a grid. The no-configuration
+convenience call supplies the small `(0.05, 0.1, 0.2)` baseline and records it
+as a repository convenience hypothesis, not target-specific evidence.
+The tuner executes every declared pair `(epsilon, L)` with the same frozen
+transport, target, coordinate identity, chain bank, and fixed-kernel screen.
+The candidate count is bounded by `max_joint_candidate_count`; a missing grid,
+duplicate-only grid, or exceeded bound fails before a chain is started. The
+legacy `fixed_grid_base_step_size_candidates` and
+`fixed_grid_scale_candidates` fields are accepted only as an explicitly
+recorded migration input and are expanded into measured pairs; they do not
+retain first-in-band or directional-repair semantics.
+
+Selection under `measured_joint_grid_v1` uses replicated fixed-kernel
+efficiency evidence (`replicated_min_bulk_ess_per_gradient`) followed by a
+disjoint held-out verification. Mean Metropolis acceptance probability and
+binary acceptance are both recorded, but neither is a convergence statistic.
+Movement, squared jump distance, energy/error telemetry, divergence provenance,
+and finite target/score checks are recorded with their stated diagnostic role.
+Missing or non-finite acceptance, and missing or non-positive
+retained-transition movement, are hard ineligibility conditions. An acceptance
+value outside the target band is instead recorded as a descriptive repair
+trigger in the measured route; it is not a validity veto, because a target such
+as `0.70` is an efficiency heuristic rather than a correctness condition.
+The selected candidate is never inferred from an unmeasured neighboring step
+size, and an acceptance target is not a substitute for an efficiency or health
+check.
+
+`legacy_directional_diagnostic_v1` preserves the former dual-averaging and
+factor-of-two ladder for migration and debugging only. Its result is stamped
+`diagnostic_only_legacy_policy`; the verified-handoff builder rejects it. At
+finite fixed `L`, leapfrog phase can make `a(epsilon,L)` non-monotone, so a
+higher acceptance does not justify multiplying epsilon and a lower acceptance
+does not justify dividing it without measuring the proposed pair. A harmonic
+oscillator makes this visible: the leapfrog phase is
+`theta(epsilon)=acos(1-epsilon^2/2)`, and the trajectory phase is
+`L*theta(epsilon)`, which can approach a return or resonance while acceptance
+remains high. This is why the measured policy evaluates the joint grid.
+
+The payload exposes distinct status fields: a candidate with finite target/score
+and valid transition health is `mechanics_validated`; a row that also passes
+the replicated efficiency screen is `tuning_candidate`; `posterior_ready`
+requires a later retained-chain assessment and is always false in this tuner.
+The result and final-kernel payloads carry `authority_status`,
+`posterior_status`, and `posterior_ready` explicitly so these labels cannot be
+inferred from a bare `passed` boolean.
+
+The July 2026 LGSSM validation caller is retained as a historical compatibility
+route and explicitly selects `legacy_directional_diagnostic_v1`. Its one-`L`
+ladder may emit diagnostics, but the handoff builder rejects it. Any active
+caller must provide a reviewed target-specific measured grid before it can
+issue a claim-bearing artifact.
+
+The same explicit legacy classification is required for the historical
+fixed-transport benchmark callers in this checkout, including the weighted
+three-mode, paper-d100, German reverse-comparator, strong-smooth, defensive
+analytic, banana-repair, replication, q=20 CPU validation, q=20 global-mixing,
+q=20 seed-B, and Chart-A six-`L` scripts. Their configurations set
+`FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY` and the historical
+`acceptance_target_distance` selector, so a bare `passed` value cannot issue a
+current measured-grid handoff. A caller that is intended to be active must
+replace that explicit legacy policy with a reviewed finite
+`step_size_candidates` grid and at least two `leapfrog_grid` values before it
+can use the measured policy.
+
+### Fixed-transport layers
+
+BayesFilter exposes one active fixed-transport tuner and retains three
+diagnostic procedures for compatibility. The diagnostic procedures solve narrower
+problems and are not alternatives in the route-decision table:
 
 1. `discover_fixed_transport_hmc_candidates` is diagnostic candidate
    nomination. It does not select or confirm a kernel.
-2. `refine_fixed_transport_hmc_candidates` is diagnostic, staged comparison of
+2. `run_fixed_transport_hmc_candidate_campaign` combines runner qualification
+   with candidate nomination. It records neither selection nor confirmation.
+3. `refine_fixed_transport_hmc_candidates` is diagnostic, staged comparison of
    nominated candidates. It does not issue an authoritative handoff.
-3. `tune_fixed_transport_hmc_kernel` is the active public tuner. Only this
-   layer can issue the fixed-transport tuning artifact described by the route
-   registry.
 
-Do not assemble the first two helpers into a new de facto tuning route in a
+`tune_fixed_transport_hmc_kernel` is the active public tuner. Only this layer
+can issue the fixed-transport tuning artifact described by the route registry.
+
+Do not assemble these helpers into a new de facto tuning route in a
 consumer. If their policy is wanted for an authoritative handoff, either feed
 the resulting proposal into an active public tuner that independently owns its
 required stages or implement and review a separate artifact-authority route.
@@ -265,25 +457,17 @@ short tuning screens; they are not posterior convergence runs. The default
 `replicated_min_bulk_ess_per_gradient` selection policy. It does not lengthen
 the default `acceptance_target_distance` branch.
 
-For the public fixed-grid branch, scales are evaluated in their declared order
-and the first healthy in-band screen stops traversal. That candidate then gets
-fresh verification. If this fresh verification fails, the public call ends
-without trying later declared scales. A plan must not promise continued scale
-search after failed verification unless the implementation is first changed
-and reviewed.
+For `measured_joint_grid_v1`, every declared pair is measured before selection;
+there is no first-in-band early stop. The selection and held-out budgets are
+explicit and disjoint. A failed pair is preserved as a candidate failure and
+does not invalidate the target or promote a neighboring unmeasured pair. A
+declared step above the configured hard cap is rejected before execution, so a
+cap-excluded pair is never counted as measured.
 
-For the public dual-averaging ladder, an in-band healthy screen stops the
-candidate ladder. A low-acceptance screen repairs toward a lower epsilon by
-dividing by `step_repair_factor`; a high-acceptance screen repairs toward a
-higher epsilon by multiplying by that factor. The default factor is `2`. This
-is a bounded multiplicative directional repair, not a continuous repair
-proportional to the measured distance from the acceptance band.
-
-The direction is intentional: all else equal, lowering epsilon normally raises
-acceptance and raising epsilon normally lowers it. Do not, however, infer an
-untested neighboring result from that local rule. At fixed finite `L`, leapfrog
-resonance can make acceptance non-monotone in epsilon, so a proposed neighboring
-epsilon must be measured with the declared screen and fresh seeds.
+The old directional ladder remains available only under
+`legacy_directional_diagnostic_v1`. Its factor-of-two repairs are explanatory
+diagnostics, not claim-bearing tuning evidence. Do not use its artifact as a
+kernel handoff or as a baseline for a new serious campaign.
 
 ### Promotion and failed-attempt discipline
 
@@ -318,6 +502,10 @@ rejected by the typed public binding.
 
 - Do not call a chain runner and describe it as full tuning.
 - Do not use a bare runner callback with `tune_hmc_kernel`.
+- Do not pass `runner_binding` with `HMCKernelTuningConfig`; use the typed
+  proposal-field branch only when its mechanics-only contract is intended.
+- Do not configure `engineering_probe_covariance_multiplier` through the public
+  ordinary config.
 - Do not pass an arbitrary position-only force to the fixed-transport tuner.
 - Do not claim ordinary mass adaptation for fixed identity mass in latent `z`.
 - Do not reuse a tuning artifact after any target, coordinate, transport,
@@ -336,10 +524,13 @@ Stop without issuing or consuming a handoff when:
 - the exact value and score do not describe the same probability measure;
 - a frozen transport or its Jacobian identity is missing;
 - neural force and endpoint target coordinates differ;
-- required telemetry, movement evidence, or source identity is missing;
+- required transition telemetry or source identity is missing; movement has no
+  additional candidate threshold unless the selected policy declares one;
 - fresh verification fails or exhausts its cap; or
-- a consumer requires TensorFlow-only or XLA-qualified ordinary tuning; the
-  current diagnostic TensorFlow prototype is not an admitted replacement; or
+- a candidate supplies only one initial position, rather than an explicit
+  four-chain bank; or
+- a consumer requires XLA-qualified tuning, because the ordinary default is
+  currently non-XLA and no reviewed exception record is present; or
 - result, route, or capability schemas are unsupported by the consumer's
   pinned BayesFilter commit.
 
@@ -347,9 +538,10 @@ Stop without issuing or consuming a handoff when:
 
 Accept a tuning result only after checking all of the following:
 
-- The capability record is `tested_supported`, has `artifact_authority=True`,
-  and its route record is active. `interface_kind="public_tuner"` alone is not
-  evidence of authority.
+- The capability record is `interface_kind="public_tuner"`,
+  `capability_status="tested_supported"`, has `artifact_authority=True`, and its
+  route record is active. Diagnostic and historical helpers never satisfy this
+  conjunction.
 - The result, capability-registry, and, when applicable, runner-binding schemas
   are explicitly supported by the consumer.
 - Target scope, coordinate signature, dimension, backend, dtype, XLA mode, and
@@ -360,7 +552,42 @@ Accept a tuning result only after checking all of the following:
   verifier must have no final kernel or public success payload.
 - The BayesFilter-owned private handoff exists for replay; redacted public
   status alone is not replayable.
+- A claim-adjacent retained consumer uses an explicit claim-bearing replay
+  builder and verifies `resolved_policy.claim_bearing_blockers == []` plus
+  `claim_bearing_artifact_authority=True`. A mechanics consumer instead uses
+  the explicit mechanics-only role; route-level `artifact_authority=True` is
+  not sufficient for posterior or scientific authority.
 - Tuning draws are excluded from retained posterior inference.
+
+### Durable typed TensorFlow replay
+
+A passing TensorFlow `candidate` is already bound to the endpoint target,
+proposal field, affine geometry, selected epsilon and `L`, final chain state,
+and source closure. Consume it only through the repository-issued binding:
+
+```python
+runner = build_retained_bound_hmc_archive_runner_from_tuning_result(
+    tuning_result=tuning_result,
+    runner_binding=binding,
+)
+pilot = runner.run(
+    BoundRetainedHMCArchiveConfig(
+        num_results=pilot_draws,
+        seed=pilot_seed,
+        output_dir=pilot_output,
+        budget_provenance=pilot_budget_provenance,
+    )
+)
+```
+
+The builder rejects a diagnostic or failed candidate, a changed binding, or a
+missing durable tuning manifest. It runs the same frozen bound transition; it
+does not switch to ordinary exact-gradient HMC. For an extension, pass the
+immediately preceding archive as `continuation_manifest`. BayesFilter verifies
+the predecessor and begins from its final active-coordinate state. The caller
+must not reconstruct the mass map or restart from the original tuning endpoint.
+This typed archive path is mechanics replay, not posterior admission; its
+`artifact_authority=False` binding must not be upgraded by the consumer.
 
 ### Durable ordinary replay
 
@@ -388,6 +615,46 @@ geometry from such a payload, the caller must provide the same explicit geometry
 inputs used originally. A public status payload without the private mass arrays
 is not replayable.
 
+### Replay roles and authority
+
+The historical-looking name
+`build_retained_frozen_kernel_hmc_adapter_from_tuning_payload` is retained for
+compatibility, but it is explicitly a `mechanics_only` replay boundary. The
+same is true of its `...from_tuning_result` form. Prefer the explicit aliases
+when writing new mechanics consumers:
+
+```python
+from bayesfilter.inference import (
+    build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload,
+    build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result,
+)
+```
+
+Claim-adjacent consumers must use the separate claim-bearing builders:
+
+```python
+from bayesfilter.inference import (
+    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload,
+    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result,
+    build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload,
+)
+```
+
+Those builders fail closed unless the repository-issued `resolved_policy`
+explicitly has an empty `claim_bearing_blockers` collection and
+`claim_bearing_artifact_authority=True`. The guard recomputes the ordinary
+epsilon/L policy from the repository-owned `config` (or the durable
+`tuning_config`) and compares both the embedded policy and blocker list; a
+caller-edited authority flag or blocker list cannot grant authority. They also
+require the persisted mechanics role to be `claim_bearing_retained`; a
+mechanics artifact cannot gain claim authority by changing a caller-side flag.
+The current ordinary route does not satisfy this gate: its result remains
+non-claim-bearing while the known NumPy runtime-policy blocker is unresolved.
+`admitted_kernel_mechanics_payload_from_tuning_result`
+therefore emits an explicit `mechanics_only` role,
+`authority_status=mechanics_only_nonclaiming`, and the source `tuning_config`
+needed for a future repository-owned policy check.
+
 Never infer compatibility from a matching schema string alone. Record the
 BayesFilter Git commit in the consumer, compare the current registry payload,
 and run that consumer's contract tests. A downstream lock update is a separate
@@ -404,6 +671,7 @@ owner-controlled migration.
 - Fixed-transport example: [hmc_tuning_fixed_transport.py](../examples/hmc_tuning_fixed_transport.py)
 - Route-selection example: [hmc_tuning_route_selection.py](../examples/hmc_tuning_route_selection.py)
 - Documentation contract: `tests/test_hmc_tuning_documentation_contract.py`
+- Bounded downstream audit: `scripts/audit_ordinary_hmc_migration_surface.py`
 - Ordinary admission and binding tests:
   `tests/test_hmc_kernel_tuning_public_api.py` and
   `tests/test_hmc_kernel_tuning_outer_loop.py`
@@ -414,7 +682,7 @@ owner-controlled migration.
 - Fixed-transport diagnostic discovery and refinement tests:
   `tests/test_fixed_transport_hmc_candidate_discovery.py`
 - Neural-force binding tests: `tests/test_neural_force_hmc.py`
-- Dispatcher and non-promoting TensorFlow diagnostic tests:
+- Dispatcher and TensorFlow diagnostic/candidate mechanics tests:
   `tests/test_hmc_tuning_dispatch.py`
 
 These checks establish interface behavior for their fixtures. They do not

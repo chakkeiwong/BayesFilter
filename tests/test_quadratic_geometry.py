@@ -179,6 +179,49 @@ def test_bad_holdout_fit_is_rejected() -> None:
     assert result.payload()["diagnostics"]["holdout_passed"] is False
 
 
+def test_holdout_gate_is_invariant_to_additive_log_target_shift() -> None:
+    def quartic_target(shift: float):
+        def value_and_score(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+            theta_array = tf.reshape(
+                tf.convert_to_tensor(theta, dtype=tf.float64), [-1]
+            )
+            value = tf.constant(shift, tf.float64) - tf.reduce_sum(
+                tf.pow(theta_array, 4)
+            )
+            return value, -4.0 * tf.pow(theta_array, 3)
+
+        return value_and_score
+
+    config = LowRankSPDQuadraticGeometryConfig(
+        rank=1,
+        sample_count=100,
+        trust_radius=1.0,
+        eigenvalue_floor=0.1,
+        holdout_rmse_abs_tolerance=1.0e-10,
+        holdout_rmse_rel_tolerance=1.0e-3,
+        seed=(701, 802),
+    )
+    baseline = fit_low_rank_spd_quadratic_geometry(
+        quartic_target(0.0), np.zeros(2), config=config
+    )
+    shifted = fit_low_rank_spd_quadratic_geometry(
+        quartic_target(1.0e6), np.zeros(2), config=config
+    )
+
+    assert baseline.status == "holdout_fit_rejected"
+    assert shifted.status == baseline.status
+    assert shifted.accepted is baseline.accepted
+    baseline_diagnostics = baseline.payload()["diagnostics"]
+    shifted_diagnostics = shifted.payload()["diagnostics"]
+    np.testing.assert_allclose(
+        shifted_diagnostics["holdout_threshold"],
+        baseline_diagnostics["holdout_threshold"],
+        rtol=0.0,
+        atol=1.0e-12,
+    )
+    assert shifted_diagnostics["holdout_passed"] is False
+
+
 def test_center_refinement_accepts_nearby_mode() -> None:
     precision = np.diag([2.0, 3.0])
     mode = np.array([0.1, -0.05])

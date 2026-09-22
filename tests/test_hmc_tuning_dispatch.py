@@ -10,6 +10,7 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.inference import (
+    BoundRetainedHMCArchiveConfig,
     DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
     FourChainMeanBandAcceptancePolicy,
     FrozenPositionOnlyForce,
@@ -23,6 +24,9 @@ from bayesfilter.inference import (
 from bayesfilter.inference import hmc_kernel_tuning
 from bayesfilter.inference import hmc_tensorflow_tuning
 from bayesfilter.inference import hmc_tuning_dispatch
+from bayesfilter.hmc_route_contract import (
+    LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+)
 
 
 class _Adapter:
@@ -111,15 +115,27 @@ def test_legacy_dispatch_calls_private_implementation_once(
     assert observed["adapter"] == "adapter"
 
 
-def test_tensorflow_config_is_explicitly_nonpromoting() -> None:
+def test_public_ordinary_config_rejects_legacy_route_before_adapter_use() -> None:
+    with pytest.raises(ValueError, match="one ordinary tuning policy"):
+        hmc_kernel_tuning.HMCKernelTuningConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+        )
+
+
+def test_tensorflow_config_limits_authority_to_mechanics_handoff() -> None:
     payload = _config().payload()
 
     assert payload["artifact_authority"] is False
+    assert payload["posterior_admission_authority"] is False
     assert payload["admission_supported"] is False
+    assert payload["mechanics_handoff_supported"] is True
     assert payload["chain_count"] == 4
     assert payload["dtype"] == "float64"
     assert payload["initial_chain_state_policy"] == (
-        "four_identical_zero_states_in_current_affine_coordinates"
+        "explicit_four_chain_bank_or_diagnostic_single_position_replication"
+    )
+    assert payload["candidate_initial_position_policy"] == (
+        "explicit_four_chain_bank_required"
     )
     assert payload["mass_window_leapfrog_steps"] == 1
     assert payload["trajectory_candidate_policy"] == (
@@ -128,11 +144,11 @@ def test_tensorflow_config_is_explicitly_nonpromoting() -> None:
     assert payload["dual_averaging_internal_policy"].startswith(
         "tensorflow_probability_defaults_except"
     )
-    assert payload["handoff_eligibility"] == "not_supported"
-    assert payload["fresh_rhat_verification"] == "not_implemented"
-    assert payload["rhat_role"] == "not_computed"
-    assert payload["xla_qualification"] == "not_implemented"
-    assert payload["xla_mode"] == "diagnostic_non_xla_only"
+    assert payload["handoff_eligibility"] == "result_dependent_candidate_screen"
+    assert payload["fresh_rhat_verification"] == "not_part_of_tuning_handoff"
+    assert payload["rhat_role"] == "retained_explanatory_only"
+    assert payload["xla_qualification"] == "not_required_for_non_xla_execution"
+    assert payload["xla_mode"] == "disabled_unless_separately_qualified"
     dispatch_source = inspect.getsource(hmc_tuning_dispatch)
     numerical_source = inspect.getsource(hmc_tensorflow_tuning)
     assert "import numpy" not in dispatch_source
@@ -158,8 +174,13 @@ def test_tensorflow_diagnostic_graph_smoke_cannot_issue_handoff() -> None:
     assert bool(result.health_passed) is True
     assert bool(result.handoff_eligible) is False
     assert bool(result.passed) is False
+    assert bool(result.initial_position_was_replicated) is True
+    tf.debugging.assert_equal(result.initial_position, tf.zeros([4, 2], tf.float64))
+    tf.debugging.assert_equal(result.initial_chain_state, tf.zeros([4, 2], tf.float64))
     assert result.final_raw_state.shape == (4, 2)
-    graph_def = result.graph_function.get_concrete_function().graph.as_graph_def()
+    concrete = result.graph_function.get_concrete_function()
+    assert concrete.inputs[0].shape == (4, 2)
+    graph_def = concrete.graph.as_graph_def()
     operations = {node.op for node in graph_def.node}
     operations.update(
         node.op for function in graph_def.library.function for node in function.node_def
@@ -167,7 +188,7 @@ def test_tensorflow_diagnostic_graph_smoke_cannot_issue_handoff() -> None:
     assert operations.isdisjoint(
         {"PyFunc", "PyFuncStateless", "EagerPyFunc", "ParallelFor"}
     )
-    with pytest.raises(ValueError, match="not admission-capable"):
+    with pytest.raises(ValueError, match="candidate mechanics screen"):
         build_retained_bound_hmc_archive_runner_from_tuning_result(
             tuning_result=result,
             runner_binding=binding,
@@ -262,11 +283,11 @@ def test_four_chain_policy_handles_infinities_and_divergence_exactly() -> None:
     assert bool(divergent.passed) is False
 
 
-def test_diagnostic_candidate_dense_metric_requires_enough_states() -> None:
+def test_candidate_dense_metric_requires_enough_states() -> None:
     with pytest.raises(ValueError, match=r"at least d \+ 1 states"):
         TensorFlowHMCKernelTuningConfig(
             parameter_dimension=54,
-            evidence_role="diagnostic_candidate_screen",
+            evidence_role="candidate",
             mass_window_results=(1,),
             step_adaptation_results=1,
             verification_results=1,
@@ -279,6 +300,58 @@ def test_diagnostic_candidate_dense_metric_requires_enough_states() -> None:
             acceptance_policy=_declared_band_policy(),
             **_explicit_diagnostic_numerics(),
         )
+
+
+def test_candidate_requires_an_explicit_four_chain_initial_bank() -> None:
+    config = TensorFlowHMCKernelTuningConfig(
+        parameter_dimension=2,
+        evidence_role="candidate",
+        mass_window_results=(1,),
+        step_adaptation_results=1,
+        verification_results=1,
+        max_leapfrog_steps=1,
+        initial_step_size=0.1,
+        budget_provenance="candidate start-bank contract fixture",
+        initial_step_size_provenance="fixture",
+        geometry_provenance="fixture",
+        target_scope="tensorflow-dispatch-test",
+        acceptance_policy=FourChainMeanBandAcceptancePolicy(
+            overall_band=(0.0, 1.0), per_chain_band=(0.0, 1.0)
+        ),
+        **_explicit_diagnostic_numerics(),
+    )
+
+    with pytest.raises(ValueError, match="explicit four-chain"):
+        tune_hmc_kernel(
+            adapter=_Adapter(),
+            initial_position=tf.zeros([2], tf.float64),
+            parameter_scales=tf.ones([2], tf.float64),
+            config=config,
+            runner_binding=_binding(),
+        )
+
+
+def test_explicit_initial_bank_preserves_order_and_affine_reconstruction() -> None:
+    bank = tf.constant(
+        [[2.0, -4.0], [4.0, 2.0], [-2.0, 5.0], [8.0, -7.0]],
+        tf.float64,
+    )
+    scales = tf.constant([2.0, 3.0], tf.float64)
+    result = tune_hmc_kernel(
+        adapter=_Adapter(),
+        initial_position=bank,
+        parameter_scales=scales,
+        config=_config(),
+        runner_binding=_binding(),
+    )
+
+    center = tf.reduce_mean(bank, axis=0)
+    expected_latent = (bank - center) / scales
+    reconstructed = center + result.initial_chain_state * scales
+    assert bool(result.initial_position_was_replicated) is False
+    tf.debugging.assert_equal(result.initial_position, bank)
+    tf.debugging.assert_near(result.initial_chain_state, expected_latent)
+    tf.debugging.assert_near(reconstructed, bank)
 
 
 def test_failed_search_reports_last_real_verification_not_synthetic_health() -> None:
@@ -328,13 +401,13 @@ def test_failed_search_reports_last_real_verification_not_synthetic_health() -> 
     )
 
 
-def test_diagnostic_candidate_artifact_reloads_but_cannot_run_retained_archive(
+def test_candidate_artifact_reloads_and_runs_bound_retained_continuation(
     tmp_path: Path,
 ) -> None:
     binding = _binding()
     config = TensorFlowHMCKernelTuningConfig(
         parameter_dimension=2,
-        evidence_role="diagnostic_candidate_screen",
+        evidence_role="candidate",
         mass_window_results=(1,),
         step_adaptation_results=1,
         verification_results=2,
@@ -351,7 +424,10 @@ def test_diagnostic_candidate_artifact_reloads_but_cannot_run_retained_archive(
     )
     result = tune_hmc_kernel(
         adapter=_Adapter(),
-        initial_position=tf.constant([0.2, -0.3], tf.float64),
+        initial_position=tf.constant(
+            [[0.2, -0.3], [0.1, -0.2], [0.3, -0.4], [0.0, -0.1]],
+            tf.float64,
+        ),
         parameter_scales=tf.ones([2], tf.float64),
         config=config,
         runner_binding=binding,
@@ -359,13 +435,15 @@ def test_diagnostic_candidate_artifact_reloads_but_cannot_run_retained_archive(
     )
 
     assert bool(result.candidate_selected) is True
+    assert bool(result.initial_position_was_replicated) is False
     assert bool(result.metric_update_valid) is True
     assert int(result.metric_update_count) == 1
     assert bool(result.heuristic_screen_passed) is True
     assert result.posterior_admission_authority is False
     assert result.admission_supported is False
-    assert bool(result.handoff_eligible) is False
-    assert bool(result.passed) is False
+    assert result.mechanics_handoff_supported is True
+    assert bool(result.handoff_eligible) is True
+    assert bool(result.passed) is True
 
     loaded = load_tensorflow_hmc_tuning_result(
         result.artifact_manifest_path,
@@ -373,12 +451,39 @@ def test_diagnostic_candidate_artifact_reloads_but_cannot_run_retained_archive(
         runner_binding=binding,
     )
     assert bool(loaded.heuristic_screen_passed) is True
+    assert bool(loaded.initial_position_was_replicated) is False
+    tf.debugging.assert_equal(loaded.initial_position, result.initial_position)
+    tf.debugging.assert_equal(loaded.initial_chain_state, result.initial_chain_state)
     assert loaded.posterior_admission_authority is False
     assert loaded.admission_supported is False
-    assert bool(loaded.handoff_eligible) is False
-    assert bool(loaded.passed) is False
-    with pytest.raises(ValueError, match="not admission-capable"):
-        build_retained_bound_hmc_archive_runner_from_tuning_result(
-            tuning_result=loaded,
-            runner_binding=binding,
+    assert loaded.mechanics_handoff_supported is True
+    assert bool(loaded.handoff_eligible) is True
+    assert bool(loaded.passed) is True
+
+    runner = build_retained_bound_hmc_archive_runner_from_tuning_result(
+        tuning_result=loaded,
+        runner_binding=binding,
+    )
+    pilot = runner.run(
+        BoundRetainedHMCArchiveConfig(
+            num_results=2,
+            seed=(20260828, 2),
+            output_dir=tmp_path / "pilot",
+            budget_provenance="two-draw retained mechanics fixture",
         )
+    )
+    tf.debugging.assert_equal(pilot.initial_chain_state, loaded.final_chain_state)
+    assert pilot.binding_hash == binding.binding_hash
+
+    extension = runner.run(
+        BoundRetainedHMCArchiveConfig(
+            num_results=2,
+            seed=(20260828, 3),
+            output_dir=tmp_path / "extension",
+            budget_provenance="two-draw continuation mechanics fixture",
+            continuation_manifest=pilot.archive_manifest_path,
+        )
+    )
+    tf.debugging.assert_equal(
+        extension.initial_chain_state, pilot.final_chain_state
+    )

@@ -822,6 +822,48 @@ def test_principal_sqrt_helper_scaled_reconstruction_guard_allows_large_rhs() ->
         placement.derivative_reconstruction_residual).numpy()) <= 1.0e-5
 
 
+@pytest.mark.parametrize(
+    "factor_backend",
+    ("compiled_custom_op", "tensorflow_eigh_strict"),
+)
+def test_principal_sqrt_helper_rejects_overflowed_reconstruction_without_nan(
+    factor_backend: str,
+) -> None:
+    """Norm overflow must raise an explicit finite-health error, not Inf-Inf."""
+
+    covariance = tf.constant(
+        [[[4.0, 0.0, 0.0], [0.0, 9.0, 0.0], [0.0, 0.0, 16.0]]],
+        dtype=tf.float64,
+    )
+    d_covariance = tf.constant(
+        [
+            [
+                [
+                    [1.0e206, 2.0e205, -1.0e205],
+                    [2.0e205, -3.0e206, 4.0e205],
+                    [-1.0e205, 4.0e205, 7.0e206],
+                ],
+            ]
+        ],
+        dtype=tf.float64,
+    )
+
+    with pytest.raises(
+        tf.errors.InvalidArgumentError,
+        match="blocked_nonfinite_principal_sqrt_reconstruction",
+    ):
+        placement = _checked_batched_principal_sqrt_factor_first_derivatives(
+            covariance,
+            d_covariance,
+            singular_floor=tf.constant(0.0, dtype=tf.float64),
+            fixed_null_tolerance=tf.constant(1.0e-10, dtype=tf.float64),
+            lyapunov_tolerance=tf.constant(1.0e-12, dtype=tf.float64),
+            label=f"test overflowing principal-sqrt reconstruction ({factor_backend})",
+            factor_backend=factor_backend,
+        )
+        _ = placement.d_factor.numpy()
+
+
 
 def test_principal_sqrt_helper_scaled_reconstruction_guard_rejects_bad_solve(
     monkeypatch: pytest.MonkeyPatch,

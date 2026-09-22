@@ -59,8 +59,11 @@ def _make_transition_fn(target_id, horizon, num_steps):
         def lp(theta, x0_raw, eta_raw):
             return jt.joint_log_prob(y, theta, x0_raw, eta_raw, target_id)
 
-        kernel = tfp.mcmc.NoUTurnSampler(
-            lp, step_size=tf.constant(2e-3, DTYPE), max_tree_depth=8)
+        # Amendment A3: fixed-trajectory HMC replaces NUTS suite-wide. The
+        # trajectory length stands in for the retired `max_tree_depth=8`
+        # ceiling, which bounded NUTS at 2**8 = 256 leapfrog steps.
+        kernel = tfp.mcmc.HamiltonianMonteCarlo(
+            lp, step_size=tf.constant(2e-3, DTYPE), num_leapfrog_steps=50)
         out = tfp.mcmc.sample_chain(
             num_results=1, num_burnin_steps=num_steps - 1,
             current_state=[theta0, x0_raw0, eta_raw0],

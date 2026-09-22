@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Bounded M3-C continuation launcher. Memory growth is established before the
+# TensorFlow process starts; the launcher does not resume an earlier attempt.
+GPU_ID="${BAYESFILTER_GPU_ID:-0}"
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-${GPU_ID}}"
+export TF_FORCE_GPU_ALLOW_GROWTH="${TF_FORCE_GPU_ALLOW_GROWTH:-true}"
+export TF_CPP_MIN_LOG_LEVEL="${TF_CPP_MIN_LOG_LEVEL:-3}"
+
+if [[ "${TF_FORCE_GPU_ALLOW_GROWTH}" != "true" ]]; then
+  printf '%s\n' 'FAIL_LAUNCH: TF_FORCE_GPU_ALLOW_GROWTH must be true' >&2
+  exit 2
+fi
+
+exec /home/ubuntu/anaconda3/envs/tfgpu/bin/python \
+  "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docs/benchmarks/run_ssl_lstm_q20_performance_whitening_next_2026_09_02.py" \
+  --gpu-id "${GPU_ID}" \
+  --max-seconds "${BAYESFILTER_NEXT_MAX_SECONDS:-900}" \
+  "$@"

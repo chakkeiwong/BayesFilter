@@ -5182,14 +5182,103 @@ def test_phase7_initial_state_consumes_only_p4_bank_with_rowwise_lineage(
     assert lineage["reports_posterior_convergence"] is False
 
 
-def test_phase7_initial_state_rejects_legacy_operational_bank_without_fallback() -> None:
-    operational = _p4_operational_fixture(policy_id="bayesfilter.greedy_four_start_bank.v1")
+def test_phase7_initial_state_preserves_ordinary_legacy_bank_without_hmc(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden_hmc(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("ordinary start-bank route test must not run HMC")
+
+    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+    operational = _p4_operational_fixture(
+        policy_id="bayesfilter.greedy_four_start_bank.v1"
+    )
+    operational.engineering_probe_bank_qualification = None
+    operational.start_bank_qualification = object()
+    operational.private_start_bank_signature = "legacy-start-bank-signature"
     stage = SimpleNamespace(
+        config=HMCWindowedMassStageConfig(
+            seed=(20260821, 31),
+            target_scope="p4_phase7_fixture",
+            engineering_probe_covariance_multiplier=None,
+        ),
         operational_warmup_result=operational,
         target_dimension=2,
     )
 
-    with pytest.raises(ValueError, match="requires the explicit P4-E"):
+    initial_state, lineage = hmc_kernel_tuning._phase7_verification_initial_state(
+        windowed_stage=stage,
+        phase4_adapter=_P4NestedAdapter("p4-phase4-adapter"),
+        verification_adapter=_P4NestedAdapter("p4-verification-adapter"),
+        verification_hmc_signature="p4-verification-adapter",
+    )
+
+    np.testing.assert_allclose(
+        initial_state,
+        operational.final_kernel_state.transform.theta_to_latent(
+            operational.private_start_bank_theta
+        ),
+        rtol=1.0e-10,
+        atol=1.0e-10,
+    )
+    assert lineage == {
+        "source": "operational_warmup_private_start_bank",
+        "source_signature": "legacy-start-bank-signature",
+        "active_signature": lineage["active_signature"],
+        "count": 4,
+        "frozen_post_warmup_bank_consumed": True,
+        "canonical_round_trip_passed": True,
+        "final_coordinate_match_passed": True,
+        "raw_values_exposed": False,
+        "reports_operational_start_lineage": True,
+    }
+
+
+def test_phase7_initial_state_rejects_legacy_bank_when_p4_is_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden_hmc(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("configured P4-E route test must not run HMC")
+
+    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+    operational = _p4_operational_fixture(policy_id="bayesfilter.greedy_four_start_bank.v1")
+    stage = SimpleNamespace(
+        config=HMCWindowedMassStageConfig(
+            seed=(20260821, 31),
+            target_scope="p4_phase7_fixture",
+            engineering_probe_covariance_multiplier=2.0,
+        ),
+        operational_warmup_result=operational,
+        target_dimension=2,
+    )
+
+    with pytest.raises(ValueError, match="configured.*P4-E.*explicit"):
+        hmc_kernel_tuning._phase7_verification_initial_state(
+            windowed_stage=stage,
+            phase4_adapter=_P4NestedAdapter("p4-phase4-adapter"),
+            verification_adapter=_P4NestedAdapter("p4-verification-adapter"),
+            verification_hmc_signature="p4-verification-adapter",
+        )
+
+
+def test_phase7_initial_state_rejects_p4_bank_without_explicit_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden_hmc(*_args: Any, **_kwargs: Any) -> Any:
+        raise AssertionError("unconfigured P4-E route test must not run HMC")
+
+    monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+    operational = _p4_operational_fixture()
+    stage = SimpleNamespace(
+        config=HMCWindowedMassStageConfig(
+            seed=(20260821, 31),
+            target_scope="p4_phase7_fixture",
+            engineering_probe_covariance_multiplier=None,
+        ),
+        operational_warmup_result=operational,
+        target_dimension=2,
+    )
+
+    with pytest.raises(ValueError, match="P4-E configuration is missing"):
         hmc_kernel_tuning._phase7_verification_initial_state(
             windowed_stage=stage,
             phase4_adapter=_P4NestedAdapter("p4-phase4-adapter"),

@@ -494,7 +494,7 @@ def test_runner_supports_admitted_kernel_replay_validation() -> None:
     assert "expected_frozen_transport_sha256" in implementation
     assert "admitted_kernel_replay_path" in implementation
     assert "admitted_kernel_mechanics_payload_from_tuning_result" in implementation
-    assert "build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload" in implementation
+    assert "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload" in implementation
     assert "tune_hmc_kernel(" in implementation
     assert "run_sequential_neutra_hmc(" in implementation
     assert implementation.count("adapter=replay.adapter") == 2
@@ -733,6 +733,9 @@ def _synthetic_admitted_kernel_fixture(*, adapter_signature: str = "base-v1"):
     }
     mechanics = {
         "schema": "bayesfilter.admitted_hmc_kernel_mechanics.v1",
+        "replay_role": "mechanics_only",
+        "authority_status": "mechanics_only_nonclaiming",
+        "claim_bearing_artifact_authority": False,
         "target_signature": "synthetic-target-v1",
         "target_scope": scope,
         "target_dimension": 2,

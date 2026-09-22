@@ -1045,6 +1045,378 @@ Gaussians of Section~\ref{sec:shadow-filter}. A boundary-exact integrator is
 therefore an optimization for the kinked case and a requirement only for a
 genuine density jump.
 
+\section{The UKF filtering collapse problem and marginal-likelihood gradient discontinuities}\label{sec:ukf-gradient}
+
+The preceding section established that ordinary leapfrog HMC remains valid on
+continuous-kink targets, albeit with degraded efficiency. This section
+addresses a more insidious geometry that arises when a Gaussian filter
+(Kalman, extended Kalman, or unscented) is used to compute the marginal
+likelihood $p(y_{1:T}\mid\vartheta)$ in a model with occasionally binding
+constraints. The composed map
+$\vartheta\mapsto\log p(y_{1:T}\mid\vartheta)$ can develop steep or
+discontinuous gradients even when the underlying economic model uses a smooth
+softplus constraint rather than a hard max, because the filter's variance
+collapse near the bound amplifies parameter-space gradient jumps. This is the
+geometry encountered in the two-country shadow-rate model of
+Section~\ref{sec:shadow} when a UKF replaces the particle filter, and it is
+the primary obstacle to making gradient-based MCMC tractable for realistic
+DSGE models with zero lower bounds.
+
+\subsection{Why UKF variance collapses at the bound}\label{sec:ukf-collapse-mechanism}
+
+Consider a shadow nominal rate $i_t^\star$ that is a deterministic function of
+a latent state $x_t$, with a smoothed constraint
+\begin{equation}\label{eq:ukf1}
+ i_t = \ell + \operatorname{softplus}(i_t^\star - \ell, \alpha)
+     = \ell + \frac{1}{\alpha}\log(1 + e^{\alpha(i_t^\star-\ell)}),
+\end{equation}
+and suppose $i_t$ is observed with small Gaussian noise. When the data pin
+$i_t$ near $\ell$ for many consecutive periods, a UKF (or any Gaussian filter)
+updates the filtering distribution over $x_t$ by conditioning on those
+near-bound observations. The Kalman gain and innovation covariance depend on
+the predictive variance; when the observations are informative and consistent,
+the filtering variance shrinks. For a state whose shadow rate is deeply
+negative, all values below a threshold produce approximately the same observed
+rate $i_t\approx\ell$, so the likelihood provides no information about
+\emph{how far} below the bound the shadow rate is. The filtering distribution
+thus develops a one-sided collapse: variance in the direction that affects the
+observed rate shrinks to near zero, while variance in the orthogonal
+``shadow-depth'' direction can grow or remain large, depending on the
+transition dynamics.
+
+The softplus in \eqref{eq:ukf1} does not prevent this collapse; it merely
+makes the transition from the informative region ($i_t^\star\approx\ell$) to
+the flat plateau ($i_t^\star\ll\ell$) continuous rather than abrupt. As the
+softplus temperature $\alpha$ increases, the transition region becomes
+steeper, and the geometry approaches that of a hard max.
+
+\subsection{How variance collapse creates parameter-space gradient jumps}\label{sec:collapse-gradient}
+
+A UKF propagates a deterministic set of sigma points through the nonlinear
+transition and observation maps. When the filtering variance is large, the
+sigma points are spread out; small parameter perturbations typically move all
+points by small amounts, and the marginal likelihood gradient
+$\nabla_\vartheta\log p(y\mid\vartheta)$ varies smoothly. When the variance
+collapses, the sigma points cluster tightly near the filtering mean. A small
+parameter change can now shift the entire cluster across the steep part of the
+softplus, causing all sigma points to change regime contribution
+simultaneously. The result is a sharp change in the predicted observations,
+innovation covariance, and log-likelihood contribution, which manifests as a
+large jump in $\nabla_\vartheta\log p(y\mid\vartheta)$.
+
+This is a \emph{continuous-kink geometry}: the likelihood
+$\log p(y\mid\vartheta)$ is continuous (by continuity of the softplus and the
+Gaussian observation density), but its gradient can have jumps of size
+$O(\alpha)$ when a collapsed sigma-point cloud crosses the steep softplus
+region. The gradient jump is not a modeling artifact; it is a consequence of
+the variance collapse in the filter combined with the deterministic sigma-point
+rule.
+
+\subsection{Why this differs from a value jump}\label{sec:kink-vs-jump-ukf}
+
+The UKF filtering collapse creates a continuous-kink target, not a value-jump
+target. At a parameter-space boundary where the sigma points cross the steep
+softplus region, the one-sided likelihood values match:
+\[
+ \lim_{\vartheta\to\vartheta_b^-}\log p(y\mid\vartheta)
+ = \lim_{\vartheta\to\vartheta_b^+}\log p(y\mid\vartheta),
+\]
+but the gradients do not:
+\[
+ \lim_{\vartheta\to\vartheta_b^-}\nabla\log p(y\mid\vartheta)
+ \ne \lim_{\vartheta\to\vartheta_b^+}\nabla\log p(y\mid\vartheta).
+\]
+
+By the argument of Section~\ref{sec:kink-validity}, ordinary Metropolized HMC
+remains \emph{valid} for this target: the leapfrog map is well defined almost
+everywhere, reversible, and volume preserving, so the Metropolis correction
+targets the correct posterior. However, leapfrog is \emph{inefficient}: each
+trajectory that crosses a steep-gradient region incurs an $O(\epsilon\,\Delta
+g)$ energy error, where $\Delta g$ is the gradient-jump magnitude and
+$\epsilon$ is the step size. When $\Delta g$ is large (high softplus
+temperature $\alpha$ or severe variance collapse), acceptance rates degrade,
+and the chain can become stuck near boundaries or in one filtering regime.
+
+This is the practical obstacle: the method is mathematically correct but
+computationally poor. Reflection/refraction HMC (Section~\ref{sec:event}) does
+not help, because there is no potential jump $\Delta U$ to pay with kinetic
+energy—the target is continuous. What is needed instead is either a different
+filter that maintains variance (particle methods), or an event-aware integrator
+that detects steep-gradient crossings and adjusts the trajectory accordingly.
+
+\subsection{Why integer regime solvers create value jumps}\label{sec:integer-regime-jumps}
+
+The analysis above assumed a smoothed constraint. When the model instead uses
+an integer solver that selects discrete regime paths—for example, a
+quantitative-easing on/off indicator or an OccBin-style spell-duration
+selector—the geometry changes fundamentally. The solver maps parameters to a
+discrete regime path $r_{1:T}\in\{0,1\}^T$ by checking equilibrium consistency
+inequalities. At a parameter-space boundary where the solver switches from path
+$j$ to path $k$, the regime-dependent state-space matrices $(F_{r_t},
+Q_{r_t}, H_{r_t})$ change discontinuously, even though the parameter
+$\vartheta$ changes smoothly.
+
+The filtered likelihood is then a composition:
+\[
+ \vartheta \xrightarrow{\text{solver}} r_{1:T}
+          \xrightarrow{\text{state-space}} (F_t, Q_t, H_t)
+          \xrightarrow{\text{UKF}} \log p(y\mid\vartheta).
+\]
+When the regime path jumps, the UKF evaluates a different piecewise-linear
+system. The innovation sequence, covariance updates, and cumulative
+log-likelihood all depend on the selected regime, so the one-sided likelihood
+values generally do not match:
+\[
+ \lim_{\vartheta\to\vartheta_b^-}\log p(y\mid\vartheta, r^-)
+ \ne \lim_{\vartheta\to\vartheta_b^+}\log p(y\mid\vartheta, r^+).
+\]
+
+This is a \emph{value-jump geometry}, the case for which reflection/refraction
+HMC and discontinuous HMC were designed. The potential has a finite jump
+$\Delta U = -[\log p(y\mid\vartheta_b,r^+) - \log p(y\mid\vartheta_b,r^-)]$,
+and standard leapfrog is invalid: a trajectory that crosses the boundary
+without an event map systematically under- or over-estimates the Hamiltonian,
+leading to biased acceptance and wrong stationary distribution.
+
+\subsection{Measurement protocol for UKF-based posteriors}\label{sec:ukf-measurement}
+
+Before choosing an HMC extension for a UKF-filtered ZLB model, the actual
+boundary geometry must be measured. The following protocol distinguishes
+continuous kinks from value jumps and quantifies gradient variation.
+
+\paragraph{Step 1: Identify candidate boundaries.}
+Run a short HMC warm-up and record parameter values where:
+\begin{itemize}
+\item the softplus input $i_t^\star - \ell$ is near zero (within a few
+      multiples of $1/\alpha$);
+\item the UKF filtering variance for the shadow-rate state is small (orders of
+      magnitude below the prior variance);
+\item an integer regime solver (if present) changes its selected path.
+\end{itemize}
+
+\paragraph{Step 2: Value-continuity test.}
+For parameter pairs $(\vartheta^-, \vartheta^+)$ straddling a candidate
+boundary, evaluate:
+\[
+ \Delta\ell = |\log p(y\mid\vartheta^+) - \log p(y\mid\vartheta^-)|.
+\]
+If $\Delta\ell / |\log p(y\mid\vartheta^-)| < 10^{-6}$, classify as
+continuous kink. If $\Delta\ell = O(1)$ or larger, classify as value jump.
+
+\paragraph{Step 3: Gradient-jump magnitude.}
+For continuous-kink boundaries, evaluate the one-sided gradients and compute:
+\[
+ \Delta g = \|\nabla_\vartheta\log p(y\mid\vartheta^+)
+             - \nabla_\vartheta\log p(y\mid\vartheta^-)\|_2.
+\]
+Large $\Delta g$ relative to the typical gradient norm indicates poor leapfrog
+geometry.
+
+\paragraph{Step 4: Boundary crossing rate.}
+Run HMC trajectories of length $L$ steps and record:
+\begin{itemize}
+\item fraction of trajectories that cross a steep-gradient or regime-switch
+      boundary;
+\item acceptance rate conditional on crossing vs not crossing;
+\item average Hamiltonian error on crossing vs non-crossing trajectories.
+\end{itemize}
+High crossing rate combined with low crossing acceptance indicates the boundary
+is a bottleneck.
+
+\paragraph{Step 5: Gradient Lipschitz estimation.}
+Sample parameter pairs with $\|\vartheta_1 - \vartheta_2\| = \delta$ and
+estimate:
+\[
+ L_{\text{est}} = \max_{\text{pairs}}
+   \frac{\|\nabla\log p(y\mid\vartheta_1) - \nabla\log p(y\mid\vartheta_2)\|}
+        {\|\vartheta_1 - \vartheta_2\|}.
+\]
+For a softplus model, $L_{\text{est}}$ grows approximately linearly with the
+temperature $\alpha$.
+
+\subsection{Why particle filters smooth the gradient}\label{sec:pf-smoothing}
+
+A particle filter approximates the filtering distribution by a weighted cloud
+of samples. Unlike a UKF's deterministic sigma points, particles retain
+diversity even when the likelihood strongly favors one region. When some
+particles have shadow rates slightly above the bound and others slightly below,
+the marginal likelihood is a mixture:
+\[
+ p(y_t\mid y_{1:t-1},\vartheta)
+ \approx \sum_{i=1}^M W_{t-1}^i\, p(y_t\mid X_{t-1}^i,\vartheta),
+\]
+where each particle $X_{t-1}^i$ contributes its own predictive density. A
+small parameter change moves each particle slightly, changing the mixture
+weights smoothly rather than flipping an entire cluster. The gradient
+$\nabla_\vartheta\log p(y\mid\vartheta)$ is then an average over particle
+contributions, and the averaging smooths out the sharp transitions that a
+collapsed UKF exhibits.
+
+This is the fundamental reason differentiable particle filters (LEDH-PFPF-OT
+and similar constructions) are pursued for ZLB models: they maintain diversity
+by design, which bounds the gradient variation and makes HMC geometrically
+tractable. The computational cost is the price of that smoothness.
+
+\subsection{Candidate solutions for the UKF gradient problem}\label{sec:ukf-solutions}
+
+Given the measurement protocol of Section~\ref{sec:ukf-measurement}, the
+following strategies apply depending on the diagnosed geometry.
+
+\paragraph{For continuous-kink targets (softplus ZLB, no integer regime).}
+\begin{enumerate}
+\item \textbf{Smaller step size.} Reduce $\epsilon$ to lower the per-crossing
+      energy error \eqref{eq:56a}. This is the simplest fix but increases
+      cost per effective sample.
+\item \textbf{Event-aware integration (Tran and Kleppe 2025).} Detect when a
+      leapfrog step would cross a steep-gradient region (by monitoring the
+      softplus input or a related margin), truncate the step at the boundary,
+      recompute the gradient on the new side, and continue. This is
+      computationally intensive (requires bisection and re-evaluation) but
+      reduces integration error.
+\item \textbf{Neural surrogate proposal.} Train a neural network
+      $s_\phi(\vartheta)$ to approximate $\nabla_\vartheta\log p(y\mid\vartheta)$
+      using automatic differentiation through the UKF at training points. Use
+      $s_\phi$ to drive leapfrog proposals, but evaluate the \emph{true} UKF
+      likelihood for Metropolis acceptance. A poor surrogate leads to low
+      acceptance, not wrong posterior (Section~\ref{sec:pmcmc}).
+\item \textbf{UKF variance inflation.} Artificially inflate the predicted
+      covariance $P_{t|t-1}$ when the variance is below a threshold and the
+      state is near a bound. This prevents full collapse and smooths the
+      gradient, but it changes the filtering distribution and hence the
+      posterior—it is a modified model, not a computational trick.
+\end{enumerate}
+
+\paragraph{For value-jump targets (integer regime solver).}
+\begin{enumerate}
+\item \textbf{Reflection/refraction HMC (Section~\ref{sec:event}).} Detect
+      regime-path changes, compute the one-sided likelihoods
+      $\log p(y\mid\vartheta_b, r^\pm)$, and apply the energy-conserving event
+      map \eqref{eq:59}--\eqref{eq:60}. This is exact but expensive: locating
+      the implicit boundary requires bisection and full solver + filter
+      re-evaluation at intermediate points.
+\item \textbf{Discontinuous HMC (Section~\ref{sec:dhmc}).} Use Laplace
+      momentum for parameters that affect regime switches. This avoids explicit
+      event detection but requires random coordinate order, randomized step
+      size, and evaluating the potential on both sides of proposed moves.
+\item \textbf{Regime-conditional HMC.} Given a regime path $r_{1:T}$, run
+      standard HMC on $p(\vartheta\mid y,r)$ (smooth, fast). Resample $r$ from
+      $p(r\mid\vartheta,y)$ using a discrete sampler. Alternate between the two
+      steps. Mixing depends on the regime-parameter coupling; if $p(r\mid\vartheta,y)$
+      is peaked, regime updates have low acceptance.
+\item \textbf{Particle MCMC.} Replace the UKF with a particle filter,
+      integrate out the regime path, and use particle Metropolis-Hastings
+      (Section~\ref{sec:pmcmc}). This avoids parameter-space discontinuities
+      entirely but requires a particle filter run at every proposal.
+\end{enumerate}
+
+\subsection{Why DHMC does not solve the continuous-kink problem}\label{sec:dhmc-limitation}
+
+It is tempting to apply discontinuous HMC (Section~\ref{sec:dhmc}) to the UKF
+variance-collapse problem, reasoning that ``the target is nonsmooth, and DHMC
+is for nonsmooth targets.'' This is incorrect. DHMC with Laplace momentum and
+the reflection/refraction event map are designed for \emph{value jumps}: finite
+discontinuities in the potential $U(\vartheta)$ itself. The UKF
+continuous-kink target has $U$ continuous everywhere; only its gradient jumps.
+
+The DHMC reflection condition checks whether the available kinetic energy
+$|p_i|/m_i$ can pay the potential increase $\Delta U$. For a continuous
+target, $\Delta U = 0$ at every boundary, so the reflection test is trivially
+satisfied, and DHMC degenerates to ordinary coordinate-wise leapfrog with
+Laplace momentum. The Laplace momentum may improve mixing in some
+high-dimensional settings (constant-velocity motion is cheaper to integrate
+than Gaussian trajectories), but it does not address the gradient-jump
+inefficiency, because that inefficiency arises from the $O(\epsilon\,\Delta g)$
+leapfrog error term, which remains present regardless of the momentum
+distribution.
+
+The distinction is sharp: DHMC and reflection/refraction HMC solve the
+value-jump problem (Case 3 of Section~\ref{sec:geometries}); they do not solve
+the continuous-kink problem (Case 1), which requires either smoother filters,
+event-aware gradient switching, or surrogate proposals.
+
+\subsection{Open research questions}\label{sec:ukf-open}
+
+The UKF gradient-discontinuity problem for ZLB models remains only partially
+solved. The following questions are active research directions.
+
+\paragraph{Can event-aware integration be made practical?}
+Tran and Kleppe's (2025) truncated-step integrator is mathematically valid for
+continuous-kink targets, but detecting an implicit OBC boundary requires
+bisection with full solver + filter re-evaluation at each bisection step. For
+a finite-horizon DSGE model, this can mean solving a 40-period piecewise-linear
+system dozens of times per HMC trajectory. Is this cost competitive with
+smaller step sizes, or does it dominate the per-effective-sample cost?
+
+\paragraph{Is the marginal likelihood Lipschitz continuous?}
+Even with softplus smoothing, the composed map
+$\vartheta\mapsto\log p(y\mid\vartheta)$ may fail global Lipschitz continuity.
+The filter can amplify small solver changes through covariance updates and log
+determinants. Can a local Lipschitz constant be derived as a function of the
+softplus temperature, filter type, and time horizon? Or must we accept that
+OBC models are inherently non-Lipschitz and design integrators accordingly?
+
+\paragraph{Can neural surrogates learn implicit boundaries?}
+A neural score approximation $s_\phi(\vartheta)\approx\nabla_\vartheta\log
+p(y\mid\vartheta)$ trained on branch-interior and near-boundary points can
+drive HMC proposals with hard-target correction. But implicit OBC boundaries
+are high-codimension surfaces defined by solver consistency checks, not simple
+hyperplanes. Can a network generalize across such surfaces, or does it
+overfit to the training regime and fail when the chain explores a new boundary?
+
+\paragraph{Does UKF variance inflation preserve scientific validity?}
+Inflating $P_{t|t-1}$ to prevent collapse smooths the gradient, but it changes
+the filtering distribution and hence the posterior. Is there a principled
+calibration (e.g., tempering, robust Bayes, conservative updating) under which
+the inflated posterior remains a valid answer to the original inference
+question? Or is inflation purely a computational heuristic that must be
+validated post hoc by comparison with a particle-filter benchmark?
+
+\paragraph{When is regime-conditional HMC competitive?}
+Alternating between $p(\vartheta\mid y,r)$ (smooth HMC) and $p(r\mid\vartheta,y)$
+(discrete sampler) avoids joint regime-parameter boundaries. But the discrete
+sampler can mix poorly when the regime path is long and tightly constrained by
+the data. Under what coupling structure does this decomposition outperform
+joint methods?
+
+\subsection{Interim recommendation}\label{sec:ukf-recommendation}
+
+Until the research questions of Section~\ref{sec:ukf-open} are resolved, the
+safest path for production inference with UKF-filtered ZLB models is:
+
+\begin{enumerate}
+\item \textbf{Measure the geometry first.} Run the protocol of
+      Section~\ref{sec:ukf-measurement} to classify the target as
+      continuous-kink or value-jump and quantify gradient variation.
+\item \textbf{For continuous-kink targets:} Use standard HMC with
+      aggressively tuned step size, report crossing diagnostics (acceptance
+      conditional on steep-gradient crossing), and accept that mixing will be
+      slower than for smooth targets. If computational budget allows, test a
+      neural surrogate with hard-target correction.
+\item \textbf{For value-jump targets:} Standard leapfrog is invalid.
+      Reflection/refraction HMC (Section~\ref{sec:event}) is exact but
+      expensive. DHMC (Section~\ref{sec:dhmc}) is cheaper but requires random
+      coordinate order and step size. Regime-conditional HMC is a fallback if
+      event methods prove intractable. Particle MCMC (Section~\ref{sec:pmcmc})
+      avoids the discontinuity entirely.
+\item \textbf{Validate reversibility.} For any event-aware or DHMC method,
+      record a trajectory, flip momentum, replay, and check
+      $\|\vartheta_{\text{final}} - \vartheta_{\text{initial}}\| < \epsilon$.
+      Reversibility failure indicates a sampler bug or boundary-handling error.
+\item \textbf{Report boundary telemetry.} Every UKF-based inference result
+      should state: geometry classification (smooth/kink/jump), boundary
+      crossing rate, acceptance rate conditional on crossing, and softplus
+      temperature (if applicable). Without this telemetry, acceptance rates and
+      ESS alone cannot diagnose whether poor mixing is due to the target
+      geometry or sampler tuning.
+\end{enumerate}
+
+The particle-filter route (Section~\ref{sec:pmcmc}) remains the robust
+fallback: it sidesteps the UKF gradient problem by maintaining diversity and
+smoothing the parameter-space likelihood. Its limitations—biased gradients in
+current differentiable implementations, high computational cost—motivate
+continued work on UKF-based methods, but they do not yet justify abandoning
+particle methods for production ZLB inference.
+
 \section{Reflection and refraction HMC for piecewise-smooth targets}\label{sec:event}
 
 When the target really does jump, so that the density, not merely its gradient, is

@@ -16,7 +16,10 @@ import tensorflow as tf
 import bayesfilter
 import bayesfilter.inference.hmc_budget_ladder as hmc_budget_ladder
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
-from bayesfilter.hmc_route_contract import LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
+from bayesfilter.hmc_route_contract import (
+    LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+    LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
+)
 from bayesfilter.inference import (
     FixedMassHMCTuningBudgetCallbackResult,
     HMCBootstrapScreenResult,
@@ -227,6 +230,7 @@ def _bootstrap() -> HMCBootstrapScreenResult:
 
 def _stage_config(**overrides: Any) -> HMCFixedMassStepStageConfig:
     payload = {
+        "algorithm_id": LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
         "target_accept_prob": 0.70,
         "seed": (20260621, 50),
         "chain_execution_mode": "eager",
@@ -543,7 +547,7 @@ def test_fixed_mass_step_stage_passes_with_frozen_mass_and_internal_budget() -> 
     assert result.passed is True
     assert result.final_status == "passed"
     assert result.diagnostics["algorithm"] == "joint_l_epsilon_grid_fixed_mass_hmc"
-    assert result.diagnostics["promoted_default"] is True
+    assert result.diagnostics["promoted_default"] is False
     assert result.diagnostics["final_local_grid_ran"] is True
     tune_l = [call["num_leapfrog_steps"] for call in calls if call["role"] == "tune"]
     screen_l = [call["num_leapfrog_steps"] for call in calls if call["role"] == "screen"]

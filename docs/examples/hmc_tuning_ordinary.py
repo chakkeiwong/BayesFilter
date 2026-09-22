@@ -19,6 +19,8 @@ import tensorflow as tf
 
 from bayesfilter.inference import (
     HMCKernelTuningConfig,
+    ORDINARY_BROAD_FIXED_METRIC_POLICY_ID,
+    ORDINARY_BROAD_PRIMARY_L_GRID,
     ValueScoreCapability,
     tune_hmc_kernel,
 )
@@ -57,4 +59,10 @@ payload = result.payload()
 assert payload["schema"] == "bayesfilter.hmc_kernel_tuning_result.v1"
 assert payload["smoke_result_is_contract_only"] is True
 assert payload["reports_posterior_convergence"] is False
+ordinary_policy = payload["resolved_policy"]["ordinary_selection_policy"]
+assert ordinary_policy["policy_id"] == ORDINARY_BROAD_FIXED_METRIC_POLICY_ID
+assert tuple(ordinary_policy["primary_l_grid"]) == ORDINARY_BROAD_PRIMARY_L_GRID
+assert ordinary_policy["epsilon_l_treatment"] == (
+    "independent_epsilon_ladder_for_every_l"
+)
 print(payload["final_status"])

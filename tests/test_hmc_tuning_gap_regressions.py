@@ -549,14 +549,14 @@ def test_private_start_bank_rejects_negligibly_dispersed_distinct_states() -> No
     assert rejected is True
 
 
-def test_ccma_serious_budget_is_a_fixed_warmup_dominated_characterization() -> None:
+def test_ccma_serious_budget_accounts_for_the_broad_per_l_search() -> None:
     attempt = hmc_kernel_tuning._default_attempt_budget_policy(314, 0)
     operational = HMCOperationalStatisticalWorkPolicy()
     manifest = build_public_hmc_work_manifest(
         target_dimension=314,
         metric_adaptation_steps=(attempt.phase4_warmup_steps,),
         selection_attempts_per_outer_attempt=(1,),
-        max_leapfrog_steps=128,
+        max_leapfrog_steps=25,
         policy=operational,
     )
     work = manifest["maximum_work"]
@@ -564,10 +564,21 @@ def test_ccma_serious_budget_is_a_fixed_warmup_dominated_characterization() -> N
     assert attempt.budget0_uncapped == 20 * 314
     assert attempt.phase4_warmup_steps == 5000
     assert attempt.budget0_after_floor_and_cap == 5000
-    assert work["total_batched_transitions"] == 6084
-    assert work["metric_adaptation_batched_transitions"] / work[
-        "total_batched_transitions"
-    ] > 0.80
+    ladder = manifest["broad_grid_ladder_work_per_candidate"]
+    expected = (
+        attempt.phase4_warmup_steps
+        + 13 * ladder["total_transitions_per_ladder"]
+        + 2
+        * (
+            operational.fresh_verification_results
+            + operational.fresh_verification_burnin_steps
+        )
+    )
+    assert manifest["candidate_count_upper_bound"] == 13
+    assert manifest["broad_primary_grid_width"] == 6
+    assert manifest["broad_refinement_grid_width_upper_bound"] == 7
+    assert work["total_batched_transitions"] == expected
+    assert work["metric_adaptation_batched_transitions"] / expected < 0.05
     assert "not posterior convergence" in attempt.budget_claim
 
 

@@ -443,7 +443,8 @@ def test_fixed_transport_tuner_and_affine_holdout_agree() -> None:
     base = GaussianOracleAdapter(scope="gaussian_oracle")
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.25,
-        leapfrog_grid=(5,),
+        step_size_candidates=(0.20, 0.35),
+        leapfrog_grid=(5, 7),
         chain_count=4,
         budget_schedule=(64,),
         tune_num_results=8,
@@ -501,6 +502,7 @@ def _efficiency_oracle_config(
     # boundary. The attempt-5 source contract separately freezes [0.65, 0.75].
     return FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.20,
+        step_size_candidates=(0.20, 0.30),
         leapfrog_grid=leapfrog_grid,
         chain_count=4,
         target_accept_prob=0.70,
@@ -556,6 +558,12 @@ def test_fixed_transport_efficiency_oracle_runs_all_l_and_builds_one_handoff(
         13,
         18,
         25,
+        3,
+        5,
+        9,
+        13,
+        18,
+        25,
     )
     selection = calibration.candidate_selection_payload
     rows = selection["candidate_rows"]
@@ -594,7 +602,7 @@ def test_fixed_transport_efficiency_oracle_runs_all_l_and_builds_one_handoff(
 def test_fixed_transport_efficiency_oracle_failed_heldout_emits_no_kernel(
     tmp_path,
 ) -> None:
-    config = _efficiency_oracle_config(leapfrog_grid=(5,))
+    config = _efficiency_oracle_config(leapfrog_grid=(5, 7))
     heldout_calls = 0
     runner_pool = FixedTransportReusableRunnerPool()
 
@@ -603,12 +611,14 @@ def test_fixed_transport_efficiency_oracle_failed_heldout_emits_no_kernel(
         result = runner_pool(adapter, initial_state, run_config)
         if run_config.num_results == config.verification_num_results:
             heldout_calls += 1
-            # Preserve a real analytic HMC run but force the heldout-only
-            # acceptance diagnostic outside its pass band.
+            # Preserve a real analytic HMC run but force a genuine heldout-only
+            # target-health failure.  Acceptance outside its target band is a
+            # descriptive repair signal under measured_joint_grid_v1, not a
+            # validity veto.
             trace = dict(result.trace)
-            trace["log_accept_ratio"] = tf.fill(
-                tf.shape(trace["log_accept_ratio"]),
-                tf.constant(-100.0, tf.float64),
+            trace["target_log_prob"] = tf.fill(
+                tf.shape(trace["target_log_prob"]),
+                tf.constant(float("nan"), tf.float64),
             )
             return replace(result, trace=trace)
         return result
@@ -625,7 +635,7 @@ def test_fixed_transport_efficiency_oracle_failed_heldout_emits_no_kernel(
     assert heldout_calls == 1
     assert calibration.passed is False
     assert calibration.final_status == "heldout_verification_failed"
-    assert calibration.candidate_selection_payload["nominated_candidate_index"] == 0
+    assert calibration.candidate_selection_payload["nominated_candidate_index"] is not None
     assert calibration.candidate_selection_payload["selected_candidate_index"] is None
     assert calibration.final_kernel_payload is None
     assert calibration.final_kernel_hash is None

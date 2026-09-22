@@ -42,6 +42,9 @@ TargetStatusSummaryCallback = Callable[[Any], Mapping[str, Any]]
 RetainedDiagnosticCallback = Callable[[tf.Tensor], Mapping[str, Any]]
 RetainedCheckpointCallback = Callable[[Mapping[str, Any]], None]
 StopRequestedCallback = Callable[[], bool]
+ExactTransitionProgram = Callable[..., Mapping[str, Any]]
+PosteriorStateExtractor = Callable[[Any], Any]
+ExactTransitionArchiveCallback = Callable[..., Mapping[str, Any]]
 
 
 @dataclass(frozen=True)
@@ -268,6 +271,93 @@ class _SharedSequentialNeuTraHMCConfig:
             "dtype": "float64",
             "energy_error_log_accept_threshold": (
                 self.energy_error_log_accept_threshold
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class SequentialExactTransitionConfig:
+    """Canonical sequential schedule for an externally compiled exact kernel.
+
+    The transition owns its chart, temperature, and swap state.  This shared
+    controller owns convergence checks and exposes only the beta-one stream.
+    """
+
+    transition_signature: str
+    warmup_seed: tuple[int, int]
+    retained_seed: tuple[int, int]
+    warmup_chunk_results: int = 1000
+    warmup_min_results: int = 2000
+    warmup_check_window_results: int = 1000
+    warmup_max_results: int = MAX_RESULTS_PER_CHAIN
+    warmup_rhat_max: float = 1.05
+    retained_chunk_results: int = 1000
+    retained_min_results: int = 1000
+    retained_max_results: int = MAX_RESULTS_PER_CHAIN
+    retained_rhat_max: float = 1.01
+    minimum_chain_count: int = 4
+
+    def __post_init__(self) -> None:
+        signature = str(self.transition_signature)
+        if not signature:
+            raise ValueError("transition_signature must be nonempty")
+        object.__setattr__(self, "transition_signature", signature)
+        for name in ("warmup_seed", "retained_seed"):
+            seed = tuple(int(item) for item in getattr(self, name))
+            if len(seed) != 2:
+                raise ValueError(f"{name} must have exactly two integers")
+            object.__setattr__(self, name, seed)
+        if self.warmup_seed == self.retained_seed:
+            raise ValueError("warmup_seed and retained_seed must be distinct")
+        for name in (
+            "warmup_chunk_results",
+            "warmup_min_results",
+            "warmup_check_window_results",
+            "warmup_max_results",
+            "retained_chunk_results",
+            "retained_min_results",
+            "retained_max_results",
+            "minimum_chain_count",
+        ):
+            value = int(getattr(self, name))
+            if value <= 0:
+                raise ValueError(f"{name} must be positive")
+            object.__setattr__(self, name, value)
+        if self.minimum_chain_count < 4:
+            raise ValueError("minimum_chain_count must be at least four")
+        if self.warmup_min_results > self.warmup_max_results:
+            raise ValueError("warmup_min_results must not exceed warmup_max_results")
+        if self.warmup_check_window_results > self.warmup_max_results:
+            raise ValueError(
+                "warmup_check_window_results must not exceed warmup_max_results"
+            )
+        if self.warmup_chunk_results > self.warmup_max_results:
+            raise ValueError("warmup_chunk_results must not exceed warmup_max_results")
+        if self.retained_min_results > self.retained_max_results:
+            raise ValueError("retained_min_results must not exceed retained_max_results")
+        if self.retained_chunk_results > self.retained_max_results:
+            raise ValueError("retained_chunk_results must not exceed retained_max_results")
+        if self.warmup_max_results > MAX_RESULTS_PER_CHAIN:
+            raise ValueError("warmup_max_results must not exceed 10000 per chain")
+        if self.retained_max_results > MAX_RESULTS_PER_CHAIN:
+            raise ValueError("retained_max_results must not exceed 10000 per chain")
+        for name in ("warmup_rhat_max", "retained_rhat_max"):
+            value = float(getattr(self, name))
+            if not math.isfinite(value) or value <= 1.0:
+                raise ValueError(f"{name} must be finite and greater than 1")
+            object.__setattr__(self, name, value)
+
+    def payload(self, *, chain_count: int | None = None) -> Mapping[str, Any]:
+        return {
+            "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+            **asdict(self),
+            "chain_count": None if chain_count is None else int(chain_count),
+            "posterior_temperature": 1.0,
+            "posterior_stream_only": True,
+            "warmup_excluded_from_posterior": True,
+            "rhat_definition": (
+                "max(rank-normalized split R-hat, "
+                "folded rank-normalized split R-hat)"
             ),
         }
 
@@ -752,6 +842,383 @@ def _run_shared_sequential_neutra_hmc(
         "private_warmup_raw": warmup_model,
         "private_retained_z": retained_latent,
         "private_retained_raw": retained_model,
+    }
+
+
+def run_sequential_exact_transition(
+    *,
+    transition_program: ExactTransitionProgram,
+    initial_transition_state: Any,
+    posterior_state_fn: PosteriorStateExtractor,
+    parameter_names: Sequence[str],
+    config: SequentialExactTransitionConfig,
+    retained_diagnostic_fn: RetainedDiagnosticCallback | None = None,
+    archive_callback: ExactTransitionArchiveCallback | None = None,
+    budget_check: Callable[[int], bool | None] | None = None,
+) -> Mapping[str, Any]:
+    """Run the canonical schedule around an exact augmented-state transition.
+
+    The transition may retain temperature slots, replica identities, and chart
+    state internally.  The controller accepts and archives only the beta-one
+    projection declared by the transition result.
+    """
+
+    if not callable(transition_program):
+        raise NeuTraHMCError("transition_program must be callable")
+    if not callable(posterior_state_fn):
+        raise NeuTraHMCError("posterior_state_fn must be callable")
+
+    current_state = initial_transition_state
+    initial_posterior, chain_count, dimension = _validated_initial_state(
+        posterior_state_fn(current_state)
+    )
+    if chain_count < config.minimum_chain_count:
+        raise NeuTraHMCError(
+            f"sequential exact transition requires at least "
+            f"{config.minimum_chain_count} chains"
+        )
+    names = tuple(str(item) for item in parameter_names)
+    if len(names) != dimension or any(not item for item in names):
+        raise NeuTraHMCError(
+            "parameter_names must be nonempty and match the posterior dimension"
+        )
+
+    def extract_posterior(value: Any) -> tf.Tensor:
+        posterior, active_chains, active_dimension = _validated_initial_state(
+            posterior_state_fn(value)
+        )
+        if active_chains != chain_count or active_dimension != dimension:
+            raise NeuTraHMCError(
+                "posterior_state_fn changed the fixed chain or parameter shape"
+            )
+        return posterior
+
+    def run_chunk(
+        active_results: int,
+        seed: tuple[int, int],
+        stage: str,
+    ) -> Mapping[str, Any]:
+        before = extract_posterior(current_state)
+        result = transition_program(
+            current_state,
+            num_results=int(active_results),
+            seed=tf.constant(seed, tf.int32),
+            stage=str(stage),
+        )
+        if not isinstance(result, Mapping):
+            raise NeuTraHMCError("transition_program must return a mapping")
+        if result.get("transition_signature") != config.transition_signature:
+            raise NeuTraHMCError("exact transition signature mismatch")
+        if result.get("posterior_stream_only") is not True:
+            raise NeuTraHMCError(
+                "exact transition must expose only its beta-one posterior stream"
+            )
+        try:
+            posterior_temperature = float(result.get("posterior_temperature"))
+        except (TypeError, ValueError) as exc:
+            raise NeuTraHMCError(
+                "exact transition must declare posterior_temperature=1"
+            ) from exc
+        if posterior_temperature != 1.0:
+            raise NeuTraHMCError(
+                "exact transition posterior stream must be the beta-one slot"
+            )
+        if "final_transition_state" not in result:
+            raise NeuTraHMCError("exact transition omitted final_transition_state")
+
+        samples = tf.convert_to_tensor(result.get("posterior_samples"), tf.float64)
+        expected_shape = (int(active_results), chain_count, dimension)
+        if samples.shape.rank != 3 or tuple(samples.shape.as_list()) != expected_shape:
+            raise NeuTraHMCError(
+                f"posterior_samples must have static shape {expected_shape}"
+            )
+        identities = tf.convert_to_tensor(
+            result.get("posterior_replica_identities"), tf.int32
+        )
+        identity_shape = (int(active_results), chain_count)
+        if identities.shape.rank != 2 or tuple(identities.shape.as_list()) != identity_shape:
+            raise NeuTraHMCError(
+                "posterior_replica_identities must have one identity per beta-one draw"
+            )
+        health = result.get("health")
+        if not isinstance(health, Mapping) or not isinstance(health.get("passed"), bool):
+            raise NeuTraHMCError(
+                "exact transition health must be a mapping with boolean passed"
+            )
+        reported_vetoes = tuple(str(item) for item in health.get("hard_vetoes", ()))
+
+        final_transition_state = result["final_transition_state"]
+        final_posterior = extract_posterior(final_transition_state)
+        samples_finite = bool(tf.reduce_all(tf.math.is_finite(samples)).numpy())
+        final_finite = bool(
+            tf.reduce_all(tf.math.is_finite(final_posterior)).numpy()
+        )
+        final_equals_last = bool(
+            tf.reduce_all(tf.equal(final_posterior, samples[-1])).numpy()
+        )
+        moved_by_chain = tf.reduce_any(
+            tf.not_equal(samples, before[tf.newaxis, :, :]), axis=(0, 2)
+        )
+        all_chains_moved = bool(tf.reduce_all(moved_by_chain).numpy())
+        controller_vetoes: list[str] = []
+        if not samples_finite or not final_finite:
+            controller_vetoes.append("beta_one_state_nonfinite")
+        if not final_equals_last:
+            controller_vetoes.append("sequential_handoff_mismatch")
+        if not all_chains_moved:
+            controller_vetoes.append("not_all_chains_moved")
+        if health["passed"] is not True and not reported_vetoes:
+            controller_vetoes.append("transition_health_failed_without_reason")
+        hard_vetoes = tuple(dict.fromkeys((*reported_vetoes, *controller_vetoes)))
+        health_passed = bool(
+            health["passed"]
+            and samples_finite
+            and final_finite
+            and final_equals_last
+            and all_chains_moved
+            and not hard_vetoes
+        )
+        return {
+            "posterior_samples": samples,
+            "posterior_replica_identities": identities,
+            "final_transition_state": final_transition_state,
+            "diagnostics": {
+                "health_passed": health_passed,
+                "transition_health": dict(health),
+                "samples_all_finite": samples_finite,
+                "final_state_all_finite": final_finite,
+                "all_chains_moved": all_chains_moved,
+                "final_state_equals_last_sample": final_equals_last,
+                "hard_vetoes": hard_vetoes,
+                "posterior_temperature": 1.0,
+                "posterior_stream_only": True,
+                "transition_signature": config.transition_signature,
+            },
+        }
+
+    started = time.monotonic()
+    warmup_chunks: list[tf.Tensor] = []
+    warmup_identity_chunks: list[tf.Tensor] = []
+    warmup_checks: list[Mapping[str, Any]] = []
+    warmup_archives: list[Mapping[str, Any]] = []
+    retained_chunks: list[tf.Tensor] = []
+    retained_identity_chunks: list[tf.Tensor] = []
+    retained_checks: list[Mapping[str, Any]] = []
+    retained_archives: list[Mapping[str, Any]] = []
+    hard_vetoes: list[str] = []
+    warmup_count = 0
+    warmup_index = 0
+    warmup_passed = False
+
+    while warmup_count < config.warmup_max_results:
+        active = min(
+            config.warmup_chunk_results, config.warmup_max_results - warmup_count
+        )
+        if budget_check is not None and budget_check(active) is False:
+            hard_vetoes.append("campaign_resource_cap")
+            break
+        seed = _shared_sequential_chunk_seed(config.warmup_seed, warmup_index)
+        chunk = run_chunk(active, seed, "warmup")
+        current_state = chunk["final_transition_state"]
+        samples = chunk["posterior_samples"]
+        identities = chunk["posterior_replica_identities"]
+        warmup_chunks.append(samples)
+        warmup_identity_chunks.append(identities)
+        warmup_count += active
+        if archive_callback is not None:
+            warmup_archives.append(
+                _call_archive(
+                    archive_callback,
+                    stage="warmup",
+                    chunk_index=warmup_index,
+                    posterior_samples=samples,
+                    posterior_replica_identities=identities,
+                    seed=seed,
+                    cumulative=False,
+                    posterior_temperature=1.0,
+                )
+            )
+        health = chunk["diagnostics"]
+        hard_vetoes.extend(health["hard_vetoes"])
+        rhat = None
+        if health["health_passed"] and warmup_count >= max(
+            config.warmup_min_results, config.warmup_check_window_results
+        ):
+            cumulative = tf.concat(warmup_chunks, axis=0)
+            rhat = rank_normalized_split_rhat_summary(
+                cumulative[-config.warmup_check_window_results :],
+                rhat_max=config.warmup_rhat_max,
+            )
+            warmup_passed = bool(rhat["passed"])
+        warmup_checks.append(
+            {
+                "chunk_index": warmup_index,
+                "completed_results_per_chain": warmup_count,
+                "seed": seed,
+                "health": health,
+                "modern_rhat": rhat,
+                "passed": warmup_passed,
+            }
+        )
+        warmup_index += 1
+        if not health["health_passed"] or warmup_passed:
+            break
+
+    retained_count = 0
+    retained_index = 0
+    retained_passed = False
+    while warmup_passed and retained_count < config.retained_max_results:
+        active = min(
+            config.retained_chunk_results,
+            config.retained_max_results - retained_count,
+        )
+        if budget_check is not None and budget_check(active) is False:
+            hard_vetoes.append("campaign_resource_cap")
+            break
+        seed = _shared_sequential_chunk_seed(config.retained_seed, retained_index)
+        chunk = run_chunk(active, seed, "retained")
+        current_state = chunk["final_transition_state"]
+        samples = chunk["posterior_samples"]
+        identities = chunk["posterior_replica_identities"]
+        retained_chunks.append(samples)
+        retained_identity_chunks.append(identities)
+        retained_count += active
+        if archive_callback is not None:
+            retained_archives.append(
+                _call_archive(
+                    archive_callback,
+                    stage="retained",
+                    chunk_index=retained_index,
+                    posterior_samples=samples,
+                    posterior_replica_identities=identities,
+                    seed=seed,
+                    cumulative=False,
+                    posterior_temperature=1.0,
+                )
+            )
+        health = chunk["diagnostics"]
+        hard_vetoes.extend(health["hard_vetoes"])
+        diagnostic = None
+        diagnostic_role = "modern_rhat"
+        if health["health_passed"]:
+            cumulative = tf.concat(retained_chunks, axis=0)
+            if retained_diagnostic_fn is None:
+                diagnostic = rank_normalized_split_rhat_summary(
+                    cumulative, rhat_max=config.retained_rhat_max
+                )
+            else:
+                diagnostic = retained_diagnostic_fn(cumulative)
+                if not isinstance(diagnostic, Mapping) or not isinstance(
+                    diagnostic.get("passed"), bool
+                ):
+                    raise NeuTraHMCError(
+                        "retained_diagnostic_fn must return a mapping with boolean passed"
+                    )
+                diagnostic_role = "full_convergence"
+                hard_vetoes.extend(
+                    str(item) for item in diagnostic.get("hard_vetoes", ())
+                )
+            retained_passed = bool(
+                retained_count >= config.retained_min_results
+                and diagnostic["passed"]
+                and not hard_vetoes
+            )
+        retained_checks.append(
+            {
+                "chunk_index": retained_index,
+                "completed_results_per_chain": retained_count,
+                "seed": seed,
+                "health": health,
+                "diagnostic_role": diagnostic_role,
+                diagnostic_role: diagnostic,
+                "passed": retained_passed,
+            }
+        )
+        retained_index += 1
+        if not health["health_passed"] or retained_passed or hard_vetoes:
+            break
+
+    empty_samples = tf.zeros((0, chain_count, dimension), tf.float64)
+    empty_identities = tf.zeros((0, chain_count), tf.int32)
+    warmup_samples = tf.concat(warmup_chunks, axis=0) if warmup_chunks else empty_samples
+    warmup_identities = (
+        tf.concat(warmup_identity_chunks, axis=0)
+        if warmup_identity_chunks
+        else empty_identities
+    )
+    retained_samples = (
+        tf.concat(retained_chunks, axis=0) if retained_chunks else empty_samples
+    )
+    retained_identities = (
+        tf.concat(retained_identity_chunks, axis=0)
+        if retained_identity_chunks
+        else empty_identities
+    )
+    cumulative_archives = None
+    if archive_callback is not None:
+        cumulative: dict[str, Mapping[str, Any]] = {}
+        if warmup_count:
+            cumulative["warmup"] = _call_archive(
+                archive_callback,
+                stage="warmup",
+                chunk_index=None,
+                posterior_samples=warmup_samples,
+                posterior_replica_identities=warmup_identities,
+                seed=None,
+                cumulative=True,
+                posterior_temperature=1.0,
+            )
+        if retained_count:
+            cumulative["retained"] = _call_archive(
+                archive_callback,
+                stage="retained",
+                chunk_index=None,
+                posterior_samples=retained_samples,
+                posterior_replica_identities=retained_identities,
+                seed=None,
+                cumulative=True,
+                posterior_temperature=1.0,
+            )
+        cumulative_archives = cumulative or None
+
+    passed = bool(warmup_passed and retained_passed and not hard_vetoes)
+    return {
+        "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+        "passed": passed,
+        "decision": (
+            "ADMIT_SEQUENTIAL_EXACT_TRANSITION"
+            if passed
+            else "REJECT_SEQUENTIAL_EXACT_TRANSITION"
+        ),
+        "config": config.payload(chain_count=chain_count),
+        "warmup_passed": warmup_passed,
+        "warmup_cap_hit": bool(
+            not warmup_passed and warmup_count >= config.warmup_max_results
+        ),
+        "warmup_results_per_chain": warmup_count,
+        "warmup_checks": tuple(warmup_checks),
+        "retained_passed": retained_passed,
+        "retained_cap_hit": bool(
+            warmup_passed
+            and not retained_passed
+            and retained_count >= config.retained_max_results
+        ),
+        "retained_results_per_chain": retained_count,
+        "retained_checks": tuple(retained_checks),
+        "hard_vetoes": tuple(dict.fromkeys(hard_vetoes)),
+        "warmup_archives": tuple(warmup_archives),
+        "retained_archives": tuple(retained_archives),
+        "cumulative_archives": cumulative_archives,
+        "warmup_excluded_from_posterior": True,
+        "posterior_temperature": 1.0,
+        "posterior_stream_only": True,
+        "elapsed_seconds": time.monotonic() - started,
+        "private_warmup_beta_one": warmup_samples,
+        "private_warmup_replica_identities": warmup_identities,
+        "private_retained_beta_one": retained_samples,
+        "private_retained_replica_identities": retained_identities,
+        "private_final_transition_state": current_state,
+        "initial_beta_one_state": initial_posterior,
     }
 
 
@@ -2613,11 +3080,13 @@ def _run_archived_sequential_neutra_hmc(
 __all__ = [
     "NEUTRA_SEQUENTIAL_HMC_POLICY_ID",
     "NeuTraHMCError",
+    "SequentialExactTransitionConfig",
     "SequentialNeuTraHMCConfig",
     "SequentialNeuTraHMCXLAQualificationReceipt",
     "qualify_sequential_neutra_hmc_xla",
     "load_sequential_neutra_hmc_xla_receipt",
     "run_sequential_neutra_hmc",
+    "run_sequential_exact_transition",
     "validate_sequential_neutra_hmc_xla_receipt",
     "_ArchivedSequentialNeuTraHMCConfig",
     "_ArchivedSequentialNeuTraHMCResult",

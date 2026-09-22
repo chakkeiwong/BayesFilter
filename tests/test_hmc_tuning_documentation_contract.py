@@ -21,6 +21,20 @@ from bayesfilter.inference.tuning_contract import (
     hmc_tuning_interface_capability,
     validate_hmc_tuning_interface_capabilities,
 )
+from bayesfilter.hmc_route_contract import (
+    HMC_TOP_LEVEL_SELECTION_STAGE,
+    ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
+    resolve_hmc_algorithm_route,
+)
+from bayesfilter.hmc_ordinary_selection_policy import (
+    ORDINARY_BROAD_PRIMARY_L_GRID,
+)
+from bayesfilter.inference.hmc_kernel_tuning import (
+    HMCKernelTuningConfig,
+    _public_resolved_policy_payload,
+)
+import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning_module
+import bayesfilter.inference.hmc_tuning_dispatch as hmc_tuning_dispatch
 from scripts.render_hmc_tuning_interface_docs import (
     OUTPUT_PATHS,
     render_markdown,
@@ -50,25 +64,29 @@ def test_capability_registry_covers_routes_and_has_resolvable_evidence() -> None
         for record in HMC_TUNING_INTERFACE_CAPABILITIES
         if record.interface_kind == "public_tuner"
     )
-    assert len(public_tuners) == 10
+    assert len(public_tuners) == 2
     assert len(active_hmc_tuning_routes()) == 2
+    assert all(record.capability_status == "tested_supported" for record in public_tuners)
     assert sum(
-        record.interface_kind == "public_tuner"
-        and record.capability_status in {"diagnostic_only", "historical_only"}
+        record.interface_kind == "diagnostic_helper"
         for record in HMC_TUNING_INTERFACE_CAPABILITIES
-    ) == 8
+    ) == 13
+    assert sum(
+        record.interface_kind == "historical_helper"
+        for record in HMC_TUNING_INTERFACE_CAPABILITIES
+    ) == 3
     assert sum(
         record.role == "active" and record.artifact_authority
         for record in HMC_TUNING_ROUTE_REGISTRY
     ) == 2
     assert {record.qualified_name for record in public_tuners} == {
         record.qualified_name for record in active_hmc_tuning_routes()
-    } | {
-        record.qualified_name
-        for record in HMC_TUNING_INTERFACE_CAPABILITIES
-        if record.interface_kind == "public_tuner"
-        and record.capability_status in {"diagnostic_only", "historical_only"}
     }
+    assert all(
+        record.replacement is not None
+        for record in HMC_TUNING_INTERFACE_CAPABILITIES
+        if record.interface_kind in {"diagnostic_helper", "historical_helper"}
+    )
     for record in HMC_TUNING_INTERFACE_CAPABILITIES:
         assert record.evidence_anchors
         for anchor in record.evidence_anchors:
@@ -102,6 +120,22 @@ def test_ordinary_capability_matches_public_signature() -> None:
     assert ordinary.acceptance_alone_can_handoff is False
     assert fixed_transport.requires_frozen_transport is True
     assert fixed_transport.mass_capability == "fixed"
+
+
+def test_implementation_module_does_not_define_a_second_public_tuner() -> None:
+    public_package = importlib.import_module("bayesfilter.inference")
+    fixed_implementation = importlib.import_module(
+        "bayesfilter.inference.fixed_transport_hmc_tuning_tf"
+    )
+    assert not hasattr(hmc_kernel_tuning_module, "tune_hmc_kernel")
+    assert public_package.tune_hmc_kernel is hmc_tuning_dispatch.tune_hmc_kernel
+    assert (
+        public_package.tune_fixed_transport_hmc_kernel
+        is fixed_implementation.tune_fixed_transport_hmc_kernel
+    )
+    assert hmc_tuning_dispatch.tune_hmc_kernel.__module__ == (
+        "bayesfilter.inference.hmc_tuning_dispatch"
+    )
 
 
 def test_every_documented_interface_resolves() -> None:
@@ -235,26 +269,67 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
         "bind_neural_force_hmc_tuning_runner",
         "run_full_chain_neural_force_hmc",
         "fixed `M=I`, fixed `L=1`",
+        "artifact-authoritative fixed-transport policy",
         "Bulk and tail ESS are disabled",
         "R-hat values at or below",
         "negative_hessian",
         "initial_covariance",
         "parameter_scales",
+        "explicit initial-position bank",
+        "initial_position_was_replicated=True",
+        "Durable typed TensorFlow replay",
+        "build_retained_bound_hmc_archive_runner_from_tuning_result",
+        "continuation_manifest",
         "Durable ordinary replay",
+        "Replay roles and authority",
+        "build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload",
+        "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload",
+        "claim_bearing_blockers",
+        "caller-edited authority flag or blocker list cannot grant authority",
+        "tuning_config",
+        "mechanics_only_nonclaiming",
         "admission_supported=False",
+        "posterior_admission_authority=False",
+        "same frozen transition",
+        "mass-signature change invalidates the selection and its calibration",
+        "retained R-hat and ESS are explanatory",
         "short `interface_name`",
         "do not transfer to this route",
+        "audit_ordinary_hmc_migration_surface.py",
+        "unknown_dynamic_import",
+        "unresolved_dynamic_attribute",
+        "canonical broad-first ordinary procedure",
+        "TensorFlowHMCKernelTuningConfig",
+        "independent epsilon",
+        "survivor-midpoint barrier",
+        "exactly two public tuners",
+        "starts at most two candidates",
+        "one implementation",
+        "one_verified_log_midpoint",
+        "audit inventory, not a menu",
+        "run_fixed_mass_step_tuning_diagnostic",
+        "run_windowed_mass_adaptation_diagnostic",
+        "run_fixed_trajectory_tuning_diagnostic",
+        "run_gaussian_dual_averaging_diagnostic",
+        "run_hmc_start_bank_diagnostic",
     ):
         assert term in normalized_guide
-    assert (
-        "does not relabel a non-gradient field as the exact adapter score"
-        in normalized_guide
-    )
+    assert "prevents a deterministic non-score field" in normalized_guide
     assert "\\label{eq:bf-neural-force-endpoint-correction}" in chapter
     assert "artifact\\_authority" in chapter
+    assert "posterior\\_admission\\_authority" in chapter
     assert "admission\\_supported" in chapter
-    assert "sets both" in chapter and "to false" in chapter
-    assert "cannot issue a retained-kernel handoff" in chapter
+    assert "\\path{ordinary_hmc}" in chapter
+    assert "\\path{ordinary_broad_fixed_metric_selection_v1}" in chapter
+    assert "\\path{operational_paired_fixed_trajectory_selection_v3}" in chapter
+    assert "tuning epsilon independently for every" in chapter
+    assert "surviving primary value" in chapter
+    assert "public artifact-authority boundary rejects" in chapter
+    assert "frozen mechanics" in chapter
+    assert "Replay roles and claim authority" in chapter
+    assert "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload" in chapter
+    assert "artifact-authoritative fixed-transport tuning policy" in chapter
+    assert "not posterior convergence" in chapter
 
 
 def test_examples_are_exact_listings_and_public_imports_resolve() -> None:
@@ -287,9 +362,15 @@ def test_construction_examples_execute_without_tuning_or_hmc() -> None:
     assert covariance_namespace["main"]()["status"] == (
         "arguments_bound_without_hmc"
     )
-    binding_payload = neural_namespace["main"]()
+    typed_payload = neural_namespace["main"]()
+    binding_payload = typed_payload["binding"]
+    config_payload = typed_payload["config"]
     assert binding_payload["artifact_authority"] is False
     assert binding_payload["tensor_kernel_factory_available"] is True
+    assert config_payload["artifact_authority"] is False
+    assert config_payload["trajectory_candidate_policy"] == (
+        "powers_of_two_then_explicit_cap"
+    )
 
 
 def test_guide_rejects_the_observed_low_level_runner_misclassification() -> None:
@@ -301,3 +382,55 @@ def test_guide_rejects_the_observed_low_level_runner_misclassification() -> None
     assert "Acceptance by itself" not in guide
     assert "Do not treat acceptance alone as convergence or handoff evidence" in normalized
     assert "A failed verifier must have no final kernel" in normalized
+
+
+def test_guide_binds_the_executable_ordinary_default_policy() -> None:
+    config = HMCKernelTuningConfig.standard()
+    route = resolve_hmc_algorithm_route(
+        algorithm_id=config.algorithm_id,
+        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        chain_execution_mode=config.chain_execution_mode,
+        use_xla=config.use_xla,
+    )
+    resolved = _public_resolved_policy_payload(config)
+
+    assert route.algorithm_id == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
+    assert route.operational_authority is True
+    assert route.artifact_authority is True
+    assert route.scientific_promotion_authority is False
+    assert resolved["config_variant"] == "ordinary_hmc"
+    assert resolved["algorithm_id"] == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
+    policy = resolved["ordinary_selection_policy"]
+    assert tuple(policy["primary_l_grid"]) == ORDINARY_BROAD_PRIMARY_L_GRID
+    assert policy["epsilon_l_treatment"] == (
+        "independent_epsilon_ladder_for_every_l"
+    )
+    assert policy["refinement_rounds"] == 1
+    assert resolved["claim_bearing_artifact_authority"] is False
+    assert resolved["claim_bearing_blocker"] == (
+        "ordinary_runtime_numpy_policy_pending"
+    )
+
+    guide = " ".join(GUIDE_PATH.read_text(encoding="utf-8").split())
+    assert "ordinary_hmc" in guide
+    assert ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID in guide
+    assert "independent epsilon" in guide
+    assert "one refinement barrier" in guide
+    assert "both fail the public artifact-authority guard" in guide
+    assert "claim_bearing_artifact_authority=True" in guide
+    assert "fixes `operational_verification_bracket_policy" in guide
+    assert "historical shared-epsilon" in guide
+
+
+def test_ordinary_module_prose_names_one_broad_public_policy() -> None:
+    source = " ".join(
+        (
+            REPO_ROOT / "bayesfilter/inference/hmc_kernel_tuning.py"
+        ).read_text(encoding="utf-8").split()
+    )
+
+    assert "complete broad primary L grid" in source
+    assert "tunes epsilon independently" in source
+    assert "survivor-midpoint refinement grid" in source
+    assert "lower-level compatibility identities" in source
+    assert "promoted fixed-mass joint" not in source

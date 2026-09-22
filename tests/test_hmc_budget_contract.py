@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import subprocess
 import sys
 
@@ -8,6 +9,7 @@ import pytest
 
 import bayesfilter.hmc_budget_contract as budget_contract
 from bayesfilter.hmc_budget_contract import (
+    BROAD_FIXED_METRIC_OPERATIONAL_ROUTE,
     HMCOperationalStatisticalWorkPolicy,
     build_private_resolved_hmc_work_manifest,
     build_public_hmc_work_manifest,
@@ -17,10 +19,15 @@ from bayesfilter.hmc_budget_contract import (
     validate_private_resolved_hmc_work_manifest,
     validate_public_hmc_work_manifest,
 )
+from bayesfilter.hmc_route_contract import (
+    LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+)
 
 
 def test_budget_contract_import_does_not_load_tensorflow_or_tfp() -> None:
     assert importlib.util.find_spec("bayesfilter.hmc_budget_contract") is not None
+    child_env = dict(os.environ)
+    child_env["BAYESFILTER_PRELOAD_CUSTOM_OP"] = "0"
     completed = subprocess.run(
         (
             sys.executable,
@@ -32,11 +39,12 @@ def test_budget_contract_import_does_not_load_tensorflow_or_tfp() -> None:
         check=False,
         capture_output=True,
         text=True,
+        env=child_env,
     )
     assert completed.returncode == 0, completed.stderr
 
 
-def test_operational_defaults_are_independent_of_metric_warmup() -> None:
+def test_screen_and_verification_defaults_are_independent_of_metric_warmup() -> None:
     policy = HMCOperationalStatisticalWorkPolicy()
     small = build_public_hmc_work_manifest(
         target_dimension=17,
@@ -57,12 +65,13 @@ def test_operational_defaults_are_independent_of_metric_warmup() -> None:
         "initial_candidate_results",
         "candidate_burnin_steps",
         "evidence_extension_checkpoints",
-        "exact_l_tune_adaptation_steps",
         "fresh_verification_results",
         "fresh_verification_burnin_steps",
     )
     assert all(small[key] == large[key] for key in independent)
     assert small["metric_adaptation_steps"] != large["metric_adaptation_steps"]
+    assert small["broad_tune_budget_schedule"] == (250, 500, 1000)
+    assert large["broad_tune_budget_schedule"] == (1250, 2500, 5000)
     assert policy.initial_candidate_results != 5000 // 4
     assert policy.fresh_verification_results != 5000 // 2
 
@@ -112,9 +121,12 @@ def test_default_manifest_counts_every_attempt_retune_fallback_and_verification_
 
     assert manifest["metric_adaptation_steps"] == (5000, 10000)
     assert manifest["selection_attempts_per_outer_attempt"] == (2, 1)
-    assert manifest["candidate_count_upper_bound"] == 3
-    assert manifest["replications_per_candidate"] == 3
-    assert manifest["exact_l_tune_start_count_upper_bound"] == 9
+    assert manifest["route_marker"] == BROAD_FIXED_METRIC_OPERATIONAL_ROUTE
+    assert manifest["candidate_count_upper_bound"] == 13
+    assert manifest["broad_primary_grid_width"] == 6
+    assert manifest["broad_refinement_grid_width_upper_bound"] == 7
+    assert manifest["replications_per_candidate"] == 1
+    assert manifest["exact_l_tune_start_count_upper_bound"] == 0
     assert manifest["fresh_verification_start_count_upper_bound"] == 4
     assert manifest["evidence_extension_checkpoints"] == ()
     assert manifest["maximum_work"]["extension_candidate_batched_transitions"] == 0
@@ -133,6 +145,7 @@ def test_extensions_are_conservative_even_when_only_inconclusive_slots_execute()
         selection_attempts_per_outer_attempt=(5,),
         max_leapfrog_steps=25,
         policy=policy,
+        algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
     )
 
     expected = 5 * 3 * 3 * ((256 + 16) + (512 + 16))

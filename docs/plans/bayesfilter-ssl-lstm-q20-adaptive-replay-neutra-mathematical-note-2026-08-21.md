@@ -1,9 +1,10 @@
-# Adaptive replay for SSL-LSTM q=20 NeuTra: mathematics, proofs, and limits
+# Adaptive replay and tempered transport ensembles for SSL-LSTM NeuTra: mathematics, proofs, corrections, and limits
 
-Date: 2026-08-21
-Status: `CONDITIONAL_MATHEMATICAL_VIABILITY_ESTABLISHED_EMPIRICAL_SUCCESS_UNPROVED`
+Original date: 2026-08-21  
+Substantive revision: 2026-08-28  
+Status: `REPLAY_THEOREMS_RETAINED_HIGH_DIMENSIONAL_FOUNDATION_WITHDRAWN_TEMPERED_RKL_ENSEMBLE_PROPOSED`
 
-## Verdict
+## Revised verdict
 
 A fixed-capacity, content-independently refreshed buffer fed by a fixed valid
 block law can target the desired transport objective and can converge under
@@ -22,6 +23,34 @@ dense IAF, the current optimizer, or the SSL-LSTM target satisfy the required
 assumptions. In particular, the existing normalized-only SMC artifacts support
 a finite empirical forward-KL fit; they do not provide an unbiased
 unnormalized target-measure estimator.
+
+The 2026-08-28 revision changes the scientific recommendation. The replay
+theorems remain conditional mathematical statements, but proposal support and
+asymptotic correctness do not imply usable finite-sample accuracy. If the
+learned transport supplies the proposal used to build its own target-side
+training measure, a mode that the transport assigns negligible probability can
+be absent from every finite block. Reweighting cannot repair an unobserved
+region, and using the resulting measure to validate the same transport is
+circular. Under product mismatch, the second moment of importance weights can
+grow exponentially with dimension even when every proposal density is positive
+everywhere. Therefore adaptive particle replay is no longer the primary
+proposal for future high-parameter SSL-LSTM NeuTra.
+
+The new primary candidate retains the original paper-style reverse-KL objective
+and its fresh IID Gaussian base draws. It trains a deliberately diversified
+ensemble of invertible transports along a proper temperature path, combines
+them as a probability mixture rather than an arithmetic average of maps, and
+uses the frozen transports as multiple exact HMC coordinate charts inside
+replica exchange. The mixture and temperature continuation are discovery and
+geometry mechanisms. Exactness comes only from the transformed target,
+Metropolis corrections, fixed state-independent mixtures of invariant kernels,
+and the replica-exchange swap ratio. No finite ensemble or temperature ladder
+proves exhaustive mode discovery.
+
+The new construction and the correction of the former recommendation are
+proved in Sections 15--25. The original replay analysis in Sections 1--13 is
+preserved because it remains useful for a later optional correction or
+diagnostic lane after independent coverage evidence exists.
 
 ## 1. Claimed target and notation
 
@@ -1104,34 +1133,664 @@ and requires an explicit bias analysis.
 - no pooling of mode-locked chains; and
 - predictive analysis only after sampler admission.
 
-## 14. Direct answer to "will it work?"
+## 14. Corrected answer to "will replay work?"
 
-Theorems 1, 2, 2A, and 3 establish that refreshed replay **can** work:
+Theorems 1, 2, 2A, and 3 establish a conditional existence result: refreshed
+replay can have the correct mean field and can converge under the stated
+support, moment, stability, and stochastic-approximation assumptions. They do
+not establish that the required estimator is usable at finite cost in high
+dimension. In particular, they do not answer how a proposal that misses an
+unknown mode will discover it.
 
-1. valid fresh particle blocks can estimate the exact forward gradient;
-2. a fixed-capacity content-independently refreshed buffer can converge under
-   explicit stochastic-approximation assumptions;
-3. an evolving proposal can generate a new proof-bearing block every update
-   while stale replay is retained with summable influence;
-4. fresh reverse-KL queries estimate the original NeuTra objective;
-5. the hybrid has the correct exact solution whenever that solution is in the
-   flow family; and
-6. at that solution the target pullback is exactly Gaussian.
+The earlier recommendation treated this gap as an empirical gate while still
+placing adaptive replay on the main repair path. That recommendation was too
+optimistic for the intended future SSL-LSTM setting. When the proposal is
+materially derived from `q_phi`, the construction can use `q_phi` to generate a
+finite target-side measure, train `q_phi` on that measure, and then report
+agreement with the same measure. The importance identity remains correct, but
+the global validation argument is circular. A defensive component proves
+support only; it does not prove an adequate second moment or a feasible sample
+count.
 
-What remains unproved for SSL-LSTM q=20 is whether the active target is globally
-regular, whether a finite dense IAF has adequate capacity, whether a
-proof-bearing proposal/SMC block generator has acceptable variance and the
-required envelopes, whether the nonconvex optimizer reaches a symmetry-free
-useful basin, and whether the resulting finite HMC kernel crosses the sign
-barrier. The strong-stability condition (30) cannot be applied globally to
-the current symmetric parameterization. These are empirical research
-questions and must remain gates rather than conclusions.
+Accordingly, replay is retained only as an optional later correction or
+diagnostic after an independent coverage argument is available. It is not the
+foundation of the new high-dimensional proposal. Sections 15--25 replace that
+foundation with multiple reverse-KL transports, temperature continuation, and
+exact replica-exchange HMC.
+
+## 15. Why full support does not solve finite high-dimensional sampling
+
+Let `pi_d` and `m_d` be normalized target and proposal densities and define the
+importance ratio `w_d=pi_d/m_d`. Whenever `pi_d << m_d`,
+
+```text
+E_m[w_d] = 1,
+E_m[w_d^2] = 1 + chi_square(pi_d || m_d)
+             = exp(D_2(pi_d || m_d)),                       (41)
+```
+
+where `D_2` is the order-two Renyi divergence. The common population proxy for
+the relative effective sample size is
+
+```text
+ESS_fraction_infinity = 1 / E_m[w_d^2].                    (42)
+```
+
+It is a second-moment diagnostic, not an exact finite-sample ESS identity.
+
+### Proposition 5: product mismatch produces exponential weight degeneration
+
+Suppose
+
+```text
+pi_d(theta) = product_{j=1}^d pi_j(theta_j),
+m_d(theta)  = product_{j=1}^d m_j(theta_j),                 (43)
+```
+
+with `pi_j << m_j`, and let
+
+```text
+c_j = integral pi_j(x)^2 / m_j(x) dx.
+```
+
+Then
+
+```text
+E_m[w_d^2] = product_{j=1}^d c_j.                           (44)
+```
+
+If `c_j >= 1+delta` for every `j` and some `delta>0`, then
+
+```text
+ESS_fraction_infinity <= (1+delta)^(-d).                   (45)
+```
+
+#### Proof
+
+The product assumptions give
+
+```text
+w_d(theta)^2 m_d(theta)
+  = product_j [pi_j(theta_j)^2 / m_j(theta_j)].
+```
+
+Tonelli's theorem factorizes the nonnegative integral and yields (44). Equation
+(45) follows by bounding every factor below by `1+delta` and taking the
+reciprocal. `QED`
+
+This proposition is deliberately elementary. Real posteriors need not
+factorize, but the result proves that positivity of a proposal density does not
+prevent catastrophic second-moment growth. A tail mismatch can instead make
+one or more `c_j` infinite.
+
+### Proposition 6: weights cannot repair an unobserved region
+
+For a measurable region `A`, let `X_1,...,X_N` be IID from a proposal `m`.
+Then
+
+```text
+P(no X_i lies in A) = (1-m(A))^N.                           (46)
+```
+
+On that event, every estimator supported only on the sampled rows assigns zero
+empirical mass to `A`, regardless of the values that an importance ratio would
+have taken there.
+
+#### Proof
+
+Independence gives the probability in (46). If no sampled row belongs to `A`,
+every weighted atomic measure on those rows evaluates the indicator of `A` as
+zero. `QED`
+
+Equations (44)--(46) are the precise form of the chicken-and-egg objection. If
+`m` is built mostly from a transport that gives an important region
+astronomically small probability, formal support does not create usable
+evidence about that region.
+
+## 16. An ensemble is a mixture of pushforward laws, not an averaged map
+
+Let `K>=1`. For each component `i`, let `T_i:R^d->R^d` be a `C^1`
+diffeomorphism and define
+
+```text
+q_i(theta)
+  = rho(T_i^{-1}(theta)) abs(det D T_i^{-1}(theta)).         (47)
+```
+
+Let `alpha_i>0` with `sum_i alpha_i=1`.
+
+### Proposition 7: categorical selection gives the mixture density
+
+Draw `I ~ Categorical(alpha_1,...,alpha_K)`, independently draw `Z~rho`, and
+set `Theta=T_I(Z)`. Then
+
+```text
+q_alpha(theta) = sum_{i=1}^K alpha_i q_i(theta).             (48)
+```
+
+#### Proof
+
+For every measurable `A`, condition on `I` and use the pushforward definition:
+
+```text
+P(Theta in A)
+  = sum_i alpha_i P(T_i(Z) in A)
+  = sum_i alpha_i integral_A q_i(theta) dtheta.
+```
+
+This identifies the density in (48). `QED`
+
+### Proposition 8: arithmetic averaging of maps is not mixture sampling
+
+In one dimension, take `T_1(z)=z-a`, `T_2(z)=z+a`, and equal weights. The
+arithmetic average is `T_bar(z)=z`, whose pushforward is `N(0,1)`. The mixture
+in (48) is
+
+```text
+0.5 N(-a,1) + 0.5 N(a,1),                                  (49)
+```
+
+which differs from `N(0,1)` for every `a != 0`. Moreover, an arithmetic average
+of diffeomorphisms need not be invertible: averaging `T_1(z)=z` and
+`T_2(z)=-z` gives the constant zero map.
+
+#### Proof
+
+The first claim follows from the means and variances: (49) has variance
+`1+a^2`, whereas `T_bar(Z)` has variance one. The second claim is immediate
+from the displayed maps. `QED`
+
+The proposed ensemble therefore retains a discrete chart index. It is not a
+single NeuTra bijector and must not be passed to an ordinary single-chart HMC
+implementation as though it were one.
+
+## 17. Mixture reverse KL still uses IID Gaussian base draws
+
+For a proper target `pi_beta=tilde_pi_beta/Z_beta`, define
+
+```text
+R_beta(alpha,T_1:K) = KL(q_alpha || pi_beta).                (50)
+```
+
+### Proposition 9: Gaussian expectation for mixture reverse KL
+
+Under the density and integrability assumptions above,
+
+```text
+R_beta(alpha,T_1:K)
+  = sum_i alpha_i E_{Z~rho} [
+      log q_alpha(T_i(Z)) - log tilde_pi_beta(T_i(Z))
+    ] + log Z_beta.                                         (51)
+```
+
+Consequently the trainable part of (51) can be estimated using only IID draws
+from `rho`, evaluations of every component density at transported points, and
+evaluations of the unnormalized target. It requires no samples from `pi_beta`
+and no particle approximation to `pi_beta`.
+
+#### Proof
+
+Expand the KL integral. Split its expectation under the mixture using (48),
+then apply the change of variables `theta=T_i(z)` separately to each component.
+Replacing `log pi_beta` by `log tilde_pi_beta-log Z_beta` gives (51). `QED`
+
+If differentiation may be interchanged with the finite sum and Gaussian
+expectations, enumerating the component index and drawing fresh Gaussian
+batches gives an unbiased stochastic gradient of the displayed trainable
+objective. A sampled categorical index is unnecessary for training because the
+finite component sum can be evaluated directly.
+
+## 18. What reverse-KL mixture weights do and do not estimate
+
+The following idealized calculation isolates the mode-mass question. Let
+`A_1,...,A_K` be a measurable partition with `p_i=pi(A_i)>0`, and define the
+conditional target `pi_i=pi 1_{A_i}/p_i`. Suppose `q_i` is supported in `A_i`
+and set
+
+```text
+delta_i = KL(q_i || pi_i).                                  (52)
+```
+
+This separated-support model is a mathematical limit; a full-support neural
+flow generally only approximates it.
+
+### Proposition 10: exact decomposition of separated mixture reverse KL
+
+Under the separated-support assumptions,
+
+```text
+KL(q_alpha || pi)
+  = sum_i alpha_i [log(alpha_i/p_i) + delta_i].              (53)
+```
+
+For fixed components, the unique minimizing weights are
+
+```text
+alpha_i_star
+  = p_i exp(-delta_i) / sum_j p_j exp(-delta_j).             (54)
+```
+
+Thus `alpha_star=p` if every component exactly equals its regional target, but
+an imperfect component is downweighted according to its local reverse-KL
+error.
+
+#### Proof
+
+On `A_i`, `q_alpha=alpha_i q_i` and `pi=p_i pi_i`. Splitting the KL integral by
+the partition gives (53). Introduce a Lagrange multiplier for
+`sum_i alpha_i=1`. The stationary equation is
+
+```text
+log(alpha_i/p_i) + delta_i + 1 + lambda = 0.
+```
+
+Normalizing its solution gives (54). Strict convexity in the positive simplex
+gives uniqueness. `QED`
+
+This proposition corrects a tempting overclaim. Joint mixture reverse-KL can
+recover regional masses in the exact separated-component limit. With unequal
+component errors, its weights confound target mass and approximation quality.
+They are variational mixture weights, not independently certified posterior
+mode probabilities.
+
+## 19. What multiple random starts can prove
+
+### Proposition 11: conditional discovery probability
+
+Suppose independent training initializations reach the basin associated with
+mode `j` with probability `r_j`. With `K` independent runs, the probability of
+missing mode `j` is
+
+```text
+(1-r_j)^K.                                                   (55)
+```
+
+For a finite declared collection of modes `1,...,J`, the probability of missing
+at least one is at most
+
+```text
+sum_{j=1}^J (1-r_j)^K.                                      (56)
+```
+
+#### Proof
+
+Equation (55) is independence. Equation (56) is the union bound. `QED`
+
+This is not a discovery guarantee because the `r_j` are unknown and can be zero.
+Changing only neural-network weight seeds may leave every transport near the
+same initial physical region. A valid experiment must diversify initial affine
+locations and scales as explicit hypotheses and preserve all lineages until a
+held-out decision stage.
+
+### Proposition 12: finite target queries cannot certify global mode completeness
+
+Let an algorithm query an unnormalized smooth positive target and any finite
+number of its derivatives at a finite set `S` in `R^d`. There exists another
+smooth positive integrable target that agrees with every queried value and
+derivative but assigns arbitrarily large additional unnormalized mass to a
+region disjoint from `S`.
+
+#### Proof
+
+Choose an open ball `B` whose closure is disjoint from the finite set `S`, and
+choose a nonzero nonnegative smooth bump `h` with compact support in `B`. For an
+original target `tilde_pi_0`, define
+
+```text
+tilde_pi_c = tilde_pi_0 + c h,       c>0.                    (57)
+```
+
+The bump and all its derivatives vanish in a neighborhood of every point in
+`S`, so all queried information agrees. Both targets are positive and
+integrable. The added unnormalized mass is `c integral h`, which can be made
+arbitrarily large. `QED`
+
+Consequently neither a finite transport ensemble nor replica exchange can prove
+the absence of every undiscovered mode without additional structural
+assumptions. The research goal is evidence of exploration under declared model
+structure, not a universal completeness certificate.
+
+## 20. Tempered reverse-KL continuation
+
+Let `g_0` be a normalized positive reference density and define the geometric
+bridge
+
+```text
+tilde_pi_beta(theta)
+  = g_0(theta)^(1-beta) tilde_pi(theta)^beta,
+0 <= beta <= 1.                                              (58)
+```
+
+Assume every `Z_beta=integral tilde_pi_beta` is finite and positive. For a
+posterior `tilde_pi(theta)=p(theta)L(y|theta)` with proper prior `p`, choosing
+`g_0=p` gives the likelihood-tempered path
+
+```text
+tilde_pi_beta(theta) = p(theta) L(y|theta)^beta.             (59)
+```
+
+This proper-reference construction is required. A uniform `beta=0` endpoint on
+`R^d` is not a probability distribution.
+
+### Proposition 13: the bridge scales only the declared energy difference
+
+Write `U_0=-log g_0` and `U_1=-log tilde_pi`. Up to an additive constant,
+
+```text
+U_beta(theta)=(1-beta)U_0(theta)+beta U_1(theta).             (60)
+```
+
+For two points `a,b`,
+
+```text
+U_beta(b)-U_beta(a)
+  = (1-beta)[U_0(b)-U_0(a)]
+    + beta[U_1(b)-U_1(a)].                                  (61)
+```
+
+For (59), the likelihood part of the difference is multiplied by `beta` while
+the prior part is unchanged.
+
+#### Proof
+
+Take the negative logarithm of (58) and subtract its values at `a` and `b`.
+The posterior factorization gives the final statement. `QED`
+
+Tempering can reduce a likelihood-created barrier, but (61) also shows why no
+monotone connectivity claim follows: the reference energy, mode volumes, and
+relative regional masses change along the path.
+
+### Proposition 14: continuation does not alter the final reverse-KL target
+
+If the last temperature is `beta_L=1`, the objective in (50) at the last stage
+is exactly `KL(q_alpha||pi)`. Earlier temperatures and warm starts alter the
+optimization trajectory but not the final population objective.
+
+#### Proof
+
+Substituting `beta=1` in (58) gives `tilde_pi_1=tilde_pi`, hence
+`pi_1=pi`. Apply definition (50). `QED`
+
+This proposition licenses temperature continuation as an optimization and
+discovery mechanism. It does not say that continuation finds the global
+minimum or that different lineages occupy different modes.
+
+## 21. Each frozen transport defines an exact coordinate-chart kernel
+
+Fix a temperature `beta` and a transport `T_i`. Define its exact pullback
+
+```text
+pi_beta_i^z(z)
+  = pi_beta(T_i(z)) abs(det D T_i(z)).                       (62)
+```
+
+Let `P_beta_i` be any Markov kernel preserving (62), such as a fixed,
+Metropolis-corrected HMC kernel evaluated with the exact transformed target.
+Define the physical-coordinate kernel
+
+```text
+K_beta_i(theta,A)
+  = P_beta_i(T_i^{-1}(theta), T_i^{-1}(A)).                  (63)
+```
+
+### Proposition 15: chart pushforward preserves the physical target
+
+The kernel `K_beta_i` preserves `pi_beta`.
+
+#### Proof
+
+Under `theta=T_i(z)`, the distribution `pi_beta(dtheta)` becomes
+`pi_beta_i^z(dz)` by (62). Therefore
+
+```text
+integral pi_beta(dtheta) K_beta_i(theta,A)
+ = integral pi_beta_i^z(dz) P_beta_i(z,T_i^{-1}(A))
+ = pi_beta_i^z(T_i^{-1}(A))
+ = pi_beta(A).
+```
+
+The middle equality is invariance of `P_beta_i`. `QED`
+
+Training quality affects the efficiency of this kernel, not its invariant
+target, provided the transport is frozen and the target, score, Jacobian, HMC
+integration, and Metropolis correction are implemented correctly.
+
+### Proposition 16: a fixed mixture of chart kernels is exact
+
+Let `gamma_i>=0`, `sum_i gamma_i=1`, and assume the `gamma_i` are fixed and do
+not depend on the current state. Then
+
+```text
+K_beta = sum_i gamma_i K_beta_i                             (64)
+```
+
+preserves `pi_beta`.
+
+#### Proof
+
+Linearity gives
+
+```text
+pi_beta K_beta
+  = sum_i gamma_i (pi_beta K_beta_i)
+  = sum_i gamma_i pi_beta
+  = pi_beta.
+```
+
+`QED`
+
+State-dependent chart weights are not automatically valid. For a two-state
+uniform target, both the identity kernel and the flip kernel are invariant. If
+the identity is selected at state zero and the flip at state one, both states
+move to zero, so the state-dependent mixture is not invariant. Any adaptive or
+state-dependent chart selector therefore requires its own correction proof.
+
+## 22. Replica exchange with transport ensembles
+
+Let `0<=beta_0<...<beta_L=1` and define the product target
+
+```text
+Pi(theta_0:L) = product_{ell=0}^L pi_beta_ell(theta_ell).     (65)
+```
+
+At temperature `ell`, use a fixed mixture of exact chart kernels as in (64).
+For adjacent temperatures, propose exchanging `theta_ell` and
+`theta_{ell+1}`.
+
+### Proposition 17: the adjacent swap ratio satisfies detailed balance
+
+For a symmetric adjacent-pair proposal, accept the exchange with probability
+
+```text
+a_swap = min(1,
+  [tilde_pi_beta_ell(theta_{ell+1})
+   tilde_pi_beta_{ell+1}(theta_ell)]
+  /
+  [tilde_pi_beta_ell(theta_ell)
+   tilde_pi_beta_{ell+1}(theta_{ell+1})]).                  (66)
+```
+
+The swap kernel is reversible with respect to `Pi`.
+
+#### Proof
+
+All unaffected product factors cancel in the ratio of (65) at the swapped and
+current states. The two unknown normalizing constants also cancel. Equation
+(66) is therefore the ordinary Metropolis ratio for a symmetric involutive
+proposal, which gives detailed balance. `QED`
+
+### Theorem 4: tempered multi-transport HMC has the exact cold marginal
+
+Suppose every within-temperature chart kernel satisfies Proposition 15, every
+chart mixture has fixed state-independent weights as in Proposition 16, and
+every exchange uses (66). Any fixed composition or random scan of these
+within-temperature and exchange kernels preserves `Pi`. Consequently the
+`beta_L=1` marginal is `pi`.
+
+#### Proof
+
+The product of the within-temperature mixtures preserves (65) because each
+factor kernel preserves its corresponding factor. Proposition 17 shows that
+every exchange kernel preserves the same product target. A composition or
+fixed state-independent mixture of kernels sharing an invariant law preserves
+that law. Finally, the last factor of (65) is `pi_beta_L=pi`. `QED`
+
+The theorem removes the particle-measure circularity from correctness. It does
+not prove irreducibility, useful swap rates, temperature round trips, hot-chain
+basin forgetting, or cold-chain convergence.
+
+### Proposition 18: invariance alone does not imply discovery
+
+The identity kernel preserves every target but never changes state. More
+generally, if all within-temperature kernels preserve a common region `A` and
+every replica is initialized in `A`, replica exchange only permutes states in
+`A`; no replica reaches `A^c`.
+
+#### Proof
+
+The identity statement is immediate. Under the second hypothesis, within-
+temperature updates keep every state in `A`, and a swap changes only which
+temperature owns each existing state. Induction over transitions proves that
+all states remain in `A`. `QED`
+
+This is why observed swaps, acceptance, or finite values are explanatory
+diagnostics. Claim-bearing evidence requires replica-identity round trips,
+hot-level basin forgetting, repeated cold-level transitions, initialization
+forgetting, modern convergence diagnostics, and target-relevant downstream
+agreement.
+
+## 23. Optional mixture proposals after training
+
+The learned mixture can also be used as an independence proposal, but this is
+an optional global-move kernel rather than the foundation of the method.
+
+### Proposition 19: Metropolis correction makes a mixture proposal exact
+
+Assume `q_alpha(theta)>0` wherever `pi(theta)>0`. From current state `x`, draw
+`y~q_alpha` and accept with probability
+
+```text
+a_ind(x,y) = min(1,
+  [tilde_pi(y) q_alpha(x)] / [tilde_pi(x) q_alpha(y)]).       (67)
+```
+
+The resulting independence kernel is reversible with respect to `pi`.
+
+#### Proof
+
+For `x != y`, the accepted flow from `x` to `y` is
+
+```text
+pi(x) q_alpha(y) min(1,
+  [pi(y)q_alpha(x)]/[pi(x)q_alpha(y)])
+ = min(pi(x)q_alpha(y), pi(y)q_alpha(x)),
+```
+
+which is symmetric in `x,y`. The rejection mass completes detailed balance.
+`QED`
+
+This kernel uses exact density ratios rather than an importance estimate, but
+its acceptance can still collapse in high dimension if `q_alpha` is a poor
+global approximation. It must be compared with, not substituted for, the
+multi-chart replica-exchange construction.
+
+## 24. Corrected algorithmic proposal
+
+### Algorithm C: tempered ensemble reverse-KL training
+
+1. Define and test a proper bridge (58). Prefer the exact prior-likelihood path
+   (59) when the target exposes that decomposition. Do not use an improper
+   uniform endpoint.
+2. Predeclare a temperature ladder for a bounded pilot. Treat its size and
+   spacing as hypotheses until temperature-overlap evidence is available.
+3. At the first level, initialize multiple transports with distinct stateless
+   neural seeds and deliberately diversified affine locations and scales drawn
+   from or constructed under the proper reference `g_0`. Random neural weights
+   alone are not a diversity contract.
+4. Train every component with the original reverse-KL Gaussian objective. At
+   later levels, warm-start each lineage from the preceding temperature and
+   apply predeclared independent perturbations or branching. Preserve all
+   lineages; do not erase a component merely because another has lower
+   descriptive loss.
+5. Optionally refine all components and positive mixture weights using (51).
+   Report the `alpha_i` as variational weights and audit the approximation-error
+   confounding in (54).
+6. Freeze transports, mixture weights, component identities, temperature path,
+   target signatures, and selection rules before sampler validation.
+
+Fully optimizing every component at `beta=0` makes all component distributions
+target the same reference law and can erase the initial distributional
+diversity. The endpoint is therefore a bridge and implementation check, not the
+sole source of distinct lineages. The bounded design must compare pure
+continuation with predeclared fresh restarts or branching at one or more
+positive temperatures. These mechanisms change initialization paths, not the
+reverse-KL objective.
+
+### Algorithm D: exact tempered multi-chart HMC
+
+1. For each temperature and retained component, construct the exact pullback
+   target (62), including the temperature-specific target value and score and
+   the transport log determinant.
+2. Tune a fixed HMC kernel within each declared temperature/chart scope using
+   disjoint tuning data. Warmup draws are never posterior draws.
+3. At each within-temperature update, select a chart with fixed
+   state-independent `gamma`; transform the current physical state through its
+   inverse, run the corrected HMC transition in that chart, and map back.
+4. Apply alternating adjacent exchanges using (66), retaining replica identity
+   and complete swap telemetry.
+5. Use only the `beta=1` retained draws for posterior inference. Require the
+   repository sequential-HMC diagnostics plus replica round trips, hot-level
+   basin forgetting, cold-level mode transitions, and downstream reference
+   agreement.
+6. Test (67) only as an optional separately labeled global proposal arm.
+
+The two algorithms use IID Gaussian base draws for learned-transport training
+and exact target evaluations for sampling. They do not require a particle
+measure drawn from the unknown posterior.
+
+The current public fixed-transport tuner binds one frozen transport and one
+transformed target per artifact. Tuning every `(beta,i)` scope separately does
+not by itself implement the multi-chart sequential controller in Algorithm D.
+That controller, its canonical NeuTra-HMC route-ledger classification, and its
+consumption of exact per-scope tuning artifacts are new implementation work.
+
+## 25. Revised evidence boundary
+
+The new candidate answers a narrower question than "solve multimodality in high
+dimension." It asks whether a diversified temperature-continuation ensemble
+creates useful complementary coordinate charts, and whether exact replica
+exchange using those charts explores the declared SSL-LSTM target better than
+the single-transport and physical-coordinate baselines under a common budget.
+
+The following roles are fixed before implementation:
+
+| Quantity | Evidentiary role |
+|---|---|
+| Exact density, inverse, Jacobian, score, HMC reversibility, and swap-ratio fixtures | hard implementation veto |
+| Target/status finiteness and GPU/XLA/batch policy | hard execution veto |
+| Single cold reverse-KL transport | required baseline |
+| Physical-coordinate replica exchange with matched tempering target | required classical comparator |
+| Cold multi-start ensemble without tempering | required ablation |
+| Tempered ensemble without joint mixture refinement | plain proposed method |
+| Tempered ensemble with joint mixture refinement | enhanced proposed method |
+| Reverse-KL loss, latent mean/covariance, component separation, acceptance, and swap rate | explanatory or nomination only |
+| Replica round trips, hot basin forgetting, cold retained R-hat/ESS, mode transitions, and reference/downstream agreement | sampler promotion criteria or vetoes as predeclared |
+| Mixture weights `alpha` | variational quantities; not posterior mode-mass authority without the conditions of Proposition 10 |
+| Fixed chart-selection weights `gamma` | algorithmic frequencies affecting efficiency, not posterior masses |
+
+No finite pass establishes exhaustive mode discovery, universal high-
+dimensional scaling, statistical superiority, or correctness of the underlying
+UKF-defined approximation to the nonlinear state-space posterior. A future
+dimension ladder must report how the required number of components,
+temperatures, target evaluations, and wall time scale; q=20 success cannot by
+itself promote the method for larger SSL-LSTM parameter spaces.
 
 ## Independent-audit status
 
-The bounded MathDevMCP audit is recorded in
+The original bounded MathDevMCP audit is recorded in
 `docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-mathdevmcp-audit-2026-08-21.md`.
-It certified the scalar deterministic-mixture cancellation but did not certify
+It covers the 2026-08-21 replay analysis. It certified the scalar
+deterministic-mixture cancellation but did not certify
 the measure-theoretic or stochastic-approximation arguments. A thorough
 read-only independent review was completed in
 `docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-fable-review-reply-2026-08-23.md`;
@@ -1140,11 +1799,34 @@ the resulting adjudication and plan amendment are in
 The original request is preserved in
 `docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-fable-handoff-2026-08-21.md`.
 
+The 2026-08-28 correction and tempered-ensemble propositions have a separate
+LaTeX audit surface and MathDevMCP record:
+
+- `docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-mathematical-note-2026-08-21.tex`;
+- `docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-mathdevmcp-audit-2026-08-28.md`.
+
+The implementation proposal and its document-alignment audit are separate from
+the mathematical audit. A Claude handoff requests an independent review of the
+revised note and plan; until that reply exists, the new route is a reviewed-by-
+Codex candidate, not an independently accepted design.
+
 ## Sources and implementation anchors
 
 - Hoffman et al., "NeuTra-lizing Bad Geometry in Hamiltonian Monte Carlo Using
-  Neural Transport," arXiv:1903.03704; local text at
+  Neural Transport," Section 2.2, equations (2)--(3), and Section 2.3,
+  arXiv:1903.03704; local text at
   `.localresources/papers/multimodal_hmc/hoffman-sountsov-dillon-2019-neutra.txt`.
+- Hukushima and Nemoto, "Exchange Monte Carlo Method and Application to Spin
+  Glass Simulations," Section II, equations (2.1)--(2.7),
+  arXiv:cond-mat/9512035; local PDF and inspection record in
+  `.localresources/papers/multimodal_hmc/` and `CORPUS_AUDIT.md`.
+- Parno and Marzouk, "Transport Map Accelerated Markov Chain Monte Carlo,"
+  Section 3.1, especially equation (21), arXiv:1412.5492; local text at
+  `.localresources/papers/multimodal_hmc/parno-marzouk-2018-transport-map-mcmc.txt`.
+- The inspected multimodal-HMC source synthesis, including the replica-exchange
+  product target, swap correction, and limitations:
+  `docs/surveys/multimodal_hmc_survey.tex` and
+  `.localresources/papers/multimodal_hmc/CORPUS_AUDIT.md`.
 - Del Moral and Doucet, "Sequential Monte Carlo Samplers" preprint; local text
   at
   `.localresources/papers/multimodal_hmc/del-moral-doucet-2002-smc-samplers-preprint.txt`.
@@ -1152,6 +1834,14 @@ The original request is preserved in
   `bayesfilter/inference/neutra_weighted_training.py`.
 - Current q=20 fixed-replay runner:
   `docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_training_2026_08_19.py`.
+- Current q=20 batch-native likelihood-plus-Gaussian-prior target:
+  `bayesfilter/nonlinear/ssl_lstm_complexity_batched_target_tf.py`.
+- Current single-map HMC interface and canonical sequential controller:
+  `docs/reference/hmc-tuning-interface.md` and
+  `bayesfilter/inference/neutra_hmc.py`.
+- Diagnostic physical-coordinate pure-power replica exchange, which is not the
+  proposed proper-reference multi-chart implementation:
+  `bayesfilter/testing/distributed_replica_exchange_tf.py`.
 - Governing plan:
   `docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-mathematics-review-plan-2026-08-21.md`.
 - MathDevMCP audit:
@@ -1160,3 +1850,5 @@ The original request is preserved in
   `docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-fable-handoff-2026-08-21.md`.
 - Review adjudication and plan amendment:
   `docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-review-adjudication-plan-2026-08-23.md`.
+- Corrected implementation plan:
+  `docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-implementation-plan-2026-08-28.md`.

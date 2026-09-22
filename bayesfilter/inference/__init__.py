@@ -9,6 +9,24 @@ from __future__ import annotations
 from importlib import import_module
 
 __all__ = [
+    "HMC_STAGE_RESUME_SCHEMA",
+    "HMC_STAGE_SEQUENCE_RESULT_SCHEMA",
+    "ORDINARY_HMC_TUNING_ROUTE",
+    "FIXED_TRANSPORT_HMC_TUNING_ROUTE",
+    "ORDINARY_HMC_STAGE_NAMES",
+    "FIXED_TRANSPORT_HMC_STAGE_NAME",
+    "HMCStageResumeError",
+    "HMCStageSpec",
+    "HMCStageBoundary",
+    "HMCStageOutcome",
+    "HMCStageResumeCheckpoint",
+    "HMCStageSequenceResult",
+    "completed_hmc_stage",
+    "build_hmc_stage_resume_checkpoint",
+    "validate_hmc_stage_resume_checkpoint",
+    "run_hmc_stage_sequence",
+    "write_hmc_stage_resume_checkpoint",
+    "load_hmc_stage_resume_checkpoint",
     "HMCFailureClassification",
     "HMCUncertaintyConfirmationAdmission",
     "HMCUncertaintyRetuningPolicy",
@@ -64,6 +82,14 @@ __all__ = [
     "RetainedSampleHMCArchiveRunResult",
     "RetainedSampleHMCArchiveRunner",
     "RetainedFrozenKernelAdapterReplayResult",
+    "REPLAY_ROLE_MECHANICS_ONLY",
+    "REPLAY_ROLE_CLAIM_BEARING_RETAINED",
+    "ORDINARY_BROAD_FIXED_METRIC_POLICY_ID",
+    "ORDINARY_BROAD_PRIMARY_L_GRID",
+    "ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID",
+    "ORDINARY_LEGACY_JOINT_L_EPSILON_POLICY_ID",
+    "ORDINARY_ENGINEERING_JOINT_L_EPSILON_POLICY_ID",
+    "resolve_ordinary_hmc_selection_policy",
     "SEQUENTIAL_RHAT_CHECKPOINT_KINDS",
     "SEQUENTIAL_RHAT_CHECKPOINT_PUBLIC_NONCLAIMS",
     "SEQUENTIAL_RHAT_CHECKPOINT_PUBLIC_REFERENCE_FIELDS",
@@ -81,6 +107,8 @@ __all__ = [
     "FIXED_TRANSPORT_HMC_GRID_POLICY_NONCLAIMS",
     "FIXED_TRANSPORT_HMC_JOINT_PREPARED_GRID_NONCLAIMS",
     "FIXED_TRANSPORT_HMC_PREPARED_GRID_NONCLAIMS",
+    "FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY",
+    "FIXED_TRANSPORT_HMC_MEASURED_POLICY",
     "FIXED_TRANSPORT_HMC_TUNING_NONCLAIMS",
     "FixedTransportHMCCandidateResult",
     "FixedTransportHMCJointPilotRow",
@@ -334,8 +362,13 @@ __all__ = [
     "build_retained_sample_hmc_archive_runner",
     "build_retained_frozen_kernel_hmc_adapter_from_tuning_payload",
     "build_retained_frozen_kernel_hmc_adapter_from_tuning_result",
+    "build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload",
+    "build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result",
+    "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload",
+    "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result",
     "admitted_kernel_mechanics_payload_from_tuning_result",
     "build_retained_frozen_kernel_hmc_adapter_from_mechanics_payload",
+    "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload",
     "build_reusable_full_chain_tfp_hmc_runner",
     "build_sequential_rhat_checkpoint_public_reference",
     "build_sequential_rhat_hmc_verifier",
@@ -518,6 +551,7 @@ __all__ = [
 ]
 
 _EXPORT_MODULES = (
+    "bayesfilter.inference.hmc_stage_resume",
     "bayesfilter.inference.hmc_operational_broad_grid",
     "bayesfilter.inference.hmc_uncertainty_retuning",
     "bayesfilter.inference.posterior_adapter",
@@ -583,6 +617,9 @@ _DIRECT_EXPORTS = {
     ),
     "load_tensorflow_hmc_tuning_result": "bayesfilter.inference.hmc_tuning_dispatch",
     "tune_hmc_kernel": "bayesfilter.inference.hmc_tuning_dispatch",
+    "tune_fixed_transport_hmc_kernel": (
+        "bayesfilter.inference.fixed_transport_hmc_tuning_tf"
+    ),
     "DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS": (
         "bayesfilter.inference.neural_force_hmc"
     ),

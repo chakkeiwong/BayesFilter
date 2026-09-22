@@ -23,6 +23,7 @@ from bayesfilter.inference.batched_value_score import (
     FixedTransportValueScoreAdapter,
     reviewed_value_score_target_fn,
 )
+from bayesfilter.inference.posterior_adapter import value_score_capability
 
 
 @dataclass(frozen=True)
@@ -505,6 +506,77 @@ def build_fixed_transport_reusable_runner(
     """Build one reusable dynamic-epsilon/dynamic-``L`` runner."""
 
     return FixedTransportReusableRunner(adapter, initial_state_template, config)
+
+
+def build_fixed_transport_one_step_transition(
+    adapter: Any,
+    *,
+    state_shape: tuple[int, int],
+    step_size: float,
+    num_leapfrog_steps: int,
+    use_xla: bool = True,
+) -> Callable[[tf.Tensor, tf.Tensor], tuple[tf.Tensor, ...]]:
+    """Build the shared pure-tensor primitive for one exact HMC transition.
+
+    This is the extension point used by fixed chart mixtures and tempered
+    controllers.  It owns no chart selection, temperature loop, tuning, or
+    convergence policy.  Claim-bearing callers must obtain ``step_size`` and
+    ``num_leapfrog_steps`` from a verified tuner handoff before construction.
+    """
+    shape = tuple(int(value) for value in state_shape)
+    if len(shape) != 2 or any(value <= 0 for value in shape):
+        raise ValueError(
+            "one-step fixed-transport state_shape must be positive rank 2"
+        )
+    step = float(step_size)
+    if not math.isfinite(step) or step <= 0.0:
+        raise ValueError("one-step fixed-transport step_size must be positive")
+    leapfrog = int(num_leapfrog_steps)
+    if leapfrog <= 0:
+        raise ValueError(
+            "one-step fixed-transport num_leapfrog_steps must be positive"
+        )
+    capability = value_score_capability(adapter)
+    if bool(use_xla) and not capability.is_accepted_xla_hmc_authority:
+        raise ValueError(
+            "one-step XLA HMC requires accepted target-XLA authority"
+        )
+    target = reviewed_value_score_target_fn(
+        adapter, dtype=tf.float64, require_batched=True
+    )
+    kernel = tfp.mcmc.HamiltonianMonteCarlo(
+        target_log_prob_fn=target,
+        step_size=tf.constant(step, tf.float64),
+        num_leapfrog_steps=leapfrog,
+        state_gradients_are_stopped=True,
+    )
+
+    @tf.function(
+        input_signature=(
+            tf.TensorSpec(shape, tf.float64),
+            tf.TensorSpec([2], tf.int32),
+        ),
+        jit_compile=bool(use_xla),
+        reduce_retracing=False,
+    )
+    def transition(
+        state: tf.Tensor, seed: tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+        results = kernel.bootstrap_results(state)
+        next_state, next_results = kernel.one_step(state, results, seed=seed)
+        return (
+            tf.ensure_shape(next_state, shape),
+            tf.ensure_shape(next_results.is_accepted, [shape[0]]),
+            tf.ensure_shape(next_results.log_accept_ratio, [shape[0]]),
+            tf.ensure_shape(
+                next_results.accepted_results.target_log_prob, [shape[0]]
+            ),
+            tf.ensure_shape(
+                next_results.accepted_results.grads_target_log_prob[0], shape
+            ),
+        )
+
+    return transition
 
 
 class FixedTransportReusableRunnerPool:
@@ -1017,6 +1089,7 @@ __all__ = [
     "FullChainRunHook",
     "RunFullChainFn",
     "build_fixed_transport_value_score_adapter",
+    "build_fixed_transport_one_step_transition",
     "fixed_transport_base_adapter_signature",
     "fixed_transport_capped_step_size_setter",
     "fixed_transport_json_ready",
