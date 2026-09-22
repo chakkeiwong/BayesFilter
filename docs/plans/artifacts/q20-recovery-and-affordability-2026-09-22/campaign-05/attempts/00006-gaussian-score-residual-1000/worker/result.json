@@ -1,0 +1,132 @@
+{
+  "dimension": 4,
+  "latent_norm": {
+    "max": 3.976756940905414,
+    "min": 0.15127855334249887,
+    "quantiles": [
+      0.15127855334249887,
+      0.5549493724334353,
+      0.8092606353218418,
+      1.3537646176320846,
+      1.8637776594705426,
+      2.3345500310843694,
+      3.0926123072322285,
+      3.5614708025705064,
+      3.976756940905414
+    ]
+  },
+  "nonclaims": [
+    "global posterior Gaussianity",
+    "posterior covariance",
+    "HMC acceptance or convergence",
+    "map qualification",
+    "production default readiness"
+  ],
+  "point_count": 1000,
+  "point_distribution": "iid_standard_normal_latent",
+  "posterior_estimate": false,
+  "promotion_qualified": false,
+  "quantile_definition": "nearest_lower_index_floor(p*(number_of_summarized_rows-1))",
+  "quantile_probabilities": [
+    0.0,
+    0.01,
+    0.05,
+    0.25,
+    0.5,
+    0.75,
+    0.95,
+    0.99,
+    1.0
+  ],
+  "r_log_target_over_gaussian_up_to_constant": {
+    "implied_density_ratio_range": 3.883057986530728e+20,
+    "max": -35.51075256554522,
+    "min": -82.91907740949983,
+    "quantiles": [
+      -82.91907740949983,
+      -64.63882255632271,
+      -54.18576733012602,
+      -45.29115786862198,
+      -42.291119180252736,
+      -39.96771706793391,
+      -38.17919498980939,
+      -37.03075852316704,
+      -35.51075256554522
+    ],
+    "range": 47.40832484395462,
+    "rows": 1000
+  },
+  "role": "pointwise_gaussianity_diagnostic_only",
+  "runtime": {
+    "allocator": {
+      "current": 935168,
+      "peak": 269198336
+    },
+    "batch_calls": 50,
+    "batch_size": 20,
+    "control_calls": 1,
+    "score_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "trace_count": 1,
+    "value_device": "/job:localhost/replica:0/task:0/device:GPU:0"
+  },
+  "schema": "bayesfilter.q20.latent_score_residual_diagnostic.v1",
+  "score_residual_norm": {
+    "exceedance_fraction": {
+      "0.1": 1.0,
+      "0.5": 0.999,
+      "1.0": 0.998,
+      "10.0": 0.321,
+      "2.0": 0.974,
+      "5.0": 0.822
+    },
+    "fraction_larger_than_gaussian_score": 0.983,
+    "max": 46.74407745701637,
+    "mean": 9.690314861113478,
+    "mean_standard_error": 0.20861437450962136,
+    "min": 0.4187509130551415,
+    "population": "finite_status_valid_rows",
+    "quantiles": [
+      0.4187509130551415,
+      1.4461880223060046,
+      2.714901690972701,
+      5.707496574416796,
+      7.600838544880336,
+      11.775324090613616,
+      23.192689763342827,
+      33.72898365356692,
+      46.74407745701637
+    ],
+    "relative_to_gaussian_score_norm_quantiles": [
+      0.23271002323178458,
+      0.8499985983398312,
+      1.5287781579114437,
+      2.7457204883343573,
+      4.338288202022567,
+      8.256440130126075,
+      13.168640816049848,
+      15.5974859369095,
+      26.791301415147768
+    ],
+    "rms": 11.720863423925103,
+    "rows": 1000,
+    "std": 6.593666453103957
+  },
+  "seed": [
+    382516868,
+    1206950493
+  ],
+  "status": "completed",
+  "timing": {
+    "target_eval_seconds": 110.78458637499716,
+    "wall_seconds": 132.32759591401555
+  },
+  "validity": {
+    "finite_score_rows": 1000,
+    "finite_value_rows": 1000,
+    "invalid_rows": 0,
+    "saved_canary_control_passed": true,
+    "status_failure_rows": 0,
+    "target_status_failure_role": "invalid_rows_cannot_support_finite_residual_summary",
+    "valid_rows": 1000
+  }
+}
