@@ -64,6 +64,53 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "initializer_small_cpu": ("tests/test_quadratic_map_covariance.py", "-k",
+        "requires_constrained or fails_closed_at_refinement_budget or locator_exception or nonfinite_initial or insufficient_samples or payload_nonclaims"),
+    "initializer_gaussian_cpu": ("tests/test_quadratic_map_covariance.py::test_quadratic_initializer_recovers_gaussian_mode_and_covariance",),
+    "initializer_scaled_cpu": ("tests/test_quadratic_map_covariance.py::test_scaled_quadratic_initializer_returns_original_coordinate_mass",),
+    "initializer_moved_cpu": ("tests/test_quadratic_map_covariance.py::test_one_shot_wrapper_never_emits_covariance_at_a_moved_candidate",),
+    "initializer_batch_cpu": ("tests/test_quadratic_map_covariance.py::test_initializer_forwards_batched_design_callback_without_changing_result",),
+    "initializer_iterative_cpu": ("tests/test_quadratic_map_covariance.py::test_iterative_initializer_reaches_terminal_center_with_bounded_steps",),
+    "initializer_enabled_cpu": ("tests/test_quadratic_map_covariance.py::test_enabled_locator_is_finite_locator_only_not_covariance_authority",),
+    "initializer_helpers_cpu": ("tests/test_filter_repair_quadratic_initializer.py", "-k", "not existing_initializer_outcomes"),
+    "initializer_current_clouds_cpu": ("tests/test_filter_repair_quadratic_initializer.py", "-k", "existing_initializer_outcomes"),
+    "geometry_public_first_cpu": ("tests/test_quadratic_geometry.py", "-k",
+        "undersampled or spd_and_condition or nonfinite_values or bad_holdout or holdout_gate or center_refinement_accepts_nearby"),
+    "geometry_public_second_cpu": ("tests/test_quadratic_geometry.py", "-k",
+        "center_refinement_rejects_out or seed_and_payload or malformed_batched or spd_quadratic_trust_region or constrained_refinement or default_refinement or retains_best"),
+    "geometry_public_parity_cpu": ("tests/test_filter_repair_geometry_parity.py",),
+    "geometry_public_memory_attribution_cpu": (
+        "tests/test_quadratic_geometry.py", "tests/test_filter_repair_geometry_parity.py", "-s", "-k",
+        "not synthetic_low_rank_spd and not batched_design_route_matches"),
+    "geometry_public_boundary_cpu": (
+        "tests/test_quadratic_geometry.py::test_constrained_refinement_accepts_exact_boundary_quadratic_step", "-s"),
+    "geometry_full_prior_attribution_cpu": (
+        "tests/test_filter_repair_geometry_full_memory.py::test_prior_geometry_spectral_attribution",),
+    **{f"geometry_public_capacity_{device}": (
+        "tests/test_quadratic_geometry.py::test_synthetic_low_rank_spd_quadratic_recovers_precision",
+        "tests/test_quadratic_geometry.py::test_batched_design_route_matches_scalar_geometry")
+        for device in ("cpu", "gpu")},
+    **{f"geometry_public_remaining_{device}": (
+        "tests/test_quadratic_geometry.py", "tests/test_filter_repair_geometry_parity.py", "-k",
+        "not synthetic_low_rank_spd and not batched_design_route_matches")
+        for device in ("cpu", "gpu")},
+    **{f"geometry_full_memory_{arm}_{capacity}_{device}": (
+        f"tests/test_filter_repair_geometry_full_memory.py::test_full_geometry_costs[{arm}-{capacity}]",)
+        for arm in ("prior", "prior_refined", "graph", "xla") for capacity in (24, 120) for device in ("cpu", "gpu")},
+    "geometry_full_public_cpu": ("tests/test_filter_repair_geometry_full.py", "-k", "public_geometry"),
+    "geometry_full_legacy_cpu": (
+        "tests/test_filter_repair_geometry_parity.py::test_complete_geometry_matches_baseline_on_identical_clouds",
+        "tests/test_quadratic_geometry.py::test_geometry_retains_best_exact_design_row",),
+    "geometry_full_shapes_cpu": ("tests/test_filter_repair_geometry_full.py::test_full_geometry_output_shapes",),
+    "geometry_full_smoke_cpu": (
+        "tests/test_filter_repair_geometry_full.py::test_full_geometry_original_records[gaussian-False-3]",
+        "tests/test_filter_repair_geometry_full.py::test_full_geometry_original_records[gaussian-True-3]"),
+    **{f"geometry_full_{dimension}_{batched}_{device}": (
+        "tests/test_filter_repair_geometry_full.py", "-k", f"original_records and {batched}-{dimension}")
+        for dimension in (1, 3, 5) for batched in ("False", "True") for device in ("cpu", "gpu")},
+    **{f"geometry_full_edges_{device}": (
+        "tests/test_filter_repair_geometry_full.py", "-k", "not original_records")
+        for device in ("cpu", "gpu")},
     "geometry_active_pilot_attribution_cpu": (
         "tests/test_filter_repair_geometry_active_pilot.py::test_active_pilot_degenerate_basis_and_hlo_attribution",),
     **{f"geometry_active_pilot_{dimension}_{device}": (
@@ -814,6 +861,17 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "initializer_public_cpu": ("initializer_small_cpu", "initializer_gaussian_cpu",
+        "initializer_scaled_cpu", "initializer_moved_cpu", "initializer_batch_cpu",
+        "initializer_iterative_cpu", "initializer_enabled_cpu", "initializer_helpers_cpu",
+        "initializer_current_clouds_cpu"),
+    "geometry_public_cpu_finish": (
+        "geometry_public_first_cpu", "geometry_public_second_cpu", "geometry_public_parity_cpu", "policy"),
+    **{f"geometry_full_memory_{device}": tuple(f"geometry_full_memory_{arm}_{capacity}_{device}"
+        for capacity in (24, 120) for arm in ("prior_refined", "graph", "xla")) for device in ("cpu", "gpu")},
+    **{f"geometry_full_{device}": (
+        *(f"geometry_full_{dimension}_{batched}_{device}" for dimension in (1, 3, 5) for batched in ("False", "True")),
+        f"geometry_full_edges_{device}") for device in ("cpu", "gpu")},
     **{f"geometry_active_pilot_{device}": (
         f"geometry_active_pilot_3_{device}", f"geometry_active_pilot_5_{device}",
         f"geometry_active_pilot_edges_{device}",
@@ -1018,6 +1076,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "geometry_public_capacity_gpu": "GPU",
+    "geometry_public_remaining_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["geometry_full_memory_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["geometry_full_gpu"]},
     **{f"geometry_active_pilot_{dimension}_gpu": "GPU" for dimension in (3, 5)},
     "geometry_active_pilot_edges_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["geometry_active_memory_gpu"]},
@@ -1320,7 +1382,8 @@ def run_job(args):
         process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
         try:
             if args.action == "test" and args.group in (
-                    "factor_guard_mapping_probe", "factor_guard_mapping_release"):
+                    "factor_guard_mapping_probe", "factor_guard_mapping_release",
+                    "geometry_public_memory_attribution_cpu"):
                 from filter_repair_process_memory import wait_observing_memory
 
                 code = wait_observing_memory(process, timeout, directory)

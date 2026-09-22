@@ -1,6 +1,6 @@
 """Internal XLA center proposal and exact replay for quadratic initialization.
 
-The public geometry wrapper is unchanged pending complete compatibility checks.
+The complete public geometry program composes these control kernels.
 These kernels consume a TensorFlow scalar target with a same-dimension score;
 they do not infer callback exceptions or claim validity of the enclosing fit.
 """

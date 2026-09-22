@@ -1,7 +1,7 @@
 """Internal native fit and final decisions on an evaluated quadratic design.
 
 Pilot clouds and partition preparation are inputs to this execution boundary.
-The public initializer is unchanged pending whole-endpoint qualification.
+The complete geometry program calls it inside its public numerical boundary.
 """
 
 from threading import RLock
@@ -30,10 +30,11 @@ _LOCK = RLock()
 _LAST_FIT = None
 
 
-def geometry_fit_program(callback, dimension, rank, train_rows, holdout_rows, config, *, jit_compile=True, active_rows=False):
+def geometry_fit_program(callback, dimension, rank, train_rows, holdout_rows, config, *, jit_compile=True, active_rows=False,
+                         minimum_train_rows=1):
     """Reuse one numerical signature without retaining prior callback graphs."""
     global _LAST_FIT
-    settings = (dimension, rank, train_rows, holdout_rows, jit_compile, active_rows,
+    settings = (dimension, rank, train_rows, holdout_rows, jit_compile, active_rows, minimum_train_rows,
         config.eigenvalue_floor, config.max_condition_number,
         config.holdout_rmse_abs_tolerance, config.holdout_rmse_rel_tolerance,
         config.constrain_center_refinement_to_trust_region, config.trust_radius,
@@ -45,7 +46,7 @@ def geometry_fit_program(callback, dimension, rank, train_rows, holdout_rows, co
         _LAST_FIT = None
         del previous
         program = make_geometry_fit_program(callback, dimension, rank, train_rows, holdout_rows,
-            config, jit_compile=jit_compile, active_rows=active_rows)
+            config, jit_compile=jit_compile, active_rows=active_rows, minimum_train_rows=minimum_train_rows)
         _LAST_FIT = (callback, settings, program)
         return program
 
@@ -57,7 +58,8 @@ def clear_geometry_fit_cache():
         _LAST_FIT = None
 
 
-def make_geometry_fit_program(callback, dimension, rank, train_rows, holdout_rows, config, *, jit_compile=True, active_rows=False):
+def make_geometry_fit_program(callback, dimension, rank, train_rows, holdout_rows, config, *, jit_compile=True, active_rows=False,
+                              minimum_train_rows=1):
     """Compile fitting through exact replay with fixed design extents.
 
     Training scores and center_score are already in whitened coordinates.
@@ -70,6 +72,8 @@ def make_geometry_fit_program(callback, dimension, rank, train_rows, holdout_row
         raise ValueError("invalid geometry fit extents")
     if train_rows * dimension < rank + 1:
         raise ValueError("training design has fewer rows than curvature parameters")
+    if not 1 <= minimum_train_rows <= train_rows:
+        raise ValueError("invalid minimum training count")
     refinement = make_center_refinement_program(callback, dimension, config, jit_compile=jit_compile)
     replay = make_exact_replay_program(callback, dimension, jit_compile=jit_compile)
     summary = summary_program(dimension, jit_compile=jit_compile)
@@ -93,7 +97,8 @@ def make_geometry_fit_program(callback, dimension, rank, train_rows, holdout_row
         training_count, holdout_count = counts if active_rows else (train_rows, holdout_rows)
         fit = _quadratic_fit_kernel(z_train, y_train, score_train, basis, center_score,
             tf.constant(config.eigenvalue_floor, D), tf.constant(config.max_condition_number, D),
-            use_xla_svd=jit_compile, active_rows=training_count if active_rows else None)
+            use_xla_svd=jit_compile, active_rows=training_count if active_rows else None,
+            minimum_active_rows=minimum_train_rows)
         if active_rows:
             fit = {**fit, "finite": fit["finite"] & (holdout_count >= 0) & (holdout_count <= holdout_rows)}
             training_mask = tf.range(train_rows) < training_count
@@ -115,7 +120,7 @@ def make_geometry_fit_program(callback, dimension, rank, train_rows, holdout_row
         predicted_train = _predict_quadratic(z_train, intercept=fit["intercept"],
             linear=fit["linear_term"], lambda0=fit["lambda0"], mu=fit["mu"], q_basis=basis)
         if active_rows:
-            train_rmse, train_std = compact_train_metrics(y_train, predicted_train, center_value, training_count)
+            train_rmse, train_std = compact_train_metrics(y_train, predicted_train, center_value, training_count, minimum_train_rows)
         else:
             train_rmse = tf.sqrt(tf.reduce_mean((y_train - predicted_train) ** 2))
             train_std = tf.math.reduce_std(y_train - center_value)

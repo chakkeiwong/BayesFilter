@@ -10,7 +10,7 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.inference import quadratic_geometry as current
-from tests.filter_repair_geometry_reference import FrozenLegacyGeometryStream
+from tests.filter_repair_geometry_reference import install_legacy_geometry_inputs
 from tests.test_quadratic_geometry import _batched_quadratic_target, _quadratic_target
 
 
@@ -38,7 +38,7 @@ def baseline(tmp_path_factory):
 def test_complete_geometry_matches_baseline_on_identical_clouds(
     baseline, monkeypatch, batched
 ):
-    monkeypatch.setattr(current, "GeometryTensorStream", FrozenLegacyGeometryStream)
+    install_legacy_geometry_inputs(monkeypatch)
     precision = np.array([[3.0, 0.2, 0.0], [0.2, 1.6, 0.1], [0.0, 0.1, 0.9]])
     mode = np.array([0.08, -0.04, 0.03])
     scalar = _quadratic_target(precision, mode=mode)

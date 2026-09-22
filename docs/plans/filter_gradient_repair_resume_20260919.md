@@ -1,34 +1,64 @@
 # Filter and gradient repair recovery
 
-The owner authorized the additional **E1--E6 enclosing-execution repair phase**
-on September22, continuing from pushed **ca920bac5**. The
-[reviewed execution program](filter_gradient_enclosing_execution_phase_20260922.md)
-adds active-row geometry/RNG, full public controller wiring, coordinated cache
-ownership, actual-consumer telemetry/deadlines and UUID-based terminal costing.
-Its skeptical review requires original compact QR/SVD semantics, exact count and
-callback behavior, independent memory attribution and public endpoint evidence.
-E1 numerical qualification is complete: **83 CPU and83 GPU checks pass**,
-alongside102 policy checks. The active-count fitter/RNG and explicit
-ill-conditioning rejection are implemented. [Results and cost review](filter_gradient_active_rows_result_20260922.md)
-preserve the capacity24 cold-compile trigger and the unqualified GPU timings:
-four cost workers shared the selected device with another process. All12 cost
-workers pass numerical comparisons, but clean GPU comparisons remain required.
-E2 pilot qualification now passes **78 CPU and78 GPU checks** in02676--02683
-and02685--02692. The GPU test-counter placement failure02684 is repaired with
-int64 resources; no numerical implementation changed for that repair.
-**02693 passes102 policy checks**. The guard remains215 sources /1306 existing
-exceptions, with no new numerical-loop or NumPy exemption. Ruff/whitespace pass.
-The pilot explicitly rejects unresolved eigenbases; full-controller wiring must
-consume that status before design/fitting. Public geometry and iterative
-execution remain open. The reviewed next tranche encloses the full geometry
-program, preserves call/accounting semantics, and removes only unreachable fit
-branch shapes. See the phase plan for the30-worker /7200-second tranche.
+The approved **E1--E6 enclosing-execution repair phase** is executing on
+`repair/filter-gradient-xla-validation-20260918`, after pushed **91928762e**.
+The [reviewed master execution program](filter_gradient_enclosing_execution_phase_20260922.md)
+now includes the confirmed public-capacity, comparator-eigensystem and native
+compiler-memory findings. [Full geometry results](filter_gradient_full_geometry_result_20260922.md)
+record the evidence and remaining limitations. Main stays unmerged.
 
-Charges through02693 are **53273.998414312766 CPU /50544.1522498743 GPU seconds**,
-leaving17.20 CPU /37.96 GPU hours inside the unchanged32/52-hour caps.
-The latest completed checkpoint has no active worker. E1 clean GPU costs, E2
-public integration, E3--E6 and every F01--F20 terminal disposition remain open;
-main stays unmerged. The known stale statements below are historical checkpoints.
+The public geometry attempt now encloses center, active pilot, design,
+finite-count permutation/partition, compact fit, refinement, incumbent and replay
+inside XLA. **02697--02705 pass81 native CPU +6 public CPU +3 legacy checks;
+02706--02712 pass87 GPU checks.** **02713 passes15 renewed CPU edge/public
+checks** after restoring current scalar-route labels. **02727 passes both large
+public CPU cases**, including260 samples/512 directions and scalar/batch replay.
+E1 and the active pilot retain their earlier83/83 and78/78 CPU/GPU qualifications.
+The217-source /1306-exception guard passes; coverage remains partial.
+
+**02721--02726 pass all six complete-call CPU cost comparisons.** The comparator
+is explicitly91928762e plus the isolated trust/pilot eigensystem fixes:
+02714/02719 preserve unmodified-prior failures, and02715/02720 isolate their cause.
+The new graph/XLA records match the original unchanged tolerances. At24/120
+samples, warm medians are5.58/6.22ms against29.22/35.10ms, while cold totals grow
+to6.23/27.89s and extra sampled host RSS is313.5/1421.9MiB. These are descriptive
+single-process results, with cold/memory triggers open. Use the corrected
+`geometry-full-costs-cpu-02726-v2.json`; `ru_maxrss` obscures stage growth on this
+host, and even sampled VmHWM has documented accounting limits. Neither memory
+leak nor leak freedom is established. Both fixtures reject holdout after the
+complete numerical attempt; accepted/public and iterative costs remain needed.
+
+GPU cost workers02728/02729 pass numerically but both share the selected device.
+Their timings cannot qualify the GPU comparison; the next launch was declined
+by contention. GPU metadata renewal, large public/consumer qualification and
+clean matched costs remain pending. Desktop protection is unchanged.
+
+Combined CPU public suite02730 aborts; its isolated boundary case02731 passes.
+Monitored02732 reproduces LLVM executable allocation failure near the65530-map
+limit (64574 sampled), with about204GiB system memory available. This matches
+prior executable-cache pressure; exact allocation and commit-pressure attribution
+remain limited. Preserve both stress failures. The installed TensorFlow backend
+has no executable eviction, and earlier Python-cache clearing did not release
+maps. All20 remaining CPU public/parity checks and102 policy checks now pass in
+02733--02736. The combined GPU suite remains required. No numerical assertion
+is dropped. All33 existing initializer consumer cases pass in02737--02745, including
+original frozen-cloud iterative acceptance and current-stream wrapper comparisons.
+02746 renews all102 policy checks after registering the bounded consumer groups.
+
+Next compose the original L-BFGS locator, iterative recentering and terminal mass
+decisions, while GPU renewal waits for eligible hardware. The dependency plan
+now specifies exact callback accounting, resource reset/ownership and full records.
+E4 must distinguish Python callback ownership from native executable retention.
+Public posterior/sequential/block integration, actual DZ5 telemetry/deadlines,
+terminal costs, F01--F20 dispositions and integration/retesting all remain open.
+Accepted-result tolerances and ill-conditioned rejection/no-use decisions are
+unchanged. Canonical LEDH rebuilding remains outside this campaign.
+
+Through02746, charges are**55720.302564892845 CPU /51722.494006055276 GPU seconds**,
+leaving16.52 CPU /37.63 GPU process-hours under unchanged32/52-hour caps. Later
+workers add charges; use runner status when idle. Remote main last inspected is
+**203fde46fcd062aced8647906bd04cd38325c03a**; overlapping intentions in HMC warmup
+and the batched sigma-point eigensolver require reconciliation and retesting.
 
 ## Diagnosis checkpoint
 

@@ -4,14 +4,13 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from tests.filter_repair_geometry_reference import FrozenLegacyGeometryStream
-
 from bayesfilter.inference.quadratic_geometry import (
     LOW_RANK_SPD_QUADRATIC_GEOMETRY_NONCLAIMS,
     LowRankSPDQuadraticGeometryConfig,
     _solve_spd_quadratic_trust_region,
     fit_low_rank_spd_quadratic_geometry,
 )
+from tests.filter_repair_geometry_reference import install_legacy_geometry_inputs
 
 
 def _quadratic_target(
@@ -70,10 +69,7 @@ def _batched_quadratic_target(
 def legacy_clouds(monkeypatch):
     # These seed-specific historical fit gates must use the original clouds.
     # The versioned TF stream has separate distribution/reproducibility checks.
-    monkeypatch.setattr(
-        "bayesfilter.inference.quadratic_geometry.GeometryTensorStream",
-        FrozenLegacyGeometryStream,
-    )
+    install_legacy_geometry_inputs(monkeypatch)
 
 
 def test_synthetic_low_rank_spd_quadratic_recovers_precision(legacy_clouds) -> None:
@@ -349,6 +345,7 @@ def test_batched_design_route_matches_scalar_geometry() -> None:
     assert scalar_diagnostics["design_evaluation_route"] == (
         "tensorflow_scalar_row_loop"
     )
+    assert scalar_diagnostics["pilot"]["evaluation_route"] == "tensorflow_scalar_row_loop"
     assert batched_diagnostics["design_evaluation_route"] == ("batched_value_and_score")
     assert batched_diagnostics["pilot"]["evaluation_route"] == (
         "batched_value_and_score"
@@ -475,7 +472,7 @@ def test_default_refinement_policy_remains_unconstrained() -> None:
 def test_geometry_retains_best_exact_design_row(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from bayesfilter.inference import quadratic_geometry
+    from bayesfilter.inference import quadratic_geometry_full_tf
 
     design = np.array(
         [
@@ -491,12 +488,14 @@ def test_geometry_retains_best_exact_design_row(
         dtype=float,
     )
 
-    def fixed_design(sample_count, dim, *, radius, rng):
-        assert sample_count == design.shape[0]
-        assert dim == design.shape[1]
-        return design.copy()
+    prepare = quadratic_geometry_full_tf.prepare_geometry_inputs
 
-    monkeypatch.setattr(quadratic_geometry, "_sample_trust_ball", fixed_design)
+    def fixed_design(dimension, config):
+        raw, offsets, seed = prepare(dimension, config)
+        assert offsets.shape == design.shape and dimension == design.shape[1]
+        return raw, tf.constant(design, tf.float64), seed
+
+    monkeypatch.setattr(quadratic_geometry_full_tf, "prepare_geometry_inputs", fixed_design)
     mode = np.array([0.4, 0.0])
     result = fit_low_rank_spd_quadratic_geometry(
         _quadratic_target(np.eye(2), mode=mode),

@@ -21,7 +21,6 @@ from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_self_adjoint_eig, xla
 from bayesfilter.inference._exact_incumbent import (
     ExactCandidate,
     candidates_from_rows,
-    select_exact_incumbent,
 )
 from bayesfilter.ops.geometry_random_tf import STREAM_ID, GeometryTensorStream
 from bayesfilter.ops.host_tensor_io import numeric_tensor
@@ -210,11 +209,15 @@ class LowRankSPDQuadraticGeometryResult:
             "nonclaims": self.nonclaims,
         }
         if self.mu is not None:
-            payload["mu"] = tuple(float(value) for value in self.mu)
+            payload["mu"] = tuple(self.mu.numpy().tolist())
         if self.precision is not None:
-            payload["precision_eigen_summary"] = _eigen_summary(self.precision)
+            payload["precision_eigen_summary"] = self.diagnostics.get("precision_eigen_summary")
+            if payload["precision_eigen_summary"] is None:
+                payload["precision_eigen_summary"] = _eigen_summary(self.precision)
         if self.covariance is not None:
-            payload["covariance_eigen_summary"] = _eigen_summary(self.covariance)
+            payload["covariance_eigen_summary"] = self.diagnostics.get("covariance_eigen_summary")
+            if payload["covariance_eigen_summary"] is None:
+                payload["covariance_eigen_summary"] = _eigen_summary(self.covariance)
         if include_arrays:
             payload.update(
                 {
@@ -252,340 +255,22 @@ def fit_low_rank_spd_quadratic_geometry(
     The fitted quadratic is in whitened coordinates ``theta = center + scale*z``.
     """
 
+    from bayesfilter.inference.quadratic_geometry_full_report import geometry_result
+    from bayesfilter.inference.quadratic_geometry_full_tf import (
+        geometry_program,
+        prepare_geometry_inputs,
+    )
+
     cfg = LowRankSPDQuadraticGeometryConfig() if config is None else config
-    center_np = _vector(center, "center")
-    dim = int(center_np.shape[0])
-    scale_np = _scale_vector(scale, dim)
-    requested_rank = min(int(cfg.rank), dim)
-    rank = min(requested_rank, max(dim - 1, 0))
-    regression_parameter_count = 1 + dim + 1 + rank
-    required_finite_samples = (
-        int(cfg.min_samples_per_parameter) * regression_parameter_count
-    )
-    sample_count = (
-        int(cfg.sample_count)
-        if cfg.sample_count is not None
-        else max(required_finite_samples + 20, 8 * regression_parameter_count)
-    )
-
-    rng = GeometryTensorStream(cfg.seed)
-
-    center_value, center_score, center_status = _evaluate_value_score(
-        value_and_score_fn,
-        center_np,
-    )
-    if center_status != "finite":
-        return _rejected_result(
-            status="center_value_or_score_nonfinite",
-            center=center_np,
-            scale=scale_np,
-            dim=dim,
-            rank=rank,
-            diagnostics=_base_diagnostics(
-                cfg=cfg,
-                dim=dim,
-                rank=rank,
-                regression_parameter_count=regression_parameter_count,
-                required_finite_samples=required_finite_samples,
-                sample_count=sample_count,
-                center_value=center_value,
-                center_score_norm=None,
-            ),
-        )
-    center_score_z = center_score * scale_np
-    center_score_norm = float(tf.linalg.norm(center_score_z))
-
-    q_basis, pilot_diagnostics, pilot_candidates = _pilot_q_basis(
-        value_and_score_fn,
-        batched_value_and_score_fn=batched_value_and_score_fn,
-        center=center_np,
-        scale=scale_np,
-        rank=rank,
-        cfg=cfg,
-        rng=rng,
-        center_value=center_value,
-        center_score_z=center_score_z,
-        start_index=1,
-    )
-    z_samples = _sample_trust_ball(
-        sample_count,
-        dim,
-        radius=float(cfg.trust_radius),
-        rng=rng,
-    )
-    theta_samples = center_np[None, :] + z_samples * scale_np[None, :]
-    values, scores = _evaluate_values_scores(
-        value_and_score_fn,
-        theta_samples,
-        batched_value_and_score_fn=batched_value_and_score_fn,
-    )
-    exact_candidates: list[ExactCandidate] = [
-        ExactCandidate(
-            position=center_np,
-            value=center_value,
-            score=center_score,
-            evaluation_index=0,
-            source_role="center",
-        ),
-        *pilot_candidates,
-        *candidates_from_rows(
-            theta_samples,
-            values,
-            scores,
-            start_index=1 + len(pilot_candidates),
-            source_role="design",
-        ),
-    ]
-    exact_evaluation_count = len(exact_candidates)
-    incumbent = select_exact_incumbent(exact_candidates)
-    finite_mask = tf.math.is_finite(values) & tf.reduce_all(
-        tf.math.is_finite(scores), axis=1
-    )
-    finite_sample_count = int(tf.math.count_nonzero(finite_mask))
-    diagnostics = _base_diagnostics(
-        cfg=cfg,
-        dim=dim,
-        rank=rank,
-        regression_parameter_count=regression_parameter_count,
-        required_finite_samples=required_finite_samples,
-        sample_count=sample_count,
-        center_value=center_value,
-        center_score_norm=center_score_norm,
-    )
-    diagnostics.update(
-        {
-            "finite_sample_count": finite_sample_count,
-            "nonfinite_sample_count": int(sample_count - finite_sample_count),
-            "pilot": pilot_diagnostics,
-            "design_evaluation_route": (
-                "batched_value_and_score"
-                if batched_value_and_score_fn is not None
-                else "tensorflow_scalar_row_loop"
-            ),
-        }
-    )
-    if finite_sample_count < required_finite_samples:
-        return _rejected_result(
-            status="insufficient_finite_samples",
-            center=center_np,
-            scale=scale_np,
-            dim=dim,
-            rank=rank,
-            diagnostics=diagnostics,
-            incumbent=incumbent,
-            exact_evaluation_count=exact_evaluation_count,
-        )
-
-    z_finite = tf.boolean_mask(z_samples, finite_mask)
-    y_finite = tf.boolean_mask(values, finite_mask)
-    score_finite = tf.boolean_mask(scores, finite_mask) * scale_np[None, :]
-    order = rng.permutation(finite_sample_count)
-    holdout_count = math.floor(float(cfg.holdout_fraction) * finite_sample_count)
-    max_holdout = max(0, finite_sample_count - required_finite_samples)
-    holdout_count = min(holdout_count, max_holdout)
-    holdout_index = order[:holdout_count]
-    train_index = order[holdout_count:]
-    z_train = tf.gather(z_finite, train_index)
-    y_train = tf.gather(y_finite, train_index)
-    score_train = tf.gather(score_finite, train_index)
-    z_holdout = tf.gather(z_finite, holdout_index)
-    y_holdout = tf.gather(y_finite, holdout_index)
-
-    fit = _fit_constrained_quadratic(
-        z_train,
-        y_train,
-        score_train,
-        q_basis=q_basis,
-        cfg=cfg,
-        dim=dim,
-        rank=rank,
-        center_score_z=center_score_z,
-    )
-    if fit["status"] != "usable":
-        diagnostics.update({"fit": fit})
-        return _rejected_result(
-            status=str(fit["status"]),
-            center=center_np,
-            scale=scale_np,
-            dim=dim,
-            rank=rank,
-            diagnostics=diagnostics,
-            incumbent=incumbent,
-            exact_evaluation_count=exact_evaluation_count,
-        )
-
-    precision = numeric_tensor(fit["precision"], tf.float64)
-    covariance = tf.linalg.inv(precision)
-    covariance = 0.5 * (covariance + tf.transpose(covariance))
-    linear = numeric_tensor(fit["linear_term"], tf.float64)
-    train_pred = _predict_quadratic(
-        z_train,
-        intercept=float(fit["intercept"]),
-        linear=linear,
-        lambda0=float(fit["lambda0"]),
-        mu=numeric_tensor(fit["mu"], tf.float64),
-        q_basis=q_basis,
-    )
-    train_rmse = _rmse(y_train, train_pred)
-    if holdout_count > 0:
-        holdout_pred = _predict_quadratic(
-            z_holdout,
-            intercept=float(fit["intercept"]),
-            linear=linear,
-            lambda0=float(fit["lambda0"]),
-            mu=numeric_tensor(fit["mu"], tf.float64),
-            q_basis=q_basis,
-        )
-        holdout_rmse = _rmse(y_holdout, holdout_pred)
-        # A log density is defined only up to an additive constant. Scale the
-        # relative gate by local variation, never by the arbitrary level at
-        # the fit center, so shifting every target value cannot relax the gate.
-        holdout_scale = max(1.0, float(tf.math.reduce_std(y_train - center_value)))
-        holdout_threshold = max(
-            float(cfg.holdout_rmse_abs_tolerance),
-            float(cfg.holdout_rmse_rel_tolerance) * holdout_scale,
-        )
-        holdout_passed = bool(holdout_rmse <= holdout_threshold)
-    else:
-        holdout_rmse = None
-        holdout_threshold = None
-        holdout_passed = True
-
-    precision_summary = _eigen_summary(precision)
-    covariance_summary = _eigen_summary(covariance)
-    center_refinement = _evaluate_center_refinement(
-        value_and_score_fn=value_and_score_fn,
-        center=center_np,
-        scale=scale_np,
-        precision=precision,
-        linear=linear,
-        cfg=cfg,
-        center_value=float(center_value),
-        center_score_norm=center_score_norm,
-    )
-    exact_evaluation_count += int(center_refinement.get("exact_evaluation_count", 0))
-    refined_score = center_refinement.get("refined_score")
-    if (
-        center_refinement.get("refined_center") is not None
-        and center_refinement.get("refined_log_prob") is not None
-        and refined_score is not None
-    ):
-        exact_candidates.append(
-            ExactCandidate(
-                position=numeric_tensor(
-                    center_refinement["refined_center"], tf.float64
-                ),
-                value=float(center_refinement["refined_log_prob"]),
-                score=numeric_tensor(refined_score, tf.float64),
-                evaluation_index=exact_evaluation_count - 1,
-                source_role="surrogate_replay",
-                eligible=bool(center_refinement.get("refined_target_finite", True)),
-            )
-        )
-        incumbent = select_exact_incumbent(exact_candidates)
-    replay = _canonical_replay(
-        value_and_score_fn,
-        incumbent,
-        evaluation_index=exact_evaluation_count,
-    )
-    exact_evaluation_count += int(replay["attempted"])
-    diagnostics.update(
-        {
-            "fit": {
-                **fit,
-                "precision": None,
-            },
-            "train_rmse": train_rmse,
-            "holdout_count": holdout_count,
-            "holdout_rmse": holdout_rmse,
-            "holdout_threshold": holdout_threshold,
-            "holdout_passed": holdout_passed,
-            "precision_eigen_summary": precision_summary,
-            "covariance_eigen_summary": covariance_summary,
-            "center_refinement": center_refinement,
-            "best_evaluated_replay": replay,
-            "artifact_hash": _artifact_hash(
-                {
-                    "config": cfg.payload(),
-                    "center": center_np,
-                    "scale": scale_np,
-                    "precision": precision,
-                    "linear": linear,
-                    "q_basis": q_basis,
-                    "diagnostics": {
-                        "finite_sample_count": finite_sample_count,
-                        "train_rmse": train_rmse,
-                        "holdout_rmse": holdout_rmse,
-                    },
-                }
-            ),
-        }
-    )
-    if not holdout_passed:
-        return _rejected_result(
-            status="holdout_fit_rejected",
-            center=center_np,
-            scale=scale_np,
-            dim=dim,
-            rank=rank,
-            diagnostics=diagnostics,
-            incumbent=incumbent,
-            exact_evaluation_count=exact_evaluation_count,
-        )
-    if not precision_summary["positive"]:
-        return _rejected_result(
-            status="precision_not_spd",
-            center=center_np,
-            scale=scale_np,
-            dim=dim,
-            rank=rank,
-            diagnostics=diagnostics,
-            incumbent=incumbent,
-            exact_evaluation_count=exact_evaluation_count,
-        )
-    if precision_summary["condition_number"] > float(cfg.max_condition_number) * (
-        1.0 + 1.0e-8
-    ):
-        return _rejected_result(
-            status="precision_condition_above_cap",
-            center=center_np,
-            scale=scale_np,
-            dim=dim,
-            rank=rank,
-            diagnostics=diagnostics,
-            incumbent=incumbent,
-            exact_evaluation_count=exact_evaluation_count,
-        )
-
-    refined_center = (
-        numeric_tensor(center_refinement["refined_center"], tf.float64)
-        if center_refinement["accepted"]
-        else None
-    )
-    return LowRankSPDQuadraticGeometryResult(
-        accepted=True,
-        status="usable",
-        dimension=dim,
-        rank=rank,
-        center=center_np,
-        scale=scale_np,
-        precision=precision,
-        covariance=covariance,
-        q_basis=q_basis,
-        linear_term=linear,
-        intercept=float(fit["intercept"]),
-        lambda0=float(fit["lambda0"]),
-        mu=numeric_tensor(fit["mu"], tf.float64),
-        refined_center=refined_center,
-        center_refinement_accepted=bool(center_refinement["accepted"]),
-        diagnostics=diagnostics,
-        best_evaluated_position=None if incumbent is None else incumbent.position,
-        best_evaluated_value=None if incumbent is None else incumbent.value,
-        best_evaluated_score=None if incumbent is None else incumbent.score,
-        best_evaluated_source=None if incumbent is None else incumbent.source_role,
-        best_evaluated_index=None if incumbent is None else incumbent.evaluation_index,
-        exact_evaluation_count=exact_evaluation_count,
-    )
+    fixed_center = _vector(center, "center")
+    dimension = int(fixed_center.shape[0])
+    fixed_scale = _scale_vector(scale, dimension)
+    inputs = prepare_geometry_inputs(dimension, cfg)
+    program = geometry_program(value_and_score_fn, dimension, cfg,
+        batched_callback=batched_value_and_score_fn)
+    raw = program(fixed_center, fixed_scale, *inputs)
+    return geometry_result(raw, fixed_center, fixed_scale, cfg,
+        batched=batched_value_and_score_fn is not None)
 
 
 def _fit_constrained_quadratic(
@@ -663,7 +348,8 @@ def _score_curvature_design(
     return tf.reshape(design, [-1, rank + 1]), tf.reshape(center[None, :] - score, [-1])
 
 
-def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *, use_xla_svd=True, active_rows=None):
+def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *, use_xla_svd=True, active_rows=None,
+                          minimum_active_rows=1):
     dim, rank = q.shape
     if active_rows is not None:
         from bayesfilter.inference.quadratic_geometry_rows_tf import (
@@ -680,12 +366,17 @@ def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *,
         z, score, center_score, q_basis=q, dim=dim, rank=rank
     )
     reduced_q, reduced_r = (tf.linalg.qr(design, full_matrices=False) if active_rows is None
-                           else compact_qr(design, active_rows, dim))
+                           else compact_qr(design, active_rows, dim, minimum_active_rows))
     if use_xla_svd:
         decomposition = xla_svd(
             reduced_r, max_iter=100, epsilon=math.ulp(1.0), precision_config=""
         )
-        singular, left_r, right_r = decomposition.s, decomposition.u, decomposition.v
+        # Raw XlaSvd has no TensorFlow shape inference. Bind its full SVD
+        # schema so enclosing conditional/loop state remains statically known.
+        rows, columns = reduced_r.shape
+        singular = tf.ensure_shape(decomposition.s, [min(rows, columns)])
+        left_r = tf.ensure_shape(decomposition.u, [rows, rows])
+        right_r = tf.ensure_shape(decomposition.v, [columns, columns])
     else:
         # Explicit graph-reference diagnostic; the default XLA tolerance remains fixed.
         singular, left_r, right_r = tf.linalg.svd(reduced_r, full_matrices=False)
@@ -707,7 +398,7 @@ def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *,
         left = tf.matmul(reduced_q, left_r[:, :extent])
         raw = tf.linalg.matvec(right, inverse * tf.linalg.matvec(left, response, transpose_a=True))
     else:
-        raw = compact_solution(reduced_q, left_r[:, :extent], right, inverse, response, active_rows, dim)
+        raw = compact_solution(reduced_q, left_r[:, :extent], right, inverse, response, active_rows, dim, minimum_active_rows)
     lambda0 = tf.maximum(floor, raw[0])
     raw_mu = raw[1:]
     upper = (condition_cap - 1.0) * lambda0
@@ -735,7 +426,7 @@ def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *,
         residual_sum_squares = tf.reduce_sum((tf.linalg.matvec(design, raw) - response) ** 2)
     else:
         intercept, loss, score_rmse, residual_sum_squares = compact_fit_statistics(
-            y, without_intercept, design, response, raw, tf.concat((lambda0[None], mu), axis=0), active_rows, dim)
+            y, without_intercept, design, response, raw, tf.concat((lambda0[None], mu), axis=0), active_rows, dim, minimum_active_rows)
     finite = (
         tf.reduce_all(tf.math.is_finite(raw))
         & tf.math.is_finite(loss)
@@ -747,7 +438,7 @@ def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *,
         & tf.math.is_finite(score_rmse)
     )
     if active_rows is not None:
-        finite &= (active_rows >= 1) & (active_rows <= z.shape[0])
+        finite &= (active_rows >= minimum_active_rows) & (active_rows <= z.shape[0])
     return {
         "loss": loss,
         "score_rmse": score_rmse,

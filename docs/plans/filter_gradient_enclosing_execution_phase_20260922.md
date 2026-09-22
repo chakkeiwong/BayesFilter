@@ -282,3 +282,264 @@ CPU and78 GPU passes. Twenty workers used in the pilot tranche. Static guard
 Post-run review: component tests can pass while public code still uses the old
 controller. That is the weakest part of current execution evidence and remains
 an explicit E2 gate. Source guard counts also do not prove endpoint closure.
+
+Full-controller02694 stops at construction: a nested fit output has unknown
+static shape, so the unevaluated early-exit template cannot be built. Localize
+the output schema before adding explicit shape contracts; no numerical target
+or tolerance change is justified by this integration error.
+02695 localizes this to raw `XlaSvd`, which has no TensorFlow shape inference;
+the graph-reference SVD retains every shape. Bind the known reduced-matrix full
+SVD output shapes explicitly. This adds static schema information, not numerical
+operations or a substitute solver. The output-schema check becomes a regression
+gate for both graph and XLA modes.
+
+02696 passes the two D3 composition checks.02697--02703 pass81 CPU checks:
+72 complete original records and9 schema, guard, seeded-input, enclosing-HLO,
+count-domain and impossible-fit checks. Wire the public geometry endpoint to
+this program next; configuration validation and CPU/XLA input generation remain
+preparation, and completed reports cannot steer execution. Reuse native spectral
+summaries in payload formatting. Existing legacy-cloud tests must freeze both
+the original clouds and the complete finite-count-dependent permutation table
+in test-only preparation. Do not change their numerical assertions or quietly
+substitute the new stream in seed-specific historical gates. The default runtime
+continues to use the versioned Philox permutation with a scalar count.
+
+Public checkpoint:02704 passes6 public original-record checks with the actual
+versioned prepared inputs;02705 passes3 frozen-PCG64/public-incumbent checks.
+The public function now calls the enclosing XLA program. Qualify GPU next and
+retain the separate iterative gate. The public pilot guard also gets an explicit
+no-design/no-geometry call-chain assertion in the next edge group.
+
+After correctness, complete descriptive costs use D3 with24 samples/6 directions
+and120 samples/64 directions, scalar center/replay and one batch per pilot/design.
+Compare pre-enclosure91928762e, native graph reference and native XLA with exactly
+identical prepared raw directions, offsets and permutation seed. Include all
+center-to-replay numerical work and public result/payload formatting, excluding
+random input generation equally in every arm. Measure construction, outer trace,
+cold call,20 synchronized warm calls, RSS/PSS and GPU allocator use separately;
+inspect IR and original3582b4ac payloads only after timing/memory snapshots.
+The prior is a mixed host/compiled implementation, not a pure eager comparator.
+Graph/XLA keep their declared solver implementations and are not an identical-
+graph ablation. These12 cost workers have a separate3600-second tranche within
+the same cumulative caps, maximum300 seconds each; clean matched GPU identity is
+required before any GPU cost interpretation. E6 still owes repeated terminal
+costs and default/consumer capacities beyond these fixtures.
+
+Remote review during the source-frozen GPU matrix: origin/main is now
+203fde46fcd062aced8647906bd04cd38325c03a. The only repair/upstream path overlaps
+remain `hmc_warmup.py` and `experimental_batched_svd_sigma_point_tf.py`.
+Upstream changes include warmup metric-evidence rules and a refined symmetric
+eigensolver. Preserve both intentions during E6 reconciliation and renew affected
+analytical-gradient, factorization and HMC preparation checks; a clean textual
+merge alone cannot establish compatible numerical behavior. No merge occurred.
+
+Continuation review: the public scalar execution label regressed from
+`tensorflow_scalar_row_loop` to the original reference's
+`scalar_value_and_score_loop` in both design and pilot reporting. Restore the
+current public label after the frozen GPU matrix exits. Normalize only this
+known historical label in comparison views, retaining raw numerical records and
+all tolerances. This is API metadata compatibility, not numerical repair.
+
+The public regression suite includes D4/sample260/pilot512 and
+D3/sample180/pilot96, substantially larger than the component fixtures. Run
+these capacity checks under the declared900-second public-job ceiling; a pass
+at16 or24 samples cannot establish their feasibility. Separate an expensive
+capacity fixture from the remaining public suite if necessary to retain useful
+failure evidence and bounded attempts. CPU results remain references; qualify
+the GPU public calls too. For cost evidence, keep the prepared-input hashes,
+source closure, complete payload comparison, chosen UUID and absence of other
+compute processes together; GPU correctness alone does not validate timings.
+
+Read-through of the next iterative dependency confirms that enclosing the
+recentring loop alone is insufficient: `_run_locator` still makes host decisions
+around the original `locate_joint_center`, and the terminal mass builder reports
+flags on the host. Preserve the original L-BFGS callback accounting, strict
+incumbent tie order, endpoint replay, rejection/fallback statuses and mass
+regularization settings while composing their numerical decisions. Do not
+replace the locator with another optimizer or issue HMC tuning authority.
+Progress callbacks are observational and must be buffered; the actual DZ5
+consumer/deadline checks in E5 remain mandatory before its promotion.
+
+Skeptical review conclusion: proceed within the unchanged scientific target and
+global/tranche budgets. The remaining risks are explicit public-capacity cost,
+metadata compatibility, callback ownership, original whole-lifecycle parity and
+consumer supervision. They remain acceptance gates; the partial source guard
+and completed component counts cannot close them.
+
+02706--02712 pass87 GPU complete/public/boundary checks. After public label
+restoration,02713 passes15 CPU edge/public checks. The GPU renewal preflight at
+06:15 UTC declines because other workers occupy the non-desktop GPUs; no worker
+launched and desktop fallback conditions were not met.
+
+Cost attempt02714 fails the pinned91928762e comparator against3582b4ac:
+the center-refinement improvement ratio differs by4.063e-10 and the refined
+score norm by3.022e-10. Preserve this failure; timings cannot support a valid
+before/after comparison yet. Source tracing shows the prior public wrapper still
+calls the unrefined raw-XLA eigensolver, while the new enclosing refinement uses
+the already-qualified shared refined eigensystem. Test that attribution on the
+identical prepared inputs, changing only the diagnostic comparator's eigensystem
+call, and compare the candidate graph/XLA complete records to the original.
+Do not relax accepted-result tolerances or change the cloud to evade this case.
+This attribution uses one integration-tranche worker under300 seconds. A prior
+comparator repair, if demonstrated necessary, must be named explicitly and cannot
+be presented as the unmodified pinned before implementation. Costs remain open
+until a comparable numerical baseline is established.
+
+02715 confirms the attribution: the unmodified prior fails, while changing only
+its trust-region eigensystem to the shared refined program brings the complete
+record within the original1e-10 tolerances. Both new graph/XLA complete records
+also pass. The original failure is well-conditioned solver error, not permission
+to waive a rejected result. Retain the unmodified prior02714 as explanatory
+evidence; use explicitly named `prior_refined` for the matched cost baseline.
+That arm is91928762e plus the isolated numerical eigensystem repair, not an
+unmodified before measurement. Include creation/tracing of the shared eigensystem
+in its timed cold call. The12 planned passing CPU/GPU cost jobs plus up to two
+localized failed-harness retries are bounded to14 workers and the unchanged
+3600-second cost ceiling. No global budget or numerical criterion changes.
+
+02716--02718 pass the24-sample CPU cost arms, but02719 fails the larger
+prior_refined120 arm on fit loss by1.766e-9. The old pilot wrapper also uses
+the raw eigensystem; its eigenvalues agree while fitted coefficients differ by
+about1e-7. Extend the same frozen-input attribution to both capacities, comparing
+trust-only and trust-plus-pilot eigensystem corrections to original records.
+This is a second distinct unmodified-prior numerical defect, not an unexplained
+retry. Candidate and graph whole records still require their own comparison.
+Pause cost interpretation until the full comparator is qualified. Preserve all
+five cost workers, and reserve12 final-source CPU/GPU repeats after repairs,
+for at most19 cost workers including two unused localized retries, under the
+unchanged3600-second cost ceiling. The attribution consumes one of the remaining
+integration workers; acceptance tolerances and scientific direction stay fixed.
+
+02720 passes both capacity attributions. Trust-only correction closes sample24;
+sample120 additionally requires the pilot-sketch eigensystem correction. With
+both changes, complete original records pass; new graph/XLA records pass without
+diagnostic patching. The final `prior_refined` cost comparator explicitly carries
+both prior eigensystem repairs, shared from the current qualified implementation.
+All other pinned operations remain unchanged. Renew all six CPU arms under this
+frozen harness before analysis, then the matching GPU arms when available.
+
+02721--02726 pass all six final-harness CPU cost comparisons. The authoritative
+analysis is `geometry-full-costs-cpu-02726-v2.json`; the first analysis is
+superseded because it used `resource.ru_maxrss`. That value already exceeds
+`/proc/self/status` VmHWM at the prepared stage in several workers, obscuring
+stage-local increases. Preserve both diagnostics; use VmHWM for this process's
+resident peak and PSS separately. Do not attribute the discrepancy to numerical
+allocation without an exec/fork attribution check.
+
+At24/120 samples, corrected extra XLA peak RSS against the explicitly repaired
+prior is313.5/1421.9MiB. Cold totals are6.23/27.89 seconds versus2.28/2.23;
+warm medians are5.58/6.22ms versus29.22/35.10ms. These are single-process
+descriptive observations. Cold and host-memory triggers both fire. At120,
+XLA RSS rises from941MiB after trace to2314MiB after cold execution, whereas
+graph mode rises from932 to1216MiB. Warm RSS changes only0.12MiB across20 calls.
+The native graph grows from5457 to17937 nodes; exact count-dispatch compiler
+storage is a plausible contributor, not yet isolated. This does not establish
+a leak or leak freedom. Further count-dispatch/cache attribution belongs to E4/E6.
+The predeclared large public-capacity CPU job02727 is running; source stays frozen.
+
+02727 passes both large public-capacity CPU cases in199.72 seconds.02728/02729
+pass the24-sample prior-refined/graph GPU cost records. Both workers have shared-device
+preflights, and the following XLA launch is declined by contention.
+Do not compare those two GPU timings or describe this as a completed GPU cost
+matrix. Continue CPU consumer qualification while GPU availability changes;
+GPU costs, public-capacity GPU qualification and terminal repeats remain open.
+
+02730 aborts during the constrained-boundary public case after11 progress
+markers, with no JUnit result. Preserve the abort; those markers are not passed
+test evidence. Run only that exact case in a fresh300-second CPU worker with
+capture disabled to retain the native error. This distinguishes a reproducible
+single-case failure from multi-signature process accumulation before any broad
+retry. Do not alter the numerical fixture, compiler settings or assertions.
+
+02731 passes the exact isolated boundary case in37.44 seconds. The abort is not
+reproduced by that single case; its cause remains unknown. Repeat the unchanged
+remaining public group once with capture disabled and the existing parent-owned
+process memory/mapping observer, under900 seconds. This records native stderr,
+VmRSS/HWM, mapping counts, system headroom and process/cgroup limits through any
+abort. It is the second localized attempt for this group within the existing
+integration ceiling. A split-suite pass alone would not explain the process
+failure and would leave E4/E6 accumulation evidence open.
+
+Recovered prior evidence already attributes a separate many-signature CPU crash
+to LLVM executable mapping exhaustion (01597--01599), and ordinary Python cache
+clearing did not release those maps. Installed TensorFlow2.19.1's
+`device_compilation_cache.h:62` explicitly documents no native eviction policy.
+See `filter_gradient_repair_memory_observability_20260918.md`. The new monitored
+public run must identify whether this is the same resource limit; do not repeat
+the disproved global-cache-clearing repair or infer that a Python ownership fix
+will release native executables. Also retain the host's documented non-monotone
+VmHWM limitation: report maximum sampled resident values and corroborating PSS,
+not a certified exact high-water peak.
+
+02732 repeats the abort and retains `LLVM ERROR: Unable to allocate section
+memory` / `allocateMappedMemory ... Cannot allocate memory`. The maximum sampled
+mapping count is64574 against65530; sampled high-water RSS is5.58GiB, with about
+204GiB available system memory and no cgroup cap/OOM event in the recorded limits.
+This supports recurrence of the established CPU executable-cache/mapping
+pressure, but does not sample the exact failing allocation or exclude commit
+accounting pressure (system commit was near its reported limit). Preserve it as
+a multi-signature stress failure. It is not an original-record mismatch.
+
+As in the earlier reviewed CPU qualification profile, run every original public
+case in three bounded fresh CPU groups and retain the combined GPU suite as a
+separate gate. No case/assertion is dropped. This establishes bounded reference
+execution only, not indefinite compilation in one process. Whole public/consumer
+renewal uses a follow-on tranche of at most20 workers/7200 charged seconds,
+300-second focused and predeclared900-second public-capacity jobs, at most three
+localized retries per group. This remains inside unchanged global caps; the
+preceding integration tranche used26 workers through02732. E4/E6 still owe
+signature reuse/churn and native residency attribution; no OS/package setting
+is changed and global Python cache clearing is not adopted as a repair.
+
+02733--02736 finish all20 remaining public/parity CPU checks and102 policy
+checks. GPU metadata renewal at07:45 UTC again declines at preflight; no worker
+launches and desktop protection remains unchanged. The initializer consumer
+suite will use nine bounded fresh CPU groups (the original33 cases, unchanged
+assertions), with the combined GPU group still required. These jobs consume the
+existing20-worker/7200-second follow-on tranche, with900-second public-capacity
+ceilings. A test-helper review found that legacy frozen clouds unnecessarily
+disabled reuse between identical iterative fits. Give that test-only helper a
+single cache keyed by callback identity, complete configuration and exact PCG
+state after preparation. Changed centers/scales remain runtime operands; changed
+cloud/permutation identity cannot reuse a stale program. This preserves the
+runtime's intended same-signature reuse and avoids artificial test-only churn;
+it neither repairs nor hides the separately preserved native-cache stress fault.
+
+Iterative dependency review: retain the original TFP L-BFGS call and settings.
+Do not substitute the sequential locator, whose tanh box mapping and multistart
+selection define a different algorithm. The joint locator must own initial
+evaluation, objective-row cap, strict finite callback incumbent, exact endpoint
+replay, accounting validation and ordered status decisions in one XLA call.
+The quadratic wrapper's separate initial evaluation remains a separate logical
+call inside its future enclosing program; deduplicating it would change the
+observed callback sequence. Preserve callback ties before endpoint ties and the
+wrapper's ability to retain a better callback even after optimizer failure.
+
+TFP's objective interface cannot return auxiliary loop state. Retain the existing
+int64 resource-counter/incumbent mechanism, reset it inside each invocation and
+give each native program its own resources. Public owners must serialize reuse
+of a resource-bearing program; numerical input/reset/selection must not cross
+back to the host. Test changed starts/scales, repeated calls after cap/failure,
+and independent handles before public integration. Compilation/runtime failures
+cannot silently trigger an eager optimizer retry. Construction-time optimizer
+exceptions retain the documented typed fallback; graph validity failures still
+fail closed. Wall-clock enforcement is an independent parent responsibility;
+the existing explicit non-XLA wall-guard route is outside this native factory.
+
+The next iterative dependency tranche allows24 workers/7200 charged seconds
+inside unchanged global caps,300-second focused jobs and at most three localized
+retries per fixture. Compare complete original joint-locator records and callback
+logs at D1/D3, scaled inputs, ordinary convergence, iteration/evaluation caps,
+invalid targets and optimizer construction failure. Require one enclosing HLO
+with changing runtime starts/scales and reset accounting. Then compose the same
+geometry program in a TensorFlow while-loop, preserving every early exit, fresh
+terminal fit and mass decision. Dependency qualification cannot close E2 before
+the public initializer and actual consumer gates pass.
+
+Skeptical review: target-row accounting is a hard criterion, not merely a timing
+proxy. Resource reuse introduces an explicit concurrency/lifetime risk; serialization
+and independent-owner tests are required. The existing source-faithful optimizer
+is the algorithm baseline, and the original full payload remains the numerical
+authority. Current-source parity alone is insufficient. The24-worker ceiling is
+a reservation, not permission to exceed the global remaining budget. Proceed
+after the active public-consumer matrix exits and its sources are unfrozen.
