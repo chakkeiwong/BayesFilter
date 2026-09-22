@@ -116,6 +116,10 @@ SEQUENTIAL_PUBLIC_CONSUMERS = (
     ),
 )
 TEST_GROUPS = {
+    "sequential_public_cost_analysis": ("tests/test_filter_repair_sequential_cost_analysis.py",),
+    **{f"sequential_public_cost_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_sequential_public_memory.py::test_complete_public_sequential_costs[{arm}-{dimension}]",)
+        for arm in ("prior", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
     "program_ownership_scope_cpu": ("tests/test_filter_repair_program_ownership.py", "-k", "factory_scope"),
     **{f"program_ownership_{case}_{device}": (
         f"tests/test_filter_repair_program_ownership.py::test_actual_owner_releases_nested_callbacks_and_keeps_retained_handle[{case}]",)
@@ -874,6 +878,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"sequential_public_cost_{arm}_{dimension}_{device}":
+        "Complete public sequential costs; repeated original-record/provenance comparisons and separate ledger disposition required."
+        for arm in ("prior", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
     **{f"posterior_residency_observer_{device}":
         "Retained mapping-observer allocation control with no numerical calls between snapshots; cannot waive numerical or cost gates."
         for device in ("cpu", "gpu")},
@@ -1013,6 +1020,8 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"sequential_public_cost_{device}": tuple(f"sequential_public_cost_{arm}_{dimension}_{device}"
+        for dimension in (3, 5) for arm in ("prior", "graph", "xla")) for device in ("cpu", "gpu")},
     **{f"program_ownership_{device}": (
         *(f"program_ownership_{case}_{device}" for case in ("terminal", "factor_one", "batched_locator", "identity")),
         *(f"sequential_public_{case}_{device}" for case in ("terminal", "factor_one", "factor_two",
@@ -1260,6 +1269,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["sequential_public_cost_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["program_ownership_gpu"]},
     "posterior_residency_observer_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["sequential_public_gpu"]},
@@ -1472,7 +1482,8 @@ def save_json(path, value):
 def require_unshared_cost_preflight(args):
     """Decline new public-cost workers before charging shared-device timing."""
     if (args.action != "test" or args.device != "GPU"
-            or args.group not in TEST_BATCHES["posterior_public_memory_gpu"]):
+            or args.group not in (*TEST_BATCHES["posterior_public_memory_gpu"],
+                                 *TEST_BATCHES["sequential_public_cost_gpu"])):
         return
     samples = args.gpu_preflight
     if len(samples) >= 2 and all(sample["performance_preflight_uncontended"]

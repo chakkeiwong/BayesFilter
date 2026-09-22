@@ -1,7 +1,7 @@
 # Complete filter and gradient execution repair
 
 The approved **E1--E6 enclosing-execution repair phase** is executing on
-`repair/filter-gradient-xla-validation-20260918`, after pushed **30c5ae43b**.
+`repair/filter-gradient-xla-validation-20260918`, after pushed **203600e74**.
 The [reviewed master execution program](filter_gradient_enclosing_execution_phase_20260922.md)
 now includes the confirmed public-capacity, comparator-eigensystem and native
 compiler-memory findings. [Full geometry results](filter_gradient_full_geometry_result_20260922.md)
@@ -111,20 +111,26 @@ the scale of the observed1.6--1.8MiB reuse growth. This does not prove leak free
 or native eviction. See posterior-residency-analysis-02883.json in the artifact
 root and the updated posterior result note.
 
-Ordered block integration, coordinated cache ownership, actual DZ5 telemetry/
+Ordered block integration, remaining callback ownership, actual DZ5 telemetry/
 deadlines, terminal costs, F01--F20 dispositions
 and integration/retesting remain open.
 Accepted-result tolerances and ill-conditioned rejection/no-use decisions are
 unchanged. Canonical LEDH rebuilding remains outside this campaign.
 
-Through02967, charges are**59081.88946123973 CPU /58769.39307047443 GPU seconds**,
-leaving15.59 CPU /35.68 GPU process-hours under unchanged32/52-hour caps.
+Through02987, charges are**59323.39863076764 CPU /58769.39307047443 GPU seconds**,
+leaving15.52 CPU /35.68 GPU process-hours under unchanged32/52-hour caps.
 The sequential public tranche completes60 workers/2400.59 seconds within64/7200.
 The reviewed E4 sequential dependency-scope unit passes all24 workers in697.07
 seconds:17 CPU checks,15 GPU checks and128 policy checks. All six lifetime
 probes release callbacks/dependencies after final-handle release; retained handles
 remain usable. See [ownership result](filter_gradient_sequential_ownership_result_20260922.md).
-Complete sequential public costs and ordered-block execution are next. Native
+All18 sequential CPU public cost workers02970--02987 pass, following13 analyzer
+and128 policy checks. XLA warm medians are7.62/22.10ms against19.33/33.02ms;
+extra observed RSS555.38/562.70MiB triggers sequential-specific attribution.
+Two GPU preflight attempts declined before launching workers because eligible
+devices were shared; desktop fallback conditions were not met. See the
+[CPU cost checkpoint](filter_gradient_sequential_cost_result_20260922.md).
+Ordered-block execution and a bounded residency study follow. Native
 XLA residency and other callback-owning consumers remain separate obligations.
 Later workers add charges; use runner status when idle. Remote main last inspected is
 **89065bc6354801cb368d5e163ba49fd9c4372d10**; six overlapping paths now

@@ -7,8 +7,10 @@ passes23 CPU/23 GPU original/boundary checks and56 existing CPU consumer checks;
 GPU consumer renewal passes56 checks;43 block-coordinate consumer checks
 pass on each device through02943. See the posterior and sequential public result
 notes. The initializer remains internal while healthy original strict-decision
-parity fails. The next reviewed implementation is E4 scoped dependency ownership,
-after the public sequential consumer checkpoint. Ordered blocks, actual DZ5
+parity fails. E4 scoped dependency ownership also qualifies through02967. All18
+CPU sequential public cost workers pass through02987, with a555--563MiB
+host-RSS trigger; GPU cost preflights declined before worker launch during
+contention. Sequential memory attribution and ordered blocks follow. Actual DZ5
 supervision, terminal costs and all finding dispositions remain open.
 
 The owner requests execution of this phase after the diagnosis checkpoint
@@ -1346,3 +1348,21 @@ are dropped, preserve retained compiled handles and do not grow standalone cache
 See the ownership result and sequential-ownership-qualification-02967.json.
 Native executable residency and other consumer lifetimes remain separate. The
 reviewed full sequential costs follow; no numerical tolerance or method changed.
+
+E5 freshness review during the frozen cost interval: MacroFinance's current
+memory/ledger now describe completed CD assessment and active CDF native tuning,
+with new frozen-source target/transition qualification. The old hierarchical
+callbacks still visibly materialize numerical telemetry into NumPy, but that
+source's existence does not prove it is the active CDF caller. Before editing
+external integration, trace the current issued-binding/preparation path and
+its frozen archive, separately classify still-callable legacy sequential routes,
+and preserve unrelated dirty MacroFinance work. Read-only inspection of
+prepare_dz5_cdf_proposal.py identifies initialize_dense_local and source/deadline
+supervision; it is a different call chain from the old hierarchical initializer.
+Do not duplicate MacroFinance's running sampling/tuning or reuse its numerical
+claims for this repair branch without exact source and physical-device identity.
+The original handoff assigns reusable runtime to BayesFilter and model/device
+comparison to MacroFinance. E5 must qualify the actual affected consumer or
+explicitly block its unsupported route, not repair retired control prose as if
+it were active. Existing fixed18-batch callbacks and independent-deadline gaps
+remain obligations where that public call chain is still reachable.
