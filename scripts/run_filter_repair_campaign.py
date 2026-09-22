@@ -36,6 +36,7 @@ from filter_repair_stochastic_fixtures import FIXTURES as STOCHASTIC_FIXTURES
 from filter_repair_source_fixtures import FIXTURES as SOURCE_FIXTURES
 from filter_repair_locator_fixtures import FIXTURES as LOCATOR_FIXTURES
 from filter_repair_batched_locator_fixtures import FIXTURES as BATCHED_LOCATOR_FIXTURES
+from filter_repair_gpu_selection import check_gpu_available
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -636,7 +637,7 @@ TEST_GROUPS = {
     "tt_adjoint_nodes": ("tests/highdim/test_p2_adjoint_nodes.py", "tests/highdim/test_p2_adjoint_vs_forward_jvp.py"),
     "tt_adjoint": ("tests/highdim/test_p2_adjoint_engine_fd.py",),
     "consumers": ("tests/test_filter_repair_consumers.py",),
-    "policy": ("tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py"),
+    "policy": ("tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py", "tests/test_filter_repair_gpu_selection.py"),
 }
 # Exact intermediate comparisons remain callable historical diagnostics. Each
 # has the same-scope original-source authority as a mandatory replacement.
@@ -1189,15 +1190,13 @@ def run_job(args):
     attempts = [row for row in rows if row["key"] == key and row["source_sha256"] == hashes]
     if len(attempts) >= 3:
         raise RuntimeError("Three attempts consumed for this exact job; inspect/repair scope before retry")
-    gpu_index = (getattr(args, "test_gpu_index", 2) if args.action == "test"
-                 else getattr(args, "measurement_gpu_index", 2) if args.action == "measure" else 2)
     if device == "GPU" and getattr(args, "gpu_preflight", None) is None:
-        args.gpu_preflight = check_gpu_idle(gpu_index)
+        prepare_gpu(args, "test_gpu_index" if args.action == "test" else "measurement_gpu_index")
     directory = OUTPUT / f"run-{len(rows) + 1:05d}"
     directory.mkdir(exist_ok=False)
     result = directory / "result.json"
     env = os.environ.copy()
-    env.update({"CUDA_VISIBLE_DEVICES": str(gpu_index) if device == "GPU" else "-1", "TF_FORCE_GPU_ALLOW_GROWTH": "true", "TF_NUM_INTRAOP_THREADS": "2", "TF_NUM_INTEROP_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0"})
+    env.update({"CUDA_VISIBLE_DEVICES": args.gpu_uuid if device == "GPU" else "-1", "TF_FORCE_GPU_ALLOW_GROWTH": "true", "TF_NUM_INTRAOP_THREADS": "2", "TF_NUM_INTEROP_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0"})
     if args.action == "test":
         if args.group == "source_preparation_localization":
             env["FILTER_REPAIR_REPEAT_STACKS"] = "1"
@@ -1249,6 +1248,9 @@ def run_job(args):
     record = {"schema": "filter_repair_run.v1", "key": key, "started_utc": datetime.now(timezone.utc).isoformat(), "state": "running", "device": device, "timeout_seconds": timeout, "command": command, "cwd": str(ROOT), "environment": {k: env[k] for k in ("CUDA_VISIBLE_DEVICES", "TF_FORCE_GPU_ALLOW_GROWTH", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS", "OPENBLAS_NUM_THREADS", "PYTHONHASHSEED")}, "git_head": git("rev-parse", "HEAD"), "git_diff_stat": git("diff", "--stat"), "source_sha256": hashes, "plan": PLAN, "result": str(result), "log": str(directory / "process.log")}
     if getattr(args, "gpu_preflight", None) is not None:
         record["gpu_preflight"] = args.gpu_preflight
+        record["gpu_uuid"] = args.gpu_uuid
+        record["gpu_performance_preflight_uncontended"] = all(
+            sample["performance_preflight_uncontended"] for sample in args.gpu_preflight[-2:])
     if env.get("FILTER_REPAIR_REPEAT_STACKS") == "1":
         record["diagnostic_stack_interval_seconds"] = 45
     save_json(directory / "run.json", record)
@@ -1312,24 +1314,20 @@ def gate():
     return 0 if complete else 1
 
 
-def check_gpu_idle(gpu_index=2):
-    if gpu_index not in (2, 3):
-        raise ValueError("Campaign GPU index must be 2 or 3")
-    samples, consecutive_idle = [], 0
-    # Utilization is sampled over an interval and can outlive the prior worker.
-    for attempt in range(6):
-        output = subprocess.check_output([
-            "nvidia-smi", "-i", str(gpu_index), "--query-gpu=memory.used,utilization.gpu",
-            "--format=csv,noheader,nounits",
-        ], text=True, timeout=5)
-        memory, utilization = (int(value.strip()) for value in output.strip().split(","))
-        samples.append(dict(memory_mib=memory, utilization_percent=utilization))
-        consecutive_idle = consecutive_idle + 1 if memory <= 100 and utilization <= 5 else 0
-        if consecutive_idle == 2:
-            return samples
-        if attempt < 5:
-            time.sleep(2)
-    raise RuntimeError(f"GPU{gpu_index} contention veto after bounded recheck: {samples}")
+def prepare_gpu(args, option):
+    """Recheck availability while preserving a matrix's physical device."""
+    samples = check_gpu_available(getattr(args, option, None))
+    selected = samples[-1]
+    if getattr(args, "gpu_uuid", selected["selected_uuid"]) != selected["selected_uuid"]:
+        raise RuntimeError("Physical GPU identity changed during the campaign matrix")
+    setattr(args, option, selected["selected_gpu_index"])
+    args.gpu_uuid = selected["selected_uuid"]
+    args.gpu_preflight = samples
+
+
+def same_gpu(run, args):
+    """Absent physical identity cannot qualify a resumed GPU comparison."""
+    return run.get("gpu_uuid") == args.gpu_uuid
 
 
 def check_matrix_state(frozen):
@@ -1368,31 +1366,44 @@ def run_matrix(args):
         unknown = set(groups) - TEST_GROUPS.keys()
         if unknown:
             raise ValueError(f"Unknown test groups in batch {batch}: {sorted(unknown)}")
+        if any(TEST_DEVICES.get(group, "CPU") == "GPU" for group in groups):
+            check_matrix_state(frozen)
+            prepare_gpu(args, "test_gpu_index")
         for group in groups:
             check_matrix_state(frozen)
             device = TEST_DEVICES.get(group, "CPU")
             if any(row["key"][:3] == ["test", group, "after"] and row["state"] == "passed"
                    and row["source_sha256"] == frozen and row["device"] == device
+                   and (device != "GPU" or same_gpu(row, args))
                    and row["key"][6] == getattr(args, "repeat", 0)
                    and test_evidence(row)["passed"] for row in records()):
                 continue
             job = argparse.Namespace(**vars(args))
+            job.gpu_preflight = None
             job.action, job.group, job.arm, job.device = "test", group, "after", device
             if device == "GPU":
-                job.gpu_preflight = check_gpu_idle(getattr(args, "test_gpu_index", 2))
+                prepare_gpu(job, "test_gpu_index")
             code = run_job(job)
             if code:
                 return code
         return 0
 
     ensure_baseline()
+    fixtures = ((args.fixture,) if args.selection == "fixture" else
+                ADDITIONAL_FIXTURES if args.selection == "additional" else
+                ENDPOINT_FIXTURES if args.selection == "new" else FIXTURES)
+    if any(measurement_device(name) == "GPU" for name in fixtures):
+        check_matrix_state(frozen)
+        prepare_gpu(args, "measurement_gpu_index")
     marker = json.loads((BASELINE_ROOT / "source-manifest.json").read_text())
     available = {}
     for row in records():
         if row["key"][0] != "measure" or not Path(row["result"]).is_file():
             continue
-        if (row["device"] == "GPU" and row.get("environment", {}).get("CUDA_VISIBLE_DEVICES")
-                != str(getattr(args, "measurement_gpu_index", 2))):
+        if row["device"] == "GPU" and (not hasattr(args, "gpu_uuid") or not same_gpu(row, args)):
+            continue
+        if (row["device"] == "GPU" and args.stage == "repeat"
+                and row.get("gpu_performance_preflight_uncontended") is not True):
             continue
         value = json.loads(Path(row["result"]).read_text())
         try:
@@ -1409,10 +1420,11 @@ def run_matrix(args):
             row, value = available[key]
         else:
             job = argparse.Namespace(**vars(args))
+            job.gpu_preflight = None
             job.action, job.fixture, job.size, job.repeat = "measure", name, size, repeat
             job.arm, job.jit, job.device = arm, mode, device
             if device == "GPU":
-                job.gpu_preflight = check_gpu_idle(getattr(args, "measurement_gpu_index", 2))
+                prepare_gpu(job, "measurement_gpu_index")
             code = run_job(job)
             row = records()[-1]
             if not Path(row["result"]).is_file():
@@ -1424,9 +1436,6 @@ def run_matrix(args):
             raise RuntimeError(f"Measurement failure requires repair: {row['result']}")
         return row, value
 
-    fixtures = ((args.fixture,) if args.selection == "fixture" else
-                ADDITIONAL_FIXTURES if args.selection == "additional" else
-                ENDPOINT_FIXTURES if args.selection == "new" else FIXTURES)
     for name in fixtures:
         for size in ((1,) if name in ONE_SIZE else (1, 2)):
             for repeat in (range(1) if args.stage == "qualify" else range(3)):
@@ -1461,20 +1470,20 @@ def main():
     parser.add_argument("--device", choices=("CPU", "GPU"), default="GPU")
     parser.add_argument("--test-timeout-seconds", type=int, choices=TEST_TIMEOUT_SECONDS, default=900,
                         help="Smaller focused-test reservation; cumulative caps and 900-second ceiling remain fixed")
-    parser.add_argument("--test-gpu-index", type=int, choices=(2, 3), default=2,
-                        help="Physical GPU for correctness tests only")
-    parser.add_argument("--measurement-gpu-index", type=int, choices=(2, 3), default=2,
-                        help="Physical GPU for fresh matched before/after groups; never mix repeat devices")
+    parser.add_argument("--test-gpu-index", type=int, choices=(0, 1, 2, 3), default=None,
+                        help="Optional physical GPU for tests; default selects an available non-desktop GPU")
+    parser.add_argument("--measurement-gpu-index", type=int, choices=(0, 1, 2, 3), default=None,
+                        help="Optional physical GPU for matched costs; default auto-selects and pins one device")
     args = parser.parse_args()
     if args.test_batch != "all" and not (args.action == "matrix" and args.stage == "tests"):
         parser.error("--test-batch is only available for a test matrix")
     if args.test_timeout_seconds != 900 and not (args.action == "test" or
                                                (args.action == "matrix" and args.stage == "tests")):
         parser.error("--test-timeout-seconds is only available for correctness tests")
-    if args.test_gpu_index != 2 and not (args.action == "test" or
+    if args.test_gpu_index is not None and not (args.action == "test" or
                                        (args.action == "matrix" and args.stage == "tests")):
         parser.error("--test-gpu-index is only available for correctness tests")
-    if args.measurement_gpu_index != 2 and not (args.action == "measure" or
+    if args.measurement_gpu_index is not None and not (args.action == "measure" or
             (args.action == "matrix" and args.stage in ("qualify", "repeat"))):
         parser.error("--measurement-gpu-index is only available for measurements")
     OUTPUT.mkdir(parents=True, exist_ok=True)

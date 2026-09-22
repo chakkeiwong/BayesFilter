@@ -18,6 +18,11 @@ def load(name):
     return module
 
 
+def gpu_preflight(index):
+    return [{"selected_gpu_index": index, "selected_uuid": f"GPU-test-{index}",
+             "performance_preflight_uncontended": True}] * 2
+
+
 def test_unfinished_attempt_consumes_reserved_budget(tmp_path, monkeypatch):
     driver = load("run_filter_repair_campaign")
     monkeypatch.setattr(driver,"OUTPUT",tmp_path)
@@ -435,7 +440,7 @@ def test_pause_request_stops_between_workers_without_taking_active_lock(tmp_path
 
 
 @pytest.mark.parametrize("graph_passes", [False, True])
-@pytest.mark.parametrize("gpu_index", [2, 3])
+@pytest.mark.parametrize("gpu_index", [0, 1, 2, 3])
 def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch, graph_passes, gpu_index):
     import argparse
 
@@ -448,6 +453,7 @@ def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch
     monkeypatch.setattr(driver, "source_hashes", dict)
     monkeypatch.setattr(driver, "ensure_baseline", lambda: None)
     monkeypatch.setattr(driver, "sha", lambda _: "fixed")
+    monkeypatch.setattr(driver, "check_gpu_available", lambda _: gpu_preflight(gpu_index))
     rows = []
     for arm, mode in (("before", "off"), ("before", "on"), ("before", "eager"),
                       ("after", "off"), ("after", "on")):
@@ -459,7 +465,8 @@ def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch
         path = tmp_path / f"{arm}-{mode}.json"
         path.write_text(json.dumps(value))
         rows.append({"key": ["measure", "policy", arm, "rectangular", mode, 1, 0, "GPU"],
-                         "device": "GPU", "environment": {"CUDA_VISIBLE_DEVICES": str(gpu_index)},
+                         "device": "GPU", "gpu_uuid": f"GPU-test-{gpu_index}",
+                         "environment": {"CUDA_VISIBLE_DEVICES": f"GPU-test-{gpu_index}"},
                          "result": str(path), "state": value["status"]})
     monkeypatch.setattr(driver, "records", lambda: rows)
     monkeypatch.setattr(driver, "run_job", lambda _: pytest.fail("Valid reference already exists"))
@@ -473,7 +480,8 @@ def test_matrix_prefers_valid_graph_reference_before_eager(tmp_path, monkeypatch
     assert pairs == [(expected, "off"), (expected, "on")]
 
 
-def test_measurement_matrix_does_not_reuse_a_different_physical_gpu(tmp_path, monkeypatch):
+@pytest.mark.parametrize("prior_index,stage,uncontended", ((2, "qualify", True), (3, "repeat", False), (3, "repeat", None)))
+def test_measurement_matrix_rejects_other_or_shared_gpu_evidence(tmp_path, monkeypatch, prior_index, stage, uncontended):
     import argparse
     driver = load("run_filter_repair_campaign")
     monkeypatch.setattr(driver, "OUTPUT", tmp_path)
@@ -484,9 +492,11 @@ def test_measurement_matrix_does_not_reuse_a_different_physical_gpu(tmp_path, mo
     monkeypatch.setattr(driver, "source_hashes", dict)
     monkeypatch.setattr(driver, "ensure_baseline", lambda: None)
     monkeypatch.setattr(driver, "records", lambda: [{"key": ["measure", "policy", "before", "rectangular", "off", 1, 0, "GPU"],
-        "device": "GPU", "environment": {"CUDA_VISIBLE_DEVICES": "2"}, "result": str(result)}])
+        "device": "GPU", "gpu_uuid": f"GPU-test-{prior_index}",
+        "gpu_performance_preflight_uncontended": uncontended,
+        "environment": {"CUDA_VISIBLE_DEVICES": f"GPU-test-{prior_index}"}, "result": str(result)}])
     selected = []
-    monkeypatch.setattr(driver, "check_gpu_idle", lambda index: selected.append(index) or ["idle"])
+    monkeypatch.setattr(driver, "check_gpu_available", lambda index: selected.append(index) or gpu_preflight(index))
 
     def launch(job):
         assert job.measurement_gpu_index == 3 and job.arm == "before"
@@ -494,11 +504,11 @@ def test_measurement_matrix_does_not_reuse_a_different_physical_gpu(tmp_path, mo
 
     monkeypatch.setattr(driver, "run_job", launch)
     with pytest.raises(RuntimeError, match="fresh_worker_required"):
-        driver.run_matrix(argparse.Namespace(stage="qualify", selection="fixture", fixture="rectangular", measurement_gpu_index=3))
-    assert selected == [3]
+        driver.run_matrix(argparse.Namespace(stage=stage, selection="fixture", fixture="rectangular", measurement_gpu_index=3))
+    assert selected == [3, 3]
 
 
-@pytest.mark.parametrize("gpu_index", (2, 3))
+@pytest.mark.parametrize("gpu_index", (0, 1, 2, 3))
 def test_gpu_test_group_uses_gpu_and_preflight(tmp_path, monkeypatch, gpu_index):
     import argparse
     driver = load("run_filter_repair_campaign")
@@ -507,12 +517,12 @@ def test_gpu_test_group_uses_gpu_and_preflight(tmp_path, monkeypatch, gpu_index)
     monkeypatch.setattr(driver, "source_hashes", dict)
     monkeypatch.setattr(driver, "records", list)
     checked = []
-    monkeypatch.setattr(driver, "check_gpu_idle", lambda index: checked.append(index) or ["idle"])
+    monkeypatch.setattr(driver, "check_gpu_available", lambda index: checked.append(index) or gpu_preflight(index))
     jobs = []
     monkeypatch.setattr(driver, "run_job", lambda job: jobs.append(job) or 0)
     assert driver.run_matrix(argparse.Namespace(stage="tests", test_gpu_index=gpu_index)) == 0
-    assert jobs[0].device == "GPU" and jobs[0].gpu_preflight == ["idle"]
-    assert checked == [gpu_index] and jobs[0].test_gpu_index == gpu_index
+    assert jobs[0].device == "GPU" and jobs[0].gpu_preflight == gpu_preflight(gpu_index)
+    assert checked == [gpu_index, gpu_index] and jobs[0].test_gpu_index == gpu_index
 
 
 def test_alternate_gpu_option_cannot_change_measurement_device(monkeypatch):
@@ -524,13 +534,70 @@ def test_alternate_gpu_option_cannot_change_measurement_device(monkeypatch):
     assert error.value.code == 2
 
 
-def test_gpu_preflight_queries_selected_device(monkeypatch):
+@pytest.mark.parametrize("prior_uuid", (None, "GPU-test-2", "GPU-replaced-3", "GPU-test-3"))
+def test_test_matrix_pins_auto_selection_and_rejects_other_gpu_evidence(tmp_path, monkeypatch, prior_uuid):
+    import argparse
+
     driver = load("run_filter_repair_campaign")
-    commands = []
-    monkeypatch.setattr(driver.subprocess, "check_output", lambda command, **_: commands.append(command) or "18, 0")
-    monkeypatch.setattr(driver.time, "sleep", lambda _: None)
-    driver.check_gpu_idle(3)
-    assert len(commands) == 2 and all(command[1:3] == ["-i", "3"] for command in commands)
+    monkeypatch.setattr(driver, "OUTPUT", tmp_path)
+    monkeypatch.setattr(driver, "TEST_GROUPS", {"first_gpu": (), "second_gpu": ()})
+    monkeypatch.setattr(driver, "TEST_DEVICES", {"first_gpu": "GPU", "second_gpu": "GPU"})
+    monkeypatch.setattr(driver, "source_hashes", dict)
+    monkeypatch.setattr(driver, "test_evidence", lambda _: {"passed": True})
+    rows = [{"key": ["test", group, "after", "covariance", "on", 1, 0, "GPU"],
+             "state": "passed", "source_sha256": {}, "device": "GPU", "gpu_uuid": prior_uuid}
+            for group in driver.TEST_GROUPS]
+    monkeypatch.setattr(driver, "records", lambda: rows)
+    checked, jobs = [], []
+    monkeypatch.setattr(driver, "check_gpu_available", lambda index: checked.append(index) or gpu_preflight(3))
+    monkeypatch.setattr(driver, "run_job", lambda job: jobs.append(job) or 0)
+    assert driver.run_matrix(argparse.Namespace(stage="tests")) == 0
+    if prior_uuid == "GPU-test-3":
+        assert checked == [None] and jobs == []
+        return
+    assert checked == [None, 3, 3]
+    assert [job.group for job in jobs] == ["first_gpu", "second_gpu"]
+    assert all(job.gpu_uuid == "GPU-test-3" for job in jobs)
+
+
+def test_matrix_stops_if_pinned_index_changes_physical_identity(monkeypatch):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    monkeypatch.setattr(driver, "check_gpu_available", lambda _: gpu_preflight(2))
+    args = argparse.Namespace(test_gpu_index=2, gpu_uuid="GPU-replaced-2")
+    with pytest.raises(RuntimeError, match="Physical GPU identity changed"):
+        driver.prepare_gpu(args, "test_gpu_index")
+
+
+def test_auto_gpu_worker_uses_and_records_uuid(tmp_path, monkeypatch):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    monkeypatch.setattr(driver, "OUTPUT", tmp_path)
+    monkeypatch.setattr(driver, "records", list)
+    monkeypatch.setattr(driver, "source_hashes", dict)
+    monkeypatch.setattr(driver, "git", lambda *_: "test")
+    monkeypatch.setattr(driver, "test_evidence", lambda *_: {"passed": True})
+    monkeypatch.setattr(driver, "check_gpu_available", lambda _: gpu_preflight(2))
+    launches = []
+
+    class Worker:
+        def wait(self, *, timeout):
+            return 0
+
+    def launch(command, **kwargs):
+        launches.append(kwargs["env"])
+        return Worker()
+
+    monkeypatch.setattr(driver.subprocess, "Popen", launch)
+    args = argparse.Namespace(action="test", device="GPU", group="policy", arm="after",
+        fixture="dns", jit="on", size=1, repeat=0, test_timeout_seconds=60)
+    assert driver.run_job(args) == 0
+    run = json.loads((tmp_path / "run-00001/run.json").read_text())
+    assert launches[0]["CUDA_VISIBLE_DEVICES"] == run["gpu_uuid"] == "GPU-test-2"
+    assert run["gpu_preflight"] == gpu_preflight(2)
+    assert run["gpu_performance_preflight_uncontended"]
 
 
 def test_repeat_aggregation_rejects_mixed_physical_devices():
@@ -543,6 +610,18 @@ def test_repeat_aggregation_rejects_mixed_physical_devices():
         comparison.validate_repeat_hardware([original, alternate, alternate])
 
 
+@pytest.mark.parametrize("uncontended", (None, False, True))
+def test_shared_gpu_cannot_qualify_terminal_performance(uncontended):
+    comparison = load("compare_filter_repair_campaign")
+    run = {"device": "GPU", "gpu_uuid": "GPU-test-2", "gpu_performance_preflight_uncontended": uncontended}
+    if uncontended:
+        comparison.validate_performance_preflight(run)
+    else:
+        with pytest.raises(ValueError, match="terminal performance"):
+            comparison.validate_performance_preflight(run)
+    comparison.validate_performance_preflight({**run, "device": "CPU"})
+
+
 def test_baseline_python_tensor_condition_is_a_tracing_failure_only():
     comparison = load("compare_filter_repair_campaign")
     failure = {"phase": "trace", "error_type": "OperatorNotAllowedInGraphError",
@@ -550,31 +629,6 @@ def test_baseline_python_tensor_condition_is_a_tracing_failure_only():
     assert comparison.baseline_compilation_failure(failure) == "baseline_host_operation_during_trace"
     assert comparison.baseline_compilation_failure({**failure, "phase": "first_execution"}) is None
     assert comparison.baseline_compilation_failure({**failure, "error_type": "RuntimeError"}) is None
-
-
-def test_gpu_idle_rechecks_recent_utilization_and_records_samples(monkeypatch):
-    driver = load("run_filter_repair_campaign")
-    samples = iter(("18, 7", "18, 0", "18, 0"))
-    monkeypatch.setattr(driver.subprocess, "check_output", lambda *a, **k: next(samples))
-    sleeps = []
-    monkeypatch.setattr(driver.time, "sleep", sleeps.append)
-    assert driver.check_gpu_idle() == [
-        {"memory_mib": 18, "utilization_percent": 7},
-        {"memory_mib": 18, "utilization_percent": 0},
-        {"memory_mib": 18, "utilization_percent": 0},
-    ]
-    assert sleeps == [2, 2]
-
-
-@pytest.mark.parametrize("reading", ("101, 0", "18, 6"))
-def test_gpu_idle_keeps_original_contention_thresholds(monkeypatch, reading):
-    driver = load("run_filter_repair_campaign")
-    monkeypatch.setattr(driver.subprocess, "check_output", lambda *a, **k: reading)
-    sleeps = []
-    monkeypatch.setattr(driver.time, "sleep", sleeps.append)
-    with pytest.raises(RuntimeError, match="contention veto after bounded recheck"):
-        driver.check_gpu_idle()
-    assert sleeps == [2] * 5
 
 
 def test_whole_endpoint_and_kernel_timings_cannot_issue_a_speed_ratio():

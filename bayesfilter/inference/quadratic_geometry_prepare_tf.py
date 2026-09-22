@@ -39,7 +39,10 @@ def _subnormal_square_units(raw):
     cross = 2 * lower * upper
     low_product = lower * lower
     low = low_product + left(cross, 32)
-    high = upper * upper + right(cross, 32) + tf.cast(low < low_product, tf.uint64)
+    # The high word is below 2**42, so signed addition is exact. Grappler
+    # combines this three-term sum into AddN, which has no uint64 GPU kernel.
+    high = tf.cast(tf.cast(upper * upper, tf.int64) + tf.cast(right(cross, 32), tf.int64)
+                   + tf.cast(low < low_product, tf.int64), tf.uint64)
     # x = significand * 2**(exponent-1075), so x*x in subnormal
     # units is significand**2 shifted right by 1076-2*exponent.
     shift = 1076 - 2 * exponent

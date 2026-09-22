@@ -1,5 +1,58 @@
 # Filter and gradient repair recovery
 
+Repair remains **incomplete** on `repair/filter-gradient-xla-validation-20260918`,
+continuing from pushed **4eda57f1**. The September 22 owner instruction replaces
+GPU3-only scheduling. The driver now automatically selects an available
+non-desktop GPU, records its UUID and pins every matrix to that physical device.
+GPU1 drives the display and GPU0 runs the remote-desktop encoder; both roles
+are protected. The exact fallback requires every non-desktop GPU to exceed
+50% utilization and have less than the declared 8 GiB launch headroom. The
+chosen fallback must itself have enough headroom and <=50% utilization.
+See [GPU selection and current gaps](filter_gradient_gpu_selection_and_gaps_20260922.md).
+
+Policy/controller checks pass **102 cases in 02602**. GPU2 was selected for the
+renewed qualification. Preparation initially exposed unsupported graph-mode
+uint64 AddN in 02598; exact signed addition of the bounded high word repairs
+it without a tolerance change. **02599 CPU and 02600 GPU each pass all 51
+preparation checks**, including 2,092 independent exact product comparisons.
+**02601 passes all 48 GPU proposal/control checks; 02603 passes all 21 GPU
+callback checks.** All **40 GPU fit checks pass in 02604--02607**, including
+original D1/D3/D5 records, changing inputs and target/cache lifetime. All **57
+GPU pilot checks pass in 02608--02612**. The failed run remains preserved.
+All **311 shared-solver GPU checks pass in 02613--02619**, including derivatives,
+factor equivalence, full original lifecycle and 223 consumers. Total: **528 GPU
+checks**, all on GPU2. Runtime/tests/driver stayed frozen during each worker and
+matrix. The refreshed remote main is **2c2419c0**.
+
+The full geometry/iterative initializer, dynamic retained-row consumption,
+post-evaluation permutation/RNG boundary, public sequential outer lifecycle
+and ordered block-coordinate control remain open. So do matching GPU/public
+cost qualification, actual DZ5 consumers and independent parent deadlines,
+and final F01--F20 call-chain dispositions.
+The rejected ill-conditioned posterior precision comparison still fails its
+strict criterion; its proposed allowance remains pending and uninstalled.
+The partial static guard is not a repo-wide completion certificate. Cold
+compile/host-RSS and standalone warm-cost investigations remain unresolved.
+The signed-word repair also requires refreshed direction costs before terminal
+comparison. CPU-only evidence cannot close GPU gates.
+
+The stable approved command prefix, one numerical worker, verified memory
+growth and cumulative **32 CPU / 52 GPU process-hour** limits are unchanged.
+No numerical-loop or NumPy exemption was added. Canonical LEDH rebuilding
+remains outside this campaign, and unsupported canonical claims remain blocked.
+Main stays unmerged until full qualification and remote integration/retesting.
+
+Audit **02620** inventories 2,988 working Python files / 2,987 parsed and one
+unchanged vendor-reference error. The partial guard passes at **213 sources /
+1,306 exact exceptions**. Charges through 02620 are **52,280.32015160784 CPU /
+49,321.5887504554 GPU seconds**, leaving about **17.48 CPU / 38.30 GPU
+process-hours**. No worker is active. Next enclose the complete public execution and
+qualify matched GPU costs, including fresh direction costs after the integer
+portability repair. Full checkpoint: `gpu-selection-qualification-02620.json`
+in the shared campaign artifact root.
+
+## Previous preparation checkpoint
+
 Active continuation from pushed **c7eba61b** on
 `repair/filter-gradient-xla-validation-20260918`. Remote main remains **c7adbda7**;
 main is unmerged. Caps remain **32 CPU / 52 GPU process-hours**.

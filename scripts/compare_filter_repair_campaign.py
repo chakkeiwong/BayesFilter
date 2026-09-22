@@ -28,6 +28,13 @@ MATCHED_FIELDS = ("input_sha256", "input_shapes", "input_dtypes", "dimensions", 
 REVIEW_PATH = ROOT / "docs/plans/filter_gradient_repair_investigation_reviews_20260917.json"
 
 
+def validate_performance_preflight(run):
+    """Shared/desktop runs retain correctness evidence, not terminal timings."""
+    if (run.get("device") == "GPU" and "gpu_uuid" in run
+            and run.get("gpu_performance_preflight_uncontended") is not True):
+        raise ValueError("Shared or desktop GPU preflight cannot qualify terminal performance")
+
+
 def flatten(value):
     if isinstance(value, (list, tuple)):
         for item in value:
@@ -262,6 +269,7 @@ def main():
         value = json.loads(Path(run["result"]).read_text())
         try:
             current_provenance(run, value, arm, measurement_harness(name), marker["files"])
+            validate_performance_preflight(run)
         except (ValueError, KeyError) as exc:
             excluded.append({"run": run["result"], "reason": str(exc)})
             continue
