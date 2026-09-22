@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import fields
 import json
+from dataclasses import fields
 from types import SimpleNamespace
 
 import numpy as np
@@ -444,18 +444,33 @@ def test_policy_switch_preserves_transactional_center_and_radius(
     # Preserve the same step, boundary and predicted-improvement fixture at
     # the native numerical boundary. All transactional assertions stay fixed.
     monkeypatch.setattr(sequential_proposal_tf, "trust_region_program", fixed_proposal_solve)
-    monkeypatch.setattr(
-        sequential,
-        "_fit_score_curvature",
-        lambda *args, **kwargs: (
-            {
-                "status": "usable",
-                "projected_precision_z": np.eye(1),
-                "projection_relative_frobenius": 0.0,
-            },
-            kwargs["evaluations"],
-        ),
-    )
+    from bayesfilter.inference import sequential_refinement_tf
+
+    def fixed_fit_program(scalar, batched, dimension, config, *, jit_compile=True):
+        # Same synthetic usable identity fit, no fit evaluations and no cloud
+        # incumbent. Inject at the boundary the enclosing controller executes.
+        @tf.function(input_signature=[tf.TensorSpec([dimension], tf.float64),
+            tf.TensorSpec([dimension], tf.float64), tf.TensorSpec([dimension], tf.float64),
+            tf.TensorSpec([], tf.float64), tf.TensorSpec([2], tf.int32)],
+            jit_compile=jit_compile, autograph=False)
+        def fit(center, score, scale, radius, seed):
+            record = {"status": tf.constant(1), "rank": tf.constant(dimension),
+                "train_score_rmse": tf.constant(0., tf.float64),
+                "holdout_score_relative_rmse": tf.constant(0., tf.float64),
+                "raw_eigenvalues": tf.ones([dimension], tf.float64),
+                "projected_eigenvalues": tf.ones([dimension], tf.float64),
+                "projection_relative_frobenius": tf.constant(0., tf.float64),
+                "projected_precision_z": tf.eye(dimension, dtype=tf.float64),
+                "best_index": tf.constant(-1), "best_value": tf.constant(float('-inf'), tf.float64),
+                "best_position": center, "best_score": score}
+            return {"usable": tf.constant(True), "projection": record["projection_relative_frobenius"],
+                "has_best": tf.constant(False), "best_value": record["best_value"],
+                "best_position": center, "best_score": score, "evaluations": tf.constant(0),
+                "seed": seed, "record": record}
+
+        return fit
+
+    monkeypatch.setattr(sequential_refinement_tf, "terminal_program", fixed_fit_program)
 
     def run(policy: str):
         return estimate_sequential_map_covariance(

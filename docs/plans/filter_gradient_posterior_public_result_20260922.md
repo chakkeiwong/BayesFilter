@@ -113,3 +113,39 @@ repeats. Cold attribution remains open on both devices and CPU host-RSS
 attribution remains open. The next recorded diagnostic uses minimal-XLA startup
 and3,000 alternating-input calls. This does not close the independent sequential,
 block, consumer, ownership, final audit or merge gates.
+
+
+## Startup, reuse and observer attribution
+
+02874--02881 pass all eight D3/D5 fresh/minimal-XLA-control CPU/GPU probes,
+with3000 alternating complete public calls each and full original comparisons
+after measurement.02882/02883 pass the observer-only controls. Analysis and
+its executable source are saved as posterior-residency-analysis-02883.json and
+analyze-posterior-residency-02883.py in the shared artifact root. All eight
+residency workers have identical source hashes; the controls are a separate
+recorded harness cohort. GPU2 and verified memory growth remain unchanged.
+
+| Device | Minimal XLA RSS growth | Endpoint cold RSS after tracing, prewarmed | Reuse RSS growth | Observer-only RSS growth |
+| --- | ---: | ---: | ---: | ---: |
+| CPU | about64MiB | 293.45/297.43MiB at D3/D5 | 1.68--1.75MiB | 1.35MiB over seven intervals |
+| GPU | about71MiB | 260.68/262.45MiB at D3/D5 | 1.61--1.67MiB | 1.43MiB over seven intervals |
+
+The generic first-XLA explanation is only partial: substantial endpoint
+compilation residency remains after the minimal control. Executable mapping
+counts and GPU allocator current/peak stay unchanged over reuse; all eight
+Python graph weakrefs release after cache clearing, while resident memory
+persists. The retained mapping observer stores456 per-file/category records
+per snapshot and itself grows RSS with no numerical calls. Its growth is of
+the same scale as much of the reuse increase, so the latter cannot be reported
+as unqualified numerical-call leakage. This is not an exact allocation census.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Preserve public posterior | All original records pass through repeated reuse | No numerical veto | Endpoint/configuration coverage remains bounded | Continue other endpoints | Not whole-repository completion |
+| Retain memory investigation | Startup attribution and observer controls pass | Earlier cold/RSS triggers remain | Native compiler/executable retention is not individually identified | Coordinated ownership and signature-churn attribution in E4 | No native eviction or general leak-freedom claim |
+
+Post-run review: observer retention is a demonstrated alternative explanation
+for small RSS growth, but cannot explain the substantial cold compilation
+residency. No timing ranking follows from one process per condition. The known
+many-signature LLVM mapping failure remains preserved and is not waived by
+fixed-signature reuse. The ten-worker diagnostic tranche is complete.

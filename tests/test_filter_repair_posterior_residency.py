@@ -108,3 +108,27 @@ def test_posterior_startup_and_reuse_residency(primed, dimension, request):
         out.write('\n')
     _equal_records(first, original)
     _equal_records(second, original_changed)
+
+
+def test_posterior_residency_observer_retention_control(request):
+    """Measure the retained mapping observer without additional numerical calls."""
+    callback, eligibility, cfg, args = pure_fixture(3)
+    gpu = bool(tf.config.list_logical_devices('GPU'))
+    result = public.refine_posterior_local_curvature(callback, args[0], args[1],
+        batched_eligibility_fn=eligibility, config=cfg).payload()
+    stages, mappings = {}, {}
+    for index in range(8):
+        stages[str(index)] = memory_snapshot(gpu)
+        mappings[str(index)] = mapping_snapshot()
+    original, hashes = reference(callback, eligibility, cfg, args)
+    report = {'schema': 'filter_posterior_residency_observer_control.v1', 'gpu': gpu,
+        'stages': stages, 'mappings': mappings, 'calls_between_snapshots': 0,
+        'result': result, 'original': original, 'original_source_sha256': hashes,
+        'role': 'explanatory_observer_allocation_control',
+        'nonclaims': ['No numerical calls between retained snapshots; this diagnoses observer overhead only.',
+            'Different fresh processes cannot establish native eviction or general leak freedom.']}
+    path = Path(request.config.getoption('xmlpath')).parent / 'posterior-residency-observer.json'
+    with path.open('x') as out:
+        json.dump(report, out, indent=2, allow_nan=False)
+        out.write('\n')
+    _equal_records(result, original)

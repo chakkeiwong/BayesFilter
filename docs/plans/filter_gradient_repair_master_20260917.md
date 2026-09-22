@@ -1,7 +1,7 @@
 # Complete filter and gradient execution repair
 
 The approved **E1--E6 enclosing-execution repair phase** is executing on
-`repair/filter-gradient-xla-validation-20260918`, after pushed **dba39e048**.
+`repair/filter-gradient-xla-validation-20260918`, after pushed **48acf5e96**.
 The [reviewed master execution program](filter_gradient_enclosing_execution_phase_20260922.md)
 now includes the confirmed public-capacity, comparator-eigensystem and native
 compiler-memory findings. [Full geometry results](filter_gradient_full_geometry_result_20260922.md)
@@ -14,9 +14,11 @@ inside XLA. **02697--02705 pass81 native CPU +6 public CPU +3 legacy checks;
 checks** after restoring current scalar-route labels. **02727 passes both large
 public CPU cases**, including260 samples/512 directions and scalar/batch replay.
 E1 and the active pilot retain their earlier83/83 and78/78 CPU/GPU qualifications.
-The current partial source guard covers223 sources /1318 exact exceptions.
+The current partial source guard covers223 sources /1325 exact exceptions.
 The sequential controller adds seven completed-history formatting exceptions;
 its numerical body has no Python-loop or NumPy exception.
+The full public sequential module is now guarded; its seven additional exact
+exceptions cover only configuration/result validation and JSON serialization.
 The public posterior module adds only two configuration and two completed-JSON
 formatting exceptions; no numerical-loop or NumPy runtime exception is added.
 
@@ -89,21 +91,41 @@ GPU warm medians7.27/11.76ms compare with251.28/306.76ms; cold totals rise to
 7.18/7.76s. Only the GPU cold trigger fires; host RSS adds93.58/98.00MiB.
 CPU/GPU cohorts are separately matched because the harness changed between them. See
 [posterior public result and review](filter_gradient_posterior_public_result_20260922.md).
-The internal complete sequential endpoint passes23 CPU original/boundary checks
-(02813--02830,02853), including final mass, full target order, progress records,
-overflow rejection before later target calls, and frozen derivative boundaries.
-GPU/public wiring and existing consumers remain pending.127 policy/runner checks
-pass02834.
-Sequential/block integration, actual DZ5 telemetry/deadlines,
-terminal costs, F01--F20 dispositions and integration/retesting all remain open.
+The internal complete sequential endpoint passes23 CPU and23 GPU checks
+(02813--02830,02853 and02854--02872), including final mass, target order,
+overflow rejection and frozen derivatives. The public API now invokes that
+controller;02884 passes all five API boundary/reuse checks. All23 public CPU and23 public GPU checks pass, along with56 existing consumer
+checks and43 block-coordinate consumer checks on each device through02943. See
+[sequential public result](filter_gradient_sequential_public_result_20260922.md). The terminal-role review
+removed accidentally copied registration blocks from the explanatory-only list;
+all native/public sequential correctness groups are mandatory.02873 passes all
+127 policy checks after that classification repair.
+
+Posterior residency02874--02883 passes eight CPU/GPU probes (24,000 alternating
+complete calls) and two observer controls. Minimal XLA startup adds about64MiB
+CPU/71MiB GPU, leaving293--297MiB CPU/261--262MiB GPU at endpoint compilation
+after tracing. Allocator usage and executable-map counts remain flat during
+reuse. Python graphs release while native residency persists. Retaining only
+memory observations adds1.35/1.43MiB with no numerical calls, explaining much of
+the scale of the observed1.6--1.8MiB reuse growth. This does not prove leak freedom
+or native eviction. See posterior-residency-analysis-02883.json in the artifact
+root and the updated posterior result note.
+
+Ordered block integration, coordinated cache ownership, actual DZ5 telemetry/
+deadlines, terminal costs, F01--F20 dispositions
+and integration/retesting remain open.
 Accepted-result tolerances and ill-conditioned rejection/no-use decisions are
 unchanged. Canonical LEDH rebuilding remains outside this campaign.
 
-Through02853, charges are**57702.603994691846 CPU /56193.047901197264 GPU seconds**,
-leaving15.97 CPU /36.39 GPU process-hours under unchanged32/52-hour caps.
+Through02943, charges are**58806.37658377485 CPU /58347.8351811944 GPU seconds**,
+leaving15.66 CPU /35.79 GPU process-hours under unchanged32/52-hour caps.
+The sequential public tranche completes60 workers/2400.59 seconds within64/7200.
+Next execute the reviewed E4 dependency-scope unit (24 workers/3600 seconds).
 Later workers add charges; use runner status when idle. Remote main last inspected is
-**8f992b205e9a4b8a861db4064cbcedb76af52f1f**; overlapping intentions in HMC warmup
-and the batched sigma-point eigensolver require reconciliation and retesting.
+**89065bc6354801cb368d5e163ba49fd9c4372d10**; six overlapping paths now
+include C2 Hermite updates and GenUT test retirement as well as HMC warmup, the
+batched sigma-point eigensolver, benchmark metadata and ignore rules. They
+require reconciliation and retesting.
 
 ## Diagnosis checkpoint
 

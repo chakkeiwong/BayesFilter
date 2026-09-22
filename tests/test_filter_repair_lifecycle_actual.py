@@ -42,7 +42,9 @@ def _excerpts(checkpoint):
     namespace = dict(vars(frozen))
     exec(compile(before, 'frozen_complete_lifecycle_exact_excerpt', 'exec'), namespace)  # noqa: S102 - frozen diagnostic
     original = namespace['execute']
-    namespace = dict(vars(current))
+    from bayesfilter.inference.mass_matrix import covariance_from_precision
+
+    namespace = {**vars(current), "covariance_from_precision": covariance_from_precision}
     exec(compile(after, 'unchanged_lifecycle_final_report_excerpt', 'exec'), namespace)  # noqa: S102 - report suffix only
     return original, namespace['finish']
 

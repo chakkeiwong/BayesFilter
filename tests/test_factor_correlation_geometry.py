@@ -3,9 +3,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 import tensorflow as tf
-import bayesfilter.inference.sequential_map_covariance as sequential
-import bayesfilter.inference.factor_correlation_geometry as factor_geometry
 
+import bayesfilter.inference.factor_correlation_geometry as factor_geometry
+import bayesfilter.inference.sequential_map_covariance as sequential
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
     factor_correlation_covariance,
@@ -315,43 +315,67 @@ def test_structured_policy_escalates_from_rejected_one_factor_to_two_factors(
         delta = tf.convert_to_tensor(theta, tf.float64) - mode[None, :]
         return -0.5 * tf.reduce_sum(delta**2, axis=1), -delta
 
-    def controlled_fit(data, *, factor_count, config):
-        del data, config
-        if factor_count == 1:
-            return {
-                "status": "holdout_score_fit_rejected",
-                "factor_count": 1,
-            }
-        return {
-            "status": "usable",
-            "factor_count": 2,
-            "projected_precision_z": np.eye(dimension),
-            "projection_relative_frobenius": 0.0,
-        }
+    from bayesfilter.inference import sequential_refinement_tf
+    from bayesfilter.inference.factor_decisions_tf import factor_decisions_program
+    from bayesfilter.inference.sequential_structured_fit_tf import _empty_result
 
-    monkeypatch.setattr(sequential, "_fit_factor_from_data", controlled_fit)
-
-    def controlled_second_program(dimension, capacity, holdout_rows, config):
-        from bayesfilter.inference.sequential_structured_fit_tf import _empty_result
-
+    def controlled_fit_program(dimension, capacity, holdout_rows, config, *, jit_compile=True):
         @tf.function(input_signature=[tf.TensorSpec([dimension], tf.float64),
             tf.TensorSpec([capacity, dimension], tf.float64), tf.TensorSpec([capacity, dimension], tf.float64),
             tf.TensorSpec([holdout_rows, dimension], tf.float64), tf.TensorSpec([holdout_rows, dimension], tf.float64),
-            tf.TensorSpec([capacity], tf.float64), tf.TensorSpec([], tf.int32)], jit_compile=True, autograph=False)
+            tf.TensorSpec([capacity], tf.float64), tf.TensorSpec([], tf.int32)],
+            jit_compile=jit_compile, autograph=False)
         def fit(*args):
-            result = _empty_result(dimension, 2)
+            factors = config.factor_count
+            result = _empty_result(dimension, factors)
             result.update(covariance=tf.eye(dimension, dtype=tf.float64), precision=tf.eye(dimension, dtype=tf.float64),
                 eigenvalues=tf.ones([dimension], tf.float64), deviations=tf.ones([dimension], tf.float64),
                 finite=tf.constant(True), condition_number=tf.constant(1., tf.float64),
-                jacobian_rank=tf.constant(3 * dimension - 1), jacobian_condition=tf.constant(1., tf.float64))
-            return {"usable": tf.constant(True), "precision": result["precision"],
-                "computed": {"input_status": tf.constant(0), "fit": result}}
+                holdout_relative=tf.constant(1. if factors == 1 else 0., tf.float64),
+                jacobian_rank=tf.constant((factors + 1) * dimension - (factors == 2)),
+                jacobian_condition=tf.constant(1., tf.float64))
+            return {"input_status": tf.constant(0), "fit": result}
 
         return fit
 
-    # Keep the same synthetic rejected-first/identity-second geometry at the
-    # native escalation boundary; all original result assertions stay fixed.
-    monkeypatch.setattr(sequential, "second_factor_program", controlled_second_program)
+    def controlled_second_program(dimension, capacity, holdout_rows, config, *, jit_compile=True):
+        factor_cfg = FactorCorrelationGeometryConfig(factor_count=2,
+            max_condition_number=config.max_condition_number,
+            holdout_score_relative_rmse=config.structured_holdout_score_relative_rmse)
+        fit = controlled_fit_program(dimension, capacity, holdout_rows, factor_cfg, jit_compile=jit_compile)
+        decide = factor_decisions_program(dimension, factor_cfg, jit_compile=jit_compile)
+
+        @tf.function(input_signature=fit.input_signature, jit_compile=jit_compile, autograph=False)
+        def second(*args):
+            computed = fit(*args)
+            result = computed['fit']
+            decision = decide(result['invalid_covariance_evaluations'], result['finite'], result['eigenvalues'],
+                result['condition_number'], result['jacobian_rank'], result['holdout_relative'],
+                result['optimizer'].failed, result['loadings'])
+            return {"usable": decision['status_code'] == 0, "precision": result['precision'],
+                "computed": computed, "decision": decision}
+
+        return second
+
+    actual_data_program = sequential_refinement_tf.structured_data_program
+
+    def controlled_data_program(*args, **kwargs):
+        prepared = actual_data_program(*args, **kwargs)
+
+        @tf.function(input_signature=prepared.input_signature,
+                     jit_compile=kwargs.get('jit_compile', True), autograph=False)
+        def data(*values):
+            # The former synthetic fit omitted every best_exact_* field.
+            # Preserve that absent-incumbent fixture after data and fit split.
+            return {**prepared(*values), 'best_index': tf.constant(-1)}
+
+        return data
+
+    monkeypatch.setattr(sequential_refinement_tf, "structured_data_program", controlled_data_program)
+    # Keep the same rejected-first/identity-second fixture at actual numerical
+    # boundaries; use the real admission decisions and preserve every assertion.
+    monkeypatch.setattr(sequential_refinement_tf, "structured_fit_data_program", controlled_fit_program)
+    monkeypatch.setattr(sequential_refinement_tf, "second_factor_program", controlled_second_program)
     result = estimate_sequential_map_covariance(
         scalar,
         [np.zeros(dimension)],

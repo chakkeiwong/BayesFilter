@@ -65,7 +65,76 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # The original eager full fitter takes 294 s for two replicates (run 01303).
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
+SEQUENTIAL_PUBLIC_CONSUMERS = (
+    (
+        'tests/test_sequential_map_covariance.py::test_score_fit_retains_best_exact_cloud_row',
+        'tests/test_sequential_map_covariance.py::test_proposal_score_policy_default_and_positional_prefix_are_compatible',
+        'tests/test_sequential_map_covariance.py::test_pair_disjoint_holdout_is_opt_in_and_preserves_whole_antithetic_pairs',
+        'tests/test_sequential_map_covariance.py::test_pair_disjoint_holdout_rejects_odd_fit_counts_before_target_use',
+        'tests/test_sequential_map_covariance.py::test_pair_disjoint_score_fit_recovers_quadratic_with_honest_holdout',
+        'tests/test_sequential_map_covariance.py::test_proposal_score_policy_validates_before_target_evaluation',
+        'tests/test_sequential_map_covariance.py::test_resolvable_score_gate_repairs_completed_ccma_false_rejections',
+        'tests/test_sequential_map_covariance.py::test_resolvable_score_gate_rejects_equal_worse_and_subfloor_changes',
+        'tests/test_sequential_map_covariance.py::test_proposal_acceptance_conjunction_remains_fail_closed',
+        'tests/test_sequential_map_covariance.py::test_nonfinite_score_norm_fails_both_active_policies',
+        'tests/test_sequential_map_covariance.py::test_disabled_score_gate_is_policy_inert',
+    ),
+    (
+        'tests/test_sequential_map_covariance.py::test_disabled_score_gate_has_identical_integrated_behavior',
+        'tests/test_sequential_map_covariance.py::test_omitted_policy_matches_explicit_fractional_behavior',
+        'tests/test_sequential_map_covariance.py::test_policy_switch_preserves_transactional_center_and_radius',
+        'tests/test_sequential_map_covariance.py::test_refinement_movement_diagnostics_are_default_off',
+        'tests/test_sequential_map_covariance.py::test_rotated_quadratic_recovers_mode_and_fresh_covariance',
+    ),
+    (
+        'tests/test_sequential_map_covariance.py::test_nonstationary_locator_fails_closed_at_evaluation_budget',
+        'tests/test_sequential_map_covariance.py::test_budget_rejection_reports_highest_exact_candidate',
+        'tests/test_sequential_map_covariance.py::test_malformed_score_fails_closed',
+        'tests/test_sequential_map_covariance.py::test_nonlinear_canary_recovers_after_truncated_locator',
+        'tests/test_sequential_map_covariance.py::test_rank_deficient_terminal_fit_fails_closed',
+    ),
+    (
+        'tests/test_sequential_map_covariance.py::test_terminal_cloud_saddle_winner_prevents_curvature_emission',
+        'tests/test_sequential_map_covariance.py::test_no_finite_start_fails_closed',
+        'tests/test_sequential_map_covariance.py::test_locator_uses_start_centered_standardized_coordinates',
+        'tests/test_sequential_map_covariance.py::test_batched_cloud_route_matches_scalar_result',
+        'tests/test_sequential_map_covariance.py::test_native_batched_locator_recovers_same_quadratic_mode',
+    ),
+    (
+        'tests/test_sequential_map_covariance.py::test_locator_gradient_tolerance_is_explicit_and_recorded',
+        'tests/test_sequential_map_covariance.py::test_locator_gradient_tolerance_must_be_positive_finite',
+        'tests/test_sequential_map_covariance.py::test_progress_callback_records_locator_and_terminal_stages',
+        'tests/test_sequential_map_covariance.py::test_locator_stopping_condition_is_explicit_and_validated',
+        'tests/test_sequential_map_covariance.py::test_center_first_stationary_center_skips_locator_and_fits_geometry',
+    ),
+    (
+        'tests/test_sequential_map_covariance.py::test_center_first_nonstationary_center_uses_local_refinement',
+        'tests/test_sequential_map_covariance.py::test_center_first_requires_one_center_and_policy_is_validated',
+        'tests/test_sequential_map_covariance.py::test_default_locator_policy_remains_multistart',
+        'tests/test_sequential_map_covariance.py::test_terminal_fit_attempt_cap_is_enforced',
+        'tests/test_sequential_map_covariance.py::test_terminal_fit_attempt_cap_must_be_positive',
+    ),
+)
 TEST_GROUPS = {
+    **{f"posterior_residency_observer_{device}": (
+        "tests/test_filter_repair_posterior_residency.py::test_posterior_residency_observer_retention_control",)
+        for device in ("cpu", "gpu")},
+    **{f"sequential_public_{case}_{device}": (
+        f"tests/test_filter_repair_sequential_public.py::test_public_original_records_and_target_order[{case}]",)
+        for case in ("terminal", "terminal_reject", "symmetric", "recenter", "fit_reject",
+            "factor_one", "factor_two", "factor_two_reuse", "stationary_budget", "moving_budget",
+            "nonfinite", "paired", "scaled_search", "score_disabled", "resolvable", "scalar_locator",
+            "batched_locator", "locator_budget") for device in ("cpu", "gpu")},
+    **{f"sequential_public_edges_{device}": (
+        "tests/test_filter_repair_sequential_public.py", "-k", "not original_records")
+        for device in ("cpu", "gpu")},
+    **{f"sequential_public_consumers_{index}_{device}": targets
+        for index, targets in enumerate(SEQUENTIAL_PUBLIC_CONSUMERS, start=1) for device in ("cpu", "gpu")},
+    **{f"sequential_public_consumers_factor_{device}": ("tests/test_factor_correlation_geometry.py",)
+        for device in ("cpu", "gpu")},
+    **{f"sequential_public_consumers_boundary_{device}": ("tests/test_filter_repair_locator_frozen.py",
+        "tests/test_filter_repair_lifecycle_original.py::test_original_full_lifecycle_records_and_target_order[symmetric]")
+        for device in ("cpu", "gpu")},
     **{f"posterior_residency_{primed}_{dimension}_{device}": (
         f"tests/test_filter_repair_posterior_residency.py::test_posterior_startup_and_reuse_residency[{primed}-{dimension}]",)
         for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -798,21 +867,12 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"posterior_residency_observer_{device}":
+        "Retained mapping-observer allocation control with no numerical calls between snapshots; cannot waive numerical or cost gates."
+        for device in ("cpu", "gpu")},
     **{f"posterior_residency_{primed}_{dimension}_{device}":
         "First-XLA startup and reuse residency attribution; complete original public numerical/cost groups remain mandatory."
         for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
-    **{f"posterior_residency_{primed}_{dimension}_{device}": (
-        f"tests/test_filter_repair_posterior_residency.py::test_posterior_startup_and_reuse_residency[{primed}-{dimension}]",)
-        for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
-    **{f"sequential_controller_{case}_{device}": (
-        f"tests/test_filter_repair_sequential_controller.py::test_complete_original_records_and_target_order[{case}]",)
-        for case in ("terminal", "terminal_reject", "symmetric", "recenter", "fit_reject",
-            "factor_one", "factor_two", "factor_two_reuse", "stationary_budget", "moving_budget",
-            "nonfinite", "paired", "scaled_search", "score_disabled", "resolvable", "scalar_locator",
-            "batched_locator", "locator_budget") for device in ("cpu", "gpu")},
-    **{f"sequential_controller_edges_{device}": (
-        "tests/test_filter_repair_sequential_controller.py", "-k", "not complete_original")
-        for device in ("cpu", "gpu")},
     "initializer_native_residual_cpu":
         "Rejected residual-correction diagnostic candidate; mandatory initializer_native original-record groups retain the unmodified runtime gate.",
     "initializer_native_lstsq_cpu":
@@ -946,6 +1006,13 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"sequential_public_{device}": tuple(f"sequential_public_{case}_{device}" for case in
+        ("terminal", "terminal_reject", "symmetric", "recenter", "fit_reject", "factor_one", "factor_two",
+         "factor_two_reuse", "stationary_budget", "moving_budget", "nonfinite", "paired", "scaled_search",
+         "score_disabled", "resolvable", "scalar_locator", "batched_locator", "locator_budget", "edges"))
+        for device in ("cpu", "gpu")},
+    **{f"sequential_public_consumers_{device}": tuple(f"sequential_public_consumers_{group}_{device}"
+        for group in (1, 2, 3, 4, 5, 6, "factor", "boundary")) for device in ("cpu", "gpu")},
     **{f"posterior_residency_{device}": tuple(f"posterior_residency_{primed}_{dimension}_{device}"
         for primed in (False, True) for dimension in (3, 5)) for device in ("cpu", "gpu")},
     **{f"sequential_controller_{device}": tuple(f"sequential_controller_{case}_{device}" for case in
@@ -1182,6 +1249,9 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "posterior_residency_observer_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["sequential_public_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["sequential_public_consumers_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["posterior_public_gpu"]},
     "posterior_public_regression_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["posterior_residency_gpu"]},

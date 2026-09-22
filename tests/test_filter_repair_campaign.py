@@ -340,7 +340,8 @@ def test_matrix_test_failure_stops_remaining_groups(tmp_path, monkeypatch):
 def test_test_roles_exclude_only_reviewed_explanatory_jobs():
     driver = load("run_filter_repair_campaign")
     assert set(driver.EXPLANATORY_TEST_GROUPS) <= set(driver.TEST_GROUPS)
-    assert all(driver.EXPLANATORY_TEST_GROUPS.values())
+    assert all(isinstance(reason, str) and reason.strip()
+        for reason in driver.EXPLANATORY_TEST_GROUPS.values())
     required = set(driver.mandatory_test_groups())
     assert not required.intersection(driver.EXPLANATORY_TEST_GROUPS)
     assert required | set(driver.EXPLANATORY_TEST_GROUPS) == set(driver.TEST_GROUPS)
@@ -349,6 +350,16 @@ def test_test_roles_exclude_only_reviewed_explanatory_jobs():
     assert set(driver.TEST_BATCHES["initializer_native_gpu"]) <= required
     assert set(driver.TEST_BATCHES["posterior_public_cpu"]) <= required
     assert set(driver.TEST_BATCHES["posterior_public_gpu"]) <= required
+    assert set(driver.TEST_BATCHES["sequential_controller_cpu"]) <= required
+    assert set(driver.TEST_BATCHES["sequential_controller_gpu"]) <= required
+    assert set(driver.TEST_BATCHES["sequential_public_cpu"]) <= required
+    assert set(driver.TEST_BATCHES["sequential_public_gpu"]) <= required
+    assert set(driver.TEST_BATCHES["sequential_public_consumers_cpu"]) <= required
+    assert set(driver.TEST_BATCHES["sequential_public_consumers_gpu"]) <= required
+    for device in ("cpu", "gpu"):
+        boundary = driver.TEST_GROUPS[f"sequential_public_consumers_boundary_{device}"]
+        assert "tests/test_filter_repair_lifecycle_original.py::test_original_full_lifecycle_records_and_target_order[symmetric]" in boundary
+        assert not any("test_filter_repair_lifecycle_actual.py" in target for target in boundary)
     assert {"factor_domain_runtime", "factor_guard_qualification", "factor_guard_cpu_fixed",
         "factor_guard_cpu_padded", "factor_guard_cpu_domain", "factor_guard_resource_lifetime",
         "factor_guard_gpu_lifetime", "active_cod_runtime", "padded_factor", "factor_runtime_inputs",

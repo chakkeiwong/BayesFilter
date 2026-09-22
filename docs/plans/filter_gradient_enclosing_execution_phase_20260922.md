@@ -1,13 +1,15 @@
 # Additional repair phase: complete execution boundaries and ownership
 
-Current execution through02812: posterior public qualification passes135 CPU /
-135 GPU checks. All18 repeated CPU public cost workers pass; cold startup and
-host-RSS investigation triggers remain open. GPU cost preflight declined before
-worker launch because of contention. See
-[complete posterior result](filter_gradient_posterior_public_result_20260922.md).
-The initializer remains internal while healthy original strict-decision parity
-fails. Next is the sequential public enclosure unit reviewed below; E4--E6,
-ordered blocks and all terminal finding dispositions remain open.
+Current execution: posterior public qualification passes135 CPU/135 GPU checks,
+and its matched CPU/GPU costs plus residency/control study are complete. Cold
+startup/native residency investigations remain open. Sequential public integration
+passes23 CPU/23 GPU original/boundary checks and56 existing CPU consumer checks;
+GPU consumer renewal passes56 checks;43 block-coordinate consumer checks
+pass on each device through02943. See the posterior and sequential public result
+notes. The initializer remains internal while healthy original strict-decision
+parity fails. The next reviewed implementation is E4 scoped dependency ownership,
+after the public sequential consumer checkpoint. Ordered blocks, actual DZ5
+supervision, terminal costs and all finding dispositions remain open.
 
 The owner requests execution of this phase after the diagnosis checkpoint
 `ca920bac5`. It extends the existing master campaign; cumulative caps remain
@@ -1064,3 +1066,210 @@ memory trigger fires. CPU and GPU cohorts have distinct harness source hashes
 because of the recorded scope repair; each cohort is internally matched and
 analyzed separately, with no cross-device timing ranking. Failed02833 remains
 preserved. Public cost tranche usage is37/38 workers, including that failure.
+
+
+Recovery review after pushed48acf5e96:02854--02872 pass all23 native sequential
+GPU original/boundary checks on GPU2, including the external frozen-derivative
+regression. The native tranche has used40/48 workers. Public wiring remains
+pending. During the terminal-program review, accidental test-registration
+blocks were found inside EXPLANATORY_TEST_GROUPS: they exempted the sequential
+correctness matrices and replaced residency explanations with tuples. Remove
+these copies, retain only the reviewed residency explanations, and require
+nonempty explanation strings plus mandatory CPU/GPU sequential matrices in the
+runner regression. This changes terminal classification only; the completed
+source-frozen GPU comparisons remain valid. No terminal gate was passed using
+the erroneous list. Run the policy group before the already-reviewed eight
+posterior residency workers. The original strict numerical criteria, GPU
+selection, source freeze and cumulative caps remain unchanged.
+
+02873 passes all127 policy/controller/provenance checks after the classification
+repair.02874--02877 CPU and02878--02881 GPU each pass four residency cases,
+including3000 alternating-input complete public calls and original records.
+All Python graph weakrefs release. The minimal XLA control adds about64MiB CPU
+and71MiB GPU; substantial endpoint compilation residency remains afterward.
+The roughly1.6--1.8MiB reuse growth is confounded by retained mapping reports:
+each snapshot stores456 per-file/category records. Use the two remaining slots
+in the existing10-worker/2400-second residency tranche for explicit CPU/GPU
+observer controls with eight snapshots and zero intervening numerical calls.
+This is an explanatory extension inside the same count/seconds/global limits,
+not a numerical criterion change. Preserve complete original comparison after
+observation. Compare the scale of observer growth; do not infer leak freedom
+or native eviction, and do not use the diagnostic for performance ranking.
+
+
+Public sequential integration review, following the native GPU matrix: replace
+only the public numerical body with the qualified native owner and completed
+reporter. Retain the public signature, input validation, result types and
+initializer_started event. Subsequent progress is delivered after the enclosing
+call; no live interruption semantics are claimed. E5 actual-consumer telemetry
+and independent deadlines remain promotion requirements.
+
+The original3582b4ac complete records and strict decisions remain authoritative.
+Call-order and complete progress records must match on18 original cases per
+device. Add public-call wiring, changing-input owner reuse, completed-only event
+delivery, input/no-target, overflow/no-partial-event, no-eager-retry and frozen
+external-derivative checks. Existing test injections must move to the executed
+native fit boundaries while preserving their transactional assertions. Their
+synthetic identity and rejected-first/accepted-second fit fixtures are unchanged;
+the latter uses actual factor admission on controlled native fit tensors. A
+legacy lifecycle comparison receives its report-only mass import explicitly.
+
+Run every existing sequential and factor geometry test on CPU/GPU, splitting
+CPU test modules at fixed test boundaries to avoid the separately documented
+many-signature executable-map exhaustion. No case or assertion is omitted.
+The public-integration tranche allows64 workers and7200 charged seconds within
+the unchanged32/52-hour caps,300-second focused jobs and900-second bounded
+consumer groups. At most three localized retries per unchanged fixture;
+stop the affected arm on unexpected records, call-count mismatch, overflow,
+unsupported callback, provenance failure or exhausted budget. Native and public
+original-record groups remain mandatory. Independent residency probes cannot
+waive their numerical gates. Complete costs, ordered blocks and E4/E5 remain.
+
+The reviewed draft removes the outer Python controller and expands the partial
+source guard to the entire public module. Its seven exact iteration exceptions
+cover four immutable configuration validations, one completed-result validation
+and two JSON formatting nodes. None permits a numerical loop, NumPy or a
+non-XLA runtime fallback. Host serialization is still outside the XLA call.
+
+Skeptical review found accidental copies of test-registration blocks inside the
+explanatory-only dictionary. Remove those entries; only the residency groups
+retain their explicit explanatory roles. Require nonempty string explanations
+and assert that both sequential correctness matrices belong to mandatory gates.
+This repairs terminal classification, not numerical evidence. The earlier GPU
+matrix still executes the same source-frozen numerical tests. No main merge or
+campaign completion is authorized by component counts or current-source parity.
+
+02882/02883 observer controls pass. Merely retaining eight snapshots adds
+1.35MiB CPU/1.43MiB GPU with no intervening numerical call. This explains much
+of the scale of small reuse growth but is not a complete allocator attribution.
+See posterior-residency-analysis-02883.json and its saved analysis script. The
+ten-worker residency tranche is complete; cold endpoint residency and native
+signature-churn concerns remain open. Proceed to the reviewed public sequential
+qualification with the same runner prefix and original numerical authority.
+
+Public boundaries02884 pass all five checks. Consumer group02885 passes its
+five original integrated policies/transactional cases. Before the factor
+consumer run, source review confirms the old synthetic first-fit fixture
+omitted all best_exact_* fields, deliberately suppressing fit-cloud incumbent
+promotion. Preserve that same fixture at the newly separated native preparation
+boundary by clearing its test-only best_index, leaving target evaluations and
+fit arrays unchanged. All original escalation/acceptance assertions remain.
+This test adapter change requires fresh source-qualified public/consumer gates;
+no numerical runtime or criterion changes.
+
+02887--02905 pass all23 public CPU original/boundary checks;02886 passes12
+factor consumer checks and02906--02911 pass every existing sequential consumer
+case.02912 passes the three frozen-locator checks but fails its added lifecycle
+case against cfbc32d2: an intermediate eigensystem error already disqualifies
+that checkpoint as precision authority. The registration mistakenly reintroduced
+the retired diagnostic as a new mandatory alias, despite the existing explicit
+original-authority replacement ledger. Correct this group's exact test path to
+test_filter_repair_lifecycle_original, which reuses the same fixture, call logs
+and materializer against3582b4ac. Add an exact-path regression preventing this
+reference error. Preserve02912 and change no runtime, fixture, assertion or
+numerical tolerance. The completed full-public3582b4ac cases remain valid.
+Retry only the affected boundary group and policy checks before GPU renewal;
+CPU groups span this recorded harness-only reference correction. Terminal E6
+still requires its final source-frozen campaign gates.
+
+CPU sequential qualification through02914 is23 public original/boundary checks,
+56 existing sequential/factor/frozen/lifecycle consumer checks and127 policy
+checks. GPU public renewal has started with sources frozen. Remote main is now
+89065bc6354801cb368d5e163ba49fd9c4372d10. Path overlap grows from two to six:
+.gitignore, highdim/c2_gaussian_hermite_proposal_tf.py, inference/hmc_warmup.py,
+nonlinear/experimental_batched_svd_sigma_point_tf.py, the C2 frozen-target
+stage2 benchmark and tests/test_genut_neutra_targets.py. Reconcile both intentions
+and rerun affected checks during E6; no merge has been attempted.
+
+Upstream overlap inspection: the C2 Hermite source adds a bidirectional
+incomplete-Gram KR route and batched ellipsis contractions, with a new Python
+axis loop in that route. Preserve its mathematical operation while routing its
+recurrence through the repaired tensor implementation during E6. Upstream
+deletes the old GenUT target test module; inspect whether replacement tests
+retain this campaign's unsupported-claim checks before resolving that deletion.
+The .gitignore change fixes literal-brace parsing and adds artifact patterns;
+it must not hide this campaign's required receipts. These are integration
+review items, not already qualified repairs.
+
+
+E4 scoped dependency ownership review (next implementation after public E3):
+the sequential root keeps one owner, but callback-bearing lru_cache entries in
+locator/replay/search/evaluation, score fitting, terminal/refinement, proposals
+and lifecycle retain displaced callbacks independently. Clearing the root alone
+cannot release them; global cache clearing after every call destroys reuse and
+does not release native XLA executables.
+
+Introduce a configuration-time dependency scope for construction/tracing of
+one complete owner. Callback-bearing factories consult that scope rather than
+their standalone compatibility LRU. Its memo stores the exact factory/signature
+and graph object only while the owner is retained. Standalone callers keep
+their existing bounded cache semantics. Build/trace the complete root inside
+the scope so lazy factory calls cannot escape into global caches. Numerical
+calls never mutate the scope or run a Python numerical recurrence. ContextVar
+isolation prevents cross-thread construction from mixing target identities;
+the existing serialized invocation protects the private locator resources.
+Shape-only factories and callers' external caches are distinct ownership.
+
+Qualify actual scalar/batched/factor public owners: same-signature reuse,
+different callback identities, concurrent scope construction, root eviction,
+weakrefs for callbacks/root/dependency graphs, and continued execution of a
+retained compiled handle. Run changed-input original full records and compare
+numerical/callback decisions unchanged. Track Python collection separately from
+native RSS/PSS/allocator/mappings; no native eviction claim follows. Existing
+standalone factories' cache_info/cache_clear compatibility must remain. Trace
+moves into construction and must remain included in total cold public costs.
+
+First add focused construction/cache tests, then actual CPU/GPU lifetime and
+original-record checks. A further24-worker/3600-second unit with300-second jobs
+is inside the existing cumulative caps; stop an affected arm for callback
+retention after final owned-handle release, stale target reuse, changed
+numerical records, scope leakage across threads, missing provenance or budget
+exhaustion. This is not authority to run many-signature stress toward the known
+mapping ceiling. Extend the scope to other callback-owning roots only after
+source tracing identifies the same ownership issue. Ordered blocks, external
+consumers, native residency and terminal costs remain independent gates.
+
+Focused qualification allocation: one pure scope/concurrent-construction group,
+three isolated lifetime cases on each device (symmetric terminal, factor and
+buffered multistart), one distinct-curvature callback-identity group per device,
+and original public renewal for terminal, factor_one, factor_two, scalar_locator,
+batched_locator and moving_budget on each device. Finish the five public
+boundary/reuse checks on each device and the policy group:24 workers total.
+The original18-case public qualification precedes this ownership-only change;
+terminal final-source E6 renewal remains mandatory. Use existing numerical
+checks through public entrypoints; no solver or comparison thresholds change.
+
+Skeptical implementation review: retaining the memo after tracing would keep
+its factories alive through the endpoint owner, which is intentional. A retained
+raw compiled handle instead owns just its captured dependencies; collection is
+required only after all explicit handles and the root cache are released. Weak
+references must not themselves close over the target. Save lifetime observations
+before asserting, so failure evidence survives. A successor with different
+curvature must demonstrate that callback identity is respected; different object
+IDs alone cannot detect stale numerical graphs. Thread isolation is checked with
+concurrent non-numerical construction and exception restoration; numerical GPU
+workers remain sequential. The factory wrapper keeps cache_info/cache_clear and
+__wrapped__ compatibility for standalone diagnostic callers. No global cache
+sweep or TensorFlow-native executable-eviction claim is introduced.
+
+Recovery review before E4 execution: the scoped factories preserve their existing
+standalone bounded LRU signatures; shape-only caches do not retain user callbacks.
+The complete root is traced inside its owner scope, including lazy nested factory
+calls. The existing lock still serializes recorder resources. Construction-time
+tracing belongs in cold timing and cannot justify excluding work from the costs.
+The cache test must save lifetime observations before asserting collection and
+must execute both a retained old handle and a different-curvature successor.
+No numerical tolerance, solver, threshold or target signature changes are allowed.
+The only in-repository runtime caller of the public sequential API is the ordered
+block controller; renew its existing CPU/GPU consumer group before this checkpoint.
+Its comparator pins3582b4ac wrappers/locator while sharing lower geometry; this
+qualifies consumer compatibility, not the unrepaired outer block execution.
+
+Public sequential checkpoint02943: all23 original/boundary,56 existing sequential/
+factor and43 block-consumer checks pass on each device.127 policy checks pass.
+Runtime hashes match throughout the qualification receipt; the documented retired-
+reference registration correction remains visible. The public tranche used60
+workers and2400.59 seconds, within64/7200. Guard/Ruff/whitespace pass. Main stays
+unmerged. Cumulative charges are58806.37658377485 CPU/58347.8351811944 GPU seconds.
+Proceed with the reviewed24-worker/3600-second E4 scope unit. The result covers
+Python callback ownership and unchanged numerical behavior, not native eviction.

@@ -72,8 +72,7 @@ def _normalize_events(events):
     return events
 
 
-@pytest.mark.parametrize('case', CASES)
-def test_complete_original_records_and_target_order(case, request):
+def check_complete_original_records_and_target_order(case, request, *, use_public=False):
     raw_scalar, raw_batch, raw_locator, cfg, starts, scale = fixture(case)
     dimension, start_count = int(starts.shape[1]), int(starts.shape[0])
     calls = tf.Variable(0, dtype=tf.int64, trainable=False)
@@ -104,19 +103,30 @@ def test_complete_original_records_and_target_order(case, request):
     calls.assign(0)
     points.assign(tf.zeros_like(points))
     search_count = public.dimension_scaled_search_count(dimension) if cfg.dimension_scaled_search else cfg.search_sample_count
-    owner = native.SequentialController(scalar, batched, locator, start_count, dimension, cfg,
-        search_count, progress=True, device=starts.device)
-    computed = owner(starts, scale)
     after_events = []
-    after = sequential_result(computed, cfg, start_count, dimension, after_events.append).payload()
+    if use_public:
+        after = public.estimate_sequential_map_covariance(scalar, starts,
+            batched_value_and_score_fn=batched, batched_locator_value_and_score_fn=locator,
+            scale=scale, config=cfg, progress_callback=after_events.append).payload()
+        # Obtain the exact public owner: identity check below ensures this is
+        # the compiled function invoked by the endpoint, not a parallel factory.
+        owner = native._LAST_CONTROLLER[4]
+        assert native._LAST_CONTROLLER[:3] == (scalar, batched, locator)
+    else:
+        owner = native.SequentialController(scalar, batched, locator, start_count, dimension, cfg,
+            search_count, progress=True, device=starts.device)
+        computed = owner(starts, scale)
+        after = sequential_result(computed, cfg, start_count, dimension, after_events.append).payload()
     report = {'case': case, 'before': before, 'after': after,
         'before_events': before_events, 'after_events': after_events,
         'before_calls': before_calls, 'after_calls': int(calls),
         'before_points': before_points, 'after_points': points[:int(calls)].numpy().tolist(),
         'reference': '3582b4ac', 'frozen_source_sha256': checkpoint.hashes(),
-        'scope': 'Complete original public endpoint versus enclosing native candidate, including final mass and reporting',
+        'scope': ('Complete original versus actual public endpoint' if use_public else
+            'Complete original public endpoint versus enclosing native candidate'),
+        'includes': 'Final mass, full reporting, progress and target order',
         'nonclaims': ['Deferred progress does not preserve live callback interruption.',
-            'Internal endpoint comparison does not establish public wiring or consumer qualification.']}
+            'Endpoint qualification does not establish external consumer telemetry/deadlines.']}
     path = Path(request.config.getoption('xmlpath')).parent / f'sequential-controller-{case}.json'
     with path.open('x') as out:
         json.dump(report, out, indent=2)
@@ -127,6 +137,11 @@ def test_complete_original_records_and_target_order(case, request):
     np.testing.assert_allclose(points[:int(calls)], before_points, atol=1e-10, rtol=1e-10)
     assert owner.compiled.get_concrete_function().function_def.attr['_XlaMustCompile'].b
     assert owner.compiled.experimental_get_tracing_count() == 1
+
+
+@pytest.mark.parametrize('case', CASES)
+def test_complete_original_records_and_target_order(case, request):
+    check_complete_original_records_and_target_order(case, request)
 
 
 def test_changed_inputs_reuse_compiled_controller_and_hlo(request):
