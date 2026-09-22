@@ -407,6 +407,28 @@ repair and fresh-verification procedure. Arbitrary transport callbacks without
 a supported reconstruction are rejected. Changing a map changes the scope;
 receipts or chain states from different maps are never pooled.
 
+Positive funnel tuning tests assume a supplied frozen whitening or partially
+whitening map. Learning a useful map is a separate preparation problem.
+For the model $v\sim\mathcal N(0,\sigma^2)$ and
+$x_i\mid v\sim\mathcal N(0,e^v)$ with two children, the exact map
+$v=\sigma z_0$, $x_i=e^{v/2}z_i$ has log determinant
+$\log\sigma+v$. Substitution in the transformed density cancels both
+conditional scale terms and gives three independent standard normals.
+This provides an algebraic control without assuming that a learner discovers
+the map. A partial map $x_i=e^{s(v)}z_i$ instead leaves conditional standard
+deviation $e^{v/2-s(v)}$ in the latent coordinates; it tests tuning with known
+residual curvature.
+
+The untransformed centered funnel remains a stress test for bounded search and
+honest numerical rejection. An empty candidate set there does not by itself
+establish a tuning defect. For a supplied map, tuning searches the declared
+step sizes and trajectory lengths in the frozen coordinates and independently
+verifies every survivor. A finite search need not succeed for every imperfect
+map. Comparisons at common model starts must apply the inverse chart and
+inverse map before passing latent starts to the tuner, then check the forward
+roundtrip. Posterior precision and exploration in the original model remain
+separate from candidate qualification.
+
 \lstinputlisting[language=Python,caption={Fixed-transport candidate-set tuning.},label={lst:bf-hmc-tuning-fixed-transport}]{examples/hmc_tuning_fixed_transport.py}
 
 \section{Typed deterministic proposal-field mechanics}

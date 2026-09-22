@@ -137,6 +137,24 @@ def initial_starts(target, regime):
     return starts
 
 
+def fixed_transport_starts(transport, adapter_starts):
+    """Convert declared base-adapter starts to the public tuner's latent bank."""
+    from bayesfilter.inference.neutra_artifacts import (
+        FrozenAffineDiagonalTransport, FrozenDenseIAFTransport,
+    )
+    if isinstance(transport, FrozenAffineDiagonalTransport):
+        latent = (adapter_starts - transport.shift) / transport.scale
+    elif isinstance(transport, FrozenDenseIAFTransport):
+        latent = transport.inverse_theta_to_z_batch(adapter_starts)
+    else:
+        raise TypeError("validation requires a supported reconstructed transport")
+    tf.debugging.assert_all_finite(latent, "nonfinite inverse-mapped starts")
+    tf.debugging.assert_near(transport.forward_batch(latent), adapter_starts,
+                             atol=2e-11, rtol=2e-11,
+                             message="frozen transport start roundtrip failed")
+    return latent
+
+
 def selected_member_ids(design, candidates):
     """Predeclared choice based on tuning records alone, never posterior output."""
     rows = [(c.candidate_id, c.leapfrog_steps) for c in candidates]
@@ -292,8 +310,17 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
             from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact
             transport = load_frozen_neutra_artifact(payload,
                 expected_target_signature=target.adapter_signature()).transport
+            latent_starts = fixed_transport_starts(transport, starts)
+            write_json(root / "start_coordinates.json", {
+                "schema": "bayesfilter.validation_transport_starts.v1",
+                "supplied_to_tuner": "latent", "target_signature": target.adapter_signature(),
+                "adapter_starts": starts.numpy().tolist(),
+                "model_starts": target.to_model(starts).numpy().tolist(),
+                "latent_starts": latent_starts.numpy().tolist(),
+                "forward_roundtrip_checked": True,
+            })
             run = tune_fixed_transport_hmc_kernel(base_adapter=target, fixed_transport=transport,
-                initial_position=starts, config=FixedTransportHMCKernelTuningConfig(initial_step_size=design.step_size,
+                initial_position=latent_starts, config=FixedTransportHMCKernelTuningConfig(initial_step_size=design.step_size,
                     leapfrog_grid=design.l_grid,use_xla=design.device=="gpu",target_scope="inference_validation"),
                 frozen_transport_payload=payload, search_config=search,execution_config=execution,
                 output_dir=tuning_path, **common)

@@ -1,5 +1,58 @@
 # HMC repair master program
 
+## September 22 scope correction: supplied funnel whitening
+
+The owner's clarified positive-test premise is a supplied frozen whitening or
+partial-whitening map. The [reviewed continuation](bayesfilter-hmc-supplied-whitening-plan-2026-09-22.md)
+supersedes requirements below to repair the centered funnel through ordinary
+epsilon/L search. Preserve that case as a numerical-failure/search stress test.
+The active tuning question is target-correct search, independent verification
+and complete candidate retention in the supplied coordinates. Learned-map
+quality is separate upstream work, not a tuning-repair completion gate.
+
+The remaining gaps are: residual curvature and search with supplied maps;
+member-specific posterior precision and global exploration; warmup/MCSE/stopping
+calibration; validation false-positive rate and subtle-defect power; exact
+MacroFinance execution/reference and bounded backend recovery; and current-source
+integration, GPU coverage and measured maintenance. M23 learned-map quality
+remains separately open. Existing scientific failures are not reclassified as
+successes by this scope correction.
+
+M20's [supplied-map tranche is complete](bayesfilter-hmc-supplied-whitening-result-2026-09-22.md).
+The harness now inverse-maps base starts before calling the latent-coordinate
+API, and 80 distinct checks pass. Ten current-source fits cover an exact map
+and two analytic partial maps at matched physical starts. Both exact-map seeds
+retained verified candidates. Both partial maps required the one declared
+intermediate-epsilon follow-up, then retained verified members in both seeds.
+All 24 verified members remain recorded. The selected exact-map posteriors
+missed the model-mean precision request; the selected partial-map posteriors
+failed proposal-health checks. None is a successful posterior result.
+
+This closes the supplied-map/start-coordinate engineering cell. Residual
+geometry, automatic search coverage, member-specific posterior usability and
+GPU/XLA evidence remain separate. The official book and agent reference are
+updated and the rendered book checked. Tranche cost is 1568.334463 CPU seconds,
+zero GPU seconds, within the 3600-second ceiling. The 1800-second transfer
+from M23 to M20 is reflected below. The temporary additional-worker exception
+has ended. The live M21/M22 source, inventories and denominators remain frozen.
+
+Next, finish/audit the running M21 fixed inventory, keeping failed fits and caps
+in its denominator. Use saved partial-map failures to diagnose residual
+curvature before declaring a new map scope or unchanged-map sibling posterior
+study; this tranche ends after its declared grid follow-up. Plan
+precision in model-quantity units after the estimator/stopping calibration
+result. GPU repetitions wait for permitted capacity; exact MacroFinance
+integration requires its matching inputs/reference. Neither untransformed-funnel
+success nor successful map training is required to complete supplied-map tests.
+
+The [M22 null confirmation](bayesfilter-hmc-repair-m22-null-result-2026-09-22.md)
+has now completed and passed its declared screen: 25/512 baseline and 19/512
+no-op rejections, all experiments valid, exact 95% upper endpoints 0.07124 and
+0.05735 (both below 0.10). All 1298 independent looks were audited. This closes
+the former interval-precision gap for that frozen Gaussian test only; subtle
+full-fit power and posterior stopping coverage remain open. M21's Gaussian and
+beta-binomial confirmation workers continue on their unchanged frozen source.
+
 ## Active continuation: M19--M24, September 22
 
 The owner has authorized integration with remote `main`, publication of the
@@ -37,8 +90,9 @@ The persistent service is `bayesfilter-hmc-confirmation-20260922-r2.service`.
 Its five-task queue permits at most two numerical workers, reserves 79800
 CPU worker-seconds and updates its ledger after every completed task. It has
 an outer 48000-second wall limit, derived from the longest planned two-worker
-schedule (45800 seconds) plus 2200 seconds for coordination/cleanup. Results
-remain pending; the service marks completion as requiring scientific review.
+schedule (45800 seconds) plus 2200 seconds for coordination/cleanup. M21 results
+remain pending; M22's completed null result is audited above. The service
+marks completion as requiring scientific review.
 The official book and agent/API reference have been reconciled and rebuilt.
 
 Completed old-source experiments retain their original identity. GPU
@@ -46,7 +100,8 @@ repetitions remain pending permitted idle capacity, rather than a hardware or
 numerical failure. The latest trusted probe still reports
 `no_idle_policy_permitted_gpu`. Completed numerical charges, including failed
 attempts and a disclosed 30-second unmeasured-test allowance, total
-12490.893982751644 CPU seconds before the live confirmation workers finish;
+20464.122419596788 CPU seconds at the supplied-map terminal snapshot, with
+69000 seconds reserved for uncompleted M21 jobs;
 no GPU worker time has been used in this continuation. The live ledger is
 `m21-r2/reconciliation-progress.json`; its uncompleted reservations are separate
 from remaining allowance. No statistical gap is closed merely by launch.
@@ -66,15 +121,13 @@ records the remaining fresh-MacroFinance-run requirement. Total extra charge is
 reservation. The temporary diagnostic-worker exception has ended. The live
 confirmation source remains frozen; its results cannot certify this later repair.
 
-1. M17 centered-funnel **preparation completed** on both devices. CPU search
-   measured eight pairs, while GPU search measured six. All were rejected;
-   the GPU primary pairs mostly failed at their first proposal stage. Calling
-   this an established preparation defect is wrong. Existing directional
-   repair cannot infer an acceptance direction from nonfinite evidence, and
-   failed-interval exploration requires a valid parent. First test a declared
-   smaller-epsilon grid under the same frozen geometry. If automated recovery
-   is needed, give proposal-only exploration its own recorded reason, finite
-   limits and fresh evidence; never fabricate an acceptance direction.
+1. M17 centered-funnel **preparation completed** on both devices; all measured
+   pairs were rejected. This is now stress evidence, not a requirement to make
+   ordinary search succeed. Supplied exact/partial-map tests and one bounded
+   intermediate-grid follow-up are complete above. Nonfinite proposals still
+   supply no acceptance direction. Residual partial-map posterior failures
+   require geometry/health diagnosis, not fabricated evidence, a relaxed
+   threshold or an unbounded additional search.
 2. M17 assessed only one identity-selected member per fit. A precision cap for
    that member does not establish failure of its siblings or of tuning. In the
    rotated Gaussian with angle 0.6 and covariance eigenvalues 1 and 100, the
@@ -140,10 +193,10 @@ charges include their host work and are not charged again as CPU workers.
 | Phase | Concrete work and completion criterion | CPU / GPU hours |
 | --- | --- | ---: |
 | M19 | Resolve the remote merge, test affected public/checkpoint/preparation/filter paths, publish without overwriting unrelated work; extract saved failure reasons and quantity-level precision; issue a reviewed M20 design | 2 / 0 |
-| M20 | Same-geometry epsilon exploration on the failed centered funnel; predeclare multiple member identities on rotated Gaussian and noncentered funnel; preserve GPU and fresh-geometry follow-up | 1 / 5 |
+| M20 | Preserve completed centered-coordinate stress evidence; now test supplied exact and partial maps, matched starts, fresh verification and model-coordinate replay under the September 22 scope correction | 1.5 / 5 |
 | M21 | Delayed-equilibration and warmup-cap fixtures; exact finite-bandwidth diagnosis and fresh estimator confirmation; then whole-fit stopped versus independent fixed-count intervals on merged source. Report coverage, caps and missing outcomes separately | 22 / 5 |
 | M22 | Fixed-size independent sequential null/no-op confirmation; complete-fit mutation activation/cost pilot and analytical power planning. Repeated whole-fit power remains under-budgeted unless a justified inventory fits; no smaller nonrejection substitutes | 12 / 4 |
-| M23 | Target-specific batched GPU transport training, freezing, public tuning and posterior checks on banana and separated mixture; first bind explicit stable graph signatures and verify real training batches exceed one. Keep untrained/affine comparators and global mixture checks. Failed mode exploration triggers training/coordinate diagnosis within this allocation | 4 / 5 |
+| M23 | Separate upstream work: target-specific batched GPU transport training, freezing, public tuning and posterior checks on banana and separated mixture; first bind explicit stable graph signatures and verify real training batches exceed one. Supplied-map tuning does not depend on this training result | 3.5 / 5 |
 | M24 | Exact MacroFinance input/reference inventory and matched integration if available; current-source model/route matrix, migration of useful legacy invariants, measured performance repair where warranted, official book/reference consistency and terminal reconciliation | 2 / 2 |
 
 All numerical phases begin with a measured cost pilot. M20 and M23 development
@@ -155,7 +208,7 @@ entire campaign attempting to make one confidence interval pass.
 
 | Remaining gap | Comparator and decisive evidence | Repair if the evidence fails |
 | --- | --- | --- |
-| Difficult geometry/search | M17 frozen geometry and starts with original versus declared smaller epsilon hypotheses; later fresh ordinary fits with exact target parity | Bounded same-L numerical exploration, or a checked reparameterization if geometry is the cause; reject invalid parents and independently verify every child |
+| Supplied geometry/search | Exact and partial supplied-map controls with matched physical starts, fixed latent mass, and independently checked target/score/Jacobian; centered geometry remains stress evidence | Diagnose residual curvature and finite search coverage; bounded same-map exploration only from eligible evidence. Improving the map is upstream work; independently verify every child |
 | Member precision | Identity-selected representatives at predeclared L values, common quantities and unchanged posterior policy; analytic or uncertainty-bearing reference | Diagnose lag dependence/trajectory and mass; report projected sample needs with uncertainty, then test a fresh member or geometry. No posterior-based deletion of tuning members |
 | Global modes | Both original mixture start regimes, known mode probability and transitions between modes; compare frozen affine and trained maps | Check map support/Jacobian and train with declared coverage of both modes; preserve global veto. Local acceptance/MCSE alone never closes this gap |
 | Burn-in and stopping | Exact stationary truth, deliberately remote starts, fixed-count independent chains and actual controller stops | Compare fixed-count MCSE calibration with stopping bias before changing an estimator or readiness rule; calibrate any proposed change on separate data |

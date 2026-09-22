@@ -33,6 +33,27 @@ The registry schema is `bayesfilter.hmc_tuning_capability_registry.v2`; the
 position-field runner schema is `bayesfilter.hmc_tuning_runner_binding.v2`.
 Import their constants rather than copying the strings.
 
+### Supplied whitening and difficult geometry
+
+Positive funnel tuning tests assume a frozen whitening or partial-whitening
+map. An exact noncentered chart is a useful analytic control; a supplied
+nonlinear map with known residual curvature tests partial whitening. Learning
+such a map is an upstream task with its own validation. Ordinary affine mass
+adaptation cannot remove a funnel's position-dependent conditional scale.
+An empty centered-coordinate search is a useful bounded-failure outcome, not
+by itself a defect in epsilon/L tuning or a requirement to extend the search
+until something passes.
+
+Use `tune_fixed_transport_hmc_kernel` for a supported frozen map, with its
+exact transformed density and score including the Jacobian. Its
+`initial_position` is in **latent coordinates**. To compare maps at identical
+model starts, apply the inverse coordinate chart and inverse map first, then
+check the forward roundtrip. Map changes require new tuning scopes and fresh
+verification. An imperfect map may leave no usable pair within the declared
+budget; record that residual-geometry outcome. All verified members remain
+retained, and convergence and precision in model quantities are assessed
+separately.
+
 ## Search, qualification, and retention
 
 1. Prepare and freeze the target, geometry, coordinate transform, four-chain
