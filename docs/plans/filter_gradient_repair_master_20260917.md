@@ -1,7 +1,7 @@
 # Complete filter and gradient execution repair
 
 Repair remains **incomplete** on `repair/filter-gradient-xla-validation-20260918`,
-continuing from pushed **4eda57f1**. The September 22 owner instruction replaces
+continuing from pushed **ea8357a48**. The September 22 owner instruction replaces
 GPU3-only scheduling. The driver now automatically selects an available
 non-desktop GPU, records its UUID and pins every matrix to that physical device.
 GPU1 drives the display and GPU0 runs the remote-desktop encoder; both roles
@@ -29,8 +29,13 @@ post-evaluation permutation/RNG boundary, public sequential outer lifecycle
 and ordered block-coordinate control remain open. So do matching GPU/public
 cost qualification, actual DZ5 consumers and independent parent deadlines,
 and final F01--F20 call-chain dispositions.
-The rejected ill-conditioned posterior precision comparison still fails its
-strict criterion; its proposed allowance remains pending and uninstalled.
+The owner-directed rejected posterior criterion is now qualified: **02622--02625
+pass 150 CPU/GPU posterior checks**, and **02626 passes 102 policy checks**.
+Ill-conditioning must be reported and the failed geometry must not be used.
+The discarded matrix's difference remains recorded; its entrywise equality and
+unfinished GPU reference are no longer blockers. The uninstalled 1e-8 proposal
+is superseded. Accepted-result comparisons and runtime thresholds are unchanged.
+See [rejection decision and validation](filter_gradient_rejected_dense_precision_decision_20260922.md).
 The partial static guard is not a repo-wide completion certificate. Cold
 compile/host-RSS and standalone warm-cost investigations remain unresolved.
 The signed-word repair also requires refreshed direction costs before terminal
@@ -44,12 +49,15 @@ Main stays unmerged until full qualification and remote integration/retesting.
 
 Audit **02620** inventories 2,988 working Python files / 2,987 parsed and one
 unchanged vendor-reference error. The partial guard passes at **213 sources /
-1,306 exact exceptions**. Charges through 02620 are **52,280.32015160784 CPU /
-49,321.5887504554 GPU seconds**, leaving about **17.48 CPU / 38.30 GPU
+1,306 exact exceptions**. Charges through 02626 are **52,437.52665588881 CPU /
+49,589.058448168376 GPU seconds**, leaving about **17.43 CPU / 38.23 GPU
 process-hours**. No worker is active. Next enclose the complete public execution and
 qualify matched GPU costs, including fresh direction costs after the integer
-portability repair. Full checkpoint: `gpu-selection-qualification-02620.json`
-in the shared campaign artifact root.
+portability repair. Checkpoints: `gpu-selection-qualification-02620.json` and
+`posterior-rejection-qualification-02626.json` in the shared campaign artifact
+root. Public posterior integration and complete endpoint qualification remain
+open. Historical pending-comparison statements below are superseded by the
+September 22 rejection decision.
 
 ## Previous preparation checkpoint
 

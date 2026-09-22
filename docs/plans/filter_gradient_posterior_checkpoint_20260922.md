@@ -1,5 +1,18 @@
 # Posterior curvature and shared solver checkpoint
 
+September 22 update through 02626: the owner-directed rejection criterion now
+passes 150 CPU/GPU posterior checks, one focused CPU check and 102 policy checks.
+Discarded ill-conditioned precision values remain diagnostic; correct rejection,
+failure reporting and no downstream use are required. The uninstalled tolerance
+proposal and unfinished GPU reference are superseded. Accepted-result checks
+remain unchanged. Shared COD GPU renewal also passed 311 checks in 02613--02619.
+Public posterior integration, costs and broader terminal work remain open.
+See [decision and validation](filter_gradient_rejected_dense_precision_decision_20260922.md).
+The unresolved-comparison and pending-renewal statements below describe the
+historical checkpoint before these updates.
+
+## Historical checkpoint through 02480
+
 This is partial execution-repair evidence on
 `repair/filter-gradient-xla-validation-20260918`, based on `96e15e9d`.
 The native fixed-center posterior controller is implemented and tested but is

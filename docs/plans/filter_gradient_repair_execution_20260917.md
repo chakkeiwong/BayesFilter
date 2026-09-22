@@ -11,6 +11,18 @@ Finite-program AD and manual JVPs remain diagnostic and keep their scalar.
 
 ## Active checkpoint and continuation
 
+September 22, through 02626: the owner's rejection criterion resolves the
+discarded ill-conditioned posterior precision comparison. The complete extras
+now include that fixture. All 150 posterior checks across CPU/GPU, one focused
+CPU case and 102 policy checks pass. Rejection and no-use checks include NaN
+poisoning and mutation tests; accepted records retain their original tolerances.
+No runtime or allow-list change was required. The proposed 1e-8 allowance and
+unfinished GPU reference are superseded. See [decision and validation](filter_gradient_rejected_dense_precision_decision_20260922.md).
+The master/resume/ledger record the remaining public integration and terminal
+work. Main remains unmerged. Subsequent sections preserve earlier checkpoints.
+
+## Previous dense and uniform checkpoint
+
 Pushed415eaa8f qualifies the dense spectral repair and owner-approved huge-scale
 comparison. Through02244,296 focused numerical/derivative/consumer/policy checks
 pass, and36 fresh dense cost workers preserve all records. D5 warm-time triggers

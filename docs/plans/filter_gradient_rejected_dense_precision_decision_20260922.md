@@ -1,4 +1,114 @@
-# Rejected dense precision comparison proposal
+# Rejected dense precision: rejection is the required behavior
+
+Owner decision, September 22: when the existing conditioning gate rejects a
+fit, report the failure and prevent use of its geometry. Numerical equality of
+the discarded diagnostic precision is not an admission criterion. This
+supersedes the historical tolerance proposal below; no tolerance allowance is
+being installed and a high-precision GPU reference for that discarded matrix
+is no longer required for this execution repair.
+
+The existing original, graph and XLA routes already reject the D3 fixture at
+the fit stage: rank 2 rather than 3, infinite design condition, accepted=false,
+status `curvature_fit_rejected`, and null public precision/covariance/factor.
+The original record retains the separately approved deficient-rank condition
+normalization; its raw retained-subspace condition is about 1.17e8.
+The implementation gate and its 1e6 design-condition limit remain unchanged.
+The engineering question is whether every route reports that same rejection
+and prevents the failed fit from reaching consensus, audit, factorization or
+proposal evaluation. Accepted and well-conditioned computations keep their
+existing numerical checks.
+
+Pre-execution review: requiring 1e-10 entrywise agreement for an unusable
+precision matrix tests an unstable diagnostic, not the rejection behavior.
+Conversely, simply skipping the failing assertion could hide an accepted bad
+fit, a changed rank/condition decision, lost records, or a downstream use.
+The replacement must check exact rejection status, rank and failure stage,
+null public geometry, unchanged callback/row accounting and all remaining
+record fields. It may omit value comparison only for
+`diagnostics.replicates[0].precision_z` in this rejected fixture, while retaining
+its complete diagnostic record and schema. Mutation tests must reject accepted
+or well-conditioned records, exposed geometry, changed rank/status/accounting,
+and missing or malformed diagnostic matrices. A poisoned-fit execution check
+must confirm that discarded values cannot advance any later phase.
+
+Use the original 3582b4ac record on identical inputs within each CPU/GPU run.
+No equality is claimed between different CPU/GPU-generated design bytes.
+Run the registered deficient-design and new rejection-contract checks on CPU
+and an available GPU, then the complete posterior extras (including the newly
+resolved case) and accepted original D3 records. Use the existing campaign
+driver, one worker, verified memory growth, unique numbered output directories,
+120/300-second job limits and remaining 32 CPU / 52 GPU-hour cumulative caps.
+Runtime/tests/driver stay frozen during every worker. Any changed acceptance,
+failure stage, usable output, callback count or unrelated numerical field
+fails this criterion. No public XLA switch or terminal completion follows from
+this bounded test repair. Record the raw matrix difference as explanatory
+evidence rather than a promotion veto; preserve all previous failures.
+
+## Validation and decision
+
+The rejection criterion passes on CPU and GPU2. The complete extras group now
+includes the formerly excluded ill-conditioned case. No runtime implementation,
+conditioning threshold, accepted-result tolerance, or numerical-loop/NumPy
+allow-list entry changed.
+
+| Run | Check | Result | Process seconds |
+| --- | --- | --- | ---: |
+| 02621 | Focused CPU ill-conditioned fixture, graph and XLA | 1 passed | 10.241 |
+| 02622 | Complete CPU posterior extras | 58 passed | 46.665 |
+| 02623 | Complete GPU posterior extras | 58 passed | 97.574 |
+| 02624 | Original D3 complete CPU records | 17 passed | 91.565 |
+| 02625 | Original D3 complete GPU records | 17 passed | 169.896 |
+| 02626 | Campaign, source-policy and GPU-selection checks | 102 passed | 8.735 |
+
+All cases passed without failures, errors or skips. The 150 posterior checks
+cover independent Gaussian geometry, all three deficient designs, 38 mutations
+of the rejection boundary on each device, callback failures, ownership and
+complete accepted/rejected original D3 records. The additional focused CPU
+check repeats the critical fixture. Six poisoned-fit executions per device
+(graph/XLA with precision scales 1, 1e200 and NaN) retain exactly 21 callback
+batches and stop at the fit stage. No consensus, audit, reconstruction,
+normalization or proposal completion is reported; all usable geometry stays
+null. This checks execution isolation, not the numerical correctness of an
+ill-conditioned discarded fit.
+
+The original, graph and XLA records all report `curvature_fit_rejected`, rank 2,
+and no usable geometry. The actual records still preserve the discarded matrix.
+Its maximum absolute differences from the original are 2.912e-9 / 2.130e-9 for
+CPU graph/XLA and 4.120e-9 / 7.178e-10 for GPU graph/XLA. All four still fail the
+historical entrywise comparison. These are explanatory differences, not a claim
+that the discarded precision is accurate or equivalent. Every other field
+retains its original comparison, with numerical atol=rtol=1e-10 and exact
+discrete decisions/accounting. The zero/rank-one fixtures keep full numerical
+comparison, including their discarded matrices.
+
+All six workers used an identical recorded source closure, with one worker at a
+time and no runtime/test/driver edits during execution. CPU workers hid GPUs.
+GPU workers selected non-desktop GPU2,
+`GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba`, and verified memory growth before
+device initialization. The manifests record TensorFlow 2.19.1, TF32, environment,
+exact commands, source hashes and bounded wall times. Graph execution is an
+explicit reference arm. Focused Ruff and whitespace checks pass.
+
+The shared campaign root contains `posterior-rejection-qualification-02626.json`,
+its reproducible summary script, and every numbered manifest/log/full record.
+Historical failures 02378, 02415 and 02456 remain preserved. Cumulative charges
+through 02626 are 52,437.52665588881 CPU and 49,589.058448168376 GPU seconds,
+leaving 17.434 CPU and 38.225 GPU process-hours under the unchanged caps.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
+| --- | --- | --- | --- | --- | --- |
+| Resolve this rejected-matrix comparison blocker | Rejection, reporting, no usable outputs and no downstream execution pass on CPU/GPU | No changed accepted output, failure stage, accounting or unrelated field | Coverage is the declared rejected fixture and controlled poison cases | Keep these checks in full qualification; retire the uninstalled allowance/reference requirement | No general waiver for ill-conditioned accepted results or discarded-fit accuracy claim |
+| Keep the wider repair open | Focused posterior and policy checks pass | Public enclosure, costs, actual consumers and terminal evidence remain open | Complete production call chains and representative workloads | Continue the master program before integration and merge | No complete repair, posterior/HMC readiness or performance claim |
+
+Post-run primary-agent review: merely suppressing the numerical assertion would
+hide a behavior change. The strict rejection preconditions, mutation tests,
+poisoned executions and unchanged accepted-record comparisons address that risk.
+A changed rejection decision or any usable/downstream geometry would overturn
+this resolution. Small fixtures do not establish behavior for every consumer,
+and the public posterior endpoint remains unwired to the native controller.
+No independent reviewer was used for this bounded test-only criterion change.
+
+## Historical proposal — superseded, never installed
 
 Status: proposed, not installed. The mandatory1e-10 comparison remains failing.
 This is a comparison-only decision; no runtime threshold, solver, score,

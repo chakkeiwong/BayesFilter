@@ -55,7 +55,7 @@ The remaining gaps, independent of scheduling, are:
 | --- | --- |
 | Complete numerical execution boundaries | Connect preparation, pilot, fit and exact replay into the full geometry initializer and iterative control; handle dynamic retained rows, batch extents and permutation generation without padded calls or host numerical decisions. Finish sequential outer lifecycle/reporting and ordered block-coordinate control. |
 | GPU qualification | Preparation, proposal/callback, fit and pilot GPU checks now pass. Shared COD derivative/factor/lifecycle/consumer renewal also passes. Complete matching uniform public and new-controller GPU costs; update post-run analyzers to enforce the selected UUID instead of hardcoding GPU3. Source-frozen terminal evidence remains required. |
-| Rejected posterior comparison | Preserve the failing D3 ill-conditioned precision comparison. The proposed field-specific allowance remains unapproved/uninstalled; GPU inputs need their own high-precision reference. The public posterior route remains unchanged. |
+| Posterior public integration | Rejected D3 comparison resolved by the September 22 owner decision: check rejection, reporting and no downstream use; preserve discarded matrix differences as explanatory evidence. 150 CPU/GPU posterior checks pass in 02622--02625. The uninstalled allowance and unfinished GPU reference are superseded. Public endpoint integration and full endpoint qualification remain open. |
 | Cost investigations | Explain and disposition cold compilation, roughly 300--525 MiB extra host RSS in some enclosing controllers, standalone preparation/report overhead, and outstanding dense/mass/selector timing triggers. Bounded 3,000-call stability is not general leak freedom or compiler-cache eviction. |
 | Actual consumers | Validate actual DZ5 targets/transitions and repair independent parent deadlines before buffering callback progress. No external source pin change counts as compatibility evidence. |
 | Audit and terminal evidence | Expand the partial exact-source guard (213 sources, 1,306 exact exemptions at 02595), verify active consumer call chains and classify every F01--F20 finding. Many repairs exist, but none has a final closed disposition. Freeze source, run all required suites and matched two-extent/three-process comparisons. |
@@ -106,7 +106,7 @@ remain in the numbered run manifests/logs. Remote main is now 2c2419c0.
 | Decision | Primary criterion | Vetoes / uncertainty | Next action | Unsupported conclusion |
 | --- | --- | --- | --- | --- |
 | Retain automatic GPU scheduling | 102 policy/controller tests pass; all workers selected recorded GPU2 UUID | Two-sample preflight cannot guarantee later exclusive device use | Keep rechecking each worker and pin matched comparisons | No unrestricted desktop use or hard allocation cap |
-| Retain GPU-qualified internal components | 528 GPU checks and 51 renewed CPU preparation checks pass; failed 02598 preserved and repaired exactly | Whole public enclosure, rejected posterior comparison and matched costs remain open | Enclose complete initializer/control; renew GPU costs | No full-repair, public readiness, HMC or canonical LEDH claim |
+| Retain GPU-qualified internal components | 528 GPU checks and 51 renewed CPU preparation checks pass; failed 02598 preserved and repaired exactly | Whole public enclosure and matched costs remain open; the rejected posterior comparison is resolved by subsequent 02622--02625 validation | Enclose complete initializer/control; renew GPU costs | No full-repair, public readiness, HMC or canonical LEDH claim |
 | Keep main merge blocked | Syntax/partial source guard passes | F01--F20 terminal dispositions, consumer transitions and remote integration remain incomplete | Complete evidence then integrate/retest/review | Component qualification is not terminal completion |
 
 Post-run review: the uint64 rewrite was a device-kernel compatibility defect,
@@ -118,3 +118,12 @@ no tolerance changed, and numerical source/tests/driver remained frozen within
 each worker/matrix. Desktop roles and matched physical identities are recorded;
 other users can still start workloads after preflight, so final performance
 comparisons require their own clean observations and repeated measurements.
+
+September 22 continuation through 02626 resolves the rejected posterior
+comparison under the [owner-directed rejection criterion](filter_gradient_rejected_dense_precision_decision_20260922.md).
+All 150 CPU/GPU posterior checks, one additional focused CPU check and 102 policy
+checks pass. GPU2 remains selected with verified memory growth. Runtime,
+conditioning limits, accepted-result tolerances and numerical allow lists are
+unchanged. Charges are now 52,437.52665588881 CPU / 49,589.058448168376 GPU seconds;
+17.43 CPU / 38.23 GPU process-hours remain. The earlier 02620 charges are a
+historical checkpoint. No worker is active; main remains unmerged.

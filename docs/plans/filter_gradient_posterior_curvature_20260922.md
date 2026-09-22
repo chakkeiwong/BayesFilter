@@ -1,5 +1,13 @@
 # Fixed-center posterior curvature execution repair
 
+September 22 update: [the owner-directed rejection criterion](filter_gradient_rejected_dense_precision_decision_20260922.md)
+supersedes the ill-conditioned discarded-matrix equivalence requirement below.
+Runs 02622--02625 pass all 150 CPU/GPU posterior checks, with unchanged accepted
+results and no downstream use after fit rejection. Policy 02626 passes 102
+checks. Preserve all historical failures; the uninstalled allowance and
+unfinished GPU reference are no longer acceptance requirements for this matrix.
+Public integration and full campaign qualification remain open.
+
 Continue the owner-authorized F18/F19 execution campaign from pushed `96e15e9d`.
 Uniform public GPU consumers now pass (02403--02406); current-source costs
 remain to be renewed after the shared COD repair documented below. The native

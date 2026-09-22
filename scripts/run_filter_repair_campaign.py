@@ -137,7 +137,7 @@ TEST_GROUPS = {
         f"tests/test_filter_repair_posterior_curvature_memory.py::test_complete_native_posterior_costs[{arm}-{dimension}]",)
         for arm in ("before", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
     **{f"posterior_curvature_extras_qualified_{device}": (
-        "tests/test_filter_repair_posterior_curvature_extras.py", "-k", "not ill_conditioned") for device in ("cpu", "gpu")},
+        "tests/test_filter_repair_posterior_curvature_extras.py",) for device in ("cpu", "gpu")},
     "posterior_curvature_condition_diagnostic": ("tests/test_filter_repair_posterior_condition_diagnostic.py",),
     "cod_tail_cpu": ("tests/test_filter_repair_qr.py", "tests/test_filter_repair_active_cod_runtime.py"),
     "cod_tail_gpu": ("tests/test_filter_repair_qr.py", "tests/test_filter_repair_active_cod_runtime.py"),
