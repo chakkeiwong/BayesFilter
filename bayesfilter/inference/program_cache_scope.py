@@ -12,6 +12,23 @@ from functools import lru_cache, wraps
 _CURRENT_SCOPE = ContextVar('bayesfilter_program_cache_scope', default=None)
 
 
+@contextmanager
+def independent_trace_scope():
+    """Trace a capture-free primitive without retaining the caller FuncGraph.
+
+    TensorFlow init_scope enables eager construction but leaves the default
+    graph stack intact. The custom-gradient registry can then retain that
+    graph through outer_graph even though the primitive has no tensor captures.
+    A fresh graph plus eager context keeps both ancestry and the function-cache
+    context independent. This scope is only for shape-only, resource-free code.
+    """
+    import tensorflow as tf
+    from tensorflow.python.eager import context
+
+    with tf.Graph().as_default(), context.eager_mode():
+        yield
+
+
 class ProgramCacheScope:
     """Own the finite set of dependencies built for one endpoint signature."""
 

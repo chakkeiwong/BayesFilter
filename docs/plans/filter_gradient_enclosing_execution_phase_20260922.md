@@ -1452,3 +1452,127 @@ in result reporting while preserving direct-constructor diagnostic behavior.
 Host mock fixtures must move to the actual native boundary without changing
 their outcomes. Component capture success alone cannot close the ordered-block
 endpoint or external-consumer gates.
+
+Capture03005 matches both complete original numerical records and exact target
+counts with one trace, then fails raw HLO text identity. Preserve this failure.
+Save both compiler exports and their exact diff in the next diagnostic attempt
+before deciding whether the discrepancy is executable specialization or only
+metadata. Do not remove the HLO requirement on the strength of numerical parity.
+
+03006 confirms that only dummy-source zero-node uniquifiers differ, including
+the StatefulPartitionedCall prefix. Normalizing that exact metadata pattern makes
+all instructions, constants, operands and other source metadata identical; see
+run-03006/hlo-attribution.json and both raw exports. Use that narrow normalization
+and test that changed constants, zero-node identity and real source metadata
+remain detectable. The numerical/runtime implementation is unchanged. Continue
+the frozen CPU/GPU capture/ownership groups; both failed raw-text attempts remain.
+
+Capture03007/03008 now passes both scalar/batch dynamic centers and complete
+original records. Ownership03009 releases callbacks, root/controller and scopes,
+but the outer FuncGraph remains. Inspect concrete-function graph ancestry and
+loaded factory caches before repairing this graph-only retention. Do not claim
+collection or proceed to outer wiring merely because callbacks were collected.
+This adds a localized lifetime attribution attempt; remain within the3600-second
+unit ceiling and record retries before extending the worker count if required.
+
+03010 identifies the retained ancestry: empty_second_program, _position_program,
+eigenpair_program, _embedding_program and precision_program each retain the
+conditional root through FuncGraph.outer_graph. The two custom-gradient
+factories already use tf.init_scope, which lifts eager construction but leaves
+the default graph stack intact in TensorFlow2.19.1. Its retained custom-gradient
+closures therefore still own the caller graph. Repair these two capture-free
+primitives by tracing under a fresh standalone graph and TensorFlow's eager
+context; preserve input signatures and require no captures/one trace. Scope the
+other three factories with the existing ownership memo while preserving their
+standalone LRUs. This supersedes the earlier assumption that shape-only caches
+could all remain unchanged. It changes graph ownership, not numerical operations
+or derivative rules. Renew existing eigenpair/affine derivative checks and public
+consumers on CPU/GPU. The unit now allows20 workers/3600seconds, including the
+preserved HLO/lifetime failures and renewed numerics; cumulative caps are unchanged.
+
+03011 removes every retained ConcreteFunction ancestry identified in03010, but
+the outer graph still survives. The dense precision function calls the spectral
+custom gradient directly; its registry can keep its FuncGraph after its concrete
+wrapper is collected. Trace that capture-free mass program in the same isolated
+scope and require the existing spectral/mass derivative tests. Preserve all
+failures; the next ownership run is the third localized retry of03009.
+
+Recovery and reviewed next diagnostic,2026-09-23:03012 also fails graph
+collection after all known ConcreteFunction ancestry is removed. Bare graphs
+named execute/step/attempt still retain the conditional root. Callback, owner,
+controller and scope collection passes; neither that fact nor unchanged RSS
+proves graph collection. No worker is active. Charges through03012 are
+59866.6079753583 CPU /59401.31348332534 GPU seconds (15.37/35.50 hours remain).
+
+The three localized numerical retries are exhausted. Before another runtime
+repair, run one new trace-only CPU diagnostic (120-second limit, at most two
+harness retries within the existing20-worker/3600-second unit). Snapshot newly
+registered TensorFlow custom-gradient functions, release the conditional owner,
+then inspect closure-to-tensor-to-FuncGraph ancestry without clearing caches or
+registry entries. Save callable file/line anchors and exact ownership paths in
+the numbered worker directory. This is an explanatory diagnostic, not numerical
+qualification or a memory benchmark. It must identify the remaining retaining
+root or explicitly report that registry retention was not established. Do not
+infer the root from graph names alone. TensorFlow2.19.1 custom_gradient.py:512--515
+registers closures globally, which motivates this check but does not establish
+that every remaining graph is retained that way.
+
+Skeptical review: original3582b4ac remains the numerical authority; no changed
+target, tolerance, strict decision, method or GPU policy is proposed. The
+diagnostic only constructs the real conditional endpoint and does not execute
+its numerical program, so it cannot qualify correctness, native allocation or
+performance. Inspect only closure edges and graph ancestry, with bounded traversal
+and explicit truncation reporting, to avoid diagnostic reachability artifacts.
+After attribution, review the smallest repair and renew ownership, affected
+derivatives and original CPU/GPU records. Public outer-block wiring remains
+blocked until those checks pass. No renewed owner approval is required under
+the unchanged campaign contract and cumulative caps.
+
+03013 establishes the remaining retaining root without numerical execution:
+CustomGradient-2315 -> tape_grad_fn -> result/matrix/rhs -> cond_false -> fit ->
+terminal -> step -> conditional execute. The gradient is
+qr_lstsq_tf.py::_complete_orthogonal_lstsq.grad. All four new registry entries
+were traversed without truncation. The first invocation omitted --device CPU
+and declined GPU preflight before launching a worker;03013 explicitly selected
+CPU. No GPU or numerical worker was charged for that preflight.
+
+Reviewed repair: give the sequential symmetric score fit's COD solve its own
+shape-only, capture-free, explicitly compiled function traced inside the same
+independent scope. Keep its existing complete-orthogonal implementation and
+pullback unchanged; do not delete gradient registry entries or detach live
+callbacks. This isolates only graph ancestry. Renew the ownership test first;
+if it fails, stop numerical retries and inspect its new reachability evidence.
+If it passes, renew exact original full records, mass/eigen/affine/COD derivatives
+and existing block consumers on CPU/GPU. Isolated trace scopes use a TensorFlow
+private eager context; explicit no-capture and derivative tests are required
+because changes in graph context can break captured-tensor gradients. The unit
+has used9 workers/226.69 seconds through03013; the20/3600 ceiling remains until
+the attribution/repair outcome is reviewed.
+
+03014 passes both scalar/batch ownership cases and the HLO-normalization guard:
+every callback, graph, controller and dependency scope releases after its final
+handle, while the deliberately retained handle still computes the same complete
+record. Proceed with the planned derivative/original/consumer renewal. Add a
+nested9x4 COD regression with independent well-conditioned least-squares values
+and matrix/RHS pullbacks, changed inputs, one trace, no captures, and parent
+graph collection; graph mode is a reference exception. This tests the new
+boundary itself. Existing eigenpair, affine-preparation and mass tests check
+unchanged pullbacks and original public fields. No numerical policy changed.
+
+03015 passes37 derivative/original-field checks;03016 passes129 policy checks.
+Post-repair review finds one further ownership risk: scoping the now independent
+precision factory would register the same shape-only spectral gradient once per
+target, and the global registry retains those independent closures. Restore its
+original bounded global LRU while keeping the independent trace scope. This is
+safe only for capture-free shapes; all matrix values remain runtime operands.
+Strengthen the actual two-target ownership test to require zero new gradient
+registry entries for the same-signature successor as well as changed precision,
+retained-handle correctness and full graph collection. This prevents moving
+the retention from a controller graph into repeated identical primitive graphs.
+Different-signature native exhaustion remains a separate investigation.
+
+The block unit now reserves24 workers/3600 charged seconds, including12 consumed
+through03016. Finish CPU/GPU capture and ownership, derivative renewal, existing
+43-case block consumers on each device and policy checks on the final sources.
+Preserve previous passes as intermediate-source evidence. This localized
+reuse correction changes neither numerical operations nor cumulative caps.

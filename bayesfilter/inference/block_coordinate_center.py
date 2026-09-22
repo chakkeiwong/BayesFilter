@@ -20,6 +20,7 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_map_covariance import (
     SequentialMapCovarianceConfig,
     estimate_sequential_map_covariance,
@@ -634,7 +635,7 @@ def _numerical_call(function, *arguments):
     return _numerical_program(function, specifications)(*arguments)
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def _target_program(function, dimension, rows):
     shape = [dimension] if rows is None else [rows, dimension]
 
@@ -658,7 +659,7 @@ def _target_program(function, dimension, rows):
     return evaluate
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def _embedding_program(dimension, start, stop, rows):
     block_shape = [stop - start] if rows is None else [rows, stop - start]
 
@@ -675,7 +676,7 @@ def _embedding_program(dimension, start, stop, rows):
     return embed
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def _block_target_program(function, dimension, start, stop, rows):
     block_shape = [stop - start] if rows is None else [rows, stop - start]
 

@@ -116,6 +116,24 @@ SEQUENTIAL_PUBLIC_CONSUMERS = (
     ),
 )
 TEST_GROUPS = {
+    **{f"block_dependency_derivatives_{device}": (
+        "tests/test_filter_repair_eigen_consumers.py",
+        "tests/test_filter_repair_independent_primitives.py",
+        "tests/test_filter_repair_structured_preparation.py::test_preparation_pullbacks_preserve_original_tensors",
+        "tests/test_filter_repair_mass_matrix.py::test_public_mass_records_preserve_projection_and_floor_decisions",
+        "tests/test_filter_repair_mass_matrix.py::test_public_mass_keeps_fail_closed_validation",
+        "tests/test_filter_repair_mass_matrix.py::test_matrix_pullback_retains_original_frozen_floor_boundary",
+        "tests/test_filter_repair_mass_matrix.py::test_compiled_precision_gradient_matches_inverse_identity_and_finite_difference")
+        for device in ("cpu", "gpu")},
+    "block_graph_registry_diagnostic_cpu": (
+        "tests/test_filter_repair_block_graph_diagnostic.py",),
+    **{f"block_capture_{batched}_{device}": (
+        f"tests/test_filter_repair_block_capture.py::test_conditional_full_center_is_dynamic_and_matches_original[{batched}]",)
+        for batched in (False, True) for device in ("cpu", "gpu")},
+    **{f"block_capture_ownership_{device}": (
+        "tests/test_filter_repair_block_capture.py::test_conditional_owner_releases_callback_dependencies",
+        "tests/test_filter_repair_block_capture.py::test_hlo_metadata_normalization_preserves_executable_and_source_changes")
+        for device in ("cpu", "gpu")},
     **{f"sequential_residency_{primed}_{dimension}_{device}": (
         f"tests/test_filter_repair_sequential_residency.py::test_sequential_startup_and_reuse_residency[{primed}-{dimension}]",)
         for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -884,6 +902,7 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "block_graph_registry_diagnostic_cpu": "Trace-only custom-gradient closure ancestry attribution; no numerical qualification or memory-cost claim.",
     **{f"sequential_residency_{primed}_{dimension}_{device}":
         "Sequential-specific startup/reuse/release allocation attribution; mandatory original-record and cost gates remain unchanged."
         for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -1032,6 +1051,8 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"block_capture_{device}": (f"block_capture_False_{device}", f"block_capture_True_{device}",
+        f"block_capture_ownership_{device}") for device in ("cpu", "gpu")},
     **{f"sequential_residency_{device}": (
         *(f"sequential_residency_{primed}_{dimension}_{device}"
           for primed in (False, True) for dimension in (3, 5)), f"sequential_residency_observer_{device}")
@@ -1285,6 +1306,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "block_dependency_derivatives_cpu": "CPU",
+    "block_dependency_derivatives_gpu": "GPU",
+    "block_graph_registry_diagnostic_cpu": "CPU",
+    **{group: "GPU" for group in TEST_BATCHES["block_capture_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["sequential_residency_gpu"]},
     **{f"geometry_full_memory_prior_{capacity}_gpu": "GPU" for capacity in (24, 120)},
     **{group: "GPU" for group in TEST_BATCHES["sequential_public_cost_gpu"]},
@@ -1484,7 +1509,7 @@ def test_evidence(run):
     try:
         root = ET.parse(path).getroot()
     except (OSError, ET.ParseError):
-        return dict(passed=False, reason="missing_or_invalid_junit")
+        return {"passed": False, "reason": "missing_or_invalid_junit"}
     cases = list(root.iter("testcase"))
     counts = {name: sum(len(case.findall(name)) for case in cases)
               for name in ("failure", "error", "skipped")}

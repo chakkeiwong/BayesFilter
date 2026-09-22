@@ -1,19 +1,36 @@
 """Complete XLA score-fit preparation for the existing sequential locator."""
 
 import math
+from functools import lru_cache
 
 import tensorflow as tf
 from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
 from bayesfilter.inference._exact_incumbent import _incumbent_selection
 from bayesfilter.inference.mass_matrix_tf import eigenpair_program
-from bayesfilter.inference.program_cache_scope import scoped_program_cache
+from bayesfilter.inference.program_cache_scope import (
+    independent_trace_scope,
+    scoped_program_cache,
+)
 from bayesfilter.inference.sequential_preparation_tf import (
     cloud_program,
     evaluation_program,
 )
 from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
 from bayesfilter.ops.symmetric_matrix_tf import symmetric_score_design, unpack_symmetric
+
+
+@lru_cache(maxsize=64)
+def _score_lstsq_program(rows, columns, jit_compile):
+    # The custom-gradient registry keeps its tensors alive. This shape-only
+    # primitive must therefore have no ancestry into a callback-owning graph.
+    with independent_trace_scope():
+        solve = tf.function(complete_orthogonal_lstsq,
+            input_signature=[tf.TensorSpec([rows, columns], tf.float64),
+                tf.TensorSpec([rows, 1], tf.float64)],
+            jit_compile=jit_compile, autograph=False)
+        solve.get_concrete_function()
+    return solve
 
 
 def partition_schema(sample_count, holdout_fraction, *, pair_disjoint):
@@ -63,7 +80,9 @@ def fit_numerics(z, scores, center_score, scale, ridge, floor, condition_cap,
 
     def solve():
         regularizer = tf.sqrt(ridge) * tf.eye(coefficients, dtype=tf.float64)
-        beta = complete_orthogonal_lstsq(tf.concat([train_design, regularizer], 0),
+        least_squares = _score_lstsq_program(int(train_design.shape[0]) + coefficients,
+            coefficients, jit_compile)
+        beta = least_squares(tf.concat([train_design, regularizer], 0),
             tf.concat([train_response, tf.zeros([coefficients, 1], tf.float64)], 0))[:, 0]
         precision = unpack_symmetric(beta, dimension)
         train_prediction = tf.einsum("nrc,c->nr", train_design_rows, beta)

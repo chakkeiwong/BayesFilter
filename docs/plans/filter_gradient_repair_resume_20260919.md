@@ -1561,3 +1561,23 @@ September 20 checkpoint accounting through 01577: 27,876.007 GPU /
 seconds under unchanged 52/32-hour caps. Inventory 01577 finds 2,879 working
 Python files, 2,878 parsed and the one unchanged external legacy error. Focused
 Ruff and whitespace checks pass. No worker is active; main remains unmerged.
+# 2026-09-23 recovery checkpoint
+
+Continue on repair/filter-gradient-xla-validation-20260918 from the isolated
+worktree. Internal ordered-block capture and graph retention repairs pass85 CPU
+checks in03017--03021 and129 policy checks in03022. See
+[result and review](filter_gradient_block_capture_checkpoint_20260923.md).
+GPU capture/ownership,37 derivative checks and43 block consumers are pending;
+preflights81545/80835 declined before launch. One earlier diagnostic invocation
+84578 omitted --device CPU and also declined before launch;03013 is the actual
+CPU attribution run. No worker is active at this checkpoint. Do not infer idle
+state later without checking the runner lock/status.
+
+The remaining root was the COD custom-gradient registry closure retaining the
+conditional graph through tensor ancestry. Capture-free primitive graphs now
+trace independently; precision keeps global shape reuse. Actual successor tests
+require zero new gradient entries, distinct target results and graph collection.
+Public ordered blocks remain unchanged; uninstalled drafts are still in
+/tmp/ordered-block-e3-drafts. Initializer rounding, DZ5 active caller, costs,
+signature churn and F01--F20/integration remain open. Charges through03022:
+60190.454886148495 CPU /59401.31348332534 GPU seconds. Main stays unmerged.

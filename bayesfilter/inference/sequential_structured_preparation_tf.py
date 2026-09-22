@@ -10,7 +10,10 @@ from functools import lru_cache
 import tensorflow as tf
 
 from bayesfilter.inference._exact_incumbent import _incumbent_selection
-from bayesfilter.inference.program_cache_scope import scoped_program_cache
+from bayesfilter.inference.program_cache_scope import (
+    independent_trace_scope,
+    scoped_program_cache,
+)
 from bayesfilter.inference.sequential_preparation_tf import (
     cloud_program,
     evaluation_program,
@@ -42,7 +45,7 @@ def _position_program(row_count, dimension, jit_compile):
     # TensorFlow's custom-gradient registry retains its traced closure. Trace
     # this resource-free affine map outside any consuming FuncGraph, so it
     # cannot retain the consumer's covariance guard or optimizer graph.
-    with tf.init_scope():
+    with independent_trace_scope():
         @tf.function(input_signature=[tf.TensorSpec([row_count, dimension], D),
             tf.TensorSpec([dimension], D), tf.TensorSpec([dimension], D)],
             jit_compile=jit_compile, autograph=False)

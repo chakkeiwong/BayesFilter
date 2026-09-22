@@ -10,6 +10,7 @@ from functools import lru_cache
 import tensorflow as tf
 from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_self_adjoint_eig
 
+from bayesfilter.inference.program_cache_scope import independent_trace_scope
 from bayesfilter.ops.compiled_tensor_program_tf import tensor_program
 
 D = tf.float64
@@ -108,7 +109,7 @@ def eigenpair_program(dimension):
     # The custom-gradient registry retains its traced tensor closure. Creating
     # that closure in a resource-owning caller also retains its factor guards.
     # Keep this graph independent, as for the shared fresh-position program.
-    with tf.init_scope():
+    with independent_trace_scope():
         @tf.function(input_signature=[tf.TensorSpec([dimension, dimension], D)],
                      jit_compile=True, autograph=False)
         def eigenpairs(matrix):
@@ -153,19 +154,24 @@ def precision_numerics(matrix, jitter, requested_floor, condition_cap, *, jit_co
 @lru_cache(maxsize=64)
 def precision_program(dimension, *, dense=None, jit_compile=True):
     """Enclose regularization and optional dense/diagonal covariance inversion."""
-    @tf.function(input_signature=[tf.TensorSpec([dimension, dimension], D),
-        tf.TensorSpec([], D), tf.TensorSpec([], D), tf.TensorSpec([], D)],
-        jit_compile=jit_compile, autograph=False)
-    def compute(matrix, jitter, floor, condition_cap):
-        regularized, diagnostics, flags = precision_numerics(matrix, jitter, floor, condition_cap,
-            jit_compile=jit_compile)
-        if dense is None:
-            return regularized, diagnostics, flags
-        diagonal = tf.linalg.diag_part(regularized)
-        diagonal_valid = tf.reduce_all(tf.math.is_finite(diagonal) & (diagonal > 0.))
-        covariance = (_symmetrize(tf.linalg.inv(regularized)) if dense else
-            tf.linalg.diag(tf.math.reciprocal(diagonal)))
-        return regularized, covariance, diagnostics, flags, diagonal_valid
+    # Its spectral pullback is registered globally; detach its graph ancestry.
+    # Keep shape-only reuse global so successive callback owners do not each
+    # register an otherwise identical permanent custom-gradient closure.
+    with independent_trace_scope():
+        @tf.function(input_signature=[tf.TensorSpec([dimension, dimension], D),
+            tf.TensorSpec([], D), tf.TensorSpec([], D), tf.TensorSpec([], D)],
+            jit_compile=jit_compile, autograph=False)
+        def compute(matrix, jitter, floor, condition_cap):
+            regularized, diagnostics, flags = precision_numerics(matrix, jitter, floor, condition_cap,
+                jit_compile=jit_compile)
+            if dense is None:
+                return regularized, diagnostics, flags
+            diagonal = tf.linalg.diag_part(regularized)
+            diagonal_valid = tf.reduce_all(tf.math.is_finite(diagonal) & (diagonal > 0.))
+            covariance = (_symmetrize(tf.linalg.inv(regularized)) if dense else
+                tf.linalg.diag(tf.math.reciprocal(diagonal)))
+            return regularized, covariance, diagnostics, flags, diagonal_valid
+        compute.get_concrete_function()
 
     return compute
 

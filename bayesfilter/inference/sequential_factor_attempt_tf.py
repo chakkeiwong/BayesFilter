@@ -8,6 +8,7 @@ from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
 )
 from bayesfilter.inference.factor_decisions_tf import factor_decisions_program
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_structured_fit_tf import (
     structured_fit_data_program,
 )
@@ -15,7 +16,7 @@ from bayesfilter.inference.sequential_structured_fit_tf import (
 D = tf.float64
 
 
-@lru_cache(maxsize=32)
+@scoped_program_cache(maxsize=32)
 def empty_second_program(dimension):
     """Fixed empty schema for configurations with exactly one proposal."""
     @tf.function(input_signature=[], jit_compile=True, autograph=False)
