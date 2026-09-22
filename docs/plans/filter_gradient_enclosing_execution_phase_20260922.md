@@ -1576,3 +1576,141 @@ through03016. Finish CPU/GPU capture and ownership, derivative renewal, existing
 43-case block consumers on each device and policy checks on the final sources.
 Preserve previous passes as intermediate-source evidence. This localized
 reuse correction changes neither numerical operations nor cumulative caps.
+
+03017--03022 finish the CPU renewal:85 capture/ownership/derivative/consumer
+checks and129 policy checks pass. The checkpoint is committed as12fda788f.
+GPU matrix preflights81545/80835 decline without workers; do not weaken GPU
+availability or desktop protection. See the2026-09-23 capture checkpoint.
+
+Next ordered-controller unit (reviewed2026-09-23): while GPU qualification is
+pending, implement and evaluate the internal outer composition on CPU. Do not
+switch the public numerical endpoint until both the prerequisite GPU checks and
+the full outer CPU/GPU/original/consumer gates pass. Use the existing draft only
+after source review; it is not evidence. A tf.while_loop carries the committed
+full center/value/score and accounting. A static tf.switch_case table preserves
+heterogeneous block widths/configurations; it is construction topology, not a
+Python numerical iteration. Every conditional call receives the newly committed
+center. Full replay decides commit, strict decrease rolls back, and status
+termination prevents later blocks from executing. Retain the allowed rejected-
+geometry handoffs and complete private records/events. Compute summary metrics
+inside the numerical graph; keep the existing direct-result-constructor behavior
+as a labeled diagnostic compatibility path.
+
+Start with original3582b4ac comparisons on coupled2D and heterogeneous/partial
+4D partitions, scalar/batch callbacks, two changing centers/scales, and normal
+versus recorded-reversal sweep controls. Save full public/private payloads,
+buffered event sequences and exact target counts. Require one enclosing XLA
+trace, unchanged executable HLO except the already-reviewed dummy metadata,
+runtime center/scale operands, and no host callback nodes. Trace-only/static
+branch construction must perform no target evaluation. Renew actual ownership
+and no-calls-after-veto tests before public promotion. Host mocks from existing
+tests will move to a native dependency boundary without changing their asserted
+outcomes; these tests cannot replace actual original-algorithm comparisons.
+
+This unit reserves at most30 workers/7200 charged seconds,300 seconds per worker,
+with at most three localized retries per unchanged fixture. CPU is an explicit
+reference/development lane; GPU/XLA remains the default execution target. Stop
+the affected arm on unexpected numerical/accounting/event mismatches, source
+mutation, missing provenance or budget exhaustion. Record before/after costs
+only after correctness and CPU/GPU public integration; no timing rank from
+component tests. All cumulative caps and other E2/E4/E5/E6 obligations remain.
+
+Skeptical review: independent block solutions would change Gauss--Seidel;
+the evolving center is explicit. Testing only accepted sequential geometries
+would miss two allowed handoffs; tests must retain them. Terminal summaries must
+not run a host numerical decision after compilation. A static branch table may
+increase cold compilation with block count, so later full public cost work must
+measure it. Resource-backed target counters require int64 on GPU. Reporting an
+error after a full replay is different from continuing later blocks; inspect
+both returned failure and call count. Partial partitions and distinct per-block
+configurations are mandatory. Public wiring remains a separate gate.
+
+03023 completes both numerical paths but the diagnostic JSON writer rejects
+an original/private -inf sentinel before comparison. Preserve its incomplete
+artifact and failed run. Encode nonfinite floats as explicit tagged diagnostic
+values for storage only; comparisons still use the original in-memory numbers
+and unchanged criteria. Retry the same fixture with no runtime change. The
+outer-controller guard adds five exact static-topology and two completed-record
+formatting exceptions (227 sources/1332 total); none allows numerical Python
+iteration, NumPy or host numerical feedback.
+
+03024--03027 pass all four coupled2D scalar/batch/reversal cases.03028 fails
+the changed-input4D partial/heterogeneous scalar fixture:173 versus182 sequential
+evaluations (176 versus185 physical rows), and the first block hands off usable
+instead of sequential_refinement_without_terminal_geometry. The initial input
+matches201 physical calls. Divergence occurs near the third proposal at a flat
+objective: an exact-incumbent promotion changes while proposal model acceptance
+stays false. Preserve full records and both HLO exports. No tolerance, exact
+decision or fixture change is allowed; stop this arm before public promotion.
+
+Reviewed discriminating diagnostic: evaluate the same first conditional block
+at the failing full center/scale through (a) original3582b4ac sequential path,
+(b) current public sequential path with an eager fixed-center callback, and
+(c) dynamic ConditionalSequentialProgram. Record full unnormalized records and
+counts plus the outer run's first-block record. Repeat with the declared
+movement diagnostics to expose exact proposal positions and objective changes;
+instrumented results are explanatory and cannot substitute for the failed
+uninstrumented gate. This distinguishes inherited sequential/XLA arithmetic from
+new outer ordering without modifying runtime algorithms. One CPU worker300s,
+at most two harness retries, charged within the30/7200 unit. Before any numerical
+repair, identify the earliest differing operation/predicate from the records.
+
+03029 reproduces the same108-versus99 evaluations in the existing public
+sequential endpoint and the new dynamic conditional endpoint. Both agree exactly
+with the outer block's first result. Thus the outer order/capture is not the
+source. Movement instrumentation preserves each arm's decisions and shows equal
+proposal coordinates but a one-ULP target value difference at the predecessor:
+original -0.15071873949579834, XLA -0.15071873949579837. The next proposal is
+-0.15071873949579834, yielding original improvement0 versus XLA2.7755575615628914e-17.
+Strict exact-incumbent promotion amplifies this into terminal/call-count changes.
+This is a new healthy-target parity gap; do not misclassify it as the approved
+discarded ill-conditioned precision exception. The uninstrumented original gate
+remains failed. Localize target arithmetic at identical points next.
+
+Independent outer-control checks can continue without promoting this arm. Nine
+compiled dependency-boundary injections cover both allowed rejected-geometry
+statuses, objective rollback, invalid handoff, excessive/negative accounting,
+nonfinite initial/replay and invalid mass. Each asserts that no later block or
+full target replay executes after a veto. The injected conditional does not
+evaluate target rows, so its synthetic accounting is explicitly separate from
+the actual-target counts above. A separate actual two-target ownership check
+executes retained handles and tests outer graph release. These are necessary
+control/lifetime checks, not replacements for the failed numerical comparison.
+
+03030 passes all nine native dependency-boundary cases, including both rejected
+geometry handoffs and no later calls after each veto. Next localize the two exact
+03029 predecessor/proposal points under eager, graph-reference and XLA callback
+arithmetic. Save delta, score, product, reduction and scalar value; also evaluate
+the untouched callback outputs to detect instrumentation effects. A100-digit
+Decimal evaluation uses exact binary64 inputs/matrix coefficients as an
+independent numerical reference. Its ranking explains rounding; it cannot
+replace the original finite-program criterion. One CPU diagnostic120s, same
+unit budget, no runtime/source/tolerance change.
+
+03031 locates the first differing operation at the target matrix-vector product
+on identical points, before the objective reduction. The untouched and
+instrumented graph/XLA callbacks match within each mode. Exact-input Decimal100
+improvement is7.545598688169452e-21 versus local binary64 spacing2.7755575615628914e-17.
+The original and XLA modes both lack objective resolution for this comparison;
+neither needs a different filter/gradient method to explain the discrepancy.
+03032 passes actual outer-owner collection and retained-handle behavior;03033
+passes129 policy checks.227 sources/1332 exceptions remain a partial guard.
+
+The [numerical-resolution proposal](filter_gradient_objective_resolution_proposal_20260923.md)
+defines a narrow explicit error/no-geometry/no-handoff candidate without rounding
+the objective or changing accepted healthy comparisons. Diagnostic03034 catches
+the preserved failed case and leaves three controls unchanged. It is uninstalled.
+Owner approval is pending because the proposal changes rejection/qualification
+semantics beyond the earlier discarded-precision decision. GPU preflight65157
+again declines before launch; do not use desktop GPUs outside the owner's
+fallback condition. The13-worker outer unit, including the current final policy
+renewal, remains below30 workers/7200seconds. Public block wiring, failed
+partial-block original gate, prerequisite GPU qualification and all wider
+campaign obligations remain open.
+
+03035 passes129 final policy checks, and03036 renews all43 existing block
+consumer checks after the optional native-summary reporting field change.
+The14-worker outer unit uses510.1393746379763 seconds. Cumulative charges through
+03036 are60700.59426078647 CPU /59401.31348332534 GPU seconds (15.14/35.50 hours
+remain). No worker is active. The numerical-resolution decision remains pending;
+no error predicate or comparison waiver is installed.

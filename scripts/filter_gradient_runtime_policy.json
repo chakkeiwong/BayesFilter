@@ -436,7 +436,9 @@
     "bayesfilter/inference/sequential_controller_tf.py": null,
     "bayesfilter/inference/sequential_controller_report.py": null,
     "bayesfilter/inference/program_cache_scope.py": null,
-    "bayesfilter/inference/block_conditional_tf.py": null
+    "bayesfilter/inference/block_conditional_tf.py": null,
+    "bayesfilter/inference/block_controller_tf.py": null,
+    "bayesfilter/inference/block_controller_report.py": null
   },
   "exceptions": [
     {
@@ -12430,6 +12432,69 @@
       "ast_sha256": "96b9284fad5890760b7067cdf758fab51b8fab3d06a20054a3fc5f2d58b8ec37",
       "role": "host_reporting",
       "reason": "Serialize completed result fields at the public JSON boundary; no numerical feedback."
+    },
+    {
+      "path": "bayesfilter/inference/block_controller_tf.py",
+      "function": "BlockController._initialize",
+      "line": 129,
+      "kind": "python_iteration",
+      "ast_sha256": "25f6291ef9663d38a9e2aa7f73fed18cec570614e9f5f22b234224922464d119",
+      "role": "fixed_schema",
+      "reason": "Constructs the finite heterogeneous block graph/branch table once from static configuration; tf.while_loop executes the ordered numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/inference/block_controller_tf.py",
+      "function": "BlockController._initialize",
+      "line": 131,
+      "kind": "python_iteration",
+      "ast_sha256": "706e8c071a7153c09fbc63608474af265bbd876b5c2b68eefa051a857c54fbb4",
+      "role": "fixed_schema",
+      "reason": "Constructs the finite heterogeneous block graph/branch table once from static configuration; tf.while_loop executes the ordered numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/inference/block_controller_tf.py",
+      "function": "BlockController._initialize",
+      "line": 132,
+      "kind": "python_iteration",
+      "ast_sha256": "16177d9655b8abc10b7d9c65a11d54d0f1ee27e606c03f5288e29befa4b1fee7",
+      "role": "fixed_schema",
+      "reason": "Constructs the finite heterogeneous block graph/branch table once from static configuration; tf.while_loop executes the ordered numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/inference/block_controller_tf.py",
+      "function": "BlockController._initialize",
+      "line": 135,
+      "kind": "python_iteration",
+      "ast_sha256": "2c8567b926e43c18d75d4b98e33567ddad7822fc67a3811f672763bb585dce68",
+      "role": "fixed_schema",
+      "reason": "Constructs the finite heterogeneous block graph/branch table once from static configuration; tf.while_loop executes the ordered numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/inference/block_controller_tf.py",
+      "function": "BlockController._initialize.execute.step",
+      "line": 161,
+      "kind": "python_iteration",
+      "ast_sha256": "7e82b9723a2ea55f31097d36e62d4899fb6d1eec728904767299ad17ec684aa4",
+      "role": "fixed_schema",
+      "reason": "Constructs the finite heterogeneous block graph/branch table once from static configuration; tf.while_loop executes the ordered numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/inference/block_controller_report.py",
+      "function": "block_result",
+      "line": 27,
+      "kind": "python_iteration",
+      "ast_sha256": "36ab3ae78054eb1fcb46c2f37938654b7a49816c38a46b27ccbea1850d46c075",
+      "role": "host_reporting",
+      "reason": "Serializes completed per-block records and events; cannot invoke numerical decisions or targets."
+    },
+    {
+      "path": "bayesfilter/inference/block_controller_report.py",
+      "function": "block_result",
+      "line": 43,
+      "kind": "python_iteration",
+      "ast_sha256": "cc6c6242b8009c4c72e7199a43544d5f55e6adc82288aa5e8639427b7b221057",
+      "role": "host_reporting",
+      "reason": "Serializes completed per-block records and events; cannot invoke numerical decisions or targets."
     }
   ]
 }

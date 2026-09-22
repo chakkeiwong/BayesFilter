@@ -149,6 +149,7 @@ class BlockCoordinateCenterResult:
     require_scheduled_block_maxima_no_worse: bool
     private_block_records: tuple[Mapping[str, Any], ...]
     nonclaims: tuple[str, ...] = BLOCK_COORDINATE_CENTER_NONCLAIMS
+    numerical_summary: Mapping[str, bool] | None = None
 
     def __post_init__(self) -> None:
         for name in ("initial_center", "final_center", "initial_score", "final_score"):
@@ -176,16 +177,17 @@ class BlockCoordinateCenterResult:
             "sequential_exact_evaluations": self.sequential_exact_evaluations,
             "physical_target_rows": self.physical_target_rows,
             "maximum_physical_target_rows": self.maximum_physical_target_rows,
-            "objective_nondecreasing": self.final_objective >= self.initial_objective,
-            "objective_progress_resolvable": _resolvable_decrease(
-                -self.initial_objective, -self.final_objective
-            ),
-            "score_l2_progress_resolvable": _resolvable_decrease(
-                self.initial_score_l2, self.final_score_l2
-            ),
-            "score_max_progress_resolvable": _resolvable_decrease(
-                self.initial_score_max_abs, self.final_score_max_abs
-            ),
+            **(dict(self.numerical_summary) if self.numerical_summary is not None else {
+                # Direct construction and the legacy diagnostic controller keep
+                # their compatibility summaries until public native wiring.
+                "objective_nondecreasing": self.final_objective >= self.initial_objective,
+                "objective_progress_resolvable": _resolvable_decrease(
+                    -self.initial_objective, -self.final_objective),
+                "score_l2_progress_resolvable": _resolvable_decrease(
+                    self.initial_score_l2, self.final_score_l2),
+                "score_max_progress_resolvable": _resolvable_decrease(
+                    self.initial_score_max_abs, self.final_score_max_abs),
+            }),
             "material_reversal_detected": self.material_reversal_detected,
             "repeat_cycle_detected": self.repeat_cycle_detected,
             "two_step_return_cycle_detected": (

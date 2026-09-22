@@ -1,20 +1,25 @@
 # Complete filter and gradient execution repair
 
 The approved **E1--E6 enclosing-execution repair phase** is executing on
-`repair/filter-gradient-xla-validation-20260918`, after pushed **0420cb299**.
+`repair/filter-gradient-xla-validation-20260918`, after pushed **12fda788f**.
 The [reviewed master execution program](filter_gradient_enclosing_execution_phase_20260922.md)
 now includes the confirmed public-capacity, comparator-eigensystem and native
 compiler-memory findings. [Full geometry results](filter_gradient_full_geometry_result_20260922.md)
 record the evidence and remaining limitations. Main stays unmerged.
 
-2026-09-23 recovery and execution: sequential residency is qualified through03004.
-The ordered-block registry-retention root is identified and repaired;03017--03021
-pass85 final-runtime CPU checks and03022 passes129 policy checks. See the
-[capture and ownership checkpoint](filter_gradient_block_capture_checkpoint_20260923.md).
-Two GPU matrix preflights declined before worker launch under contention.
-Derivative, final CPU/GPU capture, full ordered-block, healthy initializer,
-actual DZ5 caller, clean GPU costs, endpoint audit and integration gates remain
-open. Charges through03022 leave15.28 CPU/35.50 GPU hours within32/52-hour caps.
+2026-09-23 execution: the registry-retention repair passes85 CPU checks; see the
+[capture checkpoint](filter_gradient_block_capture_checkpoint_20260923.md).
+The internal ordered controller passes four complete original coupled cases,
+nine failure-path cases and actual owner collection. A partial-block fixture
+exposes a new strict-decision mismatch also present in the public sequential
+route: one-ULP target rounding changes an incumbent promotion. See the
+[ordered-controller result and review](filter_gradient_ordered_block_checkpoint_20260923.md).
+The tested [explicit-error proposal](filter_gradient_objective_resolution_proposal_20260923.md)
+is uninstalled pending an owner decision.03035 passes129 policy checks.
+GPU preflights decline under contention. GPU renewal, full ordered-block
+qualification/public wiring, healthy initializer, actual DZ5 caller, clean GPU
+costs, endpoint audit and integration remain open. Charges through03036 leave
+15.14 CPU/35.50 GPU hours within32/52-hour caps. No worker is active at checkpoint.
 
 The public geometry attempt now encloses center, active pilot, design,
 finite-count permutation/partition, compact fit, refinement, incumbent and replay
@@ -23,7 +28,7 @@ inside XLA. **02697--02705 pass81 native CPU +6 public CPU +3 legacy checks;
 checks** after restoring current scalar-route labels. **02727 passes both large
 public CPU cases**, including260 samples/512 directions and scalar/batch replay.
 E1 and the active pilot retain their earlier83/83 and78/78 CPU/GPU qualifications.
-The current partial source guard covers225 sources /1325 exact exceptions.
+The current partial source guard covers227 sources /1332 exact exceptions.
 The sequential controller adds seven completed-history formatting exceptions;
 its numerical body has no Python-loop or NumPy exception.
 The full public sequential module is now guarded; its seven additional exact

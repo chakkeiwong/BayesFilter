@@ -116,6 +116,19 @@ SEQUENTIAL_PUBLIC_CONSUMERS = (
     ),
 )
 TEST_GROUPS = {
+    "objective_resolution_diagnostic_cpu": ("tests/test_filter_repair_objective_resolution_diagnostic.py",),
+    **{f"block_boundaries_{device}": (
+        "tests/test_filter_repair_block_boundaries.py::test_transaction_veto_stops_later_blocks",)
+        for device in ("cpu", "gpu")},
+    **{f"block_outer_ownership_{device}": (
+        "tests/test_filter_repair_block_boundaries.py::test_outer_owner_release_preserves_retained_compiled_handle",)
+        for device in ("cpu", "gpu")},
+    "block_rounding_diagnostic_cpu": ("tests/test_filter_repair_block_rounding_diagnostic.py::test_partial_block_rounding_attribution",),
+    "block_target_arithmetic_cpu": ("tests/test_filter_repair_block_rounding_diagnostic.py::test_identical_point_target_arithmetic",),
+    **{f"block_controller_{case}_{batched}_{device}": (
+        f"tests/test_filter_repair_block_controller.py::test_complete_ordered_block_matches_original[{case}-{batched}]",)
+        for case in ("coupled", "record_reversal", "partial_heterogeneous")
+        for batched in (False, True) for device in ("cpu", "gpu")},
     **{f"block_dependency_derivatives_{device}": (
         "tests/test_filter_repair_eigen_consumers.py",
         "tests/test_filter_repair_independent_primitives.py",
@@ -902,6 +915,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "objective_resolution_diagnostic_cpu": "Uninstalled representation-resolution reporting candidate; cannot waive original strict decisions or qualify the public route.",
+    "block_target_arithmetic_cpu": "Identical predecessor/proposal target arithmetic and100-digit reference; no equivalence or predicate waiver.",
+    "block_rounding_diagnostic_cpu": "Partial-block strict incumbent arithmetic attribution; original uninstrumented gate remains mandatory.",
     "block_graph_registry_diagnostic_cpu": "Trace-only custom-gradient closure ancestry attribution; no numerical qualification or memory-cost claim.",
     **{f"sequential_residency_{primed}_{dimension}_{device}":
         "Sequential-specific startup/reuse/release allocation attribution; mandatory original-record and cost gates remain unchanged."
@@ -1051,6 +1067,9 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"block_controller_{device}": tuple(f"block_controller_{case}_{batched}_{device}"
+        for case in ("coupled", "record_reversal", "partial_heterogeneous") for batched in (False, True))
+        for device in ("cpu", "gpu")},
     **{f"block_capture_{device}": (f"block_capture_False_{device}", f"block_capture_True_{device}",
         f"block_capture_ownership_{device}") for device in ("cpu", "gpu")},
     **{f"sequential_residency_{device}": (
@@ -1306,6 +1325,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "block_boundaries_gpu": "GPU", "block_outer_ownership_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["block_controller_gpu"]},
     "block_dependency_derivatives_cpu": "CPU",
     "block_dependency_derivatives_gpu": "GPU",
     "block_graph_registry_diagnostic_cpu": "CPU",

@@ -1563,6 +1563,21 @@ Python files, 2,878 parsed and the one unchanged external legacy error. Focused
 Ruff and whitespace checks pass. No worker is active; main remains unmerged.
 # 2026-09-23 recovery checkpoint
 
+Latest execution through03036: internal ordered-controller coupled originals,
+nine veto boundaries and outer ownership pass;129 policy checks pass. The new
+partial-block original mismatch remains open and is traced to one-ULP target
+arithmetic, also reproduced by the current public sequential endpoint. See
+[latest result](filter_gradient_ordered_block_checkpoint_20260923.md).
+The [explicit-error proposal](filter_gradient_objective_resolution_proposal_20260923.md)
+has a passing uninstalled diagnostic but awaits owner decision. Do not silently
+install its changed rejection semantics or waive03028. GPU preflight65157 also
+declined without a worker. Charges through03036:60700.59426078647 CPU /
+59401.31348332534 GPU seconds. Latest pushed capture checkpoint is12fda788f.
+Public blocks remain unchanged; internal controller/report/tests are now installed.
+The /tmp drafts are obsolete. No worker is active at this checkpoint.
+
+Earlier checkpoint details follow for preserved recovery context.
+
 Continue on repair/filter-gradient-xla-validation-20260918 from the isolated
 worktree. Internal ordered-block capture and graph retention repairs pass85 CPU
 checks in03017--03021 and129 policy checks in03022. See
