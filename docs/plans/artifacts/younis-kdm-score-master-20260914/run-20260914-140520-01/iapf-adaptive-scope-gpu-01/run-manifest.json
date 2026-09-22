@@ -1,0 +1,78 @@
+{
+  "command": [
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/run-iapf-adaptive-scope.py",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-adaptive-scope-gpu-01",
+    "--source-revision",
+    "1c12eefa2ed55b81c4336fca4c006b9877c2df5f"
+  ],
+  "default_ready": false,
+  "driver_sha256": "7f9ea88437f54ee8682399dd354706d92e7fbcd091c84124c8ec68a50563fea3",
+  "environment": {
+    "BAYESFILTER_PRELOAD_CUSTOM_OP": "0",
+    "CUDA_VISIBLE_DEVICES": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+    "OMP_NUM_THREADS": "1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "TF_NUM_INTRAOP_THREADS": "1"
+  },
+  "error": "ValueError: incompatible estimator/proposal",
+  "git_commit": "1c12eefa2ed55b81c4336fca4c006b9877c2df5f",
+  "hardware": {
+    "backend": "tensorflow",
+    "cpu_threads": 4,
+    "device": "GPU",
+    "gpu_intentionally_hidden": false,
+    "jit_compile": true,
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "reference_exception": false,
+    "tensorflow_version": "2.20.0-dev0+selfbuilt",
+    "tf32": true
+  },
+  "interpreter": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "plan": "docs/plans/younis-score-iapf-adaptive-scope-2026-09-16.md",
+  "runtime_comparison": "forbidden_concurrent_workloads",
+  "schema": "iapf_adaptive_scope_mechanics_v1",
+  "score_semantics": "finite_program_fixed_fit_realized_N_and_labels",
+  "source_root": "/home/chakwong/BayesFilter/.localresources/worktrees/younis-score-iapf-adaptive-scope-20260916",
+  "statistically_supported_ranking": false,
+  "status": "failed",
+  "studies": [
+    {
+      "name": "calibration",
+      "output": "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-adaptive-scope-gpu-01/calibration",
+      "rows": 4,
+      "status": "complete",
+      "wall_seconds": 9.44909582400578
+    },
+    {
+      "name": "evaluation",
+      "output": "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-adaptive-scope-gpu-01/evaluation",
+      "rows": 2,
+      "status": "complete",
+      "wall_seconds": 2.355584302000352
+    }
+  ],
+  "wall_seconds": 21.8513122160075
+}

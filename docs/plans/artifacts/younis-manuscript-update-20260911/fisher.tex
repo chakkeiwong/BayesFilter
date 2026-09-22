@@ -1,0 +1,145 @@
+\section{A model score that averages over ancestors}
+\label{sec:fisher}
+
+A good proposal improves the particle approximation, but a separate question
+remains: which score should we compute from those particles? Differentiating
+every operation of a chosen finite filter is one answer. Fisher's identity
+supplies another, aimed directly at the observed-data score.
+
+Assume the initial, transition, and observation laws have differentiable
+densities on a common dominating measure, and that differentiation may pass
+through the joint integral. For $x_{0:T}$, the joint density is
+\begin{equation}
+ p_\theta(x_{0:T},y_{1:T})
+ =\mu_\theta(x_0)\prod_{t=1}^T
+       f_\theta(x_t\mid x_{t-1})g_\theta(y_t\mid x_t).
+ \label{eq:joint-model-density}
+\end{equation}
+The derivative inside this density holds $x_{0:T}$ fixed. Define its complete
+data score by
+\begin{equation}
+ H_T(x_{0:T})=\nabla_\theta\log\mu_\theta(x_0)
+ +\sum_{t=1}^T\left\{
+    \nabla_\theta\log f_\theta(x_t\mid x_{t-1})
+   +\nabla_\theta\log g_\theta(y_t\mid x_t)\right\}.
+ \label{eq:complete-data-score}
+\end{equation}
+Since $\nabla_\theta p_\theta=p_\theta H_T$, integrating this equality and
+dividing by $Z=p_\theta(y_{1:T})$ gives
+\begin{align}
+ s(\theta)
+ &=\frac{\int p_\theta(x_{0:T},y_{1:T})H_T(x_{0:T})\,\dd x_{0:T}}{Z}
+ \notag\\
+ &=\mathbb E_\theta[H_T(X_{0:T})\mid y_{1:T}].
+ \label{eq:fisher-model-score}
+\end{align}
+The posterior expectation is over whole state histories, including the
+initial state. A parameter-dependent stationary initial law contributes the
+first term even when no observation is assigned to time zero. In a
+latent-innovation representation, the density and the derivative must instead
+be derived in those coordinates; the state-density expression cannot be used
+unchanged for a singular transition.
+
+The needed history average has a forward recursion. Let $H_t$ be
+\eqref{eq:complete-data-score} truncated at time $t$, and define
+$A_t(x_t)=\mathbb E[H_t(X_{0:t})\mid X_t=x_t,y_{1:t}]$. Conditional on
+$X_t$, the observation at $t$ does not further distinguish its ancestors.
+The backward conditional distribution is proportional to
+$p_\theta(x_{t-1}\mid y_{1:t-1})f_\theta(x_t\mid x_{t-1})$.
+Conditioning the additive score on this distribution gives
+\begin{align}
+ A_t(x)&=\nabla_\theta\log g_\theta(y_t\mid x)
+ \notag\\[-2pt]
+ &\quad+\int\left[A_{t-1}(z)
+           +\nabla_\theta\log f_\theta(x\mid z)\right]
+       p_\theta(z\mid x,y_{1:t-1})\,\dd z.
+ \label{eq:fisher-conditional-recursion}
+\end{align}
+This is the step that a single realized ancestor cannot represent exactly.
+It averages all histories compatible with the current state instead of
+discarding them when a resampling label is selected.
+
+For a weighted particle approximation, define the backward probabilities
+\begin{equation}
+ b_t^{ji}=
+ \frac{W_{t-1}^j f_\theta(x_t^i\mid x_{t-1}^j)}
+      {\sum_kW_{t-1}^k f_\theta(x_t^i\mid x_{t-1}^k)}.
+ \label{eq:backward-particle-probabilities}
+\end{equation}
+All terms are evaluated at the current parameter; the denominator must be
+positive. The initial particles must approximate $\mu_\theta$: they may be
+drawn from it directly, or drawn from a covering proposal and weighted by
+the corresponding initial-law ratio. Initialize
+$A_0^j=\nabla_\theta\log\mu_\theta(x_0^j)$ and use
+\begin{align}
+ A_t^i&=\nabla_\theta\log g_\theta(y_t\mid x_t^i)
+       +\sum_j b_t^{ji}\left[A_{t-1}^j
+          +\nabla_\theta\log f_\theta(x_t^i\mid x_{t-1}^j)\right],\\
+ \widehat s_N&=\sum_i W_T^i A_T^i.
+ \label{eq:particle-fisher-recursion}
+\end{align}
+This is the marginal-score construction in
+\citet[Section 2.2, Algorithm 2, equations (20) and (22)]{poyiadjis2011particle},
+with the initial state indexed explicitly as time zero. Its relation to
+modified differentiation rules is discussed by
+\citet[Section 4.2, equations (24)--(25)]{scibior2021dpf}. The displayed
+recursion follows directly from the conditional expectation above, with the
+initial and observation timing made explicit.
+
+No derivative of the proposal or of the sampled trajectory is missing from
+\eqref{eq:particle-fisher-recursion}: its integrand is the complete-data
+model score. Proposal design changes how well its expectation is estimated.
+This differs from $S_0^N$, where state motion through the executed finite
+program is part of the claimed derivative. The Fisher estimator should
+therefore be checked against a model-score oracle and checked local density
+derivatives. Requiring it to match finite differences of the old OT-reset
+scalar would ask it to compute a different quantity.
+
+Particle approximation and normalization still introduce error. With an
+exact smoothing draw, $H_T$ is unbiased for $s$ under the stated integrability
+conditions; with a finite approximate smoothing distribution,
+$\widehat s_N$ is not generally unbiased. Averaging ancestors reduces a
+particular source of randomness without proving a universal ranking of full
+filters. This remains true when the marginal likelihood estimate itself is
+unbiased.
+
+The original Poyiadjis paper gives a useful, specific precedent. Its
+Section~2.3 compares the methods against an analytic Gaussian-model score
+using 500 particles and 100 replications. The discussion of linear growth in
+the marginal method's variance combines a stability conjecture with those
+numerical results; Theorem~1 instead proves a quadratic lower bound for the
+genealogical construction under its stated mixing and boundedness conditions.
+These distinctions prevent a local ancestor-averaging argument from becoming
+an unsupported universal variance theorem for the proposed filter.
+
+There is a useful computational overlap with
+Section~\ref{sec:model-mixtures}. The transition mixture in the numerator
+of \eqref{eq:model-marginal-weights} is also the denominator of
+\eqref{eq:backward-particle-probabilities}. The same pairwise densities can
+support both the value calculation and the score recursion. A direct
+implementation costs $O(TN^2)$, plus the cost of the model derivatives.
+Streaming reduces memory use, not the number of pairs. PaRIS is an option
+for replacing the exact ancestor sum by a controlled number of backward
+draws; its acceptance cost, added variance, and support assumptions must be
+measured in the actual model before choosing it over the exact reference.
+
+\subsection{Using both past and future information}
+
+Younis and Sudderth's smoother suggests a complementary proposal design.
+Their equation (18) draws from a mixture of forward and backward predictive
+approximations, allowing either set of observations to nominate a state.
+Their equation (19) retains a generative correction, including an auxiliary
+reference density; equation (20) replaces its numerator with a learned
+discriminative weight \citep[Section 4]{younis2024}. The distinction matters
+here. A learned state predictor is not automatically a model posterior, and
+multiplying two posterior approximations can count prior information twice
+unless the appropriate reference-density factor is included.
+
+For transition parameters, the score contains functions of
+$(X_{t-1},X_t)$, so single-time smoothing marginals alone are insufficient.
+A Younis-inspired smoother must supply adjacent-state or path information
+and the original model correction. Its most direct role is therefore an
+evaluable proposal for the expectation in \eqref{eq:fisher-model-score},
+followed by model-based weighting, rather than replacement of that expectation
+by the paper's supervised state-prediction loss. A learned proposal would
+require its own target-specific training protocol and downstream validation.

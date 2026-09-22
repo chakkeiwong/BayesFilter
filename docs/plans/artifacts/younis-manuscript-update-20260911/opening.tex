@@ -1,0 +1,118 @@
+\begin{abstract}
+A differentiable particle filter can compute the derivative of its own
+finite likelihood accurately while estimating the underlying model score
+poorly. This distinction explains both the progress and the negative results
+of the BayesFilter investigation of Younis and Sudderth's kernel mixtures.
+The original observation sidecar led to a complete kernelized-observation
+recursion and then to an all-components, raw-importance-weight resampling
+reference. The integrated derivatives pass their declared checks, but the
+calibrated resampling construction has higher model-score mean squared error
+than the canonical filter in both tested matrix-Gaussian scopes. We retain
+these results and derive a different use of the same mixture ideas: construct
+evaluable proposals, retain the original transition and observation densities
+in the importance correction, and estimate the observed-data score by
+averaging complete-data scores over possible ancestors. Selective pathwise
+and importance-weight derivatives, valid control variates, and analytic
+conditional integration supply additional variance-reduction candidates.
+The note documents the implemented finite programs, the reasons for each
+change in direction, the complete proposed recursions, and the experiments
+needed to distinguish improved model-score accuracy from implementation
+correctness. The new combination is a research proposal; its finite-particle
+bias and computational value remain to be measured.
+\end{abstract}
+
+\section{The model score and the finite filter}
+\label{sec:question}
+
+The scientific question is how to estimate the score of a state-space model
+accurately enough to support inference about its parameters. The existing
+BayesFilter calculation uses \LEDH{} particle flow, PF--PF importance weights,
+entropy-regularized \OT{}, Contract--E moment restoration, and \GenUT{}
+higher-moment correction with two trust-region caps. These mechanisms define
+a particular finite calculation. They are useful starting points for a
+proposal, but they do not define what the exact model score must be.
+
+This note grew out of the historical ``Section 3.6'' observation-sidecar
+document. That earlier note remains in the isolated
+\path{section-3-6-prior-weight-sidecar} worktree, under
+\path{docs/papers/section_3_6_prior_weight_sidecar/}. The present manuscript,
+\path{docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex}, is its
+broader successor. It brings together the subsequent implementation, results,
+and the September 11 change in research question. The implementation history
+is tied to research commit \texttt{804616e3}; later differences in the current
+checkout, \texttt{5cc59cfa}, are identified in Section~\ref{sec:implementation}.
+
+For fixed observations $y_{1:T}$ and model parameters $\theta\in\R^p$, write
+\begin{align}
+ \ell(\theta)&=\log p_\theta(y_{1:T}), &
+ s(\theta)&=\nabla_\theta\ell(\theta), \label{eq:exact-score}\\
+ L_0^N(\theta;\xi)&=\text{value of the executed finite filter}, &
+ S_0^N(\theta;\xi)&=\nabla_\theta L_0^N(\theta;\xi).
+ \label{eq:finite-score}
+\end{align}
+Here $N$ is the particle count and $\xi$ is the fixed random design used by
+the finite program. In this note $\dd F$ means the directional derivative
+$v^\mathsf{T}\nabla_\theta F$ for a declared direction $v$; $s$ denotes the
+complete vector. Checking $S_0^N$ against finite differences of $L_0^N$ tests
+the implementation of that derivative. Comparing it with $s$ tests its
+accuracy as a model-score estimator. A third calculation, developed in
+Section~\ref{sec:fisher}, estimates $s$ through posterior expectations. It
+need not equal $S_0^N$ for the same particle realization.
+
+For a fixed dataset, define the conditional bias and covariance of the
+finite-program score by
+\begin{equation}
+ b_N(\theta;y)=\mathbb E_\xi[S_0^N\mid y]-s(\theta),\qquad
+ V_N(\theta;y)=\operatorname{Cov}_\xi(S_0^N\mid y).
+ \label{eq:conditional-score-error}
+\end{equation}
+When the second moments exist, its squared Euclidean error has expectation
+$\|b_N\|^2+\operatorname{tr}V_N$. An individual discrepancy from Kalman does
+not identify which term is responsible. Averaging errors over different
+observation paths answers another question again: conditional biases can
+cancel across datasets. Repeated filter randomizations within each dataset
+are needed to distinguish conditional bias from Monte Carlo variance.
+
+Even an unbiased likelihood estimate does not generally give an unbiased
+log-likelihood score. Consider the positive estimator
+$\widehat Z(\theta)=\theta+\varepsilon$, where
+$\Pr(\varepsilon=a)=\Pr(\varepsilon=-a)=1/2$ and $\theta>a>0$.
+Its mean is $Z(\theta)=\theta$, and its derivative is exactly one. Yet
+\begin{equation}
+ \mathbb E\left[\partial_\theta\log\widehat Z\right]
+ =\frac12\left(\frac1{\theta+a}+\frac1{\theta-a}\right)
+ =\frac{\theta}{\theta^2-a^2}\ne\frac1\theta
+ =\partial_\theta\log Z.
+ \label{eq:unbiased-value-biased-score}
+\end{equation}
+At $\theta=2$ and $a=1/2$, the two scores are $8/15$ and $1/2$.
+The bias is created by the random denominator, despite correct
+differentiation and an unbiased numerator. This example does not say that
+every finite-particle score is biased in every model. It shows why the two
+correctness statements cannot be substituted for a score-accuracy argument.
+
+There are consequently several possible repairs. Missing derivatives of the
+state, covariance, initial law, or sampling distribution require an
+implementation or estimator correction. A reset or kernel that changes the
+filtering measure requires a correction to that approximation or an explicit
+new target. A valid but noisy integral requires better integration. The
+development below separates these explanations before selecting the next
+method. A zero-mean control variate addresses the last problem; it does not
+remove an arbitrary bias already present in its baseline.
+
+The existing implementation names remain useful for identifying what ran.
+\texttt{ATOM-FINITE} denotes $L_0^N$; \texttt{KDM-FINITE} denotes a
+positive-bandwidth observation program; \texttt{RESKDM-IWSG-FINITE} denotes
+the post-Contract--E resampling program with raw anchored ratios; and
+\texttt{RESKDM-SN-FINITE} denotes its historical, prematurely normalized
+variant. \texttt{MODEL-IS} denotes an importance calculation whose numerator
+retains the original model factors. These are program identities, not levels
+of scientific validity. In particular, a correct \texttt{MODEL-IS} update
+does not by itself make an additional deterministic reset unbiased, and a
+different finite derivative is acceptable only under its actual name.
+
+The \LEDH{} spelling follows the Li--Coates particle-flow construction
+\citep{li2017particle}; the differentiable-transport context is
+\citet{corenflos2021differentiable}. The new investigation now includes
+alternative model-score estimators explicitly. It no longer rules them out
+merely because they differentiate a different finite scalar.

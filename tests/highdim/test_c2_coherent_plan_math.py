@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 
 from scipy.integrate import quad
-from scipy.special import eval_hermitenorm, gamma
+from scipy.special import eval_hermitenorm
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -79,4 +79,3 @@ def test_c2_fixture_has_nonzero_observations_and_matches_envelope_stationary_poi
             log_likelihood = -0.5 * math.log(2.0 * math.pi * v_star) - 0.5 * y * y / v_star
             expected = -0.5 * math.log(2.0 * math.pi) - math.log(abs(y)) - 0.5
             assert math.isclose(log_likelihood, expected, rel_tol=2e-12, abs_tol=2e-12)
-

@@ -1,0 +1,106 @@
+{
+  "comparison_target": "model_score",
+  "derivative_id": "analytical_recursion",
+  "derivative_target": "finite_program_score",
+  "diagnostics": {
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 8,
+    "controls": {
+      "coordinate_cap": 0.4,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_steps": 1,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.5,
+      "flow_substeps": 2,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 3,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 3
+    },
+    "data_model": "affine_gaussian_all_six_parameters",
+    "data_seed": [
+      211612301,
+      2132762280
+    ],
+    "data_version": "835f8e2d31c0e9a0d5b3d805fbfa582ccc50c7888ad80aedb922cb3a8fbdef6f",
+    "derivative_semantics": "analytical_total_initial_moments_flow_genut_contract_e",
+    "horizon": 3,
+    "initial_seed": [
+      311971841,
+      1537160074
+    ],
+    "parameter_dimension": 6,
+    "particle_count": 8,
+    "process_seed": [
+      1352885461,
+      1575281368
+    ],
+    "resampling_seed": [
+      1958900446,
+      425959782
+    ],
+    "reset_contract_id": "contract_e_chol_v1",
+    "reset_seed": [
+      2039162582,
+      1785895566
+    ],
+    "score_consumer": "make_canonical_kernel -> canonical_value_and_analytical_score",
+    "score_squared_error": 0.9469316893606471,
+    "state_dimension": 2,
+    "tuning_status": "verified_selection",
+    "uses_autodiff": false,
+    "value_squared_error": 0.4297983147269253
+  },
+  "inference_status": "mechanics_only",
+  "initial_terms": true,
+  "numerical_validity": "pass",
+  "oracle_score": [
+    5.0443131409507345,
+    1.1180263660009846,
+    -0.19471835564264361,
+    2.5650293516896,
+    1.3967401745649086,
+    0.8413150068784286
+  ],
+  "oracle_value": -4.519801272432609,
+  "proposal_law": "canonical_ledh_pfpf_contract_e",
+  "runtime": {
+    "allocator_current_bytes": null,
+    "allocator_peak_bytes": null,
+    "backend": "tensorflow",
+    "cpu_threads": 4,
+    "device": "CPU",
+    "dtype": "float64",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": true,
+    "kernel_calls": 6,
+    "kernel_wall_seconds": 12.479553576995386,
+    "memory_policy": {
+      "mode": "cpu_reference_gpu_intentionally_hidden",
+      "physical_devices": []
+    },
+    "reason": "CPU reference; GPU intentionally hidden",
+    "reference_exception": true,
+    "score_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+    "tensorflow_version": "2.20.0-dev0+selfbuilt",
+    "tf32": false,
+    "traces": 1,
+    "value_device": "/job:localhost/replica:0/task:0/device:CPU:0"
+  },
+  "score": [
+    5.985123940130534,
+    1.0232282804789206,
+    -0.2475653165761943,
+    2.676792240938144,
+    1.4038264088053254,
+    1.0349282633456984
+  ],
+  "value": -3.8642112216181346,
+  "value_target": "finite_particle_log_likelihood"
+}

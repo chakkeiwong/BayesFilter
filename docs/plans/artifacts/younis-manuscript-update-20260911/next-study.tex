@@ -1,0 +1,128 @@
+\section{The next discriminating comparison}
+\label{sec:next-study}
+
+The primary question is whether model-corrected mixture proposals and
+ancestor averaging reduce model-score error at equal compute. Proposal
+quality, score construction, and mixture-gradient variance must be separated.
+Otherwise a successful run could be attributed to the wrong mechanism, just
+as a passing derivative check previously obscured a changed scalar.
+
+The smallest useful sequence begins with three calculations. First, compare
+\eqref{eq:model-marginal-weights} and
+\eqref{eq:fully-adapted-mixture} with direct Gaussian integration on a fixed
+incoming cloud. Second, compare the complete-data and backward-recursion
+scores with exact enumeration on a small finite-state model, including a
+parameter-dependent initial law. Third, compare IWSG, centered IWSG, and
+\eqref{eq:hybrid-estimator} for the same declared mixture expectation.
+These calculations test identities and failure mechanisms; their particle
+counts need only be large enough to exercise the operation being tested.
+They are not score-quality campaigns or reasons to select a production
+particle count.
+
+The subsequent accuracy study should use a linear-Gaussian model with an
+independent Kalman score, a short Gaussian-mixture model whose modes can be
+enumerated exactly, and a scalar nonlinear model with a numerically converged
+quadrature score. Kalman checks the basic integration and complete derivatives.
+The mixture model tests the separated modes that motivate Younis's method.
+The nonlinear model tests how proposal approximation affects the result.
+A one-step or unimodal success cannot establish the latter two properties.
+Models with unresolved initialization or support identity must be repaired
+before their score results are interpreted.
+
+For each model, change one mechanism at a time: ordinary ancestor sampling
+versus marginal mixture weights; a genealogical complete-data score versus
+the full ancestor average; and, where an expectation derivative is actually
+used, all-IWSG versus the selective estimator. Include the enhanced
+combination only after the component comparisons. The exact full-mixture
+reference remains necessary when evaluating a later sparse or sampled
+approximation.
+
+The cheap alternatives are constructed from the model before claim data are
+examined. A bootstrap PF proposes from the physical transition and uses a
+proper complete-data score estimator. A locally adapted PF uses the current
+observation to guide each ancestor's proposal and keeps the exact importance
+weight. In nearly linear regimes, EKF and UKF approximate-likelihood scores
+test whether inexpensive Gaussian propagation already suffices; their
+derivatives must include the full declared Gaussian approximation. A
+scope-tuned canonical LEDH filter supplies the project comparator. The exact
+Kalman, mixture-enumeration, or quadrature solution supplies the oracle.
+Neither a weak fixed-ancestry derivative nor an untuned numerical default
+should stand in for all conventional particle-score methods.
+
+Evaluate these comparisons conditionally. Weak and strong observations probe
+proposal concentration; overlapping and separated modes probe mixture
+gradients; low and high persistence probe loss of ancestor diversity; short
+and long horizons probe accumulation; near-zero and large score components
+probe the error scale. These situations must be defined from the model and
+research question before using validation data. Failure against a cheap
+alternative in a salient situation rejects promotion under the repository's
+sanity-check rule, even if the method wins an unconditional average. The
+adversaries are falsification checks, not extra tuning targets.
+
+For dataset $d$ and independent filter randomization $r$, denote the estimate
+by $\widehat s_{d,r}$ and the oracle by $s_d$. Replication within each fixed
+dataset estimates $b_d$ and $V_d$ from
+\eqref{eq:conditional-score-error}; the distribution over datasets measures
+generalization. Pair methods within datasets and respect this nesting in
+confidence intervals. A path bootstrap with only one filter realization per
+path cannot estimate each dataset's conditional bias. Freeze parameter
+coordinate scales before comparison, because a relative error divided by a
+nearly zero oracle score is unstable. Change $N$ and $T$ independently, and
+report both equal-particle and equal-measured-compute comparisons.
+
+Before a serious run, choose a practically meaningful reduction $\delta$ and
+test a predeclared upper confidence bound for
+\begin{equation}
+ \Delta=\mathbb E\!\left[
+    \|\widehat s_{\rm candidate}-s\|_D^2
+    -(1-\delta)\|\widehat s_{\rm comparator}-s\|_D^2\right],
+ \qquad \|v\|_D^2=v^\mathsf T Dv,
+ \label{eq:next-study-criterion}
+\end{equation}
+where $D$ is the fixed coordinate scaling and the expectation follows the
+specified sampling of datasets and filter randomizations. The upper bound must be below
+zero, subject to validity and conditional-comparison vetoes. The old ten
+percent criterion is not automatically a justified threshold for every new
+model. Its practical meaning, replication requirement, multiplicity handling,
+and total compute budget must be stated for the new study. A power pilot that
+requires more replications than the budget permits leads to an inconclusive
+study, not a forced ranking among viable candidates.
+
+All material numerical choices need a provenance and failure explanation.
+The physical transition covariance comes from the model; proposal bandwidth,
+defensive-mixture fraction, covariance marks, chart, regularization, and
+ancestor-sampling precision are numerical hypotheses. The earliest checks
+should expose wrong support, missing proposal mass, large importance ratios,
+or a gradient dominated by inverse bandwidth. Calibration and validation
+must be disjoint for each bound model/horizon/particle/backend scope. The
+initial law is part of that scope. Retaining an old setting for comparability
+does not make it a tuned default, and a failed holdout cannot become the next
+calibration set.
+
+Numerical validity is assessed before score ranking. Nonfinite values,
+incorrect density ratios, support violations, missing initial-law terms,
+an invalid reference, or an omitted sampling-law derivative invalidate the
+affected comparison. ESS, mode overlap, cap activity, tangent norms, bandwidth,
+memory, and runtime explain its behavior; they do not replace the model-score
+criterion. A valid candidate that loses is a candidate rejection. A later
+prespecified repair may continue unless the target, evidence, or total budget
+has become invalid.
+
+BayesFilter implementation remains TensorFlow/TFP with analytical recursive
+scores. Autodiff and finite differences are independent diagnostics. The
+production direction remains GPU/XLA with the declared memory-growth and
+transport-chunk policies; the earlier float64 and no-TF32 tests are reference
+exceptions. New mixture evaluation must expose its pair count and memory
+behavior. Batch wrappers must preserve the mathematical calculation and,
+for NeuTra training, actually evaluate a batch rather than apply a scalar
+target independently to each row. None of the proposed new calculations is
+promoted by this document.
+
+The most useful next evidence is therefore modest but decisive: correct
+model-density weights and complete initialization, an independently checked
+score recursion, and a powered comparison against simple alternatives. The
+strongest alternative explanation for any improvement is better proposal
+adaptation or more effective computation, rather than the gradient identity.
+The component comparisons distinguish those explanations. Loss to a tuned
+conventional score estimator at equal compute would overturn the practical
+priority of the new combination without invalidating its algebra.

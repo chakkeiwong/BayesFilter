@@ -1,0 +1,119 @@
+{
+  "comparison_target": "model_score",
+  "derivative_id": "analytical_recursion",
+  "derivative_target": "frozen_iwsg_log_program_score",
+  "diagnostics": {
+    "bandwidth_derivative": "total_model_parameter_dependence",
+    "bandwidth_law": "scale_squared_times_Q_theta",
+    "bandwidth_scale": 0.2,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 8,
+    "controls": {
+      "coordinate_cap": 0.4,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_steps": 1,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.5,
+      "flow_substeps": 2,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 3,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 3
+    },
+    "data_model": "affine_gaussian_all_six_parameters",
+    "data_seed": [
+      1656551339,
+      123073238
+    ],
+    "data_version": "c1c5140b1ee58e62dfe9cd975ead74b62c95ab7e6087c39dff7090a311fb6760",
+    "derivative_semantics": "analytical_total_initial_moments_flow_genut_contract_e",
+    "expectation_gradient_unbiasedness": "not_claimed_for_log_program",
+    "horizon": 3,
+    "initial_seed": [
+      702127610,
+      676376925
+    ],
+    "kdm_components_seed": [
+      553979548,
+      13655982
+    ],
+    "kdm_random_seed": [
+      1790195423,
+      1637972135
+    ],
+    "kdm_target": "RESKDM-IWSG-FINITE",
+    "parameter_dimension": 6,
+    "particle_count": 8,
+    "process_seed": [
+      1402741264,
+      695335497
+    ],
+    "resampling_seed": [
+      1631469589,
+      691669999
+    ],
+    "reset_contract_id": "contract_e_chol_v1",
+    "reset_seed": [
+      994691810,
+      1686367842
+    ],
+    "score_consumer": "make_kdm_kernel -> KDM consumer -> shared canonical executor",
+    "score_squared_error": 11.845302176214355,
+    "state_dimension": 2,
+    "tuning_status": "mechanics_or_tuning_candidate",
+    "uses_autodiff": false,
+    "value_squared_error": 0.08850519903312448
+  },
+  "inference_status": "mechanics_only",
+  "initial_terms": true,
+  "numerical_validity": "pass",
+  "oracle_score": [
+    -0.28392106695941965,
+    -0.6163359605222585,
+    -0.9772937534907045,
+    -1.031273484662531,
+    0.23730785839304272,
+    -0.3711371402722802
+  ],
+  "oracle_value": -2.655106336671603,
+  "proposal_law": "contract_e_then_raw_full_mixture_iwsg",
+  "runtime": {
+    "allocator_current_bytes": null,
+    "allocator_peak_bytes": null,
+    "backend": "tensorflow",
+    "cpu_threads": 4,
+    "device": "CPU",
+    "dtype": "float64",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": true,
+    "kernel_calls": 6,
+    "kernel_wall_seconds": 0.0124451240117196,
+    "memory_policy": {
+      "mode": "cpu_reference_gpu_intentionally_hidden",
+      "physical_devices": []
+    },
+    "reason": "CPU reference; GPU intentionally hidden",
+    "reference_exception": true,
+    "score_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+    "tensorflow_version": "2.20.0-dev0+selfbuilt",
+    "tf32": false,
+    "traces": 1,
+    "value_device": "/job:localhost/replica:0/task:0/device:CPU:0"
+  },
+  "score": [
+    1.4726954613656722,
+    1.7123748426609005,
+    -1.0839572272289142,
+    -1.7212383901933566,
+    -1.4487518920041884,
+    -0.4516380369372619
+  ],
+  "value": -2.952604570335476,
+  "value_target": "RESKDM-IWSG-FINITE"
+}

@@ -1,0 +1,1125 @@
+{
+  "study": "lgssm_1d_t3_component_ablation",
+  "date": "2026-08-28",
+  "question": "which filter mechanism causes the +1.9% value offset vs exact Kalman on a 1D linear Gaussian model at T=3, N=1008",
+  "why_it_matters": "the analytical score was verified to equal a finite difference of the filter's own value to 6 decimals, so the tangent is correct and the value offset is what makes the score differ from the exact Kalman score",
+  "model": {
+    "family": "1D AR(1) linear Gaussian",
+    "dim": 1,
+    "theta": [
+      0.9,
+      0.6,
+      0.8
+    ],
+    "horizon": 3,
+    "observations": [
+      -0.9911206904960701,
+      -2.7246862541942303,
+      -0.30490733274540416
+    ]
+  },
+  "exact_kalman": -5.903444873434653,
+  "bootstrap_reference": {
+    "particles": 200000,
+    "values": [
+      -5.892795500970383,
+      -5.898640794354894,
+      -5.902015401491649,
+      -5.9043464066386395
+    ],
+    "summary": {
+      "n": 4,
+      "mean_value": -5.899449525863892,
+      "bias": 0.003995347570761476,
+      "bias_se": 0.0025082074109526666,
+      "separated_from_zero_2se": false
+    }
+  },
+  "seeds": [
+    999000,
+    999001,
+    999002,
+    999003,
+    999004,
+    999005,
+    999006,
+    999007
+  ],
+  "arms": [
+    {
+      "arm": "A full (reset+caps)",
+      "note": "production-shaped",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": true,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.767419561693809,
+        "bias": 0.13602531174084442,
+        "bias_se": 0.060003389212188604,
+        "separated_from_zero_2se": true
+      },
+      "rows": [
+        {
+          "value": -5.790364796258427,
+          "program_valid": true,
+          "max_marginal_tv": 2.1115025447215885e-05,
+          "marginals_valid": true,
+          "ess_min": 300.31027907605477
+        },
+        {
+          "value": -5.8770914919793835,
+          "program_valid": true,
+          "max_marginal_tv": 2.0450344891287386e-05,
+          "marginals_valid": true,
+          "ess_min": 297.64979725193723
+        },
+        {
+          "value": -5.9292586678192984,
+          "program_valid": true,
+          "max_marginal_tv": 2.0722283807117492e-05,
+          "marginals_valid": true,
+          "ess_min": 295.04589986859037
+        },
+        {
+          "value": -5.794448458595244,
+          "program_valid": true,
+          "max_marginal_tv": 2.998005220433697e-05,
+          "marginals_valid": true,
+          "ess_min": 331.9291124282019
+        },
+        {
+          "value": -5.701109611145566,
+          "program_valid": true,
+          "max_marginal_tv": 2.9310442187124863e-05,
+          "marginals_valid": true,
+          "ess_min": 220.23376432500987
+        },
+        {
+          "value": -5.932447665379372,
+          "program_valid": true,
+          "max_marginal_tv": 2.1553812985075638e-05,
+          "marginals_valid": true,
+          "ess_min": 390.557734920826
+        },
+        {
+          "value": -5.7026265425067555,
+          "program_valid": true,
+          "max_marginal_tv": 0.0001060515278368257,
+          "marginals_valid": false,
+          "ess_min": 287.1764742179628
+        },
+        {
+          "value": -5.412009259866423,
+          "program_valid": true,
+          "max_marginal_tv": 0.00020730469259433448,
+          "marginals_valid": false,
+          "ess_min": 69.21188007245968
+        }
+      ]
+    },
+    {
+      "arm": "B no caps",
+      "note": "trust region off",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": false,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.783233977564631,
+        "bias": 0.1202108958700212,
+        "bias_se": 0.06224124824466431,
+        "separated_from_zero_2se": false
+      },
+      "rows": [
+        {
+          "value": -5.800413110070377,
+          "program_valid": true,
+          "max_marginal_tv": 2.210502134403214e-05,
+          "marginals_valid": true,
+          "ess_min": 292.2925963999856
+        },
+        {
+          "value": -5.897415510203259,
+          "program_valid": true,
+          "max_marginal_tv": 2.156181653845124e-05,
+          "marginals_valid": true,
+          "ess_min": 287.29337059757444
+        },
+        {
+          "value": -5.929050765065903,
+          "program_valid": true,
+          "max_marginal_tv": 2.001226312131621e-05,
+          "marginals_valid": true,
+          "ess_min": 251.0869433517553
+        },
+        {
+          "value": -5.8138251963030845,
+          "program_valid": true,
+          "max_marginal_tv": 2.998005220433697e-05,
+          "marginals_valid": true,
+          "ess_min": 324.5134422578479
+        },
+        {
+          "value": -5.735876152992517,
+          "program_valid": true,
+          "max_marginal_tv": 2.9310442187124863e-05,
+          "marginals_valid": true,
+          "ess_min": 229.60632026817927
+        },
+        {
+          "value": -5.971345649966446,
+          "program_valid": true,
+          "max_marginal_tv": 2.1857922547496855e-05,
+          "marginals_valid": true,
+          "ess_min": 390.557734920826
+        },
+        {
+          "value": -5.705936308546719,
+          "program_valid": true,
+          "max_marginal_tv": 0.0001060515278368257,
+          "marginals_valid": false,
+          "ess_min": 287.17647969608134
+        },
+        {
+          "value": -5.412009127368749,
+          "program_valid": true,
+          "max_marginal_tv": 0.00020730469259433448,
+          "marginals_valid": false,
+          "ess_min": 69.21188100132059
+        }
+      ]
+    },
+    {
+      "arm": "D flow=12",
+      "note": "flow discretization ladder",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": false,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.783233977564631,
+        "bias": 0.1202108958700212,
+        "bias_se": 0.06224124824466431,
+        "separated_from_zero_2se": false
+      },
+      "rows": [
+        {
+          "value": -5.800413110070377,
+          "program_valid": true,
+          "max_marginal_tv": 2.210502134403214e-05,
+          "marginals_valid": true,
+          "ess_min": 292.2925963999856
+        },
+        {
+          "value": -5.897415510203259,
+          "program_valid": true,
+          "max_marginal_tv": 2.156181653845124e-05,
+          "marginals_valid": true,
+          "ess_min": 287.29337059757444
+        },
+        {
+          "value": -5.929050765065903,
+          "program_valid": true,
+          "max_marginal_tv": 2.001226312131621e-05,
+          "marginals_valid": true,
+          "ess_min": 251.0869433517553
+        },
+        {
+          "value": -5.8138251963030845,
+          "program_valid": true,
+          "max_marginal_tv": 2.998005220433697e-05,
+          "marginals_valid": true,
+          "ess_min": 324.5134422578479
+        },
+        {
+          "value": -5.735876152992517,
+          "program_valid": true,
+          "max_marginal_tv": 2.9310442187124863e-05,
+          "marginals_valid": true,
+          "ess_min": 229.60632026817927
+        },
+        {
+          "value": -5.971345649966446,
+          "program_valid": true,
+          "max_marginal_tv": 2.1857922547496855e-05,
+          "marginals_valid": true,
+          "ess_min": 390.557734920826
+        },
+        {
+          "value": -5.705936308546719,
+          "program_valid": true,
+          "max_marginal_tv": 0.0001060515278368257,
+          "marginals_valid": false,
+          "ess_min": 287.17647969608134
+        },
+        {
+          "value": -5.412009127368749,
+          "program_valid": true,
+          "max_marginal_tv": 0.00020730469259433448,
+          "marginals_valid": false,
+          "ess_min": 69.21188100132059
+        }
+      ]
+    },
+    {
+      "arm": "D flow=24",
+      "note": "flow discretization ladder",
+      "config": {
+        "flow_substeps": 24,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": false,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.779050159758235,
+        "bias": 0.12439471367641797,
+        "bias_se": 0.06609544079060709,
+        "separated_from_zero_2se": false
+      },
+      "rows": [
+        {
+          "value": -5.799117252619109,
+          "program_valid": true,
+          "max_marginal_tv": 2.4647253667353652e-05,
+          "marginals_valid": true,
+          "ess_min": 279.5278170360555
+        },
+        {
+          "value": -5.898029389177525,
+          "program_valid": true,
+          "max_marginal_tv": 2.1362469851737842e-05,
+          "marginals_valid": true,
+          "ess_min": 272.2831560320366
+        },
+        {
+          "value": -5.929975079166682,
+          "program_valid": true,
+          "max_marginal_tv": 2.1341791580198333e-05,
+          "marginals_valid": true,
+          "ess_min": 237.2270124620151
+        },
+        {
+          "value": -5.816432440885148,
+          "program_valid": true,
+          "max_marginal_tv": 3.113585262326524e-05,
+          "marginals_valid": true,
+          "ess_min": 312.1680346416363
+        },
+        {
+          "value": -5.730352204986651,
+          "program_valid": true,
+          "max_marginal_tv": 3.221592851332389e-05,
+          "marginals_valid": true,
+          "ess_min": 215.47099544288344
+        },
+        {
+          "value": -5.978225973813026,
+          "program_valid": true,
+          "max_marginal_tv": 2.2083908334025182e-05,
+          "marginals_valid": true,
+          "ess_min": 374.8364092012026
+        },
+        {
+          "value": -5.6977789839524275,
+          "program_valid": true,
+          "max_marginal_tv": 0.00011573326628422365,
+          "marginals_valid": false,
+          "ess_min": 271.5708797492096
+        },
+        {
+          "value": -5.382489953465313,
+          "program_valid": true,
+          "max_marginal_tv": 0.00026905955746769905,
+          "marginals_valid": false,
+          "ess_min": 58.71980724800581
+        }
+      ]
+    },
+    {
+      "arm": "D flow=48",
+      "note": "flow discretization ladder",
+      "config": {
+        "flow_substeps": 48,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": false,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.776901284158576,
+        "bias": 0.12654358927607712,
+        "bias_se": 0.06810115660030157,
+        "separated_from_zero_2se": false
+      },
+      "rows": [
+        {
+          "value": -5.798508611638238,
+          "program_valid": true,
+          "max_marginal_tv": 2.609261719044298e-05,
+          "marginals_valid": true,
+          "ess_min": 273.15863672200953
+        },
+        {
+          "value": -5.898328897969062,
+          "program_valid": true,
+          "max_marginal_tv": 2.228028461104259e-05,
+          "marginals_valid": true,
+          "ess_min": 264.7833101202829
+        },
+        {
+          "value": -5.930411605318697,
+          "program_valid": true,
+          "max_marginal_tv": 2.2575753973796964e-05,
+          "marginals_valid": true,
+          "ess_min": 230.37567695429104
+        },
+        {
+          "value": -5.8178572737991265,
+          "program_valid": true,
+          "max_marginal_tv": 3.177499820594676e-05,
+          "marginals_valid": true,
+          "ess_min": 305.96992297223494
+        },
+        {
+          "value": -5.727556926027517,
+          "program_valid": true,
+          "max_marginal_tv": 3.389410630916245e-05,
+          "marginals_valid": true,
+          "ess_min": 208.52491977635194
+        },
+        {
+          "value": -5.98179217500033,
+          "program_valid": true,
+          "max_marginal_tv": 2.238740853499621e-05,
+          "marginals_valid": true,
+          "ess_min": 367.0046529651105
+        },
+        {
+          "value": -5.693621727083666,
+          "program_valid": true,
+          "max_marginal_tv": 0.00012087010691175237,
+          "marginals_valid": false,
+          "ess_min": 263.87859361549516
+        },
+        {
+          "value": -5.36713305643197,
+          "program_valid": true,
+          "max_marginal_tv": 0.00030703292577527463,
+          "marginals_valid": false,
+          "ess_min": 54.04967216019922
+        }
+      ]
+    },
+    {
+      "arm": "D flow=96",
+      "note": "flow discretization ladder",
+      "config": {
+        "flow_substeps": 96,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": false,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.775813321213251,
+        "bias": 0.12763155222140155,
+        "bias_se": 0.06912366635205595,
+        "separated_from_zero_2se": false
+      },
+      "rows": [
+        {
+          "value": -5.798215552134149,
+          "program_valid": true,
+          "max_marginal_tv": 2.6854611860471778e-05,
+          "marginals_valid": true,
+          "ess_min": 269.98094567001453
+        },
+        {
+          "value": -5.898477064303945,
+          "program_valid": true,
+          "max_marginal_tv": 2.286991002620198e-05,
+          "marginals_valid": true,
+          "ess_min": 261.0401773774306
+        },
+        {
+          "value": -5.9306228821333775,
+          "program_valid": true,
+          "max_marginal_tv": 2.3250218873727135e-05,
+          "marginals_valid": true,
+          "ess_min": 226.97398688774229
+        },
+        {
+          "value": -5.8186013586977285,
+          "program_valid": true,
+          "max_marginal_tv": 3.210163413314149e-05,
+          "marginals_valid": true,
+          "ess_min": 302.86756623010245
+        },
+        {
+          "value": -5.726152202697514,
+          "program_valid": true,
+          "max_marginal_tv": 3.479875886114314e-05,
+          "marginals_valid": true,
+          "ess_min": 205.0871992432952
+        },
+        {
+          "value": -5.983606812886355,
+          "program_valid": true,
+          "max_marginal_tv": 2.2561918740393594e-05,
+          "marginals_valid": true,
+          "ess_min": 363.1011255184344
+        },
+        {
+          "value": -5.691524993613799,
+          "program_valid": true,
+          "max_marginal_tv": 0.00012350959877949208,
+          "marginals_valid": false,
+          "ess_min": 260.06484634354047
+        },
+        {
+          "value": -5.359305703239144,
+          "program_valid": true,
+          "max_marginal_tv": 0.0003282130346633494,
+          "marginals_valid": false,
+          "ess_min": 51.849354227253514
+        }
+      ]
+    },
+    {
+      "arm": "E eps=1.0",
+      "note": "entropic regularization ladder",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 24,
+        "caps": false,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.783233937050003,
+        "bias": 0.12021093638464952,
+        "bias_se": 0.06224124722849589,
+        "separated_from_zero_2se": false
+      },
+      "rows": [
+        {
+          "value": -5.800413034571694,
+          "program_valid": true,
+          "max_marginal_tv": 2.200434755650349e-05,
+          "marginals_valid": true,
+          "ess_min": 292.29258352399364
+        },
+        {
+          "value": -5.897415380849318,
+          "program_valid": true,
+          "max_marginal_tv": 2.146175756934099e-05,
+          "marginals_valid": true,
+          "ess_min": 287.29333854760233
+        },
+        {
+          "value": -5.929050681754394,
+          "program_valid": true,
+          "max_marginal_tv": 1.9922801584471017e-05,
+          "marginals_valid": true,
+          "ess_min": 251.08694100606849
+        },
+        {
+          "value": -5.813825199873906,
+          "program_valid": true,
+          "max_marginal_tv": 2.98539744107984e-05,
+          "marginals_valid": true,
+          "ess_min": 324.51338843775466
+        },
+        {
+          "value": -5.735876080086148,
+          "program_valid": true,
+          "max_marginal_tv": 2.9179693228797987e-05,
+          "marginals_valid": true,
+          "ess_min": 229.60631350819915
+        },
+        {
+          "value": -5.971345739231001,
+          "program_valid": true,
+          "max_marginal_tv": 2.1746815036749467e-05,
+          "marginals_valid": true,
+          "ess_min": 390.557734920826
+        },
+        {
+          "value": -5.705936252664817,
+          "program_valid": true,
+          "max_marginal_tv": 0.00010520738578634337,
+          "marginals_valid": false,
+          "ess_min": 287.17647969608134
+        },
+        {
+          "value": -5.412009127368749,
+          "program_valid": true,
+          "max_marginal_tv": 0.0002050260518444702,
+          "marginals_valid": false,
+          "ess_min": 69.21188100132059
+        }
+      ]
+    },
+    {
+      "arm": "E eps=0.5",
+      "note": "entropic regularization ladder",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 0.5,
+        "sinkhorn_steps": 24,
+        "caps": false,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.791247292645127,
+        "bias": 0.11219758078952591,
+        "bias_se": 0.06321287961978042,
+        "separated_from_zero_2se": false
+      },
+      "rows": [
+        {
+          "value": -5.819272869743805,
+          "program_valid": true,
+          "max_marginal_tv": 4.9600788770476356e-05,
+          "marginals_valid": true,
+          "ess_min": 288.0951543249283
+        },
+        {
+          "value": -5.906054095111384,
+          "program_valid": true,
+          "max_marginal_tv": 4.850874393014237e-05,
+          "marginals_valid": true,
+          "ess_min": 285.90761522023575
+        },
+        {
+          "value": -5.92474483352261,
+          "program_valid": true,
+          "max_marginal_tv": 4.1516628698445857e-05,
+          "marginals_valid": true,
+          "ess_min": 240.12160827675643
+        },
+        {
+          "value": -5.814667591984547,
+          "program_valid": true,
+          "max_marginal_tv": 9.230414434568956e-05,
+          "marginals_valid": true,
+          "ess_min": 312.93107574552425
+        },
+        {
+          "value": -5.753127243428365,
+          "program_valid": true,
+          "max_marginal_tv": 7.454787555616349e-05,
+          "marginals_valid": true,
+          "ess_min": 232.1951643722752
+        },
+        {
+          "value": -5.990126150914469,
+          "program_valid": true,
+          "max_marginal_tv": 4.435768278199248e-05,
+          "marginals_valid": true,
+          "ess_min": 376.30233428808856
+        },
+        {
+          "value": -5.709976429087089,
+          "program_valid": true,
+          "max_marginal_tv": 0.0011895530624315143,
+          "marginals_valid": false,
+          "ess_min": 287.17647969608134
+        },
+        {
+          "value": -5.412009127368749,
+          "program_valid": true,
+          "max_marginal_tv": 0.0025049010291695595,
+          "marginals_valid": false,
+          "ess_min": 69.21188100132059
+        }
+      ]
+    },
+    {
+      "arm": "E eps=0.25",
+      "note": "entropic regularization ladder",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 0.25,
+        "sinkhorn_steps": 24,
+        "caps": false,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.7704102617974335,
+        "bias": 0.13303461163721908,
+        "bias_se": 0.059684486781402736,
+        "separated_from_zero_2se": true
+      },
+      "rows": [
+        {
+          "value": -5.81272293127177,
+          "program_valid": true,
+          "max_marginal_tv": 0.00025717710377648473,
+          "marginals_valid": false,
+          "ess_min": 286.4573164189656
+        },
+        {
+          "value": -5.90624958731232,
+          "program_valid": true,
+          "max_marginal_tv": 0.0002046745939878747,
+          "marginals_valid": false,
+          "ess_min": 286.00618530453767
+        },
+        {
+          "value": -5.9004528600145285,
+          "program_valid": true,
+          "max_marginal_tv": 0.00015784344577696174,
+          "marginals_valid": false,
+          "ess_min": 234.49764643487453
+        },
+        {
+          "value": -5.822330445463673,
+          "program_valid": true,
+          "max_marginal_tv": 0.0009627987165004015,
+          "marginals_valid": false,
+          "ess_min": 375.06013871311313
+        },
+        {
+          "value": -5.683213081762748,
+          "program_valid": true,
+          "max_marginal_tv": 0.0003112803096882999,
+          "marginals_valid": false,
+          "ess_min": 244.64445765505542
+        },
+        {
+          "value": -5.912970415045471,
+          "program_valid": true,
+          "max_marginal_tv": 0.00011818827624665573,
+          "marginals_valid": false,
+          "ess_min": 390.557734920826
+        },
+        {
+          "value": -5.713333646140211,
+          "program_valid": true,
+          "max_marginal_tv": 0.009908977895975113,
+          "marginals_valid": false,
+          "ess_min": 287.17647969608134
+        },
+        {
+          "value": -5.412009127368749,
+          "program_valid": true,
+          "max_marginal_tv": 0.020323636010289192,
+          "marginals_valid": false,
+          "ess_min": 69.21188100132059
+        }
+      ]
+    },
+    {
+      "arm": "E eps=0.1",
+      "note": "entropic regularization ladder",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 0.1,
+        "sinkhorn_steps": 24,
+        "caps": false,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.7540448036069805,
+        "bias": 0.14940006982767273,
+        "bias_se": 0.05811260733563675,
+        "separated_from_zero_2se": true
+      },
+      "rows": [
+        {
+          "value": -5.753684412805957,
+          "program_valid": true,
+          "max_marginal_tv": 0.004527399782091379,
+          "marginals_valid": false,
+          "ess_min": 310.6066675608137
+        },
+        {
+          "value": -5.84424587843858,
+          "program_valid": true,
+          "max_marginal_tv": 0.002471701242029667,
+          "marginals_valid": false,
+          "ess_min": 312.20964226919085
+        },
+        {
+          "value": -5.93094582299335,
+          "program_valid": true,
+          "max_marginal_tv": 0.002936127595603466,
+          "marginals_valid": false,
+          "ess_min": 339.05597882060755
+        },
+        {
+          "value": -5.809279358666379,
+          "program_valid": true,
+          "max_marginal_tv": 0.007879327051341534,
+          "marginals_valid": false,
+          "ess_min": 375.06013871311313
+        },
+        {
+          "value": -5.683213081762748,
+          "program_valid": true,
+          "max_marginal_tv": 0.008656715974211693,
+          "marginals_valid": false,
+          "ess_min": 244.64445765505542
+        },
+        {
+          "value": -5.900729892798236,
+          "program_valid": true,
+          "max_marginal_tv": 0.002597253769636154,
+          "marginals_valid": false,
+          "ess_min": 390.557734920826
+        },
+        {
+          "value": -5.698250854021842,
+          "program_valid": true,
+          "max_marginal_tv": 0.01658041775226593,
+          "marginals_valid": false,
+          "ess_min": 287.17647969608134
+        },
+        {
+          "value": -5.412009127368749,
+          "program_valid": true,
+          "max_marginal_tv": 0.0628688782453537,
+          "marginals_valid": false,
+          "ess_min": 69.21188100132059
+        }
+      ]
+    },
+    {
+      "arm": "F N=504",
+      "note": "sampling error ladder",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": true,
+        "particles": 504
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.793948992338126,
+        "bias": 0.10949588109652664,
+        "bias_se": 0.042024164678345674,
+        "separated_from_zero_2se": true
+      },
+      "rows": [
+        {
+          "value": -5.894223096784918,
+          "program_valid": true,
+          "max_marginal_tv": 9.762676199898124e-06,
+          "marginals_valid": true,
+          "ess_min": 166.35833416835118
+        },
+        {
+          "value": -5.82101553797154,
+          "program_valid": true,
+          "max_marginal_tv": 1.5328019799198955e-05,
+          "marginals_valid": true,
+          "ess_min": 89.57506133359446
+        },
+        {
+          "value": -5.883306613185624,
+          "program_valid": true,
+          "max_marginal_tv": 1.2024336683680303e-05,
+          "marginals_valid": true,
+          "ess_min": 175.64928731449353
+        },
+        {
+          "value": -5.766067915455435,
+          "program_valid": true,
+          "max_marginal_tv": 3.6808953154832125e-05,
+          "marginals_valid": true,
+          "ess_min": 107.40141572975755
+        },
+        {
+          "value": -5.829965611724123,
+          "program_valid": true,
+          "max_marginal_tv": 9.63214370131027e-06,
+          "marginals_valid": true,
+          "ess_min": 142.7156728288723
+        },
+        {
+          "value": -5.588839938579792,
+          "program_valid": true,
+          "max_marginal_tv": 1.2862285075243562e-05,
+          "marginals_valid": true,
+          "ess_min": 142.19341269356846
+        },
+        {
+          "value": -5.917852483901427,
+          "program_valid": true,
+          "max_marginal_tv": 1.4638003449363168e-05,
+          "marginals_valid": true,
+          "ess_min": 87.89644425494551
+        },
+        {
+          "value": -5.650320741102151,
+          "program_valid": true,
+          "max_marginal_tv": 9.43081104196608e-05,
+          "marginals_valid": true,
+          "ess_min": 41.72429898752156
+        }
+      ]
+    },
+    {
+      "arm": "F N=1008",
+      "note": "sampling error ladder",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": true,
+        "particles": 1008
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.767419561693809,
+        "bias": 0.13602531174084442,
+        "bias_se": 0.060003389212188604,
+        "separated_from_zero_2se": true
+      },
+      "rows": [
+        {
+          "value": -5.790364796258427,
+          "program_valid": true,
+          "max_marginal_tv": 2.1115025447215885e-05,
+          "marginals_valid": true,
+          "ess_min": 300.31027907605477
+        },
+        {
+          "value": -5.8770914919793835,
+          "program_valid": true,
+          "max_marginal_tv": 2.0450344891287386e-05,
+          "marginals_valid": true,
+          "ess_min": 297.64979725193723
+        },
+        {
+          "value": -5.9292586678192984,
+          "program_valid": true,
+          "max_marginal_tv": 2.0722283807117492e-05,
+          "marginals_valid": true,
+          "ess_min": 295.04589986859037
+        },
+        {
+          "value": -5.794448458595244,
+          "program_valid": true,
+          "max_marginal_tv": 2.998005220433697e-05,
+          "marginals_valid": true,
+          "ess_min": 331.9291124282019
+        },
+        {
+          "value": -5.701109611145566,
+          "program_valid": true,
+          "max_marginal_tv": 2.9310442187124863e-05,
+          "marginals_valid": true,
+          "ess_min": 220.23376432500987
+        },
+        {
+          "value": -5.932447665379372,
+          "program_valid": true,
+          "max_marginal_tv": 2.1553812985075638e-05,
+          "marginals_valid": true,
+          "ess_min": 390.557734920826
+        },
+        {
+          "value": -5.7026265425067555,
+          "program_valid": true,
+          "max_marginal_tv": 0.0001060515278368257,
+          "marginals_valid": false,
+          "ess_min": 287.1764742179628
+        },
+        {
+          "value": -5.412009259866423,
+          "program_valid": true,
+          "max_marginal_tv": 0.00020730469259433448,
+          "marginals_valid": false,
+          "ess_min": 69.21188007245968
+        }
+      ]
+    },
+    {
+      "arm": "F N=2016",
+      "note": "sampling error ladder",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": true,
+        "particles": 2016
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.857925134181366,
+        "bias": 0.045519739253287006,
+        "bias_se": 0.018329676837006474,
+        "separated_from_zero_2se": true
+      },
+      "rows": [
+        {
+          "value": -5.852037094178754,
+          "program_valid": true,
+          "max_marginal_tv": 7.567647844552994e-05,
+          "marginals_valid": true,
+          "ess_min": 684.8940967531178
+        },
+        {
+          "value": -5.89870986210216,
+          "program_valid": true,
+          "max_marginal_tv": 5.274979048408568e-05,
+          "marginals_valid": true,
+          "ess_min": 487.24097937765816
+        },
+        {
+          "value": -5.861366167373975,
+          "program_valid": true,
+          "max_marginal_tv": 3.8651731301797554e-05,
+          "marginals_valid": true,
+          "ess_min": 699.356757284575
+        },
+        {
+          "value": -5.763395386723747,
+          "program_valid": true,
+          "max_marginal_tv": 5.273803253658116e-05,
+          "marginals_valid": true,
+          "ess_min": 523.7588226941482
+        },
+        {
+          "value": -5.843102248114816,
+          "program_valid": true,
+          "max_marginal_tv": 4.6168181143002585e-05,
+          "marginals_valid": true,
+          "ess_min": 485.685271331241
+        },
+        {
+          "value": -5.856250965182547,
+          "program_valid": true,
+          "max_marginal_tv": 5.208973016124219e-05,
+          "marginals_valid": true,
+          "ess_min": 519.0092610407758
+        },
+        {
+          "value": -5.842769354581582,
+          "program_valid": true,
+          "max_marginal_tv": 4.276930121704936e-05,
+          "marginals_valid": true,
+          "ess_min": 646.2165422005099
+        },
+        {
+          "value": -5.945769995193346,
+          "program_valid": true,
+          "max_marginal_tv": 0.00017546390881761909,
+          "marginals_valid": false,
+          "ess_min": 67.71377348556257
+        }
+      ]
+    },
+    {
+      "arm": "F N=4032",
+      "note": "sampling error ladder",
+      "config": {
+        "flow_substeps": 12,
+        "epsilon": 1.0,
+        "sinkhorn_steps": 8,
+        "caps": true,
+        "particles": 4032
+      },
+      "summary": {
+        "n": 8,
+        "mean_value": -5.847080617139103,
+        "bias": 0.05636425629554931,
+        "bias_se": 0.009739859649783586,
+        "separated_from_zero_2se": true
+      },
+      "rows": [
+        {
+          "value": -5.84684851237138,
+          "program_valid": true,
+          "max_marginal_tv": 9.418976696906611e-05,
+          "marginals_valid": true,
+          "ess_min": 1270.2407371705333
+        },
+        {
+          "value": -5.852024021056898,
+          "program_valid": true,
+          "max_marginal_tv": 0.00010910010314546525,
+          "marginals_valid": false,
+          "ess_min": 1351.7492580916971
+        },
+        {
+          "value": -5.869397115600195,
+          "program_valid": true,
+          "max_marginal_tv": 8.915362559491768e-05,
+          "marginals_valid": true,
+          "ess_min": 1325.040093746628
+        },
+        {
+          "value": -5.784912654671653,
+          "program_valid": true,
+          "max_marginal_tv": 0.0001905392564367503,
+          "marginals_valid": false,
+          "ess_min": 1182.2889729056956
+        },
+        {
+          "value": -5.842246689761027,
+          "program_valid": true,
+          "max_marginal_tv": 0.0001317467394983396,
+          "marginals_valid": false,
+          "ess_min": 1331.5671467153336
+        },
+        {
+          "value": -5.855386647944199,
+          "program_valid": true,
+          "max_marginal_tv": 8.831486047711223e-05,
+          "marginals_valid": true,
+          "ess_min": 1267.155526100035
+        },
+        {
+          "value": -5.875784567454253,
+          "program_valid": true,
+          "max_marginal_tv": 9.845671593211591e-05,
+          "marginals_valid": true,
+          "ess_min": 1251.3228747406981
+        },
+        {
+          "value": -5.850044728253224,
+          "program_valid": true,
+          "max_marginal_tv": 0.00011125406308565289,
+          "marginals_valid": false,
+          "ess_min": 1205.3318844954904
+        }
+      ]
+    }
+  ],
+  "interpretation_rules": [
+    "An arm's bias is 'real' only if separated_from_zero_2se is true; otherwise it is descriptive at this seed count.",
+    "If bias falls monotonically as flow_substeps rises, flow discretization is a cause.",
+    "If bias falls as epsilon falls, entropic regularization of the reset is a cause.",
+    "If bias is flat in N, the offset is deterministic, not sampling error, and cannot be fixed with more particles."
+  ],
+  "non_claims": [
+    "Arm C (reset off) VALUE is not a log-likelihood estimator for T>1 per the score lane's own estimand warning; it is a mechanism probe only.",
+    "This is one model, one horizon, one direction. No result here transfers to another model or route.",
+    "Ranking arms by bias is descriptive; nothing here promotes a configuration."
+  ]
+}

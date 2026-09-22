@@ -1,0 +1,596 @@
+--- docs/plans/artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_note_before_pair_remedy_20260914.tex
++++ docs/plans/artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_observation_aware_tt_algorithm_note.tex
+@@ -68,6 +68,14 @@
+ derives the resulting proposal density, Jacobian, particle weights, and
+ same-scalar analytical score, and separates the source-faithful Algorithm~3
+ baseline from the UKF-guided extension that still requires executable tests.
++The paired-current/previous construction in Section~\ref{sec:paired-repair}
++now has a completed diagnostic comparison. An incorrect conditional Gram
++contraction was localized and repaired without refitting the saved proposals.
++The repaired pair proposal passes the declared filtering-mean and log-evidence
++screens in one and four dimensions, but its observed conditional mean errors
++still exceed simple heuristics in several observation regimes. The tested
++configuration therefore remains unpromoted; four particle seeds on one
++observation sequence do not establish a ranking.
+ \end{abstract}
+ 
+ \section{Question, Evidence, and Decision}
+@@ -4006,6 +4014,578 @@
+ the research direction. Any later capacity study must use disjoint
+ calibration data and preserve this comparison as untouched evidence.
+ 
++\section{Repairing the adjacent-state representation with pair cores}
++\label{sec:paired-repair}
++
++The target remains the joint law of the current and previous states. The
++first-transition diagnosis found a representation problem inside that joint
++fit: the scalar ordering $(u_1,\ldots,u_d,v_1,\ldots,v_d)$ forces all temporal
++dependence through one rank-three bond. On the recorded four-dimensional
++transition, the fitted relative amplitude error was $0.4608$, whereas a
++constructed feasible TT in the same order achieved $0.2830$, and a scalar TT
++in paired order achieved $0.0949$. These are descriptive errors on a frozen
++finite quadrature, not results of a new training algorithm. They motivate two
++separate repairs: move strongly coupled variables together, and make the
++regression solver use the available capacity. Better row sampling addresses
++a third issue, the accuracy of the sampled regression objective.
++
++The construction below implements this recommendation with pair cores,
++exact retained-density contractions, particle-specific conditionals, and
++importance-weighted regression. It is a local extension of the squared-TT
++proposal method. It is not the author's TT-cross algorithm. Zhao and Cui's
++Section 2.2 uses residual-based rank adaptation; the inspected author code
++in \path{deep-tensor.dev/src/@TTFun/build_basis_amen.m}, lines 34, 118 and 127,
++uses local truncation, a maximum rank and residual enrichment. The author's
++contiguous marginal and conditional operations are in
++\path{@TTSIRT/marginalise.m}, lines 25--45, and
++\path{@TTSIRT/eval_cirt_reference.m}, lines 103--118. The local source copy is
++under \path{third_party/audit/tensor-ssm-paper-demo/}. These sources motivate
++adaptive capacity and density contractions; the pair-core L1 regression and
++its new consumer are derived here.
++\footnote{Y. Zhao and T. Cui, \emph{Tensor-train methods for sequential state and parameter
++learning in state-space models}, JMLR 25 (2024), Section 2.2 and the adjacent-state
++construction in Section 3.1;
++\url{https://jmlr.org/papers/v25/23-0743.html}.}
++
++\subsection{Why a change of coordinates alone cannot remove this rank cut}
++
++Write $z=x_{t-1}$ and let $\widehat\pi_{t-1}$ be the incoming retained TT
++law. For $t\geq1$ define
++\begin{equation}
++ \gamma_t(x,z)=\widehat\pi_{t-1}(z)f_\theta(x\mid z)g_\theta(y_t\mid x),
++ \qquad
++ H_t(u,v)^2=
++ \frac{\gamma_t(T_x(u),T_z(v))J_x(u)J_z(v)}{\rho_d(u)\rho_d(v)}.
++ \label{eq:pair-target}
++\end{equation}
++Here $\rho_d$ is the product standard Gaussian density, $T_x,T_z$ are the
++SGQF affine charts, and $J_x,J_z$ are their positive absolute Jacobians.
++SGQF supplies coordinates and row proposals; it does not replace
++$\widehat\pi_{t-1}$ in this target. The two separate charts do not assume that
++$x$ and $z$ are independent.
++
++\begin{proposition}[Separate charts preserve the temporal separation spectrum]
++\label{prop:pair-unitary}
++Suppose $\sqrt{\gamma_t}\in L^2(dx\,dz)$ and each chart is a differentiable
++bijection with positive absolute Jacobian almost everywhere. The singular
++values across the partition $x\mid z$ of $\sqrt{\gamma_t}$ equal those across
++$u\mid v$ of $H_t$ in $L^2(\rho_d\otimes\rho_d)$.
++\end{proposition}
++\begin{proof}
++The map $U_xa(u)=a(T_x(u))\sqrt{J_x(u)/\rho_d(u)}$ is an isometry, since
++\begin{equation}
++ \int |U_xa(u)|^2\rho_d(u)\,du
++ =\int |a(T_x(u))|^2J_x(u)\,du=\int|a(x)|^2\,dx.
++ \label{eq:pair-unitary-norm}
++\end{equation}
++The inverse chart makes it onto. The analogous map $U_z$ is also unitary.
++Applying $U_x\otimes U_z$ to a Schmidt expansion preserves its orthonormal
++factors and singular coefficients, and gives exactly \eqref{eq:pair-target}.
++Thus separate whitening may change polynomial resolution and regression
++conditioning, but cannot remove the intrinsic all-current/all-past rank.
++\end{proof}
++
++Let $\psi_k$ be the normalized probabilists' Hermite polynomials. A pair TT is
++\begin{equation}
++ G_i(u_i,v_i)=\sum_{a,b=0}^p C_i^{ab}\psi_a(u_i)\psi_b(v_i),\qquad
++ h(u,v)=G_1(u_1,v_1)\cdots G_d(u_d,v_d),
++ \label{eq:pair-amplitude}
++\end{equation}
++where $C_i^{ab}\in\mathbb R^{r_{i-1}\times r_i}$ and $r_0=r_d=1$.
++\begin{proposition}[Local pairing can replace a product of temporal ranks]
++\label{prop:pair-rank}
++If $H(u,v)=\prod_{i=1}^dH_i(u_i,v_i)$ and each $H_i$ has finite nonzero
++Schmidt rank $s_i$, the rank across $u\mid v$ is $\prod_i s_i$, whereas its
++functional pair TT has rank one between pairs. A polynomial pair core has an
++exact scalar interleaved expansion whose internal rank is at most
++$(p+1)r_i$; its inter-pair rank remains $r_i$.
++\end{proposition}
++\begin{proof}
++Multiply the $d$ Schmidt expansions. Their tensor-product factors are
++orthonormal and their singular coefficients are all products of the positive
++local coefficients. There are exactly $\prod_i s_i$ such terms. In paired
++order each $H_i$ is one scalar factor, so the inter-pair rank is one. For the
++polynomial core, use $(b,r)$ as an intermediate scalar bond after $u_i$ and
++contract $b$ at the following $v_i$ site. This uses at most $(p+1)r_i$ channels
++and reproduces every coefficient without truncation.
++\end{proof}
++
++For uniform rank $r$, storage is approximately $d(p+1)^2r^2$, compared with
++$2d(p+1)r^2$ for a scalar TT. At $p=3$ the pair representation uses about
++twice as many coefficients before endpoint corrections; it does not construct
++a full $2d$-dimensional grid. Dense cross-component interactions can still
++require high inter-pair rank. Physical-coordinate pairing is a tested
++hypothesis motivated by the nearly diagonal transition, not a universal
++ordering. Singular vectors of a whitened Gaussian cross covariance can suggest
++separate within-state rotations for other models, but do not change
++Proposition~\ref{prop:pair-unitary}.
++
++\subsection{Retaining and sampling the same positive joint approximation}
++
++Fix $\tau>0$, and write
++$Z=\int h(u,v)^2\rho_d(u)\rho_d(v)\,du\,dv$. The represented joint is
++\begin{equation}
++ q(u,v)=\frac{h(u,v)^2+\tau}{Z+\tau}\rho_d(u)\rho_d(v).
++ \label{eq:pair-joint}
++\end{equation}
++A marginal of this square need not itself have a convenient low-rank square
++root. The next proposition retains its positive quadratic form directly.
++
++\begin{proposition}[Exact retained density by positive matrix maps]
++\label{prop:pair-marginal}
++Set $B_i^b(u_i)=\sum_a C_i^{ab}\psi_a(u_i)$ and
++$\mathcal E_i^{u_i}(R)=\sum_bB_i^b(u_i)R B_i^b(u_i)^{\mathsf T}$. Then
++\begin{equation}
++ Q(u)=\int h(u,v)^2\rho_d(v)\,dv
++ =\bigl(\mathcal E_1^{u_1}\circ\cdots\circ\mathcal E_d^{u_d}\bigr)([1]),
++ \qquad q_u(u)=\frac{Q(u)+\tau}{Z+\tau}\rho_d(u).
++ \label{eq:pair-retained-map}
++\end{equation}
++Every intermediate matrix is positive semidefinite, $Q(u)\geq0$, and
++$\int Q\rho_d=Z$. The physical retained density is
++$q_u(T_x^{-1}x)/J_x(T_x^{-1}x)$.
++\end{proposition}
++\begin{proof}
++Expand the two copies of \eqref{eq:pair-amplitude} and integrate $v_d$ first.
++Orthonormality replaces $\psi_b(v_d)\psi_{b'}(v_d)$ by $\delta_{bb'}$, giving
++$\mathcal E_d^{u_d}([1])$. Continue from right to left to obtain
++\eqref{eq:pair-retained-map}. Each map is a sum of congruences, preserving
++positive semidefiniteness. Integrating the remaining $u_i$ basis products
++replaces them by identity Grams, giving $Z$. Finally integrate the constant
++$\tau$ and apply the change-of-variables formula for $T_x$.
++\end{proof}
++
++\begin{proposition}[Conditional cores depend on each previous particle]
++\label{prop:pair-conditional}
++For fixed $v$, form $D_i^a(v_i)=\sum_bC_i^{ab}\psi_b(v_i)$ and
++$Z(v)=\int h(u,v)^2\rho_d(u)\,du$. These scalar cores represent $h(\cdot,v)$,
++and the conditional of \eqref{eq:pair-joint} is
++\begin{equation}
++ q(u\mid v)=\frac{h(u,v)^2+\tau}{Z(v)+\tau}\rho_d(u)
++ =\frac{Z(v)}{Z(v)+\tau}\frac{h(u,v)^2\rho_d(u)}{Z(v)}
++ +\frac{\tau}{Z(v)+\tau}\rho_d(u),
++ \label{eq:pair-conditional-mixture}
++\end{equation}
++with the first component omitted when $Z(v)=0$.
++\end{proposition}
++\begin{proof}
++Substitute $v_i$ into each pair factor. Integrating the square of the resulting
++scalar TT gives $Z(v)$ by the Hermite Gram recursion. The marginal density of
++$v$ is $(Z(v)+\tau)\rho_d(v)/(Z+\tau)$; division of the joint by this marginal
++gives the first expression in \eqref{eq:pair-conditional-mixture}. Splitting
++its numerator proves the mixture expression. If $Z(v)=0$, the polynomial
++conditional is zero almost everywhere and the remaining law is $\rho_d$.
++\end{proof}
++
++The normalizer in this proposition can be computed from the left without
++enumerating the full coefficient tensor. To make both copies of the amplitude
++explicit, start with $E_0=[1]$ and set
++\begin{equation}
++ E_i=\sum_{k=0}^p (D_i^k)^{\mathsf T}E_{i-1}D_i^k,\qquad
++ (E_i)_{bc}=\sum_{a,a',k}(E_{i-1})_{aa'}
++                 (D_i^k)_{ab}(D_i^k)_{a'c},\qquad Z(v)=E_d.
++ \label{eq:pair-forward-gram}
++\end{equation}
++Here $v$ is fixed in every $D_i^k(v_i)$. After integrating $u_1,\ldots,u_i$,
++$E_i$ is the Gram matrix of the remaining bond coefficients: multiplying by
++the next core introduces two Hermite factors, and orthonormality leaves their
++common index $k$. This proves the recursion by induction. Each term is a
++congruence of a positive semidefinite matrix, so the resulting scalar is
++nonnegative. Equivalently, fully expanding the scalar TT gives coefficients
++$a_{k_1\ldots k_d}(v)$ with
++$Z(v)=\sum_{k_1,\ldots,k_d}a_{k_1\ldots k_d}(v)^2$.
++This second expression is more expensive but supplies an independent small
++test of the recursion.
++
++The two left bond indices $a$ and $a'$ are essential. Reusing $a$ in both
++cores instead produces $\sum_{a,a',k}E_{aa'}D_{ab}^kD_{ac}^k$, which is
++generally a different quantity. For example, take
++\begin{equation}
++ E=\begin{pmatrix}1&-2\\-2&4\end{pmatrix}
++   =\begin{pmatrix}1\\-2\end{pmatrix}\begin{pmatrix}1&-2\end{pmatrix},
++ \qquad D=\begin{pmatrix}1\\0\end{pmatrix}.
++ \label{eq:pair-gram-counterexample}
++\end{equation}
++The correct contraction is $D^{\mathsf T}ED=1$; the repeated-index expression
++gives $-1$. A negative computed mass in this example is an algebraic error,
++even in exact arithmetic. This distinction proved decisive in the sampling
++failure reported below.
++
++In particular, each carried particle $z^{(j)}$ is mapped to
++$v^{(j)}=T_z^{-1}(z^{(j)})$, contracts a different batch of cores, and receives
++its own mixture probability. The sampled physical proposal and correction are
++\begin{equation}
++ q_x(x\mid z)=q(T_x^{-1}x\mid T_z^{-1}z)/J_x(T_x^{-1}x),\qquad
++ \widetilde w_t^{(j)}=w_{t-1}^{(j)}
++ \frac{f(x_t^{(j)}\mid z^{(j)})g(y_t\mid x_t^{(j)})}
++ {q_x(x_t^{(j)}\mid z^{(j)})}.
++ \label{eq:pair-physical-correction}
++\end{equation}
++The incoming retained TT helps construct $q_x$; the importance numerator is
++the actual transition and likelihood. At $t=0$, define $H_0^2$ by
++$p_0(T_xu)g(y_0\mid T_xu)J_x/\rho_d(u)$, independent of the dummy $v$.
++Dividing by $\rho_d(v)$ at this initial step would give a non-integrable
++Lebesgue-uniform dummy coordinate and is wrong. The experiment uses the SGQF
++Gaussian initial particle proposal and the pair-fitted retained law for the
++next regression.
++
++A small example makes the positive marginal and scalar inversion explicit.
++For $h=(1+u_1v_1)(1+u_2v_2)+c$,
++\begin{equation}
++ Q(u)=(1+u_1^2)(1+u_2^2)+2c+c^2
++      =(1+c)^2+u_1^2+u_2^2+u_1^2u_2^2.
++ \label{eq:pair-example}
++\end{equation}
++It is nonnegative without fitting a new square root. A scalar conditional
++with density $(Ax^2+Bx+C+\tau)\varphi(x)/(A+C+\tau)$ has
++\begin{equation}
++ F(x)=\Phi(x)-\frac{(Ax+B)\varphi(x)}{A+C+\tau},\qquad
++ F'(x)=\frac{Ax^2+Bx+C+\tau}{A+C+\tau}\varphi(x).
++ \label{eq:pair-cdf}
++\end{equation}
++These follow from $\Phi'=\varphi$, $\varphi'=-x\varphi$ and integration at
++$-\infty$. If the quadratic is nonnegative and $\tau>0$, the full conditional
++CDF is strictly increasing. The general implementation samples the equivalent
++mixture, using the shared incomplete-Hermite-Gram KR kernel for its polynomial
++component and a Gaussian draw for its defensive component. It preserves that
++kernel's finite-mass, bracket and inverse-residual checks.
++
++\subsection{An observation-aware joint guide for weighted rows}
++
++The SGQF update already incorporates the observation magnitude and the
++previous observation history. For the linear latent transition, it supplies a
++joint Gaussian row proposal without a $2d$-dimensional quadrature.
++\begin{proposition}[Backward conditional and smoothed moments are distinct]
++\label{prop:sgqf-backward}
++Let the previous Gaussian guide be $N(m,P)$, the transition be $x=Az+\eta$,
++$\eta\sim N(0,Q)$ with $P,Q\succ0$, and let the current SGQF posterior chart
++have moments $(m_x^+,P_x^+)$, $P_x^+\succ0$. Define
++\begin{equation}
++ S=APA^{\mathsf T}+Q,\quad K=PA^{\mathsf T}S^{-1},\quad
++ B=P-KSK^{\mathsf T}.
++ \label{eq:sgqf-backward}
++\end{equation}
++The joint proposal generated by $x\sim N(m_x^+,P_x^+)$ and
++$z\mid x\sim N(m+K(x-Am),B)$ has moments
++\begin{equation}
++ m_z^+=m+K(m_x^+-Am),\quad P_z^+=B+KP_x^+K^{\mathsf T},\quad
++ P_{xz}^+=P_x^+K^{\mathsf T}.
++ \label{eq:sgqf-smoothed-moments}
++\end{equation}
++It is a positive definite Gaussian law. Its previous marginal is generally a
++smoothed law and is not the previous filtering Gaussian.
++\end{proposition}
++\begin{proof}
++The predictive Gaussian covariance of $(z,x)$ has blocks
++$P,PA^{\mathsf T},S$; its Schur complement is $B\succ0$. Gaussian conditioning
++gives the stated $z\mid x$. Write $z=m+K(x-Am)+\xi$, where
++$\xi\sim N(0,B)$ is independent of $x$. Taking means, total covariance and
++cross covariance yields \eqref{eq:sgqf-smoothed-moments}. This also constructs
++the joint as an invertible triangular transform of independent nondegenerate
++Gaussians, proving positive definiteness. Using $P_z^+$ as the conditional
++noise covariance would add $KP_x^+K^{\mathsf T}$ twice and is wrong. Exact
++posterior current moments would give the corresponding smoothed moments of
++the Gaussian predictive approximation; SGQF introduces its own moment error.
++\end{proof}
++
++Let $s_g(u,v)$ be this Gaussian density pulled back through the two existing
++charts, including both Jacobians. It changes the training rows, not the
++retained TT target in \eqref{eq:pair-target}.
++\begin{proposition}[Defensive importance rows preserve the population loss]
++\label{prop:pair-importance}
++For $s=\epsilon\rho+(1-\epsilon)s_g$, $\rho=\rho_d\otimes\rho_d$ and
++$0<\epsilon\leq1$, let $W=\rho/s$. Then $0<W\leq1/\epsilon$ and
++\begin{equation}
++ \mathbb E_s[W(h-H)^2]=\mathbb E_\rho[(h-H)^2].
++ \label{eq:pair-importance-unbiased}
++\end{equation}
++For fixed $h$, independent rows from $s$ give an unbiased empirical loss by
++$N^{-1}\sum_j W_j(h_j-H_j)^2$. Fitting $h$ on those rows does not make its
++training error an unbiased estimate of its generalization error.
++\end{proposition}
++\begin{proof}
++The bound follows from $s\geq\epsilon\rho$. Substituting $W=\rho/s$ into the
++expectation cancels $s$ pointwise. Linearity of expectation proves the fixed-$h$
++empirical identity. Selection of $h$ introduces data dependence, which is why
++validation and audit rows must be independent of its fitting rows.
++\end{proof}
++
++This is the measure relation $w\,d\mu=d\rho$ in Cohen and Migliorati,
++Section 2. Their near-optimal sampling results concern a specified linear
++space; they do not prove convergence of nonlinear adaptive TT regression.
++\footnote{A. Cohen and G. Migliorati, \emph{Optimal weighted least-squares
++methods}, arXiv:1608.00512v1 (2016), Section 2, measure identity preceding
++Theorem 2; \url{https://arxiv.org/abs/1608.00512v1}. The inspected version and
++text are stored as
++\path{.localresources/papers/cohen-migliorati-2016-optimal-weighted-least-squares-arxiv-v1.*}.}
++The experiment starts with $\epsilon=0.2$ (weight bound five), records row ESS,
++and treats the mixture fraction as a hypothesis. Bounded weights do not bound
++the target residual, imply finite residual variance, or guarantee improvement.
++The implementation uses a random mixture draw and the full mixture density.
++
++\begin{proposition}[Frozen scaling and weighted block regression]
++\label{prop:pair-weighted-fit}
++Let $\ell_j=\log H(w_j)^2$ and define the training-only scale
++\begin{equation}
++ \begin{aligned}
++ \log c&=\operatorname{logsumexp}_j(\ell_j+\log W_j)-\log N,\\
++ b_j&=\exp\{(\ell_j-\log c)/2\},\\
++ L(C)&=\frac1{2N}\sum_jW_j(h_C(w_j)-b_j)^2+\lambda\sum_i\|C_i\|_1.
++ \end{aligned}
++ \label{eq:pair-weighted-objective}
++\end{equation}
++For one unfrozen core with design $D$ and coefficient vector $a$, its quadratic
++terms are $G=D^{\mathsf T}\operatorname{diag}(W)D/N$ and
++$r=D^{\mathsf T}\operatorname{diag}(W)b/N$. A proximal step with
++$L\geq\lambda_{\max}(G)>0$,
++\begin{equation}
++ a^+=\operatorname{soft}_{\lambda/L}\{a-(Ga-r)/L\},
++ \label{eq:pair-proximal-step}
++\end{equation}
++does not increase the block objective in exact arithmetic. Its KKT residual
++uses $|(Ga-r)_k+\lambda\operatorname{sign}(a_k)|$ when $a_k\ne0$ and
++$\max(|(Ga-r)_k|-\lambda,0)$ when $a_k=0$.
++\end{proposition}
++\begin{proof}
++Holding other cores fixed makes $h_C=Da$. Expanding the square gives
++$\tfrac12a^{\mathsf T}Ga-r^{\mathsf T}a+\lambda\|a\|_1$ up to a constant.
++The Hessian bound makes its quadratic part lie below the tangent quadratic
++with curvature $L$. Minimizing that upper bound plus the L1 penalty yields
++\eqref{eq:pair-proximal-step}; comparison with its value at $a$ proves
++nonincrease. The stated residual is the distance to zero of each coordinate
++of $Ga-r+\lambda\partial\|a\|_1$. Neither nonincrease nor a small block KKT
++residual proves a global TT optimum. Dividing by the random $\sum_jW_j$
++instead of $N$ while retaining $\lambda$ would change relative regularization.
++\end{proof}
++
++The scale is frozen across validation and audit for each fit. Validation
++selects L1 from $\{0,10^{-5},10^{-3}\}$ using the unpenalized weighted
++relative residual; audit rows are only scored after selection. There is no
++unbiasedness claim for the random normalized target $H/\sqrt c$ on its own
++training rows. Independent audit errors compare the realized fitted function
++with that same fixed scaled target.
++
++\begin{proposition}[Core L1 is gauge dependent]
++\label{prop:pair-gauge}
++For an invertible internal bond matrix $M$, replacing adjacent factors by
++$G_iM$ and $M^{-1}G_{i+1}$ leaves $h$ unchanged, but generally changes the sum
++of their coefficient L1 norms.
++\end{proposition}
++\begin{proof}
++The inserted factors cancel. For the scalar gauge $M=cI$, $c>0$, the two
++norms become $c\|C_i\|_1+c^{-1}\|C_{i+1}\|_1$, which is generally different
++from their original sum.
++\end{proof}
++
++The solver therefore records its coefficient convention and deterministic
++initialization, excites every stored rank channel, and performs no unrecorded
++QR gauge changes during penalized updates. Setting every unused channel to
++zero would trap one-core ALS in a rank-one subspace. Post-fit bond spectra
++are diagnostic contractions and do not modify the fitted coefficients.
++Rank is tested on the bounded ladder $2,3,4$; increasing it and increasing
++solver work are separately recorded interventions. This finite search is a
++capacity diagnostic, not an implementation of the author's residual-enrichment
++algorithm. Four sweeps of 128 proximal steps form the initial work budget;
++failed convergence triggers one predeclared comparison with eight sweeps of
++256 steps. Conditioning, effective ranks, objective decrease and KKT residual
++are reported alongside independently measured amplitude error.
++
++\subsection{Executable sequence, audit and test scope}
++
++For each observation, the executable sequence is: update the SGQF guide from
++its previous posterior moments; freeze the current and previous charts and
++the backward row proposal; evaluate \eqref{eq:pair-target} using the previous
++retained TT density; fit and validate the weighted pair amplitude; integrate
++its past variables using Proposition~\ref{prop:pair-marginal}; contract the
++actual particle histories using Proposition~\ref{prop:pair-conditional}; draw
++with the shared KR kernel and apply \eqref{eq:pair-physical-correction}.
++The retained quadratic supplies the next regression target, while normalized
++particle weights supply the particle filtering recursion. These roles are
++different and remain explicitly represented in code.
++
++The implementation is in \path{bayesfilter/highdim/pair_block_tt_tf.py} and
++\path{bayesfilter/highdim/observation_guided_tt_tf.py}. The master driver is
++\path{docs/benchmarks/run_observation_aware_tt_complete.py} with
++\texttt{--pair-block}. Stable TensorFlow signatures compile the repeated
++regression and conditional-sampling kernels; rule construction, chart setup
++and reference diagnostics stay outside XLA. The plan and its skeptical review
++are in \path{docs/plans/observation-tt-pair-block-remedy-20260914.md}.
++The tests compare pair and scalar evaluations, exact quadrature marginals,
++particle conditionals against independent quadratic CDF algebra, physical
++Jacobian corrections, importance-weighted reference moments, and saved-core
++reloads. A new regression also compares \eqref{eq:pair-forward-gram} with the
++fully expanded coefficient norm for signed rank-three cores and multiple
++conditioning particles. The two focused suites contain thirteen passing
++tests after the contraction repair, including a compiled normalization check.
++
++\subsection{What the completed pair experiment establishes}
++\label{sec:pair-completed-results}
++
++The repaired pair proposal passes the declared reference screens in both
++dimensions, but still fails the comparison with simple proposals. In one
++dimension, the transition bootstrap has smaller observed mean errors for
++ordinary and large observations. In four dimensions, the SGQF Gaussian has a
++slightly smaller error for large observations. Under the rule specified before
++execution, these losses prevent promotion of the tested pair configuration.
++They do not establish statistical inferiority: all comparisons use four
++particle seeds on one observation sequence.
++
++The representation diagnostic first fitted the initial transition under a
++Gaussian incoming law, keeping its calibration, validation and audit rows
++separate. For $d=4$, the common Gaussian audit gave relative amplitude RMS
++errors $0.442461$ for grouped scalar TT, $0.108114$ for interleaved scalar TT,
++and $0.116883$ for the selected weighted pair TT. These values show why a
++grouped scalar fit alone is an inadequate test of the joint representation.
++They do not isolate the effect of pair cores: the scalar and pair fitters use
++different initializations, and pair cores contain more coefficients at the
++same nominal rank.
++
++Validation selected pair rank three, four sweeps and 128 proximal steps.
++The prescribed eight-sweep, 256-step solver repair gave common-audit error
++$0.131604$ and validation error $0.068324$, compared with $0.065773$ for
++the selected fit. Selection used the validation errors, not the common audit.
++The KKT residual was $0.010057$ before this repair and $0.011450$ afterward,
++both above the $0.001$ diagnostic threshold. Thus neither execution time nor
++decreasing block objectives establishes converged fitting here. The available
++solver repair was tried; it did not remove that uncertainty.
++
++The downstream comparison used the recursive retained TT density, $T=20$,
++512 particles, degree three and 1024 rows per split. Setting
++$\tau=Z(0.05/0.95)$ assigns five percent of the joint proposal mass to the
++Gaussian base. A positive base component ensures full support, but the
++particular five-percent value is an inherited hypothesis without calibration
++evidence here; it remains an unresolved choice affecting proposal coverage
++and variance. The same frozen d4 configuration was applied to d1 as a transfer
++diagnostic. The saved campaign stopped while sampling the four-dimensional
++pair proposal. A replay of its
++saved cores, charts and random inputs localized the failure to $t=2$, sampler
++seed 210102. The conditional mass was $-0.008694$, while the CDF bracket was
++valid and the inverse residual was $5.55\times10^{-16}$.
++
++The cause was precisely the repeated-index error in
++\eqref{eq:pair-gram-counterexample}. The implementation used the left bond
++index twice in its forward Gram contraction. Correcting that index restored
++\eqref{eq:pair-forward-gram}; no mass clipping, ridge or CDF tolerance change
++was introduced. The independent coefficient-norm test failed before the
++correction and passed afterward. The fitting and retained-density routines
++do not call the defective normalizer, so their saved cores remained usable.
++
++The terminal comparison reloaded those fits and recomputed every particle and
++reference arm. All saved proposal files retained identical hashes, and the
++four-dimensional pair runs exactly matched a separate replay through the
++consumer. The one-dimensional pair runs also matched the original launch:
++with one core there is no nontrivial internal bond on which the erroneous
++index can act. All corrected conditional masses were positive, with minima
++$0.030365$ in d1 and $0.007332$ in d4. Maximum inverse-CDF residuals were
++$5.55\times10^{-16}$ and $9.99\times10^{-16}$, respectively.
++The repair reused already exposed downstream observations; it is a corrected
++comparison on the frozen sequence, not a new holdout experiment.
++
++The scalar reference is independent physical-space quadrature. The
++four-dimensional reference averages four transition filters with 32,768
++particles each; its log-evidence standard error across seeds is $0.016875$.
++Table~\ref{tab:pair-reference} gives the pair estimates. The predeclared
++log-evidence screen allows an absolute discrepancy of $0.15$ plus
++$3.182446$ times the combined seed standard error. Filtering means use the
++analogous coordinate-by-time rule, with additive tolerance $0.15\sigma$.
++All six proposals passed both screens in both dimensions. These broad
++diagnostic tolerances are neither simultaneous confidence guarantees nor
++evidence of efficiency.
++
++\begin{table}[htbp]
++\centering
++\begin{tabular}{crrrr}
++\toprule
++$d$ & Pair log evidence & Seed SE & Reference & Difference\\
++\midrule
++1 & $-20.975034$ & $0.050027$ & $-20.972621$ & $-0.002413$\\
++4 & $-63.677796$ & $0.071604$ & $-63.641241$ & $-0.036555$\\
++\bottomrule
++\end{tabular}
++\caption{The pair estimates pass the prescribed log-evidence screen.
++Each estimate averages four particle seeds on the same observation sequence;
++the standard error describes particle variation, not sequence generalization.}
++\label{tab:pair-reference}
++\end{table}
++
++The more discriminating comparison conditions on observation magnitude.
++Classify an observation by $\max_j|y_j|/\beta$: at most $0.5$ is near zero,
++at least $2$ is large, and the remainder is ordinary. The cheap alternatives
++are the transition bootstrap, which uses the exact conditional dynamics;
++the stationary prior, which tests the value of conditioning; and the SGQF
++Gaussian, which tests the added value of TT fitting beyond the moment guide.
++Table~\ref{tab:pair-conditional-errors} compares the four-seed average
++filtering mean with the reference, pooling only the indicated observations
++and state coordinates.
++
++\begin{table}[htbp]
++\centering
++\begin{tabular}{clrrr}
++\toprule
++$d$ & Proposal & Near zero & Ordinary & Large\\
++\midrule
++1 & Transition bootstrap & 0.030203 & 0.018188 & 0.014385\\
++  & Stationary prior     & 0.036207 & 0.025927 & 0.029007\\
++  & SGQF Gaussian        & 0.079116 & 0.050992 & 0.018675\\
++  & Scalar predictive TT & 0.013610 & 0.024908 & 0.016814\\
++  & Scalar guided TT     & 0.015054 & 0.026387 & 0.021022\\
++  & Pair TT              & 0.016192 & 0.024908 & 0.019715\\
++\midrule
++4 & Transition bootstrap & 0.090113 & 0.035104 & 0.054022\\
++  & Stationary prior     & 0.073189 & 0.070619 & 0.104458\\
++  & SGQF Gaussian        & 0.045774 & 0.044386 & 0.047386\\
++  & Scalar predictive TT & 0.065791 & 0.052730 & 0.058269\\
++  & Scalar guided TT     & 0.065547 & 0.057570 & 0.059305\\
++  & Pair TT              & 0.027447 & 0.034611 & 0.048544\\
++\bottomrule
++\end{tabular}
++\caption{Conditional mean RMSE remains descriptive. The pair proposal does
++not clear all three simple alternatives: its d1 ordinary/large errors exceed
++the transition errors, and its large-observation errors exceed the SGQF
++Gaussian in both dimensions. The three regimes contain 7/10/3 observations
++in d1 and 1/9/10 in d4; the d4 near-zero column contains only one timepoint.}
++\label{tab:pair-conditional-errors}
++\end{table}
++
++In d4, the pair errors are descriptively smaller than both scalar TT errors
++in every observed regime. Yet the large-observation comparison with SGQF is
++$0.048544$ against $0.047386$. The prescribed heuristic comparison therefore
++withholds promotion even though that difference is small and its statistical
++significance is unknown. The first-transition amplitude error alone could
++not have settled this question: downstream performance also depends on
++recursive fitting, proposal variability and importance weighting.
++
++\begin{samepage}
++The strongest alternative explanation for the apparent pair advantage over
++scalar TT is a combination of extra coefficients, initialization and particle
++variation. A matched-capacity comparison with converged fitting and multiple
++independent observation sequences would distinguish these explanations.
++The present failure rejects the frozen configuration for promotion; it leaves
++the representation mathematically viable. Further selection must use fresh
++calibration and reserve new observation sequences for final evaluation.
++\par
++\end{samepage}
++
++MathDevMCP's eight proposition audits were inconclusive because their bounded
++algebraic backend did not encode the integral and tensor statements. The
++document-wide derivation audit also failed to execute. Nine scoped identities,
++one weight identity and the additional quadratic-form identity were checked;
++the old contraction has the explicit checked counterexample above. Those
++results support the named algebraic steps, not a proof certificate for this
++whole note. The finite-difference score check in the filtering driver concerns
++the scalar guided proposal with frozen proposals and realized resampling;
++it does not check pair gradients or derivatives through fitting. HMC
++readiness and a statistically supported ordering remain unestablished.
++
++The reproducible comparison and decision record are in
++{\def\UrlBreaks{\do\/\do\-\do\_}%
++\path{docs/plans/observation-tt-pair-block-remedy-20260914-result.md}}.
++The repair used float64 TensorFlow on the RTX5080 with XLA and verified
++memory growth. The terminal run took $48.465$ seconds after reloading fits,
++so that time is not an end-to-end fitting cost. Three full launch slots and
++the single allowed solver repair have now been used. The authorized numerical
++comparison is complete; further experimentation requires a new bounded plan.
++
+ \appendix
+ \section{Artifact Provenance and Corrections}
+ 

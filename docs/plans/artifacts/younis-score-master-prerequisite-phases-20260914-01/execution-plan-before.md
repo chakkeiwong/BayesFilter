@@ -1,0 +1,460 @@
+# Plan to make the score master program executable
+
+Date: 2026-09-14
+
+This is the implementation companion to the
+[score master program](younis-kdm-score-master-program-2026-09-14.md).
+It specifies what to build, what evidence makes a stage executable, and how
+results change the next stage. It does not report that the runner or method
+integrations have been implemented. The present request authorizes this plan
+and the corresponding master amendment; no research campaign was launched.
+
+## Outcome and scope
+
+The first milestone is a runnable linear-Gaussian study: one coordinator can
+validate a study, run verified baselines with an exact oracle, apply scoped
+tuning, save failures and results, assess evidence, repair defects, and resume
+from a refreshed phase plan. The second milestone adds every active method
+family and its required tests. A successful implementation does not require a
+proposed estimator to outperform the baselines; a trustworthy negative result
+is a successful execution of the experiment.
+
+The scientific question remains whether KDM/IWSG, estimator combinations,
+better proposal covariances, twisting/iAPF, or coupled finite differences
+reduce model-score error at a declared compute budget. Active models here
+have regular transitions and usable reference evidence. Smoothing estimators,
+Rhee--Glynn/JLS, and the DSGE support derivation remain with their separate
+programs. No implementation dependency may pull those branches back in.
+
+There are three different completion statements:
+
+| Statement | Required evidence |
+|---|---|
+| Baseline study executable | E0--E2 below pass, including a real baseline run, phase-boundary repair/resume test, and complete report. |
+| Active master executable | Every active method family has a callable implementation and tested dependencies; the admitted matrix can run and resume on the required backend. A missing active integration prevents this statement. |
+| Scientific comparison complete | The declared experiments, untouched comparisons, uncertainty analysis, and candidate decisions are complete. Executability alone establishes none of these results. |
+
+## Current starting point
+
+Inspection was on branch `surrogate-hmc`; the source snapshot and protected
+master are recorded in the
+[planning checkpoint](artifacts/younis-score-execution-plan-20260914-01/checkpoint.md).
+Existing uncommitted work includes the canonical LEDH loop repair. Recheck the
+checkout and that repair before implementation; do not overwrite it or create
+a second, reduced LEDH executor.
+
+| Component | Checked evidence | Work needed |
+|---|---|---|
+| Master orchestration | Five registries and a coordinator are specified as pseudocode. | Implement the scheduler, study validation, numerical adapters, aggregation, and repair/resume behavior. |
+| KDM mathematics and kernels | [KDM primitives](../../bayesfilter/highdim/ledh_younis_kdm_tf.py), [integrated route](../../bayesfilter/highdim/ledh_younis_kdm_integrated_tf.py), and [resampling route](../../bayesfilter/highdim/ledh_younis_kdm_resampling_tf.py) exist. | Verify target identities and the actual consumer call chains; existence is not admission evidence. |
+| Canonical compatibility | The [scalar executor](../../bayesfilter/highdim/ledh_canonical_score_tf.py) rejects traces and callbacks requested by both KDM consumers. | Reconcile with the [ongoing loop repair](ledh-while-loop-regression-repair-plan-2026-09-14.md), restore the required capabilities in the shared executor, and run endpoint regressions. |
+| Gaussian references | The [LGSSM reference](../../bayesfilter/highdim/ledh_younis_kdm_lgssm_reference_tf.py) exposes analytical Kalman and fixed-stream bootstrap derivatives. | Preserve the bootstrap's finite-program target. Extend or select an independent oracle for derivatives through the initial law and all tested parameters. |
+| SGQF | [Value/filter code](../../bayesfilter/nonlinear/fixed_sgqf_tf.py) and [analytical derivatives](../../bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py) exist. | Verify the LEDH consumer, filtering lifecycle, capabilities, and GPU/XLA feasibility. These integrations were not runtime-checked. |
+| Tuning and resource policy | [Tuning scopes](../../bayesfilter/highdim/ledh_tuning_scope.py), [route registry](../../bayesfilter/highdim/ledh_tuning_registry.py), and [GPU memory policy](../../bayesfilter/runtime/gpu_memory_policy.py) exist. | Reuse applicable services after checking their issuer-to-consumer path; a scope dataclass is not a complete tuner. |
+| Previous campaign harness | [Phase 4A runner](../benchmarks/run_ledh_younis_kdm_phase4a_campaign.py) exists. | Audit reusable components against the amended target, partition, and result contracts. Do not treat its CLI as the revised master. |
+| Scientific document | The [manuscript](../papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex) still needs the localized corrections identified in the [amendment review](../reviews/younis-score-master-program-amendment-review-2026-09-14.md). | Synchronize the FD and SGQF sections, compile, and inspect before they serve as implementation instructions. |
+
+The math reference checks from the amendment remain reference evidence only.
+No new runtime tests, external review, or MathDevMCP audit were performed for
+this plan.
+
+## Build sequence and prerequisites
+
+E0--E7 are implementation work packages, not replacements for the master's
+scientific phase numbers. Every package and every later scientific phase ends
+with the repair and refresh procedure below.
+
+| Package | Deliverable | Dependencies | Master coverage |
+|---|---|---|---|
+| E0: reconcile the specification | Current capability inventory, target/oracle definitions, corrected manuscript, and focused E1/E2 task list. | Current source and governing policies. | Phase 0 and open prerequisites. |
+| E1: build the coordinator | Registries, explicit study configurations, dependency validation, CLI, records, budgets, and repair/resume state. | E0. | Program architecture and all phase boundaries. |
+| E2: make the baseline study run | Exact oracles, admitted baselines, analytical derivative checks, scoped tuning, statistical reports, and GPU/XLA integration smoke. | E1 plus each baseline's verified numerical prerequisites. | Phases 0--1 and baseline portions of 2, 7--9. |
+| E3: integrate KDM/IWSG and combinations | Fixed-cloud tests, full-filter KDM routes, centered control variates, and explicitly calibrated biased combinations. | E2 for each affected row; shared executor repair for integrated KDM. | Phases 1, 3, 4 and KDM rows of 2. |
+| E4: integrate proposal alternatives | Covariance-provider lifecycle, SGQF, corrected lookahead/twisted/iAPF proposals, and their analytical sensitivities. | E2; a KDM provider additionally needs the relevant E3 law tests. | Phase 2 and applicable Phase 1 checks. |
+| E5: integrate FD and error diagnostics | Deterministic stencils, valid coupling, full-score reconstruction, normalization study, and consistency calibration. | Exact mechanics can start after E0; stochastic FD needs E2 value endpoints; other diagnostics need only the estimator they assess. | Phases 4, 4B, 4C. |
+| E6: run systematic comparisons | Nonlinear regular models, salient regimes, SGQF dimension/level pilot, single-factor and interaction studies, and fair comparisons. | E2 plus the specific E3/E4/E5 capabilities used by each row. | Phases 2--4C and 7. |
+| E7: replicate and close | Untouched replication, complete cost accounting, implementation audit, and final candidate decisions. | Applicable E6 evidence and frozen scopes. | Phases 8--9. |
+
+E3, E4, and stochastic parts of E5 are separate branches, not a forced serial
+chain. A failed SGQF capability test blocks SGQF rows, not valid FD or KDM
+tests. Independent work may be scheduled concurrently when resources permit;
+this plan does not require launching additional agents.
+
+### E0: reconcile once, then build
+
+1. Read the current canonical repair result and inspect the actual callable
+   interfaces. Record each capability as verified, unverified, blocked, or
+   deferred, with its first executable test. Refresh stale source claims.
+2. Reconcile the manuscript's smoothness requirement, deterministic versus
+   stochastic FD checks, and SGQF prediction/conditioning/reset description
+   with the amended master. Preserve the existing derivations and source
+   boundaries. Fix the malformed `,qquad`, build, and inspect the affected pages.
+3. Define the exact numerical return contract: log likelihood/value target,
+   derivative target, coordinate system, initial-law dependence, denominator,
+   proposal law, and oracle precision. Specify which outputs are model-score
+   estimates and which are derivatives of a different quantity.
+4. Inventory reuse before adding modules. Identify real production/candidate
+   baseline endpoints; diagnostic reference functions remain reference lanes.
+   Verify paper equations and author code for method-faithfulness claims when
+   their numerical implementation is selected. Do not wait for a new broad
+   literature survey to build the coordinator.
+
+Exit: no unresolved ambiguity about the first baseline's mathematical target
+or the E1 interface. Remaining method gaps have named tests and block only
+their dependent rows. Refresh E1/E2 using the current repair status.
+
+### E1: implement a small coordinator that cannot hide failures
+
+Proposed new locations, to be reconciled with existing services in E0:
+
+- `bayesfilter/highdim/score_study/`: typed study/row definitions, registry
+  validation, adapters, phase state, and report assembly;
+- `scripts/run_younis_score_master.py`: a thin CLI over those services;
+- `docs/plans/configs/younis_score/`: versioned baseline and later study inputs;
+- `tests/highdim/test_younis_score_master_*.py`: coordinator contract and
+  integration tests.
+
+These paths are planned deliverables, not existing executable commands.
+Keep Python standard-library scheduling, JSON, and provenance outside the
+numerical kernels. Use TensorFlow/TFP for candidate numerical calculations,
+tuning, and admission decisions. No NumPy runtime dependency is introduced.
+
+The CLI needs `validate`, `dry-run`, `run`, `resume`, and `report` actions.
+Validation and dry-run must enumerate both runnable rows and excluded rows
+with reasons without importing a GPU-initializing kernel. A run may not
+silently reduce the requested matrix. Resume checks the saved scientific
+specification, source dependencies, partitions, tuning scope, and completed
+results before reusing work.
+
+Code or mathematical repair remains work for the supervising developer or
+agent. The CLI records the changed revision and issue disposition, schedules
+declared regression/retry commands, and enforces the updated dependencies; it
+does not generate arbitrary source fixes or silently choose a new method.
+
+Implement separate fields for numerical validity, scientific candidate
+decision, and execution completion. A low-MSE failure, unavailable kernel,
+insufficient precision, and a deferred method are different states. Store
+paired randomness by model, dataset, particle replicate, perturbation, and
+coupling group, independent of scheduling order.
+
+Required tests include incompatible support/target rejection; stale tuning;
+missing initialization terms; missing active methods; deterministic row
+generation; repeated/resumed execution; bounded attempts; incomplete output
+rejection; preservation of failed attempts; and a blocked branch alongside an
+independent runnable branch. Test the repair/refresh transitions explicitly.
+An E1 fake numerical endpoint can test scheduling, but its evidence must never
+be presented as a real particle-filter run.
+
+Exit: a synthetic failing task can be repaired and resumed with the right
+dependencies and artifacts. This establishes coordinator behavior only.
+
+### E2: deliver a real baseline study before adding enhancements
+
+Use scalar and multivariate regular LGSSMs. Include parameter effects on
+initial mean/covariance, transition, and observation parameters rather than
+only the existing transition-direction example. Verify the independent
+analytical Kalman oracle and explicit total derivatives. Same-finite-program
+parity and error against the exact model score are separate tests.
+
+Construct the initial cheap comparator set: bootstrap PF, UKF Gaussian
+approximation, and the analytically adapted Gaussian proposal where its
+density is available. Kalman is the error oracle. Add the canonical
+LEDH/GenUT/Contract E baseline only after its actual endpoint passes the
+required lifecycle, reset, determinant, and analytical-sensitivity checks.
+Keep approximation and finite-stream targets visible in every comparison.
+
+Build the tuning adapter and reports now. Each claim scope binds all master
+fields, including proposal/estimator controls, bandwidth, FD choices, dtype,
+TF32, horizon, particle count, and backend. Check the repository's actual
+tuning issuer and reject a caller-stamped identity. Tune on calibration and
+validation partitions; claim data and streams remain untouched until freeze.
+Mechanics smokes do not need statistical tuning and cannot support a quality
+claim.
+
+The report preserves raw dataset/replicate results, paired oracle errors,
+uncertainty, conditional heuristic tables, failures, oracle limitations, and
+cost. Test aggregation on independently known small examples, including
+shared versus independent particle noise and datasets with unequal numbers
+of successful replicates. Do not silently discard failures or treat particle
+replicates as independent observation datasets.
+
+Run CPU-only reference checks with `CUDA_VISIBLE_DEVICES=-1`. Verify candidate
+kernels separately on trusted GPU/XLA with stable signatures, analytical
+derivatives, verified memory growth, TF32 recorded, and canonical chunking.
+Autodiff is parity evidence only. Do not recover a missing capability through
+a scalar fallback, pfor, or a reduced LEDH fork.
+
+Exit: the same study specification drives a real baseline smoke, a scoped
+tuning/claim plumbing check, artifact aggregation, and an interrupted-run
+resume. The tiny claim-plumbing fixture carries explicit no-ranking status.
+All required baseline rows either pass or keep E2 incomplete; running only
+the oracle does not close this milestone. End with repair and refreshed E3,
+E4, and E5 plans. A statistical baseline claim requires its own sufficiently
+powered run after this engineering exit.
+
+### E3: KDM/IWSG, control variates, and estimator combinations
+
+First test frozen-mixture IWSG identities against analytic integration or exact
+small examples. Then vary independent clouds to separate conditional sampling
+variance from cloud variation. Fix trace/callback support and required
+analytical tangents in the shared canonical executor before integrated or
+resampling KDM runs. Compare scalar and every claimed batch/device lane through
+the consumer, including parameter-dependent initialization and bandwidth.
+
+Implement the actual KDM proposal density, physical numerator, component
+covariance lifecycle, and any OT/jitter law used. Check that samples and weight
+denominators describe the same distribution. Do not add an OT determinant
+without a corresponding density derivation or present a changed measure as
+the original filter.
+
+For an exact control variate, identify the sampling law and either a known
+center or an independent unbiased center estimate. Test the coefficient and
+center dependence conditions, account for center cost/variance, and report
+the unchanged mean of the baseline estimator. For two biased estimates,
+implement a separate calibration path using oracle error and held-out MSE;
+variance minimization alone does not determine the better combination.
+
+Exit: conditional identities and full-filter wiring pass independently; ratio
+bias and target distinctions remain explicit. A variance reduction result
+alone cannot close a model-score improvement claim. If centering is unknown,
+that exact-CV row remains blocked while a correctly labeled calibrated
+combination can still run.
+
+### E4: covariance alternatives and corrected proposals
+
+Implement one provider interface for prior/predicted moments, observation
+conditioning, persistent per-component state, reset/ancestry mapping, and
+analytical sensitivities. Integrate UKF first, then KDM and SGQF. A
+prediction-only replacement cannot stand in for a complete filtering
+covariance lifecycle. Test the actual moments and derivatives consumed by
+LEDH with linear-Gaussian exact moments and nonlinear stress examples.
+
+SGQF requires separate checks for signed integration weights versus sampling
+probabilities, projected covariance validity, sparse-grid point count,
+dimension/level growth, and the real GPU/XLA call chain. Existing standalone
+code does not certify that chain. Evaluate covariance safeguards explicitly;
+record any ridge, clipping, or damping as a numerics-altering choice and test
+its non-harm before promotion.
+
+For twisting/iAPF, start with a positive fixed one-step lookahead whose
+ancestor law, transition proposal, normalization integral, and weight
+correction can be derived and checked. Test a finite discrete example and a
+Gaussian example before fitted twists, including initialization, terminal
+factors, telescoping, and recovery of the untwisted law when the lookahead is
+constant. Inspect primary equations and author
+code for source-faithfulness claims. Fit on allowed calibration data and
+freeze before claim evaluation. Distinguish held-fixed learned controls from
+their explicitly parameter-dependent evaluations and include the latter's
+derivatives. An unknown required normalizer blocks that proposed correction.
+
+Exit: each provider/proposal has density and total-derivative tests and a
+consumer integration test. Better covariance or ESS alone is explanatory;
+score-MSE improvement still requires untouched evidence. An unrepairable
+within-scope proposal assumption rejects that row, not the rest of E4.
+
+### E5: finite differences and error attribution
+
+Move the already checked exact three-, five-, and eleven-point examples into
+maintained diagnostic tests. Include polynomial cancellation, smoothness
+counterexamples, rectangular direction recovery, deficient rank, parameter
+boundaries, and precision/conditioning checks. They may be developed before
+KDM or SGQF integration is complete.
+
+Implement the stochastic FD lane using verified value endpoints and an
+explicit coupling of replicas. Check that each replica has the correct
+marginal law; an OT coupling here is distinct from OT as a filter reset.
+Measure the stencil covariance and the full bias-square term, including the
+cross-term. Use a positive scale-aware step ladder and QR/SVD direction
+reconstruction. Do not require a universal U-curve or a stochastic slope equal
+to deterministic stencil order.
+
+Once eligible estimators exist, implement the value/derivative/ratio study
+and Phase 4B consistency diagnostics. Fit step sizes, combinations, and any
+diagnostic-based decision rule on calibration/validation only. Measure oracle
+error and diagnostic correlation with uncertainty on separate data. Unknown
+bias attribution limits interpretation; it does not invalidate a correctly
+measured held-out MSE comparison.
+
+Exit: exact mechanics, coupling, reconstruction, normalization targets, and
+partition checks pass. Approximate consistency remains evidence about the
+tested relationship, not proof of unbiasedness.
+
+### E6--E7: expand only after the executable baseline
+
+Add nonlinear regular models with reference-error certificates and explicit
+salient regimes. Run capacity/timing pilots before the SGQF dimension/level
+ladder or a factorial expansion. Uncertain oracles restrict conclusions and
+cannot silently turn a high-particle estimate into truth.
+
+Generate baseline rows, single-factor changes, pairwise interactions, and then
+the eligible larger matrix. Preserve interactions that address a known failed
+candidate's repair; screening one component must not silently remove a
+predeclared repair experiment. Use both matched particle count and matched
+total cost, including tuning, twist fitting, center estimation, extra FD
+evaluations, compilation, and amortization assumptions.
+
+Before E7, freeze the compared scopes and the uncertainty/promotion rules.
+Report conditional heuristic losses prominently and retain all failed
+candidates. Final-only data cannot become new selection data; an
+outcome-informed repair creates a new candidate version and fresh partitions.
+E7 repairs still undergo the boundary procedure. If a repair changes a
+scientific claim, return to the affected evaluation stage before closing the
+final report. Default/HMC readiness requires separate applicable evidence;
+this plan does not change either consumer or default.
+
+## Mandatory phase-boundary repair and next-phase refresh
+
+The prior master had repair queues and failure categories, but no enforced
+closure loop. The following is now required after every E package and every
+scientific phase, including the final phase:
+
+1. **Assess what ran.** Reconcile planned, completed, failed, blocked, and
+   omitted rows. Keep engineering validity, numerical validity, and scientific
+   conclusions separate. Determine whether a result invalidates the harness,
+   target, implementation, or evidence, or merely rejects this candidate.
+2. **Triage defects and candidate failures.** Record affected endpoints and
+   rows, evidence, root cause or smallest discriminator, repair hypothesis,
+   regression checks, budget, and scope/partition consequences. Repairable
+   means a concrete correction can be tested within the current scientific
+   scope and remaining resources; a promise that more tuning might help is
+   insufficient.
+3. **Repair what can be repaired.** Correct mathematical, code, wiring,
+   numerical, test, documentation, or local infrastructure defects. Carry out
+   applicable planned candidate repairs. Begin with the smallest reproducer.
+   Do not change the target, baseline, tolerances, or success criterion merely
+   to convert a failure into a pass.
+4. **Verify the repair and its consequences.** Run the focused regression,
+   impacted caller tests, and a small integrated check. Invalidate dependent
+   evidence when its source, numerical law, or scope changed. Recompute the
+   phase decision using the repaired evidence; an edited file alone is not
+   resolution.
+5. **Disposition everything unresolved.** Record blocked dependencies,
+   exhausted-budget investigations, support-invalid rows, inconclusive
+   comparisons, and scientifically rejected candidates explicitly. A
+   repairable validity defect cannot remain on an admitted dependency. Other
+   branches may proceed, with the phase marked partial if required work
+   remains. A scientifically valid negative result needs no forced improvement.
+6. **Refresh the next phase before it starts.** Update its question, eligible
+   rows, dependencies, proposed repairs, baseline set, evidence roles, tuning
+   scopes, partitions, commands/environment, resource estimate, tests, and
+   stopping conditions using the actual results. Record a brief skeptical
+   audit of that revised plan. Include the plan version in every next-phase
+   launch. A terminal phase instead refreshes the terminal disposition and
+   any justified follow-up work.
+
+Apply this per dependency: it is not a requirement that all methods pass
+before any can advance. Record the same closeout once and link it from the
+master; do not create an extra review packet for each repair. Routine local
+repairs and replanning within an authorized campaign do not require renewed
+human or reviewer approval. Actual scientific, resource, external, or
+irreversible boundary changes follow the governing policy.
+
+### Repair classification and evidence reuse
+
+| Finding | Required response | What may proceed |
+|---|---|---|
+| Harness, target, density, derivative, or artifact invalidity | Repair, recheck callers, invalidate affected evidence; block dependent claims. | Independently verified rows. |
+| Local infrastructure failure with unchanged numerical program | Retry in a fresh attempt directory within budget; preserve failed attempt and unchanged streams where appropriate. | The same question after the infrastructure check passes. |
+| Tunable candidate misses the criterion | Use its planned repair and fresh calibration/validation/claim partitions when outcomes inform a new candidate. | Other candidates; the repaired version after its own checks. |
+| A numerical protection changes accepted values | Evaluate it explicitly for non-harm, record its dependence and retuning implications. | Existing valid routes; the protection only after evaluation. |
+| Supported negative scientific result | Reject the candidate for the stated scope; retain a planned discriminating repair if one remains. | The remaining research program. |
+| Insufficient precision or budget | Use the predeclared valid replication rule if resources remain; otherwise record unresolved evidence. | Work that does not require the missing conclusion. |
+| Missing support derivation or out-of-scope method change | Keep the row blocked/deferred and record the precise mathematical gap. | Compatible active rows. |
+
+Do not retry the same unchanged failure blindly. Stop that attempt once the
+cause is established. A bounded repair trial must test a new hypothesis or a
+specific correction. Three unsuccessful trials for one cause trigger a
+diagnostic reassessment and an explicit remaining-budget decision, not an
+automatic rejection of the research direction. A same-data infrastructure
+retry cannot be used to select outcomes or conceal a failed comparison.
+
+### Required closeout fields and process tests
+
+Use the existing phase note plus one machine-readable record containing:
+
+```text
+phase_id, phase_plan_version, source_revision, source_changes
+planned_rows, completed_rows, blocked_rows, omitted_rows_with_reasons
+engineering_status, numerical_status, scientific_decision, inference_status
+issues: [issue_id, affected_rows, classification, root_cause, repair,
+         regression_evidence, scope_effect, disposition]
+attempts, consumed_cpu_hours, consumed_gpu_hours, remaining_budget
+invalidated_evidence, current_tuning_scopes, partition_usage
+next_phase_plan, next_phase_plan_version, refreshed_dependencies
+```
+
+The scheduler must be tested on: failure followed by repair; repair that
+invalidates a formerly passing dependency; changed horizon/source with stale
+tuning; failure caused by shared code affecting two methods; a blocked method
+alongside a runnable method; exhausted repair budget; and a last-phase repair
+requiring fresh evaluation. It must refuse a dependent launch without the
+applicable boundary disposition and current next-phase plan. These are
+scientific consistency checks, not approval-token or launch-security schemes.
+
+## Initial execution envelope and acceptance checks
+
+The first implementation tranche is E0--E2 plus E5's deterministic mechanics.
+Start with tiny diagnostic LGSSMs, then a bounded GPU integration check.
+Proposed engineering validation cap: 12 CPU process-hours, 8 GPU device-hours
+including compilation and failed runs, and at most 12 GPU launches. Reserve
+2 of those GPU hours for repairs. These are conservative planning allocations,
+not runtime estimates or evidence that the baseline fits. Reassess allocation
+using the first timing observation; record exhaustion rather than weakening
+a check. This plan launches none of these jobs.
+
+E0 pins the available interpreter/environment and records it in E1/E2's exact
+commands; this plan does not guess a conda environment or install packages.
+GPU commands require trusted/escalated access and verified memory growth.
+Small CPU reference runs explicitly hide GPU devices. Later refreshed phases
+must state finite row counts, partitions, replication rules, and resource
+caps based on measured costs before a serious launch. The master's large
+coverage grid is never an unconditional Cartesian-product command.
+
+The proposed CLI acceptance sequence, once implemented, is:
+
+```text
+python scripts/run_younis_score_master.py --study <baseline.json> --action validate
+python scripts/run_younis_score_master.py --study <baseline.json> --action dry-run
+python scripts/run_younis_score_master.py --study <baseline.json> --action run --output <new-run-directory>
+python scripts/run_younis_score_master.py --study <baseline.json> --action resume --output <existing-run-directory>
+python scripts/run_younis_score_master.py --study <baseline.json> --action report --output <existing-run-directory>
+```
+
+These are the interface to build, not runnable instructions today. Each attempt
+uses a fresh subdirectory; resume reads existing results but does not overwrite
+them. A serious launch replaces the placeholders with exact versioned paths
+and writes its full command into the manifest. Store runs under a new versioned
+directory within `docs/plans/artifacts/younis-kdm-score-master-20260914/`.
+
+| Check | Evidence required before advancing |
+|---|---|
+| Specification | Correct target, support, initialization, derivative, density, and oracle definitions; focused manuscript build. |
+| Engineering | Real endpoint execution, stable signatures, failure handling, resume, and complete row accounting. |
+| Numerical validity | Independent identities, consumer-to-provider checks, valid weights/covariances, and applicable GPU/XLA parity. |
+| Statistical plumbing | Known-reference aggregation checks, partition isolation, paired/nested uncertainty, and failed-row accounting. |
+| Repair and refresh | Executed reproducer/regressions, invalidation of affected evidence, explicit unresolved dispositions, and current next-phase plan. |
+| Scientific promotion | Untouched oracle error at declared cost, applicable vetoes, conditional heuristics, and uncertainty support. No engineering smoke substitutes for this check. |
+
+## Default audit and skeptical review
+
+| Choice | Provenance and purpose | Failure mode and earliest check | Status |
+|---|---|---|---|
+| Regular Gaussian first | Master Phase 0; exact score separates target and implementation errors. | Apparent success hides missing initial-law derivatives; use a nonconstant-initialization fixture. | Reference baseline, not cross-model evidence. |
+| Canonical analytical LEDH/GenUT/Contract E | Current owner policy. | A simplified lane appears to pass; test the actual consumer and reset composition. | Required baseline identity, with correctness still to verify. |
+| Tiny smoke allocation and first-tranche caps | This plan; make the first failure cheap and reserve repair time. | A smoke is misreported as a ranking, or compilation exhausts allocation; record no-ranking status and early timing. | Convenience allocation, not a scientific threshold. |
+| Existing tuning services and kernels | Repository reuse candidates. | Their API exists but cannot issue/consume the required scope; exercise the complete path. | Unverified until tested. |
+| Step sizes, bandwidths, ridges, twist families, and covariance controls | Selected derivations plus per-scope calibration. | Bias/robustness or target changes are concealed by numerical success; log realized choices and earliest validity/curve checks. | Hypotheses until justified, including off/zero settings. |
+| Statistical precision and oracle tolerances | Exact identities, dtype/scale analysis, reference convergence, and powered pilot. | Arbitrary cutoffs or replication-driven selection; validate error scale and freeze a valid uncertainty rule. | Must be specified in the refreshed run plan, never inferred from a successful smoke. |
+
+The skeptical review of this build order finds no need to wait for the
+separately owned smoothing/DSGE programs. The material risks are wrong target
+labels, inherited but unreachable capabilities, stale tuning, and silently
+skipped failures. The earliest tests above address those risks before large
+runs. An executable coordinator cannot resolve an unknown proposal normalizer,
+prove a control-variate center, or supply a missing oracle; those rows remain
+explicitly blocked until the scientific prerequisites are met.
+
+The next action is E0's source/specification reconciliation, followed by E1's
+coordinator contracts and E2's real baseline integration. At each boundary,
+repair what is repairable, recheck the affected computation, and rewrite the
+next phase from the evidence actually obtained.
