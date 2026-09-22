@@ -237,9 +237,10 @@ def _value_and_analytical_score_impl(
         raise ValueError("choose a recursive provider or an independent filter schedule")
 
     def scheduled_moments(t, prefix):
-        return tuple(tf.broadcast_to(moment_schedule[prefix + name][t],
+        moments = tuple(tf.broadcast_to(moment_schedule[prefix + name][t],
                      [count, dim, dim] if "covariances" in name else [count, dim])
                      for name in ("means", "covariances", "d_means", "d_covariances"))
+        return (*moments, tf.broadcast_to(moment_schedule[prefix + "valid"][t], [count]))
 
     def predict_at(t, *args, **kwargs):
         return scheduled_moments(t, "predicted_") if moment_schedule is not None else moment_predict(*args, **kwargs)

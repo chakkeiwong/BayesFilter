@@ -13,6 +13,8 @@ from .fitted_twist_tf import normalizer
 from .conditional_means_tf import conditional_mean, validate_curves
 
 FIT_OBJECTIVES = ("density_l2", "relative_shape")
+FIT_INITIALIZATIONS = ("cloud_moments", "log_quadratic")
+FIT_OBJECTIVE_SCALES = ("native", "initial_peak")
 
 
 def profile_density_loss(z, target, parameters):
@@ -25,7 +27,7 @@ def profile_density_loss(z, target, parameters):
     return loss,gradient,tf.exp(log_scale),shape_error
 
 
-def _density_profile(z, log_target, parameters, objective="density_l2"):
+def _density_profile(z, log_target, parameters, objective="density_l2", log_density_scale=0.):
     """Same density objective, with scale/shape evaluated before underflow.
 
     All factors of the parameter-dependent scaling cancel analytically.
@@ -45,7 +47,10 @@ def _density_profile(z, log_target, parameters, objective="density_l2"):
                         tf.reduce_logsumexp(2*log_target))
     scale=tf.exp(log_relative_scale)
     residual=density-scale*target
-    squared_amplitude=tf.exp(2*log_amplitude)
+    # A declared fixed scale changes objective units, never its minimizers.
+    # Apply it before exp so neither a tiny intermediate nor a huge inverse
+    # scale needs to be materialized. It is constant in fitted parameters.
+    squared_amplitude=tf.exp(2*(log_amplitude-tf.cast(log_density_scale,z.dtype)))
     loss=squared_amplitude*tf.reduce_mean(residual**2)
     mean_gradient=2*squared_amplitude*tf.reduce_mean((residual*density)[:,None]*standardized*tf.exp(-log_sd),axis=0)
     log_sd_gradient=2*squared_amplitude*tf.reduce_mean((residual*density)[:,None]*(standardized**2-1),axis=0)
@@ -58,14 +63,46 @@ def _density_profile(z, log_target, parameters, objective="density_l2"):
     return loss,tf.concat([mean_gradient,log_sd_gradient],0),log_amplitude+log_relative_scale,shape_error,log_amplitude
 
 
+def _log_quadratic_initialization(z, log_target):
+    """Strict diagonal log-quadratic QR initialization; no moment fallback.
+
+    Invalid rank/concavity is reported, not repaired by a ridge or a different
+    fitting rule. Safe operands below only make rejected outputs inspectable.
+    """
+    n,d=z.shape
+    if n is None or n<2*d+1:
+        raise ValueError("log-quadratic initialization requires N >= 2*d+1")
+    dtype=z.dtype
+    eps=tf.constant(2**-23 if dtype==tf.float32 else 2**-52,dtype)
+    finite=tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(log_target))
+    safe_z=tf.where(tf.math.is_finite(z),z,tf.zeros_like(z))
+    design=tf.concat([tf.ones([n,1],dtype),safe_z,safe_z**2],axis=1)
+    q,r=tf.linalg.qr(design,full_matrices=False)
+    rnorm=tf.reduce_max(tf.reduce_sum(tf.abs(r),axis=1))
+    rank_margin=tf.reduce_min(tf.abs(tf.linalg.diag_part(r)))/rnorm
+    rank_valid=tf.math.is_finite(rank_margin)&(rank_margin>eps*tf.cast(max(n,2*d+1),dtype))
+    rhs=tf.linalg.matvec(q,tf.where(tf.math.is_finite(log_target),log_target,tf.zeros_like(log_target)),transpose_a=True)
+    coefficients=tf.linalg.triangular_solve(tf.where(rank_valid,r,tf.eye(2*d+1,dtype=dtype)),rhs[:,None],lower=False)[:,0]
+    linear,quadratic=coefficients[1:1+d],coefficients[1+d:]
+    concave=tf.reduce_all(quadratic < -tf.sqrt(eps))
+    valid=finite&rank_valid&tf.reduce_all(tf.math.is_finite(coefficients))&concave
+    safe_quadratic=tf.where(valid,quadratic,-tf.ones_like(quadratic)*.5)
+    mean=tf.where(valid,-linear/(2*safe_quadratic),tf.zeros_like(linear))
+    log_sd=-.5*tf.math.log(-2*safe_quadratic)
+    return tf.concat([mean,log_sd],axis=0),valid,rank_margin
+
+
 def bounded_density_fit(points, log_targets, *, mean_bound, sd_lower, sd_upper,
                         max_steps, max_backtracks, tolerance, floor_ratio,
-                        objective="density_l2"):
+                        objective="density_l2", initialization="cloud_moments",
+                        objective_scale="native"):
     """Projected backtracking fit with explicit finite/convergence status."""
     if objective not in FIT_OBJECTIVES:
         raise ValueError("unknown iAPF fit objective")
-    def profile(z, log_target, parameters):
-        return _density_profile(z, log_target, parameters, objective)
+    if initialization not in FIT_INITIALIZATIONS or objective_scale not in FIT_OBJECTIVE_SCALES:
+        raise ValueError("unknown iAPF initialization or objective scale")
+    if objective!="density_l2" and objective_scale!="native":
+        raise ValueError("fixed density scaling requires density_l2")
     dtype=points.dtype; d=points.shape[-1]
     cloud_mean=tf.reduce_mean(points,axis=0)
     cloud_sd=tf.sqrt(tf.reduce_mean((points-cloud_mean)**2,axis=0))
@@ -76,11 +113,32 @@ def bounded_density_fit(points, log_targets, *, mean_bound, sd_lower, sd_upper,
                      tf.fill([d],tf.cast(math.log(sd_lower),dtype))],0)
     upper=tf.concat([tf.fill([d],tf.cast(mean_bound,dtype)),
                      tf.fill([d],tf.cast(math.log(sd_upper),dtype))],0)
-    parameters=tf.clip_by_value(tf.zeros([2*d],dtype),lower,upper)
+    initial_parameters=tf.zeros([2*d],dtype)
+    initialization_valid=tf.constant(True);rank_margin=tf.ones([],dtype)
+    if initialization=="log_quadratic":
+        initial_parameters,initialization_valid,rank_margin=_log_quadratic_initialization(z,log_target)
+    parameters=tf.clip_by_value(initial_parameters,lower,upper)
+    initialization_clipped=tf.reduce_any(parameters!=initial_parameters)
+    log_density_scale=tf.zeros([],dtype)
+    if objective_scale=="initial_peak":
+        standardized=(z-parameters[:d])*tf.exp(-parameters[d:])
+        log_density_scale=tf.stop_gradient(-tf.reduce_sum(parameters[d:])-.5*tf.reduce_min(tf.reduce_sum(standardized**2,axis=1)))
+    def profile(z, log_target, parameters):
+        return _density_profile(z, log_target, parameters, objective,log_density_scale)
     finite_input=(tf.reduce_all(tf.math.is_finite(z)) &
                   tf.reduce_all(tf.math.is_finite(log_targets)) &
-                  tf.reduce_all(cloud_sd>0))
-    initial_loss,initial_gradient,_,_,_=profile(z,log_target,parameters)
+                  tf.reduce_all(cloud_sd>0) & initialization_valid)
+    initial_loss,initial_gradient,_,initial_shape,_=profile(z,log_target,parameters)
+    # Reporting only: keep native density energy in log space even when its
+    # exponential underflows. These quantities never enter the optimizer or
+    # acceptance flags. Target-squared weights are the measure in the profiled
+    # shape objective, not the filter's particle weights.
+    def log_density_energy(par):
+        log_p=-tf.reduce_sum(par[d:])-.5*tf.reduce_sum(
+            ((z-par[:d])*tf.exp(-par[d:]))**2,axis=1)
+        return tf.reduce_logsumexp(2*log_p)-tf.math.log(tf.cast(tf.shape(z)[0],dtype))
+    initial_log_energy=log_density_energy(parameters)
+    target_squared_weights=tf.nn.softmax(2*log_target)
     tol=tf.cast(tolerance,dtype)
     # In an active iteration some |gradient_j| exceeds tolerance. This
     # geometry bound lets that component traverse the full parameter box;
@@ -112,7 +170,8 @@ def bounded_density_fit(points, log_targets, *, mean_bound, sd_lower, sd_upper,
         body,(0,parameters,initial_loss,initial_gradient,tf.cast(1.,dtype),finite_input),
         parallel_iterations=1)
     loss,gradient,log_scale,shape_error,log_amplitude=profile(z,log_target,parameters)
-    density_loss=(loss if objective=="density_l2" else _density_profile(z,log_target,parameters)[0])
+    density_loss=(loss if objective=="density_l2" and objective_scale=="native"
+                  else _density_profile(z,log_target,parameters)[0])
     projected_gradient=projected_norm(parameters,gradient)
     converged=healthy & (projected_gradient<=tol)
     center=cloud_mean+cloud_sd*parameters[:d]
@@ -139,7 +198,15 @@ def bounded_density_fit(points, log_targets, *, mean_bound, sd_lower, sd_upper,
         "projected_gradient":projected_gradient,"cloud_sd":cloud_sd,
         "fitted_sd":sd,"density_log_constant":log_constant,
         "density_log_amplitude":log_amplitude,
-        "objective_underflow":objective_underflow}
+        "objective_underflow":objective_underflow,
+        "initial_shape_residual":initial_shape,"initialization_valid":initialization_valid,
+        "initialization_rank_margin":rank_margin,"initialization_clipped":initialization_clipped,
+        "objective_log_density_scale":log_density_scale,
+        "target_squared_effective_count":1/tf.reduce_sum(target_squared_weights**2),
+        "target_squared_max_weight":tf.reduce_max(target_squared_weights),
+        "initial_log_density_energy":initial_log_energy,
+        "log_density_energy":log_density_energy(parameters),
+        "initial_optimization_loss":initial_loss}
 
 
 @lru_cache(maxsize=16)
@@ -147,9 +214,16 @@ def make_density_recursive_fit_kernel(d,o,N,T,mean_bound,sd_lower,sd_upper,
                                       max_steps,max_backtracks,tolerance,floor_ratio,
                                       dtype_name="float64",jit_compile=True,
                                       transition_curve=0.,observation_curve=0.,
-                                      objective="density_l2"):
+                                      objective="density_l2",initialization="cloud_moments",
+                                      objective_scale="native"):
     if objective not in FIT_OBJECTIVES:
         raise ValueError("unknown iAPF fit objective")
+    if initialization not in FIT_INITIALIZATIONS or objective_scale not in FIT_OBJECTIVE_SCALES:
+        raise ValueError("unknown iAPF initialization or objective scale")
+    if objective!="density_l2" and objective_scale!="native":
+        raise ValueError("fixed density scaling requires density_l2")
+    if initialization=="log_quadratic" and N<2*d+1:
+        raise ValueError("log-quadratic initialization requires N >= 2*d+1")
     validate_curves(d,o,transition_curve,observation_curve)
     values=(mean_bound,sd_lower,sd_upper,tolerance,floor_ratio)
     if not all(math.isfinite(x) and x>0 for x in values) or not sd_lower<1<sd_upper:
@@ -162,7 +236,7 @@ def make_density_recursive_fit_kernel(d,o,N,T,mean_bound,sd_lower,sd_upper,
     def fit(theta,observations,clouds):
         A,_,H,_,_,_,_,_,Q,_,R,_=parameterized_model(theta,d,o)
         centers=tf.TensorArray(dtype,size=T);covariances=tf.TensorArray(dtype,size=T)
-        floors=tf.TensorArray(dtype,size=T);diagnostics=tf.TensorArray(dtype,size=T,element_shape=[11])
+        floors=tf.TensorArray(dtype,size=T);diagnostics=tf.TensorArray(dtype,size=T,element_shape=[23])
         def step(t,center,V,log_floor,valid,converged,centers,covariances,floors,diagnostics):
             x=clouds[t]
             lg,_=gaussian_log_density_and_tangent(observations[t]-conditional_mean(x,H,observation_curve,quadratic=True),
@@ -172,12 +246,18 @@ def make_density_recursive_fit_kernel(d,o,N,T,mean_bound,sd_lower,sd_upper,
             center,V,log_floor,info=bounded_density_fit(x,lg+lf,mean_bound=mean_bound,
                 sd_lower=sd_lower,sd_upper=sd_upper,max_steps=max_steps,
                 max_backtracks=max_backtracks,tolerance=tolerance,floor_ratio=floor_ratio,
-                objective=objective)
+                objective=objective,initialization=initialization,objective_scale=objective_scale)
             summary=tf.stack([info["scaled_loss"],info["normalized_shape_residual"],info["log_lambda"],
                 tf.cast(info["boundary_active"],dtype),tf.cast(info["iterations"],dtype),
                 info["projected_gradient"],tf.reduce_min(info["fitted_sd"]),tf.reduce_max(info["fitted_sd"]),
                 info["density_log_amplitude"],tf.cast(info["objective_underflow"],dtype),
-                info["optimization_loss"]])
+                info["optimization_loss"],tf.reduce_min(info["cloud_sd"]),
+                tf.reduce_max(info["cloud_sd"]),info["initial_shape_residual"],
+                tf.cast(info["initialization_valid"],dtype),info["initialization_rank_margin"],
+                tf.cast(info["initialization_clipped"],dtype),info["objective_log_density_scale"],
+                info["target_squared_effective_count"],info["target_squared_max_weight"],
+                info["initial_log_density_energy"],info["log_density_energy"],
+                info["initial_optimization_loss"]])
             return (t-1,center,V,log_floor,valid&info["valid"],converged&info["converged"],
                     centers.write(t,center),covariances.write(t,V),floors.write(t,log_floor),diagnostics.write(t,summary))
         out=tf.while_loop(lambda t,*_:t>=0,step,(T-1,tf.zeros([d],dtype),tf.eye(d,dtype=dtype),

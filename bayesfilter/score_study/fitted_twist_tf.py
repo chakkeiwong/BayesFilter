@@ -9,6 +9,7 @@ from functools import lru_cache
 import tensorflow as tf
 from .gaussian_tf import (parameterized_model,chol_tangent,gaussian_log_density_and_tangent,symmetric)
 from .conditional_means_tf import conditional_mean, conditional_mean_and_tangent, validate_curves
+from .complete_data_score_tf import initial_score, increment_score
 
 
 def gaussian_floor_log(x,dx,center,covariance,log_floor):
@@ -33,9 +34,14 @@ def twisted_transition(mean,dmean,Q,dQ,center,V,probability,noise,uniform):
     C=symmetric(Q-K@Q)
     dC=symmetric(dQ-dK@Q-K@dQ)
     LC=tf.linalg.cholesky(C); LQ=tf.linalg.cholesky(Q)
-    residual=center-mean
-    adapted=mean+tf.einsum("ij,nj->ni",K,residual)+tf.einsum("ij,nj->ni",LC,noise)
-    dadapted=dmean+tf.einsum("pij,nj->pni",dK,residual)-tf.einsum("ij,pnj->pni",K,dmean)
+    # Keep the time-dependent center out of the broadcast GEMM operand.
+    # GPU/XLA/TF32 can otherwise reuse the first loop iteration's center;
+    # the time-varying-center diagnostic reproduces that wrong-result case.
+    # K(center-mean) = K center - K mean, including its total tangent.
+    adapted=mean-tf.einsum("ij,nj->ni",K,mean)+tf.linalg.matvec(K,center)[None,:]
+    adapted+=tf.einsum("ij,nj->ni",LC,noise)
+    dadapted=dmean-tf.einsum("ij,pnj->pni",K,dmean)
+    dadapted+=tf.einsum("pij,j->pi",dK,center)[:,None,:]-tf.einsum("pij,nj->pni",dK,mean)
     dadapted+=tf.einsum("pij,nj->pni",chol_tangent(LC,dC),noise)
     prior=mean+tf.einsum("ij,nj->ni",LQ,noise)
     dprior=dmean+tf.einsum("pij,nj->pni",chol_tangent(LQ,dQ),noise)
@@ -43,17 +49,57 @@ def twisted_transition(mean,dmean,Q,dQ,center,V,probability,noise,uniform):
     return tf.where(choose[:,None],adapted,prior),tf.where(choose[None,:,None],dadapted,dprior)
 
 
+def resampling_score_control(additive, indices, cumulative_weights, uniform_bits):
+    """Diagnostic martingale control for uniforms k / 2**uniform_bits.
+
+    Count the lattice points selected by the actual right-sided CDF search,
+    including the last-index clamp. FP64 accumulation limits cancellation;
+    it does not alter the particles or the underlying FP32 score.
+    """
+    cumulative = tf.cast(cumulative_weights[:-1], tf.float64)
+    boundaries = tf.concat([tf.zeros([1], tf.float64),
+        tf.clip_by_value(cumulative, 0., 1.), tf.ones([1], tf.float64)], 0)
+    lattice = tf.constant(float(2**uniform_bits), tf.float64)
+    counts = tf.math.ceil(lattice * boundaries)
+    probabilities = (counts[1:] - counts[:-1]) / lattice
+    scores = tf.cast(additive, tf.float64)
+    selected_mean = tf.reduce_mean(tf.gather(scores, indices, axis=1), axis=1)
+    expected_mean = tf.reduce_sum(scores * probabilities[None, :], axis=1)
+    return tf.sqrt(tf.cast(tf.shape(indices)[0], tf.float64)) * (selected_mean - expected_mean)
+
+
 @lru_cache(maxsize=12)
 def make_fitted_twist_kernel(d,o,N,T,dtype_name="float64",jit_compile=True,constant_twist=False,
-                             transition_curve=0.,observation_curve=0.):
+                             transition_curve=0.,observation_curve=0.,include_fisher_score=False,
+                             include_resampling_controls=False,resampling_uniform_bits=None,
+                             include_numerical_trace=False):
+    """Optionally append a terminal Fisher estimate on the same genealogy.
+
+    The existing score differentiates the fixed-label finite value program.
+    The extra score estimates the physical-model score by Fisher's identity;
+    it is not a gradient of that finite program or finite-N unbiased.
+    Optional FP64 controls cover the T nonterminal ancestor draws. Callers
+    must supply independent uniforms on the explicitly declared binary grid.
+    Numerical traces expose actual ancestor CDFs/indices and Gaussian mixture
+    probabilities for precision diagnostics; they do not change decisions.
+    """
     validate_curves(d,o,transition_curve,observation_curve)
     dtype=tf.as_dtype(dtype_name)
+    if include_resampling_controls:
+        if not include_fisher_score:
+            raise ValueError("resampling controls require the Fisher score")
+        max_bits = 23 if dtype == tf.float32 else 52
+        if type(resampling_uniform_bits) is not int or not 1 <= resampling_uniform_bits <= max_bits:
+            raise ValueError("resampling controls require a representable uniform lattice")
+    elif resampling_uniform_bits is not None:
+        raise ValueError("uniform lattice is only used by resampling controls")
     @tf.function(input_signature=[tf.TensorSpec([6],dtype),tf.TensorSpec([T,o],dtype),
         tf.TensorSpec([N,d],dtype),tf.TensorSpec([T,N,d],dtype),tf.TensorSpec([T+1,N],dtype),
         tf.TensorSpec([T,N],dtype),tf.TensorSpec([T,d],dtype),tf.TensorSpec([T,d,d],dtype),
         tf.TensorSpec([T],dtype)],jit_compile=jit_compile)
     def kernel(theta,observations,initial_noise,noise,uniforms,mixture_uniforms,centers,covariances,log_floors):
-        A,dA,H,dH,m,dm,P,dP,Q,dQ,R,dR=parameterized_model(theta,d,o)
+        model=parameterized_model(theta,d,o)
+        A,dA,H,dH,m,dm,P,dP,Q,dQ,R,dR=model
         L=tf.linalg.cholesky(P)
         x=m+tf.einsum("ij,nj->ni",L,initial_noise)
         dx=dm[:,None,:]+tf.einsum("pij,nj->pni",chol_tangent(L,dP),initial_noise)
@@ -65,15 +111,30 @@ def make_fitted_twist_kernel(d,o,N,T,dtype_name="float64",jit_compile=True,const
             return normalizer(*predict(x,dx),Q,dQ,centers[t],covariances[t],log_floors[t])
         def resample(x,dx,logw,dlogw,u):
             w=tf.nn.softmax(logw)
-            indices=tf.searchsorted(tf.cumsum(w),u,side="right")
+            cumulative=tf.cumsum(w)
+            indices=tf.searchsorted(cumulative,u,side="right")
             indices=tf.minimum(indices,N-1)
-            return tf.gather(x,indices),tf.gather(dx,indices,axis=1),tf.reduce_logsumexp(logw)-tf.math.log(tf.cast(N,dtype)),tf.reduce_sum(w[None,:]*dlogw,-1)
+            return tf.gather(x,indices),tf.gather(dx,indices,axis=1),tf.reduce_logsumexp(logw)-tf.math.log(tf.cast(N,dtype)),tf.reduce_sum(w[None,:]*dlogw,-1),indices,cumulative
         initial_log,initial_dlog,_=future(x,dx,0)
-        x,dx,total,dtotal=resample(x,dx,initial_log,initial_dlog,uniforms[0])
+        additive=initial_score(x,model) if include_fisher_score else tf.zeros([6,N],dtype)
+        x,dx,total,dtotal,indices,cumulative=resample(x,dx,initial_log,initial_dlog,uniforms[0])
+        ancestor_trace=tf.TensorArray(tf.int32,size=T+1,element_shape=[N])
+        cdf_trace=tf.TensorArray(dtype,size=T+1,element_shape=[N])
+        mixture_trace=tf.TensorArray(dtype,size=T,element_shape=[N])
+        if include_numerical_trace:
+            ancestor_trace=ancestor_trace.write(0,indices)
+            cdf_trace=cdf_trace.write(0,cumulative)
+        controls=tf.TensorArray(tf.float64,size=T,element_shape=[6])
+        if include_resampling_controls:
+            controls=controls.write(0,resampling_score_control(additive,indices,cumulative,resampling_uniform_bits))
+        if include_fisher_score:
+            additive=tf.gather(additive,indices,axis=1)
         arrays=tf.TensorArray(dtype,size=T,element_shape=[N,d])
-        def step(t,x,dx,total,dtotal,clouds):
+        def step(t,x,dx,total,dtotal,clouds,additive,fisher,controls,ancestor_trace,cdf_trace,mixture_trace):
+            previous=x
             mean,dmean=predict(x,dx)
             if constant_twist:
+                probability=tf.zeros([N],dtype)
                 LQ=tf.linalg.cholesky(Q)
                 x=mean+tf.einsum("ij,nj->ni",LQ,noise[t])
                 dx=dmean+tf.einsum("pij,nj->pni",chol_tangent(LQ,dQ),noise[t])
@@ -90,10 +151,35 @@ def make_fitted_twist_kernel(d,o,N,T,dtype_name="float64",jit_compile=True,const
                 lp,dlp=gaussian_floor_log(x,dx,centers[t],covariances[t],log_floors[t])
             lf,dlf=tf.cond(t+1<T,lambda:future(x,dx,t+1)[:2],
                 lambda:(tf.zeros([N],dtype),tf.zeros([6,N],dtype)))
-            x,dx,term,dterm=resample(x,dx,lg+lf-lp,dlg+dlf-dlp,uniforms[t+1])
-            return t+1,x,dx,total+term,dtotal+dterm,clouds
-        result=tf.while_loop(lambda t,*_:t<T,step,(0,x,dx,total,dtotal,arrays),parallel_iterations=1)
-        return result[3],result[4],result[5].stack()
+            logw=lg+lf-lp
+            if include_fisher_score:
+                additive+=increment_score(previous,x,observations[t],model,transition_curve,observation_curve)
+                # Only the terminal weighted genealogy targets the physical posterior.
+                fisher=tf.cond(t+1==T,lambda:tf.reduce_sum(tf.nn.softmax(logw)[None,:]*additive,-1),lambda:fisher)
+            x,dx,term,dterm,indices,cumulative=resample(x,dx,logw,dlg+dlf-dlp,uniforms[t+1])
+            if include_numerical_trace:
+                ancestor_trace=ancestor_trace.write(t+1,indices)
+                cdf_trace=cdf_trace.write(t+1,cumulative)
+                mixture_trace=mixture_trace.write(t,probability)
+            if include_resampling_controls:
+                controls=tf.cond(t+1<T,
+                    lambda:controls.write(t+1,resampling_score_control(additive,indices,cumulative,resampling_uniform_bits)),
+                    lambda:controls)
+            if include_fisher_score:
+                additive=tf.gather(additive,indices,axis=1)
+            return t+1,x,dx,total+term,dtotal+dterm,clouds,additive,fisher,controls,ancestor_trace,cdf_trace,mixture_trace
+        result=tf.while_loop(lambda t,*_:t<T,step,
+            (0,x,dx,total,dtotal,arrays,additive,tf.zeros([6],dtype),controls,
+             ancestor_trace,cdf_trace,mixture_trace),parallel_iterations=1)
+        outputs=(result[3],result[4],result[5].stack())
+        if include_resampling_controls:
+            outputs=(*outputs,result[7],result[8].stack())
+        elif include_fisher_score:
+            outputs=(*outputs,result[7])
+        if include_numerical_trace:
+            outputs=(*outputs,{"ancestor_indices":result[9].stack(),
+                "ancestor_cdf":result[10].stack(),"gaussian_probability":result[11].stack()})
+        return outputs
     return kernel
 
 

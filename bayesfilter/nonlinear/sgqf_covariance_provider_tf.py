@@ -32,15 +32,17 @@ class SGQFCovarianceProvider:
 
     @staticmethod
     def _checked(result):
-        mean, covariance, dmean, dcovariance = result
+        mean, covariance, dmean, dcovariance, shared_valid = result
         eigenvalues = tf.linalg.eigvalsh(covariance)
         scale = tf.reduce_max(tf.abs(eigenvalues), axis=-1)
         eps = tf.cast(2**-23 if covariance.dtype == tf.float32 else 2**-52, covariance.dtype)
         margin = eps * tf.cast(tf.shape(covariance)[-1], covariance.dtype) * scale
         valid = tf.reduce_all(tf.reduce_min(eigenvalues, axis=-1) > margin)
         valid &= tf.reduce_all(tf.math.is_finite(eigenvalues))
+        valid &= tf.reduce_all(shared_valid)
         # This numerical return guard survives XLA's removal of Assert ops.
-        return tuple(tf.where(valid, x, tf.cast(float("nan"), x.dtype)) for x in result)
+        moments = tuple(tf.where(valid, x, tf.cast(float("nan"), x.dtype)) for x in result[:4])
+        return (*moments, shared_valid & valid)
 
     def predict(self, *args, **kwargs):
         return self._checked(quadrature_predict_with_parameter_tangent(

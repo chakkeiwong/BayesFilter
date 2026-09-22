@@ -145,15 +145,16 @@ def make_moment_filter(T,c,b,method="ukf",dtype_name="float64",jit_compile=True)
         model,*_=direction_inputs(theta,direction,tf.zeros([1,1],dtype),c,b)
         A,dA,H,dH,m,dm,P,dP,Q,dQ,R,dR=parameterized_model(theta,1,1)
         dA,dH,dm,dP,dQ,dR=[tf.tensordot(direction,x,1) for x in (dA,dH,dm,dP,dQ,dR)]
-        def step(t,m,P,dm,dP,value,score,margin):
+        def step(t,m,P,dm,dP,value,score,margin,healthy):
             if method=="ukf":
                 pred=quadrature_predict_with_parameter_tangent(m,P,dm,dP,
                     lambda x:model.transition_mean_fn(theta,x),
                     lambda x,dx:model.transition_mean_tangent_fn(theta,x,dx),Q,
                     d_process_noise_covariance=dQ,jitter=0.)
-                m,P,dm,dP,lg,dlg=quadrature_update_with_parameter_tangent(*pred,
+                m,P,dm,dP,update_valid,lg,dlg=quadrature_update_with_parameter_tangent(*pred[:4],
                     model.observation_fn,model.observation_tangent_fn,R,observations[t],
                     d_observation_covariance=dR,jitter=0.,return_evidence=True)
+                healthy=healthy&tf.reduce_all(pred[4])&tf.reduce_all(update_valid)
             else:
                 old=m[0,0];dold=dm[0,0];cov=P[0,0,0];dcov=dP[0,0,0]
                 slope=A[0,0]+tf.cast(c,dtype)*tf.cos(old)
@@ -177,10 +178,10 @@ def make_moment_filter(T,c,b,method="ukf",dtype_name="float64",jit_compile=True)
                 dpost=(dvariance*R[0,0]+variance*dR[0,0]-post*dS)/S
                 P=tf.reshape(post,[1,1,1]);dP=tf.reshape(dpost,[1,1,1])
             margin=tf.minimum(margin,tf.reduce_min(P))
-            return t+1,m,P,dm,dP,value+tf.reduce_sum(lg),score+tf.reduce_sum(dlg),margin
+            return t+1,m,P,dm,dP,value+tf.reduce_sum(lg),score+tf.reduce_sum(dlg),margin,healthy
         out=tf.while_loop(lambda t,*_:t<T,step,(0,m[None,:],P[None,:,:],dm[None,:],dP[None,:,:],
-            tf.zeros([],dtype),tf.zeros([],dtype),tf.reduce_min(P)),parallel_iterations=1)
-        valid=tf.math.is_finite(out[5])&tf.math.is_finite(out[6])&(out[7]>0)
+            tf.zeros([],dtype),tf.zeros([],dtype),tf.reduce_min(P),tf.constant(True)),parallel_iterations=1)
+        valid=out[8]&tf.math.is_finite(out[5])&tf.math.is_finite(out[6])&(out[7]>0)
         return tf.where(valid,out[5],tf.cast(float("nan"),dtype)),tf.where(valid,out[6],tf.cast(float("nan"),dtype)),out[7]
     return kernel
 

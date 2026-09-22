@@ -54,6 +54,8 @@ def test_xla_does_not_discard_final_reset_validity(monkeypatch):
         tf.random.stateless_normal([8, 2], [3, 7], dtype=tf.float64),
         tf.random.stateless_normal([1, 8, 2], [3, 8], dtype=tf.float64),
         tf.random.stateless_normal([8, 2], [3, 9], dtype=tf.float64))
-    assert not bool(tf.math.is_finite(value))
-    assert not bool(tf.math.is_finite(score))
+    # The shared executor's rejection sentinel is (-inf, 0). The zero score
+    # is a safe placeholder accompanying a rejected value, not a valid score.
+    assert float(value) == float("-inf")
+    assert float(score) == 0.0
     make_canonical_kernel.cache_clear()

@@ -89,6 +89,9 @@ def validate_result_accounting(result, row, settings):
     from .iapf_adapter import FIT_DIAGNOSTIC_COLUMNS
     if diag.get("fit_objective") != config.get("fit_objective", "density_l2"):
         raise ValueError("fit objective differs from the declared configuration")
+    for key,default in (("fit_initialization","cloud_moments"),("fit_objective_scale","native")):
+        if diag.get(key)!=config.get(key,default):
+            raise ValueError("fit initialization/scale differs from the declared configuration")
     if diag.get("fit_diagnostic_columns") != FIT_DIAGNOSTIC_COLUMNS:
         raise ValueError("fit diagnostic schema mismatch")
     ledger = diag["fit_iterations"]

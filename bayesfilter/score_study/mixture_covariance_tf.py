@@ -35,23 +35,26 @@ def mixture_schedule(model,theta,observations,means,covariances,dmeans,dcovarian
     horizon = observations.shape[0]
     logits = tf.fill([count],-tf.math.log(tf.cast(count,dtype)))
     dlogits = tf.zeros_like(logits)
-    arrays = tuple(tf.TensorArray(dtype,size=horizon) for _ in range(14))
+    arrays = (tuple(tf.TensorArray(dtype,size=horizon) for _ in range(14)) +
+              tuple(tf.TensorArray(tf.bool,size=horizon) for _ in range(2)))
     def step(t,m,P,dm,dP,l,dl,*buffers):
         pred = quadrature_predict_with_parameter_tangent(m,P,dm,dP,
             lambda x:model.transition_mean_fn(theta,x),
             lambda x,dx:model.transition_mean_tangent_fn(theta,x,dx),model.process_covariance,
             d_process_noise_covariance=model.process_covariance_tangent_fn(theta),jitter=0.)
-        aggregate_prediction = mixture_moments(*pred,l,dl)
-        update = quadrature_update_with_parameter_tangent(*pred,model.observation_fn,
+        aggregate_prediction = mixture_moments(*pred[:4],l,dl)
+        update = quadrature_update_with_parameter_tangent(*pred[:4],model.observation_fn,
             model.observation_tangent_fn,model.observation_covariance,observations[t],
             d_observation_covariance=model.observation_covariance_tangent_fn(theta),
             jitter=0.,return_evidence=True)
-        m,P,dm,dP,logg,dlogg = update
+        m,P,dm,dP,update_valid,logg,dlogg = update
         eigenvalues = tf.linalg.eigvalsh(P)
         eps = tf.cast(2**-23 if dtype == tf.float32 else 2**-52,dtype)
         margin = eps*tf.cast(dimension,dtype)*tf.reduce_max(tf.abs(eigenvalues),-1)
         valid = tf.reduce_all(tf.reduce_min(eigenvalues,-1)>margin)
         valid &= tf.reduce_all(tf.math.is_finite(eigenvalues))
+        predict_valid = tf.reduce_all(pred[4])
+        valid &= predict_valid & tf.reduce_all(update_valid)
         m,P,dm,dP,logg,dlogg = (tf.where(valid,x,tf.cast(float("nan"),dtype))
                                for x in (m,P,dm,dP,logg,dlogg))
         raw,draw = l+logg,dl+dlogg
@@ -59,7 +62,7 @@ def mixture_schedule(model,theta,observations,means,covariances,dmeans,dcovarian
         weights = tf.nn.softmax(raw)
         l,dl = raw-normalization,draw-tf.reduce_sum(weights*draw)
         aggregate_update = mixture_moments(m,P,dm,dP,l,dl)
-        values = (*aggregate_prediction,*aggregate_update,m,P,dm,dP,l,dl)
+        values = (*aggregate_prediction,*aggregate_update,m,P,dm,dP,l,dl,predict_valid,valid)
         return (t+1,m,P,dm,dP,l,dl,*(a.write(t,v) for a,v in zip(buffers,values)))
     result = tf.while_loop(lambda t,*_:t<horizon,step,
         (0,means,covariances,dmeans,dcovariances,logits,dlogits,*arrays),parallel_iterations=1)
@@ -67,6 +70,7 @@ def mixture_schedule(model,theta,observations,means,covariances,dmeans,dcovarian
              for name in ("means","covariances","d_means","d_covariances")]
     names += ["component_means","component_covariances","d_component_means",
               "d_component_covariances","component_log_weights","d_component_log_weights"]
+    names += ["predicted_valid", "post_valid"]
     return dict(zip(names,[a.stack() for a in result[7:]]))
 
 

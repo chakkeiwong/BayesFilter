@@ -1,6 +1,815 @@
 # Master program: systematic investigation of KDM, LEDH, and model-score estimators
 
+Active execution, 2026-09-22: supervisor PID 4021639 is executing the reviewed
+[adaptive R replication ladder](iapf-adaptive-replication-ladder-2026-09-22.md),
+accumulating100,300,1000 complete learner labels per dimension under the
+remaining budget. The [adaptive comparison](artifacts/iapf-adaptive-score-reference-20260922-01/result.md)
+is complete:400 evaluations,729 checks, no rejected/capped learner. Score/tail8
+floor distortion disappears from fit2 in all d80 runs, but score/later doubling
+fails the d40 descriptive heuristic screen (RMSE.340 vs FA-APF.317). QR/later
+has RMSE.120 there. Ten replicates do not support statistical ranking. Early
+doubling changes N/cost. The next ladder preserves both reconstructed fitters,
+uses the explicit later-doubling hypothesis, fresh data/seeds, exact controls
+and uncertainty intervals. No Eq15, author-identity or full-paper replication
+claim follows. It runs automatically through all stages unless a validity or
+budget veto fires; ordinary candidate losses do not stop execution.
+The [paper-model transfer result](artifacts/iapf-paper-score-transfer-20260922-01/result.md)
+remains preserved with119 terminal checks and400 final evaluations.
+The completed
+[covariance/floor factorial](artifacts/iapf-covariance-floor-factorial-20260922-01/result.md)
+passes 419 checks and 48 independent R recursions. At d10, removing the .01 floor
+reduces diagonal-guide observed MSE from 15.230 to .081; restoring full covariance
+with the floor retained gives 12.456. The full/negligible arm recovers the exact
+Gaussian oracle to 4.89e-15 in coefficients and 2.85e-14 in likelihood. This
+identifies the floor as the larger contributor on the replayed cases, with
+covariance effects remaining. No population ranking or paper transfer follows.
+The [score-regression result](artifacts/iapf-score-regression-20260922-01/result.md)
+is complete: 446 checks pass, all 576 final evaluations complete, and independent
+R reproduces the recursive fits. The diagonal, .01-floor candidate nevertheless
+fails the conditional heuristic screen at dimensions 5 and 10. Observed mean
+squared log-likelihood errors are 1.064 and 15.230, versus .031 and .069 for the
+current-observation guide. Four data sets per dimension do not support a
+population ranking. Numerical correctness does not imply downstream accuracy.
+The completed factorial refits all four combinations. This is a diagnostic local extension,
+not Eq15, original-author code, a default change, or paper replication.
+The [actual-consumer fit observability](iapf-fit-observability-2026-09-22.md)
+phase is complete:24 CPU tests,330 terminal checks, all original outputs exactly
+replayed across four cases and14 recursive fit calls. Five appended fields agree
+with independent references within4.27e-14; the same candidate rejection remains.
+The [oracle-start result](artifacts/iapf-oracle-start-population-20260922-01/result.md)
+is complete:57/64 fits meet the unchanged optimizer gate. A converged terminal
+d5 density fit moves from the exact diagonal minimum KL0.198 to7.18; a converged
+relative-shape fit also reduces its residual while worsening global geometry.
+Known-Gaussian controls verify concentration at N1000 and a population
+counterexample to inferring small KL from small fitting error. Initialization
+alone and density normalization alone are insufficient on these cases.
+The [representation diagnosis](artifacts/iapf-representation-support-20260922-01/result.md)
+is complete with 63 terminal checks. Full quadratic recovery exactly reconstructs
+all 16 Gaussian messages; omitted cross terms explain diagonal-QR coefficient
+distortion. Some target-squared criteria give one particle 97% of the weight
+and have local curvature ratios near ten million. These are fixed-case
+mechanisms, not a population failure rate or a proposed paper-scale full fit.
+The completed [independent optimizer comparison](artifacts/iapf-optimizer-isolation-20260922-01/result.md)
+checks all 64 fixed problems: R L-BFGS-B meets the unchanged gradient criterion
+in 57/64, compared with 48/64 for local projected descent. This is no stochastic
+ranking. Converged fits can still have small sampled shape error and large
+exact-message KL. All 16 oracle diagonal guides lie inside the original box.
+The [fit-input result](artifacts/iapf-fit-input-isolation-20260922-01/result.md)
+already proves density-energy escape on actual terminal fits with independently
+correct objective/gradient arithmetic. The [guide-geometry result](artifacts/iapf-guide-geometry-20260922-01/result.md)
+verifies the FP64 consumer with explicit finite initial-integration error.
+Current budget: about45.226 CPU /47.745 GPU hours; the active phase ledger is authoritative.
+No defaults changed. Filtering vetoes, TF32 and paper timing/controller/author
+choice gaps remain open.
+
+Latest continuation result, 2026-09-22: the reviewed
+[adaptive consumer comparison](iapf-adaptive-consumer-parity-2026-09-22.md)
+has completed: 1732 final independent checks and 22 regression tests pass.
+All ten CPU and ten GPU FP64/XLA adaptive consumers match independently fitted
+R guides, full clouds, count/stopping decisions and final finite-program scores.
+The scalar restriction is removed for the local linear consumer; nonlinear
+scalar restrictions and claim/tuning verification remain. One finite-difference
+boundary crossing was resolved by label-stable steps with unchanged tolerances.
+[Result and remaining gaps](artifacts/iapf-adaptive-consumer-20260922-01/result.md).
+This is conformance of the local adaptation, not paper-scale replication or
+clearance of the prior TF32 veto. The now completed
+[density-scale diagnosis](iapf-density-scale-diagnosis-2026-09-22.md)
+tested absolute-density stopping and initialization against an exactly representable
+Gaussian target as dimension grows. It found eight inaccurate zero-step fits
+per device at d40/d80. Fixed scaling alone was insufficient, motivating the
+now completed initialization isolation. These are closed evidence phases.
+
+Latest completed result, 2026-09-22: the owner-authorized
+[renewed mechanism campaign](iapf-renewed-mechanism-campaign-2026-09-22.md)
+has completed all four phases and terminal skeptical review. The wider master
+program remains open. [Results, decisions and inference status](artifacts/iapf-renewed-mechanism-20260922-01/result.md)
+and the [mathematical/source audit](artifacts/iapf-renewed-mechanism-20260922-01/source-and-math-audit.md)
+replace the previous next-action instructions below.
+
+The campaign found and repaired a real GPU execution defect: the shared
+TF32/XLA transition could effectively reuse the first guide center at later
+times. A standalone broadcast matrix product reproduces the error; disabling
+Triton GEMM in one diagnostic selects cuBLAS and removes it. The retained
+repair computes Kc-Km instead of K(c-m), with the matching analytical tangent.
+Fifty-four focused and dependent consumer tests pass. The final FP64 and
+ordinary FP32 full-filter comparisons pass 18/18 each. Strict TF32 comparisons
+still fail 11/18 from rounding and changed discrete choices; that veto remains.
+No numerical backend/default or canonical LEDH route changed.
+
+Earlier GPU/XLA/TF32 evidence using the original affected fitted transition
+requires revalidation before reuse. Preserve those artifacts. The finding is
+specific to the tested fused route and installed custom compiler build; it
+is not evidence that every scalar, FP64, R or other-GPU result was wrong.
+
+The fresh confirmation contains 160 cells and 480 learner attempts. QR and
+safeguarded unweighted fitting complete 160/160 each; weighted fitting
+completes 158/160 under the frozen 12-iteration cap. Unweighted matches QR to
+3.64e-12 with no ridge interventions. Weighted fitting uses 6,650 ridges and
+can have weight ESS near one for a 161-coefficient d80 fit. All four estimable
+adjusted accuracy intervals contain zero; d80 has no complete paired interval.
+Every learned arm fails conditional heuristic screens, so no ranking or
+promotion follows. The two caps complete at iterations 13 and 14 in separate
+extensions with exactly reproduced original prefixes; confirmation is unchanged.
+
+The new allocation is 48 CPU hours and 48 GPU hours, with no wall deadline.
+[Budget accounting](artifacts/iapf-renewed-mechanism-20260922-01/budget.json)
+records about 2.072 CPU hours and 4.95 GPU minutes consumed, leaving about
+45.887 CPU hours and 47.891 GPU hours after the adaptive comparison. The active
+density-scale phase budget records subsequent spending. All failed attempts are charged. No
+research worker is running. The old expired deadline and token-style launch
+rules below are historical; the remaining authorization does not require
+another owner approval for local work under the same scientific scope.
+
+The next master actions, in dependency order, are:
+
+1. Preserve the repaired shared consumer and compiler reproducer. Revalidate
+   any affected old TF32 result before using it; evaluate distributional
+   likelihood accuracy separately from fixed-random-stream path parity.
+2. DONE on tested d1/d2/d5 FP64 CPU/GPU fixtures: close the actual R/TF adaptive-consumer boundary; explicitly match the model,
+   X1 versus X0 timing, retained weights/resampling, diagonal guide, objective,
+   floor and stopping semantics. Test the entire multidimensional consumer
+   against the independent R reference before removing the d=o=1 guard.
+   Full consumer evidence now supports this removal; high-dimensional fitting
+   quality and the different paper-study model remain open.
+3. Keep Equation 15 reconstruction separate from the log-regression extensions.
+   The unrestricted density objective has a vanishing-density degeneracy;
+   the authors' initialized local solver and numerical floor remain unknown.
+   Test any concrete reconstructed procedure as a declared hypothesis, with
+   fresh data and the existing oracle/heuristic ladder, before a paper-scale
+   replication. Do not spend the remaining budget repeating a solver-validity
+   check as if it established likelihood accuracy.
+4. After these reference and consumer questions are resolved, return to the
+   marginal model-score comparison and then KDM/LEDH integration under their
+   own source, tuning and canonical-route requirements. The present result
+   establishes none of those downstream claims.
+
+The concise [checkpoint](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/checkpoint.md)
+contains the exact resume state and evidence paths. The records below preserve
+earlier phases; their old next-step text and deadlines are superseded by this
+current entry and the newest repository governance.
+
+<!-- IAPF_24H_AUTOMATIC_STATUS -->
+Earlier unattended campaign status: frozen campaign completed. Five-dimension study complete: True. All-dimension reference screens: {'qr': False, 'short_qr': False}. No algorithm default changed. [Terminal report](artifacts/iapf-r-24hour-campaign-20260921-01/result.md).
+<!-- END_IAPF_24H_AUTOMATIC_STATUS -->
+
 Date: 2026-09-14
+
+Previous result, 2026-09-22: the owner-authorized
+[independent validation](iapf-r-independent-validation-2026-09-22.md) is complete.
+The [results and terminal review](artifacts/iapf-r-independent-validation-20260922-01/result.md)
+record 80/80 paired cells, 160/160 full learners and 880/880 additional
+filter/control evaluations. All exact Gaussian controls agree with Kalman
+(maximum absolute log error 3.64e-12). Both frozen learners complete the new
+cases; the repaired learner's observed mean absolute error is higher in all
+five dimensions, but every predeclared paired 99% interval includes zero.
+No accuracy ranking is statistically supported by this bounded sample.
+
+Fourteen conditional heuristic comparisons veto promotion of the repaired
+reference. Both learners have a tested particle count satisfying the declared
+relative-RMSE precision screen at every dimension; measured costs do not
+establish an efficiency ranking. The 51,100 recorded repaired fits include
+3,331 positive ridges, four active curvature bounds and three active-set
+fallbacks; the largest KKT residual is 5.80e-7, below the frozen 1e-6 gate.
+Full paper replication and original-author identity remain open. Numerical
+execution used 2,209.885535 worker seconds in 84/90 launches, below the
+4,100-second cap, finishing at 2026-09-21T20:03:51Z before the original
+20:04:26Z deadline. A bounded scheduling repair completed the last two cells
+with fresh attempts; the first index/report remain preserved. No worker is
+running. Unused compute allocation does not renew the expired wall deadline.
+
+Previous result, 2026-09-22: the owner-authorized
+[targeted fitting repair plan](iapf-r-targeted-fitting-repair-2026-09-22.md)
+is complete. The [results and terminal review](artifacts/iapf-r-targeted-fitting-repair-20260922-01/result.md)
+record all 25 blocked warm starts reaching the optimizer under both tolerances,
+while Equation 15 still gives inadequate guide shapes. The explicit
+weighted-log/ridge extension completes all eight reproduced d80 failures after
+one localized convex-solver repair, as well as all six fresh learning runs;
+the six QR comparators also complete. Forty-three focused checks and the
+existing author-choice regression suite pass.
+
+Numerical repair is established for those checked cases; an accuracy advantage
+is not. The repaired learner has larger absolute terminal error than QR in
+three of six fresh comparisons, and conditional heuristic checks veto promotion.
+Full paper replication remains open. This is an independent CPU R reference
+extension. Execution used 494.012354 worker seconds in 29/30 launches under
+the 4,800-second cap and original deadline. The remaining prior allocation is
+4,513.601570 seconds, with no implicit deadline renewal. No worker is running.
+
+Prior diagnosis, 2026-09-22: the owner's requested step back is
+complete. The [source/code root-cause audit](iapf-r-root-cause-audit-2026-09-22.md)
+and [mathematical findings](artifacts/iapf-r-root-cause-audit-20260922-01/result.md)
+identify separate fitting failures: actual Equation15 density disappearance;
+omitted Gaussian cross terms amplified by concentrated weighted regression;
+and QR numerical-rank rejection. Exact saved-cloud replays and the shared
+exact-guide APF/Kalman check pass. Crucially, 25/32 F2 failures occurred in
+strict QR initialization before the optimizer could use an available valid
+previous guide. The implemented F2 variant failed qualification, but those
+results do not fairly reject warm starting itself. No worker remains active.
+
+Previously completed, the reviewed
+[author-choice hypothesis campaign](iapf-r-author-choice-hypotheses-2026-09-22.md)
+is complete. [Final findings and review](artifacts/iapf-r-author-choice-hypotheses-20260922-01/terminal-review.md)
+and the [revised numerical report](artifacts/iapf-r-author-choice-hypotheses-20260922-01/runs/report-v3/results/result.md)
+replace the proposed execution instructions. No worker remains active.
+
+The strict/loose Equation15 and previous-fit initialization variants did not
+qualify. Target-weighted log fitting completed all 16 d5/d20 probes, but every
+tested d80 run failed during the first backward sweep. Its 161-coefficient
+weighted regression had only 1.0–2.4 effective weighted observations; direct
+rank/concavity checks identify the failures. Alternative floors did not repair
+this. Sample versus population SD left all 16 completed paired runs unchanged.
+No combination passed all six calibration datasets, so untouched validation
+correctly did not trigger. This rejects tested candidates, not the iAPF direction.
+
+Final review found and repaired an actual harness defect: an explanatory
+Equation15 underflow check wrongly rejected a weighted-log fit. The identical
+replayed case now completes; peak/N^4 passes 4/6 cells. The overall selection
+remains unchanged. All focused algebra, call-chain, failure-diagnostic and
+preserved-core parity checks pass. Original outputs and source versions remain
+preserved; the superseded record is identified explicitly.
+
+The campaign produced 126 completed fixed-cloud fits and 288 final full-filter
+records (189 complete, 99 failed), with eight further scheduled replications
+resource-censored by three timed workers. It used 2188.624/7200 aggregate worker
+seconds and 69/100 launches under the unchanged deadline. Small calibration
+samples do not support method ranking or full paper replication.
+
+Next research item: use the saved independent cases to separate learned-guide
+error from the diagonal Gaussian family's approximation error. Compare fitted
+guides, both analytic diagonal projections and the exact full guide at matched
+times and inputs before proposing another fitting change. Concentrated weights
+still reach effective sample size near one; successful optimization alone does
+not resolve that information loss. Preserve both validated references and use
+fresh data for any later candidate evaluation. A continuation experiment needs
+a new bounded time allocation because the original wall deadline has expired.
+Author settings remain necessary for implementation identity. Printed Equation
+15 and the weighted-log/ridge extension remain separate: this validation does
+not close original-author replication or the KDM/LEDH score questions.
+
+Previous completed amendment, 2026-09-21: the reviewed
+[Equation15 resolution amendment](iapf-r-equation15-resolution-2026-09-21.md)
+is complete. [Results and terminal review](artifacts/iapf-r-equation15-resolution-20260921-01/result.md)
+and [mathematical findings](artifacts/iapf-r-equation15-resolution-20260921-01/mathematical-findings.md)
+replace the earlier proposed next actions. No numerical worker is running.
+
+All four local Equation15 variants failed the d5/d20 full-filter probes,
+including the prescribed alternative starts and larger-iteration retries:
+32 attempts, zero completed filters. The algebra, gradient and consumer tests
+pass; fixed-cloud fits show that tiny absolute density loss can accompany a
+badly wrong Gaussian guide. This closes the bounded diagnostic, not the fitting
+replication gap or the iAPF research direction. Untouched validation was not
+triggered because no candidate met its entry condition.
+
+The saved d80 audit reproduces all prior means and verifies 1,000 parent hashes.
+One replica supplies 84% of the six-estimate arm's ordinary-prefix loss. An exact
+future-guide diagnostic has terminal log error below 5.46e-12 yet potentially
+large prefix variance, with the density-ratio identity checked at every time.
+Existing project prefix vetoes remain recorded; they do not refute the paper's
+terminal-likelihood result. No statistical ranking follows from this amendment.
+
+Timing now separates filter/learning work from extra diagnostics and I/O.
+Sixteen sequential records completed. These small runs do not establish matched-
+accuracy efficiency. All workers and artifact checks completed normally.
+The amendment used 98.081 of its 10,000 process-second allowance in 59 launches;
+previous use is retained in the manifest. The original deadline remains
+2026-09-21 20:04:26 UTC. The bounded amendment ended on its scientific decision,
+not a budget, review or permission stop.
+
+The formerly proposed reconstruction hypotheses have now been executed; their
+current results and next research item are stated above. The earlier box1 and QR
+findings remain preserved, and the distinction between terminal likelihood and
+online filtering remains binding.
+
+Prior evidence: [completed five-dimension campaign](artifacts/iapf-r-24hour-campaign-20260921-01/result.md)
+and [remaining-gap audit](artifacts/iapf-r-24hour-campaign-20260921-01/remaining-replication-gaps.md).
+Its 1,000-replica-per-dimension coverage gap is closed. Full paper replication,
+original numerical settings/data, matched-cost comparison, later studies and
+multidimensional R/TF parity remain open. No LEDH/KDM/HMC or production default
+claim follows. Active state is in the
+[master checkpoint](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/checkpoint.md).
+
+Historical completed allocation, superseded by the new campaign: the next fitting and controller actions
+were already in this program and have now been executed within their bounded
+allocation. The [full-filter fitting comparison](iapf-r-full-filter-fitting-comparison-2026-09-21.md)
+is complete. The first dataset of the separately reviewed
+[controller-window comparison](iapf-r-controller-window-comparison-2026-09-21.md)
+is complete after an automatic timeout repair. No numerical worker remains.
+Full evidence and decisions: [result](artifacts/iapf-r-full-filter-fitting-20260921-01/result.md).
+
+All 32 constrained Equation15 validation replicas completed, but the frozen box1
+fit fails the practical likelihood/variability/particle screen on both fresh d20
+datasets; QR passes both. Observed SDs are .501/.523 versus .120/.100 for QR.
+The constrained fit also loses the observed conditional heuristic screen to FA;
+paired intervals span zero, so population inferiority is not established.
+Saved-guide Gaussian-component KL is about2.23 versus .19 for QR, consistent
+with the previously derived diffuse-density escape and distorted guide shape.
+Compact bounds restore a finite fitting problem but do not fix its objective.
+This rejects the tested constrained reconstruction, not every iAPF implementation.
+
+At d80, all eight paired controller replicas and three heuristic baselines are
+complete on fresh dataset89400080. Shortening the stopping window from six to
+five estimates reduces final N from2000 to1000 in every pair and saves a mean
+6.675 seconds (paired95% interval [-7.627,-5.879]). Its likelihood-mean interval
+[.8603,1.2194] misses the prescribed upper limit1.20. The six-estimate comparator
+passes likelihood accuracy conditions but exceeds N<=1713. Both clear the
+observed heuristic screen. Neither controller arm is promoted; the terminal
+squared-error difference remains unresolved and the evidence covers one dataset.
+All tail/fit checks pass. Default controller behavior is unchanged.
+
+Execution: 2354.902653/2400 summed worker seconds, 15/16 launches, leaving
+45.097347 seconds and one launch. Attempt14 timed out after26 complete method
+pairs; attempt15 finished only the14 missing pairs with identical algorithms,
+data and seed recipes. All40 pairs and diagnostic records validate. Twelve
+regressions, direct identities, controller/consumer wiring, repair smoke,
+source/merge hashes and git diff --check pass. CPU R independent reference only.
+The earlier audit's unused549.198570 seconds remain separate and unspent.
+
+Next exact task: complete the frozen second d80 dataset89500080, IDs2601--2608,
+with QR and the five-estimate extension plus BPF/FA/SIS. The current remaining
+allocation cannot cover that cell. Reserve roughly700 additional worker seconds
+based on the first dataset's roughly550 seconds of method work, using resumable
+method/replica units; this allocation is proposed, not silently spent. Do not
+retune the controller or fitting settings on the first dataset. Then reassess
+reference viability before the five-dimension1000-repeat study. Candidate
+failure triggers evidence/repair work; insufficient remaining compute is the
+present continuation boundary.
+
+Original-author data/settings and literal paper variability/resampling agreement
+remain open, as do later studies and multidimensional full-filter R/TF parity;
+the existing TF endpoint is one-dimensional. QR uses a different fitting
+objective from Equation15. None of this establishes LEDH, KDM, GPU or HMC
+correctness or failure. Prior source/math findings:
+[audit](artifacts/iapf-r-replication-gap-audit-20260921-01/source-and-math-audit.md).
+Exact current checkpoint:
+[checkpoint](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/checkpoint.md).
+The bounded fitting campaign is complete; the broader research program is not.
+The dated entries below preserve historical decisions. Their old next-step
+instructions and budget balances are superseded by this state and checkpoint.
+
+Completed owner-directed reconstruction, 2026-09-21: the user explicitly permits
+trying plausible unknown numerical choices. Execute the
+[bounded reconstruction comparison](iapf-r-plausible-reconstruction-2026-09-21.md)
+across current/delayed doubling, an intermediate positive floor, and a bounded
+local Eq15 fit. The previous missing-author-settings dependency now limits
+claims of original implementation identity; it does not block this authorized
+empirical comparison. Compare the paper's actual SD, particle and resampling
+patterns, then check a frozen choice on fresh data against Kalman and three
+heuristics. Transfer exactly 868.02274921973 remaining summed worker seconds;
+preserve earlier evidence and execute repairs/phase transitions automatically.
+No original-code, 1000-replicate, GPU, HMC or algorithm-default claim follows.
+The comparison has now completed ten launches, with nine successful cells and
+one active-bound rejection. Delayed doubling fixes the d5/d10/d20 particle
+count in this sample (1000). Fresh d10 mean ratio is 0.999454, SD 0.074891;
+fresh d80 mean ratio is 0.958843, SD 0.198255, with mean N=1937.5 versus the
+paper's 1142. The d80 particle criterion fails. At d20, ordinary-innovation
+MSE is descriptively worse than FA-APF; its paired difference interval includes
+zero, so this is a conservative promotion veto, not established inferiority.
+Only d5/d10 pass every practical-reference screen. Every tested dimension
+misses the literal variability/resampling agreement screen. Original-code
+identity remains unknown. See the
+[full result](artifacts/iapf-r-plausible-reconstruction-20260921-01/result.md).
+Accounted use 795.381162 of 868.022749 seconds; 72.641587 remain. The planned
+eight-repeat d40 cell plus reporting reserve does not fit that balance.
+Next: complete new-setting d40 and obtain fresh d20 evidence when enough
+campaign allowance is available. A shorter controller window is nominated only
+as an explicitly labeled extension: saved histories implicate the earliest
+estimate in fifteen of sixteen d80 stopping windows. No worker remains running.
+
+Owner continuation directive, 2026-09-20: execute the authorized program
+across phase boundaries without waiting for another message. A phase boundary
+is an internal checkpoint: save the result, classify failures, execute bounded
+repairs, refresh and skeptically review the successor, then launch the next
+eligible work. A failed candidate, finished batch, missing advisory reviewer,
+or routine infrastructure failure is not by itself a reason to end execution.
+Continue independent work when only a dependent row is blocked. Pause only
+when all useful authorized work is blocked, the applicable budget is exhausted,
+or the next necessary action crosses a real permission, cost or scientific
+scope boundary. State the precise blocker and smallest resolution when pausing.
+This makes the existing between-phase repair mechanism operational; it adds
+no approval ceremony and does not permit silently changing a scientific target.
+
+Current state, 2026-09-21: the authorized automatic continuation completed
+source reconciliation, the missing same-setting d5/d10/d20 checks, and the
+R–TensorFlow component comparison without a phase-approval stop. All 96 new
+repetitions pass their accuracy, fit, tail and conditional heuristic screens;
+all eight shared numerical comparisons and four wiring/endpoint checks pass.
+The largest component discrepancy is 6.22e-15. Eleven focused tests pass.
+No numerical core, scientific setting, algorithmic default or production
+consumer changed. Results:
+[small dimensions](artifacts/iapf-r-small-dimension-completion-20260921-01/result.md)
+and [component parity](artifacts/iapf-r-tf-component-parity-20260921-01/result.md).
+
+The next original-paper replication step has a substantive dependency:
+recover or explicitly define the numerical fitting procedure behind Eq.15.
+The unrestricted written optimization can lack a finite minimizer, and the
+author's solver/constraints/floor/early-controller choices were not recovered.
+The qualified log-quadratic R method remains a different objective. The
+current TF consumer additionally has a scalar restriction and a different
+model; its separate log-quadratic comparator uses full covariance. A larger
+same-method experiment cannot be specified honestly by ignoring those gaps.
+This is a source/method-definition blocker for that experiment, not a phase
+approval requirement or evidence against every iAPF method. The independent
+checks that could answer the current questions without resolving it are done.
+No worker remains running. The transferred allowance has 868.022749220 worker
+seconds left; it is not exhausted. Current
+[checkpoint](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/checkpoint.md).
+
+Completed source investigation: see the
+[result and mathematical counterexample](artifacts/iapf-r-source-reconciliation-20260920-01/result.md).
+Both recovered arXiv versions leave the original optimizer/constraints/floor
+unspecified. A deterministic counterexample verifies that unrestricted Eq.15
+can have infimum zero without a finite minimizer. This blocks exact numerical
+paper replication, not the authorized optional R reference work. The
+[frozen small-dimension completion](iapf-r-small-dimension-completion-2026-09-21.md)
+then executed without a new permission stop. It transferred 479.519126 seconds remaining after the
+source diagnostic plus 853.973386 unused positive-floor validation seconds,
+total 1333.492513; prior manifests stay unchanged and allowances cannot be
+spent twice. Its historical handoff
+[checkpoint](artifacts/iapf-r-source-reconciliation-20260920-01/checkpoint.md).
+
+Active execution update, 2026-09-20: the
+[d40 confirmation plan](iapf-r-d40-confirmation-2026-09-20.md) is COMPLETE.
+All 64 new repetitions pass the separate accuracy, fit, tail and conditional
+heuristic screens. The same-data mean likelihood ratio is 0.967538, with
+bootstrap 95% interval [0.932404, 1.002977]; fresh data give 1.022861,
+[0.982292, 1.061802]. The earlier upward discrepancy did not recur; neither
+interval proves unbiasedness. All 38,600 QR fits and 6,400 Gaussian-limit tail
+checks pass. Numerical settings and the R core are unchanged. Eleven focused
+tests pass, including a mutation test for returning the stopping estimate
+instead of the fresh final estimate. The source audit derives conditional
+unbiasedness for the idealized checked algorithm. See the
+[result](artifacts/iapf-r-d40-confirmation-20260920-01/result.md) and
+[derivation](artifacts/iapf-r-d40-confirmation-20260920-01/likelihood-audit.md).
+Use: 1,020.265967 / 1,500 summed worker seconds; 479.734033 unused. Both
+planned launches succeeded, no retry occurred, and no worker remains running.
+Current [checkpoint](artifacts/iapf-r-d40-confirmation-20260920-01/checkpoint.md).
+
+Previous completed stage: the [frozen positive-floor validation
+plan](iapf-r-positive-floor-validation-2026-09-20.md) is COMPLETE. All96
+repetitions passed the separate dataset accuracy/tail/heuristic screens:
+d80-A mean1.020141, bootstrap95[.975004,1.073665]; d80-B mean.981628,
+[.927681,1.036752]; d40 mean1.041181,[1.005136,1.078378]. All64100 fits
+and9600 Gaussian-limit tail checks pass. The d40 interval excludes1 despite
+passing the predeclared10% tolerance, so exact agreement/unbiasedness is not
+established. The optional log-quadratic objective and floor8 remain frozen;
+numerical defaults are unchanged. See the
+[terminal result](artifacts/iapf-r-positive-floor-validation-20260920-01/result.md).
+Use3146.026614/4000 worker-seconds;853.973386 remain, with no extra launch
+allocated and no process running. Ten focused tests and six evidence-mutation
+checks pass. One pre-launch reporting-wrapper failure was repaired; no filter
+run or scientific setting was retried. Previous
+[checkpoint](artifacts/iapf-r-positive-floor-validation-20260920-01/checkpoint.md).
+
+Pending source dependency: the original-paper numerical fitting procedure is
+not fully recovered. The written Eq.15 amplitude escape is now checked, and
+the pinned public R comparator uses a different scaled objective with
+unverified author provenance. The successful optional log-quadratic fit is
+also a different objective. More repetitions cannot establish Eq.15
+conformance. Resolve this identity before labeling a 1,000-repeat study exact
+paper replication; continue the qualified optional reference meanwhile. The
+later TensorFlow comparison must identify its actual R comparator. No
+score/HMC/KDM/LEDH promotion follows from this study.
+
+Active reference-development branch, 2026-09-20: the owner requested a complete
+independent R iAPF implementation and replication before using it to debug the
+TensorFlow program. The selected scope is the paper's first linear-Gaussian
+study, starting with bounded runs and scaling toward published settings. The
+owner's careful paper/code audit and continuation have been planned,
+self-reviewed and executed. Current evidence is the
+[paper/code audit](artifacts/iapf-r-paper-code-audit-20260920-01/result.md),
+[log-fit repair result](artifacts/iapf-r-log-fit-repair-20260920-01/result.md) and
+[mathematical explanation](../reference/iapf-independent-r-reference.md).
+
+The optional `relative_l2` fitter removes the demonstrated density-amplitude
+escape. It is explicitly different from equation (15); `paper_eq15` remains the
+default. Complete 32-repeat comparisons at T100,d5/d10 pass the prespecified
+likelihood-accuracy screen. Mean ratios to Kalman are 1.0011 [0.9897,1.0131] and
+1.0044 [0.9886,1.0204]. Conditional bootstrap intervals support lower variance
+than the fully adapted filter on those datasets, at unequal computing budgets.
+Ordinary/large-innovation heuristic vetoes do not fire. There is no paper-scale,
+equal-cost, nonlinear, score, HMC or canonical LEDH conclusion.
+
+The d20 relative-loss fit remains rejected. L-BFGS-B fails a fresh pilot; explicit nlminb
+passes seven saved fits but fails another fresh pilot and a 10000-iteration
+replay. The first failed fit has squared-target effective size 1.272/1000 and
+residual-Jacobian condition ratio 48,446; its independent gradient check passes.
+The audit now confirms the off-cloud failure: exact relative errors under the
+smoothing measure are .472332 and .261061, worse than the initial fits, despite
+training residuals near zero. Diagonal target-moment diagnostics give .018480
+and .017046. This is a fitting/coverage failure in the checked cases, not a
+failure of the proposal/importance-correction identities.
+Author solver/floor/early-controller choices and original data remain unknown.
+The full 1000-repeat study and the TensorFlow comparison are not complete.
+
+The separately labeled `log_quadratic` fitter completed four d20 pilot repeats
+and 16 repeats on another untouched dataset. The latter mean likelihood ratio
+to Kalman is .989741, with bootstrap95% interval [.951537,1.029334], passing its
+conditional accuracy screen. The new validation stage added two fresh d20
+32-repeat datasets: means .996404 and 1.009890, with bootstrap95% intervals
+[.976202,1.016881] and [.985510,1.033173]. A d40 four-repeat pilot was
+descriptive (.875362); its independent 16-repeat batch gave 1.004931
+[.961774,1.051352]. All completed fits pass strict QR/rank/curvature checks and
+all conditional heuristic screens pass. This optional objective differs from
+equation15; the default is unchanged, and no method ranking is claimed.
+
+The d80 pilot is a scoped failure: it hit the frozen 20-iteration controller
+cap at N=8000, with last-six likelihood CV1.401898 versus the .5 stopping
+threshold. All 2,000 QR fits were admissible. Exact replay reproduced status,
+history, counts and fits; a full-covariance exact-twist control matched Kalman
+with zero recorded log error. The failure was subsequently localized to the
+chosen positive floor at observation93. Its mixture probability exceeded.99999
+and all4000/8000 particles used the original transition in two bad passes.
+Removing that floor only reduced log errors from-37.70/-36.05 to-1.21/-1.89.
+This identifies a local floor calibration failure; it is not evidence that
+the original author's unspecified floor behaves similarly.
+
+The separately reviewed positive-floor repair keeps the same controller limits
+and changes the explicit optional tail power from2 to8, selected from analytic
+mixture probabilities. Healthy outputs are exactly equal;1700 Gaussian-limit
+tail checks pass. Eight d20 non-harm repetitions, two d80 pilot repetitions and
+four repetitions on a fresh d80 dataset complete, with9000 valid fits and no
+conditional heuristic veto. Every d80 run takes eight adaptive passes and
+N2000; the fresh mean ratio is1.088298, descriptive bootstrap95%[1.008317,1.162667].
+This is feasibility, not established accuracy from four repetitions. Ordinary
+d20 prefix MSE rises descriptively25.6-36.3%, within the declared factor2 screen.
+The default objective/floor remain unchanged. See the
+[floor diagnosis and repair](artifacts/iapf-r-log-fit-validation-20260920-01/floor-result.md).
+
+The audit also repaired strict-fit nonconvergence/underflow acceptance,
+incomplete saved failure context and execution of live rather than captured
+sources. Final checks: 88 reference plus 33 alternative R checks, three source
+mutations and snapshot regressions pass (seven pytest cases, 1.78s). Exact-twist
+controls through d80 retain their limited oracle role. Repair use is
+1516.719870/1550 worker-seconds across all12 launches; combined worker use is
+1765.102396/1800 seconds. Mechanics are charged55/120 seconds. That bounded
+campaign is complete; its remaining33.280130 seconds have no launch slots.
+
+The owner-authorized
+[frozen log-fit validation plan](iapf-r-log-fit-validation-2026-09-20.md) has
+an1800 CPU-worker-second/eight-planned-launch budget. The
+[validation result](artifacts/iapf-r-log-fit-validation-20260920-01/result.md)
+records the completed d20/d40 runs and original d80 failure. The owner's
+continuation executed the [floor diagnosis](iapf-r-d80-floor-diagnosis-2026-09-20.md)
+and [positive-floor repair](iapf-r-d80-positive-floor-repair-2026-09-20.md).
+Campaign use is1474.773800 seconds, including one localized logging/status
+infrastructure retry (nine process launches). The repair and retry share the
+original600-second allocation; no numerical settings changed on retry.
+325.226200 seconds remain in that closed allocation; no repair job remains.
+The owner's next execution request completed the separate
+[positive-floor validation](iapf-r-positive-floor-validation-2026-09-20.md),
+with frozen32-repeat validation on each of two untouched d80 datasets and
+32 repeats on a fresh d40 control. All pass the declared Kalman accuracy,
+conditional heuristic and numerical screens. These results test accuracy and
+dataset dependence of power8 before scaling toward1000 repetitions; they do
+not establish equality to the original fitting procedure.
+Author objective/solver/floor/data ambiguities remain separate
+paper-replication gaps. TensorFlow comparison
+follows the qualified R reference; no nonlinear, score, HMC, KDM or canonical
+LEDH promotion follows from this result. This reference exception does not
+change the TensorFlow/GPU production direction.
+
+Reference status, 2026-09-20: the requested
+[public-iAPF paper-conformance audit](artifacts/iapf-paper-conformance-20260919-01/result.md)
+is COMPLETE. Thirteen checked Gaussian/procedure identities pass; the public R
+code differs in the fitting objective, positive floor, earliest stopping index,
+and T=1 handling. It remains an unverified-original-author comparator for
+`matched_gaussian_operations_only`, with `paper_reference_eligible=false`.
+The actual comparison consumer now enforces that scope; 49 focused CPU tests
+pass, including source mutations and consumer wiring. This is reference
+classification evidence, not a new score-performance run or an explanation of
+case 1900. The next scientific question below is unchanged.
+
+Current result and next question, 2026-09-19: the owner directed continued
+execution without unnecessary stops. All four stages of the
+[fitting/precision continuation](younis-iapf-fitting-protocol-2026-09-19.md) are
+COMPLETE; the [terminal result](artifacts/younis-iapf-fitting-protocol-20260919-01/result.md)
+and [independent audit](artifacts/younis-iapf-fitting-protocol-20260919-01/analysis.json)
+are the current evidence. Execution continued after fitting-only validation
+failed, first to a fresh-data particle-precision comparison and then to a
+replay of the known failures.
+
+Fitting-only validation produced 0/4 statistically supported gains. Increasing
+final N from 4096 to 16384 with each proposal frozen produced 4/4 primary
+interval passes on new observations (observed MSE reductions 72--79%), and
+3/3 on the failure replay. Two of the three known cases now clear the observed
+heuristic screen. **1900 still fails the observed UKF screen**, retaining a poor first-step
+twist and an earlier fitting-bound contact. This isolates substantial Monte
+Carlo error without proving the remaining error is solely a proposal defect.
+The selected large-cloud fitting protocol has not been refitted on 1900.
+No equal-cost, default, HMC or LEDH promotion follows.
+
+The [mathematical explanation](artifacts/younis-iapf-fitting-protocol-20260919-01/mathematical-explanation.md)
+now separates proved defects from causal hypotheses. The active estimator is
+iAPF plus a Fisher-identity score and frozen linear controls. Likelihood-optimal
+twisting need not minimize score variance; the old CV threshold is provably
+ineffective. For 1900, the observed MSE excess over UKF is .0011519, while the
+descriptive standard error of that MSE is .0015491. A true risk ordering and a
+causal explanation of that excess are not established. Saved-data arithmetic
+and executed-source checks used no new filter calls, fits or GPU launches.
+
+Next scientific question: separate inadequate cloud coverage, optimizer failure,
+and Gaussian-family limitations in 1900's first backward fit. Preserve the exact
+failing fit; inspect predictive coverage and fit geometry before choosing a
+repair. Any accuracy confirmation must use fresh observations. A reporting-only
+repair now preserves fitting-cloud SD through the shared recursive fitter and
+actual adapter; 33 focused CPU fitting/adapter/scope tests pass. Historical
+scientific artifacts retain their old schema and executed source snapshots.
+
+This allocation used 4/4 launches, 28/32 adaptive fits, 7988/8000 charged calls
+and 255.037560/1800 driver seconds; CPU checks are conservatively charged
+160/600 seconds. No experiment is running, and the remaining twelve calls
+cannot cover another research stage. This paragraph supersedes older
+next-action/budget paragraphs. The research direction remains open; the next
+allocation must address the specific fit question above rather than repeat
+completed screens.
+
+Historical terminal continuation, 2026-09-19: the owner-approved
+[pinned/fresh-data/bound-sensitivity plan](younis-iapf-pinned-continuation-2026-09-19.md)
+is COMPLETE. [Results](artifacts/younis-iapf-pinned-continuation-20260919-01/result.md)
+and the [mathematical fitting diagnosis](artifacts/younis-iapf-pinned-continuation-20260919-01/fitting-diagnosis.md)
+remain archived evidence. No process from that allocation is running.
+
+The intended RTX5080 confirmation passes all four primary nonlinear comparisons
+with fresh calibration/final streams, observed MSE reductions of 42--76%, and
+all four nonlinear heuristic screens. Physical UUID, memory growth and actual
+GPU:0 score/control outputs are verified. This closes the device-selection gap.
+
+Fresh observations change the scientific result: datasets 1900/1901 still lose
+to simple filters; only 3/4 primary new-versus-ancestor comparisons pass. Both
+curved datasets clear the observed heuristic screens. The original-box fit for
+1900 contacts a bound. The predeclared paired wider-box stage also passes only
+3/4 primary comparisons, retains that contact, and leaves both weak cases
+losing to UKF. The three interior proposal fits are exactly unchanged, so box
+expansion passes interior non-harm but fails as a complete fitting repair.
+
+A checked mathematical defect in the inherited diagnostic configuration is
+now explicit: k=1 means a two-likelihood window with CV <= sqrt(2), so tau=100
+always passes at the first eligible stop. This cannot establish fitting
+convergence. Dataset1900 keeps only 16 fitting particles and has first-step
+predictive shape residual 0.996807 (original box) / 0.888282 (wider box).
+Small-cloud coverage, optimizer behavior and Gaussian-family limitations remain
+separate hypotheses. An interior-fit failure on 1901 also shows that removing
+bound contacts alone cannot clear the weak-case score-accuracy gap.
+
+Budget used: 3/4 launches, 3068/8000 charged filter calls, 8/8 adaptive fits,
+137.859234/1800 driver seconds and conservative 60/600 CPU test/probe seconds.
+The planned stages are complete and the fitting allowance is exhausted. Remaining
+calls do not authorize more fitting. Eight focused CPU tests and six analytic
+checks against the actual stopping callable pass; independent arithmetic,
+frozen-calibration, source snapshots, reference and GPU audits pass.
+
+Exact next task: design and skeptically review a bounded, target-specific
+larger-fitting-cloud and informative-stopping protocol using new calibration
+observations, followed by untouched validation. Retain matched ancestor controls,
+raw Fisher and UKF; preserve current failed finals without tuning on them.
+Do this before longer horizons/dimensions or iAPF-moment/LEDH integration.
+No default/HMC/LEDH promotion or population ranking; general backward smoothing
+remains deferred. The whole master remains incomplete. This refresh supersedes
+all older active/next-action/budget paragraphs below.
+
+Current terminal refresh, 2026-09-19: the
+[Gaussian-innovation control plan](younis-iapf-innovation-control-2026-09-18.md)
+has been implemented and its bounded GPU comparison is COMPLETE. The
+[result and terminal audit](artifacts/younis-iapf-resampling-control-20260918-01/innovation-result.md)
+record 4/4 nonlinear primary MSE comparisons passing, observed reductions of
+49--73% against a matched ancestor-only correction, and 4/4 nonlinear mean-bias
+screens passing. All four nonlinear observed heuristic screens now pass
+against EKF, UKF and no resampling. The prior frozen 192-calibration correction
+is also retained as a comparator; its exploratory intervals favor the new
+controls. Exact Kalman still dominates the affine case. No default/HMC/LEDH
+promotion; this remains five fixed scalar datasets at T2 and N4096.
+
+Execution defect: this launch omitted the previous RTX5080 UUID pin, exposing
+both GPUs with RTX4080 SUPER as TensorFlow GPU:0. Actual per-output ordinals
+were not saved. Matched comparisons remain evidence for the executed scope,
+but intended RTX5080 replication is outstanding. The executed source/plan
+are preserved; the driver now pins the reference UUID before TensorFlow
+import, checks device identity and records tensor devices. Six focused CPU
+repair checks pass after 22 pre-launch checks (23 distinct tests overall).
+The repaired GPU launch has not run. Arithmetic, frozen coefficients,
+references, single-trace checks and executed source hashes pass.
+
+This campaign is CLOSED at 4/4 launches, 8000/8000 filter calls,
+166.131425/1800 driver seconds, 5/8 adaptive fits and conservative 240/600
+test/probe seconds. No run is active. Remaining wall time does not permit
+another call or launch under this campaign.
+
+Exact next task: write and skeptically review a NEW bounded campaign for a
+fresh-stream confirmation on the pinned RTX5080, retaining both ancestor
+baselines and the same target. Then repair/audit scope-specific iAPF fitting
+bounds and validate on fresh observation datasets and independent calibration
+before extending horizons/dimensions or integrating iAPF moments into LEDH.
+Do not tune against any completed final streams. Gaussian controls preserve
+finite-N bias and are not finite-program likelihood gradients. General backward
+smoothing stays deferred; the whole master remains incomplete. This terminal
+refresh supersedes every older active/next-action paragraph below.
+
+Current execution refresh, 2026-09-18: the
+[resampling-control plan](younis-iapf-resampling-control-2026-09-18.md) and its
+fresh-stream conditioning follow-up are COMPLETE. See the
+[comparison result](artifacts/younis-iapf-resampling-control-20260918-01/result.md)
+and [safety result](artifacts/younis-iapf-resampling-control-20260918-01/conditioning-result.md).
+The corrected Fisher score still loses to UKF on weak dataset 1500; curved
+dataset 1511 is statistically indistinguishable from no resampling. No
+default/HMC/LEDH promotion. Relative to raw Fisher at N4096, all four nonlinear
+primary comparisons pass, with observed MSE reductions of 29--47% and 4/4
+mean-bias screens passing. The control is exactly centered under the declared
+ancestor sampling law and preserves finite-N bias; it is not a finite-program
+likelihood gradient.
+
+Affine control regression exposed an incorrect numerical-rank assumption:
+FP64 fitting retained an FP32 roundoff direction although the exact rank is
+at most seven. The explicit input-precision safeguard passes fresh validation:
+affine rank repaired and Kalman bias screen passed; all four nonlinear final
+corrections exactly unchanged. Seventeen focused CPU tests pass; all kernels
+trace once, references and terminal source hashes pass. Existing defaults are
+unchanged. Total use: 3/4 launches, 129.311595/1800 driver seconds, 5/8 fits,
+6884/8000 filter charges, conservative 180/600 test/probe seconds. No run is
+active; all planned comparisons and safety checks are complete.
+
+Exact next task: derive Gaussian-innovation zero-mean controls or conditional
+integration to address variance left after ancestor controls. Subtract any
+control outside the normalized statistic, freeze coefficients on independent
+calibration, explicitly declare input precision, and compare conditionally
+against UKF/no resampling on fresh streams. First write and skeptically review
+that evidence contract; 1116 filter charges and one launch remain in the
+current budget, so a larger ladder needs an explicit new bounded budget.
+Do not reuse final streams from either completed stage. General backward
+smoothing, fitting-bound repair, iAPF-moment/LEDH integration and wider model
+coverage remain pending. The whole master is incomplete. This refresh
+supersedes older next-action instructions below.
+
+Active execution refresh, 2026-09-18: the
+[iAPF Fisher-score plan](younis-iapf-fisher-score-2026-09-18.md) is reviewed,
+implemented and its bounded GPU comparison is complete. See the
+[result](artifacts/younis-iapf-fisher-score-20260918-01/result.md).
+The new analytical terminal-genealogy score passes the N4096 mean-bias screen
+on all four fresh nonlinear datasets; the fixed-label derivative fails on all
+four. However, Fisher has larger observed sampling variance, higher MSE than
+the fixed-label score, and loses to UKF on both weak datasets. No candidate is
+promoted. This is a physical-score diagnostic; it is not the gradient of the
+reported finite likelihood and cannot silently replace an HMC force.
+
+The optional score is returned by the same iAPF kernel invocation. Separate
+FP32 compilations can change a categorical choice; that precision limitation
+is documented and the failed attempt preserved. FP64 parity and independent
+genealogy checks pass. KDM mixture/SGQF quadrature validity propagation is
+repaired; all 29 distinct focused CPU checks pass. Campaign use: 2/4 attempts,
+128.756/1800 driver seconds, 5/8 fits, 3000/3000 filter-call charges. This stage
+is complete; its call budget is exhausted.
+
+Exact next task: derive target-preserving conditional integration or an
+exactly centered control variate to reduce score variance, beginning with
+the tractable short-horizon identity reference. Check the expectation of the
+self-normalized ratio, not merely separate expectations of numerator and
+denominator. Review that derivation before a fresh bounded calibration and
+confirmation campaign; do not fit controls on the diagnostic final streams.
+The bounded Fisher identity comparison is an explicit exception to the
+deferred inventory below, not activation of the general backward-smoothing
+program. Fitting-bound repair remains open, followed by eligible
+iAPF-moment/LEDH integration and wider model coverage. The whole master is
+incomplete. This paragraph supersedes older next-action instructions.
+
+Latest execution refresh: 2026-09-18. The requested
+[curved iAPF diagnosis](younis-iapf-curved-diagnosis-2026-09-18.md) is reviewed
+and complete; see its
+[result](artifacts/younis-iapf-curved-diagnosis-20260918-01/result.md).
+Same-cloud calibration fits agree under 2000/5000/10000 solver caps, while
+fresh datasets still require up to 3823 steps. Floor .001 was nominated by
+calibration shape only, but confirmation has offline bound activity. At
+N=4096 its curved calibration score MSE is 0.009514 versus 0.005106 without
+resampling; the paired conditional 99% difference interval is positive.
+Finite-program derivative parity is about 1e-10, yet a mean score component
+is 21 Monte Carlo standard errors from the model oracle. This separates
+correct local calculus from model-score accuracy. No setting is promoted.
+The UKF baseline's stale quadrature return-value handling was repaired;
+12 focused checks pass. Campaign use: 3/4 attempts, 252.093/2400 driver
+seconds, 37/40 adaptive fits and 3141/3500 filter-call charges.
+The next task at that stage was to derive and test an analytical model-score estimator accounting for
+categorical sampling, keeping the current fixed-label finite-program
+derivative as a distinct target. Use the existing Fisher/complete-data
+direction as a checked comparator; repair fitting bounds on fresh data
+before any promotion. iAPF-moment/LEDH integration and the broader master
+remain incomplete. The newer Fisher result above now governs the next action.
+
+Execution refresh: 2026-09-18. The owner-requested
+[iAPF/KDM public-reference comparison](younis-iapf-kdm-reference-comparison-2026-09-18.md)
+was planned, self-reviewed and executed. Its
+[result](artifacts/younis-iapf-kdm-reference-comparison-20260918-01/result.md)
+records agreement for all tested shared Gaussian algebra, KDM analytical
+derivatives and IWSG resampling after accounting for the author code's epsilon
+terms. The exact iAPF filter example agrees to floating-point precision. One
+public R default fit misses the known variance by 0.00402 despite reporting
+convergence; changing only its stopping control reduces all variance errors
+below 7.4e-7. The original failed comparison is retained. Across two attempts,
+143/144 distinct checks pass; 19 focused consumer/score regressions pass.
+The CPU reference campaign used 2/4 attempts and a conservative 100/1800
+seconds; no runtime default changed. The R source uses an objective monotone
+in our relative-shape objective, omits the paper's positive floor, and has an
+earlier stopping boundary. It is an independent public reference, not verified
+original-author code. These comparisons do not close the curved-score failure.
+Next remains fresh Phase 0E fitting-control and family/bound/floor diagnosis;
+do not replace checked local formulas merely to copy reference defaults.
 
 Execution refresh: 2026-09-17. The latest
 [relative-shape repair and solver diagnostic](artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-relative-shape-repair-20260917-01/result-and-refresh.md)
@@ -898,6 +1707,13 @@ that exact-CV row remains blocked while a correctly labeled calibrated
 combination can still run.
 
 ## Phase 0E: covariance alternatives and corrected proposals
+
+Current execution note (2026-09-18): the
+[fitting/score diagnosis](artifacts/younis-iapf-curved-diagnosis-20260918-01/result.md)
+has completed the next diagnostic step. Fitting limitations remain, but
+sampling-law contributions now require an explicit analytical score study.
+Finite-program parity and physical-model score agreement remain separate
+requirements. No iAPF candidate is promoted and no broader phase exit is claimed.
 
 Execution update (2026-09-15): Phase 0D's two full KDM consumers, conditional
 identities, known-center control and independent calibrated blend now execute.
@@ -1908,6 +2724,13 @@ terminal validation and audit, not sources of new tuning data.
 
 ### Between-phase repair and refresh
 
+These steps execute automatically under the owner's continuing authorization.
+After step 5, proceed directly to the next eligible phase. A terminal chat
+response is not a required phase gate. If a dependency is blocked, execute
+independent work and applicable repairs before asking the owner for anything.
+Read-only source recovery and small falsification checks are part of repair,
+not separate projects requiring permission. Report progress while executing.
+
 Every phase, including a failed or terminal phase, ends with an explicit
 repair pass and a refresh of its successors. A scientific gate passing does
 not waive unresolved defects in the computation that produced its evidence.
@@ -2134,7 +2957,7 @@ start of the master or unrelated verified work.
 | KDM integrated/resampling endpoint | 0D, with shared baseline regression in 0C | Implemented and tested in the protected 0D snapshot; 48 CPU combination rows and three GPU consumer rows complete. Main integration preserves the concurrent native loops; both consumers pass main CPU direction checks and the focused GPU callback retry. |
 | Parameter-dependent initialization | 0C and every affected 0D--0G adapter | Explicit initial-state/covariance tangents implemented; six-parameter canonical finite-difference regression passes. Extend the same contract to each later adapter. |
 | UKF/KDM/SGQF moment lifecycle | 0C--0E | Shared UKF/SGQF and persistent Gaussian-mixture prediction, observation conditioning and reset carry execute with total analytical tangents. Provider snapshot 677e38a8 has CPU/GPU and independent selection/claim checks. Nonlinear snapshot a99a1c55 reaches the same shared consumers. The mixture construction is a local assumed-density candidate, not a reproduction of Younis's learned filter. |
-| Twisting/iAPF | 0E | Relative-shape adaptation at `e6298503` completes 29 fresh numerical rows with no underflow failure; one unconverged validation fit blocks two weak claims. Curved repaired claims fail boundary and EKF/UKF/local-linear screens. A same-cloud diagnostic converges in 4,201 steps at the unchanged tolerance, identifying inadequate solver allowance. Nine source fingerprints and 29 result digests pass audit; 32 isolated tests, three hooks and 13 main checks pass. Campaign closes at 249/280 charges and 3/3 launches, without promotion or supported ranking. Next: fresh scoped solver/control calibration and diagnosis of curved downstream error. Wider dimensions and iAPF-moment integration into LEDH remain open. |
+| Twisting/iAPF | 0E and bounded Phase 3 diagnostic | The September 18 public-reference, curved-fit and Fisher comparisons are complete (results linked above). Correct fixed-label differentiation is distinct from physical-score estimation. Terminal Fisher corrects the mean-bias failure in the tested scopes but has high variance. Exactly centered ancestor controls reduce N4096 error versus raw Fisher on four fresh nonlinear datasets under the primary uncertainty criterion; UKF/no-resampling promotion vetoes remain. The optional input-precision rank safeguard passes fresh numerical non-harm validation. Next: derive remaining innovation controls/conditional integration with fresh calibration, preserving the score target. Earlier fitting-bound failures, wider dimensions and iAPF-moment/LEDH integration remain open. |
 | KDM as a LEDH control variate | 0D | Known-zero-center mixture density-score control and independent calibrated biased-score blend execute. The tiny exact-control fixture has worse descriptive validation error; no ranking. Other unknown centers cannot inherit this result. |
 | Coupled finite differences | 0F | Three stencils, full directional reconstruction/covariance and frozen-design consumption execute. Forty-row pilot plus independent eight-row selection and two held-out mechanics rows complete. Conditional normalization, ratio covariance and N/2N/4N consistency reports also execute; 48 diagnostic rows complete. The eight-row pooled LEDH consistency association is only r=0.058, descriptive and insufficient for bias calibration. Larger replication and calibrated combinations remain open. See phase-0f-result-and-refresh.md and phase-0g-capacity-normalization-result.md in the active artifact root. |
 | Companion manuscript | 0A, then relevant phase repairs | Synchronize FD smoothness, stochastic MSE, direction convention and covariance lifecycle before using it as the revised implementation specification. |

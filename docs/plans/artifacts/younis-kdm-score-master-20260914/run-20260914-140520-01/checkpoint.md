@@ -1,15 +1,41 @@
-# Active score master checkpoint
+# Active iAPF checkpoint
 
-Owner directive, 2026-09-17: refresh the master and continue execution. Main checkout `/home/chakwong/BayesFilter`, branch `surrogate-hmc`. Preserve unrelated changes. No subagents.
+Question: how variable are fresh final likelihoods from complete adaptive R
+reconstructions, conditional on the paper's five linear-Gaussian dimensions?
+Stage: phase 16 RUNNING; detached supervisor PID 4021639, launched
+2026-09-22 at 09:02 UTC. It advances through 100, 300, and 1,000 labels per
+method/dimension without per-stage intervention. Candidate failures continue;
+source/numerical/artifact invalidity, repeated infrastructure failure or budget
+exhaustion stops with an explicit checkpoint.
 
-Current stage: Phase 0E relative-shape fitting repair and final solver diagnostic executed; this bounded campaign is closed at its three-launch limit. The entire master is incomplete. Latest result: `iapf-relative-shape-repair-20260917-01/result-and-refresh.md` (relative to this checkpoint directory). Do not resume the oversized stalled session.
+Checkout: /home/chakwong/BayesFilter; surrogate-hmc;
+HEAD 6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef. Preserve unrelated dirty changes.
+Master: docs/plans/younis-kdm-score-master-program-2026-09-14.md.
+Plan: docs/plans/iapf-adaptive-replication-ladder-2026-09-22.md.
+Live state, log, budget and completed-stage summaries are under:
+`docs/plans/artifacts/iapf-adaptive-replication-ladder-20260922-01/`.
+Read `checkpoint.json` and `budget.json` there for current counts and budget;
+`launch-confirmation.json` preserves the initial execution verification.
+Two single-thread CPU workers, GPU intentionally hidden, phase cap 36 charged
+worker hours inside the owner's existing campaign budget. No wall deadline or
+new approval gate. Do not modify sources recorded in `preflight.json` while
+running. Same-seed d5/d80 numerical replay passed, 180 statistics checks passed,
+and three supervisor regressions passed, including candidate-cap continuation
+and bounded infrastructure retries.
 
-Checked findings: the optional Algorithm-3 relative-shape objective is analytically derived and explicitly different from Eq. (15), retained as comparator. Fresh GPU run: 29 accepted rows, one unconverged validation fit, two blocked weak claims, no underflow failures. Curved repaired claims have bound activity and greater observed score error than EKF, UKF and local-linear: no promotion or supported ranking. A same-stream replay of validation 1212 converged after 4,201 steps with the unchanged 1e-7 threshold; full replay passed. The former 2,000-step cap was insufficient for this case. The replay does not validate a new default or erase the curved claim failure.
+Phase 15 is COMPLETE: 400 evaluations, 729 checks, all 200 learners complete;
+full Gaussian oracle/Kalman error 1.82e-12. Initial d80 score floor distortion
+up to .188 disappears by fit 2 in all recorded runs. Score/later doubling
+fails the descriptive d40 heuristic screen (RMSE .340 versus FA .317).
+Ten replicates do not establish a ranking. Detailed result and derivation:
+`docs/plans/artifacts/iapf-adaptive-score-reference-20260922-01/result.md` and
+`gaussian-mechanism.md` in that same directory.
 
-Source: clean isolated commit `e6298503bf923a2aa8ee9fff53732b79eac205cb`, `.localresources/worktrees/younis-score-iapf-density-repair-20260917`. Six changed implementation/driver/test files are copied to main and byte-verified; unrelated edits preserved. 32 isolated tests, three oracle hook tests, and 13 main repair/driver tests pass. CPU tests intentionally hide GPU. Saved-run audit passes nine study/source fingerprints, 29 result digests, matching references/observations, objective identities and independent final streams. Preserve isolated source unchanged for future fingerprint checks.
-
-Campaign budget: 249/280 charges; 3/3 GPU launches used; 252.98/3000 GPU wall seconds and 1074.95/7200 CPU seconds conservatively charged. Accounting: `iapf-relative-shape-repair-20260917-01/campaign-accounting.json`. The remaining 31 charges do not authorize a fourth launch. Actual GPU is RTX 5080 UUID `GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a`; ordinal 1 previously differed from nvidia-smi. FP32/TF32/XLA, FP64 fitting and memory growth verified. Concurrent workload forbids timing ranking.
-
-Exact next action: write a new bounded Phase 0E fitting-control calibration plan. Use the 4,201-step finding to justify a solver-budget ladder or a separately checked optimizer-geometry repair; keep the convergence threshold justified. Diagnose curved-regime bound/floor, Gaussian-family and particle-budget limitations. Keep original density fit, plain repaired fit, and conditional EKF/UKF/bootstrap/local-linear comparisons visible. Allocate fresh calibration/validation/claim identities before new selection. Do not tune on old claim IDs 1120–1125 or 1220–1221; validation 1212 replay is diagnosis only. One-arm pilots have not completed scope-specific control tuning. Require powered fresh evidence before ranking; do not declare default/HMC/canonical LEDH readiness.
-
-Source-grounding and derivation: `docs/plans/younis-score-iapf-relative-shape-repair-2026-09-17.md`. Final diagnostic: `docs/plans/younis-score-iapf-solver-budget-diagnostic-2026-09-17.md`. Earlier failed calibration/underflow results remain historical evidence, not reusable successful baselines. iAPF-moment integration into LEDH, wider models and powered replication remain open after fitting is adequate. Candidate rejection has not rejected the research direction or invalidated the checked harness.
+Next action: inspect the live checkpoint and completed stage summaries; the
+supervisor itself continues the frozen ladder. If it records a true failure,
+inspect its exact error/attempt, repair locally within the unchanged contract
+and remaining budget, then resume without overwriting prior evidence. On full
+completion, review conditional uncertainty, tails, failed learners, floor
+weights and classical controls before drawing a scientific conclusion.
+These are independent R reconstructions, not Eq15, original-author code, full
+paper replication, model-parameter scores, nonlinear validity or a new default.
