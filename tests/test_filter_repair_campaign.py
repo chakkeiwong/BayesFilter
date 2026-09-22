@@ -852,3 +852,19 @@ def test_test_matrix_resumes_each_requested_repeat_independently(monkeypatch, re
     monkeypatch.setattr(driver, "run_job", execute)
     assert driver.run_matrix(SimpleNamespace(stage="tests", test_batch="fixture", repeat=requested)) == 0
     assert launched == ([requested] if launch else [])
+
+
+def test_sequential_public_consumer_partition_covers_every_existing_case_once():
+    import ast
+    from pathlib import Path
+
+    driver = load("run_filter_repair_campaign")
+    source = Path(driver.ROOT, "tests/test_sequential_map_covariance.py")
+    expected = {"tests/test_sequential_map_covariance.py::" + node.name
+        for node in ast.parse(source.read_text()).body
+        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")}
+    registered = [case for group in driver.SEQUENTIAL_PUBLIC_CONSUMERS for case in group]
+    assert set(registered) == expected
+    assert len(registered) == len(set(registered))
+    for device in ("cpu", "gpu"):
+        assert set(driver.TEST_BATCHES[f"program_ownership_{device}"]) <= set(driver.mandatory_test_groups())

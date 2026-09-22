@@ -1,8 +1,8 @@
 """Enclosing native sequential locator, refinement, terminal geometry and records.
 
 This internal controller preserves the public numerical method. Its bounded
-owner serializes mutable locator observations; nested factory ownership is a
-separate lifetime concern. Progress delivery is outside the numerical call.
+owner serializes mutable locator observations and owns callback-dependent
+factories as one construction/tracing scope. Progress delivery is outside the numerical call.
 """
 
 from threading import RLock
@@ -10,6 +10,7 @@ from threading import RLock
 import tensorflow as tf
 
 from bayesfilter.inference.mass_matrix_tf import precision_program
+from bayesfilter.inference.program_cache_scope import ProgramCacheScope
 from bayesfilter.inference.sequential_batched_locator_tf import (
     BufferedBatchedLocator,
     batched_locator_program,
@@ -59,6 +60,19 @@ class SequentialController:
     """Own a compiled endpoint and optional private observation resources."""
 
     def __init__(self, scalar, batched, locator_batch, start_count, dimension,
+                 config, search_count, *, progress=False, device=None,
+                 jit_compile=True, trace_capacity=None):
+        self.dependency_scope = ProgramCacheScope()
+        with self.dependency_scope.activate():
+            self._initialize(scalar, batched, locator_batch, start_count, dimension,
+                config, search_count, progress=progress, device=device,
+                jit_compile=jit_compile, trace_capacity=trace_capacity)
+            # Trace while the same owner scope is active, including factories
+            # resolved lazily from nested graph bodies. This performs no target
+            # evaluation and keeps source-compatible unsupported-callback errors.
+            self.compiled.get_concrete_function()
+
+    def _initialize(self, scalar, batched, locator_batch, start_count, dimension,
                  config, search_count, *, progress=False, device=None,
                  jit_compile=True, trace_capacity=None):
         cfg = config

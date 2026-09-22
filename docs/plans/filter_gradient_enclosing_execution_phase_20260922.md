@@ -1273,3 +1273,76 @@ workers and2400.59 seconds, within64/7200. Guard/Ruff/whitespace pass. Main stay
 unmerged. Cumulative charges are58806.37658377485 CPU/58347.8351811944 GPU seconds.
 Proceed with the reviewed24-worker/3600-second E4 scope unit. The result covers
 Python callback ownership and unchanged numerical behavior, not native eviction.
+
+E4 execution starts after pushed30c5ae43b. The scoped ownership implementation
+adds one fully guarded source (224 total) with no new exception (1325 total).
+02944 passes both construction/thread/exception-restoration checks. Initial CPU
+lifetime cases02945--02947 release callbacks, root and dependencies after the last
+owned handle; old retained handles execute unchanged. Continue the frozen-source
+CPU/GPU numerical matrix before interpreting this as complete E4 qualification.
+
+Sequential E6 public-cost review, to execute after E4 ownership qualification:
+compare pinned48acf5e96 public behavior with the current explicit outer-graph
+reference and current XLA public endpoint. The original3582b4ac full payload is
+the numerical authority for every arm. The graph arm retains existing nested
+compiled preparation kernels and declared solver differences; it is not an
+identical-graph compiler ablation. Label its mixed dependencies accurately.
+
+Use D3/D5 smooth separable quartic fixtures, center-first,24 fitting rows,
+4 search rows and up to3 attempts/256 exact rows. Starts near the stationary
+point exercise refinement followed by fresh terminal fit. Changed starts/scales
+are runtime operands; measure both and require unchanged trace count. These
+are fixed convenience sizes for engineering scaling, not general nonlinear
+posterior evidence. Accepted and rejected records retain all original numerical
+fields and discrete decisions; a comparator defect must stop that cost arm and
+be diagnosed explicitly rather than changing the fixture or tolerance.
+
+Three fresh processes per arm/extent/device give36 workers, each at most300s,
+7200 charged seconds total inside the unchanged32/52-hour campaign caps. Include
+factory construction and tracing in total cold, including E4's moved trace work.
+Measure full public invocation/payload,20 synchronized warm calls, RSS/PSS and
+GPU allocator current/peak; export HLO/reference records after measured stages.
+Validate complete input/config/source/environment identities and physical UUID
+with the established versioned provenance validator. Decline shared-device cost
+preflights, monitor foreign compute during observation and keep its sampling
+limitation. No performance ranking from one process or shared timing.
+
+Use the existing cold>2x,warm>20%,device>2x,host>256MiB/2x and continuing-growth
+investigation triggers. They prompt attribution, not numerical waivers or
+research abandonment. This diagnostic follows qualified public numerical and
+ownership tests and cannot close ordered blocks, external telemetry/deadlines,
+F01--F20 endpoint dispositions or main integration. This is a draft until
+registered and reviewed together with the actual analyzer; no launch yet.
+
+The sequential public-cost draft and analyzer have now been reviewed together.
+Use the same mature UUID/growth/sharing validator as posterior costs. Require
+same runtime/harness source throughout, input and config identities at each
+extent, original full records, exactly three distinct repeat indices and passing
+single-case JUnit evidence. Compare CPU/GPU environment identities within their
+own device cohorts; their explicit cpu/visible scopes intentionally differ.
+Negative analyzer checks cover source/environment/input drift, original numerical
+and discrete mismatches, duplicate/incomplete repeats, baseline changes, missing
+samples, sharing and pytest failure. These checks precede numerical cost workers.
+The36 numerical workers plus analyzer/policy groups allow38 workers total with
+the same7200-second ceiling. All remain within cumulative caps. Initial failures
+are preserved; any changed source after a repair begins a new matched cost cohort.
+No mandatory numerical group becomes explanatory because a cost fails. This
+review authorizes the bounded cost unit after E4 passes; the initial draft's
+pending-registration note is superseded by this review once registration is
+installed. Worker commands are the stable runner's matrix --stage tests
+--test-batch sequential_public_cost_cpu or sequential_public_cost_gpu with
+--repeat0,1,2 and --test-timeout-seconds300 (space-separated CLI values).
+
+Cost launch review found that preflight rejection was registered only for the
+posterior cost matrix. Extend that same check to every sequential GPU cost group
+before executing it, and exercise each registration with a shared-preflight
+negative test. The analyzer still independently rejects in-run sharing. Without
+this addition the comparison could spend budget on evidence it must discard.
+
+E4 sequential scope qualification completes in02944--02967:17 CPU checks,15
+GPU checks and128 policy checks, all24 workers passed in697.07 seconds. Six
+lifetime reports release callbacks and9/11/13 dependencies after all handles
+are dropped, preserve retained compiled handles and do not grow standalone caches.
+See the ownership result and sequential-ownership-qualification-02967.json.
+Native executable residency and other consumer lifetimes remain separate. The
+reviewed full sequential costs follow; no numerical tolerance or method changed.

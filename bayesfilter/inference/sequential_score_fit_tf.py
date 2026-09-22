@@ -1,13 +1,13 @@
 """Complete XLA score-fit preparation for the existing sequential locator."""
 
 import math
-from functools import lru_cache
 
 import tensorflow as tf
 from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
 from bayesfilter.inference._exact_incumbent import _incumbent_selection
 from bayesfilter.inference.mass_matrix_tf import eigenpair_program
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_preparation_tf import (
     cloud_program,
     evaluation_program,
@@ -90,7 +90,7 @@ def fit_numerics(z, scores, center_score, scale, ridge, floor, condition_cap,
         "projected_precision_z": projected}
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def score_fit_program(scalar, batched, sample_count, dimension, training_indices, holdout_indices,
                       *, jit_compile=True):
     """Enclose seeded cloud, full target evaluation, fit and exact selection."""

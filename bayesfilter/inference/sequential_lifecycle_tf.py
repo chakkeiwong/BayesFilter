@@ -5,14 +5,15 @@ The controller preserves the original asymmetric terminal budget checks and
 the final terminal-fit attempt, including its original lack of recentering.
 """
 
-from functools import lru_cache
 
 import tensorflow as tf
+
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 
 D = tf.float64
 
 
-@lru_cache(maxsize=32)
+@scoped_program_cache(maxsize=32)
 def lifecycle_program(refine, terminal, dimension, config, search_count, *, jit_compile=True):
     refine_shape = refine.get_concrete_function().structured_outputs
     terminal_shape = terminal.get_concrete_function().structured_outputs

@@ -6,11 +6,11 @@ a change to the optimizer. Host-only target callbacks are unsupported.
 """
 
 import threading
-from functools import lru_cache
 
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_selection_tf import selection_numerics
 
 D = tf.float64
@@ -100,7 +100,7 @@ def _program(scalar, batched, count, dimension, box_radius, tolerance,
     return locate
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def batched_locator_program(scalar, batched, count, dimension, box_radius, tolerance,
                             max_iterations, max_line_search_iterations,
                             stopping_condition, *, jit_compile=True):
@@ -152,7 +152,7 @@ class BufferedBatchedLocator:
             return result
 
 
-@lru_cache(maxsize=4)
+@scoped_program_cache(maxsize=4)
 def buffered_batched_locator_program(scalar, batched, count, dimension, box_radius,
                                     tolerance, max_iterations, max_line_search_iterations,
                                     stopping_condition, *, device, jit_compile=True):

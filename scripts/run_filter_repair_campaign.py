@@ -116,6 +116,13 @@ SEQUENTIAL_PUBLIC_CONSUMERS = (
     ),
 )
 TEST_GROUPS = {
+    "program_ownership_scope_cpu": ("tests/test_filter_repair_program_ownership.py", "-k", "factory_scope"),
+    **{f"program_ownership_{case}_{device}": (
+        f"tests/test_filter_repair_program_ownership.py::test_actual_owner_releases_nested_callbacks_and_keeps_retained_handle[{case}]",)
+        for case in ("terminal", "factor_one", "batched_locator") for device in ("cpu", "gpu")},
+    **{f"program_ownership_identity_{device}": (
+        "tests/test_filter_repair_program_ownership.py::test_distinct_public_target_identities_do_not_reuse_stale_graphs",)
+        for device in ("cpu", "gpu")},
     **{f"posterior_residency_observer_{device}": (
         "tests/test_filter_repair_posterior_residency.py::test_posterior_residency_observer_retention_control",)
         for device in ("cpu", "gpu")},
@@ -1006,6 +1013,10 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"program_ownership_{device}": (
+        *(f"program_ownership_{case}_{device}" for case in ("terminal", "factor_one", "batched_locator", "identity")),
+        *(f"sequential_public_{case}_{device}" for case in ("terminal", "factor_one", "factor_two",
+            "scalar_locator", "batched_locator", "moving_budget", "edges"))) for device in ("cpu", "gpu")},
     **{f"sequential_public_{device}": tuple(f"sequential_public_{case}_{device}" for case in
         ("terminal", "terminal_reject", "symmetric", "recenter", "fit_reject", "factor_one", "factor_two",
          "factor_two_reuse", "stationary_budget", "moving_budget", "nonfinite", "paired", "scaled_search",
@@ -1249,6 +1260,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["program_ownership_gpu"]},
     "posterior_residency_observer_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["sequential_public_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["sequential_public_consumers_gpu"]},

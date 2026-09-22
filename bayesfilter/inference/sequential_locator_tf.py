@@ -5,17 +5,17 @@ locator. This program preserves their order; it does not batch independent
 optimizers or substitute endpoint objective values for exact replay.
 """
 
-from functools import lru_cache
 
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_selection_tf import selection_numerics
 
 D = tf.float64
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def scalar_locator_program(scalar, count, dimension, box_radius, tolerance,
                            max_iterations, max_line_search_iterations,
                            stopping_condition, *, jit_compile=True):

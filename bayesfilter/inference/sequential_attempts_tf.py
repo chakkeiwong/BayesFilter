@@ -4,10 +4,10 @@ The second-fit callback is a native fixed-signature program; it must return
 precision and usability plus its complete tensor record for later reporting.
 """
 
-from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_proposal_tf import proposal_program
 
 D = tf.float64
@@ -24,7 +24,7 @@ def _empty_proposal(dimension, old_norm, active):
         'accepted': tf.constant(False)}
 
 
-@lru_cache(maxsize=32)
+@scoped_program_cache(maxsize=32)
 def attempts_program(scalar, second_fit, dimension, config, *, jit_compile=True):
     # The fixed second callback has explicit input/output signatures. Its empty
     # record is schema construction only and never evaluates a target or fit.

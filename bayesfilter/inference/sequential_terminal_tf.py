@@ -1,9 +1,9 @@
 """Native terminal score fit with the original static support decision."""
 
-from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_score_fit_tf import (
     partition_schema,
     score_fit_program,
@@ -12,7 +12,7 @@ from bayesfilter.inference.sequential_score_fit_tf import (
 D = tf.float64
 
 
-@lru_cache(maxsize=32)
+@scoped_program_cache(maxsize=32)
 def terminal_program(scalar, batched, dimension, config, *, jit_compile=True):
     count = config.terminal_sample_count
     if config.pair_disjoint_score_holdout:

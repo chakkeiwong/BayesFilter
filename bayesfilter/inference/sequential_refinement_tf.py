@@ -1,6 +1,5 @@
 """One native search, fresh fit, exact recenter and ordered proposal step."""
 
-from functools import lru_cache
 
 import tensorflow as tf
 
@@ -8,6 +7,7 @@ from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
 )
 from bayesfilter.inference.factor_decisions_tf import factor_decisions_program
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_attempts_tf import attempts_program
 from bayesfilter.inference.sequential_factor_attempt_tf import (
     empty_second_program,
@@ -25,7 +25,7 @@ from bayesfilter.inference.sequential_terminal_tf import terminal_program
 D = tf.float64
 
 
-@lru_cache(maxsize=32)
+@scoped_program_cache(maxsize=32)
 def refinement_program(scalar, batched, dimension, config, search_count, *, jit_compile=True):
     search = search_program(scalar, batched, search_count, dimension,
         config.orthogonal_antithetic_search, jit_compile=jit_compile)

@@ -9,10 +9,11 @@ from functools import lru_cache
 import tensorflow as tf
 
 from bayesfilter.inference.mass_matrix_tf import eigenpair_program
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.ops.stateless_random_tf import philox_normal_float64
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def evaluation_program(scalar_function, batched_function, row_count, dimension):
     """Compile one complete cloud with a bounded, fixed input signature."""
 

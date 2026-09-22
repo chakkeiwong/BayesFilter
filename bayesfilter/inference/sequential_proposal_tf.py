@@ -8,6 +8,7 @@ from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_preparation_tf import trust_region_program
 from bayesfilter.inference.sequential_structured_preparation_tf import _position_program
 
@@ -51,7 +52,7 @@ def acceptance_program(policy, active, *, jit_compile=True):
     return decide
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def proposal_program(scalar, dimension, policy, active, *, jit_compile=True):
     solve = trust_region_program(dimension, jit_compile=jit_compile).python_function
     position = _position_program(1, dimension, jit_compile)

@@ -4,10 +4,10 @@ Eligibility follows the inherited value/score rule. Position finiteness is not
 an additional selection gate. Optimizer and refinement lifecycles are separate.
 """
 
-from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_preparation_tf import (
     cloud_program,
     evaluation_program,
@@ -37,7 +37,7 @@ def selection_numerics(positions, values, scores, *, keep_first=False):
         'score': tf.gather(scores, index)}
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def replay_program(scalar, rows, dimension, *, jit_compile=True):
     evaluate = evaluation_program(scalar, None, rows, dimension).python_function
 
@@ -52,7 +52,7 @@ def replay_program(scalar, rows, dimension, *, jit_compile=True):
     return replay
 
 
-@lru_cache(maxsize=64)
+@scoped_program_cache(maxsize=64)
 def search_program(scalar, batched, rows, dimension, orthogonal, *, jit_compile=True):
     generate = cloud_program(rows, dimension, orthogonal).python_function
     evaluate = evaluation_program(scalar, batched, rows, dimension).python_function

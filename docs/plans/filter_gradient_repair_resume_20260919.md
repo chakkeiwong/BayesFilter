@@ -1,7 +1,7 @@
 # Filter and gradient repair recovery
 
 The approved **E1--E6 enclosing-execution repair phase** is executing on
-`repair/filter-gradient-xla-validation-20260918`, after pushed **48acf5e96**.
+`repair/filter-gradient-xla-validation-20260918`, after pushed **30c5ae43b**.
 The [reviewed master execution program](filter_gradient_enclosing_execution_phase_20260922.md)
 now includes the confirmed public-capacity, comparator-eigensystem and native
 compiler-memory findings. [Full geometry results](filter_gradient_full_geometry_result_20260922.md)
@@ -14,7 +14,7 @@ inside XLA. **02697--02705 pass81 native CPU +6 public CPU +3 legacy checks;
 checks** after restoring current scalar-route labels. **02727 passes both large
 public CPU cases**, including260 samples/512 directions and scalar/batch replay.
 E1 and the active pilot retain their earlier83/83 and78/78 CPU/GPU qualifications.
-The current partial source guard covers223 sources /1325 exact exceptions.
+The current partial source guard covers224 sources /1325 exact exceptions.
 The sequential controller adds seven completed-history formatting exceptions;
 its numerical body has no Python-loop or NumPy exception.
 The full public sequential module is now guarded; its seven additional exact
@@ -117,10 +117,15 @@ and integration/retesting remain open.
 Accepted-result tolerances and ill-conditioned rejection/no-use decisions are
 unchanged. Canonical LEDH rebuilding remains outside this campaign.
 
-Through02943, charges are**58806.37658377485 CPU /58347.8351811944 GPU seconds**,
-leaving15.66 CPU /35.79 GPU process-hours under unchanged32/52-hour caps.
+Through02967, charges are**59081.88946123973 CPU /58769.39307047443 GPU seconds**,
+leaving15.59 CPU /35.68 GPU process-hours under unchanged32/52-hour caps.
 The sequential public tranche completes60 workers/2400.59 seconds within64/7200.
-Next execute the reviewed E4 dependency-scope unit (24 workers/3600 seconds).
+The reviewed E4 sequential dependency-scope unit passes all24 workers in697.07
+seconds:17 CPU checks,15 GPU checks and128 policy checks. All six lifetime
+probes release callbacks/dependencies after final-handle release; retained handles
+remain usable. See [ownership result](filter_gradient_sequential_ownership_result_20260922.md).
+Complete sequential public costs and ordered-block execution are next. Native
+XLA residency and other callback-owning consumers remain separate obligations.
 Later workers add charges; use runner status when idle. Remote main last inspected is
 **89065bc6354801cb368d5e163ba49fd9c4372d10**; six overlapping paths now
 include C2 Hermite updates and GenUT test retirement as well as HMC warmup, the

@@ -10,6 +10,7 @@ from functools import lru_cache
 import tensorflow as tf
 
 from bayesfilter.inference._exact_incumbent import _incumbent_selection
+from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_preparation_tf import (
     cloud_program,
     evaluation_program,
@@ -52,7 +53,7 @@ def _position_program(row_count, dimension, jit_compile):
     return position
 
 
-@lru_cache(maxsize=32)
+@scoped_program_cache(maxsize=32)
 def structured_data_program(scalar, batched, dimension, fresh_count, search_count,
                             reuse_search_scores, *, jit_compile=True):
     if fresh_count < 4 * dimension or fresh_count % 2:
