@@ -1,6 +1,65 @@
 # Complete filter and gradient execution repair
 
 Repair remains **incomplete** on `repair/filter-gradient-xla-validation-20260918`,
+continuing from pushed **54bc96fc9**. The remaining-gap investigation now gives
+source anchors, a repair path and an acceptance test for each known execution
+boundary. See [diagnosis and repair roadmap](filter_gradient_remaining_gap_diagnosis_20260922.md).
+
+**02627--02634 pass 14 diagnostic checks** (including one two-check formatting
+repeat). The tensor-count permutation prototype exactly preserves the existing
+CPU random stream on CPU/GPU. Naive zero padding changes the fitter's intercept
+and loss; dynamic slicing specializes XLA despite one TensorFlow trace. These
+findings require active-count fitting and bounded exact-shape callback handling,
+not changed numerical tolerances. No runtime implementation changed here.
+
+Fresh graph/XLA fit records agree at the unchanged tolerances. First-execution
+host RSS differs by **271.81 MiB CPU / 26.05 MiB GPU** for this D3 fixture.
+Most growth occurs at execution; reporting is small. Python graphs release,
+while RSS stays high. A separate actual-lifecycle trace proves nested caches
+retain callbacks after outer-only eviction and release them after dependency
+cache clearing. Native executable/allocator retention remains unisolated; these
+small diagnostics establish neither a memory leak nor leak freedom.
+
+The current external credit target already calls rectangular SR-UKF; the old
+wrong-filter finding is stale. Its qualification remains target-only. Separate
+DZ5 geometry callbacks still perform NumPy/Python telemetry inside target calls.
+Exact supervisor-source tests confirm elapsed guards only report crossings,
+while quiet compiled phases can trigger stale-progress termination. Tensor
+telemetry, independent parent deadlines and actual consumer tests remain needed.
+
+**02635 passes all 102 policy/controller checks.** Audit **02636** inventories
+2,990 working Python files / 2,989 parsed, with the unchanged vendor-reference
+parse error. The guard remains partial at **213 sources / 1,306 exact exemptions**;
+no allow-list or runtime-default change was made. Focused Ruff and whitespace
+checks pass. All F01--F20 terminal dispositions remain open.
+
+Next implement active-count geometry and full iterative execution, wire the
+existing native posterior/sequential controllers into public endpoints, finish
+ordered block control and coordinate callback-cache ownership. Qualify actual
+consumers and matched GPU/public costs using UUID-aware analyzers, then finish
+the active endpoint audit and terminal comparisons. The rejected ill-conditioned
+posterior comparison is resolved by the owner's rejection/reporting/no-use rule;
+accepted-result criteria remain unchanged. Canonical LEDH rebuilding remains
+outside this campaign and unsupported claims remain blocked.
+
+The stable approved runner, one numerical worker, source freeze, verified GPU
+memory growth and **32 CPU / 52 GPU process-hour** caps remain active. Scheduling
+protects desktop/encoder GPUs and selects an eligible non-desktop UUID; preserve
+the declared 8 GiB floor and exact fallback rule. All three GPU diagnostic
+workers used GPU2. Charges through 02636 are **52,486.56585271178 CPU /
+49,656.2098863024 GPU seconds**, leaving **17.42 CPU / 38.21 GPU process-hours**.
+The static audit's 34.64 seconds are conservatively charged to GPU by the
+existing runner classification. No worker is active.
+
+Refreshed remote main is **01d67ec41062e6cf8759c5e099f45a5a7f3443f1**. Only two
+tracked code/test paths overlap the committed repair changes, but no merge trial
+or conflict qualification has occurred. Main stays unmerged until full testing
+and integration/retesting. Structured checkpoint:
+`artifacts/filter-gradient-repair-20260917/remaining-gap-diagnosis-02636.json`.
+
+## Previous rejected-precision checkpoint
+
+Repair remains **incomplete** on `repair/filter-gradient-xla-validation-20260918`,
 continuing from pushed **ea8357a48**. The September 22 owner instruction replaces
 GPU3-only scheduling. The driver now automatically selects an available
 non-desktop GPU, records its UUID and pins every matrix to that physical device.

@@ -64,6 +64,13 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "gap_ownership_supervisor_cpu": ("tests/test_filter_repair_gap_followup.py",),
+    **{f"gap_enclosure_diagnostics_{device}": (
+        "tests/test_filter_repair_gap_diagnostics.py", "-k", "not compiler_memory")
+        for device in ("cpu", "gpu")},
+    **{f"gap_compiler_memory_{arm}_{device}": (
+        f"tests/test_filter_repair_gap_diagnostics.py::test_fit_compiler_memory_release[{jit}]",)
+        for arm, jit in (("graph", False), ("xla", True)) for device in ("cpu", "gpu")},
     **{f"geometry_preparation_reuse_{kind}_{dimension}_{device}": (
         f"tests/test_filter_repair_geometry_preparation_memory.py::test_preparation_components_and_changing_input_reuse[{kind}-{dimension}]",)
         for kind in ("directions", "partition") for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -966,6 +973,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "gap_enclosure_diagnostics_gpu": "GPU",
+    **{f"gap_compiler_memory_{arm}_gpu": "GPU" for arm in ("graph", "xla")},
     **{group: "GPU" for group in TEST_BATCHES["geometry_preparation_followup_gpu"]},
     "geometry_preparation_boundary_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["geometry_preparation_memory_gpu"]},

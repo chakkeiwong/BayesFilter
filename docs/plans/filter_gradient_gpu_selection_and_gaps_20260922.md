@@ -1,5 +1,7 @@
 # GPU selection and remaining repair work
 
+Current checkpoint: [remaining-gap diagnosis and repair roadmap](filter_gradient_remaining_gap_diagnosis_20260922.md), through02636. It supersedes earlier current-state claims below; source guard coverage and main merge remain incomplete.
+
 Owner instruction on September 22 supersedes the GPU3-only campaign restriction:
 use an available GPU that does not serve the remote desktop; use a desktop GPU
 only when every other GPU is above 50% utilization and lacks enough free memory.
@@ -56,10 +58,10 @@ The remaining gaps, independent of scheduling, are:
 | Complete numerical execution boundaries | Connect preparation, pilot, fit and exact replay into the full geometry initializer and iterative control; handle dynamic retained rows, batch extents and permutation generation without padded calls or host numerical decisions. Finish sequential outer lifecycle/reporting and ordered block-coordinate control. |
 | GPU qualification | Preparation, proposal/callback, fit and pilot GPU checks now pass. Shared COD derivative/factor/lifecycle/consumer renewal also passes. Complete matching uniform public and new-controller GPU costs; update post-run analyzers to enforce the selected UUID instead of hardcoding GPU3. Source-frozen terminal evidence remains required. |
 | Posterior public integration | Rejected D3 comparison resolved by the September 22 owner decision: check rejection, reporting and no downstream use; preserve discarded matrix differences as explanatory evidence. 150 CPU/GPU posterior checks pass in 02622--02625. The uninstalled allowance and unfinished GPU reference are superseded. Public endpoint integration and full endpoint qualification remain open. |
-| Cost investigations | Explain and disposition cold compilation, roughly 300--525 MiB extra host RSS in some enclosing controllers, standalone preparation/report overhead, and outstanding dense/mass/selector timing triggers. Bounded 3,000-call stability is not general leak freedom or compiler-cache eviction. |
-| Actual consumers | Validate actual DZ5 targets/transitions and repair independent parent deadlines before buffering callback progress. No external source pin change counts as compatibility evidence. |
+| Cost investigations | First-execution allocation and nested callback-cache retention are now localized in02629--02634; native cache versus allocator attribution remains open. Explain and disposition cold compilation, roughly 300--525 MiB extra host RSS in some enclosing controllers, standalone preparation/report overhead, and outstanding dense/mass/selector timing triggers. Bounded 3,000-call stability is not general leak freedom or compiler-cache eviction. |
+| Actual consumers | Validate actual DZ5 targets/transitions and repair independent parent deadlines before buffering callback progress. Current credit target uses rectangular SR-UKF with target-only qualification; geometry callbacks still materialize into NumPy. No external source pin change counts as compatibility evidence. |
 | Audit and terminal evidence | Expand the partial exact-source guard (213 sources, 1,306 exact exemptions at 02595), verify active consumer call chains and classify every F01--F20 finding. Many repairs exist, but none has a final closed disposition. Freeze source, run all required suites and matched two-extent/three-process comparisons. |
-| Integration | Integrate refreshed remote main 2c2419c0, resolve any conflicts, recheck affected code and perform terminal review. Merge only after full qualification. |
+| Integration | Integrate refreshed remote main 01d67ec410, resolve any conflicts, recheck affected code and perform terminal review. Merge only after full qualification. |
 
 Canonical LEDH algorithm rebuilding remains outside this execution-repair
 campaign by the owner's earlier decision. Unsupported canonical claims remain
