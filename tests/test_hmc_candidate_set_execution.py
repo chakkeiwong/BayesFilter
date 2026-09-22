@@ -323,15 +323,23 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
     from bayesfilter.inference import bind_hmc_candidate_set_execution_from_preparation
     from bayesfilter.inference.hmc_kernel_tuning import (
         build_operational_fixed_mass_hmc_adapter, run_hmc_windowed_mass_stage,
-        OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+        OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID, HMCBootstrapScreenConfig,
     )
     adapter = fixture._RotatedGaussianAdapter()
     geometry = fixture.initialize_hmc_kernel_geometry(adapter=adapter, initial_position=[.4,-.3],
         initial_covariance=[[1.4,.3],[.3,.8]],
         config=fixture.HMCGeometryInitializationConfig(covariance_jitter=0.0))
+    def bootstrap_fixture(_adapter, _state, config):
+        count = int(config.num_results)
+        result = fixture._runtime_shaped_result(warmup_steps=count,
+            acceptance_trace=([True, True, False, True] * count)[:count])
+        # Bootstrap now consumes Metropolis probabilities, independently of
+        # the binary reporting field. Declare a passing probability trace.
+        result.trace["log_accept_ratio"] = tf.fill([count], tf.math.log(tf.constant(.7, tf.float64)))
+        return result
     bootstrap = fixture.run_hmc_bootstrap_screen(adapter=adapter, geometry=geometry,
-        run_full_chain=lambda _adapter, _state, config: fixture._runtime_shaped_result(
-            warmup_steps=int(config.num_results), acceptance_trace=[True,True,False,True]*4))
+        config=HMCBootstrapScreenConfig(screen_num_results=12),
+        run_full_chain=bootstrap_fixture)
     stage = run_hmc_windowed_mass_stage(adapter=adapter, geometry=geometry, bootstrap=bootstrap,
         config=fixture._stage_config(algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
                                      chain_execution_mode="tf_function"),

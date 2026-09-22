@@ -690,7 +690,13 @@ def _issue_binding(*, adapter: Any, layers: Sequence[Mapping[str, Any]], initial
     starts = tf.convert_to_tensor(initial_active_state, dtype=tf.float64)
     closure = _source_closure(adapter, source_paths)
     kind = "fixed_transport" if layers[0]["kind"] == "frozen_transport" else "ordinary"
-    preparation_identity = _sha256({"layers": layers, "lineage": target_lineage, "preparation": preparation})
+    numerical_preparation = dict(preparation)
+    if "numerical_geometry_hash" in numerical_preparation:
+        # Keep the full artifact hash in the binding for integrity. Probe clock
+        # variation must not choose a different candidate random stream.
+        numerical_preparation.pop("geometry_hash")
+    preparation_identity = _sha256({"layers": layers, "lineage": target_lineage,
+                                   "preparation": numerical_preparation})
     numerical_policy = dict(config.payload())
     numerical_policy.pop("preparation_elapsed_seconds")
     runner_kind = ("batched_chain_tfp_fixed_hmc" if config.chain_mode == "batched"
@@ -790,6 +796,8 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
         initial_active_state=checked["initial_position"], target_scope=checked["target_scope"],
         target_lineage=target_lineage,
         preparation={"source": "operational_windowed_handoff", "geometry_hash": geometry.artifact_hash,
+                     "numerical_geometry_hash": geometry.numerical_hash,
+                     "geometry_identity_policy": "exclude_bootstrap_probe_wall_seconds_v1",
                      "start_lineage": checked["start_lineage"], "final_adapter_signature": checked["final_adapter_signature"],
                      "search_domain_policy": exploration,
                      "epsilon_proposal_bound": {"upper": upper, "role": "preparation_probe_bound_only",

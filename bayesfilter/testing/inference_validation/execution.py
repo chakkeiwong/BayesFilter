@@ -90,7 +90,11 @@ def worker(design_file,root,budget,attempt=1):
     started=time.monotonic()
     profile = None
     try:
-        runtime=configure_worker(design)
+        isolated = design.options.get("isolate_fits", False)
+        runtime = ({"device_scope": design.device,
+                    "framework_initialization": "isolated fit children only",
+                    "child_manifests": "replication-*/process-attempt-*-manifest.json"}
+                   if isolated else configure_worker(design))
         manifest={"design":design.payload(),"runtime":runtime,
             "source":source_state(),"command":sys.argv,"started_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
             "environment":sys.executable,"data_version":design.options.get("data_version", "declared synthetic law"),
@@ -102,7 +106,10 @@ def worker(design_file,root,budget,attempt=1):
             import cProfile
             profile = cProfile.Profile()
             profile.enable()
-        if design.scenario.route=="external":
+        if isolated:
+            from .fit_process import run_isolated_replications
+            assessment = run_isolated_replications(design, root, deadline=deadline)
+        elif design.scenario.route=="external":
             from .references.external import load_reference
             from .engines.statistics import accuracy_assessment
             observed=read_json(design.options["observations"])
@@ -133,13 +140,14 @@ def worker(design_file,root,budget,attempt=1):
             from .engines.pipeline import run
             assessment=run(design,root,deadline)
         result={"schema":"bayesfilter.inference_validation_result.v1","design_identity":design.identity,
-                "execution_status":"complete","assessment":assessment,"runtime":runtime,
+                "execution_status":("failed" if isolated and assessment.get("execution_failures") else "complete"),
+                "assessment":assessment,"runtime":runtime,
                 "elapsed_seconds":time.monotonic()-started,"coverage":design.coverage_key()}
         from .controls import response
         result["test_response"]=response(design,assessment)
         write_json(root/f"attempt-{attempt:03d}-result.json",result)
         write_json(root/"result.json",result)
-        return 0
+        return 1 if isolated and assessment.get("execution_failures") else 0
     except Exception as exc:
         write_json(root/f"attempt-{attempt:03d}-failure.json",{"execution_status":"failed","exception":type(exc).__name__,
             "reason":str(exc),"traceback":traceback.format_exc(),"elapsed_seconds":time.monotonic()-started})

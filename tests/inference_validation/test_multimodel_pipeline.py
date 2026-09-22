@@ -13,7 +13,7 @@ from bayesfilter.testing.inference_validation.engines.pipeline import check_inve
 from bayesfilter.testing.inference_validation.storage import read_json, read_tensor, file_hash
 
 
-@pytest.mark.parametrize("target,epsilon", [("gaussian",1.3),("beta_binomial",.8),
+@pytest.mark.parametrize("target,epsilon", [("gaussian",1.3),("rotated_gaussian",1.3),("beta_binomial",.8),
     ("lgssm_location",.7),("banana",.5),("funnel_noncentered",1.2)])
 def test_public_multimodel_candidates_reload_and_exclude_warmup(tmp_path,target,epsilon):
     design=ValidationDesign(design_id="integration-"+target,engine="accuracy",

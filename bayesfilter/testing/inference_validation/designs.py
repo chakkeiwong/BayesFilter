@@ -85,6 +85,19 @@ class ValidationDesign:
             raise ValueError("kernel_power is a positive int32 count for frozen invariance only")
         if type(self.options.get("profile_execution", False)) is not bool:
             raise ValueError("profile_execution must be a boolean")
+        isolate = self.options.get("isolate_fits", False)
+        fit_timeout = self.options.get("fit_process_timeout_seconds")
+        if type(isolate) is not bool:
+            raise ValueError("isolate_fits must be a boolean")
+        if isolate and (self.engine not in {"search", "accuracy", "stopping"}
+                        or self.scenario.route not in {"ordinary", "prepared", "fixed_transport"}):
+            raise ValueError("isolate_fits requires a numerical pipeline engine/route")
+        if (isolate and (type(fit_timeout) not in (int, float)
+                         or not math.isfinite(fit_timeout) or not 0 < fit_timeout <= self.budget_seconds)
+                or not isolate and fit_timeout is not None):
+            raise ValueError("isolated fits require an explicit timeout within the design budget")
+        if isolate and self.options.get("profile_execution", False):
+            raise ValueError("profile isolated numerical work in each child, not the coordinator")
         energy = self.options.get("gaussian_energy_test", False)
         if (type(energy) is not bool or (energy and
                 (self.engine != "invariance" or self.scenario.target != "gaussian"))):
@@ -119,6 +132,9 @@ class ValidationDesign:
             raise ValueError("posterior_members must be all or selected")
         if self.options.get("member_rule", "declared_l_first") not in {"declared_l_first", "first_verified"}:
             raise ValueError("unsupported predeclared member rule")
+        precision_method = self.options.get("posterior_precision_method", "lugsail")
+        if not isinstance(precision_method, str) or precision_method not in {"lugsail", "autocorrelation", "batch_means"}:
+            raise ValueError("posterior_precision_method requires a supported mean estimator")
         native=self.options.get("native_search",False)
         if type(native) is not bool or (native and (self.scenario.route!="ordinary" or "search" in self.options)):
             raise ValueError("native_search requires ordinary preparation without a search override")
@@ -142,17 +158,28 @@ class ValidationDesign:
             raise ValueError("global_quantities supports declared mixture left_mode_probability only")
         count_options = {"warmup_chunk_results", "warmup_min_results", "warmup_check_window_results",
                          "warmup_max_results", "retained_chunk_results", "retained_min_results", "retained_max_results"}
+        count_budget = self.options.get("posterior_count_budget", {})
+        if (not isinstance(count_budget, dict) or (count_budget and
+                (set(count_budget) != {"max_results_per_chain", "count_budget_reason"}
+                 or type(count_budget["max_results_per_chain"]) is not int
+                 or count_budget["max_results_per_chain"] < 4
+                 or not isinstance(count_budget["count_budget_reason"], str)
+                 or not count_budget["count_budget_reason"].strip()))):
+            raise ValueError("posterior_count_budget requires an integer limit >=4 and a reason")
+        count_limit = count_budget.get("max_results_per_chain", 10000)
+        if self.posterior_cap > count_limit:
+            raise ValueError("posterior_cap exceeds the declared posterior count budget")
         posterior = self.options.get("posterior_settings", {})
         if not isinstance(posterior, dict) or set(posterior) - count_options:
             raise ValueError("posterior_settings supports explicit count controls only")
-        if any(type(v) is not int or not 4 <= v <= 10000 for v in posterior.values()):
-            raise ValueError("posterior counts must be integers in [4,10000]")
+        if any(type(v) is not int or not 4 <= v <= count_limit for v in posterior.values()):
+            raise ValueError(f"posterior counts must be integers in [4,{count_limit}]")
         fixed = self.options.get("fixed_comparator")
         if fixed is not None:
             if (self.engine != "stopping" or self.scenario.route not in {"ordinary", "prepared", "fixed_transport"}
                     or not isinstance(fixed, dict) or set(fixed) != {"warmup_results", "retained_results"}
-                    or any(type(v) is not int or not 4 <= v <= 10000 for v in fixed.values())):
-                raise ValueError("fixed comparator requires numerical stopping and declared counts in [4,10000]")
+                    or any(type(v) is not int or not 4 <= v <= count_limit for v in fixed.values())):
+                raise ValueError(f"fixed comparator requires numerical stopping and declared counts in [4,{count_limit}]")
         if self.engine == "sbc":
             if not get_target(self.scenario.target).generative:
                 raise ValueError("SBC requires a proper generative model")

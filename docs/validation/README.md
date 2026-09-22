@@ -108,6 +108,18 @@ Aggregation verifies membership, numerical settings, source and result checksums
 missing groups and fits stay in their original denominator. Pilot, changed-source
 and repaired confirmation experiments are not pooled.
 
+For numerical search, accuracy and stopping designs, `options.isolate_fits`
+can enable a new child process for each complete fit. Declare
+`options.fit_process_timeout_seconds` within the total design budget. The
+coordinator stays free of TensorFlow and keeps each child's normal exit or
+failure, log, source/device manifest and memory/graph measurements. All tuning
+members and posterior archives remain on disk. Total coordinator wall time
+already includes these sequential children; do not charge their nested receipts
+a second time. Isolation is optional, and unsupported engines fail validation.
+An abnormal process with a completed assessment is retained for audit and is
+neither automatically rerun nor counted as a successful replication. Partial
+work may resume using native checkpoints, with previous attempts charged.
+
 For ongoing accounting use `scripts/audit_inference_validation_campaign.py`
 with `--live --cpu-seconds 86400 --gpu-seconds 86400`. Add `--verify-artifacts`
 for result and tensor checksum checks. Its live ledger includes running and

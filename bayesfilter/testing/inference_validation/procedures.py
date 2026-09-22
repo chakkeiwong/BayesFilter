@@ -373,7 +373,8 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         precision_targets.extend(HMCPrecisionTarget(name, kind="mean", mcse_absolute_max=design.mcse_tolerance)
                                  for name in design.options.get("global_quantities", []))
         policy=HMCPosteriorAssessmentPolicy(precision=HMCPrecisionPolicy(tuple(precision_targets),
-            method="lugsail",jit_compile=design.device=="gpu"), quantities_id=quantities_id)
+            method=design.options.get("posterior_precision_method", "lugsail"),
+            jit_compile=design.device=="gpu"), quantities_id=quantities_id)
         counts = dict(warmup_chunk_results=count,warmup_min_results=count,warmup_check_window_results=count,
             warmup_max_results=design.posterior_cap,retained_chunk_results=count,retained_min_results=count,
             retained_max_results=design.posterior_cap)
@@ -381,7 +382,7 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         config=SequentialNeuTraHMCConfig(step_size=member.step_size,num_leapfrog_steps=member.num_leapfrog_steps,
             jit_compile=design.device=="gpu", warmup_seed=seed_for(design.seed,design.design_id,dataset_id,fit_id,index,"warmup"),
             retained_seed=seed_for(design.seed,design.design_id,dataset_id,fit_id,index,"retained"),
-            **counts,assessment_policy=policy)
+            **counts,**design.options.get("posterior_count_budget", {}),assessment_policy=policy)
         posterior_started = time.monotonic()
         with DurableTensorCheckpoint(directory/"posterior_chunks",{
             "member":member.member_hash,"policy":policy.payload(),"quantities":quantities_id or "model_coordinates.v1",

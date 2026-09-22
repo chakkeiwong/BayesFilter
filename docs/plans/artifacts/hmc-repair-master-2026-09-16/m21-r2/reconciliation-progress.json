@@ -1,6 +1,6 @@
 {
   "schema": "bayesfilter.hmc_campaign_reconciliation.v1",
-  "created_utc": "2026-09-22T04:19:44.636068+00:00",
+  "created_utc": "2026-09-22T12:29:51.775956+00:00",
   "terminal": false,
   "invalid_artifacts": [],
   "records": [
@@ -353,12 +353,40 @@
       "cpu_seconds": 5879.119874261902,
       "gpu_seconds": 0,
       "note": "measured worker wall time"
+    },
+    {
+      "phase": "M21",
+      "path": "m21-r2/confirmation-queue-progress.json#m21-merged-confirmation-gaussian",
+      "cpu_seconds": 27313.332492760033,
+      "gpu_seconds": 0,
+      "note": "measured worker wall time"
+    },
+    {
+      "phase": "M21",
+      "path": "m21-r2/confirmation-queue-progress.json#m21-merged-confirmation-beta_binomial",
+      "cpu_seconds": 31757.81137743499,
+      "gpu_seconds": 0,
+      "note": "measured worker wall time"
+    },
+    {
+      "phase": "M21",
+      "path": "m21-r2/confirmation-queue-progress.json#m21-merged-confirmation-rotated_gaussian",
+      "cpu_seconds": 1906.5305806270335,
+      "gpu_seconds": 0,
+      "note": "measured worker wall time"
+    },
+    {
+      "phase": "M21",
+      "path": "m21-r2/confirmation-queue-progress.json#m21-merged-confirmation-lgssm_location",
+      "cpu_seconds": 1738.771093989024,
+      "gpu_seconds": 0,
+      "note": "measured worker wall time"
     }
   ],
   "phase_charges_cpu_seconds": {
     "M19": 1179.7794076572172,
     "M20": 2966.0961031578686,
-    "M21": 6359.6705864396645,
+    "M21": 69076.11613125075,
     "M22": 9367.767695457907,
     "M23": 145.89585869503208,
     "M24": 444.9127681890968
@@ -369,22 +397,17 @@
       "gpu": 86400
     },
     "charged": {
-      "cpu_reference": 20464.122419596788,
+      "cpu_reference": 83180.56796440786,
       "gpu": 0
     },
     "remaining": {
-      "cpu_reference": 152335.8775804032,
+      "cpu_reference": 89619.43203559214,
       "gpu": 86400
     },
     "exceeded": false
   },
   "remaining_excludes_future_reservations": true,
-  "uncompleted_queue_reservations_seconds": {
-    "m21-merged-confirmation-gaussian": 28000,
-    "m21-merged-confirmation-beta_binomial": 35000,
-    "m21-merged-confirmation-rotated_gaussian": 3000,
-    "m21-merged-confirmation-lgssm_location": 3000
-  },
+  "uncompleted_queue_reservations_seconds": {},
   "non_numerical_git_document_build_waiting_not_charged_as_numerical_workers": true,
   "source": "completed per-worker records, never coordinator plus worker"
 }

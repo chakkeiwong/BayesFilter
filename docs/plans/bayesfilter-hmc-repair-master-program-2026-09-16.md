@@ -1,5 +1,81 @@
 # HMC repair master program
 
+## September 22 M26 completion and next execution
+
+The [M26 lifetime and posterior-policy plan](bayesfilter-hmc-m26-lifetime-and-policy-plan-2026-09-22.md)
+is complete. Its [audited result](bayesfilter-hmc-m26-lifetime-and-policy-result-2026-09-22.md)
+records optional complete-fit process isolation, a repair removing bootstrap
+clocks from numerical seed identity, four exact paired full-fit comparisons
+and 197 distinct passing tests. All six model-specific posterior pilots
+completed; five passed their checks and one selected rotated-Gaussian member
+reached its warmup cap. All 117 verified pilot candidates remain retained.
+R-hat, ESS and MCSE remain posterior-only criteria.
+
+The failed member's saved 60000-draw fixed arm has median MCSE .289 against
+.05 despite R-hat 1.00114. A larger readiness window alone is insufficient.
+The [post-M26 program](bayesfilter-hmc-post-m26-next-phase-2026-09-22.md)
+therefore puts bounded, predeclared sibling assessment and GPU process/pricing
+checks before large confirmation. M27 has not run. Its planned ceilings are
+3600 CPU / 4800 GPU seconds within the existing allowance. The remaining
+supplied-map, global-exploration, full-fit-power and consumer-input gaps remain
+explicit in that plan; learned-map training stays separate.
+
+The exact coverage calculation also changes the budget decision: 128 fits have
+only .541 probability of passing one existing lower-.90 screen if true coverage
+is .95. At measured CPU costs, an adequate all-model inventory exceeds the
+remaining budget. Small pilots cannot be relabeled as confirmation; price GPU
+and resolve member allocations before freezing the next inventory.
+
+M26 used **4877.17 CPU / zero GPU worker-seconds**, including failed attempts,
+tests and a conservative guide-build charge. The terminal ledger is
+`m26-r1/reconciliation-terminal.json`: **79635.40 CPU / 84803.52 GPU seconds
+remain**, with no live M26 workers or reservations. M25 and earlier evidence
+remain unchanged. The official tuning chapter and agent reference are updated;
+the rebuilt book's changed pages were visually checked.
+
+## September 22 audited completion and next work
+
+The [reviewed M25 repair](bayesfilter-hmc-gap-closure-continuation-2026-09-22.md)
+is implemented and its bounded execution is complete. The
+[result and terminal audit](bayesfilter-hmc-gap-closure-result-2026-09-22.md)
+record 203 distinct passing tests, 1200 actual-controller calibration trials,
+six supplied-map GPU/XLA fits and the complete 272-fit M21 public inventory.
+Explicit posterior count/estimator options, matched interval reporting and
+requested-versus-unassessed member accounting are repaired. Tuning retains all
+verified candidates; R-hat, ESS and MCSE remain posterior-only requirements.
+
+The larger window/count allocation passes the declared exact-AR(1) screen:
+394/400 delivered posteriors and 389/400 covered intervals. This closes that
+specific allocation cell, not general HMC stopping calibration. The GPU fits
+retain 19 verified members. Both exact-map selected posteriors are healthy but
+hit the precision cap; all four selected partial-map posteriors fail numerical
+health. Analytic curvature confirms that these partial maps leave unbounded
+tail stiffness. Their siblings remain retained and unassessed.
+
+M21's Gaussian and beta-binomial all-quantity coverage screens fail; its eight
+rotated-Gaussian fits hit retained caps and its eight LGSSM fits pass their
+posterior checks. Those small groups are stress evidence. All 5397 verified
+members remain recorded. The beta worker's final numerical evidence was audited
+before terminating its prolonged high-memory teardown; its abnormal process
+exit is preserved separately. No confirmation fit needs rerunning.
+
+The [refreshed follow-up design](bayesfilter-hmc-post-m25-next-phase-2026-09-22.md)
+orders the remaining work: bound repeated-fit process lifetime; calibrate
+model-specific posterior allocations and explicit member rules; test improved
+supplied-map tails or predeclared siblings; reprice full-fit power; and execute
+exact consumer integration when its missing qualified inputs arrive. Learned
+map quality remains a separate upstream program. No universal successful repair
+is established for unknown modes or arbitrary geometry.
+
+M25 used **5106.86 CPU / 1596.48 GPU worker-seconds**, within its transferred
+12000/4200 allocation. The final combined ledger is
+`m25-r1/reconciliation-terminal-r2.json`: **84512.57 CPU / 84803.52 GPU seconds
+remain** under the existing 48/24-hour authorization, with no live worker
+reservations. The temporary extra-worker exception has ended. The earlier
+`reconciliation-terminal.json` predates the final estimator/reporting bridge
+checks and is preserved as an interim snapshot. No blanket code refactor,
+estimator default, posterior default or transport default was promoted.
+
 ## September 22 scope correction: supplied funnel whitening
 
 The owner's clarified positive-test premise is a supplied frozen whitening or
@@ -28,32 +104,30 @@ All 24 verified members remain recorded. The selected exact-map posteriors
 missed the model-mean precision request; the selected partial-map posteriors
 failed proposal-health checks. None is a successful posterior result.
 
-This closes the supplied-map/start-coordinate engineering cell. Residual
-geometry, automatic search coverage, member-specific posterior usability and
-GPU/XLA evidence remain separate. The official book and agent reference are
-updated and the rendered book checked. Tranche cost is 1568.334463 CPU seconds,
+At M20 closure this established the supplied-map/start-coordinate engineering
+cell. M25 now adds the GPU/XLA engineering matrix and residual-curvature
+diagnosis; member-specific posterior usability and finite search limits remain.
+The official book and agent reference are updated and the rendered book checked. Tranche cost is 1568.334463 CPU seconds,
 zero GPU seconds, within the 3600-second ceiling. The 1800-second transfer
 from M23 to M20 is reflected below. The temporary additional-worker exception
-has ended. The live M21/M22 source, inventories and denominators remain frozen.
+has ended. The M21/M22 source, inventories and denominators remain frozen.
 
-Next, finish/audit the running M21 fixed inventory, keeping failed fits and caps
-in its denominator. Use saved partial-map failures to diagnose residual
-curvature before declaring a new map scope or unchanged-map sibling posterior
-study; this tranche ends after its declared grid follow-up. Plan
-precision in model-quantity units after the estimator/stopping calibration
-result. GPU repetitions wait for permitted capacity; exact MacroFinance
-integration requires its matching inputs/reference. Neither untransformed-funnel
-success nor successful map training is required to complete supplied-map tests.
+M21's fixed inventory has now been audited in M25, retaining failures and caps
+in its denominator. The M25 curvature diagnosis supports a new map scope or
+predeclared sibling study, rather than another unchanged-map epsilon search.
+Exact MacroFinance integration still requires its matching inputs/reference.
+Neither centered-funnel success nor successful learned-map training is required
+to complete supplied-map tuning engineering tests.
 
 The [M22 null confirmation](bayesfilter-hmc-repair-m22-null-result-2026-09-22.md)
 has now completed and passed its declared screen: 25/512 baseline and 19/512
 no-op rejections, all experiments valid, exact 95% upper endpoints 0.07124 and
 0.05735 (both below 0.10). All 1298 independent looks were audited. This closes
 the former interval-precision gap for that frozen Gaussian test only; subtle
-full-fit power and posterior stopping coverage remain open. M21's Gaussian and
-beta-binomial confirmation workers continue on their unchanged frozen source.
+full-fit power and posterior stopping coverage remain open. M21's 272 public
+fits are now complete and audited on their unchanged frozen source.
 
-## Active continuation: M19--M24, September 22
+## Continuation history and allocations: M19--M25, September 22
 
 The owner has authorized integration with remote `main`, publication of the
 committed work, and continued repairs with **48 CPU worker-hours and 24 GPU
@@ -83,28 +157,16 @@ records new Gaussian/beta-binomial pilots and 800 fresh fixed-count estimator
 replications. The existing autocorrelation option passed its declared screen
 in both exact regimes; neither lugsail bandwidth passed both. No default changed.
 
-The [refreshed continuation](bayesfilter-hmc-merged-source-continuation-2026-09-22.md)
-is executing the fixed 272-fit/1024-null inventory from committed package
-identity `13917d3625fa5a09dfd3bf1ab9d2894618ed7bc4259ca7603f16c766f6213d66`.
-The persistent service is `bayesfilter-hmc-confirmation-20260922-r2.service`.
-Its five-task queue permits at most two numerical workers, reserves 79800
-CPU worker-seconds and updates its ledger after every completed task. It has
-an outer 48000-second wall limit, derived from the longest planned two-worker
-schedule (45800 seconds) plus 2200 seconds for coordination/cleanup. M21 results
-remain pending; M22's completed null result is audited above. The service
-marks completion as requiring scientific review.
-The official book and agent/API reference have been reconciled and rebuilt.
-
-Completed old-source experiments retain their original identity. GPU
-repetitions remain pending permitted idle capacity, rather than a hardware or
-numerical failure. The latest trusted probe still reports
-`no_idle_policy_permitted_gpu`. Completed numerical charges, including failed
-attempts and a disclosed 30-second unmeasured-test allowance, total
-20464.122419596788 CPU seconds at the supplied-map terminal snapshot, with
-69000 seconds reserved for uncompleted M21 jobs;
-no GPU worker time has been used in this continuation. The live ledger is
-`m21-r2/reconciliation-progress.json`; its uncompleted reservations are separate
-from remaining allowance. No statistical gap is closed merely by launch.
+The [merged-source continuation](bayesfilter-hmc-merged-source-continuation-2026-09-22.md)
+completed its fixed 272-fit/1024-null inventory from committed package identity
+`13917d3625fa5a09dfd3bf1ab9d2894618ed7bc4259ca7603f16c766f6213d66`.
+The service has finished. Its frozen records and actual worker exits remain
+unchanged; the M25 result distinguishes completed beta-binomial evidence from
+its post-output termination. GPU capacity recovered and the six supplied-map
+fits completed with verified growth and XLA. Current charges and remaining
+allowance are in the M25 terminal ledger linked above. Old-source experiments
+retain their original identities and cannot certify later repairs. The official
+book and agent/API reference have been reconciled and rebuilt.
 
 ### Audit findings that change the next work
 
@@ -118,7 +180,7 @@ combined check passed 413 tests, with two disclosed skips; failed intermediate
 attempts are retained. The [consumer reply](bayesfilter-macrofinance-bootstrap-diagnostics-repair-reply-2026-09-22.md)
 records the remaining fresh-MacroFinance-run requirement. Total extra charge is
 444.9127681890968 CPU seconds, zero GPU seconds, within the 1800-second repair
-reservation. The temporary diagnostic-worker exception has ended. The live
+reservation. The temporary diagnostic-worker exception has ended. The completed
 confirmation source remains frozen; its results cannot certify this later repair.
 
 1. M17 centered-funnel **preparation completed** on both devices; all measured
@@ -164,13 +226,14 @@ confirmation source remains frozen; its results cannot certify this later repair
    calculations; the bandwidth is inadequate in this regime. Twenty batches
    and a positive estimate do not establish calibration. Longer batches and the
    existing autocorrelation estimator are development hypotheses requiring
-   fresh confirmation, followed by separate stopping calibration. No default
-   changes on reused draws.
+   fresh confirmation, followed by separate stopping calibration. M25 completed
+   that test for the two original AR(1) cells and one longer-count repair; HMC
+   transfer remains open. No default changes on reused draws.
 8. Eighteen complete-fit mutation pilots cost 3375.62 CPU seconds. At that
    rate, a single 128-dataset, three-fit SBC experiment costs about 20 hours
    per arm. Repeated whole-fit power estimation is unaffordable in M22's
-   12-hour allocation. Complete the affordable null confirmation and preserve
-   this power gap explicitly; do not substitute frozen-kernel power or two-rank
+   12-hour allocation. The affordable null confirmation passed; preserve
+   the full-fit power gap explicitly; do not substitute frozen-kernel power or two-rank
    nonrejection. This allocation finding does not stop independent repairs.
 9. ESS arithmetic now has two explicit finite-sample conventions: Stan/ArviZ
    for bulk/tail and preserved-transition reporting, and the named TFP estimator
@@ -186,7 +249,8 @@ statistical sample-size justifications. Unspent amounts carry forward within
 this continuation. Numerical replication counts are resolved from measured
 cost and a stated uncertainty calculation before each phase. Four unused CPU hours move from M20 to M21 after the measured public-pilot
 cost audit; the total remains 48 CPU hours. The allocations reserve 5 CPU
-hours and 3 GPU hours for localized repairs. Count all failed
+hours and 3 GPU hours for localized repairs before M25. Its 12000 CPU and
+4200 GPU seconds transfer from those reserves rather than increasing the total. Count all failed
 launches and retries. Record worker wall time and thread settings; GPU worker
 charges include their host work and are not charged again as CPU workers.
 
@@ -198,6 +262,7 @@ charges include their host work and are not charged again as CPU workers.
 | M22 | Fixed-size independent sequential null/no-op confirmation; complete-fit mutation activation/cost pilot and analytical power planning. Repeated whole-fit power remains under-budgeted unless a justified inventory fits; no smaller nonrejection substitutes | 12 / 4 |
 | M23 | Separate upstream work: target-specific batched GPU transport training, freezing, public tuning and posterior checks on banana and separated mixture; first bind explicit stable graph signatures and verify real training batches exceed one. Supplied-map tuning does not depend on this training result | 3.5 / 5 |
 | M24 | Exact MacroFinance input/reference inventory and matched integration if available; current-source model/route matrix, migration of useful legacy invariants, measured performance repair where warranted, official book/reference consistency and terminal reconciliation | 2 / 2 |
+| M25 | Completed bounded option/accounting repair, exact-model allocation confirmation, supplied-map GPU matrix and terminal audits; funding transferred from the existing common repair reserves | 3.3333 / 1.1667 |
 
 All numerical phases begin with a measured cost pilot. M20 and M23 development
 fits may diagnose mechanisms; they do not by themselves establish statistical

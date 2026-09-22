@@ -7,7 +7,6 @@ import numpy as np
 
 from ..catalog import get_target
 from ..designs import seed_for
-from ..procedures import execute_pipeline
 from ..references import analytic
 from ..storage import read_json,read_tensor,write_json
 from .statistics import accuracy_assessment,binomial_interval
@@ -143,59 +142,67 @@ def controller_experiment(design,root):
     return result
 
 
+def run_replication(design, root, replication, deadline=None):
+    """One complete fit and independent assessment, reusable across processes."""
+    from ..procedures import execute_pipeline
+
+    path = Path(root) / f"replication-{replication:04d}"
+    if (path / "independent_assessment.json").exists():
+        return read_json(path / "independent_assessment.json")
+    data=design.options.get("data")
+    output=execute_pipeline(design,path,data=data,fit_id=replication,deadline=deadline)
+    payload=read_json(output["tuning_path"])
+    # Mutations act on a copy of observations. Native tuning authority remains intact.
+    payload=copy.deepcopy(payload)
+    if design.scenario.control=="drop_candidate": payload["verified_candidate_ids"]=payload["verified_candidate_ids"][1:]
+    if design.scenario.control=="cross_l_epsilon":
+        payload["verification_receipts"]=[dict(r,exact_l=99) for r in payload["verification_receipts"]]
+    if design.scenario.control=="lost_chunk" and design.engine=="search": payload["observations"]=payload["observations"][1:]
+    inventory=check_inventory(payload)
+    members=[]
+    spec=get_target(design.scenario.target)
+    for member in output["members"]:
+        if member["status"]!="assessed":
+            members.append(member); continue
+        draws=read_tensor(member["draws_path"]).numpy()
+        reference=analytic.model_coordinates(spec.target_id,analytic.draw(spec.target_id,
+            max(4096,design.draws),seed_for(design.seed,design.design_id,replication,member["candidate_id"],"reference"),
+            design.scenario.parameters,data))
+        assessment=accuracy_assessment(draws,reference,tolerance=design.accuracy_tolerance,
+            finite_variance=spec.finite_variance)
+        reported=member["posterior"]["passed"]
+        row={"candidate_id":member["candidate_id"],"L":member["L"],"epsilon":member["epsilon"],
+            "assessment":assessment,"runtime_checks_passed":reported,
+            "false_favorable_screen_observed":reported and assessment["finding"]=="reference_discrepancy",
+            "warmup_exclusion_matches":member["warmup_exclusion_matches"],
+            "duplicate_chains":member["duplicate_chains"],
+            "stopped_intervals":stopped_intervals(member,spec,design.scenario.parameters,data),
+            "warmup_count":member["posterior"]["warmup_results_per_chain"],
+            "retained_count":member["recorded_retained_count"],"member_record":member}
+        if design.options.get("fixed_comparator") is not None:
+            from .stopping import arm_quantities
+            comparator=member.get("fixed_comparator",{})
+            fixed=(read_tensor(comparator["draws_path"]).numpy() if comparator.get("status")=="assessed"
+                   else np.empty((0,draws.shape[1],draws.shape[2])))
+            interval_options = {"jit_compile": design.device == "gpu",
+                "method": design.options.get("posterior_precision_method", "lugsail")}
+            row["stopping_pair"]={"stopped":arm_quantities(draws,spec,design.scenario.parameters,data,**interval_options),
+                "fixed":arm_quantities(fixed,spec,design.scenario.parameters,data,**interval_options),
+                "fixed_status":comparator.get("status","unavailable")}
+        members.append(row)
+    record={"replication":replication,"inventory":inventory,"members":members,
+                    "tuning_completion":output["completion"],
+                    "pipeline":str(path/"pipeline.json")}
+    write_json(path/"independent_assessment.json",record)
+    return record
+
+
 def run(design,root,deadline=None):
     if design.scenario.route=="controller": return controller_experiment(design,root)
     records=[]
     for replication in range(design.replications):
         if deadline and time.monotonic()>=deadline: break
-        path=root/f"replication-{replication:04d}"
-        if (path/"independent_assessment.json").exists():
-            records.append(read_json(path/"independent_assessment.json"))
-            continue
-        data=design.options.get("data")
-        output=execute_pipeline(design,path,data=data,fit_id=replication,deadline=deadline)
-        payload=read_json(output["tuning_path"])
-        # Mutations act on a copy of observations. Native tuning authority remains intact.
-        payload=copy.deepcopy(payload)
-        if design.scenario.control=="drop_candidate": payload["verified_candidate_ids"]=payload["verified_candidate_ids"][1:]
-        if design.scenario.control=="cross_l_epsilon":
-            payload["verification_receipts"]=[dict(r,exact_l=99) for r in payload["verification_receipts"]]
-        if design.scenario.control=="lost_chunk" and design.engine=="search": payload["observations"]=payload["observations"][1:]
-        inventory=check_inventory(payload)
-        members=[]
-        spec=get_target(design.scenario.target)
-        for member in output["members"]:
-            if member["status"]!="assessed":
-                members.append(member); continue
-            draws=read_tensor(member["draws_path"]).numpy()
-            reference=analytic.model_coordinates(spec.target_id,analytic.draw(spec.target_id,
-                max(4096,design.draws),seed_for(design.seed,design.design_id,replication,member["candidate_id"],"reference"),
-                design.scenario.parameters,data))
-            assessment=accuracy_assessment(draws,reference,tolerance=design.accuracy_tolerance,
-                finite_variance=spec.finite_variance)
-            reported=member["posterior"]["passed"]
-            row={"candidate_id":member["candidate_id"],"L":member["L"],"epsilon":member["epsilon"],
-                "assessment":assessment,"runtime_checks_passed":reported,
-                "false_favorable_screen_observed":reported and assessment["finding"]=="reference_discrepancy",
-                "warmup_exclusion_matches":member["warmup_exclusion_matches"],
-                "duplicate_chains":member["duplicate_chains"],
-                "stopped_intervals":stopped_intervals(member,spec,design.scenario.parameters,data),
-                "warmup_count":member["posterior"]["warmup_results_per_chain"],
-                "retained_count":member["recorded_retained_count"],"member_record":member}
-            if design.options.get("fixed_comparator") is not None:
-                from .stopping import arm_quantities
-                comparator=member.get("fixed_comparator",{})
-                fixed=(read_tensor(comparator["draws_path"]).numpy() if comparator.get("status")=="assessed"
-                       else np.empty((0,draws.shape[1],draws.shape[2])))
-                row["stopping_pair"]={"stopped":arm_quantities(draws,spec,design.scenario.parameters,data,jit_compile=design.device=="gpu"),
-                    "fixed":arm_quantities(fixed,spec,design.scenario.parameters,data,jit_compile=design.device=="gpu"),
-                    "fixed_status":comparator.get("status","unavailable")}
-            members.append(row)
-        record={"replication":replication,"inventory":inventory,"members":members,
-                        "tuning_completion":output["completion"],
-                        "pipeline":str(path/"pipeline.json")}
-        write_json(path/"independent_assessment.json",record)
-        records.append(record)
+        records.append(run_replication(design, root, replication, deadline))
     result=summarize_replications(design,records)
     write_json(root/"assessment.json",result)
     return result
@@ -204,8 +211,9 @@ def run(design,root,deadline=None):
 def summarize_replications(design, records):
     """Keep calls, usable posterior outputs and full assessment distinct."""
     # Independent replication-level summaries; never count siblings as iid trials.
-    completed=len(records)
-    favorable=sum(any(m.get("false_favorable_screen_observed") for m in r["members"]) for r in records)
+    completed=sum("execution_failure" not in row for row in records)
+    favorable=sum(any(m.get("false_favorable_screen_observed") for m in r["members"])
+                  for r in records if "execution_failure" not in r)
     members=[m for r in records for m in r["members"]]
     requested=[m for m in members if m.get("status")!="unassessed_by_design"]
     assessed=[m for m in members if "assessment" in m]
@@ -231,6 +239,8 @@ def summarize_replications(design, records):
     interval_groups.update({name+":mean": {"covered":0,"available":0}
                             for name in design.options.get("global_quantities", ())})
     for rep in records:
+        if "execution_failure" in rep:
+            continue
         group=sorted((m for m in rep["members"] if design.options.get("member_rule","declared_l_first")=="first_verified"
                       or m.get("L")==design.member_l),key=lambda m:m["candidate_id"])
         if group and "stopped_intervals" in group[0]:
@@ -244,11 +254,16 @@ def summarize_replications(design, records):
         counts["unavailable"]=design.replications-counts["available"]
         counts["coverage_interval"]=binomial_interval(counts["covered"],design.replications)
     result={"replications":records,"completed":completed,"planned":design.replications,
+            "attempted_replications":len(records),
+            "execution_failures":sum("execution_failure" in row for row in records),
             "interval_coverage_at_stop":interval_groups,"coverage_member_L":design.member_l,
             "verified_members":len(members),"assessed_members":len(assessed),
+            "requested_members":len(requested),
             "posterior_output_members":len(available),
-            "posterior_unavailable_members":len(members)-len(available),
+            "posterior_unavailable_members":len(requested)-len(available),
             "unassessed_by_design_members":len(members)-len(requested),
+            "all_members_without_posterior_output":len(members)-len(available),
+            "member_accounting":"requested unavailable excludes siblings unassessed by design",
             "all_verified_members_assessed":len(available)==len(members) and bool(members),
             "assessment_complete":complete,
             "search_complete":completed==design.replications and all(
@@ -265,6 +280,9 @@ def summarize_replications(design, records):
         from .stopping import summarize_pairs
         pairs=[]
         for record in records:
+            if "execution_failure" in record:
+                pairs.append({})
+                continue
             group=sorted((m for m in record["members"] if design.options.get("member_rule","declared_l_first")=="first_verified"
                           or m.get("L")==design.member_l),key=lambda m:m["candidate_id"])
             pairs.append(group[0].get("stopping_pair",{}) if group else {})

@@ -21,6 +21,10 @@ def main(argv=None):
     assess=sub.add_parser("assess");assess.add_argument("root",type=Path);assess.add_argument("--output",type=Path,required=True)
     worker=sub.add_parser("_worker");worker.add_argument("design",type=Path);worker.add_argument("root",type=Path);worker.add_argument("budget",type=float)
     worker.add_argument("attempt",type=int)
+    fit=sub.add_parser("_pipeline_fit")
+    fit.add_argument("design",type=Path); fit.add_argument("root",type=Path)
+    fit.add_argument("replication",type=int); fit.add_argument("budget",type=float)
+    fit.add_argument("attempt",type=int)
     args=parser.parse_args(argv)
     if args.command=="list":
         print(json.dumps({k:v.payload() for k,v in TARGETS.items()},indent=2)); return 0
@@ -40,6 +44,9 @@ def main(argv=None):
     if args.command=="assess":
         from .assessment import assess
         assess(args.root,args.output); return 0
+    if args.command=="_pipeline_fit":
+        from .fit_process import fit_worker
+        return fit_worker(args.design,args.root,args.replication,args.budget,args.attempt)
     from .execution import worker
     return worker(args.design,args.root,args.budget,args.attempt)
 

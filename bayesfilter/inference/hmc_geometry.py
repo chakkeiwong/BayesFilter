@@ -243,6 +243,25 @@ class HMCGeometryInitializationResult:
     def artifact_hash(self) -> str:
         return stable_config_hash(self.payload(include_mass_arrays=True))
 
+    @property
+    def numerical_hash(self) -> str:
+        """Numerical provenance for streams; the full audit hash retains clocks."""
+        payload = dict(self.payload(include_mass_arrays=True))
+        formula = dict(payload["formula_report"])
+        startup = formula.get("bootstrap_initialization")
+        if startup is not None:
+            startup = dict(startup)
+            startup["rounds"] = [
+                {key: value for key, value in row.items() if key != "wall_seconds"}
+                for row in startup["rounds"]]
+            if startup.get("first_invalid_proposal") is not None:
+                startup["first_invalid_proposal"] = {
+                    key: value for key, value in startup["first_invalid_proposal"].items()
+                    if key != "wall_seconds"}
+            formula["bootstrap_initialization"] = startup
+        payload["formula_report"] = formula
+        return stable_config_hash(payload)
+
 def initialize_hmc_kernel_geometry(
     *,
     adapter: Any,

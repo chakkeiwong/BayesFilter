@@ -257,6 +257,14 @@ subsequent bootstrap and operational mass checks still run; startup nomination
 cannot issue a tuning artifact. The q20 pricing and classical tuning consumers
 explicitly enable this repair; unrelated consumers retain their existing policy.
 
+The geometry's full `artifact_hash` retains bootstrap-probe wall times for
+audit. New ordinary candidate scopes use its separate `numerical_hash`, which
+excludes only those probe clock fields. Clock variation therefore cannot change
+the candidate random streams. The full geometry hash remains in the execution
+binding, while seeds, numerical probe outcomes, mass, starts and target still
+bind the numerical identity. Existing saved checkpoints retain their original
+scope and streams.
+
 Bootstrap decisions use the mean Metropolis probability
 `mean(exp(min(log_accept_ratio, 0)))` over **every recorded proposal**, including
 rejections. Discarded burnin is excluded. The historical `acceptance_rate` field
@@ -561,6 +569,26 @@ chains trapped together in a missed mode may still pass. A failed screen
 continues within the declared cap. Exhaustion reports inconclusive equilibration
 or insufficient retained evidence, never sufficient burn-in by fiat.
 
+A short recent window can contain too little effective information even after
+initialization bias has decayed. Increasing `warmup_max_results` alone leaves
+the information per readiness check unchanged. Declare the recent-window
+length and total allowance together, assess their cost with pilot dependence
+estimates, and validate the resulting posterior policy on fresh replications.
+A changed policy needs a new checkpoint; it does not change tuning membership.
+
+The shared keyword configuration and `SequentialExactTransitionConfig` retain
+the default maximum of 10,000 per chain. A reviewed larger allocation can set
+`max_results_per_chain` explicitly, together with a nonempty
+`count_budget_reason`, and set the warmup/retained maxima within that bound.
+The result records `count_budget_policy="explicit_nondefault_posterior_allocation"`.
+This optional finite budget changes neither diagnostic thresholds nor the
+canonical default allocation. The reason records the scientific justification;
+it does not certify sufficiency. Default configuration payloads are unchanged.
+Validation designs pass this same option in `options.posterior_count_budget`;
+their posterior and fixed-comparator counts must fit its declared limit.
+They can declare the existing mean estimator with `options.posterior_precision_method`;
+omitting it preserves lugsail. This option changes no tuning decision.
+
 Bulk/tail ESS uses the Stan/ArviZ initial-positive, initial-monotone recursion,
 identified by `bulk_tail_ess_method` in the assessment policy and result. The
 preserved-transition reporting API in `hmc_posterior_diagnostics` uses that
@@ -589,6 +617,14 @@ correlated HMC. Broad scales and heavy tails can make an absolute target costly
 even with favorable R-hat. Retain the unmet target, inspect the quantity-level
 report and other predeclared members, and distinguish insufficient sampling
 precision from numerical tuning failure. Lugsail does not estimate burn-in bias.
+
+For four independent unit-variance stationary AR(1) chains with correlation
+0.995, the long-chain mean variance is approximately `399/(4*n)`. MCSE 0.05
+then needs about 39,900 retained draws per chain, beyond a 10,000 cap. This is
+a derived planning comparison, not a universal HMC count or sufficient burn-in.
+The actual controller must be tested separately from fixed-count intervals.
+The [M25 continuation](../plans/bayesfilter-hmc-gap-closure-continuation-2026-09-22.md)
+keeps readiness, interval coverage and precision delivery separate.
 
 The mean estimators are `autocorrelation`, `batch_means`, and `lugsail`.
 Autocorrelation retains the explicitly identified TFP 0.25 positive-pairs
@@ -675,6 +711,26 @@ fresh datasets and independent complete fits, with one declared output per fit;
 candidate siblings never inflate replication counts. Failed fits remain in the
 denominator. Data-dependent likelihood quantities help detect fitting procedures
 that ignore the observations even when parameter ranks appear uniform.
+
+Pipeline reports distinguish `requested_members`, requested
+`posterior_unavailable_members`, and `unassessed_by_design_members`.
+`all_members_without_posterior_output` includes both unavailable requested
+members and deliberately unassessed siblings. Historical reports before this
+accounting correction included the siblings in `posterior_unavailable_members`;
+inspect their individual records rather than treating that count as failed fits.
+
+Numerical `search`, `accuracy` and `stopping` validation designs may declare
+`options.isolate_fits=true` and `options.fit_process_timeout_seconds` to run
+each complete fit in a fresh process. The timeout must fit within the design's
+total budget. The coordinator does not initialize TensorFlow; each child checks
+device policy, retains the full tuning and posterior evidence, and exits
+normally. Exit receipts and resource measurements distinguish a saved result
+from successful shutdown. Failed processes and missing outputs remain in the
+replication denominator. Resume requires the same source/design, preserves
+earlier attempts and consumes the remaining fit budget. A completed assessment
+from an abnormal exit is preserved for inspection and is not automatically
+rerun or counted as a successful replication. This optional validation setting
+does not alter the tuner, member selection, numerical defaults or HMC kernels.
 
 Fixed-kernel invariance tests use the reversible random-position construction
 or independent two-sample experiments. Adapting warmup draws cannot replace

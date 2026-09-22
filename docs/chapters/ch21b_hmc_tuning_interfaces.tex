@@ -104,6 +104,13 @@ bootstrap uses its \path{warmup_startup_only} role: high acceptance does not
 trigger upward refinement before adaptation, and the starting step is not
 declared a stability ceiling.
 
+Probe wall times remain in the geometry's full artifact hash for audit, but are
+excluded from the separate numerical geometry hash used by new candidate scopes.
+Otherwise, two identical preparations could receive different candidate seeds
+merely because a probe took longer. Numerical probe outcomes, seed provenance,
+mass and starts remain bound to the numerical identity. Existing checkpoints
+retain their saved scopes and streams.
+
 The probe follows the declared target-status policy. With \path{none}, it checks
 finite retained and proposed states, values and scores without manufacturing
 status data. With \path{per_chain_step}, complete valid telemetry is also
@@ -772,6 +779,17 @@ export/reload and posterior assessment. The profile includes failed attempts;
 a framework call may include both compilation and execution time. Such a pilot
 identifies costs to investigate before funding more replications. It does not
 establish statistical calibration or rank the viable kernels by efficiency.
+
+Repeated validation fits can use a fresh process for each complete fit, with
+an explicit per-fit timeout inside the total experiment budget. This bounds
+the lifetime of process-local framework caches. Each child preserves its full
+candidate set, posterior chunks and independent assessment before normal exit;
+the coordinator records process failures separately from saved numerical
+results. Missing or abnormally terminated fits remain in the replication
+denominator. Numerical search, accuracy and stopping designs enable this
+optional mode with \path{options.isolate_fits} and
+\path{options.fit_process_timeout_seconds}. The setting does not change the
+HMC transition, tuning criteria or posterior thresholds.
 
 The executable suite definitions are documented in
 \path{docs/validation/README.md}. The following table is generated from their

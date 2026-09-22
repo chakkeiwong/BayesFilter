@@ -1,6 +1,6 @@
 {
   "queue_sha256": "1f2ef8a46f72d285803dda308e677c7361968420b3b5528d6dd8a8fa5875cc65",
-  "status": "running",
+  "status": "execution_finished_review_required",
   "started_utc": "2026-09-22T02:02:34.253674+00:00",
   "pid": 3867414,
   "source_commit": "f9c86f41ac44efc5e6a5a5220633073fce803431",
@@ -29,7 +29,7 @@
       "index_sha256": "b7c327d3f0906f835704365a8f4d986161e8fbe8da6269e8c8e7c9e6379584d1"
     },
     "m21-merged-confirmation-gaussian": {
-      "status": "running",
+      "status": "complete",
       "phase": "M21",
       "command": [
         "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
@@ -44,10 +44,15 @@
       ],
       "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-r1",
       "output": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/gaussian",
-      "started_utc": "2026-09-22T02:02:34.299904+00:00"
+      "started_utc": "2026-09-22T02:02:34.299904+00:00",
+      "returncode": 0,
+      "coordinator_elapsed_seconds": 27313.674240782973,
+      "cpu_worker_seconds": 27313.332492760033,
+      "worker_charges_replace_coordinator_time": true,
+      "index_sha256": "bc03be37e0ea7b2d58db526588e4ec777aab8e02ff695ef4aa700fa13abeb666"
     },
     "m21-merged-confirmation-beta_binomial": {
-      "status": "running",
+      "status": "needs_repair",
       "phase": "M21",
       "command": [
         "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
@@ -62,11 +67,63 @@
       ],
       "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-r1",
       "output": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/beta_binomial",
-      "started_utc": "2026-09-22T03:40:33.693180+00:00"
+      "started_utc": "2026-09-22T03:40:33.693180+00:00",
+      "returncode": 1,
+      "coordinator_elapsed_seconds": 31757.992168630008,
+      "cpu_worker_seconds": 31757.81137743499,
+      "worker_charges_replace_coordinator_time": true,
+      "index_sha256": "8997a20e015b630e45e4619190e6bbd696bf1c9583cfd9881dd769979af1c83d"
+    },
+    "m21-merged-confirmation-rotated_gaussian": {
+      "status": "complete",
+      "phase": "M21",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "bayesfilter.testing.inference_validation",
+        "run",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/m21-merged-confirmation-rotated_gaussian.json",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/rotated_gaussian",
+        "--max-workers",
+        "1"
+      ],
+      "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-r1",
+      "output": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/rotated_gaussian",
+      "started_utc": "2026-09-22T09:37:48.036534+00:00",
+      "returncode": 0,
+      "coordinator_elapsed_seconds": 1906.7591125059407,
+      "cpu_worker_seconds": 1906.5305806270335,
+      "worker_charges_replace_coordinator_time": true,
+      "index_sha256": "94dbee6b143f003b7ccbea39aafaa7f781a5e36e0ce76aa1727919c996979f81"
+    },
+    "m21-merged-confirmation-lgssm_location": {
+      "status": "complete",
+      "phase": "M21",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "bayesfilter.testing.inference_validation",
+        "run",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/m21-merged-confirmation-lgssm_location.json",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/lgssm_location",
+        "--max-workers",
+        "1"
+      ],
+      "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-r1",
+      "output": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/lgssm_location",
+      "started_utc": "2026-09-22T10:09:34.852256+00:00",
+      "returncode": 0,
+      "coordinator_elapsed_seconds": 1738.982722220011,
+      "cpu_worker_seconds": 1738.771093989024,
+      "worker_charges_replace_coordinator_time": true,
+      "index_sha256": "b38232bbca62678af20de8bf27c8abeb1ca5d3a8b264fe0825cb7bdd5548acd3"
     }
   },
   "reserved_cpu_seconds": 79800,
   "gpu_seconds": 0,
   "max_numerical_workers": 2,
-  "scientific_gaps_closed": false
+  "scientific_gaps_closed": false,
+  "completed_utc": "2026-09-22T12:29:51.726907+00:00"
 }

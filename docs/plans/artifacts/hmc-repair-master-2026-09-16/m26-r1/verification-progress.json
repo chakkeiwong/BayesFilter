@@ -1,0 +1,50 @@
+{
+  "distinct_passing": 182,
+  "passing_executions": 216,
+  "unresolved": [],
+  "prior_failures": [
+    {
+      "test": "tests.inference_validation.test_fit_process::test_public_isolated_pipeline_preserves_outputs_and_restart[gaussian]",
+      "file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/tests-integration-r1/tests.xml"
+    },
+    {
+      "test": "tests.inference_validation.test_fit_process::test_public_isolated_pipeline_preserves_outputs_and_restart[beta_binomial]",
+      "file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/tests-integration-r1/tests.xml"
+    },
+    {
+      "test": "tests.test_hmc_m9_repairs::test_startup_bootstrap_exhaustion_cannot_fall_through_to_adaptation",
+      "file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/tests-stream-r1/tests.xml"
+    },
+    {
+      "test": "tests.test_hmc_candidate_set_execution::test_real_windowed_preparation_preserves_both_affine_layers",
+      "file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/tests-stream-r1/tests.xml"
+    },
+    {
+      "test": "tests.test_hmc_candidate_set_execution::test_real_windowed_preparation_preserves_both_affine_layers",
+      "file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/tests-stream-r2/tests.xml"
+    },
+    {
+      "test": "tests.test_hmc_candidate_set_execution::test_real_windowed_preparation_preserves_both_affine_layers",
+      "file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/tests-stream-r3/tests.xml"
+    }
+  ],
+  "execution_order": "manifest started_utc; earlier failing integration ended after focused repair test",
+  "failure_resolutions": [
+    {
+      "finding": "resource object type __module__ can be a descriptor",
+      "repair": "type guard; regression test; both real isolated pipelines passed"
+    },
+    {
+      "finding": "old startup-exhaustion fixture lacked payload required by existing failure-progress reporting",
+      "repair": "updated fixture payload; startup veto unchanged; focused test passed"
+    },
+    {
+      "finding": "old affine-preparation fixture mismatched 12 saved positions with 16 probability entries and did not supply a passing mean probability",
+      "repair": "12-entry aligned bootstrap fixture with probability .7; actual adapted geometry and replay test passed"
+    },
+    {
+      "finding": "probe wall time changed numerical candidate seeds",
+      "repair": "separate numerical geometry hash; arithmetic/sensitivity regressions and four complete paired fits passed"
+    }
+  ]
+}

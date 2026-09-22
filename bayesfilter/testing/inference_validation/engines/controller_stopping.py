@@ -87,15 +87,24 @@ def fixed_mean_law(rho, starts, *, warmup, draws, stationary_start=False):
             "last_initial_mean_by_chain": [v * rho**warmup for v in starts]}
 
 
-def mean_interval(samples, *, jit_compile):
-    """Report ordinary normal lugsail intervals, including unavailable estimates."""
+def mean_interval(samples, *, jit_compile, method="lugsail"):
+    """Report the declared normal interval, including unavailable estimates.
+
+    The historical diagnostic default remains lugsail. Callers validating a
+    different stopping policy must explicitly request its matching estimator.
+    """
+    if method not in {"lugsail", "autocorrelation", "batch_means"}:
+        raise ValueError("unknown diagnostic interval estimator")
+    metadata = {"method": method + "_normal_95", "reference": 0.,
+                "anytime_coverage_claim": False}
     if int(samples.shape[0]) < 4:
-        return {"available": False, "covered": False, "estimate": None, "mcse": None}
-    report = mean_precision(samples, method="lugsail", jit_compile=jit_compile)
+        return {**metadata, "available": False, "covered": False,
+                "estimate": None, "mcse": None, "interval": None}
+    report = mean_precision(samples, method=method, jit_compile=jit_compile)
     valid = bool(report["valid"][0])
     estimate = float(report["estimate"][0])
     se = float(report["mcse"][0]) if valid else None
-    return {"available": valid, "covered": bool(valid and abs(estimate) <= 1.959963984540054 * se),
+    return {**metadata, "available": valid, "covered": bool(valid and abs(estimate) <= 1.959963984540054 * se),
             "estimate": estimate, "mcse": se,
             "interval": [estimate - 1.959963984540054 * se, estimate + 1.959963984540054 * se] if valid else None,
-            "reference": 0., "method": "lugsail_normal_95", "anytime_coverage_claim": False}
+            "estimator": report["estimator"]}
