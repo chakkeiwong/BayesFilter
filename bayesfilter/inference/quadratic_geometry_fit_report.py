@@ -40,8 +40,15 @@ def geometry_fit_report(raw, config, center_value, center_score_norm, *, holdout
         "intercept": None, "lambda0": None, "mu": None}
     if not bool(fit["finite"]):
         return {**result, "fit": {"status": "fit_nonfinite"}}
+    if not bool(fit["design_resolved"]):
+        return {**result, "fit": {"status": "fit_design_ill_conditioned",
+            "score_design_rank": int(fit["score_design_rank"]),
+            "score_design_retained_condition_number": float(fit["retained_design_condition"]),
+            "score_design_roundoff_indicator": float(fit["design_roundoff_indicator"]),
+            "score_design_roundoff_limit": float(fit["design_roundoff_limit"])}}
     report = {name: value.numpy().tolist() for name, value in fit.items()
-              if name not in ("finite", "singular_values", "residual_sum_squares")}
+              if name not in ("finite", "singular_values", "residual_sum_squares", "design_resolved",
+                              "retained_design_condition", "design_roundoff_indicator", "design_roundoff_limit")}
     # Formatting uses precomputed scalar diagnostics supplied by the program.
     report.update(status="usable", fit_method="score_difference_linear_least_squares_with_value_intercept",
         optimizer_converged=True, optimizer_failed=False, optimizer_iterations=0,
@@ -73,7 +80,7 @@ def geometry_fit_result(raw, config, center, scale, prefix_diagnostics, *, holdo
     report = geometry_fit_report(raw, config, prefix_diagnostics["center_log_prob"],
         prefix_diagnostics["center_score_norm"], holdout_rows=holdout_rows)
     diagnostics = {**prefix_diagnostics, **{key: value for key, value in report.items() if key not in _TOP_FIELDS}}
-    if bool(raw["fit"]["finite"]):
+    if bool(raw["fit"]["finite"]) and bool(raw["fit"]["design_resolved"]):
         diagnostics["artifact_hash"] = _artifact_hash({"config": config.payload(),
             "center": center, "scale": scale, "precision": raw["fit"]["precision"],
             "linear": raw["fit"]["linear_term"], "q_basis": raw["basis"], "diagnostics": {

@@ -64,6 +64,22 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"geometry_active_memory_{arm}_{capacity}_{device}": (
+        f"tests/test_filter_repair_geometry_active_memory.py::test_active_fit_costs[{arm}-{capacity}]",)
+        for arm in ("compact", "graph", "xla") for capacity in (16, 24) for device in ("cpu", "gpu")},
+    **{f"geometry_public_guard_{device}": (
+        "tests/test_quadratic_geometry.py", "tests/test_filter_repair_geometry_parity.py")
+        for device in ("cpu", "gpu")},
+    "geometry_active_rank_diagnostic_cpu": (
+        "tests/test_filter_repair_geometry_active_rows.py::test_single_row_and_rank_cutoff_use_active_extent",),
+    **{f"geometry_active_{dimension}_{device}": (
+        f"tests/test_filter_repair_geometry_active_rows.py::test_active_fit_preserves_complete_original_records[gaussian-{dimension}]",
+        f"tests/test_filter_repair_geometry_active_rows.py::test_active_fit_preserves_complete_original_records[nonquadratic-{dimension}]",
+        f"tests/test_filter_repair_geometry_active_rows.py::test_active_fit_preserves_complete_original_records[zero_design-{dimension}]",
+        f"tests/test_filter_repair_geometry_active_rows.py::test_active_fit_preserves_complete_original_records[reject_holdout-{dimension}]",)
+        for dimension in (1, 3, 5) for device in ("cpu", "gpu")},
+    **{f"geometry_active_edges_{device}": (
+        "tests/test_filter_repair_geometry_active_rows.py", "-k", "not complete_original") for device in ("cpu", "gpu")},
     "gap_ownership_supervisor_cpu": ("tests/test_filter_repair_gap_followup.py",),
     **{f"gap_enclosure_diagnostics_{device}": (
         "tests/test_filter_repair_gap_diagnostics.py", "-k", "not compiler_memory")
@@ -665,6 +681,11 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"geometry_active_memory_{arm}_{capacity}_{device}":
+        "Single-process active-count fit costs; complete original-record qualification is mandatory separately, and terminal repeats remain required."
+        for arm in ("compact", "graph", "xla") for capacity in (16, 24) for device in ("cpu", "gpu")},
+    "geometry_active_rank_diagnostic_cpu":
+        "Inherited near-rank failure attribution; the identical case and rejection guard remain mandatory in geometry_active_edges_cpu/gpu.",
     **{f"geometry_preparation_reuse_{kind}_{dimension}_{device}":
         "Native/report component attribution and 3000 alternating-input calls; no original raw-kernel ranking or general memory bound."
         for kind in ("directions", "partition") for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -783,6 +804,14 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"geometry_active_qualification_{device}": (
+        *(f"geometry_active_{dimension}_{device}" for dimension in (1, 3, 5)),
+        f"geometry_active_edges_{device}",
+        *(f"geometry_fit_{dimension}_{device}" for dimension in (1, 3, 5)),
+        f"geometry_fit_operands_{device}", f"geometry_public_guard_{device}")
+        for device in ("cpu", "gpu")},
+    **{f"geometry_active_memory_{device}": tuple(f"geometry_active_memory_{arm}_{capacity}_{device}"
+        for arm in ("compact", "graph", "xla") for capacity in (16, 24)) for device in ("cpu", "gpu")},
     **{f"geometry_preparation_followup_{device}": (
         *(f"geometry_preparation_memory_directions_{arm}_{dimension}_{device}"
           for arm in ("before", "graph", "xla") for dimension in (3, 5)),
@@ -973,6 +1002,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["geometry_active_memory_gpu"]},
+    "geometry_public_guard_gpu": "GPU",
+    **{f"geometry_active_{dimension}_gpu": "GPU" for dimension in (1, 3, 5)},
+    "geometry_active_edges_gpu": "GPU",
     "gap_enclosure_diagnostics_gpu": "GPU",
     **{f"gap_compiler_memory_{arm}_gpu": "GPU" for arm in ("graph", "xla")},
     **{group: "GPU" for group in TEST_BATCHES["geometry_preparation_followup_gpu"]},

@@ -622,6 +622,16 @@ def _fit_constrained_quadratic(
         return {"status": "score_curvature_lstsq_failed"}
     if not bool(result.pop("finite")):
         return {"status": "fit_nonfinite"}
+    resolved = bool(result.pop("design_resolved"))
+    retained_condition = result.pop("retained_design_condition")
+    roundoff_indicator = result.pop("design_roundoff_indicator")
+    roundoff_limit = result.pop("design_roundoff_limit")
+    if not resolved:
+        return {"status": "fit_design_ill_conditioned",
+            "score_design_rank": int(result["score_design_rank"]),
+            "score_design_retained_condition_number": float(retained_condition),
+            "score_design_roundoff_indicator": float(roundoff_indicator),
+            "score_design_roundoff_limit": float(roundoff_limit)}
     result["score_design_condition_number"] = _design_condition_number(
         result.pop("singular_values")
     )
@@ -653,12 +663,24 @@ def _score_curvature_design(
     return tf.reshape(design, [-1, rank + 1]), tf.reshape(center[None, :] - score, [-1])
 
 
-def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *, use_xla_svd=True):
+def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *, use_xla_svd=True, active_rows=None):
     dim, rank = q.shape
+    if active_rows is not None:
+        from bayesfilter.inference.quadratic_geometry_rows_tf import (
+            compact_fit_statistics,
+            compact_qr,
+            compact_solution,
+        )
+
+        active = tf.range(z.shape[0]) < active_rows
+        z = tf.where(active[:, None], z, tf.zeros_like(z))
+        y = tf.where(active, y, tf.zeros_like(y))
+        score = tf.where(active[:, None], score, tf.zeros_like(score))
     design, response = _score_curvature_design(
         z, score, center_score, q_basis=q, dim=dim, rank=rank
     )
-    reduced_q, reduced_r = tf.linalg.qr(design, full_matrices=False)
+    reduced_q, reduced_r = (tf.linalg.qr(design, full_matrices=False) if active_rows is None
+                           else compact_qr(design, active_rows, dim))
     if use_xla_svd:
         decomposition = xla_svd(
             reduced_r, max_iter=100, epsilon=math.ulp(1.0), precision_config=""
@@ -668,17 +690,24 @@ def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *,
         # Explicit graph-reference diagnostic; the default XLA tolerance remains fixed.
         singular, left_r, right_r = tf.linalg.svd(reduced_r, full_matrices=False)
     extent = singular.shape[0]
-    left = tf.matmul(reduced_q, left_r[:, :extent])
     right = right_r[:, :extent]
     # NumPy lstsq(rcond=None) uses eps*max(rows,columns), unlike Eigen COD.
-    threshold = tf.reduce_max(singular) * tf.constant(
-        math.ulp(1.0) * max(design.shape), tf.float64
-    )
+    relative_cutoff = (tf.constant(math.ulp(1.0) * max(design.shape), tf.float64) if active_rows is None
+        else tf.constant(math.ulp(1.0), tf.float64) * tf.cast(tf.maximum(active_rows * dim, rank + 1), tf.float64))
+    threshold = tf.reduce_max(singular) * relative_cutoff
     keep = singular > threshold
+    retained_condition = tf.where(tf.reduce_any(keep),
+        tf.reduce_max(singular) / tf.reduce_min(tf.where(keep, singular, tf.constant(float('inf'), tf.float64))),
+        tf.constant(1., tf.float64))
+    roundoff_indicator = relative_cutoff * retained_condition
+    roundoff_limit = tf.constant(math.sqrt(math.ulp(1.0)), tf.float64)
+    design_resolved = tf.math.is_finite(roundoff_indicator) & (roundoff_indicator <= roundoff_limit)
     inverse = tf.where(keep, tf.math.reciprocal(singular), tf.zeros_like(singular))
-    raw = tf.linalg.matvec(
-        right, inverse * tf.linalg.matvec(left, response, transpose_a=True)
-    )
+    if active_rows is None:
+        left = tf.matmul(reduced_q, left_r[:, :extent])
+        raw = tf.linalg.matvec(right, inverse * tf.linalg.matvec(left, response, transpose_a=True))
+    else:
+        raw = compact_solution(reduced_q, left_r[:, :extent], right, inverse, response, active_rows, dim)
     lambda0 = tf.maximum(floor, raw[0])
     raw_mu = raw[1:]
     upper = (condition_cap - 1.0) * lambda0
@@ -695,13 +724,18 @@ def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *,
         mu=mu,
         q_basis=q,
     )
-    intercept = tf.reduce_mean(y - without_intercept)
-    residual = intercept + without_intercept - y
-    score_residual = (
-        tf.linalg.matvec(design, tf.concat((lambda0[None], mu), axis=0)) - response
-    )
-    loss = tf.reduce_mean(residual**2)
-    score_rmse = tf.sqrt(tf.reduce_mean(score_residual**2))
+    if active_rows is None:
+        intercept = tf.reduce_mean(y - without_intercept)
+        residual = intercept + without_intercept - y
+        score_residual = (
+            tf.linalg.matvec(design, tf.concat((lambda0[None], mu), axis=0)) - response
+        )
+        loss = tf.reduce_mean(residual**2)
+        score_rmse = tf.sqrt(tf.reduce_mean(score_residual**2))
+        residual_sum_squares = tf.reduce_sum((tf.linalg.matvec(design, raw) - response) ** 2)
+    else:
+        intercept, loss, score_rmse, residual_sum_squares = compact_fit_statistics(
+            y, without_intercept, design, response, raw, tf.concat((lambda0[None], mu), axis=0), active_rows, dim)
     finite = (
         tf.reduce_all(tf.math.is_finite(raw))
         & tf.math.is_finite(loss)
@@ -712,15 +746,19 @@ def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *,
         & tf.reduce_all(tf.math.is_finite(center_score))
         & tf.math.is_finite(score_rmse)
     )
+    if active_rows is not None:
+        finite &= (active_rows >= 1) & (active_rows <= z.shape[0])
     return {
         "loss": loss,
         "score_rmse": score_rmse,
         "finite": finite,
+        "design_resolved": design_resolved,
+        "retained_design_condition": retained_condition,
+        "design_roundoff_indicator": roundoff_indicator,
+        "design_roundoff_limit": roundoff_limit,
         "score_design_rank": tf.math.count_nonzero(keep),
         "singular_values": singular,
-        "residual_sum_squares": tf.reduce_sum(
-            (tf.linalg.matvec(design, raw) - response) ** 2
-        ),
+        "residual_sum_squares": residual_sum_squares,
         "raw_lambda0": raw[0],
         "raw_mu": raw_mu,
         "mu_clipped_count": tf.math.count_nonzero((raw_mu < 0.0) | (raw_mu > upper)),

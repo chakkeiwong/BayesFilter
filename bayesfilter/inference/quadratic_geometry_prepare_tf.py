@@ -12,6 +12,7 @@ import tensorflow as tf
 from bayesfilter.inference.quadratic_geometry_pilot_tf import (
     make_geometry_cloud_program,
 )
+from bayesfilter.ops.geometry_permutation_tf import make_geometry_permutation_program
 
 D = tf.float64
 
@@ -166,3 +167,22 @@ def make_geometry_partition_program(dimension, capacity, required_finite, holdou
             "y_holdout": tf.where(holdout_active, tf.gather(values, order), tf.zeros_like(values))}
 
     return partition
+
+
+def make_geometry_seeded_partition_program(dimension, capacity, required_finite, holdout_fraction, *, jit_compile=True):
+    """Enclose finite counting, the unchanged seeded permutation and partition."""
+    permute = make_geometry_permutation_program(capacity, jit_compile=jit_compile)
+    partition = make_geometry_partition_program(dimension, capacity, required_finite,
+        holdout_fraction, jit_compile=jit_compile)
+
+    @tf.function(input_signature=[tf.TensorSpec([capacity, dimension], D),
+        tf.TensorSpec([capacity], D), tf.TensorSpec([capacity, dimension], D),
+        tf.TensorSpec([dimension], D), tf.TensorSpec([2], tf.int32)],
+        autograph=False, jit_compile=jit_compile)
+    def prepare(offsets, values, scores, scale, seed):
+        finite = tf.math.is_finite(values) & tf.reduce_all(tf.math.is_finite(scores), axis=1)
+        count = tf.math.count_nonzero(finite, dtype=tf.int32)
+        permutation = permute(count, seed)
+        return partition(offsets, values, scores, scale, permutation['permutation'])
+
+    return prepare

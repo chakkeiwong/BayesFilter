@@ -1,5 +1,23 @@
 # Complete filter and gradient execution repair
 
+The owner authorized the additional **E1--E6 enclosing-execution repair phase**
+on September22, continuing from pushed **ca920bac5**. The
+[reviewed execution program](filter_gradient_enclosing_execution_phase_20260922.md)
+adds active-row geometry/RNG, full public controller wiring, coordinated cache
+ownership, actual-consumer telemetry/deadlines and UUID-based terminal costing.
+Its skeptical review requires original compact QR/SVD semantics, exact count and
+callback behavior, independent memory attribution and public endpoint evidence.
+E1 numerical qualification is complete: **83 CPU and83 GPU checks pass**,
+alongside102 policy checks. The active-count fitter/RNG and explicit
+ill-conditioning rejection are implemented. [Results and cost review](filter_gradient_active_rows_result_20260922.md)
+preserve the capacity24 cold-compile trigger and the unqualified GPU timings:
+four cost workers shared the selected device with another process. All12 cost
+workers pass numerical comparisons, but clean GPU comparisons remain required.
+E2 pilot/full-controller execution is next. Caps and main-merge gates are
+unchanged; all F01--F20 terminal dispositions remain open.
+
+## Diagnosis checkpoint
+
 Repair remains **incomplete** on `repair/filter-gradient-xla-validation-20260918`,
 continuing from pushed **54bc96fc9**. The remaining-gap investigation now gives
 source anchors, a repair path and an acceptance test for each known execution
