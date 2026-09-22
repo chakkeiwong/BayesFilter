@@ -61,6 +61,16 @@ After the latest remote merge, the complete focused integration run passed
 219 tests in 212.51 seconds, with GPU devices deliberately hidden. This covers
 the iAPF reference/score consumers and affected Kalman/HMC integration contracts;
 it is not a new scientific or GPU validation claim.
+Final checkout checks also exposed two integration defects. A literal closing
+brace in an upstream ignore pattern broke ripgrep parsing; `[}]` preserves the
+intended malformed-directory match and restores successful searches. The NeuTra
+route guard found nine records for deleted scripts, six unregistered historical
+LEDH diagnostics, and one unregistered validation adapter. The ledger now
+matches the merged source; all six route-policy tests pass. The historical
+classification follows the terminated September 7 program, and the validation
+adapter explicitly supplies diagnostic controls. Discovery rules and active
+route classifications are unchanged. These are integration repairs, not new
+sampling or numerical behavior.
 
 GitHub SSH authentication over port 443 succeeded using the already trusted
 github.com host key. The repository's SSH command now uses that verified
@@ -93,4 +103,4 @@ documentation files changed concurrently during synchronization; preserve their
 latest contents rather than restoring their initial hashes.
 The incoming tracked NeuTra route ledger supersedes an older ignored local
 copy. Preserve that old copy in the synchronization backup before updating the
-working branch; use the incoming ledger with its corresponding merged sources.
+working branch; use the reconciled ledger with its corresponding merged sources.
