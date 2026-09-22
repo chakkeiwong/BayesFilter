@@ -34,6 +34,22 @@ pack and still making progress. Remote main was observed at `8f992b20`.
 The existing remote surrogate-hmc tip `8a5c23ab` is an ancestor of our branch.
 No remote push has yet been made. Merge and final identity checks remain.
 
+The cached remote history `d2124d42` merged cleanly in `c41d6477`; its ancestry
+to the current remote tip was checked. The isolated checkout then passed 188
+integration tests, with 30 external-reference tests skipped and one missing
+fixture failure. The missing 1,729-byte underflow fixture is now versioned.
+After copying the existing pinned R source and paper into the isolated local
+resource directory, all 32 external-reference/fixture checks passed. The
+availability check now requires the paper as well as R and source code, so a
+fresh checkout reports missing references explicitly. No numerical algorithm
+changed. The ignored custom-op binary was also copied from the original
+checkout; its digest is recorded in the local synchronization logs.
+
+GitHub SSH authentication over port 443 succeeded using the already trusted
+github.com host key. A brief duplicate fetch on that connection was slower
+and was stopped; the original HTTPS download remains active. The authenticated
+port-443 connection is available for the requested pushes.
+
 The first focused CPU/XLA run passed 133 tests and exposed one stale assertion
 in the canonical reset rejection test. The shared executor has returned the
 explicit rejection sentinel `(-inf, 0)` since commit `bdc0bdcb`; the test still

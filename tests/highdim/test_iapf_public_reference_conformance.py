@@ -17,8 +17,9 @@ from docs.benchmarks import diagnose_younis_iapf_kdm_reference_comparison as com
 
 @pytest.fixture(scope="module")
 def reference(tmp_path_factory):
-    if not shutil.which("Rscript") or not audit.SOURCE.exists():
-        pytest.skip("external pinned iAPF source and R required; no conformance admission issued")
+    if (not shutil.which("Rscript") or not audit.SOURCE.exists()
+            or not audit.PAPER.exists()):
+        pytest.skip("external pinned iAPF source, paper and R required; no conformance admission issued")
     return audit.run_reference(tmp_path_factory.mktemp("iapf-paper-source"))
 
 
