@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from typing import Any
 
 import tensorflow as tf
-import tensorflow_probability as tfp
+
+from bayesfilter.inference.hmc_ess import STAN_ESS_VERSION
 
 
 RANK_NORMALIZED_SPLIT_RHAT_DEFINITION = (
@@ -48,8 +49,8 @@ class RankNormalizedHMCThresholds:
 
 
 def _real_fft_cross_chain_ess(states: Any) -> tf.Tensor:
-    from bayesfilter.inference.hmc_diagnostic_math import _cross_chain_ess
-    return _cross_chain_ess(states)
+    from bayesfilter.inference.hmc_ess import stan_cross_chain_ess
+    return stan_cross_chain_ess(states)
 
 
 def rank_normalized_split_rhat_summary(
@@ -197,26 +198,10 @@ def rank_normalized_hmc_diagnostics(
         dtype=tf.float64,
     )
     rhat = tf.constant([float("nan") if value is None else value for value in rhat_summary["rhat"]], dtype=tf.float64)
-    split_rank = _rank_normalize(_split_chains(values))
-    bulk_ess = _real_fft_cross_chain_ess(split_rank)
-
-    q05 = tfp.stats.percentile(
-        values,
-        5.0,
-        axis=(0, 1),
-        interpolation="linear",
-    )
-    q95 = tfp.stats.percentile(
-        values,
-        95.0,
-        axis=(0, 1),
-        interpolation="linear",
-    )
-    lower_indicator = tf.cast(values <= q05[tf.newaxis, tf.newaxis, :], tf.float64)
-    upper_indicator = tf.cast(values >= q95[tf.newaxis, tf.newaxis, :], tf.float64)
-    lower_ess = _real_fft_cross_chain_ess(_split_chains(lower_indicator))
-    upper_ess = _real_fft_cross_chain_ess(_split_chains(upper_indicator))
-    tail_ess = tf.minimum(lower_ess, upper_ess)
+    from bayesfilter.inference.hmc_posterior_diagnostics import rank_normalized_bulk_tail_ess
+    ess = rank_normalized_bulk_tail_ess(tf.transpose(values, (1, 0, 2)))
+    bulk_ess, tail_ess = ess["bulk"], ess["tail"]
+    lower_ess, upper_ess = ess["lower_5pct"], ess["upper_95pct"]
 
     finite_diagnostics = tf.logical_and(
         tf.math.is_finite(rhat),
@@ -257,15 +242,17 @@ def rank_normalized_hmc_diagnostics(
         "split_draw_count_per_chain": draw_count // 2,
         "split_chain_count": 2 * chain_count,
         "thresholds": thresholds.payload(),
+        "bulk_tail_ess_method": STAN_ESS_VERSION,
         "definitions": {
             "rank_transform": "Blom average-rank normal score",
             "rhat": RANK_NORMALIZED_SPLIT_RHAT_DEFINITION,
             "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
             "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators",
             "autocorrelation_truncation": (
-                "Geyer initial positive pairs; TFP 0.25 formula parity via "
+                "Stan/ArviZ initial positive and monotone pairs via "
                 "TensorFlow real FFT"
             ),
+            "tail_indicator": "x <= q at both pooled q05 and q95 cutoffs",
             "quantile_interpolation": "linear",
         },
         "max_rhat": float(tf.reduce_max(rhat).numpy()),
@@ -290,12 +277,9 @@ def _rank_normalize(values: tf.Tensor) -> tf.Tensor:
 
 
 def _rank_normalized_split_rhat_components(values: tf.Tensor):
-    from bayesfilter.inference.hmc_diagnostic_math import _split_rhat_from_sample_major
-    split = _split_chains(values)
-    median = tfp.stats.percentile(split, 50., axis=(0, 1), interpolation="midpoint")
-    rank_rhat = _split_rhat_from_sample_major(_rank_normalize(split))
-    folded_rhat = _split_rhat_from_sample_major(_rank_normalize(tf.abs(split - median)))
-    return rank_rhat, folded_rhat, tf.maximum(rank_rhat, folded_rhat)
+    from bayesfilter.inference.hmc_posterior_diagnostics import rank_normalized_split_rhat
+    summary = rank_normalized_split_rhat(tf.transpose(values, (1, 0, 2)))
+    return summary["bulk"], summary["folded"], summary["maximum"]
 
 
 def _maximum_finite_tensor_value(values: tf.Tensor) -> float | None:
@@ -346,6 +330,7 @@ def _failed_nonfinite_payload(
         "draw_count_per_chain": draw_count,
         "chain_count": chain_count,
         "parameter_count": len(parameter_names),
+        "bulk_tail_ess_method": STAN_ESS_VERSION,
         "split_draw_count_per_chain": draw_count // 2,
         "split_chain_count": 2 * chain_count,
         "thresholds": thresholds.payload(),

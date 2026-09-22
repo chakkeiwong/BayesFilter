@@ -13,10 +13,10 @@ import tensorflow as tf
 
 from .hmc_convergence import (
     RankNormalizedHMCThresholds,
-    _real_fft_cross_chain_ess,
     _split_chains,
     rank_normalized_hmc_diagnostics,
 )
+from .hmc_ess import STAN_ESS_VERSION, stan_cross_chain_ess
 from .fixed_transport_candidate_selection import FixedTransportCandidateSelectionConfig
 
 
@@ -49,7 +49,7 @@ def fixed_transport_candidate_diagnostics(
         ),
     )
     movement = tf.reduce_max(tf.abs(values - starts[tf.newaxis, :, :]), axis=(0, 2))
-    mean_ess = _real_fft_cross_chain_ess(_split_chains(values))
+    mean_ess = stan_cross_chain_ess(_split_chains(values))
     sample_count = tf.cast(tf.shape(values)[0] * tf.shape(values)[1], tf.float64)
     standard_deviation = tf.math.reduce_std(values, axis=(0, 1)) * tf.sqrt(
         sample_count / (sample_count - 1.0)
@@ -86,6 +86,7 @@ def fixed_transport_candidate_diagnostics(
         "mean_mcse": [float(value) for value in tf.unstack(standard_deviation * mean_mcse_sd)],
         "sample_standard_deviation": [float(value) for value in tf.unstack(standard_deviation)],
         "mcse_method": "unranked_split_chain_ess",
+        "mean_ess_method": STAN_ESS_VERSION,
         "movement_max_abs_by_chain": [float(value) for value in tf.unstack(movement)],
         "rank_normalized_diagnostics": rank,
         "hard_vetoes": [],

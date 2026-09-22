@@ -912,6 +912,15 @@ def _bootstrap_hard_vetoes(bootstrap: "HMCBootstrapScreenResult") -> tuple[str, 
         dict.fromkeys(
             str(veto)
             for round_result in bootstrap.rounds
+            # A discarded, narrowly attributed proposal failure can be
+            # repaired only by a later completed bootstrap screen. Its raw
+            # veto and first-failure record remain in the round artifact.
+            if not (
+                getattr(bootstrap, "passed", False)
+                and round_result.round_index < bootstrap.selected_round_index
+                and round_result.classification == "repair"
+                and round_result.diagnostics.get("proposal_domain_retry_eligible") is True
+            )
             for veto in round_result.hard_vetoes
         )
     )

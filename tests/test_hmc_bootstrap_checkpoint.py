@@ -92,11 +92,11 @@ def test_discarded_invalid_proposal_is_a_veto(tmp_path, monkeypatch):
 
 def test_high_acceptance_only_passes_explicit_startup_role():
     _, _, cfg = inputs()
-    diag = dict(acceptance_rate=1., runtime_finite=True, log_accept_ratio_finite=True,
+    diag = dict(mean_acceptance_probability=1., acceptance_rate=1., runtime_finite=True, log_accept_ratio_finite=True,
                 samples_all_finite=True, target_log_prob_finite=True)
     assert _classify_bootstrap_screen(cfg, diagnostics=diag, screen_error=None)[0] == "repair"
     startup = replace(cfg, acceptance_role="warmup_startup_only")
     assert _classify_bootstrap_screen(startup, diagnostics=diag, screen_error=None)[:2] == (
         "passed", "finite_startup_for_adaptation_only")
-    assert _classify_bootstrap_screen(startup, diagnostics={**diag, "acceptance_rate": .2}, screen_error=None)[0] == "repair"
+    assert _classify_bootstrap_screen(startup, diagnostics={**diag, "mean_acceptance_probability": .2}, screen_error=None)[0] == "repair"
     assert _classify_bootstrap_screen(startup, diagnostics={**diag, "log_accept_ratio_finite": False}, screen_error=None)[0] == "hard_veto"

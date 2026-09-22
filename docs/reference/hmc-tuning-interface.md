@@ -236,6 +236,35 @@ subsequent bootstrap and operational mass checks still run; startup nomination
 cannot issue a tuning artifact. The q20 pricing and classical tuning consumers
 explicitly enable this repair; unrelated consumers retain their existing policy.
 
+Bootstrap decisions use the mean Metropolis probability
+`mean(exp(min(log_accept_ratio, 0)))` over **every recorded proposal**, including
+rejections. Discarded burnin is excluded. The historical `acceptance_rate` field
+and the explicit `binary_acceptance_rate` remain binary reporting fields;
+`mean_acceptance_probability` controls the screen and directional epsilon
+repair. Missing, nonfinite, empty, misaligned or incomplete probability traces
+stop the screen without falling back to binary acceptance. For example, a mean
+probability of 0.6846376853 inside [0.65, 0.75] passes this acceptance check even
+if 13 of 16 proposals were accepted. This short preparation check provides no
+posterior or final candidate qualification.
+
+A bootstrap trial that raises a narrowly adapter-declared target-domain
+`InvalidArgumentError` can trigger a smaller fresh trial only when the
+repository's failure recorder locates it in a proposal target callback after
+a finite pre-transition state. An adapter's `classify_target_exception(error)`
+must return a Python boolean and recognize its own domain failures specifically.
+Initial-state, retained/trace, unattributed, device, programming and classifier
+failures still stop preparation. Original exception and first-failure records
+remain attached to the failed round. The failed epsilon bounds future trial
+proposals without being assigned an acceptance probability. A smaller measured
+parent and the failed bound nominate a logarithmic midpoint; otherwise the
+existing repair multiplier shrinks epsilon. L is recomputed and its clamp is
+recorded. A failed reusable runner is replaced, each retry consumes the existing
+repair budget, and only a later completed screen permits a repaired handoff.
+This rule does not retry arbitrary TensorFlow errors or remove target assertions.
+Repository failure attribution is currently available for `tf_function` without
+XLA. Eager or XLA exceptions without that attribution remain terminal; enabling
+retry does not relax execution-mode policy or manufacture missing evidence.
+
 The ordinary public config also exposes `bootstrap_initialization_rounds`.
 Zero, its default, preserves the existing preparation policy. A positive integer
 enables the same probe with that finite round cap and uses the existing
@@ -582,6 +611,18 @@ recomputed from draws before comparing thresholds. Rank diagnostics run as
 bounded-shape TensorFlow reporting graphs without XLA because rank grouping
 uses data-dependent segment operations. This exception does not change the
 member's HMC XLA execution policy; the optional batch-means kernel defaults to XLA.
+
+Both `hmc_convergence.rank_normalized_hmc_diagnostics` (draw, chain, parameter)
+and `hmc_posterior_diagnostics.rank_normalized_bulk_tail_ess` (chain, draw,
+parameter) now call the shared Stan/ArviZ initial-positive/monotone ESS
+implementation, identified as `bayesfilter.stan_initial_positive_monotone_ess.v1`.
+Bulk and tail ESS split chains; odd lengths omit the middle draw from the
+split, while tail cutoffs use the full pooled draws. Both tail indicators use
+`x <= q`; equal percentile endpoints remain exactly equal. Constant draws
+remain nonpromotable. Public schemas and threshold values are unchanged, but
+older convergence reports need recomputation from their saved draws. The
+explicitly named TFP mean/quantile precision option and the covariance-window
+ESS heuristic are separate; this repair does not change either computation.
 
 The separate legacy Phase 29 warmup screen still uses configured adjacent-epoch
 drift thresholds as heuristic rejection criteria. Its standardized differences

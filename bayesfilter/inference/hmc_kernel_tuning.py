@@ -11978,7 +11978,7 @@ def _bootstrap_public_summary(
     last_round = rounds[-1] if rounds else None
     relations = tuple(
         _bootstrap_acceptance_relation(
-            round_result.diagnostics.get("acceptance_rate"),
+            round_result.diagnostics.get("mean_acceptance_probability"),
             bootstrap.config.acceptance_band,
         )
         for round_result in rounds

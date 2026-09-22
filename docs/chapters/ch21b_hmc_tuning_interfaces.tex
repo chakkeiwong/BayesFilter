@@ -65,6 +65,34 @@ candidate search begins. Inspect that preparation failure and supply checked
 geometry in the active coordinates when available. Increasing the subsequent
 candidate budget does not repair a bootstrap that never reaches its handoff.
 
+Bootstrap epsilon decisions use the mean Metropolis probability over all
+recorded proposals, including rejected proposals and excluding discarded burnin:
+\[
+  \bar\alpha=\frac{1}{n}\sum_{t=1}^{n}
+     \exp\{\min(\log r_t,0)\}.
+\]
+The realized accepted fraction includes the additional uniform accept/reject
+draw and remains a separate movement diagnostic. For example, a recorded mean
+probability of $0.6846$ lies within the configured $[0.65,0.75]$ band even when
+$13/16=0.8125$ proposals were accepted. That binary fraction must not cause an
+upward epsilon repair. Missing, nonfinite or incomplete probability traces stop
+the screen. The ordinary fixed-kernel band and the optional startup floor have
+different preparation roles; neither establishes final candidate or posterior
+validity.
+
+A target-domain exception permits a bounded smaller bootstrap trial only if
+the adapter specifically classifies it and the repository failure record
+locates it in a proposal target callback after a finite pre-transition state.
+Initial-state, retained-state, unattributed and unrelated execution failures
+remain terminal. The failed round retains its original assertion and first
+failure; it receives no invented acceptance probability. A smaller finite
+parent and the failed epsilon can nominate a logarithmic midpoint; otherwise
+the configured multiplier reduces epsilon. The next trial recomputes $L$,
+records any clamp and consumes the existing repair budget. A failed reusable
+runner is replaced, and only a subsequent completed screen can supply the
+repaired preparation pair. Target assertions and Metropolis correction remain
+part of every trial.
+
 An optional finite startup probe is available through
 \path{HMCKernelTuningConfig(bootstrap_initialization_rounds=20)}. Zero is the
 default; a positive integer bounds the number of rounds. Each round tests four

@@ -50,7 +50,8 @@ def test_preparation_veto_causes_persist_before_exception(tmp_path, monkeypatch)
         hard_vetoes=("nonfinite_target_score",),
         diagnostics={"exception_type": "InvalidArgumentError", "exception_message": "target failed"})
     bootstrap = SimpleNamespace(artifact_hash="bootstrap", final_status="hard_veto",
-        rounds=(failed_round,))
+        rounds=(failed_round,), payload=lambda: {"final_status": "hard_veto",
+                                                "rounds": [failed_round.payload()]})
     monkeypatch.setattr("bayesfilter.inference.hmc_geometry.initialize_hmc_kernel_geometry", lambda **kw: geometry)
     monkeypatch.setattr("bayesfilter.inference.hmc_configuration._public_geometry_config", lambda cfg: None)
     monkeypatch.setattr("bayesfilter.inference.hmc_configuration._public_bootstrap_config", lambda *a, **kw: None)
@@ -73,7 +74,8 @@ def test_windowed_preparation_failure_preserves_stage_diagnostics(tmp_path, monk
     monkeypatch.setattr("bayesfilter.inference.hmc_configuration._public_geometry_config", lambda cfg: None)
     monkeypatch.setattr("bayesfilter.inference.hmc_configuration._public_bootstrap_config", lambda *a, **kw: None)
     monkeypatch.setattr("bayesfilter.inference.hmc_bootstrap.run_hmc_bootstrap_screen", lambda **kw:
-        SimpleNamespace(artifact_hash="bootstrap", final_status="passed"))
+        SimpleNamespace(artifact_hash="bootstrap", final_status="passed",
+                        payload=lambda: {"final_status": "passed"}))
     monkeypatch.setattr("bayesfilter.inference.hmc_mass_adaptation._bootstrap_preflight_passed", lambda result: True)
     monkeypatch.setattr("bayesfilter.inference.hmc_configuration._HMCAttemptBudgetPolicy", SimpleNamespace)
     monkeypatch.setattr("bayesfilter.inference.hmc_configuration._public_budget_policy_factory", lambda *a, **kw:
@@ -83,7 +85,8 @@ def test_windowed_preparation_failure_preserves_stage_diagnostics(tmp_path, monk
     monkeypatch.setattr("bayesfilter.inference.hmc_mass_adaptation.run_hmc_windowed_mass_stage", lambda **kw:
         SimpleNamespace(passed=False, operational_warmup_result=None, final_status="hard_veto",
             hard_vetoes=("metric_update_failed",),
-            diagnostics={"exception_type": "ValueError", "exception_message": "invalid covariance"}))
+            diagnostics={"exception_type": "ValueError", "exception_message": "invalid covariance"},
+            payload=lambda: {"final_status": "hard_veto", "hard_vetoes": ["metric_update_failed"]}))
     with pytest.raises(HMCPreparationFailure):
         with HMCPreparationProgress(tmp_path) as progress:
             prepare_operational_windowed_mass_handoff(adapter=GaussianTarget(), initial_position=[0., 0.],

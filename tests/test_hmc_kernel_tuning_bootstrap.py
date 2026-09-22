@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import math
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
@@ -98,24 +99,29 @@ def _fake_result(
     runtime_s: float = 0.01,
     use_xla: bool = False,
     timing_scope: str = "unit_test_sample_chain_scope",
+    count: int = 4,
+    binary_rate: float | None = None,
 ) -> _FakeRunResult:
     sample_value = 0.0 if finite_samples else np.nan
-    samples = tf.constant([[sample_value, sample_value]], dtype=tf.float64)
+    samples = tf.fill([count, 2], tf.constant(sample_value, tf.float64))
+    accepted_count = round(count * (acceptance if binary_rate is None else binary_rate))
+    accepted = [True] * accepted_count + [False] * (count - accepted_count)
+    log_ratio = math.log(acceptance) if acceptance > 0. else -1000.
     trace = {
-        "is_accepted": tf.constant([acceptance >= 0.5, acceptance >= 0.25]),
+        "is_accepted": tf.constant(accepted),
         "log_accept_ratio": tf.constant(
-            [0.0, 0.1 if finite_log_accept else np.nan],
+            [log_ratio] * (count - 1) + [log_ratio if finite_log_accept else np.nan],
             dtype=tf.float64,
         ),
         "target_log_prob": tf.constant(
-            [0.0, -0.5 if target_log_prob_finite else np.nan],
+            [0.0] * (count - 1) + [-0.5 if target_log_prob_finite else np.nan],
             dtype=tf.float64,
         ),
     }
     diagnostics = {
-        "acceptance_rate": tf.constant(float(acceptance), dtype=tf.float64),
-        "finite_sample_count": tf.constant(2 if finite_samples else 0, dtype=tf.int32),
-        "nonfinite_sample_count": tf.constant(0 if finite_samples else 2, dtype=tf.int32),
+        "acceptance_rate": tf.constant(accepted_count / count, dtype=tf.float64),
+        "finite_sample_count": tf.constant(2 * count if finite_samples else 0, dtype=tf.int32),
+        "nonfinite_sample_count": tf.constant(0 if finite_samples else 2 * count, dtype=tf.int32),
         "trace_policy": "standard",
     }
     return _FakeRunResult(
@@ -148,7 +154,8 @@ def _scripted_runner(acceptances: list[float]):
         )
         np.testing.assert_allclose(initial_state.numpy(), np.zeros(2))
         acceptance = acceptances.pop(0)
-        return _fake_result(acceptance=acceptance, use_xla=bool(config.use_xla))
+        return _fake_result(acceptance=acceptance, use_xla=bool(config.use_xla),
+                            count=config.num_results)
 
     return run, calls
 
@@ -600,7 +607,7 @@ def test_nonfinite_screen_diagnostics_hard_veto(
 
     assert result.passed is False
     assert result.final_status == "hard_veto"
-    assert result.rounds[0].hard_vetoes == (expected_veto,)
+    assert expected_veto in result.rounds[0].hard_vetoes
 
 
 def test_nonfinite_runtime_metadata_hard_vetoes() -> None:

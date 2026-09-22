@@ -34,6 +34,8 @@ for p in ['engineering-tests-r1-attempt.json','engineering-tests-r2-attempt.json
     attempt('M23','m23-r1/'+p)
 index('M21','m21-r2/public-pilot-cpu-r1/run_index.json')
 attempt('M21','m21-r2/estimator-confirmation-execution.json','cpu_worker_seconds')
+for receipt in sorted((ROOT/'m24-r2').glob('tests-*/result.json')):
+    attempt('M24',str(receipt.relative_to(ROOT)),'wall_seconds')
 queue_path=ROOT/'m21-r2/confirmation-queue-progress.json'
 reservations={}
 if queue_path.exists():

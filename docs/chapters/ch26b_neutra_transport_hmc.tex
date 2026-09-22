@@ -425,6 +425,14 @@ state which convention it checks.  Bulk/tail diagnostics still use split
 chains.  This reporting correction does not change HMC transitions or
 retroactively alter archived diagnostic reports.
 
+The public \path{rank_normalized_hmc_diagnostics} entry point uses these same
+bulk/tail and split/folded R-hat implementations. Its inputs retain the order
+draw, chain, parameter; the preserved-transition API uses chain, draw,
+parameter. Thresholds and output schemas remain unchanged. The separately named
+TFP mean/quantile precision option and the temporal-ESS heuristic used during
+covariance adaptation have their own estimator conventions; this reporting
+repair does not change them.
+
 The historical case-study protocol below used four chains, warm-up modern R-hat at most
 $1.05$, retained modern R-hat at most $1.01$, minimum bulk ESS $1000$, minimum
 tail ESS $400$, and caps of $10{,}000$ warm-up and retained draws per chain.

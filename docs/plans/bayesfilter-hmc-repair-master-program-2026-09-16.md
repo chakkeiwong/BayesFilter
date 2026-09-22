@@ -53,6 +53,19 @@ from remaining allowance. No statistical gap is closed merely by launch.
 
 ### Audit findings that change the next work
 
+September 22 consumer follow-up: the
+[MacroFinance bootstrap/diagnostics repair](bayesfilter-macrofinance-bootstrap-diagnostics-repair-2026-09-22.md)
+confirmed two additional M24 omissions in baseline `2c2419c09`: bootstrap decided
+from binary acceptance and the public convergence API routed bulk/tail ESS
+through the older precision estimator. Both are now repaired, with bounded
+proposal-domain recovery and an additional exact-constancy ESS guard. The final
+combined check passed 413 tests, with two disclosed skips; failed intermediate
+attempts are retained. The [consumer reply](bayesfilter-macrofinance-bootstrap-diagnostics-repair-reply-2026-09-22.md)
+records the remaining fresh-MacroFinance-run requirement. Total extra charge is
+444.9127681890968 CPU seconds, zero GPU seconds, within the 1800-second repair
+reservation. The temporary diagnostic-worker exception has ended. The live
+confirmation source remains frozen; its results cannot certify this later repair.
+
 1. M17 centered-funnel **preparation completed** on both devices. CPU search
    measured eight pairs, while GPU search measured six. All were rejected;
    the GPU primary pairs mostly failed at their first proposal stage. Calling

@@ -101,6 +101,10 @@ def _cross_chain_ess_impl(sample_major: Any) -> Any:
     tau_bound = tf.math.log(tf.constant(10.0, tf.float64)) / tf.math.log(total_draws)
     tau = tf.maximum(-1.0 + 2.0 * pair_sum + last_even, tau_bound)
     ess = total_draws / tau
-    valid = tf.logical_and(variance_plus > 0.0,
-        tf.reduce_all(tf.math.is_finite(values), axis=(0, 1)))
+    # XLA may lower a mean to reciprocal multiplication; even an exactly
+    # constant array can then acquire a tiny positive centered variance.
+    # Constancy is a property of the draws, not of that rounded variance.
+    nonconstant = tf.reduce_any(tf.not_equal(values, values[:1, :1, :]), axis=(0, 1))
+    valid = tf.logical_and(nonconstant, tf.logical_and(variance_plus > 0.0,
+        tf.reduce_all(tf.math.is_finite(values), axis=(0, 1))))
     return tf.where(valid, ess, tf.fill([parameter_count], tf.constant(float("nan"), tf.float64)))

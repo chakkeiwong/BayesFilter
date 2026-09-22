@@ -55,6 +55,13 @@ def test_constant_ess_remains_nonpromotable():
     assert np.isnan(ess).all()
 
 
+@pytest.mark.parametrize("draws", [16, 160, 257])
+def test_constant_ess_does_not_depend_on_xla_mean_rounding(draws):
+    values = tf.broadcast_to(tf.constant([1., .1, 1.e6], tf.float64), [draws, 4, 3])
+    ess = native._cross_chain_ess(values).numpy()
+    assert np.isnan(ess).all()
+
+
 def test_percentile_keeps_equal_endpoints_and_tail_cdf_boundary():
     endpoint = np.float64.fromhex("0x1.7bc004f322299p-12")
     values = np.full((4, 256, 1), endpoint)
@@ -98,3 +105,44 @@ def test_initialization_memory_is_invariant_to_exact_large_location_shift():
     shifted = native.initialization_memory_statistics(tf.constant(values + 2**30, tf.float64))
     np.testing.assert_allclose(shifted["standardized_difference"].numpy(),
         reference_values["standardized_difference"].numpy(), rtol=2e-12, atol=2e-12)
+
+
+@pytest.mark.parametrize("fixture", ["odd", "antithetic", "tied", "constant"])
+def test_public_convergence_api_reaches_repaired_independent_reference(fixture):
+    from bayesfilter.inference.hmc_convergence import (
+        RankNormalizedHMCThresholds, rank_normalized_hmc_diagnostics,
+    )
+    from bayesfilter.inference.hmc_ess import STAN_ESS_VERSION
+    rng = np.random.default_rng(5521)
+    values = rng.normal(size=(4, 257, 2))
+    if fixture == "antithetic":
+        values = lfilter([1.], [1., .95], rng.normal(size=(4, 769, 2)), axis=1)[:, 512:]
+    elif fixture == "tied":
+        endpoint = np.float64.fromhex("0x1.7bc004f322299p-12")
+        values[:] = endpoint
+        for chain in range(4):
+            values[chain, :4+chain] = endpoint/2
+            values[chain, -6-chain:] = endpoint*2
+    elif fixture == "constant":
+        values[:] = 1.
+    got = rank_normalized_hmc_diagnostics(tf.constant(values.transpose(1, 0, 2)),
+        parameter_names=("a", "b"), thresholds=RankNormalizedHMCThresholds())
+    assert got["schema"] == "bayesfilter.rank_normalized_hmc_diagnostics.v2"
+    assert got["bulk_tail_ess_method"] == STAN_ESS_VERSION
+    assert got["split_draw_count_per_chain"] == 128
+    assert got["split_chain_count"] == 8
+    if fixture == "constant":
+        # Deliberate stricter convention than ArviZ's constant ESS sentinel:
+        # constant chains provide no estimable mixing or posterior admission.
+        assert not got["passed"]
+        assert got["hard_vetoes"] == ("nonfinite_convergence_diagnostic",)
+        assert all(np.isnan(row["bulk_ess"]) for row in got["parameter_diagnostics"])
+        return
+    for i, row in enumerate(got["parameter_diagnostics"]):
+        np.testing.assert_allclose(row["rhat"], az.rhat(values[:, :, i]), rtol=2e-11, atol=2e-11)
+        for key in ("bulk", "tail"):
+            np.testing.assert_allclose(row[key + "_ess"], az.ess(values[:, :, i], method=key),
+                                       rtol=2e-11, atol=2e-11)
+        for key, cutoff in (("lower", .05), ("upper", .95)):
+            np.testing.assert_allclose(row[key + "_tail_ess"],
+                az.ess(values[:, :, i], method="quantile", prob=cutoff), rtol=2e-11, atol=2e-11)

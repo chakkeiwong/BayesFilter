@@ -145,8 +145,10 @@ def _geometry(**overrides: Any):
 
 
 def _bootstrap() -> HMCBootstrapScreenResult:
+    from tests.test_hmc_kernel_tuning_bootstrap import _fake_result as bootstrap_result
+
     def run(_adapter: Any, _initial_state: Any, _config: Any) -> _FakeRunResult:
-        return _fake_result(warmup_steps=4, acceptance_trace=[True, True, False, True])
+        return bootstrap_result(acceptance=.70, binary_rate=.75, count=_config.num_results)
 
     return run_hmc_bootstrap_screen(
         adapter=_ToyGaussianAdapter(),
@@ -304,6 +306,7 @@ def _operational_budget(attempt_index: int = 0):
 
 
 def _operational_inputs():
+    from tests.test_hmc_kernel_tuning_bootstrap import _fake_result as bootstrap_result
     adapter = _RotatedGaussianAdapter()
     geometry = initialize_hmc_kernel_geometry(
         adapter=adapter,
@@ -313,9 +316,8 @@ def _operational_inputs():
     bootstrap = run_hmc_bootstrap_screen(
         adapter=adapter,
         geometry=geometry,
-        run_full_chain=lambda _adapter, _state, config: _runtime_shaped_result(
-            warmup_steps=int(config.num_results),
-            acceptance_trace=[True, True, False, True] * 4,
+        run_full_chain=lambda _adapter, _state, config: bootstrap_result(
+            acceptance=.7, binary_rate=.75, count=config.num_results,
         ),
     )
     return adapter, geometry, bootstrap
@@ -1316,13 +1318,14 @@ def test_windowed_mass_stage_requires_bootstrap_without_hard_veto() -> None:
 
 
 def test_windowed_mass_stage_accepts_non_promoting_bootstrap_preflight() -> None:
+    from tests.test_hmc_kernel_tuning_bootstrap import _fake_result as bootstrap_result
     geometry = _geometry()
     bootstrap = run_hmc_bootstrap_screen(
         adapter=_ToyGaussianAdapter(),
         geometry=geometry,
         config=None,
-        run_full_chain=lambda _adapter, _initial_state, _config: _fake_result(
-            acceptance_trace=[True] * 12
+        run_full_chain=lambda _adapter, _initial_state, _config: bootstrap_result(
+            acceptance=1., count=_config.num_results,
         ),
     )
     assert bootstrap.passed is False

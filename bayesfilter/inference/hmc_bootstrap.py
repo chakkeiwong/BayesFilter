@@ -62,6 +62,8 @@ BOOTSTRAP_SCREEN_NONCLAIMS = (
     "no GPU or XLA readiness claim",
 )
 
+BOOTSTRAP_ACCEPTANCE_STATISTIC = "mean_metropolis_probability_over_recorded_proposals"
+
 
 RunFullChainFn = Callable[[Any, Any, FullChainHMCConfig], FullChainHMCRunResult]
 
@@ -188,6 +190,7 @@ class HMCBootstrapScreenConfig:
             "target_status_trace_policy": self.target_status_trace_policy,
             "source": self.source,
             "acceptance_role": self.acceptance_role,
+            "acceptance_statistic": BOOTSTRAP_ACCEPTANCE_STATISTIC,
         }
 
 
@@ -628,6 +631,7 @@ def run_hmc_bootstrap_screen(
     target_trajectory = float(geometry.target_trajectory_length)
     low_acceptance_step: float | None = None
     high_acceptance_step: float | None = None
+    unsafe_proposal_step: float | None = None
     previous_clamp_direction: str | None = None
     final_status = "repair_budget_exhausted"
     selected_index: int | None = None
@@ -733,6 +737,7 @@ def run_hmc_bootstrap_screen(
         )
         diagnostics: Mapping[str, Any]
         screen_error: Exception | None = None
+        contract_hash: str | None = None
         route_event_recorded = False
         round_started = time.perf_counter()
         try:
@@ -827,6 +832,7 @@ def run_hmc_bootstrap_screen(
                 run_result,
                 use_xla_requested=screen_config.use_xla,
                 compile_chain_with_xla=screen_config.use_xla,
+                expected_num_results=screen_config.num_results,
             )
         except Exception as exc:  # noqa: BLE001 - return fail-closed artifact.
             from bayesfilter.inference.hmc_preparation import HMCPreparationBudgetExceeded, HMCPreparationFailure
@@ -858,6 +864,12 @@ def run_hmc_bootstrap_screen(
                     }
                 )
             diagnostics = _bootstrap_error_diagnostics(exc)
+            from bayesfilter.inference.fixed_l_finite_bracket import classify_tuning_exception
+            diagnostics["failure_class"] = classify_tuning_exception(adapter, exc)
+            # Capturing a failure makes a reusable runner terminal. Keep its
+            # evidence, and construct a fresh runner if a retry is admissible.
+            if contract_hash is not None:
+                runner_cache.pop(contract_hash, None)
             if diagnostics.get("first_failure") is not None and _private_diagnostic_callback is not None:
                 try:
                     _private_diagnostic_callback(
@@ -877,6 +889,23 @@ def run_hmc_bootstrap_screen(
             diagnostics=diagnostics,
             screen_error=screen_error,
         )
+        proposal_retry = _bootstrap_proposal_failure_is_repairable(
+            diagnostics, screen_error=screen_error
+        )
+        if proposal_retry:
+            unsafe_proposal_step = (step if unsafe_proposal_step is None
+                                    else min(step, unsafe_proposal_step))
+            # These remain measured acceptance endpoints, never invented
+            # acceptance observations for a failed trial.
+            if high_acceptance_step is not None and high_acceptance_step >= unsafe_proposal_step:
+                high_acceptance_step = None
+            if low_acceptance_step is not None and low_acceptance_step >= unsafe_proposal_step:
+                low_acceptance_step = None
+            classification = "repair"
+            diagnostic_role = "declared_proposal_domain_failure_repair_only"
+            repair_triggers = ("declared_proposal_domain_failure",)
+        diagnostics["proposal_domain_retry_eligible"] = proposal_retry
+        diagnostics["unsafe_proposal_step_bound"] = unsafe_proposal_step
         emit_bootstrap_progress(
             "bootstrap_round_classified",
             round_index=round_index,
@@ -891,7 +920,7 @@ def run_hmc_bootstrap_screen(
                 )
             ),
             acceptance_relation_to_band=_bootstrap_acceptance_relation(
-                diagnostics.get("acceptance_rate"),
+                diagnostics.get("mean_acceptance_probability"),
                 cfg.acceptance_band,
             ),
             runtime_finite=diagnostics.get("runtime_finite"),
@@ -901,20 +930,23 @@ def run_hmc_bootstrap_screen(
         )
         repair_action: str | None = None
         if classification == "repair":
-            acceptance = _scalar_or_none(diagnostics.get("acceptance_rate"))
-            low_acceptance_step, high_acceptance_step = _bootstrap_update_repair_bracket(
-                cfg,
-                current_step=step,
-                acceptance=acceptance,
-                low_acceptance_step=low_acceptance_step,
-                high_acceptance_step=high_acceptance_step,
-            )
-            repair_action = _bootstrap_repair_action(
-                cfg,
-                acceptance,
-                low_acceptance_step=low_acceptance_step,
-                high_acceptance_step=high_acceptance_step,
-            )
+            acceptance = _scalar_or_none(diagnostics.get("mean_acceptance_probability"))
+            if proposal_retry:
+                repair_action = "smaller_epsilon_after_declared_proposal_failure_recompute_l"
+            else:
+                low_acceptance_step, high_acceptance_step = _bootstrap_update_repair_bracket(
+                    cfg,
+                    current_step=step,
+                    acceptance=acceptance,
+                    low_acceptance_step=low_acceptance_step,
+                    high_acceptance_step=high_acceptance_step,
+                )
+                repair_action = _bootstrap_repair_action(
+                    cfg,
+                    acceptance,
+                    low_acceptance_step=low_acceptance_step,
+                    high_acceptance_step=high_acceptance_step,
+                )
             repair_triggers = repair_triggers + (repair_action,)
         round_result = HMCBootstrapRepairRound(
             round_index=round_index,
@@ -949,13 +981,30 @@ def run_hmc_bootstrap_screen(
         if round_index >= cfg.max_repairs:
             final_status = "repair_budget_exhausted"
             break
-        repaired_step = _repair_step_size(
-            cfg,
-            current_step=step,
-            acceptance=acceptance,
-            low_acceptance_step=low_acceptance_step,
-            high_acceptance_step=high_acceptance_step,
-        )
+        try:
+            if proposal_retry:
+                repaired_step = _bootstrap_smaller_trial_step(
+                    cfg, unsafe_step=unsafe_proposal_step,
+                    finite_parent_step=high_acceptance_step,
+                )
+            else:
+                repaired_step = _repair_step_size(
+                    cfg,
+                    current_step=step,
+                    acceptance=acceptance,
+                    low_acceptance_step=low_acceptance_step,
+                    high_acceptance_step=high_acceptance_step,
+                )
+                if unsafe_proposal_step is not None and repaired_step >= unsafe_proposal_step:
+                    repaired_step = _bootstrap_smaller_trial_step(
+                        cfg, unsafe_step=unsafe_proposal_step, finite_parent_step=step,
+                    )
+        except ValueError as exc:
+            # Preserve every completed/failed trial even at floating-point
+            # search exhaustion; no unexecuted pair becomes a handoff.
+            rounds[-1].diagnostics["repair_failure"] = str(exc)
+            final_status = "repair_step_unavailable"
+            break
         repaired_leapfrog_payload = _bootstrap_leapfrog_payload(
             repaired_step,
             target_trajectory,
@@ -986,7 +1035,7 @@ def run_hmc_bootstrap_screen(
                     "classification": classification,
                     "diagnostic_role": diagnostic_role,
                     "acceptance_relation_to_band": _bootstrap_acceptance_relation(
-                        diagnostics.get("acceptance_rate"),
+                        diagnostics.get("mean_acceptance_probability"),
                         cfg.acceptance_band,
                     ),
                     "step_size_changed": bool(repaired_step != step),
@@ -1104,6 +1153,9 @@ def run_hmc_bootstrap_screen(
             "geometry_seed_distinct_from_bootstrap_seed": geometry_seed != root_seed,
         },
         diagnostic_roles={
+            "mean_acceptance_probability": "bootstrap_decision_and_repair",
+            "binary_acceptance_rate": "explanatory_movement_diagnostic",
+            "declared_proposal_domain_failure": "failed_trial_veto_and_bounded_repair_trigger",
             "acceptance_band": ("startup_floor_only" if cfg.acceptance_role == "warmup_startup_only"
                                 else "bootstrap_promotion_only"),
             "repair_band": "bootstrap_repair_trigger",
@@ -1137,6 +1189,7 @@ def _bootstrap_selected_kernel_payload(
         "target_trajectory_length": selected.target_trajectory_length,
         "target_accept_prob": config.target_accept_prob,
         "acceptance_role": config.acceptance_role,
+        "acceptance_statistic": BOOTSTRAP_ACCEPTANCE_STATISTIC,
         "startup_acceptance_floor": (config.repair_band[0]
                                      if config.acceptance_role == "warmup_startup_only" else None),
         "acceptance_band": config.acceptance_band,
@@ -1171,6 +1224,7 @@ def _bootstrap_diagnostics_payload(
     *,
     use_xla_requested: bool | None = None,
     compile_chain_with_xla: bool | None = None,
+    expected_num_results: int | None = None,
 ) -> Mapping[str, Any]:
     """Summarize actual runner tensors before constructing host-side screen metadata.
 
@@ -1199,7 +1253,14 @@ def _bootstrap_diagnostics_payload(
         else bool(jit_compile_metadata)
     )
     payload: dict[str, Any] = {
+        # Keep the historical runner field binary. Decisions below use only
+        # the explicitly named probability computed from the proposal trace.
         "acceptance_rate": acceptance,
+        "binary_acceptance_rate": acceptance,
+        "mean_acceptance_probability": None,
+        "acceptance_statistic": BOOTSTRAP_ACCEPTANCE_STATISTIC,
+        "acceptance_probability_count": 0,
+        "acceptance_probability_unavailable_reason": "missing_log_accept_ratio",
         "runtime_s": runtime_s,
         "runtime_finite": runtime_s is not None and math.isfinite(runtime_s),
         "use_xla": use_xla,
@@ -1253,6 +1314,27 @@ def _bootstrap_diagnostics_payload(
             tf.size(target_log_prob) > 0, tf.reduce_all(tf.math.is_finite(target_log_prob))
         ).numpy())
     samples = tf.cast(tf.convert_to_tensor(run_result.samples, dtype_hint=tf.float64), tf.float64)
+    if log_accept is not None:
+        probability_count = int(tf.size(log_accept).numpy())
+        payload["acceptance_probability_count"] = probability_count
+        if probability_count == 0:
+            reason = "empty_log_accept_ratio"
+        elif (samples.shape.rank not in (2, 3)
+              or log_accept.shape != samples.shape[:-1]):
+            reason = "sample_and_acceptance_shapes_differ"
+        elif (expected_num_results is not None
+              and int(tf.shape(log_accept)[0].numpy()) != expected_num_results):
+            reason = "recorded_proposal_count_mismatch"
+        elif payload["log_accept_ratio_finite"] is not True:
+            reason = "nonfinite_log_accept_ratio"
+        else:
+            # TFP's result trace excludes burnin, and includes the proposal
+            # log ratio even when MH rejects. Never filter by is_accepted.
+            payload["mean_acceptance_probability"] = float(tf.reduce_mean(
+                tf.exp(tf.minimum(log_accept, 0.0))
+            ).numpy())
+            reason = None
+        payload["acceptance_probability_unavailable_reason"] = reason
     samples_all_finite = bool(tf.logical_and(
         tf.size(samples) > 0, tf.reduce_all(tf.math.is_finite(samples))
     ).numpy())
@@ -1307,6 +1389,11 @@ def _bootstrap_error_diagnostics(exc: Exception) -> Mapping[str, Any]:
            if getattr(exc, "failure_record", None) is not None else {}),
         "failure_diagnostics_role": "diagnostic_exception_provenance_not_scientific_evidence",
         "acceptance_rate": None,
+        "binary_acceptance_rate": None,
+        "mean_acceptance_probability": None,
+        "acceptance_statistic": BOOTSTRAP_ACCEPTANCE_STATISTIC,
+        "acceptance_probability_count": 0,
+        "acceptance_probability_unavailable_reason": "screen_execution_failed",
         "runtime_s": None,
         "runtime_finite": False,
         "samples_all_finite": False,
@@ -1323,6 +1410,51 @@ def _bootstrap_error_diagnostics(exc: Exception) -> Mapping[str, Any]:
             "nonclaims": BOOTSTRAP_SCREEN_NONCLAIMS,
         },
     }
+
+
+def _bootstrap_proposal_failure_is_repairable(
+    diagnostics: Mapping[str, Any], *, screen_error: Exception | None,
+) -> bool:
+    """Require both adapter classification and repository proposal attribution.
+
+    Error strings and InvalidArgumentError alone cannot establish locality.
+    The initial bootstrap and retained trace are never repairable here.
+    """
+    import tensorflow as tf
+
+    if not isinstance(screen_error, tf.errors.InvalidArgumentError):
+        return False
+    record = diagnostics.get("first_failure")
+    if (diagnostics.get("failure_class") != "target_domain"
+            or not isinstance(record, Mapping)
+            or record.get("schema") != "bayesfilter.traced_hmc_first_failure.v1"
+            or record.get("evaluation_phase") != "trajectory"
+            or record.get("failure_location") != "target_callback"
+            or type(record.get("failed_leapfrog_substep")) is not int
+            or record["failed_leapfrog_substep"] < 1):
+        return False
+    state = record.get("pre_transition_state")
+
+    def finite_state(value: Any) -> bool:
+        if isinstance(value, (list, tuple)):
+            return bool(value) and all(finite_state(item) for item in value)
+        return type(value) in (int, float) and math.isfinite(value)
+
+    return isinstance(state, (list, tuple)) and finite_state(state)
+
+
+def _bootstrap_smaller_trial_step(
+    config: HMCBootstrapScreenConfig, *, unsafe_step: float,
+    finite_parent_step: float | None,
+) -> float:
+    """Nominate an interior trial without fabricating acceptance evidence."""
+    if finite_parent_step is not None and 0.0 < finite_parent_step < unsafe_step:
+        candidate = math.exp(0.5 * (math.log(finite_parent_step) + math.log(unsafe_step)))
+    else:
+        candidate = unsafe_step / config.step_repair_factor
+    if not math.isfinite(candidate) or not 0.0 < candidate < unsafe_step:
+        raise ValueError("bootstrap unsafe proposal bound has no smaller finite trial")
+    return candidate
 
 
 def _bootstrap_leapfrog_payload(
@@ -1493,7 +1625,7 @@ def _classify_bootstrap_screen(
     hard_vetoes: list[str] = []
     if screen_error is not None:
         hard_vetoes.append("screen_hmc_error")
-    acceptance = diagnostics.get("acceptance_rate")
+    acceptance = diagnostics.get("mean_acceptance_probability")
     if acceptance is None or not _finite_number(acceptance):
         hard_vetoes.append("screen_acceptance_missing_or_nonfinite")
     if diagnostics.get("runtime_finite") is not True:
