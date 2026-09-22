@@ -439,7 +439,13 @@
     "bayesfilter/inference/quadratic_geometry_rows_tf.py": null,
     "bayesfilter/inference/quadratic_geometry_full_tf.py": null,
     "bayesfilter/inference/quadratic_geometry_full_report.py": null,
-    "bayesfilter/ops/geometry_permutation_tf.py": null
+    "bayesfilter/ops/geometry_permutation_tf.py": null,
+    "bayesfilter/inference/joint_center_tf.py": null,
+    "bayesfilter/inference/quadratic_initializer_tf.py": null,
+    "bayesfilter/inference/quadratic_initializer_report.py": null,
+    "bayesfilter/inference/posterior_curvature_refinement.py": null,
+    "bayesfilter/inference/sequential_controller_tf.py": null,
+    "bayesfilter/inference/sequential_controller_report.py": null
   },
   "exceptions": [
     {
@@ -12277,6 +12283,106 @@
       "ast_sha256": "0958e6781cb5011ac23725e434fbd051a403a07abe9f31a0c8ff3c2697b8ff58",
       "role": "host_validation",
       "reason": "Inspect traced callback operation metadata once at construction; no data-dependent numerical work or Python callback executes here."
+    },
+    {
+      "path": "bayesfilter/inference/quadratic_initializer_report.py",
+      "function": "initializer_result",
+      "kind": "python_iteration",
+      "ast_sha256": "690877f64a525113c233bf50aa3fb1c88659ed88f9afad85cd068e0594c609f8",
+      "role": "host_reporting",
+      "reason": "Format already-completed initializer history and replay observational callbacks in order; every target evaluation, recentering, stopping and mass decision has completed inside XLA. No record feeds back into numerical execution."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_curvature_refinement.py",
+      "function": "PosteriorCurvatureRefinementConfig.__post_init__",
+      "line": 65,
+      "kind": "python_iteration",
+      "ast_sha256": "73af7c0eeaaf82a2cd9d1b61c859c8765ec2e165e299564144822a0c740bc84d",
+      "role": "host_validation",
+      "reason": "Validate immutable scalar configuration fields before target construction; no data-dependent numerical iteration."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_curvature_refinement.py",
+      "function": "PosteriorCurvatureRefinementConfig.__post_init__",
+      "line": 82,
+      "kind": "python_iteration",
+      "ast_sha256": "bc842e7aa60b9c8f81b89c33f027c112f253167279206c17eca6f177b0c8359b",
+      "role": "host_validation",
+      "reason": "Validate immutable scalar configuration fields before target construction; no data-dependent numerical iteration."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_curvature_refinement.py",
+      "function": "_json_ready",
+      "line": 184,
+      "kind": "python_iteration",
+      "ast_sha256": "2f78de5e4bcfa04600b7d5d14a6d3c70d496cea80c990d2190346245f0028c1f",
+      "role": "host_reporting",
+      "reason": "Serialize completed result fields to strict JSON; the report cannot affect numerical execution."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_curvature_refinement.py",
+      "function": "_json_ready",
+      "line": 186,
+      "kind": "python_iteration",
+      "ast_sha256": "96b9284fad5890760b7067cdf758fab51b8fab3d06a20054a3fc5f2d58b8ec37",
+      "role": "host_reporting",
+      "reason": "Serialize completed result fields to strict JSON; the report cannot affect numerical execution."
+    },
+    {
+      "path": "bayesfilter/inference/sequential_controller_report.py",
+      "function": "_row",
+      "kind": "python_iteration",
+      "ast_sha256": "41da62a6202e96ba641428d5a99e7bd99896467fde89ed903fb706139c16145d",
+      "role": "host_reporting",
+      "reason": "Serialize an already-computed nested history row; no numerical recurrence or target calls."
+    },
+    {
+      "path": "bayesfilter/inference/sequential_controller_report.py",
+      "function": "_row",
+      "kind": "python_iteration",
+      "ast_sha256": "733b8beb7db8c89652030711276e270b13f20dace06aca097e143d2adaa87b00",
+      "role": "host_reporting",
+      "reason": "Serialize an already-computed nested history row; no numerical recurrence or target calls."
+    },
+    {
+      "path": "bayesfilter/inference/sequential_controller_report.py",
+      "function": "refinement_payload",
+      "kind": "python_iteration",
+      "ast_sha256": "f2f11ffa9ce8fe67e05ae565629ac3f366ae48a19ae293993c2ee5a2b14c8686",
+      "role": "host_reporting",
+      "reason": "Format completed ordered proposal records after all numerical decisions."
+    },
+    {
+      "path": "bayesfilter/inference/sequential_controller_report.py",
+      "function": "_locator_records",
+      "kind": "python_iteration",
+      "ast_sha256": "1363ac2c51c3da47b562969eb528106c4f46f8bf70d9b1cea28ac46d74be6427",
+      "role": "host_reporting",
+      "reason": "Serialize completed locator diagnostics and buffered events; no target evaluation or numerical selection."
+    },
+    {
+      "path": "bayesfilter/inference/sequential_controller_report.py",
+      "function": "_locator_records",
+      "kind": "python_iteration",
+      "ast_sha256": "40c04badd3ba4b008139cb6d51e98edd36bf5f9366a0b3a121c9ed487fc5f45f",
+      "role": "host_reporting",
+      "reason": "Serialize completed locator diagnostics and buffered events; no target evaluation or numerical selection."
+    },
+    {
+      "path": "bayesfilter/inference/sequential_controller_report.py",
+      "function": "_locator_records",
+      "kind": "python_iteration",
+      "ast_sha256": "0a397742e60776a384867845ed1083329efa0a1c57dc051133ead7d9e72025b7",
+      "role": "host_reporting",
+      "reason": "Serialize completed locator diagnostics and buffered events; no target evaluation or numerical selection."
+    },
+    {
+      "path": "bayesfilter/inference/sequential_controller_report.py",
+      "function": "sequential_result",
+      "kind": "python_iteration",
+      "ast_sha256": "690e1288040a1755d0b8eea4ffd1d1f79702ea292de3b197e16e0f1ee8a0b779",
+      "role": "host_reporting",
+      "reason": "Format completed lifecycle history/events from tensor-computed decisions and movement metrics."
     }
   ]
 }

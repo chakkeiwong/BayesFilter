@@ -1,7 +1,7 @@
 # Complete filter and gradient execution repair
 
 The approved **E1--E6 enclosing-execution repair phase** is executing on
-`repair/filter-gradient-xla-validation-20260918`, after pushed **91928762e**.
+`repair/filter-gradient-xla-validation-20260918`, after pushed **dba39e048**.
 The [reviewed master execution program](filter_gradient_enclosing_execution_phase_20260922.md)
 now includes the confirmed public-capacity, comparator-eigensystem and native
 compiler-memory findings. [Full geometry results](filter_gradient_full_geometry_result_20260922.md)
@@ -14,7 +14,11 @@ inside XLA. **02697--02705 pass81 native CPU +6 public CPU +3 legacy checks;
 checks** after restoring current scalar-route labels. **02727 passes both large
 public CPU cases**, including260 samples/512 directions and scalar/batch replay.
 E1 and the active pilot retain their earlier83/83 and78/78 CPU/GPU qualifications.
-The217-source /1306-exception guard passes; coverage remains partial.
+The current partial source guard covers223 sources /1318 exact exceptions.
+The sequential controller adds seven completed-history formatting exceptions;
+its numerical body has no Python-loop or NumPy exception.
+The public posterior module adds only two configuration and two completed-JSON
+formatting exceptions; no numerical-loop or NumPy runtime exception is added.
 
 **02721--02726 pass all six complete-call CPU cost comparisons.** The comparator
 is explicitly91928762e plus the isolated trust/pilot eigensystem fixes:
@@ -30,8 +34,11 @@ complete numerical attempt; accepted/public and iterative costs remain needed.
 
 GPU cost workers02728/02729 pass numerically but both share the selected device.
 Their timings cannot qualify the GPU comparison; the next launch was declined
-by contention. GPU metadata renewal, large public/consumer qualification and
-clean matched costs remain pending. Desktop protection is unchanged.
+by contention. GPU metadata renewal passes15 checks in02757; both large public GPU cases
+pass02758 and all20 remaining public records pass02759. The combined initializer
+consumer suite02760 timed out at901.17 seconds; the isolated large iterative
+GPU case02781 passes in132.30 seconds. The combined timeout is preserved. Clean matched costs remain pending. Desktop
+protection is unchanged.
 
 Combined CPU public suite02730 aborts; its isolated boundary case02731 passes.
 Monitored02732 reproduces LLVM executable allocation failure near the65530-map
@@ -40,24 +47,62 @@ prior executable-cache pressure; exact allocation and commit-pressure attributio
 remain limited. Preserve both stress failures. The installed TensorFlow backend
 has no executable eviction, and earlier Python-cache clearing did not release
 maps. All20 remaining CPU public/parity checks and102 policy checks now pass in
-02733--02736. The combined GPU suite remains required. No numerical assertion
-is dropped. All33 existing initializer consumer cases pass in02737--02745, including
+02733--02736. The corresponding combined GPU public suite passes02759. No numerical
+assertion is dropped. All33 existing initializer consumer cases pass in02737--02745, including
 original frozen-cloud iterative acceptance and current-stream wrapper comparisons.
 02746 renews all102 policy checks after registering the bounded consumer groups.
 
-Next compose the original L-BFGS locator, iterative recentering and terminal mass
-decisions, while GPU renewal waits for eligible hardware. The dependency plan
-now specifies exact callback accounting, resource reset/ownership and full records.
+The original L-BFGS locator dependency now runs initialization, optimization,
+callback incumbent tracking, exact endpoint replay, accounting and selection in
+one native program. **02750--02752 pass16 CPU checks;02754--02756 pass16 GPU
+checks.** Strict ties required preserving the original multiply/add rounding
+boundary;02747/02748 retain the failed attempts and02749 verifies the repair.
+GPU comparison explicitly uses the original with int64 accounting only because
+its original int32 resources cannot compile on GPU (02753). Seven controlled locator failure cases additionally pass on CPU02768 and
+GPU02761. Public integration remains pending; component passes cannot close E2.
+
+The internal initializer now encloses recentering, terminal mass decisions and
+buffered observation records. All36 D1/D3 scalar/batch controller cases pass
+02769--02772 against pinned dba39e048. This isolates the control mechanism; it
+does not establish original3582b4ac numerical equivalence. All four edge/reuse
+checks02773 pass, completing40 CPU checks.02776--02780 pass the same40 GPU
+controller/boundary checks against dba39e048. Original D1 scalar comparisons02767 pass8/9: a healthy
+least-squares fit differs by a few ulps, reaches the adjacent representable
+mode and changes strict terminal refinement/source selection. Same-center
+attribution02765 locates this in the geometry dependency; affine-boundary
+experiments02766 do not repair it. Exact-array attribution02774 confirms
+QR/SVD rounding; the residual-correction candidate02775 fixes D1 but fails
+D3 clipping-count parity near zero. It is not installed. No tolerance, strict tie rule or fixture
+change is authorized. The public initializer stays on its existing controller
+until original/GPU/consumer gates pass. Exact callback accounting, resource
+reset/ownership, full records and independent deadlines remain requirements.
 E4 must distinguish Python callback ownership from native executable retention.
-Public posterior/sequential/block integration, actual DZ5 telemetry/deadlines,
+Public posterior integration is installed and qualified by135 CPU checks
+(02782--02787) and135 GPU checks(02788--02793). Its numerical body invokes one
+XLA controller; host validation and completed reporting remain explicit.
+No eager controller fallback remains. All18 CPU public cost workers02795--02812
+pass original/changed payload comparisons across three repeats per arm/extent.
+Warm medians are2.02/2.53ms versus145.37/172.02ms; cold totals rise to3.02/3.05s
+and observed RSS adds373.47/377.66MiB. Cold/RSS investigations remain open.
+All18 uncontended GPU costs02835--02852 also pass after the pytest scope repair.
+GPU warm medians7.27/11.76ms compare with251.28/306.76ms; cold totals rise to
+7.18/7.76s. Only the GPU cold trigger fires; host RSS adds93.58/98.00MiB.
+CPU/GPU cohorts are separately matched because the harness changed between them. See
+[posterior public result and review](filter_gradient_posterior_public_result_20260922.md).
+The internal complete sequential endpoint passes23 CPU original/boundary checks
+(02813--02830,02853), including final mass, full target order, progress records,
+overflow rejection before later target calls, and frozen derivative boundaries.
+GPU/public wiring and existing consumers remain pending.127 policy/runner checks
+pass02834.
+Sequential/block integration, actual DZ5 telemetry/deadlines,
 terminal costs, F01--F20 dispositions and integration/retesting all remain open.
 Accepted-result tolerances and ill-conditioned rejection/no-use decisions are
 unchanged. Canonical LEDH rebuilding remains outside this campaign.
 
-Through02746, charges are**55720.302564892845 CPU /51722.494006055276 GPU seconds**,
-leaving16.52 CPU /37.63 GPU process-hours under unchanged32/52-hour caps. Later
-workers add charges; use runner status when idle. Remote main last inspected is
-**203fde46fcd062aced8647906bd04cd38325c03a**; overlapping intentions in HMC warmup
+Through02853, charges are**57702.603994691846 CPU /56193.047901197264 GPU seconds**,
+leaving15.97 CPU /36.39 GPU process-hours under unchanged32/52-hour caps.
+Later workers add charges; use runner status when idle. Remote main last inspected is
+**8f992b205e9a4b8a861db4064cbcedb76af52f1f**; overlapping intentions in HMC warmup
 and the batched sigma-point eigensolver require reconciliation and retesting.
 
 ## Diagnosis checkpoint

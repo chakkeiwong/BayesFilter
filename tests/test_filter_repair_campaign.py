@@ -344,6 +344,11 @@ def test_test_roles_exclude_only_reviewed_explanatory_jobs():
     required = set(driver.mandatory_test_groups())
     assert not required.intersection(driver.EXPLANATORY_TEST_GROUPS)
     assert required | set(driver.EXPLANATORY_TEST_GROUPS) == set(driver.TEST_GROUPS)
+    assert "initializer_native_residual_cpu" in driver.EXPLANATORY_TEST_GROUPS
+    assert set(driver.TEST_BATCHES["initializer_native_cpu"]) <= required
+    assert set(driver.TEST_BATCHES["initializer_native_gpu"]) <= required
+    assert set(driver.TEST_BATCHES["posterior_public_cpu"]) <= required
+    assert set(driver.TEST_BATCHES["posterior_public_gpu"]) <= required
     assert {"factor_domain_runtime", "factor_guard_qualification", "factor_guard_cpu_fixed",
         "factor_guard_cpu_padded", "factor_guard_cpu_domain", "factor_guard_resource_lifetime",
         "factor_guard_gpu_lifetime", "active_cod_runtime", "padded_factor", "factor_runtime_inputs",
@@ -356,6 +361,25 @@ def test_test_roles_exclude_only_reviewed_explanatory_jobs():
     assert driver.TEST_DEVICES["factor_guard_qualification"] == "GPU"
     assert all(driver.TEST_DEVICES.get(group, "CPU") == "CPU" for group in
         ("factor_guard_cpu_fixed", "factor_guard_cpu_padded", "factor_guard_cpu_domain"))
+
+
+def test_public_cost_preflight_declines_shared_gpu_before_worker_launch(tmp_path, monkeypatch):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    monkeypatch.setattr(driver, "OUTPUT", tmp_path)
+    args = argparse.Namespace(action="test", device="GPU",
+        group="posterior_public_memory_xla_3_gpu", gpu_uuid="GPU-test-2",
+        gpu_preflight=[{"performance_preflight_uncontended": False}] * 2)
+    with pytest.raises(RuntimeError, match="declined before launch"):
+        driver.require_unshared_cost_preflight(args)
+    record, = tmp_path.glob("cost-preflight-declined-*.json")
+    assert json.loads(record.read_text())["worker_launched"] is False
+    args.gpu_preflight = [{"performance_preflight_uncontended": True}] * 2
+    driver.require_unshared_cost_preflight(args)
+    args.group = "posterior_public_3_gpu"
+    args.gpu_preflight = [{"performance_preflight_uncontended": False}] * 2
+    driver.require_unshared_cost_preflight(args)
 
 
 def test_intermediate_authority_disposition_keeps_original_numerical_vetoes(monkeypatch):

@@ -70,6 +70,7 @@ def refinement_program(scalar, batched, dimension, config, search_count, *, jit_
             decision = decide(computed['invalid_covariance_evaluations'], computed['finite'], computed['eigenvalues'],
                 computed['condition_number'], computed['jacobian_rank'], computed['holdout_relative'],
                 computed['optimizer'].failed, computed['loadings'])
+            first = {**first, 'decision': decision}
             usable = (first['input_status'] == 0) & (decision['status_code'] == 0)
             precision = computed['precision']
             has_best, best_value, best_position, best_score = (

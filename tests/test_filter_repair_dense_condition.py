@@ -10,6 +10,7 @@ import tensorflow as tf
 
 from bayesfilter.inference import batched_quadratic_center as quadratic
 from bayesfilter.inference import posterior_curvature_refinement as posterior
+from bayesfilter.inference import posterior_curvature_tf as posterior_runtime
 from tests.filter_repair_frozen_checkpoint import FrozenCheckpoint
 from tests.test_filter_repair_fixed_stability import _compare
 from tests.test_filter_repair_quadratic_numerics import (
@@ -88,7 +89,11 @@ def test_posterior_consumer_complete_decisions(dimension, case, monkeypatch, req
         with monkeypatch.context() as context:
             # Frozen independent clouds isolate the numerical and consumer
             # contract; RNG equivalence is covered by separate initializer tests.
-            context.setattr(module, '_draw_offsets', lambda *_: offsets)
+            if name == 'original':
+                context.setattr(module, '_draw_offsets', lambda *_: offsets)
+            else:
+                posterior_runtime.clear_posterior_curvature_controller_cache()
+                context.setattr(posterior_runtime, 'draw_offsets', lambda *_: offsets)
             cfg = module.PosteriorCurvatureRefinementConfig(rows_per_partition=32,
                 batch_size=8, max_physical_rows=1000)
             records[name] = module.refine_posterior_local_curvature(callback,

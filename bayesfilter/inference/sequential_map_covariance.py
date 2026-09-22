@@ -1091,7 +1091,7 @@ def _fit_factor_from_data(
     return _factor_fit_payload(result, data)
 
 
-def _factor_result_from_native(computed, factor_config, dimension, active_rows, holdout_rows):
+def _factor_result_from_native(computed, factor_config, dimension, active_rows, holdout_rows, *, decision=None):
     """Materialize the native input gate and complete fit without refitting."""
     input_status = int(computed["input_status"])
     if input_status == 1:
@@ -1105,7 +1105,7 @@ def _factor_result_from_native(computed, factor_config, dimension, active_rows, 
     if input_status in (3, 4):
         raise ValueError("prepared training rows and active weights must be valid")
     return _factor_result_from_computed(computed["fit"], factor_config, dimension,
-        active_rows, holdout_rows, True)
+        active_rows, holdout_rows, True, decision=decision)
 
 
 def _factor_fit_payload(result, data):

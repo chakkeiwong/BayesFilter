@@ -221,18 +221,19 @@ def fit_factor_correlation_score_geometry(
         int(holdout_z.shape[0]), bool(jit_compile))
 
 
-def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_rows, jit_compile):
+def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_rows, jit_compile, *, decision=None):
     """Materialize the existing public record after a completed numerical fit."""
     parameter_count = 2 * dimension if cfg.factor_count == 1 else 3 * dimension - 1
-    decision = factor_decisions_program(dimension, cfg, jit_compile=jit_compile)(
-        computed["invalid_covariance_evaluations"], computed["finite"], computed["eigenvalues"],
-        computed["condition_number"], computed["jacobian_rank"], computed["holdout_relative"],
-        computed["optimizer"].failed, computed["loadings"])
+    if decision is None:
+        decision = factor_decisions_program(dimension, cfg, jit_compile=jit_compile)(
+            computed["invalid_covariance_evaluations"], computed["finite"], computed["eigenvalues"],
+            computed["condition_number"], computed["jacobian_rank"], computed["holdout_relative"],
+            computed["optimizer"].failed, computed["loadings"])
     status_code = int(decision["status_code"])
     if status_code == 1:
         return _rejected(
             cfg, dimension, "factor_optimizer_failed", parameter_count=parameter_count,
-            anchors=tuple(computed["anchors"].numpy().tolist()),
+            anchors=tuple(_json_ready(computed["anchors"])),
             diagnostics={"exception_type": "InvalidArgumentError", "jit_compile": bool(jit_compile),
                          "invalid_covariance_evaluations": int(computed["invalid_covariance_evaluations"]),
                          "failure_reason": "factor_covariance_domain_violation"},
@@ -249,7 +250,7 @@ def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_ro
     jacobian_rank = computed["jacobian_rank"]
     jacobian_condition = computed["jacobian_condition"]
     optimizer = computed["optimizer"]
-    anchors = tuple(computed["anchors"].numpy().tolist())
+    anchors = tuple(_json_ready(computed["anchors"]))
     jacobian_rank = int(jacobian_rank)
     jacobian_condition = float(jacobian_condition) if bool(decision["jacobian_condition_available"]) else None
     second_factor_identified = bool(decision["second_factor_identified"])
@@ -262,23 +263,23 @@ def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_ro
         "training_score_equation_count": row_count * dimension,
         "holdout_score_equation_count": holdout_rows * dimension,
         "parameter_count": parameter_count,
-        "train_score_rmse": float(train_rmse.numpy()),
-        "holdout_score_rmse": float(holdout_error.numpy()),
-        "holdout_score_relative_rmse": float(holdout_relative.numpy()),
+        "train_score_rmse": float(_json_ready(train_rmse)),
+        "holdout_score_rmse": float(_json_ready(holdout_error)),
+        "holdout_score_relative_rmse": float(_json_ready(holdout_relative)),
         "holdout_score_relative_rmse_cap": cfg.holdout_score_relative_rmse,
-        "covariance_eigenvalues": eigenvalues.numpy(),
-        "condition_number": float(condition_number.numpy()),
+        "covariance_eigenvalues": _json_ready(eigenvalues),
+        "condition_number": float(_json_ready(condition_number)),
         "prediction_jacobian_rank": jacobian_rank,
         "prediction_jacobian_condition_number": jacobian_condition,
         "second_factor_identified": second_factor_identified,
-        "optimizer_converged": bool(optimizer.converged.numpy()),
-        "optimizer_failed": bool(optimizer.failed.numpy()),
-        "optimizer_iterations": int(optimizer.num_iterations.numpy()),
+        "optimizer_converged": bool(_json_ready(optimizer.converged)),
+        "optimizer_failed": bool(_json_ready(optimizer.failed)),
+        "optimizer_iterations": int(_json_ready(optimizer.num_iterations)),
         "optimizer_objective_evaluations": int(
-            optimizer.num_objective_evaluations.numpy()
+            _json_ready(optimizer.num_objective_evaluations)
         ),
-        "final_loss": float(optimizer.objective_value.numpy()),
-        "loading_row_squared_norms": decision["loading_row_squared_norms"].numpy(),
+        "final_loss": float(_json_ready(optimizer.objective_value)),
+        "loading_row_squared_norms": _json_ready(decision["loading_row_squared_norms"]),
         "covariance_parameterization": (
             "D[diag(1-row_norm(L)^2)+LL^T]D"
         ),
@@ -290,10 +291,10 @@ def _factor_result_from_computed(computed, cfg, dimension, row_count, holdout_ro
         factor_count=cfg.factor_count,
         parameter_count=parameter_count,
         anchor_indices=anchors,
-        covariance_z=covariance.numpy(),
-        precision_z=precision.numpy(),
-        marginal_standard_deviations=deviations.numpy(),
-        loadings=loadings.numpy(),
+        covariance_z=_json_ready(covariance),
+        precision_z=_json_ready(precision),
+        marginal_standard_deviations=_json_ready(deviations),
+        loadings=_json_ready(loadings),
         diagnostics=diagnostics,
     )
 

@@ -23,20 +23,22 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from enforce_filter_gradient_policy import verify as verify_source_policy
-from filter_repair_endpoint_fixtures import FIXTURES as ENDPOINT_FIXTURES
 from filter_repair_additional_fixtures import FIXTURES as ADDITIONAL_FIXTURES
+from filter_repair_batched_locator_fixtures import FIXTURES as BATCHED_LOCATOR_FIXTURES
+from filter_repair_centered_fixtures import FIXTURES as CENTERED_FIXTURES
+from filter_repair_centered_training_fixtures import (
+    FIXTURES as CENTERED_TRAINING_FIXTURES,
+)
+from filter_repair_endpoint_fixtures import FIXTURES as ENDPOINT_FIXTURES
 from filter_repair_forecast_fixtures import FIXTURES as FORECAST_FIXTURES
 from filter_repair_forecast_pool_fixtures import FIXTURES as FORECAST_POOL_FIXTURES
-from filter_repair_preparation_fixtures import FIXTURES as PREPARATION_FIXTURES
-from filter_repair_centered_fixtures import FIXTURES as CENTERED_FIXTURES
-from filter_repair_centered_training_fixtures import FIXTURES as CENTERED_TRAINING_FIXTURES
-from filter_repair_initialization_fixtures import FIXTURES as INITIALIZATION_FIXTURES
-from filter_repair_training_fixtures import FIXTURES as TRAINING_FIXTURES
-from filter_repair_stochastic_fixtures import FIXTURES as STOCHASTIC_FIXTURES
-from filter_repair_source_fixtures import FIXTURES as SOURCE_FIXTURES
-from filter_repair_locator_fixtures import FIXTURES as LOCATOR_FIXTURES
-from filter_repair_batched_locator_fixtures import FIXTURES as BATCHED_LOCATOR_FIXTURES
 from filter_repair_gpu_selection import check_gpu_available
+from filter_repair_initialization_fixtures import FIXTURES as INITIALIZATION_FIXTURES
+from filter_repair_locator_fixtures import FIXTURES as LOCATOR_FIXTURES
+from filter_repair_preparation_fixtures import FIXTURES as PREPARATION_FIXTURES
+from filter_repair_source_fixtures import FIXTURES as SOURCE_FIXTURES
+from filter_repair_stochastic_fixtures import FIXTURES as STOCHASTIC_FIXTURES
+from filter_repair_training_fixtures import FIXTURES as TRAINING_FIXTURES
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -64,6 +66,65 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    **{f"posterior_residency_{primed}_{dimension}_{device}": (
+        f"tests/test_filter_repair_posterior_residency.py::test_posterior_startup_and_reuse_residency[{primed}-{dimension}]",)
+        for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"sequential_controller_{case}_{device}": (
+        f"tests/test_filter_repair_sequential_controller.py::test_complete_original_records_and_target_order[{case}]",)
+        for case in ("terminal", "terminal_reject", "symmetric", "recenter", "fit_reject",
+            "factor_one", "factor_two", "factor_two_reuse", "stationary_budget", "moving_budget",
+            "nonfinite", "paired", "scaled_search", "score_disabled", "resolvable", "scalar_locator",
+            "batched_locator", "locator_budget") for device in ("cpu", "gpu")},
+    **{f"sequential_controller_edges_{device}": (
+        "tests/test_filter_repair_sequential_controller.py", "-k", "not complete_original")
+        for device in ("cpu", "gpu")},
+    **{f"posterior_public_memory_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_posterior_public_memory.py::test_complete_public_posterior_costs[{arm}-{dimension}]",)
+        for arm in ("prior", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"posterior_public_{dimension}_{device}": (
+        "tests/test_filter_repair_posterior_public.py", "-k", f"original_records and {dimension}")
+        for dimension in (1, 3, 5) for device in ("cpu", "gpu")},
+    **{f"posterior_public_edges_{device}": (
+        "tests/test_filter_repair_posterior_public.py", "-k", "not original_records")
+        for device in ("cpu", "gpu")},
+    **{f"posterior_public_regression_{device}": (
+        "tests/test_posterior_curvature_refinement.py", "tests/test_posterior_curvature_refinement_regressions.py")
+        for device in ("cpu", "gpu")},
+    **{f"posterior_public_dense_{device}": (
+        "tests/test_filter_repair_dense_condition.py", "-k", "posterior_consumer")
+        for device in ("cpu", "gpu")},
+    "initializer_native_residual_cpu": (
+        "tests/test_filter_repair_initializer_arithmetic.py::test_initializer_residual_correction_candidate",),
+    "initializer_native_lstsq_cpu": (
+        "tests/test_filter_repair_initializer_arithmetic.py::test_initializer_least_squares_attribution",),
+    **{f"initializer_controller_{dimension}_{batched}_{device}": (
+        "tests/test_filter_repair_initializer_native.py", "-k", f"controller_records and {dimension} and {batched}")
+        for dimension in (1, 3) for batched in (False, True) for device in ("cpu", "gpu")},
+    **{f"initializer_controller_edges_{device}": (
+        "tests/test_filter_repair_initializer_native.py", "-k", "typed_target or reuses_changed")
+        for device in ("cpu", "gpu")},
+    "initializer_native_affine_cpu": (
+        "tests/test_filter_repair_initializer_native.py::test_initializer_affine_boundary_attribution",),
+    "initializer_native_roundoff_cpu": (
+        "tests/test_filter_repair_initializer_native.py::test_initializer_roundoff_attribution",),
+    **{f"initializer_native_{dimension}_{batched}_{device}": (
+        "tests/test_filter_repair_initializer_native.py", "-k", f"original_records and {dimension} and {batched}")
+        for dimension in (1, 3) for batched in (False, True) for device in ("cpu", "gpu")},
+    "initializer_native_smoke_cpu": ("tests/test_filter_repair_initializer_native.py", "-k",
+        "original_records and 1 and False and (iterative or single)"),
+    **{f"joint_native_failures_{device}": (
+        "tests/test_filter_repair_joint_center_native.py", "-k", "synthetic_failures")
+        for device in ("cpu", "gpu")},
+    "initializer_iterative_gpu": (
+        "tests/test_quadratic_map_covariance.py::test_iterative_initializer_reaches_terminal_center_with_bounded_steps", "-s"),
+    "joint_native_rounding_cpu": ("tests/test_filter_repair_joint_center_native.py", "-k",
+        "affine_rounding or (original_records and 1 and (quadratic or quartic))"),
+    **{f"joint_native_{dimension}_{device}": (
+        "tests/test_filter_repair_joint_center_native.py", "-k", f"original_records and {dimension}")
+        for dimension in (1, 3) for device in ("cpu", "gpu")},
+    **{f"joint_native_edges_{device}": (
+        "tests/test_filter_repair_joint_center_native.py", "-k", "not original_records")
+        for device in ("cpu", "gpu")},
     "initializer_small_cpu": ("tests/test_quadratic_map_covariance.py", "-k",
         "requires_constrained or fails_closed_at_refinement_budget or locator_exception or nonfinite_initial or insufficient_samples or payload_nonclaims"),
     "initializer_gaussian_cpu": ("tests/test_quadratic_map_covariance.py::test_quadratic_initializer_recovers_gaussian_mode_and_covariance",),
@@ -715,7 +776,8 @@ TEST_GROUPS = {
     "tt_adjoint_nodes": ("tests/highdim/test_p2_adjoint_nodes.py", "tests/highdim/test_p2_adjoint_vs_forward_jvp.py"),
     "tt_adjoint": ("tests/highdim/test_p2_adjoint_engine_fd.py",),
     "consumers": ("tests/test_filter_repair_consumers.py",),
-    "policy": ("tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py", "tests/test_filter_repair_gpu_selection.py"),
+    "policy": ("tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py",
+        "tests/test_filter_repair_gpu_selection.py", "tests/test_filter_repair_cost_provenance.py"),
 }
 # Exact intermediate comparisons remain callable historical diagnostics. Each
 # has the same-scope original-source authority as a mandatory replacement.
@@ -736,6 +798,29 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"posterior_residency_{primed}_{dimension}_{device}":
+        "First-XLA startup and reuse residency attribution; complete original public numerical/cost groups remain mandatory."
+        for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"posterior_residency_{primed}_{dimension}_{device}": (
+        f"tests/test_filter_repair_posterior_residency.py::test_posterior_startup_and_reuse_residency[{primed}-{dimension}]",)
+        for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"sequential_controller_{case}_{device}": (
+        f"tests/test_filter_repair_sequential_controller.py::test_complete_original_records_and_target_order[{case}]",)
+        for case in ("terminal", "terminal_reject", "symmetric", "recenter", "fit_reject",
+            "factor_one", "factor_two", "factor_two_reuse", "stationary_budget", "moving_budget",
+            "nonfinite", "paired", "scaled_search", "score_disabled", "resolvable", "scalar_locator",
+            "batched_locator", "locator_budget") for device in ("cpu", "gpu")},
+    **{f"sequential_controller_edges_{device}": (
+        "tests/test_filter_repair_sequential_controller.py", "-k", "not complete_original")
+        for device in ("cpu", "gpu")},
+    "initializer_native_residual_cpu":
+        "Rejected residual-correction diagnostic candidate; mandatory initializer_native original-record groups retain the unmodified runtime gate.",
+    "initializer_native_lstsq_cpu":
+        "Identical-array least-squares arithmetic attribution; not original initializer equivalence.",
+    "initializer_native_affine_cpu":
+        "Diagnostic affine rounding adaptations; not an installed runtime repair or parity waiver.",
+    "initializer_native_roundoff_cpu":
+        "Same-center attribution of the preserved original initializer mismatch; original-record groups remain mandatory.",
     "geometry_active_pilot_attribution_cpu":
         "Rank-deficient pilot and HLO attribution; does not replace mandatory complete pilot records.",
     **{f"geometry_active_memory_{arm}_{capacity}_{device}":
@@ -861,6 +946,27 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"posterior_residency_{device}": tuple(f"posterior_residency_{primed}_{dimension}_{device}"
+        for primed in (False, True) for dimension in (3, 5)) for device in ("cpu", "gpu")},
+    **{f"sequential_controller_{device}": tuple(f"sequential_controller_{case}_{device}" for case in
+        ("terminal", "terminal_reject", "symmetric", "recenter", "fit_reject", "factor_one", "factor_two",
+         "factor_two_reuse", "stationary_budget", "moving_budget", "nonfinite", "paired", "scaled_search",
+         "score_disabled", "resolvable", "scalar_locator", "batched_locator", "locator_budget", "edges"))
+        for device in ("cpu", "gpu")},
+    **{f"posterior_public_memory_{device}": tuple(f"posterior_public_memory_{arm}_{dimension}_{device}"
+        for arm in ("prior", "graph", "xla") for dimension in (3, 5)) for device in ("cpu", "gpu")},
+    **{f"posterior_public_{device}": (f"posterior_public_1_{device}", f"posterior_public_3_{device}",
+        f"posterior_public_5_{device}", f"posterior_public_edges_{device}",
+        f"posterior_public_dense_{device}")
+        for device in ("cpu", "gpu")},
+    **{f"initializer_controller_{device}": (*tuple(
+        f"initializer_controller_{dimension}_{batched}_{device}" for dimension in (1, 3) for batched in (False, True)),
+        f"initializer_controller_edges_{device}") for device in ("cpu", "gpu")},
+    **{f"initializer_native_{device}": tuple(
+        f"initializer_native_{dimension}_{batched}_{device}" for dimension in (1, 3) for batched in (False, True))
+        for device in ("cpu", "gpu")},
+    **{f"joint_native_{device}": (f"joint_native_1_{device}", f"joint_native_3_{device}",
+        f"joint_native_edges_{device}") for device in ("cpu", "gpu")},
     "initializer_public_cpu": ("initializer_small_cpu", "initializer_gaussian_cpu",
         "initializer_scaled_cpu", "initializer_moved_cpu", "initializer_batch_cpu",
         "initializer_iterative_cpu", "initializer_enabled_cpu", "initializer_helpers_cpu",
@@ -1076,6 +1182,15 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["posterior_public_gpu"]},
+    "posterior_public_regression_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["posterior_residency_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["sequential_controller_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["posterior_public_memory_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["initializer_controller_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["initializer_native_gpu"]},
+    "joint_native_failures_gpu": "GPU", "initializer_iterative_gpu": "GPU",
+    "joint_native_1_gpu": "GPU", "joint_native_3_gpu": "GPU", "joint_native_edges_gpu": "GPU",
     "geometry_public_capacity_gpu": "GPU",
     "geometry_public_remaining_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["geometry_full_memory_gpu"]},
@@ -1156,7 +1271,7 @@ TEST_DEVICES = {
     "quadratic_batch_long_growth_gpu": "GPU",
     **{f"quadratic_batch_growth_{arm}_gpu": "GPU" for arm in ("before", "xla")},
     **{group: "GPU" for group in TEST_BATCHES["quadratic_batch_memory"]},
-    "sequential_preparation": "GPU", "sequential_geometry": "GPU", "sequential_score_fit": "GPU", "block_center": "GPU",
+    "sequential_preparation": "GPU", "sequential_score_fit": "GPU", "block_center": "GPU",
     "quadratic_initializer": "GPU", "joint_center": "GPU", "predator_tp": "GPU", "exact_incumbent": "GPU",
     "mass_matrix": "GPU", "block_score_geometry": "GPU", "fixed_stability": "GPU", "fixed_selection": "GPU", "fixed_fitting": "GPU",
     "sequential_selection": "GPU", "sequential_locator": "GPU", "batched_locator": "GPU", "locator_frozen": "GPU",
@@ -1272,6 +1387,23 @@ def save_json(path, value):
     temporary.replace(path)
 
 
+def require_unshared_cost_preflight(args):
+    """Decline new public-cost workers before charging shared-device timing."""
+    if (args.action != "test" or args.device != "GPU"
+            or args.group not in TEST_BATCHES["posterior_public_memory_gpu"]):
+        return
+    samples = args.gpu_preflight
+    if len(samples) >= 2 and all(sample["performance_preflight_uncontended"]
+                               for sample in samples[-2:]):
+        return
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    record = OUTPUT / f"cost-preflight-declined-{stamp}.json"
+    save_json(record, {"schema": "filter_repair_cost_preflight.v1", "worker_launched": False,
+        "group": args.group, "gpu_uuid": args.gpu_uuid, "samples": samples,
+        "reason": "Shared-device preflight cannot qualify public-cost timing"})
+    raise RuntimeError(f"GPU cost worker declined before launch: {record}")
+
+
 def ensure_baseline():
     marker = BASELINE_ROOT / "source-manifest.json"
     if marker.exists():
@@ -1314,11 +1446,12 @@ def run_job(args):
         raise RuntimeError("Three attempts consumed for this exact job; inspect/repair scope before retry")
     if device == "GPU" and getattr(args, "gpu_preflight", None) is None:
         prepare_gpu(args, "test_gpu_index" if args.action == "test" else "measurement_gpu_index")
+    require_unshared_cost_preflight(args)
     directory = OUTPUT / f"run-{len(rows) + 1:05d}"
     directory.mkdir(exist_ok=False)
     result = directory / "result.json"
     env = os.environ.copy()
-    env.update({"CUDA_VISIBLE_DEVICES": args.gpu_uuid if device == "GPU" else "-1", "TF_FORCE_GPU_ALLOW_GROWTH": "true", "TF_NUM_INTRAOP_THREADS": "2", "TF_NUM_INTEROP_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0"})
+    env.update({"CUDA_VISIBLE_DEVICES": args.gpu_uuid if device == "GPU" else "-1", "TF_FORCE_GPU_ALLOW_GROWTH": "true", "BAYESFILTER_TEST_DEVICE_SCOPE": "visible" if device == "GPU" else "cpu", "TF_NUM_INTRAOP_THREADS": "2", "TF_NUM_INTEROP_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0"})
     if args.action == "test":
         if args.group == "source_preparation_localization":
             env["FILTER_REPAIR_REPEAT_STACKS"] = "1"
@@ -1367,7 +1500,7 @@ def run_job(args):
         command = [sys.executable, "scripts/compare_filter_repair_campaign.py", "--output", str(result)]
     else:
         raise ValueError(args.action)
-    record = {"schema": "filter_repair_run.v1", "key": key, "started_utc": datetime.now(timezone.utc).isoformat(), "state": "running", "device": device, "timeout_seconds": timeout, "command": command, "cwd": str(ROOT), "environment": {k: env[k] for k in ("CUDA_VISIBLE_DEVICES", "TF_FORCE_GPU_ALLOW_GROWTH", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS", "OPENBLAS_NUM_THREADS", "PYTHONHASHSEED")}, "git_head": git("rev-parse", "HEAD"), "git_diff_stat": git("diff", "--stat"), "source_sha256": hashes, "plan": PLAN, "result": str(result), "log": str(directory / "process.log")}
+    record = {"schema": "filter_repair_run.v1", "key": key, "started_utc": datetime.now(timezone.utc).isoformat(), "state": "running", "device": device, "timeout_seconds": timeout, "command": command, "cwd": str(ROOT), "environment": {k: env[k] for k in ("CUDA_VISIBLE_DEVICES", "TF_FORCE_GPU_ALLOW_GROWTH", "BAYESFILTER_TEST_DEVICE_SCOPE", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS", "OPENBLAS_NUM_THREADS", "PYTHONHASHSEED")}, "git_head": git("rev-parse", "HEAD"), "git_diff_stat": git("diff", "--stat"), "source_sha256": hashes, "plan": PLAN, "result": str(result), "log": str(directory / "process.log")}
     if getattr(args, "gpu_preflight", None) is not None:
         record["gpu_preflight"] = args.gpu_preflight
         record["gpu_uuid"] = args.gpu_uuid
@@ -1479,7 +1612,10 @@ def measurement_device(name):
 def run_matrix(args):
     """Resume registered jobs sequentially; failures retain their original evidence."""
     from compare_filter_repair_campaign import (
-        ONE_SIZE, baseline_compilation_failure, compare_pair, current_provenance,
+        ONE_SIZE,
+        baseline_compilation_failure,
+        compare_pair,
+        current_provenance,
     )
 
     frozen = source_hashes()
