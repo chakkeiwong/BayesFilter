@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-09-21. This reference describes the common candidate-set
+Last checked: 2026-09-22. This reference describes the common candidate-set
 procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
 HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
 classifies public tuners, preparation helpers, chain runners, and historical
@@ -511,6 +511,14 @@ chains trapped together in a missed mode may still pass. A failed screen
 continues within the declared cap. Exhaustion reports inconclusive equilibration
 or insufficient retained evidence, never sufficient burn-in by fiat.
 
+Bulk/tail ESS uses the Stan/ArviZ initial-positive, initial-monotone recursion,
+identified by `bulk_tail_ess_method` in the assessment policy and result. The
+preserved-transition reporting API in `hmc_posterior_diagnostics` uses that
+recursion for its original-scale and per-chain mean ESS too. The separate
+`HMCPrecisionPolicy` autocorrelation estimator retains its named TFP convention
+below. These finite-sample estimates can differ; their identifiers distinguish
+them. A changed assessment policy requires a new checkpoint identity.
+
 Retained draws grow cumulatively, excluding all warmup. Core R-hat and health
 checks cannot be replaced by `retained_diagnostic_fn`; callbacks can add
 requirements or vetoes. No accuracy target produces `precision_not_requested`,
@@ -522,6 +530,15 @@ indicator; quantiles use their own probability and indicator-ESS/order-statistic
 MCSE. Supply `quantities_fn(draws)` returning named `[draw, chain]` tensors and a
 stable `quantities_id` for scientific functionals or event probabilities. These
 quantities receive the same R-hat and ESS checks as model coordinates.
+
+Choose tolerances in the units of the requested quantity and check their cost
+before interpreting a cap as a mixing failure. For independent normal draws,
+the mean MCSE is `SD/sqrt(N)` and the asymptotic median MCSE is
+`sqrt(pi/2)*SD/sqrt(N)`. These are planning comparisons, not lower bounds for
+correlated HMC. Broad scales and heavy tails can make an absolute target costly
+even with favorable R-hat. Retain the unmet target, inspect the quantity-level
+report and other predeclared members, and distinguish insufficient sampling
+precision from numerical tuning failure. Lugsail does not estimate burn-in bias.
 
 The mean estimators are `autocorrelation`, `batch_means`, and `lugsail`.
 Autocorrelation retains the explicitly identified TFP 0.25 positive-pairs
@@ -537,6 +554,13 @@ width are unavailable evidence, including unobserved rare events.
 
 These MCSE calculations assume the relevant moments and mixing/CLT conditions.
 Lugsail estimates retained mean uncertainty; it does not estimate burn-in.
+A positive finite estimate and twenty batches do not establish adequate
+bandwidth. The M21 exact-Gaussian diagnostic found substantial downward bias
+with `sqrt(n)` batches under strong persistence. Inspect dependence and compare
+justified batch lengths or the existing autocorrelation estimator before
+relying on a demanding precision claim. The [estimator diagnosis](../plans/bayesfilter-hmc-repair-m21-estimator-diagnosis-2026-09-22.md)
+preserves the calculation and observed coverage; its alternatives remain
+development evidence and do not change the default estimator.
 Repeated MCSE checks provide an operational accuracy screen, not anytime-valid
 confidence coverage. Finite-chain calibration does not justify a universal new
 stopping default. Declared target-specific posterior checks remain necessary.

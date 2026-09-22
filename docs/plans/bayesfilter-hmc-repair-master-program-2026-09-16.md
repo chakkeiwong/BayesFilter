@@ -1,6 +1,211 @@
 # HMC repair master program
 
-## Current status: M13--M18 completed, September 22
+## Active continuation: M19--M24, September 22
+
+The owner has authorized integration with remote `main`, publication of the
+committed work, and continued repairs with **48 CPU worker-hours and 24 GPU
+worker-hours**. This is the new available ceiling, conservatively replacing
+the unused M18 balance rather than adding to it. Prior spending and evidence
+remain in the historical ledgers. This section supersedes the completed-program
+status below; M13--M18 are completed experiments, not closure of all nine gaps.
+The [continuation reset](bayesfilter-hmc-continuation-reset-2026-09-22.md)
+records the integration audit. `program-progress.json` remains the single
+progress record, with a separate September 22 opening ledger.
+
+Current execution: M19's first merge and M20's CPU development tranche are
+recorded. The [M21 controller result](bayesfilter-hmc-repair-m21-controller-result-2026-09-22.md)
+now contains all 2,400 planned replications and the exact finite-batch diagnosis.
+The [M22 pilot result](bayesfilter-hmc-repair-m22-pilot-result-2026-09-22.md)
+contains four complete null experiments and 18 complete public fits. M23's
+bounded trainer graph/batch repair passed 95 focused checks. None of these
+results closes every scientific gap.
+
+Remote main advanced to `c7adbda7d` during the initial history upload. The
+[late integration plan](bayesfilter-hmc-late-remote-integration-2026-09-22.md)
+preserves the extracted architecture and checks the incoming Stan/ArviZ ESS
+repair independently. The old 272-fit/1024-null confirmation queue stopped
+before any numerical task launched. The committed repair `f9c86f41a` is now
+published on main. The [merged-source result](bayesfilter-hmc-merged-source-result-2026-09-22.md)
+records new Gaussian/beta-binomial pilots and 800 fresh fixed-count estimator
+replications. The existing autocorrelation option passed its declared screen
+in both exact regimes; neither lugsail bandwidth passed both. No default changed.
+
+The [refreshed continuation](bayesfilter-hmc-merged-source-continuation-2026-09-22.md)
+is executing the fixed 272-fit/1024-null inventory from committed package
+identity `13917d3625fa5a09dfd3bf1ab9d2894618ed7bc4259ca7603f16c766f6213d66`.
+The persistent service is `bayesfilter-hmc-confirmation-20260922-r2.service`.
+Its five-task queue permits at most two numerical workers, reserves 79800
+CPU worker-seconds and updates its ledger after every completed task. It has
+an outer 48000-second wall limit, derived from the longest planned two-worker
+schedule (45800 seconds) plus 2200 seconds for coordination/cleanup. Results
+remain pending; the service marks completion as requiring scientific review.
+The official book and agent/API reference have been reconciled and rebuilt.
+
+Completed old-source experiments retain their original identity. GPU
+repetitions remain pending permitted idle capacity, rather than a hardware or
+numerical failure. The latest trusted probe still reports
+`no_idle_policy_permitted_gpu`. Completed numerical charges, including failed
+attempts and a disclosed 30-second unmeasured-test allowance, total
+12490.893982751644 CPU seconds before the live confirmation workers finish;
+no GPU worker time has been used in this continuation. The live ledger is
+`m21-r2/reconciliation-progress.json`; its uncompleted reservations are separate
+from remaining allowance. No statistical gap is closed merely by launch.
+
+### Audit findings that change the next work
+
+1. M17 centered-funnel **preparation completed** on both devices. CPU search
+   measured eight pairs, while GPU search measured six. All were rejected;
+   the GPU primary pairs mostly failed at their first proposal stage. Calling
+   this an established preparation defect is wrong. Existing directional
+   repair cannot infer an acceptance direction from nonfinite evidence, and
+   failed-interval exploration requires a valid parent. First test a declared
+   smaller-epsilon grid under the same frozen geometry. If automated recovery
+   is needed, give proposal-only exploration its own recorded reason, finite
+   limits and fresh evidence; never fabricate an acceptance direction.
+2. M17 assessed only one identity-selected member per fit. A precision cap for
+   that member does not establish failure of its siblings or of tuning. In the
+   rotated Gaussian with angle 0.6 and covariance eigenvalues 1 and 100, the
+   broad coordinate has variance `sin(0.6)^2 + 100 cos(0.6)^2`. Its independent
+   Gaussian median approximation is `sqrt(pi/2) * SD / sqrt(40000)`, slightly
+   above 0.05. This is a planning comparator, not a lower bound for correlated
+   HMC or a reason to relax the requirement. Separate correlation, scale,
+   heavy-tail uncertainty and the requested precision before extending chains.
+3. Repeating an accuracy matrix with one seed would not close delayed burn-in,
+   interval coverage, sequential size or subtle-defect power. Use independent
+   whole experiments, fixed predeclared denominators and interval precision.
+   A successful launch, a nonrejection or an elapsed phase budget cannot close
+   these gaps. Pilot samples do not become untouched confirmation evidence.
+4. M18's source-bound evidence is not evidence for every merged filter path.
+   Diagnose saved failures without modifying their snapshots, then bind fresh
+   fits to merged source. Preserve remote numerical recurrence changes and
+   the single public candidate-set route; historical recovery cannot become
+   an alternative public tuner.
+5. A failed mixture mode check is a real posterior failure, although a tuning
+   candidate can remain valid. First measure crossings and global occupancy.
+   New parameterizations must retain the exact law and Jacobian. A learned
+   map needs target-specific training and downstream validation; a fixed map
+   codec test cannot substitute. No new transition family or global default
+   is implicitly approved by this program.
+6. The newer MacroFinance recovery report contains 72 passing posterior block
+   fits under fixed loadings and explicit prior comparisons. It is not a
+   matched independent reference for the earlier full joint target. M24 must
+   bind the exact target/data/prior/coordinate bundle; passing block fits cannot
+   silently close the full-consumer reference gap. The read-only search and
+   source hashes are recorded in M19's `consumer-inventory-followup.json`.
+
+7. The sqrt(n) lugsail bandwidth severely underestimates finite-count mean
+   uncertainty for rho=0.995. Its formula agrees with independent covariance
+   calculations; the bandwidth is inadequate in this regime. Twenty batches
+   and a positive estimate do not establish calibration. Longer batches and the
+   existing autocorrelation estimator are development hypotheses requiring
+   fresh confirmation, followed by separate stopping calibration. No default
+   changes on reused draws.
+8. Eighteen complete-fit mutation pilots cost 3375.62 CPU seconds. At that
+   rate, a single 128-dataset, three-fit SBC experiment costs about 20 hours
+   per arm. Repeated whole-fit power estimation is unaffordable in M22's
+   12-hour allocation. Complete the affordable null confirmation and preserve
+   this power gap explicitly; do not substitute frozen-kernel power or two-rank
+   nonrejection. This allocation finding does not stop independent repairs.
+9. ESS arithmetic now has two explicit finite-sample conventions: Stan/ArviZ
+   for bulk/tail and preserved-transition reporting, and the named TFP estimator
+   for the existing mean/quantile precision option. Bind method identity even
+   when extra assessment settings are omitted. The remote optional metric
+   window must preserve probe, recovery and evidence settings and actually run
+   without the checkpoint-bootstrap branch. Test both conditions before merge.
+
+### Work packages, budgets and closure evidence
+
+Allocations are engineering ceilings chosen to fit the owner's budget, not
+statistical sample-size justifications. Unspent amounts carry forward within
+this continuation. Numerical replication counts are resolved from measured
+cost and a stated uncertainty calculation before each phase. Four unused CPU hours move from M20 to M21 after the measured public-pilot
+cost audit; the total remains 48 CPU hours. The allocations reserve 5 CPU
+hours and 3 GPU hours for localized repairs. Count all failed
+launches and retries. Record worker wall time and thread settings; GPU worker
+charges include their host work and are not charged again as CPU workers.
+
+| Phase | Concrete work and completion criterion | CPU / GPU hours |
+| --- | --- | ---: |
+| M19 | Resolve the remote merge, test affected public/checkpoint/preparation/filter paths, publish without overwriting unrelated work; extract saved failure reasons and quantity-level precision; issue a reviewed M20 design | 2 / 0 |
+| M20 | Same-geometry epsilon exploration on the failed centered funnel; predeclare multiple member identities on rotated Gaussian and noncentered funnel; preserve GPU and fresh-geometry follow-up | 1 / 5 |
+| M21 | Delayed-equilibration and warmup-cap fixtures; exact finite-bandwidth diagnosis and fresh estimator confirmation; then whole-fit stopped versus independent fixed-count intervals on merged source. Report coverage, caps and missing outcomes separately | 22 / 5 |
+| M22 | Fixed-size independent sequential null/no-op confirmation; complete-fit mutation activation/cost pilot and analytical power planning. Repeated whole-fit power remains under-budgeted unless a justified inventory fits; no smaller nonrejection substitutes | 12 / 4 |
+| M23 | Target-specific batched GPU transport training, freezing, public tuning and posterior checks on banana and separated mixture; first bind explicit stable graph signatures and verify real training batches exceed one. Keep untrained/affine comparators and global mixture checks. Failed mode exploration triggers training/coordinate diagnosis within this allocation | 4 / 5 |
+| M24 | Exact MacroFinance input/reference inventory and matched integration if available; current-source model/route matrix, migration of useful legacy invariants, measured performance repair where warranted, official book/reference consistency and terminal reconciliation | 2 / 2 |
+
+All numerical phases begin with a measured cost pilot. M20 and M23 development
+fits may diagnose mechanisms; they do not by themselves establish statistical
+superiority. M21 and M22 require explicit replication calculations and a fixed
+inventory before confirmation. If the inventory is unaffordable, retain an
+underpowered/open result and continue other funded repairs. Do not spend the
+entire campaign attempting to make one confidence interval pass.
+
+| Remaining gap | Comparator and decisive evidence | Repair if the evidence fails |
+| --- | --- | --- |
+| Difficult geometry/search | M17 frozen geometry and starts with original versus declared smaller epsilon hypotheses; later fresh ordinary fits with exact target parity | Bounded same-L numerical exploration, or a checked reparameterization if geometry is the cause; reject invalid parents and independently verify every child |
+| Member precision | Identity-selected representatives at predeclared L values, common quantities and unchanged posterior policy; analytic or uncertainty-bearing reference | Diagnose lag dependence/trajectory and mass; report projected sample needs with uncertainty, then test a fresh member or geometry. No posterior-based deletion of tuning members |
+| Global modes | Both original mixture start regimes, known mode probability and transitions between modes; compare frozen affine and trained maps | Check map support/Jacobian and train with declared coverage of both modes; preserve global veto. Local acceptance/MCSE alone never closes this gap |
+| Burn-in and stopping | Exact stationary truth, deliberately remote starts, fixed-count independent chains and actual controller stops | Compare fixed-count MCSE calibration with stopping bias before changing an estimator or readiness rule; calibrate any proposed change on separate data |
+| Acceptance/sequential size | Original compatibility semantics, same source-checked sequential test and null/no-op laws; fixed additional independent complete experiments | Correct harness or test construction if defective. A wide interval requires evidence, not a threshold change or conditional replication until success |
+| Subtle full-procedure defects | No-op versus fixed, declared data/score/Jacobian perturbations through preparation, tuning and posterior; SBC ranks from independent fits | Diagnose insensitive quantities and power by independent pilot; freeze larger dataset/rank inventory before confirmation and preserve every fit failure |
+| Exact MacroFinance case | Exact target/data/prior/coordinates plus checked reference law and reference Monte Carlo uncertainty | Search local consumer manifests read-only; bind only a matched bundle. Missing inputs leave this cell open and do not stop the other phases |
+| Learned transport | Untrained/affine, plain dense-IAF and one declared enhanced arm; target-specific objective, scale, capacity, optimizer and seed checks | Repair training using held-out development evidence, freeze the chosen map, then use untouched downstream streams; no borrowed setting becomes a default |
+| Maintenance/coverage | Merged current-source named public tests and multi-model integrations; actual profile against matching baseline | Migrate useful historical invariants, repair measured duplication with parity, and reconcile the book. Avoid speculative whole-facade rewrites |
+
+### Evidence contract, defaults and continuation
+
+The question is whether identified mechanism failures can be repaired while
+preserving the mathematical target, all verified candidates, fresh verification
+and separate posterior assessment. Engineering promotion requires invariants
+and actual public-path tests. Numerical/posterior promotion requires the phase's
+unchanged health, convergence, precision and reference criteria. Numerical
+invalidity vetoes a candidate; corrupted target, missing essential diagnostics
+or invalid accounting stops the affected experiment for repair. Candidate
+rejection, a precision cap, a missed mode or statistical inconclusiveness is a
+repair trigger, not a research-direction veto.
+
+R-hat, ESS and MCSE remain posterior diagnostics; none qualifies, ranks, repairs
+or delays a tuning candidate. Wall time, acceptance distance and losses are
+explanatory unless a specific experiment predeclares an uncertainty-based
+comparison. Every verified sibling remains in its inventory even when only a
+declared subset receives posterior assessment. Unknown-mode convergence,
+anytime interval coverage, broad default readiness and universal robustness
+will not be inferred from these experiments.
+
+Inherited M17 settings (broad L grid, 128 base evidence draws, finite evidence
+rungs, 2000 minimum warmup, 1000 recent window, 10000 per-chain caps and 0.05
+absolute precision in its matrix) are baselines, not validated universal
+defaults. New epsilon multipliers, member rules, training choices and counts
+are hypotheses with provenance in each design. Their earliest checks are
+candidate health, explicit selection inventories, target/Jacobian parity,
+batch-native GPU objective checks and affordability pilots. Do not silently
+replace a failing scientific requirement with a more convenient one.
+
+M19 uses `/home/ubuntu/anaconda3/envs/tfgpu/bin/python`, GPUs deliberately hidden,
+and bounded CPU engineering tests. Subsequent serious runs use the repository
+TF/TFP GPU/XLA route, trusted device access and verified memory growth. CPU
+numerical arms are labeled independent-reference/development exceptions.
+Every launch receives a fresh `m19-r1`, `m20-r1`, etc. output directory, source
+and command manifest, seeds, device settings, wall time and preserved failures.
+
+At each phase boundary, reconcile attempts and spending; classify failure;
+execute the justified local repair; write decision and inference-status tables;
+resolve the next design using the result; skeptically audit it; then execute.
+The refresh script must distinguish an active continuation from completed
+historical phases. A phase is not scientifically closed merely because its
+commands finished. A missing consumer bundle closes no other work package.
+Stop only at the stated budget, invalidity, indispensable-input or material
+scope boundary. No new approval tokens or mandatory external review chain.
+
+Skeptical review: the old agenda conflated a search failure with preparation,
+used an unexamined absolute precision target across scales, and offered further
+matrices without sufficiently specified repair continuations. Those flaws are
+repaired above. Baselines, diagnostic roles, uncertainty requirements, resource
+limits and source changes are explicit. Each numerical design still requires
+its own resolved commands and cost audit before launch. Successful integration
+tests cannot promote a numerical default or establish posterior correctness.
+
+## Historical status: M13--M18 completed, September 22
 
 The bounded repair program is complete through M18. The terminal
 [M18 result](bayesfilter-hmc-repair-m18-result-2026-09-21.md) reconciles the

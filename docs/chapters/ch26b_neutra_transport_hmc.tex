@@ -432,12 +432,12 @@ The value $1000$ is a conservative convenience rule, not a theorem.  The
 structural result below missed it narrowly and is labeled with the disclosed
 post-result owner adjudication rather than called an automated pass.
 
-New posterior runs declare their ESS and precision requirements through
-\path{HMCPosteriorAssessmentPolicy}; Chapter~\ref{ch:bf-diagnostics} gives the
-common procedure. The corrected diagnostic version is
-\path{bayesfilter.hmc_diagnostic_math.v2}. Historical numerical reports below
-have not been recomputed with that version and cannot establish current
-threshold passage.
+New posterior runs declare ESS and precision requirements using the assessment
+policy in Chapter~\ref{ch:bf-diagnostics}. The rank and R-hat calculations have
+version \path{bayesfilter.hmc_diagnostic_math.v2}; bulk and tail ESS use
+\path{bayesfilter.stan_initial_positive_monotone_ess.v1}.
+Historical numerical reports below have not been recomputed with these
+estimators and cannot establish current threshold passage.
 
 TFP's fixed HamiltonianMonteCarlo kernel did not expose native divergence flags
 for these runs.  The preserved hard screen defines an energy failure as a

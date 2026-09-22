@@ -44,7 +44,11 @@ and slow metric updates. Finishing that schedule is not a proof of stationarity.
 minimum bulk and tail ESS during warm-up and retention, the number of
 consecutive successful warm-up checks, and accuracy targets for the retained
 estimators. Every eligible look reports rank-normalized split and folded R-hat,
-bulk/tail ESS, original-scale mean ESS and mean MCSE. Custom callbacks add
+bulk/tail ESS, original-scale mean ESS and mean MCSE. Bulk and tail ESS use
+the Stan/ArviZ initial-positive, initial-monotone recursion, with an explicit
+method identifier in the assessment report. The separate precision-policy
+autocorrelation estimator retains the TFP convention described below.
+Custom callbacks add
 requirements; they cannot replace core health and R-hat checks. The archived
 wrapper retains its historical strict inequality and declared coordinate/ESS
 screens, while using the same diagnostic arithmetic. The generic entry point
@@ -104,6 +108,24 @@ batches is an operational stability floor, not a theorem about coverage.
 Terminal incomplete batches are excluded from long-run variance estimation;
 their count is recorded, and all retained draws still enter the posterior mean.
 
+Batch length must also resolve the dependence in the chain. For a stationary
+unit-variance Gaussian AR(1) with correlation $\rho$, define
+$V(k)=k+2\sum_{j=1}^{k-1}(k-j)\rho^j$, the variance of a sum of $k$ draws.
+When $n=ab$, centering the batch means gives
+\begin{equation}
+ \mathbb{E}[\widehat\sigma_{i,b}^2]
+ =\frac{V(b)-V(n)/a^2}{b(1-1/a)}.
+\end{equation}
+This follows by subtracting the variance of the overall batch mean from the
+sum of the batch second moments. Substituting the two batch sizes into
+\eqref{eq:bf-lugsail-mcse} shows why a positive estimate can still be biased
+downward. With $\rho=0.995$, $n=10000$, $b=100$, $r=3$ and $c=1/2$, its expected
+mean-variance estimate is only about $34\%$ of the exact finite-count variance.
+The smaller batch calculation uses its own complete-batch count. Twenty or
+more batches therefore cannot certify adequate bandwidth. Dependence,
+longer-chain evidence and sensitivity to justified batch lengths must be
+examined when the required accuracy is consequential.
+
 The autocorrelation option retains the identified TFP 0.25 positive-pairs ESS
 calculation. Rank-normalized bulk ESS is useful for exploration diagnostics,
 but original-scale mean uncertainty needs the ESS of the actual functional.
@@ -124,6 +146,19 @@ coverage. The asymptotic fixed-width results in
 \citet[sections 2--3.1 and Appendix A]{flegalgongfixedwidth} require additional
 regularity and estimator-consistency conditions. Lugsail estimates uncertainty
 in retained means; it does not estimate how many burn-in draws are enough.
+
+Absolute accuracy requirements must be interpreted in the units of the
+functional. For independent normal observations with standard deviation $s$
+and total count $N$, the mean has MCSE $s/\sqrt N$. The usual quantile
+approximation gives variance $p(1-p)/(N f(q_p)^2)$; substituting $p=1/2$
+and normal density $f(q_{1/2})=1/(\sqrt{2\pi}s)$ yields median MCSE
+$\sqrt{\pi/2}\,s/\sqrt N$. Thus a broad normal coordinate can need more
+draws to estimate its median than its mean at the same absolute tolerance.
+These independent-draw calculations help plan cost; correlated HMC can have
+different variances, including smaller ones under negative dependence.
+A retained cap therefore requires inspecting quantity-specific uncertainty
+and trajectory behavior before diagnosing a tuning failure. An unmet accuracy
+requirement remains unmet even when R-hat is favorable.
 
 The diagnostic version \path{bayesfilter.hmc_diagnostic_math.v2} corrects two
 prior arithmetic errors: normal-score ranks use $S+1/4$ in the denominator,

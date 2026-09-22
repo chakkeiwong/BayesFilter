@@ -1,8 +1,8 @@
 {
   "schema": "bayesfilter.hmc_repair_program_progress.v1",
   "plan_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
-  "opening_ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m18-r1/reconciliation-terminal.json",
-  "active_phase": null,
+  "opening_ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r1/reconciliation-cpu-tranche.json",
+  "active_phase": "M21",
   "phases": {
     "M13": {
       "status": "bounded_execution_complete",
@@ -60,6 +60,69 @@
       "result_file": "docs/plans/bayesfilter-hmc-repair-m18-result-2026-09-21.md",
       "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m18-r1/reconciliation-terminal.json",
       "refresh_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m18-r1/phase-refresh.json"
+    },
+    "M19": {
+      "status": "integration_tested_and_published",
+      "cpu_limit": 7200,
+      "gpu_limit": 0,
+      "scientific_gaps_closed": false,
+      "result_file": "docs/plans/bayesfilter-hmc-repair-m19-result-2026-09-22.md",
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m19-r1/reconciliation-terminal.json",
+      "refresh_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m19-r1/phase-refresh.json",
+      "late_integration_plan": "docs/plans/bayesfilter-hmc-late-remote-integration-2026-09-22.md"
+    },
+    "M20": {
+      "status": "bounded_execution_complete",
+      "cpu_limit": 3600,
+      "gpu_limit": 18000,
+      "scientific_gaps_closed": false,
+      "design_file": "docs/plans/bayesfilter-hmc-repair-m20-design-2026-09-22.md",
+      "result_file": "docs/plans/bayesfilter-hmc-repair-m20-result-2026-09-22.md",
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r1/reconciliation-cpu-tranche.json",
+      "refresh_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r1/phase-refresh.json",
+      "deferred_work": [
+        "GPU repetitions",
+        "fresh geometry/coordinate confirmation"
+      ]
+    },
+    "M21": {
+      "status": "executing_merged_source_confirmation",
+      "cpu_limit": 79200,
+      "gpu_limit": 18000,
+      "scientific_gaps_closed": false,
+      "design_file": "docs/plans/bayesfilter-hmc-repair-m21-design-2026-09-22.md",
+      "confirmation_design": "docs/plans/bayesfilter-hmc-merged-source-continuation-2026-09-22.md",
+      "public_controls_design": "docs/plans/bayesfilter-hmc-repair-m21-public-controls-2026-09-22.md",
+      "controller_result": "docs/plans/bayesfilter-hmc-repair-m21-controller-result-2026-09-22.md",
+      "old_confirmation_queue": "stopped_before_launch_for_late_remote_integration",
+      "confirmation_queue": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/confirmation-queue-progress.json",
+      "merged_source_result": "docs/plans/bayesfilter-hmc-merged-source-result-2026-09-22.md"
+    },
+    "M22": {
+      "status": "executing_merged_source_confirmation",
+      "cpu_limit": 43200,
+      "gpu_limit": 14400,
+      "scientific_gaps_closed": false,
+      "design_file": "docs/plans/bayesfilter-hmc-repair-m22-design-2026-09-22.md",
+      "pilot_result": "docs/plans/bayesfilter-hmc-repair-m22-pilot-result-2026-09-22.md",
+      "whole_fit_power_status": "under_budgeted_at_measured_pilot_cost",
+      "confirmation_design": "docs/plans/bayesfilter-hmc-merged-source-continuation-2026-09-22.md",
+      "confirmation_queue": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/confirmation-queue-progress.json"
+    },
+    "M23": {
+      "status": "engineering_verified_quality_pending_gpu_capacity",
+      "cpu_limit": 14400,
+      "gpu_limit": 18000,
+      "scientific_gaps_closed": false,
+      "design_file": "docs/plans/bayesfilter-hmc-repair-m23-training-engineering-2026-09-22.md",
+      "engineering_result": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m23-r1/isolated-continuation-tests-r3.json"
+    },
+    "M24": {
+      "status": "official_book_refreshed_reference_cell_open",
+      "cpu_limit": 7200,
+      "gpu_limit": 7200,
+      "scientific_gaps_closed": false,
+      "guide_build": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m24-r1/guide-build.json"
     }
   },
   "stop_conditions": [
@@ -70,8 +133,8 @@
   ],
   "next_phase_policy": "reconcile -> classify -> repair and test -> result -> refreshed design -> skeptical audit -> execute",
   "scientific_gaps_closed": false,
-  "status": "bounded_execution_complete",
-  "remaining_gap_agenda": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md#remaining-gaps-and-next-discriminating-work",
+  "status": "active",
+  "remaining_gap_agenda": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md#active-continuation-m19--m24-september-22",
   "remaining_gaps": [
     "automatic_preparation_difficult_geometry",
     "member_specific_posterior_precision",
@@ -83,6 +146,9 @@
     "target_specific_learned_transport_training",
     "broader_current_source_scale_performance_and_legacy_tests"
   ],
-  "completed_utc": "2026-09-21T16:16:33.778298+00:00",
-  "completion_local_date": "2026-09-22"
+  "continuation_budget_interpretation": "replacement available allowance, not additive to prior unused balance",
+  "current_ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/reconciliation-progress.json",
+  "active_source_commit": "f9c86f41ac44efc5e6a5a5220633073fce803431",
+  "active_service": "bayesfilter-hmc-confirmation-20260922-r2.service",
+  "next_action": "Monitor the fixed confirmation queue, preserve all caps and failures, reconcile each group, then review results and execute the next justified funded repair. GPU training awaits idle permitted capacity; exact MacroFinance reference remains unmatched."
 }
