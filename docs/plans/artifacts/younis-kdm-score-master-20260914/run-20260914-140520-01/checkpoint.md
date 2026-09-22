@@ -2,14 +2,18 @@
 
 Question: how variable are fresh final likelihoods from complete adaptive R
 reconstructions, conditional on the paper's five linear-Gaussian dimensions?
-Stage: phase 16 RUNNING; detached supervisor PID 4021639, launched
+Stage: phase 16 RUNNING; the 100-replicate stage is complete and the
+300-replicate stage is active as of 2026-09-22 at 12:00 UTC.
+Detached supervisor PID 4021639, launched
 2026-09-22 at 09:02 UTC. It advances through 100, 300, and 1,000 labels per
 method/dimension without per-stage intervention. Candidate failures continue;
 source/numerical/artifact invalidity, repeated infrastructure failure or budget
 exhaustion stops with an explicit checkpoint.
 
 Checkout: /home/chakwong/BayesFilter; surrogate-hmc;
-HEAD 6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef. Preserve unrelated dirty changes.
+Research source commit db72d33c; branch synchronization is recorded in
+docs/plans/iapf-branch-synchronization-2026-09-22.md. Read the actual branch
+HEAD when resuming. Preserve unrelated dirty changes.
 Master: docs/plans/younis-kdm-score-master-program-2026-09-14.md.
 Plan: docs/plans/iapf-adaptive-replication-ladder-2026-09-22.md.
 Live state, log, budget and completed-stage summaries are under:
@@ -22,6 +26,13 @@ new approval gate. Do not modify sources recorded in `preflight.json` while
 running. Same-seed d5/d80 numerical replay passed, 180 statistics checks passed,
 and three supervisor regressions passed, including candidate-cap continuation
 and bounded infrastructure retries.
+
+Stage 100: 3,000 records, no failed/capped learners and no observed heuristic
+promotion veto in this sample. The completed note is `stage100/result.md` in
+the live root. Pointwise bootstrap intervals are conditional on one data set
+per dimension; no population ranking or paper-identity claim follows.
+At 12:00 UTC, 111 batches were complete; about 39.093 CPU hours and 47.745 GPU
+hours remained, with 0.500 CPU hours reserved. Refresh these from live state.
 
 Phase 15 is COMPLETE: 400 evaluations, 729 checks, all 200 learners complete;
 full Gaussian oracle/Kalman error 1.82e-12. Initial d80 score floor distortion

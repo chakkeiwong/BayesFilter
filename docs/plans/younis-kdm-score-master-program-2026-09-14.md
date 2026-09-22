@@ -1,9 +1,17 @@
 # Master program: systematic investigation of KDM, LEDH, and model-score estimators
 
-Active execution, 2026-09-22: supervisor PID 4021639 is executing the reviewed
-[adaptive R replication ladder](iapf-adaptive-replication-ladder-2026-09-22.md),
-accumulating100,300,1000 complete learner labels per dimension under the
-remaining budget. The [adaptive comparison](artifacts/iapf-adaptive-score-reference-20260922-01/result.md)
+Active execution, 2026-09-22 at 12:00 UTC: supervisor PID 4021639 is executing
+the reviewed [adaptive R replication ladder](iapf-adaptive-replication-ladder-2026-09-22.md).
+The [100-replicate stage](artifacts/iapf-adaptive-replication-ladder-20260922-01/stage100/result.md)
+is complete: 3,000 records, no failed or capped learners, and no observed
+heuristic promotion veto in this sample. The 300-replicate stage is running;
+the supervisor then advances to 1,000 replicates per method and dimension.
+The intervals are conditional on one data set per dimension and do not
+establish full-paper replication or a population ranking. The branch
+[synchronization record](iapf-branch-synchronization-2026-09-22.md) documents
+the source commit, merge checks and preservation of the live campaign.
+
+The earlier [adaptive comparison](artifacts/iapf-adaptive-score-reference-20260922-01/result.md)
 is complete:400 evaluations,729 checks, no rejected/capped learner. Score/tail8
 floor distortion disappears from fit2 in all d80 runs, but score/later doubling
 fails the d40 descriptive heuristic screen (RMSE.340 vs FA-APF.317). QR/later
@@ -111,34 +119,40 @@ Every learned arm fails conditional heuristic screens, so no ranking or
 promotion follows. The two caps complete at iterations 13 and 14 in separate
 extensions with exactly reproduced original prefixes; confirmation is unchanged.
 
-The new allocation is 48 CPU hours and 48 GPU hours, with no wall deadline.
-[Budget accounting](artifacts/iapf-renewed-mechanism-20260922-01/budget.json)
-records about 2.072 CPU hours and 4.95 GPU minutes consumed, leaving about
-45.887 CPU hours and 47.891 GPU hours after the adaptive comparison. The active
-density-scale phase budget records subsequent spending. All failed attempts are charged. No
-research worker is running. The old expired deadline and token-style launch
+The allocation is 48 CPU hours and 48 GPU hours, with no wall deadline.
+The active [replication budget](artifacts/iapf-adaptive-replication-ladder-20260922-01/budget.json)
+and `checkpoint.json` in that directory are authoritative for current spending.
+At 12:00 UTC, about 39.093 CPU hours and 47.745 GPU hours remained, with
+0.500 CPU hours reserved for active attempts. Two CPU workers continue the
+frozen ladder; GPU devices are intentionally hidden for this R reference.
+All failed attempts are charged. The old expired deadline and token-style launch
 rules below are historical; the remaining authorization does not require
 another owner approval for local work under the same scientific scope.
 
 The next master actions, in dependency order, are:
 
-1. Preserve the repaired shared consumer and compiler reproducer. Revalidate
+1. Complete the frozen 300- and 1,000-replicate stages automatically. Review
+   per-dimension uncertainty, rare-weight tails, controller completion, final
+   particle counts, and exact/classical controls. A candidate loss blocks its
+   promotion but does not stop the next stage. Repair infrastructure failures
+   within the existing contract and budget; preserve every failed attempt.
+2. Preserve the repaired shared consumer and compiler reproducer. Revalidate
    any affected old TF32 result before using it; evaluate distributional
    likelihood accuracy separately from fixed-random-stream path parity.
-2. DONE on tested d1/d2/d5 FP64 CPU/GPU fixtures: close the actual R/TF adaptive-consumer boundary; explicitly match the model,
+3. DONE on tested d1/d2/d5 FP64 CPU/GPU fixtures: close the actual R/TF adaptive-consumer boundary; explicitly match the model,
    X1 versus X0 timing, retained weights/resampling, diagonal guide, objective,
    floor and stopping semantics. Test the entire multidimensional consumer
    against the independent R reference before removing the d=o=1 guard.
    Full consumer evidence now supports this removal; high-dimensional fitting
    quality and the different paper-study model remain open.
-3. Keep Equation 15 reconstruction separate from the log-regression extensions.
+4. Keep Equation 15 reconstruction separate from the log-regression extensions.
    The unrestricted density objective has a vanishing-density degeneracy;
    the authors' initialized local solver and numerical floor remain unknown.
    Test any concrete reconstructed procedure as a declared hypothesis, with
    fresh data and the existing oracle/heuristic ladder, before a paper-scale
    replication. Do not spend the remaining budget repeating a solver-validity
    check as if it established likelihood accuracy.
-4. After these reference and consumer questions are resolved, return to the
+5. After these reference and consumer questions are resolved, return to the
    marginal model-score comparison and then KDM/LEDH integration under their
    own source, tuning and canonical-route requirements. The present result
    establishes none of those downstream claims.
