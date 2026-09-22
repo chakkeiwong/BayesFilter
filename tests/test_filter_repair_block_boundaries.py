@@ -21,7 +21,7 @@ D = tf.float64
 
 
 @pytest.mark.parametrize('case', ['allowed_no_geometry', 'allowed_projection', 'decrease',
-    'invalid_handoff', 'overcount', 'negative_count', 'nonfinite_initial', 'nonfinite_replay', 'invalid_mass'])
+    'invalid_handoff', 'objective_resolution', 'overcount', 'negative_count', 'nonfinite_initial', 'nonfinite_replay', 'invalid_mass'])
 def test_transaction_veto_stops_later_blocks(case, monkeypatch, request):
     full_calls = tf.Variable(0, dtype=tf.int64)
     block_calls = tf.Variable([0, 0], dtype=tf.int64)
@@ -55,8 +55,8 @@ def test_transaction_veto_stops_later_blocks(case, monkeypatch, request):
                 result = tf.nest.map_structure(lambda row: tf.zeros(row.shape, row.dtype), schema)
                 evaluations = -1 if case == 'negative_count' else 129 if case == 'overcount' else 3
                 status = 3 if case == 'allowed_projection' else 0 if case == 'invalid_mass' else 4
-                result['status'] = tf.constant(2 if case == 'invalid_handoff' else 0)
-                result['locator_evaluations'] = tf.constant(evaluations, tf.int64)
+                result['status'] = tf.constant(4 if case == 'objective_resolution' else 2 if case == 'invalid_handoff' else 0)
+                result['locator_evaluations'] = tf.constant(1 if case == 'objective_resolution' else evaluations, tf.int64)
                 result['locator']['selected']['finite_count'] = tf.constant(1)
                 result['lifecycle'].update(status=tf.constant(status), evaluations=tf.constant(evaluations, tf.int64),
                     center=tf.constant([2. if case == 'decrease' else .5], D))
@@ -84,6 +84,7 @@ def test_transaction_veto_stops_later_blocks(case, monkeypatch, request):
         expected = {'allowed_no_geometry': 'sweep_completed_with_resolvable_progress',
             'allowed_projection': 'sweep_completed_with_resolvable_progress',
             'decrease': 'transaction_objective_decrease', 'invalid_handoff': 'invalid_sequential_handoff',
+            'objective_resolution': 'invalid_sequential_handoff',
             'overcount': 'sequential_row_accounting_invalid'}[case]
         assert result.status == expected
         if case.startswith('allowed'):
@@ -93,7 +94,10 @@ def test_transaction_veto_stops_later_blocks(case, monkeypatch, request):
         else:
             assert result.accepted_block_count == 0
             assert result.final_center.numpy().tolist() == [0., 0.]
-            assert result.physical_target_rows == {'decrease': 5, 'invalid_handoff': 4, 'overcount': 1}[case]
+            assert result.physical_target_rows == {'decrease': 5, 'invalid_handoff': 4, 'objective_resolution': 4, 'overcount': 1}[case]
+            if case == 'objective_resolution':
+                assert result.private_block_records[0]['handoff_status'] == 'objective_resolution_limited'
+                assert result.sequential_exact_evaluations == 3
     assert observed['block_calls'] == ([1, 1] if case.startswith('allowed') else [0, 0] if case == 'nonfinite_initial' else [1, 0])
     assert observed['full_calls'] == (3 if case.startswith('allowed') else 2 if case in ('decrease', 'nonfinite_replay') else 1)
 

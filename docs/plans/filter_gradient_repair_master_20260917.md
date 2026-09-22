@@ -1,7 +1,22 @@
 # Complete filter and gradient execution repair
 
+2026-09-23 current checkpoint through 03098: the owner-approved
+`objective_resolution_limited` error is installed. All 273 final CPU checks pass:
+15 guard/no-use, 23 public, 56 sequential consumers, 6 ordered-controller,
+43 block consumers, 1 ownership and 129 policy checks. See the
+[current result and review](filter_gradient_objective_resolution_result_20260923.md).
+The guard preserves diagnostics/counts and blocks geometry and later handoffs;
+unflagged original comparisons are unchanged. No new runtime policy exception.
+GPU qualification remains pending: two preflights declined under contention
+without launching workers. This unit used 62/90 workers and 1700.000701 seconds
+of its 14,400-second ceiling. Remaining cumulative budget is 14.67 CPU/35.50 GPU
+hours. No worker is active. Main and the public outer-block migration remain
+gated; initializer parity, actual DZ5 migration, clean costs, native residency,
+endpoint dispositions and remote integration/retests are still open. Earlier
+pending-decision and execution notes below are historical checkpoints.
+
 The approved **E1--E6 enclosing-execution repair phase** is executing on
-`repair/filter-gradient-xla-validation-20260918`, after pushed **12fda788f**.
+`repair/filter-gradient-xla-validation-20260918`, based on the pushed **17b56ade2** checkpoint.
 The [reviewed master execution program](filter_gradient_enclosing_execution_phase_20260922.md)
 now includes the confirmed public-capacity, comparator-eigensystem and native
 compiler-memory findings. [Full geometry results](filter_gradient_full_geometry_result_20260922.md)
@@ -15,7 +30,8 @@ exposes a new strict-decision mismatch also present in the public sequential
 route: one-ULP target rounding changes an incumbent promotion. See the
 [ordered-controller result and review](filter_gradient_ordered_block_checkpoint_20260923.md).
 The tested [explicit-error proposal](filter_gradient_objective_resolution_proposal_20260923.md)
-is uninstalled pending an owner decision.03035 passes129 policy checks.
+was approved on2026-09-23; CPU qualification is complete and GPU qualification is pending.
+03035 passes129 policy checks.
 GPU preflights decline under contention. GPU renewal, full ordered-block
 qualification/public wiring, healthy initializer, actual DZ5 caller, clean GPU
 costs, endpoint audit and integration remain open. Charges through03036 leave

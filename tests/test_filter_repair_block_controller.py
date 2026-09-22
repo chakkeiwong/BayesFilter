@@ -84,6 +84,8 @@ def test_complete_ordered_block_matches_original(case, batched, request):
             progress_callback=expected_events.append)
         rows.append({'actual': actual.private_payload(), 'expected': expected.private_payload(),
             'events': events, 'expected_events': expected_events,
+            'resolution_flags': raw['sequential'][0]['objective_resolution']['attempt_flags'].numpy().tolist(),
+            'executed': raw['history']['executed'].numpy().tolist(),
             'actual_calls': actual_calls, 'expected_calls': int(calls)})
         hlos.append(owner.compiled.experimental_get_compiler_ir(center, scale)(stage='hlo'))
     report = {'scope': 'internal complete ordered-block endpoint', 'case': case, 'batched': batched,
@@ -97,6 +99,21 @@ def test_complete_ordered_block_matches_original(case, batched, request):
     (root / f'block-controller-{case}-{batched}.hlo.txt').write_text(hlos[0])
     (root / f'block-controller-{case}-{batched}-changed.hlo.txt').write_text(hlos[1])
     for row in rows:
+        if any(row['resolution_flags']):
+            # Only the owner's exact completed-boundary error can replace a
+            # flagged comparison; the failed03028 records remain archived.
+            assert case == 'partial_heterogeneous'
+            summary = row['actual']['public_summary']
+            assert not summary['completed'] and summary['status'] == 'invalid_sequential_handoff'
+            assert summary['accepted_block_count'] == 0
+            assert row['executed'] == [True, False]
+            assert row['actual_calls'] == summary['physical_target_rows'] == 1 + summary['sequential_exact_evaluations']
+            assert len(row['actual']['block_records']) == 1
+            record = row['actual']['block_records'][0]
+            assert record['handoff_status'] == 'objective_resolution_limited' and not record['committed']
+            assert record['center_after'] == record['center_before']
+            assert not any(event['stage'] == 'block_completed' for event in row['events'])
+            continue
         _assert_record(row['actual'], row['expected'])
         _assert_record(row['events'], row['expected_events'])
         assert row['actual_calls'] == row['expected_calls'] == row['actual']['public_summary']['physical_target_rows']

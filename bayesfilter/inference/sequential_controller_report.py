@@ -10,6 +10,7 @@ from dataclasses import replace
 import tensorflow as tf
 
 from bayesfilter.inference.mass_matrix import _precision_report
+from bayesfilter.inference.sequential_controller_tf import OBJECTIVE_RESOLUTION_LIMITED
 from bayesfilter.inference.sequential_score_fit_tf import partition_schema
 
 
@@ -163,7 +164,7 @@ def sequential_result(computed, cfg, start_count, dimension, progress_callback=N
     if result['status'] == 3:
         return public._rejected('maximum_exact_evaluations_after_bounded_locator',
             result['locator_evaluations'], rows, cfg, map_candidate=selected['position'])
-    if result['status'] != 0:
+    if result['status'] not in (0, OBJECTIVE_RESOLUTION_LIMITED):
         raise RuntimeError('Incomplete sequential controller observations')
     observations = result['observations']
     emit('candidate_selected', finite_candidate_count=selected['finite_count'],
@@ -201,6 +202,19 @@ def sequential_result(computed, cfg, start_count, dimension, progress_callback=N
                     exact_evaluations=observations['evaluations_after'][index], action=record['action'],
                     max_abs_scaled_score=observations['max_score_after'][index], radius=refined['radius_after'])
     extra['history'] = history
+    if result['status'] == OBJECTIVE_RESOLUTION_LIMITED:
+        extra['objective_resolution'] = result['objective_resolution']
+        extra['completed_lifecycle_status'] = lifecycle['status']
+        extra['terminal_fit_attempts'] = lifecycle['terminal_attempts']
+        extra['terminal_max_abs_scaled_score'] = lifecycle['max_score']
+        extra['search_seed'] = list(cfg.seed)
+        if lifecycle['terminal_attempts']:
+            extra['terminal_fit'] = terminal_payload(lifecycle['terminal'], cfg)
+            extra['terminal_seed'] = extra['terminal_fit']['seed']
+        emit('initializer_completed', accepted=False, status='objective_resolution_limited',
+            exact_evaluations=lifecycle['evaluations'])
+        return public._rejected('objective_resolution_limited', lifecycle['evaluations'], rows, cfg,
+            extra=extra)
     status = lifecycle['status']
     if status != 0:
         labels = ('usable', 'maximum_exact_evaluations_before_terminal_fit', 'maximum_exact_evaluations',

@@ -22,8 +22,26 @@ from bayesfilter.inference.sequential_selection_tf import replay_program
 from bayesfilter.inference.sequential_terminal_tf import terminal_program
 
 D = tf.float64
+OBJECTIVE_RESOLUTION_LIMITED = 4
 _LOCK = RLock()
 _LAST_CONTROLLER = None
+
+
+def _objective_resolution_flags(before, after, promoted, executed):
+    """Flag an unresolved rejected-proposal promotion, without changing it."""
+    finite = tf.math.is_finite(before) & tf.math.is_finite(after)
+
+    def ordered(value):
+        # Exact binary64 ordering, identifying the two signed zeros. Floating
+        # comparisons can flush subnormals in XLA; integer distance preserves
+        # precisely a < b <= nextafter(a, +inf) for finite representable values.
+        bits = tf.bitcast(value, tf.uint64)
+        midpoint = tf.constant(1 << 63, tf.uint64)
+        magnitude = tf.bitwise.bitwise_and(bits, midpoint - 1)
+        return tf.where(bits >= midpoint, midpoint - magnitude, midpoint + magnitude)
+
+    first, second = ordered(before), ordered(after)
+    return executed & promoted & finite & (second > first) & (second - first == 1)
 
 
 def _movement_records(history, origin, scale):
@@ -125,6 +143,16 @@ class SequentialController:
                 lambda: lifecycle(selected['position'], selected['value'], selected['score'], scale, evaluations),
                 lambda: empty)
             history = result['history']
+            refined = history['refine']
+            resolution_flags = _objective_resolution_flags(
+                refined['selected_value'], refined['center_value'],
+                refined['attempts']['promoted_without_acceptance'],
+                (history['event'] == 3) & (refined['action'] >= 2)
+                & refined['attempts']['last_evaluated'])
+            # Finish the original lifecycle for complete diagnostics/accounting,
+            # then veto geometry and downstream handoff on unresolved promotion.
+            status = tf.where((status == 0) & tf.reduce_any(resolution_flags),
+                OBJECTIVE_RESOLUTION_LIMITED, status)
             observations = {
                 'selected_max_score': tf.reduce_max(tf.abs(scale * selected['score'])),
                 'initial_score_norm': tf.linalg.norm(scale * selected['score']),
@@ -154,6 +182,9 @@ class SequentialController:
             return tf.nest.map_structure(tf.stop_gradient, {
                 'status': status, 'locator': located, 'locator_evaluations': evaluations,
                 'lifecycle': result, 'observations': observations, 'movement': movement,
+                'objective_resolution': {'attempt_flags': resolution_flags,
+                    'selected_value': refined['selected_value'],
+                    'promoted_value': refined['center_value']},
                 'precision': prepared[0], 'covariance': prepared[1],
                 'mass_diagnostics': prepared[2], 'mass_flags': prepared[3],
                 'mass_diagonal_valid': prepared[4]})

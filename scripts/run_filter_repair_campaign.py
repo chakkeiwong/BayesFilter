@@ -116,6 +116,15 @@ SEQUENTIAL_PUBLIC_CONSUMERS = (
     ),
 )
 TEST_GROUPS = {
+    **{f"objective_resolution_boundaries_{device}": (
+        "tests/test_filter_repair_objective_resolution.py::test_exact_resolution_boundaries",)
+        for device in ("cpu", "gpu")},
+    **{f"objective_resolution_sequential_{batched}_{device}": (
+        f"tests/test_filter_repair_objective_resolution.py::test_completed_error_preserves_lifecycle_and_skips_mass[{batched}]",)
+        for batched in (False, True) for device in ("cpu", "gpu")},
+    **{f"objective_resolution_block_{batched}_{device}": (
+        f"tests/test_filter_repair_objective_resolution.py::test_public_block_error_prevents_replay_and_later_blocks[{batched}]",)
+        for batched in (False, True) for device in ("cpu", "gpu")},
     "objective_resolution_diagnostic_cpu": ("tests/test_filter_repair_objective_resolution_diagnostic.py",),
     **{f"block_boundaries_{device}": (
         "tests/test_filter_repair_block_boundaries.py::test_transaction_veto_stops_later_blocks",)
@@ -915,7 +924,7 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
-    "objective_resolution_diagnostic_cpu": "Uninstalled representation-resolution reporting candidate; cannot waive original strict decisions or qualify the public route.",
+    "objective_resolution_diagnostic_cpu": "Historical prototype representation-resolution diagnostic; actual error/no-use qualification requires the installed guard tests.",
     "block_target_arithmetic_cpu": "Identical predecessor/proposal target arithmetic and100-digit reference; no equivalence or predicate waiver.",
     "block_rounding_diagnostic_cpu": "Partial-block strict incumbent arithmetic attribution; original uninstrumented gate remains mandatory.",
     "block_graph_registry_diagnostic_cpu": "Trace-only custom-gradient closure ancestry attribution; no numerical qualification or memory-cost claim.",
@@ -1067,6 +1076,10 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"objective_resolution_{device}": (f"objective_resolution_boundaries_{device}",
+        *(f"objective_resolution_sequential_{batched}_{device}" for batched in (False, True)),
+        *(f"objective_resolution_block_{batched}_{device}" for batched in (False, True)),
+        f"block_boundaries_{device}") for device in ("cpu", "gpu")},
     **{f"block_controller_{device}": tuple(f"block_controller_{case}_{batched}_{device}"
         for case in ("coupled", "record_reversal", "partial_heterogeneous") for batched in (False, True))
         for device in ("cpu", "gpu")},
@@ -1325,6 +1338,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["objective_resolution_gpu"]},
     "block_boundaries_gpu": "GPU", "block_outer_ownership_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["block_controller_gpu"]},
     "block_dependency_derivatives_cpu": "CPU",

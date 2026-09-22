@@ -1,5 +1,11 @@
 # Internal ordered-controller execution and numerical gap
 
+Current continuation: the owner approved the narrow resolution error, now
+installed and CPU-tested. See [the current qualification](filter_gradient_objective_resolution_result_20260923.md).
+The03036 checkpoint and pending-decision discussion below are historical;
+GPU renewal and public ordered-block integration remain open.
+
+
 The master program is refreshed and executing. The new internal controller
 encloses ordered conditional solves, full replay, transactional commit/rollback,
 accounting, reversal/cycle stops, summary metrics and completed records in one

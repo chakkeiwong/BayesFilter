@@ -13,6 +13,7 @@ from bayesfilter.inference.block_coordinate_center import (
     _terminal_core,
 )
 from bayesfilter.inference.program_cache_scope import ProgramCacheScope
+from bayesfilter.inference.sequential_controller_tf import OBJECTIVE_RESOLUTION_LIMITED
 
 D = tf.float64
 I = tf.int64
@@ -34,7 +35,8 @@ def _branch(index, program, block, dimension, bounds, cfg, full):
         raw = program.compiled(center, scale)
         sequential = sequential[:index] + (raw,) + sequential[index + 1:]
         life = raw['lifecycle']
-        evaluations = tf.where(raw['status'] == 0, life['evaluations'], raw['locator_evaluations'])
+        completed = (raw['status'] == 0) | (raw['status'] == OBJECTIVE_RESOLUTION_LIMITED)
+        evaluations = tf.where(completed, life['evaluations'], raw['locator_evaluations'])
         allowed = (raw['status'] == 0) & ((life['status'] == 0) | (life['status'] == 3) | (life['status'] == 4))
         accounting = (evaluations >= 0) & (evaluations <= block.sequential_config.max_exact_evaluations)
         mass_valid = (raw['status'] != 0) | (life['status'] != 0) | tf.reduce_all(raw['mass_flags'][:3])
