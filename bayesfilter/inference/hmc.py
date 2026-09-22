@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import secrets
 import time
@@ -11,10 +12,10 @@ from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from numbers import Integral
 from pathlib import Path
+from threading import Lock
 from typing import Any, Callable
-
-import numpy as np
 
 from bayesfilter.inference.mass_matrix import (
     covariance_from_negative_hessian,
@@ -25,16 +26,25 @@ from bayesfilter.inference.hmc_tuning import (
     normalize_hmc_tuning_policy,
     require_executable_tuning_policy,
 )
+from bayesfilter.inference.fixed_l_finite_bracket import (
+    bound_adaptation_step,
+    bounded_dual_averaging_kwargs,
+    guard_finite_transitions,
+)
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptancePolicy,
     TARGET_STATUS_TELEMETRY_CORE_FIELDS,
     TARGET_STATUS_TELEMETRY_FIELDS,
     TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS,
+    _all_close,
+    _all_finite,
     _evaluate_retained_target_health,
+    _float64_tensor,
     evaluate_hmc_acceptance_evidence,
     summarize_hmc_tuning_telemetry,
 )
 from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
+from bayesfilter.inference.hmc_status import cache_hmc_target_status, cached_target_status
 from bayesfilter.inference.posterior_adapter import value_score_capability
 from bayesfilter.inference.tuning_contract import HMC_TUNING_ORDINARY_RHAT_THRESHOLD
 
@@ -89,29 +99,31 @@ class PrecomputedMassArtifact:
     reconstruction_atol: float = 1.0e-10
 
     def __post_init__(self) -> None:
-        position = np.asarray(self.position, dtype=float).copy()
-        covariance = np.asarray(self.covariance, dtype=float).copy()
-        factor = np.asarray(self.factor, dtype=float).copy()
-        if position.ndim != 1:
+        import tensorflow as tf
+
+        position = _float64_tensor(self.position)
+        covariance = _float64_tensor(self.covariance)
+        factor = _float64_tensor(self.factor)
+        if position.shape.rank != 1:
             raise ValueError("precomputed mass position must be a one-dimensional vector")
         dim = int(position.shape[0])
         if covariance.shape != (dim, dim):
             raise ValueError("precomputed mass covariance shape must match position dimension")
         if factor.shape != (dim, dim):
             raise ValueError("precomputed mass factor shape must match position dimension")
-        if not np.all(np.isfinite(position)):
+        if not _all_finite(position):
             raise ValueError("precomputed mass position must be finite")
-        if not np.all(np.isfinite(covariance)):
+        if not _all_finite(covariance):
             raise ValueError("precomputed mass covariance must be finite")
-        if not np.all(np.isfinite(factor)):
+        if not _all_finite(factor):
             raise ValueError("precomputed mass factor must be finite")
-        if not np.allclose(covariance, covariance.T, rtol=self.reconstruction_rtol, atol=self.reconstruction_atol):
+        if not _all_close(covariance, tf.transpose(covariance), rtol=self.reconstruction_rtol, atol=self.reconstruction_atol):
             raise ValueError("precomputed mass covariance must be symmetric")
         orientation = str(self.factor_orientation)
         if orientation != "row_right_transpose":
             raise ValueError("factor_orientation must be 'row_right_transpose'")
-        reconstruction = factor @ factor.T
-        if not np.allclose(
+        reconstruction = tf.matmul(factor, factor, transpose_b=True)
+        if not _all_close(
             reconstruction,
             covariance,
             rtol=float(self.reconstruction_rtol),
@@ -165,6 +177,9 @@ class PrecomputedMassArtifact:
         nonclaims = tuple(str(item) for item in self.nonclaims)
         if not nonclaims:
             raise ValueError("nonclaims must be non-empty")
+        position = position.numpy()
+        covariance = covariance.numpy()
+        factor = factor.numpy()
         position.setflags(write=False)
         covariance.setflags(write=False)
         factor.setflags(write=False)
@@ -199,8 +214,11 @@ class PrecomputedMassArtifact:
         jitter: float = 1.0e-9,
         **kwargs: Any,
     ) -> "PrecomputedMassArtifact":
-        regularized = np.asarray(covariance, dtype=float) + float(jitter) * np.eye(
-            np.asarray(covariance, dtype=float).shape[0]
+        import tensorflow as tf
+
+        covariance_tensor = _float64_tensor(covariance)
+        regularized = covariance_tensor + float(jitter) * tf.eye(
+            tf.shape(covariance_tensor)[0], dtype=tf.float64
         )
         factor = whitening_from_covariance(covariance, jitter=jitter)
         return cls(
@@ -265,7 +283,7 @@ class PrecomputedMassArtifact:
         adapter: Any,
         *,
         expected_dim: int | None = None,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[Any, Any, Any]:
         if expected_dim is not None and self.dimension != int(expected_dim):
             raise ValueError(
                 f"precomputed mass dimension {self.dimension} does not match {expected_dim}"
@@ -330,9 +348,9 @@ class PrecomputedMassArtifact:
         if include_arrays:
             payload.update(
                 {
-                    "position": np.asarray(self.position, dtype=float).tolist(),
-                    "covariance": np.asarray(self.covariance, dtype=float).tolist(),
-                    "factor": np.asarray(self.factor, dtype=float).tolist(),
+                    "position": self.position.tolist(),
+                    "covariance": self.covariance.tolist(),
+                    "factor": self.factor.tolist(),
                 }
             )
         return payload
@@ -423,16 +441,16 @@ class LatentAffineHMCTransform:
     )
 
     def __post_init__(self) -> None:
-        center = np.asarray(self.center, dtype=float)
-        factor = np.asarray(self.factor, dtype=float)
-        if center.ndim != 1:
+        center = _float64_tensor(self.center)
+        factor = _float64_tensor(self.factor)
+        if center.shape.rank != 1:
             raise ValueError("latent affine center must be a one-dimensional vector")
         dim = int(center.shape[0])
         if factor.shape != (dim, dim):
             raise ValueError("latent affine factor must be square and match center dimension")
-        if not np.all(np.isfinite(center)):
+        if not _all_finite(center):
             raise ValueError("latent affine center must be finite")
-        if not np.all(np.isfinite(factor)):
+        if not _all_finite(factor):
             raise ValueError("latent affine factor must be finite")
         orientation = str(self.factor_orientation)
         if orientation != "row_right_transpose":
@@ -459,34 +477,41 @@ class LatentAffineHMCTransform:
     def dimension(self) -> int:
         return int(self.center.shape[0])
 
-    def latent_to_position(self, z: Any) -> np.ndarray:
+    def latent_to_position(self, z: Any) -> Any:
         """Map scalar or batched row-vector latent coordinates to positions."""
 
-        z_array = self._validate_latent_shape(z)
-        return self.center + z_array @ self.factor.T
+        import tensorflow as tf
 
-    def position_to_latent(self, theta: Any) -> np.ndarray:
+        z_array = self._validate_latent_shape(z)
+        return self.center + tf.tensordot(z_array, self.factor, axes=[[-1], [1]])
+
+    def position_to_latent(self, theta: Any) -> Any:
         """Invert the affine map for nonsingular factors."""
+
+        import tensorflow as tf
 
         theta_array = self._validate_position_shape(theta)
         delta = theta_array - self.center
         try:
-            solved = np.linalg.solve(self.factor, np.moveaxis(delta, -1, 0))
-            return np.moveaxis(solved, 0, -1)
-        except np.linalg.LinAlgError as exc:
+            flattened = tf.reshape(delta, [-1, self.dimension])
+            solved = tf.linalg.solve(self.factor, tf.transpose(flattened))
+            return tf.reshape(tf.transpose(solved), tf.shape(delta))
+        except tf.errors.InvalidArgumentError as exc:
             raise ValueError("latent affine factor must be nonsingular to invert") from exc
 
-    def theta_score_to_latent_score(self, grad_theta: Any) -> np.ndarray:
+    def theta_score_to_latent_score(self, grad_theta: Any) -> Any:
         """Apply the chain rule ``grad_z = factor.T @ grad_theta`` row-wise."""
 
+        import tensorflow as tf
+
         grad_array = self._validate_position_shape(grad_theta)
-        return grad_array @ self.factor
+        return tf.tensordot(grad_array, self.factor, axes=[[-1], [0]])
 
     def value_and_score(
         self,
         z: Any,
-        value_and_grad_fn: Callable[[np.ndarray], tuple[Any, Any]],
-    ) -> tuple[Any, np.ndarray]:
+        value_and_grad_fn: Callable[[Any], tuple[Any, Any]],
+    ) -> tuple[Any, Any]:
         """Evaluate a theta-target and return the corresponding latent score."""
 
         theta = self.latent_to_position(z)
@@ -502,19 +527,19 @@ class LatentAffineHMCTransform:
             "nonclaims": self.nonclaims,
         }
 
-    def _validate_latent_shape(self, value: Any) -> np.ndarray:
-        array = np.asarray(value, dtype=float)
+    def _validate_latent_shape(self, value: Any) -> Any:
+        array = _float64_tensor(value)
         if array.shape[-1:] != (self.dimension,):
             raise ValueError("latent coordinate trailing dimension must match transform dimension")
-        if not np.all(np.isfinite(array)):
+        if not _all_finite(array):
             raise ValueError("latent coordinates must be finite")
         return array
 
-    def _validate_position_shape(self, value: Any) -> np.ndarray:
-        array = np.asarray(value, dtype=float)
+    def _validate_position_shape(self, value: Any) -> Any:
+        array = _float64_tensor(value)
         if array.shape[-1:] != (self.dimension,):
             raise ValueError("position/score trailing dimension must match transform dimension")
-        if not np.all(np.isfinite(array)):
+        if not _all_finite(array):
             raise ValueError("position/score values must be finite")
         return array
 
@@ -535,17 +560,46 @@ class FullChainHMCConfig:
     tuning_policy: str | HMCTuningPolicy | None = None
     target_scope: str | None = None
     chain_execution_mode: str = "tf_function"
+    require_finite_transitions: bool = False
+    capture_candidate_health: bool = False
+    capture_first_failure: bool = False
+    failure_capture_role: str = "sampling"
+    step_size_upper_bound: float | None = None
 
     def __post_init__(self) -> None:
-        for name in ("num_results", "num_burnin_steps", "num_leapfrog_steps"):
+        if type(self.capture_candidate_health) is not bool:
+            raise TypeError("capture_candidate_health must be boolean")
+        if self.capture_candidate_health and self.trace_policy != "standard":
+            raise ValueError("candidate health requires the standard trace")
+        if self.capture_first_failure and (
+            self.use_xla or self.chain_execution_mode != "tf_function"
+            or self.trace_policy != "standard"
+        ):
+            raise ValueError("first-failure capture requires non-XLA tf_function standard tracing")
+        if self.failure_capture_role not in {
+            "sampling", "bootstrap_screen", "bracketing", "dual_averaging", "verification",
+        }:
+            raise ValueError("unsupported first-failure lifecycle role")
+        if self.require_finite_transitions and (self.use_xla or self.trace_policy != "standard"):
+            raise ValueError("finite-transition checks require non-XLA standard tracing")
+        for name in ("num_results", "num_leapfrog_steps"):
             value = int(getattr(self, name))
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
             object.__setattr__(self, name, value)
+        burnin = int(self.num_burnin_steps)
+        if burnin < 0:
+            raise ValueError("num_burnin_steps must be nonnegative")
+        object.__setattr__(self, "num_burnin_steps", burnin)
         step_size = float(self.step_size)
-        if not np.isfinite(step_size) or step_size <= 0.0:
+        if not math.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("step_size must be positive and finite")
         object.__setattr__(self, "step_size", step_size)
+        if self.step_size_upper_bound is not None:
+            bound = float(self.step_size_upper_bound)
+            if not math.isfinite(bound) or bound <= 0.0 or step_size > bound:
+                raise ValueError("step_size_upper_bound must be finite, positive, and bound step_size")
+            object.__setattr__(self, "step_size_upper_bound", bound)
         seed = tuple(int(item) for item in self.seed)
         if len(seed) != 2:
             raise ValueError("seed must contain exactly two integers")
@@ -621,6 +675,10 @@ class FullChainHMCConfig:
         return {
             "num_results": self.num_results,
             "num_burnin_steps": self.num_burnin_steps,
+            **({"require_finite_transitions": True} if self.require_finite_transitions else {}),
+            **({"capture_candidate_health": True} if self.capture_candidate_health else {}),
+            **({"capture_first_failure": True, "failure_capture_role": self.failure_capture_role}
+               if self.capture_first_failure else {}),
             "step_size": self.step_size,
             "num_leapfrog_steps": self.num_leapfrog_steps,
             "seed": self.seed,
@@ -631,6 +689,8 @@ class FullChainHMCConfig:
             "adaptation_policy": self.adaptation_policy,
             "tuning_policy": self.tuning_policy.payload(),
             "target_scope": self.target_scope,
+            **({"step_size_upper_bound": self.step_size_upper_bound}
+               if self.step_size_upper_bound is not None else {}),
         }
 
 
@@ -673,7 +733,7 @@ class FixedSizeHMCChunkConfig:
             raise ValueError("num_leapfrog_steps must be positive")
         object.__setattr__(self, "num_leapfrog_steps", leapfrog)
         step_size = float(self.step_size)
-        if not np.isfinite(step_size) or step_size <= 0.0:
+        if not math.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("step_size must be positive and finite")
         object.__setattr__(self, "step_size", step_size)
         seed = tuple(int(item) for item in self.seed)
@@ -864,7 +924,7 @@ class InternalSegmentHMCRunnerConfig:
             raise ValueError("num_burnin_steps must be nonnegative")
         object.__setattr__(self, "num_burnin_steps", burnin)
         step_size = float(self.step_size)
-        if not np.isfinite(step_size) or step_size <= 0.0:
+        if not math.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("step_size must be positive and finite")
         object.__setattr__(self, "step_size", step_size)
         seed = tuple(int(item) for item in self.seed)
@@ -940,7 +1000,7 @@ class RetainedSampleHMCArchiveConfig:
             raise ValueError("num_leapfrog_steps must be positive")
         object.__setattr__(self, "num_leapfrog_steps", leapfrog)
         step_size = float(self.step_size)
-        if not np.isfinite(step_size) or step_size <= 0.0:
+        if not math.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("step_size must be positive and finite")
         object.__setattr__(self, "step_size", step_size)
         seed = tuple(int(item) for item in self.seed)
@@ -991,9 +1051,10 @@ class SequentialRHatHMCVerificationConfig:
     The verifier runs a fixed-size TF/TFP HMC chunk repeatedly, computes
     dependence-aware acceptance evidence and rank-normalized split/folded R-hat
     on private traces after each checkpoint. Out-of-band acceptance returns a
-    repair decision immediately; promotion requires both acceptance evidence
-    and the R-hat gate after the minimum retained count.
-    It is a tuning-verification gate, not a posterior-convergence certificate.
+    repair decision immediately. ``rhat_role`` explicitly determines whether
+    the R-hat threshold is a pass requirement or an explanatory diagnostic.
+    The default remains the posterior/diagnostic gate for direct consumers;
+    ordinary tuning selects the explanatory-only role.
     """
 
     check_interval: int
@@ -1011,6 +1072,7 @@ class SequentialRHatHMCVerificationConfig:
     use_xla: bool = False
     target_scope: str | None = None
     chain_execution_mode: str = "tf_function"
+    rhat_role: str = "posterior_gate"
 
     def __post_init__(self) -> None:
         check_interval = int(self.check_interval)
@@ -1050,7 +1112,7 @@ class SequentialRHatHMCVerificationConfig:
             raise ValueError("num_leapfrog_steps must be positive")
         object.__setattr__(self, "num_leapfrog_steps", leapfrog)
         step_size = float(self.step_size)
-        if not np.isfinite(step_size) or step_size <= 0.0:
+        if not math.isfinite(step_size) or step_size <= 0.0:
             raise ValueError("step_size must be positive and finite")
         object.__setattr__(self, "step_size", step_size)
         seed = tuple(int(item) for item in self.seed)
@@ -1062,9 +1124,15 @@ class SequentialRHatHMCVerificationConfig:
             raise ValueError("sequential R-hat verification requires at least two chains")
         object.__setattr__(self, "chain_count", chain_count)
         threshold = float(self.rhat_threshold)
-        if not np.isfinite(threshold) or threshold <= 1.0:
+        if not math.isfinite(threshold) or threshold <= 1.0:
             raise ValueError("rhat_threshold must be finite and greater than 1")
         object.__setattr__(self, "rhat_threshold", threshold)
+        rhat_role = str(self.rhat_role)
+        if rhat_role not in {"posterior_gate", "tuning_explanatory_only"}:
+            raise ValueError(
+                "rhat_role must be 'posterior_gate' or 'tuning_explanatory_only'"
+            )
+        object.__setattr__(self, "rhat_role", rhat_role)
         if not isinstance(self.acceptance_policy, HMCAcceptancePolicy):
             raise TypeError("acceptance_policy must be HMCAcceptancePolicy")
         object.__setattr__(self, "use_xla", bool(self.use_xla))
@@ -1091,6 +1159,7 @@ class SequentialRHatHMCVerificationConfig:
             "seed": self.seed,
             "chain_count": self.chain_count,
             "rhat_threshold": self.rhat_threshold,
+            "rhat_role": self.rhat_role,
             "acceptance_policy": self.acceptance_policy.payload(),
             "use_xla": self.use_xla,
             "chain_execution_mode": self.chain_execution_mode,
@@ -1136,7 +1205,7 @@ class RetainedSampleHMCArchiveRunResult:
 
 @dataclass(frozen=True)
 class SequentialRHatHMCVerificationResult:
-    """Public-safe result for sequential R-hat tuning verification."""
+    """Fixed-kernel evidence with an explicit R-hat diagnostic or gate role."""
 
     passed: bool
     cap_hit: bool
@@ -2534,9 +2603,9 @@ def _sequential_rhat_target_log_prob_summary(
     if finite_count is None or finite_count <= 0:
         min_finite = None
         max_finite = None
-    if min_finite is not None and not np.isfinite(min_finite):
+    if min_finite is not None and not math.isfinite(min_finite):
         min_finite = None
-    if max_finite is not None and not np.isfinite(max_finite):
+    if max_finite is not None and not math.isfinite(max_finite):
         max_finite = None
     return {
         "finite_count": finite_count,
@@ -2557,7 +2626,7 @@ def _sequential_rhat_log_accept_ratio_summary(
     )
     if finite_count is None or finite_count <= 0:
         max_abs_finite = None
-    if max_abs_finite is not None and not np.isfinite(max_abs_finite):
+    if max_abs_finite is not None and not math.isfinite(max_abs_finite):
         max_abs_finite = None
     return {
         "finite_count": finite_count,
@@ -2621,6 +2690,45 @@ def _validated_hmc_runtime_inputs(
     if step_tensor.shape.rank != 0:
         raise ValueError("step_size must be a scalar")
     return state_tensor, seed_tensor, step_tensor
+
+
+def _hmc_dual_averaging_kernel(inner_kernel: Any, config: FullChainHMCConfig, step_size: Any) -> Any:
+    """Keep a qualified tuning ceiling on consumed and exported epsilon.
+
+    The optional bound is tied to the caller's frozen coordinates and metric.
+    It constrains adaptation only; it does not change the target or remove the
+    Metropolis correction. The unbounded route retains TFP's exact defaults.
+    """
+    import tensorflow as tf
+    import tensorflow_probability as tfp
+    from tensorflow_probability.python.internal import unnest
+
+    step = tf.convert_to_tensor(step_size)
+    parameters = dict(
+        inner_kernel=inner_kernel,
+        num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
+        target_accept_prob=tf.constant(config.tuning_policy.target_accept_prob, step.dtype),
+    )
+    if config.step_size_upper_bound is None:
+        return tfp.mcmc.DualAveragingStepSizeAdaptation(**parameters)
+    bound = tf.constant(config.step_size_upper_bound, step.dtype)
+
+    def bounded_step_setter(kernel_results: Any, new_step_size: Any) -> Any:
+        return unnest.replace_innermost(
+            kernel_results, step_size=tf.minimum(new_step_size, bound)
+        )
+
+    class BoundedDualAveraging(tfp.mcmc.DualAveragingStepSizeAdaptation):
+        def one_step(self, current_state, previous_kernel_results, seed=None):
+            next_state, results = super().one_step(current_state, previous_kernel_results, seed=seed)
+            return next_state, results._replace(new_step_size=tf.minimum(results.new_step_size, bound))
+
+    parameters.update(
+        inner_kernel=inner_kernel.copy(step_size=tf.minimum(step, bound)),
+        step_size_setter_fn=bounded_step_setter,
+        shrinkage_target=tf.minimum(10.0 * step, bound),
+    )
+    return BoundedDualAveraging(**parameters)
 
 
 def _fixed_hmc_kernel(
@@ -2704,11 +2812,19 @@ class ReusableFullChainHMCRunner:
         )
         self._state_dtype = template.dtype
         self._initial_state_template = template
+        self._failure_recorder = None
+        self._capture_lock = Lock()
+        if config.capture_first_failure:
+            from bayesfilter.inference.hmc_failure_capture import TracedHMCFailureRecorder
+
+            self._failure_recorder = TracedHMCFailureRecorder(adapter, template)
         self._target_log_prob = _make_tfp_target_log_prob_fn(
-            adapter,
+            self._failure_recorder if self._failure_recorder is not None else adapter,
             dtype=self._state_dtype,
         )
         self._trace_fn = _trace_fn_for_config(config, adapter=adapter)
+        if self._failure_recorder is not None:
+            self._trace_fn = self._failure_recorder.wrap_trace(self._trace_fn)
         runner_build_start = time.perf_counter()
         self._runner = self._build_runner()
         self._runner_build_s = time.perf_counter() - runner_build_start
@@ -2766,15 +2882,33 @@ class ReusableFullChainHMCRunner:
                 )
 
         sample_chain_start = time.perf_counter()
-        if self.dynamic_num_leapfrog_steps:
-            samples, trace = self._runner(
-                state_tensor,
-                seed_tensor,
-                step_tensor,
-                leapfrog_tensor,
-            )
-        else:
-            samples, trace = self._runner(state_tensor, seed_tensor, step_tensor)
+        recorder = self._failure_recorder
+        if recorder is not None and not self._capture_lock.acquire(blocking=False):
+            raise RuntimeError("concurrent calls to an observed HMC runner are unsupported")
+        try:
+            if recorder is not None:
+                recorder.begin_call(
+                    seed=seed_tensor, step_size=step_tensor,
+                    leapfrog_steps=int(leapfrog_tensor.numpy()),
+                    burnin_steps=self.config.num_burnin_steps,
+                    role=self.config.failure_capture_role,
+                )
+            if self.dynamic_num_leapfrog_steps:
+                samples, trace = self._runner(
+                    state_tensor, seed_tensor, step_tensor, leapfrog_tensor,
+                )
+            else:
+                samples, trace = self._runner(state_tensor, seed_tensor, step_tensor)
+        except Exception as error:
+            if recorder is not None:
+                try:
+                    recorder.capture(error)
+                except Exception as capture_error:
+                    error.failure_capture_error = repr(capture_error)
+            raise
+        finally:
+            if recorder is not None:
+                self._capture_lock.release()
         sample_chain_call_s = time.perf_counter() - sample_chain_start
         self._call_count += 1
         if self._call_count == 1:
@@ -2832,14 +2966,19 @@ class ReusableFullChainHMCRunner:
                 num_leapfrog_steps=leapfrog_count,
             )
             if config.tuning_policy.uses_dual_averaging:
-                kernel = tfm.DualAveragingStepSizeAdaptation(
-                    inner_kernel=kernel,
-                    num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
-                    target_accept_prob=tf.constant(
-                        config.tuning_policy.target_accept_prob,
-                        dtype=current_state.dtype,
-                    ),
+                kernel = _hmc_dual_averaging_kernel(kernel, config, step_size)
+            if (config.capture_candidate_health and config.target_status_trace_policy == "per_chain_step"
+                    and self._failure_recorder is None):
+                kernel = cache_hmc_target_status(
+                    kernel, self.adapter.target_status_telemetry,
+                    uses_dual_averaging=config.tuning_policy.uses_dual_averaging,
                 )
+            if config.require_finite_transitions:
+                kernel = guard_finite_transitions(
+                    kernel, uses_dual_averaging=config.tuning_policy.uses_dual_averaging
+                )
+            if self._failure_recorder is not None:
+                kernel = self._failure_recorder.wrap_kernel(kernel, leapfrog_count)
             return tfm.sample_chain(
                 num_results=config.num_results,
                 num_burnin_steps=config.num_burnin_steps,
@@ -2847,6 +2986,7 @@ class ReusableFullChainHMCRunner:
                 kernel=kernel,
                 trace_fn=trace_fn,
                 seed=seed,
+                **({"parallel_iterations": 1} if self._failure_recorder is not None else {}),
             )
 
         input_signature = [
@@ -2891,6 +3031,14 @@ class ReusableFullChainHMCRunner:
         return {
             "runtime": "tfp.mcmc.sample_chain",
             "reusable_runner": True,
+            "target_status_reuse": (
+                "accepted_status_from_tfp_metropolis_mask_v1"
+                if config.capture_candidate_health and config.target_status_trace_policy == "per_chain_step" and not config.capture_first_failure
+                else "none"
+            ),
+            **({"first_failure_capture": "bayesfilter.traced_hmc_first_failure.v1",
+                "failure_capture_role": config.failure_capture_role}
+               if config.capture_first_failure else {}),
             "jit_compile": config.use_xla,
             "use_xla": config.use_xla,
             "chain_execution_mode": config.chain_execution_mode,
@@ -2905,6 +3053,7 @@ class ReusableFullChainHMCRunner:
                 target_status_trace_policy=config.target_status_trace_policy,
             ),
             "value_score_authority": capability.value_score_authority,
+            "score_provenance": capability.score_provenance,
             "target_scope": capability.target_scope,
             "requested_target_scope": config.target_scope,
             "program_signature": program_signature(
@@ -2912,6 +3061,7 @@ class ReusableFullChainHMCRunner:
                     "adapter": stable_adapter_signature(self.adapter),
                     "capability": {
                         "value_score_authority": capability.value_score_authority,
+                        "score_provenance": capability.score_provenance,
                         "xla_hmc_ready": capability.xla_hmc_ready,
                         "full_chain_xla_diagnostic_ready": (
                             capability.full_chain_xla_diagnostic_ready
@@ -2926,6 +3076,11 @@ class ReusableFullChainHMCRunner:
                     "initial_state_dtype": self._state_dtype.name,
                     "dynamic_inputs": dynamic_inputs,
                     "dynamic_num_leapfrog_steps": self.dynamic_num_leapfrog_steps,
+                    "target_status_reuse": (
+                        "accepted_status_from_tfp_metropolis_mask_v1"
+                        if config.capture_candidate_health and config.target_status_trace_policy == "per_chain_step" and not config.capture_first_failure
+                        else "none"
+                    ),
                 }
             ),
             "initial_state_shape": self._state_shape,
@@ -2993,6 +3148,8 @@ class IndependentChainHMCRunner:
     ) -> None:
         import tensorflow as tf
 
+        if config.capture_first_failure:
+            raise ValueError("independent-chain capture is unsupported; use the batched reusable runner")
         template = tf.cast(tf.convert_to_tensor(initial_state_template), tf.float64)
         if template.shape.rank != 2:
             raise ValueError(
@@ -3741,6 +3898,7 @@ class FixedSizeHMCChunkRunner:
                 target_status_trace_policy=config.target_status_trace_policy,
             ),
             "value_score_authority": capability.value_score_authority,
+            "score_provenance": capability.score_provenance,
             "target_scope": capability.target_scope,
             "requested_target_scope": config.target_scope,
             "program_signature": program_signature(
@@ -3748,6 +3906,7 @@ class FixedSizeHMCChunkRunner:
                     "adapter": stable_adapter_signature(self.adapter),
                     "capability": {
                         "value_score_authority": capability.value_score_authority,
+                        "score_provenance": capability.score_provenance,
                         "xla_hmc_ready": capability.xla_hmc_ready,
                         "full_chain_xla_diagnostic_ready": (
                             capability.full_chain_xla_diagnostic_ready
@@ -4325,6 +4484,7 @@ class InternalSegmentHMCRunner:
             "output_mode": config.output_mode,
             "target_status_trace_policy": "none",
             "value_score_authority": capability.value_score_authority,
+            "score_provenance": capability.score_provenance,
             "target_scope": capability.target_scope,
             "requested_target_scope": config.target_scope,
             "program_signature": program_signature(
@@ -4332,6 +4492,7 @@ class InternalSegmentHMCRunner:
                     "adapter": stable_adapter_signature(self.adapter),
                     "capability": {
                         "value_score_authority": capability.value_score_authority,
+                        "score_provenance": capability.score_provenance,
                         "xla_hmc_ready": capability.xla_hmc_ready,
                         "full_chain_xla_diagnostic_ready": (
                             capability.full_chain_xla_diagnostic_ready
@@ -4850,6 +5011,7 @@ class RetainedSampleHMCArchiveRunner:
             "use_xla": config.use_xla,
             "chain_execution_mode": config.chain_execution_mode,
             "value_score_authority": capability.value_score_authority,
+            "score_provenance": capability.score_provenance,
             "target_scope": capability.target_scope,
             "requested_target_scope": config.target_scope,
             "program_signature": program_signature(
@@ -4857,6 +5019,7 @@ class RetainedSampleHMCArchiveRunner:
                     "adapter": stable_adapter_signature(self.adapter),
                     "capability": {
                         "value_score_authority": capability.value_score_authority,
+                        "score_provenance": capability.score_provenance,
                         "xla_hmc_ready": capability.xla_hmc_ready,
                         "full_chain_xla_diagnostic_ready": (
                             capability.full_chain_xla_diagnostic_ready
@@ -5046,9 +5209,9 @@ class SequentialRHatHMCVerifier:
         start = time.perf_counter()
         current_state = self._initial_state
         retained_chunks: list[Any] = []
-        log_accept_chunks: list[np.ndarray] = []
-        is_accepted_chunks: list[np.ndarray] = []
-        target_log_prob_chunks: list[np.ndarray] = []
+        log_accept_chunks: list[Any] = []
+        is_accepted_chunks: list[Any] = []
+        target_log_prob_chunks: list[Any] = []
         chunk_summaries: list[Mapping[str, Any]] = []
         retained_count = 0
         chunk_index = 0
@@ -5088,9 +5251,7 @@ class SequentialRHatHMCVerifier:
                 tf.convert_to_tensor(result.samples),
                 tf.convert_to_tensor(result.valid_mask, dtype=tf.bool),
             )
-            actual_valid_count = int(
-                np.sum(_private_tensor_to_numpy(result.valid_mask).astype(bool))
-            )
+            actual_valid_count = int(tf.shape(valid_samples)[0])
             retained_chunks.append(valid_samples)
             retained_count += actual_valid_count
             chunk_summary = _sequential_rhat_chunk_summary(
@@ -5107,7 +5268,7 @@ class SequentialRHatHMCVerifier:
             if self._retained_target_health_policy is not None:
                 target_health = _evaluate_retained_target_health(
                     adapter=self.adapter,
-                    samples=_private_tensor_to_numpy(valid_samples),
+                    samples=valid_samples,
                     target_status_trace_policy=self._retained_target_health_policy,
                 )
                 engineering_invalidity_reasons.extend(
@@ -5149,30 +5310,26 @@ class SequentialRHatHMCVerifier:
             missing_trace_keys = tuple(
                 key for key in required_trace_keys if key not in trace
             )
-            if missing_trace_keys:
+            malformed_acceptance = (
+                not missing_trace_keys
+                and tf.convert_to_tensor(trace["is_accepted"]).dtype != tf.bool
+            )
+            if missing_trace_keys or malformed_acceptance:
                 shared_invalidity_reasons = (
-                    "required_standard_acceptance_trace_missing",
+                    "required_standard_acceptance_trace_missing"
+                    if missing_trace_keys else "shared_schema_invalid",
                 )
-                active_log_accept = np.zeros(
-                    (actual_valid_count, int(config.chain_count)), dtype=float
+                active_log_accept = tf.zeros(
+                    [actual_valid_count, int(config.chain_count)], tf.float64
                 )
-                active_is_accepted = np.zeros_like(active_log_accept, dtype=bool)
-                active_target_log_prob = np.zeros_like(active_log_accept, dtype=float)
+                active_is_accepted = tf.zeros_like(active_log_accept, dtype=tf.bool)
+                active_target_log_prob = tf.zeros_like(active_log_accept)
             else:
                 shared_invalidity_reasons = ()
-                mask = _private_tensor_to_numpy(result.valid_mask).astype(bool)
-                active_log_accept = _private_tensor_to_numpy(
-                    result.trace["log_accept_ratio"]
-                )[mask]
-                active_is_accepted = np.asarray(
-                    result.trace["is_accepted"].numpy()
-                    if hasattr(result.trace["is_accepted"], "numpy")
-                    else result.trace["is_accepted"],
-                    dtype=bool,
-                )[mask]
-                active_target_log_prob = _private_tensor_to_numpy(
-                    result.trace["target_log_prob"]
-                )[mask]
+                mask = tf.convert_to_tensor(result.valid_mask, dtype=tf.bool)
+                active_log_accept = tf.boolean_mask(_float64_tensor(trace["log_accept_ratio"]), mask)
+                active_is_accepted = tf.boolean_mask(tf.convert_to_tensor(trace["is_accepted"]), mask)
+                active_target_log_prob = tf.boolean_mask(_float64_tensor(trace["target_log_prob"]), mask)
             log_accept_chunks.append(active_log_accept)
             is_accepted_chunks.append(active_is_accepted)
             target_log_prob_chunks.append(active_target_log_prob)
@@ -5182,10 +5339,10 @@ class SequentialRHatHMCVerifier:
             if not divergence_consistent:
                 engineering_invalidity_reasons.append("shared_schema_invalid")
             acceptance_evidence = evaluate_hmc_acceptance_evidence(
-                samples=_private_tensor_to_numpy(retained),
-                log_accept_ratio=np.concatenate(log_accept_chunks, axis=0),
-                is_accepted=np.concatenate(is_accepted_chunks, axis=0),
-                target_log_prob=np.concatenate(target_log_prob_chunks, axis=0),
+                samples=retained,
+                log_accept_ratio=tf.concat(log_accept_chunks, axis=0),
+                is_accepted=tf.concat(is_accepted_chunks, axis=0),
+                target_log_prob=tf.concat(target_log_prob_chunks, axis=0),
                 policy=config.acceptance_policy,
                 native_divergence_status=divergence_status,
                 native_divergence_count=divergence_count,
@@ -5226,7 +5383,10 @@ class SequentialRHatHMCVerifier:
             if (
                 acceptance_evidence.promotion_eligible
                 and minimum_retained_satisfied
-                and bool(final_rhat["passed"])
+                and (
+                    config.rhat_role == "tuning_explanatory_only"
+                    or bool(final_rhat["passed"])
+                )
             ):
                 passed = True
                 break
@@ -5254,7 +5414,7 @@ class SequentialRHatHMCVerifier:
             ),
             "chunk_count": len(chunk_summaries),
             "rhat_threshold": float(config.rhat_threshold),
-            "rhat_role": "fixed_kernel_convergence_gate_not_candidate_ranking",
+            "rhat_role": config.rhat_role,
             "rhat_definition": final_rhat["rhat_definition"],
             "max_finite_rhat": final_rhat["max_finite_rhat"],
             "max_rank_normalized_split_rhat": final_rhat[
@@ -5300,7 +5460,7 @@ class SequentialRHatHMCVerifier:
                 for item in chunk_summaries
             ),
             "runtime_s": float(runtime_s),
-            "runtime_finite": bool(np.isfinite(runtime_s)),
+            "runtime_finite": math.isfinite(runtime_s),
             "acceptance_rate": (
                 None if acceptance_evidence is None else acceptance_evidence.pooled_mean
             ),
@@ -5393,6 +5553,7 @@ class SequentialRHatHMCVerifier:
             "chunk_count": len(chunk_summaries),
             "chain_count": int(config.chain_count),
             "rhat_threshold": float(config.rhat_threshold),
+            "rhat_role": config.rhat_role,
             "rhat_definition": final_rhat["rhat_definition"],
             "max_rank_normalized_split_rhat": final_rhat[
                 "max_rank_normalized_split_rhat"
@@ -5503,6 +5664,8 @@ def run_full_chain_tfp_hmc(
     callers may convert tensors after this function returns.
     """
 
+    if config.capture_first_failure:
+        return build_reusable_full_chain_tfp_hmc_runner(adapter, initial_state, config).run()
     capability = _validate_full_chain_hmc_authority(adapter, config)
 
     import tensorflow as tf
@@ -5525,14 +5688,13 @@ def run_full_chain_tfp_hmc(
         num_leapfrog_steps=config.num_leapfrog_steps,
     )
     if config.tuning_policy.uses_dual_averaging:
-        kernel = tfm.DualAveragingStepSizeAdaptation(
-            inner_kernel=kernel,
-            num_adaptation_steps=config.tuning_policy.num_adaptation_steps,
-            target_accept_prob=tf.constant(
-                config.tuning_policy.target_accept_prob,
-                dtype=state.dtype,
-            ),
-    )
+        kernel = _hmc_dual_averaging_kernel(
+            kernel, config, tf.constant(config.step_size, dtype=state.dtype)
+        )
+    if config.require_finite_transitions:
+        kernel = guard_finite_transitions(
+            kernel, uses_dual_averaging=config.tuning_policy.uses_dual_averaging
+        )
     trace_fn = _trace_fn_for_config(config, adapter=adapter)
     runner_build_start = time.perf_counter()
     runner = _build_sample_chain_runner(config, kernel, trace_fn, state)
@@ -5564,6 +5726,7 @@ def run_full_chain_tfp_hmc(
             target_status_trace_policy=config.target_status_trace_policy,
         ),
         "value_score_authority": capability.value_score_authority,
+        "score_provenance": capability.score_provenance,
         "target_scope": capability.target_scope,
         "requested_target_scope": config.target_scope,
         "program_signature": program_signature(
@@ -5571,6 +5734,7 @@ def run_full_chain_tfp_hmc(
                 "adapter": stable_adapter_signature(adapter),
                 "capability": {
                     "value_score_authority": capability.value_score_authority,
+                    "score_provenance": capability.score_provenance,
                     "xla_hmc_ready": capability.xla_hmc_ready,
                     "full_chain_xla_diagnostic_ready": (
                         capability.full_chain_xla_diagnostic_ready
@@ -5662,9 +5826,9 @@ def _json_safe_metadata(value: Any) -> Any:
         return {str(key): _json_safe_metadata(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):
         return [_json_safe_metadata(item) for item in value]
-    if isinstance(value, np.ndarray):
+    if hasattr(value, "tolist"):
         return _json_safe_metadata(value.tolist())
-    if isinstance(value, np.generic):
+    if hasattr(value, "item"):
         return value.item()
     return value
 
@@ -5732,8 +5896,10 @@ def _rhat_summary_from_retained_samples(
 ) -> Mapping[str, Any]:
     """Compute the shared modern multi-chain R-hat summary."""
 
-    array = _private_tensor_to_numpy(samples)
-    if array.ndim < 3:
+    import tensorflow as tf
+
+    array = _float64_tensor(samples)
+    if array.shape.rank < 3:
         raise ValueError("R-hat samples must have shape (draw, chain, parameter...)")
     draw_count = int(array.shape[0])
     chain_count = int(array.shape[1])
@@ -5741,7 +5907,7 @@ def _rhat_summary_from_retained_samples(
         return _empty_rhat_summary()
     if chain_count < 2:
         raise ValueError("R-hat requires at least two chains")
-    flat = np.reshape(array, (draw_count, chain_count, -1))
+    flat = tf.reshape(array, [draw_count, chain_count, -1])
     from bayesfilter.inference.hmc_convergence import (
         rank_normalized_split_rhat_summary,
     )
@@ -5769,6 +5935,8 @@ def _sequential_rhat_chunk_summary(
     retained_count: int,
     expected_active_results: int,
 ) -> Mapping[str, Any]:
+    import tensorflow as tf
+
     diagnostics = result.diagnostics
     metadata = result.metadata
     hard_vetoes: list[str] = []
@@ -5776,9 +5944,7 @@ def _sequential_rhat_chunk_summary(
     valid_sample_count = _int_or_none_metadata(
         diagnostics.get("valid_sample_count")
     )
-    observed_valid_count = int(
-        np.sum(_private_tensor_to_numpy(result.valid_mask).astype(bool))
-    )
+    observed_valid_count = int(tf.reduce_sum(tf.cast(result.valid_mask, tf.int32)))
     if (
         valid_sample_count != int(expected_active_results)
         or observed_valid_count != int(expected_active_results)
@@ -5790,9 +5956,7 @@ def _sequential_rhat_chunk_summary(
     if nonfinite is None or nonfinite != 0:
         hard_vetoes.append("nonfinite_retained_samples")
         engineering_invalidity_reasons.append("nonfinite_retained_samples")
-    final_state_finite = bool(
-        np.all(np.isfinite(_private_tensor_to_numpy(result.final_state)))
-    )
+    final_state_finite = _all_finite(result.final_state)
     if not final_state_finite:
         hard_vetoes.append("nonfinite_final_state")
         engineering_invalidity_reasons.append("nonfinite_final_state")
@@ -5866,8 +6030,8 @@ def _aggregate_divergence_provenance(
     counts = tuple(chunk.get("divergence_count") for chunk in chunks)
     if status == "available":
         if any(
-            isinstance(count, (bool, np.bool_))
-            or not isinstance(count, (int, np.integer))
+            isinstance(count, bool)
+            or not isinstance(count, Integral)
             or int(count) < 0
             for count in counts
         ):
@@ -5917,17 +6081,15 @@ def _int_or_none_metadata(value: Any) -> int | None:
     converted = _tensor_or_plain_to_metadata(value)
     if converted is None:
         return None
-    if isinstance(converted, bool) or not isinstance(converted, (int, np.integer)):
+    if isinstance(converted, bool) or not isinstance(converted, Integral):
         return None
     return int(converted)
 
 
-def _private_tensor_to_numpy(value: Any) -> np.ndarray:
+def _private_tensor_to_numpy(value: Any) -> Any:
     """Convert a private diagnostic tensor to NumPy without JSON list expansion."""
 
-    if hasattr(value, "numpy"):
-        value = value.numpy()
-    return np.asarray(value, dtype=float)
+    return _float64_tensor(value).numpy()
 
 
 def _assert_sequential_rhat_public_safe(payload: Mapping[str, Any]) -> None:
@@ -6209,17 +6371,20 @@ def _assert_retained_archive_public_summary_safe(payload: Mapping[str, Any]) -> 
     walk(payload, tuple())
 
 
-def _covariance_eigen_summary(covariance: np.ndarray) -> Mapping[str, Any]:
-    eigenvalues = np.linalg.eigvalsh(0.5 * (covariance + covariance.T))
-    finite = bool(np.all(np.isfinite(eigenvalues)))
-    positive = bool(finite and float(np.min(eigenvalues)) > 0.0)
+def _covariance_eigen_summary(covariance: Any) -> Mapping[str, Any]:
+    import tensorflow as tf
+
+    covariance = _float64_tensor(covariance)
+    eigenvalues = tf.linalg.eigvalsh(0.5 * (covariance + tf.transpose(covariance)))
+    finite = _all_finite(eigenvalues)
+    positive = bool(finite and float(tf.reduce_min(eigenvalues)) > 0.0)
     return {
         "finite": finite,
         "positive": positive,
-        "min": float(np.min(eigenvalues)) if finite else float("nan"),
-        "max": float(np.max(eigenvalues)) if finite else float("nan"),
+        "min": float(tf.reduce_min(eigenvalues)) if finite else float("nan"),
+        "max": float(tf.reduce_max(eigenvalues)) if finite else float("nan"),
         "condition_number": (
-            float(np.max(eigenvalues) / np.min(eigenvalues)) if positive else float("inf")
+            float(tf.reduce_max(eigenvalues) / tf.reduce_min(eigenvalues)) if positive else float("inf")
         ),
         "eigenvalues": tuple(float(value) for value in eigenvalues),
     }
@@ -6242,12 +6407,12 @@ def validate_precomputed_map(
     adapter: Any,
     *,
     expected_dim: int | None = None,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[Any, Any]:
     """Validate reusable MAP/mass metadata before it can be consumed."""
 
-    position = np.asarray(artifact.position, dtype=float)
-    covariance = np.asarray(artifact.covariance, dtype=float)
-    if position.ndim != 1:
+    position = _float64_tensor(artifact.position)
+    covariance = _float64_tensor(artifact.covariance)
+    if position.shape.rank != 1:
         raise ValueError("precomputed MAP position must be a one-dimensional vector")
     dim = int(position.shape[0])
     if expected_dim is not None and dim != int(expected_dim):
@@ -6259,10 +6424,10 @@ def validate_precomputed_map(
     expected_signature = stable_adapter_signature(adapter)
     if str(artifact.adapter_signature) != expected_signature:
         raise ValueError("precomputed MAP adapter signature mismatch")
-    return position, covariance
+    return position.numpy(), covariance.numpy()
 
 
-def latent_to_position(z: Any, center: Any, whitening_factor: Any) -> np.ndarray:
+def latent_to_position(z: Any, center: Any, whitening_factor: Any) -> Any:
     """Map row-vector latent coordinates with theta = center + z @ W.T."""
 
     transform = LatentAffineHMCTransform(
@@ -6277,8 +6442,8 @@ def latent_value_and_score(
     z: Any,
     center: Any,
     whitening_factor: Any,
-    value_and_grad_fn: Callable[[np.ndarray], tuple[Any, Any]],
-) -> tuple[Any, np.ndarray]:
+    value_and_grad_fn: Callable[[Any], tuple[Any, Any]],
+) -> tuple[Any, Any]:
     """Evaluate a transformed target and map theta-score to latent-score."""
 
     transform = LatentAffineHMCTransform(
@@ -6443,7 +6608,82 @@ def _trace_fn_for_config(
     config: FullChainHMCConfig,
     *,
     adapter: Any | None = None,
+    _wrap_finite_checks: bool = True,
+    _wrap_candidate_health: bool = True,
 ) -> Callable[[Any, Any], Mapping[str, Any]]:
+    if config.capture_candidate_health and _wrap_candidate_health:
+        base_trace = _trace_fn_for_config(
+            config, adapter=adapter, _wrap_finite_checks=_wrap_finite_checks,
+            _wrap_candidate_health=False,
+        )
+
+        def candidate_health_trace(state: Any, kernel_results: Any) -> Mapping[str, Any]:
+            import tensorflow as tf
+
+            trace = dict(base_trace(state, kernel_results))
+            results = kernel_results.inner_results if config.require_finite_transitions else kernel_results
+            if config.tuning_policy.uses_dual_averaging:
+                results = results.inner_results
+            proposed = results.proposed_results
+            accepted = results.accepted_results
+            scores = tf.nest.flatten((proposed.grads_target_log_prob, accepted.grads_target_log_prob))
+            trace["target_score_finite"] = tf.reduce_all(tf.stack([
+                tf.reduce_all(tf.math.is_finite(score), axis=-1) for score in scores
+            ]), axis=0)
+            # Preserve proposals so the host can check displacement from the
+            # actual pre-transition state, including the first transition.
+            trace["proposed_state"] = results.proposed_state
+            initial_momentum = tf.nest.flatten(proposed.initial_momentum)
+            final_momentum = tf.nest.flatten(proposed.final_momentum)
+            if len(initial_momentum) != 1 or len(final_momentum) != 1:
+                raise ValueError("candidate health requires a single tensor state")
+            trace["initial_momentum"] = initial_momentum[0]
+            trace["final_momentum"] = final_momentum[0]
+            if config.target_status_trace_policy == "per_chain_step":
+                telemetry = cached_target_status(results, proposed=True)
+                if telemetry is None:
+                    telemetry = adapter.target_status_telemetry(results.proposed_state)
+                if any(key not in telemetry for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS):
+                    raise ValueError("proposed target-status telemetry is incomplete")
+                trace["proposed_target_status_telemetry"] = {
+                    key: telemetry[key] for key in TARGET_STATUS_TELEMETRY_FIELDS if key in telemetry
+                }
+            return trace
+
+        return candidate_health_trace
+    if config.require_finite_transitions and _wrap_finite_checks:
+        base_trace = _trace_fn_for_config(
+            config, adapter=adapter, _wrap_finite_checks=False,
+            _wrap_candidate_health=False,
+        )
+
+        def checked_trace(state: Any, kernel_results: Any) -> Mapping[str, Any]:
+            trace = dict(base_trace(state, kernel_results.inner_results))
+            trace.update(kernel_results.health)
+            return trace
+
+        return checked_trace
+    if config.tuning_policy.step_size_upper_bound is not None:
+        if config.use_xla:
+            raise ValueError("fixed-L bounded adaptation requires separate XLA qualification")
+        if config.trace_policy != "standard":
+            raise ValueError("fixed-L bounded adaptation requires the complete standard trace")
+        base_trace = (
+            _adaptive_standard_trace_fn_with_target_status(adapter)
+            if config.target_status_trace_policy == "per_chain_step"
+            else _adaptive_standard_trace_fn
+        )
+
+        def bounded_trace(state: Any, kernel_results: Any) -> Mapping[str, Any]:
+            trace = dict(base_trace(state, kernel_results))
+            trace["raw_next_step_size"] = kernel_results.new_step_size
+            trace["step_size"] = bound_adaptation_step(
+                kernel_results.new_step_size, config.tuning_policy.step_size_upper_bound
+            )
+            trace["consumed_step_size"] = kernel_results.inner_results.proposed_results.step_size
+            return trace
+
+        return bounded_trace
     if config.target_status_trace_policy != "none":
         if adapter is None or not callable(getattr(adapter, "target_status_telemetry", None)):
             raise TypeError(
@@ -6464,7 +6704,9 @@ def _trace_fn_for_config(
 def _standard_trace_fn_with_target_status(adapter: Any) -> Callable[[Any, Any], Mapping[str, Any]]:
     def trace_fn(state: Any, kernel_results: Any) -> Mapping[str, Any]:
         trace = dict(_standard_trace_fn(state, kernel_results))
-        telemetry = adapter.target_status_telemetry(state)
+        telemetry = cached_target_status(kernel_results)
+        if telemetry is None:
+            telemetry = adapter.target_status_telemetry(state)
         # TFP's trace_scan stacks every returned field.  Keep only the declared
         # tensor telemetry fields here; explanatory metadata (for example a
         # string diagnostic-limits note) belongs in the adapter API, not in a
@@ -6505,7 +6747,9 @@ def _standard_trace_fn(_state: Any, kernel_results: Any) -> Mapping[str, Any]:
 def _adaptive_standard_trace_fn_with_target_status(adapter: Any) -> Callable[[Any, Any], Mapping[str, Any]]:
     def trace_fn(state: Any, kernel_results: Any) -> Mapping[str, Any]:
         trace = dict(_adaptive_standard_trace_fn(state, kernel_results))
-        telemetry = adapter.target_status_telemetry(state)
+        telemetry = cached_target_status(kernel_results.inner_results)
+        if telemetry is None:
+            telemetry = adapter.target_status_telemetry(state)
         missing = tuple(
             key for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS if key not in telemetry
         )
@@ -6527,6 +6771,7 @@ def _adaptive_standard_trace_fn(_state: Any, kernel_results: Any) -> Mapping[str
         "is_accepted": inner_results.is_accepted,
         "log_accept_ratio": inner_results.log_accept_ratio,
         "target_log_prob": inner_results.accepted_results.target_log_prob,
+        "proposed_target_log_prob": inner_results.proposed_results.target_log_prob,
         "step_size": kernel_results.new_step_size,
         "target_accept_prob": kernel_results.target_accept_prob,
         "num_adaptation_steps": kernel_results.num_adaptation_steps,
@@ -7215,11 +7460,11 @@ def program_signature(payload: Mapping[str, Any] | Any) -> str:
 
 
 def _stack_like_chain(chain_state: Any, rows: list[Any]) -> Any:
-    if hasattr(chain_state, "dtype") and chain_state.__class__.__module__.startswith("tensorflow"):
-        import tensorflow as tf
+    import tensorflow as tf
 
+    if tf.is_tensor(chain_state):
         return tf.stack(rows, axis=0)
-    return np.stack(rows, axis=0)
+    return tf.stack(rows, axis=0).numpy()
 
 
 def _normalize_for_json(value: Any) -> Any:
@@ -7227,8 +7472,8 @@ def _normalize_for_json(value: Any) -> Any:
         return {str(key): _normalize_for_json(val) for key, val in value.items()}
     if isinstance(value, (tuple, list)):
         return [_normalize_for_json(item) for item in value]
-    if isinstance(value, np.ndarray):
+    if callable(getattr(value, "tolist", None)):
         return _normalize_for_json(value.tolist())
-    if isinstance(value, np.generic):
-        return value.item()
+    if callable(getattr(value, "numpy", None)):
+        return _normalize_for_json(value.numpy())
     return value

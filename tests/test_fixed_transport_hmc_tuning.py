@@ -1,3 +1,7 @@
+"""Historical fixed-transport scheduler/reader regressions and public configuration tests.
+
+The current public scheduler is exercised by test_hmc_whole_procedure_repair.
+"""
 from __future__ import annotations
 
 import json
@@ -16,6 +20,7 @@ import tensorflow as tf
 
 import bayesfilter
 import bayesfilter.inference.fixed_transport_hmc_tuning_tf as fixed_tuning
+from bayesfilter.inference.fixed_transport_hmc_tuning_tf import _run_historical_fixed_transport_hmc_tuning
 from bayesfilter.inference import (
     FixedTransportHMCKernelTuningConfig,
     FixedTransportReusableRunnerPool,
@@ -453,8 +458,9 @@ def _config() -> FixedTransportHMCKernelTuningConfig:
 
 
 def test_fixed_transport_defaults_match_owner_acceptance_policy() -> None:
-    with pytest.raises(ValueError, match="at least two distinct step_size_candidates"):
-        FixedTransportHMCKernelTuningConfig(initial_step_size=0.1)
+    defaults = FixedTransportHMCKernelTuningConfig(initial_step_size=0.1)
+    assert defaults.leapfrog_grid == (3, 5, 9, 13, 18, 25)
+    assert defaults.step_size_candidates == (.1,)  # Initial pilot hypothesis.
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
         step_size_candidates=(0.05, 0.1),
@@ -516,7 +522,7 @@ def test_fixed_transport_hmc_tuner_selects_frozen_identity_z_kernel(tmp_path: Pa
     transport = CountingIdentityTransport()
     fake_hmc = FakeHMC()
 
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=base,
         fixed_transport=transport,
         initial_position=np.zeros(2),
@@ -560,7 +566,7 @@ def test_fixed_transport_hmc_tuner_passes_through_declared_resource_stop(
         raise CampaignResourceStop("fixture resource refusal")
 
     with pytest.raises(CampaignResourceStop, match="fixture resource refusal"):
-        tune_fixed_transport_hmc_kernel(
+        _run_historical_fixed_transport_hmc_tuning(
             base_adapter=CountingGaussianAdapter(),
             fixed_transport=CountingIdentityTransport(),
             initial_position=np.zeros(2),
@@ -585,7 +591,7 @@ def test_reusable_pool_resource_hook_propagates_before_compilation(
     pool = FixedTransportReusableRunnerPool(before_run=resource_stop)
     config = replace(_config(), chain_execution_mode="tf_function")
     with pytest.raises(CampaignResourceStop, match="pool resource refusal"):
-        tune_fixed_transport_hmc_kernel(
+        _run_historical_fixed_transport_hmc_tuning(
             base_adapter=CountingGaussianAdapter(),
             fixed_transport=CountingIdentityTransport(),
             initial_position=np.zeros(2),
@@ -603,7 +609,7 @@ def test_fixed_transport_hmc_tuner_still_converts_undeclared_runtime_error() -> 
     def runtime_error(_adapter, _initial_state, _config):
         raise RuntimeError("fixture numerical runtime error")
 
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -621,7 +627,7 @@ def test_fixed_transport_hmc_tuner_uses_and_records_explicit_initial_state_bank(
     config = FixedTransportHMCKernelTuningConfig(
         **{**_config().__dict__, "initial_state_bank": bank}
     )
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.asarray(bank[0]),
@@ -641,7 +647,7 @@ def test_fixed_transport_hmc_tuner_uses_and_records_explicit_initial_state_bank(
 def test_fixed_transport_hmc_tuner_broadcasts_nonzero_initial_position() -> None:
     fake_hmc = FakeHMC()
     start = np.asarray([0.4, -0.7])
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=start,
@@ -656,7 +662,7 @@ def test_fixed_transport_hmc_tuner_broadcasts_nonzero_initial_position() -> None
 
 
 def test_nominal_acceptance_cannot_promote_stuck_chains() -> None:
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -669,7 +675,7 @@ def test_nominal_acceptance_cannot_promote_stuck_chains() -> None:
 
 
 def test_initial_jump_does_not_count_as_retained_movement() -> None:
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -728,7 +734,7 @@ def test_replicated_efficiency_policy_screens_every_ladder_nominee_then_holds_ou
     fake_hmc = EfficiencyRankingFakeHMC()
     base = CountingGaussianAdapter()
     transport = CountingIdentityTransport()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=base,
         fixed_transport=transport,
         initial_position=np.zeros(2),
@@ -795,7 +801,7 @@ def test_replicated_efficiency_traverses_all_l_values_and_tunes_epsilon_independ
         }
     )
     fake_hmc = AllLeapfrogEfficiencyFakeHMC()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -863,7 +869,7 @@ def test_failed_post_selection_holdout_suppresses_kernel_without_trying_runner_u
         }
     )
     fake_hmc = HeldoutFailureFakeHMC()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -912,7 +918,7 @@ def test_selection_requires_complete_target_value_and_score_telemetry(
             "selection_acceptance_band": (0.35, 0.95),
         }
     )
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -949,7 +955,7 @@ def test_dual_averaging_screen_repairs_epsilon_in_the_correct_direction(
             "repair_band": (0.55, 0.85),
         }
     )
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -987,7 +993,7 @@ def test_resource_stop_inside_efficiency_selection_is_not_scientific_failure() -
         return fake_hmc(adapter, initial_state, run_config)
 
     with pytest.raises(CampaignResourceStop, match="selection compute ceiling"):
-        tune_fixed_transport_hmc_kernel(
+        _run_historical_fixed_transport_hmc_tuning(
             base_adapter=CountingGaussianAdapter(),
             fixed_transport=CountingIdentityTransport(),
             initial_position=np.zeros(2),
@@ -1008,7 +1014,7 @@ def test_rejected_candidate_never_runs_efficiency_selection() -> None:
         }
     )
     fake_hmc = RejectedLeapfrogFakeHMC()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1033,7 +1039,7 @@ def test_rejected_candidate_never_runs_efficiency_selection() -> None:
 def test_verified_handoff_rejects_target_scope_substitution() -> None:
     base = CountingGaussianAdapter()
     transport = CountingIdentityTransport()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=base,
         fixed_transport=transport,
         initial_position=np.zeros(2),
@@ -1056,7 +1062,7 @@ def test_verified_handoff_rejects_target_scope_substitution() -> None:
 def test_verified_handoff_rejects_transport_substitution() -> None:
     base = CountingGaussianAdapter()
     tuned_transport = CountingIdentityTransport(manifest_tag="tuned")
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=base,
         fixed_transport=tuned_transport,
         initial_position=np.zeros(2),
@@ -1074,7 +1080,7 @@ def test_verified_handoff_rejects_transport_substitution() -> None:
 
 def test_tuning_artifact_binds_source_closure_scope_route_and_seed_domains() -> None:
     fake_hmc = FakeHMC()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1214,7 +1220,7 @@ def test_real_tfp_xla_route_uses_shared_scalar_step_and_zero_chain_bank() -> Non
         use_xla=True,
         target_scope="gaussian_fixture_fixed_transport",
     )
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=tf.zeros((2,), tf.float64),
@@ -1244,7 +1250,7 @@ def test_real_tfp_xla_route_uses_shared_scalar_step_and_zero_chain_bank() -> Non
 
 def test_fixed_transport_hmc_tuner_forbids_gradient_tape_fallback() -> None:
     with pytest.raises(ValueError, match="gradient_tape_fallback"):
-        tune_fixed_transport_hmc_kernel(
+        _run_historical_fixed_transport_hmc_tuning(
             base_adapter=CountingGaussianAdapter(authority="gradient_tape_fallback"),
             fixed_transport=CountingIdentityTransport(),
             initial_position=np.zeros(2),
@@ -1254,7 +1260,7 @@ def test_fixed_transport_hmc_tuner_forbids_gradient_tape_fallback() -> None:
 
 
 def test_fixed_transport_hmc_tuner_keeps_valid_high_acceptance_candidate() -> None:
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1297,7 +1303,7 @@ def test_fixed_transport_hmc_tuner_runs_bayesfilter_fixed_grid_scale_repair() ->
     )
 
     fake_hmc = StepSensitiveFakeHMC()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1337,31 +1343,19 @@ def test_fixed_transport_hmc_tuner_runs_bayesfilter_fixed_grid_scale_repair() ->
     assert result.final_kernel_payload is None
 
 
-def test_modern_verification_requires_four_chains_and_1000_draws() -> None:
-    with pytest.raises(ValueError, match="exactly four chains"):
-        _modern_config(chain_count=3)
-    with pytest.raises(ValueError, match="at least the configured retained"):
-        _modern_config(verification_num_results=999)
-
-
-def test_diagnostic_modern_verification_has_the_same_archive_requirements() -> None:
-    with pytest.raises(ValueError, match="exactly four chains"):
-        _modern_config(
-            chain_count=3,
-            require_modern_rank_normalized_verification=False,
-            report_modern_rank_normalized_verification=True,
-        )
-    with pytest.raises(ValueError, match="at least the configured retained"):
-        _modern_config(
-            verification_num_results=999,
-            require_modern_rank_normalized_verification=False,
-            report_modern_rank_normalized_verification=True,
-        )
+def test_modern_reporting_does_not_impose_convergence_draw_budget() -> None:
+    # Historical reporting settings do not impose sample or chain counts.
+    # The current public acceptance policy separately requires four chains.
+    assert _modern_config(chain_count=3).chain_count == 3
+    assert _modern_config(verification_num_results=16).verification_num_results == 16
+    assert _modern_config(verification_num_results=16,
+        require_modern_rank_normalized_verification=False,
+        report_modern_rank_normalized_verification=True).verification_num_results == 16
 
 
 def test_modern_verification_passes_from_real_iid_archive() -> None:
     fake_hmc = ArchiveFakeHMC()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1387,8 +1381,8 @@ def test_modern_verification_passes_from_real_iid_archive() -> None:
     assert [call["num_results"] for call in fake_hmc.calls].count(64) == 8
 
 
-def test_modern_verification_folded_rhat_vetoes_in_band_acceptance() -> None:
-    result = tune_fixed_transport_hmc_kernel(
+def test_historical_required_rhat_field_cannot_veto_in_band_acceptance() -> None:
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1396,8 +1390,8 @@ def test_modern_verification_folded_rhat_vetoes_in_band_acceptance() -> None:
         run_full_chain=ArchiveFakeHMC(folded_scale_mismatch=True),
     )
 
-    assert not result.passed
-    assert result.final_kernel_payload is None
+    assert result.passed
+    assert result.final_kernel_payload is not None
     assert len(result.candidates) == 4
     assert result.candidates[0].final_status == "passed"
     scale = result.fixed_grid_scale_selection_payload
@@ -1405,14 +1399,14 @@ def test_modern_verification_folded_rhat_vetoes_in_band_acceptance() -> None:
     attempt = scale["attempts"][0]
     assert attempt["measured"] is True
     assert result.candidate_selection_payload["heldout_verification"]["final_status"] == (
-        "hard_veto"
+        "passed"
     )
     modern = result.candidate_selection_payload["heldout_verification"]["diagnostics"][
         "modern_rank_normalized_verification"
     ]
     assert modern["max_rank_normalized_split_rhat"] < 1.01
     assert modern["max_folded_rank_normalized_split_rhat"] > 1.01
-    assert "heldout_verification_modern_rank_folded_rhat_failed" in result.hard_vetoes
+    assert "heldout_verification_modern_rank_folded_rhat_failed" not in result.hard_vetoes
 
 
 def test_diagnostic_modern_rhat_is_reported_without_vetoing_healthy_mechanics() -> None:
@@ -1422,7 +1416,7 @@ def test_diagnostic_modern_rhat_is_reported_without_vetoing_healthy_mechanics() 
         require_modern_rank_normalized_verification=False,
         report_modern_rank_normalized_verification=True,
     )
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=base,
         fixed_transport=transport,
         initial_position=np.zeros(2),
@@ -1461,7 +1455,7 @@ def test_diagnostic_modern_rhat_computation_error_cannot_veto_mechanics(
     monkeypatch.setattr(
         fixed_tuning, "rank_normalized_split_rhat_summary", fail_diagnostic
     )
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1487,7 +1481,7 @@ def test_diagnostic_modern_rhat_computation_error_cannot_veto_mechanics(
 
 
 def test_verification_target_status_failure_is_a_hard_veto() -> None:
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1505,7 +1499,7 @@ def test_verification_target_status_failure_is_a_hard_veto() -> None:
 
 
 def test_native_divergence_is_a_hard_veto() -> None:
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1520,7 +1514,7 @@ def test_native_divergence_is_a_hard_veto() -> None:
 
 
 def test_unavailable_native_divergence_is_recorded_but_not_a_veto() -> None:
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),
@@ -1540,7 +1534,7 @@ def test_unavailable_native_divergence_is_recorded_but_not_a_veto() -> None:
 
 
 def test_finite_log_accept_energy_tail_is_explanatory_only() -> None:
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=CountingGaussianAdapter(),
         fixed_transport=CountingIdentityTransport(),
         initial_position=np.zeros(2),

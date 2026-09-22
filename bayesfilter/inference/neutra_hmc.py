@@ -14,6 +14,10 @@ from typing import Any, Callable
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+from bayesfilter.inference.hmc_posterior_assessment import (
+    HMCPosteriorAssessmentPolicy, assess_posterior, validate_sequential_seeds,
+)
+from bayesfilter.inference.hmc_ess import STAN_ESS_VERSION
 from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
 from bayesfilter.inference.hmc_convergence import (
     rank_normalized_split_rhat_summary,
@@ -36,6 +40,20 @@ from bayesfilter.inference.posterior_adapter import value_score_capability
 
 MAX_RESULTS_PER_CHAIN = 10_000
 DEFAULT_ENERGY_ERROR_LOG_ACCEPT_THRESHOLD = -1000.0
+
+
+def _sequential_rhat(samples, *, rhat_max):
+    if int(samples.shape[0]) < 4:
+        return {"passed": False, "rhat_threshold": rhat_max, "status": "insufficient_draws"}
+    return rank_normalized_split_rhat_summary(samples, rhat_max=rhat_max)
+
+
+def _assessment_status(checks):
+    if not checks:
+        return "precision_unavailable"
+    last = checks[-1]
+    return (last.get(last.get("diagnostic_role", "modern_rhat")) or {}).get(
+        "precision", {}).get("status", "precision_unavailable")
 
 ArchiveCallback = Callable[..., Mapping[str, Any]]
 TargetStatusSummaryCallback = Callable[[Any], Mapping[str, Any]]
@@ -133,8 +151,8 @@ class BatchedHMCConfig:
             raise ValueError("step_size must be finite and positive")
         if int(self.num_leapfrog_steps) <= 0:
             raise ValueError("num_leapfrog_steps must be positive")
-        seed = tuple(int(item) for item in self.seed)
-        if len(seed) != 2:
+        seed = tuple(self.seed)
+        if len(seed) != 2 or any(type(v) is not int or not -(2**31) <= v < 2**31 for v in seed):
             raise ValueError("seed must have exactly two integers")
         threshold = float(self.energy_error_log_accept_threshold)
         if not math.isfinite(threshold) or threshold >= 0.0:
@@ -184,19 +202,22 @@ class _SharedSequentialNeuTraHMCConfig:
     retained_max_results: int = MAX_RESULTS_PER_CHAIN
     retained_rhat_max: float = 1.01
     minimum_chain_count: int = 4
+    assessment_policy: HMCPosteriorAssessmentPolicy | None = None
     jit_compile: bool = True
     energy_error_log_accept_threshold: float = (
         DEFAULT_ENERGY_ERROR_LOG_ACCEPT_THRESHOLD
     )
 
     def __post_init__(self) -> None:
+        if getattr(self, "assessment_policy", None) is not None and not isinstance(self.assessment_policy, HMCPosteriorAssessmentPolicy):
+            raise TypeError("assessment_policy must be HMCPosteriorAssessmentPolicy")
         if not math.isfinite(float(self.step_size)) or float(self.step_size) <= 0.0:
             raise ValueError("step_size must be finite and positive")
         if int(self.num_leapfrog_steps) <= 0:
             raise ValueError("num_leapfrog_steps must be positive")
         for name in ("warmup_seed", "retained_seed"):
-            seed = tuple(int(item) for item in getattr(self, name))
-            if len(seed) != 2:
+            seed = tuple(getattr(self, name))
+            if len(seed) != 2 or any(type(v) is not int or not -(2**31) <= v < 2**31 for v in seed):
                 raise ValueError(f"{name} must have exactly two integers")
             object.__setattr__(self, name, seed)
         if self.warmup_seed == self.retained_seed:
@@ -248,6 +269,8 @@ class _SharedSequentialNeuTraHMCConfig:
     def payload(self, *, chain_count: int | None = None) -> Mapping[str, Any]:
         return {
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+            "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+            "bulk_tail_ess_method": STAN_ESS_VERSION,
             "step_size": float(self.step_size),
             "num_leapfrog_steps": int(self.num_leapfrog_steps),
             "warmup_seed": self.warmup_seed,
@@ -265,6 +288,7 @@ class _SharedSequentialNeuTraHMCConfig:
                 "max(rank-normalized split R-hat, "
                 "folded rank-normalized split R-hat)"
             ),
+            "assessment_policy": None if self.assessment_policy is None else self.assessment_policy.payload(),
             "minimum_chain_count": self.minimum_chain_count,
             "chain_count": None if chain_count is None else int(chain_count),
             "jit_compile": bool(self.jit_compile),
@@ -296,15 +320,18 @@ class SequentialExactTransitionConfig:
     retained_max_results: int = MAX_RESULTS_PER_CHAIN
     retained_rhat_max: float = 1.01
     minimum_chain_count: int = 4
+    assessment_policy: HMCPosteriorAssessmentPolicy | None = None
 
     def __post_init__(self) -> None:
+        if self.assessment_policy is not None and not isinstance(self.assessment_policy, HMCPosteriorAssessmentPolicy):
+            raise TypeError("assessment_policy must be HMCPosteriorAssessmentPolicy")
         signature = str(self.transition_signature)
         if not signature:
             raise ValueError("transition_signature must be nonempty")
         object.__setattr__(self, "transition_signature", signature)
         for name in ("warmup_seed", "retained_seed"):
-            seed = tuple(int(item) for item in getattr(self, name))
-            if len(seed) != 2:
+            seed = tuple(getattr(self, name))
+            if len(seed) != 2 or any(type(v) is not int or not -(2**31) <= v < 2**31 for v in seed):
                 raise ValueError(f"{name} must have exactly two integers")
             object.__setattr__(self, name, seed)
         if self.warmup_seed == self.retained_seed:
@@ -350,7 +377,10 @@ class SequentialExactTransitionConfig:
     def payload(self, *, chain_count: int | None = None) -> Mapping[str, Any]:
         return {
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+            "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+            "bulk_tail_ess_method": STAN_ESS_VERSION,
             **asdict(self),
+            "assessment_policy": None if self.assessment_policy is None else self.assessment_policy.payload(),
             "chain_count": None if chain_count is None else int(chain_count),
             "posterior_temperature": 1.0,
             "posterior_stream_only": True,
@@ -371,13 +401,14 @@ def run_batched_hmc(
 ) -> Mapping[str, Any]:
     """Run all chains in one fixed-size TensorFlow/TFP HMC invocation."""
 
-    state, chain_count, _ = _validated_initial_state(initial_state)
+    state, chain_count, dimension = _validated_initial_state(initial_state)
     compiled = _build_batched_hmc_program(
         adapter=adapter,
         num_results=int(config.num_results),
         num_burnin_steps=int(config.num_burnin_steps),
         step_size=float(config.step_size),
         num_leapfrog_steps=int(config.num_leapfrog_steps),
+        state_shape=(chain_count, dimension),
         jit_compile=bool(config.jit_compile),
     )
     started = time.monotonic()
@@ -400,9 +431,14 @@ def _build_batched_hmc_program(
     num_burnin_steps: int,
     step_size: float,
     num_leapfrog_steps: int,
+    state_shape: tuple[int, int],
     jit_compile: bool,
 ) -> Callable[[tf.Tensor, tf.Tensor], Any]:
     """Build one reusable fixed-size batched HMC program."""
+
+    state_shape = tuple(int(item) for item in state_shape)
+    if len(state_shape) != 2 or any(item <= 0 for item in state_shape):
+        raise NeuTraHMCError("state_shape must contain two positive dimensions")
 
     target = reviewed_value_score_target_fn(adapter, dtype=tf.float64, require_batched=True)
     kernel = tfp.mcmc.HamiltonianMonteCarlo(
@@ -423,7 +459,16 @@ def _build_batched_hmc_program(
             result["target_status"] = telemetry(state)
         return result
 
-    @tf.function(jit_compile=bool(jit_compile), reduce_retracing=True)
+    input_signature = (
+        tf.TensorSpec(shape=state_shape, dtype=tf.float64),
+        tf.TensorSpec(shape=(2,), dtype=tf.int32),
+    )
+
+    @tf.function(
+        input_signature=input_signature,
+        jit_compile=bool(jit_compile),
+        autograph=False,
+    )
     def compiled(current_state: tf.Tensor, seed: tf.Tensor):
         return tfp.mcmc.sample_chain(
             num_results=int(num_results),
@@ -497,9 +542,7 @@ def _summarize_batched_hmc_output(
         ),
         "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
         "all_states_moved": bool(
-            tf.reduce_all(
-                tf.reduce_any(tf.not_equal(samples[-1], initial_state), axis=-1)
-            ).numpy()
+            tf.reduce_all(_chain_moved(initial_state, samples)).numpy()
         ),
         "elapsed_seconds": float(elapsed_seconds),
         "jit_compile": bool(config.jit_compile),
@@ -541,32 +584,44 @@ def _run_shared_sequential_neutra_hmc(
     archive_callback: ArchiveCallback | None = None,
     target_status_summary_fn: TargetStatusSummaryCallback | None = None,
     budget_check: Callable[[int], bool | None] | None = None,
+    checkpoint_store: Any | None = None,
+    quantities_fn: Any = None,
+    _member_runner: Any = None,
 ) -> Mapping[str, Any]:
     """Retain warm-up and sample cumulatively until declared gates or caps."""
 
+    validate_sequential_seeds(config)
     state, chain_count, dimension = _validated_initial_state(initial_state)
     if chain_count < config.minimum_chain_count:
         raise NeuTraHMCError(
             f"sequential HMC requires at least {config.minimum_chain_count} chains"
         )
     names = tuple(str(item) for item in parameter_names)
-    if len(names) != dimension:
-        raise NeuTraHMCError("parameter_names must match the HMC dimension")
+    if not names or len(set(names)) != len(names):
+        raise NeuTraHMCError("parameter_names must uniquely name model quantities")
+    if model_transform is None and raw_transform is None and len(names) != dimension:
+        raise NeuTraHMCError("parameter_names must match the HMC dimension without a transform")
     if model_transform is not None and raw_transform is not None:
         raise NeuTraHMCError("provide only one of model_transform or raw_transform")
     transform_fn = model_transform or raw_transform or (lambda values: values)
     programs: dict[int, Callable[[tf.Tensor, tf.Tensor], Any]] = {}
+    checkpoint_index = 0
 
     def transform(samples: tf.Tensor) -> tf.Tensor:
         values = tf.convert_to_tensor(transform_fn(samples), tf.float64)
-        if values.shape != samples.shape:
+        if values.shape != samples.shape[:-1].concatenate([len(names)]):
             raise NeuTraHMCError(
-                "model_transform must preserve [draw, chain, parameter] shape"
+                "model_transform must preserve draw/chain axes and match named model quantities"
             )
         return values
 
     def run_chunk(active_results: int, seed: tuple[int, int]) -> Mapping[str, Any]:
+        nonlocal checkpoint_index
         active = int(active_results)
+        if _member_runner is not None:
+            result = _member_runner(state, active, seed, checkpoint_store, checkpoint_index)
+            checkpoint_index += 1
+            return result
         if active not in programs:
             programs[active] = _build_batched_hmc_program(
                 adapter=adapter,
@@ -574,6 +629,7 @@ def _run_shared_sequential_neutra_hmc(
                 num_burnin_steps=0,
                 step_size=config.step_size,
                 num_leapfrog_steps=config.num_leapfrog_steps,
+                state_shape=(chain_count, dimension),
                 jit_compile=config.jit_compile,
             )
         chunk_config = BatchedHMCConfig(
@@ -588,7 +644,21 @@ def _run_shared_sequential_neutra_hmc(
             ),
         )
         started = time.monotonic()
-        samples, trace = programs[active](state, tf.constant(seed, tf.int32))
+        if checkpoint_store is None:
+            samples, trace = programs[active](state, tf.constant(seed, tf.int32))
+        else:
+            checkpoint_inputs = {
+                "adapter_signature": str(adapter.adapter_signature()),
+                "config": config.payload(chain_count=chain_count),
+                "active_results": active,
+                "seed": seed,
+                "initial_state_sha256": checkpoint_store.tensor_hash(state),
+            }
+            samples, trace = checkpoint_store.run(
+                f"chunk-{checkpoint_index:06d}", checkpoint_inputs,
+                lambda: programs[active](state, tf.constant(seed, tf.int32)),
+            )
+            checkpoint_index += 1
         return _summarize_batched_hmc_output(
             initial_state=state,
             samples=samples,
@@ -608,6 +678,7 @@ def _run_shared_sequential_neutra_hmc(
     warmup_count = 0
     warmup_passed = False
     warmup_index = 0
+    warmup_successes = 0
 
     while warmup_count < config.warmup_max_results:
         active = min(
@@ -622,6 +693,9 @@ def _run_shared_sequential_neutra_hmc(
         chunk = run_chunk(active, seed)
         latent_samples = tf.convert_to_tensor(chunk["samples"], tf.float64)
         model_samples = transform(latent_samples)
+        if not bool(tf.reduce_all(tf.math.is_finite(model_samples))):
+            chunk["diagnostics"] = {**chunk["diagnostics"], "health_passed": False,
+                                    "model_samples_all_finite": False}
         state = latent_samples[-1]
         warmup_latent_chunks.append(latent_samples)
         warmup_model_chunks.append(model_samples)
@@ -657,10 +731,16 @@ def _run_shared_sequential_neutra_hmc(
         ):
             cumulative = tf.concat(warmup_model_chunks, axis=0)
             window = cumulative[-config.warmup_check_window_results :]
-            rhat = rank_normalized_split_rhat_summary(
+            rhat = _sequential_rhat(
                 window, rhat_max=config.warmup_rhat_max
             )
-            warmup_passed = bool(rhat["passed"])
+            assessment = assess_posterior(window, names, policy=config.assessment_policy,
+                stage="warmup", rhat=rhat, quantities_fn=quantities_fn)
+            hard_vetoes.extend(assessment.get("health_failures", ()))
+            warmup_successes = warmup_successes + 1 if assessment["passed"] else 0
+            required = (config.assessment_policy or HMCPosteriorAssessmentPolicy()).warmup_consecutive_checks
+            warmup_passed = warmup_successes >= required
+            rhat = {**rhat, "assessment": assessment, "consecutive_passes": warmup_successes}
         warmup_checks.append(
             {
                 "chunk_index": warmup_index,
@@ -675,7 +755,7 @@ def _run_shared_sequential_neutra_hmc(
             }
         )
         warmup_index += 1
-        if warmup_passed:
+        if warmup_passed or hard_vetoes:
             break
 
     retained_latent_chunks: list[tf.Tensor] = []
@@ -700,6 +780,9 @@ def _run_shared_sequential_neutra_hmc(
         chunk = run_chunk(active, seed)
         latent_samples = tf.convert_to_tensor(chunk["samples"], tf.float64)
         model_samples = transform(latent_samples)
+        if not bool(tf.reduce_all(tf.math.is_finite(model_samples))):
+            chunk["diagnostics"] = {**chunk["diagnostics"], "health_passed": False,
+                                    "model_samples_all_finite": False}
         state = latent_samples[-1]
         retained_latent_chunks.append(latent_samples)
         retained_model_chunks.append(model_samples)
@@ -730,18 +813,14 @@ def _run_shared_sequential_neutra_hmc(
             )
             break
         cumulative = tf.concat(retained_model_chunks, axis=0)
-        if retained_diagnostic_fn is None:
-            diagnostic = rank_normalized_split_rhat_summary(
-                cumulative, rhat_max=config.retained_rhat_max
-            )
-            diagnostic_role = "modern_rhat"
-        else:
-            diagnostic = retained_diagnostic_fn(cumulative)
-            if not isinstance(diagnostic, Mapping) or "passed" not in diagnostic:
-                raise NeuTraHMCError(
-                    "retained_diagnostic_fn must return a mapping with passed"
-                )
-            diagnostic_role = "full_convergence"
+        core_rhat = _sequential_rhat(cumulative, rhat_max=config.retained_rhat_max)
+        extra = None if retained_diagnostic_fn is None else retained_diagnostic_fn(cumulative)
+        diagnostic = assess_posterior(cumulative, names, policy=config.assessment_policy,
+            stage="retained", rhat=core_rhat, extra=extra, quantities_fn=quantities_fn)
+        hard_vetoes.extend(diagnostic.get("health_failures", ()))
+        if extra is not None:
+            hard_vetoes.extend(str(item) for item in extra.get("hard_vetoes", ()))
+        diagnostic_role = "modern_rhat" if extra is None else "full_convergence"
         retained_passed = bool(
             retained_count >= config.retained_min_results and diagnostic["passed"]
         )
@@ -756,10 +835,11 @@ def _run_shared_sequential_neutra_hmc(
         check[diagnostic_role] = diagnostic
         retained_checks.append(check)
         retained_index += 1
-        if retained_passed:
+        if retained_passed or hard_vetoes:
             break
 
     empty = tf.zeros((0, chain_count, dimension), tf.float64)
+    empty_model = tf.zeros((0, chain_count, len(names)), tf.float64)
     warmup_latent = (
         tf.concat(warmup_latent_chunks, axis=0)
         if warmup_latent_chunks
@@ -768,7 +848,7 @@ def _run_shared_sequential_neutra_hmc(
     warmup_model = (
         tf.concat(warmup_model_chunks, axis=0)
         if warmup_model_chunks
-        else empty
+        else empty_model
     )
     retained_latent = (
         tf.concat(retained_latent_chunks, axis=0)
@@ -778,7 +858,7 @@ def _run_shared_sequential_neutra_hmc(
     retained_model = (
         tf.concat(retained_model_chunks, axis=0)
         if retained_model_chunks
-        else empty
+        else empty_model
     )
     cumulative_archives = None
     if archive_callback is not None:
@@ -805,6 +885,23 @@ def _run_shared_sequential_neutra_hmc(
             )
         cumulative_archives = cumulative or None
 
+    program_evidence = []
+    if checkpoint_store is not None:
+        for active, program in programs.items():
+            trace_count = int(program.experimental_get_tracing_count())
+            hlo = (
+                str(program.experimental_get_compiler_ir(
+                    state, tf.constant(config.warmup_seed, tf.int32)
+                )(stage="hlo"))
+                if config.jit_compile and trace_count > 0 else None
+            )
+            program_evidence.append({
+                "num_results": active, "tracing_count": trace_count,
+                "jit_compile": bool(config.jit_compile),
+                "hlo_sha256": None if hlo is None else hashlib.sha256(hlo.encode()).hexdigest(),
+                "input_signature": tuple({"shape": item.shape.as_list(), "dtype": item.dtype.name}
+                                         for item in program.input_signature),
+            })
     passed = bool(warmup_passed and retained_passed and not hard_vetoes)
     return {
         "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
@@ -815,11 +912,14 @@ def _run_shared_sequential_neutra_hmc(
             else "REJECT_SEQUENTIAL_FIXED_NEUTRA_HMC_KERNEL"
         ),
         "config": config.payload(chain_count=chain_count),
+        "equilibration_status": "checks_passed" if warmup_passed else "equilibration_inconclusive",
+        "precision_status": _assessment_status(retained_checks),
         "warmup_passed": warmup_passed,
         "warmup_cap_hit": bool(
             not warmup_passed and warmup_count >= config.warmup_max_results
         ),
         "warmup_results_per_chain": warmup_count,
+        "checkpoint_program_evidence": tuple(program_evidence),
         "warmup_check_count": len(warmup_checks),
         "warmup_checks": tuple(warmup_checks),
         "retained_passed": retained_passed,
@@ -853,6 +953,7 @@ def run_sequential_exact_transition(
     parameter_names: Sequence[str],
     config: SequentialExactTransitionConfig,
     retained_diagnostic_fn: RetainedDiagnosticCallback | None = None,
+    quantities_fn: Any = None,
     archive_callback: ExactTransitionArchiveCallback | None = None,
     budget_check: Callable[[int], bool | None] | None = None,
 ) -> Mapping[str, Any]:
@@ -868,6 +969,7 @@ def run_sequential_exact_transition(
     if not callable(posterior_state_fn):
         raise NeuTraHMCError("posterior_state_fn must be callable")
 
+    validate_sequential_seeds(config)
     current_state = initial_transition_state
     initial_posterior, chain_count, dimension = _validated_initial_state(
         posterior_state_fn(current_state)
@@ -1009,6 +1111,7 @@ def run_sequential_exact_transition(
     warmup_count = 0
     warmup_index = 0
     warmup_passed = False
+    warmup_successes = 0
 
     while warmup_count < config.warmup_max_results:
         active = min(
@@ -1045,11 +1148,16 @@ def run_sequential_exact_transition(
             config.warmup_min_results, config.warmup_check_window_results
         ):
             cumulative = tf.concat(warmup_chunks, axis=0)
-            rhat = rank_normalized_split_rhat_summary(
+            rhat = _sequential_rhat(
                 cumulative[-config.warmup_check_window_results :],
                 rhat_max=config.warmup_rhat_max,
             )
-            warmup_passed = bool(rhat["passed"])
+            assessment = assess_posterior(cumulative[-config.warmup_check_window_results:], names,
+                policy=config.assessment_policy, stage="warmup", rhat=rhat, quantities_fn=quantities_fn)
+            hard_vetoes.extend(assessment.get("health_failures", ()))
+            warmup_successes = warmup_successes + 1 if assessment["passed"] else 0
+            warmup_passed = warmup_successes >= (config.assessment_policy or HMCPosteriorAssessmentPolicy()).warmup_consecutive_checks
+            rhat = {**rhat, "assessment": assessment, "consecutive_passes": warmup_successes}
         warmup_checks.append(
             {
                 "chunk_index": warmup_index,
@@ -1061,7 +1169,7 @@ def run_sequential_exact_transition(
             }
         )
         warmup_index += 1
-        if not health["health_passed"] or warmup_passed:
+        if not health["health_passed"] or warmup_passed or hard_vetoes:
             break
 
     retained_count = 0
@@ -1102,22 +1210,14 @@ def run_sequential_exact_transition(
         diagnostic_role = "modern_rhat"
         if health["health_passed"]:
             cumulative = tf.concat(retained_chunks, axis=0)
-            if retained_diagnostic_fn is None:
-                diagnostic = rank_normalized_split_rhat_summary(
-                    cumulative, rhat_max=config.retained_rhat_max
-                )
-            else:
-                diagnostic = retained_diagnostic_fn(cumulative)
-                if not isinstance(diagnostic, Mapping) or not isinstance(
-                    diagnostic.get("passed"), bool
-                ):
-                    raise NeuTraHMCError(
-                        "retained_diagnostic_fn must return a mapping with boolean passed"
-                    )
-                diagnostic_role = "full_convergence"
-                hard_vetoes.extend(
-                    str(item) for item in diagnostic.get("hard_vetoes", ())
-                )
+            core_rhat = _sequential_rhat(cumulative, rhat_max=config.retained_rhat_max)
+            extra = None if retained_diagnostic_fn is None else retained_diagnostic_fn(cumulative)
+            diagnostic = assess_posterior(cumulative, names, policy=config.assessment_policy,
+                stage="retained", rhat=core_rhat, extra=extra, quantities_fn=quantities_fn)
+            hard_vetoes.extend(diagnostic.get("health_failures", ()))
+            diagnostic_role = "full_convergence" if extra is not None else "modern_rhat"
+            if extra is not None:
+                hard_vetoes.extend(str(item) for item in extra.get("hard_vetoes", ()))
             retained_passed = bool(
                 retained_count >= config.retained_min_results
                 and diagnostic["passed"]
@@ -1191,6 +1291,8 @@ def run_sequential_exact_transition(
             else "REJECT_SEQUENTIAL_EXACT_TRANSITION"
         ),
         "config": config.payload(chain_count=chain_count),
+        "equilibration_status": "checks_passed" if warmup_passed else "equilibration_inconclusive",
+        "precision_status": _assessment_status(retained_checks),
         "warmup_passed": warmup_passed,
         "warmup_cap_hit": bool(
             not warmup_passed and warmup_count >= config.warmup_max_results
@@ -1233,6 +1335,7 @@ def run_retained_neutra_hmc_continuation(
     config: SequentialNeuTraHMCConfig,
     next_chunk_index: int,
     retained_diagnostic_fn: RetainedDiagnosticCallback,
+    quantities_fn: Any = None,
     archive_callback: ArchiveCallback | None = None,
     checkpoint_callback: RetainedCheckpointCallback | None = None,
     stop_requested_fn: StopRequestedCallback | None = None,
@@ -1240,11 +1343,13 @@ def run_retained_neutra_hmc_continuation(
 ) -> Mapping[str, Any]:
     """Continue retained HMC from a verified, already-discarded-warmup prefix."""
 
+    validate_sequential_seeds(config)
     latent = tf.convert_to_tensor(prefix_latent, tf.float64)
     model = tf.convert_to_tensor(prefix_model, tf.float64)
-    if latent.shape.rank != 3 or model.shape != latent.shape:
+    if (latent.shape.rank != 3 or model.shape.rank != 3
+            or model.shape[:2] != latent.shape[:2]):
         raise NeuTraHMCError(
-            "continuation prefixes must share [draw, chain, parameter] shape"
+            "continuation prefixes must share draw/chain axes"
         )
     static_shape = latent.shape.as_list()
     if any(value is None for value in static_shape):
@@ -1257,8 +1362,11 @@ def run_retained_neutra_hmc_continuation(
             f"sequential HMC requires at least {config.minimum_chain_count} chains"
         )
     names = tuple(str(item) for item in parameter_names)
-    if len(names) != dimension:
-        raise NeuTraHMCError("parameter_names must match the HMC dimension")
+    if (not names or len(set(names)) != len(names)
+            or model.shape[-1] != len(names)):
+        raise NeuTraHMCError("parameter_names must uniquely match the model prefix dimension")
+    if model_transform is None and raw_transform is None and len(names) != dimension:
+        raise NeuTraHMCError("a transform is required for different active and model dimensions")
     if not bool(tf.reduce_all(tf.math.is_finite(latent)).numpy()) or not bool(
         tf.reduce_all(tf.math.is_finite(model)).numpy()
     ):
@@ -1280,9 +1388,9 @@ def run_retained_neutra_hmc_continuation(
 
     def transform(samples: tf.Tensor) -> tf.Tensor:
         values = tf.convert_to_tensor(transform_fn(samples), tf.float64)
-        if values.shape != samples.shape:
+        if values.shape != samples.shape[:-1].concatenate([len(names)]):
             raise NeuTraHMCError(
-                "model_transform must preserve [draw, chain, parameter] shape"
+                "model_transform must preserve draw/chain axes and match named model quantities"
             )
         return values
 
@@ -1313,6 +1421,7 @@ def run_retained_neutra_hmc_continuation(
                 num_burnin_steps=0,
                 step_size=config.step_size,
                 num_leapfrog_steps=config.num_leapfrog_steps,
+                state_shape=(chain_count, dimension),
                 jit_compile=config.jit_compile,
             )
         seed = sequential_chunk_seed(config.retained_seed, chunk_index)
@@ -1366,21 +1475,17 @@ def run_retained_neutra_hmc_continuation(
             hard_vetoes.append("retained_continuation_model_samples_nonfinite")
         else:
             cumulative_model = tf.concat(model_chunks, axis=0)
-            diagnostic = retained_diagnostic_fn(cumulative_model)
-            if not isinstance(diagnostic, Mapping) or not isinstance(
-                diagnostic.get("passed"), bool
-            ):
-                raise NeuTraHMCError(
-                    "retained_diagnostic_fn must return a mapping with boolean passed"
-                )
-            diagnostic_vetoes = tuple(
-                str(item) for item in diagnostic.get("hard_vetoes", ())
-            )
+            extra = retained_diagnostic_fn(cumulative_model)
+            core_rhat = _sequential_rhat(cumulative_model, rhat_max=config.retained_rhat_max)
+            diagnostic = assess_posterior(cumulative_model, names, policy=config.assessment_policy,
+                stage="retained", rhat=core_rhat, extra=extra, quantities_fn=quantities_fn)
+            diagnostic_vetoes = tuple(str(item) for item in extra.get("hard_vetoes", ()))
             hard_vetoes.extend(diagnostic_vetoes)
+            hard_vetoes.extend(diagnostic.get("health_failures", ()))
             retained_passed = bool(
                 retained_count >= config.retained_min_results
                 and diagnostic["passed"]
-                and not diagnostic_vetoes
+                and not hard_vetoes
             )
         check = {
             "chunk_index": chunk_index,
@@ -1468,6 +1573,7 @@ def run_retained_neutra_hmc_continuation(
         "passed": passed,
         "decision": decision,
         "completion_status": completion_status,
+        "precision_status": _assessment_status(checks),
         "retained_passed": retained_passed,
         "retained_cap_hit": retained_cap_hit,
         "stopped_before_chunk": stopped_before_chunk,
@@ -1594,8 +1700,11 @@ class _ArchivedSequentialNeuTraHMCConfig:
     primary_diagnostic_coordinate: str = "maximum_over_z_and_model"
     retained_ess_required: bool = True
     xla_qualification_required: bool = False
+    assessment_policy: HMCPosteriorAssessmentPolicy | None = None
 
     def __post_init__(self) -> None:
+        if getattr(self, "assessment_policy", None) is not None and not isinstance(self.assessment_policy, HMCPosteriorAssessmentPolicy):
+            raise TypeError("assessment_policy must be HMCPosteriorAssessmentPolicy")
         if not math.isfinite(float(self.step_size)) or float(self.step_size) <= 0.0:
             raise ValueError("step_size must be positive and finite")
         object.__setattr__(self, "step_size", float(self.step_size))
@@ -1668,8 +1777,8 @@ class _ArchivedSequentialNeuTraHMCConfig:
             object.__setattr__(self, name, value)
         if self.acceptance_min >= self.acceptance_max:
             raise ValueError("acceptance_min must be less than acceptance_max")
-        seed = tuple(int(item) for item in self.seed)
-        if len(seed) != 2:
+        seed = tuple(self.seed)
+        if len(seed) != 2 or any(type(v) is not int or not -(2**31) <= v < 2**31 for v in seed):
             raise ValueError("seed must contain two integers")
         object.__setattr__(self, "seed", seed)
         object.__setattr__(self, "use_xla", bool(self.use_xla))
@@ -1686,7 +1795,10 @@ class _ArchivedSequentialNeuTraHMCConfig:
     def payload(self) -> Mapping[str, Any]:
         return {
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+            "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+            "bulk_tail_ess_method": STAN_ESS_VERSION,
             **asdict(self),
+            "assessment_policy": None if self.assessment_policy is None else self.assessment_policy.payload(),
         }
 
 
@@ -2596,6 +2708,8 @@ def _run_archived_sequential_neutra_hmc(
     ]
     | None = None,
     resume: bool = False,
+    parameter_names: Sequence[str] | None = None,
+    quantities_fn: Any = None,
 ) -> _ArchivedSequentialNeuTraHMCResult:
     """Run fixed-kernel sequential warm-up and retained HMC."""
 
@@ -2604,6 +2718,30 @@ def _run_archived_sequential_neutra_hmc(
         raise ValueError("initial_state must have shape [chain, parameter]")
     if any(dim is None for dim in state.shape):
         raise ValueError("initial_state must have a fully static shape")
+    names = tuple(parameter_names) if parameter_names is not None else tuple(f"parameter_{i}" for i in range(int(state.shape[1])))
+    if len(set(names)) != len(names) or len(names) != int(state.shape[1]):
+        raise ValueError("parameter_names must uniquely cover coordinates")
+    # The archived API uses a single root and a phase offset. Validate its
+    # complete bounded schedule before any sampling or archive mutation.
+    used_seeds = {tuple(config.seed)}
+    for phase_index, maximum, size in ((0, config.warmup_max_results, config.warmup_chunk_size),
+                                       (1, config.retained_max_results, config.retained_chunk_size)):
+        for index in range(maximum // size):
+            seed = _archived_sequential_chunk_seed(config.seed, phase_index=phase_index, chunk_index=index)
+            if any(not -(2**31) <= v < 2**31 for v in seed) or seed in used_seeds:
+                raise ValueError("archived chunk seeds must be disjoint int32 pairs")
+            used_seeds.add(seed)
+    policy = config.assessment_policy or HMCPosteriorAssessmentPolicy()
+    def assessment(values, legacy, stage):
+        model_values = _mapped_model_samples(adapter, values)
+        threshold = getattr(config, stage + "_rhat_max")
+        core = _sequential_rhat(model_values, rhat_max=threshold)
+        # Preserve the archive's stronger, declared coordinate/ESS checks.
+        legacy_passed = bool(legacy["all_finite"] and legacy["max_rhat"] < threshold)
+        if stage == "retained" and config.retained_ess_required:
+            legacy_passed = legacy_passed and legacy["min_bulk_ess"] >= config.bulk_ess_min and legacy["min_tail_ess"] >= config.tail_ess_min
+        return assess_posterior(model_values, names, policy=policy, stage=stage,
+            rhat=core, extra={"passed": bool(legacy_passed)}, quantities_fn=quantities_fn)
     root = Path(archive_root)
     checkpoint_path = root / f"{archive_label}-checkpoint.json"
     manifest_path = root / f"{archive_label}-manifest.json"
@@ -2627,6 +2765,7 @@ def _run_archived_sequential_neutra_hmc(
     phase_samples: dict[str, list[tf.Tensor]] = {"warmup": [], "retained": []}
     hard_vetoes: list[str] = []
     warmup_ready = False
+    warmup_successes = 0
     retained_passed = False
     warmup_count = 0
     retained_count = 0
@@ -2642,6 +2781,7 @@ def _run_archived_sequential_neutra_hmc(
         "adapter_signature": fixed_transport_base_adapter_signature(adapter),
         "config": config.payload(),
         "archive_label": archive_label,
+        "parameter_names": names,
         "initial_state_shape": [int(item) for item in state.shape],
         "initial_state_hash": _payload_hash({"state": initial_state_payload}),
         "runner_programs": (
@@ -2722,6 +2862,7 @@ def _run_archived_sequential_neutra_hmc(
         warmup_count = int(checkpoint["warmup_results_per_chain"])
         retained_count = int(checkpoint["retained_results_per_chain"])
         warmup_ready = bool(checkpoint["warmup_ready"])
+        warmup_successes = int(checkpoint.get("warmup_consecutive_passes", 0))
         retained_passed = bool(checkpoint["retained_passed"])
         last_warmup_diagnostics = dict(checkpoint.get("last_warmup_diagnostics", {}))
         last_retained_diagnostics = dict(checkpoint.get("last_retained_diagnostics", {}))
@@ -2848,11 +2989,12 @@ def _run_archived_sequential_neutra_hmc(
                                 config.primary_diagnostic_coordinate
                             ),
                         )
-                        warmup_ready = bool(
-                            last_warmup_diagnostics["all_finite"]
-                            and last_warmup_diagnostics["max_rhat"]
-                            < config.warmup_rhat_max
-                        )
+                        common = assessment(window, last_warmup_diagnostics, "warmup")
+                        chunk_hard.extend(common.get("health_failures", ()))
+                        warmup_successes = warmup_successes + 1 if common["passed"] else 0
+                        warmup_ready = warmup_successes >= policy.warmup_consecutive_checks
+                        last_warmup_diagnostics = {**last_warmup_diagnostics,
+                            "assessment": common, "consecutive_passes": warmup_successes}
                         checkpoint_diagnostics = last_warmup_diagnostics
                 else:
                     retained_count += chunk_size
@@ -2874,20 +3016,10 @@ def _run_archived_sequential_neutra_hmc(
                                 config.primary_diagnostic_coordinate
                             ),
                         )
-                        retained_passed = bool(
-                            last_retained_diagnostics["all_finite"]
-                            and last_retained_diagnostics["max_rhat"]
-                            < config.retained_rhat_max
-                            and (
-                                not config.retained_ess_required
-                                or (
-                                    last_retained_diagnostics["min_bulk_ess"]
-                                    >= config.bulk_ess_min
-                                    and last_retained_diagnostics["min_tail_ess"]
-                                    >= config.tail_ess_min
-                                )
-                            )
-                        )
+                        common = assessment(combined, last_retained_diagnostics, "retained")
+                        chunk_hard.extend(common.get("health_failures", ()))
+                        retained_passed = common["passed"]
+                        last_retained_diagnostics = {**last_retained_diagnostics, "assessment": common}
                         checkpoint_diagnostics = last_retained_diagnostics
             prefix = f"{archive_label}-{phase}-{chunk_index:03d}"
             sample_receipt = _write_tensor(root / phase / f"{prefix}-samples.tftensor", samples)
@@ -2961,6 +3093,7 @@ def _run_archived_sequential_neutra_hmc(
                     "warmup_results_per_chain": warmup_count,
                     "retained_results_per_chain": retained_count,
                     "warmup_ready": warmup_ready,
+                    "warmup_consecutive_passes": warmup_successes,
                     "retained_passed": retained_passed,
                     "last_warmup_diagnostics": last_warmup_diagnostics,
                     "last_retained_diagnostics": last_retained_diagnostics,
@@ -3041,6 +3174,8 @@ def _run_archived_sequential_neutra_hmc(
         warmup_results_per_chain=warmup_count,
         retained_results_per_chain=retained_count,
         diagnostics={
+            "equilibration_status": "checks_passed" if warmup_ready else "equilibration_inconclusive",
+            "precision_status": last_retained_diagnostics.get("assessment", {}).get("precision", {}).get("status", "precision_unavailable"),
             "warmup": last_warmup_diagnostics,
             "retained": last_retained_diagnostics,
             "hard_vetoes": list(dict.fromkeys(hard_vetoes)),
@@ -3068,6 +3203,8 @@ def _run_archived_sequential_neutra_hmc(
         },
         metadata={
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
+            "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+            "bulk_tail_ess_method": STAN_ESS_VERSION,
             "wall_seconds": time.perf_counter() - started,
             "use_xla": config.use_xla,
             "warmup_excluded_from_posterior": True,

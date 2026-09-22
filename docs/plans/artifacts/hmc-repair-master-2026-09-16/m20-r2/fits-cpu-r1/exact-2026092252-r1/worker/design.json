@@ -1,0 +1,97 @@
+{
+  "design_id": "supplied-funnel-exact-2026092252",
+  "engine": "accuracy",
+  "scenario": {
+    "target": "funnel_noncentered",
+    "route": "fixed_transport",
+    "control": "baseline",
+    "start": "dispersed",
+    "parameters": {
+      "scale": 3.0
+    }
+  },
+  "replications": 1,
+  "draws": 500,
+  "seed": 2026092252,
+  "budget_seconds": 350.0,
+  "purpose": "tuning given a supplied frozen map of the same funnel law",
+  "numerical_provenance": "docs/plans/bayesfilter-hmc-supplied-whitening-plan-2026-09-22.md",
+  "device": "cpu_reference",
+  "alpha": 0.05,
+  "null_draws": 1999,
+  "rank_draws": 7,
+  "step_size": 0.5,
+  "leapfrog_steps": 5,
+  "member_l": 3,
+  "l_grid": [
+    3,
+    5,
+    9,
+    13,
+    18,
+    25
+  ],
+  "measurement_draws": 128,
+  "posterior_cap": 10000,
+  "mcse_tolerance": 0.05,
+  "accuracy_tolerance": 0.25,
+  "multiplicity": 1,
+  "phase": "development",
+  "options": {
+    "transport_payload": {
+      "component_order": [
+        "scale_v"
+      ],
+      "components": [
+        {
+          "component_id": "scale_v",
+          "dim": 3,
+          "kind": "affine",
+          "offset": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            3.0,
+            1.0,
+            1.0
+          ],
+          "component_topology_hash": "40ee89a4d0921f246d93eae942bb40332e60c4e52ac8da7b437964f9e601408f",
+          "component_tensor_hash": "6ddc5eedb2a7a94366d8593fb039a21faf47b82c725fd8f5dd42ccef47e77d09"
+        }
+      ],
+      "construction": {
+        "kind": "exact",
+        "saturation": 6.0,
+        "scale": 3.0,
+        "strength": null,
+        "training_performed": false
+      },
+      "dimension": 3,
+      "log_jacobian_available": true,
+      "nonclaims": [
+        "analytic validation fixture; no transport training",
+        "no learned-map quality or universal tuning guarantee"
+      ],
+      "schema": "bayesfilter.neutra.dense_iaf_frozen_transport.v1",
+      "target_signature": "7d933def1858286c1d2348070a58ee87c143216b7ab235ff5e32c20e1ffc59cd",
+      "training_state_hash": "sha256:bd6f79ea9edd39c15150f44c4c4484ec28919caee3ae10966e271f118f2b5d70",
+      "transport_id": "validation-supplied-funnel-exact",
+      "topology_hash": "47a340270c8317716253591b1d0b361d97e13da0aa3f178120a7bb648eba6e47",
+      "tensor_hash": "c9cad70b019fa9205a347f8f38383befdfd17e6a9b43bf21db11efee298ff764",
+      "transport_hash": "bcea267ebe354c0c136b3bbe65277bf88494bf4b15d286a7bc0c108b8afd2a60"
+    },
+    "posterior_members": "selected",
+    "member_rule": "first_verified",
+    "posterior_settings": {
+      "warmup_chunk_results": 500,
+      "warmup_min_results": 2000,
+      "warmup_check_window_results": 1000,
+      "warmup_max_results": 10000,
+      "retained_chunk_results": 500,
+      "retained_min_results": 1000,
+      "retained_max_results": 10000
+    }
+  }
+}

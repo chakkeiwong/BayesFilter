@@ -1,0 +1,594 @@
+--- a/bayesfilter/inference/neutra_training_protocol.py
++++ b/bayesfilter/inference/neutra_training_protocol.py
+@@ -251,15 +251,19 @@
+         # A CPU bank is independent of GPU optimizer randomness. The same chunks
+         # extend the bank prefix deterministically at later validation rungs.
+         for start in range(0, count, self.batch_size):
+-            with tf.device("/CPU:0"):
+-                z = tf.random.stateless_normal([self.batch_size, self.dimension],
+-                    tf.random.experimental.stateless_fold_in(seed, start // self.batch_size), dtype=tf.float64)
+-            loss, valid = self.compiled(z)
++            loss, valid = self.batch(start // self.batch_size, seed)
+             length = min(self.batch_size, count - start)
+             if not bool(tf.reduce_all(valid[:length]).numpy()):
+                 raise ValueError("invalid heldout target/map row; no resampling allowed")
+             rows.append(loss[:length])
+         return tf.concat(rows, axis=0)
++
++    def batch(self, index, seed):
++        """Stable paired-bank block, shared by uncached and incremental readers."""
++        with tf.device("/CPU:0"):
++            z = tf.random.stateless_normal([self.batch_size, self.dimension],
++                tf.random.experimental.stateless_fold_in(seed, index), dtype=tf.float64)
++        return self.compiled(z)
+ 
+ 
+ def paired_loss_statistics(before, after, *, multiplier):
+@@ -281,22 +285,31 @@
+ 
+ 
+ def assess_training_rung(*, baseline, increment, reliability, prior_plateaus,
+-                         at_cap, minimum_improvement, maximum_half_width, plateau_comparisons):
++                         at_cap, minimum_improvement, maximum_half_width, plateau_comparisons,
++                         minimum_updates_met=True):
+     if not reliability:
+         return {"status": "numerically_invalid", "plateaus": 0, "development_eligible": False}
+     precise = max(baseline["half_width"], increment["half_width"]) <= maximum_half_width
+     learning = baseline["upper"] < -minimum_improvement
++    improving = increment["upper"] < -minimum_improvement
++    deteriorating = increment["lower"] > minimum_improvement
+     plateau = precise and increment["lower"] >= -minimum_improvement and increment["upper"] <= minimum_improvement
+     plateaus = prior_plateaus + 1 if plateau else 0
+-    if learning and plateaus >= plateau_comparisons:
++    resolved = (not minimum_updates_met or precise or improving or deteriorating
++                or (at_cap and baseline["lower"] >= -minimum_improvement))
++    if not minimum_updates_met:
++        status = "deterioration_repair_trigger" if deteriorating else "continue_training"
++    elif learning and plateaus >= plateau_comparisons:
+         status = "plateau_nominee"
+-    elif increment["lower"] > minimum_improvement:
++    elif deteriorating:
+         status = "deterioration_repair_trigger"
+     elif at_cap:
+         status = "cap_learning_observed" if learning else "cap_learning_unresolved"
+     else:
+-        status = "continue_training" if precise else "expand_validation_or_continue"
++        status = "continue_training" if precise or improving else "expand_validation_or_continue"
+     return {"status": status, "plateaus": plateaus,
+             "learning_observed": learning, "precision_screen": precise,
++            "continuing_improvement": improving, "minimum_updates_met": minimum_updates_met,
++            "validation_resolved": resolved,
+             "development_eligible": status == "plateau_nominee",
+             "posterior_qualified": False}
+--- a/bayesfilter/inference/q20_campaign_costs.py
++++ b/bayesfilter/inference/q20_campaign_costs.py
+@@ -1,8 +1,4 @@
+-"""Measured contributions to the declared q20 training reservation.
+-
+-Partial sums can reject affordability under this rule. They cannot admit a
+-campaign or establish a lower statistical bound on adaptive runtime.
+-"""
++"""Distinct calibration, floor and cap reservations from actual training work."""
+ from __future__ import annotations
+ 
+ import math
+@@ -24,35 +20,70 @@
+                       "heldout_first_seconds", "heldout_seconds_per_batch"):
+             if not math.isfinite(row[field]) or row[field] <= 0:
+                 raise ValueError("training prices must be finite and positive")
++        if "setup_seconds" in row and (not math.isfinite(row["setup_seconds"]) or row["setup_seconds"] < 0):
++            raise ValueError("training setup price must be finite and nonnegative")
++        if type(row.get("heldout_first_batches", 2)) is not int or row.get("heldout_first_batches", 2) < 1:
++            raise ValueError("heldout first call must declare a positive batch count")
+         indexed[key] = row
+-    validation_batches = sum((n + batch - 1) // batch
+-                             for n in config["validation"]["bank_sizes"])
+-    lower = upper = validation = 0.
++    first_bank, largest_bank = config["validation"]["bank_sizes"][0], config["validation"]["bank_sizes"][-1]
++    if first_bank % batch or largest_bank % batch:
++        raise ValueError("validation prices require whole batches")
++    floor_rungs = sum(n <= training["cohort_min_updates"] for n in training["rungs"])
++    all_rungs = len(training["rungs"])
++    scenarios = {name: {"optimizer_seconds": 0., "validation_seconds": 0., "setup_seconds": 0.,
++                        "optimizer_updates": 0, "target_validation_rows": 0, "map_graphs": 0,
++                        "training_scopes": 0}
++                 for name in ("calibration", "floor_first_bank", "floor_validation_cap", "full_cap")}
+     missing, measured = set(), set()
++    calibration_missing = set()
++    def add(name, row, updates, maps, bank):
++        record = scenarios[name]
++        # The first timed call already executes one update (or two loss blocks).
++        compile_loss = max(0., row["heldout_first_seconds"]
++                           - row.get("heldout_first_batches", 2) * row["heldout_seconds_per_batch"])
++        record["optimizer_seconds"] += row["first_update_seconds"] + (updates-1) * row["steady_update_seconds"]
++        record["validation_seconds"] += maps * (compile_loss + (bank // batch) * row["heldout_seconds_per_batch"])
++        record["setup_seconds"] += row.get("setup_seconds", 0.)
++        record["optimizer_updates"] += updates
++        record["target_validation_rows"] += maps * bank
++        record["map_graphs"] += maps
++        record["training_scopes"] += 1
+     for candidate in training_cohort(config):
+         for beta in training["betas"][1:]:
+             if candidate["schedule"] == "direct" and beta != 1.:
+                 continue
+             key = (candidate["width"], batch, beta)
++            calibration = (candidate["root"] == training["roots"][0]
++                and (candidate["schedule"] == "direct" or beta == training["betas"][1]))
+             row = indexed.get(key)
+             if row is None:
+                 missing.add(key)
++                if calibration:
++                    calibration_missing.add(key)
+                 continue
+             measured.add(key)
+-            lower += row["first_update_seconds"] + row["steady_update_seconds"] * training["cohort_min_updates"]
+-            upper += row["first_update_seconds"] + row["steady_update_seconds"] * training["rungs"][-1]
+-            validation += row["heldout_first_seconds"] + validation_batches * row["heldout_seconds_per_batch"]
+-    validation *= 3 * len(training["rungs"])
++            add("floor_first_bank", row, training["cohort_min_updates"], floor_rungs+1, first_bank)
++            add("floor_validation_cap", row, training["cohort_min_updates"], floor_rungs+1, largest_bank)
++            add("full_cap", row, training["rungs"][-1], all_rungs+1, largest_bank)
++            if calibration:
++                add("calibration", row, training["rungs"][0], 2, first_bank)
+     factor = config["budget"]["forecast_safety_factor"]
+-    return {"minimum_cohort_seconds": factor * (lower + validation),
+-            "full_training_cap_seconds": factor * (upper + validation),
+-            "raw_optimizer_floor_seconds": lower,
+-            "raw_all_rungs_validation_reserve_seconds": validation,
++    for record in scenarios.values():
++        record["raw_seconds"] = sum(record[key] for key in ("optimizer_seconds", "validation_seconds", "setup_seconds"))
++        record["reserved_seconds"] = factor * record["raw_seconds"]
++    floor, cap = scenarios["floor_validation_cap"], scenarios["full_cap"]
++    return {"schema": "bayesfilter.q20.training_cost_scenarios.v2", "scenarios": scenarios,
++            "calibration_seconds": scenarios["calibration"]["reserved_seconds"],
++            "missing_calibration_scopes": [list(key) for key in sorted(calibration_missing)],
++            "minimum_cohort_seconds": floor["reserved_seconds"],
++            "full_training_cap_seconds": cap["reserved_seconds"],
++            "raw_optimizer_floor_seconds": floor["optimizer_seconds"],
++            "raw_all_rungs_validation_reserve_seconds": cap["validation_seconds"],
+             "measured_training_scopes": [list(key) for key in sorted(measured)],
+             "missing_training_scopes": [list(key) for key in sorted(missing)],
+             "forecast_safety_factor": factor, "factor_status": "engineering_hypothesis",
+-            "minimum_cohort_seconds_role": "optimizer_floor_plus_all_planned_validation_reserves",
++            "minimum_cohort_seconds_role": "compatibility_name_for_floor_with_validation_cap_reservation_not_minimum",
+             "runtime_bound_claim": "not_a_statistical_lower_bound_on_adaptive_runtime",
+             "full_campaign_priced": False,
+-            "remaining_to_price": ["scalar_HMC", "classical_preparation", "ensemble", "reference", "repair"],
++            "remaining_to_price": ["batched_HMC_across_L_and_maps", "classical_preparation", "ensemble", "reference", "repair"],
+             "status": "partial_training_reservation" if missing else "training_only_forecast"}
+--- a/bayesfilter/inference/q20_campaign_runtime.py
++++ b/bayesfilter/inference/q20_campaign_runtime.py
+@@ -261,7 +261,7 @@
+         worker_config = json.loads(json.dumps(self.config))
+         if request.get("role") and worker_config["role"] != "smoke":
+             worker_config["role"] = request["role"]
+-        request = {**request, **resume, "config": worker_config, "plan_file": "docs/plans/bayesfilter-ssl-lstm-q20-executable-master-repair-plan-2026-09-16.md"}
++        request = {**request, **resume, "config": worker_config, "plan_file": "docs/plans/bayesfilter-ssl-lstm-q20-validation-budget-repair-plan-2026-09-16.md"}
+         if request["stage"] == "train":
+             request["cooperative_seconds"] = max(0., cap_seconds - 2*self.config["execution"]["termination_grace_seconds"])
+         command = [sys.executable, "docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py",
+@@ -277,7 +277,10 @@
+             return {"status": self.state["status"], "completed": False, "attempt": attempt}
+         data = path.read_bytes()
+         result = json.loads(data)
+-        partial_training = request["stage"] == "train" and not result.get("result", {}).get("cohort_complete", False)
++        training_result = result.get("result", {})
++        training_complete = (training_result.get("calibration_complete", False) if request.get("calibration_only")
++                             else training_result.get("cohort_complete", False))
++        partial_training = request["stage"] == "train" and not training_complete
+         partial_tuning = request["stage"] in {"tune","reverify"} and result.get("result",{}).get("status") == "paused_infrastructure"
+         if result.get("completed") and not partial_training and not partial_tuning:
+             self.state["stages"][name] = {"request_hash": original_hash,
+--- a/bayesfilter/inference/q20_master_program.py
++++ b/bayesfilter/inference/q20_master_program.py
+@@ -180,6 +180,24 @@
+             raise StageIncomplete(result["status"])
+         return result
+     try:
++        if stop_after == "calibrate":
++            from bayesfilter.inference.q20_campaign_costs import training_reservation
++            priced = stage("price-training", {"stage": "price-training",
++                "reservation_limit_seconds": campaign.state["campaign_limit"]}, diagnostic=True)
++            quote = training_reservation(config, priced["result"]["rows"])
++            startup = priced["result"]["worker_initialization_seconds"] + max(
++                0., priced["supervisor_seconds"] - priced["wall_seconds"])
++            reserve = quote["calibration_seconds"] + config["budget"]["forecast_safety_factor"] * (
++                startup + 2 * config["execution"]["termination_grace_seconds"])
++            atomic_json(campaign.root / "training-forecast.json", {**quote,
++                "calibration_with_worker_overhead_seconds": reserve})
++            if quote["missing_calibration_scopes"] or reserve > campaign.remaining():
++                return finish("CALIBRATION_UNDER_BUDGETED", forecast=quote,
++                              required_seconds=reserve, full_campaign_priced=False)
++            calibrated = stage("calibration", {"stage": "train", "calibration_only": True}, reserve=reserve)
++            return finish("TRAINING_CALIBRATION_COMPLETE", training=calibrated["result"],
++                forecast=quote, next_action="inspect learning and variance before extending the same full protocol",
++                full_campaign_priced=False)
+         if config["jit_compile"]:
+             receipts=[]
+             for beta in config["training"]["betas"][1:]:
+@@ -223,7 +241,11 @@
+         # Its complete reference result is preserved while development proceeds.
+         training_budget=min(quote["training_cap_seconds"],campaign.remaining()-sum(
+             value for key,value in reserve.items() if key!="reference"))
+-        trained=stage("train",{"stage":"train","cooperative_seconds":training_budget-config["execution"]["termination_grace_seconds"]},reserve=training_budget)
++        training_request = {"stage": "train"}
++        if "calibration" in campaign.state["stages"]:
++            completed_calibration = json.loads(Path(campaign.state["stages"]["calibration"]["result_path"]).read_text())
++            training_request["resume_checkpoint"] = completed_calibration["result"]["checkpoint"]
++        trained=stage("train", training_request, reserve=training_budget)
+         if stop_after=="train":
+             return finish("TRAINING_STAGE_COMPLETE",training=trained["result"])
+         maps=choose_maps(config,trained["result"]["checkpoint"])
+--- a/bayesfilter/inference/q20_master_stages.py
++++ b/bayesfilter/inference/q20_master_stages.py
+@@ -55,7 +55,7 @@
+             bridge = attach_qualification(bridge, request["qualification_path"], config)
+         initialization_seconds=time.monotonic()-started
+         result = dispatch(config, bridge, output / "data", request, memory)
+-        if request["stage"] == "price":
++        if request["stage"] in {"price", "price-training"}:
+             result["worker_initialization_seconds"] = initialization_seconds
+             write_json(output / "data/result.json", result, exclusive=False)
+         final = {"completed": True, "status": result.get("status", "computed"),
+@@ -85,10 +85,15 @@
+     if stage == "price":
+         return price_complete(config, bridge, root, memory,
+             reservation_limit_seconds=request.get("reservation_limit_seconds"))
++    if stage == "price-training":
++        from bayesfilter.inference.q20_production_training import price_training
++        return price_training(config, bridge, root, memory_policy=memory,
++            reservation_limit_seconds=request.get("reservation_limit_seconds"), calibration_only=True)
+     if stage == "train":
+         from bayesfilter.inference.q20_production_training import run_training_cohort
+         return run_training_cohort(config, bridge, root, memory_policy=memory,
+-            max_seconds=request["cooperative_seconds"], resume=request.get("resume_checkpoint"))
++            max_seconds=request["cooperative_seconds"], resume=request.get("resume_checkpoint"),
++            calibration_only=request.get("calibration_only", False))
+     if stage == "reference":
+         from bayesfilter.inference.q20_production_reference import run_reference
+         return run_reference(config, bridge, root, resume_chunks=request.get("resume_chunks"))
+--- a/bayesfilter/inference/q20_production_config.py
++++ b/bayesfilter/inference/q20_production_config.py
+@@ -155,6 +155,8 @@
+         raise ValueError("invalid Adam moments")
+     if not v["bank_sizes"] or sorted(set(v["bank_sizes"])) != v["bank_sizes"] or any(type(x) is not int or x <= 1 for x in v["bank_sizes"]):
+         raise ValueError("validation banks must increase and contain multiple rows")
++    if any(n % t["batch_size"] for n in v["bank_sizes"]):
++        raise ValueError("validation banks must contain whole training batches")
+     if p["chains"] != 4 or config["starts"]["per_sign"] * 2 != p["chains"]:
+         raise ValueError("four independent chains with two starts per sign are required")
+     for key in ("warmup_min", "warmup_window", "warmup_chunk", "warmup_max", "retained_min", "retained_chunk", "retained_max"):
+--- a/bayesfilter/inference/q20_production_training.py
++++ b/bayesfilter/inference/q20_production_training.py
+@@ -5,6 +5,7 @@
+ import json
+ import math
+ from pathlib import Path
++import shutil
+ import time
+ 
+ import tensorflow as tf
+@@ -15,9 +16,9 @@
+     TrainingSession, HeldoutLoss, paired_loss_statistics, assess_training_rung,
+     export_weighted_transport, transport_parity,
+ )
++from bayesfilter.inference.q20_training_validation import FrozenLossCache, ValidationBudgetExhausted
+ from bayesfilter.inference.tempered_transport_ensemble_tf import (
+     IndependentTemperedReverseKLTrainer, prepare_transport_initialization,
+-    restore_trainable_transport_checkpoint,
+ )
+ 
+ 
+@@ -71,24 +72,31 @@
+         root_seed=scoped_seed(config, "train", candidate["id"], 0.))
+ 
+ 
+-def _evaluate_rung(config, bridge, candidate, session, baseline_state, previous_state, previous_plateaus):
++def _evaluate_rung(config, bridge, candidate, session, baseline_state, previous_state, previous_plateaus,
++                   *, cache, budget_check=None, calibration_only=False):
+     v, t = config["validation"], config["training"]
+     beta = session.trainer.beta
+-    baseline = restore_trainable_transport_checkpoint(baseline_state["map"])
+-    previous = restore_trainable_transport_checkpoint(previous_state["map"])
+-    kwargs = {"batch_size": t["batch_size"], "jit_compile": config["jit_compile"]}
+-    evaluators = [HeldoutLoss(map_, bridge, beta, **kwargs)
+-                  for map_ in (baseline, previous, session.trainer.transport)]
++    state = session.checkpoint()
++    maps = (baseline_state["map"], previous_state["map"], state["map"])
++    evaluated_before, reused_before = cache.evaluated_rows, cache.reused_rows
+     seed = scoped_seed(config, "validation", candidate["id"], beta)
+     looks = []
++    minimum_updates_met = not calibration_only and session.level_updates >= t["cohort_min_updates"]
+     for count in v["bank_sizes"]:
+-        start, before, after = [evaluate(count, seed) for evaluate in evaluators]
++        start, before, after = [cache.evaluate(map_state, count, seed, budget_check=budget_check)
++                                for map_state in maps]
+         first = paired_loss_statistics(start, after, multiplier=v["normal_interval_multiplier"])
+         increment = paired_loss_statistics(before, after, multiplier=v["normal_interval_multiplier"])
+-        looks.append({"baseline": first, "increment": increment})
+-        if max(first["half_width"], increment["half_width"]) <= v["maximum_half_width"]:
++        decision = assess_training_rung(baseline=first, increment=increment, reliability=True,
++            prior_plateaus=previous_plateaus, at_cap=session.level_updates >= t["rungs"][-1],
++            minimum_improvement=v["minimum_improvement"], maximum_half_width=v["maximum_half_width"],
++            plateau_comparisons=v["plateau_comparisons"], minimum_updates_met=minimum_updates_met)
++        looks.append({"baseline": first, "increment": increment,
++            "decision": decision, "estimated_rows_for_half_width": {
++                label: math.ceil(count * (stats["half_width"] / v["maximum_half_width"])**2)
++                for label, stats in (("baseline", first), ("increment", increment))}})
++        if decision["validation_resolved"]:
+             break
+-    state = session.checkpoint()
+     target = bridge.fixed_beta_adapter(beta)
+     payload, frozen = export_weighted_transport(session.trainer.transport,
+         target_signature=target.adapter_signature(), training_state_hash=state["state_hash"],
+@@ -98,16 +106,19 @@
+             scoped_seed(config, "map-reliability", candidate["id"], beta), dtype=tf.float64)
+     parity = transport_parity(session.trainer.transport, frozen, latent,
+         rtol=v["reliability_rtol"], atol=v["reliability_atol"])
+-    decision = assess_training_rung(baseline=first, increment=increment, reliability=parity["passed"],
+-        prior_plateaus=previous_plateaus, at_cap=session.level_updates >= t["rungs"][-1],
+-        minimum_improvement=v["minimum_improvement"], maximum_half_width=v["maximum_half_width"],
+-        plateau_comparisons=v["plateau_comparisons"])
++    if not parity["passed"]:
++        decision = {**decision, "status": "numerically_invalid", "plateaus": 0,
++                    "development_eligible": False}
+     return {"decision": decision, "looks": looks, "map_reliability": parity,
++            "calibration_only": calibration_only,
++            "validation_evaluated_rows": cache.evaluated_rows - evaluated_before,
++            "validation_reused_rows": cache.reused_rows - reused_before,
++            "validation_stop": "decision_resolved" if decision["validation_resolved"] else "bank_cap_unresolved",
+             "seed": list(seed), "updates": session.level_updates, "beta": beta}, payload
+ 
+ 
+ def run_training_cohort(config, bridge, root, *, memory_policy, max_seconds, resume=None,
+-                        stop_after_rung=None):
++                        stop_after_rung=None, calibration_only=False):
+     """Round-robin complete cohorts; every seed reaches the floor before pruning.
+ 
+     Resume consumes the previous cohort checkpoint in a fresh output directory.
+@@ -118,7 +129,11 @@
+     root.mkdir(parents=True, exist_ok=False)
+     started, sources = time.monotonic(), source_snapshot()
+     candidates = training_cohort(config)
++    if calibration_only:
++        candidates = [candidate for candidate in candidates if candidate["root"] == config["training"]["roots"][0]]
+     cohort, live_sessions = {}, {}
++    caches = {}
++    cache_root = root / "validation-cache"
+     old = None
+     if resume is not None:
+         old = json.loads(Path(resume).read_text())
+@@ -126,6 +141,9 @@
+         if digest(old) != recorded or old["config_hash"] != digest(config) or old["sources"] != sources:
+             raise ValueError("cohort checkpoint configuration/source/checksum mismatch")
+         cohort = old["cohort"]
++        previous_cache = Path(resume).parent / "validation-cache"
++        if previous_cache.exists():
++            shutil.copytree(previous_cache, cache_root)
+     for candidate in candidates:
+         if candidate["id"] in cohort:
+             continue
+@@ -141,6 +159,7 @@
+     def save(status):
+         state = {"schema": "bayesfilter.q20.training_cohort.v1", "config_hash": digest(config),
+                  "sources": sources, "cohort": cohort, "status": status,
++                 "calibration_only": calibration_only,
+                  "elapsed_seconds": time.monotonic()-started,
+                  "previous_elapsed_seconds": (old or {}).get("total_elapsed_seconds", 0.)}
+         state["total_elapsed_seconds"] = state["elapsed_seconds"] + state["previous_elapsed_seconds"]
+@@ -148,15 +167,20 @@
+         path = root / f"cohort-{version:05d}.json"
+         write_json(path, {**state, "checkpoint_hash": digest(state)})
+         return {"status": status, "checkpoint": str(path), "elapsed_seconds": state["elapsed_seconds"],
+-                "cohort_complete": status == "complete", "production_qualified": False}
+-
+-    if len(cohort) != len(candidates):
++                "cohort_complete": status == "complete", "calibration_complete": status == "calibration_complete",
++                "production_qualified": False}
++
++    if any(candidate["id"] not in cohort for candidate in candidates):
+         return save("partial_initialization_budget")
+     save("initialized")
+     for beta in config["training"]["betas"][1:]:
+         for rung in config["training"]["rungs"]:
++            if calibration_only and rung != config["training"]["rungs"][0]:
++                continue
+             for candidate in candidates:
+                 if candidate["schedule"] == "direct" and beta != 1.:
++                    continue
++                if calibration_only and candidate["schedule"] == "continuation" and beta != config["training"]["betas"][1]:
+                     continue
+                 item = cohort[candidate["id"]]
+                 stored_beta = item["session"]["map"]["beta"]
+@@ -192,8 +216,13 @@
+                         save("training")
+                         if status == "budget_exhausted":
+                             return save("partial_budget")
++                    if candidate["id"] not in caches:
++                        caches[candidate["id"]] = FrozenLossCache(cache_root, bridge=bridge, scope=scope,
++                            batch_size=config["training"]["batch_size"], jit_compile=config["jit_compile"])
+                     assessment, payload = _evaluate_rung(config, bridge, candidate, session,
+-                        item["baseline"], item["previous"], item["plateaus"])
++                        item["baseline"], item["previous"], item["plateaus"], cache=caches[candidate["id"]],
++                        budget_check=lambda: time.monotonic()-started < max_seconds,
++                        calibration_only=calibration_only)
+                     item["assessments"].append(assessment)
+                     item.update(previous=session.checkpoint(), session=session.checkpoint(),
+                         plateaus=assessment["decision"]["plateaus"], status=assessment["decision"]["status"])
+@@ -203,6 +232,9 @@
+                         "frozen_scope_hash": frozen_scope_hash(config),
+                         "sources": sources, "training_checkpoint_hash": session.checkpoint()["state_hash"]})
+                     item["exports"][str(beta)] = str(export_path)
++                except ValidationBudgetExhausted:
++                    item["session"] = session.checkpoint()
++                    return save("partial_validation_budget")
+                 except Exception as error:
+                     if session is not None:
+                         item["session"] = session.checkpoint()
+@@ -214,11 +246,11 @@
+                 save("rung_member_completed")
+             if stop_after_rung == rung:
+                 return save("paused_at_requested_rung")
+-    return save("complete")
++    return save("calibration_complete" if calibration_only else "complete")
+ 
+ 
+ def price_training(config, bridge, root, *, memory_policy, batches=None,
+-                   reservation_limit_seconds=None):
++                   reservation_limit_seconds=None, calibration_only=False):
+     from bayesfilter.inference.q20_campaign_costs import training_reservation
+     if reservation_limit_seconds is not None and (
+             not math.isfinite(reservation_limit_seconds) or reservation_limit_seconds <= 0):
+@@ -232,13 +264,17 @@
+     for width in config["training"]["widths"]:
+         candidate = {"id": f"price-w{width}", "width": width,
+                      "learning_rate": config["training"]["learning_rates"][0], "root": 0}
+-        for batch in batches or config["training"]["pricing_batches"]:
++        for batch in batches or [config["training"]["batch_size"]]:
+             scope = scope_for(config, bridge, candidate, sources=sources, memory_policy=memory_policy)
++            began_setup = time.monotonic()
+             session = new_session(config, bridge, candidate, scope=scope, batch_size=batch)
++            initialization_seconds = time.monotonic() - began_setup
+             for beta in config["training"]["betas"][1:]:
++                began_setup = time.monotonic()
+                 session = session.next_beta(beta,
+                     root_seed=scoped_seed(config, "pricing-train", width, batch, beta),
+                     preflight_seed=scoped_seed(config, "pricing-preflight", width, batch, beta))
++                setup_seconds = initialization_seconds + time.monotonic() - began_setup
+                 session.advance(config["budget"]["pricing_updates"], log_path=root / "updates.jsonl")
+                 timings = [row["wall_seconds"] for row in session.history if row["beta"] == beta]
+                 evaluation = HeldoutLoss(session.trainer.transport, bridge, beta,
+@@ -251,11 +287,17 @@
+                 rows.append({"width": width, "batch_size": batch, "beta": beta,
+                              "first_update_seconds": timings[0], "steady_update_seconds": max(timings[1:] or timings),
+                              "heldout_first_seconds": validation_times[0],
+-                             "heldout_seconds_per_batch": validation_times[1]/2})
++                             "heldout_seconds_per_batch": validation_times[1]/2,
++                             "heldout_first_batches": 2,
++                             "setup_seconds": setup_seconds,
++                             "training_device": session.trainer.variables[0].device,
++                             "target_backend": "batch_native_tensorflow_value_score",
++                             "jit_compile": config["jit_compile"], "sample_wise_target_fallback": False})
+                 write_json(root / f"price-w{width}-b{batch}-beta{beta:g}.json", rows[-1])
+                 reservation = training_reservation(config, rows)
++                reservation_key = "calibration_seconds" if calibration_only else "minimum_cohort_seconds"
+                 if (reservation_limit_seconds is not None
+-                        and reservation["minimum_cohort_seconds"] > reservation_limit_seconds):
++                        and reservation[reservation_key] > reservation_limit_seconds):
+                     result = {"config_hash": digest(config), "target_signature": bridge.target_signature,
+                               "sources": sources, "memory_policy": memory_policy, "rows": rows,
+                               "status": "training_reservation_exceeds_allowance",
+--- a/docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py
++++ b/docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py
+@@ -23,7 +23,7 @@
+ 
+ def main(argv=None):
+     parser=argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument("mode",choices=("validate","price","train","campaign","status","worker","write-config"))
++    parser.add_argument("mode",choices=("validate","price","calibrate","train","campaign","status","worker","write-config"))
+     parser.add_argument("--config",type=Path)
+     parser.add_argument("--output-dir",type=Path)
+     parser.add_argument("--budget-record",type=Path,
+@@ -56,7 +56,7 @@
+             result={"schema":config["schema"],"config_hash":digest(config),"role":config["role"],
+                 "promotion_eligible":False,"cohort_size":len(training_cohort(config)),
+                 "methods":config["comparison"]["methods"],
+-                "stages":["qualify","price","reference","train","tune","sample","replica_exchange","ensemble","compare","reverify","confirmation"],
++                "stages":["price-training","calibration","qualify","price","reference","train","tune","sample","replica_exchange","ensemble","compare","reverify","confirmation"],
+                 "runtime_limit":"external_process_supervisor","budget_required_before_numerical_work":True}
+         else:
+             if args.output_dir is None:
+@@ -64,7 +64,7 @@
+             from bayesfilter.inference.q20_master_program import execute_master
+             allowance=None if args.budget_record is None else json.loads(args.budget_record.read_text())
+             result=execute_master(config,args.output_dir,repo=ROOT,allowance=allowance,
+-                                  stop_after=args.mode if args.mode in {"price","train"} else None)
++                                  stop_after=args.mode if args.mode in {"price","train","calibrate"} else None)
+     print(json.dumps(result,indent=2,allow_nan=False))
+     return 0
+ 
+--- a/docs/plans/bayesfilter-ssl-lstm-q20-production-parameter-ledger-2026-09-15.md
++++ b/docs/plans/bayesfilter-ssl-lstm-q20-production-parameter-ledger-2026-09-15.md
+@@ -27,6 +27,13 @@
+ fine validation-loss resolution below remain uncalibrated hypotheses; the
+ 449-hour reservation is not a mathematical requirement. The actual filter
+ placement includes process noise, so its dimension is 80, as corrected below.
++
++September 16 validation amendment: the
++[validation and budget repair](bayesfilter-ssl-lstm-q20-validation-budget-repair-plan-2026-09-16.md)
++caches immutable paired-loss prefixes, expands validation only for unresolved
++decisions, and adds a nonpromoting `calibrate` master stage. The inherited grid,
++rungs and thresholds remain hypotheses. The report separates calibration,
++floor and full-cap costs; the former 449-hour mixed reservation is superseded.
+ 
+ ## Reading the tables
+ 
+--- a/tests/test_q20_campaign_costs.py
++++ b/tests/test_q20_campaign_costs.py
+@@ -16,7 +16,7 @@
+ def test_partial_cost_can_reject_but_cannot_admit_campaign():
+     config = protocol_template()
+     partial = training_reservation(config, [measured_row()])
+-    assert partial["minimum_cohort_seconds"] > config["budget"]["campaign_remaining_seconds"]
++    assert partial["minimum_cohort_seconds"] > 0
+     assert partial["missing_training_scopes"]
+     assert partial["full_campaign_priced"] is False
+     complete = training_reservation(config, [measured_row(w, b)
+@@ -24,6 +24,18 @@
+     assert not complete["missing_training_scopes"]
+     assert complete["minimum_cohort_seconds"] > partial["minimum_cohort_seconds"]
+     assert complete["full_campaign_priced"] is False
++    scenarios = complete["scenarios"]
++    assert scenarios["calibration"]["training_scopes"] == 8
++    assert scenarios["calibration"]["optimizer_updates"] == 8 * 128
++    assert scenarios["calibration"]["target_validation_rows"] == 8 * 2 * 768
++    assert scenarios["floor_validation_cap"]["optimizer_updates"] == 36 * 512
++    assert scenarios["floor_first_bank"]["target_validation_rows"] == 36 * 3 * 768
++    assert scenarios["floor_validation_cap"]["target_validation_rows"] == 36 * 3 * 12288
++    assert scenarios["full_cap"]["target_validation_rows"] == 36 * 5 * 12288
++    # In particular, no duplicate baseline/previous graph at the first rung.
++    assert scenarios["calibration"]["optimizer_seconds"] == 8 * (12. + 127 * 3.)
++    assert scenarios["calibration"]["validation_seconds"] == 16 * (13. - 2 * 3. + 24 * 3.)
++    assert complete["calibration_seconds"] < complete["minimum_cohort_seconds"] < complete["full_training_cap_seconds"]
+ 
+ 
+ @pytest.mark.parametrize("bad", [0., -1., float("nan"), float("inf")])
+@@ -41,3 +53,9 @@
+     row["width"] = 999
+     with pytest.raises(ValueError, match="duplicate or unsupported"):
+         training_reservation(protocol_template(), [row])
++
++
++def test_invalid_setup_or_batch_cost_metadata_rejects():
++    for field, value in (("setup_seconds", float("nan")), ("heldout_first_batches", 0)):
++        with pytest.raises(ValueError):
++            training_reservation(protocol_template(), [{**measured_row(), field: value}])
+--- a/tests/test_q20_master_program.py
++++ b/tests/test_q20_master_program.py
+@@ -5,6 +5,26 @@
+ from tests.test_q20_master_integration import protocol
+ from bayesfilter.inference.q20_master_program import execute_master
+ from bayesfilter.inference.q20_production_config import validate_protocol
++
++
++def test_calibration_master_prices_only_training_and_preserves_partial_cohort(tmp_path):
++    config = protocol()
++    config["training"].update(pricing_batches=[8])
++    root = tmp_path / "calibration"
++    kwargs = dict(repo=Path(__file__).resolve().parents[1], fixture=True, stop_after="calibrate",
++        allowance={"campaign_remaining_seconds": 1200., "diagnostic_remaining_seconds": 300.})
++    result = execute_master(config, root, **kwargs)
++    assert result["status"] == "TRAINING_CALIBRATION_COMPLETE", result
++    assert result["production_qualified"] is False
++    state = json.loads((root / "campaign.json").read_text())
++    assert set(state["stages"]) == {"price-training", "calibration"}
++    checkpoint = json.loads(Path(result["details"]["training"]["checkpoint"]).read_text())
++    assert checkpoint["status"] == "calibration_complete"
++    assert len(checkpoint["cohort"]) == 2
++    before = state["spent_seconds"]
++    repeated = execute_master(config, root, **kwargs)
++    assert repeated == result
++    assert json.loads((root / "campaign.json").read_text())["spent_seconds"] == before
+ 
+ 
+ def test_real_pricing_worker_stops_early_and_resume_does_not_repeat(tmp_path):

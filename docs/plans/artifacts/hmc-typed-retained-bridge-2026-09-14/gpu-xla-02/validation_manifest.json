@@ -1,0 +1,211 @@
+{
+  "command": [
+    "docs/examples/hmc_candidate_set_retained.py",
+    "--output-dir",
+    "docs/plans/artifacts/hmc-typed-retained-bridge-2026-09-14/gpu-xla-02"
+  ],
+  "git_commit": "4990085e50829d1050b8cf03636f8136ce91350f",
+  "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "cpu_reference": false,
+  "gpu_intentionally_hidden": false,
+  "data_version": "known_Gaussian_fixture_v1",
+  "plan": "docs/plans/bayesfilter-typed-candidate-retained-bridge-plan-2026-09-14.md",
+  "result": {
+    "status": "passed",
+    "verified_candidate_ids": [
+      "docs-bridge:example-1:candidate:000005",
+      "docs-bridge:example-1:candidate:000006"
+    ],
+    "candidate_count": 6,
+    "selected_member": "docs-bridge:example-1:candidate:000005",
+    "member_hash": "7f366ac71271669b08bd0b571e09e9bef938cd352b3d231c7a2932837193eb23",
+    "member_path": "docs/plans/artifacts/hmc-typed-retained-bridge-2026-09-14/gpu-xla-02/member.json",
+    "retained_archives": [
+      "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-typed-retained-bridge-2026-09-14/gpu-xla-02/retained_1/retained_archive.json",
+      "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-typed-retained-bridge-2026-09-14/gpu-xla-02/retained_2/retained_archive.json"
+    ],
+    "maximum_same_backend_transition_error": 0.0,
+    "cpu_reference_errors": {
+      "position": 4.440892098500626e-16,
+      "momentum": 8.881784197001252e-16,
+      "log_accept": 1.7763568394002505e-15
+    },
+    "compiled_runner_trace_counts": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "runtime_policy": {
+      "device_type": "GPU",
+      "memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "tf32_enabled": true,
+      "cuda_visible_devices": "1"
+    },
+    "source_closure": {
+      "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_budget_contract.py": "a2bd9a4865ac5857268c21283a213b26ac4235fa3e6798214dabcb495001d4a4",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_ordinary_selection_policy.py": "0aa46488b2b5d2158ed000739cf7a0d379f8ac9bf1f6919966704aca0fb44177",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_route_contract.py": "ec0a8fd8e0e07b372ecf8775324a4b58be0fb9d906c6341ba37b8510c9b0e929",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/batched_value_score.py": "25dd24e5aeb56c0c32a22d21723761e100eff5ec6fbb9018dd613f0717dba13e",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_l_finite_bracket.py": "4bb83fac9253c72e548d8a36aa5668c98f980431cfee50d684222f51ddf006a7",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_transport_hmc_mechanics_tf.py": "4540826d97605e7d767b87d78959772d331b5b276cf39f2f41ba91bf707dcb89",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_transport_hmc_tuning_tf.py": "37676e1a30ca357a42036788b0bad889b13d4403f2ced095d964254339d3557e",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc.py": "be4e04804c3af3d8a619073771e84d7bffb72bbe9a2aaf8cede1b67773145ea4",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_artifact_identity.py": "947f5498e4cf8007f8e54c1ad8e9cec84186f6830b8b7067acc405f0985dc105",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_budget_ladder.py": "3056671a250cc581475c532dfe9ce4fb1c85f6c6257696fc43b96a7c0bf20894",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_adapters.py": "638e49a68cfd0738cfb76f304a078f9b0611f0f5f5ae2ad6ba9bff80906ef6d3",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_artifacts.py": "f5f011fa1684b63cb998e74d3adef3b79bb9a2c10f9077549b1d0b471bdb136c",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_execution.py": "b378d6d83cf0cc9e1f92f90bda2a0bf0543406799b3b8037f1a2f65cedfb1806",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_retained.py": "441e1706ff712fd0bf48745a3bcc0d12b19515c797b6ab1fceacd2bfed356bf8",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_tuning.py": "bdaa60c1e9df7a6de1870e8cbecc2baf211910fda54e4777c93013aba6c2b5aa",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_convergence.py": "b7544346f4beb63946c7482a8a9a2341f4d5cabe72a2b29fab7c4f4ab8408dd7",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_coordinates.py": "ca8e6512ea968c7351f1d3ad90ff3b79bef556a25c6010a700faad706112a154",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_diagnostics.py": "a33073bf16336b8c47a54d56f85295dd70c1b198eb09967b3a1f581c0ee87dd1",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_selection.py": "74cb15743189eb254dce9d115b8411c0bf10081c2a9974fbef585c1041bc6421",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py": "c0aaa96cbff1ae3027d1b79d1435fa48bc0755ecfdce85a5f08653e1090bb71e",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning.py": "c1f2ccde7d86a330b79de55ddf3154f692642184ddc74d4831ff978bd20bd78a",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning_dispatch.py": "887f1a17ab0dfba44fc7e6788e2af5c14d26778fdf1ce3e873ef24ccbea37c92",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning_state.py": "63659b3202349048532fbf85c69fa58a5dac3faa63732ea8421fabb7d1ae283c",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_verification.py": "9ff0f90a83775a157421dc435a8813a968a0ab1015ecdb00ed3ad0ed674e4d7c",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_warmup.py": "d064d55fc8a53ef5f49bbf655744284edcafa4c8ea7c75b35f46cfc5116234c4",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/mass_matrix.py": "6a959080a1de9c3894697bda39667777596b73f469a32e5a7676a7032dbd53b3",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/neutra_artifacts.py": "80ce1b32103d45e2c6e772cae085ec17650e2f7e46537a1d5997d40e63396530",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/tuning_contract.py": "80cb2e049cf62aed97e5d4f3f7a753d054dcb2de65927018b840b84a1307c784",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/runner.py": "d0e49fb3ca650e2374674c31c05ed6d31c66ada364cd43e24c10f30bb0b76dcf",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/selection.py": "3793e76dc5d619ed70973c621917aa6c4c76cf0ea7f857c45a19c8d66df885c4",
+      "/home/ubuntu/python/BayesFilter/docs/examples/hmc_candidate_set_retained.py": "d7a5a2b2410a59385234e58818643dc7833fdf2bb6949bf2772a6076e991cad0"
+    },
+    "execution_config": {
+      "measurement_num_results": 128,
+      "verification_num_results": 128,
+      "num_warmup_steps": 8,
+      "seed": [
+        20260914,
+        11
+      ],
+      "acceptance_policy": {
+        "schema": "bayesfilter.hmc_acceptance_policy.v5",
+        "target": 0.7,
+        "practical_region": [
+          0.55,
+          0.85
+        ],
+        "repair_region": [
+          0.5,
+          0.9
+        ],
+        "chain_count": 4,
+        "block_count": 4,
+        "min_block_size": 16,
+        "min_decisions_per_chain": 64,
+        "confidence_level": 0.9,
+        "min_movement_rate": 0.05,
+        "max_repeated_state_fraction": 0.95,
+        "min_normalized_return_displacement": 0.0001,
+        "path_return_contract": {
+          "lags": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "aggregation": "maximum_recurrence_fraction_over_lags_per_chain",
+          "minimum_repetitions_at_minimum_evidence": 4,
+          "max_fraction": 0.95,
+          "absolute_tolerance": 1e-12,
+          "relative_tolerance": 1e-10,
+          "chain_rule": "veto_if_any_chain_exceeds_max_fraction"
+        },
+        "max_abs_log_accept_energy_proxy": 1000.0,
+        "allowed_cost_stop_reasons": [],
+        "dependence_unit": "independently_seeded_chain_mean",
+        "uncertainty_method": "two_sided_student_t_independent_chain_means",
+        "tuning_decision_role": "working_tuning_compatibility_interval_not_convergence_or_equivalence",
+        "diagnostic_roles": {
+          "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+          "movement": "promotion_veto_and_trajectory_repair_trigger",
+          "bounded_short_cycle_path_return": "promotion_veto_and_resonance_repair_trigger",
+          "native_divergence": "promotion_veto",
+          "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+          "signed_log_accept_ratio_tails": "explanatory_alert_only"
+        }
+      },
+      "target_status_trace_policy": "per_chain_step",
+      "use_xla": true,
+      "non_xla_reason": null,
+      "chain_mode": "serial"
+    },
+    "gpu_allocator": {
+      "current": 68352,
+      "peak": 581120
+    },
+    "inference_status": "engineering parity only; no statistical ranking or posterior admission"
+  },
+  "wall_seconds": 65.38301176700043
+}

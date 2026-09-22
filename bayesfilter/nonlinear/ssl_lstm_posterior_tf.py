@@ -19,7 +19,6 @@ from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
     tf_ssl_lstm_svd_ukf_score,
 )
 
-
 TARGET_SEMANTIC_SHA256 = (
     "549efdf2aa5d9534226cb29c3678489d92766f92e6140901355eac33618f719e"
 )
@@ -280,7 +279,7 @@ class SSLLSTMParameterMask:
 
     def embed(self, free: Any) -> tf.Tensor:
         values = _require_tensor(free, shape=(4,), name="free")
-        indices = tf.constant([[index] for index in self.free_indices], dtype=tf.int32)
+        indices = tf.reshape(tf.constant(self.free_indices, tf.int32), [-1, 1])
         return tf.tensor_scatter_nd_update(self.full_values, indices, values)
 
     def extract(self, full: Any) -> tf.Tensor:

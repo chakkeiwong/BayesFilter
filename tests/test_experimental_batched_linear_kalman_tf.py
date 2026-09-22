@@ -19,7 +19,6 @@ from bayesfilter.linear.types_tf import (
     TFLinearGaussianStateSpaceDerivatives,
 )
 
-
 JITTER = 1.0e-9
 
 
@@ -307,10 +306,15 @@ def test_experimental_batched_kalman_score_matches_tape_jacobian_reference() -> 
         batch_value, _batch_score = _batched_value_and_score(values)
         return tf.reduce_sum(batch_value)
 
-    with tf.GradientTape() as tape:
-        tape.watch(theta_batch)
-        value = scalar_sum(theta_batch)
-    autodiff_score = tape.gradient(value, theta_batch)
+    # Differentiate inside the same compiled boundary as the recurrence.
+    @tf.function(jit_compile=True)
+    def compiled_reference(values):
+        with tf.GradientTape() as tape:
+            tape.watch(values)
+            value = scalar_sum(values)
+        return tape.gradient(value, values)
+
+    autodiff_score = compiled_reference(theta_batch)
     _batched_value, analytic_score = _batched_value_and_score(theta_batch)
 
     assert autodiff_score is not None

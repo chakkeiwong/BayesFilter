@@ -12,7 +12,6 @@ from bayesfilter.nonlinear.fixed_sgqf_tf import (
 )
 from bayesfilter.structural_tf import TFStructuralStateSpace
 
-
 _ADMISSION_STATUSES = {"exact_eligible", "approximate_eligible", "ineligible"}
 
 
@@ -248,16 +247,12 @@ def tf_structural_to_fixed_sgqf_model(
             ),
         )
 
-    parameter_dim = int(derivatives.d_initial_mean.shape[0])
     fixed_derivatives = TFFixedSGQFDerivatives(
         d_initial_mean=tf.convert_to_tensor(derivatives.d_initial_mean, dtype=tf.float64),
         d_initial_covariance=tf.convert_to_tensor(derivatives.d_initial_covariance, dtype=tf.float64),
-        d_process_covariance=tf.convert_to_tensor(
-            [
-                [[derivatives.d_innovation_covariance[i, 0, 0], 0.0], [0.0, 0.0]]
-                for i in range(parameter_dim)
-            ],
-            dtype=tf.float64,
+        d_process_covariance=(
+            derivatives.d_innovation_covariance[:, :1, :1]
+            * tf.constant([[[1.0, 0.0], [0.0, 0.0]]], tf.float64)
         ),
         d_observation_covariance=tf.convert_to_tensor(derivatives.d_observation_covariance, dtype=tf.float64),
         transition_state_jacobian_fn=lambda points: tf.convert_to_tensor(

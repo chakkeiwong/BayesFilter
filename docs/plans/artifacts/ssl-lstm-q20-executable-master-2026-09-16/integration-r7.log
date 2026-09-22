@@ -1,0 +1,56 @@
+.F
+=================================== FAILURES ===================================
+______________ test_actual_tuning_member_and_posterior[classical] ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-325/test_actual_tuning_member_and_1')
+method = 'classical'
+
+    @pytest.mark.parametrize("method", ["identity", "classical", "neutra"])
+    def test_actual_tuning_member_and_posterior(tmp_path, method):
+        config, bridge = protocol(), four_dimensional_bridge()
+        if method in {"identity", "classical"}:
+            config["tuning"]["initial_epsilon"] = 1.1
+        export = None
+        if method == "neutra":
+            trained = run_training_cohort(config, bridge, tmp_path / "training",
+                memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
+            cohort = json.loads(Path(trained["checkpoint"]).read_text())["cohort"]
+            export = next(iter(cohort.values()))["exports"]["1.0"]
+>       tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_q20_master_integration.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:167: in tune_scope
+    preparation = prepare_operational_windowed_mass_handoff(adapter=adapter,
+bayesfilter/inference/hmc_kernel_tuning.py:24230: in prepare_operational_windowed_mass_handoff
+    return prepare(adapter=adapter, initial_position=initial_position, config=config,
+bayesfilter/inference/hmc_preparation.py:143: in prepare_operational_windowed_mass_handoff
+    bootstrap = run_hmc_bootstrap_screen(
+bayesfilter/inference/hmc_kernel_tuning.py:9363: in run_hmc_bootstrap_screen
+    target_scope = _resolve_bootstrap_target_scope(adapter, cfg)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+adapter = <bayesfilter.inference.tempered_target_tf.FixedBetaBridgeAdapter object at 0x7591f019fce0>
+config = HMCBootstrapScreenConfig(target_accept_prob=0.7, acceptance_band=(0.65, 0.75), repair_band=(0.55, 0.85), step_repair_f...-beta1', target_status_trace_policy='per_chain_step', source='bayesfilter.inference.tune_hmc_kernel.serious.bootstrap')
+
+    def _resolve_bootstrap_target_scope(
+        adapter: Any,
+        config: HMCBootstrapScreenConfig,
+    ) -> str:
+        capability = value_score_capability(adapter)
+        capability_scope = capability.target_scope
+        if config.target_scope is not None:
+            target_scope = str(config.target_scope)
+            if not target_scope:
+                raise ValueError("target_scope must be non-empty when provided")
+            if capability_scope is not None and target_scope != capability_scope:
+>               raise ValueError("value/score target_scope mismatch")
+E               ValueError: value/score target_scope mismatch
+
+bayesfilter/inference/hmc_kernel_tuning.py:16247: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_integration.py::test_actual_tuning_member_and_posterior[classical]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed, 585 warnings in 18.76s

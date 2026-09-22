@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="16" time="55.919" timestamp="2026-09-21T22:03:53.734432+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_tuning_posterior_oracle" name="test_ordinary_tuner_calibration_freezes_artifact_and_holdout_agrees" time="48.932" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_one_sd_nomination_is_explicit_and_non_promoting" time="0.001" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_high_mean_candidate_is_outside_practical_region" time="0.000" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_hard_veto_wins_over_nomination" time="0.000" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_invalid_summary_cannot_be_nominated[values0]" time="0.000" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_invalid_summary_cannot_be_nominated[values1]" time="0.000" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_invalid_summary_cannot_be_nominated[values2]" time="0.000" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_invalid_summary_cannot_be_nominated[values3]" time="0.000" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_policy_payload_is_explicit_and_validates" time="0.000" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_summary_payload_round_trip_and_schema_guard" time="0.001" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_uncertainty_nominee_admission_is_lineage_bound_and_non_promoting" time="0.240" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_candidate_payload_parser_is_strict" time="0.184" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_confirmation_admission_rejects_tampered_nomination_means" time="0.131" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_confirmation_admission_rejects_lineage_tampering" time="0.136" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_confirmation_admission_preserves_real_promotion_vetoes" time="0.109" /><testcase classname="tests.test_hmc_uncertainty_retuning" name="test_public_admission_import_does_not_load_tensorflow" time="3.041"><failure message="AssertionError: assert 'True' == 'False'&#10;  &#10;  - False&#10;  + True">def test_public_admission_import_does_not_load_tensorflow() -&gt; None:
+        output = subprocess.check_output(
+            (
+                sys.executable,
+                "-c",
+                "import sys; "
+                "from bayesfilter.inference import "
+                "admit_hmc_uncertainty_nomination_for_confirmation; "
+                "print(any(n == 'tensorflow' or n.startswith('tensorflow.') "
+                "for n in sys.modules))",
+            ),
+            text=True,
+            env=dict(os.environ, BAYESFILTER_PRELOAD_CUSTOM_OP="0", CUDA_VISIBLE_DEVICES="-1"),
+        ).strip()
+&gt;       assert output == "False"
+E       AssertionError: assert 'True' == 'False'
+E         
+E         - False
+E         + True
+
+tests/test_hmc_uncertainty_retuning.py:275: AssertionError</failure></testcase></testsuite></testsuites>

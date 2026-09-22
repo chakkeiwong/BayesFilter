@@ -29,7 +29,6 @@ from docs.benchmarks.benchmark_experimental_batched_svd_sigma_point_cpu_gpu impo
     _to_tensors,
 )
 
-
 BACKENDS = ("tf_svd_ukf", "tf_svd_cubature")
 OLD_BACKENDS = ("tf_svd_ukf", "tf_svd_cubature", "tf_svd_cut4")
 
@@ -942,6 +941,217 @@ def test_principal_sqrt_helper_roundoff_repair_cpu_xla_records_diagnostics() -> 
     assert float(min_eigenvalue.numpy()[0]) < 0.0
 
 
+def test_cached_strict_factor_reuses_covariance_eigensystem_without_changing_rows() -> None:
+    covariance = tf.constant(
+        [
+            [[4.0, 0.2], [0.2, 9.0]],
+            [[1.0, 0.0], [0.0, -1.0e-20]],
+            [[1.0, 0.0], [0.0, -1.0e-3]],
+        ],
+        dtype=tf.float64,
+    )
+    d_covariance = tf.constant(
+        [
+            [[[0.3, 0.1], [0.1, -0.2]]],
+            [[[0.2, 0.0], [0.0, 0.1]]],
+            [[[0.0, 0.0], [0.0, 0.0]]],
+        ],
+        dtype=tf.float64,
+    )
+    kwargs = dict(
+        singular_floor=tf.constant(0.0, dtype=tf.float64),
+        fixed_null_tolerance=tf.constant(1.0e-10, dtype=tf.float64),
+        lyapunov_tolerance=tf.constant(1.0e-10, dtype=tf.float64),
+        label="cached strict parity",
+    )
+    strict = _checked_batched_principal_sqrt_factor_first_derivatives(
+        covariance,
+        d_covariance,
+        factor_backend="tensorflow_eigh_strict",
+        **kwargs,
+    )
+    cached = _checked_batched_principal_sqrt_factor_first_derivatives(
+        covariance,
+        d_covariance,
+        factor_backend="tensorflow_eigh_strict_cached",
+        **kwargs,
+    )
+    factor_cached = _checked_batched_principal_sqrt_factor_first_derivatives(
+        covariance,
+        d_covariance,
+        factor_backend="tensorflow_eigh_strict_factor_cached",
+        **kwargs,
+    )
+
+    np.testing.assert_allclose(cached.factor.numpy(), strict.factor.numpy(), rtol=1.0e-11, atol=1.0e-12)
+    np.testing.assert_allclose(cached.d_factor.numpy(), strict.d_factor.numpy(), rtol=1.0e-10, atol=1.0e-11)
+    np.testing.assert_allclose(
+        cached.implemented_covariance.numpy(),
+        strict.implemented_covariance.numpy(),
+        rtol=1.0e-11,
+        atol=1.0e-12,
+    )
+    np.testing.assert_array_equal(
+        cached.roundoff_repair_count.numpy(), strict.roundoff_repair_count.numpy()
+    )
+    np.testing.assert_array_equal(
+        cached.classified_invalid_count.numpy(), strict.classified_invalid_count.numpy()
+    )
+    np.testing.assert_allclose(
+        factor_cached.factor.numpy(), strict.factor.numpy(), rtol=1.0e-11, atol=1.0e-12
+    )
+    np.testing.assert_allclose(
+        factor_cached.d_factor.numpy(), strict.d_factor.numpy(), rtol=1.0e-10, atol=1.0e-11
+    )
+    np.testing.assert_array_equal(
+        factor_cached.roundoff_repair_count.numpy(), strict.roundoff_repair_count.numpy()
+    )
+    np.testing.assert_array_equal(
+        factor_cached.classified_invalid_count.numpy(), strict.classified_invalid_count.numpy()
+    )
+
+    @tf.function(
+        input_signature=(
+            tf.TensorSpec([3, 2, 2], tf.float64),
+            tf.TensorSpec([3, 1, 2, 2], tf.float64),
+        ),
+        jit_compile=True,
+        reduce_retracing=True,
+    )
+    def xla_parity(covariance_value: tf.Tensor, derivative_value: tf.Tensor):
+        strict_value = _checked_batched_principal_sqrt_factor_first_derivatives(
+            covariance_value,
+            derivative_value,
+            factor_backend="tensorflow_eigh_strict",
+            **kwargs,
+        )
+        cached_value = _checked_batched_principal_sqrt_factor_first_derivatives(
+            covariance_value,
+            derivative_value,
+            factor_backend="tensorflow_eigh_strict_cached",
+            **kwargs,
+        )
+        factor_cached_value = _checked_batched_principal_sqrt_factor_first_derivatives(
+            covariance_value,
+            derivative_value,
+            factor_backend="tensorflow_eigh_strict_factor_cached",
+            **kwargs,
+        )
+        return (
+            strict_value.factor,
+            cached_value.factor,
+            factor_cached_value.factor,
+            strict_value.d_factor,
+            cached_value.d_factor,
+            factor_cached_value.d_factor,
+            strict_value.roundoff_repair_count,
+            cached_value.roundoff_repair_count,
+            factor_cached_value.roundoff_repair_count,
+            strict_value.classified_invalid_count,
+            cached_value.classified_invalid_count,
+            factor_cached_value.classified_invalid_count,
+        )
+
+    (
+        strict_factor_xla,
+        cached_factor_xla,
+        factor_cached_factor_xla,
+        strict_d_factor_xla,
+        cached_d_factor_xla,
+        factor_cached_d_factor_xla,
+        strict_repairs_xla,
+        cached_repairs_xla,
+        factor_cached_repairs_xla,
+        strict_invalid_xla,
+        cached_invalid_xla,
+        factor_cached_invalid_xla,
+    ) = xla_parity(covariance, d_covariance)
+    np.testing.assert_allclose(
+        cached_factor_xla.numpy(), strict_factor_xla.numpy(), rtol=1.0e-10, atol=1.0e-11
+    )
+    np.testing.assert_allclose(
+        cached_d_factor_xla.numpy(), strict_d_factor_xla.numpy(), rtol=1.0e-9, atol=1.0e-10
+    )
+    np.testing.assert_allclose(
+        factor_cached_factor_xla.numpy(), strict_factor_xla.numpy(), rtol=1.0e-10, atol=1.0e-11
+    )
+    np.testing.assert_allclose(
+        factor_cached_d_factor_xla.numpy(), strict_d_factor_xla.numpy(), rtol=1.0e-9, atol=1.0e-10
+    )
+    np.testing.assert_array_equal(cached_repairs_xla.numpy(), strict_repairs_xla.numpy())
+    np.testing.assert_array_equal(cached_invalid_xla.numpy(), strict_invalid_xla.numpy())
+    np.testing.assert_array_equal(
+        factor_cached_repairs_xla.numpy(), strict_repairs_xla.numpy()
+    )
+    np.testing.assert_array_equal(
+        factor_cached_invalid_xla.numpy(), strict_invalid_xla.numpy()
+    )
+
+
+def test_cached_strict_score_matches_strict_score_on_batched_fixture() -> None:
+    tensors = _fixture(batch_size=3, time_steps=2)
+    model, derivatives = _batched_model_and_derivatives(tensors)
+
+    def evaluate(backend: str):
+        return tf_batched_svd_sigma_point_value_and_score(
+            tensors["observations"],
+            model,
+            derivatives,
+            backend="tf_principal_sqrt_ukf",
+            principal_sqrt_backend=backend,
+            placement_floor=tf.constant(0.0, tf.float64),
+            innovation_floor=tf.constant(1.0e-12, tf.float64),
+            fixed_null_tolerance=tf.constant(1.0e-10, tf.float64),
+            principal_sqrt_reconstruction_tolerance=tf.constant(1.0e-10, tf.float64),
+        )
+
+    strict_value, strict_score, strict_diag = evaluate("tensorflow_eigh_strict")
+    cached_value, cached_score, cached_diag = evaluate("tensorflow_eigh_strict_cached")
+    np.testing.assert_allclose(cached_value.numpy(), strict_value.numpy(), rtol=1.0e-10, atol=1.0e-10)
+    np.testing.assert_allclose(cached_score.numpy(), strict_score.numpy(), rtol=1.0e-9, atol=1.0e-10)
+    for key in (
+        "principal_sqrt_target_classified_invalid_count",
+        "principal_sqrt_target_row_class_code",
+        "principal_sqrt_target_valid_count",
+    ):
+        np.testing.assert_array_equal(cached_diag[key].numpy(), strict_diag[key].numpy())
+
+
+def test_strict_factor_cached_score_matches_strict_on_batched_fixture() -> None:
+    tensors = _fixture(batch_size=3, time_steps=2)
+    model, derivatives = _batched_model_and_derivatives(tensors)
+
+    def evaluate(backend: str):
+        return tf_batched_svd_sigma_point_value_and_score(
+            tensors["observations"],
+            model,
+            derivatives,
+            backend="tf_principal_sqrt_ukf",
+            principal_sqrt_backend=backend,
+            placement_floor=tf.constant(0.0, tf.float64),
+            innovation_floor=tf.constant(1.0e-12, tf.float64),
+            fixed_null_tolerance=tf.constant(1.0e-10, tf.float64),
+            principal_sqrt_reconstruction_tolerance=tf.constant(1.0e-10, tf.float64),
+        )
+
+    strict_value, strict_score, strict_diag = evaluate("tensorflow_eigh_strict")
+    cached_value, cached_score, cached_diag = evaluate(
+        "tensorflow_eigh_strict_factor_cached"
+    )
+    np.testing.assert_allclose(
+        cached_value.numpy(), strict_value.numpy(), rtol=1.0e-10, atol=1.0e-10
+    )
+    np.testing.assert_allclose(
+        cached_score.numpy(), strict_score.numpy(), rtol=1.0e-9, atol=1.0e-10
+    )
+    for key in (
+        "principal_sqrt_target_classified_invalid_count",
+        "principal_sqrt_target_row_class_code",
+        "principal_sqrt_target_valid_count",
+    ):
+        np.testing.assert_array_equal(cached_diag[key].numpy(), strict_diag[key].numpy())
+
+
 def test_principal_sqrt_helper_repairs_low_margin_strict_rows_cpu_xla() -> None:
     covariance = tf.constant(
         [
@@ -1515,7 +1725,7 @@ def test_lagged_observation_contract_source_contract() -> None:
     source = inspect.getsource(module.tf_batched_svd_sigma_point_value_and_score_with_rule)
     tree = ast.parse(textwrap.dedent(source))
 
-    assert "tf.while_loop" in source
+    assert "compiled_tensor_recurrence" in source
     assert "observation_contract" in source
     assert "lagged_previous_innovation_predicted" in source
     assert "d_lagged_observation_fn" in source

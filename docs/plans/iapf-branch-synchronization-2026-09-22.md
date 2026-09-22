@@ -26,16 +26,29 @@ No experiment-source change is permitted during its execution without a
 recorded repair and renewed numerical verification. Git commit IDs may change;
 each future launch records the actual commit and the frozen source hashes.
 
-Current synchronization status: source commit `db72d33c` is complete and local
-main has fast-forwarded to it in `/tmp/bayesfilter-main-sync-20260922`.
-The initial SSH fetch stalled and was stopped. An all-branch HTTPS fetch
-failed with an early EOF; the main-only HTTPS fetch is downloading a large
-pack and still making progress. Remote main was observed at `8f992b20`.
+Source commit `db72d33c` is integrated into local main in
+`/tmp/bayesfilter-main-sync-20260922`. The cached remote history `d2124d42`
+merged in `c41d6477`; latest remote main `8f992b20` subsequently merged without
+conflicts. Both histories and the remote HMC policy changes are preserved.
 The existing remote surrogate-hmc tip `8a5c23ab` is an ancestor of our branch.
-No remote push has yet been made. Merge and final identity checks remain.
+The final synchronization sequence is to commit the reviewed merge and master
+refresh, push main, fast-forward surrogate-hmc to main, push that branch, and
+verify both local and remote commit/tree identities. The actual terminal
+verification is recorded in `/tmp/bayesfilter-sync-20260922/final-verification.json`.
 
-The cached remote history `d2124d42` merged cleanly in `c41d6477`; its ancestry
-to the current remote tip was checked. The isolated checkout then passed 188
+The bulk fetch delay was caused by extensive committed remote experiment data.
+An all-branch HTTPS fetch failed with early EOF; a later main-only bulk fetch
+remained active but was superseded and stopped after a successful filtered
+fetch obtained the complete remote commit/tree history. Origin now uses Git's
+standard on-demand blob retrieval. Matching sparse checkout patterns defer
+71,722 bulk payload paths in 31 newly introduced remote artifact directories;
+they exclude no previously tracked local path. Code, plans, compact text
+results, and all existing local experiments remain materialized. Deferred
+payloads remain tracked at their original Git identities and can be fetched
+when needed. This changes local materialization, not either branch's tree.
+Pattern and preservation records are in the local synchronization log directory.
+
+After the cached remote merge, the isolated checkout passed 188
 integration tests, with 30 external-reference tests skipped and one missing
 fixture failure. The missing 1,729-byte underflow fixture is now versioned.
 After copying the existing pinned R source and paper into the isolated local
@@ -44,11 +57,15 @@ availability check now requires the paper as well as R and source code, so a
 fresh checkout reports missing references explicitly. No numerical algorithm
 changed. The ignored custom-op binary was also copied from the original
 checkout; its digest is recorded in the local synchronization logs.
+After the latest remote merge, the complete focused integration run passed
+219 tests in 212.51 seconds, with GPU devices deliberately hidden. This covers
+the iAPF reference/score consumers and affected Kalman/HMC integration contracts;
+it is not a new scientific or GPU validation claim.
 
 GitHub SSH authentication over port 443 succeeded using the already trusted
-github.com host key. A brief duplicate fetch on that connection was slower
-and was stopped; the original HTTPS download remains active. The authenticated
-port-443 connection is available for the requested pushes.
+github.com host key. The repository's SSH command now uses that verified
+connection for lazy fetches and pushes; its previous configuration is backed
+up in the local synchronization logs. No host-key verification was disabled.
 
 The first focused CPU/XLA run passed 133 tests and exposed one stale assertion
 in the canonical reset rejection test. The shared executor has returned the
@@ -66,9 +83,14 @@ Detailed local command logs and the explicit staging selection are in
 diagnostics is preserved in the original checkout; a fresh clone alone does
 not contain those raw experimental payloads.
 
-Master refresh: stage 100 is complete (3,000 records, zero failed/capped
-learners); stage 300 is active. The master now explicitly schedules completion
-of 300 and 1,000 before terminal uncertainty/control review, removes its stale
-no-worker statement, and points to the live budget. All nine frozen source
-hashes matched before and after the source commit; all eight excluded tracked
-files still matched their initial content hashes.
+Master refresh: stages 100 and 300 are complete; stage 1,000 is active.
+Stage 300 retains all 9,000 records, including two failed/capped d80 score
+learners and the resulting heuristic promotion veto. The master schedules
+completion of 1,000 before terminal uncertainty/control review and points to
+the live budget. All nine frozen source hashes matched in both checkouts after
+the latest remote merge. Eight unrelated tracked edits are preserved. Two TT
+documentation files changed concurrently during synchronization; preserve their
+latest contents rather than restoring their initial hashes.
+The incoming tracked NeuTra route ledger supersedes an older ignored local
+copy. Preserve that old copy in the synchronization backup before updating the
+working branch; use the incoming ledger with its corresponding merged sources.

@@ -1,0 +1,149 @@
+....................................F..........F.....                    [100%]
+=================================== FAILURES ===================================
+_______ test_scope_collection_is_read_only_and_keeps_scope_bound_members _______
+tests/test_hmc_candidate_set_tuning.py:263: in test_scope_collection_is_read_only_and_keeps_scope_bound_members
+    collection.member("scope-c", "missing")
+bayesfilter/inference/hmc_candidate_set_tuning.py:791: in member
+    raise ValueError("candidate is absent or ambiguous in the scope/search collection")
+E   ValueError: candidate is absent or ambiguous in the scope/search collection
+
+During handling of the above exception, another exception occurred:
+tests/test_hmc_candidate_set_tuning.py:262: in test_scope_collection_is_read_only_and_keeps_scope_bound_members
+    with pytest.raises(ValueError, match="scope is absent"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E     Expected regex: 'scope is absent'
+E     Actual message: 'candidate is absent or ambiguous in the scope/search collection'
+_______ test_replay_rejects_inconclusive_receipt_relabelled_as_verified ________
+tests/test_hmc_candidate_set_artifacts.py:148: in test_replay_rejects_inconclusive_receipt_relabelled_as_verified
+    require_verified_member(
+bayesfilter/inference/hmc_candidate_set_artifacts.py:464: in require_verified_member
+    _validate_result_payload(payload)
+bayesfilter/inference/hmc_candidate_set_artifacts.py:254: in _validate_result_payload
+    HMCCandidateDecision.from_observation(receipt)
+bayesfilter/inference/hmc_candidate_decisions.py:70: in from_observation
+    raise ValueError("acceptance decision aliases disagree")
+E   ValueError: acceptance decision aliases disagree
+
+During handling of the above exception, another exception occurred:
+tests/test_hmc_candidate_set_artifacts.py:147: in test_replay_rejects_inconclusive_receipt_relabelled_as_verified
+    with pytest.raises(ValueError, match="passing verification receipt"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E     Expected regex: 'passing verification receipt'
+E     Actual message: 'acceptance decision aliases disagree'
+=============================== warnings summary ===============================
+../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/test_hmc_consistency_gap_repair.py: 24 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Constant.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Compare.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 140 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Attribute.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: BinOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 91 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Call.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 17 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: keyword.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 15 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FunctionDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 24 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Load.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Tuple.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Expr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: IsNot.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Dict.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Try.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Subscript.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: List.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: alias.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Import.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Slice.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: UnaryOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_hmc_candidate_set_tuning.py::test_scope_collection_is_read_only_and_keeps_scope_bound_members
+FAILED tests/test_hmc_candidate_set_artifacts.py::test_replay_rejects_inconclusive_receipt_relabelled_as_verified
+2 failed, 51 passed, 351 warnings in 13.23s

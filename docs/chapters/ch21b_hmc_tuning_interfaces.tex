@@ -1,166 +1,39 @@
 \chapter{HMC Tuning Interfaces}
 \label{ch:bf-hmc-tuning-interfaces}
 
-Hamiltonian dynamics execute a kernel only after its mass matrix, step size,
-and trajectory length have been fixed.  Choosing those quantities is a
-different operation from drawing transitions with them.  BayesFilter makes
-that boundary explicit because a chain runner that happens to adapt a step
-size can otherwise be mistaken for a complete tuning procedure.
+HMC tuning determines which frozen kernels are suitable for further sampling.
+For each declared trajectory length $L$, BayesFilter measures proposed step sizes
+$\epsilon$, independently verifies the surviving pairs, and retains every pair
+that passes. A failed pair can motivate another measured proposal. A passing
+pair does not end the search or establish posterior convergence.
 
-\section{Terms and authority}
+\section{One candidate-set procedure}
 
-A \emph{tuner} is a public, repository-owned orchestration route.  It may issue
-a canonical tuning artifact only after its required stages and fresh
-verification pass.  A \emph{chain runner} executes one supplied configuration;
-it does not become a tuner when it dual-averages only the step size.  A
-\emph{stage helper} implements an internal or diagnostic part of the ladder,
-and direct use of it does not inherit public artifact authority.
+The public functions \path{tune_hmc_kernel} and
+\path{tune_fixed_transport_hmc_kernel} share
+\path{HMCTuningCandidateSetController}. Both return
+\path{HMCTypedCandidateSetRun}, whose \path{result} contains the full
+\path{HMCTuningCandidateSetResult}. Their preparation differs with the target
+and coordinates; their candidate scheduling and retention do not.
 
-A \emph{tuning artifact} records scope-bound evidence for a selected fixed
-kernel.  Its draws are tuning draws, not retained posterior draws.  A
-\emph{final handoff} consists of a replayable private kernel payload and a
-redacted public status record.  It exists only when the route's tested
-admission rule passes.
+Ordinary \path{HMCKernelTuningConfig} prepares a windowed mass matrix or an
+explicit identity metric. \path{FixedTransportHMCKernelTuningConfig} prepares
+identity mass in the coordinates of a reconstructable frozen transport.
+A caller with already prepared geometry supplies \path{HMCControllerConfig}
+and the numerical binding's \path{typed_adapter}. The conditional
+\path{TensorFlowHMCKernelTuningConfig} proposal-field route also uses the shared
+scheduler, but retains its weaker mechanics authority.
 
-\emph{Ordinary coordinates} are the target adapter's coordinates.  The
-ordinary tuner builds affine mass coordinates around them.  \emph{Fixed-
-transport coordinates} are the latent coordinates (z) of one frozen,
-identity-bound nonlinear map.  Replacing that map changes the tuning scope.
-\emph{Neural-force mechanics} means a fixed position-only force combined with
-an exact endpoint potential.  That description alone supplies neither a
-nonlinear transport nor mass or leapfrog-count tuning.
+The capability registry \path{HMC_TUNING_INTERFACE_CAPABILITIES} identifies the
+supported target and coordinate combinations. Chain runners, stage helpers,
+discovery routines, and historical selectors cannot independently issue new
+candidate-set tuning evidence. Unsupported legacy runner customizations fail
+before execution. Historical single-kernel results remain readable, with their
+original identities; they are not the result of the current procedure.
 
-When sources disagree, the checked mathematical target and project policy come
-first, followed by executable signatures and behavioral tests, then the
-validated capability registry and its generated documentation.  Historical
-plans and result notes do not override current executable behavior.  The
-registry classifies authority and supported behavior; an evidence anchor in
-the registry identifies the test that checks each behavioral statement.
+\lstinputlisting[language=Python,caption={Inspecting supported target and coordinate routes.}]{examples/hmc_tuning_route_selection.py}
 
-\section{Choose the route from the target}
-
-The decision starts with the probability measure, not with a convenient
-function name.  There are exactly two public tuners.  Each supported situation
-has one primary instruction and at most one weaker conditional alternative.
-
-\begin{longtable}{p{0.25\textwidth}p{0.34\textwidth}p{0.32\textwidth}}
-\toprule
-Situation & Primary instruction & Conditional alternative or stop \\
-\midrule
-\endfirsthead
-\toprule
-Situation & Primary instruction & Conditional alternative or stop \\
-\midrule
-\endhead
-Exact log target and matching exact score in ordinary coordinates &
-Use \code{tune\_hmc\_kernel} with \code{HMCKernelTuningConfig}; this is the
-broad-first ordinary procedure. & Reuse an admitted result only when its
-complete tuning scope is unchanged; otherwise retune. \\
-\addlinespace
-One frozen nonlinear transport with the exact Jacobian-corrected transformed
-value and matching score & Use
-\texttt{tune\_fixed\_\allowbreak transport\_hmc\_\allowbreak kernel} with the
-measured joint-grid policy. & The legacy directional policy is available only
-for mechanics debugging and cannot issue a verified handoff. \\
-\addlinespace
-Deterministic position-only proposal field that is not the exact score, with an
-exact endpoint potential in the same coordinates & Build the repository
-binding and call \code{tune\_hmc\_kernel} with
-\texttt{TensorFlow\allowbreak HMC\allowbreak Kernel\allowbreak Tuning\allowbreak Config}.
-& This is mechanics/candidate evidence
-only.  Stop if artifact-authoritative tuning is required. \\
-\addlinespace
-Chain-mechanics smoke or historical replay & Use the exact runner or helper
-named by the test or record. & Never use that result as a tuning handoff. \\
-\addlinespace
-No matching contract & Stop. & Do not relabel a runner, helper, arbitrary
-force, or partial derivative as a supported tuner. \\
-\bottomrule
-\end{longtable}
-
-An exact ordinary score uses the first row without a runner binding.  A
-different deterministic proposal field uses the third row and retains its
-mechanics-only authority boundary.
-
-The complete generated registry appears in
-Section~\ref{sec:bf-hmc-complete-interface-inventory}.  It is an audit
-inventory, not a menu of peer tuning procedures.
-
-\section{Ordinary-coordinate tuning}
-
-The public import is
-\code{from bayesfilter.inference import HMCKernelTuningConfig,
-tune\_hmc\_kernel}.  With the default runner, the adapter must bind its
-dimension, stable signature, target scope, exact log value, matching score,
-and value--score capability.  This configuration selects the one reviewed
-ordinary policy.  It does not let a model caller insert candidate grids, mass
-windows, tuning draw counts, a runner binding, a bare chain callback, or
-private handoff mechanics.
-
-The ordinary route performs the following linked stages:
-
-\begin{enumerate}
-  \item initialize geometry and a positive-definite mass representation;
-  \item run a bootstrap screen for a viable fixed-(L) step;
-  \item by default, update mass in bounded windows and requalify the step after
-    every coordinate change;
-  \item evaluate the complete primary grid
-    \(L\in\{3,5,9,13,18,25\}\), tuning epsilon independently for every
-    value from the same frozen metric and checked four-chain start bank;
-  \item evaluate one refinement barrier containing every untested floor and
-    ceiling integer midpoint adjacent to a surviving primary value, again with
-    an independent epsilon tune for every \(L\);
-  \item order eligible measured pairs deterministically for verification,
-    without treating that order as a statistical ranking; and
-  \item freeze the kernel and run fresh verification on draws not used for
-    candidate selection.
-\end{enumerate}
-
-The geometry-derived trajectory target helps order viable candidates.  It does
-not construct the primary grid, eliminate a primary value before measurement,
-or trigger a second local \(L\) search after the broad barriers.
-
-Fresh verification consumes the eligible measured pairs directly and starts
-at most two candidates from the deterministic queue in one attempt.  A passing
-candidate ends tuning.  Otherwise, a consistent acceptance-direction signal
-may seed another complete attempt, but it cannot bypass mass adaptation or
-either broad-grid barrier; conflicting signals do not mutate epsilon.  The
-public configuration fixes
-\path{operational_verification_bracket_policy} at
-\path{single_repair}.  The old \path{one_verified_log_midpoint} procedure
-is accepted only by the explicitly selected historical shared-epsilon helper
-route and is not an ordinary public-tuner option.
-
-Each candidate binds the mass-artifact signature, target scope, coordinates, and
-metric signature.  A mass-signature change invalidates the selection and its
-calibration: the stage emits a hard veto and no final handoff, and fresh tuning
-is required under the new geometry.
-
-For the ordinary configuration, the resolved public variant is
-\path{ordinary_hmc} with algorithm identifier
-\path{ordinary_broad_fixed_metric_selection_v1}.  The public config
-fixes the upper bound at \(L=25\) so that it cannot silently truncate the
-primary grid, and it exposes neither a caller-selected grid nor the private
-P4-E covariance-multiplier switch.  The former shared-epsilon
-\path{operational_paired_fixed_trajectory_selection_v3} identity and the
-internal \path{joint_l_epsilon_grid_fixed_mass_hmc} identity remain
-readable compatibility records; the public artifact-authority boundary rejects
-both.  The route
-payload separates \path{operational_authority}, replayable
-\path{artifact_authority}, and \path{scientific_promotion_authority}.
-Operational or replayable authority does not establish a scientific claim.
-The current ordinary result is explicitly non-admitting for claim-bearing use
-while its known NumPy runtime-policy debt and XLA-default mismatch remain
-unresolved.
-
-The package exports one implementation entry for each public tuner.  The
-ordinary export delegates to
-\path{bayesfilter.inference.hmc_tuning_dispatch.tune_hmc_kernel}; the ordinary
-implementation module contains only the private canonical executor.  The
-fixed-transport package export delegates to the sole implementation in
-\path{bayesfilter.inference.fixed_transport_hmc_tuning_tf}.  Chain runners,
-stage helpers, and compatibility procedures do not define additional public
-tuners.
+\section{Preparation and immutable geometry}
 
 Geometry is a shared responsibility rather than an unspecified tuner default.
 The caller supplies the initial center and may supply a local geometry
@@ -184,71 +57,320 @@ next is tried; with fallback disabled, it is a hard error.  The explicit fixed-
 identity policy ignores all hints.  Identity is a useful mechanics baseline,
 not evidence that an anisotropic posterior has identity geometry.
 
-A covariance-first calculation must keep the estimated center and covariance
-together.  The covariance should be finite, symmetric, positive definite,
-estimated at the supplied center, and expressed in the adapter's coordinates.
-Exact target and score replay must pass there, and any regularization or
-fallback remains part of the provenance.  The following listing checks this
-argument binding with stubs and therefore performs neither covariance fitting
-nor HMC.
+When no hint is supplied, the initializer uses unit curvature frequencies;
+it does not estimate the target Hessian. A finite density or a near-zero score
+at the initial point therefore does not establish a stable initial step.
+Strongly scaled targets can fail the bootstrap before windowed adaptation or
+candidate search begins. Inspect that preparation failure and supply checked
+geometry in the active coordinates when available. Increasing the subsequent
+candidate budget does not repair a bootstrap that never reaches its handoff.
 
-\lstinputlisting[language=Python,caption={Covariance-first ordinary-tuner handoff without chain execution.},label={lst:bf-hmc-tuning-covariance-first}]{examples/hmc_tuning_covariance_first.py}
+Bootstrap epsilon decisions use the mean Metropolis probability over all
+recorded proposals, including rejected proposals and excluding discarded burnin:
+\[
+  \bar\alpha=\frac{1}{n}\sum_{t=1}^{n}
+     \exp\{\min(\log r_t,0)\}.
+\]
+The realized accepted fraction includes the additional uniform accept/reject
+draw and remains a separate movement diagnostic. For example, a recorded mean
+probability of $0.6846$ lies within the configured $[0.65,0.75]$ band even when
+$13/16=0.8125$ proposals were accepted. That binary fraction must not cause an
+upward epsilon repair. Missing, nonfinite or incomplete probability traces stop
+the screen. The ordinary fixed-kernel band and the optional startup floor have
+different preparation roles; neither establishes final candidate or posterior
+validity.
 
-The default ordinary TFP verifier requires typed finite-state and acceptance
-evidence, the configured minimum retained tuning draws, and finite
-rank-normalized split and folded split \(\widehat R\) values at or below 1.01.
-Failure or exhaustion at that cap prevents the final handoff.  The value 1.01
-is the existing verifier setting restored at the admission boundary; this
-documentation work did not choose a new threshold.  Bulk and tail effective
-sample sizes are disabled for ordinary tuning admission.  They belong to
-subsequent retained-posterior assessment unless another reviewed route
-explicitly says otherwise.  Acceptance by itself never authorizes a handoff.
-The implementation anchor for the threshold is
-\code{HMC\_TUNING\_ORDINARY\_RHAT\_THRESHOLD}; consumers should import
-that constant rather than hard-code a copied number.
+A target-domain exception permits a bounded smaller bootstrap trial only if
+the adapter specifically classifies it and the repository failure record
+locates it in a proposal target callback after a finite pre-transition state.
+Initial-state, retained-state, unattributed and unrelated execution failures
+remain terminal. The failed round retains its original assertion and first
+failure; it receives no invented acceptance probability. A smaller finite
+parent and the failed epsilon can nominate a logarithmic midpoint; otherwise
+the configured multiplier reduces epsilon. The next trial recomputes $L$,
+records any clamp and consumes the existing repair budget. A failed reusable
+runner is replaced, and only a subsequent completed screen can supply the
+repaired preparation pair. Target assertions and Metropolis correction remain
+part of every trial.
 
-The ordinary tuning family still contains NumPy and host numerical and
-serialization paths.  This is BayesFilter-owned backend migration debt, so the
-ordinary public result is currently non-admitting for claim-bearing use.  The
-separate TensorFlow-only proposal-field branch has two evidence roles.  A
-\code{diagnostic\_only} result
-cannot hand off.  A \code{candidate} result may hand the same frozen transition
-to a retained pilot only after a predeclared trajectory candidate is selected,
-the metric update is rank eligible and valid, final verification has zero
-divergences, and the declared four-chain acceptance screen passes.  Its
-serialized result still sets \code{artifact\_authority},
-\code{posterior\_admission\_authority}, and \code{admission\_supported} to
-false.  Thus the handoff authorizes frozen mechanics, not posterior convergence
-or scientific admission.
+An optional finite startup probe is available through
+\path{HMCKernelTuningConfig(bootstrap_initialization_rounds=20)}. Zero is the
+default; a positive integer bounds the number of rounds. Each round tests four
+independent momentum proposals and shrinks the step when proposals are invalid
+or acceptance is below the configured lower repair floor. The probe preserves
+the target, affine mass, failed proposals and separate seed stream. Its selected
+pair must still pass fresh bootstrap and operational adaptation. In this mode,
+bootstrap uses its \path{warmup_startup_only} role: high acceptance does not
+trigger upward refinement before adaptation, and the starting step is not
+declared a stability ceiling.
 
-Fresh retained \(\widehat R\) and effective sample size are explanatory
-posterior diagnostics and do not enter this tuning handoff.  The ordinary
-configuration currently defaults to \code{use\_xla=False}, which is a mismatch
-with the repository XLA-default policy rather than an implicit qualification.
-A claim-adjacent consumer must wait for an XLA-on default or a scope-bound
-reviewed exception.  The typed proposal-field branch's exposed tuning
-hyperparameters have no numeric constructor defaults, but the implementation
-still fixes four chains and \code{float64}.  A candidate supplies an explicit
-raw-position bank \(q_i\), \(i=1,\ldots,4\).  With initial diagonal factor
-\(A=\operatorname{diag}(s)\), the tuner uses
+The probe follows the declared target-status policy. With \path{none}, it checks
+finite retained and proposed states, values and scores without manufacturing
+status data. With \path{per_chain_step}, complete valid telemetry is also
+required. Invalid initial or retained states stop preparation. A finite startup
+nomination neither qualifies a final candidate nor establishes convergence.
+
+Preparation success need not mean that the mass changed. The
+\path{allow_valid_incumbent} policy permits zero empirical updates; inspect
+\path{operational_metric_update_count} when the initial geometry is poorly
+scaled. A regression diagnosis retained identity geometry throughout preparation
+and subsequently failed posterior equilibration despite verified tuning
+candidates. Ordinary operational preparation runs one chain; it constructs the
+four-chain bank for candidate verification afterwards. Its metric assessment
+preserves temporal order. For explicitly supplied multiple chains, temporal
+information is estimated separately within each chain. Split R-hat is reported
+when available and never vetoes or delays a metric proposal.
+
+The proposed position covariance is the finite-window centered second moment,
+divided by $N-1$, with correlations shrunk toward zero while preserving marginal
+variances. It is a geometry hypothesis during adaptation, not an unbiased
+posterior covariance estimate. State-count and temporal-information floors,
+numerical rank, condition and regularization-discrepancy checks screen this
+hypothesis. Positive-definiteness, coordinate reconstruction, target value/score
+parity and a fresh reasonable-step check are required before using its transform.
+
+Ordinary preparation records each completed window's metric decision and failed
+checks in \path{preparation_progress.json}. It also reports whether the scheduled
+windows can meet the state-count floors. The \path{standard} preset is a local
+diagnostic allocation: with the default metric policy, its 150 transitions in six dimensions contain slow
+windows of 30, 60 and 30, each shorter than the dense minimum of 64. The explicit
+\path{serious} preset funds a larger preparation. Inspect its actual decisions
+as well; neither a larger allocation nor an accepted metric update establishes
+posterior equilibration. Rejections preserve the incumbent and identify whether
+evidence, transform construction, affine parity or step qualification failed.
+
+At a metric change, the fresh step search starts from the previous coordinate
+system's bounded dual-averaging average. Clipping in log space before
+exponentiation prevents a large unconstrained adaptation proposal from
+exhausting the search before any usable step is tested. This old bound limits
+only the initial hypothesis: the search may expand in the new coordinates and
+must independently qualify its step. Rejected probes preserve their starting
+value and attempts. A nonfinite warmup trace identifies its failed fields and
+first indices; the failure still vetoes preparation.
+
+The optional \path{metric_evidence_policy="finite_window"} keeps the same
+covariance formula and numerical checks while treating temporal ESS as
+explanatory. The default \path{temporal_information} retains the ESS floor.
+With the optional policy, automatic preparation allocates slow windows large
+enough to reach the existing dense state-count floor when the declared budget
+permits, or the diagonal floor when only that is affordable. It preserves the
+total transitions and initial/final buffers, merging an undersized final slow
+remainder. Insufficient total capacity remains visible. This schedule change
+removes avoidable count failures; it does not establish adequate covariance
+information or posterior equilibration. Directly supplied schedules and the
+default policy retain their declared window lengths.
+This option permits an early geometry proposal before the chain has explored
+well enough to estimate posterior covariance precisely. For any fixed
+nonsingular affine factor $A$, $\theta=c+Az$ has transformed score
+$A^{\mathsf T}\nabla_\theta\ell$; exact-score Metropolis-adjusted sampling in
+the transformed coordinates does not require $AA^{\mathsf T}$ to equal the
+posterior covariance. Its usefulness still depends on exploration and numerical
+health. Adaptation must finish before candidate verification and retained draws.
+
+The option remains experimental. Its first matched regression preparation
+applied two updates and later failed a nonfinite warmup trace. The existing
+reasonable-step probe checks a few momenta at one state and cannot guarantee
+stability everywhere visited later. Preparation failures remain failures,
+and neither policy turns metric qualification into posterior convergence.
+
+The optional \path{metric_probe_num_results} extends each of the four independent
+metric-boundary probes to a short chain at fixed epsilon and fixed leapfrog
+count. Its default is one transition. A larger allocation, for example sixteen,
+tests evolving positions and checks every proposed and retained endpoint,
+score, momentum and energy correction before the existing acceptance bracket
+can qualify the step. The evidence records the probe length. Retained-state
+inconsistency or unclassified execution failure stops preparation; a failed
+proposal rejects that probe. This remains an experimental preparation option:
+short chains cannot guarantee global stability. Later warmup windows, candidate
+measurement and independent verification still require their own numerical
+checks. It neither adds R-hat admission nor retries an invalid warmup window.
+
+The separate optional \path{preparation_max_restarts} bounds recovery from
+rejected nonfinite proposals; its default is zero. Recovery requires finite
+retained states, values and scores, consistent acceptance decisions and valid
+declared telemetry. The entire failed preparation attempt is archived and its
+adaptation statistics discarded. A full new schedule starts from the failed
+window's independently validated starting state and qualified transform, with
+fresh streams and reset covariance and dual-averaging statistics. A new probe
+may only shrink from half the consumed failing step. High acceptance can
+nominate this conservative preparation step; it does not relax final candidate
+acceptance or independent verification. A changed metric still requires fresh
+qualification in its new coordinates. All discarded work and probe work counts
+toward finite attempt and execution budgets. Retained or shared invalidity and
+unclassified execution errors remain fatal. This ordinary-preparation option
+is experimental: three restarts is a development allocation, not a universal
+robustness guarantee.
+
+\lstinputlisting[language=Python,caption={Binding a local covariance estimate in the target coordinates.}]{examples/hmc_tuning_covariance_first.py}
+
+
+\path{prepare_operational_windowed_mass_handoff} freezes the operational metric
+and actual post-warmup start bank. The numerical factory
+\path{bind_hmc_candidate_set_execution_from_preparation} preserves both its
+bootstrap and final affine layers. The explicit
+\path{bind_hmc_candidate_set_execution} factory instead accepts a frozen mass
+or supported frozen transport payload. A bound scope records target, data/prior
+lineage, source dependencies, coordinates, metric, starts, warmup, dtype,
+backend, and XLA settings. Changing them requires a new scope.
+
+For the proposal-field preparation, four raw-coordinate starts $q_i$ and
+positive parameter scales $s$ give the initial factor $A=\operatorname{diag}(s)$:
 \begin{equation}
-  c=\frac{1}{4}\sum_{i=1}^{4}q_i,
-  \qquad z_i=(q_i-c)A^{-\mathsf T},
-  \qquad q_i=c+z_iA^{\mathsf T}.
-  \label{eq:bf-tensorflow-hmc-initial-bank}
+ c=\frac{1}{4}\sum_{i=1}^{4}q_i,
+ \qquad z_i=(q_i-c)A^{-\mathsf T},
+ \qquad q_i=c+z_iA^{\mathsf T}.
+ \label{eq:bf-tensorflow-hmc-initial-bank}
 \end{equation}
-Caller row order is preserved.  A diagnostic may supply one position, which is
-deliberately replicated and recorded; a candidate may not use that compatibility
-path.  The remaining fixed policies are \(L=1\) in metric windows, a powers-of-
-two trajectory grid, and a stateless seed-offset scheme.  The implementation
-also inherits TensorFlow Probability's internal dual-averaging defaults except
-for the explicit adaptation count and target acceptance.  These are interface
-policies rather than evidence of posterior convergence or default readiness.
+Here starts are represented as row vectors. Caller order is preserved.
+A diagnostic may explicitly replicate one start; candidate preparation requires
+its declared four-chain bank. Affine metric windows use $L=1$ and the configured
+adaptation counts. Their proposals receive fresh fixed-kernel measurements.
 
-The smoke preset in the following listing deliberately has a tiny budget.  It
-tests invocation and result shape; it need not pass tuning admission.
+The ordinary preparation config and numerical binding default to GPU/XLA
+execution. TensorFlow memory growth is configured before device initialization.
+Small CPU/non-XLA checks are explicit reference or debugging exceptions.
+Execution policy does not qualify an arbitrary target: the binding still checks
+its full-chain capability and the consumer must establish value/score fidelity.
 
-\lstinputlisting[language=Python,caption={Ordinary public-tuner invocation.},label={lst:bf-hmc-tuning-ordinary}]{examples/hmc_tuning_ordinary.py}
+\section{Broad search, repairs, and further evidence}
+\label{sec:bf-fixed-transport-joint-tuning}
+\label{sec:bf-fixed-transport-candidate-selection}
+
+The ordinary convenience grid is $L\in\{3,5,9,13,18,25\}$, and its legacy
+preparation config fixes the maximum at 25. The proposal-field config declares
+its own maximum. Supplied initial, refinement and expansion grids must obey
+the applicable maximum. An explicit \path{epsilon_by_l} may supply several proposals
+at each $L$; \path{initial_epsilon} is a warm start when no grid is supplied.
+Every pair is measured independently. A shared numeric proposal at two values
+of $L$ transfers no acceptance evidence between them. The final-metric epsilon
+from operational preparation supplies the starting step and the inherited search
+ceiling. The short probe does not establish a stability limit or guarantee a
+suitable pair below that ceiling for every $L$. An explicit
+\path{candidate_search_bound_expansion_steps=1} widens the exploration cap by
+the existing repair factor, preserving the final metric and coordinates.
+Zero retains the inherited ceiling. Every explored pair still requires its own
+health checks, measurement and fresh verification. This optional setting is a
+search hypothesis whose calibration remains separate from its implementation.
+
+Direct preparation bindings expose \path{preparation_bound_expansion_steps}.
+They intersect the requested domain with the finite expanded cap, save the
+original bound and final metric/coordinate identities, and issue a new search
+identity. Existing scopes and verification receipts are immutable. Preparation
+failures preserve their stage and available veto causes in
+\path{preparation_progress.json} before raising an exception.
+Nonfinite diagnostic values are marked explicitly in the JSON record, preserving
+the original failure even when its numerical summaries cannot be finite.
+
+A multiplicative repair can jump from high acceptance directly to nonfinite
+trajectories. That nonfinite result supplies no valid acceptance direction,
+so it cannot form the opposing-evidence interval used by refinement. The optional
+\path{explore_failed_intervals=True} controller setting allows funded refinement
+rounds to explore the unvisited geometric interior between a valid directional
+parent and its nearest numerically rejected same-$L$ child. Each proposal is a
+new same-family child of the valid parent; both source receipts are recorded,
+and the failed endpoint stays rejected. This interval is an exploration
+hypothesis, not a stability bound or an assertion of monotone acceptance.
+Missing telemetry, unknown invalidity, invalid retained states and shared
+corruption cannot supply such endpoints. Family, candidate and work limits
+still apply, and every proposed pair needs measurement and independent
+verification. The option is disabled by default. An explicit intermediate grid
+in a fresh scope remains available. Neither procedure exhausts the continuous
+epsilon domain.
+
+The automatic preparation translation enables one pilot per $L$ and one bounded
+refinement round. A direct controller config can disable these optional stages
+for an explicitly supplied grid. A pilot proposes a frozen pair; measurement
+and fresh verification qualify it. Refinement applies declared epsilon factors
+and additional $L$ hypotheses to every surviving family. Exact pairs are
+deduplicated, and all proposals remain subject to candidate and work limits.
+The reciprocal convenience factors $(0.8,1.25)$ are hypotheses about useful
+nearby proposals, not universal numerical optima.
+
+Work proceeds in closed cohorts. Every funded admitted peer receives its reserved
+stage before a repair child enters the next cohort. A peer whose full required
+work cannot fit the remaining budget is explicitly deferred, permitting other
+affordable reserved work to finish. Its evidence allocation is preserved and
+the search remains incomplete. A first pass does not
+remove later candidates. Directional evidence creates an immutable child with
+the same $L$, mass, target, coordinates, and initial bank. The child has a new
+epsilon and must receive its own measurement and verification. A parent may
+fail movement because an oversized step rejects nearly everything; that
+promotion veto does not suppress a supported smaller-epsilon repair.
+A trajectory alert can propose only declared additional $L$ values, as separate
+candidates. It never silently changes an existing candidate's $L$.
+
+The distinction between proposal and evidence matters for fixed-length HMC.
+For a transition from $x$, the acceptance probability is
+\begin{equation}
+ a(\epsilon,L\mid x)
+ =\mathbb E\!\left[\min\{1,\exp(-\Delta H)\}\mid x\right].
+\end{equation}
+The reported probability mean averages the computed Metropolis probabilities
+over visited states and sampled momenta. The realized acceptance rate also
+contains the uniform accept/reject decisions: for each proposal with
+probability $a$, that indicator has expectation $a$. Both summaries describe
+acceptance in the explored region; neither measures convergence.
+For the unit harmonic oscillator, one leapfrog matrix has determinant one and
+trace $2-\epsilon^2$. In the stable range its conjugate eigenvalues therefore
+give the phase
+\begin{equation}
+ \vartheta(\epsilon)=\arccos(1-\epsilon^2/2),\qquad 0<\epsilon<2.
+\end{equation}
+The trajectory phase is $L\vartheta(\epsilon)$. Near a return phase, acceptance
+can be high with little net movement. A multiplicative epsilon repair is thus
+another hypothesis to measure. The controller remembers the latest valid
+directional evidence for each exact pair and prioritizes unvisited geometric
+interior points toward nearby opposing observations. It retains this evidence
+across restart. Finite refinement also investigates unresolved directional
+intervals when no original family survives. It does not assume monotone
+acceptance or infer a pass at an unmeasured point.
+When a proposal crosses the declared domain, its unvisited boundary can be
+measured before that direction is exhausted.
+
+Inconclusive measurement or verification receives the predeclared
+\path{evidence_rungs}; the convenience multipliers are $(1,2,4)$. Each rung is
+an independently seeded run of the unchanged candidate. Unfinished work stays
+resumable; exhaustion gives \path{inconclusive_at_cap}. The reported
+compatibility intervals support an operational screen, not a claim of nominal
+confidence coverage across repeated looks. A cap does not turn an inconclusive
+candidate into a verified member.
+
+\section{Acceptance, numerical health, and posterior diagnostics}
+
+The default \path{HMCAcceptancePolicy} uses four independent chain means,
+temporal blocks, and a 90\% compatibility interval. Its first allocation
+requires at least four blocks of sixteen decisions per chain. After health,
+chain-conflict, temporal-conflict and trajectory checks, acceptance passes when
+the compatibility interval overlaps the practical band, lies inside the repair
+band, and every chain mean lies inside the repair band. For example, mean
+$0.76$ and interval $[0.73,0.79]$ can pass with practical band $[0.65,0.75]$
+and repair band $[0.55,0.85]$. The rule tests compatibility; it does not rank
+candidates by closeness to $0.70$. Acceptance,
+movement and numerical health have distinct roles. Finite accepted/proposed
+states and targets, endpoint score finiteness, momentum, Metropolis state
+consistency and declared target status determine
+whether the numerical evidence is usable. Candidate-local failure rejects that
+pair; shared execution corruption stops the scope and disables all its replay.
+A declared target-domain exception preserves the attempted seeds and failure
+without inventing an acceptance value, so other candidates can continue.
+Shared invalidity preserves the history of earlier verification while revoking
+current replay. Released reservations cause affordable deferred work to be
+reconsidered within the same invocation.
+Available native divergence vetoes promotion of the current pair. When the
+acceptance evidence is valid and supports a directional repair, that veto does
+not prevent a newly measured child. Acceptance compatibility and promotion
+eligibility are separate typed fields, so a rejected pair's in-band acceptance
+receipt remains readable alongside its verified peers.
+Both routes check numerical health over discarded warmup as well. The
+proposal-field route checks finite states, log acceptance and energy errors
+before excluding warmup from acceptance statistics.
+
+$\widehat R$ is reporting-only during tuning. High, missing, nonfinite or
+failed-to-compute values cannot reject, rank, repair or delay a candidate.
+ESS and short-chain timing are descriptive diagnostics. They do not silently
+replace the acceptance/health screen or discard a viable member.
+Posterior warmup and cumulative model-coordinate $\widehat R$/ESS assessment
+remain separate requirements for inference.
 
 \section{A frozen nonlinear transport}
 
@@ -276,126 +398,48 @@ and its matching score is
 Dropping either Jacobian term changes the target or its derivative.  Such a
 calculation is wrong relative to the transformed-target claim.
 
-The public tuner constructs the transformed adapter itself, hashes the
-transport manifest, and uses a fixed identity mass in (z).  It tunes step
-size and chooses a leapfrog count from its declared policy, then performs fresh
-candidate or held-out verification.  It does not perform ordinary windowed
-mass adaptation.  A supplied chain runner is scoped only after the transformed
-adapter has been built; this argument is not a generic arbitrary-force hook.
-Changing the transport manifest, base or transformed adapter signature, target
-scope, dimension, backend, or coordinate identity invalidates reuse.
-Its ESS and verifier policies are selected by the fixed-transport
-configuration.  The ordinary route's disabled tuning-ESS status and 1.01
-\(\widehat R\) threshold do not transfer automatically.
 
-The identity map below is mathematically simple but satisfies the complete
-transport protocol.  Its Jacobian contribution is zero rather than omitted.
+The fixed-transport preparation reconstructs the full diagonal-affine or
+dense-IAF map from \path{frozen_transport_payload}, checks its live identity,
+and uses identity mass in latent coordinates. Starts are supplied in those
+coordinates. Every proposed $(L,\epsilon)$ then enters the same measurement,
+repair and fresh-verification procedure. Arbitrary transport callbacks without
+a supported reconstruction are rejected. Changing a map changes the scope;
+receipts or chain states from different maps are never pooled.
 
-\lstinputlisting[language=Python,caption={Frozen-transport public-tuner invocation.},label={lst:bf-hmc-tuning-fixed-transport}]{examples/hmc_tuning_fixed_transport.py}
+Positive funnel tuning tests assume a supplied frozen whitening or partially
+whitening map. Learning a useful map is a separate preparation problem.
+For the model $v\sim\mathcal N(0,\sigma^2)$ and
+$x_i\mid v\sim\mathcal N(0,e^v)$ with two children, the exact map
+$v=\sigma z_0$, $x_i=e^{v/2}z_i$ has log determinant
+$\log\sigma+v$. Substitution in the transformed density cancels both
+conditional scale terms and gives three independent standard normals.
+This provides an algebraic control without assuming that a learner discovers
+the map. A partial map $x_i=e^{s(v)}z_i$ instead leaves conditional standard
+deviation $e^{v/2-s(v)}$ in the latent coordinates; it tests tuning with known
+residual curvature.
 
-\subsection{Joint fixed-transport tuning}
-\label{sec:bf-fixed-transport-joint-tuning}
+The untransformed centered funnel remains a stress test for bounded search and
+honest numerical rejection. An empty candidate set there does not by itself
+establish a tuning defect. For a supplied map, tuning searches the declared
+step sizes and trajectory lengths in the frozen coordinates and independently
+verifies every survivor. A finite search need not succeed for every imperfect
+map. Comparisons at common model starts must apply the inverse chart and
+inverse map before passing latent starts to the tuner, then check the forward
+roundtrip. Posterior precision and exploration in the original model remain
+separate from candidate qualification.
 
-The artifact-authoritative fixed-transport tuning policy is
-\texttt{measured\_joint\_grid\_v1}.  It treats the step size
-\(\epsilon\) and the leapfrog count \(L\) as a coupled design choice.  A
-configuration therefore supplies a finite, explicit set
-\(E\) of positive step sizes and at least two distinct values of \(L\).  The
-runner measures every pair in \(E\times\mathcal L\) with the same frozen
-transport, target, coordinate identity, chain bank, and fixed-kernel screen.
-The configured maximum candidate count is checked before execution.  No
-result at an unmeasured neighboring step is inferred from a result that was
-measured.
-The dataclass does not silently construct a grid; the no-configuration
-convenience call supplies a small repository baseline and records it as a
-convenience hypothesis rather than target-specific evidence.
-
-For a transition started from \(x\), write
-\begin{equation}
-  a(\epsilon,L\mid x)
-  =\mathbb E\!\left[\min\{1,\exp(-\Delta H)
-      \}\mid x\right]
-\end{equation}
-for the expected Metropolis probability, and let
-\(b(\epsilon,L\mid x)\) denote the probability of a Bernoulli accept/reject
-decision.  The implementation reports the sample mean of the former and the
-sample mean of the latter separately.  Neither quantity is a convergence
-diagnostic.  Candidate selection also records movement, squared jump distance,
-energy/error telemetry, divergence availability, and target/score finiteness;
-their roles are explicit in the tuning artifact.
-
-The distinction is necessary because fixed-length leapfrog dynamics do not
-make \(a(\epsilon,L)\) monotone in \(\epsilon\).  For the unit harmonic
-oscillator, the leapfrog phase is
-\begin{equation}
-  \vartheta(\epsilon)=\arccos(1-\epsilon^2/2),
-  \qquad 0<\epsilon<2,
-\end{equation}
-and a trajectory has phase \(L\vartheta(\epsilon)\).  Values near a return
-phase can have high acceptance and little net movement.  Consequently, a
-factor-of-two increase after a high-acceptance screen (or decrease after a
-low-acceptance screen) is a proposal for another experiment, not evidence
-about that experiment.  The former ladder is retained only as
-\path{legacy_directional_diagnostic_v1}; its records are stamped
-\path{diagnostic_only_legacy_policy} and cannot be handed to a retained
-sampler.
-
-Under the measured policy, replicated fixed-kernel efficiency evidence is
-collected for every candidate that survives the basic validity screen, then a
-disjoint held-out fixed-kernel run qualifies the nominated pair.  Missing or
-non-finite acceptance and missing retained movement are hard failures.  An
-acceptance value outside the target band is recorded as a repair diagnostic,
-but is not a measured-route validity veto: a target such as 0.70 is an
-efficiency heuristic, not a correctness condition.  The payload labels a
-healthy candidate \texttt{mechanics\_validated}, an efficiency-eligible row
-\texttt{tuning\_candidate}, and leaves \texttt{posterior\_ready} false until a
-separate retained-chain assessment.  Thus acceptance cannot by itself
-establish convergence, correctness, mode discovery, or sampler superiority.
-
-The July 2026 LGSSM validation caller is retained as historical compatibility
-code and explicitly uses \path{legacy_directional_diagnostic_v1}.  Its
-one-$L$ ladder can emit diagnostic records but cannot issue an
-artifact-authoritative handoff.  An active caller must provide a reviewed,
-target-specific measured grid before it can issue a claim-bearing result.
-
-The same explicit legacy classification applies to the historical
-fixed-transport benchmark callers in this checkout: the weighted three-mode,
-paper-d100, German reverse-comparator, strong-smooth, defensive analytic,
-banana-repair, replication, q=20 CPU validation, q=20 global-mixing, q=20
-seed-B, and Chart-A six-$L$ scripts.  Their configurations select
-\path{FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY} and the historical
-\path{acceptance_target_distance} selector, so a bare
-\texttt{passed} value cannot issue a current measured-grid handoff.  A caller
-that is intended to be active must replace that explicit legacy policy with a
-reviewed finite \path{step_size_candidates} grid and at least two
-\path{leapfrog_grid} values before it can use the measured policy.
+\lstinputlisting[language=Python,caption={Fixed-transport candidate-set tuning.},label={lst:bf-hmc-tuning-fixed-transport}]{examples/hmc_tuning_fixed_transport.py}
 
 \section{Typed deterministic proposal-field mechanics}
 
-\code{run\_full\_chain\_neural\_force\_hmc} consumes a supplied mass
-coordinate system, fixed (L), and fixed or dual-averaged epsilon.  Directly
-calling it with (M=I), (L=1), and a few adaptation transitions establishes
-only that this configuration ran.  It does not establish mass adaptation,
-trajectory selection, fresh verification, or a reason to reject HMC or the
-target.
-
-For a raw-coordinate frozen force, the public binding factory requires and
-identity-binds a coordinate-consistent endpoint potential and issues an
-\texttt{HMC\allowbreak Tuning\allowbreak Runner\allowbreak Binding}.  The
-binding is accepted by the public facade only together with
-\texttt{TensorFlow\allowbreak HMC\allowbreak Kernel\allowbreak Tuning\allowbreak Config};
-\texttt{HMC\allowbreak Kernel\allowbreak Tuning\allowbreak Config} rejects it
-and continues to use the exact adapter score.  The typed TensorFlow branch owns
-its affine mass wrapper, epsilon,
-(L), screening, verification, and repair.  This branch is not the canonical
-ordinary broad-grid policy, and its result remains mechanics-only.  The binding
-must report finite values, divergence and energy status, movement, endpoint
-target health, deterministic execution identity, and source closure.  It
-rejects the low-level runner's direct identity-coordinate fallback.  A bare
-Python callable is rejected by the public ordinary tuner.
-The binding proves the declared software identity and coordinate semantics; it
-cannot prove that the supplied endpoint function equals the claimed target.
-That equality still requires a target-specific value check.
+\path{bind_neural_force_hmc_tuning_runner} binds a declared position-only field
+to its coordinate-consistent endpoint potential. The public facade accepts
+that binding with \path{TensorFlowHMCKernelTuningConfig}. Affine preparation
+remains specific to this transition, while the shared controller schedules its
+candidate measurements, repairs and verification. The result is conditional
+mechanics evidence and cannot become an exact-score numerical retained member.
+The endpoint function still needs target-specific validation.
 
 The typed objects use potential, not log-density, signs.  If
 \(\ell(\theta)=\log \pi(\theta)\), the exact endpoint object is
@@ -436,128 +480,349 @@ under the declared \code{constant\_omitted} convention.  Both raw objects and
 that convention are bound into runner schema
 \path{bayesfilter.hmc_tuning_runner_binding.v2}.
 
-\lstinputlisting[language=Python,caption={Typed deterministic proposal-field and exact endpoint-potential binding.},label={lst:bf-hmc-tuning-neural-force-binding}]{examples/hmc_tuning_neural_force_binding.py}
 
-A transformed neural target is not allowed to masquerade as this ordinary raw-
-coordinate binding.  It belongs to the fixed-transport route only when an
-actual frozen transport supplies Equations~\eqref{eq:bf-fixed-transport-hmc-target}
-and~\eqref{eq:bf-fixed-transport-hmc-score}.
+\lstinputlisting[language=Python,caption={Typed proposal field and exact endpoint-potential binding.},label={lst:bf-hmc-tuning-neural-force-binding}]{examples/hmc_tuning_neural_force_binding.py}
 
-\section{Artifacts, failures, and conclusions}
-
-Before consuming a tuning result, a caller checks that the public route has
-artifact authority, the result and capability schema versions are supported,
-the target and coordinate scope match, all bound identities and source closure
-are present, fresh verification passed, and the private replay payload is
-available at the BayesFilter-owned boundary.  Tuning draws must be discarded.
-
-A passing typed TensorFlow candidate is consumed with
-\path{build_retained_bound_hmc_archive_runner_from_tuning_result}.  The builder
-requires the same repository-issued runner binding and durable tuning manifest,
-and it rejects a diagnostic or failed result.  It reuses the frozen endpoint
-target, deterministic proposal field, affine geometry, step size, leapfrog
-count, and final state rather than switching to an ordinary exact-gradient
-kernel.  A retained extension names the immediately preceding archive as its
-continuation manifest; BayesFilter verifies that predecessor and resumes from
-its final active-coordinate state.  This typed archive path is a
-frozen-mechanics handoff, not posterior admission; its binding's
-\code{artifact\_authority=False} cannot be upgraded by a consumer.
-
-An in-memory ordinary result retains private initial and adapted mass arrays;
-its redacted public status does not.  Before process exit,
-\path{admitted_kernel_mechanics_payload_from_tuning_result}
-converts a passed result into the durable JSON-ready replay form.  It reuses the
-validated geometry already carried by the result, so nonidentity initialization
-does not require the consumer to rediscover hidden hints.  The payload binds the
-target, scope, execution settings, initial position, adapter identities, and
-both mass signatures.  The corresponding mechanics-payload replay helper
-checks those fields and reconstructs the fixed adapter without invoking tuning
-or HMC.  In contrast, reconstruction from an older serialized tuning payload
-requires the original explicit geometry inputs and private array-bearing data.
-
-\subsection{Replay roles and claim authority}
+\section{Persistence, resource limits, and replay}
 \label{sec:bf-hmc-replay-roles}
 
-Despite their historical names, these compatibility helpers are mechanics-only
-boundaries:
-\begin{itemize}[leftmargin=*,nosep]
-  \item \path{build_retained_frozen_kernel_hmc_adapter_from_tuning_payload}
-  \item \path{build_retained_frozen_kernel_hmc_adapter_from_tuning_result}
-\end{itemize}
-New mechanics consumers may use the corresponding explicit aliases:
-\begin{itemize}[leftmargin=*,nosep]
-  \item \path{build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_payload}
-  \item \path{build_mechanics_only_frozen_kernel_hmc_adapter_from_tuning_result}
-\end{itemize}
-A claim-eligible consumer must instead call one of the separately named
-claim-bearing builders:
-{\footnotesize
-\begin{itemize}[leftmargin=*,nosep]
-  \item \path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_payload}
-  \item \path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_tuning_result}
-  \item \path{build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_mechanics_payload}
-\end{itemize}
-}
+\path{verified_candidate_ids} retains every verified member with no implicit
+nominee. \path{viable_candidate_ids} also includes validating and terminally
+inconclusive candidates; their individual states must be inspected. A verified
+member remains usable when another candidate exhausts its budget, unless the
+scope itself is invalid. Descriptive differences among members do not establish
+a statistically supported ranking.
 
-The claim-bearing boundary requires a repository-issued \path{resolved_policy}
-with an empty \path{claim_bearing_blockers} collection.  It must also set
-\texttt{claim\_bearing\_artifact\_\allowbreak authority=True}.  Before
-reconstruction it
-recomputes the ordinary epsilon/L policy from the repository-owned
-\path{config} (or durable \path{tuning_config}) and compares the embedded
-policy and blocker list.  A caller-edited authority flag or blocker list
-therefore cannot grant authority.  The boundary also checks the persisted
-replay role, so a mechanics-only payload cannot acquire claim authority through
-a caller-supplied flag.  The current ordinary route fails this gate while its
-known NumPy runtime-policy blocker remains.  The
-durable ordinary helper consequently emits the explicit
-\path{mechanics_only} role,
-\texttt{authority\_status=\allowbreak mechanics\_only\_\allowbreak nonclaiming},
-and the source
-\path{tuning_config}; this describes reusable transition
-mechanics and does not admit posterior or scientific claims.
+A fresh output directory preserves \path{execution_spec.json}, immutable
+numerical evidence and chunk files, and the atomic
+\path{tuning_checkpoint.json}. All observations, including failed measurements
+and zero-verified searches, are retained. Complete results use
+\path{candidate_set_result.json} and are never overwritten. Resource failures
+pause with their reason; unexpected exceptions preserve state and propagate.
+Optional diagnostic errors cannot erase completed numerical evidence.
+Malformed provider data is recorded as an execution error before it enters the
+observation history; retry retains the attempted cost. Valid shared-failure
+observations remain recorded. If the same live binding later records shared
+invalidity, even a member verified earlier becomes unavailable for replay.
 
-\begin{longtable}{p{0.20\textwidth}p{0.34\textwidth}p{0.36\textwidth}}
-\toprule
-Observed result & Classification & Justified action \\
-\midrule
-\endfirsthead
-\toprule
-Observed result & Classification & Justified action \\
-\midrule
-\endhead
-Missing identity, telemetry, nonfinite target, or inconsistent coordinates &
-Implementation or target-contract veto & Repair the smallest violated
-contract; do not interpret acceptance or tuning metrics. \\
-\addlinespace
-Finite candidate fails acceptance, movement, energy, or fresh
-\(\widehat R\) screen & Tuning-candidate failure & Use the declared bounded
-repair or retry budget.  The result does not reject HMC or the target. \\
-\addlinespace
-Exact endpoint target or score is wrong for the claimed measure & Target
-invalidity & Correct the value and score contract before tuning. \\
-\addlinespace
-Public tuning handoff passes & Fixed-kernel tuning admission only & Start a
-separate retained-chain assessment under its own evidence requirements. \\
-\bottomrule
-\end{longtable}
+\path{resume_hmc_candidate_set_tuning} reconstructs the same geometry, policy,
+evidence, candidates and work queue using the original target. It checks source
+and target drift, tensor checksums, numerical versions, and scope identity.
+Position-field mechanics separately preserve preparation and observations for
+\path{resume_position_field_candidate_tuning}, which also requires the original
+runner binding. Their \path{controller_checkpoint.json} also references immutable
+completed chunks, permitting restart within a longer evidence stage.
+Controller-only reload cannot create missing numerical evidence.
 
-No route in this chapter turns tuning acceptance, a documentation build, or a
-short smoke into proof of posterior convergence, target correctness, sampler
-superiority, scientific validity, default readiness, performance, or GPU/XLA
-readiness.  The route-selection example makes that authority boundary
-executable.
+Before frozen execution exists, \path{preparation_progress.json} records
+preparation phases, elapsed time and failures. Ordinary preparation checks time
+at available progress boundaries; proposal-field affine preparation is one
+compiled graph checked before and after its call. Failed preparation must be
+retried in a fresh directory. Numerical resume requires a frozen scope with
+the same source and controller policy; historical results remain readable when
+those identities change, but cannot be silently resumed under new rules.
 
-\lstinputlisting[language=Python,caption={Capability-based route selection and expected chain-runner rejection.},label={lst:bf-hmc-tuning-route-selection}]{examples/hmc_tuning_route_selection.py}
+Call budgets count attempted work. Candidate reservations protect mandatory
+stages; extensions and retries can use remaining free budget. A separate
+transition-times-$(L+1)$ estimate accounts conservatively for gradient work.
+The scheduler quotes unfinished work, and each chunk is charged and checkpointed
+before its native call. Resume does not recharge saved completed chunks; an
+interrupted native call remains conservatively charged even when it returned
+no usable evidence. Elapsed time includes recorded preparation. Numerical chunks are bounded
+by \path{chunk_max_results}, whose convenience default is 256. Time limits are
+checked between chunks; Python cannot preempt a native operation or compilation.
+A hard process limit must be applied externally. When preparation and search
+time limits are both supplied, the smaller limit applies.
+The first-call timing includes any tracing/compilation rather than pretending
+that it measures steady-state kernel cost.
 
-\section{Complete interface inventory}
+Select a member by explicit ID and supply its result and numerical binding to
+\path{build_retained_bound_hmc_archive_runner_from_candidate_set_result}.
+The two frozen-kernel variants share these checks, with the claim-eligible
+variant additionally requiring actual GPU/XLA evidence. A child's own passing
+verification is required; its failed ancestor need not pass. Export with
+\path{runner.export(path)} and reconstruct with
+\path{load_hmc_candidate_retained_runner(path, adapter=original_target)}.
+Fresh retained blocks continue from the verified or preceding endpoint with
+frozen settings and fresh seeds. Freshness checks include every tuning stage
+and chunk, attempted partial chunks and predecessor retained blocks. Attempted
+seeds are reconstructed from the durable work/accounting records after member
+export and reload, including failed native calls that returned no trace.
+Tuning draws remain excluded.
+\path{runner.run_sequential} connects the explicitly chosen member to the
+shared cumulative posterior controller, preserving the member's transition,
+chain topology and target-status requirements. The generic entry point is
+\path{run_hmc_posterior(member=runner, config=config)}. Diagnostics use model
+coordinates and any declared scientific functionals. Posterior rejection does
+not change tuning membership. Chapter~\ref{ch:bf-diagnostics} distinguishes
+adaptation, discarded equilibration and retained precision.
+
+The status \path{complete} means the declared search reached terminal
+dispositions; its verified set may be empty. It does not prove the absence of a
+useful kernel. The recorded limiting reason distinguishes the candidate cap,
+the family repair count, the epsilon domain and exhaustion of representable
+unvisited proposals. At a refinement cap, the remaining count includes only
+eligible pairs not yet admitted in that round. Reporting collections resolve explicit scope/search/member
+identities and require every included search to complete, independently of
+their ordering.
+
+Public option conflicts are rejected before numerical preparation. An issued
+binding rejects redundant search, execution, provenance or transport overrides.
+Automatic routes may accept the shared search and execution configs. For the
+proposal-field route, legacy \path{step_adaptation_results} supplies the
+fixed-pair pilot count, while \path{verification_results} supplies measurement
+and verification counts. An explicit \path{HMCCandidateExecutionConfig} replaces
+these allocations, with an optional \path{pilot_num_results}. Pilots never
+qualify a pair. The legacy adaptive selector remains historical. Config
+payloads label their legacy candidate-policy fields as historical helper
+metadata; the active result's shared configs determine candidate stages.
+Proposal-field execution defaults to XLA; a diagnostic exception supplies
+\path{non_xla_reason}.
+
+Retained-member exports share one checksummed evidence bundle beside their
+compact member files. Copy the bundle when moving the members, or use
+\path{runner.export(path, portable=True)} for a standalone file. Numerical
+analyses are cached by current evidence content; mutations and changed source
+identities still invalidate reuse. Predecessor history is checked iteratively. These mechanics tests do not qualify target-scale memory, restart
+latency, posterior convergence, or scientific validity. Consumer evidence must
+also establish complete target/data/prior identity and any intermediate
+integrator telemetry required by that target.
+
+\lstinputlisting[language=Python,caption={Ordinary candidate-set invocation.},label={lst:bf-hmc-tuning-ordinary}]{examples/hmc_tuning_ordinary.py}
+\lstinputlisting[language=Python,caption={Numerical candidate evidence and explicit retained-member replay.}]{examples/hmc_candidate_set_retained.py}
+
+\section{What the validation experiments establish}
+\label{sec:bf-inference-validation}
+
+The tuning procedure is tested through several distinct experiments. Numerical
+oracles compare target values, scores, coordinate Jacobians and leapfrog updates
+with independent calculations. Frozen-kernel experiments test invariance using
+independent reference draws and a reversible random-position construction.
+The latter uses Algorithm 2 and Proposition 2.3 of
+\citet{gandy2021mcmctesting}; it applies to frozen reversible kernels.
+An experiment may replace its kernel $K$ by $K^s$, composing $s$ complete
+Metropolis transitions with independent randomness at each substep. Repeated
+composition of this same reversible kernel preserves reversibility; section 2.2
+of that paper proposes this extension to improve sensitivity to subtle errors.
+Sensitivity still needs measurement for the chosen alternative. The option
+\path{kernel_power} applies only to the frozen invariance experiment. It does
+not make posterior draws independent. Finite states and log acceptance ratios are checked at every
+substep, including earlier substeps when the final one is finite.
+
+A separate optional wrapper implements Algorithm 3 of
+\citet{gandy2021mcmctesting}. Each look uses an independently seeded complete
+experiment, with the sample count increased once after the first look. For
+overall level $\alpha$, at most $k$ looks and a fixed family of $d$ component
+tests, initialize $\beta=\alpha/k$ and $\gamma=\beta^{1/k}$. At each look,
+set $q=d\min_j p_j$. Reject when $q\leq\beta$, stop without rejection when
+$q>\gamma+\beta$, and otherwise continue with $\beta\leftarrow\beta/\gamma$.
+Theorem 3.1 bounds the probability of rejection under the null by $\alpha$
+when the look vectors are independent and each component p-value is
+superuniform. Fresh experiments are essential: repeatedly testing cumulative
+posterior draws would not satisfy that independence condition. Numerical
+failures invalidate the affected experiment; they do not count as defect
+detection. This wrapper is a validation experiment and does not alter the
+tuning acceptance screen, warmup checks or posterior precision stopping.
+
+The Gaussian mechanics experiment also reconstructs the Metropolis log ratio
+from an independent analytic density and the actual TFP endpoint momenta. It
+checks that the returned state agrees with the recorded accept/reject decision.
+This arithmetic check can expose a reversed energy correction even when a short
+distributional experiment has little power to detect its effect.
+For an identity-metric Gaussian, an additional fixed-look test uses the sum
+of squared standardized endpoint coordinates. Starting from independent exact
+Gaussian draws makes the endpoints independent under the correct frozen
+kernel, so this sum has a chi-squared distribution with degrees of freedom
+equal to the number of draws times the dimension. The experiment adjusts for
+all declared radius, rank and energy tests. Adjacent states from one chain
+cannot replace independent endpoints in this calculation. Null controls and
+complete repeated experiments measure size and power for the declared defect;
+one detected error does not establish broad sensitivity.
+Controller tests check that every qualified pair is retained, each repair keeps
+its own L, and fresh verification and restart preserve the numerical record.
+Full-procedure experiments then call the public tuner and run the separate
+posterior controller. Small integration cases reconstruct every verified member.
+Larger replicated experiments may predeclare one member by tuning identity
+before sampling; all other verified members remain recorded as unassessed for
+that experiment.
+
+Simulation-based calibration generates a parameter from a proper prior and a
+dataset conditional on that parameter. If the fitted outputs are independent
+exact posterior draws, the generating parameter's randomized rank among them
+is uniform. This supplies the null distribution for the test. The implemented design uses independent
+complete fits within each dataset and one fixed output per fit. It includes
+data-dependent likelihood quantities because parameter ranks alone can miss a
+procedure that ignores the observations. Failed fits remain in the denominator;
+conditional ranks from successful fits cannot establish calibration for a
+procedure that sometimes fails. Candidate siblings share a dataset and are not
+independent calibration replications.
+The rank argument follows \citet{talts2020sbc}; the likelihood quantities follow
+the sensitivity analysis of \citet{modrak2023sbcquantities}.
+
+The later M15 experiment obtained all 246 planned fitted outputs over 82 fresh
+datasets, using three independently fitted outputs per dataset. Its rank tests
+did not reject, but three rank draws give a coarse test. Independent analytic
+controls in M16 showed that the 32-dataset normal design detected a shift of
+one quarter of a posterior standard deviation in only 27 of 256 experiments,
+and a half-standard-deviation shift in 64 of 256. The corresponding
+nonrejection therefore supplies little evidence against those errors. These
+controls measure the rank statistic's sensitivity; they do not measure defect
+power of the complete HMC procedure. The full denominators, uncertainty and
+source versions are recorded in the M15 and M16 result notes under
+\path{docs/plans/}.
+
+An invariant kernel can remain motionless or revisit only a few states.
+Identity and two-cycle controls therefore accompany the distributional tests.
+Similarly, an MCSE estimator can perform adequately on fixed-length stationary
+arrays while intervals based on it have poor coverage at a data-dependent
+stopping time. Separate experiments compare the actual controller's stopped
+means and medians with available exact references, retaining cap and unavailable
+outcomes. A fixed-length arm reuses the same verified kernel with independent
+randomness and predeclared discarded and retained counts. Mixture mode
+probabilities check global exploration that a local mean or small reported MCSE
+may miss. Missing arms remain in the comparison denominator; pointwise
+uncertainty intervals from a small number of replications do not establish a
+ranking or nominal sequential coverage. No R-hat, ESS or MCSE assessment changes
+tuning membership.
+Coverage is reported both over all planned fits and conditional on an available
+interval. Repeating a fit to one fixed dataset measures conditional behavior;
+it is distinct from prior-predictive simulation-based calibration. A longer
+fixed-count arm can also have inaccurate uncertainty estimates, so disagreement
+with nominal coverage does not by itself identify optional stopping as the cause.
+
+The September 2026 campaign observed this distinction directly. A Gaussian
+mixture run passed its local posterior checks after 6,500 discarded and 2,000
+retained transitions per chain, but all retained draws occupied the right mode.
+Its estimated mean was 4.956, against the exact mean 2, with reported MCSE 0.038.
+Thus a small within-mode uncertainty estimate did not measure error relative
+to the full posterior. Target-specific posterior assessment should include
+relevant mode or other global quantities and examine sensitivity to starting
+locations. The saved result and its limited replication evidence are documented
+in \path{docs/plans/bayesfilter-inference-validation-24h-result-2026-09-16.md}.
+Validation designs may now declare the mixture probability $P(x<0)$ as a
+monitored posterior mean. It receives the same diagnostic and precision checks
+as the other declared quantities; a constant event indicator supplies no usable
+precision estimate. A separate experiment starts chains in both known modes.
+These checks address the saved failure mechanism without establishing discovery
+of unknown modes. Synthetic acceptance calibration separately measures the
+candidate screen near its practical and repair boundaries, including repeated
+evidence allocations. It does not establish posterior validity.
+The separate numerical acceptance experiment calls the public tuner on a
+declared identity-metric Gaussian pair. Every repeated search measures that
+exact pair from the fixed tuning starts, with no repair children. Each
+measurement survivor receives its own fresh verification. Independent exact
+Gaussian anchors supply a stationary acceptance
+reference using actual Metropolis transitions and a separate endpoint-energy
+check. That reference neither supplies tuning starts nor determines qualification.
+Stationary acceptance and acceptance over a finite window from fixed starts
+are different quantities; their difference is part of the experiment.
+Observed qualification rates therefore describe the operational compatibility
+screen, not nominal sequential coverage or automatic-preparation reliability.
+The M16 experiment completed 384 CPU-reference and 192 GPU/XLA searches around
+stationary acceptance values from .64 to .76. Pairs on both sides of the
+nominal [.65,.75] band could qualify. This is consistent with the implemented
+uncertainty-aware compatibility rule, whose finite-start evidence measures a
+different quantity from the independent stationary reference. Separately, 128
+complete sequential validation experiments per device detected the declared
+reversed-Metropolis-ratio defect every time. Three of the four baseline/no-op
+null intervals were still too wide for the declared size-precision screen.
+That result supports detection of this defect while leaving null-size
+precision and sensitivity to other defects unresolved.
+Stopped-interval reporting compares the monitored mode probability with its
+independent mixture CDF. That quantity remains in the planned denominator when
+warmup ends without retained draws.
+
+Automatic initialization and supplied epsilon proposals are distinct subjects
+of validation. A supplied proposal can exceed the final prepared metric's bound;
+native initialization uses preparation's own starting epsilon. Either search
+can return no verified member under its finite domain and budget. A complete
+calibration experiment must preserve those missing fits, even when all observed
+ranks among successful fits look uniform. Parallel dataset groups are combined
+only when declared together with identical settings and frozen source; pilot and
+repaired experiments remain separate.
+
+Matched consumer comparisons use the same public ordinary tuner and posterior
+controller. The explicit noncentered eight-schools and Bayesian regression
+adapters reproduce the pinned posteriordb Stan laws, observations and coordinate
+Jacobians. A member is selected by tuning identity before posterior sampling;
+every other verified member remains recorded. The ten-chain Stan reference is
+used only for the subsequent comparison, with lugsail uncertainty from both
+finite samples. Agreement within a declared practical margin is a
+target-specific accuracy screen. It neither makes the reference exact nor
+establishes calibration for another dataset or consumer. Exact inputs, commands
+and results are recorded in
+\path{docs/plans/bayesfilter-hmc-repair-m8-result-2026-09-18.md}.
+
+The later M17 matrix completed 21 model/route fits and four matched-reference
+fits. Eleven matrix members and three reference members passed their full
+declared posterior checks. Centered funnels produced no verified member;
+mixtures reached the warmup cap; rotated Gaussian, noncentered funnel and CPU
+eight-schools fits reached retained precision caps. Their verified kernels
+remain in the tuning set. All four reference fits met the declared mean
+agreement margins, illustrating why reference mean agreement and requested
+precision must be reported separately. Six conditional position-field cases
+also exercised fresh verification and durable restart. Fixed nonlinear maps
+in this matrix were not trained. Exact model/device outcomes and source versions
+are recorded in \path{docs/plans/bayesfilter-hmc-repair-m17-result-2026-09-21.md}.
+The original MacroFinance target and matched posterior reference remain a
+separate missing comparison.
+
+Cost pilots can save a host profile of automatic preparation, candidate search,
+export/reload and posterior assessment. The profile includes failed attempts;
+a framework call may include both compilation and execution time. Such a pilot
+identifies costs to investigate before funding more replications. It does not
+establish statistical calibration or rank the viable kernels by efficiency.
+
+The executable suite definitions are documented in
+\path{docs/validation/README.md}. The following table is generated from their
+saved reports. C, H and P denote current-source executions, historical-source
+executions and planned designs, including retries. These are counts of designs,
+not models declared correct or independent replications. CPU reference work and
+GPU/XLA work remain separate. A completed controller call with no retained draws
+does not establish posterior coverage; missing stopping intervals remain in the
+denominator. Affine and dense nonlinear transports occupy separate rows.
+Each experiment declares its evidence scope. Incomplete confirmation cannot
+establish calibration; statistical uncertainty and unresolved coverage are
+reported with the underlying observations.
+
+The table covers suite reports. Separately executed phase diagnostics, including
+the matched posteriordb comparisons above, are recorded in their phase results.
+An unavailable external eight-schools row refers to that original suite's
+missing reference bundle; it does not negate the later explicitly bound
+eight-schools comparison. Neither supplies the absent MacroFinance reference.
+
+Automatically inferred suite requirements identify each planned design, so a
+completed step-size or kernel-power setting cannot cover an unrun setting in
+the same category. Explicit category requirements may request any matching
+assessed design. Older saved plans without design identifiers retain that
+category-level meaning; their individual rows determine whole-suite completion.
+
+\input{generated/inference_validation_coverage}
+
+\section{Historical readers and complete interface inventory}
+
+Initial geometry and bootstrap screening are implemented in
+\path{hmc_geometry.py} and \path{hmc_bootstrap.py}, respectively.
+Windowed preparation, its timeout policy and the frozen-mass/start-bank handoff
+are implemented in \path{hmc_mass_adaptation.py}.
+Public imports and historical \path{hmc_kernel_tuning} aliases resolve to the
+same definitions. Automatic preparation calls these implementations directly;
+public presets, configuration translation and geometry-scaled budgets live in
+\path{hmc_configuration.py}. The old module retains historical orchestration and
+readers, with aliases for the extracted definitions.
+These helpers do not issue candidate-set tuning authority. Numerical bindings
+include their source files and shared preparation helpers. Seed identifiers
+remain stable, while live seed records name the current implementation files.
+Historical results retain their original source provenance.
 \label{sec:bf-hmc-complete-interface-inventory}
 
-The following table is rendered from
-\path{HMC_TUNING_INTERFACE_CAPABILITIES}; it is not a separately maintained
-summary.  Its diagnostic helpers cover fixed-mass steps, mass adaptation,
-trajectory selection, dual averaging, start banks, candidate discovery, and
-chain execution.  They have no artifact authority and name the relevant public
-tuner as their replacement.
+Earlier single-kernel ordinary, fixed-transport and typed TensorFlow results
+retain their original identities and readers. Their compatibility replay roles
+and older \path{claim_bearing_blockers} remain historical evidence; a
+caller-edited authority flag or blocker list cannot grant authority. The active
+procedure uses the candidate-set result and the member's own numerical evidence.
+Discovery, refinement, \path{select_fixed_transport_candidate_set}, and stage
+helpers remain diagnostics. The generated registry below identifies their
+replacement public route and their limits.
 
 \input{generated/hmc_tuning_route_table}

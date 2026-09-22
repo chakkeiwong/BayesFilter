@@ -1,11 +1,14 @@
 # Master program: systematic investigation of KDM, LEDH, and model-score estimators
 
-Active execution, 2026-09-22 at 12:00 UTC: supervisor PID 4021639 is executing
+Active execution, 2026-09-22 at 13:04 UTC: supervisor PID 4021639 is executing
 the reviewed [adaptive R replication ladder](iapf-adaptive-replication-ladder-2026-09-22.md).
-The [100-replicate stage](artifacts/iapf-adaptive-replication-ladder-20260922-01/stage100/result.md)
-is complete: 3,000 records, no failed or capped learners, and no observed
-heuristic promotion veto in this sample. The 300-replicate stage is running;
-the supervisor then advances to 1,000 replicates per method and dimension.
+The [300-replicate stage](artifacts/iapf-adaptive-replication-ladder-20260922-01/stage300/result.md)
+is complete: 9,000 records, with two failed/capped d80 score learners retained
+in the results. The d80 score candidate fails the heuristic promotion screen;
+that candidate failure does not invalidate the harness or stop the campaign.
+The supervisor has advanced automatically to 1,000 replicates per method and
+dimension. The earlier [100-replicate stage](artifacts/iapf-adaptive-replication-ladder-20260922-01/stage100/result.md)
+had 3,000 records with no failed/capped learners or observed heuristic veto.
 The intervals are conditional on one data set per dimension and do not
 establish full-paper replication or a population ranking. The branch
 [synchronization record](iapf-branch-synchronization-2026-09-22.md) documents
@@ -66,7 +69,8 @@ The [fit-input result](artifacts/iapf-fit-input-isolation-20260922-01/result.md)
 already proves density-energy escape on actual terminal fits with independently
 correct objective/gradient arithmetic. The [guide-geometry result](artifacts/iapf-guide-geometry-20260922-01/result.md)
 verifies the FP64 consumer with explicit finite initial-integration error.
-Current budget: about45.226 CPU /47.745 GPU hours; the active phase ledger is authoritative.
+At phase 16 launch, about45.226 CPU /47.745 GPU hours remained; the live phase
+ledger and the timestamped budget below supersede that launch snapshot.
 No defaults changed. Filtering vetoes, TF32 and paper timing/controller/author
 choice gaps remain open.
 
@@ -122,7 +126,7 @@ extensions with exactly reproduced original prefixes; confirmation is unchanged.
 The allocation is 48 CPU hours and 48 GPU hours, with no wall deadline.
 The active [replication budget](artifacts/iapf-adaptive-replication-ladder-20260922-01/budget.json)
 and `checkpoint.json` in that directory are authoritative for current spending.
-At 12:00 UTC, about 39.093 CPU hours and 47.745 GPU hours remained, with
+At 13:04 UTC, about 36.878 CPU hours and 47.745 GPU hours remained, with
 0.500 CPU hours reserved for active attempts. Two CPU workers continue the
 frozen ladder; GPU devices are intentionally hidden for this R reference.
 All failed attempts are charged. The old expired deadline and token-style launch
@@ -131,7 +135,7 @@ another owner approval for local work under the same scientific scope.
 
 The next master actions, in dependency order, are:
 
-1. Complete the frozen 300- and 1,000-replicate stages automatically. Review
+1. Complete the frozen 1,000-replicate stage automatically; stage 300 is complete. Review
    per-dimension uncertainty, rare-weight tails, controller completion, final
    particle counts, and exact/classical controls. A candidate loss blocks its
    promotion but does not stop the next stage. Repair infrastructure failures

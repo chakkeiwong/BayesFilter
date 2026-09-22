@@ -1,0 +1,380 @@
+.......................F................................................ [ 40%]
+..........F..................FF........FFF..........F..FF.........F..... [ 81%]
+.FFFFF.F....F.FFF.F......F..FFFFF                                        [100%]
+=================================== FAILURES ===================================
+_______ test_position_field_recovers_completed_chunk_after_interruption ________
+tests/test_hmc_whole_procedure_repair.py:280: in test_position_field_recovers_completed_chunk_after_interruption
+    tune_hmc_kernel(adapter=_Adapter(), initial_position=tf.zeros([4,2], tf.float64),
+bayesfilter/inference/hmc_tuning_dispatch.py:111: in tune_hmc_kernel
+    return run_shared_position_field_tuning(
+bayesfilter/inference/hmc_candidate_set_position_field.py:196: in run_shared_position_field_tuning
+    typed = _issued_adapter(spec, adapter=adapter, runner_binding=runner_binding)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_position_field.py:68: in _issued_adapter
+    policy = HMCAcceptancePolicy(practical_region=config.acceptance_policy.overall_band,
+<string>:15: in __init__
+    ???
+bayesfilter/inference/hmc_verification.py:537: in __post_init__
+    raise ValueError("practical_region must be ordered inside (0, 1)")
+E   ValueError: practical_region must be ordered inside (0, 1)
+----------------------------- Captured stderr call -----------------------------
+W0000 00:00:1789402895.734421       4 loop_optimizer.cc:934] Skipping loop optimization for Merge node with control input: assert_positive_1/assert_less/Assert/AssertGuard/branch_executed/_17
+_________ test_real_windowed_preparation_preserves_both_affine_layers __________
+tests/test_hmc_candidate_set_execution.py:307: in test_real_windowed_preparation_preserves_both_affine_layers
+    result = run_typed_hmc_candidate_set(binding.typed_adapter,
+bayesfilter/inference/hmc_candidate_set_adapters.py:237: in run_typed_hmc_candidate_set
+    controller = _resume_controller or HMCTuningCandidateSetController(adapter.scope, config)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_tuning.py:863: in __init__
+    self._admit_primary_candidates()
+bayesfilter/inference/hmc_candidate_set_tuning.py:1062: in _admit_primary_candidates
+    candidate = self._new_candidate(leapfrog, epsilon)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_tuning.py:1128: in _new_candidate
+    candidate = HMCTuningCandidateRecord.create(
+bayesfilter/inference/hmc_candidate_set_tuning.py:239: in create
+    raise ValueError("epsilon is outside the scope domain")
+E   ValueError: epsilon is outside the scope domain
+_________ test_tensorflow_config_limits_authority_to_mechanics_handoff _________
+tests/test_hmc_tuning_dispatch.py:160: in test_tensorflow_config_limits_authority_to_mechanics_handoff
+    assert len(dispatch_source.splitlines()) < 150
+E   assert 166 < 150
+E    +  where 166 = len(['"""Public dispatch for ordinary and typed TensorFlow HMC tuning."""', 'from __future__ import annotations', '', 'from pathlib import Path', 'from typing import Any', '', ...])
+E    +    where ['"""Public dispatch for ordinary and typed TensorFlow HMC tuning."""', 'from __future__ import annotations', '', 'from pathlib import Path', 'from typing import Any', '', ...] = <built-in method splitlines of str object at 0x5722aa748a00>()
+E    +      where <built-in method splitlines of str object at 0x5722aa748a00> = '"""Public dispatch for ordinary and typed TensorFlow HMC tuning."""\nfrom __future__ import annotations\n\nfrom pathl...rom_tuning_result",\n    "load_tensorflow_hmc_tuning_result",\n    "HMCControllerConfig",\n    "tune_hmc_kernel",\n]\n'.splitlines
+_________ test_tensorflow_diagnostic_graph_smoke_cannot_issue_handoff __________
+tests/test_hmc_tuning_dispatch.py:168: in test_tensorflow_diagnostic_graph_smoke_cannot_issue_handoff
+    result = _run_tensorflow_hmc_tuning(
+E   TypeError: _run_tensorflow_hmc_tuning() missing 1 required keyword-only argument: 'output_dir'
+_________ test_candidate_requires_an_explicit_four_chain_initial_bank __________
+tests/test_hmc_tuning_dispatch.py:327: in test_candidate_requires_an_explicit_four_chain_initial_bank
+    _run_tensorflow_hmc_tuning(
+E   TypeError: _run_tensorflow_hmc_tuning() missing 1 required keyword-only argument: 'output_dir'
+_____ test_explicit_initial_bank_preserves_order_and_affine_reconstruction _____
+tests/test_hmc_tuning_dispatch.py:342: in test_explicit_initial_bank_preserves_order_and_affine_reconstruction
+    result = _run_tensorflow_hmc_tuning(
+E   TypeError: _run_tensorflow_hmc_tuning() missing 1 required keyword-only argument: 'output_dir'
+____ test_failed_search_reports_last_real_verification_not_synthetic_health ____
+tests/test_hmc_tuning_dispatch.py:390: in test_failed_search_reports_last_real_verification_not_synthetic_health
+    result = _run_tensorflow_hmc_tuning(
+E   TypeError: _run_tensorflow_hmc_tuning() missing 1 required keyword-only argument: 'output_dir'
+_________ test_normative_chapter_and_agent_guide_are_wired_to_registry _________
+tests/test_hmc_tuning_documentation_contract.py:319: in test_normative_chapter_and_agent_guide_are_wired_to_registry
+    assert term in normalized_guide
+E   AssertionError: assert 'artifact-authoritative fixed-transport policy' in '# HMC Tuning Interface Last checked: 2026-09-15. This reference describes the common candidate-set procedure. Read it...nner` for the conditional position-field mechanics route; never disguise an arbitrary field as a frozen nonlinear map.'
+______ test_guide_rejects_the_observed_low_level_runner_misclassification ______
+tests/test_hmc_tuning_documentation_contract.py:383: in test_guide_rejects_the_observed_low_level_runner_misclassification
+    assert "A chain runner or stage helper is not a complete tuner" in normalized
+E   AssertionError: assert 'A chain runner or stage helper is not a complete tuner' in '# HMC Tuning Interface Last checked: 2026-09-15. This reference describes the common candidate-set procedure. Read it...nner` for the conditional position-field mechanics route; never disguise an arbitrary field as a frozen nonlinear map.'
+___________ test_guide_binds_the_executable_ordinary_default_policy ____________
+tests/test_hmc_tuning_documentation_contract.py:420: in test_guide_binds_the_executable_ordinary_default_policy
+    assert "ordinary_hmc" in guide
+E   AssertionError: assert 'ordinary_hmc' in '# HMC Tuning Interface Last checked: 2026-09-15. This reference describes the common candidate-set procedure. Read it...nner` for the conditional position-field mechanics route; never disguise an arbitrary field as a frozen nonlinear map.'
+_____ test_screen_pairing_uses_common_training_seeds_and_replication_means _____
+tests/test_neutra_all_models_end_to_end_contract.py:136: in test_screen_pairing_uses_common_training_seeds_and_replication_means
+    import bayesfilter.inference.neutra_end_to_end as campaign
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+______ test_preflight_uses_real_hmc_runner_and_complete_status_telemetry _______
+tests/test_neutra_all_models_end_to_end_contract.py:268: in test_preflight_uses_real_hmc_runner_and_complete_status_telemetry
+    from bayesfilter.inference.neutra_end_to_end import BatchNativeBoundAdapter
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+______ test_batch_native_bound_adapter_preserves_scalar_and_batch_routes _______
+tests/test_neutra_all_models_end_to_end_contract.py:298: in test_batch_native_bound_adapter_preserves_scalar_and_batch_routes
+    from bayesfilter.inference.neutra_end_to_end import BatchNativeBoundAdapter
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+_______ test_batch_native_bound_adapter_lifts_rank1_hmc_state_for_pp_ukf _______
+tests/test_neutra_all_models_end_to_end_contract.py:332: in test_batch_native_bound_adapter_lifts_rank1_hmc_state_for_pp_ukf
+    from bayesfilter.inference.neutra_end_to_end import BatchNativeBoundAdapter
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+____ test_pp_ukf_bound_adapter_advertises_retained_flat_and_combined_status ____
+tests/test_neutra_all_models_end_to_end_contract.py:357: in test_pp_ukf_bound_adapter_advertises_retained_flat_and_combined_status
+    from bayesfilter.inference.neutra_end_to_end import BatchNativeBoundAdapter
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+__ test_preflight_accepts_structured_candidate_rejection_only_after_real_hmc ___
+tests/test_neutra_all_models_end_to_end_contract.py:386: in test_preflight_accepts_structured_candidate_rejection_only_after_real_hmc
+    assert required in text
+E   assert '"candidate_tuning_passed": tiny_tuning.passed is True' in '"""Reusable end-to-end NeuTra campaign composition.\n\nThe module deliberately delegates target evaluation, training,...rn str(value)\n    if hasattr(value, "numpy"):\n        return _json_ready(value.numpy().tolist())\n    return value\n'
+_____________ test_training_throughput_projection_is_conservative ______________
+tests/test_neutra_all_models_end_to_end_contract.py:411: in test_training_throughput_projection_is_conservative
+    from bayesfilter.inference.neutra_end_to_end import _throughput_timing_summary
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+____________ test_runner_supports_admitted_kernel_replay_validation ____________
+tests/test_neutra_all_models_end_to_end_contract.py:500: in test_runner_supports_admitted_kernel_replay_validation
+    assert implementation.count("adapter=replay.adapter") == 2
+E   assert 0 == 2
+E    +  where 0 = <built-in method count of str object at 0x5722ac5d13f0>('adapter=replay.adapter')
+E    +    where <built-in method count of str object at 0x5722ac5d13f0> = '"""Reusable end-to-end NeuTra campaign composition.\n\nThe module deliberately delegates target evaluation, training,...rn str(value)\n    if hasattr(value, "numpy"):\n        return _json_ready(value.numpy().tolist())\n    return value\n'.count
+__________ test_broad_grid_config_rejects_bad_hash_seed_and_cpu_claim __________
+tests/test_neutra_all_models_end_to_end_contract.py:529: in test_broad_grid_config_rejects_bad_hash_seed_and_cpu_claim
+    from bayesfilter.inference.neutra_end_to_end import (
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+__________ test_frozen_transport_validation_config_rejects_bad_hashes __________
+tests/test_neutra_all_models_end_to_end_contract.py:559: in test_frozen_transport_validation_config_rejects_bad_hashes
+    from bayesfilter.inference.neutra_end_to_end import (
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+______ test_frozen_transport_validation_config_normalizes_transport_hash _______
+tests/test_neutra_all_models_end_to_end_contract.py:596: in test_frozen_transport_validation_config_normalizes_transport_hash
+    from bayesfilter.inference.neutra_end_to_end import (
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+____ test_tuning_only_frozen_validation_returns_before_sequential_sampling _____
+tests/test_neutra_all_models_end_to_end_contract.py:626: in test_tuning_only_frozen_validation_returns_before_sequential_sampling
+    assert marker in text
+E   assert 'if config.tuning_only:' in '"""Reusable end-to-end NeuTra campaign composition.\n\nThe module deliberately delegates target evaluation, training,...rn str(value)\n    if hasattr(value, "numpy"):\n        return _json_ready(value.numpy().tolist())\n    return value\n'
+______ test_sequential_config_applies_seed_offset_only_to_sampling_seeds _______
+tests/test_neutra_all_models_end_to_end_contract.py:844: in test_sequential_config_applies_seed_offset_only_to_sampling_seeds
+    from bayesfilter.inference.neutra_end_to_end import _sequential_config
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+_____ test_current_target_factories_bind_batch_native_surface[LGSSM-EXACT] _____
+tests/test_neutra_all_models_end_to_end_contract.py:898: in test_current_target_factories_bind_batch_native_surface
+    from bayesfilter.inference.neutra_end_to_end import _target_signature
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+_______ test_current_target_factories_bind_batch_native_surface[PP-UKF] ________
+tests/test_neutra_all_models_end_to_end_contract.py:898: in test_current_target_factories_bind_batch_native_surface
+    from bayesfilter.inference.neutra_end_to_end import _target_signature
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+_______ test_current_target_factories_bind_batch_native_surface[PP-SGQF] _______
+tests/test_neutra_all_models_end_to_end_contract.py:898: in test_current_target_factories_bind_batch_native_surface
+    from bayesfilter.inference.neutra_end_to_end import _target_signature
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+______ test_current_target_factories_bind_batch_native_surface[SIR-SGQF] _______
+tests/test_neutra_all_models_end_to_end_contract.py:898: in test_current_target_factories_bind_batch_native_surface
+    from bayesfilter.inference.neutra_end_to_end import _target_signature
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+_______ test_current_target_factories_bind_batch_native_surface[STR-UKF] _______
+tests/test_neutra_all_models_end_to_end_contract.py:898: in test_current_target_factories_bind_batch_native_surface
+    from bayesfilter.inference.neutra_end_to_end import _target_signature
+bayesfilter/inference/neutra_end_to_end.py:27: in <module>
+    from bayesfilter.inference.hmc_kernel_tuning import (
+E   ImportError: cannot import name 'tune_hmc_kernel' from 'bayesfilter.inference.hmc_kernel_tuning' (/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py)
+=============================== warnings summary ===============================
+../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/test_hmc_whole_procedure_repair.py: 24 warnings
+tests/test_hmc_candidate_set_execution.py: 70 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Constant.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 5 warnings
+tests/test_hmc_candidate_set_execution.py: 9 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Compare.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 140 warnings
+tests/test_hmc_candidate_set_execution.py: 448 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Attribute.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 4 warnings
+tests/test_hmc_candidate_set_execution.py: 17 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: BinOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 91 warnings
+tests/test_hmc_candidate_set_execution.py: 299 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Call.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 17 warnings
+tests/test_hmc_candidate_set_execution.py: 13 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: keyword.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 15 warnings
+tests/test_hmc_candidate_set_execution.py: 25 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FunctionDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 24 warnings
+tests/test_hmc_candidate_set_execution.py: 25 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Load.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 6 warnings
+tests/test_hmc_candidate_set_execution.py: 25 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Tuple.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 4 warnings
+tests/test_hmc_candidate_set_execution.py: 7 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Expr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: IsNot.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Dict.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 3 warnings
+tests/test_hmc_candidate_set_execution.py: 15 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Try.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py: 5 warnings
+tests/test_hmc_candidate_set_execution.py: 18 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Subscript.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: List.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: alias.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Import.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Slice.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_whole_procedure_repair.py::test_checkpoint_rejects_observation_that_disagrees_with_numerical_evidence
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: UnaryOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: ListComp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FormattedValue.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: JoinedStr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: With.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: ClassDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Is.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Store.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: comprehension.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: GeneratorExp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_finite_guard_and_candidate_health_wrappers_compose
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Lambda.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: AugAssign.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_hmc_whole_procedure_repair.py::test_position_field_recovers_completed_chunk_after_interruption
+FAILED tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers
+FAILED tests/test_hmc_tuning_dispatch.py::test_tensorflow_config_limits_authority_to_mechanics_handoff
+FAILED tests/test_hmc_tuning_dispatch.py::test_tensorflow_diagnostic_graph_smoke_cannot_issue_handoff
+FAILED tests/test_hmc_tuning_dispatch.py::test_candidate_requires_an_explicit_four_chain_initial_bank
+FAILED tests/test_hmc_tuning_dispatch.py::test_explicit_initial_bank_preserves_order_and_affine_reconstruction
+FAILED tests/test_hmc_tuning_dispatch.py::test_failed_search_reports_last_real_verification_not_synthetic_health
+FAILED tests/test_hmc_tuning_documentation_contract.py::test_normative_chapter_and_agent_guide_are_wired_to_registry
+FAILED tests/test_hmc_tuning_documentation_contract.py::test_guide_rejects_the_observed_low_level_runner_misclassification
+FAILED tests/test_hmc_tuning_documentation_contract.py::test_guide_binds_the_executable_ordinary_default_policy
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_screen_pairing_uses_common_training_seeds_and_replication_means
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_preflight_uses_real_hmc_runner_and_complete_status_telemetry
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_batch_native_bound_adapter_preserves_scalar_and_batch_routes
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_batch_native_bound_adapter_lifts_rank1_hmc_state_for_pp_ukf
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_pp_ukf_bound_adapter_advertises_retained_flat_and_combined_status
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_preflight_accepts_structured_candidate_rejection_only_after_real_hmc
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_training_throughput_projection_is_conservative
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_runner_supports_admitted_kernel_replay_validation
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_broad_grid_config_rejects_bad_hash_seed_and_cpu_claim
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_frozen_transport_validation_config_rejects_bad_hashes
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_frozen_transport_validation_config_normalizes_transport_hash
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_tuning_only_frozen_validation_returns_before_sequential_sampling
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_sequential_config_applies_seed_offset_only_to_sampling_seeds
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_current_target_factories_bind_batch_native_surface[LGSSM-EXACT]
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_current_target_factories_bind_batch_native_surface[PP-UKF]
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_current_target_factories_bind_batch_native_surface[PP-SGQF]
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_current_target_factories_bind_batch_native_surface[SIR-SGQF]
+FAILED tests/test_neutra_all_models_end_to_end_contract.py::test_current_target_factories_bind_batch_native_surface[STR-UKF]
+28 failed, 149 passed, 1361 warnings in 132.68s (0:02:12)

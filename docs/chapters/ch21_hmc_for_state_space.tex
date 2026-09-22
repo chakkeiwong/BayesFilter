@@ -55,33 +55,39 @@ promoted beyond reference or diagnostic use.
 \section{Promoted Fixed-Trajectory Tuning Algorithm}
 \label{sec:bf-promoted-fixed-trajectory-hmc-tuning}
 
-BayesFilter's promoted one-call tuning tool uses fixed-trajectory HMC rather
-than a single one-dimensional search over the integration time.  The algorithm
-is deliberately conservative:
+BayesFilter's promoted tuning lifecycle uses fixed-trajectory HMC rather than a
+single one-dimensional search over integration time.  Ordinary coordinates and
+one frozen nonlinear transport prepare different scopes, but both pass the
+same candidate-set controller.  The controller is deliberately explicit:
 
 \begin{enumerate}
   \item Build an initial mass matrix from posterior, pilot, or local covariance
     information.
   \item Regularize that covariance toward a symmetric positive-definite matrix;
     if dense regularization is not credible, use a recorded diagonal fallback.
-  \item Choose an initial grid of leapfrog counts \(L\).
-  \item For each \(L\), tune the step size \(\epsilon\) using bounded HMC
-    screens and the target acceptance rule.
-  \item Select the best pair \((L,\epsilon)\) using finite-value diagnostics,
-    acceptance, trajectory-window membership, and hard-veto checks.
-  \item If the selected \(L\) lies on a grid boundary, repair the grid upward or
-    downward and repeat the screen.
-  \item Run one final local grid around the selected pair.
-  \item Freeze \((L,\epsilon)\), update the mass matrix moderately from a
-    windowed draw, and repeat only while the repair loop records meaningful
-    progress and an attempt slot remains.
+  \item Choose a broad, finite grid of leapfrog counts \(L\), with its
+    coverage rationale and proposal budget recorded in the scope.
+  \item Qualify one or more step-size proposals independently for every \(L\),
+    measure every resulting pair with the same frozen geometry, and retain all
+    non-vetoed candidates.
+  \item Advance the complete measured cohort through declared validation and
+    fresh verification stages.  A passing candidate does not end the cohort.
+  \item Use acceptance, movement, and numerical health to classify evidence. A typed
+    one-sided directional result may create a new child with the same \(L\),
+    mass, target, start bank, and warmup protocol; the child receives fresh
+    verification before not-yet-admitted work for another \(L\).
+  \item Extend inconclusive evidence through the declared finite allocation
+    sequence. At the cap, record \path{inconclusive_at_cap}. Neither pending
+    nor capped evidence qualifies an unmeasured repair.
+  \item Return the verified set and immutable parent/child records.  A
+    caller chooses a member explicitly; the controller issues no nominee.
 \end{enumerate}
 
 The step-size search and the trajectory length must refer to the same HMC
 kernel.  In particular, a reasonable-step calculation performed with one
 leapfrog step is not valid evidence for a later fixed trajectory with
-\(L>1\).  BayesFilter therefore evaluates every reasonable-step proposal with
-the active fixed \(L\), and records that value in the private attempt evidence.
+\(L>1\). Preparation screens may seed later proposals, but the shared search
+measures and verifies each pair at its own fixed \(L\).
 
 Operational warmup also distinguishes a screened step from an unscreened
 proposal.  If the bootstrap stage has already passed a fixed-kernel screen at
@@ -113,30 +119,33 @@ decision, not permission to weaken target-domain assertions or replace the
 declared target.
 
 This procedure is a tuning and diagnostics policy, not a posterior-validity
-proof.  A passing tuner means that BayesFilter found a finite fixed HMC kernel
-that survived its route-specific fresh verification.  For the ordinary default
-runner, that handoff also requires the configured minimum retained draws and
-finite rank-normalized split and folded split \(\widehat R\) values no greater
-than 1.01.  The threshold is a tuning-handoff diagnostic; it does not establish
-posterior convergence.  Chapter~\ref{ch:bf-hmc-tuning-interfaces} gives the
-public interfaces and the exact distinction between tuning evidence and
-retained-chain evidence.  Scientific validity, sampler superiority, default
-readiness, and GPU readiness require separate evidence.
+proof.  A passing member means that its own fixed HMC kernel survived the
+declared fresh verification.  The result also records incomplete campaign
+states: \path{repair\_budget\_exhausted} means a required directional repair
+was identified but could not be funded, while \path{partial\_budget} means
+other required work remains.  Neither status is a scientific rejection.
+Chapter~\ref{ch:bf-hmc-tuning-interfaces} gives the public interfaces and the
+exact distinction between tuning evidence and retained-chain evidence.
+Scientific validity, sampler superiority, default readiness, and GPU readiness
+require separate evidence.
+R-hat is reporting-only throughout tuning, including when its computation is
+unavailable. Posterior warmup and cumulative R-hat/ESS assessment follow the
+explicit selection of a verified member.
 
 \section{Public And Private Handoffs}
 \label{sec:bf-hmc-public-private-handoffs}
 
-The final frozen kernel has two different artifacts.  The private BayesFilter
-handoff contains the adapted mass arrays, step size, and leapfrog count needed
-to replay the exact fixed kernel.  The public handoff is non-replayable: it may
-expose hashes, signatures, target dimension, verification status, acceptance
-summary, and nonclaims, but it must not expose raw samples, final states, mass
-arrays, step size, leapfrog count, candidate grids, or private file paths.
+The local candidate-set result records every pair, its evidence, and its
+remaining work. Numerical checkpoints additionally preserve geometry, states,
+and traces so an interrupted search can resume. An exported member contains
+the verified kernel and the evidence needed for checked replay. These local
+files may contain target-specific numerical information; consumers choose what
+to include in an externally shared report.
 
-This split lets downstream model repositories record that tuning completed
-without forcing them to own or publish HMC mechanics.  If a retained frozen
-kernel must be launched, the replay boundary remains BayesFilter-owned and
-requires the private payload.
+Earlier single-kernel archives used separate sanitized public summaries and
+private mechanics payloads. Their readers preserve that historical split.
+The current public API returns the full candidate set; retained execution still
+uses a repository-owned validator and an explicitly selected verified member.
 
 \section{Diagnostic Use of NUTS}
 \label{sec:bf-nuts-diagnostic-use}

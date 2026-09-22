@@ -2,8 +2,8 @@
 
 Question: how variable are fresh final likelihoods from complete adaptive R
 reconstructions, conditional on the paper's five linear-Gaussian dimensions?
-Stage: phase 16 RUNNING; the 100-replicate stage is complete and the
-300-replicate stage is active as of 2026-09-22 at 12:00 UTC.
+Stage: phase 16 RUNNING; stages 100 and 300 are complete and the
+1,000-replicate stage is active as of 2026-09-22 at 13:04 UTC.
 Detached supervisor PID 4021639, launched
 2026-09-22 at 09:02 UTC. It advances through 100, 300, and 1,000 labels per
 method/dimension without per-stage intervention. Candidate failures continue;
@@ -31,7 +31,10 @@ Stage 100: 3,000 records, no failed/capped learners and no observed heuristic
 promotion veto in this sample. The completed note is `stage100/result.md` in
 the live root. Pointwise bootstrap intervals are conditional on one data set
 per dimension; no population ranking or paper-identity claim follows.
-At 12:00 UTC, 111 batches were complete; about 39.093 CPU hours and 47.745 GPU
+Stage 300: 9,000 records, two failed/capped d80 score learners retained, and
+three observed d80 score heuristic comparisons vetoing promotion. The harness
+checks passed and the supervisor continued automatically. See `stage300/result.md`.
+At 13:04 UTC, 151 batches were complete; about 36.878 CPU hours and 47.745 GPU
 hours remained, with 0.500 CPU hours reserved. Refresh these from live state.
 
 Phase 15 is COMPLETE: 400 evaluations, 729 checks, all 200 learners complete;

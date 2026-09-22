@@ -1,0 +1,29 @@
+{
+  "schema": "bayesfilter.q20.recovered_allowance.v1",
+  "campaign_remaining_seconds": 124650.72741333082,
+  "diagnostic_remaining_seconds": 43674.27443840095,
+  "source_ledger": "/tmp/BayesFilter-q20-master-repair-20260916/docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/real-q20-r2/campaign.json",
+  "source_sha256": "7d054cc3d546ef66c8726d6decc60853605a691f334cd86cab246979db079154",
+  "additional_charges": [
+    {
+      "path": "docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/cost-stop-regression-r1.json",
+      "seconds": 58.54711030801991,
+      "basis": "full supervised regression process wall including startup and exit"
+    }
+  ],
+  "inherited_holds_already_subtracted": [
+    {
+      "reason": "Entire prior repair allocation held; incomplete prior smoke timing is not treated as zero.",
+      "seconds": 7200.0
+    },
+    {
+      "reason": "Unmeasured Python startup/exit and prior readiness probe. Per-launch hold is ceil(2 * largest observed supervised process overhead); engineering allowance, not a measured charge.",
+      "seconds": 115
+    }
+  ],
+  "unsettled_holds": [],
+  "previous_initial_diagnostic_attempts_used": 4,
+  "new_measured_cost_phase_diagnostic_attempts": 3,
+  "allocation_plan": "docs/plans/bayesfilter-ssl-lstm-q20-executable-master-repair-plan-2026-09-16.md#measured-cost-repair-after-r2",
+  "scope": "Same target/data/method/criteria/hardware and total budget; new bounded cost-accounting repair phase after the four initial attempts, with fresh qualification."
+}

@@ -1,0 +1,61 @@
+{
+  "plan_file": "docs/plans/bayesfilter-hmc-merged-source-continuation-2026-09-22.md",
+  "source_manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-manifest-r1.json",
+  "source_identity": "13917d3625fa5a09dfd3bf1ab9d2894618ed7bc4259ca7603f16c766f6213d66",
+  "git_commit": "f9c86f41ac44efc5e6a5a5220633073fce803431",
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/run_estimator_confirmation.py"
+  ],
+  "driver_sha256": "72881cd13059a8b248efff65105fc99006c4d49acdd36d6dce7004631006c286",
+  "seed": 2026092244,
+  "replications_per_case": 400,
+  "planned": 800,
+  "warmup": 10000,
+  "retained": 10000,
+  "chains": 4,
+  "cases": [
+    [
+      "slow_stationary",
+      0.98,
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      true
+    ],
+    [
+      "dispersed",
+      0.995,
+      [
+        -8.0,
+        -4.0,
+        4.0,
+        8.0
+      ],
+      false
+    ]
+  ],
+  "arms": [
+    "lugsail_100",
+    "lugsail_500",
+    "autocorrelation"
+  ],
+  "cpu_worker_limit_seconds": 900,
+  "device": "cpu_reference",
+  "gpu_intentionally_hidden": true,
+  "jit_compile": false,
+  "tensorflow": "2.20.0",
+  "tfp": "0.25.0",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "1",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "data_version": "synthetic exact Gaussian AR1 laws declared in this manifest"
+}

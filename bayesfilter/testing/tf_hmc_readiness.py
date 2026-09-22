@@ -8,6 +8,16 @@ from typing import Mapping
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+from bayesfilter.linear.kalman_qr_derivatives_tf import (
+    tf_qr_linear_gaussian_score,
+    tf_qr_linear_gaussian_score_hessian,
+)
+from bayesfilter.linear.kalman_qr_tf import tf_qr_linear_gaussian_log_likelihood
+from bayesfilter.linear.kalman_tf import tf_kalman_filter
+from bayesfilter.linear.types_tf import (
+    TFLinearGaussianStateSpace,
+    TFLinearGaussianStateSpaceDerivatives,
+)
 from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import tf_svd_cut4_score
 from bayesfilter.testing.nonlinear_diagnostics_tf import (
     nonlinear_sigma_point_score_branch_summary,
@@ -17,15 +27,6 @@ from bayesfilter.testing.nonlinear_models_tf import (
     make_nonlinear_accumulation_model_tf,
     model_b_observations_tf,
 )
-from bayesfilter.linear.kalman_qr_derivatives_tf import (
-    tf_qr_linear_gaussian_score_hessian,
-)
-from bayesfilter.linear.kalman_qr_tf import tf_qr_linear_gaussian_log_likelihood
-from bayesfilter.linear.types_tf import (
-    TFLinearGaussianStateSpace,
-    TFLinearGaussianStateSpaceDerivatives,
-)
-
 
 tfm = tfp.mcmc
 
@@ -116,24 +117,45 @@ class QRStaticLGSSMTarget:
         parameters: tf.Tensor,
     ) -> tuple[tf.Tensor, tf.Tensor]:
         params = tf.convert_to_tensor(parameters, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            tape.watch(params)
-            value = self.log_likelihood(params)
-        score = tape.gradient(value, params)
-        return value, score
+        # Independent diagnostic: keep the entire reverse pass inside XLA so
+        # TensorList intermediates do not cross an eager/compiled boundary.
+        @tf.function(input_signature=[tf.TensorSpec([2], tf.float64)], jit_compile=True)
+        def reference(position):
+            with tf.GradientTape() as tape:
+                tape.watch(position)
+                value = self.log_likelihood(position)
+            return value, tape.gradient(value, position)
+
+        return reference(params)
 
     def log_likelihood_autodiff_score_hessian(
         self,
         parameters: tf.Tensor,
     ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         params = tf.convert_to_tensor(parameters, dtype=tf.float64)
-        with tf.GradientTape() as outer:
+        # Eager covariance/Joseph reference is independent of the compiled QR
+        # derivative recurrence, including its second-order factor rules.
+        with tf.GradientTape(persistent=True) as outer:
             outer.watch(params)
             with tf.GradientTape() as inner:
                 inner.watch(params)
-                value = self.log_likelihood(params)
+                model, _ = self.model_and_derivatives(params)
+                value, _, _ = tf_kalman_filter.python_function(
+                    observations=self.observations,
+                    transition_offset=model.transition_offset,
+                    transition_matrix=model.transition_matrix,
+                    transition_covariance=model.transition_covariance,
+                    observation_offset=model.observation_offset,
+                    observation_matrix=model.observation_matrix,
+                    observation_covariance=model.observation_covariance,
+                    initial_state_mean=model.initial_mean,
+                    initial_state_covariance=model.initial_covariance,
+                    jitter=self.jitter,
+                    return_filtered=False,
+                )
             score = inner.gradient(value, params)
-        hessian = outer.jacobian(score, params)
+        hessian = outer.jacobian(score, params, experimental_use_pfor=False)
+        del outer
         return value, score, hessian
 
     def analytic_score_hessian(self, parameters: tf.Tensor):
@@ -147,13 +169,19 @@ class QRStaticLGSSMTarget:
 
     def target_log_prob(self, parameters: tf.Tensor) -> tf.Tensor:
         params = tf.convert_to_tensor(parameters, dtype=tf.float64)
-        value = self.log_likelihood(params)
-        prior_quadratic = tf.reduce_sum(tf.square(params / self.prior_scale))
-        return value - 0.5 * prior_quadratic
+
+        @tf.custom_gradient
+        def analytical_target(position):
+            value, score = self.target_log_prob_and_grad(position)
+            return value, lambda cotangent: cotangent * score
+
+        return analytical_target(params)
 
     def target_log_prob_and_grad(self, parameters: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         params = tf.convert_to_tensor(parameters, dtype=tf.float64)
-        value, score = self.log_likelihood_and_autodiff_score(params)
+        model, derivatives = self.model_and_derivatives(params)
+        result = tf_qr_linear_gaussian_score(self.observations, model, derivatives, jitter=self.jitter)
+        value, score = result.log_likelihood, result.score
         prior_score = -(params / tf.square(self.prior_scale))
         prior_quadratic = tf.reduce_sum(tf.square(params / self.prior_scale))
         return value - 0.5 * prior_quadratic, score + prior_score
@@ -200,18 +228,23 @@ def run_qr_static_lgssm_hmc_smoke(
         num_leapfrog_steps=num_leapfrog_steps,
     )
     initial_state = target.initial_parameters
-    samples, trace = tfm.sample_chain(
-        num_results=num_results,
-        num_burnin_steps=num_burnin_steps,
-        current_state=initial_state,
-        kernel=kernel,
-        trace_fn=lambda _state, kernel_results: {
-            "is_accepted": kernel_results.is_accepted,
-            "log_accept_ratio": kernel_results.log_accept_ratio,
-            "target_log_prob": kernel_results.accepted_results.target_log_prob,
-        },
-        seed=tf.constant(seed, dtype=tf.int32),
-    )
+
+    @tf.function(input_signature=[tf.TensorSpec([2], tf.float64)], jit_compile=True)
+    def sample_reference(position):
+        return tfm.sample_chain(
+            num_results=num_results,
+            num_burnin_steps=num_burnin_steps,
+            current_state=position,
+            kernel=kernel,
+            trace_fn=lambda _state, kernel_results: {
+                "is_accepted": kernel_results.is_accepted,
+                "log_accept_ratio": kernel_results.log_accept_ratio,
+                "target_log_prob": kernel_results.accepted_results.target_log_prob,
+            },
+            seed=tf.constant(seed, dtype=tf.int32),
+        )
+
+    samples, trace = sample_reference(initial_state)
     sample_mean = tf.reduce_mean(samples, axis=0)
     sample_stddev = tf.math.reduce_std(samples, axis=0)
     value, gradient = target.target_log_prob_and_grad(initial_state)

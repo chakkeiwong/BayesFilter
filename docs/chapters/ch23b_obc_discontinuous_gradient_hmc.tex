@@ -1,4 +1,5 @@
 \chapter{Occasionally Binding Constraints, Gradient Discontinuities, and a Failed Hypothesis}
+\chaptermark{Constraints and Gradient Discontinuities}
 \label{ch:bf-obc-discontinuous-gradient}
 
 \section{Purpose and scope}
@@ -443,7 +444,27 @@ The softplus second derivative bound $\sup s'' = 1/(4a)$ is correct. For small $
 
 \subsection{Hard kinks are different}
 
-The hard max $i_t = \max\{\ell, i_t^\star\}$ does have a kinked gradient: $\partial i_t / \partial i_t^\star = \mathbf{1}\{i_t^\star > \ell\}$, which jumps from 0 to 1. Leapfrog remains valid (the nondifferentiable set has measure zero), but event-aware methods can improve efficiency by detecting boundary crossings and adjusting trajectories accordingly.\footnote{Pakman and Paninski (2014), ``Exact Hamiltonian Monte Carlo for truncated multivariate Gaussians''; Afshar and Domke (2015), ``Reflection, Refraction, and Hamiltonian Monte Carlo.''}
+The hard max $i_t = \max\{\ell, i_t^\star\}$ has a derivative that jumps from
+0 to 1 at the boundary; the derivative is undefined at equality. This can
+produce a continuous potential with a discontinuous gradient. The validity
+of a Metropolis-corrected leapfrog proposal rests on its reversible,
+volume-preserving composition of momentum kicks and position drifts, with a
+fixed deterministic force convention and the exact endpoint energy. The
+measure-zero boundary alone does not establish accurate integration or
+efficient exploration.
+
+Boundary methods must match the type of boundary.
+\citet[Section~2]{Pakman2014} solve the quadratic Hamiltonian exactly between
+reflections at truncation constraints. Their Bayesian Lasso extension
+(Section~4, equations~4.12--4.22) instead crosses a continuous kink with
+continuous position and velocity, updating the region's quadratic dynamics.
+That special construction does not supply an integrator for an arbitrary
+hard-max state-space posterior. \citet[Algorithm~1 and Section~5]{Afshar2015}
+incorporate reflection or refraction at a jump $\Delta U$ in potential energy,
+with their volume-preservation proof covering affine partition boundaries.
+When a crossing has $\Delta U=0$ and nonzero normal momentum, their refraction
+rule leaves that momentum unchanged. Thus this rule alone does not correct
+the integration error caused by a continuous gradient kink.
 
 \textbf{Key distinction:} The hard max is a Case 1 geometry (continuous kink, $\Delta U = 0$). The softplus is smooth (no kink, $\Delta U = 0$, but large curvature). They are not the same, and methods for one do not automatically apply to the other.
 
@@ -467,7 +488,11 @@ This is a real geometric challenge, independent of the failed UKF discontinuity 
 \item Non-centered vs centered parameterization (already used in the executed G2.3 target).
 \item QR reparameterization of the latent-to-observable Jacobian to decorrelate scales from rotations.
 \item Hierarchical priors on log scales to regularize extreme values.
-\item Partial centering (adaptively interpolating between centered and non-centered) \citep{Gorinova2020}.
+\item Partial centering chosen before sampling. Variationally inferred
+parameterization learns the interpolation between centered and non-centered
+coordinates during variational preprocessing, then fixes it for HMC
+\citep[Section~5.2 and Appendix~C]{Gorinova2020}. The variational objective
+does not guarantee that all posterior modes are represented.
 \end{itemize}
 
 The funnel is a smooth geometry problem, not a discontinuity problem. It is orthogonal to the retracted UKF hypothesis.
@@ -482,7 +507,9 @@ Readers implementing HMC for occasionally binding constraints should read:
 \begin{itemize}
 \item Chapter~\ref{ch:bf-boundary-gradients}: Boundary handling and safe gradients (correct general treatment).
 \item Chapter~\ref{ch:bf-hmc-for-state-space}: HMC for state-space models (correct filter-HMC integration).
-\item The cited literature on reflection/refraction HMC \citep{Pakman2014, Afshar2015} for hard kinks.
+\item \citet{Pakman2014} for truncated Gaussian and piecewise-quadratic
+dynamics, and \citet{Afshar2015} for potential jumps across affine boundaries,
+with the distinctions above for a continuous kink.
 \item This chapter only for the cautionary example.
 \end{itemize}
 
@@ -543,5 +570,3 @@ The executed work stands as correct. The abandoned plan was a separate, unexecut
 \textbf{The corrective action:} Survey §7 retracted, research plan archived, hypothesis closed. No phases executed, no GPU-hours spent. The failure was caught by adversarial audit before resources were committed.
 
 \textbf{The durable value:} A worked example of how to structure, audit, and reject a wrong hypothesis—and how to extract lessons that prevent the next one.
-
-

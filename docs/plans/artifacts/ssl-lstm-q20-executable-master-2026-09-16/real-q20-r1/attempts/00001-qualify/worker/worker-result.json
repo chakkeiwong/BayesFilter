@@ -1,0 +1,9 @@
+{
+  "completed": false,
+  "message": "target_status_telemetry conditioning fields must be both present or both absent",
+  "production_qualified": false,
+  "status": "worker_failure",
+  "traceback": "Traceback (most recent call last):\n  File \"/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/q20_master_stages.py\", line 57, in run_worker\n    result = dispatch(config, bridge, output / \"data\", request, memory)\n  File \"/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/q20_master_stages.py\", line 84, in dispatch\n    return qualify_bridge(config, bridge, root)\n  File \"/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/q20_hmc_qualification.py\", line 92, in qualify_bridge\n    public=runner.run(mode=\"serial\")\n  File \"/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc.py\", line 3223, in run\n    diagnostics = _full_chain_hmc_diagnostics(\n        samples,\n        trace,\n        trace_policy=self.config.trace_policy,\n    )\n  File \"/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc.py\", line 6992, in _full_chain_hmc_diagnostics\n    diagnostics[\"target_status_telemetry\"] = _target_status_telemetry_diagnostics(\n                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        trace[\"target_status_telemetry\"]\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc.py\", line 7395, in _target_status_telemetry_diagnostics\n    raise ValueError(\n        \"target_status_telemetry conditioning fields must be both present or both absent\"\n    )\nValueError: target_status_telemetry conditioning fields must be both present or both absent\n",
+  "type": "ValueError",
+  "wall_seconds": 315.4979411509703
+}

@@ -1,0 +1,26 @@
+..........................F............................................. [ 50%]
+.......................F................................................ [100%]
+=================================== FAILURES ===================================
+__ test_position_field_pilot_uses_declared_count_and_shared_execution_policy ___
+tests/test_hmc_consistency_gap_repair.py:237: in test_position_field_pilot_uses_declared_count_and_shared_execution_policy
+    run = tune_hmc_kernel(adapter=_Adapter(), initial_position=tf.zeros([4, 2], tf.float64),
+bayesfilter/inference/hmc_tuning_dispatch.py:117: in tune_hmc_kernel
+    return run_shared_position_field_tuning(
+bayesfilter/inference/hmc_candidate_set_position_field.py:181: in run_shared_position_field_tuning
+    policy = HMCAcceptancePolicy(target=config.target_accept_prob,
+<string>:15: in __init__
+    ???
+bayesfilter/inference/hmc_verification.py:537: in __post_init__
+    raise ValueError("practical_region must be ordered inside (0, 1)")
+E   ValueError: practical_region must be ordered inside (0, 1)
+_ test_default_policy_rejects_finite_out_of_band_acceptance_and_warmup_health __
+tests/test_hmc_candidate_set_execution.py:194: in test_default_policy_rejects_finite_out_of_band_acceptance_and_warmup_health
+    assert bad["decision"] == "failed" and "nonfinite_target_score" in bad["hard_vetoes"]
+E   AssertionError: assert ('passed' == 'failed'
+E     
+E     - failed
+E     + passed)
+=========================== short test summary info ============================
+FAILED tests/test_hmc_consistency_gap_repair.py::test_position_field_pilot_uses_declared_count_and_shared_execution_policy
+FAILED tests/test_hmc_candidate_set_execution.py::test_default_policy_rejects_finite_out_of_band_acceptance_and_warmup_health
+2 failed, 142 passed, 1638 warnings in 162.40s (0:02:42)

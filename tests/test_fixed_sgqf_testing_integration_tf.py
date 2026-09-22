@@ -1,6 +1,9 @@
 import tensorflow as tf
 
-from bayesfilter.nonlinear.fixed_sgqf_derivatives_tf import TFFixedSGQFDerivatives, tf_fixed_sgqf_score
+from bayesfilter.nonlinear.fixed_sgqf_derivatives_tf import (
+    TFFixedSGQFDerivatives,
+    tf_fixed_sgqf_score,
+)
 from bayesfilter.nonlinear.fixed_sgqf_tf import (
     TFFixedSGQFBranchConfig,
     TFFixedSGQFNonlinearModel,
@@ -50,8 +53,8 @@ def test_fixed_sgqf_testing_helpers_expose_diagnostics_for_successful_value_and_
 
     assert value_snapshot.branch_hash == value_result.branch_identity.hash.value
     assert score_snapshot.branch_hash == score_result.branch_identity.hash.value
-    assert value_snapshot.runtime_mode == "eager_only_python_branch_records"
-    assert score_snapshot.runtime_mode == "eager_only_python_branch_records"
+    assert value_snapshot.runtime_mode == "xla_tensor_recurrence_python_branch_records"
+    assert score_snapshot.runtime_mode == "xla_tensor_recurrence_python_branch_records"
     assert value_snapshot.failure_stage is None
     assert score_snapshot.failure_stage is None
     assert score_snapshot.derivative_method == "analytic_first_order_fixed_branch"

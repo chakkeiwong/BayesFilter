@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.922" timestamp="2026-09-17T01:34:36.620750+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_master_repair" name="test_refinement_cap_counts_only_eligible_unadmitted_pairs" time="0.003"><failure message="assert 5 == 2">def test_refinement_cap_counts_only_eligible_unadmitted_pairs():
+        from tests.test_hmc_candidate_set_tuning import _scope, _pass
+        from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig, HMCTuningCandidateSetController
+        result = HMCTuningCandidateSetController(_scope(), HMCControllerConfig(
+            primary_l_grid=(3,), initial_epsilon=.5, max_candidates=2, refinement_rounds=1,
+            epsilon_refinement_factors=(.8, 1.25, 100.), refinement_l_grid=(3, 5))).run(_pass)
+        # .4 was admitted; .5 duplicates the parent; 50 is outside the domain.
+        # Only (3, .625) and (5, .5) remain eligible at this round's cap.
+        limits = [row for row in result.accounting_events if row["event"] == "refinement_cap_reached"]
+&gt;       assert limits[0]["remaining_proposals"] == 2
+E       assert 5 == 2
+
+tests/test_hmc_master_repair.py:110: AssertionError</failure></testcase></testsuite></testsuites>

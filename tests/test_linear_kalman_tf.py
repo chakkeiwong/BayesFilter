@@ -11,15 +11,14 @@ from bayesfilter.linear.kalman_tf import (
     tf_kalman_log_likelihood,
     tf_linear_gaussian_log_likelihood,
     tf_masked_kalman_filter,
-    tf_masked_kalman_filter_checked_batched_static_with_diagnostics,
     tf_masked_kalman_filter_checked_batched_static_value,
+    tf_masked_kalman_filter_checked_batched_static_with_diagnostics,
     tf_masked_kalman_filter_checked_value,
     tf_masked_kalman_filter_checked_with_diagnostics,
     tf_masked_kalman_filter_with_diagnostics,
     tf_masked_kalman_log_likelihood,
 )
 from bayesfilter.linear.types_tf import TFLinearGaussianStateSpace
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -547,13 +546,15 @@ def test_checked_batched_static_matches_scalar_rows_and_scores() -> None:
     mask = tf.constant(
         [[True, True], [True, False], [False, True]], tf.bool
     )
-    with tf.GradientTape() as tape:
-        tape.watch(parameters)
-        batch_value, batch_minimum, batch_condition, batch_valid = (
-            _call_batched_checked(parameters)
-        )
-        batch_total = tf.reduce_sum(batch_value)
-    batch_score = tape.gradient(batch_total, parameters)
+    @tf.function(jit_compile=True)
+    def compiled_value_and_score(parameters):
+        with tf.GradientTape() as tape:
+            tape.watch(parameters)
+            value, minimum, condition, valid = _call_batched_checked(parameters)
+            total = tf.reduce_sum(value)
+        return value, minimum, condition, valid, tape.gradient(total, parameters)
+
+    batch_value, batch_minimum, batch_condition, batch_valid, batch_score = compiled_value_and_score(parameters)
     assert batch_score is not None
 
     scalar_values = []

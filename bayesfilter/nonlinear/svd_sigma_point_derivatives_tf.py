@@ -9,6 +9,7 @@ from typing import Callable
 import tensorflow as tf
 
 from bayesfilter.diagnostics import TFFilterDiagnostics, TFRegularizationDiagnostics
+from bayesfilter.linear.compiled_recurrence_tf import compiled_tensor_recurrence
 from bayesfilter.linear.qr_factor_tf import factor_solve
 from bayesfilter.linear.svd_factor_tf import (
     eigh_logdet,
@@ -19,14 +20,16 @@ from bayesfilter.linear.svd_factor_tf import (
     symmetrize,
 )
 from bayesfilter.nonlinear.cut_tf import tf_cut4g_sigma_point_rule
-from bayesfilter.nonlinear.sigma_points_tf import TFSigmaPointRule, tf_unit_sigma_point_rule
+from bayesfilter.nonlinear.sigma_points_tf import (
+    TFSigmaPointRule,
+    tf_unit_sigma_point_rule,
+)
 from bayesfilter.results_tf import TFFilterDerivativeResult
 from bayesfilter.structural_tf import (
     TFStructuralStateSpace,
     structural_block_metadata,
     structural_filter_metadata,
 )
-
 
 TFTransitionStateJacobianFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 TFTransitionInnovationJacobianFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
@@ -568,7 +571,7 @@ def _smooth_sigma_point_score_with_rule(
         dtype=tf.float64,
     )
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_fixed_null_derivative_residual, max_innovation_floor_count, max_innovation_residual, max_integration_rank, max_placement_floor_count, max_placement_residual, max_structural_null_count, max_structural_null_covariance_residual, max_support_residual, mean, min_innovation_eigen_gap, min_placement_eigen_gap, score):
         aug_mean = tf.concat(
             [mean, tf.zeros([innovation_dim], dtype=tf.float64)],
             axis=0,
@@ -760,20 +763,11 @@ def _smooth_sigma_point_score_with_rule(
         )
 
         kalman_gain = cross_covariance @ innovation_precision
-        d_kalman_gain = []
-        kalman_gain_transpose = tf.transpose(kalman_gain)
-        for i in range(p):
-            rhs = (
-                tf.transpose(d_cross_covariance[i])
-                - d_raw_innovation_covariance[i] @ kalman_gain_transpose
-            )
-            solved = eigh_solve(
-                innovation_factor.eigenvectors,
-                innovation_factor.floored_eigenvalues,
-                rhs,
-            )
-            d_kalman_gain.append(tf.transpose(solved))
-        d_kalman_gain = tf.stack(d_kalman_gain, axis=0)
+        rhs = (tf.linalg.matrix_transpose(d_cross_covariance)
+               - d_raw_innovation_covariance @ tf.transpose(kalman_gain))
+        packed_rhs = tf.reshape(tf.transpose(rhs, [1, 0, 2]), [observation_dim, p * state_dim])
+        solved = eigh_solve(innovation_factor.eigenvectors, innovation_factor.floored_eigenvalues, packed_rhs)
+        d_kalman_gain = tf.transpose(tf.reshape(solved, [observation_dim, p, state_dim]), [1, 2, 0])
 
         mean = predicted_mean + tf.linalg.matvec(kalman_gain, innovation)
         d_mean = (
@@ -871,6 +865,27 @@ def _smooth_sigma_point_score_with_rule(
         last_implemented_innovation_covariance = (
             innovation_factor.implemented_covariance
         )
+        return t + 1, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_fixed_null_derivative_residual, max_innovation_floor_count, max_innovation_residual, max_integration_rank, max_placement_floor_count, max_placement_residual, max_structural_null_count, max_structural_null_covariance_residual, max_support_residual, mean, min_innovation_eigen_gap, min_placement_eigen_gap, score
+
+    _, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_fixed_null_derivative_residual, max_innovation_floor_count, max_innovation_residual, max_integration_rank, max_placement_floor_count, max_placement_residual, max_structural_null_count, max_structural_null_covariance_residual, max_support_residual, mean, min_innovation_eigen_gap, min_placement_eigen_gap, score = compiled_tensor_recurrence(
+        time_step, (covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_fixed_null_derivative_residual, max_innovation_floor_count, max_innovation_residual, max_integration_rank, max_placement_floor_count, max_placement_residual, max_structural_null_count, max_structural_null_covariance_residual, max_support_residual, mean, min_innovation_eigen_gap, min_placement_eigen_gap, score), n_timesteps,
+    )
+
+    # Assertions inside XLA may be ignored; enforce the same branch in
+    # returned tensors, and retain clear eager-boundary rejection messages.
+    no_floor = (max_placement_floor_count == 0) & (max_innovation_floor_count == 0)
+    separated = (min_placement_eigen_gap > spectral_gap_tolerance) & (min_innovation_eigen_gap > spectral_gap_tolerance)
+    fixed_support = ((max_structural_null_covariance_residual <= fixed_null_tolerance)
+                     & (max_fixed_null_derivative_residual <= fixed_null_tolerance))
+    branch_valid = no_floor & separated & fixed_support
+    tf.debugging.assert_equal(no_floor, True, message="blocked_active_floor")
+    tf.debugging.assert_equal(separated, True, message="blocked_weak_spectral_gap")
+    tf.debugging.assert_less_equal(max_structural_null_covariance_residual, fixed_null_tolerance,
+                                   message="blocked_structural_null_covariance")
+    tf.debugging.assert_less_equal(max_fixed_null_derivative_residual, fixed_null_tolerance,
+                                   message="blocked_fixed_null_derivative")
+    log_likelihood = tf.where(branch_valid, log_likelihood, tf.constant(float("nan"), tf.float64))
+    score = tf.where(branch_valid, score, tf.constant(float("nan"), tf.float64))
 
     checked_value = tf.debugging.check_numerics(
         log_likelihood,
@@ -914,6 +929,7 @@ def _smooth_sigma_point_score_with_rule(
         ),
         "derivative_provider": derivatives.name,
         "hessian_status": "deferred",
+        "jit_compile": True,
     }
     diagnostics = TFFilterDiagnostics(
         backend=backend_name,
@@ -945,7 +961,7 @@ def _smooth_sigma_point_score_with_rule(
                 if allow_fixed_null_support
                 else "analytic_score_smooth_branch_hessian_deferred"
             ),
-            compiled_status="eager_tf",
+            compiled_status="xla_tensor_recurrence",
         ),
         diagnostics=diagnostics,
         trace=(
@@ -1021,7 +1037,7 @@ def _principal_sqrt_sigma_point_score_with_rule(
         dtype=tf.float64,
     )
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_innovation_condition_estimate, max_innovation_floor_count, max_innovation_residual, max_innovation_sylvester_residual, max_placement_floor_count, max_placement_residual, max_support_residual, mean, min_innovation_eigen_gap, min_innovation_eigenvalue, min_placement_eigen_gap, score):
         aug_mean = tf.concat(
             [mean, tf.zeros([innovation_dim], dtype=tf.float64)],
             axis=0,
@@ -1209,16 +1225,9 @@ def _principal_sqrt_sigma_point_score_with_rule(
         )
 
         kalman_gain = cross_covariance @ innovation_precision
-        d_kalman_gain = []
-        kalman_gain_transpose = tf.transpose(kalman_gain)
-        for i in range(p):
-            rhs = (
-                tf.transpose(d_cross_covariance[i])
-                - d_raw_innovation_covariance[i] @ kalman_gain_transpose
-            )
-            solved = factor_solve(innovation_factor_matrix, rhs)
-            d_kalman_gain.append(tf.transpose(solved))
-        d_kalman_gain = tf.stack(d_kalman_gain, axis=0)
+        rhs = (tf.linalg.matrix_transpose(d_cross_covariance)
+               - d_raw_innovation_covariance @ tf.transpose(kalman_gain))
+        d_kalman_gain = tf.linalg.matrix_transpose(factor_solve(innovation_factor_matrix, rhs))
 
         mean = predicted_mean + tf.linalg.matvec(kalman_gain, innovation)
         d_mean = (
@@ -1304,6 +1313,11 @@ def _principal_sqrt_sigma_point_score_with_rule(
             step_condition_estimate,
         )
         last_implemented_innovation_covariance = innovation_factor.implemented_covariance
+        return t + 1, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_innovation_condition_estimate, max_innovation_floor_count, max_innovation_residual, max_innovation_sylvester_residual, max_placement_floor_count, max_placement_residual, max_support_residual, mean, min_innovation_eigen_gap, min_innovation_eigenvalue, min_placement_eigen_gap, score
+
+    _, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_innovation_condition_estimate, max_innovation_floor_count, max_innovation_residual, max_innovation_sylvester_residual, max_placement_floor_count, max_placement_residual, max_support_residual, mean, min_innovation_eigen_gap, min_innovation_eigenvalue, min_placement_eigen_gap, score = compiled_tensor_recurrence(
+        time_step, (covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_innovation_condition_estimate, max_innovation_floor_count, max_innovation_residual, max_innovation_sylvester_residual, max_placement_floor_count, max_placement_residual, max_support_residual, mean, min_innovation_eigen_gap, min_innovation_eigenvalue, min_placement_eigen_gap, score), n_timesteps,
+    )
 
     checked_value = tf.debugging.check_numerics(
         log_likelihood,
@@ -1368,7 +1382,7 @@ def _principal_sqrt_sigma_point_score_with_rule(
             model,
             filter_name=backend_name,
             differentiability_status="analytic_score_principal_sqrt_branch_hessian_deferred",
-            compiled_status="eager_tf",
+            compiled_status="xla_tensor_recurrence",
         ),
         diagnostics=diagnostics,
         trace=(

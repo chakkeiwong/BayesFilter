@@ -1,4 +1,4 @@
-"""Focused tests for the guide-directed fixed-transport tuning policy.
+"""Historical fixed-transport policy coverage and active-facade migration guards.
 
 These are mechanics/policy tests.  They do not establish posterior validity or
 HMC performance for a scientific target.
@@ -22,6 +22,7 @@ from bayesfilter.inference import (
     tune_fixed_transport_hmc_kernel,
 )
 from bayesfilter.inference.hmc import FullChainHMCRunResult
+from bayesfilter.inference.fixed_transport_hmc_tuning_tf import _run_historical_fixed_transport_hmc_tuning
 
 
 class _GaussianAdapter:
@@ -146,28 +147,20 @@ def test_harmonic_oscillator_phase_invalidates_directional_inference() -> None:
     assert phase_near_return > phase_near_reversal
 
 
-def test_measured_policy_rejects_underspecified_grid() -> None:
-    with pytest.raises(ValueError, match="at least two distinct step"):
-        FixedTransportHMCKernelTuningConfig(
-            initial_step_size=0.1,
-            step_size_candidates=(0.1,),
-        )
-    with pytest.raises(ValueError, match="at least two distinct leapfrog"):
-        FixedTransportHMCKernelTuningConfig(
-            initial_step_size=0.1,
-            step_size_candidates=(0.1, 0.2),
-            leapfrog_grid=(5,),
-        )
-    with pytest.raises(ValueError, match="replicated_min_bulk_ess_per_gradient"):
-        FixedTransportHMCKernelTuningConfig(
-            initial_step_size=0.1,
-            step_size_candidates=(0.1, 0.2),
-            leapfrog_grid=(5, 7),
-            selection_policy="acceptance_target_distance",
-        )
+def test_initial_grid_can_be_a_single_pilot_hypothesis() -> None:
+    config = FixedTransportHMCKernelTuningConfig(initial_step_size=0.1, leapfrog_grid=(5,))
+    assert config.step_size_candidates == (0.1,)
+    assert config.leapfrog_grid == (5,)
 
 
-def test_measured_policy_executes_every_joint_pair_and_holds_out() -> None:
+def test_active_facade_rejects_custom_historical_runners() -> None:
+    with pytest.raises(ValueError, match="custom fixed-transport runners are historical"):
+        tune_fixed_transport_hmc_kernel(base_adapter=_GaussianAdapter(), fixed_transport=_IdentityTransport(),
+            initial_position=np.zeros(2), config=FixedTransportHMCKernelTuningConfig(initial_step_size=.1),
+            run_full_chain=_IIDFixedKernel())
+
+
+def test_historical_measured_policy_executes_every_joint_pair_and_holds_out() -> None:
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
         step_size_candidates=(0.1, 0.2),
@@ -182,7 +175,7 @@ def test_measured_policy_executes_every_joint_pair_and_holds_out() -> None:
         target_scope="policy_repair_fixture",
     )
     runner = _IIDFixedKernel()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=_GaussianAdapter(),
         fixed_transport=_IdentityTransport(),
         initial_position=np.zeros(2),
@@ -209,7 +202,7 @@ def test_measured_policy_executes_every_joint_pair_and_holds_out() -> None:
     )
 
 
-def test_measured_policy_does_not_hard_veto_valid_high_acceptance() -> None:
+def test_historical_measured_policy_does_not_hard_veto_valid_high_acceptance() -> None:
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
         step_size_candidates=(0.1, 0.2),
@@ -223,7 +216,7 @@ def test_measured_policy_does_not_hard_veto_valid_high_acceptance() -> None:
         use_xla=False,
         target_scope="policy_repair_fixture_high_acceptance",
     )
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=_GaussianAdapter(),
         fixed_transport=_IdentityTransport(),
         initial_position=np.zeros(2),
@@ -272,7 +265,7 @@ def test_legacy_directional_policy_is_diagnostic_only() -> None:
         use_xla=False,
         target_scope="policy_repair_fixture",
     )
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=_GaussianAdapter(),
         fixed_transport=_IdentityTransport(),
         initial_position=np.zeros(2),

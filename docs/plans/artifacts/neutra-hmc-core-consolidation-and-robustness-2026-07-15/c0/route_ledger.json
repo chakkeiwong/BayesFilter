@@ -1,0 +1,390 @@
+{
+  "schema": "bayesfilter.neutra_hmc_route_ledger.v1",
+  "canonical_policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+  "discovery": {
+    "roots": [
+      "bayesfilter",
+      "docs/benchmarks"
+    ],
+    "suffix": ".py",
+    "required_case_insensitive_marker": "neutra",
+    "behavior_markers": [
+      "run_sequential_neutra_hmc",
+      "run_hmc_tuning_candidate",
+      "run_batched_hmc",
+      "tfp.mcmc.sample_chain",
+      "HamiltonianMonteCarlo"
+    ],
+    "exclusions": [
+      {
+        "path": "bayesfilter/inference/__init__.py",
+        "reason": "Lazy public exports only; this module does not own an executable sampling route."
+      },
+      {
+        "path": "bayesfilter/inference/neutra_hmc.py",
+        "reason": "Canonical shared controller implementation, including the beta-one-only exact augmented-transition mode, audited through its consumers rather than classified as a model campaign route."
+      },
+      {
+        "path": "bayesfilter/inference/neutra_hmc_policy.py",
+        "reason": "The route-policy implementation necessarily contains its own discovery markers."
+      },
+      {
+        "path": "bayesfilter/hardbound/hmc_runner.py",
+        "reason": "Standalone hardbound NUTS runner explicitly independent of NeuTra; discovery matches its explanatory docstring rather than a NeuTra execution route."
+      },
+      {
+        "path": "docs/benchmarks/audit_ssl_lstm_q20_phase9b_plan_2026_09_05.py",
+        "reason": "Read-only Phase 9B source-authority auditor; it records source and artifact checks and does not execute HMC or own a sampling route."
+      }
+    ]
+  },
+  "routes": [
+    {
+      "path": "bayesfilter/inference/hmc_candidate_set_retained.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "active_entry_points": [
+        "_run_sequential_member"
+      ],
+      "required_symbols": [
+        "run_sequential_neutra_hmc",
+        "_run_sequential_member"
+      ],
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "An explicitly verified numerical member delegates posterior assessment to the shared sequential controller; run() supplies diagnostic retained blocks without posterior authority."
+    },
+    {
+      "path": "bayesfilter/inference/neutra_campaign.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "active_entry_points": [
+        "run_campaign_neutra_hmc"
+      ],
+      "required_symbols": [
+        "NEUTRA_SEQUENTIAL_HMC_POLICY_ID",
+        "run_sequential_neutra_hmc"
+      ],
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Reusable typed-target campaign consumer of the canonical sequential controller."
+    },
+    {
+      "path": "bayesfilter/inference/neutra_end_to_end.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "active_entry_points": [
+        "run_neutra_frozen_transport_broad_grid_cell",
+        "run_neutra_broad_grid_sequential_cell",
+        "run_neutra_end_to_end_cell",
+        "run_neutra_frozen_transport_validation_cell"
+      ],
+      "required_symbols": [
+        "NEUTRA_SEQUENTIAL_HMC_POLICY_ID",
+        "run_sequential_neutra_hmc"
+      ],
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Reusable end-to-end and preserved-transport claim-bearing consumers."
+    },
+    {
+      "path": "bayesfilter/testing/lgssm_neutra_gap_closure_tf.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "active_entry_points": [
+        "run_corrected_sequential_hmc_candidate",
+        "run_confirmatory_hmc_candidate"
+      ],
+      "required_symbols": [
+        "NEUTRA_SEQUENTIAL_HMC_POLICY_ID",
+        "run_sequential_neutra_hmc"
+      ],
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Canonical migrated LGSSM reference consumer retained by the core-consolidation program."
+    },
+    {
+      "path": "docs/benchmarks/run_lgssm_neutra_gap_closure_2026_07_15.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "delegated",
+      "delegate_path": "bayesfilter/testing/lgssm_neutra_gap_closure_tf.py",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Thin CLI delegating every sampling stage to the canonical migrated LGSSM consumer."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_hmc_2026_08_19.py",
+      "classification": "historical_or_superseded",
+      "reason": "Terminal 2026-08-19 under-budgeted campaign preserved as immutable baseline; superseded for new execution by the 2026-08-20 continuation runner."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_neutra_global_mixing_continuation_2026_08_20.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "active_entry_points": [
+        "_execute"
+      ],
+      "required_symbols": [
+        "NEUTRA_SEQUENTIAL_HMC_POLICY_ID",
+        "run_sequential_neutra_hmc"
+      ],
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Current bounded SSL-LSTM q=20 continuation with canonical sequential admission, anti-pooling diagnostics, and resource-only affordability stops."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_neutra_rhat_trajectory_diagnostic_2026_08_21.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Diagnostic-only replay of one rejected q=20 fixed kernel; preserves raw chains and R-hat/sign trajectories but cannot admit a posterior."
+    },
+    {
+      "path": "bayesfilter/inference/hmc.py",
+      "classification": "training_or_non_hmc",
+      "reason": "Generic HMC implementation; NeuTra appears only in shared integration context, not as a NeuTra campaign route."
+    },
+    {
+      "path": "bayesfilter/inference/neural_force_hmc.py",
+      "classification": "training_or_non_hmc",
+      "reason": "Separate neural-force HMC method and not a canonical fixed-NeuTra claim route."
+    },
+    {
+      "path": "bayesfilter/hardbound/windowed_dense_mass_adaptation.py",
+      "classification": "training_or_non_hmc",
+      "reason": "Standalone hardbound dense-mass adaptation helper; it does not implement a NeuTra route governed by the canonical sequential policy."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_phase9b_p1_sequential_canary_2026_09_05.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Bounded Phase 9B mechanics canary; it is executable-readiness evidence only and cannot promote a posterior, sampler, or default."
+    },
+    {
+      "path": "docs/benchmarks/diagnose_ssl_lstm_q20_phase9b_executable_readiness_2026_09_06.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Bounded Phase 9B executable-readiness timing and provenance diagnostic; it cannot produce a posterior or promote a sampler or default."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_phase9b_recovery_runtime_2026_09_09.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Bounded two-arm recovery canary and full-controller health/runtime diagnostic through the shared sequential controller; no posterior or default promotion."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_performance_whitening_diagnostic_2026_09_02.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Performance and whitening diagnostic retained for engineering localization; it cannot admit a NeuTra posterior or default."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_performance_whitening_next_2026_09_02.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Follow-on performance diagnostic retained for engineering localization; it cannot admit a NeuTra posterior or default."
+    },
+    {
+      "path": "docs/benchmarks/phase2_surrogate_force_hmc.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical surrogate-force HMC prototype superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "docs/benchmarks/phase2_surrogate_force_optimized.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical surrogate-force optimization prototype superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "docs/benchmarks/phase2_surrogate_minimal.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical surrogate-force minimal prototype superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "docs/benchmarks/phase2_ultraminimal.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical ultraminimal HMC prototype superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "docs/benchmarks/phase2_ultraminimal_fixed.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical fixed ultraminimal HMC prototype superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "docs/benchmarks/step1_true_surrogate_force.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical true-surrogate-force prototype superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "docs/benchmarks/step2_reduced_particle_count.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical reduced-particle surrogate-force step superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "docs/benchmarks/step2_ultraminimal_n252.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical n=252 ultraminimal step superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "docs/benchmarks/step3_three_arm_comparison.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical three-arm comparison superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "docs/benchmarks/step3_ultraminimal_three_arm.py",
+      "classification": "historical_or_superseded",
+      "reason": "Historical ultraminimal three-arm comparison superseded by the canonical NeuTra route and preserved only as old evidence."
+    },
+    {
+      "path": "bayesfilter/inference/neutra_adaptive_nuts.py",
+      "classification": "historical_or_superseded",
+      "reason": "Adaptive NUTS experiment is not eligible for new fixed-NeuTra claim-bearing execution."
+    },
+    {
+      "path": "bayesfilter/inference/neutra_fixed_hmc.py",
+      "classification": "historical_or_superseded",
+      "reason": "Legacy fixed-count NeuTra implementation superseded by the canonical sequential controller."
+    },
+    {
+      "path": "bayesfilter/testing/lgssm_neutra_robustness_s1_tf.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed 2026-07-15 robustness campaign retained for artifact reproducibility only."
+    },
+    {
+      "path": "bayesfilter/testing/lgssm_new_fixture_neutra_hmc_f2_tf.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed new-fixture F2 campaign retained for artifact reproducibility only."
+    },
+    {
+      "path": "bayesfilter/testing/lgssm_new_fixture_plain_hmc_f0_tf.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed F0 comparator route; not a new NeuTra posterior execution default."
+    },
+    {
+      "path": "docs/benchmarks/diagnose_pp_ukf_reasonable_epsilon_probe.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Bounded epsilon diagnostic with no convergence or posterior promotion claim."
+    },
+    {
+      "path": "docs/benchmarks/resume_neutra_retained_from_warmup_2026_07_20.py",
+      "classification": "historical_or_superseded",
+      "reason": "Dated retained-continuation campaign retained for historical replay only."
+    },
+    {
+      "path": "docs/benchmarks/run_defensive_weighted_neutra_analytic_hmc_2026_08_12.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed defensive weighted-NeuTra campaign; not a current default route."
+    },
+    {
+      "path": "docs/benchmarks/run_defensive_weighted_neutra_analytic_hmc_replication_2026_08_12.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed replication launcher retained for its dated evidence only."
+    },
+    {
+      "path": "docs/benchmarks/run_multimodel_neutra_p1_canary.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Multimodel P1 canary is bounded engineering evidence, not posterior admission."
+    },
+    {
+      "path": "docs/benchmarks/run_multimodel_neutra_p4_pp_sgqf_laplace_hmc.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed campaign-specific P4 launcher retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_multimodel_neutra_p4_pp_ukf_affine_hmc_repair.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed campaign-specific P4 repair launcher retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_multimodel_neutra_p4_predator_prey_neutra_confirmation.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed predator-prey confirmation launcher retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_multimodel_neutra_p4_predator_prey_plain_hmc.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed predator-prey comparator launcher retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_multimodel_neutra_p5_structural_affine_hmc.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed structural affine campaign launcher retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_multimodel_neutra_p5_structural_plain_hmc.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed structural comparator launcher retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_multimodel_neutra_p6_sir_sgqf_hmc.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed SIR SGQF campaign launcher retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_multimodel_neutra_p6_sir_sgqf_neutra_confirmation.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed SIR confirmation launcher retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_neutra_banana_hmc_l10_confirmation_2026_08_16.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed dated banana confirmation retained for its original evidence only."
+    },
+    {
+      "path": "docs/benchmarks/run_neutra_paper_d100_hmc_2026_08_13.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed paper-d100 campaign retained for its dated evidence only."
+    },
+    {
+      "path": "docs/benchmarks/run_neutra_replication_hmc_campaign_2026_08_16.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed replication campaign retained for its dated evidence only."
+    },
+    {
+      "path": "docs/benchmarks/run_pp_ukf_true_hmc_validation_20260722.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed PP-UKF validation campaign retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_chart_a_l10_sequential_hmc_2026_08_04.py",
+      "classification": "historical_or_superseded",
+      "reason": "Earlier single-chart q=20 campaign superseded for global-mixing claims."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_fixed_hmc_api_cpu_xla_validation_2026_08_02.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "CPU/XLA API validation is reference engineering evidence, not the GPU claim route."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_multimodal_repair_2026_08_10.py",
+      "classification": "historical_or_superseded",
+      "reason": "Earlier q=20 multimodal repair campaign superseded by the common-kernel global-mixing plan."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_neutra_sequential_real_2026_07_22.py",
+      "classification": "historical_or_superseded",
+      "reason": "Earlier q=20 sequential campaign retained for historical artifact replay only."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_physical_global_repair_2026_08_10.py",
+      "classification": "historical_or_superseded",
+      "reason": "Earlier physical-global repair campaign is not eligible for the current claim."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_seed_b_neutra_mode_failure_root_cause_2026_08_10.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Root-cause diagnostic provides representatives and geometry but no posterior admission."
+    },
+    {
+      "path": "docs/benchmarks/run_ssl_lstm_q20_seed_b_terminal_sequential_hmc_2026_08_07.py",
+      "classification": "historical_or_superseded",
+      "reason": "Earlier seed-B terminal route superseded by the common-kernel global-mixing campaign."
+    },
+    {
+      "path": "docs/benchmarks/run_structural_ukf_neutra_confirmation.py",
+      "classification": "historical_or_superseded",
+      "reason": "Campaign-specific structural confirmation launcher retained for historical evidence."
+    },
+    {
+      "path": "docs/benchmarks/run_weighted_neutra_german_reverse_hmc_2026_08_13.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed German-credit reverse campaign retained for its dated evidence only."
+    },
+    {
+      "path": "docs/benchmarks/run_weighted_neutra_strong_smooth_hmc_2026_08_12.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed strong-smooth weighted campaign retained for its dated evidence only."
+    },
+    {
+      "path": "docs/benchmarks/run_weighted_neutra_three_mode_hmc_2026_08_12.py",
+      "classification": "historical_or_superseded",
+      "reason": "Completed three-mode campaign is provenance for settings, not a reusable default route."
+    }
+  ]
+}

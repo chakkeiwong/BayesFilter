@@ -1,0 +1,32 @@
+F
+=================================== FAILURES ===================================
+_ test_master_runs_real_workers_and_confirmation_then_reuses_completed_stages __
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-337/test_master_runs_real_workers_0')
+
+    def test_master_runs_real_workers_and_confirmation_then_reuses_completed_stages(tmp_path):
+        config=protocol()
+        config["training"].update(betas=[0.,1.],pricing_batches=[8])
+        config["tuning"].update(initial_epsilon=1.1,max_repairs_per_family=4,
+            total_budget_units=50,repair_reserve_units=20)
+        # Loose screens exercise dispatch and receipts on a known distribution.
+        # They are smoke hypotheses and cannot qualify research accuracy.
+        config["posterior"].update(warmup_rhat=10.,retained_rhat=10.,bulk_ess=1.,tail_ess=1.)
+        config["comparison"].update(mean_margin_sd=10.,quantile_margin_sd=10.,event_margin=1.)
+        config["reference"].update(banks=4,rungs=[512,2048],batch_size=32,ess_min=2.,minimum_tail_rows=1)
+        validate_protocol(config)
+        kwargs=dict(repo=Path(__file__).resolve().parents[1],fixture=True,
+            allowance={"campaign_remaining_seconds":20000.,"diagnostic_remaining_seconds":1200.})
+        result=execute_master(config,tmp_path/"campaign",**kwargs)
+>       assert result["status"]=="DECLARED_CONFIRMATION_CHECKS_PASSED",result
+E       AssertionError: {'campaign_root': '/tmp/pytest-of-ubuntu/pytest-337/test_master_runs_real_workers_0/campaign', 'declared_confirmation_...450a', 'label': 'neutra-beta1-direct-w4-lr0.001-r0', 'method': 'neutra', ...}}, 'method_ranking': 'not_estimated', ...}
+E       assert 'TUNING_REPAIR_REQUIRED' == 'DECLARED_CON...CHECKS_PASSED'
+E         
+E         - DECLARED_CONFIRMATION_CHECKS_PASSED
+E         + TUNING_REPAIR_REQUIRED
+
+tests/test_q20_master_program.py:24: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_program.py::test_master_runs_real_workers_and_confirmation_then_reuses_completed_stages
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 2 warnings in 80.67s (0:01:20)

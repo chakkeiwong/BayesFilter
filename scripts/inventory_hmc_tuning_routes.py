@@ -78,11 +78,13 @@ def discover_routes(inference_root: Path) -> tuple[dict[str, Any], ...]:
             is_candidate_helper = name.startswith(("discover_", "refine_")) and (
                 "fixed_transport_hmc_candidates" in lowered
             )
+            is_legacy_selection_helper = name == "select_fixed_transport_candidate_set"
             if not (
                 is_tuner
                 or is_runner
                 or is_orchestrator
                 or is_candidate_helper
+                or is_legacy_selection_helper
                 or is_diagnostic_route
             ):
                 continue

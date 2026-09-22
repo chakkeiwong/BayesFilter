@@ -89,6 +89,7 @@ def test_claim_bearing_tuning_replay_rejects_numpy_blocker_before_validation() -
 
 def test_claim_bearing_replay_cannot_clear_repository_policy_in_serialized_fields() -> None:
     config = HMCKernelTuningConfig.standard().payload()
+    config.pop("runtime_backend_policy")
     # Simulate a caller copying a valid ordinary policy and then deleting the
     # blocker fields.  The guard must recompute the policy from config rather
     # than accepting the caller's apparently clear authority declaration.

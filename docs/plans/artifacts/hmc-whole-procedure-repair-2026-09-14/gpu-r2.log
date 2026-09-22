@@ -1,0 +1,94 @@
+2026-09-15 01:23:25.476742: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789406608.226992  838214 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30103 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:01:00.0, compute capability: 8.9
+I0000 00:00:1789406608.352337  838214 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x59f03d3f5510
+2026-09-15 01:23:29.616835: I external/local_xla/xla/service/service.cc:163] XLA service 0x59f044a74140 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2026-09-15 01:23:29.616912: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9
+2026-09-15 01:23:29.634089: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+2026-09-15 01:23:29.746692: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700
+I0000 00:00:1789406612.184877  838214 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+WARNING:tensorflow:5 out of the last 5 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x7319f40eb100> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING:tensorflow:6 out of the last 6 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x7319f40eb420> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+{
+  "passed": true,
+  "role": "engineering GPU/XLA smoke; no posterior or ranking claim",
+  "verified_candidate_ids": [
+    "whole-procedure-gpu:b80aab895bff92e23780:candidate:000002",
+    "whole-procedure-gpu:b80aab895bff92e23780:candidate:000003",
+    "whole-procedure-gpu:b80aab895bff92e23780:candidate:000005",
+    "whole-procedure-gpu:b80aab895bff92e23780:candidate:000006"
+  ],
+  "candidate_count": 6,
+  "completion_status": "complete",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "execution_policy": {
+    "device_type": "GPU",
+    "memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "tf32_enabled": true,
+    "cuda_visible_devices": "0"
+  },
+  "samples_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "allocator": {
+    "current": 51200,
+    "peak": 577280
+  },
+  "jit_compile": true,
+  "versions": {
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tfp": "0.25.0"
+  },
+  "wall_seconds": 50.56880067300517,
+  "command": [
+    "docs/plans/artifacts/hmc-whole-procedure-repair-2026-09-14/gpu_smoke.py",
+    "docs/plans/artifacts/hmc-whole-procedure-repair-2026-09-14/gpu-r2"
+  ],
+  "git_commit": "9329cadf3296211ccfa9e2539235225e041ad36a"
+}

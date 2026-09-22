@@ -10,7 +10,6 @@ from typing import Any
 
 import tensorflow as tf
 
-
 _DEFAULT_PIVOT_TOLERANCE = 1.0e-12
 _DEFAULT_CHART_TOLERANCE = 1.0e-10
 _LOG_TWO_PI = tf.math.log(tf.constant(2.0 * 3.141592653589793, tf.float64))
@@ -48,34 +47,20 @@ def _batched_qr_with_derivative(
     derivative = _finite(derivative, "qr_derivative")
     if derivative.shape.rank != 4 or derivative.shape[0] != b or derivative.shape[2:] != (n, r):
         raise ValueError("qr_derivative must have shape [B,P,N,R]")
-    p = derivative.shape[1]
-    d_q_rows = []
-    d_r_rows = []
-    for parameter_index in range(int(p)):
-        d_matrix = derivative[:, parameter_index]
-        projected = tf.einsum("bni,bnj->bij", q, d_matrix)
-        scaled = tf.linalg.triangular_solve(
-            tf.linalg.matrix_transpose(upper),
-            tf.linalg.matrix_transpose(projected),
-            lower=True,
-        )
-        scaled = tf.linalg.matrix_transpose(scaled)
-        lower = tf.linalg.band_part(scaled, -1, 0) - tf.linalg.diag(
-            tf.linalg.diag_part(scaled)
-        )
-        omega = lower - tf.linalg.matrix_transpose(lower)
-        d_upper = tf.einsum("bij,bjk->bik", scaled - omega, upper)
-        normal = d_matrix - tf.einsum("bni,bij->bnj", q, projected)
-        d_q = tf.linalg.matrix_transpose(
-            tf.linalg.triangular_solve(
-                tf.linalg.matrix_transpose(upper),
-                tf.linalg.matrix_transpose(normal),
-                lower=True,
-            )
-        ) + tf.einsum("bni,bij->bnj", q, omega)
-        d_q_rows.append(d_q)
-        d_r_rows.append(d_upper)
-    return q, upper, tf.stack(d_q_rows, axis=1), tf.stack(d_r_rows, axis=1)
+    projected = tf.einsum("bni,bpnj->bpij", q, derivative)
+    scaled = tf.linalg.matrix_transpose(tf.linalg.triangular_solve(
+        tf.linalg.matrix_transpose(upper)[:, None, :, :],
+        tf.linalg.matrix_transpose(projected), lower=True,
+    ))
+    lower = tf.linalg.band_part(scaled, -1, 0) - tf.linalg.diag(tf.linalg.diag_part(scaled))
+    omega = lower - tf.linalg.matrix_transpose(lower)
+    d_upper = tf.einsum("bpij,bjk->bpik", scaled - omega, upper)
+    normal = derivative - tf.einsum("bni,bpij->bpnj", q, projected)
+    d_q = tf.linalg.matrix_transpose(tf.linalg.triangular_solve(
+        tf.linalg.matrix_transpose(upper)[:, None, :, :],
+        tf.linalg.matrix_transpose(normal), lower=True,
+    )) + tf.einsum("bni,bpij->bpnj", q, omega)
+    return q, upper, d_q, d_upper
 
 
 def _fixed_chart_decomposition(

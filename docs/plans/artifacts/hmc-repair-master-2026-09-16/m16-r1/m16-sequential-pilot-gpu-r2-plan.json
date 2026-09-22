@@ -1,0 +1,141 @@
+{
+  "aggregate_groups": [],
+  "budget_by_device": {
+    "cpu_reference": 0,
+    "gpu": 200
+  },
+  "jobs": [
+    {
+      "availability": "ready",
+      "coverage": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "power",
+        "family": "quadratic",
+        "phase": "development",
+        "route": "frozen",
+        "start": "dispersed",
+        "target": "gaussian",
+        "transport": "none"
+      },
+      "design": {
+        "accuracy_tolerance": 0.25,
+        "alpha": 0.05,
+        "budget_seconds": 200,
+        "design_id": "m16-sequential-pilot-gpu",
+        "device": "gpu",
+        "draws": 128,
+        "engine": "power",
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "leapfrog_steps": 5,
+        "mcse_tolerance": 0.1,
+        "measurement_draws": 128,
+        "member_l": 3,
+        "multiplicity": 1,
+        "null_draws": 1999,
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m16-design-2026-09-21.md",
+        "options": {
+          "calibration_design": {
+            "accuracy_tolerance": 0.25,
+            "alpha": 0.05,
+            "budget_seconds": 200,
+            "design_id": "m16-sequential-pilot-gpu-kernel",
+            "device": "gpu",
+            "draws": 128,
+            "engine": "invariance",
+            "l_grid": [
+              3,
+              5,
+              9,
+              13,
+              18,
+              25
+            ],
+            "leapfrog_steps": 5,
+            "mcse_tolerance": 0.1,
+            "measurement_draws": 128,
+            "member_l": 3,
+            "multiplicity": 1,
+            "null_draws": 1999,
+            "numerical_provenance": "docs/plans/bayesfilter-hmc-repair-m16-design-2026-09-21.md",
+            "options": {
+              "gaussian_energy_test": true,
+              "invariance_quantities": [
+                "bounded_radius"
+              ],
+              "kernel_power": 32,
+              "plan_file": "docs/plans/bayesfilter-hmc-repair-m16-design-2026-09-21.md",
+              "sequential": {
+                "max_looks": 3,
+                "sample_multiplier": 2
+              }
+            },
+            "phase": "development",
+            "posterior_cap": 1024,
+            "purpose": "M16 bounded operating characteristics; all failures and uncertainty retained",
+            "rank_draws": 7,
+            "replications": 16384,
+            "scenario": {
+              "control": "baseline",
+              "parameters": {},
+              "route": "frozen",
+              "start": "dispersed",
+              "target": "gaussian"
+            },
+            "seed": 788601227,
+            "step_size": 0.3
+          },
+          "plan_file": "docs/plans/bayesfilter-hmc-repair-m16-design-2026-09-21.md",
+          "power_controls": [
+            "baseline",
+            "noop",
+            "wrong_energy"
+          ]
+        },
+        "phase": "development",
+        "posterior_cap": 1024,
+        "purpose": "M16 bounded operating characteristics; all failures and uncertainty retained",
+        "rank_draws": 7,
+        "replications": 2,
+        "scenario": {
+          "control": "baseline",
+          "parameters": {},
+          "route": "frozen",
+          "start": "dispersed",
+          "target": "gaussian"
+        },
+        "seed": 300545116,
+        "step_size": 0.4
+      },
+      "identity": "ed634f016f7381b50b9e580b6b0d0180e6e702bf5c0c2fb98d5bc433951c52c3",
+      "reason": null
+    }
+  ],
+  "maximum_worker_seconds": 200,
+  "no_numerical_execution": true,
+  "profile": "master",
+  "required_coverage": [
+    {
+      "control": "baseline",
+      "design_id": "m16-sequential-pilot-gpu",
+      "device": "gpu",
+      "engine": "power",
+      "family": "quadratic",
+      "phase": "development",
+      "route": "frozen",
+      "start": "dispersed",
+      "target": "gaussian",
+      "transport": "none"
+    }
+  ],
+  "schema": "bayesfilter.inference_validation_plan.v1",
+  "suite_id": "m16-sequential-pilot-gpu-r2",
+  "suite_identity": "f671a9a157154487c425e02895a013543d06e0229919ffe93fd0d3adbae6f93b"
+}

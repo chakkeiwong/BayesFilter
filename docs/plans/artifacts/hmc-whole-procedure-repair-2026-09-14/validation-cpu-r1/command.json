@@ -1,0 +1,24 @@
+{
+  "argv": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_hmc_whole_procedure_repair.py",
+    "tests/test_hmc_candidate_set_tuning.py",
+    "tests/test_hmc_candidate_set_artifacts.py",
+    "tests/test_hmc_candidate_set_adapters.py",
+    "tests/test_hmc_candidate_set_execution.py",
+    "tests/test_hmc_tuning_dispatch.py",
+    "tests/test_hmc_tuning_documentation_contract.py",
+    "tests/test_neutra_all_models_end_to_end_contract.py",
+    "--junitxml=docs/plans/artifacts/hmc-whole-procedure-repair-2026-09-14/validation-cpu-r1/pytest.xml",
+    "--tb=short"
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu"
+  },
+  "role": "CPU mechanics/reference exception; GPU intentionally hidden"
+}

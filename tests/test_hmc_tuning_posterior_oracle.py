@@ -1,10 +1,11 @@
-"""Independent analytic posterior oracles for the two active HMC tuners.
+"""Analytic public candidate-set oracles and explicit historical regressions.
 
 The Gaussian specification below is the reference.  Tuning draws are used
 only for calibration; every posterior claim in this module is made on a fresh
 holdout chain with independent seeds.  The checks are engineering adequacy
 gates, not evidence of universal convergence, superiority, or production
-readiness.
+readiness. The historical efficiency tests exercise the retired single-winner
+scheduler only; they do not define public tuning or selection behavior.
 """
 
 from __future__ import annotations
@@ -22,6 +23,9 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter.inference import (
+    HMCAcceptancePolicy,
+    HMCCandidateExecutionConfig,
+    HMCControllerConfig,
     FixedTransportHMCKernelTuningConfig,
     FixedTransportReusableRunnerPool,
     FullChainHMCConfig,
@@ -30,6 +34,8 @@ from bayesfilter.inference import (
     RankNormalizedHMCThresholds,
     ValueScoreCapability,
     build_fixed_mass_hmc_adapter,
+    build_retained_bound_hmc_archive_runner_from_candidate_set_result,
+    load_hmc_candidate_retained_runner,
     build_verified_fixed_transport_hmc_handoff_from_tuning_result,
     rank_normalized_hmc_diagnostics,
     run_full_chain_tfp_hmc,
@@ -38,6 +44,9 @@ from bayesfilter.inference import (
 )
 from bayesfilter.inference.batched_value_score import FixedTransportValueScoreAdapter
 from bayesfilter.inference.hmc_tuning import HMCTuningPolicy
+from bayesfilter.inference.fixed_transport_hmc_tuning_tf import (
+    _run_historical_fixed_transport_hmc_tuning,
+)
 
 MU = tf.constant([0.65, -0.85], dtype=tf.float64)
 SIGMA = tf.constant([[1.40, 0.55], [0.55, 0.90]], dtype=tf.float64)
@@ -404,7 +413,48 @@ def test_affine_transport_value_score_and_jacobian_composition() -> None:
     )
 
 
-def test_ordinary_tuner_calibration_freezes_artifact_and_holdout_agrees() -> None:
+def _oracle_execution(seed):
+    # Broad, declared mechanics fixture; no acceptance-boundary calibration.
+    return HMCCandidateExecutionConfig(measurement_num_results=64,
+        verification_num_results=64, num_warmup_steps=8, seed=seed,
+        acceptance_policy=HMCAcceptancePolicy(practical_region=(.41, .99),
+                                             repair_region=(.405, .995)),
+        target_status_trace_policy="per_chain_step", use_xla=False,
+        non_xla_reason="explicit tiny CPU analytic reference")
+
+
+def _candidate_member_holdout(calibration, adapter, root):
+    import json
+    from bayesfilter.testing.inference_validation.engines.pipeline import check_inventory
+
+    result = calibration.result
+    assert result.verified_candidate_ids
+    assert not check_inventory(json.loads((root / "tuning/candidate_set_result.json").read_text()))["failures"]
+    membership = tuple(result.verified_candidate_ids)
+    candidate_id = sorted(membership)[0]  # Fixed before examining any holdout.
+    member = build_retained_bound_hmc_archive_runner_from_candidate_set_result(
+        candidate_set_result=result, candidate_id=candidate_id,
+        retained_binding=calibration.adapter._execution_binding)
+    member.export(root / "member.json")
+    loaded = load_hmc_candidate_retained_runner(root / "member.json", adapter=adapter)
+    assert loaded.member_hash == member.member_hash
+    loaded.run(num_results=64, seed=(20260818, 202), output_dir=root / "discarded")
+    holdout = loaded.run(num_results=512, seed=(20260818, 203),
+        previous_archive=root / "discarded/retained_archive.json", output_dir=root / "retained")
+    samples = holdout["position_samples"]
+    assert samples.shape == (512, 4, 2)
+    assert bool(tf.reduce_all(tf.math.is_finite(samples)))
+    flat = tf.reshape(samples, [-1, 2])
+    mean = tf.reduce_mean(flat, axis=0)
+    centered = flat - mean
+    covariance = tf.matmul(centered, centered, transpose_a=True) / tf.cast(tf.shape(flat)[0] - 1, tf.float64)
+    # Inherited absolute fixture tolerances; not an iid MCSE or interval claim.
+    np.testing.assert_allclose(mean, MU, atol=.30, rtol=0.)
+    np.testing.assert_allclose(covariance, SIGMA, atol=.45, rtol=0.)
+    assert tuple(result.verified_candidate_ids) == membership
+
+
+def test_ordinary_tuner_calibration_freezes_artifact_and_holdout_agrees(tmp_path) -> None:
     adapter = GaussianOracleAdapter()
     calibration = tune_hmc_kernel(
         adapter=adapter,
@@ -413,85 +463,41 @@ def test_ordinary_tuner_calibration_freezes_artifact_and_holdout_agrees() -> Non
             target_scope="gaussian_oracle",
             mass_policy="fixed_identity",
             use_xla=False,
-            max_attempts=3,
-            acceptance_band=(0.50, 0.90),
-            repair_band=(0.41, 0.99),
+            target_status_trace_policy="per_chain_step",
             seed=(20260818, 101),
         ),
+        execution_config=_oracle_execution((20260818, 101)),
+        output_dir=tmp_path / "tuning",
     )
-    assert calibration.passed is True
-    assert calibration.final_kernel_payload is not None
-    kernel = calibration.tune_verify_repair_loop.final_kernel_payload
-    assert kernel is not None
-    assert calibration.final_kernel_hash is not None
-    assert kernel["mass_policy"] == "fixed_identity"
-    holdout = _run_holdout(
-        adapter,
-        initial_state=tf.zeros((4, 2), tf.float64),
-        mean=MU,
-        covariance=SIGMA,
-        step_size=float(kernel["step_size"]),
-        leapfrog=int(kernel["num_leapfrog_steps"]),
-        seed=(20260818, 202),
-        scope="gaussian_oracle",
-    )
-    assert holdout["evidence_contract"]["calibration_disjoint"] is True
-    assert holdout["finite"] is True
+    _candidate_member_holdout(calibration, adapter, tmp_path)
 
 
-def test_fixed_transport_tuner_and_affine_holdout_agree() -> None:
+def test_fixed_transport_tuner_and_affine_holdout_agree(tmp_path) -> None:
+    from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact
+
     base = GaussianOracleAdapter(scope="gaussian_oracle")
+    payload = {"schema": "bayesfilter.neutra.frozen_affine_diag.v1",
+        "transport_id": "posterior-oracle-affine", "target_signature": base.adapter_signature(),
+        "dimension": 2, "shift": [.15, -.20], "raw_scale": [.1, -.1],
+        "log_jacobian_available": True}
+    transport = load_frozen_neutra_artifact(payload,
+        expected_target_signature=base.adapter_signature()).transport
     config = FixedTransportHMCKernelTuningConfig(
-        initial_step_size=0.25,
-        step_size_candidates=(0.20, 0.35),
-        leapfrog_grid=(5, 7),
-        chain_count=4,
-        budget_schedule=(64,),
-        tune_num_results=8,
-        screen_num_results=64,
-        screen_num_burnin_steps=16,
-        verification_num_results=64,
-        verification_num_burnin_steps=16,
-        acceptance_band=(0.50, 0.95),
-        repair_band=(0.41, 0.99),
-        fixed_grid_fallback_acceptance_max=0.95,
-        chain_execution_mode="eager",
-        use_xla=False,
-        target_scope="gaussian_oracle_fixed_transport",
-        tune_seed_base=(20260818, 301),
-        screen_seed_base=(20260818, 401),
-        verification_seed_base=(20260818, 501),
+        initial_step_size=.8, leapfrog_grid=(3, 5, 9), use_xla=False,
+        target_scope="gaussian_oracle", target_status_trace_policy="per_chain_step",
     )
     calibration = tune_fixed_transport_hmc_kernel(
         base_adapter=base,
-        fixed_transport=AffineGaussianTransport(),
-        initial_position=[0.0, 0.0],
+        fixed_transport=transport,
+        frozen_transport_payload=payload,
+        initial_position=[[-1., -.5], [-.3, .2], [.4, -.2], [1., .5]],
         config=config,
+        execution_config=_oracle_execution((20260818, 301)),
+        search_config=HMCControllerConfig(primary_l_grid=(3, 5, 9), initial_epsilon=.8,
+            pilot_enabled=True, refinement_rounds=0, total_budget_units=72, repair_reserve_units=12),
+        output_dir=tmp_path / "tuning",
     )
-    assert calibration.passed is True
-    selected = calibration.selected_candidate
-    assert selected is not None
-    transformed = FixedTransportValueScoreAdapter(
-        base_adapter=base,
-        transport=AffineGaussianTransport(),
-        target_scope="gaussian_oracle_fixed_transport",
-        xla_hmc_ready=False,
-        full_chain_xla_diagnostic_ready=False,
-    )
-    holdout = _run_holdout(
-        transformed,
-        initial_state=tf.zeros((4, 2), tf.float64),
-        mean=Z_MU,
-        covariance=Z_SIGMA,
-        step_size=float(selected.selected_step_size),
-        leapfrog=int(selected.num_leapfrog_steps),
-        seed=(20260818, 601),
-        scope="gaussian_oracle_fixed_transport",
-    )
-    theta_samples = transformed.latent_to_position(holdout["samples"])
-    theta_mean = tf.reduce_mean(tf.reshape(theta_samples, [-1, 2]), axis=0)
-    np.testing.assert_allclose(theta_mean, MU, atol=0.25, rtol=0.0)
-    assert calibration.fixed_transport_manifest_hash
+    _candidate_member_holdout(calibration, base, tmp_path)
 
 
 def _efficiency_oracle_config(
@@ -534,14 +540,14 @@ def _efficiency_oracle_config(
     )
 
 
-def test_fixed_transport_efficiency_oracle_runs_all_l_and_builds_one_handoff(
+def test_historical_fixed_transport_efficiency_oracle_runs_all_l_and_builds_one_handoff(
     tmp_path,
 ) -> None:
     base = GaussianOracleAdapter(scope="gaussian_oracle")
     transport = AffineGaussianTransport()
     config = _efficiency_oracle_config()
     runner_pool = FixedTransportReusableRunnerPool()
-    calibration = tune_fixed_transport_hmc_kernel(
+    calibration = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=base,
         fixed_transport=transport,
         initial_position=[0.0, 0.0],
@@ -599,7 +605,7 @@ def test_fixed_transport_efficiency_oracle_runs_all_l_and_builds_one_handoff(
         )
 
 
-def test_fixed_transport_efficiency_oracle_failed_heldout_emits_no_kernel(
+def test_historical_fixed_transport_efficiency_oracle_failed_heldout_emits_no_kernel(
     tmp_path,
 ) -> None:
     config = _efficiency_oracle_config(leapfrog_grid=(5, 7))
@@ -623,7 +629,7 @@ def test_fixed_transport_efficiency_oracle_failed_heldout_emits_no_kernel(
             return replace(result, trace=trace)
         return result
 
-    calibration = tune_fixed_transport_hmc_kernel(
+    calibration = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=GaussianOracleAdapter(scope="gaussian_oracle"),
         fixed_transport=AffineGaussianTransport(),
         initial_position=[0.0, 0.0],

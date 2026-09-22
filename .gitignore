@@ -39,6 +39,7 @@ build-tf221/
 # Generated JSON outputs. Only compact artifacts whose names identify a
 # promotion, claim, verification, or reproducibility role are re-included.
 *.json
+!scripts/kalman_ukf_runtime_loop_exceptions.json
 !docs/benchmarks/*.json
 !docs/benchmarks/configs/
 !docs/benchmarks/configs/**/*.json
@@ -46,6 +47,9 @@ build-tf221/
 !docs/benchmarks/artifacts/**/
 !docs/plans/artifacts/
 !docs/plans/artifacts/**/
+
+# Executable NeuTra posterior route policy, required by the discovery guard.
+!docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/c0/route_ledger.json
 
 # Claim-bearing and promotion-supporting experiment artifacts. Intermediate
 # preparations, traces, mutable progress, checkpoints, and private payloads

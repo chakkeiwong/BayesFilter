@@ -30,7 +30,6 @@ from bayesfilter.ssm import (
     stable_ssm_target_signature,
 )
 
-
 PP_DATASET_ID = "zhao_cui_predator_prey_T20"
 PP_DATASET_SEED = 81104
 PP_HORIZON = 20
@@ -419,6 +418,7 @@ def _principal_sqrt_value_factor(
     )
 
 
+@tf.function(jit_compile=True)
 def pp_ukf_likelihood_value_only_status(
     theta: Any, *, observations: tf.Tensor
 ) -> tuple[tf.Tensor, Mapping[str, tf.Tensor]]:
@@ -656,6 +656,7 @@ def _build_ukf_model_and_derivatives(
     return model, derivatives, initial_value
 
 
+@tf.function(jit_compile=True)
 def pp_ukf_likelihood_value_score_status(
     theta: Any,
     *,
