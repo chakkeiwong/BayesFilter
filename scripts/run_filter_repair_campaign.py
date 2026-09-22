@@ -116,6 +116,12 @@ SEQUENTIAL_PUBLIC_CONSUMERS = (
     ),
 )
 TEST_GROUPS = {
+    **{f"sequential_residency_{primed}_{dimension}_{device}": (
+        f"tests/test_filter_repair_sequential_residency.py::test_sequential_startup_and_reuse_residency[{primed}-{dimension}]",)
+        for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"sequential_residency_observer_{device}": (
+        "tests/test_filter_repair_sequential_residency.py::test_sequential_residency_observer_retention_control",)
+        for device in ("cpu", "gpu")},
     "sequential_public_cost_analysis": ("tests/test_filter_repair_sequential_cost_analysis.py",),
     **{f"sequential_public_cost_{arm}_{dimension}_{device}": (
         f"tests/test_filter_repair_sequential_public_memory.py::test_complete_public_sequential_costs[{arm}-{dimension}]",)
@@ -878,6 +884,12 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"sequential_residency_{primed}_{dimension}_{device}":
+        "Sequential-specific startup/reuse/release allocation attribution; mandatory original-record and cost gates remain unchanged."
+        for primed in (False, True) for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"sequential_residency_observer_{device}":
+        "Sequential retained mapping observer control without numerical calls; cannot waive cost or numerical gates."
+        for device in ("cpu", "gpu")},
     **{f"sequential_public_cost_{arm}_{dimension}_{device}":
         "Complete public sequential costs; repeated original-record/provenance comparisons and separate ledger disposition required."
         for arm in ("prior", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -1020,6 +1032,10 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"sequential_residency_{device}": (
+        *(f"sequential_residency_{primed}_{dimension}_{device}"
+          for primed in (False, True) for dimension in (3, 5)), f"sequential_residency_observer_{device}")
+        for device in ("cpu", "gpu")},
     **{f"sequential_public_cost_{device}": tuple(f"sequential_public_cost_{arm}_{dimension}_{device}"
         for dimension in (3, 5) for arm in ("prior", "graph", "xla")) for device in ("cpu", "gpu")},
     **{f"program_ownership_{device}": (
@@ -1269,6 +1285,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["sequential_residency_gpu"]},
+    **{f"geometry_full_memory_prior_{capacity}_gpu": "GPU" for capacity in (24, 120)},
     **{group: "GPU" for group in TEST_BATCHES["sequential_public_cost_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["program_ownership_gpu"]},
     "posterior_residency_observer_gpu": "GPU",
@@ -1702,6 +1720,14 @@ def measurement_device(name):
     return "CPU" if name in ("cpu_pool", *FORECAST_POOL_FIXTURES) else "GPU"
 
 
+def declared_test_device(group):
+    """Fail on omitted GPU metadata rather than silently launch a CPU reference."""
+    device = TEST_DEVICES.get(group, "CPU")
+    if group.endswith("_gpu") and device != "GPU":
+        raise ValueError(f"GPU-labeled test group lacks GPU registration: {group}")
+    return device
+
+
 def run_matrix(args):
     """Resume registered jobs sequentially; failures retain their original evidence."""
     from compare_filter_repair_campaign import (
@@ -1718,12 +1744,13 @@ def run_matrix(args):
         unknown = set(groups) - TEST_GROUPS.keys()
         if unknown:
             raise ValueError(f"Unknown test groups in batch {batch}: {sorted(unknown)}")
-        if any(TEST_DEVICES.get(group, "CPU") == "GPU" for group in groups):
+        devices = {group: declared_test_device(group) for group in groups}
+        if any(device == "GPU" for device in devices.values()):
             check_matrix_state(frozen)
             prepare_gpu(args, "test_gpu_index")
         for group in groups:
             check_matrix_state(frozen)
-            device = TEST_DEVICES.get(group, "CPU")
+            device = devices[group]
             if any(row["key"][:3] == ["test", group, "after"] and row["state"] == "passed"
                    and row["source_sha256"] == frozen and row["device"] == device
                    and (device != "GPU" or same_gpu(row, args))

@@ -1366,3 +1366,89 @@ comparison to MacroFinance. E5 must qualify the actual affected consumer or
 explicitly block its unsupported route, not repair retired control prose as if
 it were active. Existing fixed18-batch callbacks and independent-deadline gaps
 remain obligations where that public call chain is still reachable.
+
+Recovery review through02987: CPU sequential cost evidence is complete and
+preserved at pushedf12f70c57. The555--563MiB host-RSS trigger requires a sequential
+study; posterior allocation findings cannot answer it. GPU preflight attempts
+45414/68660 launched no worker because the clean-device criterion failed.
+Continue CPU work without waiting indefinitely or using the desktop outside
+the owner's fallback condition. A later GPU cost cohort must preserve its own
+source freeze and cannot be combined silently with this CPU cohort.
+
+The next E4/E6 diagnostic unit uses the exact sequential D3/D5 cost fixtures in
+four fresh CPU and four fresh GPU processes: unprimed and a minimal16-element
+XLA sine/add priming control. Record prepared, primed, built/traced, cold,
+changed-input, four300-call alternating reuse windows and Python-release stages.
+Keep full payload equality on every reused call and original3582b4ac records
+for both inputs, one trace, callback/graph weak references, RSS/PSS, memory-map
+categories/counts and GPU allocator current/peak. Reference evaluation and HLO
+inspection belong after the observed interval. Priming is an explanatory control,
+not a new production requirement. Add one observer-only control on each device
+with the same retained snapshots and zero intervening numerical calls, because
+the observer itself allocates memory. These10 probes plus policy renewal allow
+11 workers,300s each and2400 charged seconds total, within existing caps.
+Use registered sequential_residency_cpu/gpu matrices and policy through the
+stable runner. Stop on numerical/provenance failure; preserve incomplete stages.
+
+Skeptical review: build now includes tracing, so excluding it would understate
+cold cost. Tiny compiler priming does not identify every endpoint-specific
+allocation; mapping categories distinguish executable maps, anonymous memory,
+libraries and heap without claiming exact ownership. A flat1200-call interval
+cannot prove leak freedom, and Python collection cannot prove native eviction.
+No malloc/environment/package intervention or lowered numerical gate is needed.
+Hardware sharing is recorded for residency probes but cannot establish costs.
+Only those explanatory probes are classified explanatory; mandatory numerical
+groups remain mandatory. Runtime sources remain frozen during each matrix.
+
+E5 active-caller inspection now confirms initialize_dense_local in
+bayesfilter_estimation_initialization.py has explicit jit_compile=False, Python
+attempt/partition loops, NumPy stacks and host admission. Its SHA256
+7c4d5598959fcd9605bed01d16d416f2002fd442301e82264ff396b1aa050f75 matches the
+completed CDF preparation receipt; see dz5-active-caller-inspection-02987.json.
+This is an affected current preparation route, distinct from the separately
+qualified native fixed-target HMC. Keep this integration repair in E5 and preserve
+the live dirty MacroFinance worktree. No external edit or duplicate run occurred.
+
+Residency registration repair:02989--02993 complete the intended CPU unit. The
+GPU-labeled matrix02994--02998 accidentally lacked TEST_DEVICES entries and
+therefore also ran on CPU; its manifests/receipts explicitly record CPU and
+hidden GPUs. Preserve it as accidental duplicate reference evidence, not GPU
+qualification. It completed before the registration repair; every worker remains
+charged to CPU. Add explicit device entries and reject any GPU-labeled group missing
+GPU metadata before a worker can launch. A global registration check also found
+two older, unused geometry prior-cost labels missing metadata; correct those
+without rerunning or reinterpreting any historical cost result. Renew policy
+checks before the true GPU unit. The local ceiling becomes17 workers, including
+five accidental duplicates and policy renewal; the2400-second unit ceiling and
+cumulative32/52-hour caps remain unchanged. No numerical source changed.
+
+Ordered-block E3/E4 implementation review: the source still executes one ordered
+Gauss--Seidel transaction at a time. Each conditional locator must receive the
+newly committed complete center from the preceding block; caching an eager
+center or solving all blocks in parallel changes the method. Before constructing
+the outer recurrence, qualify ConditionalSequentialProgram with explicit dynamic
+full-center/scale operands, one complete SequentialController per static block
+configuration, and pure symbolic center capture through every nested function.
+CoupledD3 targets with block[1:3], scalar/batch evaluation and two different
+centers/scales must match full original3582b4ac payloads and exact evaluation
+counts with one trace, unchanged HLO and no Python numerical callback. Target
+execution during construction is forbidden. Scope the callback-dependent
+_block_target_program and _target_program factories; leave shape-only embedding
+caches unchanged. Test collection after releasing the final compiled handle and
+continued use of an explicitly retained handle; scope collection is not native
+executable eviction.
+
+This first block unit allows12 workers/3600 charged seconds,300s per worker:
+four dynamic-capture cases, two ownership cases, both43-case existing block
+consumer groups, policy renewal and at most three localized retries. It does
+not switch the public outer block controller. Review rejected sequential
+statuses explicitly: sequential_refinement_without_terminal_geometry and
+terminal_projection_exceeds_cap remain allowed candidate handoffs, while the
+full objective replay still decides commit/rollback. Exact budget accounting,
+nonfinite full-target rejection, heterogeneous configurations, partial partitions,
+reversal/cycle precedence and buffered event order remain required in the next
+outer-controller unit. Tensor summaries must replace the current numerical work
+in result reporting while preserving direct-constructor diagnostic behavior.
+Host mock fixtures must move to the actual native boundary without changing
+their outcomes. Component capture success alone cannot close the ordered-block
+endpoint or external-consumer gates.

@@ -1,7 +1,7 @@
 # Filter and gradient repair recovery
 
 The approved **E1--E6 enclosing-execution repair phase** is executing on
-`repair/filter-gradient-xla-validation-20260918`, after pushed **203600e74**.
+`repair/filter-gradient-xla-validation-20260918`, after pushed **f12f70c57**.
 The [reviewed master execution program](filter_gradient_enclosing_execution_phase_20260922.md)
 now includes the confirmed public-capacity, comparator-eigensystem and native
 compiler-memory findings. [Full geometry results](filter_gradient_full_geometry_result_20260922.md)
@@ -117,8 +117,8 @@ and integration/retesting remain open.
 Accepted-result tolerances and ill-conditioned rejection/no-use decisions are
 unchanged. Canonical LEDH rebuilding remains outside this campaign.
 
-Through02987, charges are**59323.39863076764 CPU /58769.39307047443 GPU seconds**,
-leaving15.52 CPU /35.68 GPU process-hours under unchanged32/52-hour caps.
+Through03004, charges are**59647.997930025376 CPU /59401.31348332534 GPU seconds**,
+leaving15.43 CPU /35.50 GPU process-hours under unchanged32/52-hour caps.
 The sequential public tranche completes60 workers/2400.59 seconds within64/7200.
 The reviewed E4 sequential dependency-scope unit passes all24 workers in697.07
 seconds:17 CPU checks,15 GPU checks and128 policy checks. All six lifetime
@@ -130,7 +130,12 @@ extra observed RSS555.38/562.70MiB triggers sequential-specific attribution.
 Two GPU preflight attempts declined before launching workers because eligible
 devices were shared; desktop fallback conditions were not met. See the
 [CPU cost checkpoint](filter_gradient_sequential_cost_result_20260922.md).
-Ordered-block execution and a bounded residency study follow. Native
+Sequential residency02989--02993 CPU/03000--03004 GPU passes9,600 alternating
+complete calls with one trace and Python owner collection. Executable maps and
+GPU allocator stay flat in reuse; observer-only controls add1.86/1.96MiB.
+Native residency remains. Five misregistered GPU-labeled jobs ran as CPU and
+are preserved as duplicate references;129 policy checks now prevent this silent
+CPU routing. Ordered-block dynamic-center qualification follows. Native
 XLA residency and other callback-owning consumers remain separate obligations.
 Later workers add charges; use runner status when idle. Remote main last inspected is
 **89065bc6354801cb368d5e163ba49fd9c4372d10**; six overlapping paths now

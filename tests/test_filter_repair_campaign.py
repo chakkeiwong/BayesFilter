@@ -337,6 +337,16 @@ def test_matrix_test_failure_stops_remaining_groups(tmp_path, monkeypatch):
     assert executed == ["first"]
 
 
+def test_gpu_labeled_groups_cannot_silently_default_to_cpu(monkeypatch):
+    driver = load("run_filter_repair_campaign")
+    for group in driver.TEST_GROUPS:
+        if group.endswith("_gpu"):
+            assert driver.declared_test_device(group) == "GPU"
+    monkeypatch.delitem(driver.TEST_DEVICES, "sequential_residency_False_3_gpu")
+    with pytest.raises(ValueError, match="lacks GPU registration"):
+        driver.declared_test_device("sequential_residency_False_3_gpu")
+
+
 def test_test_roles_exclude_only_reviewed_explanatory_jobs():
     driver = load("run_filter_repair_campaign")
     assert set(driver.EXPLANATORY_TEST_GROUPS) <= set(driver.TEST_GROUPS)

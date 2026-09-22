@@ -139,15 +139,15 @@
     "parse_errors": 1
   },
   "current_checkpoint": {
-    "through_run": 2987,
-    "committed_checkpoint": "203600e74",
+    "through_run": 3004,
+    "committed_checkpoint": "f12f70c57",
     "record": "filter_gradient_enclosing_execution_phase_20260922.md",
     "terminal_acceptance": false,
     "public_outer_wiring": "Geometry, posterior and sequential qualified; initializer/block pending",
     "guarded_sources": 224,
     "exact_exceptions": 1325,
     "guard_coverage": "partial; no new numerical-loop or NumPy exemption",
-    "status": "Sequential public ownership and CPU costs qualify numerically; host-RSS trigger open; GPU cost preflights declined during contention; memory attribution and ordered blocks next",
+    "status": "Sequential residency passes9600 CPU/GPU reuse calls and owner release; GPU routing fixed with129 policy checks; ordered-block capture next",
     "additional_phase_record": "additional_enclosing_phase",
     "active_job": null,
     "all_finding_dispositions_open": true,
@@ -157,8 +157,8 @@
       "GPU": 54224.80828809242
     },
     "charged_seconds": {
-      "CPU": 59323.39863076764,
-      "GPU": 58769.39307047443
+      "CPU": 59647.997930025376,
+      "GPU": 59401.31348332534
     },
     "remote_main": "89065bc6354801cb368d5e163ba49fd9c4372d10",
     "charged_seconds_through_02883": {
@@ -1781,9 +1781,9 @@
       "cpu_cost_analysis": "artifacts/filter-gradient-repair-20260917/geometry-active-costs-cpu-02672.json"
     },
     "checkpoint_charged_seconds": {
-      "CPU": 59323.39863076764,
-      "GPU": 58769.39307047443,
-      "through_run": 2987
+      "CPU": 59647.997930025376,
+      "GPU": 59401.31348332534,
+      "through_run": 3004
     },
     "first_tranche_used_workers": 37,
     "first_tranche_used_seconds": 1301.99503987086,
@@ -1983,6 +1983,35 @@
       "sha256": "7c4d5598959fcd9605bed01d16d416f2002fd442301e82264ff396b1aa050f75",
       "finding": "Current source matches completed CDF preparation receipt; explicit jit_compile=False, attempt/partition Python loops, NumPy stacks and host admission remain. This does not invalidate separately qualified native fixed-target HMC.",
       "execution": "Read-only inspection only; preserve live dirty worktree and avoid duplicate active jobs; isolated integration pending."
+    },
+    "e4_sequential_residency": {
+      "runs": {
+        "CPU": "02989--02993",
+        "GPU": "03000--03004"
+      },
+      "duplicate_CPU_references": "02994--02998, misregistered GPU labels; no GPU evidence",
+      "policy": "02999:129 checks",
+      "analysis": "artifacts/filter-gradient-repair-20260917/sequential-residency-analysis-03004.json",
+      "reuse_calls": 9600,
+      "python_owners": "All released; one trace; allocator and executable maps flat during reuse",
+      "observer_growth_mib": {
+        "CPU": 1.85546875,
+        "GPU": 1.95703125
+      },
+      "primed_endpoint_growth_mib": {
+        "CPU": [
+          713.7578125,
+          725.5625
+        ],
+        "GPU": [
+          630.73828125,
+          638.24609375
+        ]
+      },
+      "workers": 17,
+      "charged_seconds": 956.519811,
+      "native_eviction_claim": false,
+      "remaining": "Cold RSS/native residency and many-signature exhaustion; clean GPU cost cohort still pending"
     }
   },
   "diagnosis_checkpoint_02636": {
