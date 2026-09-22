@@ -1873,7 +1873,7 @@
     "authorized": "Owner requested refreshed, reviewed program and execution on2026-09-22",
     "steps": {
       "E1": "numerically_qualified; clean GPU cost comparison and public-capacity costs remain in E6",
-      "E2": "active: reviewed pilot implementation drafted; not yet installed",
+      "E2": "active: pilot installed;78 CPU and78 GPU checks pass; full geometry/public and iterative control still pending",
       "E3": "pending",
       "E4": "pending",
       "E5": "pending",
@@ -1892,10 +1892,24 @@
       "cpu_cost_analysis": "artifacts/filter-gradient-repair-20260917/geometry-active-costs-cpu-02672.json"
     },
     "checkpoint_charged_seconds": {
-      "CPU": 53099.95632481277,
-      "GPU": 50344.81445407226
+      "CPU": 53273.998414312766,
+      "GPU": 50544.1522498743
     },
     "first_tranche_used_workers": 37,
-    "first_tranche_used_seconds": 1301.99503987086
+    "first_tranche_used_seconds": 1301.99503987086,
+    "e2_pilot_qualification": {
+      "CPU": 78,
+      "GPU": 78,
+      "policy": 102,
+      "runs": "02676--02683,02685--02693",
+      "preserved_failures": [
+        "02674: ill-conditioned eigenbasis and synthetic HLO metadata",
+        "02684: fixture int32 resources on CPU"
+      ],
+      "guard": "pilot_eigenbasis_ill_conditioned; public wiring pending",
+      "tranche_used_workers": 20,
+      "next_integration_worker_cap": 30,
+      "next_integration_seconds_cap": 7200
+    }
   }
 }

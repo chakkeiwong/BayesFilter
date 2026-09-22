@@ -13,8 +13,22 @@ ill-conditioning rejection are implemented. [Results and cost review](filter_gra
 preserve the capacity24 cold-compile trigger and the unqualified GPU timings:
 four cost workers shared the selected device with another process. All12 cost
 workers pass numerical comparisons, but clean GPU comparisons remain required.
-E2 pilot/full-controller execution is next. Caps and main-merge gates are
-unchanged; all F01--F20 terminal dispositions remain open.
+E2 pilot qualification now passes **78 CPU and78 GPU checks** in02676--02683
+and02685--02692. The GPU test-counter placement failure02684 is repaired with
+int64 resources; no numerical implementation changed for that repair.
+**02693 passes102 policy checks**. The guard remains215 sources /1306 existing
+exceptions, with no new numerical-loop or NumPy exemption. Ruff/whitespace pass.
+The pilot explicitly rejects unresolved eigenbases; full-controller wiring must
+consume that status before design/fitting. Public geometry and iterative
+execution remain open. The reviewed next tranche encloses the full geometry
+program, preserves call/accounting semantics, and removes only unreachable fit
+branch shapes. See the phase plan for the30-worker /7200-second tranche.
+
+Charges through02693 are **53273.998414312766 CPU /50544.1522498743 GPU seconds**,
+leaving17.20 CPU /37.96 GPU hours inside the unchanged32/52-hour caps.
+The latest completed checkpoint has no active worker. E1 clean GPU costs, E2
+public integration, E3--E6 and every F01--F20 terminal disposition remain open;
+main stays unmerged. The known stale statements below are historical checkpoints.
 
 ## Diagnosis checkpoint
 

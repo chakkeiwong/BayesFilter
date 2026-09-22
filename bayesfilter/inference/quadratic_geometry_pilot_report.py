@@ -4,6 +4,8 @@ from bayesfilter.inference._exact_incumbent import candidates_from_rows
 
 
 def geometry_pilot_report(raw, *, rank, requested_direction_count, batched, start_index=1):
+    if "count_valid" in raw and not bool(raw["count_valid"]):
+        return None, {"status": "pilot_active_count_invalid"}, ()
     if not rank:
         return raw["q_basis"], {"positive_curvature_count": 0}, ()
     positive = int(raw["positive_count"])
@@ -19,4 +21,9 @@ def geometry_pilot_report(raw, *, rank, requested_direction_count, batched, star
         "evaluation_batch_size": raw["values"].shape[0] if batched else 1}
     candidates = candidates_from_rows(raw["positions"], raw["values"], raw["scores"],
         start_index=start_index, source_role="pilot", eligibility=None if batched else raw["valid"])
+    if not bool(raw["basis_resolved"]):
+        return None, {**diagnostics, 'status': 'pilot_eigenbasis_ill_conditioned',
+            'basis_roundoff_indicator': float(raw['basis_roundoff_indicator']),
+            'basis_roundoff_limit': float(raw['basis_roundoff_limit']),
+            'basis_minimum_eigen_gap': float(raw['basis_minimum_eigen_gap'])}, candidates
     return raw["q_basis"], diagnostics, candidates

@@ -168,3 +168,117 @@ feasibility at production sample/direction capacities; that remains an E2/E6
 requirement. Graph-reference and XLA arms retain their already-declared distinct
 SVD/eigensolver implementations and must not be described as identical-graph
 compiler ablations.
+
+E1 result: see [numerical qualification and cost review](filter_gradient_active_rows_result_20260922.md).
+The166 CPU/GPU checks establish the E1 dependency; shared-device timing leaves
+GPU costs open under E6. E2's first pilot tranche allows at most20 numerical
+workers (including at most three localized retries per fixture), 300 seconds
+each and6000 charged seconds total, inside the unchanged cumulative caps. Run
+`geometry_active_pilot_cpu`/`geometry_active_pilot_gpu` test matrices, stopping
+the affected matrix on the first failure. The new tests include coupled batch
+targets, so a silently padded callback cannot satisfy the comparison. This
+tranche qualifies pilot execution only; full geometry and iterative public
+controllers retain their independent E2 gates.
+
+E2 attribution02675 resolves02674's failures. At one retained direction, the
+original D3 sketch has eigenvalues about3.6323,4.8e-16,-4.8e-16. Its requested
+second basis vector lies in an unresolved null eigenspace. Active and pinned
+40f169fcc compact XLA bases are identical, and both differ from the original
+basis by0.3193. Counts0/4/9 agree at ordinary floating-point error. This is an
+inherited basis-identification failure, not padded callback evaluation.
+Following the owner's ill-conditioning instruction and the Class B rule, add a
+`pilot_eigenbasis_ill_conditioned` status before this basis can feed a fit.
+For a nonzero positive sketch, use the smallest adjacent eigenvalue gap needed
+to identify each retained eigenvector, including the retained/discarded boundary.
+The engineering indicator is `eps * max(active_direction_count, dimension) *
+max(abs(eigenvalues)) / minimum_required_gap`, limited by `sqrt(eps)`.
+In a2x2 symmetric perturbation, `tan(2*rotation)=2*off_diagonal_error/gap`;
+this motivates the relative gap check but does not certify an error bound.
+The original zero-positive-curvature identity fallback and rank-zero pilot are
+deterministic and retain their semantics. No eigenvalue, eigenvector or accepted
+fit is regularized or changed. Healthy original tests and1% guard-margin cases
+must pass; rejected pilots expose no usable basis in their report, and the full
+controller must reject before design/fitting. This exception changes only the
+unreliable-basis rejection criterion. Public wiring remains an E2 obligation.
+
+The HLO difference is solely Grappler's nested
+`StatefulPartitionedCall/zeros*/_N` dummy-source metadata suffix. Extend only
+that diagnostic normalization; all instructions, constants, operand identities,
+shapes and other metadata still require exact equality. Preserve the raw HLO
+exports and02674 failure. No executable-reuse or numerical tolerance is relaxed.
+
+E2 CPU qualification02676--02683 passes78 checks. GPU02684 stops at the first
+group because the test fixture uses int32 resources, which TensorFlow places on
+CPU even inside its GPU device scope. Use int64 recording counters, as existing
+GPU fixtures do; no runtime numerical change is required. Preserve the failed
+worker and rerun the affected GPU matrix under the same300-second deadlines.
+The original20-worker tranche covers this retry and policy checks; any additional
+full CPU renewal after the fixture-only correction belongs to the next bounded
+integration tranche, not an unrecorded expansion.
+
+E2 enclosing-controller review before implementation: compose the center target,
+direction preparation, active pilot, design evaluation, seeded partition, fit,
+incumbent selection and replay inside one stable-signature program. Pre-generate
+the versioned CPU/XLA raw directions and ball offsets and prepare the permutation
+seed in the original normal/ball/permutation stream order; these are runtime
+operands, not captured numerical constants. Permutation consumes the finite
+design count inside the enclosing program. Rank-zero preparation does not draw
+unused directions. Preserve the original center-failure public accounting of
+zero recorded evaluations (one attempted callback); record both counts explicitly
+in native results so this legacy reporting behavior cannot hide actual work.
+
+Preserve earliest strict-finite incumbent ties and logical indices: design
+indices start after twice the retained direction count, regardless of pilot
+storage capacity. Rejected pilots stop before any design, fit, refinement or
+replay. Completed host records may format statuses and arrays but cannot feed
+numerical decisions back to the program. Preserve legacy callback construction
+failures through the already-qualified adapter; unsupported runtime callbacks
+still fail closed without an eager retry.
+
+Bound the fit branch table using the existing required-finite rule. For finite
+count N, required count R and holdout fraction f, H(N)=min(floor(f*N),N-R).
+For R<=N<=S, H and N-H are nondecreasing, so training counts lie in
+[R,S-H(S)] and holdout counts in[0,H(S)]. This only removes unreachable branch
+shapes; use the same compact QR, projections, rank threshold and reductions.
+Keep general fitter defaults unchanged and reject invalid counts outside any
+declared restricted domain. If S<R, compile the original insufficient-samples
+exit without an unreachable fitter. Test all legal counts at small capacity
+and public/default capacities separately; small fixtures cannot close compile
+feasibility. Exact batch dispatch still scales with the pilot capacity and is
+an explicit compile-memory risk, not a justified assumption of low overhead.
+
+The next integration tranche allows30 workers,300-second focused jobs and at
+most900 seconds for a predeclared public-capacity or consumer job, with a shared
+7200 charged-second ceiling inside the cumulative caps. At most three localized
+retries per fixture. Use original3582b4ac complete payloads on identical frozen
+raw directions, clouds and permutation draws;40f169fcc is the current mechanism
+baseline. Include changed centers/scales/counts, scalar and coupled batch
+callbacks, center/pilot/design/fit failures, no-holdout and exact-tie cases,
+runtime-operand/HLO checks, actual call logs and public consumers. Renew CPU
+checks affected by the pilot fixture's counter-only change in this tranche.
+Record timing/memory descriptively here; E6 retains the fresh-process repeated
+cost gates. Integration is accepted only after these gates pass, not merely
+after creating an internal factory.
+
+Renewed skeptical review: the original source remains numerical authority,
+while current-checkpoint attribution cannot certify correctness. Versioned RNG
+changes are approved, but frozen-input comparisons remain mandatory. Pilot and
+fit rejection exceptions are limited to the documented ill-conditioning guards.
+No accepted tolerance, numerical regularizer or target changes. GPU correctness
+may run on a shared eligible device; GPU cost comparison may not. Public
+endpoint, native-memory ownership, external consumer and terminal gates remain
+open. The bounded next implementation answers the execution-boundary question;
+it cannot establish posterior validity, canonical LEDH status or merge readiness.
+
+E2 pilot result:02685--02692 pass78 GPU checks after the fixture repair;
+02693 passes102 policy checks. Together with02676--02683, the pilot has78
+CPU and78 GPU passes. Twenty workers used in the pilot tranche. Static guard
+215 sources /1306 existing exceptions; no numerical exemption added.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| Qualify the active pilot dependency | Complete original records, exact calls/extents and HLO checks pass CPU/GPU | Ill-conditioned bases reject; invalid counts do not call target | Full/public composition and large-capacity costs untested | Enclose geometry and qualify its actual outputs/calls | No whole-endpoint, performance, HMC or merge claim |
+
+Post-run review: component tests can pass while public code still uses the old
+controller. That is the weakest part of current execution evidence and remains
+an explicit E2 gate. Source guard counts also do not prove endpoint closure.

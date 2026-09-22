@@ -64,6 +64,14 @@ TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
 TEST_GROUPS = {
+    "geometry_active_pilot_attribution_cpu": (
+        "tests/test_filter_repair_geometry_active_pilot.py::test_active_pilot_degenerate_basis_and_hlo_attribution",),
+    **{f"geometry_active_pilot_{dimension}_{device}": (
+        "tests/test_filter_repair_geometry_active_pilot.py", "-k", f"complete_original and {dimension}")
+        for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"geometry_active_pilot_edges_{device}": (
+        "tests/test_filter_repair_geometry_active_pilot.py", "-k", "invalid_counts or guard_relative_margin")
+        for device in ("cpu", "gpu")},
     **{f"geometry_active_memory_{arm}_{capacity}_{device}": (
         f"tests/test_filter_repair_geometry_active_memory.py::test_active_fit_costs[{arm}-{capacity}]",)
         for arm in ("compact", "graph", "xla") for capacity in (16, 24) for device in ("cpu", "gpu")},
@@ -681,6 +689,8 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "geometry_active_pilot_attribution_cpu":
+        "Rank-deficient pilot and HLO attribution; does not replace mandatory complete pilot records.",
     **{f"geometry_active_memory_{arm}_{capacity}_{device}":
         "Single-process active-count fit costs; complete original-record qualification is mandatory separately, and terminal repeats remain required."
         for arm in ("compact", "graph", "xla") for capacity in (16, 24) for device in ("cpu", "gpu")},
@@ -804,6 +814,12 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"geometry_active_pilot_{device}": (
+        f"geometry_active_pilot_3_{device}", f"geometry_active_pilot_5_{device}",
+        f"geometry_active_pilot_edges_{device}",
+        *(f"geometry_pilot_{dimension}_{device}" for dimension in (1, 3, 5)),
+        f"geometry_pilot_operands_{device}", f"geometry_pilot_extras_{device}")
+        for device in ("cpu", "gpu")},
     **{f"geometry_active_qualification_{device}": (
         *(f"geometry_active_{dimension}_{device}" for dimension in (1, 3, 5)),
         f"geometry_active_edges_{device}",
@@ -1002,6 +1018,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{f"geometry_active_pilot_{dimension}_gpu": "GPU" for dimension in (3, 5)},
+    "geometry_active_pilot_edges_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["geometry_active_memory_gpu"]},
     "geometry_public_guard_gpu": "GPU",
     **{f"geometry_active_{dimension}_gpu": "GPU" for dimension in (1, 3, 5)},
