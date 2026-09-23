@@ -1,7 +1,6 @@
 """Complete process-supervised known-target execution, explicitly smoke only."""
 import json
 from pathlib import Path
-import pytest
 
 from tests.test_q20_master_integration import protocol
 from bayesfilter.inference.q20_master_program import execute_master
@@ -56,10 +55,6 @@ def test_real_pricing_worker_stops_early_and_resume_does_not_repeat(tmp_path):
     assert before["spent_seconds"] == after["spent_seconds"]
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "Existing posterior assessment applies continuous tail ESS to binary "
-    "positive_theta_2; its constant upper-tail indicator prevents admission. "
-    "Keep the success contract pending the separate diagnostic repair."))
 def test_master_stops_after_valid_plain_estimate_and_reuses_completed_stages(tmp_path):
     config=protocol()
     config["training"].update(betas=[0.,1.],pricing_batches=[8])

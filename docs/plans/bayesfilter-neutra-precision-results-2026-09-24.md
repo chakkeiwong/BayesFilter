@@ -42,15 +42,24 @@ are in the plan and engineering manifest.
 The q20 refresh controller's unlabeled training price and obsolete classical
 preparation requests were repaired. A migration fixture now expects the actual
 budget pause at its protected reserve. The intended Gaussian posterior success
-test remains a strict expected failure because continuous-tail ESS is applied
-to a binary sign indicator. That diagnostic issue must be repaired before a
-posterior promotion claim. It is not evidence against the learned map.
+test initially remained a strict expected failure because continuous-tail ESS
+was applied to a binary sign indicator. The subsequent repair explicitly types
+binary quantities, applies event-indicator ESS and rank split R-hat to them,
+and preserves raw undefined binary quantile/folded diagnostics. Physical
+coordinates keep their continuous rank/folded and tail checks; event MCSE and
+information floors are unchanged. An exact-half fixture exposed the folded
+binary degeneracy and is included in the regression tests. Constant events and
+stuck binary chains still fail. The final six focused checks, including the
+complete supervised Gaussian master success/resume test, pass. The existing
+posterior regression checks also passed. One intermediate supervisor test was
+invalidated by an edit during its source snapshot; it was rerun from a fresh
+directory after source stabilization. All attempts are charged.
 
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Unsupported conclusion |
 |---|---|---|---|---|---|
 | Admit explicit FP32/TF32 for q20 calibration | Precision equations, inverse and resume checks passed | No precision veto observed | Target-specific gradient noise and training stability | Price and calibrate the actual q20 target | Universal TF32 adequacy |
 | Continue training investigation | Mechanism implementation is testable | Training quality has not yet been evaluated | Capacity, optimization and nonlinear fit | Fund and execute replicated sustained training | Improved q20 learning |
-| Defer posterior promotion | Full posterior checks unavailable | Binary-tail information diagnostic defect | Correct discrete diagnostic semantics | Repair before downstream admission | Convergence or production readiness |
+| Defer q20 posterior promotion | Full q20 posterior checks unavailable | Binary diagnostic defect repaired; no q20 posterior has been run | Actual q20 mixing and coverage | Qualify the exact final map within budget | Convergence or production readiness |
 
 | Inference status | Evidence |
 |---|---|

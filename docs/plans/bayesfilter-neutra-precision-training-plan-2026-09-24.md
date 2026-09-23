@@ -292,3 +292,39 @@ which the downstream qualification must test; a training pass cannot establish
 it. The budget arithmetic fits only with measured update prices and at least
 two available GPUs before the deadline; defer a busy device and retain the
 wall-time veto. Audit passes for calibration and the stated conditional ladder.
+
+## Binary-event posterior diagnostic repair
+
+The narrow repair declares binary quantities explicitly in the common posterior
+policy. For an event indicator I, the estimand is E[I], so its information is
+the event-indicator ESS and MCSE. With both outcomes observed, pooled rank
+normalization maps the two values to a+bI with b>0; the common autocovariance/
+between-chain ESS ratios are invariant under this affine transformation.
+Therefore rank bulk ESS equals split-chain indicator ESS. Apply both declared
+information floors to that ESS for the named binary quantity, while retaining
+the existing continuous-tail ESS for each model coordinate. Preserve undefined
+binary quantile-tail ESS as undefined in the report. Do not claim to estimate
+a continuous binary quantile or remove event monitoring. Missing outcomes,
+non-0/1 values, failed R-hat or failed event MCSE still prevent admission.
+
+The first independent fixture also exposed the exact-half case: a binary sample
+with median 1/2 folds to a constant 1/2 despite varying events. A Bernoulli
+distribution has only its event-probability parameter, so explicitly typed
+events use rank-normalized split R-hat; continuous quantities retain the maximum
+rank/folded rule. The report has a new quantity-aware summary schema and retains
+the complete raw rank/folded diagnostic, including undefined folded entries.
+All-zero/all-one or separate stuck-zero/stuck-one chains still fail. This is a
+change of diagnostic appropriate to the declared estimand, not evidence from a
+relaxed threshold. Direct indicator-ESS equality and those counterexamples are
+tested, and the full known-target supervisor test passes after the repair.
+
+Engineering contract: compare the explicit event ESS against independently
+constructed raw-indicator split ESS; require the known Gaussian master success
+fixture to complete; ensure all-zero/all-one and falsely declared binary data
+cannot pass. Existing untyped quantity behavior and continuous-tail formulas
+remain intact. These CPU-hidden reference checks establish diagnostic wiring
+and its algebraic invariant, not q20 posterior accuracy. Skeptical audit finds
+no threshold relaxation: the same floors and event MCSE apply to the correct
+estimand, and exact policy identity records the change. No sampler, mass,
+target or training arithmetic changes. Tests and their wall time are preserved
+under the existing campaign engineering charge.

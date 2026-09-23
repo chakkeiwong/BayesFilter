@@ -35,6 +35,7 @@ def posterior_policy(config, *, parameter_names=PARAMETERS):
     targets.append(HMCPrecisionTarget("positive_theta_2", mcse_absolute_max=p["event_mcse"]))
     return HMCPosteriorAssessmentPolicy(retained_bulk_ess_min=p["bulk_ess"],
         retained_tail_ess_min=p["tail_ess"], quantities_id="q20_physical_coordinates_and_theta2_sign_v1",
+        binary_quantity_names=("positive_theta_2",),
         precision=HMCPrecisionPolicy(tuple(targets), method="autocorrelation", jit_compile=config["jit_compile"]))
 
 

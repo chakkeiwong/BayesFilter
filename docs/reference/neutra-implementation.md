@@ -220,3 +220,15 @@ behavior, optimizer continuation, invalid-input rejection, the actual HMC
 adapter path, weighted/tempered consumption and the 1,000-point procedure.
 This guard complements code review; renaming a new numerical fork cannot make
 it an authorized implementation.
+
+## q20 posterior event monitoring
+
+The q20 posterior policy declares `positive_theta_2` in
+`HMCPosteriorAssessmentPolicy.binary_quantity_names`. Event probability uses
+rank split R-hat, split indicator ESS, and event MCSE. Rank normalization is
+affine on a binary variable, so its bulk ESS is the same indicator ESS.
+Continuous parameter coordinates retain max(rank, folded rank) R-hat and
+continuous quantile-tail ESS. Binary quantile-tail ESS can be undefined, and
+folding an exactly balanced binary sample gives a constant; the raw diagnostics
+remain in the report rather than being relabeled as event information.
+Both outcomes must be observed, and nonbinary or stuck event data cannot pass.
