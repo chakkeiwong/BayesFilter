@@ -1,17 +1,19 @@
 # Complete filter and gradient execution repair
 
-2026-09-23 checkpoint through03123: the resolution guard passes17 CPU/17 GPU
-checks plus129 policy checks. Block capture/ownership now passes5 GPU checks and
-its dependency derivatives pass37. Complete ordered-block and affected consumer
-GPU renewal is next. See the
-[updated result](filter_gradient_objective_resolution_result_20260923.md), the
-[remaining-gap map](filter_gradient_repair_master_20260917.md#remaining-gap-repair-map-2026-09-23-continuation)
-and gpu-block-dependency-checkpoint-03123.json in the artifact root.
-The guard tranche closed at85 launches/2364.06 seconds below90/14,400; the next
-GPU renewal has used4/64 workers and152.23/14,400 seconds. Remaining
-cumulative budget is14.59 CPU/35.35 GPU hours. No worker is active at this
-checkpoint. Public ordered wiring and wider E2/E4/E5/E6 gates remain; main is
-unmerged. Older checkpoint text below is historical.
+2026-09-23 checkpoint through03177: GPU renewal is complete:5 block capture/
+ownership,37 dependency derivative,6 ordered-controller,1 outer-owner,23 public
+sequential,56 sequential-consumer and43 block-consumer checks pass;129 policy
+checks pass. All18 clean sequential GPU public cost workers also pass complete
+original/changed records on the same GPU2. XLA warm medians are23.73/100.18ms
+versus40.00/115.85ms atD3/D5. Host RSS adds476.75/482.22MiB; theD3 allocator
+peak rises from58,880 to132,608 bytes. Memory dispositions remain open. See the
+[updated cost result](filter_gradient_sequential_cost_result_20260922.md) and
+`gpu-renewal-cost-checkpoint-03177.json` in the artifact root.
+The renewal closed at58/64 workers and2144.744946/14,400 seconds. Cumulative
+charges are62,674.147180 CPU/61,936.569239 GPU seconds, leaving14.59/34.80 hours.
+No worker is active at this checkpoint. The reviewed E3 public ordered-block
+integration is next; E2 initializer/E4 native retention/E5 DZ5/E6 final audit and
+integration remain open. Main is unmerged. Earlier checkpoints are historical.
 
 ## Remaining-gap repair map (2026-09-23 continuation)
 

@@ -1,11 +1,55 @@
 # Additional repair phase: complete execution boundaries and ownership
 
+E3 public ordered-block continuation, reviewed 2026-09-23: after the frozen
+GPU renewal and sequential cost cohort, replace the public numerical sweep with
+the qualified `block_controller` and completed `block_result` formatter. Keep
+the signature, input/configuration validation and prospective row cap. Progress
+is observational and buffered until numerical completion; it cannot enforce a
+live deadline. E5's independent parent deadline remains required for DZ5.
+
+Review found seven consumer fixtures (eight calls) mocking the retired Python locator call.
+Move these injections to the compiled conditional dependency, preserving their
+rejection, rollback, row accounting and policy assertions. Retain independent
+original-source comparisons, and add actual public changed-input/owner reuse,
+target-order, HLO, validation-before-target, unsupported-callback and frozen
+derivative checks. Cover heterogeneous/partial partitions, both reversal
+policies, both no-worse policies, scalar/batched targets and the approved
+resolution error. Extend the source guard to the whole public module; only
+exact configuration/reporting exemptions are eligible, never a numerical loop.
+
+Reserve at most 64 registered workers and 14,400 charged seconds for this E3
+unit, within the unchanged cumulative caps, starting after the GPU cost cohort.
+Use bounded individual original cases and consumer groups if compilation map
+pressure makes a combined process unsuitable; do not drop assertions. Run CPU
+first, then GPU, with policy checks and at most three localized retries per
+unchanged fixture. Freeze runtime/scripts/tests during workers. Numerical,
+accounting, HLO, ownership or source-provenance failures stop the affected arm
+for diagnosis, not the entire repair direction. Public integration alone does
+not close its matched-cost, initializer, native-residency or DZ5 obligations.
+
+E2 follow-up during the frozen GPU renewal: exhaustive post-run inspection of
+the rejected02775 residual-correction candidate finds no additional hidden
+differences in its four D1/D3 scalar/batched records. D1 records/events/calls
+match; D3 differs only in five mu_clipped_count fields and their event copies.
+Target calls and all remaining fields satisfy the original unchanged comparison.
+The affected native raw_mu values are2.86e-17 to1.51e-16; the original values
+are-2.63e-16 to-3.50e-16. The count is0 versus1 at a zero clipping boundary.
+Receipt: initializer-residual-field-review-03130.json in the campaign root.
+This is post-run attribution, not installation or an equivalence waiver. The
+next E2 diagnostic should isolate this boundary on identical design/response
+arrays, compare the signed coefficients against an independent high-precision
+reference, and retain complete downstream records/calls. Do not reuse the
+discarded-posterior-precision exception or broaden the approved sequential guard
+to this healthy initializer. The strict count gate and public migration remain
+open until a repair satisfies the existing contract or a concrete revised
+criterion is separately agreed.
+
 Reviewed GPU continuation after03119: reserve at most64 registered workers and
 14,400 charged seconds within the unchanged32 CPU/52 GPU-hour campaign caps.
 The prior guard tranche is closed below its cap; this renewal does not increase
 cumulative compute. Run block_capture_gpu, block_dependency_derivatives_gpu,
 block_controller_gpu and block_outer_ownership_gpu, then affected
-sequential_public_gpu, sequential_public_consumers_gpu and block_center_gpu.
+sequential_public_gpu, sequential_public_consumers_gpu and block_center on GPU.
 The ten block boundary cases already pass on this frozen source in03110; repeat
 only if relevant source changes. Complete policy renewal and, if numerical
 qualification and clean-device provenance pass, the previously reviewed18
@@ -24,18 +68,20 @@ valid but cannot qualify clean cost comparisons. Public ordered wiring remains
 gated on these results, and E2 initializer/E4 native retention/E5 DZ5/E6 final
 audit and integration obligations are unchanged.
 
-2026-09-23 checkpoint through03123: the resolution guard passes17 CPU/17 GPU
-checks plus129 policy checks. Block capture/ownership now passes5 GPU checks and
-its dependency derivatives pass37. Complete ordered-block and affected consumer
-GPU renewal is next. See the
-[updated result](filter_gradient_objective_resolution_result_20260923.md), the
-[remaining-gap map](filter_gradient_repair_master_20260917.md#remaining-gap-repair-map-2026-09-23-continuation)
-and gpu-block-dependency-checkpoint-03123.json in the artifact root.
-The guard tranche closed at85 launches/2364.06 seconds below90/14,400; the next
-GPU renewal has used4/64 workers and152.23/14,400 seconds. Remaining
-cumulative budget is14.59 CPU/35.35 GPU hours. No worker is active at this
-checkpoint. Public ordered wiring and wider E2/E4/E5/E6 gates remain; main is
-unmerged. Older checkpoint text below is historical.
+2026-09-23 checkpoint through03177: GPU renewal is complete:5 block capture/
+ownership,37 dependency derivative,6 ordered-controller,1 outer-owner,23 public
+sequential,56 sequential-consumer and43 block-consumer checks pass;129 policy
+checks pass. All18 clean sequential GPU public cost workers also pass complete
+original/changed records on the same GPU2. XLA warm medians are23.73/100.18ms
+versus40.00/115.85ms atD3/D5. Host RSS adds476.75/482.22MiB; theD3 allocator
+peak rises from58,880 to132,608 bytes. Memory dispositions remain open. See the
+[updated cost result](filter_gradient_sequential_cost_result_20260922.md) and
+`gpu-renewal-cost-checkpoint-03177.json` in the artifact root.
+The renewal closed at58/64 workers and2144.744946/14,400 seconds. Cumulative
+charges are62,674.147180 CPU/61,936.569239 GPU seconds, leaving14.59/34.80 hours.
+No worker is active at this checkpoint. The reviewed E3 public ordered-block
+integration is next; E2 initializer/E4 native retention/E5 DZ5/E6 final audit and
+integration remain open. Main is unmerged. Earlier checkpoints are historical.
 
 2026-09-23 current checkpoint through 03098: the owner-approved
 `objective_resolution_limited` error is installed. All 273 final CPU checks pass:
