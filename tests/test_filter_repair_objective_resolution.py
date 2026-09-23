@@ -2,6 +2,7 @@
 
 import json
 import math
+from dataclasses import asdict
 from pathlib import Path
 
 import pytest
@@ -92,8 +93,22 @@ def _assert_no_geometry(result):
             assert before < after == math.nextafter(before, math.inf)
 
 
+def _independent_flags(raw):
+    history = _host(raw['lifecycle']['history'])
+    refine = history['refine']
+    return [event == 3 and action >= 2 and executed and promoted
+        and math.isfinite(before) and math.isfinite(after)
+        and before < after <= math.nextafter(before, math.inf)
+        for event, action, executed, promoted, before, after in zip(
+            history['event'], refine['action'], refine['attempts']['last_evaluated'],
+            refine['attempts']['promoted_without_acceptance'],
+            refine['selected_value'], refine['center_value'])]
+
+
 @pytest.mark.parametrize('batched', [False, True])
 def test_completed_error_preserves_lifecycle_and_skips_mass(batched, monkeypatch, request):
+    # The real CPU fixture fires the guard. GPU arithmetic can have no rejected
+    # promotion, in which case the complete original result remains mandatory.
     scalar, batch, calls, center, scale = _fixture()
     cfg = _sequential_config()
     block = BlockCoordinateCenterBlock('wide', 1, 3, cfg)
@@ -113,16 +128,23 @@ def test_completed_error_preserves_lifecycle_and_skips_mass(batched, monkeypatch
     owner = ConditionalSequentialProgram(scalar, batch if batched else None, 4, block)
     raw = owner.compiled(center, scale)
     current_calls = int(calls)
-    assert int(raw['status']) == native.OBJECTIVE_RESOLUTION_LIMITED
-    assert int(mass_calls) == 0
-    assert not bool(tf.reduce_any(raw['precision'] != 0.))
-    assert not bool(tf.reduce_any(raw['covariance'] != 0.))
-    assert not bool(tf.reduce_any(raw['mass_flags']))
+    flags = _independent_flags(raw)
+    flagged = any(flags)
+    assert _host(raw['objective_resolution']['attempt_flags']) == flags
+    assert int(raw['status']) == (native.OBJECTIVE_RESOLUTION_LIMITED if flagged else 0)
+    expected_mass_calls = int(not flagged and int(raw['lifecycle']['status']) == 0)
+    assert int(mass_calls) == expected_mass_calls
+    if flagged:
+        assert not bool(tf.reduce_any(raw['precision'] != 0.))
+        assert not bool(tf.reduce_any(raw['covariance'] != 0.))
+        assert not bool(tf.reduce_any(raw['mass_flags']))
     events = []
     result = sequential_result(raw, cfg, 1, 2, events.append)
-    _assert_no_geometry(result)
+    if flagged:
+        _assert_no_geometry(result)
     assert current_calls == result.diagnostics['exact_evaluations'] == int(raw['lifecycle']['evaluations'])
-    assert events[-1]['status'] == 'objective_resolution_limited' and not events[-1]['accepted']
+    if flagged:
+        assert events[-1]['status'] == 'objective_resolution_limited' and not events[-1]['accepted']
 
     checkpoint = FrozenCheckpoint('17b56ade2', f'resolution_lifecycle_{batched}')
     old_module = checkpoint.load('bayesfilter.inference.block_conditional_tf')
@@ -136,9 +158,13 @@ def test_completed_error_preserves_lifecycle_and_skips_mass(batched, monkeypatch
     old_result = old_report.sequential_result(old_raw, cfg, 1, 2, old_events.append)
     _assert_record(result.diagnostics['history'], old_result.diagnostics['history'])
     _assert_record(result.diagnostics['locator'], old_result.diagnostics['locator'])
-    for field in ('terminal_fit_attempts', 'terminal_max_abs_scaled_score', 'search_seed', 'terminal_seed', 'terminal_fit'):
-        _assert_record(result.diagnostics[field], old_result.diagnostics[field])
-    _assert_record(events[:-1], old_events[:-1] if old_events[-1]['stage'] == 'initializer_completed' else old_events)
+    if flagged:
+        for field in ('terminal_fit_attempts', 'terminal_max_abs_scaled_score', 'search_seed', 'terminal_seed', 'terminal_fit'):
+            _assert_record(result.diagnostics[field], old_result.diagnostics[field])
+        _assert_record(events[:-1], old_events[:-1] if old_events[-1]['stage'] == 'initializer_completed' else old_events)
+    else:
+        _assert_record(result.payload(), old_result.payload())
+        _assert_record(events, old_events)
 
     def conditional(point):
         value, score = scalar(tf.concat([center[:1], point, center[3:]], 0))
@@ -153,18 +179,31 @@ def test_completed_error_preserves_lifecycle_and_skips_mass(batched, monkeypatch
     calls.assign(0)
     public_result = public.estimate_sequential_map_covariance(conditional, center[None, 1:3],
         batched_value_and_score_fn=conditional_batch if batched else None, scale=scale[1:3], config=cfg)
-    _assert_no_geometry(public_result)
-    assert int(calls) == current_calls and int(mass_calls) == 0
+    if flagged:
+        _assert_no_geometry(public_result)
+    else:
+        original = FrozenCheckpoint('3582b4ac', f'resolution_unflagged_{batched}')
+        old_public = original.load('bayesfilter.inference.sequential_map_covariance')
+        public_calls = int(calls)
+        calls.assign(0)
+        reference = old_public.estimate_sequential_map_covariance(conditional, center[None, 1:3],
+            batched_value_and_score_fn=conditional_batch if batched else None, scale=scale[1:3],
+            config=old_public.SequentialMapCovarianceConfig(**asdict(cfg)))
+        _assert_record(result.payload(), reference.payload())
+        _assert_record(public_result.payload(), reference.payload())
+        assert int(calls) == public_calls == current_calls
+    assert int(calls) == current_calls and int(mass_calls) == 2 * expected_mass_calls
     _assert_record(public_result.diagnostics['history'], result.diagnostics['history'])
     # Positive control for the resource probe: a healthy execution really does
     # call the same mass preparation dependency, so zero above proves a skip.
     healthy = owner.compiled(tf.zeros([4], D), tf.ones([4], D))
     assert int(healthy['status']) == 0 and int(healthy['lifecycle']['status']) == 0
-    assert int(mass_calls) == 1
+    assert int(mass_calls) == 2 * expected_mass_calls + 1
     assert owner.compiled.get_concrete_function().function_def.attr['_XlaMustCompile'].b
     _write(request, f'objective-resolution-sequential-{batched}.json', {
         'public': public_result.payload(), 'conditional': result.payload(), 'previous': old_result.payload(),
-        'current_calls': current_calls, 'rejected_mass_calls': 0, 'healthy_mass_calls': int(mass_calls), 'events': events,
+        'current_calls': current_calls, 'flagged': flagged, 'independent_flags': flags,
+        'initial_mass_calls': expected_mass_calls, 'healthy_mass_calls': 1, 'events': events,
         'unchanged_lifecycle': True, 'previous_source_sha256': checkpoint.hashes()})
 
 
@@ -177,12 +216,111 @@ def test_public_block_error_prevents_replay_and_later_blocks(batched, request):
     result = locate_block_coordinate_center(scalar, center, blocks=blocks,
         batched_value_and_score_fn=batch if batched else None, scale=scale,
         config=BlockCoordinateCenterConfig(max_physical_target_rows=300), progress_callback=events.append)
-    assert result.status == 'invalid_sequential_handoff' and not result.completed
-    assert result.accepted_block_count == 0 and result.completed_block_count == 1
-    assert result.private_block_records[0]['handoff_status'] == 'objective_resolution_limited'
-    assert result.final_center.numpy().tolist() == center.numpy().tolist()
-    assert result.physical_target_rows == int(calls) == 1 + result.sequential_exact_evaluations
+    actual_calls = int(calls)
+    flagged = result.private_block_records[0]['handoff_status'] == 'objective_resolution_limited'
+    if flagged:
+        assert result.status == 'invalid_sequential_handoff' and not result.completed
+        assert result.accepted_block_count == 0 and result.completed_block_count == 1
+        assert result.final_center.numpy().tolist() == center.numpy().tolist()
+        assert result.physical_target_rows == actual_calls == 1 + result.sequential_exact_evaluations
+        assert [row['block_index'] for row in events if row['stage'] == 'block_started'] == [0]
+        assert not any(row['stage'] == 'block_completed' for row in events)
+    else:
+        original = FrozenCheckpoint('3582b4ac', f'resolution_public_block_{batched}')
+        old_block = original.load('bayesfilter.inference.block_coordinate_center')
+        old_seq = original.load('bayesfilter.inference.sequential_map_covariance')
+        old_blocks = tuple(old_block.BlockCoordinateCenterBlock(block.name, block.start, block.stop,
+            old_seq.SequentialMapCovarianceConfig(**asdict(cfg))) for block in blocks)
+        calls.assign(0)
+        expected_events = []
+        reference = old_block.locate_block_coordinate_center(scalar, center, blocks=old_blocks,
+            batched_value_and_score_fn=batch if batched else None, scale=scale,
+            config=old_block.BlockCoordinateCenterConfig(max_physical_target_rows=300),
+            progress_callback=expected_events.append)
+        _assert_record(result.private_payload(), reference.private_payload())
+        _assert_record(events, expected_events)
+        assert actual_calls == int(calls) == result.physical_target_rows
+    _write(request, f'objective-resolution-public-block-{batched}.json', {
+        'result': result.private_payload(), 'events': events, 'calls': actual_calls, 'flagged': flagged})
+
+
+@pytest.mark.parametrize('batched', [False, True])
+def test_controlled_completed_error_skips_mass_and_block_handoff(batched, monkeypatch, request):
+    """Require the real enclosing guard to fire on each backend via tensor inputs."""
+    scalar, batch, calls, center, scale = _fixture()
+    cfg = _sequential_config()
+    block = BlockCoordinateCenterBlock('wide', 1, 3, cfg)
+    blocks = (block, BlockCoordinateCenterBlock('later', 0, 1, cfg))
+    original_lifecycle, original_mass = native.lifecycle_program, native.precision_program
+    armed = tf.Variable(True)
+    mass_calls = tf.Variable(0, dtype=tf.int64)
+
+    def lifecycle_factory(*args, **kwargs):
+        lifecycle = original_lifecycle(*args, **kwargs)
+
+        def execute(*inputs):
+            real = lifecycle(*inputs)
+
+            def inject():
+                history = real['history']
+                refined = history['refine']
+
+                def replace_row(rows, value):
+                    return tf.tensor_scatter_nd_update(rows, [[1]], [tf.constant(value, rows.dtype)])
+
+                attempts = {**refined['attempts'],
+                    'promoted_without_acceptance': replace_row(refined['attempts']['promoted_without_acceptance'], True),
+                    'last_evaluated': replace_row(refined['attempts']['last_evaluated'], True)}
+                refined = {**refined, 'selected_value': replace_row(refined['selected_value'], -1.),
+                    'center_value': replace_row(refined['center_value'], math.nextafter(-1., math.inf)),
+                    'action': replace_row(refined['action'], 3), 'attempts': attempts}
+                return {**real, 'history': {**history,
+                    'event': replace_row(history['event'], 3), 'refine': refined}}
+
+            return tf.cond(armed, inject, lambda: real)
+
+        return tf.function(execute, input_signature=lifecycle.input_signature,
+            jit_compile=True, autograph=False)
+
+    def mass_factory(*args, **kwargs):
+        mass = original_mass(*args, **kwargs)
+
+        def counted(*inputs):
+            mass_calls.assign_add(1)
+            return mass(*inputs)
+
+        return counted
+
+    monkeypatch.setattr(native, 'lifecycle_program', lifecycle_factory)
+    monkeypatch.setattr(native, 'precision_program', mass_factory)
+    owner = ConditionalSequentialProgram(scalar, batch if batched else None, 4, block)
+    raw = owner.compiled(center, scale)
+    result = sequential_result(raw, cfg, 1, 2)
+    _assert_no_geometry(result)
+    assert _independent_flags(raw) == _host(raw['objective_resolution']['attempt_flags'])
+    assert int(calls) == result.diagnostics['exact_evaluations'] == int(raw['lifecycle']['evaluations'])
+    assert int(mass_calls) == 0
+    for field in ('precision', 'covariance', 'mass_flags'):
+        assert not bool(tf.reduce_any(tf.cast(raw[field], tf.bool)))
+
+    calls.assign(0)
+    events = []
+    sweep = locate_block_coordinate_center(scalar, center, blocks=blocks,
+        batched_value_and_score_fn=batch if batched else None, scale=scale,
+        config=BlockCoordinateCenterConfig(max_physical_target_rows=300), progress_callback=events.append)
+    assert sweep.status == 'invalid_sequential_handoff' and not sweep.completed
+    assert sweep.private_block_records[0]['handoff_status'] == 'objective_resolution_limited'
+    assert sweep.accepted_block_count == 0 and sweep.completed_block_count == 1
+    assert sweep.final_center.numpy().tolist() == center.numpy().tolist()
+    assert sweep.physical_target_rows == int(calls) == 1 + sweep.sequential_exact_evaluations
     assert [row['block_index'] for row in events if row['stage'] == 'block_started'] == [0]
     assert not any(row['stage'] == 'block_completed' for row in events)
-    _write(request, f'objective-resolution-public-block-{batched}.json', {
-        'result': result.private_payload(), 'events': events, 'calls': int(calls)})
+    assert int(mass_calls) == 0
+    armed.assign(False)
+    healthy = owner.compiled(tf.zeros([4], D), tf.ones([4], D))
+    assert int(healthy['status']) == 0 and int(healthy['lifecycle']['status']) == 0
+    assert int(mass_calls) == 1
+    _write(request, f'objective-resolution-controlled-{batched}.json', {
+        'role': 'Controlled lifecycle boundary injection; no numerical equivalence claim',
+        'rejected': result.payload(), 'block': sweep.private_payload(), 'events': events,
+        'healthy_mass_calls': int(mass_calls), 'unchanged_target_arithmetic': True})

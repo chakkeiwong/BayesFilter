@@ -1,5 +1,43 @@
 # Objective-resolution error qualification
 
+Renewal03103--03119 completes17 GPU,17 CPU and129 policy checks on one frozen
+source cohort. Both actual scalar/batched GPU public paths retain full original
+comparisons; controlled completed events prove guard firing, no mass and no
+public-block replay/later call on each device. CPU real cases retain the
+original rejection and completed lifecycle evidence. No runtime arithmetic,
+threshold, tolerance or allow-list exception changed. Receipt:
+`artifacts/filter-gradient-repair-20260917/objective-resolution-backend-checkpoint-03119.json`.
+The qualification tranche closes at85 launches (83 registered and2 excluded
+sandbox probes) and2364.063729 charged seconds, below90/14,400. GPU ordered-block
+and affected public/consumer renewal follows under the bounded continuation
+recorded in the E1--E6 program. Main remains unmerged.
+
+Continuation through03102: GPU03099 passes exact predicate boundaries.03100
+preserves the failed CPU-specific assumption that the real fixture must fire the
+guard on GPU. Same-device attribution03101/03102 proves that scalar and batched
+GPU executions have no rejected promotion: the last objectives tie exactly at
+-0.15071873949579834. Root status0/lifecycle status4 and all108 target calls match
+both preguard17b56ade2 and original3582b4ac complete public records. This is a
+harness expectation defect, not evidence to change the numerical guard.
+
+Reviewed harness repair: calculate the expected flag independently with host
+math.nextafter. Flagged real runs retain every rejection/no-use assertion and
+the full preguard lifecycle comparison; unflagged runs must compare complete
+original public payloads/events/counts. Add separate tensor lifecycle-boundary
+injections requiring the enclosing guard to fire on CPU/GPU, instrument actual
+mass use, and require public blocks to stop before replay/later calls. The
+injection is explicitly controlled evidence and cannot replace numerical
+equivalence. Its healthy control disarms the injected event and must execute
+mass preparation. Runtime arithmetic, thresholds and tolerances remain unchanged.
+
+The existing qualification tranche has used66/90 workers through03102. The two
+unregistered sandbox probes after03100 accidentally ran on CPU because CUDA was
+unavailable. They are excluded from qualification and conservatively charged60
+CPU seconds in supplemental-compute-0006; further probes use the registered
+runner with verified device provenance. Remaining qualification can renew its
+local allocation within the same cumulative caps; no increased compute budget
+or relaxed numerical gate is implied.
+
 Current final CPU checkpoint:273 checks pass on one frozen source cohort,
 03057--03098. GPU qualification is pending availability; main remains unmerged.
 Receipt: `artifacts/filter-gradient-repair-20260917/objective-resolution-checkpoint-03098.json`.

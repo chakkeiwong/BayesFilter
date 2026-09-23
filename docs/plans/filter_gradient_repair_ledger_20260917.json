@@ -139,15 +139,15 @@
     "parse_errors": 1
   },
   "current_checkpoint": {
-    "through_run": 3036,
-    "committed_checkpoint": "12fda788f",
-    "record": "filter_gradient_enclosing_execution_phase_20260922.md",
+    "through_run": 3123,
+    "committed_checkpoint": "cf586b06c",
+    "record": "filter_gradient_objective_resolution_result_20260923.md",
     "terminal_acceptance": false,
-    "public_outer_wiring": "Geometry/posterior/sequential installed; new sequential near-tie original parity gap; initializer/block public migration pending",
+    "public_outer_wiring": "Geometry/posterior/sequential installed; initializer and ordered-block public migration pending",
     "guarded_sources": 227,
     "exact_exceptions": 1332,
     "guard_coverage": "partial; no new numerical-loop or NumPy exemption",
-    "status": "Internal ordered blocks pass four coupled original cases, nine failure paths and ownership; partial-block strict incumbent mismatch isolated to target one-ULP arithmetic. Explicit-error proposal awaits owner decision; GPU qualification pending",
+    "status": "Guard17 CPU/17 GPU and129 policy checks pass. Block capture/ownership5 GPU and dependency derivatives37 GPU pass. Complete ordered-block GPU comparison is next; public outer migration remains gated.",
     "additional_phase_record": "additional_enclosing_phase",
     "active_job": null,
     "all_finding_dispositions_open": true,
@@ -157,14 +157,15 @@
       "GPU": 54224.80828809242
     },
     "charged_seconds": {
-      "CPU": 60700.59426078647,
-      "GPU": 59401.31348332534
+      "CPU": 62665.71341731369,
+      "GPU": 59952.49298794514
     },
-    "remote_main": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+    "remote_main": "0643b0adc",
     "charged_seconds_through_02883": {
       "CPU": 57782.92938268492,
       "GPU": 56970.689644316255
-    }
+    },
+    "remaining_gap_plan": "filter_gradient_repair_master_20260917.md#remaining-gap-repair-map-2026-09-23-continuation"
   },
   "historical_quadratic_batch_checkpoint": {
     "through_run": 1879,
@@ -1763,8 +1764,8 @@
     "steps": {
       "E1": "numerically_qualified; clean GPU cost comparison and public-capacity costs remain in E6",
       "E2": "active: public geometry qualifies CPU/GPU; native initializer implemented but original terminal-roundoff mismatch blocks public integration; GPU combined consumer timeout preserved",
-      "E3": "Owner-approved objective-resolution error installed; 273 final CPU guard/public/consumer/block/ownership/policy checks pass through03098. GPU renewal and public ordered-block migration remain gated.",
-      "E4": "Sequential ownership qualified; nested block registry retention repaired and CPU-qualified; GPU renewal and native signature churn remain",
+      "E3": "Guard renewal qualifies17 CPU/17 GPU checks plus129 policy checks through03119. Native ordered-block/dependency and affected public/consumer GPU renewal follows; public outer migration remains gated.",
+      "E4": "Sequential ownership qualified; nested block registry repair now passes5 GPU capture/ownership checks plus37 dependency derivative checks; outer ownership and native signature churn remain.",
       "E5": "pending",
       "E6": "pending"
     },
@@ -1781,9 +1782,9 @@
       "cpu_cost_analysis": "artifacts/filter-gradient-repair-20260917/geometry-active-costs-cpu-02672.json"
     },
     "checkpoint_charged_seconds": {
-      "CPU": 62400.59496179693,
-      "GPU": 59401.31348332534,
-      "through_run": 3098
+      "CPU": 62665.71341731369,
+      "GPU": 59952.49298794514,
+      "through_run": 3123
     },
     "first_tranche_used_workers": 37,
     "first_tranche_used_seconds": 1301.99503987086,
@@ -2389,10 +2390,10 @@
         48597
       ],
       "checkpoint_receipt": "artifacts/filter-gradient-repair-20260917/objective-resolution-checkpoint-03098.json",
-      "through_run": 3098,
+      "through_run": 3119,
       "tests_passed_final_cpu": 273,
-      "workers_used": 62,
-      "seconds_used": 1700.00070101046,
+      "workers_used": 85,
+      "seconds_used": 2364.0637287680293,
       "final_cpu_runs": {
         "first": 3057,
         "last": 3098
@@ -2400,11 +2401,34 @@
       "active_worker": null,
       "main_merged": false,
       "remaining_hours": {
-        "CPU": 14.666501399500852,
-        "GPU": 35.49963514352074
-      }
+        "CPU": 14.592857384079531,
+        "GPU": 35.38881720678718
+      },
+      "gpu_boundary_pass": 3099,
+      "gpu_preserved_failure": 3100,
+      "registered_workers_used": 83,
+      "unregistered_sandbox_probes": 2,
+      "backend_checkpoint_receipt": "artifacts/filter-gradient-repair-20260917/objective-resolution-backend-checkpoint-03119.json",
+      "gpu_guard_tests": 17,
+      "cpu_guard_renewal_tests": 17,
+      "policy_renewal": 3119,
+      "gpu_qualification": "Guard complete; ordered-block and affected public/consumer renewal pending",
+      "tranche_complete": true
     },
-    "remote_main_at_objective_resolution_checkpoint": "0643b0adc"
+    "remote_main_at_objective_resolution_checkpoint": "0643b0adc",
+    "gpu_renewal_unit_03119": {
+      "start_after_run": 3119,
+      "worker_cap": 64,
+      "seconds_cap": 14400,
+      "workers_used": 4,
+      "seconds_used": 152.2349323789822,
+      "status": "running between source-frozen matrices; no worker active at03123 checkpoint",
+      "groups": "block_capture_gpu; block_dependency_derivatives_gpu; block_controller_gpu; block_outer_ownership_gpu; sequential_public_gpu; sequential_public_consumers_gpu; block_center_gpu; policy; sequential_public_cost_gpu repeated3 if correctness and uncontended provenance pass",
+      "stop_conditions": "Unexpected numerical/accounting/HLO/ownership mismatch, unsupported callback, missing provenance, source mutation or exhausted local/cumulative budget. Preserve failure and diagnose before retry; at most3 localized retries per unchanged fixture.",
+      "capture_checks": 5,
+      "derivative_checks": 37,
+      "checkpoint_receipt": "artifacts/filter-gradient-repair-20260917/gpu-block-dependency-checkpoint-03123.json"
+    }
   },
   "diagnosis_checkpoint_02636": {
     "through_run": 2636,
@@ -2545,5 +2569,33 @@
       "posterior_rejected_precision": "2026-09-22: ill-conditioned rejected geometry must report the error and prevent use; equality of discarded precision is explanatory only. Scoped test comparator requires exact rejection/rank/stage and no usable geometry; every other field and accepted result retains its comparison. Uninstalled 1e-8 proposal and GPU high-precision reference requirement superseded."
     },
     "remaining_gap_diagnosis_report": "docs/plans/artifacts/filter-gradient-repair-20260917/remaining-gap-diagnosis-02636.json"
+  },
+  "historical_current_checkpoint_03036": {
+    "through_run": 3036,
+    "committed_checkpoint": "12fda788f",
+    "record": "filter_gradient_enclosing_execution_phase_20260922.md",
+    "terminal_acceptance": false,
+    "public_outer_wiring": "Geometry/posterior/sequential installed; new sequential near-tie original parity gap; initializer/block public migration pending",
+    "guarded_sources": 227,
+    "exact_exceptions": 1332,
+    "guard_coverage": "partial; no new numerical-loop or NumPy exemption",
+    "status": "Internal ordered blocks pass four coupled original cases, nine failure paths and ownership; partial-block strict incumbent mismatch isolated to target one-ULP arithmetic. Explicit-error proposal awaits owner decision; GPU qualification pending",
+    "additional_phase_record": "additional_enclosing_phase",
+    "active_job": null,
+    "all_finding_dispositions_open": true,
+    "costs": "See additional_enclosing_phase and full geometry result; CPU cold/RSS triggers, shared GPU costs and native signature-churn failure remain open.",
+    "charged_seconds_through_02774": {
+      "CPU": 56658.754748529915,
+      "GPU": 54224.80828809242
+    },
+    "charged_seconds": {
+      "CPU": 60700.59426078647,
+      "GPU": 59401.31348332534
+    },
+    "remote_main": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+    "charged_seconds_through_02883": {
+      "CPU": 57782.92938268492,
+      "GPU": 56970.689644316255
+    }
   }
 }

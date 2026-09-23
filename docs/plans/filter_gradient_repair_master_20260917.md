@@ -1,5 +1,46 @@
 # Complete filter and gradient execution repair
 
+2026-09-23 checkpoint through03123: the resolution guard passes17 CPU/17 GPU
+checks plus129 policy checks. Block capture/ownership now passes5 GPU checks and
+its dependency derivatives pass37. Complete ordered-block and affected consumer
+GPU renewal is next. See the
+[updated result](filter_gradient_objective_resolution_result_20260923.md), the
+[remaining-gap map](filter_gradient_repair_master_20260917.md#remaining-gap-repair-map-2026-09-23-continuation)
+and gpu-block-dependency-checkpoint-03123.json in the artifact root.
+The guard tranche closed at85 launches/2364.06 seconds below90/14,400; the next
+GPU renewal has used4/64 workers and152.23/14,400 seconds. Remaining
+cumulative budget is14.59 CPU/35.35 GPU hours. No worker is active at this
+checkpoint. Public ordered wiring and wider E2/E4/E5/E6 gates remain; main is
+unmerged. Older checkpoint text below is historical.
+
+## Remaining-gap repair map (2026-09-23 continuation)
+
+Every reported gap has an execution and acceptance path in the
+[E1--E6 program](filter_gradient_enclosing_execution_phase_20260922.md).
+The initializer rounding and native executable retention paths still require
+diagnosis to establish a successful repair; their inclusion is not a claim that
+a solution is already qualified.
+
+| Remaining gap | Planned repair and next evidence | Closure gate |
+| --- | --- | --- |
+| Public numerical control still in Python | E2/E3: qualify and install the internal iterative initializer and ordered-block controllers. Renew the approved resolution guard and block dependencies on GPU first. | Complete original public records, exact target order/counts, failure/no-use behavior, supported configurations and unchanged HLO on CPU/GPU. |
+| Healthy initializer QR/SVD rounding changes strict decisions | E2: use the preserved identical-input decomposition attribution to locate changed QR/SVD arithmetic; evaluate corrections against both D1 terminal selection and D3 clipping counts before public wiring. | Original healthy decisions and full records at unchanged tolerances on both devices; no blanket near-tie waiver or discarded-precision exemption. |
+| Actual DZ5 consumer uses non-JIT/Python/NumPy execution | E5: migrate the actual initialize_dense_local call chain in an isolated MacroFinance checkout, using tensor telemetry, compiled attempts/partitions, TF/standard-library assembly and independent parent deadlines. | Real target/transition wiring, fixed batch extent, invalid-row accounting, quiet/blocked worker cleanup and exact source/pin provenance; preserve the live dirty tree. |
+| GPU correctness and matched before/after costs | E6: complete registered GPU renewal, then original/graph/XLA public comparisons at two extents with three fresh processes per arm. | Verified memory growth and device identity; full-record comparisons; shared-device timing cannot close a clean cost gate. |
+| Native executable retention and cold/RSS overhead | E4/E6: separate owner/graph collection from executable residency; profile bounded signature churn and compilation by stage. Evaluate bounded signature reuse and process-lifetime containment if native eviction is unavailable. | Measured bounded resource use for the supported lifecycle, preserved arithmetic, and explicit dispositions for each cold/warm/host/device trigger; Python collection alone is insufficient. |
+| Incomplete final audit and integration | E6: finish endpoint-to-implementation inventory and F01--F20 evidence dispositions, reconcile current remote, run final frozen-source suites/cost checks and terminal review. | Every required gate passes before main merge; canonical LEDH rebuilding remains excluded. |
+
+Continuation review: source-frozen GPU run03099 passes the independent exact
+predicate boundaries;03100 fails because the scalar fixture returns root status0
+where the CPU-specific expectation required4. Preserve that failure. Before
+altering runtime or expectations, record every predicate input, compare with an
+independent host nextafter predicate, and compare full lifecycle records against
+preguard17b56ade2 on the same device. If no predicate is present, full original
+3582b4ac behavior remains required. A correct predicate test alone cannot close
+actual no-use qualification. Use at most three localized diagnostic/retry workers
+per unchanged fixture within the existing90-worker/14,400-second guard tranche
+and unchanged cumulative caps. No tolerance or algorithm change is authorized.
+
 2026-09-23 current checkpoint through 03098: the owner-approved
 `objective_resolution_limited` error is installed. All 273 final CPU checks pass:
 15 guard/no-use, 23 public, 56 sequential consumers, 6 ordered-controller,

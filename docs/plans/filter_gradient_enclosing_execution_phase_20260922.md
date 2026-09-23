@@ -1,5 +1,42 @@
 # Additional repair phase: complete execution boundaries and ownership
 
+Reviewed GPU continuation after03119: reserve at most64 registered workers and
+14,400 charged seconds within the unchanged32 CPU/52 GPU-hour campaign caps.
+The prior guard tranche is closed below its cap; this renewal does not increase
+cumulative compute. Run block_capture_gpu, block_dependency_derivatives_gpu,
+block_controller_gpu and block_outer_ownership_gpu, then affected
+sequential_public_gpu, sequential_public_consumers_gpu and block_center_gpu.
+The ten block boundary cases already pass on this frozen source in03110; repeat
+only if relevant source changes. Complete policy renewal and, if numerical
+qualification and clean-device provenance pass, the previously reviewed18
+sequential GPU public cost workers (three repeats of each arm/extent).
+
+Review: the real GPU resolution fixture has no promotion event, so its complete
+original result is the criterion; synthetic injections only prove guard/no-use
+wiring. Full outer original records, call order/counts, HLO stability and actual
+ownership remain independent requirements. Keep runtime/scripts/tests frozen
+during each matrix, one numerical worker, existing device selection/memory growth
+and all numerical tolerances. Stop the affected arm on numerical/accounting/HLO/
+ownership failures, missing provenance, source mutation or exhausted budget.
+At most three localized retries per unchanged fixture; do not convert a failed
+public comparison into a diagnostic waiver. Shared-device correctness may be
+valid but cannot qualify clean cost comparisons. Public ordered wiring remains
+gated on these results, and E2 initializer/E4 native retention/E5 DZ5/E6 final
+audit and integration obligations are unchanged.
+
+2026-09-23 checkpoint through03123: the resolution guard passes17 CPU/17 GPU
+checks plus129 policy checks. Block capture/ownership now passes5 GPU checks and
+its dependency derivatives pass37. Complete ordered-block and affected consumer
+GPU renewal is next. See the
+[updated result](filter_gradient_objective_resolution_result_20260923.md), the
+[remaining-gap map](filter_gradient_repair_master_20260917.md#remaining-gap-repair-map-2026-09-23-continuation)
+and gpu-block-dependency-checkpoint-03123.json in the artifact root.
+The guard tranche closed at85 launches/2364.06 seconds below90/14,400; the next
+GPU renewal has used4/64 workers and152.23/14,400 seconds. Remaining
+cumulative budget is14.59 CPU/35.35 GPU hours. No worker is active at this
+checkpoint. Public ordered wiring and wider E2/E4/E5/E6 gates remain; main is
+unmerged. Older checkpoint text below is historical.
+
 2026-09-23 current checkpoint through 03098: the owner-approved
 `objective_resolution_limited` error is installed. All 273 final CPU checks pass:
 15 guard/no-use, 23 public, 56 sequential consumers, 6 ordered-controller,

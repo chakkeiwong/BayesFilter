@@ -1,5 +1,18 @@
 # Filter and gradient repair recovery
 
+2026-09-23 checkpoint through03123: the resolution guard passes17 CPU/17 GPU
+checks plus129 policy checks. Block capture/ownership now passes5 GPU checks and
+its dependency derivatives pass37. Complete ordered-block and affected consumer
+GPU renewal is next. See the
+[updated result](filter_gradient_objective_resolution_result_20260923.md), the
+[remaining-gap map](filter_gradient_repair_master_20260917.md#remaining-gap-repair-map-2026-09-23-continuation)
+and gpu-block-dependency-checkpoint-03123.json in the artifact root.
+The guard tranche closed at85 launches/2364.06 seconds below90/14,400; the next
+GPU renewal has used4/64 workers and152.23/14,400 seconds. Remaining
+cumulative budget is14.59 CPU/35.35 GPU hours. No worker is active at this
+checkpoint. Public ordered wiring and wider E2/E4/E5/E6 gates remain; main is
+unmerged. Older checkpoint text below is historical.
+
 2026-09-23 current checkpoint through 03098: the owner-approved
 `objective_resolution_limited` error is installed. All 273 final CPU checks pass:
 15 guard/no-use, 23 public, 56 sequential consumers, 6 ordered-controller,

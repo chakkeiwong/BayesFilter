@@ -116,6 +116,12 @@ SEQUENTIAL_PUBLIC_CONSUMERS = (
     ),
 )
 TEST_GROUPS = {
+    **{f"objective_resolution_controlled_{batched}_{device}": (
+        f"tests/test_filter_repair_objective_resolution.py::test_controlled_completed_error_skips_mass_and_block_handoff[{batched}]",)
+        for batched in (False, True) for device in ("cpu", "gpu")},
+    **{f"resolution_backend_{batched}_{device}": (
+        f"tests/test_filter_repair_resolution_backend_diagnostic.py::test_backend_resolution_attribution[{batched}]",)
+        for batched in (False, True) for device in ("cpu", "gpu")},
     **{f"objective_resolution_boundaries_{device}": (
         "tests/test_filter_repair_objective_resolution.py::test_exact_resolution_boundaries",)
         for device in ("cpu", "gpu")},
@@ -924,6 +930,8 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"resolution_backend_{batched}_{device}": "Backend predicate and preguard lifecycle attribution; original public differences remain diagnostic and cannot waive qualification."
+        for batched in (False, True) for device in ("cpu", "gpu")},
     "objective_resolution_diagnostic_cpu": "Historical prototype representation-resolution diagnostic; actual error/no-use qualification requires the installed guard tests.",
     "block_target_arithmetic_cpu": "Identical predecessor/proposal target arithmetic and100-digit reference; no equivalence or predicate waiver.",
     "block_rounding_diagnostic_cpu": "Partial-block strict incumbent arithmetic attribution; original uninstrumented gate remains mandatory.",
@@ -1077,6 +1085,7 @@ EXPLANATORY_TEST_GROUPS = {
 }
 TEST_BATCHES = {
     **{f"objective_resolution_{device}": (f"objective_resolution_boundaries_{device}",
+        *(f"objective_resolution_controlled_{batched}_{device}" for batched in (False, True)),
         *(f"objective_resolution_sequential_{batched}_{device}" for batched in (False, True)),
         *(f"objective_resolution_block_{batched}_{device}" for batched in (False, True)),
         f"block_boundaries_{device}") for device in ("cpu", "gpu")},
@@ -1338,6 +1347,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{f"resolution_backend_{batched}_gpu": "GPU" for batched in (False, True)},
     **{group: "GPU" for group in TEST_BATCHES["objective_resolution_gpu"]},
     "block_boundaries_gpu": "GPU", "block_outer_ownership_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["block_controller_gpu"]},
