@@ -798,6 +798,15 @@ export/reload and posterior assessment. The profile includes failed attempts;
 a framework call may include both compilation and execution time. Such a pilot
 identifies costs to investigate before funding more replications. It does not
 establish statistical calibration or rank the viable kernels by efficiency.
+Use the validation CLI's \path{run} command with \path{--profile-execution} for paired
+comparisons: it preserves the numerical design and random streams. With
+isolated fits, the profiler runs in the numerical child after framework
+imports, with setup time recorded separately. It records Python call boundaries
+without native builtins tracing, avoiding an observed Python 3.13/TensorFlow
+interaction that loses outer calls. This is host cost attribution, not device
+kernel timing. The run index records profile availability. A completed fit is
+never repeated to replace a missing profile, and profiling failures do not
+replace numerical outcomes.
 
 Repeated validation fits can use a fresh process for each complete fit, with
 an explicit per-fit timeout inside the total experiment budget. This bounds

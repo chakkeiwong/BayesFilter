@@ -24,7 +24,6 @@ def isolated(design, **options):
     {"isolate_fits": True, "fit_process_timeout_seconds": float("nan")},
     {"isolate_fits": True, "fit_process_timeout_seconds": 121},
     {"fit_process_timeout_seconds": 2},
-    {"isolate_fits": True, "fit_process_timeout_seconds": 10, "profile_execution": True},
 ])
 def test_isolation_requires_supported_explicit_allocation(design, options):
     with pytest.raises(ValueError):

@@ -95,10 +95,11 @@ def configure_worker(design):
             "visible_devices":os.environ.get("CUDA_VISIBLE_DEVICES"), **placement}
 
 
-def worker(design_file,root,budget,attempt=1):
+def worker(design_file,root,budget,attempt=1,*,profile_execution=False):
     root=Path(root); design=ValidationDesign.from_payload(read_json(design_file))
     started=time.monotonic()
     profile = None
+    requested = profile_execution or design.options.get("profile_execution", False)
     try:
         isolated = design.options.get("isolate_fits", False)
         runtime = ({"device_scope": design.device,
@@ -109,16 +110,22 @@ def worker(design_file,root,budget,attempt=1):
             "source":source_state(),"command":sys.argv,"started_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
             "environment":sys.executable,"data_version":design.options.get("data_version", "declared synthetic law"),
             "plan_file":design.options.get("plan_file","docs/plans/bayesfilter-inference-validation-execution-2026-09-15.md"),
-            "result_file":str(root/f"attempt-{attempt:03d}-result.json")}
+            "result_file":str(root/f"attempt-{attempt:03d}-result.json"),
+            "profiling":{"requested":requested,
+                "scope":"isolated_numerical_children" if isolated else "numerical_worker",
+                "status_files":"replication-*/process-attempt-*-profile.json" if isolated
+                    else f"attempt-{attempt:03d}-profile.json"}}
         write_json(root/f"attempt-{attempt:03d}-manifest.json",manifest)
         deadline=started+budget
-        if design.options.get("profile_execution", False):
-            import cProfile
-            profile = cProfile.Profile()
-            profile.enable()
+        if requested and not isolated:
+            from .profiling import HostProfile
+            profile = HostProfile(root/f"attempt-{attempt:03d}", requested=True,
+                                  scope="numerical_worker")
+            profile.start()
         if isolated:
             from .fit_process import run_isolated_replications
-            assessment = run_isolated_replications(design, root, deadline=deadline)
+            assessment = run_isolated_replications(design, root, deadline=deadline,
+                                                   profile_execution=requested)
         elif design.scenario.route=="external":
             from .references.external import load_reference
             from .engines.statistics import accuracy_assessment
@@ -165,17 +172,10 @@ def worker(design_file,root,budget,attempt=1):
         return 1
     finally:
         if profile is not None:
-            profile.disable()
-            try:
-                profile.dump_stats(str(root/f"attempt-{attempt:03d}-host.prof"))
-            except OSError as exc:
-                # Profiling is explanatory. Preserve the engine outcome and its
-                # failure record when a profile cannot be written.
-                import warnings
-                warnings.warn(f"host profile unavailable: {exc}", RuntimeWarning)
+            profile.finish()
 
 
-def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
+def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_execution=False):
     """One ordinary advisory lock prevents accidental concurrent budget writers."""
     import fcntl
     root=Path(root).resolve()
@@ -187,13 +187,17 @@ def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
         raise ValueError("max_jobs must be positive")
     if type(max_workers) is not int or not 1 <= max_workers <= 32:
         raise ValueError("max_workers must be an integer in [1,32]")
+    if type(profile_execution) is not bool:
+        raise ValueError("profile_execution execution flag must be a boolean")
     root.mkdir(parents=True,exist_ok=True)
     with (root/".coordinator.lock").open("a+b") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return _run_suite(suite,root,resume=resume,max_jobs=max_jobs,max_workers=max_workers)
+        return _run_suite(suite,root,resume=resume,max_jobs=max_jobs,max_workers=max_workers,
+                          profile_execution=profile_execution)
 
 
-def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
+def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_execution=False):
+    from .profiling import profile_report
     root=Path(root).resolve(); plan=plan_suite(suite); sources=source_state()
     index_path=root/"run_index.json"
     if index_path.exists():
@@ -208,7 +212,11 @@ def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
     for job in plan["jobs"]:
         d=ValidationDesign.from_payload(job["design"]); key=d.design_id
         prior=index["jobs"].get(key,{"attempts":[]})
-        if prior.get("status")=="complete": continue
+        if prior.get("status")=="complete":
+            if profile_execution or d.options.get("profile_execution", False):
+                prior["profiling"] = profile_report(root/key,
+                    isolated=d.options.get("isolate_fits", False), requested=True)
+            continue
         if prior.get("status")=="running":
             # The previous coordinator died without recording worker exit. We
             # cannot assume unused time or safely launch a duplicate worker.
@@ -226,6 +234,8 @@ def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
         design_path=job_root/"design.json"; write_json(design_path,d.payload())
         attempt=len(prior["attempts"])+1; log=job_root/f"attempt-{attempt:03d}.log"
         command=[sys.executable,"-m","bayesfilter.testing.inference_validation","_worker",str(design_path),str(job_root),str(remaining),str(attempt)]
+        if profile_execution:
+            command.append("--profile-execution")
         pending.append((d,prior,remaining,attempt,log,command,job_root))
     index["max_workers"]=max_workers
     # Only this coordinator writes the index. Threads supervise independent
@@ -251,6 +261,9 @@ def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
                     "result":str(result_path) if record["exit_code"]==0 else None}
                 if record["exit_code"]==0:
                     index["jobs"][d.design_id]["result_sha256"]=file_hash(result_path)
+                if profile_execution or d.options.get("profile_execution", False):
+                    index["jobs"][d.design_id]["profiling"] = profile_report(job_root,
+                        isolated=d.options.get("isolate_fits", False), requested=True)
                 write_json(index_path,index)
                 print(f"{d.design_id}: {record['status']} ({record['elapsed_seconds']:.2f}s)",flush=True)
     write_json(index_path,index)

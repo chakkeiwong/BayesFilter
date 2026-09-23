@@ -52,9 +52,10 @@ def resource_snapshot():
     return result
 
 
-def fit_worker(design_file, root, replication, budget, attempt):
+def fit_worker(design_file, root, replication, budget, attempt, *, profile_execution=False):
     """CLI child; configure device before importing the numerical pipeline."""
     from .execution import configure_worker, source_state
+    from .profiling import HostProfile
 
     started = time.monotonic()
     root = Path(root)
@@ -62,17 +63,24 @@ def fit_worker(design_file, root, replication, budget, attempt):
     path.mkdir(parents=True, exist_ok=True)
     prefix = path / f"process-attempt-{attempt:03d}"
     design = ValidationDesign.from_payload(read_json(design_file))
+    requested = profile_execution or design.options.get("profile_execution", False)
+    profile = HostProfile(prefix, requested=requested, scope="isolated_numerical_child")
     manifest = {"command": [sys.executable, *sys.argv], "environment": sys.executable,
                 "design_identity": design.identity, "replication": replication,
                 "seed": design.seed, "data": design.options.get("data"),
                 "source": source_state(), "budget_seconds": budget,
                 "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "plan_file": design.options.get("plan_file", design.numerical_provenance),
-                "result_file": str(path / "independent_assessment.json")}
+                "result_file": str(path / "independent_assessment.json"),
+                "profiling": {"requested": requested, "scope": "isolated_numerical_child",
+                              "status_file": str(prefix) + "-profile.json",
+                              "start_boundary": "after_framework_and_pipeline_imports"}}
     try:
         manifest["runtime"] = configure_worker(design)
-        write_json(str(prefix) + "-manifest.json", manifest)
         from .engines.pipeline import run_replication
+        manifest["setup_seconds_before_profile"] = time.monotonic() - started
+        write_json(str(prefix) + "-manifest.json", manifest)
+        profile.start()
         before = resource_snapshot()
         run_replication(design, root, replication, started + budget)
         write_json(str(prefix) + "-resources.json", {
@@ -86,6 +94,8 @@ def fit_worker(design_file, root, replication, budget, attempt):
             "traceback": traceback.format_exc(), "elapsed_seconds": time.monotonic() - started})
         traceback.print_exc()
         return 1
+    finally:
+        profile.finish()
 
 
 def _supervise(command, log, seconds, device):
@@ -123,7 +133,7 @@ def _record(path, replication, receipt):
     return row
 
 
-def run_isolated_replications(design, root, *, deadline):
+def run_isolated_replications(design, root, *, deadline, profile_execution=False):
     """Sequential complete-fit children; native checkpoints support local retry.
 
     A failed process with a final assessment is preserved and never rerun.
@@ -133,9 +143,11 @@ def run_isolated_replications(design, root, *, deadline):
         raise RuntimeError("isolated-fit coordinator must not initialize TensorFlow")
     from .execution import source_state
     from .engines.pipeline import summarize_replications
+    from .profiling import profile_report
 
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
+    requested = profile_execution or design.options.get("profile_execution", False)
     identity = {"design_identity": design.identity, "source_identity": source_state()["identity"]}
     binding = root / "isolation_identity.json"
     if binding.exists() and read_json(binding) != identity:
@@ -176,6 +188,8 @@ def run_isolated_replications(design, root, *, deadline):
         command = [sys.executable, "-m", "bayesfilter.testing.inference_validation",
                    "_pipeline_fit", str(design_file.resolve()), str(root.resolve()),
                    str(replication), str(remaining), str(attempt)]
+        if requested:
+            command.append("--profile-execution")
         write_json(str(prefix) + "-launch.json", {"command": command, "budget_seconds": remaining})
         receipt = _supervise(command, str(prefix) + ".log", remaining, design.device)
         if assessment.exists():
@@ -190,5 +204,7 @@ def run_isolated_replications(design, root, *, deadline):
     result = summarize_replications(design, records)
     result["execution_mode"] = "one_process_per_complete_fit"
     result["framework_initialized_in_coordinator"] = "tensorflow" in sys.modules
+    if requested:
+        result["profiling"] = profile_report(root, isolated=True, requested=True)
     write_json(root / "assessment.json", result)
     return result

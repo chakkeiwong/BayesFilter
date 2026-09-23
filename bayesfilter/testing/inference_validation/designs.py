@@ -96,8 +96,6 @@ class ValidationDesign:
                          or not math.isfinite(fit_timeout) or not 0 < fit_timeout <= self.budget_seconds)
                 or not isolate and fit_timeout is not None):
             raise ValueError("isolated fits require an explicit timeout within the design budget")
-        if isolate and self.options.get("profile_execution", False):
-            raise ValueError("profile isolated numerical work in each child, not the coordinator")
         energy = self.options.get("gaussian_energy_test", False)
         if (type(energy) is not bool or (energy and
                 (self.engine != "invariance" or self.scenario.target != "gaussian"))):

@@ -789,10 +789,19 @@ The Gaussian mechanics experiment independently reconstructs the Metropolis
 log ratio from the analytic density and actual TFP endpoint momenta, and checks
 the selected state against the accepted mask. This directly tests the energy
 calculation, including the reversed-ratio defect. It does not measure the power
-of distributional tests. `options.profile_execution=true` saves an attempt's
-host profile, including engine failures. Profile time can include TensorFlow
-compilation and execution; it is not a separate GPU kernel timing. An unwritable
-profile is reported without hiding the numerical outcome.
+of distributional tests. The validation CLI's `run --profile-execution` saves
+an attempt's host profile, including numerical failures. This execution flag
+preserves the design identity and seeds for paired comparisons. With isolated
+fits, profiling runs inside each numerical child after framework imports;
+setup time is recorded separately. Python-frame profiling avoids an observed
+Python 3.13/TensorFlow interaction that loses outer calls with native builtins
+tracing enabled. Profile time includes compilation and execution at Python
+call boundaries; it is not GPU kernel timing. The run index reports child
+profile paths and availability. Resume reports missing historical profiles as
+unavailable without rerunning completed fits, and a profile failure preserves
+the numerical outcome. The legacy `options.profile_execution` setting remains
+supported, but changing that design option changes its identity; use the CLI
+flag for exact paired comparisons.
 
 Validation of native automatic initialization passes no supplied search
 configuration. A fixed epsilon declared before preparation is a different

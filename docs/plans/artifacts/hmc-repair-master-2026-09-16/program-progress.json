@@ -2,7 +2,7 @@
   "schema": "bayesfilter.hmc_repair_program_progress.v1",
   "plan_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
   "opening_ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r1/reconciliation-cpu-tranche.json",
-  "active_phase": null,
+  "active_phase": "M30",
   "phases": {
     "M25": {
       "status": "bounded_execution_complete_and_audited",
@@ -262,11 +262,42 @@
       "scientific_gaps_closed": false
     },
     "M29": {
-      "status": "planned",
+      "status": "bounded_execution_complete_and_audited",
       "plan": "docs/plans/bayesfilter-hmc-post-m28-next-phase-2026-09-23.md",
       "cpu_seconds_cap": 1800,
       "gpu_seconds_cap": 4800,
       "allocation_source": "remaining existing campaign budget; no launch reservation",
+      "completed_gpu_attempts": {
+        "gaussian_off_seconds": 617.9934403569205,
+        "gaussian_profiled_seconds": 625.2420615250012
+      },
+      "gaussian_pair_audit": {
+        "exact_parity": true,
+        "candidate_count": 92,
+        "verified_count": 22,
+        "receipts_and_observations": 155,
+        "tensor_count": 84,
+        "profile_contains_required_numerical_stages": true,
+        "descriptive_profile_overhead_seconds": 7.248621168080717
+      },
+      "scientific_gaps_closed": false,
+      "result": "docs/plans/bayesfilter-hmc-m29-profiling-result-2026-09-23.md",
+      "audit": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/terminal-audit-summary.json",
+      "ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/reconciliation-terminal.json",
+      "cpu_seconds_charged": 668.1526323368307,
+      "gpu_seconds_charged": 2525.601570591796,
+      "verified_candidates": 40,
+      "exact_numerical_pairs": 2,
+      "observations_and_evidence_compared": 326,
+      "tensor_records_compared": 178,
+      "focused_tests_passed": 43,
+      "documentation_tests_passed": 15
+    },
+    "M30": {
+      "status": "reviewed_not_launched",
+      "plan": "docs/plans/bayesfilter-hmc-post-m29-next-phase-2026-09-23.md",
+      "cpu_seconds_cap": 1800,
+      "gpu_seconds_cap": 4800,
       "scientific_gaps_closed": false
     }
   },
@@ -278,8 +309,8 @@
   ],
   "next_phase_policy": "reconcile -> classify -> repair and test -> result -> refreshed design -> skeptical audit -> execute",
   "scientific_gaps_closed": false,
-  "status": "bounded_phase_complete_next_phase_ready",
-  "remaining_gap_agenda": "docs/plans/bayesfilter-hmc-post-m28-next-phase-2026-09-23.md",
+  "status": "M29_complete_M30_reviewed_ready",
+  "remaining_gap_agenda": "docs/plans/bayesfilter-hmc-post-m29-next-phase-2026-09-23.md",
   "remaining_gaps": [
     "residual_geometry_search_and_posterior_usability_given_supplied_maps",
     "member_specific_posterior_precision_and_global_modes",
@@ -290,10 +321,10 @@
     "upstream_learned_map_quality_separate"
   ],
   "continuation_budget_interpretation": "replacement available allowance, not additive to prior unused balance",
-  "current_ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m28-r1/reconciliation-terminal.json",
-  "active_source_commit": "47ae8836c3859ce4e6ce0b980a684de12701112e",
+  "current_ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/reconciliation-terminal.json",
+  "active_source_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
   "active_service": null,
-  "next_action": "Execute reviewed M29 child-process profiling and cost attribution; keep global exploration, coverage/power and exact MacroFinance inputs open",
+  "next_action": "Execute M30 saved-chunk first-call/warmed replay; exact numerical equality precedes any scoped runner-reuse prototype.",
   "scope_correction": {
     "date": "2026-09-22",
     "owner_instruction": "Assume whitened or partially whitened map for positive funnel tests",
@@ -304,7 +335,7 @@
     "temporary_worker_exception_status": "ended_after_supplied_map_tranche",
     "supplied_map_result": "docs/plans/bayesfilter-hmc-supplied-whitening-result-2026-09-22.md"
   },
-  "active_source_scope": "M28 source-r1 committed base plus owned fixture/tests; unrelated edits excluded",
+  "active_source_scope": "M29 source-r3 committed base plus owned profiling changes; unrelated Q20/NeuTra excluded",
   "current_source_development_baseline": "8f992b205e9a4b8a861db4064cbcedb76af52f1f",
   "closed_cells": [
     "supplied_map_coordinate_algebra_public_pipeline_cpu_engineering",
@@ -317,13 +348,15 @@
     "bootstrap_probe_clock_independence_of_new_candidate_streams",
     "supplied residual-scale map algebra and bounded-curvature diagnostic",
     "four GPU supplied-map searches with complete candidate retention and model-coordinate posterior slots",
-    "M28 count-table freeze and latent-to-model archive reconstruction audit"
+    "M28 count-table freeze and latent-to-model archive reconstruction audit",
+    "isolated_child_host_profiles_with_exact_two_model_gpu_numerical_parity",
+    "optional_profiling_failure_and_completed_resume_isolation"
   ],
   "concurrent_phase": null,
-  "next_phase_design": "docs/plans/bayesfilter-hmc-post-m28-next-phase-2026-09-23.md",
-  "next_phase": "M29",
+  "next_phase_design": "docs/plans/bayesfilter-hmc-post-m29-next-phase-2026-09-23.md",
+  "next_phase": "M30",
   "remaining_budget_seconds": {
-    "cpu_reference": 75647.83128280654,
-    "gpu": 79820.0906220735
+    "cpu_reference": 74979.67865046971,
+    "gpu": 77294.48905148171
   }
 }

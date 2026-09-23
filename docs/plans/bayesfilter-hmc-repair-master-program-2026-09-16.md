@@ -1,5 +1,40 @@
 # HMC repair master program
 
+## September 23 M29 completion and measured M30 continuation
+
+The [M29 result](bayesfilter-hmc-m29-profiling-result-2026-09-23.md) closes
+isolated-child profiling. An execution-only CLI flag preserves design identity
+and seeds; profiles cover numerical children, report missing/corrupt evidence
+on resume, and cannot replace numerical outcomes. Both Gaussian and
+beta-binomial GPU/XLA pairs passed exact parity over all 326 numerical
+observations/evidence records and 178 tensors, with 40 distinct verified
+members retained. Both predeclared selected posteriors passed their checks;
+R-hat, ESS and MCSE remain posterior-only. The final regression suite passed
+43 tests and the documentation contract passed 15. The official book rebuilt
+with bibliography and rendered-page checks.
+
+First calls for a cached (L, count) consumed 313.707 of 354.947 Gaussian
+observation-chunk seconds and 369.978 of 399.670 beta-binomial seconds. These
+include construction, compilation and sampling. The existing runner already
+reuses epsilon changes; indiscriminate cache refactoring would miss the actual
+question. Checkpoint writing also costs about 62/73 profiled seconds, but even
+removing all of it cannot fund the unchanged confirmation inventory.
+
+M29 charged **668.153 CPU / 2525.602 GPU seconds** within its 1800/4800
+ceiling. The terminal ledger
+`artifacts/hmc-repair-master-2026-09-16/m29-r1/reconciliation-terminal.json`
+leaves **74979.679 CPU / 77294.489 GPU seconds**, with no pending workers.
+All failures and retries are included.
+
+The [reviewed M30 plan](bayesfilter-hmc-post-m29-next-phase-2026-09-23.md)
+is the next executable phase. It resolves saved first-call versus warmed-call
+cost at identical states and seeds before testing narrowly scoped graph reuse.
+Full numerical replay and resource/integration checks precede any optimized
+runtime admission or revised confirmation price. Adequate stopping/MCSE
+coverage, global exploration, subtle full-fit null/power, exact MacroFinance
+inputs and upstream learned-map quality remain open. Two successful profiling
+pairs do not close those scientific gaps.
+
 ## September 23 M28 completion and M29 continuation
 
 The [M28 result](bayesfilter-hmc-m28-supplied-residual-result-2026-09-23.md)

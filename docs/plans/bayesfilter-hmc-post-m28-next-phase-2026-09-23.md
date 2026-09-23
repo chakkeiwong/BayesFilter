@@ -1,9 +1,11 @@
 # Continuation after the supplied residual-map experiment
 
-Status: reviewed next-phase design; execute after the M28 terminal result and
-budget reconciliation. M28's numerical results belong in its result note, not
-in this prospective design. Its archive, count and public-pipeline checks are
-not reasons to rerun successful fits. Learning a map remains upstream of tuning.
+Status: M29 bounded execution completed and audited. See
+[the result](bayesfilter-hmc-m29-profiling-result-2026-09-23.md) and the
+[M30 continuation](bayesfilter-hmc-post-m29-next-phase-2026-09-23.md). The
+prospective contract below records the criteria used before M29 execution.
+Completed M28 and M29 fits do not need rerunning. Learning a map remains
+upstream of tuning.
 
 ## Research intent and remaining requirements
 
