@@ -39,8 +39,19 @@ def original_fitter():
     module.FactorCorrelationGeometryConfig = factor.FactorCorrelationGeometryConfig
     factor_path = "bayesfilter/inference/factor_correlation_geometry.py"
     factor_source = subprocess.check_output(["git", "show", f"3582b4ac:{factor_path}"], cwd=repo)
+    # The original public module imports this numerical dependency. Resolving
+    # it from the repair tree would silently compare a mixed-version baseline.
+    # Its original closure imports only TensorFlow and standard-library types.
+    score_path = "bayesfilter/inference/score_curvature_tf.py"
+    score_source = subprocess.check_output(["git", "show", f"3582b4ac:{score_path}"], cwd=repo)
+    score_spec = importlib.util.spec_from_loader("dense_validated_fit_original_score", loader=None)
+    score_module = importlib.util.module_from_spec(score_spec)
+    sys.modules[score_spec.name] = score_module
+    exec(compile(score_source, score_spec.name, "exec"), score_module.__dict__)  # noqa: S102
+    module.fit_dense_score_precision_tf = score_module.fit_dense_score_precision_tf
     return module, {path: hashlib.sha256(source.encode()).hexdigest(),
-        factor_path: hashlib.sha256(factor_source).hexdigest()}
+        factor_path: hashlib.sha256(factor_source).hexdigest(),
+        score_path: hashlib.sha256(score_source).hexdigest()}
 
 
 def padded(inputs):

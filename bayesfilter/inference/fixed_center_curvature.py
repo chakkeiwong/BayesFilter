@@ -15,12 +15,14 @@ clouds; the audit cloud is evaluated only after candidate selection.
 from __future__ import annotations
 
 import math
+import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 
 import tensorflow as tf
+from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
 from bayesfilter.inference import dense_partition_validation_tf as partition_validation
 from bayesfilter.inference import fixed_center_fitting_tf as fitting_native
@@ -373,13 +375,14 @@ def fit_fixed_center_curvature(
 
 def _fixed_center_result_from_native(result, fixed_center, center_score, *, dimension,
         replicates, training_rows, selection_rows, audit_rows, thresholds, factor_max,
-        weights, structured_target_family, lineage=None):
+        weights, structured_target_family, lineage=None, jit_compile=True):
     """Format completed fit tensors without evaluating or selecting geometry."""
     report = tf.nest.map_structure(lambda value: value.numpy().tolist(), result)
     families = ("dense", "factor_1", "factor_2") if report["two_attempted"] else ("dense", "factor_1")
     groups = tuple(tuple(_native_fit_record(family, index,
         {name: values[family_index][index] for name, values in report["fits"].items()},
-        dimension, training_rows, selection_rows, thresholds.selection_holdout_relative_rmse_cap)
+        dimension, training_rows, selection_rows, thresholds.selection_holdout_relative_rmse_cap,
+        jit_compile=jit_compile)
         for index in range(replicates)) for family_index, family in enumerate(families))
     fits = [fit for pair in zip(groups[0], groups[1], strict=True) for fit in pair]
     if report["two_attempted"]:
@@ -417,7 +420,7 @@ def _fixed_center_result_from_native(result, fixed_center, center_score, *, dime
             "selection": selection, "lineage": {} if lineage is None else dict(lineage)})
 
 
-def _native_fit_record(family, index, row, dimension, training_rows, selection_rows, holdout_cap):
+def _native_fit_record(family, index, row, dimension, training_rows, selection_rows, holdout_cap, *, jit_compile=True):
     """Materialize the unchanged public schema from a completed native fit."""
     present, admissible, accepted = row["flags"]
     factor_count = None if family == "dense" else int(family[-1])
@@ -436,7 +439,7 @@ def _native_fit_record(family, index, row, dimension, training_rows, selection_r
                 metrics[name] = bool(metrics[name])
             if not metrics["prediction_jacobian_rank"]:
                 metrics["prediction_jacobian_condition_number"] = None
-            diagnostics = {**metrics, "jit_compile": True, "training_row_count": training_rows,
+            diagnostics = {**metrics, "jit_compile": jit_compile, "training_row_count": training_rows,
                 "holdout_row_count": selection_rows, "training_score_equation_count": training_rows * dimension,
                 "holdout_score_equation_count": selection_rows * dimension, "parameter_count": count,
                 "holdout_score_relative_rmse_cap": holdout_cap, "covariance_eigenvalues": row["factor_eigenvalues"],
@@ -444,7 +447,7 @@ def _native_fit_record(family, index, row, dimension, training_rows, selection_r
                 "covariance_parameterization": "D[diag(1-row_norm(L)^2)+LL^T]D",
                 "score_model": "center_score_minus_local_score_equals_precision_times_offset"}
         elif domain_violations:
-            diagnostics = {"exception_type": "InvalidArgumentError", "jit_compile": True,
+            diagnostics = {"exception_type": "InvalidArgumentError", "jit_compile": jit_compile,
                 "invalid_covariance_evaluations": domain_violations,
                 "failure_reason": "factor_covariance_domain_violation"}
         else:
@@ -603,6 +606,20 @@ def _precision_eigenvalues(precision):
     return _eigenpairs(precision, True)[0]
 
 
+def _trace_normalized_operator(difference, scale, *, jit_compile=True):
+    # XLA's SVD can stop before resolving off-diagonal entries of a small
+    # matrix. Homogeneity keeps its input at unit magnitude without changing
+    # the operator norm or the caller's acceptance threshold.
+    magnitude = tf.reduce_max(tf.abs(difference))
+    safe_magnitude = tf.where(magnitude > 0., magnitude, tf.ones_like(magnitude))
+    normalized = difference / safe_magnitude
+    # Match the repository's binary64 eigensystem/condition diagnostics;
+    # scaling alone cannot resolve nearly equal singular values at 1e-6.
+    singular = (xla_svd(normalized, max_iter=100, epsilon=sys.float_info.epsilon,
+        precision_config="").s if jit_compile else tf.linalg.svd(normalized, compute_uv=False))
+    return tf.reduce_max(singular) * (magnitude / scale)
+
+
 def _precision_geometry_kernel(first, second, tolerance, requested_rank, *, jit_compile=True):
     # Principal angles depend on eigenvectors as well as eigenvalues. The
     # backend's loose default stopping check can leave O(1e-7) residuals.
@@ -654,7 +671,7 @@ def _precision_geometry_kernel(first, second, tolerance, requested_rank, *, jit_
         angles,
         generalized_values,
         tf.linalg.norm(difference) / scale,
-        tf.reduce_max(tf.linalg.svd(difference, compute_uv=False)) / scale,
+        _trace_normalized_operator(difference, scale, jit_compile=jit_compile),
     )
 
 

@@ -43,9 +43,10 @@ def make_dense_initializer_attempt_program(callback, dimension, replicates,
         clouds = cloud(center, scale, center_value, offsets)
         moved = clouds["valid"] & (clouds["candidate_value"] > center_value)
         centered = clouds["valid"] & ~moved
+        scaled_center_score = center_score * scale
 
         def fit_centered():
-            return fit(center, center_score * scale, offsets, clouds["scaled_scores"])
+            return fit(center, scaled_center_score, offsets, clouds["scaled_scores"])
 
         fit_result = tf.cond(centered, fit_centered, lambda: zero_fit)
         usable = centered & fit_result["usable"]
@@ -67,6 +68,8 @@ def make_dense_initializer_attempt_program(callback, dimension, replicates,
             "status_code": status, "cloud": clouds, "fit": fit_result,
             "candidate_center": clouds["candidate_center"],
             "candidate_value": clouds["candidate_value"],
+            "objective_improvement": clouds["candidate_value"] - center_value,
+            "scaled_center_score": scaled_center_score,
             "marginal_standard_deviations": marginal,
             "initial_output_shift": tf.where(status == 6, clouds["candidate_center"],
                 tf.zeros_like(center)),

@@ -1,6 +1,86 @@
 # Complete filter and gradient execution repair
 
-Current checkpoint through03463: dense attempt composition is implemented
+Current checkpoint through03612: graph-reference fit reports now use the
+controller-issued JIT setting. Reproduction03609 fails as expected; repair03610,
+default-XLA seeded D3 renewal03611 and all129 policy checks03612 pass. Only three
+existing reporting AST hashes changed; coverage remains239 sources/1340 exact
+exceptions, with no new numerical-loop or NumPy allowance.
+
+All48 matched SVD workers are complete. Candidate graph/XLA and prior graph pass
+independent Kalman numerics; prior XLA fails and is excluded from speed ranking.
+The [cost result and review](filter_gradient_svd_cost_result_20260924.md) records
+CPU cold ratios4.4--4.7x,200--205MiB extra host residency and a GPU T=3 graph
+warm-time trigger of+24.7%. These require lifecycle/capacity and graph-timing
+attribution; they are not waived. GPU XLA allocator peaks are about19KiB, which
+does not measure all CUDA-context memory. The48-worker cohort predates the
+reporting repair; its frozen source scope remains explicit.
+
+Next execute the registered complete original-reference renewal on CPU/GPU,
+then continue actual isolated DZ5/public integration and remaining SVD/call-chain
+repairs. Both reporting proposals and the isotropic compatibility mismatch remain
+open. Main is unmerged; fetched origin/main is622d9a9ed. Charges through03612 are
+70500.987698 CPU/69597.536923 GPU seconds, leaving12.416/32.667 process-hours under
+unchanged32/52-hour caps. No worker is active at this checkpoint. Receipt:
+`artifacts/filter-gradient-repair-20260917/svd-reporting-checkpoint-03612.json`.
+
+Historical checkpoint through03559: all ten seeded CPU and ten GPU initializer
+cases pass with the fully pinned original reference. Full results/archives,
+callback order/counts, changed operands, one trace, unchanged HLO, frozen
+derivatives and owner collection pass. The receipt is
+`artifacts/filter-gradient-repair-20260917/dense-seeded-checkpoint-03559.json`.
+All129 policy checks pass03549. This qualifies the tested internal seeded
+composition; public and actual23-parameter DZ5 integration remain open.
+
+03548 traces the original isotropic discrepancy to repeated eigenvalues, the
+inherited loading floor and zero-iteration optimizer stopping. It reproduces
+the original final precision exactly before optimization. The full-record
+mismatch remains open; no tolerance or algorithm changed. Read the
+[isotropic result](filter_gradient_dense_isotropic_result_20260924.md).
+
+The [reference renewal](filter_gradient_dense_reference_renewal_20260924.md)
+and [matched SVD costs](filter_gradient_svd_cost_unit_20260924.md) are registered
+bounded next steps. CPU cost pilots03561--03568 pass the candidate's independent
+Kalman screen but reproduce old-XLA numerical errors, so old-XLA speed ranking
+is forbidden. XLA adds about200MiB host residency over graph and4.5--4.8x cold
+cost in this pilot; repeated CPU/GPU measurements and disposition are pending.
+The prior mixed-version controller/attempt/fitter comparisons remain partial
+reference evidence until renewal. See the
+[remaining SVD caller review](filter_gradient_svd_caller_followup_20260924.md).
+Both reporting proposals still await specific agreement; no associated change
+is installed. All final source/call-chain, memory/cost and merge gates remain.
+
+Historical checkpoint through03535: the prepared-cloud dense initializer
+controller and NumPy-free formatter/archive integration pass18 CPU/18 GPU cases.
+Coverage includes full original records, exact callbacks/row counts, partial
+archives, retry/exhaustion and error precedence, changed-input HLO, one trace,
+frozen derivatives and actual callback/dependency collection. Seeded cloud
+preparation passes3 CPU/3 GPU shapes atD1/D3/D23, preserving Philox words/uniforms.
+Seeded complete-controller and actual isolated DZ5 integration remain open. The
+internal seeded candidate is installed but unqualified; its initial isotropic
+D3/D23 discrepancy is under registered identical-cloud attribution. See the
+[seeded unit](filter_gradient_dense_seeded_unit_20260924.md).
+
+The new scale audit found and repaired real numerical errors in XLA SVD.
+On well-conditioned small matrices, original SRUKF covariance/gain errors were
+about54%/51--61%; corrected errors are below3e-15 in the reproduced CPU cases.
+All39 SVD/endpoint/analytical-consumer checks pass on CPU03509/03510 and
+GPU03512/03513. The precision-difference norm repair also restores the complete
+healthyD3 initializer comparison. No comparison tolerance or scientific threshold
+changed. See the [checkpoint review](filter_gradient_dense_controller_result_20260924.md)
+and [SVD repair](filter_gradient_svd_scale_repair_20260923.md). The28-call discovery
+inventory still requires other reachable SVD dispositions and matched costs.
+
+All129 policy checks pass03511; partial guard238 sources/1340 exact
+exceptions. The five added allowances are completed reporting only. Both
+previous E2 clipping-count and ill-conditioned D3 diagnostic proposals remain
+pending; no associated comparison change or residual correction is installed.
+Main remains unmerged. Charges69601.439728 CPU/68745.953130 GPU seconds
+leave12.67/32.90 process-hours under unchanged32CPU/52GPU caps.
+No worker is active at this checkpoint. All public initializer/staged wiring,
+actual DZ5 target/transition and containment integration, terminal costs, source
+and call-chain audit, remote integration and retests still gate the final merge.
+
+Historical checkpoint through03463: dense attempt composition is implemented
 with the missing raw-to-scaled center-score conversion repaired. Strengthened
 checks execute the exact external cloud loop and original3582b4ac fitter,
 compare full records/archives and actual fit calls, and test changed operands,
@@ -223,6 +303,8 @@ a solution is already qualified.
 
 | Remaining gap | Planned repair and next evidence | Closure gate |
 | --- | --- | --- |
+| Newly reproduced XLA SVD scale error | Precision-difference norm checks pass on CPU/GPU, and the three reproduced Kalman/SRUKF defects pass39 checks per backend. Follow the [SVD scale audit](filter_gradient_svd_scale_audit_20260923.md) through the remaining reachable consumers and complete matched costs. | Independent scale-aware residuals, unchanged ranks/cutoffs/thresholds, original full records where numerically valid, and CPU/GPU consumer/derivative renewal; do not confuse a passing attribution worker with numerical qualification. |
+| Seeded initializer at isotropic geometry | A preliminary D3/D23 identity-covariance fixture has changed factor records and precision. The [seeded unit](filter_gradient_dense_seeded_unit_20260924.md) compares both original/current fitters on identical original/generated clouds before attributing RNG or enclosure. | Preserve the discrepancy and raw records; no tie, condition or precision exemption. Passing nondegenerate fixtures cannot close this finding. |
 | Public numerical control still in Python | E2: qualify and install the internal iterative initializer. E3 public ordered-block CPU/GPU qualification completes through03247; matched costs remain. | Complete original public records, exact target order/counts, failure/no-use behavior, supported configurations and unchanged HLO on CPU/GPU. |
 | Initializer coefficient roundoff and clipping reports | E2: independent high-precision attribution is complete. The residual candidate preserves actual decisions but changes near-zero D3 reporting counts. The concrete narrow reporting proposal awaits agreement before installing the correction and renewing full records/consumers. | Original healthy decisions and full records at unchanged tolerances; no blanket near-tie waiver or discarded-precision exemption. |
 | Actual DZ5 consumer uses non-JIT/Python/NumPy execution | E5: reusable locator passes nine CPU/nine GPU checks; cloud evaluation14 per backend and partition validation68 scenarios per backend pass. Validated fitter passes CPU/GPU through03422. Attempt composition repairs score scaling and passes D1 CPU/GPU; D3 ill-conditioned diagnostic disposition awaits agreement. NPZ reader compatibility passes21 cases. Complete attempts/seeded clouds, then migrate initialize_dense_local in an isolated checkout with tensor telemetry, compiled attempts/partitions and TF/standard-library assembly. Current CDF parent deadline mechanics pass four tests. | Real target/transition wiring, fixed batch extent, invalid-row accounting, actual compiled consumer under the tested parent and exact source/pin provenance; preserve the live dirty tree. |

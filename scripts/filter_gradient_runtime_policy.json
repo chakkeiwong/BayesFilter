@@ -2,6 +2,7 @@
   "schema": "filter_gradient_runtime_policy.v1",
   "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance.",
   "sources": {
+    "bayesfilter/ops/accurate_svd_tf.py": null,
     "bayesfilter/inference/dense_partition_validation_tf.py": null,
     "bayesfilter/inference/dense_initializer_cloud_tf.py": null,
     "bayesfilter/highdim/source_route.py": [
@@ -181,6 +182,8 @@
     "bayesfilter/inference/factor_correlation_geometry.py": null,
     "bayesfilter/inference/fixed_center_curvature.py": {
       "python_iteration": [
+        "_trace_normalized_operator",
+        "_precision_geometry_kernel",
         "_family_stability",
         "_stability_report",
         "_select_candidate",
@@ -424,7 +427,11 @@
     "bayesfilter/inference/batched_local_center_tf.py": null,
     "bayesfilter/inference/dense_validated_fit_tf.py": null,
     "bayesfilter/inference/dense_initializer_attempt_tf.py": null,
-    "bayesfilter/inference/tensor_npz_archive.py": null
+    "bayesfilter/inference/tensor_npz_archive.py": null,
+    "bayesfilter/inference/dense_initializer_controller_tf.py": null,
+    "bayesfilter/inference/dense_initializer_random_tf.py": null,
+    "bayesfilter/inference/dense_initializer_reporting.py": null,
+    "bayesfilter/inference/dense_initializer_seeded_tf.py": null
   },
   "exceptions": [
     {
@@ -11689,7 +11696,7 @@
       "function": "_fixed_center_result_from_native",
       "line": 368,
       "kind": "python_iteration",
-      "ast_sha256": "c33b7abd9297f9a9dd82dda7b5cf8cbc36c61c3dd6802d347dd223ab95a81fcc",
+      "ast_sha256": "380e5efae7fd205560b3dbb9a9c74d1b3fa14d1f46af847507d8dff1e87655af",
       "role": "host_reporting",
       "reason": "Reconstruct completed native fit and selector records, cast declared integer/Boolean fields and preserve the original family/replicate report order; no numerical fitting or selection executes in this loop."
     },
@@ -11698,7 +11705,7 @@
       "function": "_fixed_center_result_from_native",
       "line": 368,
       "kind": "python_iteration",
-      "ast_sha256": "a7a8485589ac8a43efc709e70533911e1f53e0b55a2376d3fc5b116ea0c2e7dc",
+      "ast_sha256": "b225afbe7d4fb56c266bd8639338da14d6f28c1c454592928441206b3b9388be",
       "role": "host_reporting",
       "reason": "Reconstruct completed native fit and selector records, cast declared integer/Boolean fields and preserve the original family/replicate report order; no numerical fitting or selection executes in this loop."
     },
@@ -12506,6 +12513,51 @@
       "ast_sha256": "9008b0ec81f0ec332bf4b1fe326b2cffc1d48c3bcebeb2efee820507a68adcbd",
       "role": "host_reporting",
       "reason": "Completed-artifact byte packing in bounded chunks; struct.pack and ZIP writes only, with no numerical computation or runtime feedback."
+    },
+    {
+      "path": "bayesfilter/inference/dense_initializer_reporting.py",
+      "function": "_completed_json",
+      "line": 20,
+      "kind": "python_iteration",
+      "ast_sha256": "931c6b57ddbf14ddfca993ef3fa2998a3379712402992f970a6edf8c6d776a73",
+      "role": "host_reporting",
+      "reason": "Materialize completed tensor payloads into JSON-compatible containers; no arithmetic or runtime decisions."
+    },
+    {
+      "path": "bayesfilter/inference/dense_initializer_reporting.py",
+      "function": "_completed_json",
+      "line": 22,
+      "kind": "python_iteration",
+      "ast_sha256": "9111937a0252771c7a5846c6bccd19f2d0dd66f818165f2f6322ea8914963b50",
+      "role": "host_reporting",
+      "reason": "Materialize completed tensor payloads into JSON-compatible containers; no arithmetic or runtime decisions."
+    },
+    {
+      "path": "bayesfilter/inference/dense_initializer_reporting.py",
+      "function": "format_dense_initializer_result",
+      "line": 56,
+      "kind": "python_iteration",
+      "ast_sha256": "8082fad487a0cb1bee680ae455917709f87eeb8076dd28c72809df83926f4b35",
+      "role": "host_reporting",
+      "reason": "Decode completed attempt histories and copy stored partition tensors to named archive members. No target call, fitting, acceptance or numerical feedback; original precomputed errors still raise before files are written."
+    },
+    {
+      "path": "bayesfilter/inference/dense_initializer_reporting.py",
+      "function": "format_dense_initializer_result",
+      "line": 66,
+      "kind": "python_iteration",
+      "ast_sha256": "8411f2717d8e106f3feaac92936cad5386930d87668d603a8e28ddb5915321a0",
+      "role": "host_reporting",
+      "reason": "Decode completed attempt histories and copy stored partition tensors to named archive members. No target call, fitting, acceptance or numerical feedback; original precomputed errors still raise before files are written."
+    },
+    {
+      "path": "bayesfilter/inference/dense_initializer_reporting.py",
+      "function": "format_dense_initializer_result",
+      "line": 68,
+      "kind": "python_iteration",
+      "ast_sha256": "bf37a838aaea7eb3405cb01f78d82aa6382de6c2141f7e4fb972b89cbfacc614",
+      "role": "host_reporting",
+      "reason": "Decode completed attempt histories and copy stored partition tensors to named archive members. No target call, fitting, acceptance or numerical feedback; original precomputed errors still raise before files are written."
     }
   ]
 }

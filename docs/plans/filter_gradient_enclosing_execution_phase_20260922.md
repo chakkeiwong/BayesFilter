@@ -1,6 +1,60 @@
 # Additional repair phase: complete execution boundaries and ownership
 
-Current checkpoint through03463: dense attempt composition is implemented
+Active continuation through03612: the false graph-reference JIT flag is repaired
+and passes its focused check, default-XLA seeded D3 renewal and129 policy checks.
+No algorithm, tolerance or allowlist scope changed. All48 matched SVD workers
+are complete; read the [cost result](filter_gradient_svd_cost_result_20260924.md).
+The CPU first-execution/host lifecycle and GPU T=3 graph timing triggers remain
+explicit investigations. Next run the registered original-reference renewal;
+both reporting proposals, isotropic compatibility, actual DZ5/public integration
+and terminal audit/merge gates remain open. No worker is active at this checkpoint.
+
+Historical continuation 2026-09-24 through03559: fully isolated original-source seeded
+composition passes10 CPU03538--03547 and10 GPU03550--03559 cases. The old
+controller/attempt/fitter authorities still need renewal; see
+[reference renewal](filter_gradient_dense_reference_renewal_20260924.md).
+[03548](filter_gradient_dense_isotropic_result_20260924.md) identifies the
+original tied-eigenspace/loading-floor/zero-iteration mechanism but does not
+waive the original-record mismatch. The [SVD cost unit](filter_gradient_svd_cost_unit_20260924.md)
+has24 CPU observations03561--03584; GPU repeats are executing. CPU repaired
+outputs pass the independent Kalman screen; prior XLA fails and cannot support
+speed ranking. Candidate XLA adds200--205MiB host residency over graph and
+about4.4--4.7x cold cost, with20--31% shorter observed warm calls. These are
+fixture-specific descriptive measurements; public construction/capacity and
+native-memory dispositions remain separate. Both earlier reporting proposals
+still await specific agreement. No final merge or actual DZ5 readiness claim.
+
+The older checkpoints below retain their historical evidence scope.
+
+Current checkpoint through03535: the prepared-cloud dense initializer
+controller and NumPy-free formatter/archive integration pass18 CPU/18 GPU cases.
+Coverage includes full original records, exact callbacks/row counts, partial
+archives, retry/exhaustion and error precedence, changed-input HLO, one trace,
+frozen derivatives and actual callback/dependency collection. Seeded cloud
+preparation passes3 CPU/3 GPU shapes atD1/D3/D23, preserving Philox words/uniforms.
+Seeded complete-controller and actual isolated DZ5 integration remain open.
+
+The new scale audit found and repaired real numerical errors in XLA SVD.
+On well-conditioned small matrices, original SRUKF covariance/gain errors were
+about54%/51--61%; corrected errors are below3e-15 in the reproduced CPU cases.
+All39 SVD/endpoint/analytical-consumer checks pass on CPU03509/03510 and
+GPU03512/03513. The precision-difference norm repair also restores the complete
+healthyD3 initializer comparison. No comparison tolerance or scientific threshold
+changed. See the [checkpoint review](filter_gradient_dense_controller_result_20260924.md)
+and [SVD repair](filter_gradient_svd_scale_repair_20260923.md). The28-call discovery
+inventory still requires other reachable SVD dispositions and matched costs.
+
+All129 policy checks pass03511; partial guard238 sources/1340 exact
+exceptions. The five added allowances are completed reporting only. Both
+previous E2 clipping-count and ill-conditioned D3 diagnostic proposals remain
+pending; no associated comparison change or residual correction is installed.
+Main remains unmerged. Charges69601.439728 CPU/68745.953130 GPU seconds
+leave12.67/32.90 process-hours under unchanged32CPU/52GPU caps.
+No worker is active at this checkpoint. All public initializer/staged wiring,
+actual DZ5 target/transition and containment integration, terminal costs, source
+and call-chain audit, remote integration and retests still gate the final merge.
+
+Historical checkpoint through03463: dense attempt composition is implemented
 with the missing raw-to-scaled center-score conversion repaired. Strengthened
 checks execute the exact external cloud loop and original3582b4ac fitter,
 compare full records/archives and actual fit calls, and test changed operands,

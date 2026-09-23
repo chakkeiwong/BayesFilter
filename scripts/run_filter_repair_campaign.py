@@ -123,6 +123,45 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "dense_execution_reporting_cpu": ("tests/test_filter_repair_dense_execution_reporting.py",),
+    "svd_cost_analysis_cpu": ("tests/test_filter_repair_svd_cost_analysis.py",),
+    "dense_isotropic_initialization_cpu": ("tests/test_filter_repair_dense_isotropic_initialization.py",),
+    **{f"svd_cost_{arm}_{horizon}_{device}": (
+        f"tests/test_filter_repair_svd_cost.py::test_complete_srukf_svd_cost[{arm}-{horizon}]",)
+        for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla")
+        for horizon in (1, 3) for device in ("cpu", "gpu")},
+    "dense_seeded_attribution_cpu": ("tests/test_filter_repair_dense_seeded.py",),
+    **{f"dense_seeded_{dimension}_{case}_{device}": (
+        f"tests/test_filter_repair_dense_controller.py::test_complete_original_seeded_controller[{case}-{dimension}]",)
+        for dimension in (1, 3) for case in ("healthy", "invalid_locator", "invalid_cloud", "score_veto", "fit_rejected")
+        for device in ("cpu", "gpu")},
+    **{f"accurate_svd_{device}": ("tests/test_filter_repair_accurate_svd.py",)
+        for device in ("cpu", "gpu")},
+    **{f"svd_endpoints_{device}": ("tests/test_filter_repair_svd_scale_qualification.py",
+        "tests/test_filter_repair_srukf_scale.py", "tests/test_rectangular_factor_tf.py",
+        "tests/test_rectangular_srukf_tf.py", "tests/test_compiled_kalman_ukf_runtime.py")
+        for device in ("cpu", "gpu")},
+    **{f"svd_scale_audit_{device}": ("tests/test_filter_repair_svd_scale_audit.py",)
+        for device in ("cpu", "gpu")},
+    **{f"dense_rng_{dimension}_{device}": (
+        f"tests/test_filter_repair_dense_rng.py::test_original_dense_cloud_stream[{dimension}]",)
+        for dimension in (1, 3, 23) for device in ("cpu", "gpu")},
+    **{f"dense_controller_{dimension}_{case}_{device}": (
+        f"tests/test_filter_repair_dense_controller.py::test_complete_original_dense_attempt_controller[{case}-{dimension}]",)
+        for dimension, case in ((1, "moved_retry"), (1, "exhausted"),
+            (1, "invalid_second_cloud"), (3, "invalid_second_cloud"),
+            (1, "invalid_rank"), (3, "invalid_rank"), (1, "overlap"), (3, "overlap"))
+        for device in ("cpu", "gpu")},
+    **{f"precision_operator_{device}": ("tests/test_filter_repair_precision_operator.py",
+        "tests/test_filter_repair_fixed_stability.py",
+        "tests/test_filter_repair_block_score_geometry.py::test_stability_caps_preserve_both_sides_of_boundary")
+        for device in ("cpu", "gpu")},
+    **{f"dense_controller_svd_{device}": ("tests/test_filter_repair_dense_controller_svd.py",)
+        for device in ("cpu", "gpu")},
+    **{f"dense_controller_{dimension}_{case}_{device}": (
+        f"tests/test_filter_repair_dense_controller.py::test_complete_original_dense_attempt_controller[{case}-{dimension}]",)
+        for dimension in (1, 3) for case in ("healthy", "invalid_locator", "invalid_cloud", "score_veto", "fit_rejected")
+        for device in ("cpu", "gpu")},
     "tensor_npz_cpu": ("tests/test_filter_repair_tensor_npz.py",),
     "dense_attempt_condition_gpu": ("tests/test_filter_repair_dense_attempt_condition.py",),
     **{f"dense_attempt_{dimension}_{case}_{device}": (
@@ -1033,6 +1072,15 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "dense_isotropic_initialization_cpu": "Original isotropic factor initialization and stopping-condition attribution; no equivalence waiver.",
+    **{f"svd_cost_{arm}_{horizon}_{device}": "Matched SVD repair costs; numerical failure forbids speed ranking, separate provenance and resource disposition required."
+        for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla")
+        for horizon in (1, 3) for device in ("cpu", "gpu")},
+    "dense_seeded_attribution_cpu": "Isotropic original/current fitter attribution on identical and RNG-rounded clouds; diagnostic execution is not numerical qualification.",
+    **{f"svd_scale_audit_{device}": "Actual Kalman/SRUKF SVD scale attribution; execution does not qualify numerical outputs."
+        for device in ("cpu", "gpu")},
+    **{f"dense_controller_svd_{device}": "Identical small-matrix SVD attribution of run03469; no runtime or comparison waiver."
+        for device in ("cpu", "gpu")},
     "dense_attempt_condition_gpu": "Same-data/state attribution of run03450; cannot close complete-record qualification.",
     **{f"block_public_cost_{arm}_{dimension}_{device}":
         "Complete public block costs; repeated original-record/provenance comparisons and separate ledger disposition required."
@@ -1199,6 +1247,37 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"svd_cost_{device}": tuple(f"svd_cost_{arm}_{horizon}_{device}"
+        for horizon in (1, 3) for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla"))
+        for device in ("cpu", "gpu")},
+    **{f"dense_reference_renewal_{device}": (
+        *(f"dense_controller_{dimension}_{case}_{device}"
+            for dimension in (1, 3) for case in ("healthy", "invalid_locator", "invalid_cloud", "score_veto", "fit_rejected")),
+        *(f"dense_controller_{dimension}_{case}_{device}"
+            for dimension, case in ((1, "moved_retry"), (1, "exhausted"),
+                (1, "invalid_second_cloud"), (3, "invalid_second_cloud"),
+                (1, "invalid_rank"), (3, "invalid_rank"), (1, "overlap"), (3, "overlap"))),
+        *(f"dense_validated_fit_{dimension}_{case}_{device}"
+            for dimension, case in ((1, "healthy"), (3, "healthy"), (3, "audit"), (3, "incomplete"), (3, "rank"))),
+        f"dense_fit_error_order_{device}",
+        *(f"dense_attempt_{dimension}_{case}_{device}"
+            for dimension in (1, 3) for case in ("centered", "moved", "invalid", "fit_rejected")))
+        for device in ("cpu", "gpu")},
+    **{f"dense_seeded_{device}": tuple(f"dense_seeded_{dimension}_{case}_{device}"
+        for dimension in (1, 3) for case in ("healthy", "invalid_locator", "invalid_cloud", "score_veto", "fit_rejected"))
+        for device in ("cpu", "gpu")},
+    **{f"svd_repair_{device}": (f"accurate_svd_{device}", f"svd_endpoints_{device}")
+        for device in ("cpu", "gpu")},
+    **{f"dense_rng_{device}": tuple(f"dense_rng_{dimension}_{device}" for dimension in (1, 3, 23))
+        for device in ("cpu", "gpu")},
+    **{f"dense_controller_edges_{device}": tuple(f"dense_controller_{dimension}_{case}_{device}"
+        for dimension, case in ((1, "moved_retry"), (1, "exhausted"),
+            (1, "invalid_second_cloud"), (3, "invalid_second_cloud"),
+            (1, "invalid_rank"), (3, "invalid_rank"), (1, "overlap"), (3, "overlap")))
+        for device in ("cpu", "gpu")},
+    **{f"dense_controller_{device}": tuple(f"dense_controller_{dimension}_{case}_{device}"
+        for dimension in (1, 3) for case in ("healthy", "invalid_locator", "invalid_cloud", "score_veto", "fit_rejected"))
+        for device in ("cpu", "gpu")},
     "dense_attempt_unaffected": ("dense_attempt_3_moved_cpu", "dense_attempt_3_invalid_cpu",
         "dense_attempt_3_moved_gpu", "dense_attempt_3_invalid_gpu", "tensor_npz_cpu", "policy"),
     "dense_attempt_cpu": tuple(f"dense_attempt_{dimension}_{case}_cpu"
@@ -1489,6 +1568,10 @@ TEST_BATCHES = {
     "factor_guard_memory": tuple(f"factor_guard_memory_{arm}_{mode}_{dimension}"
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)),
 }
+TEST_BATCHES.update({f"dense_controller_complete_{device}": (
+    f"precision_operator_{device}", *TEST_BATCHES[f"dense_rng_{device}"],
+    *TEST_BATCHES[f"dense_controller_{device}"], *TEST_BATCHES[f"dense_controller_edges_{device}"])
+    for device in ("cpu", "gpu")})
 
 
 def mandatory_test_groups():
@@ -1502,6 +1585,16 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["svd_cost_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["dense_seeded_gpu"]},
+    "accurate_svd_gpu": "GPU",
+    "svd_endpoints_gpu": "GPU",
+    "svd_scale_audit_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["dense_rng_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["dense_controller_edges_gpu"]},
+    "precision_operator_gpu": "GPU",
+    "dense_controller_svd_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["dense_controller_gpu"]},
     "dense_attempt_condition_gpu": "GPU",
     **{f"dense_attempt_{dimension}_{case}_gpu": "GPU"
         for dimension in (1, 3) for case in ("centered", "moved", "invalid", "fit_rejected")},
@@ -1757,7 +1850,8 @@ def require_unshared_cost_preflight(args):
             or args.group not in (*TEST_BATCHES["posterior_public_memory_gpu"],
                                  *TEST_BATCHES["sequential_public_cost_gpu"],
                                  *TEST_BATCHES["block_public_cost_gpu"],
-                                 *TEST_BATCHES["staged_center_cost_gpu"])):
+                                 *TEST_BATCHES["staged_center_cost_gpu"],
+                                 *TEST_BATCHES["svd_cost_gpu"])):
         return
     samples = args.gpu_preflight
     if len(samples) >= 2 and all(sample["performance_preflight_uncontended"]
