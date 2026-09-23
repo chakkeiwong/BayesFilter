@@ -11,6 +11,7 @@ the dimension-sized inverse and variable-length damping use TensorFlow loops.
 from __future__ import annotations
 
 import tensorflow as tf
+from bayesfilter.inference import neutra_transport_core as _transport_core
 
 
 METRIC_NAMES = ('zero', 'rms', 'p95', 'maximum', 'log_scale')
@@ -107,8 +108,8 @@ class ScaleAwareNumericalKernels:
             if hasattr(component, '_network_with_diagnostics'):
                 scale, shift, logits, hidden = component._network_with_diagnostics(values)
                 exp_scale = tf.exp(scale)
-                values = values*exp_scale+shift
-                logdet = logdet+tf.reduce_sum(scale, axis=-1)
+                values, increment = _transport_core.iaf_apply(values, scale, shift)
+                logdet = logdet+increment
                 stage_scales.append(scale)
                 valid &= finite_tensor(values, logdet, scale, logits, hidden, exp_scale)
                 valid &= tf.reduce_all(exp_scale > 0)

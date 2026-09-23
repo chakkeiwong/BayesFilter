@@ -121,7 +121,7 @@ class _QualifiedAdapter(FixedBetaBridgeAdapter):
                        evidence_path="docs/plans/bayesfilter-ssl-lstm-q20-executable-master-repair-plan-2026-09-16.md")
 
 
-def attach_qualification(bridge, path, config):
+def attach_qualification(bridge, path, config, *, betas=None):
     """Validate measured receipt before exposing the full-chain capability."""
     record=json.loads(Path(path).read_text())
     checksum=record.pop("checksum")
@@ -131,7 +131,10 @@ def attach_qualification(bridge, path, config):
         raise ValueError("stale/mismatched q20 HMC qualification")
     if record["jit_compile"]!=config["jit_compile"] or record["cpu_reference"]!=config["cpu_reference"]:
         raise ValueError("qualification backend differs")
-    if set(record["betas"]) != {str(float(b)) for b in config["training"]["betas"][1:]}:
+    requested = config["training"]["betas"][1:] if betas is None else betas
+    if not requested or any(b not in config["training"]["betas"][1:] for b in requested):
+        raise ValueError("qualification requested unsupported temperatures")
+    if set(record["betas"]) != {str(float(b)) for b in requested}:
         raise ValueError("qualification temperature inventory differs")
     shape = [config["posterior"]["chains"], bridge.parameter_dim]
     if not record["passed"] or any(not v["passed"] or v["traces"]!=1

@@ -402,7 +402,7 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
         bind_hmc_candidate_set_execution_from_preparation(**(kwargs | {"preparation": bad}))
 
 
-@pytest.mark.parametrize("kind", ["affine", "dense_iaf"])
+@pytest.mark.parametrize("kind", ["affine", "dense_iaf", "configured_iaf", "configured_naf_dsf"])
 @pytest.mark.parametrize("reuse", [False, True])
 def test_supported_frozen_transports_use_numerical_controller_and_durable_geometry(kind, reuse, tmp_path):
     target = GaussianTarget()
@@ -410,11 +410,23 @@ def test_supported_frozen_transports_use_numerical_controller_and_durable_geomet
         payload = {"schema": "bayesfilter.neutra.frozen_affine_diag.v1", "transport_id": "test-affine",
             "dimension": 2, "target_signature": target.adapter_signature(), "log_jacobian_available": True,
             "shift": [.2,-.1], "raw_scale": [.1,.05]}
-    else:
+    elif kind == "dense_iaf":
         from tests.test_dense_iaf_neutra_artifact_loader import _payload
         payload = _payload(target_signature=target.adapter_signature())
+    else:
+        from bayesfilter.inference.neutra_transport import NeuTraTransport, NeuTraTransportConfig
+        config = (NeuTraTransportConfig.hoffman_author_iaf(2, conditional_scale_cap=2., seed=(47, 11))
+                  if kind == "configured_iaf" else NeuTraTransportConfig.huang_dsf(
+                      2, hidden_layers=(4,), stages=1, mixture_components=3, seed=(47, 11)))
+        payload = NeuTraTransport(config).frozen_payload(target_signature=target.adapter_signature())
+    # This fixture checks codec/controller/retained replay, not acceptance
+    # calibration. Source-bound seed changes can leave the narrower generic
+    # fixture with no statistically verified survivor. Use an explicit broad
+    # engineering band; production policies and all hard vetoes stay intact.
     binding = make_binding(mass_artifact=None, frozen_transport_payload=payload, start_coordinates="active",
-                           config=execution_config(reuse_leapfrog_graphs=reuse))
+                           config=execution_config(reuse_leapfrog_graphs=reuse,
+                               acceptance_policy=HMCAcceptancePolicy(practical_region=(.41, .99),
+                                                                    repair_region=(.405, .995))))
     probes = tf.constant([[.2,-.5],[-.3,.4]], tf.float64)
     value, score = binding._active_adapter.log_prob_and_grad(probes)
     raw = binding.position_samples(probes)

@@ -89,6 +89,13 @@ The run therefore validated the harness and artifact path, weakened the
 Gaussian-whitening hypothesis for this frozen export, and left the NeuTra
 research direction open for map repair and target-specific tuning.
 
+The subsequent [training-gap investigation](bayesfilter-q20-training-gap-results-2026-09-22.md)
+checked physical and transformed scores against central value differences at
+twelve saved points, including the four largest-residual points. Maximum
+absolute errors at the finest tested increment were 1.84e-8 and 6.32e-9,
+respectively. This weakens the score-error explanation at those points without
+extending the result to all posterior regions.
+
 ## Provenance and budget
 
 - Plan: `docs/plans/bayesfilter-q20-1000-point-score-residual-plan-2026-09-22.md`

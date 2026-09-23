@@ -1,7 +1,60 @@
 # q20 executable master repair and campaign
 
-Date: 2026-09-16 (Asia/Shanghai)
-Status: `REPAIRED_REVIEWED_EXECUTED`; final master outcome `UNDER_BUDGETED`.
+September 22 active addition: execute phases R1–R6 in the
+[estimation master](bayesfilter-ssl-lstm-q20-estimation-reset-2026-09-19.md#active-additional-phases-september-22),
+using the [reviewed recovery plan](bayesfilter-q20-recovery-and-affordability-repair-plan-2026-09-21.md).
+Historical comparator requirements below remain superseded. The paused campaign
+is preserved; no funds or completed numerical evidence are reset.
+
+Owner reset, 2026-09-19: the active objective is now stable estimation using
+plain NeuTra HMC or the tempered NeuTra ensemble. The comparison campaign,
+classical mass preparation and mandatory comparative confirmations below are
+historical. Follow the [estimation reset](bayesfilter-ssl-lstm-q20-estimation-reset-2026-09-19.md).
+Existing artifacts and balances remain preserved; no budget is renewed.
+
+Active status: `MASTER_ESTIMATION_OBJECTIVE_REPAIRED`; see the estimation reset
+above for verification and the current balance.
+
+Historical date: 2026-09-16 (Asia/Shanghai)
+Historical status before the reset: `MASTER_CACHE_GRAPH_QUALIFIED`; full preparation remained deferred
+by cost. The original September 16 outcome was `UNDER_BUDGETED`.
+Historical continuation: [current-source performance result](bayesfilter-ssl-lstm-q20-performance-result-2026-09-19.md).
+The master's `profile` and `cache-qualify` modes completed conservative factor
+reuse parity and fresh GPU/XLA qualification at both temperatures. Warm HMC time
+fell about 35–37% in the paired measurements; no posterior claim follows.
+The candidate protocol and qualified source are recorded in that result. The
+authoritative ledger is now
+`artifacts/ssl-lstm-q20-performance-2026-09-19/qualification/campaign/campaign.json`.
+Remaining allowance is 22.2830 campaign hours including 1.23871 diagnostic hours;
+the combined mass scheduling forecast is 23.721 hours before later work, so the
+master did not launch unaffordable preparation. Training and bootstrap evidence
+are preserved. The preceding
+[checkpointed preparation](bayesfilter-ssl-lstm-q20-checkpointed-preparation-2026-09-19.md) used
+the executable master's `checkpoint-repair` phase. The owner requested refresh
+and continuation after the timeout audit. This phase uses measured-cost admission,
+four-transition bootstrap checkpoints and an explicit startup-only acceptance
+role, with unchanged final tuning/posterior requirements. It inherits the settled
+September 19 retry ledger and allocates fresh stage envelopes within the existing
+remaining campaign/diagnostic balances. It finished September 19 13:42:13
+Asia/Shanghai with `MASTER_STARTUP_PASSED_MASS_DEFERRED`: both qualifications
+and bootstrap scopes passed, no timeout occurred, and full mass adaptation was
+deferred before launch by the measured-cost check. The service is inactive.
+The settled allowance is 22.9230 campaign hours including 1.87868 diagnostic
+hours. Overall preparation and posterior work remain incomplete; see the
+terminal assessment in the continuation plan. The preceding [bootstrap initialization repair](bayesfilter-ssl-lstm-q20-bootstrap-repair-2026-09-18.md)
+used the executable master's `repair` phase and inherited the settled
+[September 18 master resume](bayesfilter-ssl-lstm-q20-master-resume-2026-09-18.md).
+The original result below is preserved; use the new plan and its campaign
+ledger for active execution. The 512-update calibration checkpoint is imported
+without repeating completed training; remaining downstream costs are being
+measured under the existing allowance. The refresh's classical bootstrap failed
+with nonfinite proposals; the reporting omission is repaired and the exact
+failure is preserved. The new shared initializer tests finite startup proposals
+before fresh bootstrap, in both pricing and actual classical tuning. Its bounded
+run finished September 19 02:50 Asia/Shanghai: both initializers found finite
+startup pairs, but both preparations timed out during bootstrap and never
+reached mass adaptation. No posterior run has been admitted. The repair is
+terminally incomplete; its settled ledger is the new phase's budget predecessor.
 Authorization: owner requested the plan, review, complete repair, whole-program
 review and execution. Existing campaign/diagnostic limits remain binding.
 

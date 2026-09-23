@@ -9,6 +9,11 @@ from __future__ import annotations
 from importlib import import_module
 
 __all__ = [
+    'NeuTraTransportConfig',
+    'NeuTraTransport',
+    'NeuTraOptimizerConfig',
+    'NeuTraTransportTrainer',
+
     "HMCPrecisionTarget", "HMCPrecisionPolicy", "HMCPosteriorAssessmentPolicy", "run_hmc_posterior",
     "HMC_STAGE_RESUME_SCHEMA",
     "HMC_STAGE_SEQUENCE_RESULT_SCHEMA",
@@ -774,6 +779,12 @@ _DIRECT_EXPORTS = {
     ),
     "HMCTuningRunnerBinding": "bayesfilter.inference.tuning_contract",
 }
+
+
+_DIRECT_EXPORTS['NeuTraTransportConfig'] = "bayesfilter.inference.neutra_transport"
+_DIRECT_EXPORTS['NeuTraTransport'] = "bayesfilter.inference.neutra_transport"
+_DIRECT_EXPORTS['NeuTraOptimizerConfig'] = "bayesfilter.inference.neutra_transport"
+_DIRECT_EXPORTS['NeuTraTransportTrainer'] = "bayesfilter.inference.neutra_transport"
 
 
 def __getattr__(name: str):

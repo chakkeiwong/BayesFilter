@@ -1,4 +1,4 @@
-"""Named posterior quantities and uncertainty-aware q20 comparisons.
+"""Named posterior quantities and uncertainty-aware validation of one estimate.
 
 All intervals are marginal asymptotic intervals. Passing every screen is not
 proof of simultaneous coverage or global mode discovery.
@@ -91,7 +91,7 @@ def posterior_summary(config, retained, *, target_signature, label, sequential_p
 
 
 def compare_quantities(config, left, right):
-    c = config["comparison"]
+    c = config["assessment"]
     critical = float(tfp.distributions.Normal(tf.constant(0., tf.float64), tf.constant(1., tf.float64)).quantile(
         (1+c["interval_probability"])/2))
     expected = {quantity_key(r["name"], r["kind"], r["probability"]) for r in quantity_layout(config)}
@@ -118,37 +118,38 @@ def compare_quantities(config, left, right):
             "quantities": rows}
 
 
-def compare_campaign(config, root, *, reference_path, posterior_paths):
+def assess_estimate(config, root, *, reference_path, posterior_path, method):
+    """Assess one permitted method; other methods are never prerequisites."""
+    if method not in config["estimation"]["methods"]:
+        raise ValueError("unsupported estimation method")
     root = Path(root)
     root.mkdir(parents=True, exist_ok=False)
     reference = json.loads(Path(reference_path).read_text())
     from bayesfilter.inference.q20_production_training import source_snapshot
     if reference.get("sources") != source_snapshot():
-        raise ValueError("comparison reference source mismatch")
+        raise ValueError("assessment reference source mismatch")
     if config["role"] != "smoke" and reference.get("role") == "smoke":
-        raise ValueError("smoke reference cannot qualify serious comparison")
-    rows = {}
-    for method, path in posterior_paths.items():
-        record = json.loads(Path(path).read_text())
-        if record.get("role") != config["role"]:
-            raise ValueError("posterior role differs from comparison")
-        summary = record["summary"]
-        if summary["frozen_scope_hash"] != frozen_scope_hash(config) or reference["frozen_scope_hash"] != frozen_scope_hash(config):
-            raise ValueError("comparison protocol scope mismatch")
-        if summary["target_signature"] != reference["target_signature"]:
-            raise ValueError("comparison posterior/reference target mismatch")
-        agreement = compare_quantities(config, summary["quantities"], reference["quantities"])
-        groups = summary["start_groups"]
-        starts = compare_quantities(config, groups.get("negative_start", {}), groups.get("positive_start", {}))
-        rows[method] = {"posterior_checks_passed": summary["sequential_declared_checks_passed"],
-                        "reference_agreement": agreement, "start_equivalence": starts,
-                        "passed": bool(summary["sequential_declared_checks_passed"] and
-                            reference["qualified"] and agreement["passed"] and starts["passed"])}
-    complete = set(rows) == set(config["comparison"]["methods"])
-    passed = complete and all(r["passed"] for r in rows.values())
-    result = {"status": "comparison_passed" if passed else "comparison_incomplete_or_failed",
-              "passed": passed, "complete_method_inventory": complete,
-              "reference_qualified": reference["qualified"], "methods": rows,
+        raise ValueError("smoke reference cannot qualify serious assessment")
+    record = json.loads(Path(posterior_path).read_text())
+    if record.get("role") != config["role"]:
+        raise ValueError("posterior role differs from assessment")
+    summary = record["summary"]
+    if summary["frozen_scope_hash"] != frozen_scope_hash(config) or reference["frozen_scope_hash"] != frozen_scope_hash(config):
+        raise ValueError("assessment protocol scope mismatch")
+    if summary["target_signature"] != reference["target_signature"]:
+        raise ValueError("assessment posterior/reference target mismatch")
+    agreement = compare_quantities(config, summary["quantities"], reference["quantities"])
+    groups = summary["start_groups"]
+    starts = compare_quantities(config, groups.get("negative_start", {}), groups.get("positive_start", {}))
+    passed = bool(summary["sequential_declared_checks_passed"] and
+                  reference["qualified"] and agreement["passed"] and starts["passed"])
+    result = {"status": "estimate_validated" if passed else
+                       "reference_unqualified" if not reference["qualified"] else "candidate_failed_checks",
+              "passed": passed, "method": method,
+              "posterior_path": str(posterior_path), "reference_path": str(reference_path),
+              "posterior_checks_passed": summary["sequential_declared_checks_passed"],
+              "reference_agreement": agreement, "start_equivalence": starts,
+              "reference_qualified": reference["qualified"],
               "method_ranking": "not_estimated", "production_qualified": False,
               "role": config["role"], "frozen_scope_hash": frozen_scope_hash(config)}
     write_json(root / "result.json", result)

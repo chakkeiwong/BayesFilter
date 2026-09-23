@@ -104,17 +104,27 @@ def validate_training_export(record, config, adapter, beta):
         raise ValueError("map was assessed at another temperature")
     if not record["assessment"]["map_reliability"]["passed"]:
         raise ValueError("map failed numerical reliability")
-    if config["role"] != "smoke" and (record["role"] == "smoke" or not record["assessment"]["decision"]["development_eligible"]):
-        raise ValueError("map training is not assessed for development; continue or repair training")
+    if config["role"] != "smoke" and (record["role"] == "smoke" or not record["assessment"]["decision"].get("hmc_trial_eligible", False)):
+        raise ValueError("map training is not assessed for an HMC trial; continue or repair training")
+    if config["role"] != "smoke":
+        from bayesfilter.inference.neutra_post_training import require_post_training_assessment
+        require_post_training_assessment(record)
     return load_frozen_neutra_artifact(record["frozen_transport"], expected_target_signature=adapter.adapter_signature())
 
 
 def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
-               initial_position=None, max_work_items=None, resume=None):
+               initial_position=None, max_work_items=None, resume=None, max_seconds=None,
+               explicit_cohort=None):
+    started = time.monotonic()
     root = Path(root)
     root.mkdir(parents=True, exist_ok=False)
+    if max_seconds is not None and max_seconds <= 0:
+        from bayesfilter.inference.q20_stage_budget import StageBudgetPause
+        raise StageBudgetPause("tuning initialization exhausted stage allocation")
     if method not in {"identity", "classical", "neutra"}:
         raise ValueError("ensemble requires every individual temperature/chart scope")
+    if config["role"] != "smoke" and method != "neutra":
+        raise ValueError("active q20 estimation uses frozen NeuTra maps without ordinary mass adaptation")
     adapter = bridge.fixed_beta_adapter(beta)
     label = f"{method}-beta{beta:g}"
     record = None
@@ -126,6 +136,13 @@ def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
         label += "-" + record["candidate"]["id"]
     elif training_export is not None:
         raise ValueError("ordinary comparator must not consume a learned map")
+    if explicit_cohort is not None:
+        if method != "neutra" or beta != 1.:
+            raise ValueError("explicit repair cohort requires plain beta-one NeuTra")
+        if (set(explicit_cohort) != {"id", "epsilon"} or not explicit_cohort["id"] or
+                not config["tuning"]["epsilon_domain"][0] <= explicit_cohort["epsilon"] <= config["tuning"]["epsilon_domain"][1]):
+            raise ValueError("invalid explicit repair cohort")
+        label += "-" + explicit_cohort["id"]
     if resume is not None:
         # Copy the complete numerical store so continuation writes fresh files
         # while preserving the original attempt and all completed chunks.
@@ -143,6 +160,12 @@ def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
                                 else (tf.convert_to_tensor(initial_position, tf.float64), {"role": "explicit_fixture"}))
         write_json(root / "starts.json", {**start_receipt, "positions": starts.numpy().tolist()})
         execution, search = tuning_configs(config, label)
+        if explicit_cohort is not None:
+            from dataclasses import replace
+            search = replace(search, pilot_enabled=False, refinement_rounds=0,
+                epsilon_by_l=tuple((length, (explicit_cohort["epsilon"],)) for length in search.primary_l_grid),
+                initial_epsilon=explicit_cohort["epsilon"], max_candidates=len(search.primary_l_grid),
+                max_wall_time_seconds=search.max_wall_time_seconds if max_seconds is None else max_seconds)
         sources = source_snapshot()
         repo = Path(__file__).resolve().parents[2]
         source_paths = [repo / path for path in sources]
@@ -154,6 +177,11 @@ def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
             epsilon_domain=tuple(config["tuning"]["epsilon_domain"]),
             repair_factor=config["tuning"]["repair_factor"],
             max_repairs_per_family=config["tuning"]["max_repairs_per_family"])
+        if explicit_cohort is not None:
+            common["max_repairs_per_family"] = 0
+            common["search_id"] = digest([config, label, explicit_cohort])[:20]
+            write_json(root / "explicit-cohort.json", {**explicit_cohort,
+                "L": list(search.primary_l_grid), "policy": "finite_supplied_pairs_fresh_verification_no_children"})
         if method == "classical":
             from bayesfilter.inference.hmc_kernel_tuning import HMCKernelTuningConfig, prepare_operational_windowed_mass_handoff
             from bayesfilter.inference.hmc_candidate_set_execution import bind_hmc_candidate_set_execution_from_preparation
@@ -163,9 +191,19 @@ def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
                 seed=scoped_seed(config, "classical-preparation", label),
                 public_timeout_budget_s=config["tuning"]["max_wall_seconds"])
             write_json(root / "preparation-policy.json", cfg.payload())
+            from bayesfilter.inference.hmc_bootstrap_initialization import POLICY
+            from bayesfilter.inference.hmc_preparation import HMCPreparationProgress
+            from bayesfilter.inference.hmc_bootstrap_checkpoint import CheckpointedBootstrapRunner
+            write_json(root / "bootstrap-initialization-policy.json", {"policy": POLICY, "enabled": True})
             started = time.monotonic()
-            preparation = prepare_operational_windowed_mass_handoff(adapter=adapter,
-                initial_position=starts[0], config=cfg, parameter_scales=tf.fill([bridge.parameter_dim], tf.constant(4., tf.float64)))
+            with HMCPreparationProgress(root, max_wall_time_seconds=config["tuning"]["max_wall_seconds"]) as progress:
+                bootstrap_execution = CheckpointedBootstrapRunner(root / "bootstrap-checkpoints",
+                    sources=source_snapshot(), progress=progress,
+                    safety_factor=config["budget"]["forecast_safety_factor"])
+                preparation = prepare_operational_windowed_mass_handoff(adapter=adapter,
+                    initial_position=starts[0], config=cfg, parameter_scales=tf.fill([bridge.parameter_dim], tf.constant(4., tf.float64)),
+                    initialize_bootstrap=True, progress_callback=progress.phase,
+                    bootstrap_execution=bootstrap_execution)
             from dataclasses import replace
             common["config"] = replace(execution, preparation_elapsed_seconds=time.monotonic()-started)
             binding = bind_hmc_candidate_set_execution_from_preparation(preparation=preparation, **common)
@@ -190,6 +228,13 @@ def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
         else:
             binding = bind_hmc_candidate_set_execution(initial_position=loaded.transport.inverse_theta_to_z_batch(starts),
                 frozen_transport_payload=record["frozen_transport"], start_coordinates="active", target_scope=adapter.target_scope, **common)
+        if max_seconds is not None:
+            from dataclasses import replace
+            from bayesfilter.inference.q20_stage_budget import StageBudgetPause
+            remaining = max_seconds - (time.monotonic()-started)
+            if remaining <= 0:
+                raise StageBudgetPause("tuning setup exhausted stage allocation")
+            search = replace(search, max_wall_time_seconds=min(search.max_wall_time_seconds, remaining))
         if method == "neutra":
             from bayesfilter.inference import tune_fixed_transport_hmc_kernel
             run = tune_fixed_transport_hmc_kernel(base_adapter=adapter, fixed_transport=binding.fixed_transport,
@@ -204,13 +249,16 @@ def tune_scope(config, bridge, root, *, method, beta=1., training_export=None,
 
 def _export_tuning_result(config, root, method, beta, label, run, binding):
     members = {}
+    parameters = {}
     for candidate_id in run.result.verified_candidate_ids:
         member = build_retained_bound_hmc_archive_runner_from_candidate_set_result(
             candidate_set_result=run.result, candidate_id=candidate_id, retained_binding=binding)
         path = member.export(root / f"member-{candidate_id}.json")
         members[candidate_id] = str(path)
+        parameters[candidate_id] = {"L": member.num_leapfrog_steps, "epsilon": member.step_size}
     result = {"status": run.result.completion_status, "method": method, "beta": beta, "label": label,
               "config_hash": digest(config), "verified_members": members,
+              "verified_member_parameters": parameters,
               "tuning_checkpoint": str(root / "tuning" / "tuning_checkpoint.json"),
               "ranking": "none; choose an explicit member", "production_qualified": False}
     write_json(root / "result.json", result)
@@ -269,18 +317,39 @@ def _check_member_protocol(member, config):
     return lineage
 
 
-def sample_member(config, bridge, root, *, member_path, label, resume_chunks=None):
+def sample_member(config, bridge, root, *, member_path, label, resume_chunks=None,
+                  max_seconds=None, chunk_reserve_seconds=0., pricing_only=False):
+    from bayesfilter.inference.q20_stage_budget import BudgetedCheckpoint
+    deadline = None if max_seconds is None else time.monotonic()+max_seconds
     root = Path(root)
     root.mkdir(parents=True, exist_ok=False)
     member = load_hmc_candidate_retained_runner(member_path, adapter=bridge.fixed_beta_adapter(1.))
-    _check_member_protocol(member, config)
+    lineage = _check_member_protocol(member, config)
+    if config["role"] != "smoke" and lineage.get("method") != "neutra":
+        raise ValueError("q20 estimation requires a verified NeuTra member")
+    if pricing_only:
+        count = config["execution"]["pricing_transitions"]
+        times = []
+        for repeat in range(config["budget"]["pricing_updates"]):
+            begin = time.monotonic()
+            member.run(num_results=count, seed=scoped_seed(config, "selected-price", label, repeat),
+                       output_dir=root / f"timing-{repeat}")
+            times.append(time.monotonic()-begin)
+        result = {"method": "neutra", "status": "selected_procedure_priced", "member_hashes": [member.member_hash],
+            "members": [member_path], "epsilon": member.step_size, "L": member.num_leapfrog_steps,
+            "first_seconds": times[0], "steady_seconds": max(times[1:] or times)/count,
+            "transitions_per_call": count, "role": "timing_only_excluded_from_posterior", "sources": source_snapshot()}
+        write_json(root / "result.json", result)
+        return result
     kwargs = sequential_kwargs(config, label)
     policy = kwargs["assessment_policy"]
     controller = SequentialNeuTraHMCConfig(step_size=member.step_size, num_leapfrog_steps=member.num_leapfrog_steps,
         jit_compile=config["jit_compile"], energy_error_log_accept_threshold=config["posterior"]["energy_log_accept_alert"], **kwargs)
     chunks = _checkpoint_directory(root, resume_chunks)
-    with DurableTensorCheckpoint(chunks, {"member": member.member_hash, "config": digest(config),
-            "label": label, "names": list(PARAMETERS), "quantities": policy.quantities_id}) as store:
+    with BudgetedCheckpoint(chunks, {"member": member.member_hash, "config": digest(config),
+            "label": label, "names": list(PARAMETERS), "quantities": policy.quantities_id},
+            deadline=deadline, chunk_seconds=chunk_reserve_seconds,
+            safety_factor=config["budget"]["forecast_safety_factor"]) as store:
         result = run_hmc_posterior(member=member, config=controller, parameter_names=PARAMETERS,
                                   quantities_fn=posterior_quantities, checkpoint_store=store)
     _write_posterior_result(root, result, config, bridge, label)
@@ -310,7 +379,12 @@ def build_member_physical_kernel(member, *, state_shape):
 
 
 def sample_ensemble(config, bridge, root, *, members_by_beta, label, resume_chunks=None,
-                    physical_baseline=False, initial_by_beta=None):
+                    physical_baseline=False, initial_by_beta=None, max_seconds=None, chunk_reserve_seconds=0.,
+                    pricing_only=False):
+    from bayesfilter.inference.q20_stage_budget import BudgetedCheckpoint
+    deadline = None if max_seconds is None else time.monotonic()+max_seconds
+    if physical_baseline and config["role"] != "smoke":
+        raise ValueError("physical replica-exchange comparisons are outside active q20 estimation")
     from bayesfilter.inference.tempered_transitions_tf import (
         FixedChartKernelMixture, BoundWithinTemperatureKernel, ProperBridgeReplicaExchange,
         ProperReplicaExchangeTransitionProgram,
@@ -360,14 +434,40 @@ def sample_ensemble(config, bridge, root, *, members_by_beta, label, resume_chun
     program = ProperReplicaExchangeTransitionProgram(ProperBridgeReplicaExchange(bridge, betas), bindings,
                                                      jit_compile=config["jit_compile"])
     initial = program.initial_state(tf.stack(starts))
+    if pricing_only:
+        count = config["execution"]["pricing_transitions"]
+        times = []
+        for repeat in range(config["budget"]["pricing_updates"]):
+            seed = scoped_seed(config, "selected-price", label, repeat)
+            if any(seed in member._tuning_seeds() for member in all_members):
+                raise ValueError("timing seed overlaps tuning")
+            begin = time.monotonic()
+            output = program(initial, num_results=count, seed=seed, stage="warmup")
+            for value in tf.nest.flatten(output):
+                if tf.is_tensor(value):
+                    value.numpy()
+            if not output["health"]["passed"]:
+                raise ValueError("verified mixture timing health failed")
+            times.append(time.monotonic()-begin)
+        result = {"method": "ensemble", "status": "selected_procedure_priced",
+            "member_hashes": [m.member_hash for m in all_members], "members_by_beta": members_by_beta,
+            "kernels": [{"epsilon": m.step_size, "L": m.num_leapfrog_steps} for m in all_members],
+            "transition_signature": program.transition_signature, "betas": betas,
+            "chart_probabilities": [1./chart_count]*chart_count,
+            "first_seconds": times[0], "steady_seconds": max(times[1:] or times)/count,
+            "transitions_per_call": count, "role": "timing_only_excluded_from_posterior", "sources": source_snapshot()}
+        write_json(root / "result.json", result)
+        return result
     controller = SequentialExactTransitionConfig(transition_signature=program.transition_signature,
                                                  **sequential_kwargs(config, label))
     from bayesfilter.inference.hmc_posterior_assessment import validate_sequential_seeds
     forbidden = set().union(*(member._tuning_seeds() for member in all_members))
     validate_sequential_seeds(controller, forbidden=forbidden)
     chunks = _checkpoint_directory(root, resume_chunks)
-    with DurableTensorCheckpoint(chunks, {"transition": program.transition_signature,
-            "config": digest(config), "label": label, "initial": tf.io.serialize_tensor(initial["state"]).numpy().hex()}) as store:
+    with BudgetedCheckpoint(chunks, {"transition": program.transition_signature,
+            "config": digest(config), "label": label, "initial": tf.io.serialize_tensor(initial["state"]).numpy().hex()},
+            deadline=deadline, chunk_seconds=chunk_reserve_seconds,
+            safety_factor=config["budget"]["forecast_safety_factor"]) as store:
         def transition(state, *, num_results, seed, stage):
             for member in all_members:
                 member._validate()

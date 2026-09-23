@@ -60,7 +60,7 @@ accuracy. No new independent score-parity test was performed in this canary.
 
 ### Why the ideal-Gaussian assumption was unsupported
 
-The frozen export records 512 optimizer updates, `status=hmc_trial_nominee`,
+The frozen export records 512 current-scope updates, `status=hmc_trial_nominee`,
 `plateau_observed=false`, `posterior_qualified=false`, and
 `map_reliability.posterior_coverage_checked=false`. The inspected
 `neutra_training_protocol.assess_training_rung` nominates a trial after numerical
@@ -68,7 +68,12 @@ reliability, the minimum update count, and observed improvement from baseline;
 it does not require a plateau, Gaussian scores, latent covariance identity or
 posterior coverage. `q20_production_training.run_training_cohort` then skips
 further updates for that eligible nominee. This establishes the nomination
-mechanism, not that 512 updates are inherently insufficient or sufficient.
+mechanism, not that a fixed update count is inherently insufficient or sufficient.
+The [subsequent training-history audit](bayesfilter-q20-rkl-training-audit-2026-09-22.md)
+corrects the lifetime count to 1,024 accepted optimizer updates: 512 before the
+checked scope migration and 512 afterward. The last distinct-checkpoint
+assessment recorded continuing improvement, not a plateau; a later reassessment
+compared the unchanged map with itself.
 The map reliability check's `pullback` entry compares trainable and frozen
 implementations under an arbitrary cotangent; it is not a posterior-whitening
 assessment.

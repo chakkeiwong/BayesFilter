@@ -1,0 +1,367 @@
+\section[Weak nonlinear learning in q20]{When transport training learns scale but little nonlinear shape}
+\label{sec:bf-neutra-q20-repair}
+
+The September 2026 q20 investigation asks why reverse-KL training can produce
+an almost affine map while substantial nonlinear posterior geometry remains.
+The target is the four-parameter, thirty-observation UKF approximate posterior
+of the SSL--LSTM example. The ``q20'' designation refers to its latent-state
+configuration, not a twenty-dimensional parameter vector. All statements in
+this section concern that specified approximate posterior; accurate sampling
+from it would not establish agreement with the exact state-space posterior.
+The earlier three-stage examples in this chapter and the two/four-stage q20
+recipes are distinct experiments.
+
+\subsection{What failed, and what has already been checked}
+
+Let $z\sim r=\calN(0,I_4)$, let $\theta=T_\phi(z)$, and define the
+unnormalized transformed log density and its Gaussian-score residual as
+\begin{equation}
+ \ell_Z(z)=\ell_\Theta(T_\phi(z))+\log|\det J_T(z)|,
+ \qquad g(z)=\nabla_z\ell_Z(z)+z.
+ \label{eq:bf-q20-residual}
+\end{equation}
+An exact Gaussianizing map has $g=0$. A useful HMC map need not make this
+identity exact, so the residual explains geometry and can nominate a repair;
+posterior estimation still requires the sampling checks described elsewhere
+in this chapter.
+
+On the saved bank of 1,000 base-normal points, affine regressions explain
+$99.866$--$99.999\%$ of the coordinate variation of the depth-four map. Of
+the observed squared residual $\sum_n\|g(z^{(n)})\|^2$, $89.02\%$ lies in
+latent coordinate 2. A constant-plus-linear regression on all four latent
+coordinates explains only $0.573\%$ of that component's residual energy;
+its root-mean-square magnitude is $4.2638$. That latent direction principally
+controls the physical observation weight, approximately
+$\theta_3=0.2743+0.4958z_2$ on this bank. These descriptive observations
+localize a failure to learn nonlinear shape. They are not a bound on derivatives
+of the fitted map, proof of separability, or evidence that the target has
+multiple modes.
+
+The corresponding source audit checked the loss
+\begin{equation}
+ -\E_r[\ell_\Theta(T_\phi(z))+\log|\det J_T(z)|]
+\end{equation}
+and verified that its first
+parameter derivative includes both the supplied analytic target score and
+the log determinant. The previously checked finite differences do not support
+a missing-score explanation. The reported loss near 43 is not a KL divergence
+of 43: the additive terms $\E_r\log r+\log Z$ are not included in that number.
+
+Clipping alone also cannot explain the remaining failure. The continuation
+control clipped $99.02\%$ of its updates, whereas the clipping repair clipped
+$0.68\%$ and the depth-four continuation clipped none. Each principal repair
+added 1,024 updates with batch 32. The added layers consequently have only
+1,024 updates, and the existing layers have 2,048 lifetime updates. The late
+depth-four losses are flat and noisy; improvement from parent to endpoint does
+not establish continuing improvement at the endpoint or optimizer convergence.
+
+These results and their frozen-source identities are preserved in the
+\href{../plans/bayesfilter-q20-training-math-audit-results-2026-09-23.md}{September 23 mathematical audit}.
+They motivate three distinct mechanisms: release overall scale from a
+saturating parameterization, reduce noise in the same reverse-KL gradient,
+and expose direct scalar shape changes. The observations do not yet determine
+which mechanism matters most.
+
+\subsection{Why reverse-KL stationarity need not remove the score residual}
+
+The objective averages log density, whereas $g$ measures its derivative.
+Even an exact optimum within an affine family can retain nonlinear score
+error. Consider $p(x)\propto\exp(-x^4/12)$ and $x=m+\sigma z$. The
+nonconstant reverse-KL objective is
+\begin{equation}
+ L(m,\sigma)=\frac{m^4+6m^2\sigma^2+3\sigma^4}{12}-\log\sigma.
+\end{equation}
+For fixed positive $\sigma$, its minimum in $m$ is zero. At $m=0$,
+$\partial_\sigma L=\sigma^3-\sigma^{-1}$, so the optimum is $\sigma=1$.
+Nevertheless $g(z)=z-z^3/3$, and the Gaussian moments give
+\begin{equation}
+ \E[g]=\E[zg]=0,\qquad
+ \E[g^2]=1-\tfrac23(3)+\tfrac19(15)=\tfrac23.
+\end{equation}
+Thus affine directions can be stationary while nonlinear error remains. This
+is an analytic example, not a fitted description of the q20 posterior.
+
+Adding $\E\|g\|^2$ to the objective would change the optimization problem.
+Its parameter derivative generally requires derivatives of the target score,
+which the existing stopped-score bridge does not supply. The following
+path-gradient mechanism instead preserves reverse KL and needs only the
+first target score.
+
+\subsection{Mechanism one: separate global scale from conditional deformation}
+
+The q20 conditional log scale is $s(a)=2\tanh(a/2)$. At the observed mean
+scale near $-1.9936$,
+\begin{equation}
+ \frac{ds}{da}=1-\left(\frac{s}{2}\right)^2\simeq0.0064.
+\end{equation}
+This is a measured local attenuation. It does not prove the composed map
+cannot contract: other stages can compensate, and Adam's update is not
+proportional to this derivative alone. Still, the fixed outer scale of four
+requires contraction somewhere, so making every global scale change pass
+through the cap is an avoidable optimization constraint.
+
+One parameterization supported by the original NeuTra author implementation is
+\begin{equation}
+ s_j(x_{<j})=b_j+c\tanh\!\left(\frac{h_j(x_{<j})}{c}\right),
+ \qquad \frac{\partial s_j}{\partial b_j}=1.
+ \label{eq:bf-q20-free-scale}
+\end{equation}
+The bounded term controls input-dependent variation and the free bias controls
+global contraction. A final cap on their sum would restore the obstruction.
+The inspected \path{neutra/utils.py} implementation applies its optional
+\texttt{log\_scale\_clip\_pre} before adding \texttt{log\_scale\_bias};
+this is an available source implementation, not a claim that every published
+experiment used that option. Andrade's stable-flow construction similarly
+separates conditional clamps from a final trainable affine transformation
+\citep[Sections 3--5]{andrade2024stableflows}.
+
+The smallest map-preserving implementation is a separate affine correction
+\begin{equation}
+ A_\eta(x)=m+\diag(e^b)x,\qquad
+ \log|\det J_A|=\sum_j b_j,
+ \qquad m=b=0\ \text{at initialization}.
+ \label{eq:bf-q20-affine-mechanism}
+\end{equation}
+Then $A_\eta\circ T_0=T_0$ initially. This adds unconstrained global scale
+without rewriting the old checkpoint or optimizer slots. Its finite-state
+checks must reject overflow rather than clip the posterior or omit offending
+draws. It can improve scale conditioning; by itself it does not supply the
+missing nonlinear scalar shape.
+
+\subsection{Mechanism two: an exact alternative reverse-KL gradient}
+
+Write $s_q(\theta)=\nabla_\theta\log q_\phi(\theta)$ and
+$s_\pi(\theta)=\nabla_\theta\ell_\Theta(\theta)$. With a differentiable
+full-support map and integrability sufficient to interchange differentiation
+and integration, the chain rule gives
+\begin{align}
+ \nabla_\phi\operatorname{KL}(q_\phi\Vert\pi_\Theta)
+ &=\E_r\big[(\partial_\phi T)^\top(s_q-s_\pi)\big]
+   +\E_q\big[\partial_\phi\log q_\phi(\theta)|_\theta\big],\\
+ \E_q\big[\partial_\phi\log q_\phi(\theta)|_\theta\big]
+ &=\partial_\phi\int q_\phi(\theta)\,d\theta=0.
+ \label{eq:bf-q20-path-gradient}
+\end{align}
+The path estimator retains the first expectation. At $q=\pi$ it vanishes
+for each draw, whereas the ordinary estimator can remain noisy. Removing a
+zero-mean term does not guarantee lower variance away from the optimum,
+because covariance between terms also matters
+\citep[Section 2]{roeder2017sticking}. A finite minibatch therefore need not
+give equal standard and path gradients. Their expectations, rather than their
+pointwise values, must be checked against the same objective.
+
+The proposal score can be obtained without numerical inversion. Differentiate
+the change-of-variables identity at a known base draw:
+\begin{align}
+ \log q_\phi(T_\phi(z))&=\log r(z)-\log|\det J_T(z)|,\\
+ J_T(z)^\top s_q(T_\phi(z))&=-z-\nabla_z\log|\det J_T(z)|.
+ \label{eq:bf-q20-forward-proposal-score}
+\end{align}
+Solving this transposed-Jacobian system supplies $s_q$. Applied one layer at
+a time it is the score recursion of
+\citet[Proposition 3.2 and Appendix B.1]{vaitl2024fastpath}. Their optimized
+coupling-flow timing results do not establish the cost of our autoregressive
+implementation. The first optional implementation uses a bounded small dense
+Jacobian assembled by coordinate-wise vector-Jacobian products. That loop is
+over the four parameter coordinates, not training samples; all sample rows
+remain batched. It uses no TensorFlow pfor and makes no coupling-flow speed claim.
+
+After computing $v=s_q-s_\pi$, hold $v$ fixed and differentiate
+$B^{-1}\sum_n T_\phi(z^{(n)})^\top v^{(n)}$ with respect to $\phi$.
+This scalar carries the intended gradient but is not the reverse-KL loss;
+the actual $-\ell_\Theta-\log|\det J_T|$ must be reported separately.
+Stopping the complete forward log determinant would discard necessary terms.
+The inverse-density construction of \citet{vaitl2022path} and the forward
+recursion above are two ways to compute the required proposal score correctly.
+
+Combining \eqref{eq:bf-q20-residual} and
+\eqref{eq:bf-q20-forward-proposal-score} yields
+\begin{equation}
+ J_T^\top(s_q-s_\pi)=-g,\qquad
+ \nabla_\phi\operatorname{KL}
+ =-\E_r\big[(J_T^{-1}\partial_\phi T)^\top g\big].
+ \label{eq:bf-q20-residual-projection}
+\end{equation}
+If available parameter variations have little projection onto $g$, the expected
+gradient can be small despite large nonlinear error. Variance reduction helps
+resolve an existing direction; it does not create a missing one.
+
+\subsection{Mechanism three: direct scalar deformation with an inexpensive log determinant}
+
+\citet[Sections 2--3 and 6.1.2]{huang2018naf} identify poor fits and local
+minima with conditional affine flows and replace the scalar affine function
+by a monotone neural transformation. For a deep sigmoid flow (DSF), let
+\begin{equation}
+ \begin{aligned}
+ S(x)=\sum_{k=1}^{K}w_k\sigma(a_kx+b_k),\quad
+ &\tau(x)=\log S(x)-\log(1-S(x)),\\
+ a_k>0,\quad w_k>0,\quad\sum_kw_k=1.
+ \end{aligned}
+ \label{eq:bf-q20-dsf}
+\end{equation}
+Here $\sigma$ is logistic. Positivity makes the derivative strictly positive;
+the limits are $\tau(x)\to\pm\infty$ as $x\to\pm\infty$. For $K=1$,
+$\tau(x)=a_1x+b_1$, giving an exact affine control.
+
+Let $p_k=\sigma(a_kx+b_k)$ and
+$N=\sum_kw_ka_kp_k(1-p_k)$. Direct differentiation gives
+\begin{equation}
+ \tau'(x)=\frac{N}{S(1-S)},\qquad
+ \log\tau'(x)=\log N-\log S-\log(1-S).
+ \label{eq:bf-q20-dsf-logdet}
+\end{equation}
+Thus there is a fast analytic determinant formula. When the scalar parameters
+depend only on preceding coordinates, the full autoregressive Jacobian remains
+triangular and $\log|\det J|=\sum_j\log\tau'_j$. A masked conditioner
+produces all coordinate parameters in one pass. A single DSF scalar layer costs
+$O(BdK)$ beyond the conditioner; a deep dense scalar network also incurs its
+hidden matrix-product costs. These operation counts are not measured GPU timings.
+
+Directly forming $1-S$ loses precision in the tail. With
+$u_k=a_kx+b_k$, calculate instead
+\begin{align}
+ A&=\operatorname{LSE}_k(\log w_k+\log\sigma(u_k)),\\
+ B_0&=\operatorname{LSE}_k(\log w_k+\log\sigma(-u_k)),\\
+ C&=\operatorname{LSE}_k(\log w_k+\log a_k+
+                         \log\sigma(u_k)+\log\sigma(-u_k)),\\
+ \tau&=A-B_0,\qquad \log\tau'=C-A-B_0.
+ \label{eq:bf-q20-dsf-stable}
+\end{align}
+Here $\operatorname{LSE}(v)=\log\sum_k\exp v_k$ is evaluated stably.
+This algebra is consistent with the log-domain approach in the paper's
+Appendix C. The inspected author code additionally shrinks $S$ to
+$(1-\delta)S+\delta/2$ for numerical stability. That yields finite output
+limits and differs from the full-range map required here; the proposed
+implementation uses \eqref{eq:bf-q20-dsf-stable} without that shrinkage.
+
+HMC and geometry diagnostics need the derivative of the log determinant too.
+Let $\rho_k=w_ka_kp_k(1-p_k)/N$. Then
+\begin{equation}
+ \frac{\tau''}{\tau'}
+ =\sum_k\rho_ka_k(1-2p_k)-\exp(C-A)+\exp(C-B_0).
+ \label{eq:bf-q20-dsf-force}
+\end{equation}
+The first term is $N'/N$, and the last two differentiate $-\log S$ and
+$-\log(1-S)$. This remains a batched scalar reduction. For a conditional
+map, derivatives through the conditioner also contribute; the scalar formula
+alone is not the entire multidimensional score.
+
+NAF's significant cost distinction is its inverse. Given $y=\tau(x)$, each
+component logit crosses $y$ at $r_k=(y-b_k)/a_k$. Therefore
+\begin{equation}
+ \min_k r_k\ \leq\ \tau^{-1}(y)\ \leq\ \max_k r_k.
+ \label{eq:bf-q20-dsf-bracket}
+\end{equation}
+At the lower bound every sigmoid is at most $\sigma(y)$; at the upper bound
+every sigmoid is at least $\sigma(y)$, proving the bracket. A bounded bisection
+can solve inside it, with explicit input/output tolerances, an iteration cap,
+and a failure result. Training in the forward reverse-KL direction and ordinary
+latent HMC steps do not require this inverse on every evaluation. Physical-space
+proposal densities, forward-KL training, and ensemble cross densities can do so.
+Fast forward determinants consequently do not imply a cheap complete ensemble
+pipeline. The first implementation does not differentiate through bisection or
+offer inverse-based training.
+
+There is also an initialization trap. At $a_k=1,b_k=0$ for all components,
+with $w=\operatorname{softmax}(\eta)$,
+\begin{equation}
+ \partial_{a_k}\tau=w_kx,\qquad
+ \partial_{b_k}\tau=w_k,\qquad
+ \partial_{\eta_k}\tau=0.
+\end{equation}
+The scalar parameter directions are initially only affine. Small distinct
+components expose nonlinear directions, but their initial map displacement
+must be measured. Zero output initialization is not generally a defect:
+successful NAF and Glow recipes start near identity
+\citep[Appendix E]{huang2018naf}\citep[Section 3.3]{kingma2018glow}.
+The question is whether the chosen features and parameter directions can
+respond usefully on this target.
+
+The smallest shape experiment freezes the current map and uses
+$T_\psi=T_0\circ D_\psi$, where
+$D_\psi(z)=(z_1,\tau_\psi(z_2),z_3,z_4)$. It includes
+$\log\tau'_\psi(z_2)$ in the loss and keeps the posterior unchanged.
+The observed concentration of error motivates coordinate 2, but does not
+guarantee a marginal correction will suffice. Residual dependence on other
+coordinates would motivate a conditional transform next.
+
+Explicit inverses are available for rational-quadratic splines, along with
+inexpensive determinants \citep[Section 3]{durkan2019splines}. Their usual construction is
+$C^1$ but generally not $C^2$. Since the scalar transformed force contains
+$\tau''/\tau'$, knot behavior requires a separate HMC energy and derivative
+check. They remain an alternative, not an automatically qualified replacement.
+
+\subsection{How the three mechanisms will be distinguished}
+
+First test the arithmetic on analytic targets: affine identities, Gaussian
+pointwise cancellation of the path gradient, equality of expected standard and
+path gradients under converged quadrature, finite differences of scalar values
+and log determinants, and inverse roundtrips including tails. Checkpoint
+reconstruction must preserve all mechanism parameters and never imply HMC
+admission. Tiny CPU fixtures with hidden GPUs answer these engineering
+questions only. A few successful optimizer steps are not training evidence
+for the q20 posterior.
+
+The target experiment then starts from the same saved endpoint for isolated
+scale, gradient-estimator, and scalar-shape arms, with unchanged reverse KL.
+An affine-only scalar control distinguishes shape from location and scale.
+Pair the latent streams where meaningful and charge actual worker time; equal
+target-row counts need not imply equal optimizer steps or equal runtime.
+Keep true losses, per-block gradient/update measurements, scale derivatives,
+inverse work where used, and checkpoints. A failed candidate triggers the
+corresponding next repair; it does not alone reject NeuTra.
+
+Every numerical choice needs a local basis. The coordinate follows the saved
+residual decomposition. The minimum nonlinear component count follows from
+$K=1$ being affine, but sufficient capacity is uncalibrated. Positive slopes
+and weights follow from invertibility. Initial component spread is judged by
+map displacement and nonlinear response. Batch, learning rate, continuation
+length, replication, and any revised conditional cap must be priced and
+calibrated on the actual target. Published values such as the original NeuTra
+batch 4,096 and 5,000 updates are experimental settings, not q20 defaults.
+
+Fresh heldout objective estimates and the standard 1,000-point score report
+can support nomination. They cannot establish mode coverage, convergence, or
+superiority among stochastic candidates without the corresponding evidence.
+A new scalar family also requires supported frozen-map reconstruction,
+transformed-score checks, and fresh public-tuner qualification before HMC.
+The implementation and experiment sequence is recorded in the
+\href{../plans/bayesfilter-q20-three-mechanisms-plan-2026-09-23.md}{three-mechanism repair plan}.
+The strongest competing explanation remains that the current IAF family could
+learn adequate nonlinear shape under a better calibrated continuation. The
+three tests are designed to distinguish that explanation from limited effective
+parameter directions, rather than assume an architecture replacement is necessary.
+
+\subsection{A shared implementation of the proposed mechanisms}
+
+The September 24 implementation makes the affine autoregressive map, its
+inverse, and its score derivatives common to ordinary, weighted, legacy,
+and frozen-map consumers. Historical checkpoints retain their original scale
+conventions. A separate source-based IAF configuration implements the NeuTra
+author code's conditional cap with a free bias at every layer, together with
+the paper's three-stage, two-hidden-layer ELU architecture. The fixed cap is
+not a bound on the free global scale. The source initializer uses fan-in
+variance scaling with factor $0.02$, as selected by the author's
+\texttt{MakeIAFBijectorFn}; neither that factor nor the paper's training
+schedule establishes a calibrated q20 protocol.
+
+The new DSF configuration is a full conditional neural autoregressive flow:
+the earlier coordinates determine each coordinate's positive slopes, shifts,
+and mixture weights. Its source profile retains the author's cMADE
+conditioner, final conditioner weight normalization, and shared output
+projection, specialized to a constant context for an unconditional target.
+The log-domain transformer preserves the paper's full real support. It omits
+the author implementation's output shrinkage, which would bound that support.
+This numerical distinction and the fixed random-number conventions are
+documented explicitly in the
+\href{../reference/neutra-implementation.md}{implementation reference}.
+
+Layerwise proposal-score propagation is connected to the Adam training
+update. It uses Vaitl's general score recursion and autoregressive triangular
+solves, not the coupling-specific linear-cost formula. Inverse-density
+gradients use implicit differentiation of the same conditional map.
+Training handoff includes the standard 1,000-point residual report; a finite
+report alone establishes neither adequate whitening nor posterior convergence.
+These changes close implementation gaps. Their numerical regression and
+GPU checks are engineering evidence; a freshly calibrated q20 training run
+and downstream sampler validation are still required.

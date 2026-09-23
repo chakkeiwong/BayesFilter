@@ -13,9 +13,9 @@ import math
 from pathlib import Path
 
 
-SCHEMA = "bayesfilter.q20.production_protocol.v2"
+SCHEMA = "bayesfilter.q20.production_protocol.v3"
 PARAMETERS = ("latent_mean_weight.0.0", "latent_mean_bias.0", "observation_weight.0.0", "observation_bias.0")
-METHODS = ("identity", "classical", "neutra", "replica_exchange", "ensemble")
+METHODS = ("neutra", "ensemble")
 
 
 def digest(value):
@@ -63,7 +63,8 @@ def protocol_template():
                      "rungs": [128, 512, 2048, 8192], "cohort_min_updates": 512,
                      "checkpoint_every": 128, "carry_optimizer_across_beta": True,
                      "beta_zero_updates": 0},
-        "validation": {"bank_sizes": [768, 3072, 12288], "minimum_improvement": .04,
+        # Larger historical banks and fine plateau tolerances cannot gate a trial.
+        "validation": {"bank_sizes": [768], "minimum_improvement": .04,
                        "maximum_half_width": .02, "plateau_comparisons": 2,
                        "normal_interval_multiplier": 1.959963984540054,
                        "reliability_rows": 32, "reliability_rtol": 1e-9,
@@ -88,10 +89,11 @@ def protocol_template():
         "starts": {"max_proposals": 128, "per_sign": 2},
         "ensemble": {"charts": 2, "conditional_charts": 4,
                      "alternative_betas": [0.0, .25, .5, .75, 1.0]},
-        "comparison": {"methods": list(METHODS), "mean_margin_sd": .10,
+        "estimation": {"methods": list(METHODS), "success_policy": "first_valid_estimate"},
+        "assessment": {"mean_margin_sd": .10,
                        "quantile_margin_sd": .20, "event_margin": .05,
                        "reference_error_fraction": 1.0 / 3.0,
-                       "confirmation_replicates": 3, "interval_probability": .95},
+                       "interval_probability": .95},
         "reference": {"banks": 8, "rungs": [1024, 4096, 16384],
                       "batch_size": 32, "ess_min": 400., "minimum_tail_rows": 20},
         "execution": {"poll_seconds": 1., "termination_grace_seconds": 5.,
@@ -113,6 +115,8 @@ def _same_keys(actual, expected, where):
 
 
 def validate_protocol(config):
+    if isinstance(config, dict) and config.get("schema") == "bayesfilter.q20.production_protocol.v2":
+        raise ValueError("historical comparison protocol: create an estimation protocol and explicitly migrate saved training state")
     template = protocol_template()
     _same_keys(config, template, "protocol")
     digest(config)  # Reject non-finite JSON, including nested values.
@@ -123,8 +127,13 @@ def validate_protocol(config):
             raise ValueError(f"{name} must be boolean")
     if config["role"] != "smoke" and (config["cpu_reference"] or not config["jit_compile"]):
         raise ValueError("serious q20 training requires GPU/XLA")
-    if config["target"] != template["target"]:
-        raise ValueError("this route binds the q20 T30 strict float64 target; target changes need a new scope")
+    expected_target = dict(template["target"])
+    backend = config["target"].get("principal_sqrt_backend")
+    if backend not in {"tensorflow_eigh_strict", "tensorflow_eigh_strict_factor_cached"}:
+        raise ValueError("q20 requires strict or explicitly scoped safe-factor cached execution")
+    expected_target["principal_sqrt_backend"] = backend
+    if config["target"] != expected_target:
+        raise ValueError("this route binds the q20 T30 float64 target; target changes need a new scope")
     seed = config["seed"]
     if not isinstance(seed, list) or len(seed) != 2 or any(type(x) is not int or not 0 <= x < 2**31 for x in seed):
         raise ValueError("seed must contain two nonnegative int32 values")
@@ -137,8 +146,8 @@ def validate_protocol(config):
         raise ValueError("rungs must increase and include the funded cohort floor")
     if t["beta_zero_updates"] != 0 or t["carry_optimizer_across_beta"] is not True:
         raise ValueError("protocol uses analytic beta zero and carries Adam across beta")
-    if t["activation"] != "tanh" or t["stages"] != 2:
-        raise ValueError("q20 architecture search is the declared two-stage tanh family")
+    if t["activation"] != "tanh" or type(t["stages"]) is not int or t["stages"] < 1:
+        raise ValueError("q20 requires explicitly configured positive tanh depth")
     if t["betas"][0] != 0 or t["betas"][-1] != 1 or sorted(set(t["betas"])) != t["betas"]:
         raise ValueError("betas must strictly increase from zero to one")
     for name in ("batch_size", "checkpoint_every", "cohort_min_updates"):
@@ -168,18 +177,18 @@ def validate_protocol(config):
         raise ValueError("shortened protocols must be explicitly classified smoke")
     if h["epsilon_domain"][0] <= 0 or not h["epsilon_domain"][0] <= h["initial_epsilon"] <= h["epsilon_domain"][1]:
         raise ValueError("initial epsilon is a bounded warm-start hypothesis")
-    if config["comparison"]["methods"] != list(METHODS):
-        raise ValueError("comparison inventory must retain every baseline and proposed method")
+    if config["estimation"] != template["estimation"]:
+        raise ValueError("estimation tries plain NeuTra then the ensemble and stops at the first valid estimate")
     if config["ensemble"]["charts"] < 2 or config["ensemble"]["charts"] > len(t["roots"]):
         raise ValueError("ensemble needs at least two independently rooted charts")
-    if not 0 < config["comparison"]["reference_error_fraction"] < 1:
+    if not 0 < config["assessment"]["reference_error_fraction"] < 1:
         raise ValueError("reference error allocation must lie in (0,1)")
     for key, value in config["budget"].items():
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
             raise ValueError(f"invalid budget {key}")
     # Values consumed by downstream stages must be checked here as well as at
     # their public consumers; malformed metadata must not start a GPU worker.
-    for section in ("validation", "tuning", "posterior", "starts", "ensemble", "comparison", "reference", "execution"):
+    for section in ("validation", "tuning", "posterior", "starts", "ensemble", "assessment", "reference", "execution"):
         for key, value in config[section].items():
             if isinstance(value, (float, int)) and (isinstance(value, bool) or not math.isfinite(value)):
                 raise ValueError(f"invalid finite {section}.{key}")
@@ -222,11 +231,9 @@ def validate_protocol(config):
             raise ValueError(f"integer execution {key} required")
     if config["execution"]["termination_grace_seconds"] >= config["execution"]["diagnostic_attempt_seconds"]:
         raise ValueError("termination grace must fit deadline")
-    c = config["comparison"]
+    c = config["assessment"]
     if any(c[k] <= 0 for k in ("mean_margin_sd", "quantile_margin_sd", "event_margin")) or not .5 < c["interval_probability"] < 1:
-        raise ValueError("invalid comparison margins or interval")
-    if type(c["confirmation_replicates"]) is not int or c["confirmation_replicates"] < (1 if config["role"] == "smoke" else 3):
-        raise ValueError("confirmation replication must follow declared protocol")
+        raise ValueError("invalid posterior assessment margins or interval")
     return config
 
 
@@ -247,9 +254,21 @@ def scoped_seed(config, *labels):
     return tuple(int.from_bytes(raw[i:i+4], "big") & 0x7fffffff for i in (0, 4))
 
 
-def training_cohort(config):
+def method_schedule(method):
+    if method not in METHODS:
+        raise ValueError("q20 estimation permits only neutra or ensemble")
+    return "direct" if method == "neutra" else "continuation"
+
+
+def method_betas(config, method):
+    method_schedule(method)
+    return [1.] if method == "neutra" else config["training"]["betas"][1:]
+
+
+def training_cohort(config, *, method=None):
     t = config["training"]
+    schedules = ("direct", "continuation") if method is None else (method_schedule(method),)
     return [{"id": f"{schedule}-w{width}-lr{lr:g}-r{root}", "width": width,
              "learning_rate": lr, "root": root, "schedule": schedule}
-            for schedule in ("direct", "continuation")
+            for schedule in schedules
             for width in t["widths"] for lr in t["learning_rates"] for root in t["roots"]]
