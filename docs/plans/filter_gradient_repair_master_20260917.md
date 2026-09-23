@@ -1,5 +1,57 @@
 # Complete filter and gradient execution repair
 
+Current checkpoint through03288: the master program and ledger are refreshed.
+All18 CPU public-block cost comparisons pass; the lone GPU timing is rejected
+for observed sharing and a complete clean GPU cohort remains required.
+CPU/GPU four-signature churn passes full records and collection but confirms
+native host residency. The internal reusable batched locator passes eight CPU
+records plus one enclosing XLA invalid-to-valid reset check; public wiring is
+unchanged until GPU/consumer/cost qualification. All129 policy checks pass.
+The exact current CDF parent passes four deadline/cleanup checks, including a
+quiet worker and SIGTERM-to-SIGKILL escalation. Actual compiled DZ5 integration
+remains open. See the [locator/deadline checkpoint](filter_gradient_batched_locator_checkpoint_20260923.md)
+and [block cost/memory result](filter_gradient_block_cost_memory_result_20260923.md).
+
+Cumulative charges are64858.705502 CPU /63571.041306 GPU seconds, leaving
+13.98 CPU /34.34 GPU process-hours under unchanged32/52-hour caps. GPU
+qualification preflights currently decline under foreign utilization. No worker
+is active. Remote main is still47ae8836c and remains unmerged. The E2 reporting-
+count proposal awaits explicit agreement; its diagnostic evidence is complete
+and no revised criterion or residual correction is installed. Next: resume
+GPU locator qualification, wire the qualified dependency into the isolated DZ5
+controller, evaluate native-memory containment, complete clean costs and E6
+endpoint dispositions. Earlier checkpoints below are historical status records.
+
+Latest continuation through03275: both public-block churn probes pass complete
+original comparisons,200 alternating calls per backend and actual callback/graph
+collection. Host memory remains resident and grows with new compiled signatures;
+E4 therefore remains open for process-lifetime containment. GPU run03273 also
+records a foreign compute process during execution, vetoing its timing despite
+passing numerics. The CPU cost cohort is complete; all18 GPU cost jobs will
+restart as a separately frozen cohort when an unshared device is available.
+Proceed with the reviewed E5 reusable batched-locator dependency in the meantime.
+The pending E2 clipping-count proposal is unchanged; main remains unmerged.
+
+E6 discovery snapshot `partial-guard-discovery-03276.json` enumerates the14
+partially guarded modules with current source hashes and every excluded syntax
+candidate. This is not a violation count. Final classification must distinguish
+configuration/reporting/process orchestration from numerical work, including
+the known public posterior-local and iterative-quadratic controllers. The source
+and Austria-SIR training modules additionally require consumer/source-anchor
+review; a passing partial guard cannot close their call-chain obligations.
+
+Current continuation through03273: the public ordered-block endpoint is
+qualified on CPU/GPU, and all18 CPU matched-cost workers pass. CPU XLA repeated
+public calls take about16/23ms atD3/D5 versus12.4/13.0s for the recompiling prior
+API; cold ratios are1.316/1.320 and observed RSS is669/690MiB lower. These are
+descriptive fixture results; no CPU relative-cost trigger fires. GPU costs have
+one passing worker and await an unshared GPU2 after a prelaunch contention stop.
+E4 bounded churn proceeds independently with frozen sources. Cumulative charges
+are64501.184090 CPU /63429.579501 GPU seconds under unchanged32/52-hour caps.
+The initializer clipping-count proposal remains pending; E2 public initializers,
+E4 native-memory disposition, E5 actual DZ5 integration and E6 terminal audit/
+integration are still open. Main remains unmerged. Earlier checkpoints follow.
+
 2026-09-23 public-block checkpoint through03247: the public endpoint now runs
 one enclosing XLA sweep. All66 checks pass on each of CPU and GPU:13 public,
 43 existing consumers,6 alternate configurations and4 resolution/no-use checks.
@@ -28,6 +80,15 @@ No worker is active at this checkpoint. The reviewed E3 public ordered-block
 integration is next; E2 initializer/E4 native retention/E5 DZ5/E6 final audit and
 integration remain open. Main is unmerged. Earlier checkpoints are historical.
 
+E2 diagnosis through03252: independent high-precision CPU/GPU checks identify
+roundoff at a near-zero reporting coefficient, with well-conditioned designs.
+The complete residual candidate matches original D1 records and differs in D3
+only in clipping counts and copied events. See the
+[diagnosis](filter_gradient_initializer_coefficient_result_20260923.md) and
+[concrete reporting-count proposal](filter_gradient_initializer_clip_reporting_proposal_20260923.md).
+The proposal requires agreement before adoption. E3/E6 block public costs are
+executing after10 analyzer and129 policy checks; E4 churn probes are prepared.
+
 ## Remaining-gap repair map (2026-09-23 continuation)
 
 Every reported gap has an execution and acceptance path in the
@@ -39,11 +100,26 @@ a solution is already qualified.
 | Remaining gap | Planned repair and next evidence | Closure gate |
 | --- | --- | --- |
 | Public numerical control still in Python | E2: qualify and install the internal iterative initializer. E3 public ordered-block CPU/GPU qualification completes through03247; matched costs remain. | Complete original public records, exact target order/counts, failure/no-use behavior, supported configurations and unchanged HLO on CPU/GPU. |
-| Healthy initializer QR/SVD rounding changes strict decisions | E2: use the preserved identical-input decomposition attribution to locate changed QR/SVD arithmetic; evaluate corrections against both D1 terminal selection and D3 clipping counts before public wiring. | Original healthy decisions and full records at unchanged tolerances on both devices; no blanket near-tie waiver or discarded-precision exemption. |
-| Actual DZ5 consumer uses non-JIT/Python/NumPy execution | E5: migrate the actual initialize_dense_local call chain in an isolated MacroFinance checkout, using tensor telemetry, compiled attempts/partitions, TF/standard-library assembly and independent parent deadlines. | Real target/transition wiring, fixed batch extent, invalid-row accounting, quiet/blocked worker cleanup and exact source/pin provenance; preserve the live dirty tree. |
+| Initializer coefficient roundoff and clipping reports | E2: independent high-precision attribution is complete. The residual candidate preserves actual decisions but changes near-zero D3 reporting counts. The concrete narrow reporting proposal awaits agreement before installing the correction and renewing full records/consumers. | Original healthy decisions and full records at unchanged tolerances; no blanket near-tie waiver or discarded-precision exemption. |
+| Actual DZ5 consumer uses non-JIT/Python/NumPy execution | E5: reusable locator passes nine CPU checks; qualify GPU then migrate initialize_dense_local in an isolated checkout with tensor telemetry, compiled attempts/partitions and TF/standard-library assembly. Current CDF parent deadline mechanics pass four tests. | Real target/transition wiring, fixed batch extent, invalid-row accounting, actual compiled consumer under the tested parent and exact source/pin provenance; preserve the live dirty tree. |
 | GPU correctness and matched before/after costs | E6: GPU renewal and sequential costs complete through03177; execute reviewed ordered-block original/graph/XLA public comparisons at two extents with three fresh processes per arm. | Verified memory growth and device identity; full-record comparisons; shared-device timing cannot close a clean cost gate. |
 | Native executable retention and cold/RSS overhead | E4/E6: separate owner/graph collection from executable residency; profile bounded signature churn and compilation by stage. Evaluate bounded signature reuse and process-lifetime containment if native eviction is unavailable. | Measured bounded resource use for the supported lifecycle, preserved arithmetic, and explicit dispositions for each cold/warm/host/device trigger; Python collection alone is insufficient. |
 | Incomplete final audit and integration | E6: finish endpoint-to-implementation inventory and F01--F20 evidence dispositions, reconcile current remote, run final frozen-source suites/cost checks and terminal review. | Every required gate passes before main merge; canonical LEDH rebuilding remains excluded. |
+
+E6 endpoint review after03252 makes a wider E2 obligation explicit: the public
+`initialize_posterior_local_location_scale` still has Python movement, curvature,
+partition and row-selection loops. Its policy entry deliberately guards no
+Python iteration yet; dependency qualification does not qualify this enclosing
+endpoint. Extract its existing recurrence into a stable native controller after
+the quadratic initializer dependency qualifies, preserving eligibility/replay
+accounting, exact incumbent order, independent cloud/holdout/audit roles and full
+reports. Test the actual public endpoint and all existing consumers on CPU/GPU,
+plus changed-input ownership/HLO and complete matched costs. This is remaining
+F18/F19 work, not a newly approved alternative algorithm or a reason to close
+those findings. E5's actual `initialize_dense_local` caller additionally uses a
+zero-argument freshly compiled batched locator; extracting reusable operand-bound
+locator state is part of its execution repair. The active frozen MacroFinance
+CDF campaign remains separate and must not be restarted or have source replaced.
 
 Continuation review: source-frozen GPU run03099 passes the independent exact
 predicate boundaries;03100 fails because the scalar fixture returns root status0

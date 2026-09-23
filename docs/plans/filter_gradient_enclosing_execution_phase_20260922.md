@@ -1,5 +1,158 @@
 # Additional repair phase: complete execution boundaries and ownership
 
+Current checkpoint03288: nine internal batched-locator CPU checks pass, including
+the enclosing recurrence; all129 policy checks pass. The locator unit has used
+11/20 workers and248.566129/3600 seconds. GPU qualification is pending after two
+prelaunch utilization declines. The current CDF parent's four deadline/cleanup
+checks pass; the separate supervision unit closes at2/4 workers and15.964788/120
+seconds. See the [checkpoint and next gates](filter_gradient_batched_locator_checkpoint_20260923.md).
+No worker is active. Cumulative charges64858.705502 CPU/63571.041306 GPU seconds
+leave13.98/34.34 process-hours. Main47ae8836c remains unmerged. Pending E2
+agreement, GPU qualification/clean costs, native-memory containment, actual DZ5
+integration and E6 terminal dispositions remain explicit. Earlier notes follow.
+
+E5 current-parent mechanics03286 passes quiet completion, timeout and ordinary
+descendant cleanup. One final diagnostic adds a worker that installs a SIGTERM
+ignore handler and records readiness before blocking, to exercise the actual
+five-second grace/SIGKILL branch. This addresses deferred native termination,
+not adversarial containment. Keep all original assertions and the4-worker/120s
+unit budget. No external source edit or numerical run is involved.
+
+E5 current-parent review after03285: the enclosing locator recurrence passes
+complete CPU records, invalid-to-valid reset, target order/counts, one inner/
+outer trace, stable HLO and collection. GPU qualification still awaits capacity.
+Inspection finds the current CDF proposal caller already invokes
+`scripts.run_bayesfilter_estimation.supervise` with an independent wall deadline;
+the earlier progress-only supervisor is a different route. Qualify the exact
+current standard-library function without editing or importing the external
+model runtime: quiet successful worker, blocked worker and blocked worker with
+one ordinary descendant. Record caller/function hashes, actual commands/events,
+deadline outcomes and process cleanup. Source mutation or missing child startup
+invalidates the evidence. At most4 CPU workers/120 charged seconds, no numerical
+campaign or GPU execution; existing cumulative caps unchanged. This can qualify
+current parent mechanics only, not the initializer call chain, active retained
+campaign, or arbitrary descendant escape. No MacroFinance-local filter/HMC
+imports occur. Preserve the external live worktree and frozen campaigns.
+
+E5 enclosing-dependency review after03284: all eight CPU cases now pass.
+GPU attempts decline before launch under foreign utilization. Add one CPU and
+one GPU worker to the same20-worker/3600-second reservation to exercise the
+actual intended composition: invoke the reusable locator inside an enclosing
+XLA tf.while_loop, first with entirely invalid starts and then valid starts,
+across changed inputs and return to the original inputs. Require complete pinned
+records/callback sequence, exact counts, one inner/outer trace, stable HLO and
+owner/callback collection. This directly tests resource reset/control ordering
+that standalone reuse cannot establish. Keep public wiring unchanged. No GPU
+evidence is inferred from the CPU passes or from declined preflights.
+
+E5 localized reporting repair after03283: seven CPU cases pass. The three-row
+invalid case reaches result writing but its callback-position recorder includes
+the original optimizer's nonfinite trial points, which strict JSON rejects.
+Encode those diagnostic positions as explicit nan/+inf/-inf labels in the saved
+report. Keep the raw comparison, including its existing equal-NaN semantics and
+signed-infinity checks, unchanged; runtime records already report absent values
+as null. Rerun the affected case before GPU qualification, preserving03283 and
+its partial output. No numerical behavior, tolerance or source authority changes.
+
+E5 internal implementation review, before03276: the reusable owner is installed
+without public wiring. AST comparison confirms unchanged close/evaluate/record/
+search-round arithmetic and an identical original run body after the added reset
+and explicit-starts/scale binding (only nested docstring indentation differs).
+All19 resources reset at invocation; a lock protects standalone concurrent use
+and synchronizes completion. The compiled callable is available for an enclosing
+owner whose own lock must cover its entire invocation. The complete module is
+guarded with no added exception (228 sources/1333 exact exceptions).
+Eight isolated cases per backend avoid accumulated native compilation pressure.
+Each first executes the pinned original with JIT on, preserving any actual GPU
+resource-placement failure before candidate comparison. Changed starts/scales,
+return-to-original, full records, call order/counts, one trace, stable HLO and
+actual collection remain required. No public API/default change or alternate
+solver is installed. The reviewed20-worker/3600-second unit starts now.
+
+2026-09-23 post-run review through03275: both bounded churn probes pass all
+original records,200 alternating calls and actual Python owner/graph/callback
+collection. Native host residency persists: after four signatures CPU/GPU RSS
+is4447/4528MiB. CPU executable mappings rise1119 ->2865; GPU map counts remain
+near4200 after first compilation, but host heap still grows. This is evidence
+for bounded signature reuse and process-lifetime containment, not native eviction.
+
+The in-run observer also detects the foreign training process in03273. Its
+numerics pass, but its cost evidence is vetoed for sharing. Thus no GPU block
+cost arm yet qualifies. Close this incomplete GPU freeze, preserve03273 and
+the preflight decline, and proceed with the reviewed E5 internal locator work.
+The18 CPU measurements remain their own complete frozen cohort. Restart all18
+GPU cost jobs together on one unshared UUID after the dependency checkpoint;
+analyze CPU and GPU cohorts separately with their source identities, checking
+the unchanged block call-chain source explicitly. This avoids stalling independent
+repairs for a foreign GPU context; it does not relax any cost or numerical gate.
+The cost unit retains its42-worker/14,400-second cap (21 workers consumed through
+03273, including two prechecks), and the churn unit closes at2 workers/234.452300s.
+No numerical worker is active. The staged E5 owner may now be installed.
+
+2026-09-23 continuation through03273: all18 CPU public-block cost workers pass
+and the CPU analysis is saved in `block-public-costs-cpu-03272.json`. GPU repeat0
+passes its prior-D3 worker03273, then the graph-D3 preflight declines before
+launch because another campaign holds a context on GPU2. Preserve that receipt;
+do not treat an idle context as an unshared device or interrupt its owner.
+Resume the frozen cost cohort on physical GPU2 when it is unshared. Meanwhile,
+execute the already reviewed E4 CPU/GPU churn diagnostics; these do not depend
+on GPU timing qualification and their sharing observations are explanatory.
+This ordering change leaves source, comparisons, unit budgets and cumulative
+caps unchanged. Do not edit runtime/scripts/tests until the cost cohort closes.
+
+E2 follow-up review after03251: all four scalar/batch CPU/GPU coefficient
+diagnostics pass. The36x2 systems have condition2.4994;100/70-digit references
+agree, but NumPy itself often has the wrong sign at essentially zero mu.
+Native/original design arrays differ around1e-16; GPU responses are identical
+and CPU responses differ up to1.11e-16. One residual correction reduces the
+observed coefficient error, without proving the full initializer equivalent.
+Use one remaining worker of the6-worker/1800-second E2 diagnostic allocation
+to run the preserved complete residual candidate on GPU, with the original
+full-record/count/event assertions still exact. Preserve all failures and
+inspect every changed field. No runtime correction or count waiver is adopted.
+Any revised discrete diagnostic criterion must be concrete and separately
+agreed before it can close healthy initializer parity.
+
+Prepared E4 follow-up, to execute after public block cost qualification: two
+CPU/GPU probes rebuild the actual block public API across four fresh callback/
+shape signatures (D3,D5,D3,D5), with50 alternating-input calls per signature.
+Use the same qualified cost fixtures/configuration and compare every saved input
+result with original3582b4ac after the observed interval. Record trace count,
+callback/owner/graph collection, RSS/PSS, GPU allocator and mapping categories at
+construction, cold/changed calls,25/50 reuse calls and release. Append stage
+evidence so a later process failure cannot erase preceding observations. Stop
+before new construction if map count already exceeds70% of the OS limit; do not
+change the OS limit or claim this diagnostic threshold is a runtime guarantee.
+Reserve at most4 workers/1200 charged seconds within existing cumulative caps,
+including localized retries. This is explanatory retention attribution, not a
+performance ranking, native-eviction certificate or general process-lifetime
+bound. A collected Python owner cannot by itself close the memory repair.
+
+E5 dependency review (prepared outside the frozen cost worktree): the actual
+MacroFinance dense initializer calls `locate_batched_local_center`, whose current
+implementation creates resource variables and a zero-argument compiled function
+for every public call. An enclosing compiled attempt cannot create that owner
+inside its numerical recurrence. Extract an internal fixed-callback/batch/
+dimension owner with explicit starts/scale operands and invocation-time resource
+reset, retaining the existing chart, TFP optimizer, tie/replay decisions and
+status/accounting. Preserve the public wrapper until internal qualification.
+This is accepted TF/TFP execution-repair work; it does not change the DZ5 model,
+target, tuner, priors, training or active frozen campaign. The HMC interface and
+capability registry were inspected; no replacement tuner is proposed.
+
+The first internal evidence unit reserves at most20 workers/3600 charged seconds
+inside the existing cumulative caps. Compare complete pinned d6a568384 records,
+target order and counts for scalar-size and three-row batches on rotated
+quadratic, nonquadratic, flat-tie and invalid-row callbacks, including changed
+starts/scales and return to the original inputs. Require one trace, stable HLO,
+actual callback/graph release and correct resource reset. CPU first, then GPU.
+Preserve an actual original GPU compilation failure before proposing any explicit
+reference-only accounting compatibility change; never silently fallback the
+runtime. Stop the affected arm on mismatch or unsupported resource ownership.
+The staged code/test in `/tmp/filter-block-public-stage-20260923` is uninstalled
+and unexecuted. Public wiring, all existing consumers, complete costs and the
+actual DZ5 compiled outer/telemetry/deadline checks remain separate E5 gates.
+
 2026-09-23 public-block checkpoint through03247: the public endpoint now runs
 one enclosing XLA sweep. All66 checks pass on each of CPU and GPU:13 public,
 43 existing consumers,6 alternate configurations and4 resolution/no-use checks.

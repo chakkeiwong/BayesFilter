@@ -123,6 +123,23 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "dz5_current_deadline_cpu": ("tests/test_filter_repair_dz5_supervision.py",),
+    **{f"batched_center_enclosing_{device}": (
+        "tests/test_filter_repair_batched_center_reuse.py::test_batched_locator_resets_inside_enclosing_xla_recurrence",)
+        for device in ("cpu", "gpu")},
+    **{f"batched_center_reuse_{case}_{batch}_{device}": (
+        f"tests/test_filter_repair_batched_center_reuse.py::test_batched_locator_reuses_operand_starts[{case}-{batch}]",)
+        for case in ("quadratic", "nonquadratic", "flat", "invalid_rows")
+        for batch in (1, 3) for device in ("cpu", "gpu")},
+    "block_public_cost_analysis": ("tests/test_filter_repair_block_cost_analysis.py",),
+    **{f"block_public_cost_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_block_public_memory.py::test_complete_public_block_costs[{arm}-{dimension}]",)
+        for arm in ("prior", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"block_public_churn_{device}": (
+        "tests/test_filter_repair_block_public_churn.py::test_bounded_public_block_callback_and_shape_churn",)
+        for device in ("cpu", "gpu")},
+    "initializer_native_residual_gpu": (
+        "tests/test_filter_repair_initializer_arithmetic.py::test_initializer_residual_correction_candidate",),
     **{f"block_public_options_{case}_{device}": (
         f"tests/test_filter_repair_block_public_options.py::test_public_block_configured_dependencies[{case}]",)
         for case in ("scalar_locator", "factor_one", "factor_two_reuse", "paired", "scaled_search", "score_disabled")
@@ -961,6 +978,14 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"block_public_cost_{arm}_{dimension}_{device}":
+        "Complete public block costs; repeated original-record/provenance comparisons and separate ledger disposition required."
+        for arm in ("prior", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
+    **{f"block_public_churn_{device}":
+        "Bounded public callback/shape churn attribution; cannot establish native eviction or waive complete original-record/cost gates."
+        for device in ("cpu", "gpu")},
+    "initializer_native_residual_gpu":
+        "GPU attribution of the diagnostic residual-correction candidate; no runtime installation or clipping-count waiver.",
     **{f"initializer_coefficient_reference_{batched}_{device}":
         "Identical-array100/70-digit coefficient attribution only; no runtime correction, clipping-count waiver or healthy initializer admission."
         for batched in (False, True) for device in ("cpu", "gpu")},
@@ -1118,6 +1143,11 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"batched_center_reuse_{device}": tuple(f"batched_center_reuse_{case}_{batch}_{device}"
+        for case in ("quadratic", "nonquadratic", "flat", "invalid_rows") for batch in (1, 3))
+        for device in ("cpu", "gpu")},
+    **{f"block_public_cost_{device}": tuple(f"block_public_cost_{arm}_{dimension}_{device}"
+        for dimension in (3, 5) for arm in ("prior", "graph", "xla")) for device in ("cpu", "gpu")},
     **{f"block_public_options_{device}": tuple(f"block_public_options_{case}_{device}"
         for case in ("scalar_locator", "factor_one", "factor_two_reuse", "paired", "scaled_search", "score_disabled"))
         for device in ("cpu", "gpu")},
@@ -1395,6 +1425,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "batched_center_enclosing_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["batched_center_reuse_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["block_public_cost_gpu"]},
+    "block_public_churn_gpu": "GPU", "initializer_native_residual_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["block_public_options_gpu"]},
     **{f"initializer_coefficient_reference_{batched}_gpu": "GPU" for batched in (False, True)},
     **{group: "GPU" for group in TEST_BATCHES["block_public_gpu"]},
@@ -1623,7 +1657,8 @@ def require_unshared_cost_preflight(args):
     """Decline new public-cost workers before charging shared-device timing."""
     if (args.action != "test" or args.device != "GPU"
             or args.group not in (*TEST_BATCHES["posterior_public_memory_gpu"],
-                                 *TEST_BATCHES["sequential_public_cost_gpu"])):
+                                 *TEST_BATCHES["sequential_public_cost_gpu"],
+                                 *TEST_BATCHES["block_public_cost_gpu"])):
         return
     samples = args.gpu_preflight
     if len(samples) >= 2 and all(sample["performance_preflight_uncontended"]
