@@ -1,5 +1,18 @@
 # Filter and gradient repair recovery
 
+2026-09-23 public-block checkpoint through03247: the public endpoint now runs
+one enclosing XLA sweep. All66 checks pass on each of CPU and GPU:13 public,
+43 existing consumers,6 alternate configurations and4 resolution/no-use checks.
+All129 policy checks pass. The source guard covers the whole public module
+(227 sources/1333 exact exceptions; no numerical-loop waiver). See the
+[public integration result](filter_gradient_block_public_result_20260923.md).
+This E3 unit closes at70/72 workers and2233.332018/14,400 seconds,
+including preserved harness failures. Cumulative charges are63689.397439 CPU
+and63154.650998 GPU seconds under unchanged32/52-hour caps. E2 coefficient
+diagnosis is next; matched block costs, native retention, actual DZ5 and final
+audit/integration remain open. Remote main is47ae8836c; main stays unmerged.
+No numerical worker is active at this checkpoint. Earlier checkpoints follow.
+
 2026-09-23 checkpoint through03177: GPU renewal is complete:5 block capture/
 ownership,37 dependency derivative,6 ordered-controller,1 outer-owner,23 public
 sequential,56 sequential-consumer and43 block-consumer checks pass;129 policy

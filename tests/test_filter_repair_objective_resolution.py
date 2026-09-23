@@ -266,7 +266,11 @@ def test_controlled_completed_error_skips_mass_and_block_handoff(batched, monkey
                 refined = history['refine']
 
                 def replace_row(rows, value):
-                    return tf.tensor_scatter_nd_update(rows, [[1]], [tf.constant(value, rows.dtype)])
+                    changed = tf.tensor_scatter_nd_update(rows, [[1]], [tf.constant(value, rows.dtype)])
+                    # Only injected diagnostic fields depend on the arm switch.
+                    # Avoid an artificial conditional over the entire completed
+                    # record, which fails CUDA graph construction in03241/03242.
+                    return tf.where(armed, changed, rows)
 
                 attempts = {**refined['attempts'],
                     'promoted_without_acceptance': replace_row(refined['attempts']['promoted_without_acceptance'], True),
@@ -277,7 +281,7 @@ def test_controlled_completed_error_skips_mass_and_block_handoff(batched, monkey
                 return {**real, 'history': {**history,
                     'event': replace_row(history['event'], 3), 'refine': refined}}
 
-            return tf.cond(armed, inject, lambda: real)
+            return inject()
 
         return tf.function(execute, input_signature=lifecycle.input_signature,
             jit_compile=True, autograph=False)

@@ -23,7 +23,6 @@ import tensorflow as tf
 from bayesfilter.inference.program_cache_scope import scoped_program_cache
 from bayesfilter.inference.sequential_map_covariance import (
     SequentialMapCovarianceConfig,
-    estimate_sequential_map_covariance,
 )
 from bayesfilter.ops.host_tensor_io import numeric_tensor
 
@@ -38,13 +37,6 @@ BLOCK_COORDINATE_CENTER_NONCLAIMS = (
     "not default-readiness evidence",
 )
 
-_ALLOWED_HANDOFF_STATUSES = frozenset(
-    {
-        "usable",
-        "sequential_refinement_without_terminal_geometry",
-        "terminal_projection_exceeds_cap",
-    }
-)
 _DISCARDED_INTERNAL_GEOMETRY_FIELDS = frozenset(
     {
         "precision",
@@ -178,8 +170,8 @@ class BlockCoordinateCenterResult:
             "physical_target_rows": self.physical_target_rows,
             "maximum_physical_target_rows": self.maximum_physical_target_rows,
             **(dict(self.numerical_summary) if self.numerical_summary is not None else {
-                # Direct construction and the legacy diagnostic controller keep
-                # their compatibility summaries until public native wiring.
+                # Directly constructed records retain compatibility summaries;
+                # the public controller supplies its completed tensor decisions.
                 "objective_nondecreasing": self.final_objective >= self.initial_objective,
                 "objective_progress_resolvable": _resolvable_decrease(
                     -self.initial_objective, -self.final_objective),
@@ -272,7 +264,11 @@ def locate_block_coordinate_center(
     config: BlockCoordinateCenterConfig | None = None,
     progress_callback: Callable[[Mapping[str, Any]], None] | None = None,
 ) -> BlockCoordinateCenterResult:
-    """Execute one ordered, nonoverlapping transactional Gauss-Seidel sweep."""
+    """Execute one ordered transactional Gauss-Seidel sweep in a single XLA call.
+
+    Progress callbacks receive completed observations after numerical execution;
+    consumers requiring a live deadline must use independent process supervision.
+    """
 
     cfg = BlockCoordinateCenterConfig() if config is None else config
     center = tf.reshape(numeric_tensor(initial_center, tf.float64), [-1])
@@ -299,268 +295,13 @@ def locate_block_coordinate_center(
             f"{prospective_rows}"
         )
 
-    initial_value_tf, initial_score_tf = _full_value_score(
-        value_and_score_fn, center, dimension
-    )
-    initial_value = float(initial_value_tf.numpy())
-    initial_center_tf = tf.identity(center)
-    block_bounds = tf.constant([(block.start, block.stop) for block in ordered_blocks], tf.int32)
-    physical_rows = 1
-    sequential_rows = 0
-    current_value = initial_value
-    current_score = initial_score_tf
-    records: list[Mapping[str, Any]] = []
-    accepted_count = 0
-    transaction_rejections = 0
-    material_reversal = False
-    repeat_cycle = False
-    two_step_cycle = False
-    scheduled_block_maxima_no_worse = False
-    status = "sweep_incomplete"
-    completed = False
-    post_update_block_maxima: dict[str, float] = {}
-    standardized_trace = [_numerical_call(tf.math.divide, initial_center_tf, scale_tf)]
-    repeat_threshold = cfg.repeat_threshold_factor * _EPS64_SQRT * max(
-        1.0, math.sqrt(dimension)
-    )
-    _emit_progress(progress_callback, "sweep_started", block_count=len(ordered_blocks))
+    from bayesfilter.inference.block_controller_report import block_result
+    from bayesfilter.inference.block_controller_tf import block_controller
 
-    for block_index, block in enumerate(ordered_blocks):
-        center_before = tf.identity(center)
-        value_before = current_value
-        score_before = current_score
-        _emit_progress(
-            progress_callback,
-            "block_started",
-            block_index=block_index,
-            block_name=block.name,
-        )
-
-        def block_value_score(block_position: tf.Tensor, *, block=block,
-                              center_before=center_before) -> tuple[tf.Tensor, tf.Tensor]:
-            value, score, finite = _block_target_program(
-                value_and_score_fn, dimension, block.start, block.stop, None
-            )(center_before, block_position)
-            if tf.executing_eagerly() and not bool(finite):
-                raise ValueError("full target replay must be finite")
-            return value, score
-
-        block_batched = None
-        if batched_value_and_score_fn is not None:
-
-            def block_batched(block_positions: tf.Tensor, *, block=block,
-                              center_before=center_before) -> tuple[tf.Tensor, tf.Tensor]:
-                values, scores, finite = _block_target_program(
-                    batched_value_and_score_fn, dimension, block.start, block.stop,
-                    int(block_positions.shape[0]),
-                )(center_before, block_positions)
-                if tf.executing_eagerly() and not bool(finite):
-                    raise ValueError("batched full target rows must be finite")
-                return values, scores
-
-        sequential_result = estimate_sequential_map_covariance(
-            block_value_score,
-            [center_before[block.start : block.stop]],
-            batched_value_and_score_fn=block_batched,
-            scale=scale_tf[block.start : block.stop],
-            config=block.sequential_config,
-            progress_callback=(
-                None
-                if progress_callback is None
-                else lambda event, index=block_index, name=block.name: _emit_progress(
-                    progress_callback,
-                    "block_locator_progress",
-                    block_index=index,
-                    block_name=name,
-                    locator_stage=event.get("stage", "unknown"),
-                )
-            ),
-        )
-        exact_evaluations = _exact_evaluation_count(sequential_result.diagnostics)
-        if exact_evaluations > block.sequential_config.max_exact_evaluations:
-            status = "sequential_row_accounting_invalid"
-            break
-        sequential_rows += exact_evaluations
-        physical_rows += exact_evaluations
-        candidate = sequential_result.map_candidate
-        if (
-            sequential_result.status not in _ALLOWED_HANDOFF_STATUSES
-            or candidate is None
-        ):
-            status = "invalid_sequential_handoff"
-            records.append(
-                _private_record(
-                    block,
-                    sequential_result.status,
-                    exact_evaluations,
-                    center_before,
-                    center_before,
-                    value_before,
-                    value_before,
-                    score_before,
-                    score_before,
-                    sequential_result.diagnostics,
-                    committed=False,
-                    reversal_diagnostics=(),
-                )
-            )
-            break
-
-        candidate_tf = tf.reshape(numeric_tensor(candidate, tf.float64), [-1])
-        if candidate_tf.shape != (block.stop - block.start,):
-            status = "invalid_sequential_candidate_shape"
-            break
-        full_candidate = _embed_scalar(
-            center_before, candidate_tf, block.start, block.stop
-        )
-        candidate_value_tf, candidate_score = _full_value_score(
-            value_and_score_fn, full_candidate, dimension
-        )
-        physical_rows += 1
-        candidate_value = float(candidate_value_tf.numpy())
-        if candidate_value < value_before:
-            transaction_rejections += 1
-            status = "transaction_objective_decrease"
-            records.append(
-                _private_record(
-                    block,
-                    sequential_result.status,
-                    exact_evaluations,
-                    center_before,
-                    full_candidate,
-                    value_before,
-                    candidate_value,
-                    score_before,
-                    candidate_score,
-                    sequential_result.diagnostics,
-                    committed=False,
-                    reversal_diagnostics=(),
-                )
-            )
-            break
-
-        center = full_candidate
-        current_value = candidate_value
-        current_score = candidate_score
-        accepted_count += 1
-        standardized_trace.append(
-            _numerical_call(tf.math.divide, center, scale_tf)
-        )
-        cycles = classify_center_trace_cycles(standardized_trace, repeat_threshold)
-        repeat_cycle = repeat_cycle or cycles["repeat_cycle"]
-        two_step_cycle = two_step_cycle or cycles["two_step_return_cycle"]
-        reversal_diagnostics = []
-        maxima = _numerical_call(_block_maxima_core, current_score, scale_tf, block_bounds)
-        prior_maxima = tf.constant(
-            [post_update_block_maxima[prior.name] for prior in ordered_blocks[:block_index]],
-            tf.float64,
-        )
-        floors, materials, block_reversal_tf = _numerical_call(
-            _reversal_core, maxima[:block_index], prior_maxima,
-            tf.constant(cfg.reversal_ratio, tf.float64),
-        )
-        for prior, post_maximum, current_maximum, floor, material in zip(
-            ordered_blocks[:block_index], prior_maxima.numpy().tolist(),
-            maxima[:block_index].numpy().tolist(), floors.numpy().tolist(),
-            materials.numpy().tolist(), strict=True,
-        ):
-            reversal_diagnostics.append(
-                {
-                    "block_name": prior.name,
-                    "post_update_max_abs_scaled_score": post_maximum,
-                    "current_max_abs_scaled_score": current_maximum,
-                    "absolute_resolution_floor": floor,
-                    "reversal_ratio_threshold": cfg.reversal_ratio,
-                    "material_reversal": material,
-                }
-            )
-        post_update_block_maxima[block.name] = float(maxima[block_index])
-        records.append(
-            _private_record(
-                block,
-                sequential_result.status,
-                exact_evaluations,
-                center_before,
-                center,
-                value_before,
-                current_value,
-                score_before,
-                current_score,
-                sequential_result.diagnostics,
-                committed=True,
-                reversal_diagnostics=tuple(reversal_diagnostics),
-            )
-        )
-        _emit_progress(
-            progress_callback,
-            "block_completed",
-            block_index=block_index,
-            block_name=block.name,
-            handoff_status=sequential_result.status,
-            exact_evaluations=exact_evaluations,
-        )
-        block_reversal = bool(block_reversal_tf)
-        material_reversal = material_reversal or block_reversal
-        if block_reversal and cfg.stop_on_material_reversal:
-            status = "material_block_score_reversal"
-            break
-        if repeat_cycle or two_step_cycle:
-            status = "impossible_block_coordinate_cycle"
-            break
-    else:
-        completed = True
-        no_worse_tf, progress_tf = _numerical_call(
-            _terminal_core, initial_score_tf, current_score, scale_tf, block_bounds,
-            tf.constant(initial_value, tf.float64), tf.constant(current_value, tf.float64),
-            tf.constant(cfg.require_scheduled_block_maxima_no_worse),
-        )
-        scheduled_block_maxima_no_worse = bool(no_worse_tf)
-        progress = bool(progress_tf)
-        status = (
-            "sweep_completed_with_resolvable_progress"
-            if progress
-            else "sweep_completed_without_resolvable_progress"
-        )
-
-    initial_l2, initial_max = _numerical_call(_score_summary_core, initial_score_tf, scale_tf)
-    final_l2, final_max = _numerical_call(_score_summary_core, current_score, scale_tf)
-    result = BlockCoordinateCenterResult(
-        completed=completed,
-        status=status,
-        initial_center=initial_center_tf,
-        final_center=center,
-        initial_score=initial_score_tf,
-        final_score=current_score,
-        initial_objective=initial_value,
-        final_objective=current_value,
-        initial_score_l2=float(initial_l2),
-        final_score_l2=float(final_l2),
-        initial_score_max_abs=float(initial_max),
-        final_score_max_abs=float(final_max),
-        completed_block_count=len(records),
-        accepted_block_count=accepted_count,
-        transaction_rejection_count=transaction_rejections,
-        sequential_exact_evaluations=sequential_rows,
-        physical_target_rows=physical_rows,
-        maximum_physical_target_rows=cfg.max_physical_target_rows,
-        material_reversal_detected=material_reversal,
-        repeat_cycle_detected=repeat_cycle,
-        two_step_return_cycle_detected=two_step_cycle,
-        scheduled_block_maxima_no_worse=scheduled_block_maxima_no_worse,
-        stop_on_material_reversal=cfg.stop_on_material_reversal,
-        require_scheduled_block_maxima_no_worse=(
-            cfg.require_scheduled_block_maxima_no_worse
-        ),
-        private_block_records=tuple(records),
-    )
-    _emit_progress(
-        progress_callback,
-        "sweep_completed",
-        completed=result.completed,
-        status=result.status,
-        physical_target_rows=result.physical_target_rows,
-    )
-    return result
+    owner = block_controller(value_and_score_fn, batched_value_and_score_fn,
+        dimension, ordered_blocks, cfg, progress=progress_callback is not None)
+    computed = owner(center, scale_tf)
+    return block_result(computed, center, ordered_blocks, cfg, progress_callback)
 
 
 def _validate_blocks(
@@ -741,54 +482,6 @@ def _terminal_core(initial, final, scale, bounds, initial_value, final_value, re
 
 def _displacement_core(before, after):
     return tf.linalg.norm(after - before)
-
-
-def _exact_evaluation_count(diagnostics: Mapping[str, Any]) -> int:
-    try:
-        evaluations = int(diagnostics["exact_evaluations"])
-    except (KeyError, TypeError, ValueError) as exc:
-        raise ValueError("sequential diagnostics lack exact_evaluations") from exc
-    if evaluations < 0:
-        raise ValueError("exact_evaluations must be nonnegative")
-    return evaluations
-
-
-def _private_record(
-    block: BlockCoordinateCenterBlock,
-    handoff_status: str,
-    exact_evaluations: int,
-    center_before: tf.Tensor,
-    center_after: tf.Tensor,
-    objective_before: float,
-    objective_after: float,
-    score_before: tf.Tensor,
-    score_after: tf.Tensor,
-    diagnostics: Mapping[str, Any],
-    *,
-    committed: bool,
-    reversal_diagnostics: Sequence[Mapping[str, Any]],
-) -> Mapping[str, Any]:
-    return _json_ready(
-        {
-            "name": block.name,
-            "start": block.start,
-            "stop": block.stop,
-            "handoff_status": handoff_status,
-            "exact_evaluations": exact_evaluations,
-            "committed": committed,
-            "center_before": center_before,
-            "center_after": center_after,
-            "objective_before": objective_before,
-            "objective_after": objective_after,
-            "score_before": score_before,
-            "score_after": score_after,
-            "displacement_l2": _numerical_call(_displacement_core, center_before, center_after),
-            "locator_history": _without_internal_geometry(
-                diagnostics.get("history", ())
-            ),
-            "reversal_diagnostics": tuple(reversal_diagnostics),
-        }
-    )
 
 
 def _resolvable_decrease(before: float, after: float) -> bool:

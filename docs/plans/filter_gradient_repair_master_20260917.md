@@ -1,5 +1,18 @@
 # Complete filter and gradient execution repair
 
+2026-09-23 public-block checkpoint through03247: the public endpoint now runs
+one enclosing XLA sweep. All66 checks pass on each of CPU and GPU:13 public,
+43 existing consumers,6 alternate configurations and4 resolution/no-use checks.
+All129 policy checks pass. The source guard covers the whole public module
+(227 sources/1333 exact exceptions; no numerical-loop waiver). See the
+[public integration result](filter_gradient_block_public_result_20260923.md).
+This E3 unit closes at70/72 workers and2233.332018/14,400 seconds,
+including preserved harness failures. Cumulative charges are63689.397439 CPU
+and63154.650998 GPU seconds under unchanged32/52-hour caps. E2 coefficient
+diagnosis is next; matched block costs, native retention, actual DZ5 and final
+audit/integration remain open. Remote main is47ae8836c; main stays unmerged.
+No numerical worker is active at this checkpoint. Earlier checkpoints follow.
+
 2026-09-23 checkpoint through03177: GPU renewal is complete:5 block capture/
 ownership,37 dependency derivative,6 ordered-controller,1 outer-owner,23 public
 sequential,56 sequential-consumer and43 block-consumer checks pass;129 policy
@@ -25,10 +38,10 @@ a solution is already qualified.
 
 | Remaining gap | Planned repair and next evidence | Closure gate |
 | --- | --- | --- |
-| Public numerical control still in Python | E2/E3: qualify and install the internal iterative initializer and ordered-block controllers. Renew the approved resolution guard and block dependencies on GPU first. | Complete original public records, exact target order/counts, failure/no-use behavior, supported configurations and unchanged HLO on CPU/GPU. |
+| Public numerical control still in Python | E2: qualify and install the internal iterative initializer. E3 public ordered-block CPU/GPU qualification completes through03247; matched costs remain. | Complete original public records, exact target order/counts, failure/no-use behavior, supported configurations and unchanged HLO on CPU/GPU. |
 | Healthy initializer QR/SVD rounding changes strict decisions | E2: use the preserved identical-input decomposition attribution to locate changed QR/SVD arithmetic; evaluate corrections against both D1 terminal selection and D3 clipping counts before public wiring. | Original healthy decisions and full records at unchanged tolerances on both devices; no blanket near-tie waiver or discarded-precision exemption. |
 | Actual DZ5 consumer uses non-JIT/Python/NumPy execution | E5: migrate the actual initialize_dense_local call chain in an isolated MacroFinance checkout, using tensor telemetry, compiled attempts/partitions, TF/standard-library assembly and independent parent deadlines. | Real target/transition wiring, fixed batch extent, invalid-row accounting, quiet/blocked worker cleanup and exact source/pin provenance; preserve the live dirty tree. |
-| GPU correctness and matched before/after costs | E6: complete registered GPU renewal, then original/graph/XLA public comparisons at two extents with three fresh processes per arm. | Verified memory growth and device identity; full-record comparisons; shared-device timing cannot close a clean cost gate. |
+| GPU correctness and matched before/after costs | E6: GPU renewal and sequential costs complete through03177; execute reviewed ordered-block original/graph/XLA public comparisons at two extents with three fresh processes per arm. | Verified memory growth and device identity; full-record comparisons; shared-device timing cannot close a clean cost gate. |
 | Native executable retention and cold/RSS overhead | E4/E6: separate owner/graph collection from executable residency; profile bounded signature churn and compilation by stage. Evaluate bounded signature reuse and process-lifetime containment if native eviction is unavailable. | Measured bounded resource use for the supported lifecycle, preserved arithmetic, and explicit dispositions for each cold/warm/host/device trigger; Python collection alone is insufficient. |
 | Incomplete final audit and integration | E6: finish endpoint-to-implementation inventory and F01--F20 evidence dispositions, reconcile current remote, run final frozen-source suites/cost checks and terminal review. | Every required gate passes before main merge; canonical LEDH rebuilding remains excluded. |
 

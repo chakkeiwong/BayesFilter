@@ -1,5 +1,56 @@
 # Additional repair phase: complete execution boundaries and ownership
 
+2026-09-23 public-block checkpoint through03247: the public endpoint now runs
+one enclosing XLA sweep. All66 checks pass on each of CPU and GPU:13 public,
+43 existing consumers,6 alternate configurations and4 resolution/no-use checks.
+All129 policy checks pass. The source guard covers the whole public module
+(227 sources/1333 exact exceptions; no numerical-loop waiver). See the
+[public integration result](filter_gradient_block_public_result_20260923.md).
+This E3 unit closes at70/72 workers and2233.332018/14,400 seconds,
+including preserved harness failures. Cumulative charges are63689.397439 CPU
+and63154.650998 GPU seconds under unchanged32/52-hour caps. E2 coefficient
+diagnosis is next; matched block costs, native retention, actual DZ5 and final
+audit/integration remain open. Remote main is47ae8836c; main stays unmerged.
+No numerical worker is active at this checkpoint. Earlier checkpoints follow.
+
+E3 localized harness repair after03242: the same controlled scalar GPU test
+twice fails CUDA graph construction only after the standalone conditional check,
+inside the public enclosing sweep. Its artificial injector wraps the entire
+completed lifecycle record in a new tf.cond. Replace that diagnostic conditional
+with per-field tf.where using the same runtime arm variable, same six updates,
+same row and values; all uninjected fields pass through unchanged. This preserves
+the injection for both arm values without changing runtime source, target
+arithmetic, any assertion or XLA defaults. Renew both controlled cases on CPU/GPU
+and policy. The existing72-worker/14,400-second unit still has capacity for these
+five workers. A failed repair requires further localization, not a no-use waiver.
+The original failed artifacts remain evidence of a backend limitation for the
+synthetic record-wide conditional; success cannot establish its general repair.
+
+Next E3/E6 ordered-block cost unit, reviewed 2026-09-23: after qualification,
+measure the complete public call and private payload for two ordered blocks at
+D3/D5. Use original3582b4ac as numerical authority and aee3ad043 as the pinned
+mechanism/cost baseline (the prior Python sweep with qualified sequential
+dependencies). Compare prior, current outer-graph diagnostic and current XLA in
+three fresh processes per arm/extent/device, 36 numerical workers. Each process
+records construction/tracing, cold execution, three synchronized repeated public
+calls and one changed-input call. Three calls deliberately preserve the prior
+API's fresh conditional callbacks and repeated compilation; a prebuilt private
+dependency would understate its actual public cost. Longer reuse and signature
+churn remain separate E4 diagnostics. The graph arm retains declared compiled
+dependencies and cannot establish an identical-graph compiler ablation.
+
+Require full original private records for both inputs at unchanged tolerances,
+two accepted blocks and a completed sweep, one candidate trace, exact source/
+configuration/input matching, verified memory growth, and the existing physical-
+UUID/unshared-device checks. Run analyzer negative checks and policy first.
+Reserve at most 42 workers and 14,400 charged seconds within the unchanged
+cumulative caps, including at most three localized retries per unchanged fixture.
+Keep source frozen for each cost cohort and preserve every failure. The existing
+cold/warm/host/device triggers require attribution and explicit dispositions;
+three process repeats provide descriptive comparisons, not broad performance
+ranking or native-eviction evidence. Numerical mismatch, incomplete provenance,
+source mutation or exhausted budget stops the affected arm for repair.
+
 E3 public ordered-block continuation, reviewed 2026-09-23: after the frozen
 GPU renewal and sequential cost cohort, replace the public numerical sweep with
 the qualified `block_controller` and completed `block_result` formatter. Keep
@@ -17,7 +68,7 @@ policies, both no-worse policies, scalar/batched targets and the approved
 resolution error. Extend the source guard to the whole public module; only
 exact configuration/reporting exemptions are eligible, never a numerical loop.
 
-Reserve at most 64 registered workers and 14,400 charged seconds for this E3
+Reserve at most 72 registered workers and 14,400 charged seconds for this E3
 unit, within the unchanged cumulative caps, starting after the GPU cost cohort.
 Use bounded individual original cases and consumer groups if compilation map
 pressure makes a combined process unsuitable; do not drop assertions. Run CPU
@@ -26,6 +77,31 @@ unchanged fixture. Freeze runtime/scripts/tests during workers. Numerical,
 accounting, HLO, ownership or source-provenance failures stop the affected arm
 for diagnosis, not the entire repair direction. Public integration alone does
 not close its matched-cost, initializer, native-residency or DZ5 obligations.
+
+E3 coverage review after03199:13 new public checks and all43 legacy CPU cases
+pass.03179 preserves a test-recorder XLA failure (runtime-valued Range endpoints);
+fixed-length indices plus runtime offset repair it without runtime arithmetic
+changes. Seven native-boundary fixtures preserve their original assertions.
+The review adds six public dependency configurations on each backend: scalar
+multistart, one/two-factor refinement with score reuse, paired holdout,
+dimension-scaled/orthogonal search and disabled score gating. This raises the
+worker reservation from64 to72 for coverage and localized retries, with the
+same14,400-second and cumulative caps. Qualification must retain full records,
+events and target order/counts. Additive tests/registration do not alter the
+already qualified CPU numerical source; GPU/guard/policy renewal follows.
+
+E2 coefficient diagnostic is prepared for execution after E3's frozen matrices:
+two scalar/batch CPU workers, optionally two GPU workers for backend attribution,
+300 seconds each, at most six workers/1800 charged seconds with localized retries.
+Use the four exactD3 centers preserved in02775, instrument original/native
+design and response arrays, and solve each identical array pair with independent
+100/70-digit Decimal references. Require full rank, condition below100 and
+reference agreement below1e-60 before interpreting signed near-zero coefficients.
+Preserve untouched/observed/corrected full geometry records and calls; report
+observer effects and array differences explicitly. The high-precision normal
+equations are a tiny independent reference only. No runtime solver change,
+clipping-count waiver, tolerance change or initializer promotion is authorized
+by this diagnostic.
 
 E2 follow-up during the frozen GPU renewal: exhaustive post-run inspection of
 the rejected02775 residual-correction candidate finds no additional hidden

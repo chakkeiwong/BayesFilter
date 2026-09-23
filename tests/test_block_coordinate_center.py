@@ -150,12 +150,53 @@ def _result(
     )
 
 
-def test_nonstationary_allowed_handoff_discards_internal_geometry(monkeypatch) -> None:
-    import bayesfilter.inference.block_coordinate_center as module
+def _inject_conditional_result(monkeypatch, supplier, *, reported_history=None):
+    """Controlled tensor boundary; the real compiled sweep makes every decision."""
+    from bayesfilter.inference import block_controller_report as reporting
+    from bayesfilter.inference import block_controller_tf as native
 
-    monkeypatch.setattr(
-        module,
-        "estimate_sequential_map_covariance",
+    original = native.ConditionalSequentialProgram
+
+    class Boundary:
+        def __init__(self, scalar, batched, dimension, block, **kwargs):
+            schema_owner = original(scalar, batched, dimension, block, **kwargs)
+            schema = schema_owner.compiled.get_concrete_function().structured_outputs
+            outcome = supplier()
+            statuses = {"usable": 0, "maximum_exact_evaluations": 2,
+                "terminal_projection_exceeds_cap": 3,
+                "sequential_refinement_without_terminal_geometry": 4}
+            status = statuses[outcome.status]
+            candidate = tf.convert_to_tensor(outcome.map_candidate, tf.float64)
+            evaluations = int(outcome.diagnostics["exact_evaluations"])
+
+            @tf.function(input_signature=[tf.TensorSpec([dimension], tf.float64),
+                tf.TensorSpec([dimension], tf.float64)], jit_compile=True, autograph=False)
+            def execute(point, scale):
+                result = tf.nest.map_structure(lambda row: tf.zeros(row.shape, row.dtype), schema)
+                result['status'] = tf.constant(0)
+                result['locator']['selected']['finite_count'] = tf.constant(1)
+                result['lifecycle'].update(status=tf.constant(status),
+                    evaluations=tf.constant(evaluations, tf.int64), center=candidate)
+                return result
+
+            self.compiled = execute
+
+    native.clear_block_controller_cache()
+    monkeypatch.setattr(native, 'ConditionalSequentialProgram', Boundary)
+    if reported_history is not None:
+        original_report = reporting.sequential_result
+
+        def report(*args, **kwargs):
+            result = original_report(*args, **kwargs)
+            return replace(result, diagnostics={**result.diagnostics, 'history': reported_history})
+
+        # This injects completed reporting fields only, never numerical state.
+        monkeypatch.setattr(reporting, 'sequential_result', report)
+
+
+def test_nonstationary_allowed_handoff_discards_internal_geometry(monkeypatch) -> None:
+    _inject_conditional_result(
+        monkeypatch,
         lambda *args, **kwargs: _result(np.array([0.5])),
     )
     target = _quadratic_target(np.eye(2), np.array([0.5, 0.0]))
@@ -178,8 +219,6 @@ def test_nonstationary_allowed_handoff_discards_internal_geometry(monkeypatch) -
 def test_private_locator_history_recursively_discards_internal_geometry(
     monkeypatch,
 ) -> None:
-    import bayesfilter.inference.block_coordinate_center as module
-
     internal = _result(np.array([0.5]))
     internal = SequentialMapCovarianceResult(
         accepted=internal.accepted,
@@ -199,10 +238,10 @@ def test_private_locator_history_recursively_discards_internal_geometry(
             ],
         },
     )
-    monkeypatch.setattr(
-        module,
-        "estimate_sequential_map_covariance",
+    _inject_conditional_result(
+        monkeypatch,
         lambda *args, **kwargs: internal,
+        reported_history=internal.diagnostics["history"],
     )
     result = locate_block_coordinate_center(
         _quadratic_target(np.eye(1), np.array([0.5])),
@@ -217,11 +256,8 @@ def test_private_locator_history_recursively_discards_internal_geometry(
 
 
 def test_exact_full_replay_rejects_objective_decrease(monkeypatch) -> None:
-    import bayesfilter.inference.block_coordinate_center as module
-
-    monkeypatch.setattr(
-        module,
-        "estimate_sequential_map_covariance",
+    _inject_conditional_result(
+        monkeypatch,
         lambda *args, **kwargs: _result(np.array([2.0])),
     )
     target = _quadratic_target(np.eye(1), np.array([0.0]))
@@ -242,12 +278,9 @@ def test_exact_full_replay_rejects_objective_decrease(monkeypatch) -> None:
 def test_material_reversal_is_detected_after_a_later_nonoverlapping_block(
     monkeypatch,
 ) -> None:
-    import bayesfilter.inference.block_coordinate_center as module
-
     candidates = iter((np.array([1.0]), np.array([1.0])))
-    monkeypatch.setattr(
-        module,
-        "estimate_sequential_map_covariance",
+    _inject_conditional_result(
+        monkeypatch,
         lambda *args, **kwargs: _result(next(candidates)),
     )
 
@@ -293,11 +326,8 @@ def test_repeat_and_two_step_trace_cycles_require_resolvable_movement() -> None:
 
 
 def test_row_cap_and_invalid_handoff_fail_closed(monkeypatch) -> None:
-    import bayesfilter.inference.block_coordinate_center as module
-
-    monkeypatch.setattr(
-        module,
-        "estimate_sequential_map_covariance",
+    _inject_conditional_result(
+        monkeypatch,
         lambda *args, **kwargs: _result(
             np.array([0.1]), status="maximum_exact_evaluations", evaluations=9
         ),
@@ -394,11 +424,8 @@ def test_public_inference_export_is_additive() -> None:
 
 
 def test_equal_objective_with_resolvable_score_progress_can_pass(monkeypatch) -> None:
-    import bayesfilter.inference.block_coordinate_center as module
-
-    monkeypatch.setattr(
-        module,
-        "estimate_sequential_map_covariance",
+    _inject_conditional_result(
+        monkeypatch,
         lambda *args, **kwargs: _result(np.array([1.0])),
     )
 
@@ -476,12 +503,9 @@ def test_material_reversal_can_be_recorded_without_stopping_full_sweep() -> None
 
 
 def test_family_no_worse_requirement_is_an_independent_sweep_gate(monkeypatch) -> None:
-    import bayesfilter.inference.block_coordinate_center as module
-
     candidates = iter((np.array([1.0]), np.array([1.0])))
-    monkeypatch.setattr(
-        module,
-        "estimate_sequential_map_covariance",
+    _inject_conditional_result(
+        monkeypatch,
         lambda *args, **kwargs: _result(next(candidates)),
     )
 

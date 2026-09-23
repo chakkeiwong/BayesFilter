@@ -115,7 +115,38 @@ SEQUENTIAL_PUBLIC_CONSUMERS = (
         'tests/test_sequential_map_covariance.py::test_terminal_fit_attempt_cap_must_be_positive',
     ),
 )
+BLOCK_PUBLIC_LEGACY_NAMES = (
+    "test_coupled_quadratic_runs_ordered_gauss_seidel_then_detects_reversal",
+    "test_scalar_and_batched_routes_match_on_coupled_quadratic",
+    "test_default_payload_is_array_free_and_private_payload_is_explicit",
+    "test_new_sweep_policy_defaults_are_behavior_and_payload_compatible",
+    "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
+)
 TEST_GROUPS = {
+    **{f"block_public_options_{case}_{device}": (
+        f"tests/test_filter_repair_block_public_options.py::test_public_block_configured_dependencies[{case}]",)
+        for case in ("scalar_locator", "factor_one", "factor_two_reuse", "paired", "scaled_search", "score_disabled")
+        for device in ("cpu", "gpu")},
+    **{f"initializer_coefficient_reference_{batched}_{device}": (
+        f"tests/test_filter_repair_initializer_coefficient_reference.py::test_identical_arrays_high_precision_coefficient_reference[{batched}]",)
+        for batched in (False, True) for device in ("cpu", "gpu")},
+    **{f"block_public_{case}_{batched}_{device}": (
+        f"tests/test_filter_repair_block_public.py::test_complete_public_block_matches_original[{case}-{batched}]",)
+        for case in ("coupled", "record_reversal", "partial_heterogeneous")
+        for batched in (False, True) for device in ("cpu", "gpu")},
+    **{f"block_public_edges_{device}": ("tests/test_filter_repair_block_public.py",
+        "-k", "not complete_public_block") for device in ("cpu", "gpu")},
+    **{f"block_public_legacy_real_{index}_{device}": (
+        f"tests/test_block_coordinate_center.py::{name}",)
+        for index, name in enumerate(BLOCK_PUBLIC_LEGACY_NAMES) for device in ("cpu", "gpu")},
+    **{f"block_public_legacy_misc_{device}": ("tests/test_block_coordinate_center.py",
+        "-k", "not (" + " or ".join(BLOCK_PUBLIC_LEGACY_NAMES) + ")") for device in ("cpu", "gpu")},
+    **{f"block_public_legacy_reference_{coupling}_{stop}_{batched}_{device}": (
+        f"tests/test_filter_repair_block_center.py::test_complete_public_and_private_records_match_original[{coupling}-{stop}-{batched}]",)
+        for coupling, stop in ((0.0, True), (3.0, True), (3.0, False))
+        for batched in (False, True) for device in ("cpu", "gpu")},
+    **{f"block_public_legacy_helpers_{device}": ("tests/test_filter_repair_block_center.py",
+        "-k", "not complete_public_and_private") for device in ("cpu", "gpu")},
     **{f"objective_resolution_controlled_{batched}_{device}": (
         f"tests/test_filter_repair_objective_resolution.py::test_controlled_completed_error_skips_mass_and_block_handoff[{batched}]",)
         for batched in (False, True) for device in ("cpu", "gpu")},
@@ -930,6 +961,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"initializer_coefficient_reference_{batched}_{device}":
+        "Identical-array100/70-digit coefficient attribution only; no runtime correction, clipping-count waiver or healthy initializer admission."
+        for batched in (False, True) for device in ("cpu", "gpu")},
     **{f"resolution_backend_{batched}_{device}": "Backend predicate and preguard lifecycle attribution; original public differences remain diagnostic and cannot waive qualification."
         for batched in (False, True) for device in ("cpu", "gpu")},
     "objective_resolution_diagnostic_cpu": "Historical prototype representation-resolution diagnostic; actual error/no-use qualification requires the installed guard tests.",
@@ -1084,6 +1118,20 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"block_public_options_{device}": tuple(f"block_public_options_{case}_{device}"
+        for case in ("scalar_locator", "factor_one", "factor_two_reuse", "paired", "scaled_search", "score_disabled"))
+        for device in ("cpu", "gpu")},
+    **{f"block_public_guard_{device}": tuple(f"objective_resolution_{kind}_{batched}_{device}"
+        for kind in ("block", "controlled") for batched in (False, True))
+        for device in ("cpu", "gpu")},
+    **{f"block_public_{device}": tuple(f"block_public_{case}_{batched}_{device}"
+        for case in ("coupled", "record_reversal", "partial_heterogeneous") for batched in (False, True))
+        + (f"block_public_edges_{device}",) for device in ("cpu", "gpu")},
+    **{f"block_public_legacy_{device}": (f"block_public_legacy_misc_{device}",)
+        + tuple(f"block_public_legacy_real_{index}_{device}" for index in range(len(BLOCK_PUBLIC_LEGACY_NAMES)))
+        + tuple(f"block_public_legacy_reference_{coupling}_{stop}_{batched}_{device}"
+            for coupling, stop in ((0.0, True), (3.0, True), (3.0, False)) for batched in (False, True))
+        + (f"block_public_legacy_helpers_{device}",) for device in ("cpu", "gpu")},
     **{f"objective_resolution_{device}": (f"objective_resolution_boundaries_{device}",
         *(f"objective_resolution_controlled_{batched}_{device}" for batched in (False, True)),
         *(f"objective_resolution_sequential_{batched}_{device}" for batched in (False, True)),
@@ -1347,6 +1395,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["block_public_options_gpu"]},
+    **{f"initializer_coefficient_reference_{batched}_gpu": "GPU" for batched in (False, True)},
+    **{group: "GPU" for group in TEST_BATCHES["block_public_gpu"]},
+    **{group: "GPU" for group in TEST_BATCHES["block_public_legacy_gpu"]},
     **{f"resolution_backend_{batched}_gpu": "GPU" for batched in (False, True)},
     **{group: "GPU" for group in TEST_BATCHES["objective_resolution_gpu"]},
     "block_boundaries_gpu": "GPU", "block_outer_ownership_gpu": "GPU",
