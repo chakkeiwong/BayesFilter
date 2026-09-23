@@ -345,8 +345,120 @@ def _evaluate_controls(
         process_noise = tf.stack(process_rows)
         ancestor_uniforms = tf.stack(ancestor_rows)
 
-    # Build model
-    model, set_score_direction = diagonal_lgssm_canonical_model(theta)
+    # Build model - use dimension-generic P44 LGSSM for non-3D cases
+    if state_dim == 3 and len(theta) == 5:
+        # Use frozen 3D canonical model for 3D T=20 tuning baseline
+        model, set_score_direction = diagonal_lgssm_canonical_model(theta)
+    else:
+        # Use dimension-generic P44 LGSSM infrastructure
+        from bayesfilter.highdim.ledh_canonical_models_tf import NonlinearScoreModel
+
+        # Extract P44-style parameters from theta
+        # For 10D: theta = [phi_1...phi_10, q_scale, r_scale] (12 params)
+        # For generic: theta = [rho_param, log_q_scale, log_r_scale, initial_mean_scale] (4 params)
+        if len(theta) > 4:
+            # Multi-parameter theta: assume [phi_1...phi_D, q_scale, r_scale]
+            phi_diag = theta[:state_dim]
+            q_scale = theta[state_dim]
+            r_scale = theta[state_dim + 1]
+        else:
+            # 4-parameter P44 style
+            scale = tf.constant([1.0, 0.85, 0.70] + [0.55] * max(0, state_dim - 3), dtype)[:state_dim]
+            q_scale_base = tf.constant([0.90, 1.10, 1.30] + [1.0] * max(0, state_dim - 3), dtype)[:state_dim]
+            r_scale_base = tf.constant([1.00, 1.20, 0.80] + [1.0] * max(0, state_dim - 3), dtype)[:state_dim]
+
+            phi_diag = 0.55 * tf.tanh(theta[0]) * scale
+            q_diag = tf.exp(theta[1]) * q_scale_base
+            r_diag = tf.exp(theta[2]) * r_scale_base
+            q_scale = tf.sqrt(tf.reduce_mean(tf.square(q_diag)))
+            r_scale = tf.sqrt(tf.reduce_mean(tf.square(r_diag)))
+
+        log_two_pi = tf.constant(np.log(2.0 * np.pi), dtype)
+
+        # Direction for score computation
+        _direction = [tf.zeros([len(theta)], dtype)]
+
+        def set_score_direction(direction):
+            _direction[0] = tf.convert_to_tensor(direction, dtype)
+
+        def transition_mean_fn(theta_arg, points):
+            if len(theta) > 4:
+                phi = theta_arg[:state_dim]
+            else:
+                scale_fn = tf.constant([1.0, 0.85, 0.70] + [0.55] * max(0, state_dim - 3), dtype)[:state_dim]
+                phi = 0.55 * tf.tanh(theta_arg[0]) * scale_fn
+            return points * phi[None, :]
+
+        def transition_mean_tangent_fn(theta_arg, points, d_points):
+            # Simplified tangent - assume phi doesn't vary with theta for now
+            if len(theta) > 4:
+                phi = theta_arg[:state_dim]
+            else:
+                scale_fn = tf.constant([1.0, 0.85, 0.70] + [0.55] * max(0, state_dim - 3), dtype)[:state_dim]
+                phi = 0.55 * tf.tanh(theta_arg[0]) * scale_fn
+            return d_points * phi[None, :]
+
+        def _scaled_gaussian(points, means, scale_val):
+            residual = points - means
+            return -0.5 * (
+                tf.reduce_sum(tf.square(residual), axis=1) / tf.square(scale_val)
+                + float(state_dim) * (log_two_pi + 2.0 * tf.math.log(scale_val))
+            )
+
+        def transition_log_density_fn(theta_arg, points, ancestors_mean):
+            if len(theta) > 4:
+                q = theta_arg[state_dim]
+            else:
+                q = tf.exp(theta_arg[1])
+            return _scaled_gaussian(points, ancestors_mean, q)
+
+        def transition_log_density_tangent_fn(theta_arg, points, ancestors_mean, d_points, d_means):
+            return tf.zeros([tf.shape(points)[0]], dtype)
+
+        def observation_log_density_fn(theta_arg, points, observation):
+            observed = points  # Identity observation
+            target = tf.broadcast_to(observation[None, :], tf.shape(observed))
+            if len(theta) > 4:
+                r = theta_arg[state_dim + 1]
+            else:
+                r = tf.exp(theta_arg[2])
+            return _scaled_gaussian(target, observed, r)
+
+        def observation_log_density_tangent_fn(theta_arg, points, observation, d_points):
+            return tf.zeros([tf.shape(points)[0]], dtype)
+
+        def process_covariance_tangent_fn(theta_arg):
+            return tf.zeros([state_dim, state_dim], dtype=dtype)
+
+        def observation_covariance_tangent_fn(theta_arg):
+            return tf.zeros([state_dim, state_dim], dtype=dtype)
+
+        def observation_fn(points):
+            return points
+
+        def observation_jacobian_fn(points):
+            return tf.broadcast_to(
+                tf.eye(state_dim, dtype=dtype), [tf.shape(points)[0], state_dim, state_dim]
+            )
+
+        def observation_tangent_fn(points, d_points):
+            return d_points
+
+        model = NonlinearScoreModel(
+            transition_mean_fn=transition_mean_fn,
+            transition_mean_tangent_fn=transition_mean_tangent_fn,
+            observation_fn=observation_fn,
+            observation_jacobian_fn=observation_jacobian_fn,
+            observation_tangent_fn=observation_tangent_fn,
+            process_covariance=tf.square(q_scale) * tf.eye(state_dim, dtype=dtype),
+            observation_covariance=tf.square(r_scale) * tf.eye(state_dim, dtype=dtype),
+            transition_log_density_fn=transition_log_density_fn,
+            transition_log_density_tangent_fn=transition_log_density_tangent_fn,
+            observation_log_density_fn=observation_log_density_fn,
+            observation_log_density_tangent_fn=observation_log_density_tangent_fn,
+            process_covariance_tangent_fn=process_covariance_tangent_fn,
+            observation_covariance_tangent_fn=observation_covariance_tangent_fn,
+        )
 
     initial_covariances = tf.eye(state_dim, batch_shape=[particle_count], dtype=dtype)
     design = _reset_design(particle_count, state_dim)
