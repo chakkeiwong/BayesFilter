@@ -1,5 +1,40 @@
 # HMC repair master program
 
+## September 23 M30 completion and M31 continuation
+
+The [M30 result](bayesfilter-hmc-m30-runner-reuse-result-2026-09-23.md) closes
+the measured runner-reuse repair. Optional
+`execution_config.reuse_leapfrog_graphs=True` shares graphs across L within a
+frozen binding and count, preserving scalar-chain streams. The default remains
+false. Static/dynamic GPU pairs matched exactly over **315 complete numerical
+records and 178 saved tensor records**, retaining all **40 verified members**.
+Both selected posteriors passed their declared checks in both arms; R-hat,
+ESS and MCSE remain posterior-only. Gaussian observed runtime was 627/347
+seconds and beta-binomial 575/286 seconds. Warmed dynamic execution can be
+slower, and these single pairs establish no stochastic performance ranking.
+
+The primary 120-case regression set passed; additional pipeline, frozen-map,
+runner and guide checks passed. The official 574-page book rebuilt with
+bibliography and visual inspection. Full-fit snapshots exclude unrelated edits;
+the final completed-fit policy guard is separately tested and its source delta
+recorded. Exact saved M29 chunk replay establishes the transition comparison;
+fresh full fits use one common source because source identity participates in
+the seeds. All attempt charges and failures are preserved.
+
+M30 charged **552.365 CPU / 2084.990 GPU seconds**. Its terminal ledger leaves
+**74427.314 CPU / 75209.499 GPU seconds**, with no live M30 workers. Even at
+the observed reduced cost, 384 independent fits imply 36.97 Gaussian or 30.45
+beta-binomial GPU hours, each exceeding the 20.89 GPU hours left.
+
+The [reviewed M31 plan](bayesfilter-hmc-post-m30-next-phase-2026-09-23.md) is
+the next executable phase: inspect and derive an affordable statistical design
+before another full-fit calibration campaign. Do not weaken the original
+coverage criterion or label a small sensitivity study as its completion.
+Remaining requirements are adequate stopped-interval/MCSE calibration, global
+exploration with a matched uncertainty-bearing reference, subtle full-fit
+null/power, exact MacroFinance inputs, broader optional-reuse evidence and
+upstream learned-map quality. M28 and M22 remain closed for their tested cells.
+
 ## September 23 M29 completion and measured M30 continuation
 
 The [M29 result](bayesfilter-hmc-m29-profiling-result-2026-09-23.md) closes

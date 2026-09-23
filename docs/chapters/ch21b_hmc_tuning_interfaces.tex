@@ -597,13 +597,25 @@ binding rejects redundant search, execution, provenance or transport overrides.
 Automatic routes may accept the shared search and execution configs. For the
 proposal-field route, legacy \path{step_adaptation_results} supplies the
 fixed-pair pilot count, while \path{verification_results} supplies measurement
-and verification counts. An explicit \path{HMCCandidateExecutionConfig} replaces
-these allocations, with an optional \path{pilot_num_results}. Pilots never
+and verification counts. The shared execution configuration can replace
+these allocations and supply an explicit \path{pilot_num_results}. Pilots never
 qualify a pair. The legacy adaptive selector remains historical. Config
 payloads label their legacy candidate-policy fields as historical helper
 metadata; the active result's shared configs determine candidate stages.
 Proposal-field execution defaults to XLA; a diagnostic exception supplies
 \path{non_xla_reason}.
+
+Exact-score TFP bindings optionally share a compiled runner across leapfrog
+counts at each chunk size with
+\path{execution_config.reuse_leapfrog_graphs=True}; the default is false.
+Each cache belongs to one frozen target and geometry with fixed chain topology,
+trace policy and backend. Independent scalar chains keep their original seed
+folding. The complete execution artifact records this option and restart
+preserves it. Within the same source snapshot it does not change numerical
+seeds; a source change still changes scope identity and can change seeds.
+The proposal-field route rejects the option. Reuse can reduce first-call
+compilation while increasing warmed execution cost, so assess its cost on
+complete fits. Candidate qualification and posterior diagnostics are unchanged.
 
 Retained-member exports share one checksummed evidence bundle beside their
 compact member files. Copy the bundle when moving the members, or use

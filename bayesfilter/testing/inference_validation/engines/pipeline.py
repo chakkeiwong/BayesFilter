@@ -143,15 +143,19 @@ def controller_experiment(design,root):
     return result
 
 
-def run_replication(design, root, replication, deadline=None):
+def run_replication(design, root, replication, deadline=None, *, reuse_leapfrog_graphs=False):
     """One complete fit and independent assessment, reusable across processes."""
     from ..procedures import execute_pipeline
 
     path = Path(root) / f"replication-{replication:04d}"
     if (path / "independent_assessment.json").exists():
+        execution = read_json(path / "tuning/execution_spec.json")["execution"]
+        if execution["config"].get("reuse_leapfrog_graphs", False) != reuse_leapfrog_graphs:
+            raise ValueError("completed fit requires the original runner reuse policy")
         return read_json(path / "independent_assessment.json")
     data=design.options.get("data")
-    output=execute_pipeline(design,path,data=data,fit_id=replication,deadline=deadline)
+    output=execute_pipeline(design,path,data=data,fit_id=replication,deadline=deadline,
+                            reuse_leapfrog_graphs=reuse_leapfrog_graphs)
     payload=read_json(output["tuning_path"])
     # Mutations act on a copy of observations. Native tuning authority remains intact.
     payload=copy.deepcopy(payload)

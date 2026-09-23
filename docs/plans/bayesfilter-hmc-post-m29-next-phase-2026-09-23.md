@@ -1,6 +1,8 @@
 # M30: distinguish first-call costs before changing runner reuse
 
-Status: reviewed continuation after the terminal M29 ledger; not yet executed.
+Status: M30 complete and audited. See
+`bayesfilter-hmc-m30-runner-reuse-result-2026-09-23.md` and the execution note
+for the preimplementation corrections and terminal evidence.
 M29 profiles and pairs are complete and must not be rerun merely to reproduce
 their successful audit. This phase consumes the existing campaign allowance.
 
@@ -52,8 +54,9 @@ design replaces it; replay calls and profiling arms never count toward it.
    folding, epsilon, L, count, transformed target and source identity. Use the
    existing adapter reconstruction and execution binding; do not replace the
    model by a standard-normal approximation or omit its preparation layers.
-2. First run a tiny CPU reference/debug replay and compare exact states and
-   every trace tensor. Keep GPU hidden. Then use trusted GPU/XLA on the same
+2. First run a tiny CPU reference/debug replay and compare repeated calls on
+   that same CPU backend, including every trace tensor. Cross-backend exact
+   equality to archived GPU values is not required. Keep GPU hidden. Then use trusted GPU/XLA on the same
    hardware class, memory growth before import, one process per model and
    serial four-chain execution. For each cell, build a fresh existing runner
    and run its exact saved chunk once, then twice more with identical inputs
@@ -73,11 +76,14 @@ design replaces it; replay calls and profiling arms never count toward it.
 4. Test any prototype on static/dynamic L replay, changed epsilon, all three
    chunk counts, separate target/geometry bindings, tracing bounds, corruption
    and restart, then actual Gaussian and beta-binomial public pipelines.
-   Compare every archived numerical field with the same-design M29 baseline
-   while verifying source-closure changes independently. Source identity is
-   allowed to change for a repaired implementation; target identity and
-   scientific inputs are not. Require the same decisions, archived tensors
-   and seed lineage. If exact parity fails, preserve the prototype as
+   Source identity participates in work seeds: simply changing source and
+   normalizing identity fields cannot produce a valid paired full-fit test.
+   The saved M29 chunks remain the exact transition comparator. Before full
+   fits, resolve a same-source static/dynamic comparison with identical seeds
+   and independently recorded implementation selection; retain all source
+   validation. Reallocate the existing ceiling explicitly if fresh baseline
+   fits are needed. Require the same decisions, archived tensors and seed
+   lineage. If exact parity fails, preserve the prototype as
    unpromoted diagnostic work and investigate before further expensive fits.
 5. If warmed execution dominates, or dynamic-L cannot preserve the required
    behavior, reject that optimization hypothesis and record the smallest next

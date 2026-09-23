@@ -129,6 +129,7 @@ class HMCCandidateExecutionConfig:
     chunk_max_results: int = 256
     preparation_elapsed_seconds: float = 0.0
     pilot_num_results: int | None = None
+    reuse_leapfrog_graphs: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.acceptance_policy, HMCAcceptancePolicy):
@@ -145,6 +146,8 @@ class HMCCandidateExecutionConfig:
         object.__setattr__(self, "seed", _seed(self.seed))
         if type(self.use_xla) is not bool:
             raise TypeError("use_xla must be boolean")
+        if type(self.reuse_leapfrog_graphs) is not bool:
+            raise TypeError("reuse_leapfrog_graphs must be boolean")
         if not self.use_xla and not str(self.non_xla_reason or "").strip():
             raise ValueError("non-XLA execution requires an explicit non_xla_reason")
         if self.target_status_trace_policy not in {"none", "per_chain_step"}:
@@ -156,6 +159,8 @@ class HMCCandidateExecutionConfig:
         payload = {**asdict(self), "acceptance_policy": self.acceptance_policy.payload()}
         if self.pilot_num_results is None:
             payload.pop("pilot_num_results")
+        if not self.reuse_leapfrog_graphs:
+            payload.pop("reuse_leapfrog_graphs")
         return payload
 
     @classmethod
@@ -320,7 +325,7 @@ class HMCCandidateExecutionBinding:
         self._partial: dict[str, list[Mapping[str, Any]]] = {}
         self._checkpoint_callback = None
         self._deadline = None
-        self._runners: dict[tuple[int, int], Any] = {}
+        self._runners: dict[tuple[int | None, int], Any] = {}
         self.validate()
 
     @property
@@ -434,6 +439,11 @@ class HMCCandidateExecutionBinding:
         }, sort_keys=True).encode()).digest()
         return tuple(int.from_bytes(digest[i:i+4], "big") & 0x7fffffff for i in (0, 4))
 
+    def _runner_cache_key(self, candidate: HMCTuningCandidateRecord, count: int) -> tuple[int | None, int]:
+        # Cache ownership is the binding: target, frozen geometry, dtype/shape,
+        # chain topology, trace policy and backend cannot cross this boundary.
+        return (None if self.config.reuse_leapfrog_graphs else candidate.leapfrog_steps, count)
+
     def _run(self, candidate: HMCTuningCandidateRecord, state: Any, count: int, seed: tuple[int, int]) -> Any:
         from bayesfilter.inference.hmc import (
             FullChainHMCConfig, ReusableFullChainHMCRunner,
@@ -441,7 +451,7 @@ class HMCCandidateExecutionBinding:
         )
 
         HMCTuningCandidateRecord.from_payload(self.scope, candidate.payload())
-        key = (candidate.leapfrog_steps, count)
+        key = self._runner_cache_key(candidate, count)
         if key not in self._runners:
             config = FullChainHMCConfig(
                 num_results=count, num_burnin_steps=0, step_size=candidate.epsilon,
@@ -452,16 +462,19 @@ class HMCCandidateExecutionBinding:
             factory = (ReusableFullChainHMCRunner if self.config.chain_mode == "batched"
                        else build_independent_chain_tfp_hmc_runner)
             self._runners[key] = factory(
-                self._active_adapter, self.initial_active_state, config)
+                self._active_adapter, self.initial_active_state, config,
+                **({"dynamic_num_leapfrog_steps": True} if self.config.reuse_leapfrog_graphs else {}))
+        runtime_l = ({"num_leapfrog_steps": candidate.leapfrog_steps}
+                     if self.config.reuse_leapfrog_graphs else {})
         if self.config.chain_mode == "batched":
             result = self._runners[key].run(current_state=state, seed=seed,
-                                            step_size=candidate.epsilon)
+                                            step_size=candidate.epsilon, **runtime_l)
             return replace(result, metadata={**result.metadata,
                 "execution_mode": "batched", "chain_count": int(state.shape[0]),
                 "single_batched_sample_chain_invocation": True,
                 "seed_layout": "tfp_stateless_vector_state_independent_chain_rows"})
         return self._runners[key].run(current_state=state, root_seed=seed,
-                                      step_size=candidate.epsilon, mode=self.config.chain_mode)
+                                      step_size=candidate.epsilon, mode=self.config.chain_mode, **runtime_l)
 
     def health_failures(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> tuple[str, ...]:
         import tensorflow as tf
@@ -622,7 +635,7 @@ class HMCCandidateExecutionBinding:
                                    chains=int(self.initial_active_state.shape[0]), index=len(chunks))
             current_seed = chunk_seed(seed, len(chunks))
             chunk_started = time.monotonic()
-            key = (candidate.leapfrog_steps, take)
+            key = self._runner_cache_key(candidate, take)
             first_runner_call = key not in self._runners
             try:
                 result = self._run(candidate, state, take, current_seed)
@@ -699,6 +712,10 @@ def _issue_binding(*, adapter: Any, layers: Sequence[Mapping[str, Any]], initial
                                    "preparation": numerical_preparation})
     numerical_policy = dict(config.payload())
     numerical_policy.pop("preparation_elapsed_seconds")
+    # Runner reuse is recorded in the complete execution binding. It changes
+    # graph lifetime, not the target/transition or numerical random streams;
+    # same-source static/dynamic diagnostics must be able to use identical seeds.
+    numerical_policy.pop("reuse_leapfrog_graphs", None)
     runner_kind = ("batched_chain_tfp_fixed_hmc" if config.chain_mode == "batched"
                    else "independent_chain_tfp_fixed_hmc")
     transition_identity = _sha256({"runner": runner_kind,

@@ -83,9 +83,10 @@ def make_binding(*, target=None, config=None, **overrides):
     return bind_hmc_candidate_set_execution(**(values | overrides))
 
 
-@pytest.fixture(scope="module", params=("serial", "batched"))
+@pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
 def tuned(request):
-    binding = make_binding(config=execution_config(chain_mode=request.param))
+    binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+        reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
     config = HMCControllerConfig(primary_l_grid=(2, 3),
         epsilon_by_l=((2, (1.1, 1.3, 1.5)), (3, (1.1, 1.3, 1.5))),
         total_budget_units=40, repair_reserve_units=3)
@@ -402,7 +403,8 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
 
 
 @pytest.mark.parametrize("kind", ["affine", "dense_iaf"])
-def test_supported_frozen_transports_use_numerical_controller_and_durable_geometry(kind, tmp_path):
+@pytest.mark.parametrize("reuse", [False, True])
+def test_supported_frozen_transports_use_numerical_controller_and_durable_geometry(kind, reuse, tmp_path):
     target = GaussianTarget()
     if kind == "affine":
         payload = {"schema": "bayesfilter.neutra.frozen_affine_diag.v1", "transport_id": "test-affine",
@@ -411,7 +413,8 @@ def test_supported_frozen_transports_use_numerical_controller_and_durable_geomet
     else:
         from tests.test_dense_iaf_neutra_artifact_loader import _payload
         payload = _payload(target_signature=target.adapter_signature())
-    binding = make_binding(mass_artifact=None, frozen_transport_payload=payload, start_coordinates="active")
+    binding = make_binding(mass_artifact=None, frozen_transport_payload=payload, start_coordinates="active",
+                           config=execution_config(reuse_leapfrog_graphs=reuse))
     probes = tf.constant([[.2,-.5],[-.3,.4]], tf.float64)
     value, score = binding._active_adapter.log_prob_and_grad(probes)
     raw = binding.position_samples(probes)

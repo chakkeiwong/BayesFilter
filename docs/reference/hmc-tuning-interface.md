@@ -428,6 +428,21 @@ the measurement and verification allocations. An explicit
 grants replay authority. The route uses batched chains and rejects threaded
 chain execution. Both preparation configs default to XLA; position-field
 non-XLA diagnostics must supply `non_xla_reason`.
+For exact-score TFP bindings, `execution_config.reuse_leapfrog_graphs=True`
+optionally shares a compiled runner across L values at each chunk size. The
+default is `False`. The cache belongs to one frozen binding and preserves
+its target, geometry, chain topology, trace policy and backend. Serial and
+threaded execution retain separate scalar-chain streams; this option does not
+switch to batched chains. The full execution artifact records the option;
+within the same source snapshot it does not change numerical seeds. Changing
+source still changes scope identity and may change seeds. Checkpoint/resume
+preserves the recorded option. The position-field route rejects it because it
+uses a different transition implementation.
+
+Sharing graphs can save first-call compilation while slowing warmed calls, so
+evaluate complete fits for the actual workload. It changes neither candidate
+qualification nor posterior criteria and is not evidence of convergence.
+
 Historical candidate-policy fields in `TensorFlowHMCKernelTuningConfig.payload()`
 are explicitly labeled as metadata for the historical graph helper. The active
 result's shared search and execution configs determine candidate stages.

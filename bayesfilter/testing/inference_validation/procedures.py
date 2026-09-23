@@ -215,7 +215,8 @@ def run_fixed_comparator(member, target, settings, directory, seed_parts, deadli
     return result
 
 
-def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, deadline=None):
+def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, deadline=None,
+                     reuse_leapfrog_graphs=False):
     """Complete public tuning plus actual replay/posterior controller for all members.
 
     Native checkpoints allow a repeated call at the same path to finish existing
@@ -248,7 +249,7 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     execution = HMCCandidateExecutionConfig(measurement_num_results=design.measurement_draws,
         verification_num_results=design.measurement_draws, num_warmup_steps=8,
         seed=seed, use_xla=design.device=="gpu", target_status_trace_policy="none",
-        acceptance_policy=acceptance_policy,
+        acceptance_policy=acceptance_policy, reuse_leapfrog_graphs=reuse_leapfrog_graphs,
         non_xla_reason="explicit CPU diagnostic validation profile" if design.device!="gpu" else None)
     search_options = dict(design.options.get("search", {}))
     forbidden = {"primary_l_grid", "initial_epsilon", "max_wall_time_seconds"} & search_options.keys()
@@ -266,6 +267,8 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     run = None
     if (tuning_path/"candidate_set_result.json").exists():
         binding, controller = load_numerical_tuning_checkpoint(tuning_path/"tuning_checkpoint.json",adapter=target)
+        if binding.config.reuse_leapfrog_graphs != reuse_leapfrog_graphs:
+            raise ValueError("resume requires the original runner reuse policy")
         result = controller.result()
         from .designs import digest
         from bayesfilter.inference.hmc_candidate_set_artifacts import candidate_set_result_payload, load_candidate_set_result_payload
@@ -278,6 +281,9 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         if digest({k:final[k] for k in fields}) != digest({k:restored[k] for k in fields}):
             raise ValueError("completed tuning artifact and checkpoint disagree")
     elif (tuning_path/"tuning_checkpoint.json").exists():
+        binding, _ = load_numerical_tuning_checkpoint(tuning_path/"tuning_checkpoint.json",adapter=target)
+        if binding.config.reuse_leapfrog_graphs != reuse_leapfrog_graphs:
+            raise ValueError("resume requires the original runner reuse policy")
         run = resume_hmc_candidate_set_tuning(tuning_path/"tuning_checkpoint.json", adapter=target)
     elif scenario.route == "ordinary":
         cfg = HMCKernelTuningConfig(preset=design.options.get("preparation_preset","standard"),
