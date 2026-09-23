@@ -128,5 +128,5 @@ def test_real_public_pipeline_continues_after_failed_first_sibling_and_resumes(
     assert hashes == {m["candidate_id"]: file_hash(m["warmup_path"])
                       for m in again["members"] if m["candidate_id"] in selected}
     changed = replace(d, options={**d.options, "posterior_member_count": 1})
-    with pytest.raises(ValueError, match="selection changed"):
+    with pytest.raises(ValueError, match="identity changed|selection changed"):
         execute_pipeline(changed, path)

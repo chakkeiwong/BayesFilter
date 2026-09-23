@@ -1,7 +1,8 @@
 # M31: affordable evidence design after runner reuse
 
-Status: reviewed continuation, pending M30's terminal ledger. No M31 numerical
-worker has started. This plan uses the existing campaign allowance.
+Status: reviewed continuation under the active M31--M38 roadmap. M30's
+terminal ledger is audited and no M31 numerical worker has started. This plan
+is the detailed M31 design; the active master now fixes the follow-on phases.
 
 ## Question and evidence contract
 

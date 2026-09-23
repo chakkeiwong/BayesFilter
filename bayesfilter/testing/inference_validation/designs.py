@@ -143,6 +143,8 @@ class ValidationDesign:
         precision_method = self.options.get("posterior_precision_method", "lugsail")
         if not isinstance(precision_method, str) or precision_method not in {"lugsail", "autocorrelation", "batch_means"}:
             raise ValueError("posterior_precision_method requires a supported mean estimator")
+        from .posterior_policy import validate_posterior_options
+        validate_posterior_options(self.options)
         native=self.options.get("native_search",False)
         if type(native) is not bool or (native and (self.scenario.route!="ordinary" or "search" in self.options)):
             raise ValueError("native_search requires ordinary preparation without a search override")

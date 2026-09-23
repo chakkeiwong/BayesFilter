@@ -612,6 +612,21 @@ their posterior and fixed-comparator counts must fit its declared limit.
 They can declare the existing mean estimator with `options.posterior_precision_method`;
 omitting it preserves lugsail. This option changes no tuning decision.
 
+For estimator experiments, `options.posterior_precision_settings` accepts
+`batch_size`, `min_batches`, `lugsail_r`, and `lugsail_c`.
+`options.posterior_assessment_settings` accepts `warmup_bulk_ess_min`,
+`warmup_tail_ess_min`, `retained_bulk_ess_min`, `retained_tail_ess_min`, and
+`warmup_consecutive_checks`. These configure the existing posterior policies;
+omitting them preserves their defaults. The stopped and fixed-count reports
+use the same declared mean estimator and batch settings. Inadequate batches
+remain unavailable; exposing a setting does not establish its calibration.
+
+Validation fit directories now bind the library source, complete design, data, fit/stream IDs
+and runner-reuse setting before reading completed summaries or numerical
+checkpoints. A changed policy requires a fresh directory. Historical fit
+directories lacking this identity remain readable as evidence, but cannot be
+silently resumed under a new policy.
+
 Bulk/tail ESS uses the Stan/ArviZ initial-positive, initial-monotone recursion,
 identified by `bulk_tail_ess_method` in the assessment policy and result. The
 preserved-transition reporting API in `hmc_posterior_diagnostics` uses that

@@ -2,7 +2,7 @@
   "schema": "bayesfilter.hmc_repair_program_progress.v1",
   "plan_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
   "opening_ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r1/reconciliation-cpu-tranche.json",
-  "active_phase": "M31",
+  "active_phase": null,
   "phases": {
     "M25": {
       "status": "bounded_execution_complete_and_audited",
@@ -308,12 +308,132 @@
       "saved_tensor_records_exact": 178
     },
     "M31": {
-      "status": "reviewed_not_started",
+      "status": "design_complete_confirmation_underfunded",
       "design_file": "docs/plans/bayesfilter-hmc-post-m30-next-phase-2026-09-23.md",
       "cpu_limit": 1800,
       "gpu_limit": 1800,
       "scientific_gaps_closed": false,
-      "budget_source": "Existing terminal M30 campaign remainder; no new compute authorization"
+      "budget_source": "Existing terminal M30 campaign remainder; no new compute authorization",
+      "roadmap_section": "M31: resolve statistical design and total affordability",
+      "roadmap_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+      "terminal_requirement": "Every M32-M37 cell has a criterion, dependency, inventory, price and funded/deferred/awaiting-input status before new HMC.",
+      "result_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m31-r1/design-and-funding.md",
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m31-r1/reconciliation-terminal.json",
+      "cpu_worker_seconds": 90.86759238597006,
+      "gpu_worker_seconds": 0
+    },
+    "M32": {
+      "status": "bounded_execution_complete_gpu_parity_audited",
+      "roadmap_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+      "roadmap_section": "M32: common engineering baseline, route matrix, reuse/lifecycle and bounded structural audit",
+      "cpu_limit": 10800.0,
+      "gpu_limit": 5400.0,
+      "dependencies": "M31",
+      "scientific_gaps_closed": false,
+      "budget_source": "remaining M30 campaign allowance; no additive authorization",
+      "baseline_tests_passed": 220,
+      "gpu_fit_count": 6,
+      "gpu_audit_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m32-r1/gpu-parity-audit.json",
+      "cpu_worker_seconds": 777.4764715926722,
+      "gpu_worker_seconds": 353.34264063090086,
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m32-r1/reconciliation-terminal.json",
+      "result_file": "docs/plans/bayesfilter-hmc-m31-m38-result-2026-09-23.md"
+    },
+    "M33": {
+      "status": "repair_complete_confirmation_underfunded",
+      "roadmap_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+      "roadmap_section": "M33: equilibration/MCSE repair and stopped-versus-fixed calibration",
+      "cpu_limit": 21600.0,
+      "gpu_limit": 25200.0,
+      "dependencies": "M31,M32",
+      "scientific_gaps_closed": false,
+      "budget_source": "remaining M30 campaign allowance; no additive authorization",
+      "repairs": [
+        "validation posterior policy forwarding",
+        "fixed/stopped estimator alignment",
+        "completed and interrupted fit identity checks"
+      ],
+      "scientific_confirmation": "underfunded",
+      "cpu_worker_seconds": 330.08809952810407,
+      "gpu_worker_seconds": 0.0,
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m33-r1/reconciliation-terminal.json",
+      "result_file": "docs/plans/bayesfilter-hmc-m31-m38-result-2026-09-23.md"
+    },
+    "M34": {
+      "status": "activation_complete_confirmation_underfunded",
+      "roadmap_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+      "roadmap_section": "M34: complete-procedure defect activation and null/power assessment",
+      "cpu_limit": 10800.0,
+      "gpu_limit": 14400.0,
+      "dependencies": "M31,M32",
+      "scientific_gaps_closed": false,
+      "budget_source": "remaining M30 campaign allowance; no additive authorization",
+      "endpoint_tests": "passed",
+      "confirmation": "underfunded",
+      "cpu_worker_seconds": 63.7239062639419,
+      "gpu_worker_seconds": 703.8198743592948,
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m34-r1/reconciliation-terminal.json",
+      "result_file": "docs/plans/bayesfilter-hmc-m31-m38-result-2026-09-23.md"
+    },
+    "M35": {
+      "status": "diagnostic_wiring_complete_global_exploration_open",
+      "roadmap_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+      "roadmap_section": "M35: global exploration diagnostics and supplied-geometry study",
+      "cpu_limit": 3600.0,
+      "gpu_limit": 5400.0,
+      "dependencies": "M31,M32",
+      "scientific_gaps_closed": false,
+      "budget_source": "remaining M30 campaign allowance; no additive authorization",
+      "global_exploration": "open",
+      "cpu_worker_seconds": 60.0,
+      "gpu_worker_seconds": 0.0,
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m35-r1/reconciliation-terminal.json",
+      "result_file": "docs/plans/bayesfilter-hmc-m31-m38-result-2026-09-23.md"
+    },
+    "M36": {
+      "status": "inventory_complete_awaiting_inputs",
+      "roadmap_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+      "roadmap_section": "M36: exact MacroFinance inventory and matched integration if inputs exist",
+      "cpu_limit": 3600.0,
+      "gpu_limit": 3600.0,
+      "dependencies": "M31,M32",
+      "scientific_gaps_closed": false,
+      "budget_source": "remaining M30 campaign allowance; no additive authorization",
+      "inventory_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m36-r1/input-inventory.json",
+      "cpu_worker_seconds": 60.065058999927714,
+      "gpu_worker_seconds": 0.0,
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m36-r1/reconciliation-terminal.json",
+      "result_file": "docs/plans/bayesfilter-hmc-m31-m38-result-2026-09-23.md"
+    },
+    "M37": {
+      "status": "cpu_gpu_composition_complete_training_quality_open",
+      "roadmap_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+      "roadmap_section": "M37: target-specific learned-map training protocol and downstream assessment",
+      "cpu_limit": 3600.0,
+      "gpu_limit": 5400.0,
+      "dependencies": "M31,M32,M35",
+      "scientific_gaps_closed": false,
+      "budget_source": "remaining M30 campaign allowance; no additive authorization",
+      "protocol_file": "docs/plans/bayesfilter-hmc-m37-training-protocol-2026-09-23.md",
+      "target_composition_tests_passed": 2,
+      "cpu_worker_seconds": 60.0,
+      "gpu_worker_seconds": 110.39703161711805,
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m37-r1/reconciliation-terminal.json",
+      "result_file": "docs/plans/bayesfilter-hmc-m31-m38-result-2026-09-23.md"
+    },
+    "M38": {
+      "status": "terminal_integration_complete",
+      "roadmap_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+      "roadmap_section": "M38: terminal integration, official guide, evidence matrix and disposition",
+      "cpu_limit": 5400.0,
+      "gpu_limit": 1800.0,
+      "dependencies": "M31-M37",
+      "scientific_gaps_closed": false,
+      "budget_source": "remaining M30 campaign allowance; no additive authorization",
+      "cpu_worker_seconds": 1038.477900119964,
+      "gpu_worker_seconds": 0.0,
+      "ledger_file": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m38-r1/reconciliation-terminal.json",
+      "result_file": "docs/plans/bayesfilter-hmc-m31-m38-result-2026-09-23.md"
     }
   },
   "stop_conditions": [
@@ -322,23 +442,24 @@
     "indispensable_input_missing_for_cell",
     "scope_change"
   ],
-  "next_phase_policy": "reconcile -> classify -> repair and test -> result -> refreshed design -> skeptical audit -> execute",
+  "next_phase_policy": "M31-M38 bounded program terminal; preserve open requirements; no automatic new phase",
   "scientific_gaps_closed": false,
-  "status": "M30_complete_M31_reviewed_ready",
-  "remaining_gap_agenda": "docs/plans/bayesfilter-hmc-post-m30-next-phase-2026-09-23.md",
+  "status": "bounded_M31_M38_program_complete_scientific_requirements_open",
+  "remaining_gap_agenda": "Terminal requirement table in bayesfilter-hmc-m31-m38-result-2026-09-23.md",
   "remaining_gaps": [
-    "adequate_warmup_mcse_stopped_interval_calibration",
-    "global_exploration_with_same_target_reference_uncertainty",
-    "subtle_full_fit_null_and_power_calibration",
-    "exact_macrofinance_source_data_prior_coordinates_and_reference",
-    "broader_optional_reuse_target_backend_coverage",
-    "upstream_learned_map_quality_separate"
+    "R2_stopped_coverage_and_delivery",
+    "R3_full_fit_null_and_defect_power",
+    "R4_global_exploration",
+    "R5_exact_consumer_inputs",
+    "R7_target_specific_learned_map_quality",
+    "optional_ArviZ_reference_environment",
+    "legacy_module_maintainability_debt"
   ],
   "continuation_budget_interpretation": "replacement available allowance, not additive to prior unused balance",
-  "current_ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/reconciliation-terminal.json",
-  "active_source_commit": "2921c2ffdb709156af39d0a622fdbad8cc8d11c3",
+  "current_ledger": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m38-r1/reconciliation-terminal.json",
+  "active_source_commit": "e9fee584704a465fc6ab984e3a8cc53980f335d0",
   "active_service": null,
-  "next_action": "Execute reviewed M31 statistical-design investigation before further full-fit calibration; preserve original coverage criterion.",
+  "next_action": "R2/R3 require adequately funded confirmation; R4/R7 require validated geometry; R5 exact inputs; no automatic M39",
   "scope_correction": {
     "date": "2026-09-22",
     "owner_instruction": "Assume whitened or partially whitened map for positive funnel tests",
@@ -349,8 +470,8 @@
     "temporary_worker_exception_status": "ended_after_supplied_map_tranche",
     "supplied_map_result": "docs/plans/bayesfilter-hmc-supplied-whitening-result-2026-09-22.md"
   },
-  "active_source_scope": "M30 source-r7 exact paired fresh fits; source-r10 adds tested completed-result policy guard; unrelated dirty work excluded",
-  "current_source_development_baseline": "8f992b205e9a4b8a861db4064cbcedb76af52f1f",
+  "active_source_scope": "M32/M34 GPU fits frozen at source-final-r2; final resume source check at r4; M37 and final book at r5. No historical relabeling.",
+  "current_source_development_baseline": "e9fee584704a465fc6ab984e3a8cc53980f335d0",
   "closed_cells": [
     "supplied_map_coordinate_algebra_public_pipeline_cpu_engineering",
     "frozen_gaussian_sequential_null_size_precision_screen",
@@ -371,11 +492,29 @@
     "M30_official_guide_rebuilt_and_visually_checked"
   ],
   "concurrent_phase": null,
-  "next_phase_design": "docs/plans/bayesfilter-hmc-post-m30-next-phase-2026-09-23.md",
-  "next_phase": "M31",
+  "next_phase_design": null,
+  "next_phase": null,
   "remaining_budget_seconds": {
-    "cpu_reference": 74427.31381860161,
-    "gpu": 75209.49884549249
+    "cpu_reference": 71946.61478971103,
+    "gpu": 74041.93929888518
   },
-  "updated_utc": "2026-09-23T11:42:45.381464+00:00"
+  "updated_utc": "2026-09-23T15:04:00.861678+00:00",
+  "roadmap_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+  "roadmap_review": "docs/plans/bayesfilter-hmc-master-roadmap-audit-2026-09-23.md",
+  "roadmap_completion_policy": {
+    "engineering": "R1,R6,R8 may close only on final-source tests and reconciled artifacts",
+    "scientific": "R2,R3,R4 require their declared complete denominators and uncertainty criteria",
+    "consumer_training": "R5,R7 remain separate input/protocol-dependent cells",
+    "terminal_phase": "M38 reports every requirement; no automatic M39"
+  },
+  "terminal_requirements": {
+    "R1": "closed_for_declared_engineering_scope",
+    "R2": "underfunded_confirmation_prior_failures_preserved",
+    "R3": "underfunded_confirmation",
+    "R4": "diagnostics_tested_exploration_open",
+    "R5": "awaiting_inputs",
+    "R6": "declared_parity_resource_checks_closed_legacy_debt_recorded",
+    "R7": "composition_tested_quality_protocol_and_cost_unresolved",
+    "R8": "book_reference_registry_and_status_aligned"
+  }
 }

@@ -177,6 +177,13 @@ coverage. The asymptotic fixed-width results in
 \citet[sections 2--3.1 and Appendix A]{flegalgongfixedwidth} require additional
 regularity and estimator-consistency conditions. Lugsail estimates uncertainty
 in retained means; it does not estimate how many burn-in draws are enough.
+Experiments that compare stopping policies must declare the batch size,
+minimum batch count and lugsail coefficients together with the recent-window
+length, effective-sample-size requirements and persistence of readiness checks.
+The fixed-count comparison uses the same declared estimator. A change to any
+of these choices requires a fresh fit identity, including when a previous fit
+has already saved its final summary. Otherwise a cached result could silently
+be attributed to a policy that never produced it.
 
 Absolute accuracy requirements must be interpreted in the units of the
 functional. For independent normal observations with standard deviation $s$

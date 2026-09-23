@@ -709,6 +709,28 @@ power of the complete HMC procedure. The full denominators, uncertainty and
 source versions are recorded in the M15 and M16 result notes under
 \path{docs/plans/}.
 
+An analytic posterior permits an additional direct check of fitted outputs.
+For a zero-mean normal prior with variance $\tau^2$ and independent observations with
+known variance $\sigma^2$, the conditional posterior has variance
+$s_y^2=(\tau^{-2}+n\sigma^{-2})^{-1}$ and mean
+$\mu_y=s_y^2\sum_i y_i/\sigma^2$. If a predetermined output $X_j$ from each
+independent complete fit has that conditional posterior law, then
+$Z_j=(X_j-\mu_y)/s_y$ are independent standard normals. Consequently,
+$\sum_j Z_j/\sqrt{J}$ is standard normal and $\sum_j Z_j^2$ has a
+$\chi^2_J$ distribution. Two two-sided tests, each at half the declared size,
+check location and second moment. The union bound controls their combined
+size under this correct-output null. The second check can expose errors that
+leave the mean unchanged.
+
+The diagnostic fixes the member, chain and terminal-draw rule before seeing
+posterior outcomes. Missing, capped or unqualified fits make its planned
+experiment incomplete; they are never counted as successful defect detections.
+Shared-stream controls cannot count as independent fits. The normal laws above
+describe the hypothesis under test. Adaptive stopping does not prove that a
+finite HMC endpoint follows them, and these tests do not establish coverage of
+intervals for stopped posterior means. Arithmetic adversaries and activated
+whole-fit defects answer different questions and are reported separately.
+
 An invariant kernel can remain motionless or revisit only a few states.
 Identity and two-cycle controls therefore accompany the distributional tests.
 Similarly, an MCSE estimator can perform adequately on fixed-length stationary

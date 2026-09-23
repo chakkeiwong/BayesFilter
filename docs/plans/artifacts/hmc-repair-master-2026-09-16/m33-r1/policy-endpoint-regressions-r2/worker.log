@@ -1,0 +1,405 @@
+...............................................................FF....... [ 93%]
+.....                                                                    [100%]
+=================================== FAILURES ===================================
+_ test_real_public_pipeline_continues_after_failed_first_sibling_and_resumes[gaussian] _
+
+design = <function design.<locals>.make at 0x73c8b41828e0>
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-689/test_real_public_pipeline_cont0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x73ca88141d00>
+target = 'gaussian'
+
+    @pytest.mark.parametrize("target", ["gaussian", "rotated_gaussian"])
+    def test_real_public_pipeline_continues_after_failed_first_sibling_and_resumes(
+            design, tmp_path, monkeypatch, target):
+        import bayesfilter.inference as public
+        original = public.run_hmc_posterior
+        calls = []
+        def first_budget_stop(**kwargs):
+            calls.append(kwargs["member"].num_leapfrog_steps)
+            if len(calls) == 1:
+                kwargs["budget_check"] = lambda _: False
+            return original(**kwargs)
+        monkeypatch.setattr(public, "run_hmc_posterior", first_budget_stop)
+        d = design("stopping", target, "prepared", replications=1, draws=64, posterior_cap=128,
+            step_size=.9, l_grid=(3, 5), options=sibling_options(
+                acceptance_policy={"practical_region": (.41, .99), "repair_region": (.405, .995)},
+                search={"pilot_enabled": False, "refinement_rounds": 0, "total_budget_units": 48,
+                        "repair_reserve_units": 8, "evidence_rungs": (1,)},
+                fixed_comparator={"warmup_results": 64, "retained_results": 128}))
+        record = run_replication(d, tmp_path, 0)
+        path = tmp_path / "replication-0000"
+        native = read_json(path / "pipeline.json")
+        selected = native["selection"]["candidate_ids"]
+        assert len(selected) == 2 and calls == [3, 5]
+        assert native["selection"]["selection_shortfall"] == 0
+        members = {m["candidate_id"]: m for m in native["members"]}
+        assert not members[selected[0]]["posterior"]["passed"]
+        assert members[selected[0]]["recorded_retained_count"] == 0
+        assert members[selected[1]]["status"] == "assessed"
+        assert members[selected[1]]["posterior"]["warmup_results_per_chain"] > 0
+        assert set(members) == set(native["verified_candidate_ids"])
+        summary = summarize_replications(d, [record])
+        assert summary["member_slot_assessments"]["1"]["interval_coverage_at_stop"]["x:mean"]["unavailable"] == 1
+        assert summary["member_slot_assessments"]["2"]["stopped_versus_fixed"]["planned"] == 1
+        hashes = {cid: file_hash(members[cid]["warmup_path"]) for cid in selected}
+        again = execute_pipeline(d, path)
+        assert calls == [3, 5] and json_ready(again["selection"]) == native["selection"]
+        assert hashes == {m["candidate_id"]: file_hash(m["warmup_path"])
+                          for m in again["members"] if m["candidate_id"] in selected}
+        changed = replace(d, options={**d.options, "posterior_member_count": 1})
+        with pytest.raises(ValueError, match="selection changed"):
+>           execute_pipeline(changed, path)
+
+tests/inference_validation/test_sibling_assessment.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+design = ValidationDesign(design_id='unit-reference', engine='stopping', scenario=ScenarioSpec(target='gaussian', route='prepar...epair_reserve_units': 8, 'evidence_rungs': (1,)}, 'fixed_comparator': {'warmup_results': 64, 'retained_results': 128}})
+destination = PosixPath('/tmp/pytest-of-ubuntu/pytest-689/test_real_public_pipeline_cont0/replication-0000')
+
+    def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, deadline=None,
+                         reuse_leapfrog_graphs=False):
+        """Complete public tuning plus actual replay/posterior controller for all members.
+    
+        Native checkpoints allow a repeated call at the same path to finish existing
+        work. The surrounding executor binds that path to immutable design/source.
+        """
+        from bayesfilter.inference import (
+            HMCControllerConfig, HMCCandidateExecutionConfig, HMCAcceptancePolicy,
+            HMCKernelTuningConfig, tune_hmc_kernel, tune_fixed_transport_hmc_kernel,
+            FixedTransportHMCKernelTuningConfig, bind_hmc_candidate_set_execution,
+            PrecomputedMassArtifact, resume_hmc_candidate_set_tuning,
+            load_numerical_tuning_checkpoint,
+            build_retained_bound_hmc_archive_runner_from_candidate_set_result,
+            load_hmc_candidate_retained_runner, SequentialNeuTraHMCConfig,
+            HMCPosteriorAssessmentPolicy, HMCPrecisionPolicy, HMCPrecisionTarget,
+            run_hmc_posterior,
+        )
+        from bayesfilter.runtime.durable_tensor_checkpoint import DurableTensorCheckpoint
+        from .storage import write_json, write_tensor, read_json
+    
+        started = time.monotonic()
+        root = Path(destination)
+        root.mkdir(parents=True, exist_ok=True)
+        # Completed member summaries bypass tensor checkpoint construction. Bind
+        # the whole fit before either that fast path or interrupted tuning replay.
+        from .designs import digest
+        fit_identity = {"design": design.identity, "data": digest(data),
+                        "fit_id": fit_id, "dataset_id": dataset_id,
+                        "reuse_leapfrog_graphs": reuse_leapfrog_graphs}
+        identity_path = root / "fit_identity.json"
+        if identity_path.exists():
+            if read_json(identity_path) != fit_identity:
+>               raise ValueError("pipeline checkpoint identity changed; use a fresh fit directory")
+E               ValueError: pipeline checkpoint identity changed; use a fresh fit directory
+
+bayesfilter/testing/inference_validation/procedures.py:251: ValueError
+
+During handling of the above exception, another exception occurred:
+
+design = <function design.<locals>.make at 0x73c8b41828e0>
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-689/test_real_public_pipeline_cont0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x73ca88141d00>
+target = 'gaussian'
+
+    @pytest.mark.parametrize("target", ["gaussian", "rotated_gaussian"])
+    def test_real_public_pipeline_continues_after_failed_first_sibling_and_resumes(
+            design, tmp_path, monkeypatch, target):
+        import bayesfilter.inference as public
+        original = public.run_hmc_posterior
+        calls = []
+        def first_budget_stop(**kwargs):
+            calls.append(kwargs["member"].num_leapfrog_steps)
+            if len(calls) == 1:
+                kwargs["budget_check"] = lambda _: False
+            return original(**kwargs)
+        monkeypatch.setattr(public, "run_hmc_posterior", first_budget_stop)
+        d = design("stopping", target, "prepared", replications=1, draws=64, posterior_cap=128,
+            step_size=.9, l_grid=(3, 5), options=sibling_options(
+                acceptance_policy={"practical_region": (.41, .99), "repair_region": (.405, .995)},
+                search={"pilot_enabled": False, "refinement_rounds": 0, "total_budget_units": 48,
+                        "repair_reserve_units": 8, "evidence_rungs": (1,)},
+                fixed_comparator={"warmup_results": 64, "retained_results": 128}))
+        record = run_replication(d, tmp_path, 0)
+        path = tmp_path / "replication-0000"
+        native = read_json(path / "pipeline.json")
+        selected = native["selection"]["candidate_ids"]
+        assert len(selected) == 2 and calls == [3, 5]
+        assert native["selection"]["selection_shortfall"] == 0
+        members = {m["candidate_id"]: m for m in native["members"]}
+        assert not members[selected[0]]["posterior"]["passed"]
+        assert members[selected[0]]["recorded_retained_count"] == 0
+        assert members[selected[1]]["status"] == "assessed"
+        assert members[selected[1]]["posterior"]["warmup_results_per_chain"] > 0
+        assert set(members) == set(native["verified_candidate_ids"])
+        summary = summarize_replications(d, [record])
+        assert summary["member_slot_assessments"]["1"]["interval_coverage_at_stop"]["x:mean"]["unavailable"] == 1
+        assert summary["member_slot_assessments"]["2"]["stopped_versus_fixed"]["planned"] == 1
+        hashes = {cid: file_hash(members[cid]["warmup_path"]) for cid in selected}
+        again = execute_pipeline(d, path)
+        assert calls == [3, 5] and json_ready(again["selection"]) == native["selection"]
+        assert hashes == {m["candidate_id"]: file_hash(m["warmup_path"])
+                          for m in again["members"] if m["candidate_id"] in selected}
+        changed = replace(d, options={**d.options, "posterior_member_count": 1})
+>       with pytest.raises(ValueError, match="selection changed"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'selection changed'
+E         Actual message: 'pipeline checkpoint identity changed; use a fresh fit directory'
+
+tests/inference_validation/test_sibling_assessment.py:131: AssertionError
+_ test_real_public_pipeline_continues_after_failed_first_sibling_and_resumes[rotated_gaussian] _
+
+design = <function design.<locals>.make at 0x73c7b43e34c0>
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-689/test_real_public_pipeline_cont1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x73c8142facf0>
+target = 'rotated_gaussian'
+
+    @pytest.mark.parametrize("target", ["gaussian", "rotated_gaussian"])
+    def test_real_public_pipeline_continues_after_failed_first_sibling_and_resumes(
+            design, tmp_path, monkeypatch, target):
+        import bayesfilter.inference as public
+        original = public.run_hmc_posterior
+        calls = []
+        def first_budget_stop(**kwargs):
+            calls.append(kwargs["member"].num_leapfrog_steps)
+            if len(calls) == 1:
+                kwargs["budget_check"] = lambda _: False
+            return original(**kwargs)
+        monkeypatch.setattr(public, "run_hmc_posterior", first_budget_stop)
+        d = design("stopping", target, "prepared", replications=1, draws=64, posterior_cap=128,
+            step_size=.9, l_grid=(3, 5), options=sibling_options(
+                acceptance_policy={"practical_region": (.41, .99), "repair_region": (.405, .995)},
+                search={"pilot_enabled": False, "refinement_rounds": 0, "total_budget_units": 48,
+                        "repair_reserve_units": 8, "evidence_rungs": (1,)},
+                fixed_comparator={"warmup_results": 64, "retained_results": 128}))
+        record = run_replication(d, tmp_path, 0)
+        path = tmp_path / "replication-0000"
+        native = read_json(path / "pipeline.json")
+        selected = native["selection"]["candidate_ids"]
+        assert len(selected) == 2 and calls == [3, 5]
+        assert native["selection"]["selection_shortfall"] == 0
+        members = {m["candidate_id"]: m for m in native["members"]}
+        assert not members[selected[0]]["posterior"]["passed"]
+        assert members[selected[0]]["recorded_retained_count"] == 0
+        assert members[selected[1]]["status"] == "assessed"
+        assert members[selected[1]]["posterior"]["warmup_results_per_chain"] > 0
+        assert set(members) == set(native["verified_candidate_ids"])
+        summary = summarize_replications(d, [record])
+        assert summary["member_slot_assessments"]["1"]["interval_coverage_at_stop"]["x:mean"]["unavailable"] == 1
+        assert summary["member_slot_assessments"]["2"]["stopped_versus_fixed"]["planned"] == 1
+        hashes = {cid: file_hash(members[cid]["warmup_path"]) for cid in selected}
+        again = execute_pipeline(d, path)
+        assert calls == [3, 5] and json_ready(again["selection"]) == native["selection"]
+        assert hashes == {m["candidate_id"]: file_hash(m["warmup_path"])
+                          for m in again["members"] if m["candidate_id"] in selected}
+        changed = replace(d, options={**d.options, "posterior_member_count": 1})
+        with pytest.raises(ValueError, match="selection changed"):
+>           execute_pipeline(changed, path)
+
+tests/inference_validation/test_sibling_assessment.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+design = ValidationDesign(design_id='unit-reference', engine='stopping', scenario=ScenarioSpec(target='rotated_gaussian', route...epair_reserve_units': 8, 'evidence_rungs': (1,)}, 'fixed_comparator': {'warmup_results': 64, 'retained_results': 128}})
+destination = PosixPath('/tmp/pytest-of-ubuntu/pytest-689/test_real_public_pipeline_cont1/replication-0000')
+
+    def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, deadline=None,
+                         reuse_leapfrog_graphs=False):
+        """Complete public tuning plus actual replay/posterior controller for all members.
+    
+        Native checkpoints allow a repeated call at the same path to finish existing
+        work. The surrounding executor binds that path to immutable design/source.
+        """
+        from bayesfilter.inference import (
+            HMCControllerConfig, HMCCandidateExecutionConfig, HMCAcceptancePolicy,
+            HMCKernelTuningConfig, tune_hmc_kernel, tune_fixed_transport_hmc_kernel,
+            FixedTransportHMCKernelTuningConfig, bind_hmc_candidate_set_execution,
+            PrecomputedMassArtifact, resume_hmc_candidate_set_tuning,
+            load_numerical_tuning_checkpoint,
+            build_retained_bound_hmc_archive_runner_from_candidate_set_result,
+            load_hmc_candidate_retained_runner, SequentialNeuTraHMCConfig,
+            HMCPosteriorAssessmentPolicy, HMCPrecisionPolicy, HMCPrecisionTarget,
+            run_hmc_posterior,
+        )
+        from bayesfilter.runtime.durable_tensor_checkpoint import DurableTensorCheckpoint
+        from .storage import write_json, write_tensor, read_json
+    
+        started = time.monotonic()
+        root = Path(destination)
+        root.mkdir(parents=True, exist_ok=True)
+        # Completed member summaries bypass tensor checkpoint construction. Bind
+        # the whole fit before either that fast path or interrupted tuning replay.
+        from .designs import digest
+        fit_identity = {"design": design.identity, "data": digest(data),
+                        "fit_id": fit_id, "dataset_id": dataset_id,
+                        "reuse_leapfrog_graphs": reuse_leapfrog_graphs}
+        identity_path = root / "fit_identity.json"
+        if identity_path.exists():
+            if read_json(identity_path) != fit_identity:
+>               raise ValueError("pipeline checkpoint identity changed; use a fresh fit directory")
+E               ValueError: pipeline checkpoint identity changed; use a fresh fit directory
+
+bayesfilter/testing/inference_validation/procedures.py:251: ValueError
+
+During handling of the above exception, another exception occurred:
+
+design = <function design.<locals>.make at 0x73c7b43e34c0>
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-689/test_real_public_pipeline_cont1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x73c8142facf0>
+target = 'rotated_gaussian'
+
+    @pytest.mark.parametrize("target", ["gaussian", "rotated_gaussian"])
+    def test_real_public_pipeline_continues_after_failed_first_sibling_and_resumes(
+            design, tmp_path, monkeypatch, target):
+        import bayesfilter.inference as public
+        original = public.run_hmc_posterior
+        calls = []
+        def first_budget_stop(**kwargs):
+            calls.append(kwargs["member"].num_leapfrog_steps)
+            if len(calls) == 1:
+                kwargs["budget_check"] = lambda _: False
+            return original(**kwargs)
+        monkeypatch.setattr(public, "run_hmc_posterior", first_budget_stop)
+        d = design("stopping", target, "prepared", replications=1, draws=64, posterior_cap=128,
+            step_size=.9, l_grid=(3, 5), options=sibling_options(
+                acceptance_policy={"practical_region": (.41, .99), "repair_region": (.405, .995)},
+                search={"pilot_enabled": False, "refinement_rounds": 0, "total_budget_units": 48,
+                        "repair_reserve_units": 8, "evidence_rungs": (1,)},
+                fixed_comparator={"warmup_results": 64, "retained_results": 128}))
+        record = run_replication(d, tmp_path, 0)
+        path = tmp_path / "replication-0000"
+        native = read_json(path / "pipeline.json")
+        selected = native["selection"]["candidate_ids"]
+        assert len(selected) == 2 and calls == [3, 5]
+        assert native["selection"]["selection_shortfall"] == 0
+        members = {m["candidate_id"]: m for m in native["members"]}
+        assert not members[selected[0]]["posterior"]["passed"]
+        assert members[selected[0]]["recorded_retained_count"] == 0
+        assert members[selected[1]]["status"] == "assessed"
+        assert members[selected[1]]["posterior"]["warmup_results_per_chain"] > 0
+        assert set(members) == set(native["verified_candidate_ids"])
+        summary = summarize_replications(d, [record])
+        assert summary["member_slot_assessments"]["1"]["interval_coverage_at_stop"]["x:mean"]["unavailable"] == 1
+        assert summary["member_slot_assessments"]["2"]["stopped_versus_fixed"]["planned"] == 1
+        hashes = {cid: file_hash(members[cid]["warmup_path"]) for cid in selected}
+        again = execute_pipeline(d, path)
+        assert calls == [3, 5] and json_ready(again["selection"]) == native["selection"]
+        assert hashes == {m["candidate_id"]: file_hash(m["warmup_path"])
+                          for m in again["members"] if m["candidate_id"] in selected}
+        changed = replace(d, options={**d.options, "posterior_member_count": 1})
+>       with pytest.raises(ValueError, match="selection changed"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'selection changed'
+E         Actual message: 'pipeline checkpoint identity changed; use a fresh fit directory'
+
+tests/inference_validation/test_sibling_assessment.py:131: AssertionError
+=============================== warnings summary ===============================
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/inference_validation/test_posterior_policy_wiring.py: 19 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Constant.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Compare.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 85 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Attribute.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: BinOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 53 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Call.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 15 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: keyword.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 18 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FunctionDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 31 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Load.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Tuple.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Expr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Eq.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Is.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: IsNot.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Dict.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Try.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Subscript.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: List.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: alias.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Import.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/inference_validation/test_sibling_assessment.py::test_real_public_pipeline_continues_after_failed_first_sibling_and_resumes[gaussian]
+FAILED tests/inference_validation/test_sibling_assessment.py::test_real_public_pipeline_continues_after_failed_first_sibling_and_resumes[rotated_gaussian]
+2 failed, 75 passed, 256 warnings in 185.90s (0:03:05)

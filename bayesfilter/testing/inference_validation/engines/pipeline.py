@@ -145,10 +145,12 @@ def controller_experiment(design,root):
 
 def run_replication(design, root, replication, deadline=None, *, reuse_leapfrog_graphs=False):
     """One complete fit and independent assessment, reusable across processes."""
-    from ..procedures import execute_pipeline
+    from ..procedures import execute_pipeline, check_fit_identity
 
     path = Path(root) / f"replication-{replication:04d}"
     if (path / "independent_assessment.json").exists():
+        check_fit_identity(design, path, data=design.options.get("data"), fit_id=replication,
+                           reuse_leapfrog_graphs=reuse_leapfrog_graphs)
         execution = read_json(path / "tuning/execution_spec.json")["execution"]
         if execution["config"].get("reuse_leapfrog_graphs", False) != reuse_leapfrog_graphs:
             raise ValueError("completed fit requires the original runner reuse policy")
@@ -189,8 +191,8 @@ def run_replication(design, root, replication, deadline=None, *, reuse_leapfrog_
             comparator=member.get("fixed_comparator",{})
             fixed=(read_tensor(comparator["draws_path"]).numpy() if comparator.get("status")=="assessed"
                    else np.empty((0,draws.shape[1],draws.shape[2])))
-            interval_options = {"jit_compile": design.device == "gpu",
-                "method": design.options.get("posterior_precision_method", "lugsail")}
+            from ..posterior_policy import mean_precision_options
+            interval_options = mean_precision_options(design)
             row["stopping_pair"]={"stopped":arm_quantities(draws,spec,design.scenario.parameters,data,**interval_options),
                 "fixed":arm_quantities(fixed,spec,design.scenario.parameters,data,**interval_options),
                 "fixed_status":comparator.get("status","unavailable")}

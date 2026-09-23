@@ -215,6 +215,28 @@ def run_fixed_comparator(member, target, settings, directory, seed_parts, deadli
     return result
 
 
+def check_fit_identity(design, destination, *, data=None, fit_id=0, dataset_id=0,
+                       reuse_leapfrog_graphs=False):
+    """Bind resume before either completed summaries or numerical checkpoints."""
+    from .designs import digest
+    from .execution import source_state
+    from .storage import read_json, write_json
+    root = Path(destination)
+    root.mkdir(parents=True, exist_ok=True)
+    fit_identity = {"design": design.identity, "data": digest(data),
+                    "source_identity": source_state()["identity"],
+                    "fit_id": fit_id, "dataset_id": dataset_id,
+                    "reuse_leapfrog_graphs": reuse_leapfrog_graphs}
+    identity_path = root / "fit_identity.json"
+    if identity_path.exists():
+        if read_json(identity_path) != fit_identity:
+            raise ValueError("pipeline checkpoint identity changed; use a fresh fit directory")
+    elif (root / "tuning").exists() or (root / "members").exists():
+        raise ValueError("legacy pipeline checkpoint lacks fit identity; use a fresh fit directory")
+    else:
+        write_json(identity_path, fit_identity)
+
+
 def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, deadline=None,
                      reuse_leapfrog_graphs=False):
     """Complete public tuning plus actual replay/posterior controller for all members.
@@ -239,6 +261,10 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     started = time.monotonic()
     root = Path(destination)
     root.mkdir(parents=True, exist_ok=True)
+    # Completed member summaries bypass tensor checkpoint construction. Bind
+    # the whole fit before either that fast path or interrupted tuning replay.
+    check_fit_identity(design, root, data=data, fit_id=fit_id, dataset_id=dataset_id,
+                       reuse_leapfrog_graphs=reuse_leapfrog_graphs)
     scenario = design.scenario
     target = ValidationTarget(scenario.target, scenario.parameters, data,
         control=scenario.control if scenario.control in {"ignore_data","wrong_score","omit_jacobian","location_shift"} else "baseline",
@@ -395,9 +421,10 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         quantities_id, quantities_fn = posterior_quantities(design)
         precision_targets.extend(HMCPrecisionTarget(name, kind="mean", mcse_absolute_max=design.mcse_tolerance)
                                  for name in design.options.get("global_quantities", []))
+        from .posterior_policy import mean_precision_options
         policy=HMCPosteriorAssessmentPolicy(precision=HMCPrecisionPolicy(tuple(precision_targets),
-            method=design.options.get("posterior_precision_method", "lugsail"),
-            jit_compile=design.device=="gpu"), quantities_id=quantities_id)
+            **mean_precision_options(design)), quantities_id=quantities_id,
+            **design.options.get("posterior_assessment_settings", {}))
         counts = dict(warmup_chunk_results=count,warmup_min_results=count,warmup_check_window_results=count,
             warmup_max_results=design.posterior_cap,retained_chunk_results=count,retained_min_results=count,
             retained_max_results=design.posterior_cap)

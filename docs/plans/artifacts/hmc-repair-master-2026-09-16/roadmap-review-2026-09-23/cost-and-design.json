@@ -1,0 +1,41 @@
+{
+  "role": "planning_arithmetic_only_no_campaign_worker",
+  "source_commit": "e9fee584704a465fc6ab984e3a8cc53980f335d0",
+  "provenance": "M26 pointwise screen and hypothetical rate; M30 observed full-fit outer seconds",
+  "method": "exact binomial upper sums; CP lower >= .90 iff P_Binomial(n,.90)(X>=k) <= .025",
+  "assumptions": [
+    "independent complete fits in a frozen cell",
+    "true .95 success probability hypothetical",
+    "single-fit costs descriptive; no guaranteed ceiling"
+  ],
+  "rows": [
+    {
+      "fits_per_target": 64,
+      "minimum_successes": 63,
+      "pass_probability_if_true_success_095": 0.1639212397117225,
+      "gaussian_gpu_hours": 6.161572237991624,
+      "beta_binomial_gpu_hours": 5.0757266653701665
+    },
+    {
+      "fits_per_target": 128,
+      "minimum_successes": 122,
+      "pass_probability_if_true_success_095": 0.5407144718389607,
+      "gaussian_gpu_hours": 12.323144475983248,
+      "beta_binomial_gpu_hours": 10.151453330740333
+    },
+    {
+      "fits_per_target": 256,
+      "minimum_successes": 240,
+      "pass_probability_if_true_success_095": 0.8551956652983012,
+      "gaussian_gpu_hours": 24.646288951966497,
+      "beta_binomial_gpu_hours": 20.302906661480666
+    },
+    {
+      "fits_per_target": 384,
+      "minimum_successes": 358,
+      "pass_probability_if_true_success_095": 0.9508812875561651,
+      "gaussian_gpu_hours": 36.969433427949745,
+      "beta_binomial_gpu_hours": 30.454359992220997
+    }
+  ]
+}

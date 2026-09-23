@@ -1,0 +1,111 @@
+{
+  "schema": "bayesfilter.hmc_m31_design_arithmetic.v1",
+  "observed_full_fit_gpu_seconds": {
+    "gaussian": 346.5884383870289,
+    "beta-binomial": 285.50962492707185
+  },
+  "coverage": [
+    {
+      "fits": 64,
+      "minimum_successes": 63,
+      "assurance_at_095": 0.1639212397117175,
+      "gpu_hours_by_target": {
+        "gaussian": 6.161572237991624,
+        "beta-binomial": 5.0757266653701665
+      }
+    },
+    {
+      "fits": 128,
+      "minimum_successes": 122,
+      "assurance_at_095": 0.5407144718389529,
+      "gpu_hours_by_target": {
+        "gaussian": 12.323144475983248,
+        "beta-binomial": 10.151453330740333
+      }
+    },
+    {
+      "fits": 256,
+      "minimum_successes": 240,
+      "assurance_at_095": 0.8551956652983287,
+      "gpu_hours_by_target": {
+        "gaussian": 24.646288951966497,
+        "beta-binomial": 20.302906661480666
+      }
+    },
+    {
+      "fits": 384,
+      "minimum_successes": 358,
+      "assurance_at_095": 0.9508812875560635,
+      "gpu_hours_by_target": {
+        "gaussian": 36.969433427949745,
+        "beta-binomial": 30.454359992220997
+      }
+    }
+  ],
+  "normal_endpoint_family": {
+    "alpha": 0.05,
+    "multiplicity": 2,
+    "statistics": [
+      "sqrt(n)*mean(z)",
+      "sum(z**2)"
+    ],
+    "nulls": [
+      "N(0,1)",
+      "chi_square(n)"
+    ],
+    "analytic_shift_designs": [
+      {
+        "delta_posterior_sd": 0.25,
+        "fits_per_experiment": 199,
+        "analytic_mean_test_power_lower_bound": 0.9006529970987088,
+        "power_confirmation_experiments": 167,
+        "minimum_detected": 144,
+        "assurance_if_power_09": 0.9550102575747426,
+        "complete_fits_per_arm": 33233,
+        "illustrative_gpu_hours_m30_gaussian_price": 3199.49265914337
+      },
+      {
+        "delta_posterior_sd": 0.5,
+        "fits_per_experiment": 50,
+        "analytic_mean_test_power_lower_bound": 0.9021899469428772,
+        "power_confirmation_experiments": 167,
+        "minimum_detected": 144,
+        "assurance_if_power_09": 0.9550102575747426,
+        "complete_fits_per_arm": 8350,
+        "illustrative_gpu_hours_m30_gaussian_price": 803.8926279254697
+      }
+    ],
+    "null_confirmation_experiments_at_095_assurance": 363,
+    "maximum_null_rejections": 25
+  },
+  "nested_baseline": {
+    "datasets": 128,
+    "fits_per_dataset": 3,
+    "fits_per_experiment": 384,
+    "illustrative_one_arm_gpu_hours": 36.969433427949745
+  },
+  "source_sha256": {
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/gaussian-full-dynamic-gpu-r1/execution.json": "ff6f659513a622d253ebfe1dada46a59836e410b9a837b8da690fe22296662d6",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/beta-binomial-full-dynamic-gpu-r1/execution.json": "22a5e746f86fc50f05422fad4da3b2931104627e39bb7373d12f75d24728ba32",
+    "/home/ubuntu/python/BayesFilter/.localresources/papers/hmc_validation_standards_20260915/talts-sbc.txt": "b9a2776fafba1c72865ea189ff777f95c6229fcd49027a3420c3ebc0e099f3bf",
+    "/home/ubuntu/python/BayesFilter/.localresources/papers/hmc_validation_standards_20260915/sbc-test-quantities-2211.02383.txt": "59768afbc79461279ff9e191a429aad0562f55b419c215a2c1e917fda53e840f",
+    "/home/ubuntu/python/BayesFilter/.localresources/papers/hmc_validation_standards_20260915/gandy-scott-mcmc-unit-2001.06465.txt": "a398d0a36d0f6876a29d51b1ef44e1a5e2f2c18b5638a687d3026c9d995d58e1",
+    "/home/ubuntu/python/BayesFilter/.localresources/papers/hmc_validation_standards_20260915/mcunit-expect-invariant.R": "1816144594b7b5fc2c2358fcd4f117fe0308b40b3a5a491034af5eab943e4fc2",
+    "/home/ubuntu/python/BayesFilter/.localresources/papers/hmc_validation_standards_20260915/sbc-diagnostics.R": "dab027dd4605f172bc114d39b0fb2ba002ce814142360b6720cdf7174cfcbbe2"
+  },
+  "funding_decision": "complete-fit coverage and repeated full-fit power are underfunded at measured costs; fund engineering and bounded activation only",
+  "provenance": {
+    "coverage_floor": "M26 inherited .90, two-sided .95 CP",
+    "power_and_null_screens": "M22 inherited .80 lower / .10 upper",
+    "planning_assurance": ".95 inherited coverage planning target, explicit hypothesis for power",
+    "true_probabilities": ".95 coverage and .90 power are hypothetical, not estimated",
+    "shift_sizes": "M22 .25/.5 posterior SD",
+    "fit_price_transfer": "illustrative only; normal-conjugate requires target-specific pricing"
+  },
+  "nonclaims": [
+    "no observed HMC power or stopping coverage",
+    "no runtime guarantee",
+    "no default promotion",
+    "oracle independence does not prove stopped output law"
+  ]
+}
