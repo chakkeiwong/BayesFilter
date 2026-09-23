@@ -1,5 +1,38 @@
 # Additional repair phase: complete execution boundaries and ownership
 
+Current checkpoint through03463: dense attempt composition is implemented
+with the missing raw-to-scaled center-score conversion repaired. Strengthened
+checks execute the exact external cloud loop and original3582b4ac fitter,
+compare full records/archives and actual fit calls, and test changed operands,
+HLO, collection and frozen derivatives. All four D1 cases pass on CPU/GPU;
+D3 moved/invalid pass on CPU. D3 fitting remains unqualified:03450 GPU/03459 CPU
+fail only the nearly singular prediction-Jacobian condition diagnostic.03454
+proves standalone/composed records match exactly and localizes diagnostic
+sensitivity on identical optimizer states. The unsuccessful rounding trial is
+removed. See the [checkpoint result](filter_gradient_dense_attempt_checkpoint_20260923.md).
+
+The NumPy-free NPZ artifact writer passes21 independent reader compatibility
+checks. All129 policy checks pass; the partial guard covers234 sources/1335 exact
+exceptions, including two new completed-file serialization loops and no numerical
+loop or NumPy waiver. GPU follow-up preflight declined under foreign utilization;
+no worker launched. CPU/GPU numerical completeness and public integration remain
+open. No performance or memory improvement is claimed for this checkpoint.
+
+Two concrete reporting proposals await an owner reply: the previous
+[E2 clipping counts](filter_gradient_initializer_clip_reporting_proposal_20260923.md)
+and the new [ill-conditioned D3 diagnostic](filter_gradient_dense_condition_reporting_proposal_20260923.md).
+No relaxed comparison, residual correction or new runtime conditioning threshold
+is installed. Continue independent controller preparation, archive integration,
+seeded RNG qualification and unaffected gates. The full attempt controller is
+prepared outside the runtime tree; it is not an admitted implementation.
+
+Charges are67618.983006 CPU/67501.553606 GPU seconds, leaving
+13.22/33.25 process-hours under the unchanged32CPU/52GPU caps.
+Remote maine9fee5847 was fetched and remains unmerged. No worker is active.
+Completed CDF retained-r5 must not restart. Public initializer/staged integration,
+actual isolated DZ5 target/transition, terminal costs and F01--F20 endpoint audit,
+remote integration and final retests still gate main merge.
+
 Current checkpoint through03422: validated dense fitting passes the complete
 CPU/GPU matrix, and the clean ordered-block GPU cost cohort
 passes all18 fresh processes. D3/D5 repeated XLA calls take29.99/65.67ms versus

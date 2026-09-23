@@ -422,7 +422,9 @@
     "bayesfilter/inference/block_controller_tf.py": null,
     "bayesfilter/inference/block_controller_report.py": null,
     "bayesfilter/inference/batched_local_center_tf.py": null,
-    "bayesfilter/inference/dense_validated_fit_tf.py": null
+    "bayesfilter/inference/dense_validated_fit_tf.py": null,
+    "bayesfilter/inference/dense_initializer_attempt_tf.py": null,
+    "bayesfilter/inference/tensor_npz_archive.py": null
   },
   "exceptions": [
     {
@@ -12488,6 +12490,22 @@
       "ast_sha256": "0e98022a047a484f49a28c89b047d19b5d079440e7e02285febe5bb5396f8445",
       "role": "host_validation",
       "reason": "Sum configured per-block maximum evaluation counts to reject an insufficient prospective row cap before constructing or executing the numerical controller."
+    },
+    {
+      "path": "bayesfilter/inference/tensor_npz_archive.py",
+      "function": "write_tensor_npz",
+      "kind": "python_iteration",
+      "ast_sha256": "2b2ba3c0fe5fecbc870a9b0e7e8d4d96b68cbf94c7b7f117265c6d58da72ffa4",
+      "role": "host_reporting",
+      "reason": "Completed-artifact serialization: traverse NPZ members, validate storage metadata, construct NPY headers and encode tensor values with the standard library; no numerical decision or feedback."
+    },
+    {
+      "path": "bayesfilter/inference/tensor_npz_archive.py",
+      "function": "write_tensor_npz",
+      "kind": "python_iteration",
+      "ast_sha256": "9008b0ec81f0ec332bf4b1fe326b2cffc1d48c3bcebeb2efee820507a68adcbd",
+      "role": "host_reporting",
+      "reason": "Completed-artifact byte packing in bounded chunks; struct.pack and ZIP writes only, with no numerical computation or runtime feedback."
     }
   ]
 }

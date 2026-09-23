@@ -123,6 +123,12 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "tensor_npz_cpu": ("tests/test_filter_repair_tensor_npz.py",),
+    "dense_attempt_condition_gpu": ("tests/test_filter_repair_dense_attempt_condition.py",),
+    **{f"dense_attempt_{dimension}_{case}_{device}": (
+        "tests/test_filter_repair_dense_attempt_composition.py", "-k", f"{case} and {dimension}")
+        for dimension in (1, 3) for case in ("centered", "moved", "invalid", "fit_rejected")
+        for device in ("cpu", "gpu")},
     **{f"dense_validated_fit_{dimension}_{case}_{device}": (
         "tests/test_filter_repair_dense_validated_fit.py", "-k", f"{case} and {dimension}")
         for dimension, case in ((1, "healthy"), (3, "healthy"), (3, "audit"), (3, "incomplete"), (3, "rank"))
@@ -1027,6 +1033,7 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "dense_attempt_condition_gpu": "Same-data/state attribution of run03450; cannot close complete-record qualification.",
     **{f"block_public_cost_{arm}_{dimension}_{device}":
         "Complete public block costs; repeated original-record/provenance comparisons and separate ledger disposition required."
         for arm in ("prior", "graph", "xla") for dimension in (3, 5) for device in ("cpu", "gpu")},
@@ -1192,6 +1199,12 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "dense_attempt_unaffected": ("dense_attempt_3_moved_cpu", "dense_attempt_3_invalid_cpu",
+        "dense_attempt_3_moved_gpu", "dense_attempt_3_invalid_gpu", "tensor_npz_cpu", "policy"),
+    "dense_attempt_cpu": tuple(f"dense_attempt_{dimension}_{case}_cpu"
+        for dimension in (1, 3) for case in ("centered", "moved", "invalid", "fit_rejected")),
+    "dense_attempt_gpu": tuple(f"dense_attempt_{dimension}_{case}_gpu"
+        for dimension in (1, 3) for case in ("centered", "moved", "invalid", "fit_rejected")),
     "dense_validated_fit_finish_cpu": (
         "dense_validated_fit_3_audit_cpu", "dense_validated_fit_3_incomplete_cpu",
         "dense_validated_fit_3_rank_cpu", "dense_fit_error_order_cpu", "fixed_geometry", "policy"),
@@ -1489,6 +1502,9 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "dense_attempt_condition_gpu": "GPU",
+    **{f"dense_attempt_{dimension}_{case}_gpu": "GPU"
+        for dimension in (1, 3) for case in ("centered", "moved", "invalid", "fit_rejected")},
     **{f"dense_validated_fit_{dimension}_{case}_gpu": "GPU"
         for dimension, case in ((1, "healthy"), (3, "healthy"), (3, "audit"), (3, "incomplete"), (3, "rank"))},
     "dense_fit_error_order_gpu": "GPU",

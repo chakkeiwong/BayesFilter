@@ -1,5 +1,39 @@
 # Dense initializer attempt composition
 
+The first composition implementation is now available as
+`dense_initializer_attempt_tf.make_dense_initializer_attempt_program`. It
+connects the qualified cloud evaluator to the validated fitter, keeps fit
+execution behind the cloud-valid/centered branch, and returns a typed status
+plus frozen output scales. The focused unit will compare the cloud component
+against the exact external loop before any external caller wiring.
+
+Recovery review, through03445: the original test passed `tf.int64` as the
+`trainable` positional argument, creating a CPU int32 resource. Explicit device
+placement alone failed (03444); using `dtype=tf.int64` repairs the resource type.
+03445 then failed only the new device-name assertion (TensorFlow uses
+`/device:GPU:0`); the suffix check now compares the normalized device spelling.
+All failures remain recorded. Sandbox preflight failures launched no workers.
+
+The recovery review also found missing evidence: the test hashed the external
+cloud source but did not execute the reference, and swallowed fitter ValueErrors.
+It now compares complete original cloud archives and original3582b4ac fitting
+records, rejects unexpected errors, counts actual fit calls, and checks changed
+and return operands, HLO, collection and the frozen derivative boundary. Nonunit
+coordinate scales and nonzero center scores expose a missing scale conversion
+in the draft composition: the fitter must receive `center_score * scale`, exactly
+as the frozen external caller does. This is repaired before qualification; no
+callback, fitter arithmetic, tolerance or selection rule changes.
+
+03446--03449 pass all four strengthened D1 GPU cases.03450 D3 fails only
+the factor prediction-Jacobian condition diagnostic (roughly1e14); the archived
+cloud operands match exactly and all other fields agree.03451 preserves a
+rejected rounding-barrier trial, which changed no results; it is removed.
+Next use one300s explanatory GPU worker on03450's exact arrays: compare current
+standalone with composed fitting, recover both unmodified optimizer states,
+and evaluate original/current graph/XLA diagnostics on identical states. This
+separates enclosure, optimizer-state and diagnostic sensitivity without changing
+any criterion. The completed full records remain the promotion criterion.
+
 This follows the validated-fitting unit; do not implement or execute its
 numerical work while that unit's source-frozen workers are active. The engineering
 question is whether the exact external2f386f75 `initialize_dense_local` attempt
@@ -47,7 +81,7 @@ archives. Progress events can describe the whole compiled boundary; they cannot
 serve as an in-graph deadline. Use the already tested independent parent deadline
 and a bounded fresh-process lifetime for the actual consumer.
 
-Reserve24 workers/7200 charged seconds after the preceding unit, within the
+Reserve48 workers/7200 charged seconds after the preceding unit, within the
 unchanged32CPU/52GPU caps. Ordinary focused workers120s, justified complete
 workers300s; separate a costly fixture rather than silently extending its
 deadline. CPU is an explicit reference and GPU is the default qualification
@@ -58,6 +92,9 @@ changed operands and return-to-original without retracing or HLO specialization.
 Cover healthy D1/D3, invalid locator/cloud, score veto, moved-center retries,
 attempt exhaustion, rejected/audit-vetoed fits, error precedence and completed
 archives. Renew existing dense consumer assertions after composition qualifies.
+The recovery allowance expands the original24-worker count for the strengthened
+CPU/GPU comparisons after23 recorded workers through03445, without increasing
+the7200-second compute reservation or the cumulative campaign caps.
 
 Stop promotion on any changed original record, predicate, callback order/count,
 shape, error, HLO or lifetime mismatch. Preserve and localize within this unit

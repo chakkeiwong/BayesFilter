@@ -1,6 +1,39 @@
 # Complete filter and gradient execution repair
 
-Current checkpoint through03422: validated dense fitting passes the complete
+Current checkpoint through03463: dense attempt composition is implemented
+with the missing raw-to-scaled center-score conversion repaired. Strengthened
+checks execute the exact external cloud loop and original3582b4ac fitter,
+compare full records/archives and actual fit calls, and test changed operands,
+HLO, collection and frozen derivatives. All four D1 cases pass on CPU/GPU;
+D3 moved/invalid pass on CPU. D3 fitting remains unqualified:03450 GPU/03459 CPU
+fail only the nearly singular prediction-Jacobian condition diagnostic.03454
+proves standalone/composed records match exactly and localizes diagnostic
+sensitivity on identical optimizer states. The unsuccessful rounding trial is
+removed. See the [checkpoint result](filter_gradient_dense_attempt_checkpoint_20260923.md).
+
+The NumPy-free NPZ artifact writer passes21 independent reader compatibility
+checks. All129 policy checks pass; the partial guard covers234 sources/1335 exact
+exceptions, including two new completed-file serialization loops and no numerical
+loop or NumPy waiver. GPU follow-up preflight declined under foreign utilization;
+no worker launched. CPU/GPU numerical completeness and public integration remain
+open. No performance or memory improvement is claimed for this checkpoint.
+
+Two concrete reporting proposals await an owner reply: the previous
+[E2 clipping counts](filter_gradient_initializer_clip_reporting_proposal_20260923.md)
+and the new [ill-conditioned D3 diagnostic](filter_gradient_dense_condition_reporting_proposal_20260923.md).
+No relaxed comparison, residual correction or new runtime conditioning threshold
+is installed. Continue independent controller preparation, archive integration,
+seeded RNG qualification and unaffected gates. The full attempt controller is
+prepared outside the runtime tree; it is not an admitted implementation.
+
+Charges are67618.983006 CPU/67501.553606 GPU seconds, leaving
+13.22/33.25 process-hours under the unchanged32CPU/52GPU caps.
+Remote maine9fee5847 was fetched and remains unmerged. No worker is active.
+Completed CDF retained-r5 must not restart. Public initializer/staged integration,
+actual isolated DZ5 target/transition, terminal costs and F01--F20 endpoint audit,
+remote integration and final retests still gate main merge.
+
+Historical checkpoint through03422: validated dense fitting passes the complete
 CPU/GPU matrix, and the clean ordered-block GPU cost cohort
 passes all18 fresh processes. D3/D5 repeated XLA calls take29.99/65.67ms versus
 20.46/21.61s for the recompiling prior API; these are descriptive fixture costs.
@@ -192,7 +225,7 @@ a solution is already qualified.
 | --- | --- | --- |
 | Public numerical control still in Python | E2: qualify and install the internal iterative initializer. E3 public ordered-block CPU/GPU qualification completes through03247; matched costs remain. | Complete original public records, exact target order/counts, failure/no-use behavior, supported configurations and unchanged HLO on CPU/GPU. |
 | Initializer coefficient roundoff and clipping reports | E2: independent high-precision attribution is complete. The residual candidate preserves actual decisions but changes near-zero D3 reporting counts. The concrete narrow reporting proposal awaits agreement before installing the correction and renewing full records/consumers. | Original healthy decisions and full records at unchanged tolerances; no blanket near-tie waiver or discarded-precision exemption. |
-| Actual DZ5 consumer uses non-JIT/Python/NumPy execution | E5: reusable locator passes nine CPU/nine GPU checks; cloud evaluation14 per backend and partition validation68 scenarios per backend pass. Validated fitter passes CPU/GPU through03422. Compose exact attempts/seeded clouds, then migrate initialize_dense_local in an isolated checkout with tensor telemetry, compiled attempts/partitions and TF/standard-library assembly. Current CDF parent deadline mechanics pass four tests. | Real target/transition wiring, fixed batch extent, invalid-row accounting, actual compiled consumer under the tested parent and exact source/pin provenance; preserve the live dirty tree. |
+| Actual DZ5 consumer uses non-JIT/Python/NumPy execution | E5: reusable locator passes nine CPU/nine GPU checks; cloud evaluation14 per backend and partition validation68 scenarios per backend pass. Validated fitter passes CPU/GPU through03422. Attempt composition repairs score scaling and passes D1 CPU/GPU; D3 ill-conditioned diagnostic disposition awaits agreement. NPZ reader compatibility passes21 cases. Complete attempts/seeded clouds, then migrate initialize_dense_local in an isolated checkout with tensor telemetry, compiled attempts/partitions and TF/standard-library assembly. Current CDF parent deadline mechanics pass four tests. | Real target/transition wiring, fixed batch extent, invalid-row accounting, actual compiled consumer under the tested parent and exact source/pin provenance; preserve the live dirty tree. |
 | GPU correctness and matched before/after costs | E6: GPU renewal, sequential costs and all18 ordered-block GPU cost comparisons pass; D3 transient allocator increase is attributed and retained for the tested signature. Other endpoint costs and final source renewal remain. | Verified memory growth and device identity; full-record comparisons; shared-device timing cannot close a clean cost gate. |
 | Native executable retention and cold/RSS overhead | E4/E6: native residency is confirmed across signatures; CPU/GPU fresh-process containment passes. Integrate the bounded lifecycle with the actual E5 consumer and resolve other cold/RSS triggers. | Measured bounded resource use for the supported lifecycle, preserved arithmetic, and explicit dispositions for each cold/warm/host/device trigger; Python collection alone is insufficient. |
 | Secondary public numerical boundaries | E6: consensus passes19 CPU/19 GPU checks; target-failure segment57 CPU/57 GPU and internal staged locator26 CPU/24 GPU. Native compiler isolation and nested reuse pass; XLA CPU/GPU costs pass. Qualify public reuse/error integration and terminal costs as specified in the endpoint follow-up. | Pinned full results and error/callback semantics, stable operand signatures, changed-input HLO, numerical/derivative and CPU/GPU qualification; legitimate host boundaries cannot exempt numerical work. |
