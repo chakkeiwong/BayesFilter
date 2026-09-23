@@ -36,7 +36,7 @@ import run_sqmc_tuning as R
 DTYPE = tf.float64
 HORIZON = 120
 STATE_DIM = 10  # Higher dimension than T=20 tuning (was 3D)
-PARTICLE_COUNT = 1008
+PARTICLE_COUNT = 1000  # Must be divisible by 2*STATE_DIM=20 for Contract-E reset design
 SEEDS = [97801, 97802, 97803, 97804]  # New seeds for T=120 test
 
 # Routes to test
@@ -120,6 +120,7 @@ def _evaluate_route_on_seed(
         seed=seed,
         horizon=HORIZON,
         particle_count=PARTICLE_COUNT,
+        state_dim=STATE_DIM,
     )
 
     result["seed"] = seed

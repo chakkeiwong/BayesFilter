@@ -293,6 +293,7 @@ def _evaluate_controls(
     horizon: int,
     particle_count: int,
     is_ablation: bool = False,
+    state_dim: int = 3,
 ) -> Dict:
     """Evaluate one control configuration."""
 
@@ -312,11 +313,11 @@ def _evaluate_controls(
     dtype = DTYPE
     if route == 'iid_dual_cap':
         initial_states = tf.random.stateless_normal(
-            [particle_count, 3], [seed, 101], dtype=dtype
+            [particle_count, state_dim], [seed, 101], dtype=dtype
         )
         process_noise = tf.stack([
             tf.random.stateless_normal(
-                [particle_count, 3], [seed, 1001 + t], dtype=dtype
+                [particle_count, state_dim], [seed, 1001 + t], dtype=dtype
             )
             for t in range(horizon)
         ])
@@ -324,7 +325,7 @@ def _evaluate_controls(
     else:
         initial_states = randomized_halton_gaussian(
             num_particles=particle_count,
-            dimension=3,
+            dimension=state_dim,
             seed=seed,
             salt=301,
             dtype=dtype,
@@ -334,7 +335,7 @@ def _evaluate_controls(
         for t in range(horizon):
             raw, ancestors, innovations = randomized_halton_joint(
                 num_particles=particle_count,
-                state_dimension=3,
+                state_dimension=state_dim,
                 seed=seed,
                 salt=3001 + t,
                 dtype=dtype,
@@ -347,8 +348,8 @@ def _evaluate_controls(
     # Build model
     model, set_score_direction = diagonal_lgssm_canonical_model(theta)
 
-    initial_covariances = tf.eye(3, batch_shape=[particle_count], dtype=dtype)
-    design = _reset_design(particle_count, 3)
+    initial_covariances = tf.eye(state_dim, batch_shape=[particle_count], dtype=dtype)
+    design = _reset_design(particle_count, state_dim)
 
     # Evaluate score for each direction
     try:
