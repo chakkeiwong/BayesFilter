@@ -123,6 +123,13 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"consensus_endpoint_{device}": (
+        "tests/test_filter_repair_consensus_endpoint.py",
+        "tests/test_fixed_center_curvature.py::test_consensus_shrinkage_and_geometry_metrics_are_spd_and_oriented",
+        "tests/test_fixed_center_curvature.py::test_consensus_tensorflow_kernel_has_xla_value_and_gradient_parity",)
+        for device in ("cpu", "gpu")},
+    **{f"process_containment_{device}": (
+        "tests/test_filter_repair_process_containment.py",) for device in ("cpu", "gpu")},
     "dz5_current_deadline_cpu": ("tests/test_filter_repair_dz5_supervision.py",),
     **{f"batched_center_enclosing_{device}": (
         "tests/test_filter_repair_batched_center_reuse.py::test_batched_locator_resets_inside_enclosing_xla_recurrence",)
@@ -1425,6 +1432,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "process_containment_gpu": "GPU",
+    "consensus_endpoint_gpu": "GPU",
     "batched_center_enclosing_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["batched_center_reuse_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["block_public_cost_gpu"]},

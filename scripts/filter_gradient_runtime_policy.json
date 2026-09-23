@@ -186,7 +186,10 @@
         "_pack_selection_partitions",
         "fit_fixed_center_curvature",
         "_native_fit_record",
-        "_selection_report"
+        "_selection_report",
+        "consensus_shrunk_precision",
+        "_checked_consensus_kernel",
+        "consensus_shrunk_precision_tf"
       ]
     },
     "bayesfilter/inference/hmc_identity.py": {
@@ -8893,7 +8896,7 @@
       "ast_sha256": "dac8faafd9ef0ed57a7b808666f3da6affa8bb5a481d5f2223b13c163ff2aaa7",
       "occurrences": 1,
       "role": "host_validation",
-      "reason": "Host wall-clock watchdog only; no target/filter/score evaluation in the callback. Optimizer-wide XLA is outside F18; target kernels remain independently compiled."
+      "reason": "Host wall-clock watchdog only, reachable with explicitly requested jit_compile=False; both configurations reject a wall deadline with XLA enabled. No target/filter/score evaluation occurs in this callback. This exact exception does not exempt surrounding numerical replay/selection or certify the endpoint; E6 tracks their enclosing execution."
     },
     {
       "path": "bayesfilter/inference/joint_center.py",
@@ -8902,7 +8905,7 @@
       "ast_sha256": "dac8faafd9ef0ed57a7b808666f3da6affa8bb5a481d5f2223b13c163ff2aaa7",
       "occurrences": 1,
       "role": "host_validation",
-      "reason": "Host wall-clock watchdog only; no target/filter/score evaluation in the callback. Optimizer-wide XLA is outside F18; target kernels remain independently compiled."
+      "reason": "Host wall-clock watchdog only, reachable with explicitly requested jit_compile=False; both configurations reject a wall deadline with XLA enabled. No target/filter/score evaluation occurs in this callback. This exact exception does not exempt surrounding numerical replay/selection or certify the endpoint; E6 tracks their enclosing execution."
     },
     {
       "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",

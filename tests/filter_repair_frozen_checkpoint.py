@@ -10,6 +10,7 @@ import hashlib
 import subprocess
 import sys
 import types
+from pathlib import Path
 
 
 class FrozenCheckpoint:
@@ -32,7 +33,11 @@ class FrozenCheckpoint:
             module.__path__ = []
             return module
         path = name.replace(".", "/") + ".py"
-        source = subprocess.check_output(["git", "show", f"{self.revision}:{path}"], text=True)
+        # A supervising consumer may set its own repository as the worker cwd.
+        # Frozen BayesFilter references always belong to this checkout's Git DB.
+        source = subprocess.check_output(
+            ["git", "show", f"{self.revision}:{path}"],
+            cwd=Path(__file__).resolve().parents[1], text=True)
         self.sources[path] = source
         module.__file__ = f"{self.revision}:{path}"
         module.__builtins__ = {**vars(builtins), "__import__": self._import}

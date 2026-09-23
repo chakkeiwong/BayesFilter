@@ -1,5 +1,80 @@
 # Additional repair phase: complete execution boundaries and ownership
 
+Current checkpoint through03295: CPU process containment passes full original
+records and cleanup with3.578MiB parent RSS growth; the consensus public endpoint
+passes19 CPU checks after enclosing its remaining arithmetic and SPD decision.
+129 policy checks pass with no new exception. The inventory covers3045 Python
+files; explicit remaining endpoint paths are recorded in the
+[follow-up](filter_gradient_endpoint_followup_20260923.md). Read the
+[current result](filter_gradient_containment_consensus_checkpoint_20260923.md)
+for complete evidence, vetoes and remaining gates. Containment uses2/4workers
+and282.823288/2400seconds; consensus uses4/8workers and34.084449/1200seconds.
+GPU preflights decline under foreign utilization; no worker is active. E2's
+reporting-count agreement remains pending. Cumulative charges65208.202479CPU/
+63571.041306GPU seconds; caps unchanged. Main47ae8836c remains unmerged.
+Earlier execution notes below retain their checkpoint context.
+
+E6 endpoint follow-up, reviewed after03290: `consensus_shrunk_precision` still
+symmetrizes each precision in a Python comprehension and computes its final
+eigensystem eagerly. No owned numerical caller was found outside tests, but the
+public endpoint still owes the default execution contract. Enclose batch
+validation, symmetrization, mean/shrinkage and the existing final SPD check in
+one stable-input XLA kernel. Keep finite/symmetry thresholds, arithmetic order,
+weight bounds and the existing candidate-only SPD criterion; do not silently
+strengthen it to require each input to be SPD. Host conversion, shape/config
+validation and raising the completed validation result remain boundary work.
+Compare pinned3582b4ac values and errors, changed operands, nonfinite/asymmetric/
+indefinite cases, gradients, one trace and HLO stability on CPU/GPU. Add no
+numerical-loop exception. Reserve at most8 workers/1200 charged seconds inside
+the existing cumulative caps, including policy/consumer checks and local retries.
+This focused endpoint repair cannot close broader F18/F19 or cost obligations.
+One fail-closed validity addition is explicit: finite inputs can overflow during
+the inherited symmetrization. Reject a nonfinite candidate before its eigensystem;
+the original `min_eigenvalue <= 0` test can accept NaN. This follows the AGENTS
+Class B numerical-validity guard: preserve all healthy results and demonstrate
+the original invalid output, with no damping, clipping or arithmetic alteration.
+
+The same contextual review confirms that `evaluate_target_with_failure_policy`
+and `locate_joint_center_staged` require explicit endpoint dispositions. The
+former implements host exception/finiteness fallback; the latter has a declared
+host checkpoint callback plus numerical replays, decisions and freshly compiled
+zero-operand stages. No owned caller beyond exports/tests was found in package,
+experiments, scripts or docs/benchmarks. They are not thereby compiled or exempt.
+Preserve the callback/exception API while planning compiled numerical segments,
+exact original records and callback order, explicit reference-only exceptions
+where Python exception behavior is essential, and terminal source/caller checks.
+Do not conflate a legitimate host checkpoint with its remaining numerical work.
+
+E4 recovery after03289: the first child completed all four candidate signatures
+and failed loading original3582b4ac because the exact DZ5 supervisor intentionally
+sets the external repository as cwd. The frozen diagnostic loader had an implicit
+cwd dependency. Bind its Git lookup to its own repair checkout; preserve the
+supervisor, numerical source, reference revision and every comparison. The child
+was reaped normally. Retry the same CPU containment unit, then GPU when available,
+within its original4-worker/2400-second reservation;03289 consumes one worker and
+96.185419 seconds. This is a harness provenance repair, not numerical evidence or
+a waiver. Source/runtime/tests stay frozen during each worker.
+
+E4 process-containment review after03288: Python owners are collected but native
+host residency grows across fresh signatures. Test the already qualified current
+DZ5 parent around two sequential fresh numerical workers, each running the same
+four-signature/200-call public-block churn check and full original comparisons.
+Use the repair checkout explicitly; do not execute or change external model or
+campaign code. Preserve worker source/environment through the campaign manifest,
+individual JUnit/complete results, append-only stage receipts, parent and child
+RSS/PSS/maps, heartbeats and verified PID removal before the next worker.
+Cold/final observations from separate workers distinguish process containment
+from an in-process cache-eviction claim. Each child has a300-second deadline;
+the parent group has the existing900-second registered ceiling. Reserve at most
+4 parent workers/2400 charged seconds, CPU then GPU, within unchanged cumulative
+caps; parent elapsed time includes both sequential children and is charged once.
+No two numerical children run concurrently. Stop on output mismatch, missing
+provenance, timeout/cleanup failure or budget exhaustion; local harness repair
+uses the same reservation. Parent growth over256MiB or continued child-to-child
+baseline/map growth triggers investigation, not a numerical waiver. Two workers
+cannot establish arbitrary-lifetime safety, exact peak bounds or actual DZ5
+target qualification. GPU sharing is recorded and prevents timing claims.
+
 Current checkpoint03288: nine internal batched-locator CPU checks pass, including
 the enclosing recurrence; all129 policy checks pass. The locator unit has used
 11/20 workers and248.566129/3600 seconds. GPU qualification is pending after two

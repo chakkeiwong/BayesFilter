@@ -508,28 +508,52 @@ def consensus_shrunk_precision(
 ) -> tf.Tensor:
     """Return ``(1-weight) * mean(precisions) + weight * target``."""
 
-    if not precisions:
+    if len(precisions) == 0:
         raise ValueError("at least one precision is required")
-    matrices = [_symmetric_matrix(value, "precision") for value in precisions]
-    if any(matrix.shape != matrices[0].shape for matrix in matrices[1:]):
-        raise ValueError("precision matrices must have matching shapes")
-    target_matrix = _symmetric_matrix(target, "target")
-    if target_matrix.shape != matrices[0].shape:
+    try:
+        matrices = numeric_tensor(precisions, tf.float64)
+    except (ValueError, tf.errors.InvalidArgumentError) as exc:
+        raise ValueError("precision matrices must have matching shapes") from exc
+    if matrices.shape.rank != 3 or matrices.shape[1] != matrices.shape[2]:
+        raise ValueError("precision must be a finite symmetric square matrix")
+    target_matrix = numeric_tensor(target, tf.float64)
+    if target_matrix.shape.rank != 2 or target_matrix.shape[0] != target_matrix.shape[1]:
+        raise ValueError("target must be a finite symmetric square matrix")
+    if target_matrix.shape != matrices.shape[1:]:
         raise ValueError("target shape must match precisions")
     shrinkage = float(weight)
     if not math.isfinite(shrinkage) or not 0.0 <= shrinkage <= 1.0:
         raise ValueError("weight must be finite and in [0, 1]")
-    stack = tf.stack(matrices, axis=0)
-    target_tf = tf.convert_to_tensor(target_matrix, tf.float64)
-    candidate = _run_kernel(
-        consensus_shrunk_precision_tf,
-        stack,
-        target_tf,
+    candidate, precision_valid, target_valid, positive = _run_kernel(
+        _checked_consensus_kernel,
+        matrices,
+        target_matrix,
         tf.convert_to_tensor(shrinkage, tf.float64),
     )
-    if float(tf.reduce_min(tf.linalg.eigvalsh(candidate)).numpy()) <= 0.0:
+    if not bool(precision_valid):
+        raise ValueError("precision must be a finite symmetric square matrix")
+    if not bool(target_valid):
+        raise ValueError("target must be a finite symmetric square matrix")
+    if not bool(positive):
         raise ValueError("consensus shrinkage requires SPD inputs and target")
     return candidate
+
+
+def _checked_consensus_kernel(precisions, target, weight):
+    """Enclose the public endpoint's numerical validation and computation."""
+    transposed = tf.linalg.matrix_transpose(precisions)
+    target_transposed = tf.transpose(target)
+    precision_valid = tf.reduce_all(tf.math.is_finite(precisions)) & tf.reduce_all(
+        tf.abs(precisions - transposed) <= 1.0e-12 + 1.0e-10 * tf.abs(transposed))
+    target_valid = tf.reduce_all(tf.math.is_finite(target)) & tf.reduce_all(
+        tf.abs(target - target_transposed) <= 1.0e-12 + 1.0e-10 * tf.abs(target_transposed))
+    candidate = consensus_shrunk_precision_tf(
+        0.5 * (precisions + transposed), 0.5 * (target + target_transposed), weight)
+    # Invalid inputs used to stop before the eigensystem. Preserve that order.
+    positive = tf.cond(precision_valid & target_valid & tf.reduce_all(tf.math.is_finite(candidate)),
+        lambda: tf.reduce_min(tf.linalg.eigvalsh(candidate)) > 0.0,
+        lambda: tf.constant(False))
+    return candidate, precision_valid, target_valid, positive
 
 
 def consensus_shrunk_precision_tf(
