@@ -81,8 +81,15 @@ def main():
             row.update(exit_code=code,supervised_worker_seconds=elapsed,status="completed" if code==0 else "failed")
             state["spent_worker_seconds"]+=elapsed
             del active[name]
+            if code!=0 and not row.get("timed_out"):
+                failure_path=Path(row["output"])/"failure.json"
+                failure=json.loads(failure_path.read_text()) if failure_path.exists() else {}
+                candidate_messages=("invalid training candidate", "gradient guard clips a majority",
+                    "post-training verification is invalid", "final exported-map inverse failed")
+                if failure.get("type")=="ValueError" and failure.get("message","").startswith(candidate_messages):
+                    row["status"]="candidate_rejected"
             print(json.dumps({"job":name,**{k:row[k] for k in ("status","supervised_worker_seconds","exit_code")}}),flush=True)
-            if code!=0:
+            if code!=0 and row["status"]!="candidate_rejected":
                 state["status"]="repair_required"
                 pending.clear()
         if state["status"]=="running" and pending:
@@ -112,10 +119,11 @@ def main():
         if pending or active:
             time.sleep(5.)
     if state["status"]=="running":
-        state["status"]="complete"
+        state["status"]=("complete_with_rejected_candidates" if any(
+            r["status"]=="candidate_rejected" for r in state["jobs"]) else "complete")
     state["finished_at"]=datetime.now(timezone.utc).isoformat()
     save(args.output/"queue.json",state)
-    if state["status"]!="complete":
+    if state["status"] not in ("complete","complete_with_rejected_candidates"):
         raise SystemExit(1)
 
 

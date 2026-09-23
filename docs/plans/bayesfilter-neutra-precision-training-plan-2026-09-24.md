@@ -251,6 +251,11 @@ is 33,178 seconds. Reprice if steady updates exceed 2.7 seconds persistently.
 Every completed training arm gets the standard 1,000-point normal-base
 post-training probe: residual norm distribution, coordinate RMS, density-ratio
 range, scale/derivative diagnostics, finite/status checks and exact map identity.
+Also test the exact exported FP64 inverse on 32 independent normal points
+scaled by four. The 1e-7 scaled reconstruction and absolute log-determinant
+limits are inherited engineering-screen hypotheses from the precision check;
+the tail scale and count are convenience stress choices. Failure rejects the
+candidate handoff and triggers repair, while other planned candidates continue.
 It is an explanatory geometry diagnostic; no arbitrary residual cutoff is
 called convergence. Preserve a single untouched final bank of 2,048 common
 normal-base points, disjoint from gradient, training, validation and the

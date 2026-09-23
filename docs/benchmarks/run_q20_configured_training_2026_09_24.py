@@ -233,6 +233,7 @@ class Runtime:
         norms = tf.linalg.norm(values["residual"], axis=1)
         ordered = tf.sort(norms)
         result = {"rows":rows,"role":role,"target_dtype":"float64","evaluation_dtype":"float64",
+            "transport_config":flow.config.payload(),
             "mean_loss":float(tf.reduce_mean(values["loss"])),
             "vector_residual_rms":float(tf.sqrt(tf.reduce_mean(norms**2))),
             "mean_residual_norm":float(tf.reduce_mean(norms)),
@@ -411,7 +412,19 @@ class Runtime:
         # Every completed training arm gets the owner-required 1,000-point
         # standard probe, with untouched seed and exact exported FP64 weights.
         finalized=trainer.finalize(self.bridge,diagnostic_seed=seed(f"post-training-{r['root_seed']}"))
+        # Check the inverse of the exact exported map at fresh tail points.
+        evaluation=flow.as_dtype("float64")
+        @tf.function(input_signature=[tf.TensorSpec([32,4],tf.float64)],jit_compile=True,autograph=False)
+        def roundtrip(z):
+            x,ld=evaluation.forward_and_logdet(z)
+            recovered,inverse_ld=evaluation.inverse_and_forward_logdet(x)
+            return tf.reduce_max(tf.abs(recovered-z)/(1.+tf.abs(z))),tf.reduce_max(tf.abs(inverse_ld-ld))
+        inverse,ld_error=roundtrip(4.*self.noise(32,f"final-inverse-{r['root_seed']}",dtype="float64"))
+        finalized["inverse_tail_check"]={"rows":32,"base_scale":4.,"scaled_error":float(inverse),
+            "logdet_error":float(ld_error),"limit":1e-7,"passed":bool(inverse<=1e-7 and ld_error<=1e-7)}
         save(self.root/"finalized.json",finalized)
+        if not finalized["inverse_tail_check"]["passed"]:
+            raise ValueError("final exported-map inverse failed its engineering check")
         return {"status":"training_complete","family":r["family"],"seed":r["root_seed"],
             "updates":r["updates"],"checkpoint":str(self.root/f"checkpoint-{r['updates']:06d}.json"),
             "finalized":str(self.root/"finalized.json"),"validation":assessments,
@@ -453,7 +466,9 @@ def main():
     manifest={"command":sys.argv,"python":sys.executable,"request":request,
         "runner_sha256":sha(__file__),"git_commit":subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip(),
         "started_at":datetime.now(timezone.utc).isoformat(),"status":"starting",
-        "cuda_visible_devices":args.gpu,"plan_file":request["plan_file"],"result_file":str(args.output/"result.json")}
+        "cuda_visible_devices":args.gpu,"plan_file":request["plan_file"],
+        "plan_sha256":sha(ROOT/request["plan_file"]),"request_sha256":sha(args.request),
+        "result_file":str(args.output/"result.json")}
     save(args.output/"manifest.json",manifest)
     try:
         runtime=Runtime(request,args.output,manifest,began)
