@@ -1,5 +1,38 @@
 # HMC repair master program
 
+## September 23 M28 completion and M29 continuation
+
+The [M28 result](bayesfilter-hmc-m28-supplied-residual-result-2026-09-23.md)
+closes the supplied residual-scale development cell. The exact noncentered
+control and the analytic residual map completed two seeds each on GPU/XLA; all
+four searches retained their complete verified candidate sets (36 verified
+members in total), and all eight predeclared model-coordinate posterior slots
+passed. Candidate membership and retention remained independent of R-hat, ESS
+and MCSE. The terminal audit checked target/Jacobian/score scope, inverse-mapped
+starts, receipts, checkpoint and tensor hashes, model-coordinate reconstruction,
+warmup exclusion, count-table identity, memory growth, XLA placement and normal
+exits. No coverage, ranking, default, global-mode or learned-map claim follows.
+
+M28's residual fixture uses `delta(v)=0.5*tanh(v/6)` after exact noncentering.
+The guide now records why merely bounding the applied log-scale leaves tail
+stiffness, derives the bounded conditional-curvature test, and states that the
+full Hessian remains unbounded. The frozen-source regression passed 36 tests and
+the documentation contract suite passed 15. The official book rebuilt with
+bibliography and undefined-reference checks passing; pages 418--419 were
+visually inspected. Early test/setup failures remain preserved and charged.
+
+M28 used **869.37 CPU / 2439.85 GPU seconds** within its 1800/4800 allocation.
+Its terminal ledger leaves **75647.83 CPU / 79820.09 GPU seconds** in the
+campaign and **930.63 CPU / 2360.15 GPU seconds** inside the M28 tranche. The
+remaining scientific gaps are unchanged: general stopping/MCSE calibration,
+global exploration, subtle full-fit null/power, exact MacroFinance inputs,
+measured maintenance/cost attribution and upstream learned-map quality.
+
+The [reviewed M29 plan](bayesfilter-hmc-post-m28-next-phase-2026-09-23.md) is
+the next executable phase. It repairs the profiling boundary so isolated
+numerical children, rather than a waiting coordinator, are profiled before any
+maintenance or affordability decision.
+
 ## September 23 M27 completion and M28 continuation
 
 The [M27 result](bayesfilter-hmc-m27-sibling-and-gpu-result-2026-09-23.md)

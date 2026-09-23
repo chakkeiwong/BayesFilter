@@ -119,6 +119,25 @@ CPU diagnostic worker. Use `/home/ubuntu/anaconda3/envs/tfgpu/bin/python`;
 environment before import. All exact commands go in metered attempt manifests.
 No long run begins until the concrete suite and source match this reviewed plan.
 
+### Frozen M28 count table
+
+The M28 suite builder compares every resolved design with this table before
+launch. All values are per chain. These are allocation hypotheses, not adequacy
+claims; the 60000 count budget requires an explicit reason in each design.
+
+| Design option | Count |
+| --- | --- |
+| posterior_settings.warmup_min_results | 10000 |
+| posterior_settings.warmup_check_window_results | 10000 |
+| posterior_settings.warmup_chunk_results | 5000 |
+| posterior_settings.warmup_max_results | 30000 |
+| posterior_settings.retained_min_results | 30000 |
+| posterior_settings.retained_chunk_results | 5000 |
+| posterior_settings.retained_max_results | 60000 |
+| fixed_comparator.warmup_results | 10000 |
+| fixed_comparator.retained_results | 60000 |
+| posterior_count_budget.max_results_per_chain | 60000 |
+
 ## Evidence contract and skeptical review
 
 The primary engineering criteria are correct transformed target and score,

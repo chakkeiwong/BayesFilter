@@ -426,6 +426,25 @@ the map. A partial map $x_i=e^{s(v)}z_i$ instead leaves conditional standard
 deviation $e^{v/2-s(v)}$ in the latent coordinates; it tests tuning with known
 residual curvature.
 
+Bounding $s(v)$ alone does not bound the residual stiffness: if $s$ remains
+bounded as $v\to-\infty$, the latent conditional precision
+$e^{2s(v)-v}$ diverges. A useful diagnostic partial-whitening family instead
+sets $s(v)=v/2+\delta(v)$ with $\delta(v)=a\tanh(v/(2\sigma))$.
+For $S=z_1^2+z_2^2$, its log determinant is
+$\log\sigma+v+2\delta(v)$, and substitution in the normalized funnel
+density yields
+\[
+ U(z)=\tfrac12 z_0^2+\tfrac12 e^{2\delta(\sigma z_0)}S
+       -2\delta(\sigma z_0)+\tfrac32\log(2\pi).
+\]
+The child-coordinate curvature lies in $[e^{-2a},e^{2a}]$ for $a\geq0$;
+the zero-amplitude limit recovers the exact control. The entire Hessian is
+still unbounded because derivatives with respect to $z_0$ contain $S$.
+The validation fixture uses $\sigma=3$ and $a=1/2$ as an explicit development
+hypothesis, not a learned-map or sampling default. Even the exact latent
+Gaussian control can require many draws for precise means of the model's
+heavy-tailed children.
+
 The untransformed centered funnel remains a stress test for bounded search and
 honest numerical rejection. An empty candidate set there does not by itself
 establish a tuning defect. For a supplied map, tuning searches the declared

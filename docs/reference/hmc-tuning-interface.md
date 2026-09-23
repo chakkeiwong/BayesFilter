@@ -54,6 +54,14 @@ budget; record that residual-geometry outcome. All verified members remain
 retained, and convergence and precision in model quantities are assessed
 separately.
 
+The validation fixture `supplied_funnel_map("residual")` composes exact
+noncentering with `delta(v)=0.5*tanh(v/6)`. It bounds the remaining
+child-coordinate curvature between `exp(-1)` and `exp(1)`; it does not bound
+the entire Hessian or guarantee model-coordinate posterior precision. The
+older `partial` fixtures bound only the applied log-scale and retain unbounded
+tail stiffness. These are analytic test maps, with no transport-training claim;
+the tuning chapter derives their transformed densities.
+
 ## Search, qualification, and retention
 
 1. Prepare and freeze the target, geometry, coordinate transform, four-chain
