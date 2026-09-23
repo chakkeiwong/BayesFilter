@@ -332,6 +332,71 @@ and the predeclared multiplicity allowance. The controller cannot grant
 posterior status. Focused synthetic checks cover cohort decisions, exact
 continuation requests and budget rejection before launch.
 
+### Bounded downstream check of a frozen trained map
+
+The question here is whether a repaired map permits useful plain NeuTra HMC
+on the same UKF approximate posterior. It is not a sampler comparison. Use the
+public `tune_fixed_transport_hmc_kernel` with a repository-issued execution
+binding, the exact configured frozen payload, identity latent mass, and four
+batched chains. Verify the q20 full-chain XLA route first with the existing
+four-transition mechanics check; its inherited epsilon 0.01 and L=3 are only
+compatibility settings, never tuning evidence. Preserve its numerical receipt.
+
+Nominate a representative map using the final report before any downstream
+outcomes: prefer a family with replicated local training improvement, then a
+fixed map with both paired improvements, then any numerically valid map.
+Within each category use the predeclared family order NAF16, NAF32, IAF16,
+legacy control and increasing seed. This order reflects the nonlinear-fit
+question and reproducibility, not a statistically supported family ranking.
+Numerical rejection of that map triggers the next nominated map within the
+same total allowance. Preserve every attempted map and reason.
+
+Reuse the target protocol's four valid prior-proposal starts, two on each side
+of theta_2=0, and check their exact forward/inverse roundtrip. These are
+overdispersed initial conditions, not posterior draws. For an epsilon warm
+start, evaluate the exact transformed score at symmetric perturbations of
+these starts. Central differences with relative displacement
+`machine_epsilon**(1/3)*(1+abs(z))` balance leading truncation and rounding
+orders in smooth FP64 arithmetic; symmetry error is explanatory. Let rho be
+the largest absolute eigenvalue of the symmetrized negative-score Jacobians.
+Use `0.5/sqrt(max(1,rho))`, constrained to the existing [1e-6,2] domain, as a
+pilot hypothesis. The numerator is one quarter of the harmonic leapfrog
+stability boundary 2/omega. It is a conservative local warm start, not a
+global curvature bound, target-acceptance formula, or mass adaptation. The
+public pilot measures each L separately and can repair epsilon.
+
+Use L=3,5,9 as the affordable prefix of the existing q20 grid, with the existing
+64-transition pilot/measurement/verification counts, 32 startup transitions,
+evidence multipliers 1,2,4, acceptance target 0.7 and practical/repair bands
+[0.65,0.75]/[0.55,0.85]. These are inherited target-protocol screening
+hypotheses; no R-hat or ESS filter enters kernel tuning. Permit at most 80
+work units, including 20 reserved for repairs, 30 candidates and eight
+same-family epsilon repairs. Those are cost caps, not convergence constants.
+Spend at most 2,500 seconds across tuning attempts inside the 8,000-second
+downstream envelope. Shortest verified L, then candidate ID, determines the
+first member to assess; preserve all verified siblings and label those not
+sampled. This is a cost-oriented nomination, not a speed or mixing ranking.
+
+Price that member and then use the shared sequential posterior controller.
+Keep all warmup chunks but exclude them from estimation. Preserve the existing
+2,000 minimum warmup, latest-1,000 window with R-hat <=1.05, cumulative retained
+R-hat <=1.01, bulk/tail ESS >=400, mean MCSE/SD <=0.02, quantile MCSE/SD <=0.05,
+and sign-event absolute MCSE <=0.01. Maximum warmup and retained counts remain
+10,000 per chain. The existing 1,000-transition chunks are admitted only when
+their measured cost fits the remaining worker budget. An unfunded chunk is
+explicitly incomplete evidence, not a mixing failure or authorization to
+lower a threshold. A passed posterior screen still lacks an independent
+q20 reference comparison and cannot establish exact state-space inference.
+
+Skeptical audit: an apparently Gaussian residual bank cannot license HMC;
+fresh tuning and model-coordinate/event diagnostics test the actual downstream
+computation. A local curvature calculation supplies only an initial proposal.
+The same map, beta, prior, data and FP64 target are bound through replay. A
+short L grid or insufficient posterior budget limits the claim instead of
+silently redefining success. The 8,000-second cap and recorded phase prices
+protect the funded training replication. Audit passes for this bounded check,
+with posterior precision and independent reference agreement still unresolved.
+
 ## Binary-event posterior diagnostic repair
 
 The narrow repair declares binary quantities explicitly in the common posterior
