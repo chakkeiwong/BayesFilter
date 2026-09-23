@@ -7,10 +7,12 @@ values. Analytical filtering scores remain on their existing QR route.
 """
 
 import sys
+from functools import lru_cache
 
 import tensorflow as tf
 from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
+from bayesfilter.inference.program_cache_scope import independent_trace_scope
 from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
 
 
@@ -59,6 +61,17 @@ def _xla_thin_svd(matrix):
     return (singular, left, right), pullback
 
 
+@lru_cache(maxsize=64)
+def _xla_svd_program(shape):
+    # Custom-gradient registry closures must own only this shape-only graph,
+    # never a calling endpoint's graph or target/resource dependencies.
+    with independent_trace_scope():
+        program = tf.function(_xla_thin_svd, autograph=False, jit_compile=True,
+            input_signature=[tf.TensorSpec(shape, tf.float64)])
+        program.get_concrete_function()
+    return program
+
+
 def accurate_svd(matrix, *, compute_uv=True):
     """Binary64 thin SVD; use the enclosing XLA or explicit graph reference.
 
@@ -72,5 +85,5 @@ def accurate_svd(matrix, *, compute_uv=True):
         raise ValueError('accurate XLA SVD requires static matrix extents')
     if min(matrix.shape[-2:]) == 0:
         return tf.linalg.svd(matrix, full_matrices=False, compute_uv=compute_uv)
-    result = _xla_thin_svd(matrix)
+    result = _xla_svd_program(tuple(matrix.shape))(matrix)
     return result if compute_uv else result[0]

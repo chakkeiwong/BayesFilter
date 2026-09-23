@@ -9,14 +9,14 @@ be used by accepted TensorFlow inference paths.
 
 from __future__ import annotations
 
-import math
 from functools import lru_cache
 from typing import Any
 
 import tensorflow as tf
-from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
 from bayesfilter.inference.mass_matrix_tf import eigenpair_program
+from bayesfilter.inference.program_cache_scope import independent_trace_scope
+from bayesfilter.ops.accurate_svd_tf import accurate_svd
 from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
 from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
 
@@ -30,10 +30,7 @@ def _singular_values_xla(matrix):
     the repository condition-number kernel. For A=U diag(s) V', the pullback
     is U diag(ds) V', as in TF 2.19 linalg_grad.py::_SvdGrad(compute_uv=False).
     """
-    decomposition = xla_svd(matrix, max_iter=100, epsilon=math.ulp(1.), precision_config="")
-    values = tf.ensure_shape(decomposition.s, matrix.shape[:-1])
-    left = tf.ensure_shape(decomposition.u, matrix.shape)
-    right = tf.ensure_shape(decomposition.v, matrix.shape)
+    values, left, right = accurate_svd(matrix)
 
     def pullback(upstream):
         return tf.matmul(left * upstream[None, :], right, transpose_b=True)
@@ -44,7 +41,7 @@ def _singular_values_xla(matrix):
 @lru_cache(maxsize=64)
 def _singular_value_program(dimension):
     # Keep the custom-gradient closure independent of resource-owning callers.
-    with tf.init_scope():
+    with independent_trace_scope():
         program = tf.function(_singular_values_xla, autograph=False, jit_compile=True,
             input_signature=[tf.TensorSpec([dimension, dimension], tf.float64)])
         program.get_concrete_function()

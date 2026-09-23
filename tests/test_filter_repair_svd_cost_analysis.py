@@ -48,7 +48,7 @@ def test_svd_costs_keep_inaccurate_baseline_but_forbid_ranking():
 def test_svd_costs_decline_shared_preflight(tmp_path, monkeypatch):
     runner = load('run_filter_repair_campaign')
     monkeypatch.setattr(runner, 'OUTPUT', tmp_path)
-    for group in runner.TEST_BATCHES['svd_cost_gpu']:
+    for group in ('svd_graph_attribution_gpu', *runner.TEST_BATCHES['svd_cost_gpu']):
         args = SimpleNamespace(action='test', device='GPU', group=group,
             gpu_uuid='GPU-device-2', gpu_preflight=[{'performance_preflight_uncontended': False}] * 2)
         with pytest.raises(RuntimeError, match='declined before launch'):

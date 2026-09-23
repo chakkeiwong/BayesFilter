@@ -16,12 +16,13 @@ from functools import lru_cache
 from typing import Any
 
 import tensorflow as tf
-from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_self_adjoint_eig, xla_svd
+from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_self_adjoint_eig
 
 from bayesfilter.inference._exact_incumbent import (
     ExactCandidate,
     candidates_from_rows,
 )
+from bayesfilter.ops.accurate_svd_tf import accurate_svd
 from bayesfilter.ops.geometry_random_tf import STREAM_ID, GeometryTensorStream
 from bayesfilter.ops.host_tensor_io import numeric_tensor
 
@@ -368,15 +369,9 @@ def _quadratic_fit_kernel(z, y, score, q, center_score, floor, condition_cap, *,
     reduced_q, reduced_r = (tf.linalg.qr(design, full_matrices=False) if active_rows is None
                            else compact_qr(design, active_rows, dim, minimum_active_rows))
     if use_xla_svd:
-        decomposition = xla_svd(
-            reduced_r, max_iter=100, epsilon=math.ulp(1.0), precision_config=""
-        )
-        # Raw XlaSvd has no TensorFlow shape inference. Bind its full SVD
-        # schema so enclosing conditional/loop state remains statically known.
-        rows, columns = reduced_r.shape
-        singular = tf.ensure_shape(decomposition.s, [min(rows, columns)])
-        left_r = tf.ensure_shape(decomposition.u, [rows, rows])
-        right_r = tf.ensure_shape(decomposition.v, [columns, columns])
+        # Normalize magnitude before XLA's Jacobi iteration. The shared helper
+        # rescales singular values and binds the thin factors' static shapes.
+        singular, left_r, right_r = accurate_svd(reduced_r)
     else:
         # Explicit graph-reference diagnostic; the default XLA tolerance remains fixed.
         singular, left_r, right_r = tf.linalg.svd(reduced_r, full_matrices=False)

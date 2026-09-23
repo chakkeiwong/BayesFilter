@@ -12,6 +12,7 @@ from functools import lru_cache
 import tensorflow as tf
 
 from bayesfilter.inference.fixed_center_curvature import _precision_geometry_kernel
+from bayesfilter.ops.accurate_svd_tf import accurate_svd
 from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
 from bayesfilter.ops.symmetric_matrix_tf import symmetric_score_design, unpack_symmetric
 
@@ -45,10 +46,10 @@ def _block_fit(offsets, response, ridge_value, condition_cap):
         return tf.zeros([dimension, dimension], D), tf.constant([0., 0., 0., 0., 0., 0., 2.], D), tf.constant(2)
     count = dimension * (dimension + 1) // 2
     design = tf.reshape(symmetric_score_design(offsets, dimension), [-1, count])
-    singular = tf.linalg.svd(design, compute_uv=False)
+    singular = accurate_svd(design, compute_uv=False)
     tolerance = tf.reduce_max(singular) * tf.cast(rows * dimension, D) * sys.float_info.epsilon
     rank = tf.math.count_nonzero(singular > tolerance, dtype=tf.int32)
-    row_singular = tf.linalg.svd(offsets, compute_uv=False)
+    row_singular = accurate_svd(offsets, compute_uv=False)
     row_tolerance = tf.reduce_max(row_singular) * tf.cast(rows, D) * sys.float_info.epsilon
     row_rank = tf.math.count_nonzero(row_singular > row_tolerance, dtype=tf.int32)
 

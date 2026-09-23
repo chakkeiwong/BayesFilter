@@ -123,6 +123,38 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"remaining_svd_requalification_{device}": (
+        "tests/test_filter_repair_remaining_svd_scale.py",
+        "tests/test_filter_repair_accurate_svd.py", "tests/test_filter_repair_dense_svd.py",
+        "tests/test_filter_repair_dense_derivatives.py", "tests/test_filter_repair_qr.py",
+        "tests/test_filter_repair_svd_scale_qualification.py", "tests/test_filter_repair_srukf_scale.py",
+        "tests/test_rectangular_factor_tf.py", "tests/test_rectangular_srukf_tf.py",
+        "tests/test_compiled_kalman_ukf_runtime.py") for device in ("cpu", "gpu")},
+    **{f"remaining_svd_ownership_{device}": (
+        "tests/test_filter_repair_block_capture.py::test_conditional_owner_releases_callback_dependencies",
+        "tests/test_filter_repair_geometry_fit.py::test_fit_target_changes_and_resource_ownership",
+        "tests/test_filter_repair_geometry_fit.py::test_fit_cache_binds_identity_numerical_settings_and_releases_old_target")
+        for device in ("cpu", "gpu")},
+    **{f"remaining_svd_scale_{device}": ("tests/test_filter_repair_remaining_svd_scale.py",)
+        for device in ("cpu", "gpu")},
+    **{f"remaining_svd_derivatives_{device}": ("tests/test_filter_repair_dense_svd.py",
+        "tests/test_filter_repair_dense_derivatives.py", "tests/test_filter_repair_qr.py")
+        for device in ("cpu", "gpu")},
+    **{f"remaining_svd_endpoints_{device}": ("tests/test_filter_repair_block_score_geometry.py",
+        "tests/test_block_score_geometry.py", "tests/test_quadratic_geometry.py",
+        "tests/test_filter_repair_block_capture.py::test_conditional_owner_releases_callback_dependencies",
+        "tests/test_filter_repair_geometry_fit.py::test_fit_target_changes_and_resource_ownership",
+        "tests/test_filter_repair_geometry_fit.py::test_fit_cache_binds_identity_numerical_settings_and_releases_old_target")
+        for device in ("cpu", "gpu")},
+    "remaining_svd_endpoint_crash_cpu": ("-s", "tests/test_quadratic_geometry.py::test_center_refinement_accepts_nearby_mode"),
+    "remaining_svd_endpoint_sequence_cpu": ("-s", "-vv",
+        "tests/test_filter_repair_block_score_geometry.py", "tests/test_block_score_geometry.py",
+        "tests/test_quadratic_geometry.py",
+        "tests/test_filter_repair_block_capture.py::test_conditional_owner_releases_callback_dependencies",
+        "tests/test_filter_repair_geometry_fit.py::test_fit_target_changes_and_resource_ownership",
+        "tests/test_filter_repair_geometry_fit.py::test_fit_cache_binds_identity_numerical_settings_and_releases_old_target"),
+    "svd_graph_attribution_gpu": ("tests/test_filter_repair_svd_graph_attribution.py",),
+    "dz5_snapshot_import_cpu": ("tests/test_filter_repair_dz5_snapshot.py",),
     "dense_execution_reporting_cpu": ("tests/test_filter_repair_dense_execution_reporting.py",),
     "svd_cost_analysis_cpu": ("tests/test_filter_repair_svd_cost_analysis.py",),
     "dense_isotropic_initialization_cpu": ("tests/test_filter_repair_dense_isotropic_initialization.py",),
@@ -1053,6 +1085,13 @@ TEST_GROUPS = {
     "policy": ("tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py",
         "tests/test_filter_repair_gpu_selection.py", "tests/test_filter_repair_cost_provenance.py"),
 }
+TEST_GROUPS.update({f"remaining_svd_{part}_{device}": TEST_GROUPS[original]
+    for part, original in (("block", "block_score_geometry"),
+        ("public_first", "geometry_public_first_cpu"),
+        ("public_second", "geometry_public_second_cpu"),
+        ("public_capacity", "geometry_public_capacity_cpu"))
+    for device in ("cpu", "gpu")})
+
 # Exact intermediate comparisons remain callable historical diagnostics. Each
 # has the same-scope original-source authority as a mandatory replacement.
 # cfbc32d2's demonstrated eigensystem error is preserved, not a precision gate.
@@ -1072,6 +1111,10 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{group: "Preserved combined-suite LLVM memory failure/localization; all unchanged endpoint cases require the registered process shards."
+        for group in ("remaining_svd_endpoints_cpu", "remaining_svd_endpoints_gpu",
+            "remaining_svd_endpoint_crash_cpu", "remaining_svd_endpoint_sequence_cpu")},
+    "svd_graph_attribution_gpu": "Interleaved graph identity/timing attribution only; independent numerical and unshared-device checks cannot waive public/default cost gates.",
     "dense_isotropic_initialization_cpu": "Original isotropic factor initialization and stopping-condition attribution; no equivalence waiver.",
     **{f"svd_cost_{arm}_{horizon}_{device}": "Matched SVD repair costs; numerical failure forbids speed ranking, separate provenance and resource disposition required."
         for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla")
@@ -1247,6 +1290,9 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"remaining_svd_qualification_{device}": tuple(f"remaining_svd_{part}_{device}"
+        for part in ("ownership", "requalification", "block", "public_first", "public_second", "public_capacity"))
+        for device in ("cpu", "gpu")},
     **{f"svd_cost_{device}": tuple(f"svd_cost_{arm}_{horizon}_{device}"
         for horizon in (1, 3) for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla"))
         for device in ("cpu", "gpu")},
@@ -1585,6 +1631,11 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["remaining_svd_qualification_gpu"]},
+    "remaining_svd_scale_gpu": "GPU",
+    "remaining_svd_derivatives_gpu": "GPU",
+    "remaining_svd_endpoints_gpu": "GPU",
+    "svd_graph_attribution_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["svd_cost_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["dense_seeded_gpu"]},
     "accurate_svd_gpu": "GPU",
@@ -1847,7 +1898,8 @@ def save_json(path, value):
 def require_unshared_cost_preflight(args):
     """Decline new public-cost workers before charging shared-device timing."""
     if (args.action != "test" or args.device != "GPU"
-            or args.group not in (*TEST_BATCHES["posterior_public_memory_gpu"],
+            or args.group not in ("svd_graph_attribution_gpu",
+                                 *TEST_BATCHES["posterior_public_memory_gpu"],
                                  *TEST_BATCHES["sequential_public_cost_gpu"],
                                  *TEST_BATCHES["block_public_cost_gpu"],
                                  *TEST_BATCHES["staged_center_cost_gpu"],
@@ -1985,7 +2037,7 @@ def run_job(args):
         try:
             if args.action == "test" and args.group in (
                     "factor_guard_mapping_probe", "factor_guard_mapping_release",
-                    "geometry_public_memory_attribution_cpu"):
+                    "geometry_public_memory_attribution_cpu", "remaining_svd_endpoint_sequence_cpu"):
                 from filter_repair_process_memory import wait_observing_memory
 
                 code = wait_observing_memory(process, timeout, directory)

@@ -11,7 +11,8 @@ import sys
 from functools import lru_cache
 
 import tensorflow as tf
-from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
+
+from bayesfilter.ops.accurate_svd_tf import accurate_svd
 
 BACKEND = "tensorflow_native_complete_orthogonal_decomposition"
 
@@ -36,9 +37,7 @@ def condition_number(matrix, *, jit_compile=True):
     if matrix.shape[0] > matrix.shape[1]:
         matrix = tf.linalg.qr(matrix, full_matrices=False)[1]
     singular = (
-        xla_svd(
-            matrix, max_iter=100, epsilon=sys.float_info.epsilon, precision_config=""
-        ).s
+        accurate_svd(matrix, compute_uv=False)
         if jit_compile
         else tf.linalg.svd(matrix, compute_uv=False)
     )

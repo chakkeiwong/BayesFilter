@@ -1,5 +1,50 @@
 # Filter and gradient repair recovery
 
+Current continuation through03708: the magnitude-normalized SVD and independent
+trace ownership repairs pass147 checks on each of CPU and GPU under one frozen
+2735-file source closure. The combined LLVM allocation failures03682/03684 and
+300-second GPU capacity timeout03698 remain preserved; unchanged fresh-process
+shards and the900-second retry03699 pass. Mapping pressure is supported, but the
+exact failed allocation was not observed. No native executable eviction is proved.
+See the [scale/ownership result](filter_gradient_remaining_svd_scale_unit_20260924.md)
+and immutable `remaining-svd-qualification-03699.json` in the campaign artifact root.
+
+The earlier GPU T3 graph warm-time increase of24.7% is not reproduced under
+matched interleaving:03701--03703 pass graph identity, independent Kalman checks,
+bitwise replay and clean sampled sharing, with candidate/prior ratios1.00237,
+0.99730 and1.00214. Preserve the original cohort; no environmental cause is
+asserted. See the [attribution result](filter_gradient_svd_graph_attribution_unit_20260924.md)
+and immutable `svd-graph-attribution-03703.json`.
+
+Isolated DZ5 import smoke03706 passes all572 snapshot hashes,91 loaded project
+modules and the exact23-parameter/96-observation fixture after the private device
+mount repair. No target or adapter qualification follows from an import. The
+snapshot predates the runtime changes; create a fresh snapshot before numerical
+qualification. See the [integration unit](filter_gradient_dz5_snapshot_integration_20260924.md).
+
+Policy03707 passes129 tests; cost-analyzer/preflight checks03708 pass. The partial
+source guard covers239 sources/1340 exact exceptions, with no new numerical-loop
+or NumPy allowance. The affected-consumer cost draft remains uninstalled pending
+ownership and independent-analysis repairs in its [plan](filter_gradient_remaining_svd_cost_followup_20260924.md).
+Both reporting proposals, isotropic compatibility, public initializer/staged
+integration, actual DZ5 target/transition, full consumer capacity, remaining
+exported host APIs and terminal F01--F20 audit remain open. Main stays unmerged.
+
+Exact charges through03708:73120.44389428098 CPU seconds and73432.97278902777 GPU
+seconds, leaving11.688766 CPU/31.601952 GPU hours under unchanged32/52-hour caps.
+No numerical worker is active. Fetched origin/main remains622d9a9ed. Older
+checkpoints below preserve their historical scope.
+
+Recovery paths: repair worktree `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`,
+branch `repair/filter-gradient-xla-validation-20260918`, stable runner
+`/home/ubuntu/miniforge3/envs/tf-gpu/bin/python scripts/run_filter_repair_campaign.py`.
+Last committed checkpoint before this refresh is9696666e4. Artifacts remain in
+`/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
+Run one numerical worker at a time and freeze runtime/scripts/tests during it.
+Completed CDF retained-r5 must never restart; live MacroFinance work is MD.
+The old112-source CDF admission is stale for this candidate; never refresh its
+hashes to imply admission. No external source edits or package changes.
+
 2026-09-23 public-block checkpoint through03247: the public endpoint now runs
 one enclosing XLA sweep. All66 checks pass on each of CPU and GPU:13 public,
 43 existing consumers,6 alternate configurations and4 resolution/no-use checks.
