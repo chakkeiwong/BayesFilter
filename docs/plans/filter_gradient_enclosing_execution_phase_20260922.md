@@ -1,6 +1,27 @@
 # Additional repair phase: complete execution boundaries and ownership
 
-Current checkpoint through03327: nine batched-locator CPU checks,57 target-failure
+Current checkpoint through03337: the staged unit passes26 distinct CPU checks,
+including real compiler-failure isolation and nested same-owner validation.
+Original and XLA D1/D3 cost cases pass; both graph arms fail strict source
+selection against original XLA. The D1 same-setting diagnosis matches full
+original records and attributes the difference to fused-affine rounding. Keep
+the failed cross-setting comparisons and unchanged gates. The short same-
+signature XLA timing/RSS improvement is descriptive; read the
+[cost result and review](filter_gradient_staged_locator_cost_result_20260923.md).
+All129 policy checks pass with no new waiver. Inventory03337 covers3050 Python
+files,3049 parsed. Charges66201.131495 CPU/63625.068103 GPU seconds; caps unchanged.
+No worker is active; GPU preflight declined under contention at08:41UTC.
+
+External freshness correction: CDF retained-r5 is complete and must not be
+restarted. Current CDF uses23 parameters and batch extents1/46/68, plus64 for
+training; old fixed18 statements concern the earlier CD scope. The current
+CreditTrainingTarget atomic value/score/validity callback is tensor-native.
+E5 must repair the enclosing dense initializer and qualify the actual selected
+call chain in isolation, preserving live/frozen MacroFinance sources and its
+existing RNG stream or an explicitly diagnosed frozen-cloud comparison.
+All public/GPU/cost/integration gates and pending E2 agreement remain open.
+
+Historical checkpoint through03327: nine batched-locator CPU checks,57 target-failure
 CPU checks and23 internal staged-locator CPU checks pass. The latter includes
 complete original records, same-state continuation, exact callback counts/order,
 validator failures, construction errors, changed operands, HLO/ownership and
@@ -464,7 +485,7 @@ equality on a discarded matrix.
 | E2. Pilot and full geometry | Preserve exact active callback batch extents and scalar/batched ordering; connect direction/design/partition/fit/replay and iterative recentering. | Full public original payloads, seeded draw/call order, failures/early exits, target counts, compiled outer invocation, coupled changing-input tests. No padded target calls or hidden scalar fallback. |
 | E3. Public controller integration | Wire native posterior and sequential controllers; compute report metrics/mass preparation in tensors; add ordered block recurrence. | Public endpoint tests, accepted/rejected records, progress buffering, budgets, asymmetric terminal behavior, coupled block replay/rollback and every supported configuration. |
 | E4. Coordinated ownership | Bound callback-dependent program caches as one lifetime, preserving live compiled handles and useful reuse. | Distinct target identities, weak-reference collection after eviction, nested dependency release, continued execution of retained handles, same-signature reuse versus signature churn, native-residency attribution in fresh CPU/GPU processes. |
-| E5. Consumer telemetry and supervision | Migrate actual DZ5 callbacks to tensor telemetry and independent parent deadlines before consuming buffered progress. | Real target/transition wiring, fixed18-batch behavior, invalid-row counts, healthy quiet and blocked workers, deadline termination/cleanup, exact source/pin provenance. Prepare external edits in an isolated checkout and obey its local policy and platform write permissions. |
+| E5. Consumer telemetry and supervision | Verify the actual atomic DZ5 callback and migrate enclosing initializer control; use the independently qualified parent deadline. | Real target/transition wiring, declared batch extents for the chosen target (current CDF23 parameters,1/46/68 evaluation rows; historical CD scope18 parameters), invalid-row counts, healthy quiet and blocked workers, deadline termination/cleanup and exact source/pin provenance. Prepare external edits in an isolated checkout; do not restart completed CDF or change frozen campaigns. |
 | E6. Costs, audit, integration | Version GPU cost analyzers around physical UUID/provenance; renew signed-word direction costs and all affected public costs; finish F01–F20 endpoint dispositions, remote integration and terminal review. | Mixed-UUID/shared-device timing rejection tests, identical inputs/full outputs, original/current graph/XLA arms, two extents and three fresh-process repeats, full source-frozen tests, current remote integration/retest. Main merge only after every terminal gate passes. |
 
 Dependencies: E1 precedes E2; sequential public integration precedes ordered

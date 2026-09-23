@@ -76,3 +76,24 @@ no stale implicit counter/incumbent/optimizer state leaks into continuation.
 Reserve one worker per backend and raise the attempt ceiling to32 under the
 same2400-second ceiling; this includes prior failed/diagnostic/policy workers
 and remaining GPU checks. No expansion of cumulative compute is authorized.
+
+Continuation after03327:23 distinct CPU checks pass and129 policy checks renew.
+Seventeen workers used426.276688 seconds. Before public wiring, exercise two
+remaining failure/ownership risks in one bounded group per backend: reject a
+real XLA-incompatible operation in each stage without executing a Python
+fallback or proceeding past the failed checkpoint; and run a nested invocation
+on the same owner inside the external validator, then compare the outer result
+and exact target order against the untouched original. The validator is allowed
+to invoke other numerical work; the outer continuation must restore its supplied
+optimizer and accounting state after that work.
+
+The injected incompatible operation exists only in the diagnostic test; no
+runtime callback or policy waiver is added. A compiler error must propagate,
+release the invocation lock, and permit later healthy execution with a fresh
+program. This is an internal failure boundary, not a claim of compatibility
+with the public legacy optimizer-exception record. Public integration still owes
+an explicit runtime-error disposition. The nested original and candidate arms
+must execute the same target work and preserve both complete records, validator
+calls and ordering. These checks use two additional workers within32/2400;
+no numerical tolerance, optimizer setting, source authority or public default
+changes. A discrepancy triggers localized diagnosis before integration.

@@ -123,13 +123,21 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "staged_center_rounding_cpu": (
+        "tests/test_filter_repair_staged_center_rounding.py",),
+    **{f"staged_center_cost_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_staged_center_cost.py::test_staged_center_complete_costs[{arm}-{dimension}]",)
+        for arm in ("prior", "graph", "xla") for dimension in (1, 3) for device in ("cpu", "gpu")},
     **{f"staged_center_{case}_{dimension}_{device}": (
         f"tests/test_filter_repair_staged_center.py::test_staged_original_records[{dimension}-{case}]",)
         for dimension, case in ((1, "quadratic"), (3, "quadratic"), (1, "quartic"), (3, "quartic"),
             (3, "constant"), (3, "invalid"), (3, "cap"), (3, "cap_after"), (3, "reject"), (3, "validator_error"))
         for device in ("cpu", "gpu")},
     **{f"staged_center_edges_{device}": (
-        "tests/test_filter_repair_staged_center.py", "-k", "not original_records and not construction_failure and not execution_label and not supplied_state")
+        "tests/test_filter_repair_staged_center.py", "-k", "not original_records and not construction_failure and not execution_label and not supplied_state and not native_compilation and not nested_validator")
+        for device in ("cpu", "gpu")},
+    **{f"staged_center_failure_isolation_{device}": (
+        "tests/test_filter_repair_staged_center.py", "-k", "native_compilation or nested_validator")
         for device in ("cpu", "gpu")},
     **{f"staged_center_state_{device}": (
         "tests/test_filter_repair_staged_center.py", "-k", "supplied_state") for device in ("cpu", "gpu")},
@@ -1168,6 +1176,8 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"staged_center_cost_{device}": tuple(f"staged_center_cost_{arm}_{dimension}_{device}"
+        for arm in ("prior", "graph", "xla") for dimension in (1, 3)) for device in ("cpu", "gpu")},
     **{f"staged_center_{device}": tuple(f"staged_center_{case}_{dimension}_{device}"
         for dimension, case in ((3, "quadratic"), (1, "quartic"), (3, "quartic"),
             (3, "constant"), (3, "invalid"), (3, "cap"), (3, "cap_after"), (3, "reject"), (3, "validator_error")))
@@ -1454,6 +1464,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["staged_center_cost_gpu"]},
+    "staged_center_failure_isolation_gpu": "GPU",
     "staged_center_state_gpu": "GPU",
     "staged_center_construction_gpu": "GPU",
     "staged_center_edges_gpu": "GPU",
@@ -1696,7 +1708,8 @@ def require_unshared_cost_preflight(args):
     if (args.action != "test" or args.device != "GPU"
             or args.group not in (*TEST_BATCHES["posterior_public_memory_gpu"],
                                  *TEST_BATCHES["sequential_public_cost_gpu"],
-                                 *TEST_BATCHES["block_public_cost_gpu"])):
+                                 *TEST_BATCHES["block_public_cost_gpu"],
+                                 *TEST_BATCHES["staged_center_cost_gpu"])):
         return
     samples = args.gpu_preflight
     if len(samples) >= 2 and all(sample["performance_preflight_uncontended"]

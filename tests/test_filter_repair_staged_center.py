@@ -4,6 +4,7 @@ import dataclasses
 import gc
 import hashlib
 import weakref
+from threading import Thread
 
 import pytest
 import tensorflow as tf
@@ -252,3 +253,125 @@ def test_continuation_uses_supplied_state_after_unrelated_invocation(request):
     _equal_records(report["actual"], report["original"])
     _equal_records(actual_rows, expected_rows)
     assert other_owner.continuation.experimental_get_tracing_count() == 1
+
+
+@pytest.mark.parametrize("stage", ["checkpoint", "continuation"])
+def test_native_compilation_failure_propagates_without_fallback(stage, monkeypatch, request):
+    """Real unsupported XLA op: never execute its Python body or retry eagerly."""
+    optimizer = tfp.optimizer.lbfgs_minimize
+    fallback_calls, validator_calls = [], []
+    counter = tf.Variable(0, dtype=tf.int64)
+
+    def forbidden_fallback():
+        fallback_calls.append(True)
+        return tf.constant(0., D)
+
+    def injected(*args, **kwargs):
+        result = optimizer(*args, **kwargs)
+        if (kwargs.get("previous_optimizer_results") is not None) == (stage == "continuation"):
+            incompatible = tf.ensure_shape(tf.py_function(forbidden_fallback, [], D), [])
+            result = result._replace(objective_value=result.objective_value + incompatible)
+        return result
+
+    def callback(point):
+        count = counter.assign_add(1)
+        with tf.control_dependencies([count]):
+            delta = point - tf.constant([.2, -.1, .4], D)
+            score = -delta * tf.constant([1., 2., 3.], D)
+            return .5 * tf.reduce_sum(delta * score), score
+
+    def validator(checkpoint):
+        validator_calls.append(clean(dataclasses.asdict(checkpoint)))
+        return True
+
+    monkeypatch.setattr(tfp.optimizer, "lbfgs_minimize", injected)
+    config = JointCenterStagedConfig(checkpoint_iterations=1, total_iterations=10, gradient_tolerance=1e-8)
+    owner = StagedJointCenterProgram(callback, 3, config)
+    start, scale = tf.constant([.8, -.4, 1.2], D), tf.constant([.7, 1.1, 1.3], D)
+    with pytest.raises(tf.errors.OpError) as caught:
+        run_staged_program(owner, start, scale, validator)
+    failed_rows = int(counter)
+    assert "EagerPyFunc" in str(caught.value)
+    assert fallback_calls == []
+    assert len(validator_calls) == int(stage == "continuation")
+    assert not owner.construction_errors
+    if stage == "checkpoint":
+        assert failed_rows == 0
+        assert owner.continuation.experimental_get_tracing_count() == 0
+    else:
+        assert failed_rows == validator_calls[0]["physical_target_rows"]
+
+    released = []
+
+    def inspect_lock():
+        acquired = owner.invocation_lock.acquire(timeout=1.)
+        released.append(acquired)
+        if acquired:
+            owner.invocation_lock.release()
+
+    thread = Thread(target=inspect_lock, daemon=True)
+    thread.start()
+    thread.join(timeout=2.)
+    assert released == [True]
+    monkeypatch.setattr(tfp.optimizer, "lbfgs_minimize", optimizer)
+    fresh = StagedJointCenterProgram(callback, 3, config)
+    counter.assign(0)
+    recovered = run_staged_program(fresh, start, scale, lambda _: True)
+    assert recovered.endpoint_accepted and recovered.continuation_started
+    assert int(counter) == recovered.physical_target_rows
+    save(request, f"staged-native-failure-{stage}.json", {
+        "stage": stage, "exception_type": type(caught.value).__name__,
+        "message": str(caught.value), "fallback_calls": fallback_calls,
+        "validator_calls": validator_calls, "failed_target_rows": failed_rows,
+        "lock_released": released[0], "fresh_result": clean(dataclasses.asdict(recovered))})
+
+
+def test_nested_validator_restores_outer_state_and_exact_calls(request):
+    """A reentrant validator must not contaminate the outer optimizer state."""
+    original = FrozenCheckpoint("3582b4ac", "staged_nested_validator")
+    previous = original.load("bayesfilter.inference.joint_center")
+    counter = tf.Variable(0, dtype=tf.int64)
+    positions = tf.Variable(tf.zeros([1200, 3], D))
+
+    def callback(point):
+        index = counter.assign_add(1) - 1
+        update = positions.scatter_nd_update(index[None, None], point[None])
+        with tf.control_dependencies([update]):
+            delta = point - tf.constant([.3, -.1, .5], D)
+            score = -delta * tf.constant([1., 2., 3.], D) - .04 * delta ** 3
+            value = -.5 * tf.reduce_sum(delta ** 2 * tf.constant([1., 2., 3.], D)) - .01 * tf.reduce_sum(delta ** 4)
+        return value, score
+
+    config = JointCenterStagedConfig(checkpoint_iterations=1, total_iterations=10, gradient_tolerance=1e-8)
+    start, scale = tf.constant([1., -.8, 1.2], D), tf.constant([.5, 1.1, 2.], D)
+    owner = StagedJointCenterProgram(callback, 3, config)
+    before_config = previous.JointCenterStagedConfig(**dataclasses.asdict(config))
+
+    def prior(point, units, validator):
+        return previous.locate_joint_center_staged(callback, point, scale=units,
+            config=before_config, checkpoint_validator=validator)
+
+    def candidate(point, units, validator):
+        return run_staged_program(owner, point, units, validator)
+
+    records = []
+    for execute in (prior, candidate):
+        counter.assign(0)
+        nested, calls = [], []
+
+        def validator(checkpoint, execute=execute, nested=nested, calls=calls):
+            calls.append({"checkpoint": clean(dataclasses.asdict(checkpoint)), "target_calls": int(counter)})
+            inner = execute(start + .2, scale * .7, lambda _: True)
+            nested.append(clean(dataclasses.asdict(inner)))
+            return True
+
+        outer = execute(start, scale, validator)
+        records.append({"outer": clean(dataclasses.asdict(outer)), "inner": nested,
+            "validator_calls": calls, "positions": positions[:int(counter)].numpy().tolist(),
+            "target_rows": int(counter)})
+    report = {"original": records[0], "actual": records[1], "original_sources": original.hashes()}
+    save(request, "staged-nested-validator.json", report)
+    _equal_records(report["actual"], report["original"])
+    assert len(records[1]["validator_calls"]) == len(records[1]["inner"]) == 1
+    assert records[1]["target_rows"] == records[1]["outer"]["physical_target_rows"] + records[1]["inner"][0]["physical_target_rows"]
+    assert owner.checkpoint.experimental_get_tracing_count() == owner.continuation.experimental_get_tracing_count() == 1

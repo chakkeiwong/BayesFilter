@@ -1,6 +1,30 @@
 # Complete filter and gradient execution repair
 
-Current checkpoint through03327: the batched locator accounting repair passes
+Current checkpoint through03337: the internal staged locator passes26 CPU
+checks, including real compiler failures and nested use of one owner. Both
+XLA cost cases pass complete original records; the two graph arms fail strict
+cross-setting source selection. A separate original-versus-candidate comparison
+at each execution setting attributes D1 to inherited fused-affine rounding,
+without a changed comparison criterion. See the
+[cost result and review](filter_gradient_staged_locator_cost_result_20260923.md).
+Same-signature XLA calls take3.4--3.6ms versus5.9s for the recompiling original;
+observed RSS stays nearly flat over three warm calls. This is short CPU
+diagnostic evidence, not public/GPU qualification or native-eviction evidence.
+
+All129 policy checks pass, with229 guarded sources/1333 exact exceptions and
+no new waiver. Inventory03337 covers3050 working-tree Python files,3049 parsed;
+the historical vendor syntax error remains. No worker is active. Charges are
+66201.131495 CPU/63625.068103 GPU seconds, leaving13.61/34.33 process-hours.
+The08:41UTC GPU preflight declined under contention before launch. The E2
+reporting proposal awaits specific agreement. Public initializers, staged/batched
+public integration, actual isolated DZ5, GPU/cost and native-memory dispositions,
+full endpoint audit and remote integration/retests remain open. Main is unmerged.
+Fresh external inspection finds CDF retained-r5 complete: do not restart it.
+Its current initializer has23 parameters and evaluation batches1/46/68; older
+fixed18 wording applies only to the prior scope. The atomic current credit
+callback is already tensor-native; the enclosing initializer remains to repair.
+
+Historical checkpoint through03327: the batched locator accounting repair passes
 nine renewed CPU checks; the target-failure numerical segment passes57; the
 internal staged locator passes23, including full original records, exact target
 order/counts and continuation on a different owner after unrelated execution.
@@ -145,7 +169,7 @@ a solution is already qualified.
 | Actual DZ5 consumer uses non-JIT/Python/NumPy execution | E5: reusable locator passes nine CPU checks; qualify GPU then migrate initialize_dense_local in an isolated checkout with tensor telemetry, compiled attempts/partitions and TF/standard-library assembly. Current CDF parent deadline mechanics pass four tests. | Real target/transition wiring, fixed batch extent, invalid-row accounting, actual compiled consumer under the tested parent and exact source/pin provenance; preserve the live dirty tree. |
 | GPU correctness and matched before/after costs | E6: GPU renewal and sequential costs complete through03177; execute reviewed ordered-block original/graph/XLA public comparisons at two extents with three fresh processes per arm. | Verified memory growth and device identity; full-record comparisons; shared-device timing cannot close a clean cost gate. |
 | Native executable retention and cold/RSS overhead | E4/E6: separate owner/graph collection from executable residency; profile bounded signature churn and compilation by stage. Evaluate bounded signature reuse and process-lifetime containment if native eviction is unavailable. | Measured bounded resource use for the supported lifecycle, preserved arithmetic, and explicit dispositions for each cold/warm/host/device trigger; Python collection alone is insufficient. |
-| Secondary public numerical boundaries | E6: consensus passes19 CPU/19 GPU checks; target-failure segment57 CPU and internal staged locator23 CPU. Qualify GPU, native errors, public reuse/integration and matched costs as specified in the endpoint follow-up. | Pinned full results and error/callback semantics, stable operand signatures, changed-input HLO, numerical/derivative and CPU/GPU qualification; legitimate host boundaries cannot exempt numerical work. |
+| Secondary public numerical boundaries | E6: consensus passes19 CPU/19 GPU checks; target-failure segment57 CPU and internal staged locator26 CPU. Native compiler isolation and nested reuse pass; both XLA CPU cost cases pass. Qualify GPU, public reuse/error integration and terminal costs as specified in the endpoint follow-up. | Pinned full results and error/callback semantics, stable operand signatures, changed-input HLO, numerical/derivative and CPU/GPU qualification; legitimate host boundaries cannot exempt numerical work. |
 | Incomplete final audit and integration | E6: finish endpoint-to-implementation inventory and F01--F20 evidence dispositions, reconcile current remote, run final frozen-source suites/cost checks and terminal review. | Every required gate passes before main merge; canonical LEDH rebuilding remains excluded. |
 
 E6 endpoint review after03252 makes a wider E2 obligation explicit: the public
@@ -160,7 +184,7 @@ plus changed-input ownership/HLO and complete matched costs. This is remaining
 F18/F19 work, not a newly approved alternative algorithm or a reason to close
 those findings. E5's actual `initialize_dense_local` caller additionally uses a
 zero-argument freshly compiled batched locator; extracting reusable operand-bound
-locator state is part of its execution repair. The active frozen MacroFinance
+locator state is part of its execution repair. The completed frozen MacroFinance
 CDF campaign remains separate and must not be restarted or have source replaced.
 
 Continuation review: source-frozen GPU run03099 passes the independent exact
