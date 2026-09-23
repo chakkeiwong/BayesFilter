@@ -22,6 +22,7 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.inference import dense_partition_validation_tf as partition_validation
 from bayesfilter.inference import fixed_center_fitting_tf as fitting_native
 from bayesfilter.inference import fixed_center_selection_tf as selection_native
 from bayesfilter.inference import fixed_center_stability_tf as stability_native
@@ -1081,7 +1082,7 @@ def _require_independent_partitions(
     row_keys = []
     for name, array in named_arrays:
         normalized = numeric_tensor(array, tf.float64)
-        normalized = tf.where(normalized == 0.0, tf.zeros_like(normalized), normalized)
+        normalized = _run_kernel(partition_validation.normalized_offset_bits, normalized)
         _, data = canonical_numeric_bytes(normalized)
         row_bytes = int(normalized.shape[1]) * 8
         row_keys.append(

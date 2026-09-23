@@ -14,11 +14,11 @@ from bayesfilter.inference.joint_center_staged_tf import (
     run_staged_program,
 )
 from scripts.filter_repair_cost_provenance import GPUProcessMonitor
-from tests.filter_repair_frozen_checkpoint import FrozenCheckpoint
 from tests.test_filter_repair_block_capture import stable_hlo
 from tests.test_filter_repair_gap_diagnostics import memory_snapshot
 from tests.test_filter_repair_geometry_control import clean, save
 from tests.test_filter_repair_quadratic_batches import _equal_records
+from tests.test_filter_repair_staged_center import original_staged_source
 
 D = tf.float64
 
@@ -26,8 +26,7 @@ D = tf.float64
 @pytest.mark.parametrize("dimension", [1, 3])
 @pytest.mark.parametrize("arm", ["prior", "graph", "xla"])
 def test_staged_center_complete_costs(arm, dimension, request):
-    original = FrozenCheckpoint("3582b4ac", "staged_center_cost_original")
-    prior = original.load("bayesfilter.inference.joint_center")
+    original, prior, compatibility = original_staged_source("staged_center_cost_original")
     precision = tf.linalg.diag(tf.cast(tf.range(dimension), D) + 1.3) + .07
     mode = .14 + tf.cast(tf.range(dimension), D) * .03
 
@@ -112,7 +111,8 @@ def test_staged_center_complete_costs(arm, dimension, request):
             programs[name] = entry
     report = {"schema": "filter_staged_center_cost.v1", "arm": arm, "dimension": dimension,
         "numerical_authority": "3582b4ac", "mechanism_baseline": "3582b4ac",
-        "original_source_sha256": original.hashes(), "config": dataclasses.asdict(config),
+        "original_source_sha256": original.hashes(), "original_compatibility": compatibility,
+        "config": dataclasses.asdict(config),
         "input_sha256": [hashlib.sha256(tf.io.serialize_tensor(x).numpy()).hexdigest() for x in inputs],
         "changed_input_sha256": [hashlib.sha256(tf.io.serialize_tensor(x).numpy()).hexdigest() for x in changed],
         "gpu": gpu, "jit_compile": arm != "graph", "candidate_installed_publicly": False,

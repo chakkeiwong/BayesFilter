@@ -36,3 +36,9 @@ matrices, `batched_center_enclosing_cpu/gpu` groups and `policy`; frozen sources
 through each cohort. Manifests and complete result records remain in fresh
 numbered campaign directories. Stop for invalid evidence, a changed method or
 exhausted limits. Main stays unmerged.
+
+All nine GPU checks03362--03370 now pass complete adapted-original records,
+exact target order/counts, changed starts/scales, unchanged HLO and collection.
+The enclosing invalid-to-valid recurrence also passes. The unit uses30/32workers
+and778.283893/3600seconds. Public wiring and actual dense-initializer integration
+remain open; the seven-counter GPU reference adaptation stays explicit.

@@ -52,3 +52,8 @@ would be a separate API change. Empty score finiteness remains vacuously true.
 Only fixed float64 conversion and finite selection are moved, so exact public
 output/decision equality is the criterion. No source edits during another
 numerical worker or matrix; execute this unit after the locator cohort ends.
+
+GPU03361 passes all57 checks with verified growth and provenance. The unit
+uses4/8workers and32.133024/1200seconds. CPU/GPU output, error and enclosing
+segment qualification is complete for this diagnostic adapter; arbitrary Python
+callbacks remain host-only and matched terminal cost/source renewal is separate.

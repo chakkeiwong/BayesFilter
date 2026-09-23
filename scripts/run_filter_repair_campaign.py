@@ -123,6 +123,14 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "block_buffer_attribution_gpu": ("tests/test_filter_repair_block_buffer_attribution.py",),
+    "dense_partition_validation_cpu": ("tests/test_filter_repair_dense_partition_validation.py",),
+    "dense_partition_validation_gpu": ("tests/test_filter_repair_dense_partition_validation.py",),
+    "dense_initializer_cloud_localization_cpu": (
+        "tests/test_filter_repair_dense_initializer_cloud.py", "-k", "healthy and 1"),
+    **{f"dense_initializer_cloud_{dimension}_{device}": (
+        "tests/test_filter_repair_dense_initializer_cloud.py", "-k", f"{dimension}")
+        for dimension in (1, 3) for device in ("cpu", "gpu")},
     "staged_center_rounding_cpu": (
         "tests/test_filter_repair_staged_center_rounding.py",),
     **{f"staged_center_cost_{arm}_{dimension}_{device}": (
@@ -1176,6 +1184,8 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "staged_center_completion_gpu": ("staged_center_edges_gpu", "staged_center_construction_gpu",
+        "staged_center_state_gpu", "staged_center_failure_isolation_gpu"),
     **{f"staged_center_cost_{device}": tuple(f"staged_center_cost_{arm}_{dimension}_{device}"
         for arm in ("prior", "graph", "xla") for dimension in (1, 3)) for device in ("cpu", "gpu")},
     **{f"staged_center_{device}": tuple(f"staged_center_{case}_{dimension}_{device}"
@@ -1464,6 +1474,10 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "block_buffer_attribution_gpu": "GPU",
+    "dense_partition_validation_gpu": "GPU",
+    "dense_initializer_cloud_1_gpu": "GPU",
+    "dense_initializer_cloud_3_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["staged_center_cost_gpu"]},
     "staged_center_failure_isolation_gpu": "GPU",
     "staged_center_state_gpu": "GPU",
@@ -1772,6 +1786,10 @@ def run_job(args):
     env = os.environ.copy()
     env.update({"CUDA_VISIBLE_DEVICES": args.gpu_uuid if device == "GPU" else "-1", "TF_FORCE_GPU_ALLOW_GROWTH": "true", "BAYESFILTER_TEST_DEVICE_SCOPE": "visible" if device == "GPU" else "cpu", "TF_NUM_INTRAOP_THREADS": "2", "TF_NUM_INTEROP_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0"})
     if args.action == "test":
+        if args.group == "block_buffer_attribution_gpu":
+            env["XLA_FLAGS"] = (env.get("XLA_FLAGS", "") +
+                f" --xla_dump_to={directory / 'xla'} --xla_dump_hlo_as_text"
+                " --xla_dump_hlo_module_re=inference_execute").strip()
         if args.group == "source_preparation_localization":
             env["FILTER_REPAIR_REPEAT_STACKS"] = "1"
         if args.arm == "before":
@@ -1820,6 +1838,10 @@ def run_job(args):
     else:
         raise ValueError(args.action)
     record = {"schema": "filter_repair_run.v1", "key": key, "started_utc": datetime.now(timezone.utc).isoformat(), "state": "running", "device": device, "timeout_seconds": timeout, "command": command, "cwd": str(ROOT), "environment": {k: env[k] for k in ("CUDA_VISIBLE_DEVICES", "TF_FORCE_GPU_ALLOW_GROWTH", "BAYESFILTER_TEST_DEVICE_SCOPE", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS", "OPENBLAS_NUM_THREADS", "PYTHONHASHSEED")}, "git_head": git("rev-parse", "HEAD"), "git_diff_stat": git("diff", "--stat"), "source_sha256": hashes, "plan": PLAN, "result": str(result), "log": str(directory / "process.log")}
+    if args.action == "test" and args.group == "block_buffer_attribution_gpu":
+        record["environment"]["XLA_FLAGS"] = env["XLA_FLAGS"]
+        record["diagnostic_xla_dump"] = {"path": str(directory / "xla"),
+            "module_pattern": "inference_execute", "timing_eligible": False}
     if getattr(args, "gpu_preflight", None) is not None:
         record["gpu_preflight"] = args.gpu_preflight
         record["gpu_uuid"] = args.gpu_uuid

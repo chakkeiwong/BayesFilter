@@ -1,5 +1,29 @@
 # Bounded process containment of native compilation residency
 
+GPU03373 also passes both sequential children with complete original numerical
+records, four signatures/200calls per child and verified process cleanup. Child
+startup RSS is845.520/845.414MiB and fourth-release RSS is4528.031/4528.371MiB.
+Their startup mappings are2602/2589, with4213/4199 at fourth release. Both start
+with zero live TensorFlow allocator bytes and finish with5376current/292608peak
+bytes. Supervised wall times are139.238/138.536seconds. Parent RSS rises by
+3.781MiB after reading results; mappings remain2509. No256MiB parent trigger
+or increasing child-startup residency appears. Earlier wording about return to
+baseline means the fresh children's startup, not exactly zero parent growth.
+
+The unit has used3/4parent workers and564.785667/2400charged seconds, including
+preserved03289. CPU and GPU support the tested fresh-process containment
+mechanism. Ordinary Python collection inside each child still leaves native
+host memory resident; this is not native in-process eviction. Applying the
+mechanism to the actual complete DZ5 consumer and all cost-trigger dispositions
+remain open. Exact evidence is `run-03373/process-containment.json`, its child
+reports, supervisor receipts and provenance logs under the campaign artifact root.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Nonclaim |
+| --- | --- | --- | --- | --- | --- |
+| GPU lifecycle supported | Both full comparisons, fresh startup and cleanup pass | No numerical, cleanup or parent-growth veto | Two sequential workers and sampled memory only | Integrate bounded worker lifetime with actual E5 consumer | No in-process eviction, unbounded-lifetime guarantee or exact peak bound |
+
+Earlier CPU evidence and preserved harness failure follow.
+
 CPU run03290 passes two sequential fresh workers supervised by the exact current
 DZ5 `supervise` function. Each child performs four public block signatures
 (D3,D5,D3,D5), 50 alternating-input calls per signature, full pinned3582b4ac

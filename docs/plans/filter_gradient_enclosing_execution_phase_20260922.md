@@ -1,6 +1,32 @@
 # Additional repair phase: complete execution boundaries and ownership
 
-Current checkpoint through03337: the staged unit passes26 distinct CPU checks,
+Current checkpoint through03407: the clean ordered-block GPU cost cohort
+passes all18 fresh processes. D3/D5 repeated XLA calls take29.99/65.67ms versus
+20.46/21.61s for the recompiling prior API; these are descriptive fixture costs.
+The D3 allocator investigation is answered: a stable150KiB transient increase
+accompanies a171360-byte compiled temporary arena. It is retained for the tested
+signature, with full consumer capacity still open. CPU/GPU fresh-process
+containment passes; it establishes bounded process cleanup, not native eviction.
+
+Staged locator24 GPU, reusable batched locator9 GPU, target-failure57 GPU and
+dense-cloud14 GPU checks pass. Partition validation passes68 scenarios per
+backend and repairs a real subnormal duplicate-row bug;121 affected geometry
+checks pass per backend. All129 policy checks pass. The partial guard covers
+231 sources/1333 exact exceptions, with no added waiver; explicit-CPU inventory
+03407 covers3056 files,3055 parsed and one unchanged historical vendor error.
+See the [checkpoint and review](filter_gradient_gpu_partition_checkpoint_20260923.md).
+
+E5 next composes validated fitting, locator/cloud evaluation and the attempt
+controller, then qualifies RNG and the actual isolated DZ5 consumer. Current
+CDF retained-r5 is complete and must not be restarted. Public staged/batched
+wiring, E2 iterative/posterior-local initializers, other cost dispositions,
+endpoint/F01--F20 terminal audit and remote integration/retests remain open.
+The E2 clipping-report proposal awaits specific agreement; no residual correction
+or revised comparison is installed. Main2921c2ffd remains unmerged. No worker
+is active at this checkpoint. Charges66508.902306 CPU/66488.573124 GPU seconds
+leave13.53/33.53 process-hours under unchanged32CPU/52GPU-hour caps.
+
+Historical checkpoint through03337: the staged unit passes26 distinct CPU checks,
 including real compiler-failure isolation and nested same-owner validation.
 Original and XLA D1/D3 cost cases pass; both graph arms fail strict source
 selection against original XLA. The D1 same-setting diagnosis matches full

@@ -48,6 +48,27 @@ evaluation index; retain initial/callback/checkpoint/endpoint order. The
 validator must never be traced or run after numerical checkpoint rejection.
 No source edits occur during a worker or matrix.
 
+GPU baseline repair after03338: the unmodified3582b4ac staged locator returns
+optimizer_exception because its int32 accounting resources live on CPU and are
+inaccessible to the GPU XLA optimizer. The candidate itself runs, reuses both
+stages and releases its owner/graphs, but that is not a numerical comparison
+against a working original. Preserve03338. On GPU only, adapt exactly four
+dtype occurrences in the original staged function: attempts, target rows, best
+callback index and their matching cap become int64. Record original/adapted
+function hashes and the exact replacements in every affected artifact; retain
+unmodified original CPU authority. No float arithmetic, optimizer setting,
+selection, error record or tolerance changes. This follows the already reviewed
+batched-locator accounting-reference repair.
+
+Skeptical review: calling the adapted reference an untouched GPU baseline would
+be false. The comparison is to original float arithmetic with wider counters;
+bounded test counts cannot overflow either width. Renew one CPU full-record
+case, then the required GPU cases. Increase the local attempt reservation to36
+workers within the unchanged2400-second and cumulative campaign limits, covering
+the preserved baseline failure, reference renewal and localized retry. Through
+03338 this staged unit uses19workers/492.200316seconds. Public integration and
+cost/consumer requirements remain unchanged.
+
 Continuation after03319: all nine initial CPU comparisons pass, with the
 03310 shared-reference lifetime failure preserved and isolated in03311. Add
 cap3 at D3, whose original checkpoint uses exactly3 target rows, to force
@@ -97,3 +118,11 @@ must execute the same target work and preserve both complete records, validator
 calls and ordering. These checks use two additional workers within32/2400;
 no numerical tolerance, optimizer setting, source authority or public default
 changes. A discrepancy triggers localized diagnosis before integration.
+
+GPU continuation03340--03349 and03355--03358 passes24 distinct checks.
+This includes complete original records/calls, construction failures, real native
+compiler failures, cross-owner supplied-state continuation and nested validation.
+03339 renews the untouched CPU D1 authority. The unit uses34/36workers and
+1024.675657/2400seconds, including original GPU failure03338. Public integration
+and legacy error-record disposition remain open; CPU has26distinct checks
+because its two explicit graph/XLA metadata smokes are separate.

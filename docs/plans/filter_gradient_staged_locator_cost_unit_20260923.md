@@ -72,3 +72,10 @@ rounded affine positions with standard-library high-precision arithmetic.
 Matching the original graph diagnostic may explain03331 but cannot turn it
 into an equivalent-to-XLA timing result. Stop attribution if the same-setting
 full-record comparison fails; preserve all records for the next repair.
+
+GPU cost authority correction after03338: the original staged GPU function
+cannot execute with its CPU-placed int32 counters. Preserve that failure and
+use the staged unit's explicit four-dtype int64-only adaptation for new GPU
+cost references. Every report includes its exact adaptation and source hashes.
+The original CPU cost cohort remains unchanged. New GPU cohorts must be frozen
+separately and must not be labeled unmodified-original GPU comparisons.

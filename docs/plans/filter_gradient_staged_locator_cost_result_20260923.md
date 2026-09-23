@@ -1,5 +1,41 @@
 # Staged locator cost and rounding diagnosis
 
+GPU continuation03374--03379 passes all six original/graph/XLA D1/D3 cases.
+The original GPU reference has the explicitly recorded four-int64-counter
+adaptation from the staged unit; unmodified original failure03338 is preserved.
+The independent analysis checks complete records, source/environment/input
+identities, JUnit, verified growth, one physical GPU2 UUID and no sampled foreign
+compute process. Both GPU graph comparisons pass. The earlier CPU graph failures
+remain valid and are not superseded by this different backend.
+
+| GPU dimension | Adapted original cold s | XLA build+cold s | Original warm median ms | XLA warm median ms | Original final observed RSS MiB | XLA final observed RSS MiB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 8.072 | 8.140 | 7616.355 | 5.047 | 2962.590 | 1394.402 |
+| 3 | 8.258 | 8.276 | 7834.844 | 6.121 | 2972.918 | 1394.801 |
+
+GPU allocator peaks are81152/82432bytes in the original and64768/66304bytes in
+XLA. The candidate's observed RSS grows0.020/0.016MiB across three warm calls;
+no relative cold/warm/RSS/device trigger fires. The graph reference reaches
+1277.969/1276.039MiB RSS and23.511/46.497ms warm medians. This is one process
+per arm and extent, with three calls, so differences are descriptive. Avoiding
+original recompilation is part of the improvement; this is not a pure compiler
+ablation. Public integration, terminal repeats and lifecycle disposition remain.
+
+Analysis: `artifacts/filter-gradient-repair-20260917/staged-center-costs-gpu-03379.json`;
+the exact standard-library analyzer is `staged-center-cost-analysis-03379.py`
+alongside it. The cost unit has used14/16workers and486.970721/2400seconds.
+The invalid `--stage costs` command was rejected by argparse before any worker
+launched; the actual recorded command uses `matrix --stage tests --test-batch
+staged_center_cost_gpu --device GPU --test-timeout-seconds 300`.
+
+Review: source, records and actual GPU sharing provenance are checked after
+execution, not inferred from exit codes. No original float operation or
+comparison is changed. Initial rusage high-water still exceeds the process's
+VmHWM, so memory attribution uses observed smaps RSS and TensorFlow allocator
+values. Neither sampled process lists nor these observations bound exact peaks.
+
+Earlier CPU evidence follows and retains its original frozen cohort.
+
 The internal XLA candidate passes both D1/D3 complete original3582b4ac record
 comparisons in03332/03333, including changed operands. Both graph arms fail the
 same original-XLA comparison in03331/03334; retain those failures and exclude

@@ -1,5 +1,6 @@
 """Complete frozen staged-locator results, validator boundaries and operands."""
 
+import ast
 import dataclasses
 import gc
 import hashlib
@@ -23,11 +24,33 @@ from tests.test_filter_repair_quadratic_batches import _equal_records
 D = tf.float64
 
 
+def original_staged_source(label):
+    """Keep CPU authority untouched; record the minimal GPU resource adaptation."""
+    original = FrozenCheckpoint("3582b4ac", label)
+    previous = original.load("bayesfilter.inference.joint_center")
+    compatibility = None
+    if tf.config.list_logical_devices("GPU"):
+        source = original.sources["bayesfilter/inference/joint_center.py"]
+        function = next(node for node in ast.parse(source).body
+            if isinstance(node, ast.FunctionDef) and node.name == "locate_joint_center_staged")
+        text = ast.get_source_segment(source, function)
+        # Original GPU failure03338 is preserved. Only attempts, target rows,
+        # best callback index and the matching cap change integer width.
+        assert text.count("tf.int32") == 4
+        adapted = text.replace("tf.int32", "tf.int64")
+        exec(compile(adapted, "3582b4ac:staged_int64_accounting_only", "exec"), previous.__dict__)  # noqa: S102
+        compatibility = {"classification": "original_with_int64_accounting_only",
+            "original_failure_run": "03338", "replacement": {"tf.int32": "tf.int64"},
+            "occurrences": 4, "original_function_sha256": hashlib.sha256(text.encode()).hexdigest(),
+            "adapted_function_sha256": hashlib.sha256(adapted.encode()).hexdigest(),
+            "float_arithmetic_changed": False}
+    return original, previous, compatibility
+
+
 @pytest.mark.parametrize("dimension,case", [(1, "quadratic"), (3, "quadratic"), (1, "quartic"),
     (3, "quartic"), (3, "constant"), (3, "invalid"), (3, "cap"), (3, "cap_after"), (3, "reject"), (3, "validator_error")])
 def test_staged_original_records(dimension, case, request):
-    original = FrozenCheckpoint("3582b4ac", "staged_center_original")
-    previous = original.load("bayesfilter.inference.joint_center")
+    original, previous, compatibility = original_staged_source("staged_center_original")
     counter = tf.Variable(0, dtype=tf.int64)
     positions = tf.Variable(tf.zeros([1200, dimension], D))
     precision = tf.linalg.diag(tf.cast(tf.range(dimension), D) + 1.3) + .07
@@ -103,7 +126,8 @@ def test_staged_original_records(dimension, case, request):
     del first_graph, owner, target
     gc.collect()
     released = {key: ref() is None for key, ref in references.items()}
-    report = {"records": reports, "original_sources": original.hashes(), "trace_counts": trace_counts,
+    report = {"records": reports, "original_sources": original.hashes(), "original_compatibility": compatibility,
+        "trace_counts": trace_counts,
         "checkpoint_hlo_unchanged": len({stable_hlo(hlo) for hlo in hlos}) == 1,
         "continuation_hlo_unchanged": len({stable_hlo(hlo) for hlo in continuing_hlos}) <= 1,
         "checkpoint_hlo_sha256": hashlib.sha256(hlos[0].encode()).hexdigest(), "python_released": released}
@@ -174,8 +198,7 @@ def test_existing_staged_consumer_assertions_in_xla(name, monkeypatch, request):
 
 @pytest.mark.parametrize("stage", ["checkpoint", "continuation"])
 def test_staged_optimizer_construction_failure_preserves_records(stage, monkeypatch, request):
-    original = FrozenCheckpoint("3582b4ac", "staged_construction_error")
-    previous = original.load("bayesfilter.inference.joint_center")
+    original, previous, compatibility = original_staged_source("staged_construction_error")
     optimizer = tfp.optimizer.lbfgs_minimize
     counter = tf.Variable(0, dtype=tf.int64)
 
@@ -202,7 +225,8 @@ def test_staged_optimizer_construction_failure_preserves_records(stage, monkeypa
     owner = StagedJointCenterProgram(callback, 3, config)
     actual = run_staged_program(owner, start, scale, lambda _: True)
     report = {"original": clean(dataclasses.asdict(expected)), "actual": clean(dataclasses.asdict(actual)),
-        "original_count": expected_count, "actual_count": int(counter), "original_sources": original.hashes()}
+        "original_count": expected_count, "actual_count": int(counter), "original_sources": original.hashes(),
+        "original_compatibility": compatibility}
     save(request, f"staged-construction-{stage}.json", report)
     _equal_records(report["actual"], report["original"])
     assert int(counter) == expected_count == actual.physical_target_rows
@@ -215,8 +239,7 @@ def test_continuation_uses_supplied_state_after_unrelated_invocation(request):
         staged_result,
     )
 
-    original = FrozenCheckpoint("3582b4ac", "staged_restored_state")
-    previous = original.load("bayesfilter.inference.joint_center")
+    original, previous, compatibility = original_staged_source("staged_restored_state")
     counter = tf.Variable(0, dtype=tf.int64)
     positions = tf.Variable(tf.zeros([1200, 3], D))
 
@@ -248,7 +271,8 @@ def test_continuation_uses_supplied_state_after_unrelated_invocation(request):
     actual = staged_result(final, checkpoint_record(first[2]), validated=True, validator_calls=1,
         continuation_started=True, jit_compile=True)
     report = {"actual": clean(dataclasses.asdict(actual)), "original": clean(dataclasses.asdict(expected)),
-        "actual_calls": actual_rows, "expected_calls": expected_rows, "original_sources": original.hashes()}
+        "actual_calls": actual_rows, "expected_calls": expected_rows, "original_sources": original.hashes(),
+        "original_compatibility": compatibility}
     save(request, "staged-restored-state.json", report)
     _equal_records(report["actual"], report["original"])
     _equal_records(actual_rows, expected_rows)
@@ -328,8 +352,7 @@ def test_native_compilation_failure_propagates_without_fallback(stage, monkeypat
 
 def test_nested_validator_restores_outer_state_and_exact_calls(request):
     """A reentrant validator must not contaminate the outer optimizer state."""
-    original = FrozenCheckpoint("3582b4ac", "staged_nested_validator")
-    previous = original.load("bayesfilter.inference.joint_center")
+    original, previous, compatibility = original_staged_source("staged_nested_validator")
     counter = tf.Variable(0, dtype=tf.int64)
     positions = tf.Variable(tf.zeros([1200, 3], D))
 
@@ -369,7 +392,8 @@ def test_nested_validator_restores_outer_state_and_exact_calls(request):
         records.append({"outer": clean(dataclasses.asdict(outer)), "inner": nested,
             "validator_calls": calls, "positions": positions[:int(counter)].numpy().tolist(),
             "target_rows": int(counter)})
-    report = {"original": records[0], "actual": records[1], "original_sources": original.hashes()}
+    report = {"original": records[0], "actual": records[1], "original_sources": original.hashes(),
+        "original_compatibility": compatibility}
     save(request, "staged-nested-validator.json", report)
     _equal_records(report["actual"], report["original"])
     assert len(records[1]["validator_calls"]) == len(records[1]["inner"]) == 1
