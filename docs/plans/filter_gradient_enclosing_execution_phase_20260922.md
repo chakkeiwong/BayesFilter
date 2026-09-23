@@ -1,6 +1,23 @@
 # Additional repair phase: complete execution boundaries and ownership
 
-Continuation03296: consensus qualifies all19 checks on GPU3 with verified memory
+Current checkpoint through03327: nine batched-locator CPU checks,57 target-failure
+CPU checks and23 internal staged-locator CPU checks pass. The latter includes
+complete original records, same-state continuation, exact callback counts/order,
+validator failures, construction errors, changed operands, HLO/ownership and
+state restoration on another owner after unrelated execution. Policy129 passes;
+guard229 sources/1333 exceptions. No added numerical waiver. Read the
+[checkpoint and review](filter_gradient_endpoint_locator_checkpoint_20260923.md).
+
+Public staged/batched integration, default GPU qualification and complete costs
+remain open. The bounded GPU preflight declined without launching a worker;
+desktop devices stay protected. No numerical worker is active. Charges through
+03327 are65883.568327 CPU/63625.068103 GPU seconds under unchanged caps.
+The E2 reporting proposal remains uninstalled pending specific agreement.
+Actual isolated DZ5, public initializers, native-memory/cost dispositions, final
+endpoint audit and main integration/retests still require their planned work.
+Earlier records below are historical checkpoints, not current completion claims.
+
+Historical continuation03296: consensus qualifies all19 checks on GPU3 with verified memory
 growth. Sharing excludes cost interpretation. The consensus unit uses5/8workers
 and46.479199/1200seconds. Locator matrix/single-case preflights decline before
 launch after contention returns. GPU containment/locator and clean costs remain

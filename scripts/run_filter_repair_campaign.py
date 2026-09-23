@@ -123,6 +123,24 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"staged_center_{case}_{dimension}_{device}": (
+        f"tests/test_filter_repair_staged_center.py::test_staged_original_records[{dimension}-{case}]",)
+        for dimension, case in ((1, "quadratic"), (3, "quadratic"), (1, "quartic"), (3, "quartic"),
+            (3, "constant"), (3, "invalid"), (3, "cap"), (3, "cap_after"), (3, "reject"), (3, "validator_error"))
+        for device in ("cpu", "gpu")},
+    **{f"staged_center_edges_{device}": (
+        "tests/test_filter_repair_staged_center.py", "-k", "not original_records and not construction_failure and not execution_label and not supplied_state")
+        for device in ("cpu", "gpu")},
+    **{f"staged_center_state_{device}": (
+        "tests/test_filter_repair_staged_center.py", "-k", "supplied_state") for device in ("cpu", "gpu")},
+    "staged_center_config_cpu": ("tests/test_filter_repair_staged_center.py", "-k", "execution_label"),
+    **{f"staged_center_construction_{device}": (
+        "tests/test_filter_repair_staged_center.py", "-k", "construction_failure") for device in ("cpu", "gpu")},
+    **{f"target_failure_endpoint_{device}": (
+        "tests/test_filter_repair_target_failure_endpoint.py",
+        "tests/test_common_inference_runtime_contracts.py", "-k", "target_failure",
+        "tests/test_linear_kalman_svd_tf.py::test_target_failure_policy_does_not_activate_on_valid_lgssm_value",
+    ) for device in ("cpu", "gpu")},
     **{f"consensus_endpoint_{device}": (
         "tests/test_filter_repair_consensus_endpoint.py",
         "tests/test_fixed_center_curvature.py::test_consensus_shrinkage_and_geometry_metrics_are_spd_and_oriented",
@@ -1150,6 +1168,10 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"staged_center_{device}": tuple(f"staged_center_{case}_{dimension}_{device}"
+        for dimension, case in ((3, "quadratic"), (1, "quartic"), (3, "quartic"),
+            (3, "constant"), (3, "invalid"), (3, "cap"), (3, "cap_after"), (3, "reject"), (3, "validator_error")))
+        for device in ("cpu", "gpu")},
     **{f"batched_center_reuse_{device}": tuple(f"batched_center_reuse_{case}_{batch}_{device}"
         for case in ("quadratic", "nonquadratic", "flat", "invalid_rows") for batch in (1, 3))
         for device in ("cpu", "gpu")},
@@ -1432,6 +1454,13 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    "staged_center_state_gpu": "GPU",
+    "staged_center_construction_gpu": "GPU",
+    "staged_center_edges_gpu": "GPU",
+    **{f"staged_center_{case}_{dimension}_gpu": "GPU"
+        for dimension, case in ((1, "quadratic"), (3, "quadratic"), (1, "quartic"), (3, "quartic"),
+            (3, "constant"), (3, "invalid"), (3, "cap"), (3, "cap_after"), (3, "reject"), (3, "validator_error"))},
+    "target_failure_endpoint_gpu": "GPU",
     "process_containment_gpu": "GPU",
     "consensus_endpoint_gpu": "GPU",
     "batched_center_enclosing_gpu": "GPU",

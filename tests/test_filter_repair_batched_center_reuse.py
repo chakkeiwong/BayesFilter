@@ -1,7 +1,9 @@
 """Complete pinned batched-locator records across reusable runtime operands."""
 
+import ast
 import dataclasses
 import gc
+import hashlib
 import json
 import math
 import weakref
@@ -20,6 +22,37 @@ from tests.test_filter_repair_block_capture import stable_hlo
 from tests.test_filter_repair_quadratic_batches import _equal_records
 
 D = tf.float64
+
+
+def original_source(label):
+    original = FrozenCheckpoint('d6a568384', label)
+    public = original.load('bayesfilter.inference.batched_local_center')
+    compatibility = None
+    if tf.config.list_logical_devices('GPU'):
+        path = 'bayesfilter/inference/batched_local_center.py'
+        source = original.sources[path]
+        function = next(node for node in ast.parse(source).body
+            if isinstance(node, ast.FunctionDef) and node.name == 'locate_batched_local_center')
+        text = '\n'.join(source.splitlines()[function.lineno - 1:function.end_lineno])
+        # Unmodified GPU failure is preserved in03297. Seven resources, one
+        # matching reduction, and matching index producers; no float changes.
+        edits = {
+            'variable(tf.fill([batch_size], -1), tf.int32)':
+                'variable(tf.fill([batch_size], tf.constant(-1, tf.int64)), tf.int64)',
+            'variable(0, tf.int32)': 'variable(0, tf.int64)',
+            'tf.cast(~valid, tf.int32)': 'tf.cast(~valid, tf.int64)',
+            'tf.range(batch_size)': 'tf.range(batch_size, dtype=tf.int64)',
+        }
+        expected_counts = [1, 6, 1, 1]
+        for (old, new), count in zip(edits.items(), expected_counts, strict=True):
+            assert text.count(old) == count
+            text = text.replace(old, new)
+        exec(compile(text, 'd6a568384:int64_accounting_only', 'exec'), public.__dict__)  # noqa: S102
+        compatibility = {'classification': 'original_with_int64_accounting_only',
+            'original_failure_run': '03297', 'edits': edits,
+            'maximum_fixture_rows': 1200,
+            'function_sha256': hashlib.sha256(text.encode()).hexdigest()}
+    return original, public, compatibility
 
 
 def _diagnostic_json(value):
@@ -61,8 +94,7 @@ def test_batched_locator_reuses_operand_starts(case, batch_size, request):
     cfg = BatchedLocalCenterConfig(max_iterations=8, max_optimizer_callback_batches_per_round=40)
     initial = tf.constant([[.8, -.7], [-.8, .7], [1., 1.2]][:batch_size], D)
     scale = tf.constant([.5, 2.], D)
-    original = FrozenCheckpoint('d6a568384', 'batched_locator_reuse_original')
-    public = original.load('bayesfilter.inference.batched_local_center')
+    original, public, compatibility = original_source('batched_locator_reuse_original')
     before_cfg = public.BatchedLocalCenterConfig(**dataclasses.asdict(cfg))
     owner = BatchedLocalCenterProgram(target, batch_size, 2, cfg)
     records, hlos = [], []
@@ -88,7 +120,8 @@ def test_batched_locator_reuses_operand_starts(case, batch_size, request):
     released = {name: ref() is None for name, ref in refs.items()}
     report = {'schema': 'filter_batched_locator_reuse.v1', 'case': case, 'batch_size': batch_size,
         'records': records, 'trace_count': count, 'hlo_unchanged': len({stable_hlo(hlo) for hlo in hlos}) == 1,
-        'python_released': released, 'original_source_sha256': original.hashes()}
+        'python_released': released, 'original_source_sha256': original.hashes(),
+        'reference_gpu_compatibility': compatibility}
     directory = Path(request.config.getoption('xmlpath')).parent
     with (directory / f'batched-locator-{case}-{batch_size}.json').open('x') as output:
         json.dump(_diagnostic_json(report), output, indent=2, allow_nan=False)
@@ -116,8 +149,7 @@ def test_batched_locator_resets_inside_enclosing_xla_recurrence(request):
 
     cfg = BatchedLocalCenterConfig(max_iterations=8, max_optimizer_callback_batches_per_round=40)
     owner = BatchedLocalCenterProgram(target, batch_size, dimension, cfg)
-    original = FrozenCheckpoint('d6a568384', 'batched_locator_enclosing_original')
-    public = original.load('bayesfilter.inference.batched_local_center')
+    original, public, compatibility = original_source('batched_locator_enclosing_original')
     before_cfg = public.BatchedLocalCenterConfig(**dataclasses.asdict(cfg))
     starts = tf.constant([[[-.8, .7], [-.7, .5], [-1., 1.2]],
         [[.8, -.7], [.7, -.5], [1., 1.2]]], D)
@@ -170,7 +202,8 @@ def test_batched_locator_resets_inside_enclosing_xla_recurrence(request):
     report = {'schema': 'filter_batched_locator_enclosing.v1', 'records': records,
         'outer_trace_count': outer_traces, 'inner_trace_count': inner_traces,
         'hlo_unchanged': len({stable_hlo(hlo) for hlo in hlos}) == 1,
-        'python_released': released, 'original_source_sha256': original.hashes()}
+        'python_released': released, 'original_source_sha256': original.hashes(),
+        'reference_gpu_compatibility': compatibility}
     directory = Path(request.config.getoption('xmlpath')).parent
     with (directory / 'batched-locator-enclosing.json').open('x') as output_file:
         json.dump(_diagnostic_json(report), output_file, indent=2, allow_nan=False)

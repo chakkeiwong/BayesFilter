@@ -1,17 +1,21 @@
-"""Finite invalid-region target policy with fail-loud exception boundaries."""
+"""Compiled finite fallback calculations and a host diagnostic exception adapter.
+
+The Python adapter preserves per-call exceptions from arbitrary callbacks. It
+is not an enclosing compiled target: compiled consumers need tensor failure
+statuses and must enforce their label permissions in their enclosing program.
+"""
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
-
-import math
 
 import tensorflow as tf
 
 from bayesfilter.ops.host_tensor_io import numeric_tensor
-
 
 TARGET_FAILURE_LABELS = frozenset(
     {
@@ -132,7 +136,7 @@ class TargetFailurePolicy:
 
     def fallback_score(self, reference: Any) -> tf.Tensor:
         array = numeric_tensor(reference, tf.float64)
-        return tf.fill(tf.shape(array), tf.constant(self.fallback_gradient_value, tf.float64))
+        return _run_target_output(tf.constant(0.0, tf.float64), array, self, True)["score"]
 
 
 @dataclass(frozen=True)
@@ -197,16 +201,53 @@ class TargetFailureClassification:
         }
 
 
+@lru_cache(maxsize=16)
+def _target_output_program(score_shape):
+    """Cache only static shapes; callbacks, data and policies are operands."""
+    @tf.function(input_signature=(
+        tf.TensorSpec([], tf.float64), tf.TensorSpec(score_shape, tf.float64),
+        tf.TensorSpec([], tf.bool), tf.TensorSpec([], tf.float64),
+        tf.TensorSpec([], tf.float64),
+    ), jit_compile=True, autograph=False)
+    def evaluate(value, score, declared_failure, fallback_value, fallback_gradient):
+        value_finite = tf.math.is_finite(value)
+        score_finite = tf.reduce_all(tf.math.is_finite(score))
+        fallback_used = declared_failure | ~(value_finite & score_finite)
+        result_score = tf.where(
+            fallback_used, tf.fill(tf.shape(score), fallback_gradient), score)
+        return {
+            "value": tf.where(fallback_used, fallback_value, value),
+            "score": result_score,
+            "fallback_used": fallback_used,
+            "input_value_finite": value_finite,
+            "input_score_finite": score_finite,
+            "result_score_finite": tf.reduce_all(tf.math.is_finite(result_score)),
+        }
+
+    return evaluate
+
+
+def _run_target_output(value, score, policy, declared_failure=False):
+    return _target_output_program(tuple(score.shape))(
+        value, score, tf.constant(declared_failure, tf.bool),
+        tf.constant(policy.fallback_log_prob, tf.float64),
+        tf.constant(policy.fallback_gradient_value, tf.float64),
+    )
+
+
 def evaluate_target_with_failure_policy(
     value_score_fn: Callable[[Any], tuple[Any, Any]],
     position: Any,
     policy: TargetFailurePolicy,
 ) -> TargetPolicyEvaluation:
-    """Evaluate a value/score target with declared finite fallback semantics.
+    """Host diagnostic exception adapter with compiled output/fallback checks.
 
     Only ``TargetRegionError`` subclasses are caught. Shape errors,
     programmer errors, TensorFlow shape/type errors, generic ``ValueError`` and
     generic ``RuntimeError`` remain loud by construction.
+    The callback runs once in Python on every invocation, so runtime-dependent
+    Python exceptions remain observable. This API is not a compiled target;
+    compiled consumers must use tensor failure statuses inside their graph.
     """
 
     try:
@@ -226,7 +267,8 @@ def evaluate_target_with_failure_policy(
         raise ValueError("target value must be scalar")
     if score_array.shape != numeric_tensor(position, tf.float64).shape:
         raise ValueError("target score shape must match position shape")
-    if not tf.reduce_all(tf.math.is_finite(value_array)) or not tf.reduce_all(tf.math.is_finite(score_array)):
+    numerical = _run_target_output(value_array, score_array, policy)
+    if bool(numerical["fallback_used"]):
         if not policy.catch_nonfinite_output:
             raise FloatingPointError("target value/score is nonfinite")
         return _fallback_evaluation(
@@ -235,13 +277,14 @@ def evaluate_target_with_failure_policy(
             failure_label="nonfinite_value_gradient",
             exception_type=None,
             details={
-                "value_finite": bool(tf.reduce_all(tf.math.is_finite(value_array))),
-                "score_finite": bool(tf.reduce_all(tf.math.is_finite(score_array))),
+                "value_finite": bool(numerical["input_value_finite"]),
+                "score_finite": bool(numerical["input_score_finite"]),
             },
+            numerical=numerical,
         )
     return TargetPolicyEvaluation(
-        value=float(value_array),
-        score=score_array,
+        value=float(numerical["value"]),
+        score=numerical["score"],
         fallback_used=False,
         branch_label="valid",
         failure_label=None,
@@ -325,9 +368,12 @@ def _fallback_evaluation(
     failure_label: str,
     exception_type: str | None,
     details: Mapping[str, Any] | None,
+    numerical: Mapping[str, tf.Tensor] | None = None,
 ) -> TargetPolicyEvaluation:
     branch = policy.branch_for_failure(failure_label)
-    score = policy.fallback_score(position)
+    if numerical is None:
+        numerical = _run_target_output(
+            tf.constant(0.0, tf.float64), numeric_tensor(position, tf.float64), policy, True)
     classification = (
         "target_region_fallback"
         if failure_label in _TARGET_BOUNDARY_LABELS
@@ -338,8 +384,8 @@ def _fallback_evaluation(
         )
     )
     return TargetPolicyEvaluation(
-        value=policy.fallback_log_prob,
-        score=score,
+        value=float(numerical["value"]),
+        score=numerical["score"],
         fallback_used=True,
         branch_label=branch,
         failure_label=str(failure_label),
@@ -350,7 +396,7 @@ def _fallback_evaluation(
             "exception_type": exception_type,
             "details": {} if details is None else dict(details),
             "value_finite": True,
-            "score_finite": bool(tf.reduce_all(tf.math.is_finite(score))),
+            "score_finite": bool(numerical["result_score_finite"]),
         },
         nonclaims=policy.nonclaims,
     )

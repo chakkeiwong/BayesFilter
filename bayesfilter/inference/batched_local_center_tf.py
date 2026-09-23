@@ -24,13 +24,15 @@ class BatchedLocalCenterProgram:
         best_values = variable(tf.fill([batch_size], negative_infinity), tf.float64)
         best_positions = variable(initial, tf.float64)
         best_scores = variable(tf.zeros_like(initial), tf.float64)
-        best_indices = variable(tf.fill([batch_size], -1), tf.int32)
-        calls = variable(0, tf.int32)
-        attempts = variable(0, tf.int32)
-        optimizer_calls = variable(0, tf.int32)
-        round_calls = variable(0, tf.int32)
-        replays = variable(0, tf.int32)
-        invalid_rows = variable(0, tf.int32)
+        # TensorFlow places int32 resources on CPU, which GPU XLA cannot read.
+        # Only accounting uses int64; optimizer and floating arithmetic stay as-is.
+        best_indices = variable(tf.fill([batch_size], tf.constant(-1, tf.int64)), tf.int64)
+        calls = variable(0, tf.int64)
+        attempts = variable(0, tf.int64)
+        optimizer_calls = variable(0, tf.int64)
+        round_calls = variable(0, tf.int64)
+        replays = variable(0, tf.int64)
+        invalid_rows = variable(0, tf.int64)
         capped = variable(False, tf.bool)
         mismatch = variable(False, tf.bool)
         endpoint_positions = variable(initial, tf.float64)
@@ -74,7 +76,7 @@ class BatchedLocalCenterProgram:
                         & tf.reduce_all(tf.math.is_finite(scores), axis=1)
                         & tf.reduce_all(tf.math.is_finite(positions), axis=1)
                     )
-                    invalid_rows.assign_add(tf.reduce_sum(tf.cast(~valid, tf.int32)))
+                    invalid_rows.assign_add(tf.reduce_sum(tf.cast(~valid, tf.int64)))
                 return (
                     tf.where(valid, values, negative_infinity),
                     tf.where(valid[:, None], scores, tf.zeros_like(scores)),
@@ -85,7 +87,7 @@ class BatchedLocalCenterProgram:
                 positions: tf.Tensor, values: tf.Tensor, scores: tf.Tensor, valid: tf.Tensor
             ) -> tf.Tensor:
                 improve = valid & (values > best_values.read_value())
-                indices = (calls.read_value() - 1) * batch_size + tf.range(batch_size)
+                indices = (calls.read_value() - 1) * batch_size + tf.range(batch_size, dtype=tf.int64)
                 updates = (
                     best_values.assign(tf.where(improve, values, best_values)),
                     best_positions.assign(
@@ -205,7 +207,7 @@ class BatchedLocalCenterProgram:
                 best_values.assign(tf.fill([batch_size], negative_infinity)),
                 best_positions.assign(initial),
                 best_scores.assign(tf.zeros_like(initial)),
-                best_indices.assign(tf.fill([batch_size], -1)),
+                best_indices.assign(tf.fill([batch_size], tf.constant(-1, tf.int64))),
                 calls.assign(0),
                 attempts.assign(0),
                 optimizer_calls.assign(0),
