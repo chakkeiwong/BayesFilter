@@ -1,5 +1,16 @@
 # Containment and consensus execution checkpoint
 
+GPU continuation03296: all19 consensus checks pass on physical GPU3
+`GPU-b8045e28-4433-ec7a-77a5-db0636748322` with verified memory growth. The
+original comparisons, invalid cases, derivatives, one trace and unchanged HLO
+match the CPU qualification. The device has a foreign compute context, so this
+is correctness evidence only. Subsequent locator matrix and single-case
+preflights decline before launch under renewed utilization. No locator GPU
+result is inferred, and no worker is active. This addendum supersedes the GPU
+pending statements in the03295 checkpoint below for consensus only. The unit
+now uses5/8workers and46.479199/1200seconds. Cumulative GPU charge is
+63583.4360546753seconds, leaving34.337934GPU hours; CPU is unchanged.
+
 The CPU process-containment experiment passes in03290. Fresh numerical workers
 return to approximately567MiB initial RSS despite each reaching about4447MiB
 after four compiled signatures. Parent RSS grows3.578MiB and its mapping count

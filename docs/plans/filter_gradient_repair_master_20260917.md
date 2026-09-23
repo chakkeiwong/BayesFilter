@@ -1,21 +1,22 @@
 # Complete filter and gradient execution repair
 
-Current checkpoint through03295: CPU native-memory process containment passes;
+Current checkpoint through03296: CPU native-memory process containment passes;
 two sequential workers reproduce all original results, each returns to about
 567MiB at startup, and parent RSS grows only3.578MiB. Public precision consensus
-now encloses matrix symmetrization and validation in XLA;19 CPU checks and129
-policy checks pass. No numerical-loop exception is added. The new nonfinite-
+now encloses matrix symmetrization and validation in XLA;19 CPU/19 GPU checks
+and129 policy checks pass. No numerical-loop exception is added. The new nonfinite-
 candidate veto rejects demonstrated overflow without altering healthy results.
 The static inventory is refreshed across3045 working-tree Python files. See the
 [checkpoint](filter_gradient_containment_consensus_checkpoint_20260923.md),
 [memory evidence](filter_gradient_process_containment_result_20260923.md) and
 [remaining endpoint repair paths](filter_gradient_endpoint_followup_20260923.md).
 
-No worker is active. GPU preflights for containment, reusable locator and
-consensus declined under foreign utilization; their qualification and clean
-cost gates remain open. The E2 reporting proposal still awaits agreement; no
+No worker is active. GPU containment and reusable-locator preflights declined
+under foreign utilization; their qualification and clean cost gates remain open.
+Consensus GPU correctness passes on GPU3, with no clean-cost claim.
+The E2 reporting proposal still awaits agreement; no
 correction or revised comparator is installed. Cumulative charges are
-65208.202479 CPU /63571.041306 GPU seconds, leaving13.89/34.34process-hours.
+65208.202479 CPU /63583.436055 GPU seconds, leaving13.89/34.34process-hours.
 All F01--F20 terminal dispositions remain open, and fetched remote main47ae8836c
 remains unmerged. Next: GPU qualification when available, agreed E2 repair and
 public integration, actual isolated DZ5 consumer migration, complete costs,
@@ -125,7 +126,7 @@ a solution is already qualified.
 | Actual DZ5 consumer uses non-JIT/Python/NumPy execution | E5: reusable locator passes nine CPU checks; qualify GPU then migrate initialize_dense_local in an isolated checkout with tensor telemetry, compiled attempts/partitions and TF/standard-library assembly. Current CDF parent deadline mechanics pass four tests. | Real target/transition wiring, fixed batch extent, invalid-row accounting, actual compiled consumer under the tested parent and exact source/pin provenance; preserve the live dirty tree. |
 | GPU correctness and matched before/after costs | E6: GPU renewal and sequential costs complete through03177; execute reviewed ordered-block original/graph/XLA public comparisons at two extents with three fresh processes per arm. | Verified memory growth and device identity; full-record comparisons; shared-device timing cannot close a clean cost gate. |
 | Native executable retention and cold/RSS overhead | E4/E6: separate owner/graph collection from executable residency; profile bounded signature churn and compilation by stage. Evaluate bounded signature reuse and process-lifetime containment if native eviction is unavailable. | Measured bounded resource use for the supported lifecycle, preserved arithmetic, and explicit dispositions for each cold/warm/host/device trigger; Python collection alone is insufficient. |
-| Secondary public numerical boundaries | E6: consensus CPU repair passes19 checks; qualify GPU. Preserve Python exception/validator contracts while enclosing target fallback and staged-locator numerical segments, as specified in the endpoint follow-up. | Pinned full results and error/callback semantics, stable operand signatures, changed-input HLO, numerical/derivative and CPU/GPU qualification; legitimate host boundaries cannot exempt numerical work. |
+| Secondary public numerical boundaries | E6: consensus passes19 CPU/19 GPU checks. Preserve Python exception/validator contracts while enclosing target fallback and staged-locator numerical segments, as specified in the endpoint follow-up. | Pinned full results and error/callback semantics, stable operand signatures, changed-input HLO, numerical/derivative and CPU/GPU qualification; legitimate host boundaries cannot exempt numerical work. |
 | Incomplete final audit and integration | E6: finish endpoint-to-implementation inventory and F01--F20 evidence dispositions, reconcile current remote, run final frozen-source suites/cost checks and terminal review. | Every required gate passes before main merge; canonical LEDH rebuilding remains excluded. |
 
 E6 endpoint review after03252 makes a wider E2 obligation explicit: the public
