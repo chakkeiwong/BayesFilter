@@ -30,7 +30,8 @@ sys.path.insert(0, "/home/chakwong/python/src")
 import numpy as np
 import tensorflow as tf
 
-import run_sqmc_tuning as R
+# Note: Cannot import run_sqmc_tuning directly due to module-level GPU init
+# Import only what we need after TensorFlow is ready
 
 # Test configuration
 DTYPE = tf.float64
@@ -108,24 +109,188 @@ def _evaluate_route_on_seed(
     theta: tf.Tensor,
     seed: int,
 ) -> Dict[str, Any]:
-    """Evaluate one route on one seed."""
+    """Evaluate one route on one seed using self-contained evaluation."""
     started = time.perf_counter()
 
-    result = R._evaluate_controls(
-        route=route,
-        controls=controls,
-        observations=observations,
-        theta=theta,
-        oracle_score=tf.zeros([12], dtype=DTYPE),  # No oracle comparison (12-param theta)
-        seed=seed,
-        horizon=HORIZON,
-        particle_count=PARTICLE_COUNT,
-        state_dim=STATE_DIM,
+    from bayesfilter.highdim.ledh_canonical_score_tf import canonical_value_and_analytical_score
+    from bayesfilter.highdim.sqmc_tf import randomized_halton_gaussian, randomized_halton_joint
+    from bayesfilter.highdim.ledh_canonical_models_tf import NonlinearScoreModel
+
+    # Map route to ancestry_policy
+    ancestry_map = {
+        'iid_dual_cap': 'existing_one_to_one',
+        'previous_inverse_cdf': 'hilbert_inverse_cdf',
+        'repaired_permutation': 'hilbert_permutation_one_to_one',
+        'repaired_permutation_ablation': 'hilbert_permutation_one_to_one',
+    }
+    ancestry_policy = ancestry_map.get(route, 'existing_one_to_one')
+
+    # Generate initial states and process noise
+    if route == 'iid_dual_cap':
+        initial_states = tf.random.stateless_normal(
+            [PARTICLE_COUNT, STATE_DIM], [seed, 101], dtype=DTYPE
+        )
+        process_noise = tf.stack([
+            tf.random.stateless_normal(
+                [PARTICLE_COUNT, STATE_DIM], [seed, 1001 + t], dtype=DTYPE
+            )
+            for t in range(HORIZON)
+        ])
+        ancestor_uniforms = tf.zeros([HORIZON, PARTICLE_COUNT], DTYPE)
+    else:
+        initial_states = randomized_halton_gaussian(
+            num_particles=PARTICLE_COUNT,
+            dimension=STATE_DIM,
+            seed=seed,
+            salt=301,
+            dtype=DTYPE,
+        )
+        process_rows = []
+        ancestor_rows = []
+        for t in range(HORIZON):
+            raw, ancestors, innovations = randomized_halton_joint(
+                num_particles=PARTICLE_COUNT,
+                state_dimension=STATE_DIM,
+                seed=seed,
+                salt=3001 + t,
+                dtype=DTYPE,
+            )
+            process_rows.append(tf.math.ndtri(innovations))
+            ancestor_rows.append(ancestors)
+        process_noise = tf.stack(process_rows)
+        ancestor_uniforms = tf.stack(ancestor_rows)
+
+    # Build dimension-generic model for 10D
+    # theta = [phi_1...phi_10, q_scale, r_scale] (12 params)
+    phi_diag = theta[:STATE_DIM]
+    q_scale = theta[STATE_DIM]
+    r_scale = theta[STATE_DIM + 1]
+
+    log_two_pi = tf.constant(np.log(2.0 * np.pi), DTYPE)
+    _direction = [tf.zeros([len(theta)], DTYPE)]
+
+    def set_score_direction(direction):
+        _direction[0] = tf.convert_to_tensor(direction, DTYPE)
+
+    def transition_mean_fn(theta_arg, points):
+        phi = theta_arg[:STATE_DIM]
+        return points * phi[None, :]
+
+    def transition_mean_tangent_fn(theta_arg, points, d_points):
+        phi = theta_arg[:STATE_DIM]
+        return d_points * phi[None, :]
+
+    def _scaled_gaussian(points, means, scale_val):
+        residual = points - means
+        return -0.5 * (
+            tf.reduce_sum(tf.square(residual), axis=1) / tf.square(scale_val)
+            + float(STATE_DIM) * (log_two_pi + 2.0 * tf.math.log(scale_val))
+        )
+
+    def transition_log_density_fn(theta_arg, points, ancestors_mean):
+        q = theta_arg[STATE_DIM]
+        return _scaled_gaussian(points, ancestors_mean, q)
+
+    def transition_log_density_tangent_fn(theta_arg, points, ancestors_mean, d_points, d_means):
+        return tf.zeros([tf.shape(points)[0]], DTYPE)
+
+    def observation_log_density_fn(theta_arg, points, observation):
+        observed = points
+        target = tf.broadcast_to(observation[None, :], tf.shape(observed))
+        r = theta_arg[STATE_DIM + 1]
+        return _scaled_gaussian(target, observed, r)
+
+    def observation_log_density_tangent_fn(theta_arg, points, observation, d_points):
+        return tf.zeros([tf.shape(points)[0]], DTYPE)
+
+    def process_covariance_tangent_fn(theta_arg):
+        return tf.zeros([STATE_DIM, STATE_DIM], dtype=DTYPE)
+
+    def observation_covariance_tangent_fn(theta_arg):
+        return tf.zeros([STATE_DIM, STATE_DIM], dtype=DTYPE)
+
+    def observation_fn(points):
+        return points
+
+    def observation_jacobian_fn(points):
+        return tf.broadcast_to(
+            tf.eye(STATE_DIM, dtype=DTYPE), [tf.shape(points)[0], STATE_DIM, STATE_DIM]
+        )
+
+    def observation_tangent_fn(points, d_points):
+        return d_points
+
+    model = NonlinearScoreModel(
+        transition_mean_fn=transition_mean_fn,
+        transition_mean_tangent_fn=transition_mean_tangent_fn,
+        transition_log_density_fn=transition_log_density_fn,
+        transition_log_density_tangent_fn=transition_log_density_tangent_fn,
+        process_covariance_tangent_fn=process_covariance_tangent_fn,
+        observation_fn=observation_fn,
+        observation_jacobian_fn=observation_jacobian_fn,
+        observation_tangent_fn=observation_tangent_fn,
+        observation_log_density_fn=observation_log_density_fn,
+        observation_log_density_tangent_fn=observation_log_density_tangent_fn,
+        observation_covariance_tangent_fn=observation_covariance_tangent_fn,
+        process_covariance=tf.square(q_scale) * tf.eye(STATE_DIM, dtype=DTYPE),
+        observation_covariance=tf.square(r_scale) * tf.eye(STATE_DIM, dtype=DTYPE),
     )
 
-    result["seed"] = seed
-    result["route"] = route
-    result["wall_seconds"] = time.perf_counter() - started
+    # Reset design for Contract-E
+    design = tf.concat([tf.eye(STATE_DIM, dtype=DTYPE), -tf.eye(STATE_DIM, dtype=DTYPE)], axis=0)
+    design = tf.tile(design, [PARTICLE_COUNT // (2 * STATE_DIM), 1])
+
+    initial_covariances = tf.eye(STATE_DIM, batch_shape=[PARTICLE_COUNT], dtype=DTYPE)
+
+    try:
+        # Compute value and score
+        value, score = canonical_value_and_analytical_score(
+            model,
+            theta,
+            initial_states,
+            initial_covariances,
+            process_noise,
+            observations,
+            flow_substeps=8,
+            with_score=True,
+            reset_policy='contract_e',
+            reset_design=design,
+            reset_epsilon=controls.get('reset_epsilon', 8.0),
+            reset_sinkhorn_steps=controls.get('reset_sinkhorn_steps', 8),
+            reset_balance_steps=controls.get('reset_balance_steps', 8),
+            reset_ridge=1e-5,
+            correction_steps=controls.get('correction_steps', 4),
+            correction_strength=controls.get('correction_strength', 0.2),
+            correction_lm_damping=0.01,
+            correction_lm_scale_floor=0.0001,
+            correction_trust_radius=0.5,
+            pairwise_steps=controls.get('pairwise_steps', 4),
+            pairwise_strength=controls.get('pairwise_strength', 0.03),
+            pairwise_rms_cap=2.0,
+            coordinate_cap=0.98,
+            coordinate_cap_power=8,
+            ancestry_policy=ancestry_policy,
+            process_ancestor_uniforms=ancestor_uniforms,
+            state_map_policy='adaptive_empirical',
+            hilbert_bits=12,
+        )
+
+        result = {
+            "seed": seed,
+            "route": route,
+            "valid": True,
+            "value": float(value.numpy()),
+            "score": score.numpy().tolist(),
+            "wall_seconds": time.perf_counter() - started,
+        }
+    except Exception as e:
+        result = {
+            "seed": seed,
+            "route": route,
+            "valid": False,
+            "error": str(e),
+            "wall_seconds": time.perf_counter() - started,
+        }
 
     return result
 
