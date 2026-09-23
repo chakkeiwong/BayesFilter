@@ -173,3 +173,122 @@ blocks downstream posterior promotion; it does not invalidate the independent
 target, transport-gradient, loss or score-residual training evaluation. Repair
 this diagnostic with explicit discrete-quantity semantics before using it for
 an HMC promotion decision. Do not remove the quantity or loosen ESS thresholds.
+
+## Priced training protocol amendment
+
+Initial q20 measurements are 2.43 seconds per batch-32 update and 6.7 seconds
+per batch-128 update across IAF/NAF and standard/path gradients. These are
+descriptive prices, not a method ranking. Use a conservative 2.7 seconds per
+batch-32 update for admission, then replace forecasts with actual worker time.
+The engineering balance is 141,245.38 seconds (39.23 hours), before q20 pricing.
+Pricing is capped at 2,400 seconds; the whole campaign still shares the same
+deadline and remaining allowance. No individual stage may create new budget.
+
+### Calibration before the sustained fits
+
+For IAF16, NAF16, NAF32 and the saved-map continuation control, inspect eight
+fixed-parameter gradient batches at sizes 32 and 128. Record standard/path
+gradient variability and matched FP32-with-TF32 / FP64 path-gradient drift.
+Drift exceeding 10% of minibatch RMS variability requires investigation.
+This is a low-cost plausibility check, not variance optimization.
+
+Use independent disposable 128-update path-gradient pilots at learning rates
+0.001, 0.003 and 0.01, initialized identically within a family. The endpoints
+come from the inspected author-code/paper range; the middle value is a
+convenience log-scale interpolation. The path estimator is the predeclared
+training candidate because it removes the score term and has zero variance
+at exact fit under its checked assumptions; this is not an empirical claim
+that it dominates standard gradients here. The standard estimator remains a
+measured calibration comparator and a bounded repair if path training fails.
+Use Adam beta1=0.9, beta2=0.999 and epsilon=1e-8 (inherited author/optimizer
+baseline hypotheses). The previous q20 epsilon check did not implicate epsilon;
+monitor update sizes and instability here rather than assuming transfer proves
+adequacy. Clip at ten times the largest initial calibration gradient norm,
+an explicit emergency-envelope hypothesis. A majority of clipped updates in
+a checkpoint window triggers repair. Preserve the exact threshold and counts.
+
+Use 128 independent common validation rows for the pilots. Select the highest
+declared rate that has finite valid updates, no majority clipping, and lower
+heldout loss than its unchanged initial map. This nominates a viable starting
+rate; it does not establish an optimal learning rate or a quality ranking.
+If none passes, extend the same ladder down to 0.0003 under the repair reserve;
+do not silently widen validity checks. A matched standard-gradient pilot at
+the nominated rate is the repair for a path-specific failure. Pilot states
+must never become undisclosed warm starts for the serious seeded fits.
+Calibration, including failed attempts, is capped at 9,000 worker seconds.
+
+### Sustained training and continuation
+
+Train IAF16 and NAF16 from the shared diagonal affine initialization, with
+three independent initialization/training seeds (indices 0, 1, 2). Each receives
+4,096 optimizer updates at batch 32. Preserve full Adam/checkpoint state every
+256 updates and assess common heldout banks of 256 rows at 1,024, 2,048 and
+4,096 updates. The update floor is a budget-feasible target-specific hypothesis,
+not a proof of convergence or a reproduction of the paper's batch-4096 study.
+The checkpoints allow the hypothesis to be inspected instead of hardening it
+into a default. There is no stop at trial eligibility and no per-update
+validation. New final maps are evaluated in FP64 after explicit conversion.
+
+Also continue the preserved legacy four-stage map for 4,096 updates with the
+same calibrated estimator/optimizer family and batch size. This control starts
+from its saved weights with fresh Adam slots, explicitly recorded; it isolates
+additional optimization only imperfectly, since the architecture and warm start
+differ. It is a conditional control, not an independently replicated old
+training recipe. Do not attribute a difference solely to architecture.
+
+Reserve an additional 4,096 updates for each of the three NAF16 seeds (up to
+8,192 total). Continue when the last distinct heldout checkpoint still improves
+or nonlinear geometry remains poor; these are repair triggers, not HMC
+admission. If NAF16 has numerical or capacity failure and the NAF32 pilot passes,
+the same reserved work may instead train three NAF32 seeds for 4,096 updates.
+That branch must be recorded before launch, with the capacity hypothesis and
+no change to the final evidence threshold. The initial IAF and NAF fits plus
+legacy control cost at most 77,415 forecast seconds; the continuation reserve
+is 33,178 seconds. Reprice if steady updates exceed 2.7 seconds persistently.
+
+### Independent verification and scientific decision
+
+Every completed training arm gets the standard 1,000-point normal-base
+post-training probe: residual norm distribution, coordinate RMS, density-ratio
+range, scale/derivative diagnostics, finite/status checks and exact map identity.
+It is an explanatory geometry diagnostic; no arbitrary residual cutoff is
+called convergence. Preserve a single untouched final bank of 2,048 common
+normal-base points, disjoint from gradient, training, validation and the
+1,000-point banks. Evaluate the saved baseline, control, and all final trained
+maps on it. Save individual paired loss and squared residual contributions.
+
+For each fixed checkpoint, estimate mean reverse-KL loss difference relative
+to the saved baseline (unknown target normalizer cancels) and mean squared
+score-residual difference on the same latent bank. Use a paired bootstrap
+with 4,096 resamples and Bonferroni-adjusted intervals across at most ten
+predeclared final map-versus-baseline comparisons. The bootstrap count is a
+Monte Carlo resolution convenience; report it and the independent bootstrap
+seed. A trained family supports replicated improvement over this saved
+baseline only when all three independent fits have an upper adjusted loss
+interval below zero, no numerical veto, and a reduced squared-residual mean
+with adjusted upper interval below zero. Otherwise report which fixed maps
+improved and the unresolved seed/geometry uncertainty. This is a stringent
+local training criterion; it is not population-level proof from three seeds.
+Do not rank IAF versus NAF or tail maxima without a separate valid comparison.
+The continuation control determines whether improved optimization alone is
+a plausible explanation, without causal attribution or superiority claims.
+
+A 6,000-second envelope covers sparse validation, final banks, required
+1,000-point probes and their compile overhead. Reserve 8,000 seconds for
+affordable downstream fixed-map qualification, and retain at least 5,000
+seconds for localized repairs. Unspent pricing/calibration reservations return
+to the shared balance. If the total forecast fails to fit, reduce optional
+downstream/repair breadth explicitly before launch; never drop seeds, required
+diagnostics, or stop still-improving training without a budget disposition.
+
+Skeptical audit: the preserved baseline and common affine warm start prevent
+silent comparator changes, while the conditional control exposes the added-
+optimization explanation. Separate banks and checkpoint hashes prevent reused
+maps or pilot selection from masquerading as final evidence. The 4,096-update
+floor can still be insufficient; explicit funded continuation addresses that
+risk. TF32 adequacy is checked on actual q20 gradients. Validation costs are
+bounded and sparse. The main unresolved limitation is posterior coverage,
+which the downstream qualification must test; a training pass cannot establish
+it. The budget arithmetic fits only with measured update prices and at least
+two available GPUs before the deadline; defer a busy device and retain the
+wall-time veto. Audit passes for calibration and the stated conditional ladder.

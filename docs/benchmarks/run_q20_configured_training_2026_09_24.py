@@ -109,6 +109,7 @@ class Runtime:
             native_op_sha256={p.name:sha(p) for p in (ROOT/"bayesfilter/ops").glob("*.so")})
         save(root/"manifest.json", manifest)
         self.noise_graphs = {}
+        self.measure_graphs = {}
 
     def check_budget(self):
         if time.monotonic()-self.began >= self.request["worker_seconds"]:
@@ -190,6 +191,247 @@ class Runtime:
         return {"status":"pricing_complete","prices":prices,
                 "quality_evidence":False,"gpu_allocator":tf.config.experimental.get_memory_info("GPU:0")}
 
+    def measurement(self, flow, rows, role):
+        """FP64 evaluation of the represented map, on an independent bank.
+
+        A mutable evaluation copy uses assignable variables so the same stable
+        graph measures distinct checkpoints without capturing stale constants.
+        No optimizer updates are applied to the evaluation copy.
+        """
+        tf = self.tf
+        batch = self.request.get("evaluation_batch_size", 32)
+        if rows % batch:
+            raise ValueError("evaluation must use whole native batches")
+        key = (json.dumps(flow.config.payload(), sort_keys=True), batch)
+        if key not in self.measure_graphs:
+            from bayesfilter.inference.neutra_transport import NeuTraTransport
+            evaluation = NeuTraTransport(replace(flow.config, dtype="float64",
+                inverse_atol=None, inverse_rtol=None))
+            @tf.function(input_signature=[tf.TensorSpec([batch, 4], tf.float64)],
+                         jit_compile=True, autograph=False)
+            def measure(z):
+                with tf.GradientTape(persistent=True, watch_accessed_variables=False) as tape:
+                    tape.watch(z)
+                    x, ld = evaluation.forward_and_logdet(z)
+                value, score, valid = self.target(x)
+                residual = tape.gradient(x, z, output_gradients=score)+tape.gradient(ld, z)+z
+                return {"loss":-value-ld, "residual":residual, "physical":x,
+                    "latent":z, "log_ratio":value+ld+.5*tf.reduce_sum(z*z,axis=1),
+                    "valid":valid}
+            self.measure_graphs[key] = (evaluation, measure)
+        evaluation, measure = self.measure_graphs[key]
+        evaluation.restore_parameters(flow.parameter_state())
+        blocks = []
+        for start in range(0, rows, batch):
+            self.check_budget()
+            block = measure(self.noise(batch, role, start//batch, dtype="float64"))
+            if not bool(tf.reduce_all(block["valid"])) or not all(
+                    bool(tf.reduce_all(tf.math.is_finite(v))) for k,v in block.items() if k != "valid"):
+                raise ValueError("invalid independent target/map evaluation")
+            blocks.append(block)
+        values = {k:tf.concat([b[k] for b in blocks],axis=0) for k in blocks[0]}
+        norms = tf.linalg.norm(values["residual"], axis=1)
+        ordered = tf.sort(norms)
+        result = {"rows":rows,"role":role,"target_dtype":"float64","evaluation_dtype":"float64",
+            "mean_loss":float(tf.reduce_mean(values["loss"])),
+            "vector_residual_rms":float(tf.sqrt(tf.reduce_mean(norms**2))),
+            "mean_residual_norm":float(tf.reduce_mean(norms)),
+            "median_residual_norm":float(ordered[(rows-1)//2]),
+            "p95_residual_norm":float(ordered[int(.95*(rows-1))]),
+            "p99_residual_norm":float(ordered[int(.99*(rows-1))]),
+            "max_residual_norm":float(ordered[-1]),
+            "coordinate_residual_rms":host(tf.sqrt(tf.reduce_mean(values["residual"]**2,axis=0))),
+            "log_ratio_range":float(tf.reduce_max(values["log_ratio"])-tf.reduce_min(values["log_ratio"])),
+            "log_ratio_sd":float(tf.math.reduce_std(values["log_ratio"])),
+            "map_parameters_sha256":hashlib.sha256(json.dumps(flow.parameter_state(),sort_keys=True).encode()).hexdigest(),
+            "blocks":host(values)}
+        return result
+
+    def gradient_screen(self, family, batch):
+        tf = self.tf
+        flow = self.flow(family)
+        gradients = {}
+        for estimator in ("standard", "path"):
+            trainer = self.trainer(flow, batch, estimator)
+            rows=[]
+            for i in range(self.request["gradient_batches"]):
+                self.check_budget()
+                result=trainer.evaluate(self.noise(batch,"gradient-calibration",i))
+                if not bool(result["valid"]):
+                    raise ValueError("invalid calibration gradient")
+                rows.append(tf.concat([tf.reshape(tf.cast(g,tf.float64),[-1]) for g in result["gradients"]],0))
+            gradients[estimator]=tf.stack(rows)
+        reference=self.flow(family,dtype="float64")
+        reference.restore_parameters(flow.parameter_state())
+        trainer64=self.trainer(reference,batch,"path")
+        drift=[]
+        for i in range(self.request["gradient_batches"]):
+            self.check_budget()
+            result=trainer64.evaluate(tf.cast(self.noise(batch,"gradient-calibration",i),tf.float64))
+            if not bool(result["valid"]):
+                raise ValueError("invalid reference gradient")
+            grad=tf.concat([tf.reshape(g,[-1]) for g in result["gradients"]],0)
+            drift.append(tf.reduce_sum((grad-gradients["path"][i])**2))
+        summary={}
+        for estimator,g in gradients.items():
+            mean=tf.reduce_mean(g,axis=0)
+            variance=tf.reduce_sum((g-mean)**2)/tf.cast(tf.shape(g)[0]-1,tf.float64)
+            summary[estimator]={"mean_gradient_norm":float(tf.linalg.norm(mean)),
+                "minibatch_rms_variability":float(tf.sqrt(variance)),
+                "norms":host(tf.linalg.norm(g,axis=1))}
+            # Keras Adam uses epsilon with the uncorrected second moment.
+            # Compare the first-step direction to epsilon=0 on the same
+            # gradient; this is an algebraic sensitivity check, not a new fit.
+            effective_epsilon=self.request["adam_epsilon"]/math.sqrt(1.-.999)
+            actual=tf.math.divide_no_nan(g[0],tf.abs(g[0])+effective_epsilon)
+            limit=tf.sign(g[0])
+            summary[estimator]["initial_adam_direction_relative_epsilon_effect"]=float(
+                tf.math.divide_no_nan(tf.linalg.norm(actual-limit),tf.linalg.norm(limit)))
+        noise=summary["path"]["minibatch_rms_variability"]
+        error=float(tf.sqrt(tf.reduce_mean(drift)))
+        result={"family":family,"batch":batch,"batches":self.request["gradient_batches"],
+            "estimators":summary,"fp32_tf32_vs_fp64_gradient_rms":error,
+            "precision_drift_over_minibatch_noise":error/noise if noise else None,
+            "precision_investigation_trigger":noise == 0. or error>.1*noise,
+            "classification":"low_cost_sanity_screen_not_variance_optimization"}
+        save(self.root/f"gradients-{family}-b{batch}.json",result)
+        return result
+
+    def calibration(self):
+        """Target-specific bounded LR/estimator checks, never final evidence."""
+        tf = self.tf
+        rows=[]
+        screens=[]
+        for family in self.request["families"]:
+            for batch in self.request["gradient_batch_sizes"]:
+                screens.append(self.gradient_screen(family,batch))
+            batch=self.request["training_batch_size"]
+            chosen=next(s for s in screens if s["family"]==family and s["batch"]==batch)
+            if chosen["precision_investigation_trigger"]:
+                raise ValueError("precision drift needs investigation before training")
+            for estimator in self.request["estimators"]:
+                clip=self.request["clip_multiplier"]*max(chosen["estimators"][estimator]["norms"])
+                for lr in self.request["learning_rates"]:
+                    self.check_budget()
+                    flow=self.flow(family)
+                    trainer=self.trainer(flow,batch,estimator,learning_rate=lr,
+                        epsilon=self.request["adam_epsilon"],clip=clip)
+                    initial=self.measurement(flow,self.request["validation_rows"],"calibration-validation")
+                    path=[]
+                    began=time.monotonic()
+                    rejected=None
+                    for i in range(self.request["updates"]):
+                        self.check_budget()
+                        old=[tf.identity(v) for v in flow.trainable_variables]
+                        result=trainer.train_step(self.noise(batch,"calibration-training",i))
+                        if not bool(result["valid"]):
+                            rejected="nonfinite_or_invalid_target_update"
+                            break
+                        changes=[a-b for a,b in zip(flow.trainable_variables,old)]
+                        offsets=[]
+                        offset=0
+                        for stage in flow.stages:
+                            count=len(stage.trainable_variables)
+                            offsets.append(float(tf.math.divide_no_nan(
+                                tf.linalg.global_norm(changes[offset:offset+count]),
+                                tf.linalg.global_norm(old[offset:offset+count]))))
+                            offset+=count
+                        path.append({"step":i+1,"loss":float(result["loss"]),
+                            "gradient_norm":float(result["gradient_norm"]),
+                            "clipped":float(result["gradient_norm"])>clip,
+                            "update_norm":float(tf.linalg.global_norm(changes)),
+                            "relative_update_by_stage":offsets})
+                    final=self.measurement(flow,self.request["validation_rows"],"calibration-validation") if rejected is None else None
+                    arm=f"{family}-{estimator}-lr{lr:g}"
+                    # Calibration states are preserved as evidence, never used
+                    # as an undisclosed final-training warm start.
+                    save(self.root/f"checkpoint-{arm}.json",trainer.checkpoint())
+                    row={"arm":arm,"family":family,"estimator":estimator,"learning_rate":lr,
+                        "gradient_clip_norm":clip,"initial":initial,"final":final,
+                        "rejection":rejected,"updates":path,"wall_seconds":time.monotonic()-began,
+                        "optimizer":vars(trainer.config),"transport_config":flow.config.payload()}
+                    save(self.root/f"calibration-{arm}.json",row)
+                    rows.append({k:v for k,v in row.items() if k not in ("initial","final","updates")})
+                    rows[-1].update(initial_loss=initial["mean_loss"],
+                        final_loss=None if final is None else final["mean_loss"],
+                        clipped_updates=sum(r["clipped"] for r in path),completed_updates=len(path))
+                    save(self.root/"calibration-progress.json",rows)
+                    print(json.dumps(rows[-1]),flush=True)
+        return {"status":"calibration_complete","arms":rows,"gradient_screens":screens,
+            "training_quality_established":False,"posterior_qualified":False}
+
+    def training(self):
+        tf = self.tf
+        r=self.request
+        flow=self.flow(r["family"],r["root_seed"])
+        trainer=self.trainer(flow,r["batch_size"],r["estimator"],r["learning_rate"],
+            r["adam_epsilon"],r["gradient_clip_norm"])
+        first=0
+        if r.get("resume_checkpoint"):
+            checkpoint=read(r["resume_checkpoint"])
+            trainer.restore(checkpoint)
+            first=int(trainer.optimizer.iterations.numpy())
+        history=[]
+        assessments=[]
+        validation_role=f"training-validation-{r['root_seed']}"
+        initial=self.measurement(flow,r["validation_rows"],validation_role)
+        save(self.root/"initial-validation.json",initial)
+        save(self.root/f"checkpoint-{first:06d}.json",trainer.checkpoint())
+        started=time.monotonic()
+        for i in range(first,r["updates"]):
+            self.check_budget()
+            result=trainer.train_step(self.noise(r["batch_size"],f"training-{r['root_seed']}",i))
+            if not bool(result["valid"]):
+                save(self.root/"last-valid-checkpoint.json",trainer.checkpoint())
+                save(self.root/"history.json",history)
+                raise ValueError(f"invalid training candidate at update {i+1}")
+            history.append({"step":i+1,"loss":float(result["loss"]),
+                "gradient_norm":float(result["gradient_norm"]),
+                "clipped":float(result["gradient_norm"])>r["gradient_clip_norm"]})
+            if (i+1)%r["checkpoint_every"]==0 or i+1==r["updates"]:
+                save(self.root/f"checkpoint-{i+1:06d}.json",trainer.checkpoint())
+                save(self.root/"history.json",history)
+                progress={"family":r["family"],"seed":r["root_seed"],"updates":i+1,
+                    "worker_seconds":time.monotonic()-self.began,
+                    "updates_per_second":(i+1-first)/(time.monotonic()-started),
+                    "clipped_updates":sum(x["clipped"] for x in history)}
+                save(self.root/"progress.json",progress)
+                print(json.dumps(progress),flush=True)
+            if i+1 in r["validation_rungs"] or i+1==r["updates"]:
+                check=self.measurement(flow,r["validation_rows"],validation_role)
+                check["updates"]=i+1
+                save(self.root/f"validation-{i+1:06d}.json",check)
+                assessments.append({k:v for k,v in check.items() if k!="blocks"})
+                # A sustained clipper-role violation triggers repair without
+                # consuming the rest of this candidate's allocation blindly.
+                recent=history[-r["checkpoint_every"]:]
+                if sum(x["clipped"] for x in recent)>.5*len(recent):
+                    raise ValueError("gradient guard clips a majority of recent updates; repair required")
+        self.check_budget()
+        # Every completed training arm gets the owner-required 1,000-point
+        # standard probe, with untouched seed and exact exported FP64 weights.
+        finalized=trainer.finalize(self.bridge,diagnostic_seed=seed(f"post-training-{r['root_seed']}"))
+        save(self.root/"finalized.json",finalized)
+        return {"status":"training_complete","family":r["family"],"seed":r["root_seed"],
+            "updates":r["updates"],"checkpoint":str(self.root/f"checkpoint-{r['updates']:06d}.json"),
+            "finalized":str(self.root/"finalized.json"),"validation":assessments,
+            "post_training":finalized["post_training"],"clipped_updates":sum(x["clipped"] for x in history),
+            "training_quality_established":False,"posterior_qualified":False}
+
+    def final_evaluation(self):
+        from bayesfilter.inference.neutra_transport import NeuTraTransport,NeuTraTransportConfig
+        r=self.request
+        if r.get("checkpoint"):
+            checkpoint=read(r["checkpoint"])
+            flow=NeuTraTransport(NeuTraTransportConfig(**checkpoint["transport_config"]))
+            flow.restore_parameters(checkpoint["parameters"])
+        else:
+            flow=self.baseline
+        result=self.measurement(flow,r["rows"],"untouched-final-bank")
+        save(self.root/"final-bank.json",result)
+        return {"status":"final_evaluation_complete","measurement":str(self.root/"final-bank.json"),
+            **{k:v for k,v in result.items() if k!="blocks"}}
+
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -215,9 +457,9 @@ def main():
     save(args.output/"manifest.json",manifest)
     try:
         runtime=Runtime(request,args.output,manifest,began)
-        if request["stage"] != "pricing":
+        if request["stage"] not in ("pricing","calibration","training","final_evaluation"):
             raise ValueError("unsupported execution stage")
-        result=runtime.pricing()
+        result=getattr(runtime,request["stage"])()
         result["wall_seconds"]=time.monotonic()-began
         save(args.output/"result.json",result)
         manifest["status"]=result["status"]
