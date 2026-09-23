@@ -58,7 +58,7 @@ def main():
         parameter_hash=hashlib.sha256(json.dumps(checkpoint["parameters"],sort_keys=True).encode()).hexdigest()
         if (final["transport_config"]!=checkpoint["transport_config"]
                 or final["map_parameters_sha256"]!=parameter_hash
-                or checkpoint["checkpoint_hash"]!=finalized["checkpoint"]["checkpoint_hash"]
+                or checkpoint!=finalized["checkpoint"]
                 or probe["rows"]!=1000 or probe["valid_rows"]!=1000
                 or not probe["finite"] or not probe["complete"]
                 or not finalized["inverse_tail_check"]["passed"]):

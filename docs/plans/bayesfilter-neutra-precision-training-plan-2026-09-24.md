@@ -164,12 +164,12 @@ preparation. It now prices plain NeuTra at beta one with its frozen chart and
 identity latent mass. A real supervised-worker test covers exact checkpoint
 restore, pricing scope and reuse without duplicate charges.
 
-An existing downstream defect remains: the generic posterior information check
+The integration audit found a downstream defect: the generic posterior information check
 applies continuous tail ESS to `positive_theta_2`, a binary indicator. Its upper
 tail indicator is constant, so the known Gaussian success fixture is rejected
-despite finite R-hat, bulk ESS and event MCSE. The intended success test is
-retained as a strict expected failure. This is a diagnostic repair trigger and
-blocks downstream posterior promotion; it does not invalidate the independent
+despite finite R-hat, bulk ESS and event MCSE. It was initially retained as a
+strict expected failure and has now been repaired as documented below; the
+success test passes without that marker. This did not invalidate the independent
 target, transport-gradient, loss or score-residual training evaluation. Repair
 this diagnostic with explicit discrete-quantity semantics before using it for
 an HMC promotion decision. Do not remove the quantity or loosen ESS thresholds.
@@ -236,10 +236,12 @@ additional optimization only imperfectly, since the architecture and warm start
 differ. It is a conditional control, not an independently replicated old
 training recipe. Do not attribute a difference solely to architecture.
 
-Reserve an additional 4,096 updates for each of the three NAF16 seeds (up to
-8,192 total). Continue when the last distinct heldout checkpoint still improves
-or nonlinear geometry remains poor; these are repair triggers, not HMC
-admission. If NAF16 has numerical or capacity failure and the NAF32 pilot passes,
+Fund an additional 4,096 updates for each of the three valid NAF16 seeds, making
+8,192 the final endpoint and 4,096 an intermediate checkpoint. This decision
+was recorded before the first 1,024-update validation: complete the affordable
+training allowance rather than make a noisy plateau screen a stopping rule.
+Improving heldout loss or poor nonlinear geometry remain repair triggers,
+not HMC admission. If NAF16 has numerical or capacity failure and the NAF32 pilot passes,
 the same reserved work may instead train three NAF32 seeds for 4,096 updates.
 That branch must be recorded before launch, with the capacity hypothesis and
 no change to the final evidence threshold. The initial IAF and NAF fits plus
@@ -297,6 +299,38 @@ which the downstream qualification must test; a training pass cannot establish
 it. The budget arithmetic fits only with measured update prices and at least
 two available GPUs before the deadline; defer a busy device and retain the
 wall-time veto. Audit passes for calibration and the stated conditional ladder.
+
+### Executable phase controller and reconciled caps
+
+`scripts/continue_neutra_training_campaign.py` waits for the six initial fits,
+then runs the saved-map control and the three funded continuation fits. A
+rejected NAF16 candidate activates the calibrated NAF32 cohort instead; valid
+NAF16 prefixes remain in the report. Infrastructure failures preserve their
+checkpoints for localized repair. Completed phases can be reused only with
+identical requests; a restart must not duplicate an already completed fit.
+The final stage evaluates the untouched common bank, verifies its identity
+against each exact finalized checkpoint, and writes paired bootstrap results.
+Posterior assessment remains a separate downstream decision.
+
+After pricing, calibration and recorded engineering charges, 134,475.159 worker
+seconds remain before sustained training. The six initial jobs have a combined
+69,000-second cap. Control plus continuation/repair have a 46,000-second cap;
+final banks have 3,000 seconds, downstream work 8,000 and localized repairs
+5,000. The 3,475.159 seconds left cover additional engineering/analysis and
+forecast error. Each 4,096-update worker has an 11,500-second cap derived from
+the measured update price plus compilation, checkpoints and diagnostics.
+Every phase checks actual spent time against the existing campaign balance.
+These are reservations within the original allowance, not new grants.
+
+Controller audit: every planned seed must have an explicit terminal outcome;
+candidate rejection cannot erase surviving peers or imply rejection of NeuTra.
+Continuation restores Adam slots and uses noise indices 4,096 onward, while
+the legacy control explicitly starts fresh slots from saved weights. Final
+evaluation consumes no pilot/validation bank. The largest repair branch has
+nine candidate maps plus the baseline, fitting both the final-evaluation cap
+and the predeclared multiplicity allowance. The controller cannot grant
+posterior status. Focused synthetic checks cover cohort decisions, exact
+continuation requests and budget rejection before launch.
 
 ## Binary-event posterior diagnostic repair
 
