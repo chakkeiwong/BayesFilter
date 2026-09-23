@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Phase 2: Dimension Transfer Test - 3D tuned controls on 10D T=20.
+"""Phase 3: Horizon Transfer Test - T=20 → T=120 at 3D and 10D.
 
-Tests whether controls tuned at 3D T=20 transfer to 10D T=20 without retuning.
-Part of sqmc-control-generalization-master-program-2026-09-23.md Phase 2.
+Tests whether controls tuned at T=20 transfer to T=120 at both 3D and 10D.
+Part of sqmc-control-generalization-master-program-2026-09-23.md Phase 3.
 """
 
 from __future__ import annotations
@@ -24,13 +24,14 @@ import tensorflow as tf
 
 # Test configuration
 DTYPE = tf.float64
-HORIZON = 20
-SEEDS = [50001, 50002, 50003, 50004]  # Same seeds as tuning campaign
+SEEDS = [60001, 60002, 60003, 60004]  # Different from tuning and Phase 2
 
-# Test dimensions
+# Test configurations: horizon transfer at 3D and 10D
 TEST_CONFIGS = [
-    {"state_dim": 3, "particle_count": 1008, "name": "3D baseline"},
-    {"state_dim": 10, "particle_count": 1000, "name": "10D transfer"},
+    {"state_dim": 3, "particle_count": 1008, "horizon": 20, "name": "3D T=20 baseline"},
+    {"state_dim": 3, "particle_count": 1008, "horizon": 120, "name": "3D T=120 transfer"},
+    {"state_dim": 10, "particle_count": 1000, "horizon": 20, "name": "10D T=20 baseline"},
+    {"state_dim": 10, "particle_count": 1000, "horizon": 120, "name": "10D T=120 transfer"},
 ]
 
 # Routes to test
@@ -56,7 +57,7 @@ def _generate_lgssm_data(seed: int, state_dim: int, horizon: int):
     """Generate LGSSM data using P44-style parameterization."""
     rng = np.random.default_rng(seed)
 
-    # Dimension-dependent dynamics: phi decays from 0.95 for dim 1 to 0.50 for dim 10+
+    # Dimension-dependent dynamics: phi decays from 0.95 to 0.50
     phi = np.array([max(0.50, 0.95 - 0.05 * i) for i in range(state_dim)])
     q_scale = 0.6
     r_scale = 0.8
@@ -86,6 +87,7 @@ def _evaluate_sqmc(
     seed: int,
     state_dim: int,
     particle_count: int,
+    horizon: int,
 ) -> dict:
     """Evaluate SQMC on given data with dimension-generic infrastructure."""
     started = time.perf_counter()
@@ -112,9 +114,9 @@ def _evaluate_sqmc(
             tf.random.stateless_normal(
                 [particle_count, state_dim], [seed, 1001 + t], dtype=DTYPE
             )
-            for t in range(HORIZON)
+            for t in range(horizon)
         ])
-        ancestor_uniforms = tf.zeros([HORIZON, particle_count], DTYPE)
+        ancestor_uniforms = tf.zeros([horizon, particle_count], DTYPE)
     else:
         initial_states = randomized_halton_gaussian(
             num_particles=particle_count,
@@ -125,7 +127,7 @@ def _evaluate_sqmc(
         )
         process_rows = []
         ancestor_rows = []
-        for t in range(HORIZON):
+        for t in range(horizon):
             raw, ancestors, innovations = randomized_halton_joint(
                 num_particles=particle_count,
                 state_dimension=state_dim,
@@ -263,13 +265,12 @@ def _evaluate_sqmc(
 
 
 def main() -> int:
-    output_dir = Path("artifacts/sqmc-dimension-transfer-t20-20260924")
+    output_dir = Path("artifacts/sqmc-horizon-transfer-20260924")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print("=" * 80)
-    print("Phase 2: Dimension Transfer Test - 3D → 10D at T=20")
+    print("Phase 3: Horizon Transfer Test - T=20 → T=120 at 3D and 10D")
     print("=" * 80)
-    print(f"Horizon: T={HORIZON}")
     print(f"Seeds: {SEEDS}")
     print(f"Configurations: {[c['name'] for c in TEST_CONFIGS]}")
     print(f"Routes: {ROUTES}")
@@ -282,7 +283,7 @@ def main() -> int:
         print(f"Route: {route}")
         print(f"{'='*80}")
 
-        # Load tuned controls from 3D campaign
+        # Load tuned controls from 3D T=20 campaign
         artifact_path = TUNING_ARTIFACTS[route]
         if not artifact_path.exists():
             print(f"ERROR: Tuning artifact not found: {artifact_path}")
@@ -299,18 +300,19 @@ def main() -> int:
         for config in TEST_CONFIGS:
             state_dim = config["state_dim"]
             particle_count = config["particle_count"]
+            horizon = config["horizon"]
             config_name = config["name"]
 
-            print(f"\n{config_name} (D={state_dim}, N={particle_count}):")
+            print(f"\n{config_name} (D={state_dim}, T={horizon}, N={particle_count}):")
             print("-" * 40)
 
             for seed in SEEDS:
                 print(f"  Generating data for seed {seed}...")
-                observations, theta = _generate_lgssm_data(seed, state_dim, HORIZON)
+                observations, theta = _generate_lgssm_data(seed, state_dim, horizon)
 
                 print(f"  Running SQMC...")
                 result = _evaluate_sqmc(
-                    route, controls, observations, theta, seed, state_dim, particle_count
+                    route, controls, observations, theta, seed, state_dim, particle_count, horizon
                 )
 
                 result.update({
@@ -318,6 +320,7 @@ def main() -> int:
                     "seed": seed,
                     "state_dim": state_dim,
                     "particle_count": particle_count,
+                    "horizon": horizon,
                     "config_name": config_name,
                 })
 
@@ -331,11 +334,10 @@ def main() -> int:
 
     # Save results
     manifest = {
-        "schema": "bayesfilter.sqmc_dimension_transfer_t20.v1",
+        "schema": "bayesfilter.sqmc_horizon_transfer.v1",
         "timestamp": datetime.now().isoformat(),
-        "phase": "Phase 2: Dimension Transfer Test",
+        "phase": "Phase 3: Horizon Transfer Test",
         "master_program": "sqmc-control-generalization-master-program-2026-09-23.md",
-        "horizon": HORIZON,
         "seeds": SEEDS,
         "test_configs": TEST_CONFIGS,
         "routes": ROUTES,
