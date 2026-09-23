@@ -1,6 +1,7 @@
 # Additional repair phase: complete execution boundaries and ownership
 
-Current checkpoint through03407: the clean ordered-block GPU cost cohort
+Current checkpoint through03422: validated dense fitting passes the complete
+CPU/GPU matrix, and the clean ordered-block GPU cost cohort
 passes all18 fresh processes. D3/D5 repeated XLA calls take29.99/65.67ms versus
 20.46/21.61s for the recompiling prior API; these are descriptive fixture costs.
 The D3 allocator investigation is answered: a stable150KiB transient increase
@@ -12,12 +13,12 @@ Staged locator24 GPU, reusable batched locator9 GPU, target-failure57 GPU and
 dense-cloud14 GPU checks pass. Partition validation passes68 scenarios per
 backend and repairs a real subnormal duplicate-row bug;121 affected geometry
 checks pass per backend. All129 policy checks pass. The partial guard covers
-231 sources/1333 exact exceptions, with no added waiver; explicit-CPU inventory
+232 sources/1333 exact exceptions, with no added waiver; explicit-CPU inventory
 03407 covers3056 files,3055 parsed and one unchanged historical vendor error.
 See the [checkpoint and review](filter_gradient_gpu_partition_checkpoint_20260923.md).
 
-E5 next composes validated fitting, locator/cloud evaluation and the attempt
-controller, then qualifies RNG and the actual isolated DZ5 consumer. Current
+E5 next composes the validated fitter with the exact dense attempt controller,
+then qualifies RNG and the actual isolated DZ5 consumer. Current
 CDF retained-r5 is complete and must not be restarted. Public staged/batched
 wiring, E2 iterative/posterior-local initializers, other cost dispositions,
 endpoint/F01--F20 terminal audit and remote integration/retests remain open.

@@ -123,6 +123,14 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"dense_validated_fit_{dimension}_{case}_{device}": (
+        "tests/test_filter_repair_dense_validated_fit.py", "-k", f"{case} and {dimension}")
+        for dimension, case in ((1, "healthy"), (3, "healthy"), (3, "audit"), (3, "incomplete"), (3, "rank"))
+        for device in ("cpu", "gpu")},
+    **{f"dense_fit_error_order_{device}": (
+        "tests/test_filter_repair_dense_validated_fit.py::test_fitting_error_precedence_is_tensor_native",
+        "tests/test_filter_repair_dense_validated_fit.py::test_enclosing_validation_recurrence_and_frozen_derivatives")
+        for device in ("cpu", "gpu")},
     "block_buffer_attribution_gpu": ("tests/test_filter_repair_block_buffer_attribution.py",),
     "dense_partition_validation_cpu": ("tests/test_filter_repair_dense_partition_validation.py",),
     "dense_partition_validation_gpu": ("tests/test_filter_repair_dense_partition_validation.py",),
@@ -1184,6 +1192,13 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "dense_validated_fit_finish_cpu": (
+        "dense_validated_fit_3_audit_cpu", "dense_validated_fit_3_incomplete_cpu",
+        "dense_validated_fit_3_rank_cpu", "dense_fit_error_order_cpu", "fixed_geometry", "policy"),
+    "dense_validated_fit_gpu": (
+        "dense_validated_fit_1_healthy_gpu", "dense_validated_fit_3_healthy_gpu",
+        "dense_validated_fit_3_audit_gpu", "dense_validated_fit_3_incomplete_gpu",
+        "dense_validated_fit_3_rank_gpu", "dense_fit_error_order_gpu", "fixed_geometry"),
     "staged_center_completion_gpu": ("staged_center_edges_gpu", "staged_center_construction_gpu",
         "staged_center_state_gpu", "staged_center_failure_isolation_gpu"),
     **{f"staged_center_cost_{device}": tuple(f"staged_center_cost_{arm}_{dimension}_{device}"
@@ -1474,6 +1489,9 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{f"dense_validated_fit_{dimension}_{case}_gpu": "GPU"
+        for dimension, case in ((1, "healthy"), (3, "healthy"), (3, "audit"), (3, "incomplete"), (3, "rank"))},
+    "dense_fit_error_order_gpu": "GPU",
     "block_buffer_attribution_gpu": "GPU",
     "dense_partition_validation_gpu": "GPU",
     "dense_initializer_cloud_1_gpu": "GPU",

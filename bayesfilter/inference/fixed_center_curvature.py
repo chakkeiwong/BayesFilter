@@ -364,6 +364,17 @@ def fit_fixed_center_curvature(
         tf.constant(weights, tf.float64), tf.constant(dense_eigenvalue_floor, tf.float64),
         tf.constant(thresholds.projection_relative_frobenius_cap, tf.float64), tf.constant(thresholds.require_raw_spd),
         tf.constant(thresholds.audit_relative_rmse_cap, tf.float64))
+    return _fixed_center_result_from_native(result, fixed_center, center_score,
+        dimension=dimension, replicates=replicates, training_rows=training_rows,
+        selection_rows=selection_rows, audit_rows=int(audit_z.shape[0]), thresholds=thresholds,
+        factor_max=factor_max, weights=weights, structured_target_family=structured_target_family,
+        lineage=lineage)
+
+
+def _fixed_center_result_from_native(result, fixed_center, center_score, *, dimension,
+        replicates, training_rows, selection_rows, audit_rows, thresholds, factor_max,
+        weights, structured_target_family, lineage=None):
+    """Format completed fit tensors without evaluating or selecting geometry."""
     report = tf.nest.map_structure(lambda value: value.numpy().tolist(), result)
     families = ("dense", "factor_1", "factor_2") if report["two_attempted"] else ("dense", "factor_1")
     groups = tuple(tuple(_native_fit_record(family, index,
@@ -389,7 +400,7 @@ def fit_fixed_center_curvature(
         return _blocked_result(fixed_center, center_score, fits, "geometry_readiness_blocked",
             lineage=lineage, extra={"selection": selection})
     audit_error = report["audit_error"]
-    selection.update(audit_relative_rmse=audit_error, audit_row_count=int(audit_z.shape[0]),
+    selection.update(audit_relative_rmse=audit_error, audit_row_count=audit_rows,
         audit_used_after_selection=True, audit_changed_selection=False)
     return FixedCenterCurvatureResult(accepted=report["status"] == 1,
         status=fitting_native.RESULT_STATUSES[report["status"]], center=fixed_center, center_score_z=center_score,
@@ -399,7 +410,7 @@ def fit_fixed_center_curvature(
             "partition_contract": {"replicate_count": replicates,
                 "training_rows_per_replicate": [training_rows] * replicates,
                 "selection_rows_per_replicate": [selection_rows] * replicates,
-                "audit_rows": int(audit_z.shape[0]), "audit_used_after_selection": True,
+                "audit_rows": audit_rows, "audit_used_after_selection": True,
                 "offset_overlap_check": "shared_memory_and_exact_float64_rows"},
             "thresholds_complete": thresholds.stability_caps_complete,
             "diagonal_only_cannot_be_automatically_eligible": report["selection"]["diagonal_only"],
