@@ -1,0 +1,30 @@
+--- a/bayesfilter/testing/inference_validation/engines/pipeline.py
++++ b/bayesfilter/testing/inference_validation/engines/pipeline.py
+@@ -246,8 +246,11 @@
+     for rep in records:
+         if "execution_failure" in rep:
+             continue
+-        group=sorted((m for m in rep["members"] if design.options.get("member_rule","declared_l_first")=="first_verified"
+-                      or m.get("L")==design.member_l),key=lambda m:m["candidate_id"])
++        group=sorted((m for m in rep["members"]
++                      if m.get("status") != "unassessed_by_design"
++                      and (design.options.get("member_rule","declared_l_first")=="first_verified"
++                           or m.get("L")==design.member_l)),
++                     key=lambda m:m["candidate_id"])
+         if group and "stopped_intervals" in group[0]:
+             for row in group[0]["stopped_intervals"]["quantities"]:
+                 key=row["name"]+":"+row["kind"]
+@@ -288,8 +291,11 @@
+             if "execution_failure" in record:
+                 pairs.append({})
+                 continue
+-            group=sorted((m for m in record["members"] if design.options.get("member_rule","declared_l_first")=="first_verified"
+-                          or m.get("L")==design.member_l),key=lambda m:m["candidate_id"])
++            group=sorted((m for m in record["members"]
++                          if m.get("status") != "unassessed_by_design"
++                          and (design.options.get("member_rule","declared_l_first")=="first_verified"
++                               or m.get("L")==design.member_l)),
++                         key=lambda m:m["candidate_id"])
+             pairs.append(group[0].get("stopping_pair",{}) if group else {})
+         references=analytic.exact_functionals(spec.target_id,design.scenario.parameters,design.options.get("data"))
+         names=[spec.parameters[index]+":"+kind for kind,index in references]

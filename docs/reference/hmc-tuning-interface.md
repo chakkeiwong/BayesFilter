@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-09-22. This reference describes the common candidate-set
+Last checked: 2026-09-23. This reference describes the common candidate-set
 procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
 HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
 classifies public tuners, preparation helpers, chain runners, and historical
@@ -718,6 +718,17 @@ Pipeline reports distinguish `requested_members`, requested
 members and deliberately unassessed siblings. Historical reports before this
 accounting correction included the siblings in `posterior_unavailable_members`;
 inspect their individual records rather than treating that count as failed fits.
+
+For a bounded sibling study, numerical validation designs can declare
+`member_rule="shortest_verified_l"`, `posterior_members="selected"` and a
+positive `posterior_member_count`. This orders distinct verified L values
+increasingly and takes the smallest candidate ID within each of the requested
+L values. The list is saved before posterior sampling; a shortage stays
+explicit, and changing it on resume fails. Each ordinal member slot has its
+own `member_slot_assessments`, with complete fits as the denominator. Siblings
+are not pooled into independent replications or selected using posterior
+outcomes. Shorter trajectories are a cost-oriented development hypothesis,
+not a guarantee of faster mixing. Every verified tuning candidate is retained.
 
 Numerical `search`, `accuracy` and `stopping` validation designs may declare
 `options.isolate_fits=true` and `options.fit_process_timeout_seconds` to run

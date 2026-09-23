@@ -1,5 +1,36 @@
 # HMC repair master program
 
+## September 23 M27 completion and M28 continuation
+
+The [M27 result](bayesfilter-hmc-m27-sibling-and-gpu-result-2026-09-23.md)
+closes optional predeclared sibling assessment on two complete rotated-Gaussian
+fits and exact GPU process parity on Gaussian and beta-binomial. All 44 CPU
+and 46 distinct GPU verified candidates remain retained. Four CPU members and
+the two GPU selected members passed their posterior checks. Siblings and paired
+replays are not independent replications. A confirmed summary-label defect is
+repaired; the generated CPU warmup-cap discrepancy and duplicate execution are
+preserved and charged. Terminal validation observed all 303 collected tests
+passing across two bounded segments, with the first segment's timeout recorded.
+The official tuning chapter and agent guide are updated; the book was rebuilt
+and its changed page inspected.
+
+M27 used **3118.21 CPU / 2543.58 GPU seconds** within its
+3600/4800 allocation. The terminal ledger is `m27-r1/reconciliation-terminal.json`:
+**76517.20 CPU / 82259.94 GPU seconds remain**, with no active
+worker reservations. GPU pricing leaves an adequate general confirmation
+inventory under-budgeted; even 384 Gaussian fits alone cost about 69.49 GPU
+hours at the larger observed price. Pilot delivery is not general coverage.
+
+The [reviewed M28 program](bayesfilter-hmc-post-m27-next-phase-2026-09-23.md)
+is the next executable phase: an analytically checked supplied map with bounded
+residual conditional scale, an exact noncentering control, and predeclared
+member assessments in model coordinates. It reserves at most 1800 CPU/4800 GPU
+seconds within the remainder, after concrete suite/source validation. Learned
+map training remains upstream. Global exploration, full-fit null/power,
+adequate coverage, exact MacroFinance reference inputs and measured maintenance
+remain explicit, separate gaps. No tuning, posterior or estimator default was
+promoted. R-hat, ESS and MCSE remain posterior-only requirements.
+
 ## September 22 M26 completion and next execution
 
 The [M26 lifetime and posterior-policy plan](bayesfilter-hmc-m26-lifetime-and-policy-plan-2026-09-22.md)
@@ -15,7 +46,7 @@ The failed member's saved 60000-draw fixed arm has median MCSE .289 against
 .05 despite R-hat 1.00114. A larger readiness window alone is insufficient.
 The [post-M26 program](bayesfilter-hmc-post-m26-next-phase-2026-09-22.md)
 therefore puts bounded, predeclared sibling assessment and GPU process/pricing
-checks before large confirmation. M27 has not run. Its planned ceilings are
+checks before large confirmation. M27 execution is recorded above. Its ceilings are
 3600 CPU / 4800 GPU seconds within the existing allowance. The remaining
 supplied-map, global-exploration, full-fit-power and consumer-input gaps remain
 explicit in that plan; learned-map training stays separate.

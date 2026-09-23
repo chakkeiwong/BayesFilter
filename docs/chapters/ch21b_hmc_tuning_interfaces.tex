@@ -791,6 +791,18 @@ optional mode with \path{options.isolate_fits} and
 \path{options.fit_process_timeout_seconds}. The setting does not change the
 HMC transition, tuning criteria or posterior thresholds.
 
+A bounded sibling study can instead predeclare several members using
+\path{member_rule="shortest_verified_l"},
+\path{posterior_members="selected"} and an explicit
+\path{posterior_member_count}. The rule orders distinct verified leapfrog
+counts increasingly and takes the first candidate identifier within each.
+It records the list before posterior sampling and preserves any shortage.
+Each ordinal member is assessed separately across complete fits; siblings do
+not increase the number of independent replications. A failed member does not
+suppress the next member or remove a tuning candidate. This is a bounded cost
+hypothesis, not an established mixing ranking, and posterior outcomes cannot
+choose a winner from the same assessment draws.
+
 The executable suite definitions are documented in
 \path{docs/validation/README.md}. The following table is generated from their
 saved reports. C, H and P denote current-source executions, historical-source

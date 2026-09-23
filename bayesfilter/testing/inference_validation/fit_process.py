@@ -39,11 +39,16 @@ def resource_snapshot():
               "max_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
               "live_objects": dict(sorted(counts.items()))}
     if "tensorflow" in sys.modules:
+        import tensorflow as tf
         from tensorflow.python.eager import context
         try:
             result["registered_tf_functions"] = len(context.context().list_function_names())
         except (AttributeError, RuntimeError) as exc:
             result["function_count_unavailable"] = str(exc)
+        if os.environ.get("CUDA_VISIBLE_DEVICES") != "-1":
+            result["gpu_allocator_bytes"] = {
+                device.name: tf.config.experimental.get_memory_info(device.name)
+                for device in tf.config.list_logical_devices("GPU")}
     return result
 
 

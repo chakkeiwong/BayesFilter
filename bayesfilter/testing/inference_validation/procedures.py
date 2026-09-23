@@ -158,6 +158,11 @@ def fixed_transport_starts(transport, adapter_starts):
 def selected_member_ids(design, candidates):
     """Predeclared choice based on tuning records alone, never posterior output."""
     rows = [(c.candidate_id, c.leapfrog_steps) for c in candidates]
+    if design.options.get("member_rule") == "shortest_verified_l":
+        by_length = {}
+        for cid, steps in sorted(rows):
+            by_length.setdefault(steps, cid)
+        return tuple(by_length[steps] for steps in sorted(by_length)[:design.options["posterior_member_count"]])
     if design.options.get("member_rule", "declared_l_first") == "declared_l_first":
         rows = [(cid, steps) for cid, steps in rows if steps == design.member_l]
     return tuple(cid for cid, _ in sorted(rows)[:1])
@@ -333,13 +338,25 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     observed_tuning_path=write_json(root/"tuning_observation.json",candidate_set_result_payload(result))
     tuning_seconds = time.monotonic() - tuning_started
     selected = selected_member_ids(design, (result.replay_candidate(cid) for cid in result.verified_candidate_ids))
-    write_json(root/"posterior_selection.json", {
+    selection_note = {
         "rule": design.options.get("member_rule", "declared_l_first"),
         "assessment_scope": design.options.get("posterior_members", "all"),
-        "selected_candidate_ids": selected, "verified_candidate_ids": result.verified_candidate_ids,
-        "selection_uses": "tuning identity and predeclared L only; no posterior or truth"})
+        "selected_candidate_ids": list(selected), "verified_candidate_ids": list(result.verified_candidate_ids),
+        "selection_uses": "tuning identity and predeclared L only; no posterior or truth"}
+    sibling_rule = design.options.get("member_rule") == "shortest_verified_l"
+    if sibling_rule:
+        selection_note.update(requested_member_count=design.options["posterior_member_count"],
+            selection_shortfall=design.options["posterior_member_count"]-len(selected),
+            slot_definition="increasing distinct verified L; smallest candidate ID within L")
+        if (root/"posterior_selection.json").exists() and read_json(root/"posterior_selection.json") != selection_note:
+            raise ValueError("predeclared sibling selection changed on resume")
+    write_json(root/"posterior_selection.json", selection_note)
     members=[]
-    for index, candidate_id in enumerate(result.verified_candidate_ids):
+    indices = {cid: index for index, cid in enumerate(result.verified_candidate_ids)}
+    candidate_order = (selected + tuple(cid for cid in result.verified_candidate_ids if cid not in selected)
+                       if sibling_rule else result.verified_candidate_ids)
+    for candidate_id in candidate_order:
+        index = indices[candidate_id]
         candidate = result.replay_candidate(candidate_id)
         if design.options.get("posterior_members", "all") == "selected" and candidate_id not in selected:
             members.append({"candidate_id":candidate_id,"L":candidate.leapfrog_steps,
@@ -428,5 +445,8 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
                   "preparation_seconds":binding.config.preparation_elapsed_seconds,
                   "invocation_seconds":time.monotonic()-started,
                   "compilation_separated":False}}
+    if sibling_rule:
+        payload["selection"].update({key: selection_note[key] for key in
+            ("requested_member_count", "selection_shortfall", "slot_definition")})
     write_json(root/"pipeline.json",payload)
     return payload

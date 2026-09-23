@@ -4,7 +4,8 @@ This replaces the post-M25 execution agenda. The
 [M26 result](bayesfilter-hmc-m26-lifetime-and-policy-result-2026-09-22.md)
 closes tested CPU process containment and paired numerical identity. It leaves
 posterior sufficiency, broader backend evidence and the earlier scientific gaps
-open. No M27 numerical experiment has run. The next executable tranche is
+open. M27 execution and deviations are recorded in the
+[M27 execution note](bayesfilter-hmc-m27-integration-and-execution-2026-09-22.md). The tranche is
 bounded member-assessment repair and GPU compatibility/pricing, before a large
 confirmation inventory is frozen.
 

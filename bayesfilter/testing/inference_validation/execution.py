@@ -77,12 +77,22 @@ def configure_worker(design):
     import tensorflow_probability as tfp
     from bayesfilter.runtime.gpu_memory_policy import configure_tensorflow_gpu_memory_growth
     memory=configure_tensorflow_gpu_memory_growth(tf,require_gpu=design.device=="gpu")
+    placement = {}
+    if design.device == "gpu":
+        physical = tf.config.list_physical_devices("GPU")
+        with tf.device("/GPU:0"):
+            probe = tf.constant([1.], tf.float64) + tf.constant([2.], tf.float64)
+        if "GPU" not in probe.device or float(probe[0]) != 3.:
+            raise RuntimeError("GPU worker placement probe failed")
+        placement = {"gpu_tensor_device": probe.device,
+            "physical_gpu_details": [{"name": device.name,
+                "details": tf.config.experimental.get_device_details(device)} for device in physical]}
     return {"python":platform.python_version(),"tensorflow":tf.__version__,"tfp":tfp.__version__,
             "device_scope":design.device,"gpu_intentionally_hidden":design.device=="cpu_reference",
             "memory_policy":memory,"jit_compile":design.device=="gpu",
             "tf32":tf.config.experimental.tensor_float_32_execution_enabled(),
             "cpu_threads":{"intra_op":os.environ["TF_NUM_INTRAOP_THREADS"],"inter_op":os.environ["TF_NUM_INTEROP_THREADS"]},
-            "visible_devices":os.environ.get("CUDA_VISIBLE_DEVICES")}
+            "visible_devices":os.environ.get("CUDA_VISIBLE_DEVICES"), **placement}
 
 
 def worker(design_file,root,budget,attempt=1):

@@ -120,6 +120,14 @@ An abnormal process with a completed assessment is retained for audit and is
 neither automatically rerun nor counted as a successful replication. Partial
 work may resume using native checkpoints, with previous attempts charged.
 
+An optional bounded sibling study uses `member_rule="shortest_verified_l"`,
+`posterior_members="selected"` and explicit `posterior_member_count`. It selects
+distinct verified L values in increasing order and the first candidate ID
+within each, before posterior sampling. `member_slot_assessments` reports
+coverage and fixed-comparator results separately for each ordinal slot, with
+all planned fits in each denominator. Missing slots stay missing; sibling
+outcomes cannot change tuning membership or nominate a posterior winner.
+
 For ongoing accounting use `scripts/audit_inference_validation_campaign.py`
 with `--live --cpu-seconds 86400 --gpu-seconds 86400`. Add `--verify-artifacts`
 for result and tensor checksum checks. Its live ledger includes running and

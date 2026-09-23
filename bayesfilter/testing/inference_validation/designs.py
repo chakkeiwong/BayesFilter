@@ -130,8 +130,18 @@ class ValidationDesign:
             raise ValueError("candidate evidence requires at least 64 draws")
         if self.options.get("posterior_members", "all") not in {"all", "selected"}:
             raise ValueError("posterior_members must be all or selected")
-        if self.options.get("member_rule", "declared_l_first") not in {"declared_l_first", "first_verified"}:
+        member_rule = self.options.get("member_rule", "declared_l_first")
+        if member_rule not in {"declared_l_first", "first_verified", "shortest_verified_l"}:
             raise ValueError("unsupported predeclared member rule")
+        member_count = self.options.get("posterior_member_count")
+        if member_rule == "shortest_verified_l":
+            if (type(member_count) is not int or member_count < 1
+                    or self.options.get("posterior_members") != "selected"
+                    or self.engine not in {"search", "accuracy", "stopping"}
+                    or self.scenario.route not in {"ordinary", "prepared", "fixed_transport"}):
+                raise ValueError("shortest_verified_l requires a positive posterior_member_count and selected numerical pipeline members")
+        elif member_count is not None:
+            raise ValueError("posterior_member_count requires shortest_verified_l")
         precision_method = self.options.get("posterior_precision_method", "lugsail")
         if not isinstance(precision_method, str) or precision_method not in {"lugsail", "autocorrelation", "batch_means"}:
             raise ValueError("posterior_precision_method requires a supported mean estimator")
