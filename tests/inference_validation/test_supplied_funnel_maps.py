@@ -58,7 +58,7 @@ def test_frozen_funnel_map_matches_independent_density_score_and_inverse(kind):
 @pytest.mark.parametrize("regime", ["dispersed", "remote"])
 def test_all_maps_preserve_the_physical_start_bank(regime):
     model_starts = initial_starts(ValidationTarget("funnel", jit_compile=False), regime)
-    for kind in ("exact", "partial", "partial_half"):
+    for kind in ("exact", "partial", "partial_half", "residual"):
         _, target, transport = map_parts(kind)
         starts = initial_starts(target, regime)
         latent = fixed_transport_starts(transport, starts)
@@ -73,11 +73,11 @@ def test_invalid_funnel_map_scale_fails(scale):
 
 
 def test_map_identities_differ_and_mismatched_target_fails():
-    maps = [supplied_funnel_map(k) for k in ("exact", "partial", "partial_half")]
+    maps = [supplied_funnel_map(k) for k in ("exact", "partial", "partial_half", "residual")]
     from bayesfilter.inference import stable_frozen_neutra_artifact_signature
     assert len({stable_frozen_neutra_artifact_signature(load_frozen_neutra_artifact(
         m["transport_payload"], expected_target_signature=m["transport_payload"]["target_signature"]))
-        for m in maps}) == 3
+        for m in maps}) == 4
     with pytest.raises(ValueError, match="target"):
         load_frozen_neutra_artifact(maps[0]["transport_payload"],
                                    expected_target_signature=maps[1]["transport_payload"]["target_signature"])
@@ -95,13 +95,14 @@ def test_affine_inverse_preserves_base_start_coordinates():
     np.testing.assert_allclose(latent, (starts - [1., -2.]) / [3., 1.], atol=2e-11)
 
 
-def test_supplied_exact_map_uses_real_public_tuning_and_replay(tmp_path):
+@pytest.mark.parametrize("kind", ["exact", "residual"])
+def test_supplied_map_uses_real_public_tuning_and_replay(tmp_path, kind):
     from bayesfilter.testing.inference_validation.designs import ScenarioSpec, ValidationDesign
     from bayesfilter.testing.inference_validation.procedures import execute_pipeline
     from bayesfilter.testing.inference_validation.engines.pipeline import check_inventory
     from bayesfilter.testing.inference_validation.storage import read_json, file_hash
 
-    spec = supplied_funnel_map("exact")
+    spec = supplied_funnel_map(kind)
     design = ValidationDesign(design_id="supplied-funnel-integration", engine="accuracy",
         scenario=ScenarioSpec(spec["target"], "fixed_transport", parameters=spec["parameters"]),
         replications=1, draws=64, seed=2026092251, budget_seconds=180,
@@ -115,13 +116,18 @@ def test_supplied_exact_map_uses_real_public_tuning_and_replay(tmp_path):
     assert not check_inventory(payload)["failures"]
     assert len(result["verified_candidate_ids"]) > 1
     starts = read_json(tmp_path / "start_coordinates.json")
-    _, target, transport = map_parts("exact")
+    _, target, transport = map_parts(kind)
     np.testing.assert_allclose(target.to_model(transport.forward_batch(starts["latent_starts"])),
                                starts["model_starts"], atol=2e-11)
     from bayesfilter.inference import load_numerical_tuning_checkpoint
     binding, _ = load_numerical_tuning_checkpoint(tmp_path / "tuning/tuning_checkpoint.json", adapter=target)
     np.testing.assert_allclose(binding.initial_active_state, starts["latent_starts"], atol=2e-11)
     assert binding.scope.coordinate_system == "fixed_transport"
+    with pytest.raises(ValueError, match="target"):
+        binding.validate_dispatch_inputs(ValidationTarget("funnel", jit_compile=False),
+                                         binding.initial_active_state)
+    with pytest.raises(ValueError, match="initial_active_state"):
+        binding.validate_dispatch_inputs(target, tf.constant(starts["adapter_starts"], tf.float64))
     assessed = [m for m in result["members"] if m["status"] == "assessed"]
     assert len(assessed) == 1
     assert assessed[0]["warmup_exclusion_matches"]

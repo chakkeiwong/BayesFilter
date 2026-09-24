@@ -83,9 +83,10 @@ def make_binding(*, target=None, config=None, **overrides):
     return bind_hmc_candidate_set_execution(**(values | overrides))
 
 
-@pytest.fixture(scope="module", params=("serial", "batched"))
+@pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
 def tuned(request):
-    binding = make_binding(config=execution_config(chain_mode=request.param))
+    binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+        reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
     config = HMCControllerConfig(primary_l_grid=(2, 3),
         epsilon_by_l=((2, (1.1, 1.3, 1.5)), (3, (1.1, 1.3, 1.5))),
         total_budget_units=40, repair_reserve_units=3)
@@ -323,15 +324,23 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
     from bayesfilter.inference import bind_hmc_candidate_set_execution_from_preparation
     from bayesfilter.inference.hmc_kernel_tuning import (
         build_operational_fixed_mass_hmc_adapter, run_hmc_windowed_mass_stage,
-        OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+        OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID, HMCBootstrapScreenConfig,
     )
     adapter = fixture._RotatedGaussianAdapter()
     geometry = fixture.initialize_hmc_kernel_geometry(adapter=adapter, initial_position=[.4,-.3],
         initial_covariance=[[1.4,.3],[.3,.8]],
         config=fixture.HMCGeometryInitializationConfig(covariance_jitter=0.0))
+    def bootstrap_fixture(_adapter, _state, config):
+        count = int(config.num_results)
+        result = fixture._runtime_shaped_result(warmup_steps=count,
+            acceptance_trace=([True, True, False, True] * count)[:count])
+        # Bootstrap now consumes Metropolis probabilities, independently of
+        # the binary reporting field. Declare a passing probability trace.
+        result.trace["log_accept_ratio"] = tf.fill([count], tf.math.log(tf.constant(.7, tf.float64)))
+        return result
     bootstrap = fixture.run_hmc_bootstrap_screen(adapter=adapter, geometry=geometry,
-        run_full_chain=lambda _adapter, _state, config: fixture._runtime_shaped_result(
-            warmup_steps=int(config.num_results), acceptance_trace=[True,True,False,True]*4))
+        config=HMCBootstrapScreenConfig(screen_num_results=12),
+        run_full_chain=bootstrap_fixture)
     stage = run_hmc_windowed_mass_stage(adapter=adapter, geometry=geometry, bootstrap=bootstrap,
         config=fixture._stage_config(algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
                                      chain_execution_mode="tf_function"),
@@ -393,17 +402,31 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
         bind_hmc_candidate_set_execution_from_preparation(**(kwargs | {"preparation": bad}))
 
 
-@pytest.mark.parametrize("kind", ["affine", "dense_iaf"])
-def test_supported_frozen_transports_use_numerical_controller_and_durable_geometry(kind, tmp_path):
+@pytest.mark.parametrize("kind", ["affine", "dense_iaf", "configured_iaf", "configured_naf_dsf"])
+@pytest.mark.parametrize("reuse", [False, True])
+def test_supported_frozen_transports_use_numerical_controller_and_durable_geometry(kind, reuse, tmp_path):
     target = GaussianTarget()
     if kind == "affine":
         payload = {"schema": "bayesfilter.neutra.frozen_affine_diag.v1", "transport_id": "test-affine",
             "dimension": 2, "target_signature": target.adapter_signature(), "log_jacobian_available": True,
             "shift": [.2,-.1], "raw_scale": [.1,.05]}
-    else:
+    elif kind == "dense_iaf":
         from tests.test_dense_iaf_neutra_artifact_loader import _payload
         payload = _payload(target_signature=target.adapter_signature())
-    binding = make_binding(mass_artifact=None, frozen_transport_payload=payload, start_coordinates="active")
+    else:
+        from bayesfilter.inference.neutra_transport import NeuTraTransport, NeuTraTransportConfig
+        config = (NeuTraTransportConfig.hoffman_author_iaf(2, conditional_scale_cap=2., seed=(47, 11))
+                  if kind == "configured_iaf" else NeuTraTransportConfig.huang_dsf(
+                      2, hidden_layers=(4,), stages=1, mixture_components=3, seed=(47, 11)))
+        payload = NeuTraTransport(config).frozen_payload(target_signature=target.adapter_signature())
+    # This fixture checks codec/controller/retained replay, not acceptance
+    # calibration. Source-bound seed changes can leave the narrower generic
+    # fixture with no statistically verified survivor. Use an explicit broad
+    # engineering band; production policies and all hard vetoes stay intact.
+    binding = make_binding(mass_artifact=None, frozen_transport_payload=payload, start_coordinates="active",
+                           config=execution_config(reuse_leapfrog_graphs=reuse,
+                               acceptance_policy=HMCAcceptancePolicy(practical_region=(.41, .99),
+                                                                    repair_region=(.405, .995))))
     probes = tf.constant([[.2,-.5],[-.3,.4]], tf.float64)
     value, score = binding._active_adapter.log_prob_and_grad(probes)
     raw = binding.position_samples(probes)

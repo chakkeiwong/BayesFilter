@@ -1,0 +1,294 @@
+........................................................................ [ 59%]
+........FF........................................                       [100%]
+=================================== FAILURES ===================================
+_____ test_public_posterior_actually_evaluates_mode_indicator[single_mode] _____
+
+design = <function design.<locals>.make at 0x7b06a073ed40>
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-690/test_public_posterior_actually0')
+start = 'single_mode'
+
+    @pytest.mark.parametrize("start", ["single_mode", "mode_dispersed"])
+    def test_public_posterior_actually_evaluates_mode_indicator(design, tmp_path, start):
+        d = design("stopping", "mixture", "prepared", replications=1, draws=64,
+            scenario=ScenarioSpec("mixture", "prepared", start=start),
+            step_size=1.3, l_grid=(2, 3), posterior_cap=128,
+            options={"global_quantities": ["left_mode_probability"],
+                "posterior_members": "selected", "member_rule": "first_verified",
+                "acceptance_policy": {"practical_region": (.41, .99), "repair_region": (.405, .995)},
+                "search": {"pilot_enabled": False, "refinement_rounds": 0,
+                           "total_budget_units": 24, "repair_reserve_units": 4, "evidence_rungs": (1,)}})
+        result = execute_pipeline(d, tmp_path)
+        assert result["verified_candidate_ids"]
+        member = next(m for m in result["members"] if m["status"] == "assessed")
+        posterior = member["posterior"]
+        checks = posterior["warmup_checks"] + posterior["retained_checks"]
+        assessments = [c[c["diagnostic_role"]] for c in checks if c.get("diagnostic_role") == "assessment"]
+>       assert assessments
+E       assert []
+
+tests/inference_validation/test_global_pipeline_wiring.py:24: AssertionError
+___ test_public_posterior_actually_evaluates_mode_indicator[mode_dispersed] ____
+
+design = <function design.<locals>.make at 0x7b05e6b845e0>
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-690/test_public_posterior_actually1')
+start = 'mode_dispersed'
+
+    @pytest.mark.parametrize("start", ["single_mode", "mode_dispersed"])
+    def test_public_posterior_actually_evaluates_mode_indicator(design, tmp_path, start):
+        d = design("stopping", "mixture", "prepared", replications=1, draws=64,
+            scenario=ScenarioSpec("mixture", "prepared", start=start),
+            step_size=1.3, l_grid=(2, 3), posterior_cap=128,
+            options={"global_quantities": ["left_mode_probability"],
+                "posterior_members": "selected", "member_rule": "first_verified",
+                "acceptance_policy": {"practical_region": (.41, .99), "repair_region": (.405, .995)},
+                "search": {"pilot_enabled": False, "refinement_rounds": 0,
+                           "total_budget_units": 24, "repair_reserve_units": 4, "evidence_rungs": (1,)}})
+        result = execute_pipeline(d, tmp_path)
+        assert result["verified_candidate_ids"]
+        member = next(m for m in result["members"] if m["status"] == "assessed")
+        posterior = member["posterior"]
+        checks = posterior["warmup_checks"] + posterior["retained_checks"]
+        assessments = [c[c["diagnostic_role"]] for c in checks if c.get("diagnostic_role") == "assessment"]
+>       assert assessments
+E       assert []
+
+tests/inference_validation/test_global_pipeline_wiring.py:24: AssertionError
+=============================== warnings summary ===============================
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/inference_validation/test_posterior_policy_wiring.py: 19 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 134 warnings
+tests/test_neutra_training_graph_contract.py: 65 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Constant.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 7 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 20 warnings
+tests/test_neutra_training_graph_contract.py: 8 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Compare.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 85 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 996 warnings
+tests/test_neutra_training_graph_contract.py: 714 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Attribute.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 1 warning
+tests/inference_validation/test_training_pipeline_composition.py: 34 warnings
+tests/test_neutra_training_graph_contract.py: 35 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: BinOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 53 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 600 warnings
+tests/test_neutra_training_graph_contract.py: 431 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Call.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 15 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 19 warnings
+tests/test_neutra_training_graph_contract.py: 9 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: keyword.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 18 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 92 warnings
+tests/test_neutra_training_graph_contract.py: 36 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FunctionDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 31 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 195 warnings
+tests/test_neutra_training_graph_contract.py: 57 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Load.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 7 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 79 warnings
+tests/test_neutra_training_graph_contract.py: 38 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Tuple.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 5 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 39 warnings
+tests/test_neutra_training_graph_contract.py: 25 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Expr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 1 warning
+tests/inference_validation/test_training_pipeline_composition.py: 7 warnings
+tests/test_neutra_training_graph_contract.py: 2 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Eq.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Is.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: IsNot.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Dict.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 2 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 16 warnings
+tests/test_neutra_training_graph_contract.py: 14 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Try.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 3 warnings
+tests/inference_validation/test_training_pipeline_composition.py: 24 warnings
+tests/test_neutra_training_graph_contract.py: 11 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Subscript.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: List.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: alias.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Import.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py: 6 warnings
+tests/test_neutra_training_graph_contract.py: 6 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: GeneratorExp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Starred.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Lambda.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py: 25 warnings
+tests/test_neutra_training_graph_contract.py: 7 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Store.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py: 13 warnings
+tests/test_neutra_training_graph_contract.py: 13 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: UnaryOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: With.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Raise.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: comprehension.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FormattedValue.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: JoinedStr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: In.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_external_and_chunked_programs_have_explicit_signatures
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: ListComp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: USub.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_cache_eviction_preserves_updates_and_signatures_are_static
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Slice.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: NotEq.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_training_pipeline_composition.py::test_batch_training_frozen_reload_public_retuning[banana]
+tests/test_neutra_training_graph_contract.py::test_static_targets_and_single_row_validation_remain_supported
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Assert.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_neutra_training_graph_contract.py::test_cache_eviction_preserves_updates_and_signatures_are_static
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: AugAssign.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/inference_validation/test_global_pipeline_wiring.py::test_public_posterior_actually_evaluates_mode_indicator[single_mode]
+FAILED tests/inference_validation/test_global_pipeline_wiring.py::test_public_posterior_actually_evaluates_mode_indicator[mode_dispersed]
+2 failed, 120 passed, 4091 warnings in 761.59s (0:12:41)

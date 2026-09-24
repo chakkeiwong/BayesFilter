@@ -25,7 +25,7 @@ from typing import Any
 
 import tensorflow as tf
 
-from . import neutra_artifacts, neutra_scale_aware_kernels, neutra_training
+from . import neutra_artifacts, neutra_scale_aware_kernels, neutra_training, neutra_transport_core
 
 
 @dataclass(frozen=True)
@@ -214,7 +214,7 @@ class ScaleAwareNeuTraTrainer:
             'release_seeds': self.release_seeds, 'tensorflow': tf.__version__,
             'sources': {Path(p).name: hashlib.sha256(Path(p).read_bytes()).hexdigest()
                         for p in (__file__, neutra_training.__file__, neutra_artifacts.__file__,
-                                  neutra_scale_aware_kernels.__file__)}})
+                                  neutra_scale_aware_kernels.__file__, neutra_transport_core.__file__)}})
         shape = tf.TensorSpec([None, self.dimension], tf.float64)
         self._kernels = neutra_scale_aware_kernels.ScaleAwareNumericalKernels(self)
         self._map_graph = self._kernels.map

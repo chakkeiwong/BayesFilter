@@ -17,6 +17,8 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.inference import neutra_transport_core as _transport_core
+
 from bayesfilter.inference.neutra_weighted_training import (
     WeightedDenseIAFTransport,
     WeightedNeuTraConfig,
@@ -300,24 +302,18 @@ class AffineDiagonalTransport:
 
     def forward_and_logdet(self, latent: Any) -> tuple[tf.Tensor, tf.Tensor]:
         values = _static_rank2(latent, self.parameter_dim, "latent")
-        return values * self.scale + self.center, tf.fill(
-            [tf.shape(values)[0]], tf.reduce_sum(tf.math.log(self.scale))
-        )
+        return _transport_core.affine_forward(values, self.center, self.scale)
 
     def forward_batch(self, latent: Any) -> tf.Tensor:
         return self.forward_and_logdet(latent)[0]
 
     def forward(self, latent: Any) -> tf.Tensor:
         values = tf.convert_to_tensor(latent, tf.float64)
-        if values.shape.rank == 1:
-            return values * self.scale + self.center
-        return self.forward_batch(values)
+        return _transport_core.affine_forward(values, self.center, self.scale)[0]
 
     def inverse_and_forward_logdet(self, physical: Any) -> tuple[tf.Tensor, tf.Tensor]:
         values = _static_rank2(physical, self.parameter_dim, "physical")
-        return (values - self.center) / self.scale, tf.fill(
-            [tf.shape(values)[0]], tf.reduce_sum(tf.math.log(self.scale))
-        )
+        return _transport_core.affine_inverse(values, self.center, self.scale)
 
     def inverse_theta_to_z_batch(self, physical: Any) -> tf.Tensor:
         return self.inverse_and_forward_logdet(physical)[0]
@@ -432,9 +428,8 @@ class ReferenceAffineTransport:
     def forward_and_logdet(self, latent: Any) -> tuple[tf.Tensor, tf.Tensor]:
         values = _static_rank2(latent, self.parameter_dim, "latent")
         inner_values, inner_logdet = self.inner.forward_and_logdet(values)
-        physical = self.center + self.scale * inner_values
-        outer_logdet = tf.reduce_sum(tf.math.log(self.scale))
-        return physical, inner_logdet + outer_logdet
+        physical, outer_logdet = _transport_core.affine_forward(inner_values, self.center, self.scale)
+        return physical, inner_logdet+outer_logdet
 
     def forward_batch(self, latent: Any) -> tf.Tensor:
         return self.forward_and_logdet(latent)[0]
@@ -449,10 +444,9 @@ class ReferenceAffineTransport:
         self, physical: Any
     ) -> tuple[tf.Tensor, tf.Tensor]:
         values = _static_rank2(physical, self.parameter_dim, "physical")
-        normalized = (values - self.center) / self.scale
+        normalized, outer_logdet = _transport_core.affine_inverse(values, self.center, self.scale)
         latent, inner_logdet = self.inner.inverse_and_forward_logdet(normalized)
-        outer_logdet = tf.reduce_sum(tf.math.log(self.scale))
-        return latent, inner_logdet + outer_logdet
+        return latent, inner_logdet+outer_logdet
 
     def inverse_theta_to_z_batch(self, physical: Any) -> tf.Tensor:
         return self.inverse_and_forward_logdet(physical)[0]
@@ -1372,7 +1366,14 @@ def transport_preflight_state_hash(transport: Any) -> str:
 
 
 def _trainable_transport_structure(transport: Any) -> Mapping[str, Any]:
+    from bayesfilter.inference.neutra_transport import NeuTraTransport
+    if isinstance(transport, NeuTraTransport):
+        return {"kind": "configured_neutra", "inner_config": transport.config.payload()}
     if isinstance(transport, ReferenceAffineTransport):
+        if isinstance(transport.inner, NeuTraTransport):
+            return {"kind": "reference_affine_configured_neutra", "component_id": transport.component_id,
+                    "center": transport.center.numpy().tolist(), "scale": transport.scale.numpy().tolist(),
+                    "inner_config": transport.inner.config.payload()}
         if not isinstance(transport.inner, WeightedDenseIAFTransport):
             raise TemperedEnsembleError(
                 "checkpoint supports only a weighted dense IAF inside the "
@@ -1423,10 +1424,17 @@ def _restore_trainable_transport_structure(payload: Mapping[str, Any]) -> Any:
     config_payload = values.get("inner_config")
     if not isinstance(config_payload, Mapping):
         raise TemperedEnsembleError("checkpoint is missing the transport config")
+    kind = values.get("kind")
+    if kind in ("configured_neutra", "reference_affine_configured_neutra"):
+        from bayesfilter.inference.neutra_transport import NeuTraTransport, NeuTraTransportConfig
+        inner = NeuTraTransport(NeuTraTransportConfig(**config_payload))
+        if kind == "configured_neutra":
+            return inner
+        return ReferenceAffineTransport(inner, center=values.get("center"), scale=values.get("scale"),
+                                        component_id=str(values.get("component_id", "")))
     inner = WeightedDenseIAFTransport(
         _weighted_config_from_manifest(config_payload)
     )
-    kind = values.get("kind")
     if kind == "weighted_dense_iaf":
         return inner
     if kind == "reference_affine_weighted_dense_iaf":

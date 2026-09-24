@@ -1,0 +1,55 @@
+{
+  "design_id": "m32-reuse-dirichlet",
+  "engine": "accuracy",
+  "scenario": {
+    "target": "dirichlet",
+    "route": "prepared",
+    "control": "baseline",
+    "start": "dispersed",
+    "parameters": {}
+  },
+  "replications": 1,
+  "draws": 64,
+  "seed": 2026092311,
+  "budget_seconds": 800,
+  "purpose": "full candidate lifecycle and posterior parity",
+  "numerical_provenance": "M32 inherited tiny mechanics counts/broad screen; not calibration",
+  "device": "gpu",
+  "alpha": 0.05,
+  "null_draws": 1999,
+  "rank_draws": 7,
+  "step_size": 0.8,
+  "leapfrog_steps": 5,
+  "member_l": 3,
+  "l_grid": [
+    2,
+    3
+  ],
+  "measurement_draws": 64,
+  "posterior_cap": 128,
+  "mcse_tolerance": 0.1,
+  "accuracy_tolerance": 0.25,
+  "multiplicity": 1,
+  "phase": "development",
+  "options": {
+    "acceptance_policy": {
+      "practical_region": [
+        0.41,
+        0.99
+      ],
+      "repair_region": [
+        0.405,
+        0.995
+      ]
+    },
+    "search": {
+      "pilot_enabled": false,
+      "refinement_rounds": 0,
+      "total_budget_units": 24,
+      "repair_reserve_units": 4,
+      "evidence_rungs": [
+        1
+      ]
+    }
+  }
+}

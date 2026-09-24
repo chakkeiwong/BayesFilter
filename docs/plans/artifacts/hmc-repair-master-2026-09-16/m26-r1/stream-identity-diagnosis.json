@@ -1,0 +1,56 @@
+{
+  "first_completed_probe_differences": {
+    "/geometry_artifact_hash": {
+      "persistent": "e080a1a5d4f0bde0eb69caa7aa008288d16424fb8b302031974cde85ecd30f40",
+      "isolated": "66e641f86f7ea36ab1c6c2b64658d621410d715c716abbd585c25c0096722f23"
+    },
+    "/rounds/0/wall_seconds": {
+      "persistent": 0.13458576297853142,
+      "isolated": 0.13788020401261747
+    }
+  },
+  "mechanism": "probe wall_seconds -> geometry.artifact_hash -> target_preparation_identity -> candidate record hash / scope -> work_seed",
+  "verdict": "reproducibility defect; full runs are diagnostic, not isolation parity evidence",
+  "attempts": [
+    {
+      "attempt": "gaussian-persistent-r1",
+      "execution": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/run_hmc_fit_lifetime_2026_09_22.py",
+          "--design",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/gaussian-lifetime-design.json",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/gaussian-persistent-r1/fits",
+          "--mode",
+          "persistent"
+        ],
+        "exit_code": 0,
+        "cpu_worker_seconds": 445.7020847470267,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/gaussian-persistent-r1/manifest.json"
+      },
+      "resource_diagnosis": "four complete fits preserved; timing-dependent scope prevents numerical parity"
+    },
+    {
+      "attempt": "gaussian-isolated-r1",
+      "execution": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/run_hmc_fit_lifetime_2026_09_22.py",
+          "--design",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/gaussian-lifetime-design.json",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/gaussian-isolated-r1/fits",
+          "--mode",
+          "isolated"
+        ],
+        "exit_code": 0,
+        "cpu_worker_seconds": 437.6992867140798,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m26-r1/gaussian-isolated-r1/manifest.json"
+      },
+      "resource_diagnosis": "four complete fits preserved; timing-dependent scope prevents numerical parity"
+    }
+  ]
+}

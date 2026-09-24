@@ -98,6 +98,76 @@ def test_design_rejects_threshold_override_and_undeclared_fixed_counts(design):
         design("stopping",route="prepared",options={"fixed_comparator":{"retained_results":100}})
 
 
+@pytest.mark.parametrize('budget', [None, {'max_results_per_chain': 12000},
+    {'max_results_per_chain': True, 'count_budget_reason': 'test'},
+    {'max_results_per_chain': 12000, 'count_budget_reason': ' '},
+    {'max_results_per_chain': 12000, 'count_budget_reason': 'test', 'retained_rhat_max': 2.}])
+def test_design_rejects_invalid_posterior_count_budget(design, budget):
+    with pytest.raises(ValueError, match='posterior_count_budget'):
+        design(options={'posterior_count_budget': budget})
+
+
+def test_design_count_budget_bounds_all_requested_counts(design):
+    budget = {'max_results_per_chain': 12000, 'count_budget_reason': 'declared mechanics allocation'}
+    with pytest.raises(ValueError, match='posterior_cap'):
+        design(posterior_cap=12000)
+    with pytest.raises(ValueError, match='posterior counts'):
+        design(options={'posterior_count_budget': budget,
+                        'posterior_settings': {'retained_max_results': 12001}})
+    with pytest.raises(ValueError, match='fixed comparator'):
+        design('stopping', route='prepared', options={'posterior_count_budget': budget,
+            'fixed_comparator': {'warmup_results': 400, 'retained_results': 12001}})
+    ordinary = design('stopping', route='prepared')
+    extended = replace(ordinary, options={'posterior_count_budget': budget}, posterior_cap=12000)
+    assert ordinary.identity != extended.identity
+
+
+@pytest.mark.parametrize('method', [None, '', 'unknown', ['lugsail']])
+def test_design_rejects_invalid_posterior_precision_method(design, method):
+    with pytest.raises(ValueError, match='posterior_precision_method'):
+        design(options={'posterior_precision_method': method})
+
+
+def test_real_public_pipeline_uses_explicit_count_budget(design, tmp_path):
+    d = design('stopping', 'gaussian', 'prepared', replications=1, posterior_cap=12000,
+        step_size=1.3, l_grid=(3,), budget_seconds=180,
+        options={'posterior_members': 'selected', 'member_rule': 'first_verified',
+            'posterior_precision_method': 'autocorrelation',
+            'posterior_count_budget': {'max_results_per_chain': 12000,
+                'count_budget_reason': 'complete public-route long-count integration'},
+            'acceptance_policy': {'practical_region': (.41,.99), 'repair_region': (.405,.995)},
+            'search': {'pilot_enabled': False, 'refinement_rounds': 0,
+                'total_budget_units': 24, 'repair_reserve_units': 4, 'evidence_rungs': (1,)},
+            'posterior_settings': {'warmup_chunk_results': 6000, 'warmup_min_results': 12000,
+                'warmup_check_window_results': 6000, 'warmup_max_results': 12000,
+                'retained_chunk_results': 6000, 'retained_min_results': 12000, 'retained_max_results': 12000},
+            'fixed_comparator': {'warmup_results': 6000, 'retained_results': 12000}})
+    from bayesfilter.testing.inference_validation.engines.pipeline import run as run_validation_pipeline
+    assessed = run_validation_pipeline(d, tmp_path)
+    fit_root = tmp_path / 'replication-0000'
+    result = read_json(fit_root / 'pipeline.json')
+    assert result['verified_candidate_ids']
+    member = next(m for m in result['members'] if m['status'] == 'assessed')
+    posterior = member['posterior']
+    assert posterior['config']['max_results_per_chain'] == 12000
+    assert posterior['config']['assessment_policy']['precision']['method'] == 'autocorrelation'
+    assert posterior['warmup_results_per_chain'] == posterior['retained_results_per_chain'] == 12000
+    assert posterior['warmup_excluded_from_posterior'] and not posterior['hard_vetoes']
+    assert read_tensor(member['fixed_comparator']['draws_path']).shape == (12000,4,2)
+    assert member['fixed_comparator']['warmup_excluded_from_estimates']
+    pair = assessed['replications'][0]['members'][0]['stopping_pair']
+    assert pair['stopped']['x:mean']['method'] == pair['fixed']['x:mean']['method'] == 'autocorrelation'
+    last = posterior['retained_checks'][-1]
+    target = next(t for t in last[last['diagnostic_role']]['precision']['targets']
+                  if t['name'] == 'x' and t['kind'] == 'mean')
+    assert pair['stopped']['x:mean']['mcse'] == pytest.approx(target['mcse'], rel=1e-12)
+    from bayesfilter.testing.inference_validation.storage import file_hash
+    hashes = {k:file_hash(member[k]) for k in ('draws_path','warmup_path')}
+    resumed = execute_pipeline(d, fit_root)
+    again = next(m for m in resumed['members'] if m['status'] == 'assessed')
+    assert hashes == {k:file_hash(again[k]) for k in hashes}
+
+
 def test_native_ordinary_search_passes_no_epsilon_override(design,tmp_path,monkeypatch):
     import bayesfilter.inference as public
     def intercept(**kwargs):
@@ -122,7 +192,26 @@ def test_subset_completeness_does_not_claim_all_members(design):
         "members":[assessed,other],"tuning_completion":"complete"}])
     assert result["assessment_complete"]
     assert result["unassessed_by_design_members"]==1
+    assert result["requested_members"] == result["posterior_output_members"] == 1
+    assert result["posterior_unavailable_members"] == 0
+    assert result["all_members_without_posterior_output"] == 1
     assert not result["all_verified_members_assessed"]
+
+
+def test_missing_requested_posterior_is_not_an_unassessed_sibling(design):
+    requested = {"candidate_id": "a", "L": 3, "status": "unfunded"}
+    sibling = {"candidate_id": "b", "L": 5, "status": "unassessed_by_design"}
+    result = summarize_replications(design("accuracy", route="prepared", replications=1,
+        options={"posterior_members": "selected"}), [{"inventory": {"failures": []},
+        "members": [requested, sibling], "tuning_completion": "complete"}])
+    assert result["verified_members"] == 2
+    assert result["requested_members"] == result["posterior_unavailable_members"] == 1
+    assert result["unassessed_by_design_members"] == 1
+    assert result["all_members_without_posterior_output"] == 2
+    assert result["posterior_output_members"] == 0
+    assert not result["assessment_complete"]
+    assert all(row["planned"] == row["unavailable"] == 1
+               for row in result["interval_coverage_at_stop"].values())
 
 
 def test_missed_mode_reference_and_missing_comparator_denominator():

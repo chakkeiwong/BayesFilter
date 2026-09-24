@@ -1,0 +1,587 @@
+{
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "docs/benchmarks/profile_hmc_full_fit_2026_09_22.py",
+    "--output",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m25-r1/profile-noop-r1/worker",
+    "--control",
+    "noop",
+    "--seconds",
+    "400"
+  ],
+  "control": "noop",
+  "elapsed_seconds": 226.232692288002,
+  "gpu_intentionally_hidden": true,
+  "inventory": {
+    "candidate_count": 100,
+    "failures": [],
+    "finding": "inventory_passed",
+    "numerical_correctness_established": false,
+    "verified_count": 14
+  },
+  "jit_compile": false,
+  "posterior": [
+    {
+      "candidate_id": "inference_validation:baf21aefb642c6b26603:candidate:000053",
+      "status": "assessed",
+      "timing": {
+        "compilation_separated": false,
+        "construction_seconds": 12.342061608913355,
+        "controller_seconds": 8.306962604052387
+      },
+      "warmup_exclusion_matches": true
+    }
+  ],
+  "power_established": false,
+  "profiling_overhead_included": true,
+  "ranking_supported": false,
+  "timing": {
+    "compilation_separated": false,
+    "invocation_seconds": 223.16179870895576,
+    "preparation_seconds": 7.734239000012167,
+    "tuning_or_reload_seconds": 200.80494649498723
+  },
+  "top_cumulative_calls": [
+    {
+      "cumulative_seconds": 87.708296319,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/execute.py",
+      "function": "quick_execute",
+      "line": 28,
+      "own_seconds": 0.033218001000000004,
+      "primitive_calls": 19104,
+      "total_calls": 19104
+    },
+    {
+      "cumulative_seconds": 87.655413818,
+      "file": "~",
+      "function": "<built-in method tensorflow.python._pywrap_tfe.TFE_Py_Execute>",
+      "line": 0,
+      "own_seconds": 87.655413818,
+      "primitive_calls": 19104,
+      "total_calls": 19104
+    },
+    {
+      "cumulative_seconds": 87.39993747800001,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/atomic_function.py",
+      "function": "call_preflattened",
+      "line": 214,
+      "own_seconds": 0.008121828000000001,
+      "primitive_calls": 2734,
+      "total_calls": 2734
+    },
+    {
+      "cumulative_seconds": 87.14187716,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/context.py",
+      "function": "call_function",
+      "line": 1680,
+      "own_seconds": 0.019142099000000003,
+      "primitive_calls": 2734,
+      "total_calls": 2734
+    },
+    {
+      "cumulative_seconds": 54.335972048,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_tuning.py",
+      "function": "_save_checkpoint",
+      "line": 1626,
+      "own_seconds": 0.014028716,
+      "primitive_calls": 628,
+      "total_calls": 628
+    },
+    {
+      "cumulative_seconds": 54.131222547,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_adapters.py",
+      "function": "checkpoint",
+      "line": 245,
+      "own_seconds": 0.028403652,
+      "primitive_calls": 628,
+      "total_calls": 628
+    },
+    {
+      "cumulative_seconds": 54.102818895000006,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_checkpoint.py",
+      "function": "write_numerical_tuning_checkpoint",
+      "line": 64,
+      "own_seconds": 0.168525098,
+      "primitive_calls": 628,
+      "total_calls": 628
+    },
+    {
+      "cumulative_seconds": 29.038828106,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/json/__init__.py",
+      "function": "dumps",
+      "line": 185,
+      "own_seconds": 0.17291441200000002,
+      "primitive_calls": 80993,
+      "total_calls": 80993
+    },
+    {
+      "cumulative_seconds": 28.833417169,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/json/encoder.py",
+      "function": "encode",
+      "line": 185,
+      "own_seconds": 0.150850173,
+      "primitive_calls": 80993,
+      "total_calls": 80993
+    },
+    {
+      "cumulative_seconds": 28.618511347000002,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/json/encoder.py",
+      "function": "iterencode",
+      "line": 207,
+      "own_seconds": 28.618253850000002,
+      "primitive_calls": 75456,
+      "total_calls": 75456
+    },
+    {
+      "cumulative_seconds": 21.467913595000002,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_tuning.py",
+      "function": "_sha256",
+      "line": 81,
+      "own_seconds": 0.141112234,
+      "primitive_calls": 16570,
+      "total_calls": 16570
+    },
+    {
+      "cumulative_seconds": 16.052307091,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_checkpoint.py",
+      "function": "_json_native_sha256",
+      "line": 23,
+      "own_seconds": 0.113545216,
+      "primitive_calls": 46709,
+      "total_calls": 46709
+    },
+    {
+      "cumulative_seconds": 16.002617686,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_tuning.py",
+      "function": "_stable_payload",
+      "line": 58,
+      "own_seconds": 12.272342403000001,
+      "primitive_calls": 16570,
+      "total_calls": 16258287
+    },
+    {
+      "cumulative_seconds": 13.743880261000001,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_runtime.py",
+      "function": "before_numerical_chunk",
+      "line": 34,
+      "own_seconds": 0.001116673,
+      "primitive_calls": 171,
+      "total_calls": 171
+    },
+    {
+      "cumulative_seconds": 13.74261148,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_tuning.py",
+      "function": "charge_numerical_chunk",
+      "line": 1638,
+      "own_seconds": 0.002536945,
+      "primitive_calls": 171,
+      "total_calls": 171
+    },
+    {
+      "cumulative_seconds": 10.151677053,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/constant_tensor_conversion.py",
+      "function": "_constant_tensor_conversion_function",
+      "line": 23,
+      "own_seconds": 0.29642055100000003,
+      "primitive_calls": 174073,
+      "total_calls": 174073
+    },
+    {
+      "cumulative_seconds": 8.240451931,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/ops.py",
+      "function": "_create_graph_constant",
+      "line": 277,
+      "own_seconds": 0.064160649,
+      "primitive_calls": 25745,
+      "total_calls": 25745
+    },
+    {
+      "cumulative_seconds": 7.151546062,
+      "file": "~",
+      "function": "<built-in method builtins.isinstance>",
+      "line": 0,
+      "own_seconds": 3.4585961920000003,
+      "primitive_calls": 15059313,
+      "total_calls": 15164914
+    },
+    {
+      "cumulative_seconds": 6.8051314960000004,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_checkpoint.py",
+      "function": "_persist_once",
+      "line": 36,
+      "own_seconds": 0.158198278,
+      "primitive_calls": 46710,
+      "total_calls": 46710
+    },
+    {
+      "cumulative_seconds": 6.301789236,
+      "file": "~",
+      "function": "<built-in method tensorflow.python._pywrap_tfe.TFE_Py_FastPathExecute>",
+      "line": 0,
+      "own_seconds": 6.301744339000001,
+      "primitive_calls": 172434,
+      "total_calls": 172434
+    },
+    {
+      "cumulative_seconds": 6.208053278,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_artifacts.py",
+      "function": "candidate_set_result_payload",
+      "line": 399,
+      "own_seconds": 0.003677824,
+      "primitive_calls": 659,
+      "total_calls": 659
+    },
+    {
+      "cumulative_seconds": 6.17731091,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_checkpoint.py",
+      "function": "_write",
+      "line": 48,
+      "own_seconds": 0.067676079,
+      "primitive_calls": 943,
+      "total_calls": 943
+    },
+    {
+      "cumulative_seconds": 5.572502902,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_artifacts.py",
+      "function": "_canonical",
+      "line": 27,
+      "own_seconds": 0.0016632880000000002,
+      "primitive_calls": 691,
+      "total_calls": 691
+    },
+    {
+      "cumulative_seconds": 4.922077402,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py",
+      "function": "resolve",
+      "line": 664,
+      "own_seconds": 0.058937252,
+      "primitive_calls": 46762,
+      "total_calls": 46762
+    },
+    {
+      "cumulative_seconds": 4.610573241,
+      "file": "<frozen posixpath>",
+      "function": "realpath",
+      "line": 388,
+      "own_seconds": 0.766065442,
+      "primitive_calls": 46762,
+      "total_calls": 46762
+    },
+    {
+      "cumulative_seconds": 4.523090983,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/util/tf_stack.py",
+      "function": "extract_stack",
+      "line": 150,
+      "own_seconds": 0.6173603910000001,
+      "primitive_calls": 78226,
+      "total_calls": 78226
+    },
+    {
+      "cumulative_seconds": 3.880032669,
+      "file": "~",
+      "function": "<built-in method tensorflow.python.util._tf_stack.extract_stack>",
+      "line": 0,
+      "own_seconds": 3.880032669,
+      "primitive_calls": 78226,
+      "total_calls": 78226
+    },
+    {
+      "cumulative_seconds": 3.3395237310000003,
+      "file": "~",
+      "function": "<built-in method _hashlib.openssl_sha256>",
+      "line": 0,
+      "own_seconds": 3.3395237310000003,
+      "primitive_calls": 85513,
+      "total_calls": 85513
+    },
+    {
+      "cumulative_seconds": 3.280104838,
+      "file": "~",
+      "function": "<built-in method builtins.next>",
+      "line": 0,
+      "own_seconds": 0.391122929,
+      "primitive_calls": 600933,
+      "total_calls": 838947
+    },
+    {
+      "cumulative_seconds": 3.2164433910000003,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/constant_op.py",
+      "function": "_constant_eager_impl",
+      "line": 297,
+      "own_seconds": 0.10436587300000001,
+      "primitive_calls": 184343,
+      "total_calls": 184343
+    },
+    {
+      "cumulative_seconds": 3.112077518,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/constant_op.py",
+      "function": "convert_to_eager_tensor",
+      "line": 75,
+      "own_seconds": 2.771352362,
+      "primitive_calls": 184343,
+      "total_calls": 184343
+    },
+    {
+      "cumulative_seconds": 2.6113956760000003,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/util/nest_util.py",
+      "function": "_tf_core_pack_sequence_as",
+      "line": 866,
+      "own_seconds": 0.046119591,
+      "primitive_calls": 20951,
+      "total_calls": 20951
+    },
+    {
+      "cumulative_seconds": 2.537595826,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/contextlib.py",
+      "function": "__enter__",
+      "line": 136,
+      "own_seconds": 0.17403194100000002,
+      "primitive_calls": 251950,
+      "total_calls": 370957
+    },
+    {
+      "cumulative_seconds": 2.33256475,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py",
+      "function": "__str__",
+      "line": 227,
+      "own_seconds": 0.315754943,
+      "primitive_calls": 200879,
+      "total_calls": 200879
+    },
+    {
+      "cumulative_seconds": 2.249962874,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/util/nest_util.py",
+      "function": "_tf_core_packed_nest_with_indices",
+      "line": 545,
+      "own_seconds": 0.30562774400000003,
+      "primitive_calls": 18483,
+      "total_calls": 110103
+    },
+    {
+      "cumulative_seconds": 2.2292725200000003,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/ops.py",
+      "function": "get_attr",
+      "line": 1592,
+      "own_seconds": 0.39724180800000003,
+      "primitive_calls": 97484,
+      "total_calls": 97484
+    },
+    {
+      "cumulative_seconds": 2.13860644,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/tensor_util.py",
+      "function": "make_tensor_proto",
+      "line": 521,
+      "own_seconds": 0.491842887,
+      "primitive_calls": 25745,
+      "total_calls": 25745
+    },
+    {
+      "cumulative_seconds": 2.133594495,
+      "file": "<frozen abc>",
+      "function": "__instancecheck__",
+      "line": 117,
+      "own_seconds": 0.950067842,
+      "primitive_calls": 4286397,
+      "total_calls": 4286515
+    },
+    {
+      "cumulative_seconds": 2.100879864,
+      "file": "~",
+      "function": "<built-in method posix.lstat>",
+      "line": 0,
+      "own_seconds": 2.100879864,
+      "primitive_calls": 513556,
+      "total_calls": 513556
+    },
+    {
+      "cumulative_seconds": 1.833686959,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py",
+      "function": "drive",
+      "line": 289,
+      "own_seconds": 0.192958407,
+      "primitive_calls": 104788,
+      "total_calls": 104788
+    },
+    {
+      "cumulative_seconds": 1.6946471,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/typing.py",
+      "function": "__instancecheck__",
+      "line": 2119,
+      "own_seconds": 0.33174572900000004,
+      "primitive_calls": 213229,
+      "total_calls": 213229
+    },
+    {
+      "cumulative_seconds": 1.6632125960000002,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/func_graph.py",
+      "function": "_func_graph_as_default_inner_cm",
+      "line": 864,
+      "own_seconds": 0.27896090900000003,
+      "primitive_calls": 73302,
+      "total_calls": 73302
+    },
+    {
+      "cumulative_seconds": 1.637053464,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/autograph/impl/api.py",
+      "function": "_convert_actual",
+      "line": 260,
+      "own_seconds": 0.0006888150000000001,
+      "primitive_calls": 264,
+      "total_calls": 264
+    },
+    {
+      "cumulative_seconds": 1.636170085,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/autograph/pyct/transpiler.py",
+      "function": "transform",
+      "line": 266,
+      "own_seconds": 0.0015380320000000002,
+      "primitive_calls": 264,
+      "total_calls": 264
+    },
+    {
+      "cumulative_seconds": 1.6344442570000002,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/autograph/pyct/transpiler.py",
+      "function": "transform_function",
+      "line": 432,
+      "own_seconds": 0.0019542550000000002,
+      "primitive_calls": 264,
+      "total_calls": 264
+    },
+    {
+      "cumulative_seconds": 1.6251348040000002,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/util/nest_util.py",
+      "function": "sequence_like",
+      "line": 174,
+      "own_seconds": 0.309035021,
+      "primitive_calls": 110103,
+      "total_calls": 110103
+    },
+    {
+      "cumulative_seconds": 1.6105945640000001,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_tuning.py",
+      "function": "replay_candidate",
+      "line": 705,
+      "own_seconds": 0.001531108,
+      "primitive_calls": 28,
+      "total_calls": 28
+    },
+    {
+      "cumulative_seconds": 1.565468826,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/ops.py",
+      "function": "_create_op_helper",
+      "line": 2773,
+      "own_seconds": 0.520062669,
+      "primitive_calls": 78226,
+      "total_calls": 78226
+    },
+    {
+      "cumulative_seconds": 1.533799547,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py",
+      "function": "__fspath__",
+      "line": 166,
+      "own_seconds": 0.087859356,
+      "primitive_calls": 154034,
+      "total_calls": 154034
+    },
+    {
+      "cumulative_seconds": 1.481397435,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/tensor_conversion.py",
+      "function": "convert_to_tensor_v2",
+      "line": 166,
+      "own_seconds": 0.042033066,
+      "primitive_calls": 52615,
+      "total_calls": 52615
+    },
+    {
+      "cumulative_seconds": 1.464947604,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/util/nest.py",
+      "function": "pack_sequence_as",
+      "line": 423,
+      "own_seconds": 0.009018168,
+      "primitive_calls": 13218,
+      "total_calls": 13218
+    },
+    {
+      "cumulative_seconds": 1.4559294360000001,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/util/nest_util.py",
+      "function": "pack_sequence_as",
+      "line": 729,
+      "own_seconds": 0.010308630000000001,
+      "primitive_calls": 13218,
+      "total_calls": 13218
+    },
+    {
+      "cumulative_seconds": 1.421496082,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/dtypes.py",
+      "function": "as_dtype",
+      "line": 863,
+      "own_seconds": 0.7285405300000001,
+      "primitive_calls": 954616,
+      "total_calls": 954616
+    },
+    {
+      "cumulative_seconds": 1.413796721,
+      "file": "~",
+      "function": "<built-in method posix.fspath>",
+      "line": 0,
+      "own_seconds": 0.09760703300000001,
+      "primitive_calls": 203637,
+      "total_calls": 483272
+    },
+    {
+      "cumulative_seconds": 1.4075224270000002,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/ast.py",
+      "function": "visit",
+      "line": 418,
+      "own_seconds": 0.325931572,
+      "primitive_calls": 339,
+      "total_calls": 91982
+    },
+    {
+      "cumulative_seconds": 1.3389735170000001,
+      "file": "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_artifacts.py",
+      "function": "require_verified_member",
+      "line": 453,
+      "own_seconds": 0.001400229,
+      "primitive_calls": 32,
+      "total_calls": 32
+    },
+    {
+      "cumulative_seconds": 1.3325712550000002,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/util/tf_stack.py",
+      "function": "__enter__",
+      "line": 45,
+      "own_seconds": 0.008658389,
+      "primitive_calls": 7,
+      "total_calls": 527
+    },
+    {
+      "cumulative_seconds": 1.265648764,
+      "file": "~",
+      "function": "<built-in method tensorflow.python.client._pywrap_tf_session.TF_FinishOperation>",
+      "line": 0,
+      "own_seconds": 1.265648764,
+      "primitive_calls": 78226,
+      "total_calls": 78226
+    },
+    {
+      "cumulative_seconds": 1.183559169,
+      "file": "~",
+      "function": "<built-in method _abc._abc_instancecheck>",
+      "line": 0,
+      "own_seconds": 1.067307669,
+      "primitive_calls": 4286397,
+      "total_calls": 4286515
+    },
+    {
+      "cumulative_seconds": 1.1753382860000001,
+      "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/inspect.py",
+      "function": "getattr_static",
+      "line": 1827,
+      "own_seconds": 0.287636858,
+      "primitive_calls": 143920,
+      "total_calls": 143920
+    }
+  ],
+  "unassessed_siblings": 13
+}

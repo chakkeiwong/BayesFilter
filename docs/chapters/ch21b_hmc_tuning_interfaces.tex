@@ -104,6 +104,13 @@ bootstrap uses its \path{warmup_startup_only} role: high acceptance does not
 trigger upward refinement before adaptation, and the starting step is not
 declared a stability ceiling.
 
+Probe wall times remain in the geometry's full artifact hash for audit, but are
+excluded from the separate numerical geometry hash used by new candidate scopes.
+Otherwise, two identical preparations could receive different candidate seeds
+merely because a probe took longer. Numerical probe outcomes, seed provenance,
+mass and starts remain bound to the numerical identity. Existing checkpoints
+retain their saved scopes and streams.
+
 The probe follows the declared target-status policy. With \path{none}, it checks
 finite retained and proposed states, values and scores without manufacturing
 status data. With \path{per_chain_step}, complete valid telemetry is also
@@ -419,6 +426,25 @@ the map. A partial map $x_i=e^{s(v)}z_i$ instead leaves conditional standard
 deviation $e^{v/2-s(v)}$ in the latent coordinates; it tests tuning with known
 residual curvature.
 
+Bounding $s(v)$ alone does not bound the residual stiffness: if $s$ remains
+bounded as $v\to-\infty$, the latent conditional precision
+$e^{2s(v)-v}$ diverges. A useful diagnostic partial-whitening family instead
+sets $s(v)=v/2+\delta(v)$ with $\delta(v)=a\tanh(v/(2\sigma))$.
+For $S=z_1^2+z_2^2$, its log determinant is
+$\log\sigma+v+2\delta(v)$, and substitution in the normalized funnel
+density yields
+\[
+ U(z)=\tfrac12 z_0^2+\tfrac12 e^{2\delta(\sigma z_0)}S
+       -2\delta(\sigma z_0)+\tfrac32\log(2\pi).
+\]
+The child-coordinate curvature lies in $[e^{-2a},e^{2a}]$ for $a\geq0$;
+the zero-amplitude limit recovers the exact control. The entire Hessian is
+still unbounded because derivatives with respect to $z_0$ contain $S$.
+The validation fixture uses $\sigma=3$ and $a=1/2$ as an explicit development
+hypothesis, not a learned-map or sampling default. Even the exact latent
+Gaussian control can require many draws for precise means of the model's
+heavy-tailed children.
+
 The untransformed centered funnel remains a stress test for bounded search and
 honest numerical rejection. An empty candidate set there does not by itself
 establish a tuning defect. For a supplied map, tuning searches the declared
@@ -571,13 +597,25 @@ binding rejects redundant search, execution, provenance or transport overrides.
 Automatic routes may accept the shared search and execution configs. For the
 proposal-field route, legacy \path{step_adaptation_results} supplies the
 fixed-pair pilot count, while \path{verification_results} supplies measurement
-and verification counts. An explicit \path{HMCCandidateExecutionConfig} replaces
-these allocations, with an optional \path{pilot_num_results}. Pilots never
+and verification counts. The shared execution configuration can replace
+these allocations and supply an explicit \path{pilot_num_results}. Pilots never
 qualify a pair. The legacy adaptive selector remains historical. Config
 payloads label their legacy candidate-policy fields as historical helper
 metadata; the active result's shared configs determine candidate stages.
 Proposal-field execution defaults to XLA; a diagnostic exception supplies
 \path{non_xla_reason}.
+
+Exact-score TFP bindings optionally share a compiled runner across leapfrog
+counts at each chunk size with
+\path{execution_config.reuse_leapfrog_graphs=True}; the default is false.
+Each cache belongs to one frozen target and geometry with fixed chain topology,
+trace policy and backend. Independent scalar chains keep their original seed
+folding. The complete execution artifact records this option and restart
+preserves it. Within the same source snapshot it does not change numerical
+seeds; a source change still changes scope identity and can change seeds.
+The proposal-field route rejects the option. Reuse can reduce first-call
+compilation while increasing warmed execution cost, so assess its cost on
+complete fits. Candidate qualification and posterior diagnostics are unchanged.
 
 Retained-member exports share one checksummed evidence bundle beside their
 compact member files. Copy the bundle when moving the members, or use
@@ -671,6 +709,28 @@ power of the complete HMC procedure. The full denominators, uncertainty and
 source versions are recorded in the M15 and M16 result notes under
 \path{docs/plans/}.
 
+An analytic posterior permits an additional direct check of fitted outputs.
+For a zero-mean normal prior with variance $\tau^2$ and independent observations with
+known variance $\sigma^2$, the conditional posterior has variance
+$s_y^2=(\tau^{-2}+n\sigma^{-2})^{-1}$ and mean
+$\mu_y=s_y^2\sum_i y_i/\sigma^2$. If a predetermined output $X_j$ from each
+independent complete fit has that conditional posterior law, then
+$Z_j=(X_j-\mu_y)/s_y$ are independent standard normals. Consequently,
+$\sum_j Z_j/\sqrt{J}$ is standard normal and $\sum_j Z_j^2$ has a
+$\chi^2_J$ distribution. Two two-sided tests, each at half the declared size,
+check location and second moment. The union bound controls their combined
+size under this correct-output null. The second check can expose errors that
+leave the mean unchanged.
+
+The diagnostic fixes the member, chain and terminal-draw rule before seeing
+posterior outcomes. Missing, capped or unqualified fits make its planned
+experiment incomplete; they are never counted as successful defect detections.
+Shared-stream controls cannot count as independent fits. The normal laws above
+describe the hypothesis under test. Adaptive stopping does not prove that a
+finite HMC endpoint follows them, and these tests do not establish coverage of
+intervals for stopped posterior means. Arithmetic adversaries and activated
+whole-fit defects answer different questions and are reported separately.
+
 An invariant kernel can remain motionless or revisit only a few states.
 Identity and two-cycle controls therefore accompany the distributional tests.
 Similarly, an MCSE estimator can perform adequately on fixed-length stationary
@@ -741,6 +801,24 @@ ranks among successful fits look uniform. Parallel dataset groups are combined
 only when declared together with identical settings and frozen source; pilot and
 repaired experiments remain separate.
 
+A complementary diagnostic uses all retained draws from one qualified fit to
+test its posterior mean. With $\theta\sim N(0,\tau^2)$ and conditionally
+independent observations $y_i\mid\theta\sim N(\theta,\sigma^2)$, completing
+the square in the prior times likelihood gives the independent reference
+\[
+ s_*^2=(\tau^{-2}+n\sigma^{-2})^{-1},\qquad
+ m_*=s_*^2\sigma^{-2}\sum_{i=1}^n y_i.
+\]
+The validation engine \path{reference_mean} compares
+$|\widehat m-m_*|/\widehat{\mathrm{MCSE}}$ with the declared normal critical
+value. It recomputes lugsail MCSE independently from the archived model draws;
+the reference never enters tuning. The normal approximation defines the alarm,
+but its achieved false-alarm and detection rates require independent complete
+fits with fresh data. A capped, missing or unqualified fit is a possible alarm
+in the conservative null rate and a nondetection in the defect rate. This
+answers a location-error question distinct from endpoint invariance and SBC;
+arithmetic and execution tests alone do not establish its power.
+
 Matched consumer comparisons use the same public ordinary tuner and posterior
 controller. The explicit noncentered eight-schools and Bayesian regression
 adapters reproduce the pinned posteriordb Stan laws, observations and coordinate
@@ -772,6 +850,38 @@ export/reload and posterior assessment. The profile includes failed attempts;
 a framework call may include both compilation and execution time. Such a pilot
 identifies costs to investigate before funding more replications. It does not
 establish statistical calibration or rank the viable kernels by efficiency.
+Use the validation CLI's \path{run} command with \path{--profile-execution} for paired
+comparisons: it preserves the numerical design and random streams. With
+isolated fits, the profiler runs in the numerical child after framework
+imports, with setup time recorded separately. It records Python call boundaries
+without native builtins tracing, avoiding an observed Python 3.13/TensorFlow
+interaction that loses outer calls. This is host cost attribution, not device
+kernel timing. The run index records profile availability. A completed fit is
+never repeated to replace a missing profile, and profiling failures do not
+replace numerical outcomes.
+
+Repeated validation fits can use a fresh process for each complete fit, with
+an explicit per-fit timeout inside the total experiment budget. This bounds
+the lifetime of process-local framework caches. Each child preserves its full
+candidate set, posterior chunks and independent assessment before normal exit;
+the coordinator records process failures separately from saved numerical
+results. Missing or abnormally terminated fits remain in the replication
+denominator. Numerical search, accuracy, stopping and reference-mean designs enable this
+optional mode with \path{options.isolate_fits} and
+\path{options.fit_process_timeout_seconds}. The setting does not change the
+HMC transition, tuning criteria or posterior thresholds.
+
+A bounded sibling study can instead predeclare several members using
+\path{member_rule="shortest_verified_l"},
+\path{posterior_members="selected"} and an explicit
+\path{posterior_member_count}. The rule orders distinct verified leapfrog
+counts increasingly and takes the first candidate identifier within each.
+It records the list before posterior sampling and preserves any shortage.
+Each ordinal member is assessed separately across complete fits; siblings do
+not increase the number of independent replications. A failed member does not
+suppress the next member or remove a tuning candidate. This is a bounded cost
+hypothesis, not an established mixing ranking, and posterior outcomes cannot
+choose a winner from the same assessment draws.
 
 The executable suite definitions are documented in
 \path{docs/validation/README.md}. The following table is generated from their

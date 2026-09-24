@@ -1,0 +1,321 @@
+................F........................FF.........                     [100%]
+=================================== FAILURES ===================================
+_______ test_quantile_precision_matches_independent_reference[0.95-ties] _______
+
+kind = 'ties', probability = 0.95
+
+    @pytest.mark.parametrize('kind', ['iid','persistent','antithetic','beta','ties','constant'])
+    @pytest.mark.parametrize('probability', [.05,.5,.95])
+    def test_quantile_precision_matches_independent_reference(kind, probability):
+        rng = np.random.default_rng(92419)
+        values = rng.normal(size=(257,4,2))
+        if kind in ('persistent','antithetic'):
+            rho = .93 if kind=='persistent' else -.85
+            values = lfilter([1.], [1.,-rho], rng.normal(size=(1281,4,2)),axis=0)[1024:]
+        elif kind=='beta':
+            values = rng.beta(.3,4.,size=values.shape)
+        elif kind=='ties':
+            values = np.repeat(values[::8],8,axis=0)[:257]
+        elif kind=='constant':
+            values[:] = .1
+        point, ess, se = reference(values, probability)
+        actual = quantile_precision(tf.constant(values),probability)
+        np.testing.assert_allclose(actual['estimate'],point,rtol=2e-13,atol=2e-15)
+>       np.testing.assert_allclose(actual['indicator_ess'],ess,rtol=2e-11,atol=2e-11,equal_nan=True)
+
+tests/test_hmc_quantile_precision_reference.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (<function assert_allclose.<locals>.compare at 0x7b52a5b99580>, array([108.41112325,  75.6345085 ]), array([108.41112325,  84.4541704 ]))
+kwds = {'equal_nan': True, 'err_msg': '', 'header': 'Not equal to tolerance rtol=2e-11, atol=2e-11', 'strict': False, ...}
+
+    @wraps(func)
+    def inner(*args, **kwds):
+        with self._recreate_cm():
+>           return func(*args, **kwds)
+                   ^^^^^^^^^^^^^^^^^^^
+E           AssertionError: 
+E           Not equal to tolerance rtol=2e-11, atol=2e-11
+E           
+E           Mismatched elements: 1 / 2 (50%)
+E           Max absolute difference among violations: 8.8196619
+E           Max relative difference among violations: 0.10443134
+E            ACTUAL: array([108.411123,  75.634508])
+E            DESIRED: array([108.411123,  84.45417 ])
+
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/contextlib.py:85: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:math_ops.py:1014 You are casting an input of type complex128 to an incompatible dtype float64.  This will discard the imaginary part and may not be what you intended.
+_____________ test_both_q20_consumers_call_shared_repair[pricing] ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-700/test_both_q20_consumers_call_s0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b529dd7df50>
+consumer = 'pricing'
+
+    @pytest.mark.parametrize("consumer", ["pricing", "classical_tuning"])
+    def test_both_q20_consumers_call_shared_repair(tmp_path, monkeypatch, consumer):
+        from bayesfilter.inference import hmc_kernel_tuning, q20_production_hmc, q20_master_stages
+        from tests.test_q20_production_repair import tiny_protocol, four_dimensional_bridge
+        class ReachedPreparation(Exception):
+            pass
+        def prepare(**kwargs):
+            assert kwargs["initialize_bootstrap"] is True
+            from bayesfilter.inference.hmc_bootstrap_checkpoint import CheckpointedBootstrapRunner
+            assert isinstance(kwargs["bootstrap_execution"], CheckpointedBootstrapRunner)
+            assert callable(kwargs["progress_callback"])
+            assert kwargs["initial_position"].shape == (4,)
+            raise ReachedPreparation
+        monkeypatch.setattr(hmc_kernel_tuning, "prepare_operational_windowed_mass_handoff", prepare)
+        with pytest.raises(ReachedPreparation):
+            if consumer == "pricing":
+>               q20_master_stages.price_preparation(tiny_protocol(), four_dimensional_bridge(),
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    tmp_path / "pricing", beta=1., max_seconds=30.)
+E               AttributeError: module 'bayesfilter.inference.q20_master_stages' has no attribute 'price_preparation'
+
+tests/test_hmc_bootstrap_initialization.py:183: AttributeError
+_________ test_both_q20_consumers_call_shared_repair[classical_tuning] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-700/test_both_q20_consumers_call_s1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b528c184150>
+consumer = 'classical_tuning'
+
+    @pytest.mark.parametrize("consumer", ["pricing", "classical_tuning"])
+    def test_both_q20_consumers_call_shared_repair(tmp_path, monkeypatch, consumer):
+        from bayesfilter.inference import hmc_kernel_tuning, q20_production_hmc, q20_master_stages
+        from tests.test_q20_production_repair import tiny_protocol, four_dimensional_bridge
+        class ReachedPreparation(Exception):
+            pass
+        def prepare(**kwargs):
+            assert kwargs["initialize_bootstrap"] is True
+            from bayesfilter.inference.hmc_bootstrap_checkpoint import CheckpointedBootstrapRunner
+            assert isinstance(kwargs["bootstrap_execution"], CheckpointedBootstrapRunner)
+            assert callable(kwargs["progress_callback"])
+            assert kwargs["initial_position"].shape == (4,)
+            raise ReachedPreparation
+        monkeypatch.setattr(hmc_kernel_tuning, "prepare_operational_windowed_mass_handoff", prepare)
+        with pytest.raises(ReachedPreparation):
+            if consumer == "pricing":
+                q20_master_stages.price_preparation(tiny_protocol(), four_dimensional_bridge(),
+                    tmp_path / "pricing", beta=1., max_seconds=30.)
+            else:
+>               q20_production_hmc.tune_scope(tiny_protocol(), four_dimensional_bridge(),
+                    tmp_path / "tune", method="classical", initial_position=tf.zeros([4, 4], tf.float64))
+
+tests/test_hmc_bootstrap_initialization.py:186: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:146: in tune_scope
+    sources = source_snapshot()
+              ^^^^^^^^^^^^^^^^^
+bayesfilter/inference/q20_production_training.py:28: in source_snapshot
+    return snapshot(Path(__file__).resolve().parents[2])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/q20_campaign_runtime.py:36: in source_snapshot
+    return {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+                                                     ^^^^^^^^^^^^^^
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:625: in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/a-r1/source-r1/docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/a-r1/source-r1/docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py'
+
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+=============================== warnings summary ===============================
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:64
+  /home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
+
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+  /home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+  /home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../reference-env/lib/python3.13/site-packages/matplotlib/_mathtext.py:45
+  /home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/reference-env/lib/python3.13/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/test_hmc_bootstrap_checkpoint.py: 60 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Constant.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py: 14 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Compare.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py: 354 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Attribute.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: BinOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py: 231 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Call.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py: 21 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: keyword.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py: 54 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FunctionDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py: 110 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Load.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py: 24 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Tuple.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py: 12 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Expr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Eq.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Is.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: IsNot.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Dict.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py: 15 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Try.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Subscript.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: List.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: alias.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Import.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Raise.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: NotIn.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Store.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: comprehension.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: GeneratorExp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: DictComp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: NotEq.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: ClassDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_bootstrap_checkpoint.py::test_resume_matches_uninterrupted_chunk_stream[False]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: UnaryOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_hmc_quantile_precision_reference.py::test_quantile_precision_matches_independent_reference[0.95-ties]
+FAILED tests/test_hmc_bootstrap_initialization.py::test_both_q20_consumers_call_shared_repair[pricing]
+FAILED tests/test_hmc_bootstrap_initialization.py::test_both_q20_consumers_call_shared_repair[classical_tuning]
+3 failed, 49 passed, 961 warnings in 21.12s

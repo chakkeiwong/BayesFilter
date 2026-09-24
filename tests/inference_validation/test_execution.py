@@ -121,7 +121,7 @@ def test_profile_write_failure_preserves_the_original_engine_failure(design, tmp
     from bayesfilter.testing.inference_validation.engines import mechanics
     from bayesfilter.testing.inference_validation.storage import write_json
     class UnwritableProfile:
-        def enable(self): pass
+        def enable(self, **kwargs): pass
         def disable(self): pass
         def dump_stats(self, path): raise OSError("profile volume full")
     monkeypatch.setattr(cProfile, "Profile", UnwritableProfile)

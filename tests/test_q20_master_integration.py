@@ -14,7 +14,6 @@ def protocol():
     config = tiny_protocol()
     config["tuning"].update(target_acceptance=.5, practical_region=[.01, .99],
                             repair_region=[.001, .999], initial_epsilon=.3)
-    config["comparison"]["confirmation_replicates"] = 1
     return config
 
 
@@ -51,8 +50,13 @@ def test_actual_tuning_member_and_posterior(tmp_path, method):
         count = runtime["native"]["sample_chain_invocation_count"]
         assert runtime["call_class"] == ("first_compile_plus_execute" if count == 1 else "repeated_execute")
     if method == "identity":
+        from bayesfilter.inference.q20_stage_budget import StageBudgetPause
+        with pytest.raises(StageBudgetPause):
+            sample_member(config, bridge, tmp_path / "posterior-budget-pause", member_path=member,
+                          label=method, max_seconds=0.)
+        assert (tmp_path / "posterior-budget-pause/chunks/identity.json").exists()
         replay = sample_member(config, bridge, tmp_path / "posterior-replay", member_path=member,
-                               label=method, resume_chunks=str(tmp_path / "posterior/chunks"))
+                               label=method, resume_chunks=str(tmp_path / "posterior/chunks"), max_seconds=0.)
         tf.debugging.assert_equal(result["private_retained_raw"], replay["private_retained_raw"])
         replay_checks = (*replay["warmup_checks"], *replay["retained_checks"])
         assert replay_checks
@@ -99,6 +103,14 @@ def test_actual_chart_mixture_and_physical_replica_dispatch(tmp_path):
         assert classical["verified_members"],classical
         physical_members[str(beta)]=[next(iter(classical["verified_members"].values()))]
     for stage,members in (("ensemble",chart_members),("replica_exchange",physical_members)):
+        if stage == "ensemble":
+            price = dispatch(config, bridge, tmp_path/"price-selected", {"stage": "price-selected",
+                "method": "ensemble", "members_by_beta": members, "label": stage,
+                "start_label": "posterior-matched"}, memory)
+            assert price["members_by_beta"] == members
+            assert len(price["kernels"]) == sum(len(v) for v in members.values())
+            assert price["first_seconds"] > 0 and price["steady_seconds"] > 0
+            assert price["role"] == "timing_only_excluded_from_posterior"
         result=dispatch(config,bridge,tmp_path/stage,{"stage":stage,"members_by_beta":members,
             "label":stage,"start_label":"posterior-matched"},memory)
         assert result["summary"]["reference_agreement"]=="incomplete"
@@ -118,9 +130,35 @@ def test_actual_pricing_dispatch_and_finite_complete_forecast(tmp_path):
     config["training"]["pricing_batches"]=[8]
     config["reference"].update(banks=4,rungs=[64,128],batch_size=32,ess_min=1.,minimum_tail_rows=1)
     priced=dispatch(config,bridge,tmp_path/"price",{"stage":"price"},{"mode":"tiny_cpu_reference"})
+    assert priced["method"] == "neutra"
+    assert {row["beta"] for row in priced["hmc"]} == {1.}
+    assert all(row["kind"].startswith("chart-") for row in priced["hmc"])
+    assert not priced["missing_cost_categories"]
+    assert not list((tmp_path/"price").glob("preparation-*"))
     prices = [json.loads(path.read_text()) for path in (tmp_path/"price").glob("hmc-*.json")]
     assert prices and all(row["runner"] == "public_batched_chain_with_proposal_telemetry" for row in prices)
     priced["worker_initialization_seconds"]=1. # Harness startup fixture; numerical prices are measured.
     quote=forecast_campaign(config,priced)
-    assert quote["minimum_complete_seconds"]>0
+    assert quote["training_floor_seconds"]>0
+    assert "minimum_complete_seconds" not in quote
     assert all(x>0 for x in quote["reserves"].values())
+    assert "confirmation_reverification" not in quote["reserves"]
+    assert quote["scope_count"] == 1
+
+
+def test_ensemble_pricing_uses_actual_chart_mixture_without_classical_work(tmp_path, monkeypatch):
+    from bayesfilter.inference import q20_master_stages
+    from bayesfilter.inference.q20_master_program import forecast_campaign
+    config, bridge = protocol(), four_dimensional_bridge()
+    config["reference"].update(banks=4,rungs=[64,128],batch_size=32,ess_min=1.,minimum_tail_rows=1)
+    def forbidden(*args, **kwargs):
+        raise AssertionError("classical preparation entered NeuTra pricing")
+    monkeypatch.setattr(q20_master_stages, "price_preparation", forbidden)
+    priced = q20_master_stages.dispatch(config, bridge, tmp_path/"price",
+        {"stage": "price", "method": "ensemble"}, {"mode": "tiny_cpu_reference"})
+    assert priced["exchange_price_role"] == "actual_multi_chart_mixture"
+    assert priced["exchange_charts_per_temperature"] == 2
+    assert {row["root"] for row in priced["map_prices"]} == {0, 1}
+    assert not priced["missing_cost_categories"]
+    priced["worker_initialization_seconds"] = 1.
+    assert forecast_campaign(config, priced)["scope_count"] == 4

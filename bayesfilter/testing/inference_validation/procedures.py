@@ -158,6 +158,11 @@ def fixed_transport_starts(transport, adapter_starts):
 def selected_member_ids(design, candidates):
     """Predeclared choice based on tuning records alone, never posterior output."""
     rows = [(c.candidate_id, c.leapfrog_steps) for c in candidates]
+    if design.options.get("member_rule") == "shortest_verified_l":
+        by_length = {}
+        for cid, steps in sorted(rows):
+            by_length.setdefault(steps, cid)
+        return tuple(by_length[steps] for steps in sorted(by_length)[:design.options["posterior_member_count"]])
     if design.options.get("member_rule", "declared_l_first") == "declared_l_first":
         rows = [(cid, steps) for cid, steps in rows if steps == design.member_l]
     return tuple(cid for cid, _ in sorted(rows)[:1])
@@ -210,7 +215,30 @@ def run_fixed_comparator(member, target, settings, directory, seed_parts, deadli
     return result
 
 
-def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, deadline=None):
+def check_fit_identity(design, destination, *, data=None, fit_id=0, dataset_id=0,
+                       reuse_leapfrog_graphs=False):
+    """Bind resume before either completed summaries or numerical checkpoints."""
+    from .designs import digest
+    from .execution import source_state
+    from .storage import read_json, write_json
+    root = Path(destination)
+    root.mkdir(parents=True, exist_ok=True)
+    fit_identity = {"design": design.identity, "data": digest(data),
+                    "source_identity": source_state()["identity"],
+                    "fit_id": fit_id, "dataset_id": dataset_id,
+                    "reuse_leapfrog_graphs": reuse_leapfrog_graphs}
+    identity_path = root / "fit_identity.json"
+    if identity_path.exists():
+        if read_json(identity_path) != fit_identity:
+            raise ValueError("pipeline checkpoint identity changed; use a fresh fit directory")
+    elif (root / "tuning").exists() or (root / "members").exists():
+        raise ValueError("legacy pipeline checkpoint lacks fit identity; use a fresh fit directory")
+    else:
+        write_json(identity_path, fit_identity)
+
+
+def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, deadline=None,
+                     reuse_leapfrog_graphs=False):
     """Complete public tuning plus actual replay/posterior controller for all members.
 
     Native checkpoints allow a repeated call at the same path to finish existing
@@ -233,6 +261,10 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     started = time.monotonic()
     root = Path(destination)
     root.mkdir(parents=True, exist_ok=True)
+    # Completed member summaries bypass tensor checkpoint construction. Bind
+    # the whole fit before either that fast path or interrupted tuning replay.
+    check_fit_identity(design, root, data=data, fit_id=fit_id, dataset_id=dataset_id,
+                       reuse_leapfrog_graphs=reuse_leapfrog_graphs)
     scenario = design.scenario
     target = ValidationTarget(scenario.target, scenario.parameters, data,
         control=scenario.control if scenario.control in {"ignore_data","wrong_score","omit_jacobian","location_shift"} else "baseline",
@@ -243,7 +275,7 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     execution = HMCCandidateExecutionConfig(measurement_num_results=design.measurement_draws,
         verification_num_results=design.measurement_draws, num_warmup_steps=8,
         seed=seed, use_xla=design.device=="gpu", target_status_trace_policy="none",
-        acceptance_policy=acceptance_policy,
+        acceptance_policy=acceptance_policy, reuse_leapfrog_graphs=reuse_leapfrog_graphs,
         non_xla_reason="explicit CPU diagnostic validation profile" if design.device!="gpu" else None)
     search_options = dict(design.options.get("search", {}))
     forbidden = {"primary_l_grid", "initial_epsilon", "max_wall_time_seconds"} & search_options.keys()
@@ -261,6 +293,8 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     run = None
     if (tuning_path/"candidate_set_result.json").exists():
         binding, controller = load_numerical_tuning_checkpoint(tuning_path/"tuning_checkpoint.json",adapter=target)
+        if binding.config.reuse_leapfrog_graphs != reuse_leapfrog_graphs:
+            raise ValueError("resume requires the original runner reuse policy")
         result = controller.result()
         from .designs import digest
         from bayesfilter.inference.hmc_candidate_set_artifacts import candidate_set_result_payload, load_candidate_set_result_payload
@@ -273,6 +307,9 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         if digest({k:final[k] for k in fields}) != digest({k:restored[k] for k in fields}):
             raise ValueError("completed tuning artifact and checkpoint disagree")
     elif (tuning_path/"tuning_checkpoint.json").exists():
+        binding, _ = load_numerical_tuning_checkpoint(tuning_path/"tuning_checkpoint.json",adapter=target)
+        if binding.config.reuse_leapfrog_graphs != reuse_leapfrog_graphs:
+            raise ValueError("resume requires the original runner reuse policy")
         run = resume_hmc_candidate_set_tuning(tuning_path/"tuning_checkpoint.json", adapter=target)
     elif scenario.route == "ordinary":
         cfg = HMCKernelTuningConfig(preset=design.options.get("preparation_preset","standard"),
@@ -333,13 +370,25 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     observed_tuning_path=write_json(root/"tuning_observation.json",candidate_set_result_payload(result))
     tuning_seconds = time.monotonic() - tuning_started
     selected = selected_member_ids(design, (result.replay_candidate(cid) for cid in result.verified_candidate_ids))
-    write_json(root/"posterior_selection.json", {
+    selection_note = {
         "rule": design.options.get("member_rule", "declared_l_first"),
         "assessment_scope": design.options.get("posterior_members", "all"),
-        "selected_candidate_ids": selected, "verified_candidate_ids": result.verified_candidate_ids,
-        "selection_uses": "tuning identity and predeclared L only; no posterior or truth"})
+        "selected_candidate_ids": list(selected), "verified_candidate_ids": list(result.verified_candidate_ids),
+        "selection_uses": "tuning identity and predeclared L only; no posterior or truth"}
+    sibling_rule = design.options.get("member_rule") == "shortest_verified_l"
+    if sibling_rule:
+        selection_note.update(requested_member_count=design.options["posterior_member_count"],
+            selection_shortfall=design.options["posterior_member_count"]-len(selected),
+            slot_definition="increasing distinct verified L; smallest candidate ID within L")
+        if (root/"posterior_selection.json").exists() and read_json(root/"posterior_selection.json") != selection_note:
+            raise ValueError("predeclared sibling selection changed on resume")
+    write_json(root/"posterior_selection.json", selection_note)
     members=[]
-    for index, candidate_id in enumerate(result.verified_candidate_ids):
+    indices = {cid: index for index, cid in enumerate(result.verified_candidate_ids)}
+    candidate_order = (selected + tuple(cid for cid in result.verified_candidate_ids if cid not in selected)
+                       if sibling_rule else result.verified_candidate_ids)
+    for candidate_id in candidate_order:
+        index = indices[candidate_id]
         candidate = result.replay_candidate(candidate_id)
         if design.options.get("posterior_members", "all") == "selected" and candidate_id not in selected:
             members.append({"candidate_id":candidate_id,"L":candidate.leapfrog_steps,
@@ -372,8 +421,10 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         quantities_id, quantities_fn = posterior_quantities(design)
         precision_targets.extend(HMCPrecisionTarget(name, kind="mean", mcse_absolute_max=design.mcse_tolerance)
                                  for name in design.options.get("global_quantities", []))
+        from .posterior_policy import mean_precision_options
         policy=HMCPosteriorAssessmentPolicy(precision=HMCPrecisionPolicy(tuple(precision_targets),
-            method="lugsail",jit_compile=design.device=="gpu"), quantities_id=quantities_id)
+            **mean_precision_options(design)), quantities_id=quantities_id,
+            **design.options.get("posterior_assessment_settings", {}))
         counts = dict(warmup_chunk_results=count,warmup_min_results=count,warmup_check_window_results=count,
             warmup_max_results=design.posterior_cap,retained_chunk_results=count,retained_min_results=count,
             retained_max_results=design.posterior_cap)
@@ -381,7 +432,7 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         config=SequentialNeuTraHMCConfig(step_size=member.step_size,num_leapfrog_steps=member.num_leapfrog_steps,
             jit_compile=design.device=="gpu", warmup_seed=seed_for(design.seed,design.design_id,dataset_id,fit_id,index,"warmup"),
             retained_seed=seed_for(design.seed,design.design_id,dataset_id,fit_id,index,"retained"),
-            **counts,assessment_policy=policy)
+            **counts,**design.options.get("posterior_count_budget", {}),assessment_policy=policy)
         posterior_started = time.monotonic()
         with DurableTensorCheckpoint(directory/"posterior_chunks",{
             "member":member.member_hash,"policy":policy.payload(),"quantities":quantities_id or "model_coordinates.v1",
@@ -427,5 +478,8 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
                   "preparation_seconds":binding.config.preparation_elapsed_seconds,
                   "invocation_seconds":time.monotonic()-started,
                   "compilation_separated":False}}
+    if sibling_rule:
+        payload["selection"].update({key: selection_note[key] for key in
+            ("requested_member_count", "selection_shortfall", "slot_definition")})
     write_json(root/"pipeline.json",payload)
     return payload

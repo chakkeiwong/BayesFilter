@@ -63,6 +63,22 @@ be monitored with a named \path{quantities_fn} and a stable
 inconclusive equilibration and does not start retained inference. Warm-up draws
 remain archived and are always excluded from posterior estimates.
 
+A short recent window can itself contain too little effective information for
+the readiness screen, even after initialization bias has decayed. Increasing
+the warm-up cap while keeping that window fixed does not increase the
+information available at each check. A target-specific study should therefore
+declare both its recent-window length and its total allowance, using pilot
+dependence estimates to plan them and fresh replications to assess delivery.
+Changing these settings defines a new posterior policy and checkpoint; it
+does not revoke or retune the verified kernel.
+
+The shared configuration also permits an explicitly justified finite budget
+exception: \path{max_results_per_chain} sets the bound and
+\path{count_budget_reason} records why a bound above $10000$ is needed.
+Warm-up and retained maxima must lie within it. The serialized posterior
+policy labels the nondefault allocation; the canonical $10000$ default and
+all health, R-hat and precision requirements are unchanged.
+
 For a scalar functional $g(\theta)$, let $X_{it}=g(\theta_{it})$ be draw $t$
 of independent chain $i$, with $m$ chains of length $n$. Under stationarity and
 an applicable central limit theorem, define the chain's long-run variance by
@@ -126,14 +142,41 @@ more batches therefore cannot certify adequate bandwidth. Dependence,
 longer-chain evidence and sensitivity to justified batch lengths must be
 examined when the required accuracy is consequential.
 
+The same calculation gives the exact variance of the pooled mean of $m$
+independent stationary chains as $V(n)/(mn^2)$. For fixed $|\rho|<1$ and long
+chains this is approximately
+\begin{equation}
+ \operatorname{Var}(\bar X) \simeq
+ \frac{1}{mn}\frac{1+\rho}{1-\rho}.
+\end{equation}
+At $\rho=0.995$, four unit-variance chains therefore need about $39900$
+retained draws each to attain mean MCSE $0.05$ in this planning approximation.
+A cap of $10000$ is inadequate for that typical precision requirement even
+when the transition and uncertainty calculation are correct. The actual
+stopping rule also depends on noisy diagnostic estimates and requires its own
+calibration; this count is neither a burn-in estimate nor a universal lower
+bound for HMC.
+
 The autocorrelation option retains the identified TFP 0.25 positive-pairs ESS
 calculation. Rank-normalized bulk ESS is useful for exploration diagnostics,
 but original-scale mean uncertainty needs the ESS of the actual functional.
 For a quantile, BayesFilter follows the indicator-ESS and order-statistic
-construction in \citet[section 4.4]{vehtari2021rank}. A constant rare-event
-indicator or a tied zero-width quantile interval supplies no reliable accuracy
-evidence. Finite diagnostics do not establish the moments or mixing assumptions
-needed by any of these estimators.
+construction in \citet[section 4.4]{vehtari2021rank}, with the explicitly named
+TFP positive-pairs indicator ESS. The pooled percentile preserves equal
+interpolation endpoints exactly: otherwise rounding a cutoff below a repeated
+value can change every indicator at that value and hence its estimated ESS.
+The corrected quantile method has a versioned identifier in both the report
+and precision policy, so a checkpoint from the earlier arithmetic cannot be
+silently reused. A constant rare-event indicator or a tied zero-width quantile
+interval supplies no reliable accuracy evidence.
+
+The reported quantile MCSE approximates a standard error using central
+order statistics. Multiplying it by $1.96$ gives a symmetric diagnostic
+interval; this is not the same finite-sample calculation as propagating the
+$.025$ and $.975$ probabilities directly to empirical order statistics.
+Independent formula agreement checks the arithmetic, not the coverage of
+either interval under actual HMC stopping. Finite diagnostics do not establish
+the moments or mixing assumptions needed by any of these estimators.
 
 Each \path{HMCPrecisionTarget} specifies a mean or a quantile and an absolute
 MCSE tolerance, an MCSE-to-posterior-SD tolerance, or both. Accuracy is assessed
@@ -146,6 +189,13 @@ coverage. The asymptotic fixed-width results in
 \citet[sections 2--3.1 and Appendix A]{flegalgongfixedwidth} require additional
 regularity and estimator-consistency conditions. Lugsail estimates uncertainty
 in retained means; it does not estimate how many burn-in draws are enough.
+Experiments that compare stopping policies must declare the batch size,
+minimum batch count and lugsail coefficients together with the recent-window
+length, effective-sample-size requirements and persistence of readiness checks.
+The fixed-count comparison uses the same declared estimator. A change to any
+of these choices requires a fresh fit identity, including when a previous fit
+has already saved its final summary. Otherwise a cached result could silently
+be attributed to a policy that never produced it.
 
 Absolute accuracy requirements must be interpreted in the units of the
 functional. For independent normal observations with standard deviation $s$

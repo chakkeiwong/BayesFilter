@@ -42,6 +42,29 @@ MAX_RESULTS_PER_CHAIN = 10_000
 DEFAULT_ENERGY_ERROR_LOG_ACCEPT_THRESHOLD = -1000.0
 
 
+def _validate_sequential_count_budget(config):
+    limit = config.max_results_per_chain
+    if type(limit) is not int or limit <= 0:
+        raise ValueError("max_results_per_chain must be a positive integer")
+    reason = config.count_budget_reason
+    if reason is not None and (not isinstance(reason, str) or not reason.strip()):
+        raise ValueError("count_budget_reason must be a nonempty string")
+    if limit > MAX_RESULTS_PER_CHAIN and reason is None:
+        raise ValueError("a nondefault count budget above 10000 requires count_budget_reason")
+    for name in ("warmup_max_results", "retained_max_results"):
+        if getattr(config, name) > limit:
+            raise ValueError(f"{name} must not exceed {limit} per chain")
+
+
+def _sequential_count_budget_payload(config):
+    # Preserve historical default payloads and checkpoint identities.
+    if config.max_results_per_chain == MAX_RESULTS_PER_CHAIN and config.count_budget_reason is None:
+        return {}
+    return {"max_results_per_chain": config.max_results_per_chain,
+            "count_budget_reason": config.count_budget_reason,
+            "count_budget_policy": "explicit_nondefault_posterior_allocation"}
+
+
 def _sequential_rhat(samples, *, rhat_max):
     if int(samples.shape[0]) < 4:
         return {"passed": False, "rhat_threshold": rhat_max, "status": "insufficient_draws"}
@@ -207,6 +230,8 @@ class _SharedSequentialNeuTraHMCConfig:
     energy_error_log_accept_threshold: float = (
         DEFAULT_ENERGY_ERROR_LOG_ACCEPT_THRESHOLD
     )
+    max_results_per_chain: int = MAX_RESULTS_PER_CHAIN
+    count_budget_reason: str | None = None
 
     def __post_init__(self) -> None:
         if getattr(self, "assessment_policy", None) is not None and not isinstance(self.assessment_policy, HMCPosteriorAssessmentPolicy):
@@ -250,10 +275,7 @@ class _SharedSequentialNeuTraHMCConfig:
             raise ValueError("retained_min_results must not exceed retained_max_results")
         if self.retained_chunk_results > self.retained_max_results:
             raise ValueError("retained_chunk_results must not exceed retained_max_results")
-        if self.warmup_max_results > MAX_RESULTS_PER_CHAIN:
-            raise ValueError("warmup_max_results must not exceed 10000 per chain")
-        if self.retained_max_results > MAX_RESULTS_PER_CHAIN:
-            raise ValueError("retained_max_results must not exceed 10000 per chain")
+        _validate_sequential_count_budget(self)
         for name in ("warmup_rhat_max", "retained_rhat_max"):
             value = float(getattr(self, name))
             if not math.isfinite(value) or value <= 1.0:
@@ -296,6 +318,7 @@ class _SharedSequentialNeuTraHMCConfig:
             "energy_error_log_accept_threshold": (
                 self.energy_error_log_accept_threshold
             ),
+            **_sequential_count_budget_payload(self),
         }
 
 
@@ -321,6 +344,8 @@ class SequentialExactTransitionConfig:
     retained_rhat_max: float = 1.01
     minimum_chain_count: int = 4
     assessment_policy: HMCPosteriorAssessmentPolicy | None = None
+    max_results_per_chain: int = MAX_RESULTS_PER_CHAIN
+    count_budget_reason: str | None = None
 
     def __post_init__(self) -> None:
         if self.assessment_policy is not None and not isinstance(self.assessment_policy, HMCPosteriorAssessmentPolicy):
@@ -364,10 +389,7 @@ class SequentialExactTransitionConfig:
             raise ValueError("retained_min_results must not exceed retained_max_results")
         if self.retained_chunk_results > self.retained_max_results:
             raise ValueError("retained_chunk_results must not exceed retained_max_results")
-        if self.warmup_max_results > MAX_RESULTS_PER_CHAIN:
-            raise ValueError("warmup_max_results must not exceed 10000 per chain")
-        if self.retained_max_results > MAX_RESULTS_PER_CHAIN:
-            raise ValueError("retained_max_results must not exceed 10000 per chain")
+        _validate_sequential_count_budget(self)
         for name in ("warmup_rhat_max", "retained_rhat_max"):
             value = float(getattr(self, name))
             if not math.isfinite(value) or value <= 1.0:
@@ -375,11 +397,15 @@ class SequentialExactTransitionConfig:
             object.__setattr__(self, name, value)
 
     def payload(self, *, chain_count: int | None = None) -> Mapping[str, Any]:
+        fields = asdict(self)
+        fields.pop("max_results_per_chain")
+        fields.pop("count_budget_reason")
         return {
             "policy_id": NEUTRA_SEQUENTIAL_HMC_POLICY_ID,
             "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
             "bulk_tail_ess_method": STAN_ESS_VERSION,
-            **asdict(self),
+            **fields,
+            **_sequential_count_budget_payload(self),
             "assessment_policy": None if self.assessment_policy is None else self.assessment_policy.payload(),
             "chain_count": None if chain_count is None else int(chain_count),
             "posterior_temperature": 1.0,

@@ -78,7 +78,7 @@ def importance_summary(config, values, log_weights):
                 tail_valid = tail_valid and bool(tf.math.is_finite(count) & (count >= config["reference"]["minimum_tail_rows"]))
         tail_ok = tail_ok and tail_valid
         scale = None if coordinate is None else float(sd[coordinate])
-        allowance = config["comparison"]["reference_error_fraction"] * (
+        allowance = config["assessment"]["reference_error_fraction"] * (
             config["posterior"]["event_mcse"] if coordinate is None else scale *
             config["posterior"]["quantile_mcse_sd" if row["kind"] == "quantile" else "mean_mcse_sd"])
         uncertainty = float(mcse)
@@ -95,7 +95,10 @@ def importance_summary(config, values, log_weights):
             "tails_observed": tail_ok, "precision_passed": all(r["precision_passed"] for r in quantities.values())}
 
 
-def run_reference(config, bridge, root, *, resume_chunks=None):
+def run_reference(config, bridge, root, *, resume_chunks=None, max_seconds=None, chunk_reserve_seconds=0.):
+    import time
+    from bayesfilter.inference.q20_stage_budget import BudgetedCheckpoint
+    deadline = None if max_seconds is None else time.monotonic()+max_seconds
     root = Path(root)
     root.mkdir(parents=True, exist_ok=False)
     chunks = root / "chunks"
@@ -115,8 +118,9 @@ def run_reference(config, bridge, root, *, resume_chunks=None):
     values, logs, history = [[] for _ in range(r["banks"])], [[] for _ in range(r["banks"])], []
     previous = None
     critical = float(tfp.distributions.Normal(tf.constant(0., tf.float64), tf.constant(1., tf.float64)).quantile(
-        (1 + config["comparison"]["interval_probability"]) / 2))
-    with DurableTensorCheckpoint(chunks, scope) as store:
+        (1 + config["assessment"]["interval_probability"]) / 2))
+    with BudgetedCheckpoint(chunks, scope, deadline=deadline, chunk_seconds=chunk_reserve_seconds,
+                            safety_factor=config["budget"]["forecast_safety_factor"]) as store:
         for rung in r["rungs"]:
             for bank in range(r["banks"]):
                 for offset in range(len(values[bank])*batch, rung, batch):

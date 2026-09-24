@@ -1,0 +1,162 @@
+{
+  "schema": "bayesfilter.inference_validation_suite.v1",
+  "suite_id": "m27-rotated-gaussian-siblings-r1",
+  "profile": "numerical_pipeline",
+  "profiles": {
+    "numerical_pipeline": [
+      "search",
+      "stopping",
+      "accuracy"
+    ]
+  },
+  "designs": [
+    {
+      "accuracy_tolerance": 0.25,
+      "alpha": 0.05,
+      "budget_seconds": 1200,
+      "design_id": "m27-rotated-gaussian-sibling-2026092281",
+      "device": "cpu_reference",
+      "draws": 500,
+      "engine": "stopping",
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "leapfrog_steps": 5,
+      "mcse_tolerance": 0.05,
+      "measurement_draws": 128,
+      "member_l": 3,
+      "multiplicity": 1,
+      "null_draws": 1999,
+      "numerical_provenance": "docs/plans/bayesfilter-hmc-post-m26-next-phase-2026-09-22.md",
+      "options": {
+        "bootstrap_initialization_rounds": 20,
+        "fixed_comparator": {
+          "warmup_results": 2000,
+          "retained_results": 60000
+        },
+        "member_rule": "shortest_verified_l",
+        "metric_evidence_policy": "finite_window",
+        "metric_probe_num_results": 16,
+        "native_search": true,
+        "plan_file": "docs/plans/bayesfilter-hmc-post-m26-next-phase-2026-09-22.md",
+        "posterior_members": "selected",
+        "posterior_settings": {
+          "warmup_min_results": 10000,
+          "warmup_check_window_results": 10000,
+          "warmup_max_results": 10000,
+          "warmup_chunk_results": 5000,
+          "retained_min_results": 30000,
+          "retained_max_results": 60000,
+          "retained_chunk_results": 5000
+        },
+        "preparation_bound_expansion_steps": 1,
+        "preparation_max_restarts": 3,
+        "preparation_preset": "standard",
+        "posterior_precision_method": "autocorrelation",
+        "isolate_fits": true,
+        "fit_process_timeout_seconds": 1180,
+        "posterior_count_budget": {
+          "max_results_per_chain": 60000,
+          "count_budget_reason": "M27 predeclared sibling affordability development; no default promotion"
+        },
+        "posterior_member_count": 2
+      },
+      "phase": "development",
+      "posterior_cap": 60000,
+      "purpose": "M27 bounded predeclared sibling posterior assessment; no statistical promotion",
+      "rank_draws": 7,
+      "replications": 1,
+      "scenario": {
+        "control": "baseline",
+        "parameters": {
+          "angle": 0.6,
+          "condition": 100.0
+        },
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "rotated_gaussian"
+      },
+      "seed": 2026092281,
+      "step_size": 0.4
+    },
+    {
+      "accuracy_tolerance": 0.25,
+      "alpha": 0.05,
+      "budget_seconds": 1200,
+      "design_id": "m27-rotated-gaussian-sibling-2026092282",
+      "device": "cpu_reference",
+      "draws": 500,
+      "engine": "stopping",
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "leapfrog_steps": 5,
+      "mcse_tolerance": 0.05,
+      "measurement_draws": 128,
+      "member_l": 3,
+      "multiplicity": 1,
+      "null_draws": 1999,
+      "numerical_provenance": "docs/plans/bayesfilter-hmc-post-m26-next-phase-2026-09-22.md",
+      "options": {
+        "bootstrap_initialization_rounds": 20,
+        "fixed_comparator": {
+          "warmup_results": 2000,
+          "retained_results": 60000
+        },
+        "member_rule": "shortest_verified_l",
+        "metric_evidence_policy": "finite_window",
+        "metric_probe_num_results": 16,
+        "native_search": true,
+        "plan_file": "docs/plans/bayesfilter-hmc-post-m26-next-phase-2026-09-22.md",
+        "posterior_members": "selected",
+        "posterior_settings": {
+          "warmup_min_results": 10000,
+          "warmup_check_window_results": 10000,
+          "warmup_max_results": 10000,
+          "warmup_chunk_results": 5000,
+          "retained_min_results": 30000,
+          "retained_max_results": 60000,
+          "retained_chunk_results": 5000
+        },
+        "preparation_bound_expansion_steps": 1,
+        "preparation_max_restarts": 3,
+        "preparation_preset": "standard",
+        "posterior_precision_method": "autocorrelation",
+        "isolate_fits": true,
+        "fit_process_timeout_seconds": 1180,
+        "posterior_count_budget": {
+          "max_results_per_chain": 60000,
+          "count_budget_reason": "M27 predeclared sibling affordability development; no default promotion"
+        },
+        "posterior_member_count": 2
+      },
+      "phase": "development",
+      "posterior_cap": 60000,
+      "purpose": "M27 bounded predeclared sibling posterior assessment; no statistical promotion",
+      "rank_draws": 7,
+      "replications": 1,
+      "scenario": {
+        "control": "baseline",
+        "parameters": {
+          "angle": 0.6,
+          "condition": 100.0
+        },
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "rotated_gaussian"
+      },
+      "seed": 2026092282,
+      "step_size": 0.4
+    }
+  ]
+}
