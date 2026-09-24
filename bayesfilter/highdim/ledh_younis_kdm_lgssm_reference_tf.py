@@ -256,6 +256,13 @@ def bootstrap_lgssm_fixed_stream_value_and_directional_score(
         resampling_offsets, tf.zeros_like(resampling_offsets)
     )
     tf.debugging.assert_less(resampling_offsets, tf.ones_like(resampling_offsets))
+    # The compiled comparator returns an explicit status because XLA may omit
+    # graph assertions. Out-of-domain offsets must never become accepted rows.
+    offsets_valid = tf.reduce_all(
+        tf.math.is_finite(resampling_offsets)
+        & (resampling_offsets >= tf.zeros_like(resampling_offsets))
+        & (resampling_offsets < tf.ones_like(resampling_offsets))
+    )
 
     process_chol = tf.linalg.cholesky(process_covariance)
     observation_chol = tf.linalg.cholesky(observation_covariance)
@@ -316,7 +323,8 @@ def bootstrap_lgssm_fixed_stream_value_and_directional_score(
         d_states = tf.gather(d_children, ancestors)
 
     finite = (
-        tf.math.is_finite(total)
+        offsets_valid
+        & tf.math.is_finite(total)
         & tf.math.is_finite(score)
         & tf.reduce_all(tf.math.is_finite(states))
         & tf.reduce_all(tf.math.is_finite(d_states))
