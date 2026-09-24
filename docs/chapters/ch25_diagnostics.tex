@@ -161,10 +161,22 @@ The autocorrelation option retains the identified TFP 0.25 positive-pairs ESS
 calculation. Rank-normalized bulk ESS is useful for exploration diagnostics,
 but original-scale mean uncertainty needs the ESS of the actual functional.
 For a quantile, BayesFilter follows the indicator-ESS and order-statistic
-construction in \citet[section 4.4]{vehtari2021rank}. A constant rare-event
-indicator or a tied zero-width quantile interval supplies no reliable accuracy
-evidence. Finite diagnostics do not establish the moments or mixing assumptions
-needed by any of these estimators.
+construction in \citet[section 4.4]{vehtari2021rank}, with the explicitly named
+TFP positive-pairs indicator ESS. The pooled percentile preserves equal
+interpolation endpoints exactly: otherwise rounding a cutoff below a repeated
+value can change every indicator at that value and hence its estimated ESS.
+The corrected quantile method has a versioned identifier in both the report
+and precision policy, so a checkpoint from the earlier arithmetic cannot be
+silently reused. A constant rare-event indicator or a tied zero-width quantile
+interval supplies no reliable accuracy evidence.
+
+The reported quantile MCSE approximates a standard error using central
+order statistics. Multiplying it by $1.96$ gives a symmetric diagnostic
+interval; this is not the same finite-sample calculation as propagating the
+$.025$ and $.975$ probabilities directly to empirical order statistics.
+Independent formula agreement checks the arithmetic, not the coverage of
+either interval under actual HMC stopping. Finite diagnostics do not establish
+the moments or mixing assumptions needed by any of these estimators.
 
 Each \path{HMCPrecisionTarget} specifies a mean or a quantile and an absolute
 MCSE tolerance, an MCSE-to-posterior-SD tolerance, or both. Accuracy is assessed

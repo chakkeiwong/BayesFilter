@@ -75,6 +75,18 @@ def test_public_stopped_fixed_policy_and_restart_identity(design, tmp_path, monk
     mean = next(t for t in last[last["diagnostic_role"]]["precision"]["targets"]
                 if t["name"] == "x" and t["kind"] == "mean")
     assert pair["stopped"]["x:mean"]["mcse"] == pytest.approx(mean["mcse"], rel=1e-12)
+    # Check the actual posterior endpoint, with official TFP indicator ESS and
+    # an independent order-statistic oracle, rather than a second call to the
+    # BayesFilter reporting helper.
+    from tests.test_hmc_quantile_precision_reference import reference
+    from bayesfilter.inference.hmc_precision import QUANTILE_PRECISION_METHOD
+    values = np.asarray(read_tensor(member["draws_path"]))
+    _, _, expected_quantile_mcse = reference(values, .5)
+    quantile = next(t for t in last[last["diagnostic_role"]]["precision"]["targets"]
+                    if t["name"] == "x" and t["kind"] == "quantile")
+    assert quantile["estimator"] == QUANTILE_PRECISION_METHOD
+    assert quantile["mcse"] == pytest.approx(expected_quantile_mcse[0], rel=2e-11)
+    assert policy["precision"]["quantile_estimator"] == QUANTILE_PRECISION_METHOD
     assert execute_pipeline(d, fit)["verified_candidate_ids"] == pipeline["verified_candidate_ids"]
     changed = replace(d, options={**d.options, "posterior_precision_settings": {**settings, "batch_size": 16}})
     assert changed.identity != d.identity

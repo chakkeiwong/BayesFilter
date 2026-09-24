@@ -10,7 +10,7 @@ from typing import Any
 
 from .catalog import get_target
 
-ENGINES = ("mechanics", "invariance", "search", "sbc", "accuracy", "stopping", "power", "acceptance")
+ENGINES = ("mechanics", "invariance", "search", "sbc", "accuracy", "stopping", "power", "acceptance", "reference_mean")
 ROUTES = ("frozen", "ordinary", "prepared", "fixed_transport", "reference", "controller", "external")
 CONTROLS = ("baseline", "noop", "wrong_score", "wrong_metric", "omit_jacobian", "ignore_data",
             "identity", "two_cycle", "wrong_energy", "duplicate_stream", "warmup_leak",
@@ -89,7 +89,7 @@ class ValidationDesign:
         fit_timeout = self.options.get("fit_process_timeout_seconds")
         if type(isolate) is not bool:
             raise ValueError("isolate_fits must be a boolean")
-        if isolate and (self.engine not in {"search", "accuracy", "stopping"}
+        if isolate and (self.engine not in {"search", "accuracy", "stopping", "reference_mean"}
                         or self.scenario.route not in {"ordinary", "prepared", "fixed_transport"}):
             raise ValueError("isolate_fits requires a numerical pipeline engine/route")
         if (isolate and (type(fit_timeout) not in (int, float)
@@ -145,6 +145,26 @@ class ValidationDesign:
             raise ValueError("posterior_precision_method requires a supported mean estimator")
         from .posterior_policy import validate_posterior_options
         validate_posterior_options(self.options)
+        alarm = self.options.get("reference_mean_alarm")
+        if self.engine == "reference_mean":
+            params = self.scenario.parameters
+            if (self.scenario.target != "normal_conjugate" or self.scenario.route != "ordinary"
+                    or self.scenario.start == "reference"
+                    or member_rule != "first_verified" or self.options.get("posterior_members") != "selected"
+                    or precision_method != "lugsail" or "data" in self.options
+                    or not isinstance(alarm, dict) or set(alarm) != {"mcse_sd_max"}):
+                raise ValueError("reference_mean requires fresh ordinary normal fits, first_verified and explicit lugsail alarm")
+            ratio = alarm["mcse_sd_max"]
+            if (type(ratio) not in (int, float) or not math.isfinite(ratio) or ratio <= 0
+                    or type(params.get("n")) is not int or params["n"] < 1
+                    or any(type(params.get(k)) not in (int, float)
+                           or not math.isfinite(params[k]) or params[k] <= 0 for k in ("tau", "sigma"))):
+                raise ValueError("reference_mean requires finite precision ratio and explicit generative n/tau/sigma")
+            sd = 1 / math.sqrt(1 / params["tau"]**2 + params["n"] / params["sigma"]**2)
+            if not math.isclose(self.mcse_tolerance, ratio * sd, rel_tol=1e-12, abs_tol=0.):
+                raise ValueError("reference_mean absolute MCSE must equal declared ratio times conditional SD")
+        elif alarm is not None:
+            raise ValueError("reference_mean_alarm is only supported by the reference_mean engine")
         native=self.options.get("native_search",False)
         if type(native) is not bool or (native and (self.scenario.route!="ordinary" or "search" in self.options)):
             raise ValueError("native_search requires ordinary preparation without a search override")
@@ -211,6 +231,8 @@ class ValidationDesign:
             else:
                 if child.get("engine") == "power":
                     raise ValueError("nested power engines are forbidden")
+                if child.get("engine") == "reference_mean":
+                    raise ValueError("reference_mean measures full-fit alarm rates directly; nested power is unsupported")
                 nested = ValidationDesign.from_payload(child)
                 if (nested.scenario.target,nested.scenario.route,nested.device) != (self.scenario.target,self.scenario.route,self.device):
                     raise ValueError("power scenario must match the experiment it repeats")
@@ -250,6 +272,7 @@ class ValidationDesign:
             "sbc": {"baseline", "noop", "ignore_data", "omit_jacobian", "location_shift"},
             "power": {"baseline"},
             "acceptance": {"baseline", "noop"},
+            "reference_mean": {"baseline", "noop", "location_shift"},
         }
         if self.scenario.control not in supported_controls[self.engine]:
             raise ValueError("control is not implemented by this experiment engine")
