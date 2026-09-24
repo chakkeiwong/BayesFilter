@@ -3,7 +3,8 @@
 
 This chapter gives a self-contained account of neural-transport Hamiltonian
 Monte Carlo (NeuTra HMC) and documents the BayesFilter implementation and
-experiments available in July 2026.  The construction was introduced by
+experiments available in July 2026, followed by a September 2026 investigation
+of weak nonlinear learning in the q20 target. The construction was introduced by
 \citet{hoffman2019neutra}; the derivation and implementation below do not
 require the reader to consult that paper.  The HMC and transport mathematics,
 diagnostics, and five common truth-tail targets are derived explicitly.  Eight
@@ -290,6 +291,8 @@ choice; neither policy is a universal NeuTra default.  No NumPy or Python
 sample-axis loop belongs to the active training/HMC route.  A valid segmented
 resume restores weights, both Adam moments, completed step, seed schedule, and
 learning-rate schedule.
+
+\input{chapters/ch26b_neutra_training_repair}
 
 \section{Geometry induced in source space}
 

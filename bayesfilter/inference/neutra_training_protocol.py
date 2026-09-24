@@ -287,29 +287,39 @@ def paired_loss_statistics(before, after, *, multiplier):
 def assess_training_rung(*, baseline, increment, reliability, prior_plateaus,
                          at_cap, minimum_improvement, maximum_half_width, plateau_comparisons,
                          minimum_updates_met=True):
-    if not reliability:
-        return {"status": "numerically_invalid", "plateaus": 0, "development_eligible": False}
-    precise = max(baseline["half_width"], increment["half_width"]) <= maximum_half_width
-    learning = baseline["upper"] < -minimum_improvement
-    improving = increment["upper"] < -minimum_improvement
-    deteriorating = increment["lower"] > minimum_improvement
+    """Nominate a bounded HMC trial; loss precision cannot certify a posterior."""
+    # Retain the historical plateau calculation as explanation only. Reused-bank
+    # intervals are descriptive screens, not nominal confidence statements.
+    distinct = increment is not None
+    precise = distinct and increment["half_width"] <= maximum_half_width
+    learning = baseline["upper"] < 0.
+    baseline_resolved = learning or baseline["lower"] >= 0.
+    improving = distinct and increment["upper"] < 0.
+    deteriorating = distinct and increment["lower"] > 0.
     plateau = precise and increment["lower"] >= -minimum_improvement and increment["upper"] <= minimum_improvement
-    plateaus = prior_plateaus + 1 if plateau else 0
-    resolved = (not minimum_updates_met or precise or improving or deteriorating
-                or (at_cap and baseline["lower"] >= -minimum_improvement))
-    if not minimum_updates_met:
-        status = "deterioration_repair_trigger" if deteriorating else "continue_training"
-    elif learning and plateaus >= plateau_comparisons:
-        status = "plateau_nominee"
+    plateaus = (prior_plateaus + 1 if plateau and reliability else 0) if distinct else prior_plateaus
+    if not reliability:
+        status = "numerically_invalid"
     elif deteriorating:
         status = "deterioration_repair_trigger"
+    elif not minimum_updates_met:
+        status = "continue_training"
+    elif learning:
+        status = "hmc_trial_nominee"
     elif at_cap:
-        status = "cap_learning_observed" if learning else "cap_learning_unresolved"
+        status = "cap_learning_unresolved"
     else:
-        status = "continue_training" if precise or improving else "expand_validation_or_continue"
+        status = "continue_training"
+    eligible = status == "hmc_trial_nominee"
     return {"status": status, "plateaus": plateaus,
+            "distinct_increment_observed": distinct,
+            "at_training_cap": bool(at_cap),
             "learning_observed": learning, "precision_screen": precise,
+            "precision_screen_target": "incremental_loss_change",
+            "precision_role": "explanatory_only", "plateau_observed": plateaus >= plateau_comparisons,
+            "baseline_learning_resolved": baseline_resolved,
             "continuing_improvement": improving, "minimum_updates_met": minimum_updates_met,
-            "validation_resolved": resolved,
-            "development_eligible": status == "plateau_nominee",
+            "validation_resolved": True,
+            "validation_policy": "bounded_learning_screen_for_hmc_trial_v1",
+            "hmc_trial_eligible": eligible, "development_eligible": eligible,
             "posterior_qualified": False}

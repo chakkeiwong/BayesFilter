@@ -17,6 +17,8 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.inference import neutra_transport_core as _transport_core
+
 from bayesfilter.inference.neutra_artifacts import (
     finalize_dense_iaf_neutra_artifact_payload,
 )
@@ -1224,12 +1226,7 @@ class _TrainableAffineDiagonal(_TrainableTransport):
         return ("shift", "raw_scale")
 
     def forward_and_logdet(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        scale = tf.exp(self.raw_scale)
-        theta = self.shift + z * scale
-        logdet = tf.zeros(tf.shape(z)[:-1], dtype=z.dtype) + tf.reduce_sum(
-            self.raw_scale
-        )
-        return theta, logdet
+        return _transport_core.affine_forward(z, self.shift, tf.exp(self.raw_scale), logdet=tf.reduce_sum(self.raw_scale))
 
     def scale_log(self, z: tf.Tensor) -> tf.Tensor:
         return tf.zeros_like(z) + self.raw_scale
@@ -1249,6 +1246,8 @@ class _TrainableAffineDiagonal(_TrainableTransport):
 
 
 class _TrainableDenseIAF(_TrainableTransport):
+    autoregressive = True
+
     def __init__(self, config: NeuTraTrainerConfig, *, stage_index: int = 0) -> None:
         self.dimension = int(config.dimension)
         self.stage_index = int(stage_index)
@@ -1394,9 +1393,7 @@ class _TrainableDenseIAF(_TrainableTransport):
         return (first, first + 1, first + 2)
 
     def forward_and_logdet(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        scale_log, shift = self._network(z)
-        theta = z * tf.exp(scale_log) + shift
-        return theta, tf.reduce_sum(scale_log, axis=-1)
+        return _transport_core.iaf_forward(self, z)
 
     def scale_log(self, z: tf.Tensor) -> tf.Tensor:
         scale_log, _ = self._network(z)
@@ -1409,43 +1406,7 @@ class _TrainableDenseIAF(_TrainableTransport):
     def _network_with_diagnostics(
         self, z: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
-        h = z
-        preactivations = []
-        for weight, bias, mask in zip(
-            self.weights[:-1], self.biases[:-1], self.masks[:-1]
-        ):
-            h = tf.matmul(h, weight * mask) + bias
-            preactivations.append(h)
-            h = _activation(h, self.activation)
-        raw = tf.matmul(h, self.weights[-1] * self.masks[-1]) + self.biases[-1]
-        scale_logits = raw[..., : self.dimension]
-        shift = raw[..., self.dimension :]
-        if self.anchor_shift_weight is not None:
-            anchor_weight = tf.linalg.band_part(
-                self.anchor_shift_weight, -1, 0
-            ) - tf.linalg.diag(tf.linalg.diag_part(self.anchor_shift_weight))
-            scale_logits = scale_logits + self.anchor_scale_raw
-            shift = shift + tf.matmul(z, anchor_weight, transpose_b=True)
-            shift = shift + self.anchor_shift_bias
-        if self.scale_transform == "identity":
-            scale_log = scale_logits
-        elif self.scale_transform == "dsge_bounded_tanh":
-            # Exact dsge_hmc convention; do not replace with raw/s_max.
-            scale_log = self.s_max * tf.math.tanh(scale_logits)
-        else:
-            # Historical normalized bounded family, retained for old arms.
-            scale_log = self.s_max * tf.math.tanh(scale_logits / self.s_max)
-        max_width = max(self.hidden_layers, default=0)
-        padded = [
-            tf.pad(values, [[0, 0], [0, max_width - int(values.shape[-1])]])
-            for values in preactivations
-        ]
-        hidden = (
-            tf.stack(padded, axis=1)
-            if padded
-            else tf.zeros((tf.shape(z)[0], 0, max_width), dtype=z.dtype)
-        )
-        return scale_log, shift, scale_logits, hidden
+        return _transport_core.iaf_network_diagnostics(self, z)
 
     def diagnostics(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         _, _, scale_logits, hidden = self._network_with_diagnostics(z)
@@ -1496,7 +1457,7 @@ class _FixedMixingReverse(_TrainableTransport):
         return ()
 
     def forward_and_logdet(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        return tf.matmul(z, self.matrix), tf.zeros(tf.shape(z)[:-1], z.dtype)
+        return _transport_core.affine_forward(z, 0., None, matrix=self.matrix, transpose=False, logdet=0.)
 
     def scale_log(self, z: tf.Tensor) -> tf.Tensor:
         return tf.zeros_like(z)
@@ -1547,15 +1508,10 @@ class _FixedTranslation(_TrainableTransport):
 
     def forward_and_logdet(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         if self.output_factor is None:
-            output = self.offset + z * self.output_scale
-            logdet = tf.reduce_sum(tf.math.log(self.output_scale))
-        else:
-            output = self.offset + tf.matmul(z, self.output_factor, transpose_b=True)
-            if self._factor_triangular:
-                logdet = tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(self.output_factor))))
-            else:
-                logdet = tf.linalg.slogdet(self.output_factor)[1]
-        return output, tf.zeros(tf.shape(z)[:-1], z.dtype) + logdet
+            return _transport_core.affine_forward(z, self.offset, self.output_scale)
+        logdet = (tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(self.output_factor))))
+                  if self._factor_triangular else tf.linalg.slogdet(self.output_factor)[1])
+        return _transport_core.affine_forward(z, self.offset, None, matrix=self.output_factor, logdet=logdet)
 
     def scale_log(self, z: tf.Tensor) -> tf.Tensor:
         return tf.zeros_like(z)
@@ -1619,12 +1575,7 @@ class _TrainableComposedIAF(_TrainableTransport):
         return tuple(indices)
 
     def forward_and_logdet(self, z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        values = z
-        logdet = tf.zeros(tf.shape(z)[:-1], z.dtype)
-        for component in self.components:
-            values, increment = component.forward_and_logdet(values)
-            logdet = logdet + increment
-        return values, logdet
+        return _transport_core.compose_forward(self.components, z)
 
     def scale_log(self, z: tf.Tensor) -> tf.Tensor:
         values = z
@@ -1646,7 +1597,7 @@ class _TrainableComposedIAF(_TrainableTransport):
                 )
                 stage_logits.append(scale_logits)
                 stage_hidden.append(hidden)
-                values = values * tf.exp(scale_log) + shift
+                values, _ = _transport_core.iaf_apply(values, scale_log, shift)
             else:
                 values, _ = component.forward_and_logdet(values)
         return tf.stack(stage_logits, axis=1), tf.stack(stage_hidden, axis=1)
@@ -2786,41 +2737,11 @@ def _training_batch(value: Any, *, dimension: int, name: str) -> tf.Tensor:
 
 
 def _activation(values: tf.Tensor, activation: str) -> tf.Tensor:
-    if activation == "elu":
-        return tf.nn.elu(values)
-    if activation == "tanh":
-        return tf.math.tanh(values)
-    if activation == "relu":
-        return tf.nn.relu(values)
-    raise NeuTraTrainingError(f"unsupported activation: {activation}")
+    return _transport_core.activation(values, activation)
 
 
 def _dense_iaf_masks(dim: int, hidden_layers: tuple[int, ...]) -> tuple[tf.Tensor, ...]:
-    degrees: list[list[int]] = [list(range(1, dim + 1))]
-    maximum = max(1, dim - 1)
-    for width in hidden_layers:
-        degrees.append([1 + (index % maximum) for index in range(width)])
-    degrees.append(list(range(1, dim + 1)) + list(range(1, dim + 1)))
-    masks = []
-    for index, (source_degrees, target_degrees) in enumerate(
-        zip(degrees[:-1], degrees[1:])
-    ):
-        output_layer = index == len(degrees) - 2
-        masks.append(
-            tf.constant(
-                [
-                    [
-                        1.0
-                        if ((source < target) if output_layer else (source <= target))
-                        else 0.0
-                        for target in target_degrees
-                    ]
-                    for source in source_degrees
-                ],
-                dtype=tf.float64,
-            )
-        )
-    return tuple(masks)
+    return _transport_core.dense_masks(dim, hidden_layers)
 
 
 def _assign_rows(

@@ -14,13 +14,14 @@ def test_calibration_master_prices_only_training_and_preserves_partial_cohort(tm
     kwargs = dict(repo=Path(__file__).resolve().parents[1], fixture=True, stop_after="calibrate",
         allowance={"campaign_remaining_seconds": 1200., "diagnostic_remaining_seconds": 300.})
     result = execute_master(config, root, **kwargs)
-    assert result["status"] == "TRAINING_CALIBRATION_COMPLETE", result
+    assert result["status"] == "TRAINING_SANITY_PILOT_COMPLETE", result
     assert result["production_qualified"] is False
     state = json.loads((root / "campaign.json").read_text())
     assert set(state["stages"]) == {"price-training", "calibration"}
     checkpoint = json.loads(Path(result["details"]["training"]["checkpoint"]).read_text())
-    assert checkpoint["status"] == "calibration_complete"
-    assert len(checkpoint["cohort"]) == 2
+    assert checkpoint["status"] == "sanity_pilot_complete"
+    assert len(checkpoint["cohort"]) == 1
+    assert all(name.startswith("direct-") for name in checkpoint["cohort"])
     before = state["spent_seconds"]
     repeated = execute_master(config, root, **kwargs)
     assert repeated == result
@@ -36,23 +37,25 @@ def test_real_pricing_worker_stops_early_and_resume_does_not_repeat(tmp_path):
                               cohort_min_updates=100000)
     validate_protocol(config)
     kwargs = dict(repo=Path(__file__).resolve().parents[1], fixture=True,
-        allowance={"campaign_remaining_seconds":120., "diagnostic_remaining_seconds":100.})
+        allowance={"campaign_remaining_seconds":120., "diagnostic_remaining_seconds":100.}, stop_after="price")
     root = tmp_path / "early-cost-stop"
     result = execute_master(config, root, **kwargs)
     assert result["status"] == "UNDER_BUDGETED", result
     assert result["details"]["forecast"]["full_campaign_priced"] is False
     before = json.loads((root / "campaign.json").read_text())
-    assert [a["stage"] for a in before["attempts"]] == ["price"]
-    receipt = json.loads(Path(before["stages"]["price"]["result_path"]).read_text())
+    assert [a["stage"] for a in before["attempts"]] == ["price-neutra"]
+    receipt = json.loads(Path(before["stages"]["price-neutra"]["result_path"]).read_text())
     assert len(receipt["result"]["training"]["rows"]) == 1
-    assert receipt["result"]["training_quote"]["missing_training_scopes"]
+    # One width at beta one is the entire plain-NeuTra price inventory.
+    assert not receipt["result"]["training_quote"]["missing_training_scopes"]
+    assert receipt["result"]["training"]["rows"][0]["beta"] == 1.
     assert execute_master(config, root, **kwargs) == result
     after = json.loads((root / "campaign.json").read_text())
     assert before["attempts"] == after["attempts"]
     assert before["spent_seconds"] == after["spent_seconds"]
 
 
-def test_master_runs_real_workers_and_confirmation_then_reuses_completed_stages(tmp_path):
+def test_master_stops_after_valid_plain_estimate_and_reuses_completed_stages(tmp_path):
     config=protocol()
     config["training"].update(betas=[0.,1.],pricing_batches=[8])
     config["tuning"].update(initial_epsilon=.3,max_repairs_per_family=4,
@@ -61,16 +64,18 @@ def test_master_runs_real_workers_and_confirmation_then_reuses_completed_stages(
     # Loose screens exercise dispatch and receipts on a known distribution.
     # They are smoke hypotheses and cannot qualify research accuracy.
     config["posterior"].update(warmup_rhat=10.,retained_rhat=10.,bulk_ess=1.,tail_ess=1.)
-    config["comparison"].update(mean_margin_sd=10.,quantile_margin_sd=10.,event_margin=1.)
+    config["assessment"].update(mean_margin_sd=10.,quantile_margin_sd=10.,event_margin=1.)
     config["reference"].update(banks=4,rungs=[512,2048],batch_size=32,ess_min=2.,minimum_tail_rows=1)
     validate_protocol(config)
     kwargs=dict(repo=Path(__file__).resolve().parents[1],fixture=True,
         allowance={"campaign_remaining_seconds":20000.,"diagnostic_remaining_seconds":1200.})
     result=execute_master(config,tmp_path/"campaign",**kwargs)
-    assert result["status"]=="DECLARED_CONFIRMATION_CHECKS_PASSED",result
+    assert result["status"]=="SMOKE_ESTIMATION_CHECKS_PASSED",result
+    assert result["details"]["method"] == "neutra"
     assert result["production_qualified"] is False
     before=json.loads((tmp_path/"campaign/campaign.json").read_text())
-    assert len(before["stages"])>=20
+    assert set(before["stages"]) == {"price-neutra", "train-neutra", "tune-neutra-beta1",
+                                    "sample-neutra", "reference", "assess-neutra"}
     repeated=execute_master(config,tmp_path/"campaign",**kwargs)
     after=json.loads((tmp_path/"campaign/campaign.json").read_text())
     assert repeated==result

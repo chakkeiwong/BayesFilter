@@ -191,7 +191,8 @@ def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping
              "hmc_diagnostic_math", "hmc_posterior_diagnostics", "hmc_precision", "hmc_posterior_assessment", "neutra_hmc",
              "tuning_contract", "hmc_tuning_dispatch", "fixed_transport_hmc_tuning_tf",
              "posterior_adapter", "batched_value_score",
-             "neutra_artifacts", "fixed_transport_hmc_mechanics_tf")
+             "neutra_artifacts", "neutra_transport", "neutra_transport_core",
+             "fixed_transport_hmc_mechanics_tf")
     paths = {Path(__file__).with_name(name + ".py").resolve() for name in names}
     paths.add(Path(__file__).parents[1] / "runtime" / "gpu_memory_policy.py")
     paths.update(Path(__file__).parents[1] / (name + ".py") for name in (

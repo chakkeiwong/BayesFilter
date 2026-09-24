@@ -16,6 +16,9 @@ from typing import Any, Mapping, Sequence
 
 import tensorflow as tf
 
+from bayesfilter.inference import neutra_transport_core as _transport_core
+from bayesfilter.inference.neutra_training_graphs import FixedShapeTrainingProgram
+
 
 WEIGHTED_NEUTRA_NONCLAIMS = (
     "weighted particles are not an unweighted posterior archive",
@@ -178,55 +181,20 @@ class WeightedNeuTraValidation:
 
 
 def _activation(values: tf.Tensor, name: str) -> tf.Tensor:
-    if name == "elu":
-        return tf.nn.elu(values)
-    if name == "tanh":
-        return tf.math.tanh(values)
-    if name == "relu":
-        return tf.nn.relu(values)
-    raise WeightedNeuTraTrainingError(f"unsupported activation: {name}")
+    return _transport_core.activation(values, name)
 
 
 def _dense_masks(dimension: int, hidden_layers: tuple[int, ...]) -> tuple[tf.Tensor, ...]:
-    degrees: list[list[int]] = [list(range(1, int(dimension) + 1))]
-    maximum = max(1, int(dimension) - 1)
-    for width in hidden_layers:
-        degrees.append([1 + index % maximum for index in range(int(width))])
-    degrees.append(
-        list(range(1, int(dimension) + 1))
-        + list(range(1, int(dimension) + 1))
-    )
-    masks = []
-    for layer, (source, target) in enumerate(zip(degrees[:-1], degrees[1:])):
-        output_layer = layer == len(degrees) - 2
-        masks.append(
-            tf.constant(
-                [
-                    [
-                        1.0
-                        if ((left < right) if output_layer else (left <= right))
-                        else 0.0
-                        for right in target
-                    ]
-                    for left in source
-                ],
-                tf.float64,
-            )
-        )
-    return tuple(masks)
+    return _transport_core.dense_masks(dimension, hidden_layers)
 
 
 def _strict_autoregressive_mask(dimension: int) -> tf.Tensor:
-    return tf.constant(
-        [
-            [1.0 if source < target else 0.0 for target in range(int(dimension))]
-            for source in range(int(dimension))
-        ],
-        tf.float64,
-    )
+    return _transport_core.strict_autoregressive_mask(dimension)
 
 
 class _DenseAutoregressiveStage:
+    autoregressive = True
+
     def __init__(self, config: WeightedNeuTraConfig, stage: int) -> None:
         self.dimension = int(config.dimension)
         self.activation = str(config.activation)
@@ -292,141 +260,42 @@ class _DenseAutoregressiveStage:
         return tuple(output)
 
     def _scale_linear_skip(self, values: tf.Tensor) -> tf.Tensor:
-        if self.scale_linear_skip_weight is None:
-            return tf.zeros_like(values)
-        return tf.matmul(
-            values, self.scale_linear_skip_weight * self.scale_linear_skip_mask
-        )
+        return _transport_core._linear(self, "scale_linear_skip_weight", values)
 
     def _unbounded_scale_linear(self, values: tf.Tensor) -> tf.Tensor:
-        if self.unbounded_scale_linear_weight is None:
-            return tf.zeros_like(values)
-        return tf.matmul(
-            values, self.unbounded_scale_linear_weight * self.scale_linear_skip_mask
-        )
+        return _transport_core._linear(self, "unbounded_scale_linear_weight", values)
 
     def _unbounded_scale_linear_pullback(self, cotangent: tf.Tensor) -> tf.Tensor:
-        if self.unbounded_scale_linear_weight is None:
-            return tf.zeros_like(cotangent)
-        return tf.matmul(
-            cotangent,
-            self.unbounded_scale_linear_weight * self.scale_linear_skip_mask,
-            transpose_b=True,
-        )
+        return _transport_core._linear_pullback(self, "unbounded_scale_linear_weight", cotangent)
 
     def _network(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        hidden = values
-        for weight, bias, mask in zip(
-            self.weights[:-1], self.biases[:-1], self.masks[:-1]
-        ):
-            hidden = _activation(tf.matmul(hidden, weight * mask) + bias, self.activation)
-        raw = tf.matmul(hidden, self.weights[-1] * self.masks[-1]) + self.biases[-1]
-        scale_logits = raw[..., : self.dimension] + self._scale_linear_skip(values)
-        scale_log = (
-            self.s_max * tf.math.tanh(scale_logits / self.s_max)
-            + self._unbounded_scale_linear(values)
-        )
-        return scale_log, raw[..., self.dimension :]
+        return _transport_core.iaf_network(self, values)
 
     def forward_and_logdet(self, latent: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        scale_log, shift = self._network(latent)
-        return (
-            latent * tf.exp(scale_log) + shift,
-            tf.reduce_sum(scale_log, axis=-1),
-        )
+        return _transport_core.iaf_forward(self, latent)
 
     def inverse_and_forward_logdet(self, output: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        latent = tf.zeros_like(output)
-        for index in range(self.dimension):
-            scale_log, shift = self._network(latent)
-            solved = (output[..., index] - shift[..., index]) * tf.exp(
-                -scale_log[..., index]
-            )
-            latent = latent + (solved - latent[..., index])[..., tf.newaxis] * tf.one_hot(
-                index, self.dimension, dtype=latent.dtype
-            )
-        scale_log, _ = self._network(latent)
-        return latent, tf.reduce_sum(scale_log, axis=-1)
+        return _transport_core.iaf_inverse_logdet(self, output)
 
     def _network_with_cache(
         self, values: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tuple[tf.Tensor, ...]]:
-        hidden = values
-        preactivations = []
-        for weight, bias, mask in zip(
-            self.weights[:-1], self.biases[:-1], self.masks[:-1]
-        ):
-            preactivation = tf.matmul(hidden, weight * mask) + bias
-            preactivations.append(preactivation)
-            hidden = _activation(preactivation, self.activation)
-        raw = tf.matmul(hidden, self.weights[-1] * self.masks[-1]) + self.biases[-1]
-        scale_logits = raw[..., : self.dimension] + self._scale_linear_skip(values)
-        scaled = scale_logits / self.s_max
-        tanh_scaled = tf.math.tanh(scaled)
-        return (
-            self.s_max * tanh_scaled + self._unbounded_scale_linear(values),
-            raw[..., self.dimension :],
-            1.0 - tf.square(tanh_scaled),
-            tuple(preactivations),
-        )
+        return _transport_core.iaf_network_cache(self, values)
 
     def _network_pullback(
         self,
         raw_cotangent: tf.Tensor,
         preactivations: tuple[tf.Tensor, ...],
     ) -> tf.Tensor:
-        cotangent = tf.matmul(
-            raw_cotangent, self.weights[-1] * self.masks[-1], transpose_b=True
-        )
-        for layer_index in reversed(range(len(preactivations))):
-            values = preactivations[layer_index]
-            if self.activation == "elu":
-                derivative = tf.where(values > tf.constant(0.0, values.dtype), tf.ones_like(values), tf.exp(values))
-            elif self.activation == "tanh":
-                derivative = 1.0 - tf.square(tf.math.tanh(values))
-            elif self.activation == "relu":
-                derivative = tf.cast(values > 0.0, values.dtype)
-            else:
-                raise WeightedNeuTraTrainingError(
-                    f"unsupported activation: {self.activation}"
-                )
-            cotangent = cotangent * derivative
-            cotangent = tf.matmul(
-                cotangent,
-                self.weights[layer_index] * self.masks[layer_index],
-                transpose_b=True,
-            )
-        if self.scale_linear_skip_weight is not None:
-            cotangent = cotangent + tf.matmul(
-                raw_cotangent[..., : self.dimension],
-                self.scale_linear_skip_weight * self.scale_linear_skip_mask,
-                transpose_b=True,
-            )
-        return cotangent
+        return _transport_core.iaf_network_pullback(self, raw_cotangent, preactivations)
 
     def pullback_score(
         self, values: tf.Tensor, output_score: tf.Tensor
     ) -> tf.Tensor:
-        scale_log, _shift, scale_derivative, cache = self._network_with_cache(values)
-        direct = output_score * tf.exp(scale_log)
-        scale_cotangent = output_score * values * tf.exp(scale_log)
-        raw_cotangent = tf.concat(
-            (scale_cotangent * scale_derivative, output_score), axis=-1
-        )
-        return (
-            direct
-            + self._network_pullback(raw_cotangent, cache)
-            + self._unbounded_scale_linear_pullback(scale_cotangent)
-        )
+        return _transport_core.iaf_pullback(self, values, output_score)
 
     def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
-        _scale_log, _shift, scale_derivative, cache = self._network_with_cache(values)
-        raw_cotangent = tf.concat(
-            (scale_derivative, tf.zeros_like(scale_derivative)), axis=-1
-        )
-        return self._network_pullback(
-            raw_cotangent, cache
-        ) + self._unbounded_scale_linear_pullback(tf.ones_like(scale_derivative))
+        return _transport_core.iaf_logdet_score(self, values)
 
 
 class WeightedDenseIAFTransport:
@@ -441,11 +310,12 @@ class WeightedDenseIAFTransport:
         )
 
     def _between_stage_permutation(self, values: tf.Tensor) -> tf.Tensor:
-        if self.config.permutation_policy == "full_reverse":
-            return tf.reverse(values, axis=(-1,))
-        return tf.concat(
-            (values[..., :1], tf.reverse(values[..., 1:], axis=(-1,))), axis=-1
-        )
+        return _transport_core.Permutation(self.parameter_dim, self.config.permutation_policy).inverse(values)
+
+    @property
+    def score_layers(self):
+        return _transport_core.interleaved_stages(self.stages, self.parameter_dim,
+                                                   self.config.permutation_policy)
 
     @property
     def trainable_variables(self) -> tuple[tf.Variable, ...]:
@@ -455,13 +325,7 @@ class WeightedDenseIAFTransport:
 
     def forward_and_logdet(self, latent: Any) -> tuple[tf.Tensor, tf.Tensor]:
         values = _rank2(latent, self.config.dimension, "latent")
-        logdet = tf.zeros(tf.shape(values)[0], tf.float64)
-        for index, stage in enumerate(self.stages):
-            values, increment = stage.forward_and_logdet(values)
-            logdet = logdet + increment
-            if index + 1 < len(self.stages):
-                values = self._between_stage_permutation(values)
-        return values, logdet
+        return _transport_core.compose_forward(self.score_layers, values)
 
     @property
     def parameter_dim(self) -> int:
@@ -545,18 +409,7 @@ class WeightedDenseIAFTransport:
     ) -> tf.Tensor:
         values = _rank2(latent, self.parameter_dim, "latent")
         score = _rank2(output_score, self.parameter_dim, "output_score")
-        inputs = []
-        current = values
-        for index, stage in enumerate(self.stages):
-            inputs.append(current)
-            current, _ = stage.forward_and_logdet(current)
-            if index + 1 < len(self.stages):
-                current = self._between_stage_permutation(current)
-        for index in reversed(range(len(self.stages))):
-            score = self.stages[index].pullback_score(inputs[index], score)
-            if index > 0:
-                score = self._between_stage_permutation(score)
-        return score
+        return _transport_core.compose_pullback(self.score_layers, values, score)
 
     def log_abs_det_jacobian_score(self, latent: Any) -> tf.Tensor:
         values = tf.convert_to_tensor(latent, tf.float64)
@@ -566,30 +419,12 @@ class WeightedDenseIAFTransport:
 
     def log_abs_det_jacobian_score_batch(self, latent: Any) -> tf.Tensor:
         values = _rank2(latent, self.parameter_dim, "latent")
-        inputs = []
-        current = values
-        for index, stage in enumerate(self.stages):
-            inputs.append(current)
-            current, _ = stage.forward_and_logdet(current)
-            if index + 1 < len(self.stages):
-                current = self._between_stage_permutation(current)
-        score = tf.zeros_like(current)
-        for index in reversed(range(len(self.stages))):
-            score = self.stages[index].pullback_score(inputs[index], score)
-            score = score + self.stages[index].logdet_score(inputs[index])
-            if index > 0:
-                score = self._between_stage_permutation(score)
-        return score
+        return _transport_core.compose_pullback(self.score_layers, values)
 
     def inverse_and_forward_logdet(self, physical: Any) -> tuple[tf.Tensor, tf.Tensor]:
         values = _rank2(physical, self.config.dimension, "physical")
-        logdet = tf.zeros(tf.shape(values)[0], tf.float64)
-        for index in reversed(range(len(self.stages))):
-            values, increment = self.stages[index].inverse_and_forward_logdet(values)
-            logdet = logdet + increment
-            if index > 0:
-                values = self._between_stage_permutation(values)
-        return values, logdet
+        latent = _transport_core.compose_inverse(self.score_layers, values)
+        return latent, _transport_core.compose_forward(self.score_layers, latent)[1]
 
     def log_prob(self, physical: Any) -> tf.Tensor:
         latent, forward_logdet = self.inverse_and_forward_logdet(physical)
@@ -604,9 +439,12 @@ class WeightedDenseIAFTransport:
 class WeightedForwardKLNeuTraTrainer:
     """Optimize ``-sum(normalized_weight * log q_phi(theta))``."""
 
-    def __init__(self, config: WeightedNeuTraConfig) -> None:
+    def __init__(self, config: WeightedNeuTraConfig, *, transport=None) -> None:
         self.config = config
-        self.transport = WeightedDenseIAFTransport(config)
+        self.transport = WeightedDenseIAFTransport(config) if transport is None else transport
+        if self.transport.parameter_dim != config.dimension:
+            raise ValueError("transport dimension does not match training config")
+        self.dtype = getattr(self.transport, "dtype", tf.float64)
         self.variables = self.transport.trainable_variables
         self.step = tf.Variable(0, trainable=False, dtype=tf.int64, name="weighted_neutra_step")
         self.optimizer = tf.keras.optimizers.Adam(
@@ -616,20 +454,8 @@ class WeightedForwardKLNeuTraTrainer:
             epsilon=float(config.epsilon),
         )
         self.optimizer.build(self.variables)
-        self._compiled_train_step = tf.function(
-            self._train_step_impl,
-            jit_compile=bool(config.jit_compile),
-            reduce_retracing=True,
-        )
-        self._compiled_validation = tf.function(
-            self._validation_impl,
-            jit_compile=bool(config.jit_compile),
-            # Validation can be called on fixed but different partitions
-            # (for example a 12-row holdout and a 256-row independent audit).
-            # Shape relaxation would erase the static row count required by
-            # _rank2/_weights and fail on the second partition.
-            reduce_retracing=False,
-        )
+        self._compiled_train_step = FixedShapeTrainingProgram(self._train_step_impl, jit_compile=bool(config.jit_compile))
+        self._compiled_validation = FixedShapeTrainingProgram(self._validation_impl, jit_compile=bool(config.jit_compile))
 
     def forward_and_logdet(self, latent: Any) -> tuple[tf.Tensor, tf.Tensor]:
         return self.transport.forward_and_logdet(latent)
@@ -641,8 +467,10 @@ class WeightedForwardKLNeuTraTrainer:
         return self.transport.log_prob(physical)
 
     def train_step(self, physical: Any, log_weights: Any) -> WeightedNeuTraStep:
-        rows = _rank2(physical, self.config.dimension, "physical")
-        weights = _weights(log_weights, rows.shape[0])
+        rows = _rank2(physical, self.config.dimension, "physical", dtype=self.dtype)
+        weights = _weights(log_weights, rows.shape[0], dtype=self.dtype)
+        if int(rows.shape[0]) < 2:
+            raise ValueError("training batch size must exceed one")
         values = self._compiled_train_step(rows, weights)
         if not bool(values[-1].numpy()):
             raise WeightedNeuTraTrainingError(
@@ -651,8 +479,8 @@ class WeightedForwardKLNeuTraTrainer:
         return WeightedNeuTraStep(*values[:-1])
 
     def validation_batch(self, physical: Any, log_weights: Any) -> WeightedNeuTraValidation:
-        rows = _rank2(physical, self.config.dimension, "physical")
-        weights = _weights(log_weights, rows.shape[0])
+        rows = _rank2(physical, self.config.dimension, "physical", dtype=self.dtype)
+        weights = _weights(log_weights, rows.shape[0], dtype=self.dtype)
         return WeightedNeuTraValidation(*self._compiled_validation(rows, weights))
 
     def state_payload(self) -> Mapping[str, Any]:
@@ -664,6 +492,8 @@ class WeightedForwardKLNeuTraTrainer:
             "optimizer_variables": [value.numpy().tolist() for value in self.optimizer.variables],
             "nonclaims": list(WEIGHTED_NEUTRA_NONCLAIMS),
         }
+        if not isinstance(self.transport, WeightedDenseIAFTransport):
+            payload["transport_config"] = self.transport.config.manifest_payload()
         return {**payload, "state_hash": _stable_hash(payload)}
 
     def _train_step_impl(
@@ -682,7 +512,7 @@ class WeightedForwardKLNeuTraTrainer:
         gradient_norm = tf.linalg.global_norm(gradients)
         clipped, _ = tf.clip_by_global_norm(
             gradients,
-            tf.constant(float(self.config.gradient_clip_norm), tf.float64),
+            tf.constant(float(self.config.gradient_clip_norm), self.dtype),
             use_norm=gradient_norm,
         )
         clipped_norm = tf.linalg.global_norm(clipped)
@@ -704,7 +534,7 @@ class WeightedForwardKLNeuTraTrainer:
         next_step = tf.cond(finite, update, lambda: tf.identity(self.step))
         self.step.assign(next_step)
         ess = tf.math.reciprocal(tf.reduce_sum(tf.square(normalized_weights)))
-        count = tf.cast(tf.size(normalized_weights), tf.float64)
+        count = tf.cast(tf.size(normalized_weights), self.dtype)
         return (
             loss,
             ess,
@@ -712,7 +542,7 @@ class WeightedForwardKLNeuTraTrainer:
             tf.reduce_max(normalized_weights),
             gradient_norm,
             clipped_norm,
-            gradient_norm > tf.constant(float(self.config.gradient_clip_norm), tf.float64),
+            gradient_norm > tf.constant(float(self.config.gradient_clip_norm), self.dtype),
             tf.identity(self.step),
             finite,
         )
@@ -723,12 +553,12 @@ class WeightedForwardKLNeuTraTrainer:
         normalized_weights = tf.exp(tf.nn.log_softmax(log_weights))
         # Reuse the inverse solve for both q_phi(theta) and latent diagnostics.
         latent, forward_logdet = self.transport.inverse_and_forward_logdet(physical)
-        dimension = tf.cast(self.config.dimension, tf.float64)
+        dimension = tf.cast(self.config.dimension, self.dtype)
         negative_log_prob = (
-            tf.constant(0.5, tf.float64) * tf.reduce_sum(tf.square(latent), axis=-1)
-            + tf.constant(0.5, tf.float64)
+            tf.constant(0.5, self.dtype) * tf.reduce_sum(tf.square(latent), axis=-1)
+            + tf.constant(0.5, self.dtype)
             * dimension
-            * tf.math.log(tf.constant(2.0 * math.pi, tf.float64))
+            * tf.math.log(tf.constant(2.0 * math.pi, self.dtype))
             + forward_logdet
         )
         mean = tf.reduce_sum(normalized_weights[:, tf.newaxis] * latent, axis=0)
@@ -739,7 +569,7 @@ class WeightedForwardKLNeuTraTrainer:
             transpose_a=True,
         )
         ess = tf.math.reciprocal(tf.reduce_sum(tf.square(normalized_weights)))
-        count = tf.cast(tf.size(normalized_weights), tf.float64)
+        count = tf.cast(tf.size(normalized_weights), self.dtype)
         return (
             tf.reduce_sum(normalized_weights * negative_log_prob),
             negative_log_prob,
@@ -771,14 +601,12 @@ class MatchedReverseKLNeuTraTrainer:
             epsilon=float(config.epsilon),
         )
         self.optimizer.build(self.variables)
-        self._compiled_train_step = tf.function(
-            self._train_step_impl,
-            jit_compile=bool(config.jit_compile),
-            reduce_retracing=True,
-        )
+        self._compiled_train_step = FixedShapeTrainingProgram(self._train_step_impl, jit_compile=bool(config.jit_compile))
 
     def train_step(self, latent: Any) -> WeightedNeuTraStep:
         rows = _rank2(latent, self.config.dimension, "latent")
+        if int(rows.shape[0]) < 2:
+            raise ValueError("training batch size must exceed one")
         values = self._compiled_train_step(rows)
         if not bool(values[-1].numpy()):
             raise WeightedNeuTraTrainingError(
@@ -842,8 +670,8 @@ class MatchedReverseKLNeuTraTrainer:
         )
 
 
-def _rank2(value: Any, dimension: int, name: str) -> tf.Tensor:
-    tensor = tf.convert_to_tensor(value, tf.float64)
+def _rank2(value: Any, dimension: int, name: str, *, dtype=tf.float64) -> tf.Tensor:
+    tensor = tf.convert_to_tensor(value, dtype)
     if tensor.shape.rank != 2 or tensor.shape[-1] != int(dimension):
         raise ValueError(f"{name} must have shape [row, {int(dimension)}]")
     if tensor.shape[0] is None:
@@ -852,8 +680,8 @@ def _rank2(value: Any, dimension: int, name: str) -> tf.Tensor:
     return tensor
 
 
-def _weights(value: Any, row_count: int | None) -> tf.Tensor:
-    tensor = tf.convert_to_tensor(value, tf.float64)
+def _weights(value: Any, row_count: int | None, *, dtype=tf.float64) -> tf.Tensor:
+    tensor = tf.convert_to_tensor(value, dtype)
     if row_count is None or tensor.shape != (int(row_count),):
         raise ValueError("log_weights must match the static physical row count")
     tf.debugging.assert_all_finite(tensor, "log_weights")

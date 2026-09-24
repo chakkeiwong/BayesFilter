@@ -13,6 +13,8 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.inference import neutra_transport_core as _transport_core
+
 from bayesfilter.inference.neutra_batching import (
     InvalidNeuTraBatchTarget,
     batch_native_value_status_target_fn,
@@ -206,6 +208,8 @@ class PlainDenseIAFTrainingConfig:
 
 class TrainableDenseAutoregressiveIAF:
     """MADE-style trainable IAF using the frozen schema's exact convention."""
+    autoregressive = True
+
 
     def __init__(
         self,
@@ -248,17 +252,7 @@ class TrainableDenseAutoregressiveIAF:
         return tuple(result)
 
     def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        z = tf.convert_to_tensor(values, dtype=tf.float64)
-        h = z
-        for weight, bias, mask in zip(
-            self.weights[:-1], self.biases[:-1], self.masks[:-1]
-        ):
-            h = tf.matmul(h, weight * mask) + bias
-            h = _activation(h, self.activation)
-        raw = tf.matmul(h, self.weights[-1] * self.masks[-1]) + self.biases[-1]
-        scale_logits, shift = tf.split(raw, 2, axis=-1)
-        scale_log = self.s_max * tf.math.tanh(scale_logits / self.s_max)
-        return z * tf.exp(scale_log) + shift, tf.reduce_sum(scale_log, axis=-1)
+        return _transport_core.iaf_forward(self, tf.convert_to_tensor(values, dtype=tf.float64))
 
     def component_payload(self, component_id: str) -> Mapping[str, Any]:
         return {
@@ -308,21 +302,14 @@ class PlainDenseIAFTransport:
     def residual_forward_and_logdet(
         self, values: tf.Tensor
     ) -> tuple[tf.Tensor, tf.Tensor]:
-        output = tf.convert_to_tensor(values, dtype=tf.float64)
-        logdet = tf.zeros(tf.shape(output)[:-1], dtype=tf.float64)
-        for index, layer in enumerate(self.layers):
-            output, layer_logdet = layer.forward_and_logdet(output)
-            logdet = logdet + layer_logdet
-            if index + 1 < len(self.layers):
-                output = tf.matmul(output, self.reverse_matrix)
-        return output, logdet
+        values = tf.convert_to_tensor(values, dtype=tf.float64)
+        return _transport_core.compose_forward(_transport_core.interleaved_stages(self.layers, self.dimension), values)
 
     def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         residual, logdet = self.residual_forward_and_logdet(values)
-        output = self.affine_center + tf.matmul(
-            residual, self.affine_factor, transpose_b=True
-        )
-        return output, logdet + self.affine_logdet
+        output, affine_logdet = _transport_core.affine_forward(residual, self.affine_center, None,
+            matrix=self.affine_factor, logdet=self.affine_logdet)
+        return output, logdet+affine_logdet
 
     def forward_batch(self, values: Any) -> tf.Tensor:
         output, _ = self.forward_and_logdet(tf.convert_to_tensor(values, tf.float64))
@@ -1196,39 +1183,11 @@ def _validate_training_runtime(config: PlainDenseIAFTrainingConfig) -> None:
 def _dense_iaf_masks(
     dimension: int, hidden_layers: Sequence[int]
 ) -> tuple[tf.Tensor, ...]:
-    degrees: list[tuple[int, ...]] = [tuple(range(1, dimension + 1))]
-    max_degree = max(1, dimension - 1)
-    for width in hidden_layers:
-        degrees.append(tuple(1 + index % max_degree for index in range(int(width))))
-    degrees.append(tuple(range(1, dimension + 1)) * 2)
-    result = []
-    for index, (left, right) in enumerate(zip(degrees[:-1], degrees[1:])):
-        output_layer = index == len(degrees) - 2
-        result.append(
-            tf.constant(
-                [
-                    [
-                        1.0
-                        if ((source < target) if output_layer else (source <= target))
-                        else 0.0
-                        for target in right
-                    ]
-                    for source in left
-                ],
-                dtype=tf.float64,
-            )
-        )
-    return tuple(result)
+    return _transport_core.dense_masks(dimension, hidden_layers)
 
 
 def _activation(values: tf.Tensor, name: str) -> tf.Tensor:
-    if name == "elu":
-        return tf.nn.elu(values)
-    if name == "tanh":
-        return tf.math.tanh(values)
-    if name == "relu":
-        return tf.nn.relu(values)
-    raise ValueError(f"unsupported activation: {name}")
+    return _transport_core.activation(values, name)
 
 
 def _write_new_json(path: Path, payload: Mapping[str, Any]) -> None:

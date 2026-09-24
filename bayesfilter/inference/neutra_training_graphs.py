@@ -18,9 +18,9 @@ class FixedShapeTrainingProgram:
 
     def __call__(self, *arguments):
         signature = tuple(tf.TensorSpec(value.shape, value.dtype) for value in arguments)
-        if any(not spec.shape.is_fully_defined() or spec.dtype != tf.float64
+        if any(not spec.shape.is_fully_defined() or spec.dtype not in (tf.float32, tf.float64)
                for spec in signature):
-            raise ValueError("NeuTra training programs require static float64 inputs")
+            raise ValueError("NeuTra training programs require static float32 or float64 inputs")
         program = self.programs.get(signature)
         if program is None:
             program = tf.function(self.function, input_signature=signature,

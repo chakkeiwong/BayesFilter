@@ -18,7 +18,7 @@ first-admission or efficiency-winner schedulers.
 | --- | --- | --- |
 | `HMCKernelTuningConfig` or omitted ordinary config | Operational windowed mass preparation, or explicit fixed identity; exact TF/TFP value and score. | All verified members can seek checked numerical replay. |
 | `HMCControllerConfig` plus numerical `candidate_set_adapter` | Caller already obtained repository-issued frozen geometry and starts. | Same controller, evidence, and replay checks. |
-| `FixedTransportHMCKernelTuningConfig` plus `frozen_transport_payload` | Reconstruct the frozen diagonal-affine or dense-IAF map; identity mass in latent coordinates. | Same controller and checked numerical replay. |
+| `FixedTransportHMCKernelTuningConfig` plus `frozen_transport_payload` | Reconstruct a frozen diagonal-affine, legacy dense-IAF, or configured IAF/conditional-DSF map; identity mass in latent coordinates. See [NeuTra implementation](neutra-implementation.md). | Same controller and checked numerical replay. |
 | `TensorFlowHMCKernelTuningConfig` plus `runner_binding` | Affine preparation and the declared position-only proposal field with exact endpoint potential. | Conditional mechanics only; no exact-score retained-member authority. |
 
 Unsupported custom transports or bare runner callbacks fail before execution.
