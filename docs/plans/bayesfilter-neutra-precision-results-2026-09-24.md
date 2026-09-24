@@ -80,3 +80,64 @@ Evidence root: `artifacts/neutra-precision-training-2026-09-24/`. Large HLO file
 remain local and are indexed with hashes. The active execution plan is
 `bayesfilter-neutra-precision-training-plan-2026-09-24.md`. Work is isolated in
 `/tmp/BayesFilter-neutra-precision-20260924` to preserve concurrent dirty work.
+
+## Sustained training and numerical repair checkpoint
+
+All three initial IAF fits reached 4,096 updates, passed their 1,000-point
+checks and exported-map inverse checks. Their descriptive residual medians
+are 0.3352, 0.4364 and 0.6732; means are 0.4208, 0.5763 and 0.8092. The
+fractions above one are 4.8%, 12.9% and 22.9%. These independent probe banks
+are not the common final comparison bank; no replicated-improvement verdict
+has yet been issued. Clipping occurred on 38, 59 and 41 of 4,096 updates.
+
+NAF seeds 0 and 1 stopped at updates 2,328 and 462. Exact replay showed an
+implementation error: the log-domain mixture rejected finite log weights
+when their unnecessary exponentiation underflowed to zero in FP32. The
+minimum log weights were -118.800 and -107.520, at exactly the rows and
+coordinates that acquired NaNs. The same represented maps and minibatches
+were valid in FP64 under both path and standard gradient estimators.
+
+The corrected validity check uses finite log weights and retains all other
+domain checks. It changes neither the mixture formula nor the target and
+adds no clipping, floor or discarded component. The 46-test equation and
+precision suite passes, including a tiny-weight component that dominates a
+tail and must survive the log-domain calculation. Both formerly failing GPU
+updates now pass with finite gradients and advance Adam to the expected next
+iteration. Evidence is in `naf-weight-underflow-01/result.json` and
+`naf-invalid-update-repair-verification-01/result.json` under the evidence root.
+The pre-repair replay and one failed diagnostic serialization attempt remain
+preserved and charged.
+
+NAF seed 2 reached 4,096 accepted updates but failed in post-training AutoGraph
+source lookup after numerical source was edited during its live process.
+The saved optimizer checkpoint is intact. The refreshed controller resumes
+all three seeds in fresh processes to 8,192 total updates, preserving moments
+and noise streams. This replaces the unjustified capacity repair for the
+now-localized implementation failure. The final heldout banks remain untouched.
+
+The downstream assessment has executable CPU reference checks for both IAF
+and NAF: frozen-map loading, public tuning, numerical member export/reload,
+and the shared sequential posterior controller. Eleven checks passed; fifteen
+including the repaired campaign controller passed. These fixtures establish
+call-chain mechanics, not q20 convergence. The current balance before resumed
+training is 84,453.730 worker seconds. Exact revised reservations are in
+`accounting-before-repaired-continuation.json`.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action | Unsupported conclusion |
+|---|---|---|---|---|---|
+| Resume NAF16 after log-weight repair | Both exact failed updates now pass | Old FP32 guard defect fixed; final quality still pending | Sustained fit and generalization | Three preserved seeds to 8,192, then untouched bank | NAF successfully trained |
+| Preserve all three IAF candidates | Required probe and inverse checks pass | No numerical veto observed | Paired final-bank differences and posterior coverage | Complete common-bank comparison | Posterior correctness from residuals |
+
+| Inference status | Current evidence |
+|---|---|
+| Hard veto screen | Original NAF invalid updates retained; exact repaired replays valid; all initial IAF maps numerically valid |
+| Statistically supported ranking | None; final paired analysis pending |
+| Descriptive-only differences | IAF residual distributions and clipping rates |
+| Default-readiness | Not established by these training results |
+| Next evidence needed | Completed NAF replication/control, paired final banks and bounded downstream assessment |
+
+The strongest alternative explanation for the IAF diagnostics remains added
+optimization and initialization. The continuation control and fresh baseline
+evaluation address that explanation. The NAF repair is supported by exact
+failure localization and independent equations, but still needs sustained
+training. No result rejects the NeuTra research direction.

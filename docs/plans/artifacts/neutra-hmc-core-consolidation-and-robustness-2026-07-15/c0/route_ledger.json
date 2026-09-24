@@ -375,6 +375,21 @@
       "path": "docs/benchmarks/ledh_surrogate_hmc_single_chain_test.py",
       "classification": "historical_or_superseded",
       "reason": "Fixed-budget LEDH surrogate-force calibration or diagnostic from the terminated 2026-09-07 executable master program (termination notice dated 2026-09-16); preserved as historical code, not an active NeuTra posterior route."
+    },
+    {
+      "path": "docs/benchmarks/run_q20_configured_hmc_2026_09_24.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "active_entry_points": [
+        "assess_member"
+      ],
+      "required_symbols": [
+        "run_hmc_posterior",
+        "SequentialNeuTraHMCConfig",
+        "BudgetedCheckpoint"
+      ],
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Configured learned map is freshly tuned by the public fixed-map tuner; posterior assessment uses the shared sequential controller and preserves every warmup/retained chunk. Pricing is explicitly separate."
     }
   ]
 }

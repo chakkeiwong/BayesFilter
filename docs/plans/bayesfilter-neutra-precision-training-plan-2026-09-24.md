@@ -332,6 +332,25 @@ and the predeclared multiplicity allowance. The controller cannot grant
 posterior status. Focused synthetic checks cover cohort decisions, exact
 continuation requests and budget rejection before launch.
 
+### Saved NAF invalid-update diagnosis
+
+The initial NAF16 seeds 0 and 1 stopped at updates 2,328 and 462 on invalid
+training updates. Their last valid parameters and Adam slots are preserved.
+Before the larger-capacity repair, replay the exact failed minibatch against
+those saved parameters. Separate target validity, map/logdet finiteness,
+layer-Jacobian diagonal margins, path proposal-score finiteness, parameter
+gradient finiteness, and post-Adam map validity. Compare the same represented
+weights/points in FP32/TF32 and FP64, and standard versus path gradients.
+This identifies a precision/conditioning, optimizer, or target failure; it
+does not rank gradient estimators or transport families. A wider network is
+not presumed to repair a numerical failure. Cap this debugging-only replay
+at 600 worker seconds from the existing 5,000-second repair reserve. Preserve
+the exact requests, failed noise seeds, per-layer results and replay outcomes
+under `naf-invalid-update-diagnostic-01`. Reconcile its actual charge before
+launching the next cohort. The active third NAF fit and completed IAF results
+remain independent evidence. Audit passes: exact failed inputs are used only
+to diagnose the failure and cannot supply final quality evidence.
+
 ### Bounded downstream check of a frozen trained map
 
 The question here is whether a repaired map permits useful plain NeuTra HMC
@@ -396,6 +415,69 @@ short L grid or insufficient posterior budget limits the claim instead of
 silently redefining success. The 8,000-second cap and recorded phase prices
 protect the funded training replication. Audit passes for this bounded check,
 with posterior precision and independent reference agreement still unresolved.
+
+### NAF log-weight repair and resumed replication
+
+Exact failed-batch replay isolates a shared implementation defect. For seed 0,
+the last stage's minimum normalized log weight is -118.800; for seed 1 it is
+-107.520. The original check required `exp(log_w)>0`, which underflowed in
+FP32 at the same row/coordinate positions that became NaN. Both batches are
+valid in FP64 with both standard and path gradients. This is an implementation
+failure, not evidence that NAF capacity or the target is inadequate.
+
+The mixture equations consume log weights directly through log-sum-exp.
+For every finite real log weight l, exp(l)>0 mathematically. Requiring a
+floating-point materialization of exp(l) to remain nonzero adds a domain
+restriction absent from these equations. Replace it with the finite-log-weight
+check; retain positive finite slopes and finite offsets. The change adds no
+clipping, weight floor, renormalization, discarded mixture component or modified
+target. A tiny-weight component can dominate in a tail, so regression tests
+check that case against independent FP64 probability-space equations, as well
+as an exactly affine equal-sigmoid mixture, derivatives and nonfinite rejection.
+
+Recheck the two saved failed batches on the GPU after repair. The complete
+debugging/repair replay allowance is now at most 1,200 seconds within the
+existing 5,000-second repair reserve; this includes failed diagnostic attempts
+and the small log-weight probe. Actual time, not the cap, is charged.
+
+When these checks pass, resume all three NAF16 seeds from their latest complete
+Adam checkpoints under the same learning rate, clipping rule, batch size,
+noise stream and target. Seed 0 resumes after 2,327 accepted updates and seed 1
+after 461; the third seed uses its last preserved state. Each still reaches
+8,192 total updates. Keep the original failed attempts in the denominator and
+record this common implementation repair. Do not replace the cohort with NAF32
+for this diagnosed failure: larger capacity would leave the defect intact.
+The healthy IAF computation does not call the changed sigmoid-mixture code.
+Use the unspent original initial-fit reservations to fund the additional
+NAF16 work, preserve the existing final-bank/downstream allocations, and record
+the exact revised job caps against the current ledger before launch.
+
+Reconciliation before resumed training: 84,453.730 worker seconds remain after
+49,310.065 seconds for all initial fits and 711.364 supplemental engineering/
+repair seconds. The NAF seed caps are 17,995, 23,593 and 12,688 seconds, derived
+from `(8192 - accepted_updates)*3 + 400`; 3 seconds conservatively covers the
+observed update rates and 400 seconds covers setup and final verification.
+The legacy control retains its 11,500-second cap. Their sum is 65,776 seconds,
+leaving 3,000 for final banks, 8,000 downstream, 5,000 for further localized
+repair and 2,677.730 unreserved. All reservations fit the original balance.
+Seed 2 completed its 4,096 training updates; its finalization error arose when
+AutoGraph looked up source that had changed during the live process. Resume
+that intact checkpoint in a fresh process. Freeze numerical source files for
+the resumed workers; implement/report-only edits must not move live numerical
+source lines. All original failures and their full charges remain preserved.
+
+The refreshed controller now also launches the bounded downstream assessment
+after paired final analysis. It accounts for analysis time and the actual
+final-bank charges before admitting that reserved phase. It reports a bounded
+evaluation as complete even when the declared posterior checks remain unmet;
+the scientific result retains that limitation explicitly.
+
+Audit: the repaired guard checks the representation actually used by the
+unchanged mathematical formula; independent equations and exact failed inputs
+distinguish a validity bug from an optimizer/capacity explanation. Resumed
+states retain their seed histories and optimizer moments. Their final banks
+remain untouched. A continued NAF numerical failure is a new repair trigger,
+not justification to report successful training from these regression checks.
 
 ## Binary-event posterior diagnostic repair
 
