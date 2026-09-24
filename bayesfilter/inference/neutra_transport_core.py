@@ -5,6 +5,11 @@ their saved conventions to these kernels. Static Python loops traverse network
 layers only. Batch rows stay in native tensor operations; coordinate derivative
 and inverse loops have a single TensorFlow body, with no pfor.
 Source/derivation: docs/reference/neutra-implementation.md.
+
+Canonical architecture: bayesfilter_neutra_iaf_author_v1 (owner, 2026-09-25).
+This core also preserves historical author-code-unfaithful configurations and
+explicit alternatives. Shared-core use alone does not confer canonical status;
+the configured map must meet the architecture in the implementation reference.
 """
 from __future__ import annotations
 

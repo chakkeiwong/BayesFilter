@@ -3,6 +3,13 @@
 See docs/reference/neutra-implementation.md for source anchors and limitations.
 Old public trainers retain their saved configurations and delegate to the same
 core. New artifacts use an explicit schema rather than relabeling NAF as IAF.
+
+Owner directive 2026-09-25: the configured author IAF profile is canonical
+(`bayesfilter_neutra_iaf_author_v1`). Use hoffman_author_iaf or explicitly select
+all documented profile fields; arbitrary configurations are not canonical.
+Legacy configurations remain historical and unfaithful to the author's code.
+NAF is a separately identified alternative. Deviations require the explanation
+in docs/plans/bayesfilter-neutra-canonical-architecture-policy-2026-09-25.md.
 """
 from __future__ import annotations
 

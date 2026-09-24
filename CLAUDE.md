@@ -2,6 +2,20 @@
 
 Claude Code reviewers and workers must follow `AGENTS.md`.
 
+## Canonical NeuTra Architecture Rule
+
+Owner directive, 2026-09-25: superseded local NeuTra implementations, saved
+configurations and results are **HISTORICAL — UNFAITHFUL TO THE AUTHOR'S CODE**.
+The current canonical architecture is `bayesfilter_neutra_iaf_author_v1`, the
+configured repaired IAF defined in `docs/reference/neutra-implementation.md`.
+Review the actual masks, initialization, ELU networks, reversal and free bias
+outside the conditional scale cap; shared-core use alone is insufficient.
+Legacy readers and facades retain historical semantics. NAF is a separately
+identified alternative. Before approving a departure, require the substantive
+source-grounded explanation and bounded validation specified in
+`docs/plans/bayesfilter-neutra-canonical-architecture-policy-2026-09-25.md`.
+Do not infer posterior correctness or causation from this architectural policy.
+
 ## Backend Rule
 
 The repository implementation backend is TensorFlow / TensorFlow Probability.

@@ -1,4 +1,10 @@
-"""GPU/XLA-oriented reverse-KL training for BayesFilter NeuTra transports.
+"""Historical reverse-KL training facades for BayesFilter NeuTra transports.
+
+HISTORICAL — UNFAITHFUL TO THE AUTHOR'S CODE (owner directive 2026-09-25):
+the built-in affine/dense/composed map recipes are compatibility/reference
+implementations, not the current canonical architecture. New canonical work
+uses the configured IAF in neutra_transport through neutra_transport_core.
+See docs/reference/neutra-implementation.md and the canonical-policy notice.
 
 The target supplies graph-native values and scores. GradientTape is restricted
 to the trainable transport; it never differentiates through the target/filter.

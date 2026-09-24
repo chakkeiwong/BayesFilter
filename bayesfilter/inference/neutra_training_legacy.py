@@ -1,4 +1,10 @@
-"""Focused TensorFlow training utilities for plain dense-IAF NeuTra."""
+"""Historical TensorFlow training utilities for plain dense-IAF NeuTra.
+
+HISTORICAL — UNFAITHFUL TO THE AUTHOR'S CODE (owner directive 2026-09-25).
+Preserved legacy behavior is not the canonical NeuTra architecture. New work
+uses the configured IAF in neutra_transport through neutra_transport_core.
+See docs/reference/neutra-implementation.md and the canonical-policy notice.
+"""
 
 from __future__ import annotations
 

@@ -2,6 +2,12 @@
 
 This module loads small, reviewed frozen transport manifests only.  It does not
 train NeuTra, import model-specific code, or establish sampler validity.
+
+Owner directive 2026-09-25: old affine/dense schemas preserve HISTORICAL —
+UNFAITHFUL TO THE AUTHOR'S CODE implementations. Successful loading is not
+canonical admission. Configured artifacts must match the canonical IAF profile
+in docs/reference/neutra-implementation.md to receive that architecture label;
+NAF and other configurations retain their separately identified status.
 """
 
 from __future__ import annotations
