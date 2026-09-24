@@ -1,5 +1,10 @@
 # NeuTra precision repair and q20 training evaluation
 
+Execution closed after all declared training/final-bank phases and the bounded
+HMC attempt. See the [terminal evaluation](bayesfilter-neutra-training-evaluation-results-2026-09-24.md)
+for results, limitations and remaining budget. Phase allocations below retain
+their historical pre-execution values; the terminal ledger records actuals.
+
 User authorization: implement configurable FP32/TF32 training, commit and merge
 with the remote and push, then evaluate the repaired training. The target is
 the existing q20/T30 four-parameter UKF posterior approximation. This is not a
@@ -249,6 +254,33 @@ legacy control cost at most 77,415 forecast seconds; the continuation reserve
 is 33,178 seconds. Reprice if steady updates exceed 2.7 seconds persistently.
 
 ### Independent verification and scientific decision
+
+Reporting amendment after inspecting saved validation draws: preserve the
+positive, negative and zero counts of `observation_weight.0.0` from every
+final map's physical draws, including the baseline. These are explanatory
+transport-coverage diagnostics, not estimates of posterior sign probability.
+The paired improvement criteria and downstream nomination order remain fixed.
+Audit: a low residual can coexist with concentration in one sign region;
+recording the counts exposes that limitation without replacing the planned
+sign-dispersed HMC or its posterior event checks. This changes only reporting,
+with the fixed paired-statistics fixture checking that the added counts do not
+alter its numerical conclusions. Running training sources remain frozen.
+
+Bounded score-debugging amendment: after NAF seeds 0/2 finish, check the four
+largest validation residuals and four central residual-order points per seed
+against central finite differences of the full transformed log density and
+the physical target. Use the exact exported FP64 weights, fixed four-row
+batches, XLA, and relative steps `eps64**(1/3)` times 1, 0.1 and 0.01.
+These steps follow the usual truncation/roundoff balance, with smaller steps
+checking sensitivity near sharp features. A maximum componentwise scaled
+error above 1e-4 at the smallest step triggers investigation; it is an
+engineering diagnostic threshold, not a convergence criterion. Preserve
+target-score pullbacks and log-Jacobian scores separately. The eight-point
+selection is a cheap localization design and cannot establish global score
+correctness or use the final heldout bank. Cap this check at 300 worker seconds
+from the existing repair reserve; run only on a free GPU and charge failures.
+Audit passes: this distinguishes a wrong score from actual sharp geometry,
+does not alter training, discard difficult points, or change promotion rules.
 
 Every completed training arm gets the standard 1,000-point normal-base
 post-training probe: residual norm distribution, coordinate RMS, density-ratio

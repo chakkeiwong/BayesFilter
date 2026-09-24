@@ -1,5 +1,10 @@
 # Configurable NeuTra training precision: engineering result and continuation
 
+This file preserves the engineering and interim execution record. The complete
+training, paired comparison, HMC outcome and current decisions are in the
+[terminal evaluation](bayesfilter-neutra-training-evaluation-results-2026-09-24.md).
+The pending-stage decisions below describe their recorded earlier stage.
+
 FP32 transport weights, gradients and Adam state can now train against the
 existing FP64 value/score target. TensorFlow's TF32 option governs eligible
 FP32 matrix multiplication; it is not a storage dtype. FP64 compatibility
