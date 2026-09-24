@@ -1,5 +1,23 @@
 # Additional repair phase: complete execution boundaries and ownership
 
+Current checkpoint, 2026-09-25 through 03762: the remaining-SVD cost unit is
+complete at 54 workers / 957.793425 seconds, including preserved failures and
+the interrupted 03728 reservation. Its 48 accepted CPU/GPU workers pass independent
+candidate numerics and caller collection. Prior XLA remains numerically invalid;
+no speed ratio uses it. Cold/host-memory and D5 GPU warm-time findings require
+capacity attribution. See the [result and review](filter_gradient_remaining_svd_cost_result_20260925.md).
+Saved analyses reproduce exactly; 25 analyzer and 129 policy checks pass.
+
+E5 next integrates remote main `5e16df06f`, renews focused filter and canonical
+NeuTra checks, then creates a fresh immutable snapshot for actual DZ5 target
+qualification. Author-profile IAF is the only current canonical architecture;
+old CDF maps and recipes are historical and cannot establish current NeuTra
+integration. The numerical target qualification itself executes no learned map.
+E2 reporting/isotropic issues, E4 native capacity, public integration and terminal
+F01--F20 dispositions remain open. Cumulative charges are 73366.07750559614 CPU /
+74145.13260247167 GPU seconds; no worker is active. Earlier statuses follow as
+historical evidence, superseded by this checkpoint.
+
 Current continuation through03708: the magnitude-normalized SVD and independent
 trace ownership repairs pass147 checks on each of CPU and GPU under one frozen
 2735-file source closure. The combined LLVM allocation failures03682/03684 and

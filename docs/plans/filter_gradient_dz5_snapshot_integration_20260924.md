@@ -106,3 +106,16 @@ it must remain immutable. Create a fresh versioned snapshot binding the current
 runtime for step2, then repeat import verification before numerical evidence.
 No target evaluation, adapter admission, training or retained chain was run.
 The three import attempts consume31.909861 seconds of the existing unit.
+
+September25 architecture boundary: the frozen CDF recipe and any old learned or
+affine NeuTra map are historical under the owner's new canonical IAF directive.
+The generic target/initializer numerical checks in steps1--4 do not qualify a
+neural architecture and may still identify execution defects. Step5's excluded
+legacy consumer, if retained, is historical mechanics only and cannot close
+current NeuTra integration. Before current NeuTra handoff, integrate and test
+`NeuTraTransportConfig.hoffman_author_iaf` through the single shared numerical
+authority, with target-specific configuration provenance and no reuse of old
+maps as canonical evidence. No new training recipe or architecture departure is
+authorized by this note. The new572-source snapshot
+`dz5-candidate-source-ea94aac96-r1` binds the repaired numerical checkpoint but
+predates canonical transport integration; keep it immutable and labeled.

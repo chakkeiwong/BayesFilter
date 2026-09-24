@@ -1,5 +1,28 @@
 # Filter and gradient repair recovery
 
+Current checkpoint, 2026-09-25 through 03762: remaining-SVD costs are complete
+with 48 accepted workers. The CPU/GPU analyses reproduce exactly and all receipt
+hashes match; 25 final analyzer and 129 policy checks pass. Numerical candidate
+and caller ownership qualify in this fixture scope. Prior XLA is invalid and
+excluded from speed ratios; cold/host and D5 GPU warm triggers remain open.
+Read [the result](filter_gradient_remaining_svd_cost_result_20260925.md).
+
+Continue on `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`, branch
+`repair/filter-gradient-xla-validation-20260918`, with the stable campaign runner.
+Artifacts live in the shared main-checkout output root named below. Commit the
+cost/checkpoint work, merge fetched remote main `5e16df06f`, preserve both SVD
+repairs and canonical NeuTra policy, run focused post-merge checks, then push the
+repair branch. Create a new merged-commit DZ5 snapshot before numerical target
+qualification; existing snapshots remain immutable historical evidence. No old
+map or affine recipe is canonical. Do not restart CDF, edit MacroFinance source,
+install packages, or refresh stale admission hashes.
+
+No worker is active. Charges are 73366.07750559614 CPU / 74145.13260247167 GPU
+seconds, leaving 11.620534 / 31.404130 hours. Remaining gates are public/actual
+DZ5 integration, reporting/isotropic findings, native capacity and F01--F20
+terminal audit. The following older checkpoints are superseded for current
+status only; their evidence and limitations remain preserved.
+
 Current continuation through03708: the magnitude-normalized SVD and independent
 trace ownership repairs pass147 checks on each of CPU and GPU under one frozen
 2735-file source closure. The combined LLVM allocation failures03682/03684 and

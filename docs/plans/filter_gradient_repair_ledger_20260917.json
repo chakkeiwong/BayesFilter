@@ -146,29 +146,32 @@
     "parse_error_role": "unchanged historical vendor syntax; counts are search leads, not compliance verdicts"
   },
   "current_checkpoint": {
-    "through_run": 3708,
-    "based_on_commit": "9696666e443b6e600891d661f186bf55a1a6b72d",
-    "record": "filter_gradient_remaining_svd_scale_unit_20260924.md",
-    "receipt": "artifacts/filter-gradient-repair-20260917/remaining-svd-qualification-03699.json",
+    "through_run": 3762,
+    "based_on_commit": "ea94aac9611cfeda826b0088bcc7aef7353e4bc4",
+    "record": "filter_gradient_remaining_svd_cost_result_20260925.md",
+    "receipt": "artifacts/filter-gradient-repair-20260917/remaining-svd-cost-receipt-03760.json",
     "terminal_acceptance": false,
     "active_job": null,
     "all_finding_dispositions_open": true,
     "guarded_sources": 239,
     "exact_exceptions": 1340,
     "guard_coverage": "Partial; no new exceptions, no numerical-loop or NumPy waiver.",
-    "status": "147 SVD/ownership/consumer checks pass per backend; graph timing increase not reproduced under matched interleaving; isolated DZ5 import passes. Actual integration, cost/capacity and terminal gates remain open.",
+    "status": "48 matched cost workers complete; independent analyses reproduce exactly. Candidate numerics and caller ownership pass; prior XLA fails. Cold/host and D5 GPU warm triggers remain open; remote integration and actual DZ5 qualification are next.",
     "charged_seconds": {
-      "CPU": 73120.44389428098,
-      "GPU": 73432.97278902777
+      "CPU": 73366.07750559614,
+      "GPU": 74145.13260247167
     },
     "remaining_hours": {
-      "CPU": 11.68876558492195,
-      "GPU": 31.601952003047842
+      "CPU": 11.620534026223293,
+      "GPU": 31.40412983264676
     },
-    "remote_main": "622d9a9ed028659328b6386f9e9de7f368e7bba3",
-    "latest_policy_run": 3707,
+    "remote_main": "5e16df06f586c16bc58fb76bc62d4f6451e7690d",
+    "latest_policy_run": 3762,
     "policy_checks": 129,
-    "cost_analyzer_run": 3708
+    "cost_analyzer_run": 3761,
+    "cost_analyzer_checks": 25,
+    "canonical_neutra_architecture": "bayesfilter_neutra_iaf_author_v1",
+    "main_promotion": false
   },
   "historical_quadratic_batch_checkpoint": {
     "through_run": 1879,
@@ -3098,22 +3101,43 @@
       "plan": "filter_gradient_dz5_snapshot_integration_20260924.md",
       "worker_cap": 24,
       "seconds_cap": 14400,
-      "status": "Import-only03706 passed after two preserved device-mount failures; fresh runtime snapshot and target qualification remain required.",
-      "snapshot": "artifacts/filter-gradient-repair-20260917/dz5-candidate-source-03612/manifest.json",
+      "status": "Import-only03706 passed; refreshed572-source ea94aac96 snapshot exists. Merge canonical main and create a new immutable merged-commit snapshot before target qualification.",
+      "snapshot": "artifacts/filter-gradient-repair-20260917/dz5-candidate-source-ea94aac96-r1/manifest.json",
       "runs": [
         3704,
         3705,
         3706
       ],
       "used_workers": 3,
-      "used_seconds": 31.909861
+      "used_seconds": 31.909861,
+      "canonical_neutra_boundary": "Author-profile IAF only. Old CDF maps/recipes historical; target numerics do not qualify a neural architecture."
     },
     "remaining_svd_cost_followup": {
       "plan": "filter_gradient_remaining_svd_cost_followup_20260924.md",
-      "worker_cap": 52,
+      "worker_cap": 54,
       "seconds_cap": 7200,
-      "status": "Draft exists at /tmp/test_filter_repair_remaining_svd_cost.py; uninstalled/unexecuted pending composition ownership and independent analyzer review. Preceding numerical/ownership qualification complete.",
-      "baseline": "9696666e4"
+      "status": "Complete matched cost cohort, with numerical veto on prior XLA; lifecycle/capacity attribution remains open.",
+      "baseline": "9696666e4",
+      "used_workers": 54,
+      "used_seconds": 957.7934247590601,
+      "result": "filter_gradient_remaining_svd_cost_result_20260925.md",
+      "cpu_runs": "03712--03736 excluding GPU03728; 24 workers",
+      "gpu_runs": "03737--03760; 24 workers",
+      "cpu_analysis": "artifacts/filter-gradient-repair-20260917/remaining-svd-cost-cpu-03736.json",
+      "gpu_analysis": "artifacts/filter-gradient-repair-20260917/remaining-svd-cost-gpu-03760.json",
+      "receipt": "artifacts/filter-gradient-repair-20260917/remaining-svd-cost-receipt-03760.json",
+      "preserved_harness_failures": [
+        3710,
+        3711
+      ],
+      "excluded_interrupted_run": 3728,
+      "final_analyzer_run": 3761,
+      "final_policy_run": 3762,
+      "open_dispositions": [
+        "CPU/GPU cold cost and host residency; CPU extra RSS 344--355 MiB",
+        "D5 GPU warm candidate-XLA/graph ratio 1.509",
+        "Actual public/DZ5 capacity and native lifecycle"
+      ]
     }
   },
   "diagnosis_checkpoint_02636": {
@@ -3581,5 +3605,30 @@
       "GPU": 32.082513801908114
     },
     "remote_main": "622d9a9ed028659328b6386f9e9de7f368e7bba3"
+  },
+  "historical_current_checkpoint_03708": {
+    "through_run": 3708,
+    "based_on_commit": "9696666e443b6e600891d661f186bf55a1a6b72d",
+    "record": "filter_gradient_remaining_svd_scale_unit_20260924.md",
+    "receipt": "artifacts/filter-gradient-repair-20260917/remaining-svd-qualification-03699.json",
+    "terminal_acceptance": false,
+    "active_job": null,
+    "all_finding_dispositions_open": true,
+    "guarded_sources": 239,
+    "exact_exceptions": 1340,
+    "guard_coverage": "Partial; no new exceptions, no numerical-loop or NumPy waiver.",
+    "status": "147 SVD/ownership/consumer checks pass per backend; graph timing increase not reproduced under matched interleaving; isolated DZ5 import passes. Actual integration, cost/capacity and terminal gates remain open.",
+    "charged_seconds": {
+      "CPU": 73120.44389428098,
+      "GPU": 73432.97278902777
+    },
+    "remaining_hours": {
+      "CPU": 11.68876558492195,
+      "GPU": 31.601952003047842
+    },
+    "remote_main": "622d9a9ed028659328b6386f9e9de7f368e7bba3",
+    "latest_policy_run": 3707,
+    "policy_checks": 129,
+    "cost_analyzer_run": 3708
   }
 }

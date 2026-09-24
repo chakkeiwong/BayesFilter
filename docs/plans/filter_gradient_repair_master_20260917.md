@@ -1,5 +1,49 @@
 # Complete filter and gradient execution repair
 
+Current checkpoint, 2026-09-25 through 03762: all 48 matched remaining-SVD
+cost workers are complete. The saved CPU/GPU analyses reproduce exactly from
+their raw artifacts; receipt hashes match. Candidate graph/XLA pass independent
+numerics, while prior XLA fails and is excluded from speed ratios. CPU XLA adds
+344--355 MiB observed RSS; cold costs and D5 GPU warm costs trigger attribution.
+These remain open capacity findings, not accepted regressions. See the
+[cost result](filter_gradient_remaining_svd_cost_result_20260925.md).
+Final analyzer checks 03761 pass 25 tests; policy 03762 passes 129 tests.
+Ruff and whitespace checks pass. No numerical runtime or allowlist changed.
+
+Next integrate fetched remote main `5e16df06f` into the repair branch, preserving
+the SVD repairs and the new canonical NeuTra authority. This is branch integration;
+promotion to main still requires all terminal gates. Review conflicting call
+chains, run focused filter/gradient and canonical-transport checks, and create a
+new immutable DZ5 snapshot bound to the resulting commit before target execution.
+The existing `dz5-candidate-source-ea94aac96-r1` snapshot remains historical.
+Public initializer/staged integration, actual DZ5 qualification, unresolved
+reporting/isotropic cases, native capacity and the F01--F20 audit remain open.
+
+Charges through 03762 are 73366.07750559614 CPU / 74145.13260247167 GPU seconds,
+leaving 11.620534 / 31.404130 hours under the unchanged 32/52-hour caps.
+No numerical worker is active. Earlier checkpoints below retain their original
+scope and are superseded for current status by this checkpoint.
+
+September25 controlling update: canonical NeuTra architecture is now
+`bayesfilter_neutra_iaf_author_v1`, using `neutra_transport.py` and the shared
+`neutra_transport_core.py`. All superseded maps/configurations/results are
+HISTORICAL — UNFAITHFUL TO THE AUTHOR'S CODE. The owner-provided AGENTS directive
+and current `docs/reference/neutra-implementation.md` supersede older architecture
+claims in this branch and its historical checkpoints. Current NeuTra integration
+must qualify the author-profile IAF; no old CDF recipe or saved map becomes
+canonical through this execution repair. Generic filters, score recursions and
+geometry primitives remain independently testable. The present SVD cost cohort
+executes no neural transport or training and continues under its existing
+numerical contract. Remote canonical changes must be integrated and tested before
+main merge; old frozen snapshots remain historical source evidence.
+
+Recovery through03728:16 CPU cost workers passed; interrupted GPU03728 has
+passing JUnit but no parent termination receipt, so it is excluded and charged
+its full300-second reservation. No worker remains active. Continue the final
+CPU repeat and three complete GPU repeats under the same frozen source set.
+See `filter_gradient_remaining_svd_cost_followup_20260924.md`. The checkpoint
+below through03708 remains the latest fully reviewed numerical repair result.
+
 Current continuation through03708: the magnitude-normalized SVD and independent
 trace ownership repairs pass147 checks on each of CPU and GPU under one frozen
 2735-file source closure. The combined LLVM allocation failures03682/03684 and

@@ -123,6 +123,11 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "remaining_svd_cost_analysis_cpu": ("tests/test_filter_repair_remaining_svd_cost_analysis.py",),
+    **{f"remaining_svd_cost_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_remaining_svd_cost.py::test_remaining_consumer_svd_cost[{arm}-{dimension}]",)
+        for device in ("cpu", "gpu") for dimension in (3, 5)
+        for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla")},
     **{f"remaining_svd_requalification_{device}": (
         "tests/test_filter_repair_remaining_svd_scale.py",
         "tests/test_filter_repair_accurate_svd.py", "tests/test_filter_repair_dense_svd.py",
@@ -1111,6 +1116,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"remaining_svd_cost_{arm}_{dimension}_{device}": "Matched affected-consumer costs; independent numerical veto, caller collection and separate capacity disposition required."
+        for device in ("cpu", "gpu") for dimension in (3, 5)
+        for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla")},
     **{group: "Preserved combined-suite LLVM memory failure/localization; all unchanged endpoint cases require the registered process shards."
         for group in ("remaining_svd_endpoints_cpu", "remaining_svd_endpoints_gpu",
             "remaining_svd_endpoint_crash_cpu", "remaining_svd_endpoint_sequence_cpu")},
@@ -1290,6 +1298,9 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"remaining_svd_cost_{device}": tuple(f"remaining_svd_cost_{arm}_{dimension}_{device}"
+        for dimension in (3, 5) for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla"))
+        for device in ("cpu", "gpu")},
     **{f"remaining_svd_qualification_{device}": tuple(f"remaining_svd_{part}_{device}"
         for part in ("ownership", "requalification", "block", "public_first", "public_second", "public_capacity"))
         for device in ("cpu", "gpu")},
@@ -1631,6 +1642,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns"
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["remaining_svd_cost_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["remaining_svd_qualification_gpu"]},
     "remaining_svd_scale_gpu": "GPU",
     "remaining_svd_derivatives_gpu": "GPU",
@@ -1899,6 +1911,7 @@ def require_unshared_cost_preflight(args):
     """Decline new public-cost workers before charging shared-device timing."""
     if (args.action != "test" or args.device != "GPU"
             or args.group not in ("svd_graph_attribution_gpu",
+                                 *TEST_BATCHES["remaining_svd_cost_gpu"],
                                  *TEST_BATCHES["posterior_public_memory_gpu"],
                                  *TEST_BATCHES["sequential_public_cost_gpu"],
                                  *TEST_BATCHES["block_public_cost_gpu"],
