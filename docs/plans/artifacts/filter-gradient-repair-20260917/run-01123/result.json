@@ -1,0 +1,1686 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "cpu_forecast_pool",
+  "size": 1,
+  "jit": "eager",
+  "device": "CPU",
+  "source_root": "/tmp/bayesfilter-filter-gradient-xla-validation-20260918",
+  "worker_sha256": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "filter_repair_forecast_pool_worker.py": "c908919c69cae52ca45b73a850668e2574802fc6a8abc61da23cc02e10d9d1ac",
+    "filter_repair_forecast_pool_fixtures.py": "be65a74ae682d40cc87df8e7f99353f6f27536488c234e2dd406d14f11f175f6"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 20439040,
+      "VmRSS": 20439040
+    },
+    "prepared": {
+      "VmHWM": 540520448,
+      "VmRSS": 540520448
+    },
+    "traced": {
+      "VmHWM": 540520448,
+      "VmRSS": 540520448
+    },
+    "cold_outputs_live": {
+      "VmHWM": 543088640,
+      "VmRSS": 543088640
+    },
+    "cold_outputs_released": {
+      "VmHWM": 543088640,
+      "VmRSS": 543088640
+    }
+  },
+  "status": "passed",
+  "phase": "complete",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": {
+    "machine": "x86_64",
+    "processor": "model name\t: AMD EPYC 7773X 64-Core Processor"
+  },
+  "timing_scope": "complete_public_cpu_forecast_pool_with_ipc_validation_and_output_conversion",
+  "numerical_execution": "owned_worker_defaults_with_cpu_xla; parent_is_host_orchestration",
+  "pool_calls": [
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        1.9501151429722086,
+        1.989870670979144
+      ],
+      "worker_runtime_max_seconds": 1.989870670979144,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.002795899985358119,
+        0.0029340799956116825
+      ],
+      "worker_runtime_max_seconds": 0.0029340799956116825,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0018213599978480488,
+        0.0018408400064799935
+      ],
+      "worker_runtime_max_seconds": 0.0018408400064799935,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0017741600167937577,
+        0.0018848199979402125
+      ],
+      "worker_runtime_max_seconds": 0.0018848199979402125,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.001762939995387569,
+        0.001836879993788898
+      ],
+      "worker_runtime_max_seconds": 0.001836879993788898,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0018112600082531571,
+        0.0017753200081642717
+      ],
+      "worker_runtime_max_seconds": 0.0018112600082531571,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0016715599922463298,
+        0.0017291299882344902
+      ],
+      "worker_runtime_max_seconds": 0.0017291299882344902,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0016424400091636926,
+        0.0017214699764735997
+      ],
+      "worker_runtime_max_seconds": 0.0017214699764735997,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0016418900049757212,
+        0.001509780006017536
+      ],
+      "worker_runtime_max_seconds": 0.0016418900049757212,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0017156399844679981,
+        0.0015676999755669385
+      ],
+      "worker_runtime_max_seconds": 0.0017156399844679981,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0017448800208512694,
+        0.0015433999942615628
+      ],
+      "worker_runtime_max_seconds": 0.0017448800208512694,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0016871499828994274,
+        0.001897370006190613
+      ],
+      "worker_runtime_max_seconds": 0.001897370006190613,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0017002600070554763,
+        0.002068439993308857
+      ],
+      "worker_runtime_max_seconds": 0.002068439993308857,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.001482469990151003,
+        0.0016548999992664903
+      ],
+      "worker_runtime_max_seconds": 0.0016548999992664903,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0016021800111047924,
+        0.0016994000179693103
+      ],
+      "worker_runtime_max_seconds": 0.0016994000179693103,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0014684399939142168,
+        0.0015970099775586277
+      ],
+      "worker_runtime_max_seconds": 0.0015970099775586277,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0014635000261478126,
+        0.001605660014320165
+      ],
+      "worker_runtime_max_seconds": 0.001605660014320165,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0014434190234169364,
+        0.0014897699875291437
+      ],
+      "worker_runtime_max_seconds": 0.0014897699875291437,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0014739799953531474,
+        0.0014817899791523814
+      ],
+      "worker_runtime_max_seconds": 0.0014817899791523814,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0014704199857078493,
+        0.0014417000056710094
+      ],
+      "worker_runtime_max_seconds": 0.0014704199857078493,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "91d7bab361211365d06b9d8303af1e544c97d06df426e0b8bcc31e66a6a70a26",
+      "seeds_hash": "5746dbd38a4f809864f167e277ba068b46ccc655b50c1b1a15285d2afc44882f",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1394389,
+        1394392
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1394392,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        },
+        {
+          "pid": 1394389,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "native_tensor_mapped_q_general_principal_root_forecast_xla",
+          "sample_wise_python_loop": false,
+          "sample_wise_tensor_mapping": true,
+          "neutra_training_eligible": false
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.0014677600120194256,
+        0.0014630900113843381
+      ],
+      "worker_runtime_max_seconds": 0.0014677600120194256,
+      "active_worker_ru_maxrss_sum_bytes": 1781043200,
+      "worker_ru_maxrss_sum_bytes": 1781043200,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2598977536,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1394389,
+        1394392
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1394389": 768192512,
+        "1394392": 766144512
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1534337024
+    }
+  ],
+  "worker_sources": [
+    {
+      "pid": 1394392,
+      "source_root": "/tmp/bayesfilter-filter-gradient-xla-validation-20260918",
+      "numerical_ru_maxrss_bytes": 891076608,
+      "shard_signatures": [
+        [
+          1,
+          true
+        ]
+      ],
+      "shard_trace_counts": [
+        1
+      ],
+      "imported_source_sha256": {
+        "scripts/filter_repair_forecast_pool_worker.py": "c908919c69cae52ca45b73a850668e2574802fc6a8abc61da23cc02e10d9d1ac",
+        "scripts/measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+        "scripts/filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+        "scripts/filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+        "scripts/filter_repair_forecast_pool_fixtures.py": "be65a74ae682d40cc87df8e7f99353f6f27536488c234e2dd406d14f11f175f6",
+        "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+        "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+        "bayesfilter/inference/cpu_forecast_pool.py": "49847ce829f61236e3641a1ed08841ba97584241aa9c44ac0bb576afd2995539",
+        "bayesfilter/nonlinear/__init__.py": "f0edaabc1fdc132742f578b6351795c78d4aa5826fd88d04ed61a433c47b93ad",
+        "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+        "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+        "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+        "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+        "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+        "bayesfilter/linear/svd_factor_tf.py": "5bbbf1f9e6c4d8782838d202d3213360604c0325a47335e0ce44bfc6870f7e6f",
+        "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+        "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+        "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+        "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+        "bayesfilter/nonlinear/sigma_points_tf.py": "33e066075446c940c29daa13cef31744cf7c0e4fb896ac92505e1d6e5f1cb6e3",
+        "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+        "bayesfilter/nonlinear/ssl_lstm_protocol.py": "b43b840275ed4fdf30a809f2c534e0a6a1a51c3467948d11d6ec5d8b5cfdb6be",
+        "bayesfilter/nonlinear/fixed_sgqf_tf.py": "3a57a78426bae7acfba7032b72ffd3925c97cf683f92f64ed31361bfafe2ac44",
+        "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+        "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+        "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "5343c84ee5bde947d00319f1cd2aa7c8b6d7ec914514071562575a0750e1ef1d",
+        "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py": "f898c7dc1d199c362de750287a71347dfaa7018b1ab593acc272800564299ba6",
+        "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+        "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+        "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+        "bayesfilter/ops/stateless_random_tf.py": "98827e3195bccf1194f417274563941fd23c089be2f528f558eb216ff2c47336",
+        "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py": "20ad1f2e362d2cb2691b3d2dde4289c4041dff33bf937db802d07e969c194ddf",
+        "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py": "9574785fdd8372b86b33bc960485b8e29920a36f2c326c6294bdaaef5f372767",
+        "bayesfilter/ops/host_tensor_io.py": "9369c29e4332a2a26a66c20e87ebe517acb87d720141ce564c3a9a27c3738c7a"
+      }
+    },
+    {
+      "pid": 1394389,
+      "source_root": "/tmp/bayesfilter-filter-gradient-xla-validation-20260918",
+      "numerical_ru_maxrss_bytes": 889966592,
+      "shard_signatures": [
+        [
+          1,
+          true
+        ]
+      ],
+      "shard_trace_counts": [
+        1
+      ],
+      "imported_source_sha256": {
+        "scripts/filter_repair_forecast_pool_worker.py": "c908919c69cae52ca45b73a850668e2574802fc6a8abc61da23cc02e10d9d1ac",
+        "scripts/measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+        "scripts/filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+        "scripts/filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+        "scripts/filter_repair_forecast_pool_fixtures.py": "be65a74ae682d40cc87df8e7f99353f6f27536488c234e2dd406d14f11f175f6",
+        "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+        "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+        "bayesfilter/inference/cpu_forecast_pool.py": "49847ce829f61236e3641a1ed08841ba97584241aa9c44ac0bb576afd2995539",
+        "bayesfilter/nonlinear/__init__.py": "f0edaabc1fdc132742f578b6351795c78d4aa5826fd88d04ed61a433c47b93ad",
+        "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+        "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+        "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+        "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+        "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+        "bayesfilter/linear/svd_factor_tf.py": "5bbbf1f9e6c4d8782838d202d3213360604c0325a47335e0ce44bfc6870f7e6f",
+        "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+        "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+        "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+        "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+        "bayesfilter/nonlinear/sigma_points_tf.py": "33e066075446c940c29daa13cef31744cf7c0e4fb896ac92505e1d6e5f1cb6e3",
+        "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+        "bayesfilter/nonlinear/ssl_lstm_protocol.py": "b43b840275ed4fdf30a809f2c534e0a6a1a51c3467948d11d6ec5d8b5cfdb6be",
+        "bayesfilter/nonlinear/fixed_sgqf_tf.py": "3a57a78426bae7acfba7032b72ffd3925c97cf683f92f64ed31361bfafe2ac44",
+        "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+        "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+        "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "5343c84ee5bde947d00319f1cd2aa7c8b6d7ec914514071562575a0750e1ef1d",
+        "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py": "f898c7dc1d199c362de750287a71347dfaa7018b1ab593acc272800564299ba6",
+        "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+        "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+        "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+        "bayesfilter/ops/stateless_random_tf.py": "98827e3195bccf1194f417274563941fd23c089be2f528f558eb216ff2c47336",
+        "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py": "20ad1f2e362d2cb2691b3d2dde4289c4041dff33bf937db802d07e969c194ddf",
+        "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py": "9574785fdd8372b86b33bc960485b8e29920a36f2c326c6294bdaaef5f372767",
+        "bayesfilter/ops/host_tensor_io.py": "9369c29e4332a2a26a66c20e87ebe517acb87d720141ce564c3a9a27c3738c7a"
+      }
+    }
+  ],
+  "pool_final_memory": {
+    "parent_ru_maxrss_bytes": 817934336,
+    "worker_ru_maxrss_sum_bytes": 1781043200,
+    "aggregate_parent_worker_ru_maxrss_bytes": 2598977536
+  },
+  "pool_memory_scope": "sum_of_parent_and_worker_rss_high_water; not_simultaneous_live_memory",
+  "numerical_backend": "tensorflow",
+  "preparation_seconds": 0.018679881002753973,
+  "dimensions": {
+    "rows": 2,
+    "q": 1,
+    "parameters": 4,
+    "filter_horizon": 30,
+    "forecast_horizon": 10,
+    "replications": 2,
+    "seed_policy": "original_independent_row_philox",
+    "role": "external_cpu_sample_generation",
+    "neutra_training_eligible": false,
+    "worker_count": 2,
+    "cores_per_worker": 1
+  },
+  "input_sha256": "63c5d2742715bd7af4e7aebe794e4131146482ce57af6dc528945e3a0060bbff",
+  "input_shapes": [
+    [
+      2,
+      4
+    ],
+    [
+      2,
+      2
+    ]
+  ],
+  "input_dtypes": [
+    "float64",
+    "int32"
+  ],
+  "trace_seconds": 3.8000871427357197e-07,
+  "graph": {
+    "nodes": 0,
+    "functions": 0,
+    "callbacks": [],
+    "must_compile": false,
+    "nested_xla": [],
+    "xla_ops": []
+  },
+  "execution_exception": "existing_host_execution_reference_only; nested compilation may exist",
+  "cold": {
+    "synchronized_seconds": 10.614046525006415,
+    "output_copy_seconds": 2.636999124661088e-05,
+    "end_to_end_seconds": 10.614072894997662
+  },
+  "output_shapes": [
+    [
+      2,
+      2,
+      10
+    ],
+    [
+      2,
+      2,
+      10
+    ],
+    [
+      2,
+      2,
+      10
+    ]
+  ],
+  "output_dtypes": [
+    "float64",
+    "float64",
+    "float64"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:CPU:0",
+    "/job:localhost/replica:0/task:0/device:CPU:0",
+    "/job:localhost/replica:0/task:0/device:CPU:0"
+  ],
+  "values": [
+    [
+      [
+        [
+          -0.8891002236846071,
+          -0.4436578492590638,
+          -0.03827840730891362,
+          -0.35138043765748816,
+          1.096016793845546,
+          0.41656658229411586,
+          0.909990577614293,
+          -0.15000252802221836,
+          -0.005159718062795932,
+          -0.338293459835826
+        ],
+        [
+          0.1738146687888482,
+          -0.35608654859934086,
+          0.525621214527888,
+          -0.1249674980972371,
+          -0.06653938583755806,
+          -0.0016658237818099407,
+          0.8357234061121132,
+          -0.2617873684346799,
+          0.03790916784476783,
+          0.3223483423483387
+        ]
+      ],
+      [
+        [
+          0.12112401531700875,
+          1.1698725044390827,
+          0.21966215694640795,
+          1.0233632985477117,
+          -0.3371813307895303,
+          0.03653614096385623,
+          0.5158679811602,
+          0.485956426746158,
+          0.266223506871374,
+          0.21786963628381575
+        ],
+        [
+          -0.8143034447220016,
+          -0.1143953756422122,
+          -0.24679676097928704,
+          -0.3361268105948482,
+          0.2030208142527726,
+          0.21177132554992742,
+          -0.7634568178971033,
+          0.6096267430295714,
+          -0.5017212708447338,
+          1.2357337623825722
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ],
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          -0.9005449790761472,
+          0.2420605400724308,
+          0.7625017392885404,
+          -0.8698496762971037,
+          1.9156221286993442,
+          1.025527976587243,
+          -0.1629346592015234,
+          -1.0739170270134761,
+          -0.3936418038028483,
+          0.8132933514735948
+        ],
+        [
+          -0.24940406281296665,
+          -0.17601363387261518,
+          0.9338955366810112,
+          0.20501249107205366,
+          -1.0215145306572528,
+          -0.08996767001158472,
+          0.954002995281088,
+          -0.2242284310539651,
+          0.378610877248664,
+          0.37161205480761533
+        ]
+      ],
+      [
+        [
+          0.938824070904327,
+          0.7715810436984013,
+          0.8290659149346891,
+          1.987316236387732,
+          0.05499023019424973,
+          -0.329604383443844,
+          1.3169823717838556,
+          0.06746261945147762,
+          -0.7625823400241488,
+          0.08651993447292344
+        ],
+        [
+          -0.24354837606113677,
+          0.1628359239410485,
+          0.015171873093699878,
+          -0.37061578470631307,
+          1.211620019865853,
+          0.23450293397408156,
+          -0.30071089167998993,
+          0.17919466408147455,
+          -1.3225890019328181,
+          0.40990830081347335
+        ]
+      ]
+    ]
+  ],
+  "warm": [
+    {
+      "iteration": 0,
+      "synchronized_seconds": 0.008873060025507584,
+      "output_copy_seconds": 1.466998946852982e-05,
+      "end_to_end_seconds": 0.008887730014976114,
+      "VmHWM": 543088640,
+      "VmRSS": 543088640
+    },
+    {
+      "iteration": 1,
+      "synchronized_seconds": 0.005917510017752647,
+      "output_copy_seconds": 2.1810003090649843e-05,
+      "end_to_end_seconds": 0.005939320020843297,
+      "VmHWM": 543088640,
+      "VmRSS": 543088640
+    },
+    {
+      "iteration": 2,
+      "synchronized_seconds": 0.0052129600080661476,
+      "output_copy_seconds": 9.379989933222532e-06,
+      "end_to_end_seconds": 0.00522233999799937,
+      "VmHWM": 543092736,
+      "VmRSS": 543092736
+    },
+    {
+      "iteration": 3,
+      "synchronized_seconds": 0.005243389983661473,
+      "output_copy_seconds": 9.450013749301434e-06,
+      "end_to_end_seconds": 0.005252839997410774,
+      "VmHWM": 543096832,
+      "VmRSS": 543096832
+    },
+    {
+      "iteration": 4,
+      "synchronized_seconds": 0.005125229014083743,
+      "output_copy_seconds": 9.059993317350745e-06,
+      "end_to_end_seconds": 0.005134289007401094,
+      "VmHWM": 543100928,
+      "VmRSS": 543100928
+    },
+    {
+      "iteration": 5,
+      "synchronized_seconds": 0.005026950006140396,
+      "output_copy_seconds": 1.781000173650682e-05,
+      "end_to_end_seconds": 0.005044760007876903,
+      "VmHWM": 543105024,
+      "VmRSS": 543105024
+    },
+    {
+      "iteration": 6,
+      "synchronized_seconds": 0.004852810001466423,
+      "output_copy_seconds": 8.709990652278066e-06,
+      "end_to_end_seconds": 0.004861519992118701,
+      "VmHWM": 543105024,
+      "VmRSS": 543105024
+    },
+    {
+      "iteration": 7,
+      "synchronized_seconds": 0.004607099981512874,
+      "output_copy_seconds": 8.530012564733624e-06,
+      "end_to_end_seconds": 0.004615629994077608,
+      "VmHWM": 543105024,
+      "VmRSS": 543105024
+    },
+    {
+      "iteration": 8,
+      "synchronized_seconds": 0.00470032001612708,
+      "output_copy_seconds": 9.269977454096079e-06,
+      "end_to_end_seconds": 0.004709589993581176,
+      "VmHWM": 543109120,
+      "VmRSS": 543109120
+    },
+    {
+      "iteration": 9,
+      "synchronized_seconds": 0.004560569010209292,
+      "output_copy_seconds": 8.500006515532732e-06,
+      "end_to_end_seconds": 0.004569069016724825,
+      "VmHWM": 543117312,
+      "VmRSS": 543117312
+    },
+    {
+      "iteration": 10,
+      "synchronized_seconds": 0.00499889999628067,
+      "output_copy_seconds": 8.239992894232273e-06,
+      "end_to_end_seconds": 0.0050071399891749024,
+      "VmHWM": 543121408,
+      "VmRSS": 543121408
+    },
+    {
+      "iteration": 11,
+      "synchronized_seconds": 0.005089449987281114,
+      "output_copy_seconds": 8.219998562708497e-06,
+      "end_to_end_seconds": 0.005097669985843822,
+      "VmHWM": 543125504,
+      "VmRSS": 543125504
+    },
+    {
+      "iteration": 12,
+      "synchronized_seconds": 0.004539910005405545,
+      "output_copy_seconds": 8.389994036406279e-06,
+      "end_to_end_seconds": 0.0045482999994419515,
+      "VmHWM": 543133696,
+      "VmRSS": 543133696
+    },
+    {
+      "iteration": 13,
+      "synchronized_seconds": 0.004706410021753982,
+      "output_copy_seconds": 8.25998722575605e-06,
+      "end_to_end_seconds": 0.004714670008979738,
+      "VmHWM": 543137792,
+      "VmRSS": 543137792
+    },
+    {
+      "iteration": 14,
+      "synchronized_seconds": 0.004628339986084029,
+      "output_copy_seconds": 8.510018233209848e-06,
+      "end_to_end_seconds": 0.004636850004317239,
+      "VmHWM": 543141888,
+      "VmRSS": 543141888
+    },
+    {
+      "iteration": 15,
+      "synchronized_seconds": 0.004478930000914261,
+      "output_copy_seconds": 8.25000461190939e-06,
+      "end_to_end_seconds": 0.00448718000552617,
+      "VmHWM": 543145984,
+      "VmRSS": 543145984
+    },
+    {
+      "iteration": 16,
+      "synchronized_seconds": 0.004482878983253613,
+      "output_copy_seconds": 8.459988748654723e-06,
+      "end_to_end_seconds": 0.004491338972002268,
+      "VmHWM": 543145984,
+      "VmRSS": 543145984
+    },
+    {
+      "iteration": 17,
+      "synchronized_seconds": 0.0045095200184732676,
+      "output_copy_seconds": 8.279981557279825e-06,
+      "end_to_end_seconds": 0.004517800000030547,
+      "VmHWM": 543145984,
+      "VmRSS": 543145984
+    },
+    {
+      "iteration": 18,
+      "synchronized_seconds": 0.004399119992740452,
+      "output_copy_seconds": 8.219998562708497e-06,
+      "end_to_end_seconds": 0.004407339991303161,
+      "VmHWM": 543150080,
+      "VmRSS": 543150080
+    },
+    {
+      "iteration": 19,
+      "synchronized_seconds": 0.004524249990936369,
+      "output_copy_seconds": 8.24002199806273e-06,
+      "end_to_end_seconds": 0.004532490012934431,
+      "VmHWM": 543154176,
+      "VmRSS": 543154176
+    }
+  ],
+  "trace_count": null,
+  "imported_source_sha256": {
+    "scripts/filter_repair_forecast_pool_worker.py": "c908919c69cae52ca45b73a850668e2574802fc6a8abc61da23cc02e10d9d1ac",
+    "scripts/measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "scripts/filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "scripts/filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "scripts/filter_repair_forecast_pool_fixtures.py": "be65a74ae682d40cc87df8e7f99353f6f27536488c234e2dd406d14f11f175f6",
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+    "bayesfilter/inference/cpu_forecast_pool.py": "49847ce829f61236e3641a1ed08841ba97584241aa9c44ac0bb576afd2995539",
+    "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+    "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+    "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+    "bayesfilter/ops/host_tensor_io.py": "9369c29e4332a2a26a66c20e87ebe517acb87d720141ce564c3a9a27c3738c7a"
+  },
+  "wall_seconds": 15.917848326993408
+}

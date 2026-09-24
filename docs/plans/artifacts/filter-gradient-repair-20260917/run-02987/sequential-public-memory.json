@@ -1,0 +1,2758 @@
+{
+  "schema": "filter_sequential_public_cost.v1",
+  "arm": "xla",
+  "dimension": 5,
+  "numerical_authority": "3582b4ac",
+  "mechanism_baseline": "48acf5e96",
+  "prior_source_sha256": {
+    "bayesfilter/inference/_exact_incumbent.py": "f4492e4fb8567a584491c29fa3727e9f3ced1d4b340352a1cf63ea31af9c7735",
+    "bayesfilter/inference/factor_correlation_geometry.py": "9812f417e4a933310162a41d5ba5b31d1b905eda0b20d0ed48439fc5f8cdccd8",
+    "bayesfilter/inference/factor_decisions_tf.py": "f1d499ba9f0ce1b4a0ae46b1e4277d0364797b2c29dbb4ce97d2961b6e7a0f39",
+    "bayesfilter/inference/mass_matrix.py": "e30bf9e8796f35e5ec5165957bd88dff2ccab38725434d3396fec5a65b1c1689",
+    "bayesfilter/inference/mass_matrix_tf.py": "20f9c715a22ffe19a92c004dad89e6c2594d37f1471d5aaa1cea4956fa548999",
+    "bayesfilter/inference/sequential_attempts_tf.py": "fc0d6db8f9bb1a8fb582967bc3502b7a50f7c5ca46d0b95bbbdf758aa6ce8cfb",
+    "bayesfilter/inference/sequential_batched_locator_tf.py": "4ff7a12d6abe156978517f419f3a0a754eb737e7b034d365232a9c537943283c",
+    "bayesfilter/inference/sequential_factor_attempt_tf.py": "532124ecf72ad815dd08c7691513f8b586e5816f28d74d1d5ec8f8c89d94ea1c",
+    "bayesfilter/inference/sequential_locator_tf.py": "abfa88098922781f6ee9fe4a905e2ddbd5b6d7bde0b3d8690e5426dc4b01f872",
+    "bayesfilter/inference/sequential_map_covariance.py": "b54a502f6714621717d58967d64a1c0d2fc2c5d62c8ac966b6c76c1a3f413805",
+    "bayesfilter/inference/sequential_preparation_tf.py": "dbaac3e65d2a6b1306fc37dd3e7a17fcee6866b0a54c9d6fd7c219b98299c6f9",
+    "bayesfilter/inference/sequential_proposal_tf.py": "2b19ea326c189f54fc2aecc35c3d192030f4c56e41f83e879bd8afd6ec5b93e3",
+    "bayesfilter/inference/sequential_score_fit_tf.py": "c4d91a01fc0024c334b8e3a044727fbd52d0b768cf9db7a019fabc5b8f1d8142",
+    "bayesfilter/inference/sequential_selection_tf.py": "a3a9ab41ca6e0a2e0f44132d3488139a48a7f4d7da10d6cc22927c51d514ea44",
+    "bayesfilter/inference/sequential_structured_fit_tf.py": "61f294acf8b74e2faa5461bc859cd3ffddaf961f66187ebbeab046fec7cb49ef",
+    "bayesfilter/inference/sequential_structured_preparation_tf.py": "e5ee0431f3221aa80943824582cca1dd313fe185c89161b427a5fb16dcdba25f",
+    "bayesfilter/ops/compiled_tensor_program_tf.py": "13e00d6f3ca17f692a649861c0bf88cdcbbef754821047bebc8c9fd11352bddb",
+    "bayesfilter/ops/host_tensor_io.py": "9369c29e4332a2a26a66c20e87ebe517acb87d720141ce564c3a9a27c3738c7a",
+    "bayesfilter/ops/qr_lstsq_tf.py": "4c41845cabcde87a022c8083920608b1ff5ae164b47d80250936f1dcf56f62f5",
+    "bayesfilter/ops/stateless_random_tf.py": "98827e3195bccf1194f417274563941fd23c089be2f528f558eb216ff2c47336",
+    "bayesfilter/ops/symmetric_matrix_tf.py": "7ee625d2a546d9beba2efca2de32ca0753b57161b88599d1c1fe945de4b21de8"
+  },
+  "original_source_sha256": {
+    "bayesfilter/inference/_exact_incumbent.py": "21191dd057380adafc6530cb15ef640666a2f3afb637bd90f4e98d3209ca5ed0",
+    "bayesfilter/inference/factor_correlation_geometry.py": "de5a85fae7cb05943ae8d504473c7775115b56c46294738fa506493e45b6a6bc",
+    "bayesfilter/inference/mass_matrix.py": "6a959080a1de9c3894697bda39667777596b73f469a32e5a7676a7032dbd53b3",
+    "bayesfilter/inference/sequential_map_covariance.py": "50e19d26168696a870dea4ebc272a5ffe0c439f69099fcdc8150d561633b8fc2"
+  },
+  "input_sha256": [
+    "bccddc9b998927667cb6bcef54655e03643aa012ab4301580fee248c0b5210bd",
+    "e7399cb5a8e70284a9a04c1358f38aab61efef4f768fa19c44411e5958f96b9e"
+  ],
+  "changed_input_sha256": [
+    "8915a4262ddaa29dd9bd3cd6fcfb6a5b70acff6e1a94ba313bf6173976ed1647",
+    "ace8d3a13817349eccc1e1c98eae48a9b3e038bfc26fef8395d0f5621db85e94"
+  ],
+  "config": {
+    "terminal_score_max_abs": 1e-05,
+    "initial_radius": 0.25,
+    "search_sample_count": 4,
+    "regression_sample_count": 24,
+    "terminal_sample_count": 24,
+    "max_attempts": 3,
+    "max_exact_evaluations": 256,
+    "locator_max_iterations": 50,
+    "locator_max_line_search_iterations": 20,
+    "locator_standardized_box_radius": 4.0,
+    "locator_gradient_tolerance": 1e-08,
+    "locator_stopping_condition": "converged_all",
+    "locator_policy": "center_first",
+    "ridge": 1e-10,
+    "eigenvalue_floor": 1e-08,
+    "max_condition_number": 100000000.0,
+    "minimum_radius": 0.0001,
+    "maximum_radius": 1.0,
+    "acceptance_ratio": 0.1,
+    "shrink_threshold": 0.25,
+    "expansion_threshold": 0.75,
+    "shrink_factor": 0.5,
+    "expansion_factor": 2.0,
+    "score_reduction_factor": 0.95,
+    "holdout_fraction": 0.25,
+    "score_holdout_relative_rmse": 0.35,
+    "terminal_projection_relative_frobenius_cap": 0.25,
+    "max_stalled_attempts": 3,
+    "refinement_geometry_policy": "full_symmetric",
+    "dimension_scaled_search": false,
+    "orthogonal_antithetic_search": false,
+    "reuse_search_scores": false,
+    "structured_fresh_sample_multiplier": 4,
+    "structured_max_factors": 2,
+    "structured_holdout_score_relative_rmse": 0.35,
+    "max_terminal_fit_attempts": null,
+    "require_proposal_score_reduction": true,
+    "stop_on_stalled_attempts": true,
+    "seed": [
+      2026,
+      715
+    ],
+    "proposal_score_acceptance_policy": "fractional",
+    "record_refinement_movement_diagnostics": true,
+    "pair_disjoint_score_holdout": false
+  },
+  "gpu": false,
+  "jit_compile": true,
+  "execution_role": "public_xla_default",
+  "build_seconds": 3.2044114490272477,
+  "trace_seconds": 0.00011102203279733658,
+  "stages": {
+    "prepared": {
+      "status": {
+        "VmHWM": 610537472,
+        "VmRSS": 610537472
+      },
+      "rollup": {
+        "Rss": 610537472,
+        "Pss": 421420032,
+        "Private_Clean": 2490368,
+        "Private_Dirty": 359256064
+      },
+      "ru_maxrss_bytes": 2030043136,
+      "gpu": null
+    },
+    "built": {
+      "status": {
+        "VmHWM": 749314048,
+        "VmRSS": 749314048
+      },
+      "rollup": {
+        "Rss": 749314048,
+        "Pss": 559021056,
+        "Private_Clean": 2490368,
+        "Private_Dirty": 496451584
+      },
+      "ru_maxrss_bytes": 2030043136,
+      "gpu": null
+    },
+    "traced": {
+      "status": {
+        "VmHWM": 749314048,
+        "VmRSS": 749314048
+      },
+      "rollup": {
+        "Rss": 749314048,
+        "Pss": 559021056,
+        "Private_Clean": 2490368,
+        "Private_Dirty": 496451584
+      },
+      "ru_maxrss_bytes": 2030043136,
+      "gpu": null
+    },
+    "cold": {
+      "status": {
+        "VmHWM": 1575641088,
+        "VmRSS": 1575641088
+      },
+      "rollup": {
+        "Rss": 1575641088,
+        "Pss": 1328291840,
+        "Private_Clean": 3444736,
+        "Private_Dirty": 1245093888
+      },
+      "ru_maxrss_bytes": 2030043136,
+      "gpu": null
+    },
+    "warm": {
+      "status": {
+        "VmHWM": 1575907328,
+        "VmRSS": 1575907328
+      },
+      "rollup": {
+        "Rss": 1575907328,
+        "Pss": 1328558080,
+        "Private_Clean": 3444736,
+        "Private_Dirty": 1245360128
+      },
+      "ru_maxrss_bytes": 2030043136,
+      "gpu": null
+    },
+    "changed": {
+      "status": {
+        "VmHWM": 1575907328,
+        "VmRSS": 1575907328
+      },
+      "rollup": {
+        "Rss": 1575907328,
+        "Pss": 1328558080,
+        "Private_Clean": 3444736,
+        "Private_Dirty": 1245360128
+      },
+      "ru_maxrss_bytes": 2030043136,
+      "gpu": null
+    }
+  },
+  "cold": {
+    "seconds": 4.6695102989906445,
+    "memory": {
+      "status": {
+        "VmHWM": 1575641088,
+        "VmRSS": 1575641088
+      },
+      "rollup": {
+        "Rss": 1575641088,
+        "Pss": 1328291840,
+        "Private_Clean": 3444736,
+        "Private_Dirty": 1245093888
+      },
+      "ru_maxrss_bytes": 2030043136,
+      "gpu": null
+    }
+  },
+  "samples": [
+    {
+      "seconds": 0.01832817797549069,
+      "memory": {
+        "status": {
+          "VmHWM": 1575751680,
+          "VmRSS": 1575751680
+        },
+        "rollup": {
+          "Rss": 1575751680,
+          "Pss": 1328402432,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245204480
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.015918613062240183,
+      "memory": {
+        "status": {
+          "VmHWM": 1575800832,
+          "VmRSS": 1575800832
+        },
+        "rollup": {
+          "Rss": 1575800832,
+          "Pss": 1328451584,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245253632
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.023055145051330328,
+      "memory": {
+        "status": {
+          "VmHWM": 1575829504,
+          "VmRSS": 1575829504
+        },
+        "rollup": {
+          "Rss": 1575829504,
+          "Pss": 1328480256,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245282304
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.02262891607824713,
+      "memory": {
+        "status": {
+          "VmHWM": 1575841792,
+          "VmRSS": 1575841792
+        },
+        "rollup": {
+          "Rss": 1575841792,
+          "Pss": 1328492544,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245294592
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.0225048940628767,
+      "memory": {
+        "status": {
+          "VmHWM": 1575870464,
+          "VmRSS": 1575870464
+        },
+        "rollup": {
+          "Rss": 1575870464,
+          "Pss": 1328521216,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245323264
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.016550826956517994,
+      "memory": {
+        "status": {
+          "VmHWM": 1575870464,
+          "VmRSS": 1575870464
+        },
+        "rollup": {
+          "Rss": 1575870464,
+          "Pss": 1328521216,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245323264
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.021673673996701837,
+      "memory": {
+        "status": {
+          "VmHWM": 1575870464,
+          "VmRSS": 1575870464
+        },
+        "rollup": {
+          "Rss": 1575870464,
+          "Pss": 1328521216,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245323264
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.022648834041319788,
+      "memory": {
+        "status": {
+          "VmHWM": 1575882752,
+          "VmRSS": 1575882752
+        },
+        "rollup": {
+          "Rss": 1575882752,
+          "Pss": 1328533504,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245335552
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.022346345940604806,
+      "memory": {
+        "status": {
+          "VmHWM": 1575882752,
+          "VmRSS": 1575882752
+        },
+        "rollup": {
+          "Rss": 1575882752,
+          "Pss": 1328533504,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245335552
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.01641510904300958,
+      "memory": {
+        "status": {
+          "VmHWM": 1575882752,
+          "VmRSS": 1575882752
+        },
+        "rollup": {
+          "Rss": 1575882752,
+          "Pss": 1328533504,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245335552
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.022623579017817974,
+      "memory": {
+        "status": {
+          "VmHWM": 1575882752,
+          "VmRSS": 1575882752
+        },
+        "rollup": {
+          "Rss": 1575882752,
+          "Pss": 1328533504,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245335552
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.022228577989153564,
+      "memory": {
+        "status": {
+          "VmHWM": 1575886848,
+          "VmRSS": 1575886848
+        },
+        "rollup": {
+          "Rss": 1575886848,
+          "Pss": 1328537600,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245339648
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.0221881999168545,
+      "memory": {
+        "status": {
+          "VmHWM": 1575886848,
+          "VmRSS": 1575886848
+        },
+        "rollup": {
+          "Rss": 1575886848,
+          "Pss": 1328537600,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245339648
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.023007831070572138,
+      "memory": {
+        "status": {
+          "VmHWM": 1575886848,
+          "VmRSS": 1575886848
+        },
+        "rollup": {
+          "Rss": 1575886848,
+          "Pss": 1328537600,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245339648
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.02300498099066317,
+      "memory": {
+        "status": {
+          "VmHWM": 1575886848,
+          "VmRSS": 1575886848
+        },
+        "rollup": {
+          "Rss": 1575886848,
+          "Pss": 1328537600,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245339648
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.02304762799758464,
+      "memory": {
+        "status": {
+          "VmHWM": 1575895040,
+          "VmRSS": 1575895040
+        },
+        "rollup": {
+          "Rss": 1575895040,
+          "Pss": 1328545792,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245347840
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.01754052797332406,
+      "memory": {
+        "status": {
+          "VmHWM": 1575899136,
+          "VmRSS": 1575899136
+        },
+        "rollup": {
+          "Rss": 1575899136,
+          "Pss": 1328549888,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245351936
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.017512019956484437,
+      "memory": {
+        "status": {
+          "VmHWM": 1575899136,
+          "VmRSS": 1575899136
+        },
+        "rollup": {
+          "Rss": 1575899136,
+          "Pss": 1328549888,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245351936
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.02274814003612846,
+      "memory": {
+        "status": {
+          "VmHWM": 1575899136,
+          "VmRSS": 1575899136
+        },
+        "rollup": {
+          "Rss": 1575899136,
+          "Pss": 1328549888,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245351936
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    },
+    {
+      "seconds": 0.02245848102029413,
+      "memory": {
+        "status": {
+          "VmHWM": 1575907328,
+          "VmRSS": 1575907328
+        },
+        "rollup": {
+          "Rss": 1575907328,
+          "Pss": 1328558080,
+          "Private_Clean": 3444736,
+          "Private_Dirty": 1245360128
+        },
+        "ru_maxrss_bytes": 2030043136,
+        "gpu": null
+      }
+    }
+  ],
+  "changed_cost": {
+    "seconds": 0.022615959052927792,
+    "memory": {
+      "status": {
+        "VmHWM": 1575907328,
+        "VmRSS": 1575907328
+      },
+      "rollup": {
+        "Rss": 1575907328,
+        "Pss": 1328558080,
+        "Private_Clean": 3444736,
+        "Private_Dirty": 1245360128
+      },
+      "ru_maxrss_bytes": 2030043136,
+      "gpu": null
+    }
+  },
+  "result": {
+    "schema": "bayesfilter.sequential_map_covariance.v1",
+    "accepted": true,
+    "status": "usable",
+    "map_candidate": [
+      1.429157872938473e-07,
+      1.795573958083486e-07,
+      8.220419604931109e-08,
+      2.4510656509114454e-07,
+      1.4655607388606317e-07
+    ],
+    "precision": [
+      [
+        1.0040966118583394,
+        -0.0005592338503742876,
+        -0.0003592996029111589,
+        0.00014005326872740774,
+        0.0015849691547907413
+      ],
+      [
+        -0.0005592338503742876,
+        1.0037376090111938,
+        -0.0008457201962884867,
+        0.001223492745126167,
+        -0.0013318559943776079
+      ],
+      [
+        -0.0003592996029111589,
+        -0.0008457201962884867,
+        1.0071782635402238,
+        -0.00014865945062496333,
+        -0.002298337563621078
+      ],
+      [
+        0.00014005326872740774,
+        0.001223492745126167,
+        -0.00014865945062496333,
+        1.0026383576868345,
+        -0.002265407881214543
+      ],
+      [
+        0.0015849691547907413,
+        -0.0013318559943776079,
+        -0.002298337563621078,
+        -0.002265407881214543,
+        1.0124289888301221
+      ]
+    ],
+    "covariance": [
+      [
+        0.9959230152387498,
+        0.0005532840900094934,
+        0.0003521727510549645,
+        -0.00014325822151008046,
+        -0.0015579220950910722
+      ],
+      [
+        0.0005532840900094934,
+        0.9962805394227864,
+        0.0008395747785201425,
+        -0.0012127297954004986,
+        0.0013089387833920573
+      ],
+      [
+        0.0003521727510549645,
+        0.0008395747785201425,
+        0.9928788950925035,
+        0.00015123343700468517,
+        0.002254847995343953
+      ],
+      [
+        -0.00014325822151008046,
+        -0.0012127297954004986,
+        0.00015123343700468517,
+        0.9973751473610705,
+        0.0022306956914309307
+      ],
+      [
+        -0.0015579220950910722,
+        0.0013089387833920573,
+        0.002254847995343953,
+        0.0022306956914309307,
+        0.9877378655162885
+      ]
+    ],
+    "diagnostics": {
+      "exact_evaluations": 83,
+      "terminal_max_abs_scaled_score": 2.451065650911504e-07,
+      "terminal_fit_fresh": true,
+      "terminal_fit_attempts": 1,
+      "search_seed": [
+        2026,
+        715
+      ],
+      "terminal_seed": [
+        2026,
+        100720
+      ],
+      "precision_coordinate_system": "theta",
+      "regression_coordinate_system": "z",
+      "locator": [
+        {
+          "finite": true,
+          "coordinate_system": "reviewed_exact_center",
+          "locator_policy": "center_first",
+          "locator_skipped": true,
+          "skip_reason": "exact_center_admission"
+        }
+      ],
+      "terminal_fit": {
+        "status": "usable",
+        "rank": 15,
+        "seed": [
+          2026,
+          100720
+        ],
+        "best_exact_value": -0.00021701862776587778,
+        "best_exact_position": [
+          0.012381338220406315,
+          -0.005348772582951617,
+          0.0106134251200992,
+          -0.011396668071395609,
+          0.0030968890010318714
+        ],
+        "best_exact_score": [
+          -0.012382097431863578,
+          0.005348833792953194,
+          -0.010613903338928535,
+          0.011397260169526536,
+          -0.0030969008815918226
+        ],
+        "best_exact_source": "score_fit_cloud",
+        "train_score_rmse": 0.0003083993595661015,
+        "holdout_score_relative_rmse": 0.005325655678804547,
+        "raw_eigenvalues": [
+          1.0015439556672956,
+          1.0033673558991334,
+          1.0039770078387271,
+          1.0071005584628236,
+          1.0140909530587343
+        ],
+        "projected_eigenvalues": [
+          1.0015439556672956,
+          1.0033673558991334,
+          1.0039770078387271,
+          1.0071005584628236,
+          1.0140909530587343
+        ],
+        "projection_relative_frobenius": 8.754847506473285e-16,
+        "projected_precision_z": [
+          [
+            1.0040966118583408,
+            -0.0005592338503739962,
+            -0.00035929960291097157,
+            0.00014005326872766274,
+            0.0015849691547907274
+          ],
+          [
+            -0.0005592338503739962,
+            1.0037376090111936,
+            -0.0008457201962885005,
+            0.0012234927451262208,
+            -0.0013318559943779479
+          ],
+          [
+            -0.00035929960291097157,
+            -0.000845720196288556,
+            1.0071782635402244,
+            -0.00014865945062492864,
+            -0.0022983375636205228
+          ],
+          [
+            0.00014005326872765927,
+            0.0012234927451262208,
+            -0.00014865945062492864,
+            1.0026383576868345,
+            -0.0022654078812144596
+          ],
+          [
+            0.0015849691547907274,
+            -0.0013318559943780034,
+            -0.0022983375636205228,
+            -0.0022654078812144596,
+            1.0124289888301221
+          ]
+        ]
+      },
+      "proposal_score_acceptance_policy": "fractional",
+      "proposal_score_gate_active": true,
+      "refinement_movement_initial": {
+        "position_z": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "value": -2.3750054212500003e-05,
+        "score_norm": 0.00689205583995918
+      },
+      "history": [
+        {
+          "attempt": 0,
+          "radius_before": 0.25,
+          "recentered": false,
+          "center_value": -2.3750054212500003e-05,
+          "fit": {
+            "status": "usable",
+            "rank": 15,
+            "seed": [
+              2026,
+              10715
+            ],
+            "best_exact_value": -0.0001497345679543051,
+            "best_exact_position": [
+              -0.010454358221086157,
+              -0.007277046783782977,
+              -0.0016242395475693722,
+              -0.008675419379639109,
+              0.007701576259239327
+            ],
+            "best_exact_score": [
+              0.010454815258888741,
+              0.007277200927381076,
+              0.001624241261567066,
+              0.008675680554532501,
+              -0.007701758984609978
+            ],
+            "best_exact_source": "score_fit_cloud",
+            "train_score_rmse": 0.00018080794135234664,
+            "holdout_score_relative_rmse": 0.0025509598281582514,
+            "raw_eigenvalues": [
+              1.002246923423174,
+              1.004234174108317,
+              1.004750257273137,
+              1.0079574248136063,
+              1.01035308903833
+            ],
+            "projected_eigenvalues": [
+              1.002246923423174,
+              1.004234174108317,
+              1.004750257273137,
+              1.0079574248136063,
+              1.01035308903833
+            ],
+            "projection_relative_frobenius": 1.676510221224425e-15,
+            "projected_precision_z": [
+              [
+                1.0074424231092796,
+                0.002901005344787877,
+                0.0006293000393488013,
+                0.000521819300814047,
+                0.0006667717746707824
+              ],
+              [
+                0.0029010053447878215,
+                1.00707953052726,
+                1.8505393764550737e-05,
+                -0.00023084167515469156,
+                0.0001779692681741496
+              ],
+              [
+                0.0006293000393488152,
+                1.8505393764557676e-05,
+                1.0027933600789471,
+                -0.00021768329457455375,
+                0.0009823893698429377
+              ],
+              [
+                0.000521819300814047,
+                -0.00023084167515471932,
+                -0.000217683294574526,
+                1.0070109108742409,
+                0.001601217507552325
+              ],
+              [
+                0.0006667717746706991,
+                0.00017796926817421899,
+                0.0009823893698429394,
+                0.0016012175075524396,
+                1.0052156440668378
+              ]
+            ]
+          },
+          "action": "proposal_accepted",
+          "actual_improvement": 2.374836370468495e-05,
+          "predicted_improvement": 2.355859125512639e-05,
+          "rho": 1.0080553394514737,
+          "score_norm_before": 0.006892055839959179,
+          "score_norm_after": 5.814650145744037e-05,
+          "proposal_score_gate": {
+            "policy": "fractional",
+            "active": true,
+            "passed": true,
+            "legacy_fractional_passed": true,
+            "required_score_norm_max": 0.006547453047961219,
+            "numerical_resolution_floor": null
+          },
+          "boundary_active": false,
+          "radius_action": "retain",
+          "radius_after": 0.25,
+          "proposal_attempts": [
+            {
+              "factor_count": null,
+              "fit_status": "usable",
+              "proposal_evaluated": true,
+              "actual_improvement": 2.374836370468495e-05,
+              "predicted_improvement": 2.355859125512639e-05,
+              "rho": 1.0080553394514737,
+              "score_norm_before": 0.006892055839959179,
+              "score_norm_after": 5.814650145744037e-05,
+              "score_reduction_passed": true,
+              "proposal_score_gate": {
+                "policy": "fractional",
+                "active": true,
+                "passed": true,
+                "legacy_fractional_passed": true,
+                "required_score_norm_max": 0.006547453047961219,
+                "numerical_resolution_floor": null
+              },
+              "accepted": true
+            }
+          ],
+          "exact_incumbent_promoted_without_model_acceptance": false,
+          "refinement_movement": {
+            "pre_position_z": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "search_position_z": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "evaluated_proposal_position_z": [
+              -0.001971806195647855,
+              -0.002476790771999084,
+              -0.002987235761279277,
+              -0.003469530315268002,
+              -0.00396907865973914
+            ],
+            "terminal_position_z": [
+              -0.001971806195647855,
+              -0.002476790771999084,
+              -0.002987235761279277,
+              -0.003469530315268002,
+              -0.00396907865973914
+            ],
+            "pre_value": -2.3750054212500003e-05,
+            "search_value": -2.3750054212500003e-05,
+            "evaluated_proposal_value": -1.6905078150526557e-09,
+            "terminal_value": -1.6905078150526557e-09,
+            "pre_score_norm": 0.00689205583995918,
+            "search_score_norm": 0.00689205583995918,
+            "evaluated_proposal_score_norm": 5.8146501457440366e-05,
+            "terminal_score_norm": 5.8146501457440366e-05,
+            "radius_before": 0.25,
+            "radius_after": 0.25,
+            "search_recentered": false,
+            "proposal_accepted": true
+          }
+        },
+        {
+          "attempt": 1,
+          "radius_before": 0.25,
+          "recentered": false,
+          "center_value": -1.6905078150526557e-09,
+          "fit": {
+            "status": "usable",
+            "rank": 15,
+            "seed": [
+              2026,
+              10716
+            ],
+            "best_exact_value": -0.0002162048622726142,
+            "best_exact_position": [
+              -0.010763068518902746,
+              -0.008450112199763085,
+              -0.01535571391276264,
+              -0.0009681102914746668,
+              -0.0029002860165752873
+            ],
+            "best_exact_score": [
+              0.01076356725213364,
+              0.008450353549826825,
+              0.015357162251105796,
+              0.0009681106544143886,
+              0.002900295775062051
+            ],
+            "best_exact_source": "score_fit_cloud",
+            "train_score_rmse": 0.00019082113522221944,
+            "holdout_score_relative_rmse": 0.0030210216002792153,
+            "raw_eigenvalues": [
+              1.0010541326232922,
+              1.0031303613080087,
+              1.0049428784452796,
+              1.006541426407006,
+              1.0081258983357153
+            ],
+            "projected_eigenvalues": [
+              1.0010541326232922,
+              1.0031303613080087,
+              1.0049428784452796,
+              1.006541426407006,
+              1.0081258983357153
+            ],
+            "projection_relative_frobenius": 1.3089242332898985e-15,
+            "projected_precision_z": [
+              [
+                1.0035800168151492,
+                0.0004540511810119628,
+                -0.0002876263752553815,
+                0.0016448583784958726,
+                -0.00045592419262018014
+              ],
+              [
+                0.0004540511810119212,
+                1.006064097848511,
+                -0.0002766325693957525,
+                0.00023297549518407415,
+                0.0007679457099193264
+              ],
+              [
+                -0.000287626375255437,
+                -0.0002766325693957482,
+                1.002094178310388,
+                0.0017498846596815665,
+                0.0005587419172897595
+              ],
+              [
+                0.0016448583784958726,
+                0.00023297549518407415,
+                0.0017498846596815665,
+                1.0066955207864239,
+                -0.0010060151988232069
+              ],
+              [
+                -0.0004559241926201524,
+                0.0007679457099194365,
+                0.0005587419172897595,
+                -0.0010060151988232069,
+                1.0053608833588323
+              ]
+            ]
+          },
+          "action": "proposal_accepted",
+          "actual_improvement": 1.690437325441886e-09,
+          "predicted_improvement": 1.6798847991924571e-09,
+          "rho": 1.0062816963725736,
+          "score_norm_before": 5.814650145744037e-05,
+          "score_norm_after": 3.754719983422078e-07,
+          "proposal_score_gate": {
+            "policy": "fractional",
+            "active": true,
+            "passed": true,
+            "legacy_fractional_passed": true,
+            "required_score_norm_max": 5.523917638456835e-05,
+            "numerical_resolution_floor": null
+          },
+          "boundary_active": false,
+          "radius_action": "retain",
+          "radius_after": 0.25,
+          "proposal_attempts": [
+            {
+              "factor_count": null,
+              "fit_status": "usable",
+              "proposal_evaluated": true,
+              "actual_improvement": 1.690437325441886e-09,
+              "predicted_improvement": 1.6798847991924571e-09,
+              "rho": 1.0062816963725736,
+              "score_norm_before": 5.814650145744037e-05,
+              "score_norm_after": 3.754719983422078e-07,
+              "score_reduction_passed": true,
+              "proposal_score_gate": {
+                "policy": "fractional",
+                "active": true,
+                "passed": true,
+                "legacy_fractional_passed": true,
+                "required_score_norm_max": 5.523917638456835e-05,
+                "numerical_resolution_floor": null
+              },
+              "accepted": true
+            }
+          ],
+          "exact_incumbent_promoted_without_model_acceptance": false,
+          "refinement_movement": {
+            "pre_position_z": [
+              -0.001971806195647855,
+              -0.002476790771999084,
+              -0.002987235761279277,
+              -0.003469530315268002,
+              -0.00396907865973914
+            ],
+            "search_position_z": [
+              -0.001971806195647855,
+              -0.002476790771999084,
+              -0.002987235761279277,
+              -0.003469530315268002,
+              -0.00396907865973914
+            ],
+            "evaluated_proposal_position_z": [
+              -0.001999857084212706,
+              -0.002499820442604192,
+              -0.002999917795803951,
+              -0.003499754893434909,
+              -0.003999853443926114
+            ],
+            "terminal_position_z": [
+              -0.001999857084212706,
+              -0.002499820442604192,
+              -0.002999917795803951,
+              -0.003499754893434909,
+              -0.003999853443926114
+            ],
+            "pre_value": -1.6905078150526557e-09,
+            "search_value": -1.6905078150526557e-09,
+            "evaluated_proposal_value": -7.048961076954378e-14,
+            "terminal_value": -7.048961076954378e-14,
+            "pre_score_norm": 5.8146501457440366e-05,
+            "search_score_norm": 5.8146501457440366e-05,
+            "evaluated_proposal_score_norm": 3.754719983422078e-07,
+            "terminal_score_norm": 3.754719983422078e-07,
+            "radius_before": 0.25,
+            "radius_after": 0.25,
+            "search_recentered": false,
+            "proposal_accepted": true
+          }
+        }
+      ]
+    },
+    "nonclaims": [
+      "local exact-stationary MAP candidate only",
+      "fresh local quadratic covariance diagnostic only",
+      "not a certified global MAP",
+      "not posterior correctness evidence",
+      "not HMC readiness evidence",
+      "not convergence evidence",
+      "not default-readiness evidence"
+    ]
+  },
+  "changed_result": {
+    "schema": "bayesfilter.sequential_map_covariance.v1",
+    "accepted": true,
+    "status": "usable",
+    "map_candidate": [
+      2.508869500809322e-07,
+      3.148742494258816e-07,
+      1.3613490912153627e-07,
+      4.156574654226282e-07,
+      2.43695335235141e-07
+    ],
+    "precision": [
+      [
+        1.0049569109315277,
+        -0.0006766745147893591,
+        -0.0004347514172144164,
+        0.00016946702464496616,
+        0.0019178169736225187
+      ],
+      [
+        -0.0006766745147893591,
+        1.0045225165210712,
+        -0.0010233227983536125,
+        0.0014804294672531373,
+        -0.0016115470732543657
+      ],
+      [
+        -0.0004347514172144164,
+        -0.0010233227983536125,
+        1.0086857027404954,
+        -0.0001798769440486507,
+        -0.0027809919497831515
+      ],
+      [
+        0.00016946702464496616,
+        0.0014804294672531373,
+        -0.0001798769440486507,
+        1.0031924197526898,
+        -0.0027411448462986016
+      ],
+      [
+        0.0019178169736225187,
+        -0.0016115470732543657,
+        -0.0027809919497831515,
+        -0.0027411448462986016,
+        1.0150390869104042
+      ]
+    ],
+    "covariance": [
+      [
+        0.995071786099568,
+        0.00066798376736053,
+        0.0004243516741536476,
+        -0.0001741373032974989,
+        -0.001878337805546429
+      ],
+      [
+        0.00066798376736053,
+        0.9955040181833339,
+        0.001014327416703091,
+        -0.001464702502851461,
+        0.0015780933085523619
+      ],
+      [
+        0.0004243516741536476,
+        0.001014327416703091,
+        0.9913978260991546,
+        0.00018361899663265957,
+        0.0027175244212642607
+      ],
+      [
+        -0.0001741373032974989,
+        -0.001464702502851461,
+        0.00018361899663265957,
+        0.9968273146866852,
+        0.002690470013338456
+      ],
+      [
+        -0.001878337805546429,
+        0.0015780933085523619,
+        0.0027175244212642607,
+        0.002690470013338456,
+        0.985204501735211
+      ]
+    ],
+    "diagnostics": {
+      "exact_evaluations": 83,
+      "terminal_max_abs_scaled_score": 4.572232119649227e-07,
+      "terminal_fit_fresh": true,
+      "terminal_fit_attempts": 1,
+      "search_seed": [
+        2026,
+        715
+      ],
+      "terminal_seed": [
+        2026,
+        100720
+      ],
+      "precision_coordinate_system": "theta",
+      "regression_coordinate_system": "z",
+      "locator": [
+        {
+          "finite": true,
+          "coordinate_system": "reviewed_exact_center",
+          "locator_policy": "center_first",
+          "locator_skipped": true,
+          "skip_reason": "exact_center_admission"
+        }
+      ],
+      "terminal_fit": {
+        "status": "usable",
+        "rank": 15,
+        "seed": [
+          2026,
+          100720
+        ],
+        "best_exact_value": -0.0002625934801735178,
+        "best_exact_position": [
+          0.013619565722031006,
+          -0.005883532480132742,
+          0.01167481334240259,
+          -0.012536188838291348,
+          0.0034066603847890194
+        ],
+        "best_exact_score": [
+          -0.01362057625333272,
+          0.005883613945769665,
+          -0.011675449859140851,
+          0.012536976893361966,
+          -0.003406676198962987
+        ],
+        "best_exact_source": "score_fit_cloud",
+        "train_score_rmse": 0.0004515280819434133,
+        "holdout_score_relative_rmse": 0.0064325921135265415,
+        "raw_eigenvalues": [
+          1.212260509687769,
+          1.2149301560919876,
+          1.2158227497211356,
+          1.2203959342855388,
+          1.2306305808095548
+        ],
+        "projected_eigenvalues": [
+          1.212260509687769,
+          1.2149301560919876,
+          1.2158227497211356,
+          1.2203959342855388,
+          1.2306305808095548
+        ],
+        "projection_relative_frobenius": 1.515494342644435e-15,
+        "projected_precision_z": [
+          [
+            1.2159978622271492,
+            -0.0008187761628947569,
+            -0.0005260492148294882,
+            0.00020505509982108455,
+            0.002320558538083217
+          ],
+          [
+            -0.0008187761628947292,
+            1.2154722449904969,
+            -0.001238220586007123,
+            0.0017913196553764055,
+            -0.0019499719586375808
+          ],
+          [
+            -0.0005260492148294882,
+            -0.0012382205860071785,
+            1.2205097003159981,
+            -0.00021765110229858553,
+            -0.0033650002592378603
+          ],
+          [
+            0.0002050550998210776,
+            0.0017913196553763881,
+            -0.00021765110229858553,
+            1.2138628279007548,
+            -0.0033167852640215156
+          ],
+          [
+            0.002320558538083217,
+            -0.0019499719586375808,
+            -0.0033650002592378603,
+            -0.003316785264021488,
+            1.2281972951615896
+          ]
+        ]
+      },
+      "proposal_score_acceptance_policy": "fractional",
+      "proposal_score_gate_active": true,
+      "refinement_movement_initial": {
+        "position_z": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "value": -3.187509361875e-05,
+        "score_norm": 0.008782847273660455
+      },
+      "history": [
+        {
+          "attempt": 0,
+          "radius_before": 0.25,
+          "recentered": false,
+          "center_value": -3.187509361875e-05,
+          "fit": {
+            "status": "usable",
+            "rank": 15,
+            "seed": [
+              2026,
+              10715
+            ],
+            "best_exact_value": -0.00017489895495416833,
+            "best_exact_position": [
+              -0.011199794043194773,
+              -0.007754751462161275,
+              -0.0015866635023263098,
+              -0.00939296131760302,
+              0.00857173388516326
+            ],
+            "best_exact_score": [
+              0.011200355983393077,
+              0.007754937998582914,
+              0.0015866651000971353,
+              0.009393292805436155,
+              -0.008571985807125407
+            ],
+            "best_exact_source": "score_fit_cloud",
+            "train_score_rmse": 0.00026546995634549,
+            "holdout_score_relative_rmse": 0.003078279641819974,
+            "raw_eigenvalues": [
+              1.213282495791893,
+              1.2161897799545518,
+              1.2169481079386175,
+              1.2216697805666363,
+              1.2252156893865662
+            ],
+            "projected_eigenvalues": [
+              1.213282495791893,
+              1.2161897799545518,
+              1.2169481079386175,
+              1.2216697805666363,
+              1.2252156893865662
+            ],
+            "projection_relative_frobenius": 1.4840067243448696e-15,
+            "projected_precision_z": [
+              [
+                1.220946423775835,
+                0.004275463411597347,
+                0.0009319583138261978,
+                0.0007687465594093668,
+                0.0009840415687654147
+              ],
+              [
+                0.004275463411597347,
+                1.2203699330784261,
+                2.0949934283878702e-05,
+                -0.0003354047428171941,
+                0.0002555685213857517
+              ],
+              [
+                0.0009319583138261978,
+                2.094993428383707e-05,
+                1.21407663524036,
+                -0.0003183692012902698,
+                0.00142727550046284
+              ],
+              [
+                0.0007687465594093668,
+                -0.0003354047428172219,
+                -0.0003183692012901935,
+                1.2202868920417347,
+                0.0023518913800667784
+              ],
+              [
+                0.0009840415687654147,
+                0.00025556852138577946,
+                0.001427275500462788,
+                0.002351891380066834,
+                1.2176259695019114
+              ]
+            ]
+          },
+          "action": "proposal_accepted",
+          "actual_improvement": 3.187170416414199e-05,
+          "predicted_improvement": 3.15611745177017e-05,
+          "rho": 1.009838976248052,
+          "score_norm_before": 0.008782847273660455,
+          "score_norm_after": 9.056754473458179e-05,
+          "proposal_score_gate": {
+            "policy": "fractional",
+            "active": true,
+            "passed": true,
+            "legacy_fractional_passed": true,
+            "required_score_norm_max": 0.008343704909977432,
+            "numerical_resolution_floor": null
+          },
+          "boundary_active": false,
+          "radius_action": "retain",
+          "radius_after": 0.25,
+          "proposal_attempts": [
+            {
+              "factor_count": null,
+              "fit_status": "usable",
+              "proposal_evaluated": true,
+              "actual_improvement": 3.187170416414199e-05,
+              "predicted_improvement": 3.15611745177017e-05,
+              "rho": 1.009838976248052,
+              "score_norm_before": 0.008782847273660455,
+              "score_norm_after": 9.056754473458179e-05,
+              "score_reduction_passed": true,
+              "proposal_score_gate": {
+                "policy": "fractional",
+                "active": true,
+                "passed": true,
+                "legacy_fractional_passed": true,
+                "required_score_norm_max": 0.008343704909977432,
+                "numerical_resolution_floor": null
+              },
+              "accepted": true
+            }
+          ],
+          "exact_incumbent_promoted_without_model_acceptance": false,
+          "refinement_movement": {
+            "pre_position_z": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "search_position_z": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "evaluated_proposal_position_z": [
+              -0.0022349669141383667,
+              -0.002696363724990106,
+              -0.0031655672760492865,
+              -0.0035980814973166453,
+              -0.004052288123834341
+            ],
+            "terminal_position_z": [
+              -0.0022349669141383667,
+              -0.002696363724990106,
+              -0.0031655672760492865,
+              -0.0035980814973166453,
+              -0.004052288123834341
+            ],
+            "pre_value": -3.187509361875e-05,
+            "search_value": -3.187509361875e-05,
+            "evaluated_proposal_value": -3.3894546080154644e-09,
+            "terminal_value": -3.3894546080154644e-09,
+            "pre_score_norm": 0.008782847273660455,
+            "search_score_norm": 0.008782847273660455,
+            "evaluated_proposal_score_norm": 9.056754473458177e-05,
+            "terminal_score_norm": 9.056754473458177e-05,
+            "radius_before": 0.25,
+            "radius_after": 0.25,
+            "search_recentered": false,
+            "proposal_accepted": true
+          }
+        },
+        {
+          "attempt": 1,
+          "radius_before": 0.25,
+          "recentered": false,
+          "center_value": -3.3894546080154644e-09,
+          "fit": {
+            "status": "usable",
+            "rank": 15,
+            "seed": [
+              2026,
+              10716
+            ],
+            "best_exact_value": -0.00026130565111860693,
+            "best_exact_position": [
+              -0.011828852161132584,
+              -0.00928665366802952,
+              -0.016887449970285916,
+              -0.0010563276208756412,
+              -0.003181845028737537
+            ],
+            "best_exact_score": [
+              0.011829514206579543,
+              0.009286974027627336,
+              0.01688937639578251,
+              0.0010563280923476337,
+              0.003181857914112532
+            ],
+            "best_exact_source": "score_fit_cloud",
+            "train_score_rmse": 0.00027937278328595347,
+            "holdout_score_relative_rmse": 0.00365089549051726,
+            "raw_eigenvalues": [
+              1.2115431729913735,
+              1.2145836376665944,
+              1.217235888352101,
+              1.2195760212842202,
+              1.2218985181439164
+            ],
+            "projected_eigenvalues": [
+              1.2115431729913735,
+              1.2145836376665944,
+              1.217235888352101,
+              1.2195760212842202,
+              1.2218985181439164
+            ],
+            "projection_relative_frobenius": 1.7298624266629715e-15,
+            "projected_precision_z": [
+              [
+                1.2152422684680597,
+                0.0006645126668763067,
+                -0.00042120631806316644,
+                0.0024088145542084938,
+                -0.000667700452532255
+              ],
+              [
+                0.0006645126668763483,
+                1.2188772962428056,
+                -0.00040497896292155354,
+                0.0003413240314821611,
+                0.0011241648299068225
+              ],
+              [
+                -0.00042120631806311093,
+                -0.0004049789629215327,
+                1.213065796635513,
+                0.002562046585632305,
+                0.000817818276388313
+              ],
+              [
+                0.0024088145542085493,
+                0.00034132403148217846,
+                0.0025620465856323327,
+                1.219804039787971,
+                -0.0014732198630753035
+              ],
+              [
+                -0.000667700452532255,
+                0.001124164829906878,
+                0.000817818276388313,
+                -0.0014732198630753035,
+                1.2178478373038588
+              ]
+            ]
+          },
+          "action": "proposal_accepted",
+          "actual_improvement": 3.389248217358899e-09,
+          "predicted_improvement": 3.36374631543688e-09,
+          "rho": 1.0075813986937678,
+          "score_norm_before": 9.056754473458177e-05,
+          "score_norm_after": 7.067286529414357e-07,
+          "proposal_score_gate": {
+            "policy": "fractional",
+            "active": true,
+            "passed": true,
+            "legacy_fractional_passed": true,
+            "required_score_norm_max": 8.603916749785269e-05,
+            "numerical_resolution_floor": null
+          },
+          "boundary_active": false,
+          "radius_action": "retain",
+          "radius_after": 0.25,
+          "proposal_attempts": [
+            {
+              "factor_count": null,
+              "fit_status": "usable",
+              "proposal_evaluated": true,
+              "actual_improvement": 3.389248217358899e-09,
+              "predicted_improvement": 3.36374631543688e-09,
+              "rho": 1.0075813986937678,
+              "score_norm_before": 9.056754473458177e-05,
+              "score_norm_after": 7.067286529414357e-07,
+              "score_reduction_passed": true,
+              "proposal_score_gate": {
+                "policy": "fractional",
+                "active": true,
+                "passed": true,
+                "legacy_fractional_passed": true,
+                "required_score_norm_max": 8.603916749785269e-05,
+                "numerical_resolution_floor": null
+              },
+              "accepted": true
+            }
+          ],
+          "exact_incumbent_promoted_without_model_acceptance": false,
+          "refinement_movement": {
+            "pre_position_z": [
+              -0.0022349669141383667,
+              -0.002696363724990106,
+              -0.0031655672760492865,
+              -0.0035980814973166453,
+              -0.004052288123834341
+            ],
+            "search_position_z": [
+              -0.0022349669141383667,
+              -0.002696363724990106,
+              -0.0031655672760492865,
+              -0.0035980814973166453,
+              -0.004052288123834341
+            ],
+            "evaluated_proposal_position_z": [
+              -0.0022724991936817446,
+              -0.0027269864779550673,
+              -0.003181694422809889,
+              -0.003635985765940525,
+              -0.004090687549695241
+            ],
+            "terminal_position_z": [
+              -0.0022724991936817446,
+              -0.0027269864779550673,
+              -0.003181694422809889,
+              -0.003635985765940525,
+              -0.004090687549695241
+            ],
+            "pre_value": -3.3894546080154644e-09,
+            "search_value": -3.3894546080154644e-09,
+            "evaluated_proposal_value": -2.0639065656544704e-13,
+            "terminal_value": -2.0639065656544704e-13,
+            "pre_score_norm": 9.056754473458177e-05,
+            "search_score_norm": 9.056754473458177e-05,
+            "evaluated_proposal_score_norm": 7.067286529414357e-07,
+            "terminal_score_norm": 7.067286529414357e-07,
+            "radius_before": 0.25,
+            "radius_after": 0.25,
+            "search_recentered": false,
+            "proposal_accepted": true
+          }
+        }
+      ]
+    },
+    "nonclaims": [
+      "local exact-stationary MAP candidate only",
+      "fresh local quadratic covariance diagnostic only",
+      "not a certified global MAP",
+      "not posterior correctness evidence",
+      "not HMC readiness evidence",
+      "not convergence evidence",
+      "not default-readiness evidence"
+    ]
+  },
+  "original_result": {
+    "schema": "bayesfilter.sequential_map_covariance.v1",
+    "accepted": true,
+    "status": "usable",
+    "map_candidate": [
+      1.4291578729382358e-07,
+      1.7955739580845364e-07,
+      8.220419604929246e-08,
+      2.4510656509114793e-07,
+      1.4655607388601574e-07
+    ],
+    "precision": [
+      [
+        1.0040966118583408,
+        -0.0005592338503734653,
+        -0.00035929960291197424,
+        0.00014005326872773734,
+        0.0015849691547905331
+      ],
+      [
+        -0.0005592338503734653,
+        1.0037376090111945,
+        -0.0008457201962889828,
+        0.0012234927451255269,
+        -0.0013318559943775038
+      ],
+      [
+        -0.00035929960291197424,
+        -0.0008457201962889828,
+        1.007178263540224,
+        -0.0001486594506222988,
+        -0.0022983375636203285
+      ],
+      [
+        0.00014005326872773734,
+        0.0012234927451255269,
+        -0.0001486594506222988,
+        1.0026383576868338,
+        -0.002265407881214307
+      ],
+      [
+        0.0015849691547905331,
+        -0.0013318559943775038,
+        -0.0022983375636203285,
+        -0.002265407881214307,
+        1.0124289888301221
+      ]
+    ],
+    "covariance": [
+      [
+        0.9959230152387486,
+        0.0005532840900086778,
+        0.0003521727510557718,
+        -0.00014325822151040643,
+        -0.001557922095090865
+      ],
+      [
+        0.0005532840900086778,
+        0.9962805394227856,
+        0.0008395747785206348,
+        -0.0012127297953998656,
+        0.0013089387833919574
+      ],
+      [
+        0.0003521727510557718,
+        0.0008395747785206348,
+        0.9928788950925032,
+        0.00015123343700204416,
+        0.0022548479953432106
+      ],
+      [
+        -0.00014325822151040643,
+        -0.0012127297953998656,
+        0.00015123343700204416,
+        0.9973751473610712,
+        0.0022306956914306957
+      ],
+      [
+        -0.001557922095090865,
+        0.0013089387833919574,
+        0.0022548479953432106,
+        0.0022306956914306957,
+        0.9877378655162884
+      ]
+    ],
+    "diagnostics": {
+      "exact_evaluations": 83,
+      "terminal_max_abs_scaled_score": 2.451065650911538e-07,
+      "terminal_fit_fresh": true,
+      "terminal_fit_attempts": 1,
+      "search_seed": [
+        2026,
+        715
+      ],
+      "terminal_seed": [
+        2026,
+        100720
+      ],
+      "precision_coordinate_system": "theta",
+      "regression_coordinate_system": "z",
+      "locator": [
+        {
+          "finite": true,
+          "coordinate_system": "reviewed_exact_center",
+          "locator_policy": "center_first",
+          "locator_skipped": true,
+          "skip_reason": "exact_center_admission"
+        }
+      ],
+      "history": [
+        {
+          "attempt": 0,
+          "radius_before": 0.25,
+          "recentered": false,
+          "center_value": -2.3750054212500003e-05,
+          "fit": {
+            "status": "usable",
+            "seed": [
+              2026,
+              10715
+            ],
+            "rank": 15,
+            "train_score_rmse": 0.00018080794135234886,
+            "holdout_score_relative_rmse": 0.002550959828158389,
+            "raw_eigenvalues": [
+              1.0022469234231737,
+              1.0042341741083158,
+              1.0047502572731362,
+              1.0079574248136067,
+              1.0103530890383314
+            ],
+            "projected_eigenvalues": [
+              1.0022469234231737,
+              1.0042341741083158,
+              1.0047502572731362,
+              1.0079574248136067,
+              1.0103530890383314
+            ],
+            "projection_relative_frobenius": 1.3221221387043365e-15,
+            "projected_precision_z": [
+              [
+                1.0074424231092787,
+                0.0029010053447894313,
+                0.0006293000393487597,
+                0.0005218193008146854,
+                0.000666771774671282
+              ],
+              [
+                0.0029010053447894313,
+                1.0070795305272613,
+                1.8505393765140543e-05,
+                -0.0002308416751547332,
+                0.00017796926817401082
+              ],
+              [
+                0.0006293000393487874,
+                1.85053937651683e-05,
+                1.0027933600789476,
+                -0.00021768329457465957,
+                0.0009823893698416228
+              ],
+              [
+                0.0005218193008146854,
+                -0.0002308416751547887,
+                -0.00021768329457465957,
+                1.0070109108742404,
+                0.0016012175075535637
+              ],
+              [
+                0.0006667717746713098,
+                0.00017796926817399694,
+                0.0009823893698416228,
+                0.0016012175075535637,
+                1.0052156440668378
+              ]
+            ],
+            "best_exact_value": -0.00014973456795430506,
+            "best_exact_position": [
+              -0.010454358221086155,
+              -0.007277046783782977,
+              -0.0016242395475693713,
+              -0.008675419379639107,
+              0.007701576259239327
+            ],
+            "best_exact_score": [
+              0.01045481525888874,
+              0.007277200927381076,
+              0.0016242412615670651,
+              0.0086756805545325,
+              -0.007701758984609978
+            ],
+            "best_exact_source": "score_fit_cloud"
+          },
+          "action": "proposal_accepted",
+          "actual_improvement": 2.374836370468495e-05,
+          "predicted_improvement": 2.3558591255126375e-05,
+          "rho": 1.0080553394514742,
+          "score_norm_before": 0.006892055839959179,
+          "score_norm_after": 5.814650145745227e-05,
+          "proposal_score_gate": {
+            "policy": "fractional",
+            "active": true,
+            "passed": true,
+            "legacy_fractional_passed": true,
+            "numerical_resolution_floor": null,
+            "required_score_norm_max": 0.006547453047961219
+          },
+          "boundary_active": false,
+          "radius_action": "retain",
+          "radius_after": 0.25,
+          "proposal_attempts": [
+            {
+              "factor_count": null,
+              "fit_status": "usable",
+              "proposal_evaluated": true,
+              "actual_improvement": 2.374836370468495e-05,
+              "predicted_improvement": 2.3558591255126375e-05,
+              "rho": 1.0080553394514742,
+              "score_norm_before": 0.006892055839959179,
+              "score_norm_after": 5.814650145745227e-05,
+              "score_reduction_passed": true,
+              "proposal_score_gate": {
+                "policy": "fractional",
+                "active": true,
+                "passed": true,
+                "legacy_fractional_passed": true,
+                "numerical_resolution_floor": null,
+                "required_score_norm_max": 0.006547453047961219
+              },
+              "accepted": true
+            }
+          ],
+          "exact_incumbent_promoted_without_model_acceptance": false,
+          "refinement_movement": {
+            "pre_position_z": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "search_position_z": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "evaluated_proposal_position_z": [
+              -0.0019718061956478456,
+              -0.0024767907719990714,
+              -0.002987235761279279,
+              -0.0034695303152679977,
+              -0.003969078659739139
+            ],
+            "terminal_position_z": [
+              -0.0019718061956478456,
+              -0.0024767907719990714,
+              -0.002987235761279279,
+              -0.0034695303152679977,
+              -0.003969078659739139
+            ],
+            "pre_value": -2.3750054212500003e-05,
+            "search_value": -2.3750054212500003e-05,
+            "evaluated_proposal_value": -1.690507815053348e-09,
+            "terminal_value": -1.690507815053348e-09,
+            "pre_score_norm": 0.006892055839959179,
+            "search_score_norm": 0.006892055839959179,
+            "evaluated_proposal_score_norm": 5.814650145745227e-05,
+            "terminal_score_norm": 5.814650145745227e-05,
+            "radius_before": 0.25,
+            "radius_after": 0.25,
+            "search_recentered": false,
+            "proposal_accepted": true
+          }
+        },
+        {
+          "attempt": 1,
+          "radius_before": 0.25,
+          "recentered": false,
+          "center_value": -1.690507815053348e-09,
+          "fit": {
+            "status": "usable",
+            "seed": [
+              2026,
+              10716
+            ],
+            "rank": 15,
+            "train_score_rmse": 0.00019082113522222058,
+            "holdout_score_relative_rmse": 0.0030210216002792196,
+            "raw_eigenvalues": [
+              1.001054132623291,
+              1.0031303613080078,
+              1.0049428784452785,
+              1.0065414264070063,
+              1.0081258983357146
+            ],
+            "projected_eigenvalues": [
+              1.001054132623291,
+              1.0031303613080078,
+              1.0049428784452785,
+              1.0065414264070063,
+              1.0081258983357146
+            ],
+            "projection_relative_frobenius": 1.10578232996613e-15,
+            "projected_precision_z": [
+              [
+                1.0035800168151467,
+                0.00045405118101179975,
+                -0.00028762637525535373,
+                0.001644858378495595,
+                -0.00045592419261984707
+              ],
+              [
+                0.00045405118101178414,
+                1.0060640978485116,
+                -0.00027663256939515924,
+                0.00023297549518409844,
+                0.0007679457099202449
+              ],
+              [
+                -0.00028762637525533985,
+                -0.000276632569395187,
+                1.0020941783103863,
+                0.0017498846596816775,
+                0.0005587419172894681
+              ],
+              [
+                0.0016448583784955395,
+                0.00023297549518408803,
+                0.001749884659681622,
+                1.0066955207864223,
+                -0.001006015198823318
+              ],
+              [
+                -0.0004559241926198193,
+                0.000767945709920244,
+                0.0005587419172894681,
+                -0.001006015198823318,
+                1.0053608833588306
+              ]
+            ],
+            "best_exact_value": -0.000216204862272614,
+            "best_exact_position": [
+              -0.010763068518902734,
+              -0.008450112199763072,
+              -0.01535571391276264,
+              -0.000968110291474662,
+              -0.0029002860165752856
+            ],
+            "best_exact_score": [
+              0.010763567252133628,
+              0.008450353549826812,
+              0.015357162251105796,
+              0.0009681106544143838,
+              0.0029002957750620495
+            ],
+            "best_exact_source": "score_fit_cloud"
+          },
+          "action": "proposal_accepted",
+          "actual_improvement": 1.6904373254425784e-09,
+          "predicted_improvement": 1.6798847991931468e-09,
+          "rho": 1.0062816963725727,
+          "score_norm_before": 5.814650145745227e-05,
+          "score_norm_after": 3.7547199834222864e-07,
+          "proposal_score_gate": {
+            "policy": "fractional",
+            "active": true,
+            "passed": true,
+            "legacy_fractional_passed": true,
+            "numerical_resolution_floor": null,
+            "required_score_norm_max": 5.5239176384579655e-05
+          },
+          "boundary_active": false,
+          "radius_action": "retain",
+          "radius_after": 0.25,
+          "proposal_attempts": [
+            {
+              "factor_count": null,
+              "fit_status": "usable",
+              "proposal_evaluated": true,
+              "actual_improvement": 1.6904373254425784e-09,
+              "predicted_improvement": 1.6798847991931468e-09,
+              "rho": 1.0062816963725727,
+              "score_norm_before": 5.814650145745227e-05,
+              "score_norm_after": 3.7547199834222864e-07,
+              "score_reduction_passed": true,
+              "proposal_score_gate": {
+                "policy": "fractional",
+                "active": true,
+                "passed": true,
+                "legacy_fractional_passed": true,
+                "numerical_resolution_floor": null,
+                "required_score_norm_max": 5.5239176384579655e-05
+              },
+              "accepted": true
+            }
+          ],
+          "exact_incumbent_promoted_without_model_acceptance": false,
+          "refinement_movement": {
+            "pre_position_z": [
+              -0.0019718061956478456,
+              -0.0024767907719990714,
+              -0.002987235761279279,
+              -0.0034695303152679977,
+              -0.003969078659739139
+            ],
+            "search_position_z": [
+              -0.0019718061956478456,
+              -0.0024767907719990714,
+              -0.002987235761279279,
+              -0.0034695303152679977,
+              -0.003969078659739139
+            ],
+            "evaluated_proposal_position_z": [
+              -0.001999857084212706,
+              -0.0024998204426041914,
+              -0.002999917795803951,
+              -0.003499754893434909,
+              -0.003999853443926114
+            ],
+            "terminal_position_z": [
+              -0.001999857084212706,
+              -0.0024998204426041914,
+              -0.002999917795803951,
+              -0.003499754893434909,
+              -0.003999853443926114
+            ],
+            "pre_value": -1.690507815053348e-09,
+            "search_value": -1.690507815053348e-09,
+            "evaluated_proposal_value": -7.048961076955159e-14,
+            "terminal_value": -7.048961076955159e-14,
+            "pre_score_norm": 5.814650145745227e-05,
+            "search_score_norm": 5.814650145745227e-05,
+            "evaluated_proposal_score_norm": 3.7547199834222864e-07,
+            "terminal_score_norm": 3.7547199834222864e-07,
+            "radius_before": 0.25,
+            "radius_after": 0.25,
+            "search_recentered": false,
+            "proposal_accepted": true
+          }
+        }
+      ],
+      "terminal_fit": {
+        "status": "usable",
+        "seed": [
+          2026,
+          100720
+        ],
+        "rank": 15,
+        "train_score_rmse": 0.00030839935956610004,
+        "holdout_score_relative_rmse": 0.005325655678804491,
+        "raw_eigenvalues": [
+          1.0015439556672951,
+          1.0033673558991338,
+          1.0039770078387271,
+          1.007100558462823,
+          1.0140909530587343
+        ],
+        "projected_eigenvalues": [
+          1.0015439556672951,
+          1.0033673558991338,
+          1.0039770078387271,
+          1.007100558462823,
+          1.0140909530587343
+        ],
+        "projection_relative_frobenius": 1.3593415263292056e-15,
+        "projected_precision_z": [
+          [
+            1.0040966118583396,
+            -0.0005592338503738505,
+            -0.0003592996029116863,
+            0.00014005326872781193,
+            0.0015849691547907274
+          ],
+          [
+            -0.0005592338503737915,
+            1.0037376090111938,
+            -0.0008457201962878691,
+            0.0012234927451266718,
+            -0.0013318559943772124
+          ],
+          [
+            -0.0003592996029116863,
+            -0.0008457201962879246,
+            1.0071782635402233,
+            -0.00014865945062349228,
+            -0.0022983375636204117
+          ],
+          [
+            0.0001400532687277807,
+            0.0012234927451266892,
+            -0.00014865945062349228,
+            1.0026383576868327,
+            -0.002265407881214515
+          ],
+          [
+            0.0015849691547907274,
+            -0.001331855994377254,
+            -0.0022983375636204117,
+            -0.002265407881214515,
+            1.0124289888301214
+          ]
+        ],
+        "best_exact_value": -0.0002170186277658778,
+        "best_exact_position": [
+          0.012381338220406315,
+          -0.005348772582951617,
+          0.0106134251200992,
+          -0.011396668071395609,
+          0.0030968890010318714
+        ],
+        "best_exact_score": [
+          -0.012382097431863578,
+          0.005348833792953194,
+          -0.010613903338928535,
+          0.011397260169526536,
+          -0.0030969008815918226
+        ],
+        "best_exact_source": "score_fit_cloud"
+      },
+      "proposal_score_acceptance_policy": "fractional",
+      "proposal_score_gate_active": true,
+      "refinement_movement_initial": {
+        "position_z": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "value": -2.3750054212500003e-05,
+        "score_norm": 0.006892055839959179
+      }
+    },
+    "nonclaims": [
+      "local exact-stationary MAP candidate only",
+      "fresh local quadratic covariance diagnostic only",
+      "not a certified global MAP",
+      "not posterior correctness evidence",
+      "not HMC readiness evidence",
+      "not convergence evidence",
+      "not default-readiness evidence"
+    ]
+  },
+  "original_changed_result": {
+    "schema": "bayesfilter.sequential_map_covariance.v1",
+    "accepted": true,
+    "status": "usable",
+    "map_candidate": [
+      2.5088695008074246e-07,
+      3.1487424942578675e-07,
+      1.361349091215261e-07,
+      4.1565746542259434e-07,
+      2.4369533523501904e-07
+    ],
+    "precision": [
+      [
+        1.0049569109315284,
+        -0.0006766745147886947,
+        -0.0004347514172146037,
+        0.0001694670246457624,
+        0.0019178169736226852
+      ],
+      [
+        -0.0006766745147886947,
+        1.0045225165210727,
+        -0.0010233227983545146,
+        0.001480429467252492,
+        -0.0016115470732545878
+      ],
+      [
+        -0.0004347514172146037,
+        -0.0010233227983545146,
+        1.0086857027404965,
+        -0.0001798769440489456,
+        -0.0027809919497832902
+      ],
+      [
+        0.0001694670246457624,
+        0.001480429467252492,
+        -0.0001798769440489456,
+        1.003192419752692,
+        -0.0027411448462991705
+      ],
+      [
+        0.0019178169736226852,
+        -0.0016115470732545878,
+        -0.0027809919497832902,
+        -0.0027411448462991705,
+        1.0150390869104056
+      ]
+    ],
+    "covariance": [
+      [
+        0.9950717860995671,
+        0.0006679837673598712,
+        0.0004243516741538309,
+        -0.00017413730329828817,
+        -0.001878337805546592
+      ],
+      [
+        0.0006679837673598712,
+        0.9955040181833325,
+        0.0010143274167039792,
+        -0.0014647025028508135,
+        0.0015780933085525798
+      ],
+      [
+        0.0004243516741538309,
+        0.0010143274167039792,
+        0.9913978260991535,
+        0.00018361899663295122,
+        0.002717524421264392
+      ],
+      [
+        -0.00017413730329828817,
+        -0.0014647025028508135,
+        0.00018361899663295122,
+        0.996827314686683,
+        0.00269047001333901
+      ],
+      [
+        -0.001878337805546592,
+        0.0015780933085525798,
+        0.002717524421264392,
+        0.00269047001333901,
+        0.9852045017352099
+      ]
+    ],
+    "diagnostics": {
+      "exact_evaluations": 83,
+      "terminal_max_abs_scaled_score": 4.572232119648854e-07,
+      "terminal_fit_fresh": true,
+      "terminal_fit_attempts": 1,
+      "search_seed": [
+        2026,
+        715
+      ],
+      "terminal_seed": [
+        2026,
+        100720
+      ],
+      "precision_coordinate_system": "theta",
+      "regression_coordinate_system": "z",
+      "locator": [
+        {
+          "finite": true,
+          "coordinate_system": "reviewed_exact_center",
+          "locator_policy": "center_first",
+          "locator_skipped": true,
+          "skip_reason": "exact_center_admission"
+        }
+      ],
+      "history": [
+        {
+          "attempt": 0,
+          "radius_before": 0.25,
+          "recentered": false,
+          "center_value": -3.187509361875e-05,
+          "fit": {
+            "status": "usable",
+            "seed": [
+              2026,
+              10715
+            ],
+            "rank": 15,
+            "train_score_rmse": 0.00026546995634548826,
+            "holdout_score_relative_rmse": 0.003078279641820235,
+            "raw_eigenvalues": [
+              1.2132824957918915,
+              1.2161897799545505,
+              1.2169481079386184,
+              1.2216697805666341,
+              1.225215689386565
+            ],
+            "projected_eigenvalues": [
+              1.2132824957918915,
+              1.2161897799545505,
+              1.2169481079386184,
+              1.2216697805666341,
+              1.225215689386565
+            ],
+            "projection_relative_frobenius": 6.764650222385271e-16,
+            "projected_precision_z": [
+              [
+                1.2209464237758312,
+                0.004275463411597347,
+                0.0009319583138268639,
+                0.0007687465594081733,
+                0.0009840415687653592
+              ],
+              [
+                0.004275463411597236,
+                1.2203699330784255,
+                2.094993428332359e-05,
+                -0.0003354047428162227,
+                0.0002555685213845582
+              ],
+              [
+                0.0009319583138268778,
+                2.0949934283309712e-05,
+                1.2140766352403594,
+                -0.00031836920129100187,
+                0.0014272755004635998
+              ],
+              [
+                0.0007687465594081733,
+                -0.00033540474281623656,
+                -0.0003183692012909793,
+                1.2202868920417327,
+                0.0023518913800654184
+              ],
+              [
+                0.000984041568765387,
+                0.00025556852138458597,
+                0.0014272755004635512,
+                0.0023518913800655294,
+                1.217625969501912
+              ]
+            ],
+            "best_exact_value": -0.0001748989549541683,
+            "best_exact_position": [
+              -0.011199794043194771,
+              -0.007754751462161276,
+              -0.001586663502326309,
+              -0.009392961317603019,
+              0.00857173388516326
+            ],
+            "best_exact_score": [
+              0.011200355983393076,
+              0.007754937998582915,
+              0.0015866651000971345,
+              0.009393292805436153,
+              -0.008571985807125407
+            ],
+            "best_exact_source": "score_fit_cloud"
+          },
+          "action": "proposal_accepted",
+          "actual_improvement": 3.187170416414199e-05,
+          "predicted_improvement": 3.1561174517701754e-05,
+          "rho": 1.0098389762480502,
+          "score_norm_before": 0.008782847273660455,
+          "score_norm_after": 9.056754473456497e-05,
+          "proposal_score_gate": {
+            "policy": "fractional",
+            "active": true,
+            "passed": true,
+            "legacy_fractional_passed": true,
+            "numerical_resolution_floor": null,
+            "required_score_norm_max": 0.008343704909977432
+          },
+          "boundary_active": false,
+          "radius_action": "retain",
+          "radius_after": 0.25,
+          "proposal_attempts": [
+            {
+              "factor_count": null,
+              "fit_status": "usable",
+              "proposal_evaluated": true,
+              "actual_improvement": 3.187170416414199e-05,
+              "predicted_improvement": 3.1561174517701754e-05,
+              "rho": 1.0098389762480502,
+              "score_norm_before": 0.008782847273660455,
+              "score_norm_after": 9.056754473456497e-05,
+              "score_reduction_passed": true,
+              "proposal_score_gate": {
+                "policy": "fractional",
+                "active": true,
+                "passed": true,
+                "legacy_fractional_passed": true,
+                "numerical_resolution_floor": null,
+                "required_score_norm_max": 0.008343704909977432
+              },
+              "accepted": true
+            }
+          ],
+          "exact_incumbent_promoted_without_model_acceptance": false,
+          "refinement_movement": {
+            "pre_position_z": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "search_position_z": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "evaluated_proposal_position_z": [
+              -0.0022349669141383767,
+              -0.00269636372499011,
+              -0.0031655672760492887,
+              -0.003598081497316656,
+              -0.004052288123834343
+            ],
+            "terminal_position_z": [
+              -0.0022349669141383767,
+              -0.00269636372499011,
+              -0.0031655672760492887,
+              -0.003598081497316656,
+              -0.004052288123834343
+            ],
+            "pre_value": -3.187509361875e-05,
+            "search_value": -3.187509361875e-05,
+            "evaluated_proposal_value": -3.389454608014206e-09,
+            "terminal_value": -3.389454608014206e-09,
+            "pre_score_norm": 0.008782847273660455,
+            "search_score_norm": 0.008782847273660455,
+            "evaluated_proposal_score_norm": 9.056754473456497e-05,
+            "terminal_score_norm": 9.056754473456497e-05,
+            "radius_before": 0.25,
+            "radius_after": 0.25,
+            "search_recentered": false,
+            "proposal_accepted": true
+          }
+        },
+        {
+          "attempt": 1,
+          "radius_before": 0.25,
+          "recentered": false,
+          "center_value": -3.389454608014206e-09,
+          "fit": {
+            "status": "usable",
+            "seed": [
+              2026,
+              10716
+            ],
+            "rank": 15,
+            "train_score_rmse": 0.00027937278328594935,
+            "holdout_score_relative_rmse": 0.0036508954905172695,
+            "raw_eigenvalues": [
+              1.2115431729913724,
+              1.214583637666592,
+              1.2172358883521,
+              1.2195760212842197,
+              1.221898518143916
+            ],
+            "projected_eigenvalues": [
+              1.2115431729913724,
+              1.214583637666592,
+              1.2172358883521,
+              1.2195760212842197,
+              1.221898518143916
+            ],
+            "projection_relative_frobenius": 7.089790515244448e-16,
+            "projected_precision_z": [
+              [
+                1.2152422684680548,
+                0.0006645126668767994,
+                -0.0004212063180625003,
+                0.0024088145542091044,
+                -0.0006677004525327546
+              ],
+              [
+                0.0006645126668767438,
+                1.2188772962428043,
+                -0.00040497896292131675,
+                0.00034132403148163723,
+                0.0011241648299066577
+              ],
+              [
+                -0.00042120631806248643,
+                -0.00040497896292128206,
+                1.213065796635512,
+                0.002562046585632527,
+                0.0008178182763879244
+              ],
+              [
+                0.0024088145542091044,
+                0.00034132403148163723,
+                0.002562046585632527,
+                1.2198040397879715,
+                -0.001473219863075581
+              ],
+              [
+                -0.0006677004525327546,
+                0.0011241648299067132,
+                0.0008178182763880493,
+                -0.001473219863075581,
+                1.217847837303857
+              ]
+            ],
+            "best_exact_value": -0.00026130565111860704,
+            "best_exact_position": [
+              -0.011828852161132592,
+              -0.009286653668029523,
+              -0.016887449970285913,
+              -0.0010563276208756529,
+              -0.0031818450287375384
+            ],
+            "best_exact_score": [
+              0.011829514206579551,
+              0.00928697402762734,
+              0.016889376395782505,
+              0.0010563280923476454,
+              0.0031818579141125332
+            ],
+            "best_exact_source": "score_fit_cloud"
+          },
+          "action": "proposal_accepted",
+          "actual_improvement": 3.3892482173576406e-09,
+          "predicted_improvement": 3.3637463154356366e-09,
+          "rho": 1.007581398693766,
+          "score_norm_before": 9.056754473456497e-05,
+          "score_norm_after": 7.067286529412258e-07,
+          "proposal_score_gate": {
+            "policy": "fractional",
+            "active": true,
+            "passed": true,
+            "legacy_fractional_passed": true,
+            "numerical_resolution_floor": null,
+            "required_score_norm_max": 8.603916749783672e-05
+          },
+          "boundary_active": false,
+          "radius_action": "retain",
+          "radius_after": 0.25,
+          "proposal_attempts": [
+            {
+              "factor_count": null,
+              "fit_status": "usable",
+              "proposal_evaluated": true,
+              "actual_improvement": 3.3892482173576406e-09,
+              "predicted_improvement": 3.3637463154356366e-09,
+              "rho": 1.007581398693766,
+              "score_norm_before": 9.056754473456497e-05,
+              "score_norm_after": 7.067286529412258e-07,
+              "score_reduction_passed": true,
+              "proposal_score_gate": {
+                "policy": "fractional",
+                "active": true,
+                "passed": true,
+                "legacy_fractional_passed": true,
+                "numerical_resolution_floor": null,
+                "required_score_norm_max": 8.603916749783672e-05
+              },
+              "accepted": true
+            }
+          ],
+          "exact_incumbent_promoted_without_model_acceptance": false,
+          "refinement_movement": {
+            "pre_position_z": [
+              -0.0022349669141383767,
+              -0.00269636372499011,
+              -0.0031655672760492887,
+              -0.003598081497316656,
+              -0.004052288123834343
+            ],
+            "search_position_z": [
+              -0.0022349669141383767,
+              -0.00269636372499011,
+              -0.0031655672760492887,
+              -0.003598081497316656,
+              -0.004052288123834343
+            ],
+            "evaluated_proposal_position_z": [
+              -0.0022724991936817446,
+              -0.0027269864779550673,
+              -0.003181694422809889,
+              -0.003635985765940525,
+              -0.004090687549695241
+            ],
+            "terminal_position_z": [
+              -0.0022724991936817446,
+              -0.0027269864779550673,
+              -0.003181694422809889,
+              -0.003635985765940525,
+              -0.004090687549695241
+            ],
+            "pre_value": -3.389454608014206e-09,
+            "search_value": -3.389454608014206e-09,
+            "evaluated_proposal_value": -2.0639065656532436e-13,
+            "terminal_value": -2.0639065656532436e-13,
+            "pre_score_norm": 9.056754473456497e-05,
+            "search_score_norm": 9.056754473456497e-05,
+            "evaluated_proposal_score_norm": 7.067286529412258e-07,
+            "terminal_score_norm": 7.067286529412258e-07,
+            "radius_before": 0.25,
+            "radius_after": 0.25,
+            "search_recentered": false,
+            "proposal_accepted": true
+          }
+        }
+      ],
+      "terminal_fit": {
+        "status": "usable",
+        "seed": [
+          2026,
+          100720
+        ],
+        "rank": 15,
+        "train_score_rmse": 0.0004515280819434188,
+        "holdout_score_relative_rmse": 0.006432592113526424,
+        "raw_eigenvalues": [
+          1.21226050968777,
+          1.2149301560919872,
+          1.2158227497211356,
+          1.2203959342855395,
+          1.2306305808095543
+        ],
+        "projected_eigenvalues": [
+          1.21226050968777,
+          1.2149301560919872,
+          1.2158227497211356,
+          1.2203959342855395,
+          1.2306305808095543
+        ],
+        "projection_relative_frobenius": 1.502260677808012e-15,
+        "projected_precision_z": [
+          [
+            1.215997862227149,
+            -0.0008187761628941116,
+            -0.0005260492148295923,
+            0.00020505509982116782,
+            0.002320558538083467
+          ],
+          [
+            -0.0008187761628941116,
+            1.215472244990497,
+            -0.0012382205860081222,
+            0.001791319655375434,
+            -0.0019499719586376363
+          ],
+          [
+            -0.0005260492148295992,
+            -0.0012382205860081222,
+            1.2205097003159984,
+            -0.00021765110229923779,
+            -0.0033650002592379713
+          ],
+          [
+            0.00020505509982116782,
+            0.0017913196553753785,
+            -0.00021765110229926554,
+            1.2138628279007566,
+            -0.0033167852640216267
+          ],
+          [
+            0.0023205585380834115,
+            -0.001949971958637664,
+            -0.003365000259237916,
+            -0.003316785264021682,
+            1.2281972951615896
+          ]
+        ],
+        "best_exact_value": -0.0002625934801735178,
+        "best_exact_position": [
+          0.013619565722031006,
+          -0.005883532480132742,
+          0.01167481334240259,
+          -0.012536188838291348,
+          0.0034066603847890194
+        ],
+        "best_exact_score": [
+          -0.01362057625333272,
+          0.005883613945769665,
+          -0.011675449859140851,
+          0.012536976893361966,
+          -0.003406676198962987
+        ],
+        "best_exact_source": "score_fit_cloud"
+      },
+      "proposal_score_acceptance_policy": "fractional",
+      "proposal_score_gate_active": true,
+      "refinement_movement_initial": {
+        "position_z": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "value": -3.187509361875e-05,
+        "score_norm": 0.008782847273660455
+      }
+    },
+    "nonclaims": [
+      "local exact-stationary MAP candidate only",
+      "fresh local quadratic covariance diagnostic only",
+      "not a certified global MAP",
+      "not posterior correctness evidence",
+      "not HMC readiness evidence",
+      "not convergence evidence",
+      "not default-readiness evidence"
+    ]
+  },
+  "trace_count": 1,
+  "graph_nodes": 6875,
+  "graph_bytes": 1112130,
+  "hlo_bytes": 16599449,
+  "gpu_process_observation": {
+    "schema": "filter_repair_cost_provenance.v1",
+    "enabled": false,
+    "uuid": null,
+    "pid": 2640833,
+    "samples": [],
+    "errors": [],
+    "limitation": "Sampled sharing evidence; brief sharing between samples can be missed."
+  },
+  "timing_scope": "Entire public call/payload; construction and tracing included in total cold.",
+  "nonclaims": [
+    "CPU is an explicit reference; outer graph mode is non-default.",
+    "Graph/XLA retain declared solvers/dependencies; not an identical-graph compiler ablation.",
+    "Observed RSS/PSS and allocator counts are not exact peaks or leak-freedom evidence.",
+    "Three processes per condition do not establish a general performance or scientific ranking."
+  ]
+}

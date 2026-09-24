@@ -1,0 +1,1333 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "block_score_geometry",
+  "size": 2,
+  "jit": "off",
+  "device": "GPU",
+  "source_root": "/tmp/bayesfilter-filter-gradient-xla-validation-20260918",
+  "worker_sha256": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "filter_repair_preparation_worker.py": "234ebd6bdc1cadf06fccb54d9b664ce06df87c1c6b1dbd1f017a62073348439a",
+    "filter_repair_preparation_fixtures.py": "17328c0d3a6ac623d48e1aff6674528b34978eadd48c8cede30620f13d9b5307"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 20381696,
+      "VmRSS": 20381696
+    },
+    "prepared": {
+      "VmHWM": 1015545856,
+      "VmRSS": 1015545856,
+      "gpu": {
+        "current": 33024,
+        "peak": 37376
+      }
+    },
+    "traced": {
+      "VmHWM": 1029525504,
+      "VmRSS": 1029525504,
+      "gpu": {
+        "current": 33024,
+        "peak": 33024
+      }
+    },
+    "cold_outputs_live": {
+      "VmHWM": 1227616256,
+      "VmRSS": 1227616256,
+      "gpu": {
+        "current": 63488,
+        "peak": 8459776
+      }
+    },
+    "cold_outputs_released": {
+      "VmHWM": 1227628544,
+      "VmRSS": 1227628544,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459776
+      }
+    }
+  },
+  "status": "passed",
+  "phase": "complete",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4090"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "2",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": "index, name, uuid, driver_version\n0, NVIDIA GeForce RTX 4090, GPU-08d989e5-2702-1b9d-c1ef-7795ff299e02, 595.91.07\n1, NVIDIA GeForce RTX 4090, GPU-225f4834-d8ad-f91a-2378-03ad0524381b, 595.91.07\n2, NVIDIA GeForce RTX 4090, GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba, 595.91.07\n3, NVIDIA GeForce RTX 4090, GPU-b8045e28-4433-ec7a-77a5-db0636748322, 595.91.07",
+  "trust_basis": "trusted_escalated_gpu_diagnostic",
+  "timing_scope": "complete_tensor_block_fit_stability_qualification_and_scaling",
+  "numerical_backend": "tensorflow",
+  "preparation_seconds": 1.6041213709977455,
+  "dimensions": {
+    "dimension": 8,
+    "replicates": 4,
+    "block_width": 2,
+    "blocks": 4,
+    "training_rows": 24,
+    "selection_rows": 18,
+    "audit_rows": 22,
+    "boundary": "complete_block_score_geometry_and_position_scaling",
+    "random_inputs": false
+  },
+  "input_sha256": "03152f7d9cc7cb604d826d97c04b755e311915b562ba2af4dde80d5ad79750d2",
+  "input_shapes": [
+    [
+      8
+    ],
+    [
+      4,
+      24,
+      8
+    ],
+    [
+      4,
+      24,
+      8
+    ],
+    [
+      4,
+      18,
+      8
+    ],
+    [
+      4,
+      18,
+      8
+    ],
+    [
+      22,
+      8
+    ],
+    [
+      22,
+      8
+    ],
+    [
+      9
+    ],
+    [],
+    [
+      8
+    ]
+  ],
+  "input_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "int32",
+    "float64"
+  ],
+  "trace_seconds": 0.440647805982735,
+  "graph": {
+    "nodes": 1289,
+    "functions": 23,
+    "callbacks": [],
+    "must_compile": false,
+    "nested_xla": [],
+    "xla_ops": []
+  },
+  "cold": {
+    "synchronized_seconds": 2.995833834982477,
+    "output_copy_seconds": 0.0003802819992415607,
+    "end_to_end_seconds": 2.9962141169817187
+  },
+  "output_shapes": [
+    [],
+    [
+      8,
+      8
+    ],
+    [
+      8,
+      8
+    ],
+    [
+      4,
+      4,
+      7
+    ],
+    [
+      4,
+      2
+    ],
+    [
+      6,
+      28
+    ],
+    [
+      6,
+      4
+    ],
+    [
+      5
+    ],
+    [
+      8,
+      8
+    ],
+    [
+      8,
+      8
+    ],
+    [
+      8,
+      8
+    ]
+  ],
+  "output_dtypes": [
+    "int32",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "bool",
+    "float64",
+    "float64",
+    "float64",
+    "float64"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "values": [
+    0,
+    [
+      [
+        1.1499999999976827,
+        0.14999999999989017,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.14999999999989017,
+        1.5785714285679582,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        2.00714285713806,
+        0.14999999999988767,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.14999999999988767,
+        2.4357142857095146,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.864285714279561,
+        0.14999999999914326,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.14999999999914326,
+        3.2928571428491153,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        3.7214285714210753,
+        0.14999999999924254
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.14999999999924254,
+        4.149999999990264
+      ]
+    ],
+    [
+      [
+        0.8804780876512069,
+        -0.08366533864571248,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.08366533864571248,
+        0.6414342629496395,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.5005242189150212,
+        -0.030824072132633905,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        -0.03082407213263391,
+        0.4124554413931387,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.3499620431630929,
+        -0.015941871814318633,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.015941871814318633,
+        0.30441383797926436,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2691060676244398,
+        -0.009726725335796825
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.009726725335796825,
+        0.24131542380788232
+      ]
+    ],
+    [
+      [
+        [
+          3.0,
+          2.0,
+          1.102716665374995,
+          1.6258547631905913,
+          0.0,
+          1.4744084443828511,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          1.9598595225168178,
+          2.4829976203331405,
+          0.0,
+          1.2669263239563813,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          2.817002379656527,
+          3.3401404774708126,
+          0.0,
+          1.1857073680846768,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          3.6741452367976457,
+          4.197283334613795,
+          0.0,
+          1.1423836196176371,
+          0.0
+        ]
+      ],
+      [
+        [
+          3.0,
+          2.0,
+          1.1027166653742095,
+          1.6258547631901203,
+          0.0,
+          1.4744084443834742,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          1.9598595225141344,
+          2.482997620332666,
+          0.0,
+          1.2669263239578736,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          2.8170023796567247,
+          3.340140477472536,
+          0.0,
+          1.1857073680852055,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          3.6741452367982848,
+          4.197283334612658,
+          0.0,
+          1.142383619617129,
+          0.0
+        ]
+      ],
+      [
+        [
+          3.0,
+          2.0,
+          1.1027166653750653,
+          1.6258547631912972,
+          0.0,
+          1.4744084443833971,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          1.9598595225153066,
+          2.4829976203322204,
+          0.0,
+          1.2669263239568886,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          2.817002379656519,
+          3.3401404774730037,
+          0.0,
+          1.1857073680854582,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          3.6741452367996894,
+          4.197283334611104,
+          0.0,
+          1.1423836196162693,
+          0.0
+        ]
+      ],
+      [
+        [
+          3.0,
+          2.0,
+          1.1027166653748355,
+          1.6258547631914493,
+          0.0,
+          1.4744084443838423,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          1.9598595225147888,
+          2.482997620331225,
+          0.0,
+          1.2669263239567157,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          2.8170023796583004,
+          3.3401404774702814,
+          0.0,
+          1.185707368083742,
+          0.0
+        ],
+        [
+          3.0,
+          2.0,
+          3.6741452367981493,
+          4.197283334614031,
+          0.0,
+          1.1423836196175448,
+          0.0
+        ]
+      ]
+    ],
+    [
+      [
+        2.147458320674303e-12,
+        2.1474583206743035e-12
+      ],
+      [
+        2.237845473165071e-12,
+        2.237845473165071e-12
+      ],
+      [
+        2.207528817334505e-12,
+        2.207528817334505e-12
+      ],
+      [
+        2.336296846048881e-12,
+        2.336296846048881e-12
+      ]
+    ],
+    [
+      [
+        1.102716665374995,
+        1.6258547631905913,
+        1.9598595225168178,
+        2.4829976203331405,
+        2.817002379656527,
+        3.340140477470813,
+        3.6741452367976457,
+        4.197283334613795,
+        1.1027166653742095,
+        1.6258547631901206,
+        1.9598595225141344,
+        2.4829976203326654,
+        2.8170023796567247,
+        3.340140477472536,
+        3.6741452367982848,
+        4.197283334612658,
+        0.0,
+        0.0,
+        2.0,
+        0.999999999998488,
+        1.0000000000006002,
+        1.0000000000021123,
+        2.000038573810003e-13,
+        1.2943393374411768e-13,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        1.102716665374995,
+        1.6258547631905913,
+        1.9598595225168178,
+        2.4829976203331405,
+        2.817002379656527,
+        3.340140477470813,
+        3.6741452367976457,
+        4.197283334613795,
+        1.1027166653750653,
+        1.6258547631912972,
+        1.9598595225153064,
+        2.482997620332221,
+        2.8170023796565196,
+        3.3401404774730032,
+        3.6741452367996894,
+        4.197283334611104,
+        0.0,
+        0.0,
+        2.0,
+        0.9999999999992146,
+        1.0000000000010676,
+        1.000000000001853,
+        2.5536902015627085e-13,
+        1.6065008537456328e-13,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        1.102716665374995,
+        1.6258547631905913,
+        1.9598595225168178,
+        2.4829976203331405,
+        2.817002379656527,
+        3.340140477470813,
+        3.6741452367976457,
+        4.197283334613795,
+        1.1027166653748355,
+        1.625854763191449,
+        1.9598595225147886,
+        2.482997620331225,
+        2.8170023796583004,
+        3.340140477470281,
+        3.6741452367981493,
+        4.197283334614031,
+        0.0,
+        0.0,
+        2.0,
+        0.9999999999988723,
+        1.0000000000006357,
+        1.0000000000017635,
+        1.891028803462353e-13,
+        1.1210364772881083e-13,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        1.1027166653742095,
+        1.6258547631901206,
+        1.9598595225141344,
+        2.4829976203326654,
+        2.8170023796567247,
+        3.340140477472536,
+        3.6741452367982848,
+        4.197283334612658,
+        1.1027166653750653,
+        1.6258547631912972,
+        1.9598595225153064,
+        2.482997620332221,
+        2.8170023796565196,
+        3.3401404774730032,
+        3.6741452367996894,
+        4.197283334611104,
+        0.0,
+        0.0,
+        2.0,
+        0.9999999999995688,
+        1.00000000000179,
+        1.0000000000022211,
+        1.9352706762782843e-13,
+        1.1404052500207337e-13,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        1.1027166653742095,
+        1.6258547631901206,
+        1.9598595225141344,
+        2.4829976203326654,
+        2.8170023796567247,
+        3.340140477472536,
+        3.6741452367982848,
+        4.197283334612658,
+        1.1027166653748355,
+        1.625854763191449,
+        1.9598595225147886,
+        2.482997620331225,
+        2.8170023796583004,
+        3.340140477470281,
+        3.6741452367981493,
+        4.197283334614031,
+        0.0,
+        0.0,
+        2.0,
+        0.999999999999264,
+        1.0000000000015037,
+        1.0000000000022398,
+        2.300006736113804e-13,
+        1.17418462429135e-13,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        1.1027166653750653,
+        1.6258547631912972,
+        1.9598595225153064,
+        2.482997620332221,
+        2.8170023796565196,
+        3.3401404774730032,
+        3.6741452367996894,
+        4.197283334611104,
+        1.1027166653748355,
+        1.625854763191449,
+        1.9598595225147886,
+        2.482997620331225,
+        2.8170023796583004,
+        3.340140477470281,
+        3.6741452367981493,
+        4.197283334614031,
+        0.0,
+        0.0,
+        2.0,
+        0.9999999999988785,
+        1.0000000000009386,
+        1.0000000000020601,
+        3.054804332764176e-13,
+        1.7462083590560305e-13,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    [
+      [
+        true,
+        true,
+        true,
+        true
+      ],
+      [
+        true,
+        true,
+        true,
+        true
+      ],
+      [
+        true,
+        true,
+        true,
+        true
+      ],
+      [
+        true,
+        true,
+        true,
+        true
+      ],
+      [
+        true,
+        true,
+        true,
+        true
+      ],
+      [
+        true,
+        true,
+        true,
+        true
+      ]
+    ],
+    [
+      2.2091128643057067e-12,
+      2.2091128643057067e-12,
+      2.2308410732427566e-12,
+      2.2308410732427566e-12,
+      2.220446049250313e-16
+    ],
+    [
+      [
+        4.599999999990731,
+        0.41999999999969245,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.41999999999969245,
+        3.0939999999931973,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        2.3278106508820104,
+        0.14134615384604798,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.141346153846048,
+        1.864843749996347,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.5551246537362713,
+        0.07033492822926334,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.07033492822926335,
+        1.3334710743769143,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.1670399999976495,
+        0.041999999999787915
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.041999999999787915,
+        1.037499999997566
+      ]
+    ],
+    [
+      [
+        0.22011952191280174,
+        -0.029880478087754455,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.029880478087754455,
+        0.3272623790559385,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.4315744540644826,
+        -0.032711260222387,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        -0.032711260222387004,
+        0.5387173112073648,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.6445729468463088,
+        -0.033998481726455046,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.033998481726455046,
+        0.751715803989612,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.8581188380881369,
+        -0.034738304770702944
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.034738304770702944,
+        0.9652616952315293
+      ]
+    ],
+    [
+      [
+        0.4691689694692113,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.06368809540315375,
+        0.5685122738867273,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.6569432654837727,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        -0.04979312817568569,
+        0.7322827019627355,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.8028530045072441,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.042347081639585844,
+        0.8659806745339195,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.9263470397686479,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.03750031389896676,
+        0.9817613873487836
+      ]
+    ]
+  ],
+  "warm": [
+    {
+      "iteration": 0,
+      "synchronized_seconds": 0.14089240599423647,
+      "output_copy_seconds": 0.0004601430264301598,
+      "end_to_end_seconds": 0.14135254902066663,
+      "VmHWM": 1227665408,
+      "VmRSS": 1227665408,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459264
+      }
+    },
+    {
+      "iteration": 1,
+      "synchronized_seconds": 0.12026578205404803,
+      "output_copy_seconds": 0.0005863539990969002,
+      "end_to_end_seconds": 0.12085213605314493,
+      "VmHWM": 1227665408,
+      "VmRSS": 1227665408,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459776
+      }
+    },
+    {
+      "iteration": 2,
+      "synchronized_seconds": 0.11570944800041616,
+      "output_copy_seconds": 0.0006070130039006472,
+      "end_to_end_seconds": 0.1163164610043168,
+      "VmHWM": 1227669504,
+      "VmRSS": 1227669504,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459264
+      }
+    },
+    {
+      "iteration": 3,
+      "synchronized_seconds": 0.11872447497444227,
+      "output_copy_seconds": 0.0005329829873517156,
+      "end_to_end_seconds": 0.11925745796179399,
+      "VmHWM": 1227669504,
+      "VmRSS": 1227669504,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459520
+      }
+    },
+    {
+      "iteration": 4,
+      "synchronized_seconds": 0.11607664998155087,
+      "output_copy_seconds": 0.0006335939979180694,
+      "end_to_end_seconds": 0.11671024397946894,
+      "VmHWM": 1227669504,
+      "VmRSS": 1227669504,
+      "gpu": {
+        "current": 57088,
+        "peak": 8460032
+      }
+    },
+    {
+      "iteration": 5,
+      "synchronized_seconds": 0.11816450097830966,
+      "output_copy_seconds": 0.0006172530120238662,
+      "end_to_end_seconds": 0.11878175399033353,
+      "VmHWM": 1227669504,
+      "VmRSS": 1227669504,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459520
+      }
+    },
+    {
+      "iteration": 6,
+      "synchronized_seconds": 0.11731675604823977,
+      "output_copy_seconds": 0.000589923991356045,
+      "end_to_end_seconds": 0.11790668003959581,
+      "VmHWM": 1227669504,
+      "VmRSS": 1227669504,
+      "gpu": {
+        "current": 57088,
+        "peak": 8460288
+      }
+    },
+    {
+      "iteration": 7,
+      "synchronized_seconds": 0.11313514300854877,
+      "output_copy_seconds": 0.0005957030225545168,
+      "end_to_end_seconds": 0.11373084603110328,
+      "VmHWM": 1227669504,
+      "VmRSS": 1227669504,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459008
+      }
+    },
+    {
+      "iteration": 8,
+      "synchronized_seconds": 0.11486058298032731,
+      "output_copy_seconds": 0.0005566129693761468,
+      "end_to_end_seconds": 0.11541719594970345,
+      "VmHWM": 1227669504,
+      "VmRSS": 1227669504,
+      "gpu": {
+        "current": 57088,
+        "peak": 8460288
+      }
+    },
+    {
+      "iteration": 9,
+      "synchronized_seconds": 0.11254509002901614,
+      "output_copy_seconds": 0.0005897029768675566,
+      "end_to_end_seconds": 0.1131347930058837,
+      "VmHWM": 1227669504,
+      "VmRSS": 1227669504,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459008
+      }
+    },
+    {
+      "iteration": 10,
+      "synchronized_seconds": 0.11195739702088758,
+      "output_copy_seconds": 0.0006095530115999281,
+      "end_to_end_seconds": 0.11256695003248751,
+      "VmHWM": 1227677696,
+      "VmRSS": 1227677696,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459776
+      }
+    },
+    {
+      "iteration": 11,
+      "synchronized_seconds": 0.11688755400246009,
+      "output_copy_seconds": 0.0005528029869310558,
+      "end_to_end_seconds": 0.11744035698939115,
+      "VmHWM": 1227677696,
+      "VmRSS": 1227677696,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459264
+      }
+    },
+    {
+      "iteration": 12,
+      "synchronized_seconds": 0.11740243597887456,
+      "output_copy_seconds": 0.0006151540437713265,
+      "end_to_end_seconds": 0.11801759002264589,
+      "VmHWM": 1227677696,
+      "VmRSS": 1227677696,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459264
+      }
+    },
+    {
+      "iteration": 13,
+      "synchronized_seconds": 0.12010628101415932,
+      "output_copy_seconds": 0.0006624840316362679,
+      "end_to_end_seconds": 0.12076876504579559,
+      "VmHWM": 1227677696,
+      "VmRSS": 1227677696,
+      "gpu": {
+        "current": 57088,
+        "peak": 8460288
+      }
+    },
+    {
+      "iteration": 14,
+      "synchronized_seconds": 0.12078279501292855,
+      "output_copy_seconds": 0.0006320239626802504,
+      "end_to_end_seconds": 0.1214148189756088,
+      "VmHWM": 1227677696,
+      "VmRSS": 1227677696,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459520
+      }
+    },
+    {
+      "iteration": 15,
+      "synchronized_seconds": 0.12170647003222257,
+      "output_copy_seconds": 0.000609162962064147,
+      "end_to_end_seconds": 0.12231563299428672,
+      "VmHWM": 1227677696,
+      "VmRSS": 1227677696,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459264
+      }
+    },
+    {
+      "iteration": 16,
+      "synchronized_seconds": 0.1183428909862414,
+      "output_copy_seconds": 0.0006451840163208544,
+      "end_to_end_seconds": 0.11898807500256225,
+      "VmHWM": 1227677696,
+      "VmRSS": 1227677696,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459008
+      }
+    },
+    {
+      "iteration": 17,
+      "synchronized_seconds": 0.1209443150437437,
+      "output_copy_seconds": 0.0006364239961840212,
+      "end_to_end_seconds": 0.12158073903992772,
+      "VmHWM": 1227677696,
+      "VmRSS": 1227677696,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459008
+      }
+    },
+    {
+      "iteration": 18,
+      "synchronized_seconds": 0.11620564898476005,
+      "output_copy_seconds": 0.000628153036814183,
+      "end_to_end_seconds": 0.11683380202157423,
+      "VmHWM": 1227681792,
+      "VmRSS": 1227681792,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459264
+      }
+    },
+    {
+      "iteration": 19,
+      "synchronized_seconds": 0.11472514201886952,
+      "output_copy_seconds": 0.0006326229777187109,
+      "end_to_end_seconds": 0.11535776499658823,
+      "VmHWM": 1227681792,
+      "VmRSS": 1227681792,
+      "gpu": {
+        "current": 57088,
+        "peak": 8459008
+      }
+    }
+  ],
+  "trace_count": 1,
+  "imported_source_sha256": {
+    "scripts/filter_repair_preparation_worker.py": "234ebd6bdc1cadf06fccb54d9b664ce06df87c1c6b1dbd1f017a62073348439a",
+    "scripts/measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "scripts/filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "scripts/filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "scripts/filter_repair_preparation_fixtures.py": "17328c0d3a6ac623d48e1aff6674528b34978eadd48c8cede30620f13d9b5307",
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+    "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+    "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+    "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+    "bayesfilter/ops/host_tensor_io.py": "9369c29e4332a2a26a66c20e87ebe517acb87d720141ce564c3a9a27c3738c7a",
+    "bayesfilter/ops/qr_lstsq_tf.py": "fa07b098a670c50cc1db6dc697df181952498d56630b5cb84954ea1acd8de078",
+    "bayesfilter/inference/factor_correlation_geometry.py": "1f0001d6b00598d703739da1069870be7cd3540ff54e439dea892a662bf3b08b",
+    "bayesfilter/ops/compiled_tensor_program_tf.py": "13e00d6f3ca17f692a649861c0bf88cdcbbef754821047bebc8c9fd11352bddb",
+    "bayesfilter/inference/mass_matrix_tf.py": "be2557f897ce464063918b358ce1b1bd0ee1276cee83963ae011de7a0cfbfacc",
+    "bayesfilter/inference/mass_matrix.py": "e30bf9e8796f35e5ec5165957bd88dff2ccab38725434d3396fec5a65b1c1689",
+    "bayesfilter/inference/hmc_diagnostics.py": "a33073bf16336b8c47a54d56f85295dd70c1b198eb09967b3a1f581c0ee87dd1",
+    "bayesfilter/runtime/runner.py": "d0e49fb3ca650e2374674c31c05ed6d31c66ada364cd43e24c10f30bb0b76dcf",
+    "bayesfilter/inference/hmc_artifact_identity.py": "947f5498e4cf8007f8e54c1ad8e9cec84186f6830b8b7067acc405f0985dc105",
+    "bayesfilter/inference/hmc_verification.py": "9ff0f90a83775a157421dc435a8813a968a0ab1015ecdb00ed3ad0ed674e4d7c",
+    "bayesfilter/inference/hmc_tuning.py": "c1f2ccde7d86a330b79de55ddf3154f692642184ddc74d4831ff978bd20bd78a",
+    "bayesfilter/inference/fixed_l_finite_bracket.py": "4bb83fac9253c72e548d8a36aa5668c98f980431cfee50d684222f51ddf006a7",
+    "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+    "bayesfilter/inference/batched_value_score.py": "25dd24e5aeb56c0c32a22d21723761e100eff5ec6fbb9018dd613f0717dba13e",
+    "bayesfilter/inference/tuning_contract.py": "bbb110186a9f49a6a4baf3bea21ae52c60cb7ddbe1180a781a5433810a3dce58",
+    "bayesfilter/inference/hmc.py": "be4e04804c3af3d8a619073771e84d7bffb72bbe9a2aaf8cede1b67773145ea4",
+    "bayesfilter/inference/score_curvature_tf.py": "5b63ab47bf2a538a0dbad7502a88cc0098b208ec84345d909da9253c63aee7b4",
+    "bayesfilter/inference/fixed_center_curvature.py": "52398bbae892340c0d817f9085c01e91226cd2f0f58132365d6fa562c2581ed7",
+    "bayesfilter/ops/symmetric_matrix_tf.py": "7ee625d2a546d9beba2efca2de32ca0753b57161b88599d1c1fe945de4b21de8",
+    "bayesfilter/inference/block_score_geometry_tf.py": "bbcc94e2dae617556f713faf0a16e316e382e5582a56e08b9a7a1ddcc81c3151",
+    "bayesfilter/inference/block_score_geometry.py": "2723f2faf3fd0ce5996f4acd43c72b251f4194609ab2111b51e990e3808b7d33"
+  },
+  "wall_seconds": 11.66439559898572
+}

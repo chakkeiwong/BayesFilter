@@ -1,0 +1,634 @@
+{
+  "actual": {
+    "schema": "bayesfilter.iterative_quadratic_map_covariance.v1",
+    "accepted": false,
+    "status": "iteration_0_geometry_center_value_or_score_nonfinite",
+    "dimension": 1,
+    "map_candidate_role": "none_rejected",
+    "covariance_source": null,
+    "locator_diagnostics": {
+      "schema": "bayesfilter.quadratic_map_covariance.locator.v1",
+      "method": "tfp_lbfgs_minimize_negative_log_prob",
+      "optimizer_role": "finite_neighborhood_locator_only",
+      "uses_optimizer_inverse_hessian": false,
+      "jit_compile": true,
+      "initial_log_prob": -0.04896000000000001,
+      "initial_score_norm": 0.40800000000000003,
+      "config": {
+        "enabled": false,
+        "max_iterations": 6,
+        "tolerance": 1e-08,
+        "log_prob_tolerance": 1e-08,
+        "parallel_iterations": 1
+      },
+      "status": "disabled_initial_position",
+      "accepted_optimizer_position": false,
+      "locator_log_prob": -0.04896000000000001,
+      "locator_score_norm": 0.40800000000000003
+    },
+    "iterations": [
+      {
+        "fit_index": 0,
+        "center": [
+          0.1
+        ],
+        "center_log_prob": -0.04896000000000001,
+        "center_score_norm": 0.3672,
+        "center_score_max_abs": 0.3672,
+        "terminal_score_gate": 1e-07,
+        "terminal_before_fit": false,
+        "geometry_accepted": false,
+        "geometry_status": "center_value_or_score_nonfinite",
+        "center_refinement": {},
+        "geometry_diagnostics": {
+          "config": {
+            "rank": 1,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 0.15,
+            "pilot_radius": 0.05,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 0.1,
+            "max_condition_number": 100.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 1.0,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": true,
+            "seed": [
+              37,
+              41
+            ],
+            "random_stream": "geometry_tf_philox_cpu_xla_v1"
+          },
+          "random_stream": "geometry_tf_philox_cpu_xla_v1",
+          "dimension": 1,
+          "rank": 0,
+          "regression_parameter_count": 3,
+          "required_finite_samples": 3,
+          "sample_count": 16,
+          "center_log_prob": "nan",
+          "center_score_norm": null,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "rejection_status": "center_value_or_score_nonfinite"
+        }
+      }
+    ],
+    "terminal_geometry": {
+      "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+      "accepted": false,
+      "status": "center_value_or_score_nonfinite",
+      "dimension": 1,
+      "rank": 0,
+      "center_refinement_accepted": false,
+      "intercept": null,
+      "lambda0": null,
+      "best_evaluated_value": null,
+      "best_evaluated_source": null,
+      "best_evaluated_index": null,
+      "exact_evaluation_count": 0,
+      "diagnostics": {
+        "config": {
+          "rank": 1,
+          "sample_count": 16,
+          "min_samples_per_parameter": 1,
+          "trust_radius": 0.15,
+          "pilot_radius": 0.05,
+          "pilot_direction_count": 6,
+          "holdout_fraction": 0.25,
+          "eigenvalue_floor": 0.1,
+          "max_condition_number": 100.0,
+          "fit_max_iterations": 300,
+          "fit_tolerance": 1e-08,
+          "holdout_rmse_abs_tolerance": 1.0,
+          "holdout_rmse_rel_tolerance": 0.1,
+          "center_score_improvement_factor": 0.95,
+          "center_log_prob_tolerance": 1e-08,
+          "constrain_center_refinement_to_trust_region": true,
+          "seed": [
+            37,
+            41
+          ],
+          "random_stream": "geometry_tf_philox_cpu_xla_v1"
+        },
+        "random_stream": "geometry_tf_philox_cpu_xla_v1",
+        "dimension": 1,
+        "rank": 0,
+        "regression_parameter_count": 3,
+        "required_finite_samples": 3,
+        "sample_count": 16,
+        "center_log_prob": "nan",
+        "center_score_norm": null,
+        "coordinate_system": "whitened_center_plus_scale_times_z",
+        "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+        "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+        "classification": "extension_or_invention",
+        "reports_map_quality": false,
+        "reports_hmc_convergence": false,
+        "reports_default_readiness": false,
+        "rejection_status": "center_value_or_score_nonfinite"
+      },
+      "nonclaims": [
+        "low-rank quadratic geometry diagnostic only",
+        "not a certified MAP covariance",
+        "not posterior correctness evidence",
+        "not HMC convergence evidence",
+        "not sampler superiority evidence",
+        "not default-readiness evidence",
+        "not source-faithful Zhao-Cui evidence"
+      ],
+      "center": [
+        0.1
+      ],
+      "scale": [
+        0.9
+      ],
+      "precision": null,
+      "covariance": null,
+      "q_basis": null,
+      "linear_term": null,
+      "refined_center": null,
+      "best_evaluated_position": null,
+      "best_evaluated_score": null
+    },
+    "mass_matrix": null,
+    "diagnostics": {
+      "iterative_config": {
+        "max_refinement_steps": 6,
+        "terminal_score_max_abs": 1e-07
+      },
+      "quadratic_config": {
+        "rank": 1,
+        "sample_count": 16,
+        "min_samples_per_parameter": 1,
+        "trust_radius": 0.15,
+        "pilot_radius": 0.05,
+        "pilot_direction_count": 6,
+        "holdout_fraction": 0.25,
+        "eigenvalue_floor": 0.1,
+        "max_condition_number": 100.0,
+        "fit_max_iterations": 300,
+        "fit_tolerance": 1e-08,
+        "holdout_rmse_abs_tolerance": 1.0,
+        "holdout_rmse_rel_tolerance": 0.1,
+        "center_score_improvement_factor": 0.95,
+        "center_log_prob_tolerance": 1e-08,
+        "constrain_center_refinement_to_trust_region": true,
+        "seed": [
+          37,
+          41
+        ],
+        "random_stream": "geometry_tf_philox_cpu_xla_v1"
+      },
+      "mass_config": {
+        "jitter": 0.0,
+        "eigenvalue_floor": 0.1,
+        "max_condition_number": 100.0,
+        "dense": true
+      },
+      "score_coordinate_system": "scale_times_theta_score",
+      "scale": [
+        0.9
+      ],
+      "optimizer_authority": "locator_only",
+      "reports_map_quality": false,
+      "reports_hmc_convergence": false,
+      "reports_default_readiness": false,
+      "classification": "iterative_diagnostic_initializer_rejected",
+      "rejection_status": "iteration_0_geometry_center_value_or_score_nonfinite"
+    },
+    "nonclaims": [
+      "iterative quadratic trust-region diagnostic only",
+      "each accepted move requires exact target improvement checks",
+      "optimizer output is a locator only",
+      "not a certified global MAP",
+      "not posterior covariance correctness evidence",
+      "not HMC convergence evidence",
+      "not HMC readiness evidence",
+      "not sampler superiority evidence",
+      "not default-readiness evidence",
+      "not source-faithful Zhao-Cui evidence"
+    ],
+    "initial_position": [
+      0.1
+    ],
+    "locator_position": [
+      0.1
+    ],
+    "map_candidate": null,
+    "precision": null,
+    "covariance": null
+  },
+  "expected": {
+    "schema": "bayesfilter.iterative_quadratic_map_covariance.v1",
+    "accepted": false,
+    "status": "iteration_0_geometry_center_value_or_score_nonfinite",
+    "dimension": 1,
+    "map_candidate_role": "none_rejected",
+    "covariance_source": null,
+    "locator_diagnostics": {
+      "schema": "bayesfilter.quadratic_map_covariance.locator.v1",
+      "method": "tfp_lbfgs_minimize_negative_log_prob",
+      "optimizer_role": "finite_neighborhood_locator_only",
+      "uses_optimizer_inverse_hessian": false,
+      "initial_log_prob": -0.04896000000000001,
+      "initial_score_norm": 0.40800000000000003,
+      "config": {
+        "enabled": false,
+        "max_iterations": 6,
+        "tolerance": 1e-08,
+        "log_prob_tolerance": 1e-08,
+        "parallel_iterations": 1
+      },
+      "status": "disabled_initial_position",
+      "accepted_optimizer_position": false,
+      "locator_log_prob": -0.04896000000000001,
+      "locator_score_norm": 0.40800000000000003
+    },
+    "iterations": [
+      {
+        "fit_index": 0,
+        "center": [
+          0.1
+        ],
+        "center_log_prob": -0.04896000000000001,
+        "center_score_norm": 0.3672,
+        "center_score_max_abs": 0.3672,
+        "terminal_score_gate": 1e-07,
+        "terminal_before_fit": false,
+        "geometry_accepted": false,
+        "geometry_status": "center_value_or_score_nonfinite",
+        "center_refinement": {},
+        "geometry_diagnostics": {
+          "config": {
+            "rank": 1,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 0.15,
+            "pilot_radius": 0.05,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 0.1,
+            "max_condition_number": 100.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 1.0,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": true,
+            "seed": [
+              37,
+              41
+            ]
+          },
+          "dimension": 1,
+          "rank": 0,
+          "regression_parameter_count": 3,
+          "required_finite_samples": 3,
+          "sample_count": 16,
+          "center_log_prob": "nan",
+          "center_score_norm": null,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "rejection_status": "center_value_or_score_nonfinite"
+        }
+      }
+    ],
+    "terminal_geometry": {
+      "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+      "accepted": false,
+      "status": "center_value_or_score_nonfinite",
+      "dimension": 1,
+      "rank": 0,
+      "center_refinement_accepted": false,
+      "intercept": null,
+      "lambda0": null,
+      "best_evaluated_value": null,
+      "best_evaluated_source": null,
+      "best_evaluated_index": null,
+      "exact_evaluation_count": 0,
+      "diagnostics": {
+        "config": {
+          "rank": 1,
+          "sample_count": 16,
+          "min_samples_per_parameter": 1,
+          "trust_radius": 0.15,
+          "pilot_radius": 0.05,
+          "pilot_direction_count": 6,
+          "holdout_fraction": 0.25,
+          "eigenvalue_floor": 0.1,
+          "max_condition_number": 100.0,
+          "fit_max_iterations": 300,
+          "fit_tolerance": 1e-08,
+          "holdout_rmse_abs_tolerance": 1.0,
+          "holdout_rmse_rel_tolerance": 0.1,
+          "center_score_improvement_factor": 0.95,
+          "center_log_prob_tolerance": 1e-08,
+          "constrain_center_refinement_to_trust_region": true,
+          "seed": [
+            37,
+            41
+          ]
+        },
+        "dimension": 1,
+        "rank": 0,
+        "regression_parameter_count": 3,
+        "required_finite_samples": 3,
+        "sample_count": 16,
+        "center_log_prob": "nan",
+        "center_score_norm": null,
+        "coordinate_system": "whitened_center_plus_scale_times_z",
+        "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+        "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+        "classification": "extension_or_invention",
+        "reports_map_quality": false,
+        "reports_hmc_convergence": false,
+        "reports_default_readiness": false,
+        "rejection_status": "center_value_or_score_nonfinite"
+      },
+      "nonclaims": [
+        "low-rank quadratic geometry diagnostic only",
+        "not a certified MAP covariance",
+        "not posterior correctness evidence",
+        "not HMC convergence evidence",
+        "not sampler superiority evidence",
+        "not default-readiness evidence",
+        "not source-faithful Zhao-Cui evidence"
+      ],
+      "center": [
+        0.1
+      ],
+      "scale": [
+        0.9
+      ],
+      "precision": null,
+      "covariance": null,
+      "q_basis": null,
+      "linear_term": null,
+      "refined_center": null,
+      "best_evaluated_position": null,
+      "best_evaluated_score": null
+    },
+    "mass_matrix": null,
+    "diagnostics": {
+      "iterative_config": {
+        "max_refinement_steps": 6,
+        "terminal_score_max_abs": 1e-07
+      },
+      "quadratic_config": {
+        "rank": 1,
+        "sample_count": 16,
+        "min_samples_per_parameter": 1,
+        "trust_radius": 0.15,
+        "pilot_radius": 0.05,
+        "pilot_direction_count": 6,
+        "holdout_fraction": 0.25,
+        "eigenvalue_floor": 0.1,
+        "max_condition_number": 100.0,
+        "fit_max_iterations": 300,
+        "fit_tolerance": 1e-08,
+        "holdout_rmse_abs_tolerance": 1.0,
+        "holdout_rmse_rel_tolerance": 0.1,
+        "center_score_improvement_factor": 0.95,
+        "center_log_prob_tolerance": 1e-08,
+        "constrain_center_refinement_to_trust_region": true,
+        "seed": [
+          37,
+          41
+        ]
+      },
+      "mass_config": {
+        "jitter": 0.0,
+        "eigenvalue_floor": 0.1,
+        "max_condition_number": 100.0,
+        "dense": true
+      },
+      "score_coordinate_system": "scale_times_theta_score",
+      "scale": [
+        0.9
+      ],
+      "optimizer_authority": "locator_only",
+      "reports_map_quality": false,
+      "reports_hmc_convergence": false,
+      "reports_default_readiness": false,
+      "classification": "iterative_diagnostic_initializer_rejected",
+      "rejection_status": "iteration_0_geometry_center_value_or_score_nonfinite"
+    },
+    "nonclaims": [
+      "iterative quadratic trust-region diagnostic only",
+      "each accepted move requires exact target improvement checks",
+      "optimizer output is a locator only",
+      "not a certified global MAP",
+      "not posterior covariance correctness evidence",
+      "not HMC convergence evidence",
+      "not HMC readiness evidence",
+      "not sampler superiority evidence",
+      "not default-readiness evidence",
+      "not source-faithful Zhao-Cui evidence"
+    ],
+    "initial_position": [
+      0.1
+    ],
+    "locator_position": [
+      0.1
+    ],
+    "map_candidate": null,
+    "precision": null,
+    "covariance": null
+  },
+  "actual_events": [
+    [
+      "start",
+      0,
+      [
+        0.1
+      ]
+    ],
+    [
+      "iteration",
+      {
+        "fit_index": 0,
+        "center": [
+          0.1
+        ],
+        "center_log_prob": -0.04896000000000001,
+        "center_score_norm": 0.3672,
+        "center_score_max_abs": 0.3672,
+        "terminal_score_gate": 1e-07,
+        "terminal_before_fit": false,
+        "geometry_accepted": false,
+        "geometry_status": "center_value_or_score_nonfinite",
+        "center_refinement": {},
+        "geometry_diagnostics": {
+          "config": {
+            "rank": 1,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 0.15,
+            "pilot_radius": 0.05,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 0.1,
+            "max_condition_number": 100.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 1.0,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": true,
+            "seed": [
+              37,
+              41
+            ],
+            "random_stream": "geometry_tf_philox_cpu_xla_v1"
+          },
+          "random_stream": "geometry_tf_philox_cpu_xla_v1",
+          "dimension": 1,
+          "rank": 0,
+          "regression_parameter_count": 3,
+          "required_finite_samples": 3,
+          "sample_count": 16,
+          "center_log_prob": "nan",
+          "center_score_norm": null,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "rejection_status": "center_value_or_score_nonfinite"
+        }
+      }
+    ]
+  ],
+  "expected_events": [
+    [
+      "start",
+      0,
+      [
+        0.1
+      ]
+    ],
+    [
+      "iteration",
+      {
+        "fit_index": 0,
+        "center": [
+          0.1
+        ],
+        "center_log_prob": -0.04896000000000001,
+        "center_score_norm": 0.3672,
+        "center_score_max_abs": 0.3672,
+        "terminal_score_gate": 1e-07,
+        "terminal_before_fit": false,
+        "geometry_accepted": false,
+        "geometry_status": "center_value_or_score_nonfinite",
+        "center_refinement": {},
+        "geometry_diagnostics": {
+          "config": {
+            "rank": 1,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 0.15,
+            "pilot_radius": 0.05,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 0.1,
+            "max_condition_number": 100.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 1.0,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": true,
+            "seed": [
+              37,
+              41
+            ]
+          },
+          "dimension": 1,
+          "rank": 0,
+          "regression_parameter_count": 3,
+          "required_finite_samples": 3,
+          "sample_count": 16,
+          "center_log_prob": "nan",
+          "center_score_norm": null,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "rejection_status": "center_value_or_score_nonfinite"
+        }
+      }
+    ]
+  ],
+  "actual_calls": {
+    "calls": 3,
+    "rows": 3,
+    "positions": [
+      [
+        0.1
+      ],
+      [
+        0.1
+      ],
+      [
+        0.1
+      ]
+    ],
+    "extents": [
+      1,
+      1,
+      1
+    ]
+  },
+  "expected_calls": {
+    "calls": 3,
+    "rows": 3,
+    "positions": [
+      [
+        0.1
+      ],
+      [
+        0.1
+      ],
+      [
+        0.1
+      ]
+    ],
+    "extents": [
+      1,
+      1,
+      1
+    ]
+  },
+  "original_sources": {
+    "bayesfilter/inference/_exact_incumbent.py": "21191dd057380adafc6530cb15ef640666a2f3afb637bd90f4e98d3209ca5ed0",
+    "bayesfilter/inference/joint_center.py": "d550236edee579152eea55e8b664740ad9554b71b222755255ff984fed8c67b8",
+    "bayesfilter/inference/mass_matrix.py": "6a959080a1de9c3894697bda39667777596b73f469a32e5a7676a7032dbd53b3",
+    "bayesfilter/inference/quadratic_geometry.py": "6a4865e98d97a441bf0146d1f581fa93f53f5ce1892ad81ebd69fc2526857fea",
+    "bayesfilter/inference/quadratic_map_covariance.py": "14f41cf959b5593e7a34ecab049f9f2bafd82da4d1b8e21a0caaf3e83dad0f79"
+  },
+  "joint_reference_gpu_compatibility": null
+}

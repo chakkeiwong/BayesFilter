@@ -1,0 +1,907 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "fixed_fitting",
+  "size": 2,
+  "jit": "eager",
+  "device": "GPU",
+  "source_root": "/tmp/bayesfilter-filter-repair-baseline-3582b4ac",
+  "worker_sha256": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "filter_repair_preparation_worker.py": "234ebd6bdc1cadf06fccb54d9b664ce06df87c1c6b1dbd1f017a62073348439a",
+    "filter_repair_preparation_fixtures.py": "bf2dcbdd3d775d3547a82005abe2a06a9ab36fd9b3c94df036e91600eca80af4"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 20324352,
+      "VmRSS": 20324352
+    },
+    "prepared": {
+      "VmHWM": 1008930816,
+      "VmRSS": 1008930816,
+      "gpu": {
+        "current": 10752,
+        "peak": 11008
+      }
+    },
+    "traced": {
+      "VmHWM": 1008996352,
+      "VmRSS": 1008996352,
+      "gpu": {
+        "current": 10752,
+        "peak": 10752
+      }
+    },
+    "cold_outputs_live": {
+      "VmHWM": 1246007296,
+      "VmRSS": 1246007296,
+      "gpu": {
+        "current": 30976,
+        "peak": 8428544
+      }
+    },
+    "cold_outputs_released": {
+      "VmHWM": 1246007296,
+      "VmRSS": 1246007296,
+      "gpu": {
+        "current": 18944,
+        "peak": 8428544
+      }
+    }
+  },
+  "status": "passed",
+  "phase": "complete",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4090"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "2",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": "index, name, uuid, driver_version\n0, NVIDIA GeForce RTX 4090, GPU-08d989e5-2702-1b9d-c1ef-7795ff299e02, 595.91.07\n1, NVIDIA GeForce RTX 4090, GPU-225f4834-d8ad-f91a-2378-03ad0524381b, 595.91.07\n2, NVIDIA GeForce RTX 4090, GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba, 595.91.07\n3, NVIDIA GeForce RTX 4090, GPU-b8045e28-4433-ec7a-77a5-db0636748322, 595.91.07",
+  "trust_basis": "trusted_escalated_gpu_diagnostic",
+  "timing_scope": "complete_public_fixed_center_fit_selection_audit_records",
+  "numerical_backend": "legacy_numpy_geometry_reporting_diagnostic_only",
+  "preparation_seconds": 0.9895915790111758,
+  "dimensions": {
+    "dimension": 3,
+    "replicates": 4,
+    "training_rows": 9,
+    "selection_rows": 6,
+    "audit_rows": 6,
+    "boundary": "complete_fixed_center_fit_selection_audit",
+    "random_inputs": false
+  },
+  "input_sha256": "fa4287d2c067fb7a1f4273dd5ca5a3bc1057067aa2fba6d42e291e1002d524a4",
+  "input_shapes": [
+    [
+      3
+    ],
+    [
+      4,
+      9,
+      3
+    ],
+    [
+      4,
+      9,
+      3
+    ],
+    [
+      4,
+      6,
+      3
+    ],
+    [
+      4,
+      6,
+      3
+    ],
+    [
+      6,
+      3
+    ],
+    [
+      6,
+      3
+    ],
+    [
+      4
+    ],
+    [
+      4
+    ],
+    [],
+    [
+      3
+    ],
+    [],
+    [],
+    [],
+    []
+  ],
+  "input_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "bool",
+    "int32",
+    "float64",
+    "float64",
+    "float64",
+    "bool",
+    "float64"
+  ],
+  "trace_seconds": 5.600159056484699e-07,
+  "graph": {
+    "nodes": 0,
+    "functions": 0,
+    "callbacks": [],
+    "must_compile": false,
+    "nested_xla": [],
+    "xla_ops": []
+  },
+  "execution_exception": "existing_host_execution_reference_only; nested compilation may exist",
+  "cold": {
+    "synchronized_seconds": 30.085737756977323,
+    "output_copy_seconds": 0.0002855979837477207,
+    "end_to_end_seconds": 30.08602335496107
+  },
+  "output_shapes": [
+    [],
+    [],
+    [
+      3,
+      3
+    ],
+    [
+      3,
+      3
+    ],
+    [],
+    [
+      2,
+      4,
+      3,
+      3
+    ],
+    [
+      2,
+      4,
+      3,
+      3
+    ],
+    [
+      2,
+      4
+    ],
+    [
+      2,
+      4
+    ],
+    [
+      2,
+      4,
+      3
+    ]
+  ],
+  "output_dtypes": [
+    "int32",
+    "int32",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "bool"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "values": [
+    1,
+    1,
+    [
+      [
+        1.1389428501041547,
+        0.07045575598070046,
+        0.058785192609949834
+      ],
+      [
+        0.07045575598070046,
+        2.1346184197745712,
+        0.12957625497762146
+      ],
+      [
+        0.058785192609949834,
+        0.12957625497762146,
+        3.132859876163144
+      ]
+    ],
+    [
+      [
+        0.8805401193454594,
+        -0.02813100312273754,
+        -0.015359004993875826
+      ],
+      [
+        -0.02813100312273754,
+        0.4705456443508956,
+        -0.01893409162837726
+      ],
+      [
+        -0.015359004993875826,
+        -0.01893409162837726,
+        0.32026848643492295
+      ]
+    ],
+    0.033705536293992325,
+    [
+      [
+        [
+          [
+            1.1299999999999997,
+            0.1300000000000002,
+            0.13000000000000017
+          ],
+          [
+            0.13000000000000017,
+            2.1299999999999994,
+            0.12999999999999995
+          ],
+          [
+            0.13000000000000017,
+            0.12999999999999998,
+            3.130000000000002
+          ]
+        ],
+        [
+          [
+            1.1299999999999994,
+            0.13000000000000012,
+            0.13000000000000006
+          ],
+          [
+            0.13000000000000012,
+            2.130000000000001,
+            0.12999999999999962
+          ],
+          [
+            0.13000000000000006,
+            0.1299999999999996,
+            3.130000000000001
+          ]
+        ],
+        [
+          [
+            1.1300000000000001,
+            0.13000000000000025,
+            0.13000000000000012
+          ],
+          [
+            0.13000000000000028,
+            2.1300000000000012,
+            0.13000000000000045
+          ],
+          [
+            0.13000000000000014,
+            0.13000000000000045,
+            3.130000000000001
+          ]
+        ],
+        [
+          [
+            1.1300000000000001,
+            0.13000000000000023,
+            0.13000000000000012
+          ],
+          [
+            0.13000000000000025,
+            2.13,
+            0.13000000000000017
+          ],
+          [
+            0.1300000000000001,
+            0.1300000000000001,
+            3.1300000000000017
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            1.1410315683144958,
+            -4.609636288304272e-09,
+            0.11828375127915099
+          ],
+          [
+            -4.609636289909374e-09,
+            2.1416578973025766,
+            0.12112698381610346
+          ],
+          [
+            0.11828375127915097,
+            0.12112698381610346,
+            3.1272538305350874
+          ]
+        ],
+        [
+          [
+            1.131839335742765,
+            0.14736514644989476,
+            -9.707059352470898e-09
+          ],
+          [
+            0.14736514644989476,
+            2.1259926847988195,
+            0.13837415054099755
+          ],
+          [
+            -9.707059351698573e-09,
+            0.13837415054099758,
+            3.132871197561255
+          ]
+        ],
+        [
+          [
+            1.1414411094069983,
+            0.13445788667659428,
+            -8.716241058379391e-09
+          ],
+          [
+            0.13445788667659428,
+            2.1290526989284024,
+            0.13660414372662616
+          ],
+          [
+            -8.716241058117223e-09,
+            0.13660414372662616,
+            3.1440276579304407
+          ]
+        ],
+        [
+          [
+            1.1414593869523606,
+            -4.594050935842065e-09,
+            0.11685703758394876
+          ],
+          [
+            -4.594050935997175e-09,
+            2.141770398068485,
+            0.12219974182675868
+          ],
+          [
+            0.11685703758394878,
+            0.12219974182675868,
+            3.1272868186257923
+          ]
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          [
+            0.8950201884253031,
+            -0.0524899057873487,
+            -0.03499327052489909
+          ],
+          [
+            -0.0524899057873487,
+            0.4737550471063258,
+            -0.017496635262449503
+          ],
+          [
+            -0.03499327052489909,
+            -0.01749663526244951,
+            0.3216689098250334
+          ]
+        ],
+        [
+          [
+            0.8950201884253032,
+            -0.05248990578734864,
+            -0.03499327052489908
+          ],
+          [
+            -0.052489905787348634,
+            0.4737550471063255,
+            -0.017496635262449454
+          ],
+          [
+            -0.03499327052489908,
+            -0.01749663526244945,
+            0.32166890982503354
+          ]
+        ],
+        [
+          [
+            0.8950201884253027,
+            -0.052489905787348655,
+            -0.034993270524899076
+          ],
+          [
+            -0.05248990578734866,
+            0.47375504710632543,
+            -0.017496635262449576
+          ],
+          [
+            -0.03499327052489908,
+            -0.017496635262449576,
+            0.3216689098250336
+          ]
+        ],
+        [
+          [
+            0.8950201884253027,
+            -0.052489905787348676,
+            -0.03499327052489906
+          ],
+          [
+            -0.05248990578734869,
+            0.4737550471063257,
+            -0.017496635262449538
+          ],
+          [
+            -0.034993270524899055,
+            -0.017496635262449527,
+            0.3216689098250335
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            0.8798573772572337,
+            0.0018863309828872784,
+            -0.03335236677516846
+          ],
+          [
+            0.0018863309828872784,
+            0.4679571370633875,
+            -0.018196590988835814
+          ],
+          [
+            -0.03335236677516846,
+            -0.01819659098883581,
+            0.3217356811315381
+          ]
+        ],
+        [
+          [
+            0.8915873198672979,
+            -0.06197937618720952,
+            0.0027375374360533032
+          ],
+          [
+            -0.061979376187209514,
+            0.4760331561386979,
+            -0.02102565986847978
+          ],
+          [
+            0.0027375374360533032,
+            -0.021025659868479783,
+            0.32012468582530323
+          ]
+        ],
+        [
+          [
+            0.8826703103063279,
+            -0.05589986873423527,
+            0.0024287831492757032
+          ],
+          [
+            -0.05589986873423526,
+            0.4745456706267196,
+            -0.020618427232618045
+          ],
+          [
+            0.0024287831492757032,
+            -0.020618427232618045,
+            0.31895920511029363
+          ]
+        ],
+        [
+          [
+            0.8794432432595523,
+            0.001879152871289571,
+            -0.0329355029135179
+          ],
+          [
+            0.001879152871289571,
+            0.4679507400474705,
+            -0.018355544338709603
+          ],
+          [
+            -0.0329355029135179,
+            -0.0183555443387096,
+            0.32171394772264383
+          ]
+        ]
+      ]
+    ],
+    [
+      [
+        7.151448661750555e-16,
+        2.808870910425538e-16,
+        4.1987904804423914e-16,
+        4.950389668332601e-16
+      ],
+      [
+        0.03953839439487673,
+        0.0446320760645013,
+        0.04569594847601895,
+        0.038041177977024505
+      ]
+    ],
+    [
+      [
+        6.122802742546716e-16,
+        3.025556588638224e-16,
+        3.0857286584543503e-16,
+        3.5031888186497727e-16
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    [
+      [
+        [
+          true,
+          true,
+          true
+        ],
+        [
+          true,
+          true,
+          true
+        ],
+        [
+          true,
+          true,
+          true
+        ],
+        [
+          true,
+          true,
+          true
+        ]
+      ],
+      [
+        [
+          true,
+          true,
+          true
+        ],
+        [
+          true,
+          true,
+          true
+        ],
+        [
+          true,
+          true,
+          true
+        ],
+        [
+          true,
+          true,
+          true
+        ]
+      ]
+    ]
+  ],
+  "warm": [
+    {
+      "iteration": 0,
+      "synchronized_seconds": 26.925422808970325,
+      "output_copy_seconds": 0.0001910179853439331,
+      "end_to_end_seconds": 26.92561382695567,
+      "VmHWM": 1253572608,
+      "VmRSS": 1253572608,
+      "gpu": {
+        "current": 37376,
+        "peak": 8439552
+      }
+    },
+    {
+      "iteration": 1,
+      "synchronized_seconds": 26.435293029004242,
+      "output_copy_seconds": 0.00015562301268801093,
+      "end_to_end_seconds": 26.43544865201693,
+      "VmHWM": 1263267840,
+      "VmRSS": 1263267840,
+      "gpu": {
+        "current": 51200,
+        "peak": 8452864
+      }
+    },
+    {
+      "iteration": 2,
+      "synchronized_seconds": 27.12634118401911,
+      "output_copy_seconds": 0.00016177300130948424,
+      "end_to_end_seconds": 27.12650295702042,
+      "VmHWM": 1272758272,
+      "VmRSS": 1272758272,
+      "gpu": {
+        "current": 65024,
+        "peak": 8467456
+      }
+    },
+    {
+      "iteration": 3,
+      "synchronized_seconds": 27.648561332956888,
+      "output_copy_seconds": 0.00023470702581107616,
+      "end_to_end_seconds": 27.6487960399827,
+      "VmHWM": 1279459328,
+      "VmRSS": 1279459328,
+      "gpu": {
+        "current": 74240,
+        "peak": 8476672
+      }
+    },
+    {
+      "iteration": 4,
+      "synchronized_seconds": 27.42171824903926,
+      "output_copy_seconds": 0.0002570279757492244,
+      "end_to_end_seconds": 27.421975277015008,
+      "VmHWM": 1285844992,
+      "VmRSS": 1285844992,
+      "gpu": {
+        "current": 83456,
+        "peak": 8485632
+      }
+    },
+    {
+      "iteration": 5,
+      "synchronized_seconds": 27.442721234052442,
+      "output_copy_seconds": 0.00015845097368583083,
+      "end_to_end_seconds": 27.442879685026128,
+      "VmHWM": 1295060992,
+      "VmRSS": 1295060992,
+      "gpu": {
+        "current": 97280,
+        "peak": 8498944
+      }
+    },
+    {
+      "iteration": 6,
+      "synchronized_seconds": 27.31283925101161,
+      "output_copy_seconds": 0.00021462299628183246,
+      "end_to_end_seconds": 27.313053874007892,
+      "VmHWM": 1304535040,
+      "VmRSS": 1304535040,
+      "gpu": {
+        "current": 111104,
+        "peak": 8513280
+      }
+    },
+    {
+      "iteration": 7,
+      "synchronized_seconds": 27.62830074696103,
+      "output_copy_seconds": 0.0002283640205860138,
+      "end_to_end_seconds": 27.628529110981617,
+      "VmHWM": 1311076352,
+      "VmRSS": 1311076352,
+      "gpu": {
+        "current": 120320,
+        "peak": 8521984
+      }
+    },
+    {
+      "iteration": 8,
+      "synchronized_seconds": 27.115246623987332,
+      "output_copy_seconds": 0.00022490299306809902,
+      "end_to_end_seconds": 27.1154715269804,
+      "VmHWM": 1320292352,
+      "VmRSS": 1320292352,
+      "gpu": {
+        "current": 134144,
+        "peak": 8536064
+      }
+    },
+    {
+      "iteration": 9,
+      "synchronized_seconds": 28.08148033299949,
+      "output_copy_seconds": 0.00021556095452979207,
+      "end_to_end_seconds": 28.08169589395402,
+      "VmHWM": 1329713152,
+      "VmRSS": 1329713152,
+      "gpu": {
+        "current": 147968,
+        "peak": 8550144
+      }
+    },
+    {
+      "iteration": 10,
+      "synchronized_seconds": 28.15717704698909,
+      "output_copy_seconds": 0.0002223520423285663,
+      "end_to_end_seconds": 28.15739939903142,
+      "VmHWM": 1283731456,
+      "VmRSS": 1283084288,
+      "gpu": {
+        "current": 32768,
+        "peak": 8549632
+      }
+    },
+    {
+      "iteration": 11,
+      "synchronized_seconds": 28.2761548240087,
+      "output_copy_seconds": 0.00024249096168205142,
+      "end_to_end_seconds": 28.27639731497038,
+      "VmHWM": 1287299072,
+      "VmRSS": 1287299072,
+      "gpu": {
+        "current": 46592,
+        "peak": 8449280
+      }
+    },
+    {
+      "iteration": 12,
+      "synchronized_seconds": 27.902220298012253,
+      "output_copy_seconds": 0.0002237799926660955,
+      "end_to_end_seconds": 27.90244407800492,
+      "VmHWM": 1290784768,
+      "VmRSS": 1290784768,
+      "gpu": {
+        "current": 55808,
+        "peak": 8458752
+      }
+    },
+    {
+      "iteration": 13,
+      "synchronized_seconds": 28.169207765022293,
+      "output_copy_seconds": 0.00019518902990967035,
+      "end_to_end_seconds": 28.169402954052202,
+      "VmHWM": 1296568320,
+      "VmRSS": 1296568320,
+      "gpu": {
+        "current": 69632,
+        "peak": 8471808
+      }
+    },
+    {
+      "iteration": 14,
+      "synchronized_seconds": 27.04160979401786,
+      "output_copy_seconds": 0.00014095596270635724,
+      "end_to_end_seconds": 27.041750749980565,
+      "VmHWM": 1302515712,
+      "VmRSS": 1302515712,
+      "gpu": {
+        "current": 83456,
+        "peak": 8485632
+      }
+    },
+    {
+      "iteration": 15,
+      "synchronized_seconds": 26.6432993930066,
+      "output_copy_seconds": 0.0001544359838590026,
+      "end_to_end_seconds": 26.64345382899046,
+      "VmHWM": 1306693632,
+      "VmRSS": 1306693632,
+      "gpu": {
+        "current": 92672,
+        "peak": 8495104
+      }
+    },
+    {
+      "iteration": 16,
+      "synchronized_seconds": 26.8469840149628,
+      "output_copy_seconds": 0.00015341502148658037,
+      "end_to_end_seconds": 26.847137429984286,
+      "VmHWM": 1313071104,
+      "VmRSS": 1313071104,
+      "gpu": {
+        "current": 106496,
+        "peak": 8508160
+      }
+    },
+    {
+      "iteration": 17,
+      "synchronized_seconds": 27.614651968993712,
+      "output_copy_seconds": 0.00023655901895835996,
+      "end_to_end_seconds": 27.61488852801267,
+      "VmHWM": 1319673856,
+      "VmRSS": 1319673856,
+      "gpu": {
+        "current": 120320,
+        "peak": 8522752
+      }
+    },
+    {
+      "iteration": 18,
+      "synchronized_seconds": 27.709953884012066,
+      "output_copy_seconds": 0.00024292798480018973,
+      "end_to_end_seconds": 27.710196811996866,
+      "VmHWM": 1323974656,
+      "VmRSS": 1323974656,
+      "gpu": {
+        "current": 129536,
+        "peak": 8531712
+      }
+    },
+    {
+      "iteration": 19,
+      "synchronized_seconds": 27.994151616003364,
+      "output_copy_seconds": 0.00020646699704229832,
+      "end_to_end_seconds": 27.994358083000407,
+      "VmHWM": 1330528256,
+      "VmRSS": 1330528256,
+      "gpu": {
+        "current": 143360,
+        "peak": 8547072
+      }
+    }
+  ],
+  "trace_count": null,
+  "imported_source_sha256": {
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+    "bayesfilter/inference/factor_correlation_geometry.py": "de5a85fae7cb05943ae8d504473c7775115b56c46294738fa506493e45b6a6bc",
+    "bayesfilter/inference/mass_matrix.py": "6a959080a1de9c3894697bda39667777596b73f469a32e5a7676a7032dbd53b3",
+    "bayesfilter/inference/hmc_diagnostics.py": "a33073bf16336b8c47a54d56f85295dd70c1b198eb09967b3a1f581c0ee87dd1",
+    "bayesfilter/runtime/runner.py": "d0e49fb3ca650e2374674c31c05ed6d31c66ada364cd43e24c10f30bb0b76dcf",
+    "bayesfilter/inference/hmc_artifact_identity.py": "947f5498e4cf8007f8e54c1ad8e9cec84186f6830b8b7067acc405f0985dc105",
+    "bayesfilter/inference/hmc_verification.py": "9ff0f90a83775a157421dc435a8813a968a0ab1015ecdb00ed3ad0ed674e4d7c",
+    "bayesfilter/inference/hmc_tuning.py": "c1f2ccde7d86a330b79de55ddf3154f692642184ddc74d4831ff978bd20bd78a",
+    "bayesfilter/inference/fixed_l_finite_bracket.py": "4bb83fac9253c72e548d8a36aa5668c98f980431cfee50d684222f51ddf006a7",
+    "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+    "bayesfilter/inference/batched_value_score.py": "25dd24e5aeb56c0c32a22d21723761e100eff5ec6fbb9018dd613f0717dba13e",
+    "bayesfilter/inference/tuning_contract.py": "bbb110186a9f49a6a4baf3bea21ae52c60cb7ddbe1180a781a5433810a3dce58",
+    "bayesfilter/inference/hmc.py": "be4e04804c3af3d8a619073771e84d7bffb72bbe9a2aaf8cede1b67773145ea4",
+    "bayesfilter/inference/score_curvature_tf.py": "b8d005fb61aece006f44cb81a9b2d45d0e5cacd9190ba672b704317c86c420e6",
+    "bayesfilter/inference/fixed_center_curvature.py": "7f44129bf82eacf539726640336a9e14c0642ee51a604cc754e136d56aa186a0"
+  },
+  "wall_seconds": 584.8803218599642
+}
