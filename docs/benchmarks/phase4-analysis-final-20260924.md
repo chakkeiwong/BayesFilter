@@ -1,5 +1,14 @@
 # Phase 4: Analysis and Recommendations - SQMC Control Generalization
 
+> **Historical interpretation — superseded at closeout.** Read
+> [the corrected final summary](sqmc-campaign-final-summary-20260924.md) before
+> using the conclusions below. These were non-production float64 eager
+> diagnostics with controls UNTUNED for transferred scopes. Phases 2/3 disabled
+> scores; Phase 0 saved zero scores. Finite values do not establish score
+> transfer, production readiness, route rankings, or an exemption from
+> per-scope tuning. The original analysis below is retained as historical
+> evidence of the interpretation that was corrected.
+
 **Date:** 2026-09-24  
 **Master Program:** sqmc-control-generalization-master-program-2026-09-23.md  
 **Status:** ✓ COMPLETE
