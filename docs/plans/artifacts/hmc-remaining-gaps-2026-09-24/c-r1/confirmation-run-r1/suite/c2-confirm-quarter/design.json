@@ -1,0 +1,70 @@
+{
+  "accuracy_tolerance": 0.25,
+  "alpha": 0.01,
+  "budget_seconds": 16500,
+  "design_id": "c2-confirm-quarter",
+  "device": "gpu",
+  "draws": 500,
+  "engine": "reference_mean",
+  "l_grid": [
+    3,
+    5,
+    9,
+    13,
+    18,
+    25
+  ],
+  "leapfrog_steps": 5,
+  "mcse_tolerance": 0.02,
+  "measurement_draws": 128,
+  "member_l": 3,
+  "multiplicity": 1,
+  "null_draws": 1999,
+  "numerical_provenance": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+  "options": {
+    "bootstrap_initialization_rounds": 20,
+    "fit_process_timeout_seconds": 890,
+    "isolate_fits": true,
+    "member_rule": "first_verified",
+    "metric_evidence_policy": "finite_window",
+    "metric_probe_num_results": 16,
+    "native_search": true,
+    "plan_file": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+    "posterior_members": "selected",
+    "posterior_precision_method": "lugsail",
+    "posterior_settings": {
+      "retained_chunk_results": 500,
+      "retained_max_results": 10000,
+      "retained_min_results": 1000,
+      "warmup_check_window_results": 1000,
+      "warmup_chunk_results": 500,
+      "warmup_max_results": 10000,
+      "warmup_min_results": 2000
+    },
+    "preparation_bound_expansion_steps": 1,
+    "preparation_max_restarts": 3,
+    "preparation_preset": "standard",
+    "reference_mean_alarm": {
+      "mcse_sd_max": 0.05
+    }
+  },
+  "phase": "confirmation",
+  "posterior_cap": 10000,
+  "purpose": "Predeclared complete-fit reference-mean null or location-defect rate screen",
+  "rank_draws": 7,
+  "replications": 64,
+  "scenario": {
+    "control": "location_shift",
+    "parameters": {
+      "location_shift_posterior_sd": 0.25,
+      "n": 6,
+      "sigma": 1.0,
+      "tau": 2.0
+    },
+    "route": "ordinary",
+    "start": "dispersed",
+    "target": "normal_conjugate"
+  },
+  "seed": 2026092432,
+  "step_size": 0.4
+}

@@ -42,7 +42,7 @@ def plan_suite(suite):
         available=spec.available
         reason=spec.unavailable_reason
         if (available and not spec.pipeline_available
-                and design.engine in {"search", "accuracy", "stopping", "sbc"}
+                and design.engine in {"search", "accuracy", "stopping", "sbc", "reference_mean"}
                 and design.scenario.route in {"ordinary", "prepared", "fixed_transport"}):
             available = False
             reason = spec.pipeline_unavailable_reason or "target lacks a shared posterior pipeline adapter"
@@ -149,6 +149,9 @@ def worker(design_file,root,budget,attempt=1,*,profile_execution=False):
             assessment=run(design,root,deadline)
         elif design.engine=="acceptance":
             from .engines.acceptance import run
+            assessment=run(design,root,deadline)
+        elif design.engine=="reference_mean":
+            from .engines.reference_mean import run
             assessment=run(design,root,deadline)
         elif design.engine=="stopping" and design.scenario.route=="reference":
             from .engines.diagnostics import run

@@ -1,0 +1,156 @@
+{
+  "schema": "bayesfilter.hmc_remaining_gap_design.v1",
+  "scope": "deterministic design arithmetic; no new HMC or achieved-power evidence",
+  "planning_source_commit": "622d9a9ed028659328b6386f9e9de7f368e7bba3",
+  "python": "3.13.13",
+  "gpu_status": "not queried or used; no framework imports",
+  "plan": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+  "confidence": {
+    "interval": "two-sided exact binomial",
+    "level": 0.95,
+    "tail_probability": 0.025
+  },
+  "observed_prices_and_subtraction_scenarios": {
+    "gaussian": {
+      "observed_full_fit_seconds": 346.5884383870289,
+      "observed_fixed_comparator_seconds": 71.99059520801529,
+      "subtraction_only_no_fixed_scenario_seconds": 274.5978431790136,
+      "scope": "one historical fit; subtraction is not a new measured execution price"
+    },
+    "beta-binomial": {
+      "observed_full_fit_seconds": 285.50962492707185,
+      "observed_fixed_comparator_seconds": 33.36801859294064,
+      "subtraction_only_no_fixed_scenario_seconds": 252.1416063341312,
+      "scope": "one historical fit; subtraction is not a new measured execution price"
+    }
+  },
+  "coverage_designs": [
+    {
+      "fits_per_target": 64,
+      "minimum_successes": 63,
+      "assurance_at_actual_joint_probabilities": {
+        "0.9": 0.009563149713054641,
+        "0.93": 0.05592719319051688,
+        "0.94": 0.09693545951707688,
+        "0.95": 0.16392123971171746,
+        "0.97": 0.4241476855538361
+      },
+      "two_target_full_fit_gpu_hours": 11.23729890336179,
+      "two_target_no_fixed_subtraction_scenario_gpu_hours": 9.364256880233684
+    },
+    {
+      "fits_per_target": 128,
+      "minimum_successes": 122,
+      "assurance_at_actual_joint_probabilities": {
+        "0.9": 0.02348652882997092,
+        "0.93": 0.2005802716579365,
+        "0.94": 0.34712729336965126,
+        "0.95": 0.5407144718389526,
+        "0.97": 0.9084813262165944
+      },
+      "two_target_full_fit_gpu_hours": 22.47459780672358,
+      "two_target_no_fixed_subtraction_scenario_gpu_hours": 18.72851376046737
+    },
+    {
+      "fits_per_target": 256,
+      "minimum_successes": 240,
+      "assurance_at_actual_joint_probabilities": {
+        "0.9": 0.023601063537563333,
+        "0.93": 0.37588981299220536,
+        "0.94": 0.6311875721797491,
+        "0.95": 0.8551956652983289,
+        "0.97": 0.9978998063752537
+      },
+      "two_target_full_fit_gpu_hours": 44.94919561344716,
+      "two_target_no_fixed_subtraction_scenario_gpu_hours": 37.45702752093474
+    },
+    {
+      "fits_per_target": 384,
+      "minimum_successes": 358,
+      "assurance_at_actual_joint_probabilities": {
+        "0.9": 0.017524389983124344,
+        "0.93": 0.4811425456857041,
+        "0.94": 0.7757437856057953,
+        "0.95": 0.9508812875560634,
+        "0.97": 0.9999493060139757
+      },
+      "two_target_full_fit_gpu_hours": 67.42379342017074,
+      "two_target_no_fixed_subtraction_scenario_gpu_hours": 56.18554128140211
+    }
+  ],
+  "per_fit_detector_designs": [
+    {
+      "independent_fits": 64,
+      "minimum_detected": 58,
+      "maximum_null_alarms_including_unavailable": 1,
+      "null_screen_assurance": {
+        "0.01": 0.8653760350168345,
+        "0.025": 0.5224780169273555,
+        "0.05": 0.16392123971171738
+      },
+      "power_screen_assurance": {
+        "0.9": 0.5390388435283109,
+        "0.95": 0.959703114107178,
+        "0.99": 0.9999962280431393
+      }
+    },
+    {
+      "independent_fits": 128,
+      "minimum_detected": 112,
+      "maximum_null_alarms_including_unavailable": 6,
+      "null_screen_assurance": {
+        "0.01": 0.9996704949564392,
+        "0.025": 0.9575254659335724,
+        "0.05": 0.5407144718389505
+      },
+      "power_screen_assurance": {
+        "0.9": 0.8612396728681758,
+        "0.95": 0.9997689880778831,
+        "0.99": 0.9999999999999785
+      }
+    }
+  ],
+  "per_fit_detector_hypothesis": {
+    "nominal_alarm_alpha": 0.01,
+    "critical_standardized_error": 2.5758293035489,
+    "assumed_mcse_over_posterior_sd": 0.05,
+    "ideal_gaussian_error_power": {
+      "0.25": 0.992328304173854,
+      "0.5": 0.9999999999999433
+    },
+    "provenance": "new development hypotheses, not established stopped-HMC laws"
+  },
+  "historical_normal_activation_fit_seconds": {
+    "baseline": 166.0315596300643,
+    "quarter": 179.83143234695308,
+    "half": 187.10101065714844
+  },
+  "r3_128_null_64_each_shift_transferred_cost_gpu_hours": 12.426587773586313,
+  "r2_256_each_plus_r3_subtraction_and_transfer_scenario_gpu_hours": 49.88361529452105,
+  "available_allowance_seconds": {
+    "cpu_reference": 71946.61478971103,
+    "gpu": 74041.93929888518
+  },
+  "scenario_shortfall_gpu_hours_before_repairs_and_training": 29.316409933719612,
+  "design_checks": "M31 boundaries, tail probabilities and upper/lower symmetry reproduced",
+  "source_sha256": {
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m31-r1/design-arithmetic.json": "a7b29f0cbbdbab9fd705abc8998a8c5210d45fed3c9adeb5ac36787bee693f07",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/gaussian-full-dynamic-gpu-r1/execution.json": "ff6f659513a622d253ebfe1dada46a59836e410b9a837b8da690fe22296662d6",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/gaussian-full-dynamic-gpu-r1/fits/replication-0000/pipeline.json": "0a89b82fd7a4b4aa6f33a5185a9e294ef6dd5b8c1ef10df1e09dfbe3aff4e981",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/beta-binomial-full-dynamic-gpu-r1/execution.json": "22a5e746f86fc50f05422fad4da3b2931104627e39bb7373d12f75d24728ba32",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/beta-binomial-full-dynamic-gpu-r1/fits/replication-0000/pipeline.json": "d4794e0a59fb777c9fd31411edd1c66814beea08c32b8e480a6d818598e9997f",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m34-r1/baseline-dynamic-gpu-r1/execution.json": "5ef0d69e2e5e4de19e782eeff53a866f62cd03a5316caf71535977a4d9c114bd",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m34-r1/quarter-dynamic-gpu-r1/execution.json": "c442fbbaca1eea34beb0212f253fd6af8987294629c45803422f217349824111",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m34-r1/half-dynamic-gpu-r1/execution.json": "77fb4ac8c169272c9f35cff1c8a09c97d787bbd2ac28f3fec4c47fc1999e840e",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m38-r1/program-reconciliation.json": "5d8a6a6646a311ae134d2ac902acfb067b754f8aeea96fa674838530a2b2c769"
+  },
+  "limitations": [
+    "Actual coverage events include missing outputs; .95 is a hypothesis, not a measured rate.",
+    "Per-fit mean alarm answers a different question from the earlier endpoint/SBC power study.",
+    "Nominal alarm alpha and ideal Gaussian power do not establish empirical false-positive rate or power.",
+    "Historical runtimes have one fit per cell and different source/policies; no runtime bound or speedup claim.",
+    "Removing a comparator changes the validation inventory, not the HMC method; new prices are still required.",
+    "No new default, statistical ranking, general convergence or training-quality conclusion."
+  ],
+  "elapsed_seconds": 0.06497836485505104
+}

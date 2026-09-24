@@ -801,6 +801,24 @@ ranks among successful fits look uniform. Parallel dataset groups are combined
 only when declared together with identical settings and frozen source; pilot and
 repaired experiments remain separate.
 
+A complementary diagnostic uses all retained draws from one qualified fit to
+test its posterior mean. With $\theta\sim N(0,\tau^2)$ and conditionally
+independent observations $y_i\mid\theta\sim N(\theta,\sigma^2)$, completing
+the square in the prior times likelihood gives the independent reference
+\[
+ s_*^2=(\tau^{-2}+n\sigma^{-2})^{-1},\qquad
+ m_*=s_*^2\sigma^{-2}\sum_{i=1}^n y_i.
+\]
+The validation engine \path{reference_mean} compares
+$|\widehat m-m_*|/\widehat{\mathrm{MCSE}}$ with the declared normal critical
+value. It recomputes lugsail MCSE independently from the archived model draws;
+the reference never enters tuning. The normal approximation defines the alarm,
+but its achieved false-alarm and detection rates require independent complete
+fits with fresh data. A capped, missing or unqualified fit is a possible alarm
+in the conservative null rate and a nondetection in the defect rate. This
+answers a location-error question distinct from endpoint invariance and SBC;
+arithmetic and execution tests alone do not establish its power.
+
 Matched consumer comparisons use the same public ordinary tuner and posterior
 controller. The explicit noncentered eight-schools and Bayesian regression
 adapters reproduce the pinned posteriordb Stan laws, observations and coordinate
@@ -848,7 +866,7 @@ the lifetime of process-local framework caches. Each child preserves its full
 candidate set, posterior chunks and independent assessment before normal exit;
 the coordinator records process failures separately from saved numerical
 results. Missing or abnormally terminated fits remain in the replication
-denominator. Numerical search, accuracy and stopping designs enable this
+denominator. Numerical search, accuracy, stopping and reference-mean designs enable this
 optional mode with \path{options.isolate_fits} and
 \path{options.fit_process_timeout_seconds}. The setting does not change the
 HMC transition, tuning criteria or posterior thresholds.

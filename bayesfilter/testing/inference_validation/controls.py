@@ -4,6 +4,13 @@
 def response(design, assessment):
     control = design.scenario.control
     finding = assessment.get("finding")
+    if design.engine == "reference_mean":
+        return {"control": control, "status": (
+                    "reference_mean_rate_screen_passed" if assessment["rate_screen_passed"]
+                    else "reference_mean_rate_screen_not_passed"),
+                "rate_screen_passed": assessment["rate_screen_passed"],
+                "unavailable": assessment["unavailable"], "power_established": False,
+                "interpretation": "complete planned denominator; one cell alone does not establish calibrated null and defect rates"}
     if finding in {None, "invalid", "unavailable", "incomplete", "calibration_incomplete",
                    "no_verified_members", "posterior_incomplete"}:
         return {"control": control, "status": "unassessed", "reason": finding,

@@ -276,7 +276,7 @@ def prepare_operational_windowed_mass_handoff(
             "bootstrap contained a hard-vetoed round and cannot seed operational warmup",
             details=details)
     if bootstrap_execution is not None:
-        from bayesfilter.inference.hmc_kernel_tuning import _json_ready
+        from bayesfilter.inference.hmc_preparation_common import _json_ready
         # Preserve the startup handoff even if the full mass stage is unaffordable.
         (bootstrap_execution.root / "bootstrap-result.json").write_text(
             json.dumps(_progress_json_value(_json_ready(bootstrap.payload())),

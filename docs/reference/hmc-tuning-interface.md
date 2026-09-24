@@ -676,6 +676,23 @@ zero, nonfinite or underbatched estimates cannot grant precision; raw per-chain
 LRV and excluded terminal counts are reported. Quantile ties yielding zero
 width are unavailable evidence, including unobserved rare events.
 
+Quantile precision uses TFP positive-pairs indicator ESS with a pooled
+percentile that preserves equal interpolation endpoints exactly. The method
+identifier is
+`vehtari_quantile_order_statistics_tfp_positive_pairs_tie_preserving.v2`;
+it appears in each result and in the precision policy's `quantile_estimator`.
+Earlier interpolation could move a tied cutoff slightly and change the
+indicator ESS. Recompute older reports from saved draws; do not reuse a
+checkpoint under the new policy identity. Independent NumPy/SciPy order
+statistics and official TFP ESS tests cover IID, persistent, antithetic, skew,
+tied, constant, odd-length and unobserved-event cases.
+
+The approximate quantile MCSE and its symmetric `estimate +/- 1.96*MCSE`
+diagnostic interval differ from a direct 95% order-statistic interval at finite
+counts. The September 24 saved-array comparison did not justify promoting a
+different interval rule. Formula agreement is separate from actual stopped
+coverage calibration.
+
 These MCSE calculations assume the relevant moments and mixing/CLT conditions.
 Lugsail estimates retained mean uncertainty; it does not estimate burn-in.
 A positive finite estimate and twenty batches do not establish adequate
@@ -717,7 +734,8 @@ split, while tail cutoffs use the full pooled draws. Both tail indicators use
 remain nonpromotable. Public schemas and threshold values are unchanged, but
 older convergence reports need recomputation from their saved draws. The
 explicitly named TFP mean/quantile precision option and the covariance-window
-ESS heuristic are separate; this repair does not change either computation.
+ESS heuristic are separate. The later quantile-cutoff repair described above
+preserves its TFP ESS convention while correcting the tied indicator cutoff.
 
 The separate legacy Phase 29 warmup screen still uses configured adjacent-epoch
 drift thresholds as heuristic rejection criteria. Its standardized differences
@@ -729,6 +747,29 @@ See [the posterior example](../examples/hmc_posterior_precision.py) and
 [the active repair master program](../plans/bayesfilter-hmc-repair-master-program-2026-09-16.md).
 
 ## Testing the procedure and its diagnostics
+
+The validation CLI also accepts `engine="reference_mean"` for a declared
+ordinary normal-conjugate full fit. Specify `tau`, `sigma`, and `n`, nominal
+alarm `alpha`, `posterior_members="selected"`, `member_rule="first_verified"`,
+the lugsail mean estimator, and
+`options.reference_mean_alarm={"mcse_sd_max": ...}`. Its absolute
+`mcse_tolerance` must equal that ratio times the known conditional posterior SD.
+Each replication generates fresh data, runs full public preparation/tuning and
+posterior assessment, then independently recomputes lugsail MCSE from the saved
+model-coordinate draws. The detector is
+`normal_conjugate_per_fit_reference_mean_lugsail.v1`.
+For repeated fits, set `options.isolate_fits=true` and an explicit
+`options.fit_process_timeout_seconds` within the total design budget. Each
+complete fit then runs in a fresh process; an abnormal exit cannot turn a saved
+numerical alarm into valid detection evidence.
+
+The alarm compares the posterior-mean error against the independent exact
+conditional mean at the declared normal critical value. Missing, capped or
+unqualified fits count as possible null alarms and defect nondetections; they
+remain in the full planned denominator. Source, design, selected member and
+stream identities are preserved. This is a diagnostic validation engine, not
+a tuning entry point. Its achieved null size and defect power remain open
+until the declared independent confirmation passes.
 
 The [inference validation suites](../validation/README.md) exercise the existing
 public procedure through separate numerical, invariance, search, SBC, reference

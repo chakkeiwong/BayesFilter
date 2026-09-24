@@ -140,6 +140,7 @@ def test_coordinator_import_stays_framework_free():
     env = dict(os.environ, CUDA_VISIBLE_DEVICES="-1", BAYESFILTER_PRELOAD_CUSTOM_OP="0")
     code = ("import sys; from bayesfilter.testing.inference_validation.fit_process import run_isolated_replications; "
             "from bayesfilter.testing.inference_validation.engines.pipeline import summarize_replications; "
+            "from bayesfilter.testing.inference_validation.engines.reference_mean import summarize_replications; "
             "assert 'tensorflow' not in sys.modules")
     subprocess.run([sys.executable, "-c", code], env=env, check=True, timeout=30)
 
@@ -188,3 +189,69 @@ def test_public_isolated_pipeline_preserves_outputs_and_restart(design, tmp_path
     resumed = run_suite(suite, tmp_path / "run", resume=True)
     assert resumed["jobs"] == index["jobs"]
     assert len(list(root.glob("replication-*/process-attempt-*-exit.json"))) == 1
+
+
+def reference_design(design):
+    from bayesfilter.testing.inference_validation.designs import ScenarioSpec
+    return design("reference_mean", "normal_conjugate", "ordinary", replications=2,
+        scenario=ScenarioSpec("normal_conjugate", "ordinary", parameters={"tau":2., "sigma":1., "n":6}),
+        alpha=.01, mcse_tolerance=.02, options={"isolate_fits":True,
+        "fit_process_timeout_seconds":10, "posterior_members":"selected",
+        "member_rule":"first_verified", "reference_mean_alarm":{"mcse_sd_max":.05}})
+
+
+@pytest.mark.parametrize("save", [False, True])
+def test_reference_mean_failed_exit_preserves_numerics_without_detection(design, tmp_path, monkeypatch, save):
+    from bayesfilter.testing.inference_validation.engines import reference_mean
+    fake_parent(monkeypatch)
+    d = reference_design(design)
+    def fail(command, log, seconds, device):
+        if save:
+            row = reference_mean.unavailable_record(d, 0, "qualified")
+            row.update(status="qualified", alarm=True, z=4., stream=[1, 2])
+            write_json(tmp_path / "replication-0000/independent_assessment.json", row)
+        return {"status":"failed", "exit_code":7, "elapsed_seconds":10.}
+    monkeypatch.setattr(fit_process, "_supervise", fail)
+    result = fit_process.run_isolated_replications(d, tmp_path, deadline=time.monotonic()+30)
+    assert result["planned"] == result["unavailable"] == result["conservative_numerator"] == 2
+    assert result["qualified"] == result["alarms"] == result["completed_fits"] == 0
+    assert result["execution_failures"] == 1
+    assert not result["assessment_complete"]
+    if save:
+        assert result["records"][0]["saved_numerical_assessment"]["alarm"]
+        monkeypatch.setattr(fit_process, "_supervise", lambda *a: pytest.fail("failed final record rerun"))
+        again = fit_process.run_isolated_replications(d, tmp_path, deadline=time.monotonic()-1)
+        assert again == result
+
+
+def test_public_reference_mean_isolation_uses_independent_data_and_restart(design, tmp_path):
+    """Two actual public fits; CPU allocations are engineering checks only."""
+    from bayesfilter.testing.inference_validation.execution import run_suite
+    base = reference_design(design)
+    d = replace(base, budget_seconds=300, draws=512, posterior_cap=2048,
+        mcse_tolerance=.2, l_grid=(3, 5), options={**base.options,
+        "fit_process_timeout_seconds":140, "reference_mean_alarm":{"mcse_sd_max":.5},
+        "bootstrap_initialization_rounds":5, "metric_evidence_policy":"finite_window",
+        "metric_probe_num_results":16, "preparation_max_restarts":1,
+        "acceptance_policy":{"practical_region":(.41,.99), "repair_region":(.405,.995)},
+        "search":{"pilot_enabled":False, "refinement_rounds":0,
+                  "total_budget_units":32, "repair_reserve_units":4, "evidence_rungs":(1,)}})
+    suite = {"schema":"bayesfilter.inference_validation_suite.v1",
+             "suite_id":"reference-mean-isolated", "profile":"test",
+             "profiles":{"test":["reference_mean"]}, "designs":[d.payload()]}
+    index = run_suite(suite, tmp_path / "run")
+    assert index["jobs"][d.design_id]["status"] == "complete"
+    root = tmp_path / "run" / d.design_id
+    assessment = read_json(root / "assessment.json")
+    assert not assessment["framework_initialized_in_coordinator"]
+    assert assessment["completed_fits"] == assessment["planned"] == 2
+    assert assessment["assessment_complete"] and not assessment["execution_failures"]
+    records = assessment["records"]
+    assert records[0]["data_seed"] != records[1]["data_seed"]
+    assert records[0]["data_identity"] != records[1]["data_identity"]
+    assert records[0]["process_execution"]["pid"] != records[1]["process_execution"]["pid"]
+    assert all(r["candidate_id"] and r["status"] == "qualified" for r in records)
+    assert records[0]["stream"] != records[1]["stream"]
+    resumed = run_suite(suite, tmp_path / "run", resume=True)
+    assert resumed["jobs"] == index["jobs"]
+    assert len(list(root.glob("replication-*/process-attempt-*-exit.json"))) == 2

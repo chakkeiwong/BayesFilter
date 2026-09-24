@@ -20,6 +20,15 @@ from .designs import ValidationDesign
 from .storage import read_json, write_json, file_hash
 
 
+def _engine(design):
+    # Both assessment modules stay framework-free until a numerical child runs.
+    if design.engine == "reference_mean":
+        from .engines import reference_mean
+        return reference_mean
+    from .engines import pipeline
+    return pipeline
+
+
 def resource_snapshot():
     """Linux resident memory and live-object diagnostics, without collecting GC."""
     status = {}
@@ -77,7 +86,7 @@ def fit_worker(design_file, root, replication, budget, attempt, *, profile_execu
                               "start_boundary": "after_framework_and_pipeline_imports"}}
     try:
         manifest["runtime"] = configure_worker(design)
-        from .engines.pipeline import run_replication
+        run_replication = _engine(design).run_replication
         manifest["setup_seconds_before_profile"] = time.monotonic() - started
         write_json(str(prefix) + "-manifest.json", manifest)
         profile.start()
@@ -122,11 +131,15 @@ def _supervise(command, log, seconds, device):
             "log": str(log)}
 
 
-def _record(path, replication, receipt):
+def _record(path, replication, receipt, design):
     assessment = path / "independent_assessment.json"
-    row = (read_json(assessment) if assessment.is_file() else {
-        "replication": replication, "inventory": {"failures": []}, "members": [],
-        "tuning_completion": "execution_failed", "pipeline": str(path / "pipeline.json")})
+    if assessment.is_file():
+        row = read_json(assessment)
+    elif design.engine == "reference_mean":
+        row = _engine(design).unavailable_record(design, replication, "execution_failed")
+    else:
+        row = {"replication": replication, "inventory": {"failures": []}, "members": [],
+               "tuning_completion": "execution_failed", "pipeline": str(path / "pipeline.json")}
     if receipt["status"] != "complete":
         row["execution_failure"] = receipt
     row["process_execution"] = receipt
@@ -142,7 +155,7 @@ def run_isolated_replications(design, root, *, deadline, profile_execution=False
     if "tensorflow" in sys.modules:
         raise RuntimeError("isolated-fit coordinator must not initialize TensorFlow")
     from .execution import source_state
-    from .engines.pipeline import summarize_replications
+    summarize_replications = _engine(design).summarize_replications
     from .profiling import profile_report
 
     root = Path(root)
@@ -166,7 +179,7 @@ def run_isolated_replications(design, root, *, deadline, profile_execution=False
             last = prior[-1]
             if last.get("assessment_sha256") != file_hash(assessment):
                 raise ValueError("saved independent assessment changed after process exit")
-            records.append(_record(path, replication, last))
+            records.append(_record(path, replication, last, design))
             continue
         if assessment.exists():
             raise ValueError("isolated assessment has no process exit receipt")
@@ -179,7 +192,7 @@ def run_isolated_replications(design, root, *, deadline, profile_execution=False
                         - sum(p["elapsed_seconds"] for p in prior))
         if remaining <= 0:
             if prior:
-                records.append(_record(path, replication, prior[-1]))
+                records.append(_record(path, replication, prior[-1], design))
             if time.monotonic() >= deadline:
                 break
             continue
@@ -197,7 +210,7 @@ def run_isolated_replications(design, root, *, deadline, profile_execution=False
         elif receipt["status"] == "complete":
             receipt["status"] = "missing_assessment"
         write_json(str(prefix) + "-exit.json", receipt)
-        records.append(_record(path, replication, receipt))
+        records.append(_record(path, replication, receipt, design))
         # Infrastructure failure needs diagnosis before another expensive fit.
         if receipt["status"] != "complete":
             break
