@@ -86,7 +86,7 @@ remain local and are indexed with hashes. The active execution plan is
 All three initial IAF fits reached 4,096 updates, passed their 1,000-point
 checks and exported-map inverse checks. Their descriptive residual medians
 are 0.3352, 0.4364 and 0.6732; means are 0.4208, 0.5763 and 0.8092. The
-fractions above one are 4.8%, 12.9% and 22.9%. These independent probe banks
+fractions above one are 4.8%, 13.6% and 22.9%. These independent probe banks
 are not the common final comparison bank; no replicated-improvement verdict
 has yet been issued. Clipping occurred on 38, 59 and 41 of 4,096 updates.
 
