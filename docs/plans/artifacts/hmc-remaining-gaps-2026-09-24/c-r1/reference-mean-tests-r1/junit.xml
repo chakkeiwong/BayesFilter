@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="32" time="16.710" timestamp="2026-09-24T03:36:22.984443+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_reference_mean" name="test_independent_variance_against_tensorflow[iid]" time="0.101" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_independent_variance_against_tensorflow[persistent]" time="0.008" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_independent_variance_against_tensorflow[antithetic]" time="0.007" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_independent_variance_against_tensorflow[ties]" time="0.003" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_independent_variance_against_tensorflow[negative]" time="0.024" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_independent_variance_against_tensorflow[constant]" time="0.003" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_insufficient_batches_are_unavailable" time="0.000" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_reference_independent_of_shifted_draws_and_runtime_mcse" time="0.025" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_unqualified_fits_cannot_be_detections[warmup_cap_hit]" time="0.003" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_unqualified_fits_cannot_be_detections[retained_cap_hit]" time="0.003" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_unqualified_fits_cannot_be_detections[hard_vetoes]" time="0.003" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_unqualified_fits_cannot_be_detections[passed]" time="0.003" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_unqualified_fits_cannot_be_detections[warmup_exclusion]" time="0.003" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_empty_selection_and_changed_member_rule" time="0.003" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_complete_denominators_and_exact_screen_boundaries" time="0.052" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_duplicate_corrupt_and_changed_policy_records_fail" time="0.001" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_design_binds_estimator_scale_selection_and_data" time="0.002" /><testcase classname="tests.inference_validation.test_reference_mean" name="test_public_full_fit_and_cached_policy_identity" time="14.356"><failure message="ValueError: reference mean requires the predetermined first-verified member">design = &lt;function design.&lt;locals&gt;.make at 0x754a29bb00e0&gt;
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-705/test_public_full_fit_and_cache0')
+
+    def test_public_full_fit_and_cached_policy_identity(design, tmp_path):
+        # Explicitly small CPU mechanics integration. Broad scientific calibration
+        # uses the native-search campaign, not these permissive acceptance settings.
+        base = normal_design(design)
+        d = replace(base, budget_seconds=240, mcse_tolerance=.2, l_grid=(3, 5), options={
+            **base.options, "reference_mean_alarm":{"mcse_sd_max":.5},
+            "bootstrap_initialization_rounds":5, "metric_evidence_policy":"finite_window",
+            "metric_probe_num_results":16, "preparation_max_restarts":1,
+            "acceptance_policy":{"practical_region":(.41,.99), "repair_region":(.405,.995)},
+            "search":{"pilot_enabled":False, "refinement_rounds":0,
+                      "total_budget_units":32, "repair_reserve_units":4, "evidence_rungs":(1,)}})
+&gt;       report = engine.run(d, tmp_path)
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/inference_validation/test_reference_mean.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/inference_validation/engines/reference_mean.py:193: in run
+    row = alarm_from_pipeline(fit_id, pipeline, alpha=design.alpha, mcse_sd_max=ratio,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+fit_id = '0'
+pipeline = {'candidate_count': 2, 'completion': 'complete', 'data': [-1.3880587184129665, -2.62243449865405, -2.472537511895413, -2.5572034351555795, -4.414077028284444, -1.6621843476104843], 'dataset_id': 0, ...}
+
+    def alarm_from_pipeline(fit_id, pipeline, *, alpha, mcse_sd_max, tau, sigma,
+                            estimator_options=None):
+        """Read only the frozen selected member; never choose by posterior results."""
+        if (type(alpha) not in (int, float) or not 0 &lt; alpha &lt; 1
+                or type(mcse_sd_max) not in (int, float)
+                or not math.isfinite(mcse_sd_max) or mcse_sd_max &lt;= 0):
+            raise ValueError("explicit finite alarm size and precision target required")
+        mean, sd = normal_reference(pipeline["data"], tau=tau, sigma=sigma)
+        record = {"fit_id": fit_id, "detector": DETECTOR, "output_rule": OUTPUT_RULE,
+                  "alpha": alpha, "mcse_sd_max": mcse_sd_max,
+                  "reference_mean": mean, "reference_sd": sd, "status": "unavailable",
+                  "alarm": None, "z": None, "stream": None, "candidate_id": None,
+                  "data": pipeline["data"]}
+        selection = pipeline["selection"]
+        verified = sorted(pipeline["verified_candidate_ids"])
+        expected = verified[:1]
+        if (selection["rule"] != "first_verified" or selection["scope"] != "selected"
+                or selection["candidate_ids"] != expected):
+&gt;           raise ValueError("reference mean requires the predetermined first-verified member")
+E           ValueError: reference mean requires the predetermined first-verified member
+
+bayesfilter/testing/inference_validation/engines/reference_mean.py:81: ValueError</failure></testcase><testcase classname="tests.inference_validation.test_normal_endpoint" name="test_conjugate_reference_and_independent_test_formulas" time="0.001" /><testcase classname="tests.inference_validation.test_normal_endpoint" name="test_location_and_variance_adversaries_and_noop" time="0.011" /><testcase classname="tests.inference_validation.test_normal_endpoint" name="test_missing_invalid_and_duplicate_records_cannot_be_detections" time="0.001" /><testcase classname="tests.inference_validation.test_normal_endpoint" name="test_pipeline_output_rule_and_caps" time="0.009" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_translation_has_declared_normal_mode_curvature_and_density[0.0]" time="0.108" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_translation_has_declared_normal_mode_curvature_and_density[0.25]" time="0.057" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_translation_has_declared_normal_mode_curvature_and_density[0.5]" time="0.057" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_translation_has_declared_normal_mode_curvature_and_density[-0.5]" time="0.057" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_unactivated_mutation_is_rejected[gaussian-None-0.5]" time="0.001" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_unactivated_mutation_is_rejected[normal_conjugate-None-0.5]" time="0.000" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_unactivated_mutation_is_rejected[normal_conjugate-data2-None]" time="0.001" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_unactivated_mutation_is_rejected[normal_conjugate-data3-nan]" time="0.000" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_reference_route_cannot_silently_ignore_translation" time="0.000" /><testcase classname="tests.inference_validation.test_full_fit_mutations" name="test_public_ordinary_preparation_receives_translated_target" time="0.107" /></testsuite></testsuites>

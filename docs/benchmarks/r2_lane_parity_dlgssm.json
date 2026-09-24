@@ -1,0 +1,140 @@
+{
+  "study": "r2_lane_parity_dlgssm",
+  "date": "2026-08-28",
+  "question": "do the value and score lanes estimate the same log-likelihood at the selected controls, and does the analytical score match the exact Kalman score",
+  "controls": {
+    "epsilon": 1.0,
+    "sinkhorn_steps": 8,
+    "balance_steps": 8,
+    "flow_substeps": 12,
+    "particle_count": 1008,
+    "score_direction": 0,
+    "provenance": "selected by R2-TUNE dlgssm pilot"
+  },
+  "tuning_data": {
+    "path": "docs/benchmarks/r2_tuning_20260827/dlgssm_tuning_data.npz",
+    "sha256": "2b326353147a795471982fc20f73e5c6aa681decc6e643d26ff91daab2668d45",
+    "replication": 0
+  },
+  "exact_reference": {
+    "log_likelihood": -230.8826936051034,
+    "score_central_diff_h1e5": 7.303406597714001,
+    "score_central_diff_h5e6": 7.303406601977257,
+    "score_step_refinement_gap": 4.263256414560601e-09,
+    "basis": "model is linear Gaussian; Kalman recursion is the exact likelihood and central differences on it give the exact score up to difference truncation"
+  },
+  "seeds": [
+    999000,
+    999001,
+    999002,
+    999003,
+    999004,
+    999005
+  ],
+  "rows": [
+    {
+      "seed": 999000,
+      "value_lane_value": -231.33678217650638,
+      "value_lane_error": -0.45408857140296277,
+      "value_lane_marginal_ok": true,
+      "value_lane_max_tv": 3.373150684637949e-05,
+      "score_lane_value": -231.66631292940494,
+      "score_lane_error": -0.7836193243015259,
+      "score": 7.605530085474324,
+      "score_error": 0.3021234877603236
+    },
+    {
+      "seed": 999001,
+      "value_lane_value": -230.3666998006055,
+      "value_lane_error": 0.5159938044979242,
+      "value_lane_marginal_ok": true,
+      "value_lane_max_tv": 3.2983061828417704e-05,
+      "score_lane_value": -231.76797092426418,
+      "score_lane_error": -0.8852773191607639,
+      "score": 6.92914907891973,
+      "score_error": -0.3742575187942707
+    },
+    {
+      "seed": 999002,
+      "value_lane_value": -231.63198817800048,
+      "value_lane_error": -0.749294572897071,
+      "value_lane_marginal_ok": true,
+      "value_lane_max_tv": 2.466652586008422e-05,
+      "score_lane_value": -231.24265622997225,
+      "score_lane_error": -0.35996262486884234,
+      "score": 5.9460285293724695,
+      "score_error": -1.3573780683415313
+    },
+    {
+      "seed": 999003,
+      "value_lane_value": -230.9378883666003,
+      "value_lane_error": -0.0551947614968924,
+      "value_lane_marginal_ok": true,
+      "value_lane_max_tv": 2.783224954328034e-05,
+      "score_lane_value": -231.27664041197858,
+      "score_lane_error": -0.3939468068751637,
+      "score": 5.7830434461996605,
+      "score_error": -1.5203631515143403
+    },
+    {
+      "seed": 999004,
+      "value_lane_value": -230.97826765286288,
+      "value_lane_error": -0.0955740477594702,
+      "value_lane_marginal_ok": true,
+      "value_lane_max_tv": 8.418672950938344e-05,
+      "score_lane_value": -231.5844770068525,
+      "score_lane_error": -0.7017834017490827,
+      "score": 7.604771089028215,
+      "score_error": 0.3013644913142146
+    },
+    {
+      "seed": 999005,
+      "value_lane_value": -231.66220989117673,
+      "value_lane_error": -0.7795162860733171,
+      "value_lane_marginal_ok": true,
+      "value_lane_max_tv": 2.2797226847615093e-05,
+      "score_lane_value": -231.63445270783046,
+      "score_lane_error": -0.7517591027270498,
+      "score": 7.2194617257358935,
+      "score_error": -0.0839448719781073
+    }
+  ],
+  "summary": {
+    "value_lane_error": {
+      "n": 6,
+      "mean": -0.2696124058552982,
+      "se": 0.20145882938712345
+    },
+    "score_lane_error": {
+      "n": 6,
+      "mean": -0.646058096613738,
+      "se": 0.08866372078277007
+    },
+    "paired_lane_gap": {
+      "n": 6,
+      "mean": -0.37644569075843987,
+      "se": 0.24876198039204878
+    },
+    "score_error": {
+      "n": 6,
+      "mean": -0.4554092719256186,
+      "se": 0.3285730914905274
+    },
+    "lane_gap_separated_from_zero_2se": false
+  },
+  "manifest": {
+    "git_commit": "e32923317feddc9003431d3d30872c960e1589f3",
+    "conda_env": "tftwogpu",
+    "cuda_device_order": "PCI_BUS_ID",
+    "cuda_visible_devices": "1",
+    "gpu": [
+      "NVIDIA GeForce RTX 4080 SUPER"
+    ],
+    "wall_time_sec": 234.12696981430054
+  },
+  "non_claims": [
+    "Neither lane is claimed more accurate than the other; the two lanes estimate one estimand and are compared for agreement, not ranked.",
+    "The lanes cannot be given a common particle cloud (the value lane samples internally from `seed`), so per-seed values are not paired realizations and only the distributions are comparable.",
+    "One model, one control cell, one horizon. Nothing here transfers to another model, route, or horizon."
+  ]
+}

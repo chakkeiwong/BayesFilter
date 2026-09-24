@@ -226,7 +226,10 @@ def test_public_windowed_preparation_feeds_automatic_broad_pilot(tmp_path):
     from tests.test_hmc_candidate_set_execution import GaussianTarget
     run = tune_hmc_kernel(adapter=GaussianTarget(), initial_position=[.2, -.3],
         parameter_scales=[1., 1.],
-        config=HMCKernelTuningConfig.smoke(target_scope="candidate-bridge-test"),
+        # The 12-transition smoke leaves only four final-window rows; one MH
+        # rejection can make the required four distinct starts unavailable.
+        # Exercise the positive preparation handoff with its standard budget.
+        config=HMCKernelTuningConfig.standard(use_xla=False, target_scope="candidate-bridge-test"),
         target_lineage={"model":"standard Gaussian", "prior":"standard normal", "data":"none"},
         source_paths=[__file__], output_dir=tmp_path, max_work_items=1)
     assert run.result.config.primary_l_grid == (3, 5, 9, 13, 18, 25)

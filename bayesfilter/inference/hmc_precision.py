@@ -16,6 +16,8 @@ import tensorflow_probability as tfp
 
 from bayesfilter.inference.hmc_diagnostic_math import _cross_chain_ess
 
+QUANTILE_PRECISION_METHOD = "vehtari_quantile_order_statistics_tfp_positive_pairs_tie_preserving.v2"
+
 
 @dataclass(frozen=True)
 class HMCPrecisionTarget:
@@ -70,6 +72,7 @@ class HMCPrecisionPolicy:
 
     def payload(self):
         return {"schema": "bayesfilter.hmc_precision_policy.v1", **asdict(self),
+                "quantile_estimator": QUANTILE_PRECISION_METHOD,
                 "batch_provenance": "explicit" if self.batch_size else "sqrt(n), literature baseline",
                 "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
                 "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
@@ -155,7 +158,10 @@ def quantile_precision(samples: Any, probability: float):
     tf.debugging.assert_all_finite(values, "quantile samples must be finite")
     if not 0. < probability < 1.:
         raise ValueError("quantile probability must be in (0, 1)")
-    q = tfp.stats.percentile(values, 100. * probability, axis=(0, 1), interpolation="linear")
+    from bayesfilter.inference.hmc_posterior_diagnostics import _pooled_percentile
+    # A rounded tied cutoff can exclude an entire rejection plateau from its
+    # indicator. Share the exact-endpoint arithmetic with bulk/tail diagnostics.
+    q = _pooled_percentile(values, probability)
     n, m, p = map(int, values.shape)
     half = n // 2
     split = tf.concat((values[:half], values[-half:]), axis=1)
@@ -174,7 +180,7 @@ def quantile_precision(samples: Any, probability: float):
     valid = ess_valid & tf.reduce_all(tf.math.is_finite(bounds), axis=0) & tf.math.is_finite(a) & tf.math.is_finite(b) & (b > a)
     return {"estimate": q, "mcse": tf.where(valid, (b - a) / 2., float("nan")),
             "valid": valid, "indicator_ess": ess,
-            "method": "vehtari_quantile_order_statistics_tfp_positive_pairs"}
+            "method": QUANTILE_PRECISION_METHOD}
 
 
 def precision_report(samples, names, policy: HMCPrecisionPolicy | None):

@@ -7,6 +7,8 @@ JVP differentiates the complete executed map without TensorFlow autodiff.
 
 from __future__ import annotations
 
+import math
+
 import tensorflow as tf
 
 from bayesfilter.highdim.genut_shape_lm_tf import (
@@ -328,9 +330,9 @@ def affine_restore_cloud_jvp(
         centered,
         centered_tangent,
     )
-    output = target_mean[None, :] + tf.linalg.matmul(
-        standardized, target_chol, transpose_b=True
-    )
+    # Keep the broadcast add rank-one so TensorFlow's float32 matmul fusion
+    # does not reinterpret a [1, D] tensor as an invalid bias.
+    output = tf.linalg.matmul(standardized, target_chol, transpose_b=True) + target_mean
     output_tangent = (
         target_mean_tangent[None, :, :]
         + tf.einsum("nip,ji->njp", standardized_tangent, target_chol)
@@ -988,13 +990,13 @@ def higher_moment_shape_jvp(
     *,
     correction_steps: int,
     strength: float,
-    floor: float,
+    floor: float = 1.0e-5,
     diagonal_lm_damping: float = 0.0,
     diagonal_lm_scale_floor: float = 1.0e-6,
     diagonal_trust_radius: float = 0.0,
     pairwise_correction_steps: int = 0,
     pairwise_strength: float = 0.0,
-    pairwise_floor: float = 1.0e-6,
+    pairwise_floor: float = 1.0e-5,
     pairwise_particle_rms_cap: float = 0.0,
     coordinatewise_bounded_cap: float = 0.0,
     coordinatewise_bounded_cap_power: int = 8,
@@ -1038,7 +1040,7 @@ def higher_moment_shape_jvp(
         or coordinatewise_bounded_cap_power < 2
         or coordinatewise_bounded_cap_power % 2 != 0
         or coordinatewise_standardized_cap < 0.0
-        or coordinatewise_standardized_cap >= 1.0
+        or not math.isfinite(coordinatewise_standardized_cap)
         or coordinatewise_standardized_cap_power < 2
         or coordinatewise_standardized_cap_power % 2 != 0
         or projected_cumulant_correction_steps < 0
@@ -1320,6 +1322,9 @@ def higher_moment_shape_jvp(
 
     # Initialize the loop state with a standardization of the input cloud.
     initial_mean, initial_cov, initial_mean_tangent, initial_cov_tangent = _uniform_moments_jvp(points, points_tangent)
+    # Class-B guard (2026-08-27): annealed likelihood concentration can
+    # collapse the initial standardization covariance; same relative-ridge
+    # as the target restoration path (line 1051).
     initial_cov_safe, initial_cov_tangent_safe = _relative_psd_covariance(
         initial_cov, initial_cov_tangent, relative_floor=RELATIVE_PSD_FLOOR
     )
@@ -1467,9 +1472,9 @@ def higher_moment_shape_jvp(
         standardized_tangent = (
             standardized_derivative[:, :, None] * standardized_pre_cap_tangent
         )
-    raw_output = mean[None, :] + tf.linalg.matmul(
-        standardized, target_chol, transpose_b=True
-    )
+    # See ``affine_restore_cloud_jvp``: a rank-one bias is required by the
+    # float32 fused matmul kernel.
+    raw_output = tf.linalg.matmul(standardized, target_chol, transpose_b=True) + mean
     raw_output_tangent = (
         mean_tangent[None, :, :]
         + tf.einsum("nip,ji->njp", standardized_tangent, target_chol)
@@ -1658,3 +1663,18 @@ __all__ = [
     "higher_moment_shape_jvp",
     "weighted_shape_targets_jvp",
 ]
+
+# Repair note (2026-08-27): Austria production annealed score crashed with
+# Cholesky NaN at S7 dual-cap entry. Root cause: the affine_restore_cloud_jvp
+# function (lines 292-360) computed Cholesky decompositions of target_cov and
+# current_cov WITHOUT ridge protection. Annealed likelihood concentration
+# collapses these covariances to near-singularity (smallest eigenvalue at
+# roundoff -6e-16). The fix: apply _relative_psd_covariance (symmetrize +
+# relative ridge delta*tr(C)/d*I) to both factorizations before Cholesky.
+# RELATIVE_PSD_FLOOR=1e-12 was calibrated via response curve: passes the
+# exact-restoration contract (<1e-12 residual on healthy clouds) while
+# rescuing the Austria NaN. Class B (fail-closed guard) + light Class C
+# (ridge alters the factor, but at 1e-12 the perturbation is negligible).
+# Non-harm verified: all 32 parity/oracle/JVP gates pass; Austria score runs
+# finite. The two speculative guards (LM matrix inverse, flow S inverse) were
+# reverted — unjustified now that the real defect is fixed.

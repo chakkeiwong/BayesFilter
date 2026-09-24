@@ -1,0 +1,13 @@
+--- docs/plans/artifacts/iapf-adaptive-consumer-20260922-01/initial-source/bayesfilter/score_study/iapf_adapter.py	2026-09-19 15:57:39.246953761 +0800
++++ bayesfilter/score_study/iapf_adapter.py	2026-09-22 11:52:56.711152219 +0800
+@@ -55,8 +55,8 @@
+     from .conditional_means_tf import model_curves
+     curves=model_curves(row,settings)
+     d,o,N,T=(settings[k] for k in ("dimension","observation_dimension","particles","horizon"))
+-    if d!=1 or o!=1:
+-        raise ValueError("density-fit iAPF consumer currently requires scalar state and observation")
++    if any(type(value) is not int or value < 1 for value in (d, o)):
++        raise ValueError("density-fit iAPF requires positive integer state and observation dimensions")
+     config=dict(row["iapf"])
+     required={"k","tau","max_iterations","max_particles","mean_bound","sd_lower","sd_upper",
+               "max_fit_steps","max_backtracks","fit_tolerance","floor_ratio","fit_theta"}

@@ -1,0 +1,163 @@
+# LEDH Canonical Completion Program (Q-phases)
+
+Date: 2026-08-24. Successor to the discharged execution plan
+(`bayesfilter-ledh-canonical-rebuild-execution-plan-2026-08-21.md`,
+P0-P7 + Parts 4-5 complete). This document governs everything that
+remains; the ledger there stays the append-only history, this program is
+the forward contract. Rules R-A..R-G of the execution plan carry over
+verbatim (no mid-phase design questions; test-first; declared tolerances;
+append-only ledger; session-resumable).
+
+## Phase inventory
+
+### Q1 — Score-path completion (CPU, mechanical, oracle-gated)
+
+Content:
+1. S6/S7 tangent wiring: the analytical score currently gates on the
+   reset-none slice (honestly documented in the gate docstrings). Wire
+   the Contract-E reset tangent (`_restore_cloud_batch_jvp` pattern) and
+   the dual-cap correction tangents (`higher_moment_shape_jvp`, already
+   hand-derived) into the score recursion so the FULL pipeline
+   (flow -> weight -> reset -> correction) carries the score.
+2. Annealed-mode score extension: stage-weight tangents through the
+   within-step annealing telescope (same Gaussian-density tangent
+   machinery, gated per stage).
+3. dlgssm q/r-direction score threading (density-callback scale
+   parameters; recorded refinement debt).
+4. Austria reduction slice (kappa -> 0 diffusion limit) — the last
+   non-GPU registry pending.
+
+Evidence contract: every new tangent gated vs the autodiff oracle at
+rtol 1e-4 float64 before entering the assembled score; full-recursion
+gate rerun after each wiring step; no autodiff ships (C-9 standing).
+Budget: CPU only. Exit: registry shows zero non-GPU pendings; the score
+entry point covers the full canonical per-step program.
+
+### Q2 — P6 calibration campaign (GPU)
+
+Content: the R6 protocol from the execution plan, unchanged in substance:
+- trust-radius model-trust curve (predicted vs actual residual reduction
+  across a radius ladder) on the frozen Austria scope;
+- LM-damping bias-vs-robustness curve;
+- relative-ridge derivation (worst-lane effective epsilon x safety
+  factor, relative form delta*tr(C)/d);
+- dual-cap constants (0.98/8, 2.0): attach owner rationale from the
+  07-xx notes or run the same protocol;
+- annealed-SMC stage-count k and flow-prior cap c response surfaces
+  (multi-seed extension of the passed probe contract);
+- float32/TF32 production-lane calibration (which precision/mode
+  configuration is the production target, with the battery evidence);
+- Austria Fisher-identity gate (rides here for GPU replication cost).
+
+Evidence contract: pre-declared per-curve acceptance criteria (non-harm
+form, never primary-metric tuning); multi-seed with declared seed sets;
+statistical-discipline language (no ranking without uncertainty); every
+calibrated value lands in the contract registry with its calibration
+artifact as provenance (Class-C justification rule). Budget: ~1 GPU-day;
+per-process cap 100 min; 3-consecutive-launch-failure stop. Exit:
+canonical defaults carry calibration provenance; zero unjustified Class-C
+values (including zeros) anywhere in the canonical lane.
+
+### Q3 — Full six-model leaderboard (GPU; gated on Q2)
+
+Content: six models x {canonical LEDH (calibrated), bootstrap PF, UKF
+Gaussian filter, SGQF where the repo comparator exists}, value AND score
+cells, multi-seed, on GPU at claim scale (N=1008-class); artifacts carry
+the G-5 conformance stamp; slice-1/2 CPU tables become the template.
+Evidence contract: hard vetoes first (finite/valid/identity), exact
+references where linear, descriptive tables with per-seed spread, ranking
+language ONLY where a pre-declared uncertainty analysis supports it.
+Budget: ~1 GPU-day. Exit: the owner-facing leaderboard report with the
+inference-status table (hard vetoes / viable / statistically supported /
+descriptive-only / next evidence).
+
+### Q4 — Merge and integration (OWNER-GATED)
+
+Content: merge `worktree-ledh-canonical-rebuild` into main; coordinate
+with the sibling agent's branch (the one overlap: both touch LEDH
+territory; the deletion lands repo-wide); wire the conformance suite into
+the repo's standing test cadence; refresh AGENTS.md pointers from
+"rebuild in progress" to "canonical lane is main".
+The merge decision, its timing relative to the sibling branch, and any
+main-branch conflict resolutions are the owner's. Everything in Q1-Q3 can
+run pre-merge on the branch; nothing in Q4 blocks Q1-Q3.
+
+### Q5 — Successor programs (OUT OF SCOPE here, listed for the map)
+
+NeuTra training and HMC campaigns on the canonical targets; posterior
+correctness and default-readiness claims; cross-model HMC readiness.
+These are their own programs with their own contracts — this program's
+nonclaims explicitly exclude them (unchanged from the invalidation
+notice's standing nonclaims).
+
+## Dependency graph
+
+Q1 (CPU) and Q2 (GPU) are independent and can interleave; Q3 requires Q2
+(calibrated defaults); Q4 requires owner action and is independent of
+Q1-Q3 ordering; Q5 requires Q3 + Q4.
+
+## Governance carry-overs
+
+- Referent-taxonomy testing regime (registry meta-test) governs all new
+  code; every new model or lane needs its four-class registry row.
+- Fidelity tally continues (currently 5/5 found-and-fixed); any new
+  infidelity gets a gate in the class that SHOULD have caught it.
+- The vendored-reference file is frozen evidence (do not edit).
+- Class A/B adopt-by-default and Class C justification rules (global
+  policy) apply to every calibration decision in Q2.
+- Stop conditions: hard veto (identity/hash/env), 3 consecutive launch
+  failures, per-process caps, or any change to scientific targets —
+  everything else proceeds and is ledgered.
+
+## 2026-08-27 repair note (Q3 Austria annealed crash)
+
+Austria production annealed score crashed with Cholesky NaN at S7 dual-cap
+entry. Root cause: `affine_restore_cloud_jvp` in
+`higher_moment_contract_e.py` computed target_cov and current_cov Cholesky
+WITHOUT ridge protection. Annealed likelihood concentration collapsed
+smallest eigenvalue to roundoff (-6.4e-16 measured against largest 2.33).
+Fix: apply `_relative_psd_covariance` (symmetrize + relative ridge
+delta*tr(C)/d*I) to both factorizations before Cholesky.
+RELATIVE_PSD_FLOOR=1e-12 calibrated via response curve: passes
+exact-restoration contract (<1e-12 residual on healthy clouds) while
+rescuing the Austria NaN. Classification: Class B (fail-closed guard) +
+light Class C (ridge alters factor, but 1e-12 perturbation negligible).
+Non-harm verified: 32 parity/oracle/JVP gates pass. Austria row
+regeneration in progress. Two speculative guards (LM matrix inverse, flow S
+inverse) reverted — unjustified after real defect identified. Commit
+3ca8b1fd.
+
+Austria row regenerated successfully post-fix: zero crashed seeds (was 6/8),
+all-finite, self-consistency 1.26e-09 vs oracle. Wall time 897s. Full
+six-model production board (trust region ON) now complete: all rows finite,
+zero crashes. Report regenerated at
+`docs/benchmarks/q3-canonical-leaderboard-report-2026-08-25.md`.
+
+## Q3 COMPLETE (2026-08-27)
+
+Six-model production leaderboard finished with the true production program
+(dual-cap trust region ON per registry definition). All value cells finite,
+zero score crashes across all rows. Artifacts under
+`docs/benchmarks/artifacts/ledh_canonical_leaderboard_2026-08/q3_board/`.
+Report: `docs/benchmarks/q3-canonical-leaderboard-report-2026-08-25.md`.
+Conformance stamp: ledh-canonical-conformance-v1-2026-08-24@6bc7a37558e1.
+
+Key findings:
+- Linear anchor: value error 0.038 nats (8 seeds, N=1008).
+- dlgssm score: error 2.4 vs exact (UNTUNED; tuning artifact pending per
+  gap register B1).
+- Austria score spread 201 over 8 seeds (C5 in gap register: variance
+  source decomposition + annealed N-ladder pending).
+- All nonlinear rows lack reference arms (C2 gap).
+- Bootstrap comparative cells omitted per configuration-status-first rule
+  (no tuning artifacts, comparability contract undefined).
+
+Statistical status: hard vetoes all pass; no ranking supported (8 seeds,
+no uncertainty analysis per gap register D2); all differences descriptive
+only. Default-readiness: Q5 scope (NeuTra training + HMC contracts).
+
+Wall time: ~2.5 GPU-hours (includes the Austria annealed crash repair +
+regeneration).
+
+Next: Q4 (owner-gated merge) whenever the owner chooses. Q1-Q3 all
+complete.

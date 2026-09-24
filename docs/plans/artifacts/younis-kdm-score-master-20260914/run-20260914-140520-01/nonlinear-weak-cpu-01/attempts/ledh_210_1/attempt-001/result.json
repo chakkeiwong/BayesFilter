@@ -1,0 +1,137 @@
+{
+  "comparison_target": "model_score",
+  "derivative_id": "analytical_recursion",
+  "derivative_target": "finite_program_score",
+  "diagnostics": {
+    "candidate_configuration": {
+      "coordinate_cap": 0.4,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_steps": 1,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.5,
+      "flow_substeps": 2,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 3,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 3
+    },
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 32,
+    "controls": {
+      "coordinate_cap": 0.4,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_steps": 1,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.5,
+      "flow_substeps": 2,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 3,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 3
+    },
+    "data_model": "scalar_sine_transition_quadratic_observation",
+    "data_seed": [
+      450748142,
+      950846395
+    ],
+    "data_version": "665142dc235ab1b54bf3e46a9abc23f45d3eb7b649663ea799c43b1dadb083b2",
+    "derivative_semantics": "analytical_total_initial_law_flow_genut_contract_e",
+    "horizon": 4,
+    "initial_seed": [
+      1017014387,
+      1511368674
+    ],
+    "observation_curve": 0.03,
+    "oracle_kind": "refined_numerical_grid_not_exact",
+    "parameter_dimension": 6,
+    "particle_count": 32,
+    "process_seed": [
+      696232111,
+      2056387225
+    ],
+    "reference_controls": {
+      "points": 601,
+      "radius": 10.0,
+      "relative_tolerance": 1e-07,
+      "tail_tolerance": 1e-09
+    },
+    "reference_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+    "reference_domain_relative_error": 1.3749863878433568e-16,
+    "reference_dtype": "float64",
+    "reference_max_tail_mass": 4.440892098500626e-16,
+    "reference_mesh_relative_error": 1.8976555207219796e-16,
+    "resampling_seed": [
+      1633317152,
+      873627211
+    ],
+    "reset_contract_id": "contract_e_chol_v1",
+    "reset_seed": [
+      807830551,
+      238600991
+    ],
+    "score_consumer": "nonlinear model -> shared LEDH executor with ledh",
+    "score_squared_error": 0.04195158580243827,
+    "state_dimension": 1,
+    "transition_curve": 0.1,
+    "uses_autodiff": false,
+    "value_squared_error": 0.015184967687415007
+  },
+  "inference_status": "mechanics_only",
+  "initial_terms": true,
+  "numerical_validity": "pass",
+  "oracle_score": [
+    -0.20321677069830468,
+    -0.6148858409667937,
+    -1.3295895532291204,
+    -1.0944373097078677,
+    0.08759052939280298,
+    -0.41235834441641955
+  ],
+  "oracle_value": -3.680398576039818,
+  "proposal_law": "canonical_ledh_pfpf_contract_e",
+  "runtime": {
+    "allocator_current_bytes": null,
+    "allocator_peak_bytes": null,
+    "backend": "tensorflow",
+    "cpu_threads": 4,
+    "device": "CPU",
+    "dtype": "float64",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": true,
+    "kernel_calls": 6,
+    "kernel_wall_seconds": 0.008452688000033959,
+    "memory_policy": {
+      "mode": "cpu_reference_gpu_intentionally_hidden",
+      "physical_devices": []
+    },
+    "reason": "CPU reference; GPU intentionally hidden",
+    "reference_exception": true,
+    "score_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+    "tensorflow_version": "2.20.0-dev0+selfbuilt",
+    "tf32": false,
+    "traces": 1,
+    "value_device": "/job:localhost/replica:0/task:0/device:CPU:0"
+  },
+  "score": [
+    -0.2263841792944491,
+    -0.6898042857420883,
+    -1.21568665471604,
+    -1.1608251012721817,
+    0.22282524277976679,
+    -0.423866895607015
+  ],
+  "value": -3.8036258769410995,
+  "value_target": "finite_particle_log_likelihood"
+}

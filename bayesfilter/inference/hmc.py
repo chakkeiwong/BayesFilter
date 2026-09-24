@@ -2731,6 +2731,21 @@ def _hmc_dual_averaging_kernel(inner_kernel: Any, config: FullChainHMCConfig, st
     return BoundedDualAveraging(**parameters)
 
 
+def _validated_runtime_leapfrog_count(value: Any, config: FullChainHMCConfig, *, dynamic: bool) -> Any:
+    """Validate the host-supplied scalar before calling a compiled chain."""
+    import tensorflow as tf
+
+    tensor = tf.convert_to_tensor(config.num_leapfrog_steps if value is None else value, dtype=tf.int32)
+    if tensor.shape.rank != 0:
+        raise ValueError("num_leapfrog_steps must be a scalar")
+    count = tf.get_static_value(tensor)
+    if count is None or int(count) < 1:
+        raise ValueError("num_leapfrog_steps must be a positive concrete integer")
+    if not dynamic and int(count) != config.num_leapfrog_steps:
+        raise ValueError("num_leapfrog_steps can vary only with dynamic_num_leapfrog_steps=True")
+    return tensor
+
+
 def _fixed_hmc_kernel(
     *,
     target_log_prob_fn: Callable[[Any], Any],
@@ -2788,9 +2803,10 @@ class ReusableFullChainHMCRunner:
     can reuse the compiled graph without changing HMC semantics.
 
     The interface is deliberately narrow: ``num_results``, burn-in length,
-    leapfrog count, trace policy, tuning policy, XLA flag, and target scope are
-    fixed by ``FullChainHMCConfig``.  A different value for any of those fields
-    requires a different runner.
+    trace policy, tuning policy, XLA flag, and target scope are fixed by
+    ``FullChainHMCConfig``. Leapfrog count is fixed unless the explicit
+    ``dynamic_num_leapfrog_steps`` option adds a scalar tensor input. A change
+    to any other contract field requires a different runner.
     """
 
     def __init__(
@@ -2865,21 +2881,8 @@ class ReusableFullChainHMCRunner:
                 "current_state shape must match reusable runner template"
             ),
         )
-        leapfrog_value = (
-            self.config.num_leapfrog_steps
-            if num_leapfrog_steps is None
-            else num_leapfrog_steps
-        )
-        leapfrog_tensor = tf.convert_to_tensor(leapfrog_value, dtype=tf.int32)
-        if leapfrog_tensor.shape.rank != 0:
-            raise ValueError("num_leapfrog_steps must be a scalar")
-        if not self.dynamic_num_leapfrog_steps:
-            static_l = tf.get_static_value(leapfrog_tensor)
-            if static_l is None or int(static_l) != int(self.config.num_leapfrog_steps):
-                raise ValueError(
-                    "num_leapfrog_steps can vary only when the reusable runner was "
-                    "built with dynamic_num_leapfrog_steps=True"
-                )
+        leapfrog_tensor = _validated_runtime_leapfrog_count(
+            num_leapfrog_steps, self.config, dynamic=self.dynamic_num_leapfrog_steps)
 
         sample_chain_start = time.perf_counter()
         recorder = self._failure_recorder
@@ -3145,6 +3148,8 @@ class IndependentChainHMCRunner:
         adapter: Any,
         initial_state_template: Any,
         config: FullChainHMCConfig,
+        *,
+        dynamic_num_leapfrog_steps: bool = False,
     ) -> None:
         import tensorflow as tf
 
@@ -3160,13 +3165,15 @@ class IndependentChainHMCRunner:
             raise ValueError("independent-chain HMC requires a fully static state shape")
         self.adapter = adapter
         self.config = config
+        self.dynamic_num_leapfrog_steps = bool(dynamic_num_leapfrog_steps)
         self._initial_state_template = template
         self._chain_count = int(template.shape[0])
         self._parameter_dim = int(template.shape[1])
         if self._chain_count < 1:
             raise ValueError("independent-chain HMC requires at least one chain")
         self._runners = tuple(
-            ReusableFullChainHMCRunner(adapter, template[index], config)
+            ReusableFullChainHMCRunner(adapter, template[index], config,
+                dynamic_num_leapfrog_steps=self.dynamic_num_leapfrog_steps)
             for index in range(self._chain_count)
         )
         self._call_count = 0
@@ -3186,6 +3193,7 @@ class IndependentChainHMCRunner:
         root_seed: tuple[int, int] | Any | None = None,
         step_size: float | Any | None = None,
         mode: str = "threaded",
+        num_leapfrog_steps: int | Any | None = None,
     ) -> FullChainHMCRunResult:
         """Run every scalar chain and restore TFP's draw-chain-parameter shape."""
 
@@ -3207,6 +3215,8 @@ class IndependentChainHMCRunner:
         step_tensor = tf.convert_to_tensor(step_value, dtype=tf.float64)
         if step_tensor.shape.rank != 0:
             raise ValueError("step_size must be a scalar")
+        leapfrog_tensor = _validated_runtime_leapfrog_count(
+            num_leapfrog_steps, self.config, dynamic=self.dynamic_num_leapfrog_steps)
         chain_seeds = tuple(
             tf.random.experimental.stateless_fold_in(seed_tensor, index)
             for index in range(self._chain_count)
@@ -3214,11 +3224,10 @@ class IndependentChainHMCRunner:
 
         def run_one(index: int) -> tuple[Any, Mapping[str, Any], float]:
             chain_started = time.perf_counter()
-            samples, trace = self._runners[index]._runner(
-                state_tensor[index],
-                chain_seeds[index],
-                step_tensor,
-            )
+            inputs = (state_tensor[index], chain_seeds[index], step_tensor)
+            if self.dynamic_num_leapfrog_steps:
+                inputs = (*inputs, leapfrog_tensor)
+            samples, trace = self._runners[index]._runner(*inputs)
             return samples, trace, time.perf_counter() - chain_started
 
         started = time.perf_counter()
@@ -3257,6 +3266,10 @@ class IndependentChainHMCRunner:
             "per_chain_call_s": tuple(
                 float(output[2]) for output in chain_outputs
             ),
+            **({"dynamic_num_leapfrog_steps": True,
+                "num_leapfrog_steps": int(tf.get_static_value(leapfrog_tensor)),
+                "num_leapfrog_steps_source": "runtime_tensor_argument"}
+               if self.dynamic_num_leapfrog_steps else {}),
             "use_xla": self.config.use_xla,
             "trace_policy": self.config.trace_policy,
             "target_scope": self.config.target_scope,
@@ -3315,10 +3328,13 @@ def build_independent_chain_tfp_hmc_runner(
     adapter: Any,
     initial_state_template: Any,
     config: FullChainHMCConfig,
+    *,
+    dynamic_num_leapfrog_steps: bool = False,
 ) -> IndependentChainHMCRunner:
     """Build the independent scalar-chain serial/threaded HMC topology."""
 
-    return IndependentChainHMCRunner(adapter, initial_state_template, config)
+    return IndependentChainHMCRunner(adapter, initial_state_template, config,
+        dynamic_num_leapfrog_steps=dynamic_num_leapfrog_steps)
 
 
 def build_reusable_full_chain_tfp_hmc_runner(

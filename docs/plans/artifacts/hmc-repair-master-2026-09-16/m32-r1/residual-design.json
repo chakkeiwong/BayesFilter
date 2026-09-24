@@ -1,0 +1,167 @@
+{
+  "design_id": "m32-reuse-funnel_noncentered",
+  "engine": "accuracy",
+  "scenario": {
+    "target": "funnel_noncentered",
+    "route": "fixed_transport",
+    "control": "baseline",
+    "start": "dispersed",
+    "parameters": {
+      "scale": 3.0
+    }
+  },
+  "replications": 1,
+  "draws": 64,
+  "seed": 2026092311,
+  "budget_seconds": 800,
+  "purpose": "full candidate lifecycle and posterior parity",
+  "numerical_provenance": "M32 inherited tiny mechanics counts/broad screen; not calibration",
+  "device": "gpu",
+  "alpha": 0.05,
+  "null_draws": 1999,
+  "rank_draws": 7,
+  "step_size": 0.5,
+  "leapfrog_steps": 5,
+  "member_l": 3,
+  "l_grid": [
+    2,
+    3
+  ],
+  "measurement_draws": 64,
+  "posterior_cap": 128,
+  "mcse_tolerance": 0.1,
+  "accuracy_tolerance": 0.25,
+  "multiplicity": 1,
+  "phase": "development",
+  "options": {
+    "transport_payload": {
+      "component_order": [
+        "scale_v",
+        "residual_funnel"
+      ],
+      "components": [
+        {
+          "component_id": "scale_v",
+          "dim": 3,
+          "kind": "affine",
+          "offset": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            3.0,
+            1.0,
+            1.0
+          ],
+          "component_topology_hash": "40ee89a4d0921f246d93eae942bb40332e60c4e52ac8da7b437964f9e601408f",
+          "component_tensor_hash": "6ddc5eedb2a7a94366d8593fb039a21faf47b82c725fd8f5dd42ccef47e77d09"
+        },
+        {
+          "activation": "tanh",
+          "biases": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "component_id": "residual_funnel",
+          "dim": 3,
+          "dtype": "float64",
+          "hidden_layers": [
+            2
+          ],
+          "kind": "dense_autoregressive_iaf",
+          "masks_policy": "legacy_degree_masks_v1",
+          "s_max": 1.0,
+          "scale_transform": "identity",
+          "weights": [
+            [
+              [
+                0.16666666666666666,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.5,
+                0.5,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "component_topology_hash": "f6d1e388b7fab7c3dd3f9b800f8780c40dd60766292ff345daf9b9a67ed78fd5",
+          "component_tensor_hash": "b982cc49ba8e0d461271cdc774892a394fc9ce79a333b8ec08a971045c7fa591"
+        }
+      ],
+      "construction": {
+        "kind": "residual",
+        "residual_amplitude": 0.5,
+        "residual_width": 6.0,
+        "saturation": 6.0,
+        "scale": 3.0,
+        "strength": null,
+        "training_performed": false
+      },
+      "dimension": 3,
+      "log_jacobian_available": true,
+      "nonclaims": [
+        "analytic validation fixture; no transport training",
+        "no learned-map quality or universal tuning guarantee"
+      ],
+      "schema": "bayesfilter.neutra.dense_iaf_frozen_transport.v1",
+      "target_signature": "7d933def1858286c1d2348070a58ee87c143216b7ab235ff5e32c20e1ffc59cd",
+      "training_state_hash": "sha256:19f0f206ab0912f206820752500d244c26d457836fcd0fa23138228f25f0d58e",
+      "transport_id": "validation-supplied-funnel-residual",
+      "topology_hash": "1084925858752d99a893a022ac44bdda82af0d74adcb2a40e39afdde7e26df16",
+      "tensor_hash": "ca10ecba3ab8d66201eef2e07b5b122e997b47e6bfc0a6fe19ce0db7a2e7579d",
+      "transport_hash": "ecaf435b1b829bc236d1a55e342fab916e653f492a970090878f2be2acc2744c"
+    },
+    "acceptance_policy": {
+      "practical_region": [
+        0.41,
+        0.99
+      ],
+      "repair_region": [
+        0.405,
+        0.995
+      ]
+    },
+    "search": {
+      "pilot_enabled": false,
+      "refinement_rounds": 0,
+      "total_budget_units": 24,
+      "repair_reserve_units": 4,
+      "evidence_rungs": [
+        1
+      ]
+    }
+  }
+}

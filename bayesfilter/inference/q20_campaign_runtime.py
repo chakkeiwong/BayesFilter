@@ -20,6 +20,8 @@ import time
 
 from bayesfilter.inference.q20_production_config import digest
 
+MASTER_PLAN_FILE = "docs/plans/bayesfilter-q20-recovery-and-affordability-repair-plan-2026-09-21.md"
+
 
 def atomic_json(path, payload):
     path = Path(path)
@@ -33,6 +35,10 @@ def source_snapshot(repo):
     paths = sorted((repo / "bayesfilter").rglob("*.py"))
     paths += sorted((repo / "bayesfilter/ops").glob("*.so"))
     paths.append(repo / "docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py")
+    paths.append(repo / "docs/benchmarks/diagnose_q20_hmc_status_reuse_2026_09_16.py")
+    profile = repo / "docs/benchmarks/diagnose_q20_factor_performance_2026_09_19.py"
+    if profile.exists():
+        paths.append(profile)
     return {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
 
 
@@ -155,7 +161,8 @@ class Campaign:
 
     def stage_remaining(self, stage):
         spent = sum(a.get("elapsed_seconds", 0.) for a in self.state["attempts"] if a["stage"] == stage)
-        return max(0., self.config["budget"]["arm_cap_seconds"] - spent)
+        limit = self.state.get("stage_limits", {}).get(stage, self.config["budget"]["arm_cap_seconds"])
+        return max(0., limit - spent)
 
     def execute(self, stage, command, *, cap_seconds, diagnostic, environment=None, request=None, request_hash=None):
         """Launch one owned process tree; charge wall time on every exit path."""
@@ -217,13 +224,17 @@ class Campaign:
         elapsed = time.monotonic()-started
         atomic_json(folder / "supervisor.json", {"elapsed_seconds": elapsed, "status": status, "returncode": code})
         self._settle(attempt, elapsed, status, code)
+        if status == "timed_out" and elapsed >= cap-grace:
+            attempt["failure_classification"] = "allocation_exhausted"
         self.save()
         return attempt
 
     def numerical_stage(self, name, request, *, cap_seconds, diagnostic, gpu=None):
+        # A timing forecast is an execution allowance, not numerical identity.
+        original_hash = digest({k: v for k, v in request.items() if k != "chunk_reserve_seconds"})
         existing = self.state["stages"].get(name)
         if existing is not None:
-            if existing["request_hash"] != digest(request):
+            if existing["request_hash"] != original_hash:
                 raise ValueError("completed stage request changed")
             result_path = Path(existing["result_path"])
             data = result_path.read_bytes()
@@ -239,16 +250,15 @@ class Campaign:
             env["CUDA_VISIBLE_DEVICES"] = "-1"
         elif gpu is None:
             raise ValueError("serious numerical stage requires a trusted GPU selection")
-        else:
+        elif gpu != "auto":
             env["CUDA_VISIBLE_DEVICES"] = str(gpu)
-        original_hash = digest(request)
         previous = [a for a in self.state["attempts"] if a["stage"] == name]
         for item in previous:
             if item.get("request_hash") != original_hash:
                 raise ValueError("interrupted stage request changed")
         resume = {}
-        if previous:
-            data_root = Path(previous[-1]["directory"]) / "worker/data"
+        for item in reversed(previous):
+            data_root = Path(item["directory"]) / "worker/data"
             kind = request["stage"]
             if kind == "train":
                 checkpoints = sorted(data_root.glob("cohort-*.json"))
@@ -256,33 +266,80 @@ class Campaign:
                     resume["resume_checkpoint"] = str(checkpoints[-1])
             elif kind == "tune" and (data_root / "tuning/tuning_checkpoint.json").is_file():
                 resume["resume_checkpoint"] = str(data_root / "tuning/tuning_checkpoint.json")
+            elif kind == "price" and (data_root / "pricing-ledger/identity.json").is_file():
+                resume["pricing_resume"] = str(data_root / "pricing-ledger")
             elif kind in {"reference", "sample", "ensemble", "replica_exchange"} and (data_root / "chunks").is_dir():
                 resume["resume_chunks"] = str(data_root / "chunks")
+            elif kind == "price-preparation" and request.get("allow_deferred"):
+                checkpoints = data_root / "bootstrap-checkpoints"
+                if any(checkpoints.glob("*/chunk-*.json")):
+                    resume["bootstrap_resume"] = str(checkpoints)
+            if resume:
+                break
         worker_config = json.loads(json.dumps(self.config))
         if request.get("role") and worker_config["role"] != "smoke":
             worker_config["role"] = request["role"]
-        request = {**request, **resume, "config": worker_config, "plan_file": "docs/plans/bayesfilter-ssl-lstm-q20-validation-budget-repair-plan-2026-09-16.md"}
-        if request["stage"] == "train":
+        request = {**request, **resume, "config": worker_config, "gpu": gpu or "auto",
+                   "plan_file": request.get("plan_file", MASTER_PLAN_FILE)}
+        if request["stage"] in {"price", "price-selected", "train", "tune", "sample", "ensemble", "reference"}:
             request["cooperative_seconds"] = max(0., cap_seconds - 2*self.config["execution"]["termination_grace_seconds"])
+        if request["stage"] == "price-preparation" and request.get("allow_deferred"):
+            request["max_seconds"] = min(request["max_seconds"], max(1., cap_seconds-100.))
         command = [sys.executable, "docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py",
                    "worker", "--request", "{attempt}/request.json", "--output-dir", "{attempt}/worker"]
+        if request["stage"] == "status-reuse":
+            command = [sys.executable, "docs/benchmarks/diagnose_q20_hmc_status_reuse_2026_09_16.py",
+                       "--request", "{attempt}/request.json", "--output-dir", "{attempt}/worker"]
+        if request["stage"] == "factor-profile":
+            request["max_seconds"] = min(request["max_seconds"], max(1., cap_seconds-60.))
+            command = [sys.executable, "docs/benchmarks/diagnose_q20_factor_performance_2026_09_19.py",
+                       "--request", "{attempt}/request.json", "--output-dir", "{attempt}/worker"]
         attempt = self.execute(name, command, cap_seconds=cap_seconds, diagnostic=diagnostic,
                                environment=env, request=request, request_hash=original_hash)
         attempt["request_hash"] = original_hash
         self.save()
         path = Path(attempt["directory"]) / "worker/worker-result.json"
-        if attempt["status"] != "completed" or not path.exists():
+        diagnostic_result = path.with_name("result.json")
+        if request["stage"] in {"status-reuse", "factor-profile"} and diagnostic_result.exists():
+            result = json.loads(diagnostic_result.read_text())
+            atomic_json(path, {"completed": result["status"] in {"completed", "candidate_rejected"},
+                "status": result["status"], "result": result, "result_path": str(diagnostic_result),
+                "wall_seconds": result["wall_seconds"], "production_qualified": False})
+        if not path.exists():
             self.state["status"] = "stage_"+attempt["status"]+":"+name
             self.save()
-            return {"status": self.state["status"], "completed": False, "attempt": attempt}
+            return {"status": self.state["status"], "completed": False, "attempt": attempt,
+                    "budget_paused": attempt["status"] == "timed_out"}
         data = path.read_bytes()
         result = json.loads(data)
+        if result.get("status") == "waiting_for_gpu":
+            attempt["failure_classification"] = "resource_unavailable"
+            self.state["status"] = "WAITING_FOR_GPU"
+            self.save()
+            return {**result, "completed": False, "attempt": attempt,
+                    "budget_paused": attempt["status"] == "timed_out",
+                    "supervisor_seconds": attempt["elapsed_seconds"]}
+        if attempt["status"] != "completed":
+            self.state["status"] = "stage_"+attempt["status"]+":"+name
+            self.save()
+            return {**result, "completed": False, "attempt": attempt,
+                    "budget_paused": attempt["status"] == "timed_out",
+                    "supervisor_seconds": attempt["elapsed_seconds"]}
         training_result = result.get("result", {})
-        training_complete = (training_result.get("calibration_complete", False) if request.get("calibration_only")
-                             else training_result.get("cohort_complete", False))
-        partial_training = request["stage"] == "train" and not training_complete
-        partial_tuning = request["stage"] in {"tune","reverify"} and result.get("result",{}).get("status") == "paused_infrastructure"
-        if result.get("completed") and not partial_training and not partial_tuning:
+        if request.get("calibration_only"):
+            training_complete = training_result.get("sanity_pilot_complete", False)
+        elif request.get("method"):
+            training_complete = (training_result.get("method_complete", False) and
+                                 training_result.get("method") == request["method"])
+        else:
+            training_complete = training_result.get("cohort_complete", False)
+        partial_training = result.get("completed") and request["stage"] == "train" and not training_complete
+        inner_status = result.get("result", {}).get("status")
+        partial_tuning = result.get("completed") and request["stage"] in {"tune","reverify"} and inner_status in {
+            "paused_infrastructure", "partial_budget", "budget_bound"}
+        budget_paused = inner_status in {"budget_paused", "partial_budget", "budget_bound",
+                                        "partial_initialization_budget", "partial_validation_budget"}
+        if result.get("completed") and not partial_training and not partial_tuning and not budget_paused:
             self.state["stages"][name] = {"request_hash": original_hash,
                 "result_path": str(path), "result_sha256": hashlib.sha256(data).hexdigest(),
                 "supervisor_seconds":attempt["elapsed_seconds"],
@@ -293,4 +350,9 @@ class Campaign:
             result.update(completed=False, status="partial_training_checkpointed")
         if partial_tuning:
             result.update(completed=False, status="partial_tuning_checkpointed")
+        if budget_paused:
+            result.update(completed=False, budget_paused=True)
+            attempt["failure_classification"] = "budget_pause"
+            self.state["status"] = "budget_paused:"+name
+            self.save()
         return {**result, "supervisor_seconds":attempt["elapsed_seconds"]}

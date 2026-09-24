@@ -146,7 +146,7 @@ def _paired_right_environments(
     environments = [tf.convert_to_tensor(suffix_gram, DTYPE)]
     for core in reversed(tuple(core_values)):
         environments.append(
-            tf.einsum("akb,ckd,bd->ac", core, core, environments[-1])
+            tf.einsum("...akb,...ckd,...bd->...ac", core, core, environments[-1])
         )
     return tuple(reversed(environments))
 
@@ -157,7 +157,7 @@ def _conditional_mass(
     right_environment: tf.Tensor,
 ) -> tf.Tensor:
     return tf.einsum(
-        "nac,akb,ckd,bd->n",
+        "...ac,...akb,...ckd,...bd->...",
         left_environment,
         core,
         core,
@@ -175,7 +175,7 @@ def _conditional_cdf(
 ) -> tf.Tensor:
     incomplete = normalized_hermite_incomplete_gram(points, degree)
     numerator = tf.einsum(
-        "nac,akb,cld,nkl,bd->n",
+        "...ac,...akb,...cld,...kl,...bd->...",
         left_environment,
         core,
         core,
@@ -193,7 +193,7 @@ def _update_left_environment(
 ) -> tf.Tensor:
     basis = _normalized_hermite_values(points, degree)
     return tf.einsum(
-        "nac,akb,cld,nk,nl->nbd",
+        "...ac,...akb,...cld,...k,...l->...bd",
         left_environment,
         core,
         core,
@@ -226,6 +226,120 @@ def _log_product_student_t(points: tf.Tensor, nu: float) -> tf.Tensor:
         * tf.math.log1p(tf.square(points) / nu_tensor),
         axis=1,
     )
+
+
+def inverse_hermite_polynomial_kr(
+    core_values: Sequence[tf.Tensor], suffix_gram: tf.Tensor, uniforms: tf.Tensor,
+    *, bisection_iterations: int = DEFAULT_BISECTION_ITERATIONS, reverse: bool = False,
+) -> Mapping[str, tf.Tensor]:
+    """Exact incomplete-Gram KR, including upper sampling with a fixed suffix.
+
+    ``reverse=True`` generates the rightmost current axis first. Its initial
+    paired environment is the evaluated conditioning-suffix outer product,
+    which may differ for each particle. Both directions use the same CDF and
+    inverse kernel. Invalid masses/brackets are reported, never silently clipped.
+    """
+    degree = int(core_values[0].shape[-2]) - 1
+    suffix_gram = tf.convert_to_tensor(suffix_gram, DTYPE)
+    work_cores = (tuple(tf.einsum("...akb->...bka", c) for c in reversed(core_values))
+                  if reverse else tuple(core_values))
+    integration_boundary = tf.ones([1, 1], DTYPE) if reverse else suffix_gram
+    if reverse:
+        uniforms = tf.reverse(uniforms, axis=[1])
+    uniforms = tf.convert_to_tensor(uniforms, DTYPE)
+    particle_count = tf.shape(uniforms)[0]
+    right_environments = _paired_right_environments(
+        work_cores, integration_boundary
+    )
+    left = (tf.broadcast_to(suffix_gram, [particle_count, tf.shape(suffix_gram)[-2], tf.shape(suffix_gram)[-1]])
+            if reverse else tf.ones([particle_count, 1, 1], DTYPE))
+    generated = []
+    residuals = []
+    conditional_masses = []
+    endpoint_margins = []
+    bracket_flags = []
+
+    for axis, core in enumerate(work_cores):
+        right = right_environments[axis + 1]
+        denominator = _conditional_mass(left, core, right)
+        conditional_masses.append(tf.reduce_min(denominator))
+        target = uniforms[:, axis]
+        inner_lower = tf.fill([particle_count], tf.constant(-DEFAULT_INNER_BRACKET, DTYPE))
+        inner_upper = tf.fill([particle_count], tf.constant(DEFAULT_INNER_BRACKET, DTYPE))
+        lower_cdf_inner = _conditional_cdf(
+            left, core, right, inner_lower, degree, denominator
+        )
+        upper_cdf_inner = _conditional_cdf(
+            left, core, right, inner_upper, degree, denominator
+        )
+        lower = tf.where(
+            target >= lower_cdf_inner,
+            inner_lower,
+            tf.fill([particle_count], tf.constant(-DEFAULT_OUTER_BRACKET, DTYPE)),
+        )
+        upper = tf.where(
+            target <= upper_cdf_inner,
+            inner_upper,
+            tf.fill([particle_count], tf.constant(DEFAULT_OUTER_BRACKET, DTYPE)),
+        )
+        lower_cdf = _conditional_cdf(
+            left, core, right, lower, degree, denominator
+        )
+        upper_cdf = _conditional_cdf(
+            left, core, right, upper, degree, denominator
+        )
+        bracket_valid = (
+            (denominator > 0.0)
+            & tf.math.is_finite(denominator)
+            & tf.math.is_finite(lower_cdf)
+            & tf.math.is_finite(upper_cdf)
+            & (lower_cdf <= target)
+            & (target <= upper_cdf)
+        )
+        bracket_flags.append(tf.reduce_all(bracket_valid))
+        endpoint_margins.append(
+            tf.reduce_min(tf.minimum(target - lower_cdf, upper_cdf - target))
+        )
+
+        def condition(iteration, _lower, _upper):
+            return iteration < int(bisection_iterations)
+
+        def body(iteration, current_lower, current_upper):
+            midpoint = 0.5 * (current_lower + current_upper)
+            midpoint_cdf = _conditional_cdf(
+                left, core, right, midpoint, degree, denominator
+            )
+            move_lower = midpoint_cdf < target
+            return (
+                iteration + 1,
+                tf.where(move_lower, midpoint, current_lower),
+                tf.where(move_lower, current_upper, midpoint),
+            )
+
+        _, lower_final, upper_final = tf.while_loop(
+            condition,
+            body,
+            (tf.constant(0, tf.int32), lower, upper),
+            parallel_iterations=1,
+        )
+        root = 0.5 * (lower_final + upper_final)
+        root_cdf = _conditional_cdf(
+            left, core, right, root, degree, denominator
+        )
+        residuals.append(tf.reduce_max(tf.abs(root_cdf - target)))
+        generated.append(root)
+        left = _update_left_environment(left, core, root, degree)
+
+    reference_points = tf.stack(generated[::-1] if reverse else generated, axis=1)
+    return {
+        "reference_points": reference_points,
+        "maximum_inverse_cdf_residual": tf.reduce_max(tf.stack(residuals)),
+        "minimum_conditional_mass": tf.reduce_min(tf.stack(conditional_masses)),
+        "minimum_endpoint_margin": tf.reduce_min(tf.stack(endpoint_margins)),
+        "cdf_bracket_valid": tf.reduce_all(tf.stack(bracket_flags)),
+        "finite": tf.reduce_all(tf.math.is_finite(reference_points))
+        & tf.reduce_all(tf.math.is_finite(tf.stack(residuals))),
+    }
 
 
 @dataclass(frozen=True)
@@ -303,8 +417,9 @@ class GaussianHermiteRetainedProposal:
             raise ValueError("coordinate_matrix diagonal must be positive")
         if self.defensive_nu is not None and float(self.defensive_nu) <= 0.0:
             raise ValueError("defensive_nu must be positive when supplied")
-        if int(self.time_index) < 1:
-            raise ValueError("retained transition proposals require time_index >= 1")
+        # The observation-guided consumer also retains the initial (t=0) fit.
+        if int(self.time_index) < 0:
+            raise ValueError("retained proposals require time_index >= 0")
         if len(str(self.source_snapshot_fingerprint)) != 64:
             raise ValueError("source_snapshot_fingerprint must be a SHA-256 digest")
 
@@ -489,99 +604,10 @@ class GaussianHermiteRetainedProposal:
     def _inverse_polynomial_component(
         self, uniforms: tf.Tensor, *, bisection_iterations: int
     ) -> Mapping[str, tf.Tensor]:
-        uniforms = tf.convert_to_tensor(uniforms, DTYPE)
-        particle_count = tf.shape(uniforms)[0]
-        right_environments = _paired_right_environments(
-            self.prefix_core_values, self.suffix_gram
+        return inverse_hermite_polynomial_kr(
+            self.prefix_core_values, self.suffix_gram, uniforms,
+            bisection_iterations=bisection_iterations,
         )
-        left = tf.ones([particle_count, 1, 1], DTYPE)
-        generated = []
-        residuals = []
-        conditional_masses = []
-        endpoint_margins = []
-        bracket_flags = []
-
-        for axis, core in enumerate(self.prefix_core_values):
-            right = right_environments[axis + 1]
-            denominator = _conditional_mass(left, core, right)
-            conditional_masses.append(tf.reduce_min(denominator))
-            target = uniforms[:, axis]
-            inner_lower = tf.fill([particle_count], tf.constant(-DEFAULT_INNER_BRACKET, DTYPE))
-            inner_upper = tf.fill([particle_count], tf.constant(DEFAULT_INNER_BRACKET, DTYPE))
-            lower_cdf_inner = _conditional_cdf(
-                left, core, right, inner_lower, self.degree, denominator
-            )
-            upper_cdf_inner = _conditional_cdf(
-                left, core, right, inner_upper, self.degree, denominator
-            )
-            lower = tf.where(
-                target >= lower_cdf_inner,
-                inner_lower,
-                tf.fill([particle_count], tf.constant(-DEFAULT_OUTER_BRACKET, DTYPE)),
-            )
-            upper = tf.where(
-                target <= upper_cdf_inner,
-                inner_upper,
-                tf.fill([particle_count], tf.constant(DEFAULT_OUTER_BRACKET, DTYPE)),
-            )
-            lower_cdf = _conditional_cdf(
-                left, core, right, lower, self.degree, denominator
-            )
-            upper_cdf = _conditional_cdf(
-                left, core, right, upper, self.degree, denominator
-            )
-            bracket_valid = (
-                (denominator > 0.0)
-                & tf.math.is_finite(denominator)
-                & tf.math.is_finite(lower_cdf)
-                & tf.math.is_finite(upper_cdf)
-                & (lower_cdf <= target)
-                & (target <= upper_cdf)
-            )
-            bracket_flags.append(tf.reduce_all(bracket_valid))
-            endpoint_margins.append(
-                tf.reduce_min(tf.minimum(target - lower_cdf, upper_cdf - target))
-            )
-
-            def condition(iteration, _lower, _upper):
-                return iteration < int(bisection_iterations)
-
-            def body(iteration, current_lower, current_upper):
-                midpoint = 0.5 * (current_lower + current_upper)
-                midpoint_cdf = _conditional_cdf(
-                    left, core, right, midpoint, self.degree, denominator
-                )
-                move_lower = midpoint_cdf < target
-                return (
-                    iteration + 1,
-                    tf.where(move_lower, midpoint, current_lower),
-                    tf.where(move_lower, current_upper, midpoint),
-                )
-
-            _, lower_final, upper_final = tf.while_loop(
-                condition,
-                body,
-                (tf.constant(0, tf.int32), lower, upper),
-                parallel_iterations=1,
-            )
-            root = 0.5 * (lower_final + upper_final)
-            root_cdf = _conditional_cdf(
-                left, core, right, root, self.degree, denominator
-            )
-            residuals.append(tf.reduce_max(tf.abs(root_cdf - target)))
-            generated.append(root)
-            left = _update_left_environment(left, core, root, self.degree)
-
-        reference_points = tf.stack(generated, axis=1)
-        return {
-            "reference_points": reference_points,
-            "maximum_inverse_cdf_residual": tf.reduce_max(tf.stack(residuals)),
-            "minimum_conditional_mass": tf.reduce_min(tf.stack(conditional_masses)),
-            "minimum_endpoint_margin": tf.reduce_min(tf.stack(endpoint_margins)),
-            "cdf_bracket_valid": tf.reduce_all(tf.stack(bracket_flags)),
-            "finite": tf.reduce_all(tf.math.is_finite(reference_points))
-            & tf.reduce_all(tf.math.is_finite(tf.stack(residuals))),
-        }
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {

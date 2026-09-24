@@ -148,10 +148,39 @@ The manuscript and MathDevMCP audit identities are recorded in the plan's
 documentation-audit section. No later conditional stage is promoted by this
 execution result.
 
-Final manuscript artifacts: the 27-page PDF is
+## Documentation Clarification (2026-09-01)
+
+The manuscript subsequently gained ``The Actual Program: A Time-Step Trace``.
+This revision explains the existing C2 call chain in executable order.  It
+also records the important implementation fact that the attempt05 runtime
+uses serialized GH9 moment hints; despite the driver name, no UKF routine is
+called during the TT fit.  The retained TT quadratic form, ALS fit, and
+external hint recursion are distinguished explicitly from a proposed
+UKF-recursive feedback variant.
+
+The focused MathDevMCP audit for the new equations selected 30 labels and
+found no algebraic counterexample, with partial coverage and remaining
+formalization/dimension-prose diagnostics.  A whole-document rerun was
+blocked by the local exposition assembler's ``KeyError: evidence_refs`` on a
+determinant issue; this is a tool failure, not a mathematical verdict.  The
+focused report is
+`docs/plans/bayesfilter-c2-actual-program-mathdevmcp-audit-20260901.md`.
+This was a documentation-only change; no numerical stage was rerun.
+
+The protected 2026-08-31 baseline manuscript artifacts were the 27-page PDF
+and source hashes below.  They remain historical baseline evidence.  The
+current 2026-09-01 explanatory revision is a 34-page PDF at the same path;
+its current hashes are:
+
+```text
+current PDF  0990b56643e693abf16718279d3f3b8f4af43ed60ad3ffff4d0a9ae785082cfd
+current TeX  808883a1112ed4ac5ea89840fc3580c7f2f9c3d6d234756139339f6da838d0dc
+```
+
+Baseline PDF:
 `docs/benchmarks/artifacts/c2_completion_20260824/attempt05/attempt05_n4_failure_analysis.pdf`
 (SHA-256 `81e36d1acdbc32600f0d621f002e7a08113f8bf76241d667bcf8fff4c759c799`),
-and the audited TeX source digest is
+and baseline audited TeX source digest
 `11d8622befa67e4d00d51b0f425442e09969a6ada143f2b977dc67a1d21ada34`.
 The final proof-presentation repair handles the $r=1$ Hermite case explicitly;
 it does not alter the mathematical target or the execution contract.

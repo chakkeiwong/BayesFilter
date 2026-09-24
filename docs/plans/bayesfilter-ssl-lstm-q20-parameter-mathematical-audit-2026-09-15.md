@@ -423,6 +423,196 @@ volume-preserving integrator with the declared target. Acceptance screens test
 proposal mechanics. There is no target-specific derivation here of optimal
 acceptance .70 or its bands, and no claim that acceptance proves stationarity.
 
+#### September 22: acceptance-based initial step estimates
+
+An acceptance target supports an approximate step calculation when the energy
+error scale is known. It does not determine epsilon by itself. The derivation
+below is conditional mathematics, not a new q20 calibration or a configuration
+change. It uses stationary starts, a smooth target, small-step leapfrog behavior
+and a fixed integration duration. These assumptions have not been established
+for the current four-chain, prior-started q20 tuning observations.
+
+Let `D=H(proposal)-H(start)`. Under the stationary joint position/momentum
+distribution and a volume-preserving bijection, change of variables gives
+`E[exp(-D)]=1`. If `D` is approximately Gaussian with variance `v`, this identity
+motivates mean `v/2`. Integrating the Metropolis probability then gives
+
+\[
+ \bar a \simeq P(D\leq0)+E[e^{-D}1_{D>0}]
+ =2\Phi(-\sqrt v/2).
+\]
+
+Here Phi is the standard-normal CDF. For leapfrog over fixed duration, the
+leading energy error is second order, so its variance has the local expansion
+`v(epsilon) approximately C*epsilon^4` when that leading term is nonzero.
+Consequently an acceptance-based proposal is
+
+\[
+ \epsilon_0\simeq
+ \left\{\frac{4[\Phi^{-1}(1-a_*/2)]^2}{C}\right\}^{1/4}.
+\]
+
+At `a_*=0.70`, the numerator is approximately `0.5938874473`, calculated with
+Python standard-library `statistics.NormalDist.inv_cdf`. C depends on the
+target, mass and trajectory duration; a justified energy-error pilot could
+estimate it as `Var(D)/epsilon_pilot^4`. Neither the constant nor the Gaussian
+energy-error approximation is established by naming the transport NeuTra.
+
+For the ideal independent standard-normal target, one leapfrog trajectory
+preserves `p^2+(1-epsilon^2/4)*z^2` in each coordinate. Thus
+`D=(epsilon^2/8)*(z_end^2-z_start^2)`. Substituting the leading exact trajectory
+`z_end=z_start*cos(tau)+p_start*sin(tau)`, with independent unit Gaussian
+position and momentum, gives per-coordinate leading variance
+`epsilon^4*sin(tau)^2/16`. Hence `C=d*sin(tau)^2/16`, explaining the familiar
+`d^(-1/4)` step scaling away from return phases. This is an asymptotic scale
+argument; the normal approximation can be poor at d=4. At fixed L, changing
+epsilon also changes `tau=L*epsilon`, so C is not generally fixed. Near a return
+phase the leading term vanishes. Neither the power-law rescaling nor monotone
+acceptance may be assumed for the saved q20 per-L search.
+
+#### Explicit L dependence for an ideal Gaussian pullback
+
+Substituting `tau=L*epsilon` into the leading Gaussian energy-error calculation
+above makes the dependence explicit:
+
+\[
+ a(\epsilon,L)\simeq
+ 2\Phi\!\left(-\frac{\sqrt d\,\epsilon^2
+                  |\sin(L\epsilon)|}{8}\right).
+\]
+
+For a desired acceptance `a_*`, this gives an implicit equation
+`epsilon^2*abs(sin(L*epsilon)) = 8*Phi^(-1)(1-a_*/2)/sqrt(d)`.
+Only in the additional short-trajectory limit `L*epsilon << 1` may sine be
+replaced by its argument, yielding the explicit initial-scale approximation
+
+\[
+ \epsilon_0(L)\simeq
+ \left\{\frac{8\Phi^{-1}(1-a_*/2)}{L\sqrt d}\right\}^{1/3}.
+\]
+
+Thus the familiar `L^(-1/3)` dependence is a short-trajectory approximation,
+not a law valid at arbitrary L. For d=4 and `a_*=0.7`, the numerator after
+division by `sqrt(d)` is 1.5412818656. At L=3,5,9,13,18,25 this cubic formula
+proposes approximately .8009,.6755,.5553,.4913,.4408,.3950, with `L*epsilon`
+approximately 2.40,3.38,5.00,6.39,7.93,9.88. Every one violates the presumed
+short-trajectory limit; these numbers are algebraic illustrations, not usable
+q20 initial settings. The energy-normal approximation itself is not reliable
+by default at dimension four.
+
+An exact stationary ideal-Gaussian calculation avoids that latter approximation.
+For `0<epsilon<2`, let `r=sqrt(1-epsilon^2/4)`,
+`theta=2*asin(epsilon/2)` and `psi=L*theta`. L leapfrog steps in each coordinate
+have matrix
+
+\[
+ A_L=\begin{pmatrix}
+ \cos\psi & \sin\psi/r\\
+ -r\sin\psi & \cos\psi
+ \end{pmatrix}.
+\]
+
+Its determinant is one and `trace(A_L^T*A_L)=2+b`, where
+`b=epsilon^4*sin(psi)^2/(16*r^2)`. The eigenvalues of `A_L^T*A_L` are
+`rho` and `1/rho`, with `rho=1+b/2+sqrt(b*(b+4))/2`. At stationary independent
+standard-normal positions and momenta, rotational invariance gives
+`D=((rho-1)*X+(1/rho-1)*Y)/2`, with independent `X,Y ~ chi_squared(d)`.
+For the reversible proposal, expected acceptance is `2*P(D<0)` (with the
+zero-error case handled by continuity), hence
+
+\[
+ a(\epsilon,L)=2I_{1/(1+\rho)}(d/2,d/2),
+\]
+
+where I is the regularized incomplete beta function: `D<0` is equivalent to
+`X/(X+Y)<1/(1+rho)`. For d=4, write `x=1/(1+rho)`; then
+`a=6*x^2-4*x^3`. Target acceptance .7 gives `x=0.3986103026924348`,
+`rho=1.5087158892919876`, and `b=0.17153120601095018`. The exact d=4
+ideal-Gaussian equation for epsilon at any declared L is therefore
+
+\[
+ \frac{\epsilon^2|\sin(2L\arcsin(\epsilon/2))|}
+      {\sqrt{1-\epsilon^2/4}}
+ =4\sqrt{0.17153120601095018}.
+\]
+
+For the current L grid, numerical inversion gives the following **smallest
+positive root** in `0<epsilon<2` for each L. Selecting the smallest root is an
+explicit initialization convention; it does not establish an optimal kernel.
+
+| L | Smallest epsilon root | Exact ideal-Gaussian expected acceptance |
+| --- | --- | --- |
+| 3 | 1.2595670000640444 | 0.70 |
+| 5 | 1.3053652851902746 | 0.70 |
+| 9 | 1.3474553766269795 | 0.70 |
+| 13 | 1.2069251634800130 | 0.70 |
+| 18 | 1.1997862812031914 | 0.70 |
+| 25 | 1.2113847601121580 | 0.70 |
+
+The deterministic [solver](artifacts/q20-gaussian-initial-epsilon-2026-09-22/solve.py)
+and [result](artifacts/q20-gaussian-initial-epsilon-2026-09-22/result.json)
+preserve the exact computation. Root isolation uses
+`g(epsilon)=epsilon^3*abs(U_(L-1)(1-epsilon^2/2))`, the same equation written
+with a Chebyshev polynomial. Its positive zeros are
+`r_k=2*sin(k*pi/(2*L))`, for `k=1,...,L-1`. Between zeros,
+`d(log g)/d(epsilon)=3/epsilon+sum_k(1/(epsilon-r_k)+1/(epsilon+r_k))`
+is strictly decreasing. Each interior lobe therefore has one maximum, allowing
+earlier lobes to be excluded before bisecting the rising branch of the first
+lobe reaching the required value. The final lobe is increasing throughout.
+This avoids a global monotonicity assumption or an unresolved sampling grid.
+
+Direct multiplication of the one-step leapfrog matrix independently checked
+expected acceptance at each root. Maximum absolute acceptance discrepancy from
+0.7 was `9.99e-16`; maximum equation residual was `6.44e-15`. The script records
+an arithmetic tolerance of `1e-12`, its source checksum, environment, command
+and elapsed time. No target evaluations or sampling occurred, and no q20
+runtime setting was changed. These values are conditional Gaussian reference
+seeds; the current map and prior-started chain bank have not been shown to meet
+their assumptions.
+
+The September 22 [actual-map canary](bayesfilter-q20-gaussian-epsilon-canary-result-2026-09-22.md)
+subsequently rejected every Gaussian-root pair in both the original-start and
+fresh map-proposal banks: 0 of 192 proposals accepted, numerical health failures
+at every pair. The .0620027091/L3 controls accepted 29 of 32 and passed health
+checks. The table above remains an analytic ideal-Gaussian reference; none of
+its roots is qualified for the current q20 frozen map.
+
+This equation can have multiple roots as L changes the trajectory phase; a
+root is not an efficiency or exploration certificate. It assumes an exact
+Gaussian target and stationary starts, neither of which is established for the
+q20 map and prior-started bank. It is eligible as a conditional analytic
+reference, not a replacement for measurement and fresh verification.
+
+Standard-library deterministic checks compared the matrix formula with direct
+leapfrog iteration and the energy identity at epsilon .075,.5,1.2,1.8 and
+L=3,5,9,25. Maximum absolute discrepancy was `2.89e-15`; these points are
+arithmetic check cases, not numerical defaults. The beta-polynomial inverse
+above was evaluated by bisection. No stochastic run or q20 target call was
+made. Across the actual L grid, the exact ideal-Gaussian stationary acceptance
+at the previously tested epsilons .0620027091 and .0759375 would be between
+approximately .99894 and .99987. The actual nonstationary q20 observations
+cannot be identified with this ideal reference or used to diagnose one unique
+failure cause from their difference.
+
+There is also an existing geometry proposal in
+`bayesfilter/inference/hmc_geometry.py::_initial_step_size`:
+
+\[
+ \epsilon_{\rm geom}
+ =\min\{c\,d^{-1/4}/\omega_{\rm rms},\;2s/\omega_{\max}\}.
+\]
+
+The inspected code has inherited coefficients `c=0.5` and `s=0.8`. Under ideal
+unit frequencies and d=4 it proposes `0.3535533906`; c is not derived from an
+acceptance target of 0.70. This formula exists in the ordinary geometry
+initializer, but the executed q20 fixed-transport route does not call it. Its
+unit-frequency example is not a recommended replacement for the current map's
+measured proposals. A current-map analogue must use geometry in the fixed
+latent coordinates and preserve identity mass. Step adaptation or the current
+public candidate search must measure actual acceptance, freeze the proposed
+pair and independently verify it. The existing shared candidate-set guide does
+not require adding ordinary mass adaptation or switching to a legacy tuner.
+
 ### M7. Posterior accuracy and independent reference error
 
 For a stationary quantity g with variance sigma_g^2 and integrated

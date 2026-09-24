@@ -112,7 +112,8 @@ def test_startup_bootstrap_exhaustion_cannot_fall_through_to_adaptation(monkeypa
     from bayesfilter.inference import hmc_bootstrap, hmc_mass_adaptation
     from bayesfilter.inference.hmc_preparation import prepare_operational_windowed_mass_handoff
     monkeypatch.setattr(hmc_bootstrap, "run_hmc_bootstrap_screen", lambda **kwargs:
-        SimpleNamespace(passed=False, artifact_hash="failed", final_status="repair_budget_exhausted", rounds=()))
+        SimpleNamespace(passed=False, artifact_hash="failed", final_status="repair_budget_exhausted", rounds=(),
+                        payload=lambda: {"passed": False, "final_status": "repair_budget_exhausted"}))
     monkeypatch.setattr(hmc_mass_adaptation, "run_hmc_windowed_mass_stage", lambda **kwargs:
         pytest.fail("exhausted startup must not run adaptation"))
     with pytest.raises(HMCPreparationFailure, match="startup floor"):

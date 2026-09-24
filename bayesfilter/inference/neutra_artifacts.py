@@ -2,6 +2,12 @@
 
 This module loads small, reviewed frozen transport manifests only.  It does not
 train NeuTra, import model-specific code, or establish sampler validity.
+
+Owner directive 2026-09-25: old affine/dense schemas preserve HISTORICAL —
+UNFAITHFUL TO THE AUTHOR'S CODE implementations. Successful loading is not
+canonical admission. Configured artifacts must match the canonical IAF profile
+in docs/reference/neutra-implementation.md to receive that architecture label;
+NAF and other configurations retain their separately identified status.
 """
 
 from __future__ import annotations
@@ -15,6 +21,8 @@ from dataclasses import dataclass
 from typing import Any
 
 import tensorflow as tf
+
+from bayesfilter.inference import neutra_transport_core as _transport_core
 
 
 NEUTRA_ARTIFACT_NONCLAIMS = (
@@ -124,13 +132,13 @@ class FrozenAffineDiagonalTransport:
 
     def forward(self, z: Any) -> tf.Tensor:
         values = tf.convert_to_tensor(z, dtype=tf.float64)
-        return self.shift + self.scale * values
+        return _transport_core.affine_forward(values, self.shift, self.scale, logdet=tf.reduce_sum(self.raw_scale))[0]
 
     def forward_batch(self, z_batch: Any) -> tf.Tensor:
         values = tf.convert_to_tensor(z_batch, dtype=tf.float64)
         if values.shape.rank != 2:
             raise ValueError("frozen transport batch input must have rank 2")
-        return self.shift + self.scale * values
+        return _transport_core.affine_forward(values, self.shift, self.scale, logdet=tf.reduce_sum(self.raw_scale))[0]
 
     def log_abs_det_jacobian(self, z: Any) -> tf.Tensor:
         values = tf.convert_to_tensor(z, dtype=tf.float64)
@@ -246,25 +254,10 @@ class FrozenDenseIAFTransport:
         z_batch: Any,
         theta_score_batch: Any,
     ) -> tf.Tensor:
-        values = _ensure_rank2(
-            tf.convert_to_tensor(z_batch, dtype=tf.float64),
-            "dense IAF pullback batch input",
-        )
-        score = _ensure_rank2(
-            tf.convert_to_tensor(theta_score_batch, dtype=values.dtype),
-            "dense IAF pullback batch score",
-        )
+        values = _ensure_rank2(tf.convert_to_tensor(z_batch, tf.float64), "dense IAF pullback batch input")
+        score = _ensure_rank2(tf.convert_to_tensor(theta_score_batch, tf.float64), "dense IAF pullback batch score")
         _require_same_shape(values, score, "dense IAF pullback score")
-        component_inputs = []
-        output = values
-        for component in self.components:
-            component_inputs.append(output)
-            output, _ = component.forward_and_logdet(output)
-        for component, component_input in reversed(
-            tuple(zip(self.components, component_inputs))
-        ):
-            score = component.pullback_score(component_input, score)
-        return score
+        return _transport_core.compose_pullback(self.components, values, score)
 
     def log_abs_det_jacobian_score(self, z: Any) -> tf.Tensor:
         values = tf.convert_to_tensor(z, dtype=tf.float64)
@@ -273,33 +266,16 @@ class FrozenDenseIAFTransport:
         )[0]
 
     def log_abs_det_jacobian_score_batch(self, z_batch: Any) -> tf.Tensor:
-        values = _ensure_rank2(
-            tf.convert_to_tensor(z_batch, dtype=tf.float64),
-            "dense IAF logdet score batch input",
-        )
-        component_inputs = []
-        output = values
-        for component in self.components:
-            component_inputs.append(output)
-            output, _ = component.forward_and_logdet(output)
-        score = tf.zeros_like(output)
-        for component, component_input in reversed(
-            tuple(zip(self.components, component_inputs))
-        ):
-            score = component.pullback_score(component_input, score)
-            score = score + component.logdet_score(component_input)
-        return score
+        values = _ensure_rank2(tf.convert_to_tensor(z_batch, tf.float64), "dense IAF logdet score batch input")
+        return _transport_core.compose_pullback(self.components, values)
 
     def _forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        output = values
-        logdet = tf.zeros(tf.shape(values)[:-1], dtype=values.dtype)
-        for component in self.components:
-            output, component_logdet = component.forward_and_logdet(output)
-            logdet = logdet + component_logdet
-        return output, logdet
+        return _transport_core.compose_forward(self.components, values)
 
 
 class _DenseAutoregressiveIAFComponent:
+    autoregressive = True
+
     def __init__(
         self,
         *,
@@ -349,117 +325,33 @@ class _DenseAutoregressiveIAFComponent:
         self.masks = _dense_iaf_masks(dim, hidden_layers)
 
     def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        scale_log, shift, _, _ = self._network(values)
-        output = values * tf.exp(scale_log) + shift
-        return output, tf.reduce_sum(scale_log, axis=-1)
+        return _transport_core.iaf_forward(self, values)
 
     def inverse(self, output: tf.Tensor) -> tf.Tensor:
-        """Solve x_i=(y_i-shift_i(x_<i))*exp(-scale_i(x_<i)).
-
-        Strict autoregressive masks make earlier coordinates sufficient for
-        each solve. A TensorFlow while loop keeps the graph size independent
-        of dimension; Python unrolling duplicated the complete network D times.
-        The original row-batched network and solve arithmetic are unchanged.
-        """
-        def solve(index, values):
-            scale_log, shift, _, _ = self._network(values)
-            solved = (output[..., index]-shift[..., index])*tf.exp(-scale_log[..., index])
-            delta = solved-values[..., index]
-            values = values+delta[..., tf.newaxis]*tf.one_hot(index, self.dim, dtype=values.dtype)
-            return index+1, values
-
-        _, values = tf.while_loop(lambda index, values: index < self.dim,
-            solve, (tf.constant(0), tf.zeros_like(output)), parallel_iterations=1,
-            maximum_iterations=self.dim)
-        return values
+        return _transport_core.iaf_inverse(self, output)
 
     def pullback_score(
         self,
         values: tf.Tensor,
         output_score: tf.Tensor,
     ) -> tf.Tensor:
-        scale_log, _, scale_derivative, cache = self._network(values)
-        direct = output_score * tf.exp(scale_log)
-        scale_cotangent = output_score * values * tf.exp(scale_log)
-        raw_cotangent = tf.concat(
-            (scale_cotangent * scale_derivative, output_score),
-            axis=-1,
-        )
-        pullback = direct + self._network_pullback(raw_cotangent, cache)
-        if self.anchor_shift_weight is not None:
-            anchor_weight = tf.linalg.band_part(
-                self.anchor_shift_weight, -1, 0
-            ) - tf.linalg.diag(tf.linalg.diag_part(self.anchor_shift_weight))
-            pullback = pullback + tf.matmul(output_score, anchor_weight)
-        return pullback
+        return _transport_core.iaf_pullback(self, values, output_score)
 
     def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
-        _, _, scale_derivative, cache = self._network(values)
-        raw_cotangent = tf.concat(
-            (scale_derivative, tf.zeros_like(scale_derivative)),
-            axis=-1,
-        )
-        return self._network_pullback(raw_cotangent, cache)
+        return _transport_core.iaf_logdet_score(self, values)
 
     def _network(
         self,
         values: tf.Tensor,
     ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tuple[tf.Tensor, ...]]:
-        h = values
-        preactivations = []
-        for weight, bias, mask in zip(
-            self.weights[:-1],
-            self.biases[:-1],
-            self.masks[:-1],
-        ):
-            preactivation = tf.matmul(h, weight * mask) + bias
-            preactivations.append(preactivation)
-            h = _apply_activation(preactivation, self.activation)
-        raw = tf.matmul(h, self.weights[-1] * self.masks[-1]) + self.biases[-1]
-        scale_logits = raw[..., : self.dim]
-        shift = raw[..., self.dim :]
-        if self.anchor_shift_weight is not None:
-            anchor_weight = tf.linalg.band_part(
-                self.anchor_shift_weight, -1, 0
-            ) - tf.linalg.diag(tf.linalg.diag_part(self.anchor_shift_weight))
-            scale_logits = scale_logits + self.anchor_scale_raw
-            shift = shift + tf.matmul(values, anchor_weight, transpose_b=True)
-            shift = shift + self.anchor_shift_bias
-        if self.scale_transform == "identity":
-            scale_log = scale_logits
-            scale_derivative = tf.ones_like(scale_logits)
-        elif self.scale_transform == "dsge_bounded_tanh":
-            scale_tanh = tf.math.tanh(scale_logits)
-            scale_log = self.s_max * scale_tanh
-            scale_derivative = 1.0 - tf.square(scale_tanh)
-        else:
-            scaled_logits = scale_logits / self.s_max
-            scale_tanh = tf.math.tanh(scaled_logits)
-            scale_log = self.s_max * scale_tanh
-            scale_derivative = 1.0 - tf.square(scale_tanh)
-        return scale_log, shift, scale_derivative, tuple(preactivations)
+        return _transport_core.iaf_network_cache(self, values)
 
     def _network_pullback(
         self,
         raw_cotangent: tf.Tensor,
         preactivations: tuple[tf.Tensor, ...],
     ) -> tf.Tensor:
-        cotangent = tf.matmul(
-            raw_cotangent,
-            self.weights[-1] * self.masks[-1],
-            transpose_b=True,
-        )
-        for layer_index in reversed(range(len(preactivations))):
-            cotangent = cotangent * _activation_derivative(
-                preactivations[layer_index],
-                self.activation,
-            )
-            cotangent = tf.matmul(
-                cotangent,
-                self.weights[layer_index] * self.masks[layer_index],
-                transpose_b=True,
-            )
-        return cotangent
+        return _transport_core.iaf_network_pullback(self, raw_cotangent, preactivations)
 
 
 class _MixingLinearComponent:
@@ -471,22 +363,17 @@ class _MixingLinearComponent:
         self.log_abs_det = tf.convert_to_tensor(log_abs_det, dtype=tf.float64)
 
     def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        output = tf.matmul(values, self.matrix)
-        logdet = tf.zeros(tf.shape(values)[:-1], dtype=values.dtype) + self.log_abs_det
-        return output, logdet
+        return _transport_core.affine_forward(values, 0., None, matrix=self.matrix, transpose=False, logdet=self.log_abs_det)
 
     def inverse(self, output: tf.Tensor) -> tf.Tensor:
-        return tf.transpose(
-            tf.linalg.solve(tf.transpose(self.matrix), tf.transpose(output))
-        )
+        return _transport_core.affine_inverse(output, 0., None, matrix=self.matrix, transpose=False, logdet=self.log_abs_det)[0]
 
     def pullback_score(
         self,
         values: tf.Tensor,
         output_score: tf.Tensor,
     ) -> tf.Tensor:
-        del values
-        return tf.matmul(output_score, self.matrix, transpose_b=True)
+        return _transport_core.affine_pullback(output_score, matrix=self.matrix, transpose=False)
 
     def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
         return tf.zeros_like(values)
@@ -526,28 +413,17 @@ class _AffineComponent:
             raise InvalidNeuTraArtifact("affine component requires scale or matrix")
 
     def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        if self.scale is not None:
-            output = self.offset + values * self.scale
-        else:
-            output = self.offset + tf.matmul(values, self.matrix, transpose_b=True)
-        logdet = tf.zeros(tf.shape(values)[:-1], dtype=values.dtype) + self.log_abs_det
-        return output, logdet
+        return _transport_core.affine_forward(values, self.offset, self.scale, matrix=self.matrix, logdet=self.log_abs_det)
 
     def inverse(self, output: tf.Tensor) -> tf.Tensor:
-        centered = output - self.offset
-        if self.scale is not None:
-            return centered / self.scale
-        return tf.transpose(tf.linalg.solve(self.matrix, tf.transpose(centered)))
+        return _transport_core.affine_inverse(output, self.offset, self.scale, matrix=self.matrix, logdet=self.log_abs_det)[0]
 
     def pullback_score(
         self,
         values: tf.Tensor,
         output_score: tf.Tensor,
     ) -> tf.Tensor:
-        del values
-        if self.scale is not None:
-            return output_score * self.scale
-        return tf.matmul(output_score, self.matrix)
+        return _transport_core.affine_pullback(output_score, self.scale, matrix=self.matrix)
 
     def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
         return tf.zeros_like(values)
@@ -560,12 +436,7 @@ class _ComposedComponent:
         self.children = children
 
     def forward_and_logdet(self, values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-        output = values
-        logdet = tf.zeros(tf.shape(values)[:-1], dtype=values.dtype)
-        for child in self.children:
-            output, child_logdet = child.forward_and_logdet(output)
-            logdet = logdet + child_logdet
-        return output, logdet
+        return _transport_core.compose_forward(self.children, values)
 
     def inverse(self, output: tf.Tensor) -> tf.Tensor:
         values = output
@@ -578,27 +449,10 @@ class _ComposedComponent:
         values: tf.Tensor,
         output_score: tf.Tensor,
     ) -> tf.Tensor:
-        child_inputs = []
-        output = values
-        for child in self.children:
-            child_inputs.append(output)
-            output, _ = child.forward_and_logdet(output)
-        score = output_score
-        for child, child_input in reversed(tuple(zip(self.children, child_inputs))):
-            score = child.pullback_score(child_input, score)
-        return score
+        return _transport_core.compose_pullback(self.children, values, output_score)
 
     def logdet_score(self, values: tf.Tensor) -> tf.Tensor:
-        child_inputs = []
-        output = values
-        for child in self.children:
-            child_inputs.append(output)
-            output, _ = child.forward_and_logdet(output)
-        score = tf.zeros_like(output)
-        for child, child_input in reversed(tuple(zip(self.children, child_inputs))):
-            score = child.pullback_score(child_input, score)
-            score = score + child.logdet_score(child_input)
-        return score
+        return _transport_core.compose_pullback(self.children, values)
 
 
 @dataclass(frozen=True)
@@ -633,6 +487,10 @@ def load_frozen_neutra_artifact(
     normalized = _require_mapping(payload, "payload")
     expected = _nonempty_text(expected_target_signature, "expected_target_signature")
     schema = _nonempty_text(normalized.get("schema"), "schema")
+    from bayesfilter.inference.neutra_transport import FROZEN_SCHEMA, load_configured_frozen
+    if schema == FROZEN_SCHEMA:
+        return load_configured_frozen(normalized, expected_target_signature=expected,
+                                      binding_type=binding_type)
     if schema == _DENSE_IAF_SCHEMA:
         return _load_dense_iaf_neutra_artifact(
             normalized,
@@ -1367,50 +1225,15 @@ def _component_list(value: Any, name: str) -> tuple[Mapping[str, Any], ...]:
 
 
 def _apply_activation(values: tf.Tensor, activation: str) -> tf.Tensor:
-    if activation == "elu":
-        return tf.nn.elu(values)
-    if activation == "tanh":
-        return tf.math.tanh(values)
-    if activation == "relu":
-        return tf.nn.relu(values)
-    raise InvalidNeuTraArtifact(f"unsupported activation: {activation}")
+    return _transport_core.activation(values, activation)
 
 
 def _activation_derivative(values: tf.Tensor, activation: str) -> tf.Tensor:
-    if activation == "elu":
-        return tf.where(values > 0.0, tf.ones_like(values), tf.exp(values))
-    if activation == "tanh":
-        activated = tf.math.tanh(values)
-        return 1.0 - tf.square(activated)
-    if activation == "relu":
-        return tf.cast(values > 0.0, values.dtype)
-    raise InvalidNeuTraArtifact(f"unsupported activation: {activation}")
+    return _transport_core.activation_derivative(values, activation)
 
 
 def _dense_iaf_masks(dim: int, hidden_layers: tuple[int, ...]) -> tuple[tf.Tensor, ...]:
-    degrees: list[list[int]] = [list(range(1, dim + 1))]
-    max_degree = max(1, dim - 1)
-    for width in hidden_layers:
-        degrees.append([1 + (index % max_degree) for index in range(width)])
-    degrees.append(list(range(1, dim + 1)) + list(range(1, dim + 1)))
-    masks = []
-    for layer_index, (deg_in, deg_out) in enumerate(zip(degrees[:-1], degrees[1:])):
-        is_output = layer_index == len(degrees) - 2
-        masks.append(
-            tf.constant(
-                [
-                    [
-                        1.0
-                        if ((source < target) if is_output else (source <= target))
-                        else 0.0
-                        for target in deg_out
-                    ]
-                    for source in deg_in
-                ],
-                dtype=tf.float64,
-            )
-        )
-    return tuple(masks)
+    return _transport_core.dense_masks(dim, hidden_layers)
 
 
 def _finalize_component_hashes(component: Mapping[str, Any]) -> Mapping[str, Any]:

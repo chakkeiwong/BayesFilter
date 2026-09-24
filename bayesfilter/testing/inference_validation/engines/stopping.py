@@ -9,10 +9,15 @@ from ..references import analytic
 from .statistics import binomial_interval
 
 
-def arm_quantities(draws, spec, params, data, *, jit_compile):
+def arm_quantities(draws, spec, params, data, *, jit_compile, method="lugsail",
+                   batch_size=None, min_batches=20, lugsail_r=3, lugsail_c=.5):
+    if not isinstance(method, str) or method not in {"lugsail", "autocorrelation", "batch_means"}:
+        raise ValueError("unknown diagnostic mean estimator")
     from bayesfilter.inference.hmc_precision import mean_precision, quantile_precision
     import tensorflow as tf
 
+    estimator_options = dict(method=method, jit_compile=jit_compile, batch_size=batch_size,
+                             min_batches=min_batches, lugsail_r=lugsail_r, lugsail_c=lugsail_c)
     values = np.asarray(draws)
     references = analytic.exact_functionals(spec.target_id, params, data)
     rows = {}
@@ -21,11 +26,13 @@ def arm_quantities(draws, spec, params, data, *, jit_compile):
         sample = values[..., index:index+1]
         available = len(sample) >= 4 and bool(np.all(np.isfinite(sample)))
         estimate = float(sample.mean() if kind == "mean" else np.median(sample)) if available else None
-        report = (mean_precision(tf.constant(sample, tf.float64), method="lugsail", jit_compile=jit_compile)
+        report = (mean_precision(tf.constant(sample, tf.float64), **estimator_options)
                   if kind == "mean" else quantile_precision(tf.constant(sample, tf.float64), .5)) if available else {}
         se = float(report["mcse"][0]) if report else None
         available = available and se is not None and math.isfinite(se) and se > 0
         rows[name] = {"reference": truth, "estimate": estimate,
+                      "method": method if kind == "mean" else "quantile",
+                      "estimator": report.get("estimator"),
                       "error": None if estimate is None else estimate-truth,
                       "mcse": se if available else None, "available": available,
                       "covered": available and abs(estimate-truth) <= stats.norm.ppf(.975)*se}
@@ -35,10 +42,11 @@ def arm_quantities(draws, spec, params, data, *, jit_compile):
         truth = float(w*stats.norm.cdf(a) + (1-w)*stats.norm.cdf(-a))
         sample = (values[..., :1] < 0).astype(float)
         estimate = float(sample.mean()) if len(sample) else None
-        report = mean_precision(tf.constant(sample,tf.float64),method="lugsail",jit_compile=jit_compile) if len(sample)>=4 else {}
+        report = mean_precision(tf.constant(sample,tf.float64),**estimator_options) if len(sample)>=4 else {}
         se = float(report["mcse"][0]) if report else None
         valid = se is not None and math.isfinite(se) and se > 0
         rows["left_mode_probability"] = {"reference": truth, "estimate": estimate,
+            "method": method, "estimator": report.get("estimator"),
             "error": None if estimate is None else estimate-truth, "mcse": se if valid else None,
             "available": valid, "covered": valid and abs(estimate-truth)<=stats.norm.ppf(.975)*se}
     return rows

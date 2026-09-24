@@ -36,6 +36,15 @@ index('M21','m21-r2/public-pilot-cpu-r1/run_index.json')
 attempt('M21','m21-r2/estimator-confirmation-execution.json','cpu_worker_seconds')
 for receipt in sorted((ROOT/'m24-r2').glob('tests-*/result.json')):
     attempt('M24',str(receipt.relative_to(ROOT)),'wall_seconds')
+for receipt in sorted((ROOT/'m20-r2').glob('tests-*/result.json')):
+    attempt('M20',str(receipt.relative_to(ROOT)),'wall_seconds')
+for receipt in sorted((ROOT/'m20-r2').glob('fits-*/**/execution.json')):
+    attempt('M20',str(receipt.relative_to(ROOT)),'wall_seconds')
+attempt('M20','m20-r2/terminal-audit.json','wall_seconds')
+if (ROOT/'m20-r2/terminal-audit.json').exists():
+    for i, audit in enumerate(load('m20-r2/terminal-audit.json').get('prior_audit_attempts', [])):
+        charge('M20','m20-r2/terminal-audit.json#prior-attempt-'+str(i),audit['wall_seconds'])
+attempt('M22','m22-r2/null-confirmation-audit.json','wall_seconds')
 queue_path=ROOT/'m21-r2/confirmation-queue-progress.json'
 reservations={}
 if queue_path.exists():

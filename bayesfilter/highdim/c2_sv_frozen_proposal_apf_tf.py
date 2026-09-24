@@ -26,7 +26,6 @@ from bayesfilter.highdim.c2_transformed_observation_student_proposal_tf import (
 from bayesfilter.highdim.zhao_cui_frozen_proposal_apf_tf import (
     MEASURE_ID,
     SCORE_BACKEND_ID,
-    FrozenProposalAPFProgram,
     PreparedFrozenProposalBranch,
     prepare_frozen_proposal_apf_program,
     prepare_frozen_proposal_branch,
@@ -178,6 +177,46 @@ class C2StochasticVolatilityFrozenAPFModel:
             * tf.exp(-states - 2.0 * xi),
             axis=1,
         )
+
+    def observation_log_density_state_score(
+        self,
+        theta: tf.Tensor,
+        state: tf.Tensor,
+        observation: tf.Tensor,
+    ) -> tf.Tensor:
+        """Return the analytical gradient of log g(y|x) with respect to x."""
+
+        parameters = tf.ensure_shape(tf.convert_to_tensor(theta, DTYPE), [2])
+        states = tf.ensure_shape(
+            tf.convert_to_tensor(state, DTYPE), [None, self.state_dim()]
+        )
+        observed = tf.ensure_shape(
+            tf.convert_to_tensor(observation, DTYPE), [self.observation_dim()]
+        )
+        scaled_square = tf.square(observed)[None, :] * tf.exp(
+            -states - 2.0 * parameters[1]
+        )
+        return -0.5 * tf.ones_like(states) + 0.5 * scaled_square
+
+    def observation_log_density_state_negative_hessian(
+        self,
+        theta: tf.Tensor,
+        state: tf.Tensor,
+        observation: tf.Tensor,
+    ) -> tf.Tensor:
+        """Return -d2 log g(y|x)/dx2 as one diagonal matrix per row."""
+
+        parameters = tf.ensure_shape(tf.convert_to_tensor(theta, DTYPE), [2])
+        states = tf.ensure_shape(
+            tf.convert_to_tensor(state, DTYPE), [None, self.state_dim()]
+        )
+        observed = tf.ensure_shape(
+            tf.convert_to_tensor(observation, DTYPE), [self.observation_dim()]
+        )
+        scaled_square = tf.square(observed)[None, :] * tf.exp(
+            -states - 2.0 * parameters[1]
+        )
+        return tf.linalg.diag(0.5 * scaled_square)
 
     def initial_log_density_parameter_score(
         self, theta: tf.Tensor, x0: tf.Tensor

@@ -179,31 +179,38 @@ freezing counts. Do not use an unavailable B=32 cost as its denominator.
 
 ### Training validation and the decision to continue
 
+Owner-approved update, September 20: the active q20 master uses the bounded
+trial-admission procedure in
+`bayesfilter-ssl-lstm-q20-training-admission-repair-2026-09-20.md`. A learned,
+numerically healthy map may enter a bounded HMC trial after the cohort floor;
+optimization plateau is not an admission requirement. The historical precision
+choices below are retained only to explain earlier results.
+
 | Choice | Concrete value | Selection rule |
 | --- | --- | --- |
-| Initial objective-validation rows | Three independent banks of 256; total M=768 | Inherited q20 design; fixed shared base rows pair checkpoint comparisons. These are selection data. |
-| Bank expansion | M=768, 3,072, 12,288 | Proposed factor-four ladder; approximately halves IID Monte Carlo standard error each extension. Chunk target calls using the qualified batch size. |
+| Objective-validation rows | M=768, evaluated in batched deterministic blocks | Inherited q20 initial-bank allocation, now the per-map cap at each rung. Fixed shared base rows pair checkpoint comparisons. These are selection data. |
+| Bank expansion | Disabled for active q20 trial admission | Saved protocols may contain the historical 768, 3,072, 12,288 ladder, but only the initial bank executes. Unresolved learning leads to another funded training rung. |
 | Validation cadence | At start, every training rung, and before/after a proposed repair | Proposed bounded cost. Cheap per-update telemetry remains continuous. |
-| Material objective change | delta=`0.01*d=0.04` nats per draw at d=4 | Proposed optimization-resolution choice. One hundredth of a nat per dimension is a resolution target, not a bound on posterior bias or a universal loss. |
+| Historical objective resolution | delta=`0.01*d=0.04` nats per draw at d=4 | Uncalibrated optimization-resolution diagnostic only. It does not gate HMC trial admission. |
 | Paired objective uncertainty | Let `I_m=loss_old(z_m)-loss_new(z_m)`; interval `mean(I) +/- 1.96*s(I)/sqrt(M)` | Approximate IID normal interval for a fixed comparison, inherited 95% calibration level. Heavy tails or unstable variance make this unavailable. Once a reused bank influences selection or repair, these are development summaries, including later comparisons on that bank. A nominal final confidence claim needs a frozen comparison, fresh bank and declared stopping/multiplicity treatment. |
-| Continue learning | Lower interval endpoint greater than delta | Material progress motivates another funded rung. If the interval overlaps delta, increase M or training evidence within its cap; do not call that a plateau. |
+| Learning screen and HMC trial | For `loss_new-loss_initial`, upper descriptive endpoint < 0 | After the inherited 512-update floor, nominate numerically healthy maps without clear incremental deterioration. Zero follows from the objective's improvement direction. This is a trial screen, not a nominal confidence or posterior claim. |
 | Plateau candidate | Interval lies within `[-delta,+delta]` for both 128-to-512 and 512-to-2,048, or a later pair of successive rung comparisons | Proposed persistence rule. It triggers capacity/optimizer/coverage assessment; it does not qualify the map by itself. |
-| Deterioration | Upper interval endpoint below `-delta` | Preserve the earlier checkpoint; run the specified repair if funded. One noisy high training loss is not enough. |
-| Seed viability | At least two of three roots improve against their own beta-start checkpoint and pass numerical checks | Inherited nomination concept; two of three is a small-sample screen, not a success-probability estimate. Carry uncertainty/failure of the third root into reporting. |
+| Deterioration | For `loss_new-loss_previous`, lower descriptive endpoint > 0 | Block trial nomination for that checkpoint; preserve earlier evidence and run a funded repair. One noisy high training loss is not enough. |
+| Trial map count | Plain NeuTra: one eligible map; ensemble: two eligible charts from distinct roots at the declared temperatures | The entire declared cohort reaches its floor before selection. Choose eligible maps in fixed cohort order, without a loss ranking. Preserve all root outcomes; trial nomination does not establish robustness across training seeds. |
 | Cheap generated-map occupancy bank | 4,096 Gaussian rows per map | Inherited; worst-case IID proportion SE `1/(2*sqrt(4096))=0.0078125`. It estimates the map's own proposal occupancy, not posterior region mass. |
 | Actual whitening | Inverse-map independently validated posterior draws; report mean, covariance/eigenvalues, radial tails, scores and coverage with uncertainty | No universal pass number. Unit covariance does not imply Gaussianity. Generated `z` or `T^{-1}(T(z))` cannot establish posterior whitening. |
 
-For a desired half-width `h`, the validation-row estimate is
+For explaining the retired fine-plateau requirement, the validation-row estimate is
 `M_required = ceil((1.96*s(I)/h)^2)`. For resolving the proposed delta closely,
 take `h=delta/2=0.02`; if the estimate exceeds 12,288 or its target-call budget,
-the comparison is inconclusive. A clearly separated progress interval can
-support extension without first reaching that fine half-width. Compare losses
+the fine-plateau comparison is inconclusive. This does not block an otherwise
+eligible HMC trial or authorize more validation rows. Compare losses
 only at the same beta and objective; unknown normalizers differ across beta.
 
-The practical training decision is: fund the initial grid, observe its learning
-curves, extend improving viable candidates, diagnose poor plateaus, and test
-qualified maps downstream. Do not run a large fixed number merely to acquire
-the appearance of production training.
+Fund the initial grid and cohort floor, then test learned, numerically healthy
+maps downstream. Continue funded training when learning is unresolved, or repair
+deterioration; freeze an eligible map for HMC. Posterior convergence and precision
+must still pass their own checks.
 
 ## 4. Temperatures, charts and ensemble transitions
 
@@ -264,6 +271,80 @@ restore and value/logdet/score parity before this consumer is usable.
 | Status cadence | `per_chain_step`, accepted and proposed state health; all integration telemetry promised by the target contract | Explicit requirement. A finite invalid sentinel must not pass. |
 | Tuning chunk size | 64 initially, increase to 256 only if measured native-call cost and memory permit | Proposed pause/recovery granularity within the existing API. This does not reduce the total evidence requirement. |
 | Candidate/attempt/gradient caps | Derived from the explicit funded cohorts and work formula below | Do not inherit 100 candidates, 100 budget units or a 20-unit repair reserve without a cost calculation. Each candidate reserves its mandatory remaining stages. |
+
+September 22 initial-epsilon audit: the executed q20 protocol does not implement
+the curvature-based initialization proposed above. Commit `965ba2949`
+(September 16) introduced hardcoded `initial_epsilon=0.01` in
+`q20_production_config.protocol_template`. `q20_production_hmc.tuning_configs`
+passes it directly into `HMCControllerConfig` with the per-L pilot enabled;
+the fixed-transport path does not compute a current-map Hessian or derive this
+seed. No target-specific derivation or calibration for exactly 0.01 was found
+in the inspected implementation and parameter records. Its classification is
+an uncalibrated starting hypothesis, not a reviewed numerical default. This is
+a discrepancy between the proposal and execution, not evidence that 0.01 is
+required for NeuTra.
+
+The completed original search in
+`artifacts/q20-master-operations-2026-09-21/campaign-01/attempts/00005-tune-neutra-beta1/worker/data/tuning/tuning_checkpoint.json`
+records six epsilon-0.01 pilots, with mean acceptance probabilities from
+0.9976268746 to 0.9991846055. All requested a larger epsilon. Their six recorded
+`work_elapsed` entries total 8,546.022927 seconds (2 h 22 min 26 s), including
+the work charged to those calls; this is not an isolated steady-kernel timing.
+These observations establish an inefficient starting region relative to the
+declared acceptance objective, not posterior convergence or optimality of a
+larger step. Further proposals for this same frozen map should use its existing
+measurements as starting evidence. A changed map or beta needs its own checked
+initialization; old values may seed hypotheses but cannot confer qualification.
+
+September 22 follow-up: **0.0620027091–0.0759375 is not an established NeuTra
+initialization range.** The original sequence was `0.01 * 1.5^k`, for
+`k=0,...,5`; its last two proposals were 0.050625 and 0.0759375. The separately
+funded repair used their geometric midpoint,
+`sqrt(0.050625*0.0759375)=0.062002709114199195`. These numbers are finite search
+hypotheses for the frozen `direct-w16-lr0.0005-r0` map, not values derived from
+successful posterior whitening.
+
+The original checkpoint cited above and
+`artifacts/q20-recovery-and-affordability-2026-09-22/campaign-04/attempts/00005-tune-neutra-beta1/worker/data/tuning/tuning_checkpoint.json`
+show the following. At the midpoint, final mean acceptance ranges from
+0.90786294 to 0.98373097 across the six L values; every final decision requests
+a larger epsilon under the declared acceptance screen. At 0.0759375, the first
+chain has zero observed movement at every L and the acceptance decision is
+`inconclusive_conflict`. It supplies neither a resolved opposite acceptance
+direction nor a demonstrated stability boundary. Neither search has a verified
+member. No epsilon strictly between the midpoint and 0.0759375 was measured.
+High acceptance alone does not invalidate the Metropolis kernel; the midpoint
+failed this campaign's operational tuning screen.
+
+The guide audit used `docs/reference/hmc-tuning-interface.md`, chapter 21b,
+`HMC_TUNING_INTERFACE_CAPABILITIES`, and the actual r2 execution snapshot:
+
+| Requirement | Inspected execution | Verdict |
+| --- | --- | --- |
+| Public frozen-transport tuner, identity latent mass, frozen map | `tune_fixed_transport_hmc_kernel` with a repository-issued numerical binding | Correct supported route; ordinary mass adaptation is not required. |
+| Exact-pair evidence and fresh verification of survivors | Per-L measurement and evidence rungs executed; no survivor reached verification | Procedure preserved; no qualified kernel resulted. |
+| Target-aware initialization proposed in this ledger | Hardcoded 0.01 supplied directly; no current-map curvature initializer | Proposed protocol not implemented. The proposed 0.1 seed and 0.8 guard are themselves hypotheses, not universal replacements. |
+| Search coverage | Original direct controller has refinement zero; repair explicitly permits six midpoint pairs and no children | Allowed by the current public guide, but finite coverage cannot reject the untested interval or the NeuTra direction. |
+| Demonstrated posterior whitening | Map numerical consistency and HMC-trial nomination were checked; independent posterior pullback qualification is not established | Whitening remains unproved; see mathematical audit V11. |
+
+For an exact standard-normal pullback with identity mass, `H_z=I` and the
+quadratic leapfrog condition below reduces to `0<epsilon<2`. This is a linear
+stability condition, not a recommended starting value, acceptance guarantee or
+optimality result. Covariance whitening alone does not establish that target.
+The next discriminating evidence is current-map geometry and score behavior
+at the actual starts and independent posterior development points where
+available, followed by measured per-L proposals and fresh verification.
+Prior-drawn starts can visit difficult regions even if typical posterior
+geometry is improved; this is an untested explanation. This audit changes no
+active numerical configuration and establishes no posterior or method ranking.
+
+September 22 Gaussian-root canary: the later L-dependent ideal-Gaussian roots
+1.1998–1.3475 failed on the current map, with 0/192 proposals accepted and
+numerical health failures in both prior-start and map-proposal banks. Controls
+at epsilon .0620027091/L3 passed numerical checks and accepted 29/32. See the
+[canary result](bayesfilter-q20-gaussian-epsilon-canary-result-2026-09-22.md).
+The larger numbers are conditional analytic reference values and are rejected
+as current-map initializations. The control is not a qualified tuning result.
 
 For a quadratic potential in identity-mass coordinates, leapfrog is stable only
 when `epsilon*sqrt(lambda)<2` for each positive-curvature mode. That gives the

@@ -1,0 +1,61 @@
+{
+  "design_id": "m34-normal-activation",
+  "engine": "accuracy",
+  "scenario": {
+    "target": "normal_conjugate",
+    "route": "ordinary",
+    "control": "location_shift",
+    "start": "dispersed",
+    "parameters": {
+      "tau": 2.0,
+      "sigma": 1.0,
+      "location_shift_posterior_sd": 0.5
+    }
+  },
+  "replications": 1,
+  "draws": 500,
+  "seed": 2026092341,
+  "budget_seconds": 700,
+  "purpose": "paired normal-target activation; no power/coverage inference",
+  "numerical_provenance": "M31/M34 development counts from M27; fixed shared data/streams test no-op parity",
+  "device": "gpu",
+  "alpha": 0.05,
+  "null_draws": 1999,
+  "rank_draws": 7,
+  "step_size": 0.4,
+  "leapfrog_steps": 5,
+  "member_l": 3,
+  "l_grid": [
+    3,
+    5,
+    9,
+    13,
+    18,
+    25
+  ],
+  "measurement_draws": 128,
+  "posterior_cap": 10000,
+  "mcse_tolerance": 0.05,
+  "accuracy_tolerance": 0.25,
+  "multiplicity": 1,
+  "phase": "development",
+  "options": {
+    "data": [
+      -0.17124193751281247,
+      0.3949695747719939,
+      -2.5164870895409193,
+      -0.3854024581494059,
+      -0.8731666125621014,
+      -0.8901012950227343
+    ],
+    "native_search": true,
+    "posterior_members": "selected",
+    "member_rule": "first_verified",
+    "bootstrap_initialization_rounds": 20,
+    "metric_evidence_policy": "finite_window",
+    "metric_probe_num_results": 16,
+    "preparation_bound_expansion_steps": 1,
+    "preparation_max_restarts": 3,
+    "preparation_preset": "standard"
+  }
+}

@@ -1,5 +1,10 @@
 # Merged-source pilots and fresh fixed-count estimator confirmation
 
+Update: the subsequent 272-fit public confirmation is complete and audited in
+[the M25 result](bayesfilter-hmc-gap-closure-result-2026-09-22.md). The decisions
+below record this earlier pilot/estimator stage. They are not outstanding launch
+instructions. General posterior calibration remains open.
+
 The Gaussian and beta-binomial pilots completed on committed source
 `f9c86f41ac44efc5e6a5a5220633073fce803431`, package identity
 `13917d3625fa5a09dfd3bf1ab9d2894618ed7bc4259ca7603f16c766f6213d66`.

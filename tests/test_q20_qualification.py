@@ -80,3 +80,17 @@ def test_enclosing_xla_and_actual_batched_runner_qualification(tmp_path):
     path.write_text(json.dumps({**receipt, "checksum": digest(receipt)}))
     with pytest.raises(ValueError, match="batched public-runner evidence"):
         attach_qualification(bridge, path, config)
+
+
+def test_plain_qualification_does_not_require_hot_temperature(tmp_path):
+    config = protocol()
+    config["jit_compile"] = True
+    bridge = four_dimensional_bridge(True)
+    qualify_bridge(config, bridge, tmp_path/"cold", betas=[1.])
+    path = tmp_path/"cold/result.json"
+    with pytest.raises(ValueError, match="temperature inventory"):
+        attach_qualification(bridge, path, config)
+    qualified = attach_qualification(bridge, path, config, betas=[1.])
+    assert qualified.fixed_beta_adapter(1.).value_score_capability().full_chain_xla_diagnostic_ready
+    with pytest.raises(ValueError, match="unqualified temperature"):
+        qualified.fixed_beta_adapter(.5)

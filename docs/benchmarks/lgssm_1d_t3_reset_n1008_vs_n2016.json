@@ -1,0 +1,63 @@
+{
+  "study": "lgssm_1d_t3_reset_diagnostic_n1008_vs_n2016",
+  "date": "2026-08-28",
+  "question": "why does N=1008 have 3\u00d7 larger bias than N=2016",
+  "model": {
+    "family": "1D AR(1) linear Gaussian",
+    "theta": [
+      0.9,
+      0.6,
+      0.8
+    ],
+    "horizon": 3,
+    "observations": [
+      -0.9911206904960701,
+      -2.7246862541942303,
+      -0.30490733274540416
+    ]
+  },
+  "exact_kalman": -5.903444873434653,
+  "n1008": {
+    "value": -5.790364796258427,
+    "program_valid": true,
+    "per_step_ess": [
+      415.5839777141017,
+      300.31027907605477,
+      718.2865524730544
+    ],
+    "per_step_marginal_tv": [
+      1.9403163605602458e-05,
+      2.0605591998901218e-05,
+      2.1115025447215885e-05
+    ],
+    "per_step_marginal_valid": [
+      true,
+      true,
+      true
+    ],
+    "max_marginal_tv": 2.1115025447215885e-05,
+    "all_marginals_valid": true
+  },
+  "n2016": {
+    "value": -5.852037094178754,
+    "program_valid": true,
+    "per_step_ess": [
+      715.4503018347959,
+      684.8940967531178,
+      1317.0914077846892
+    ],
+    "per_step_marginal_tv": [
+      7.567647844552994e-05,
+      2.6742569389170967e-05,
+      5.4295072914101183e-05
+    ],
+    "per_step_marginal_valid": [
+      true,
+      true,
+      true
+    ],
+    "max_marginal_tv": 7.567647844552994e-05,
+    "all_marginals_valid": true
+  },
+  "note": "Both runs use the same seed, observations, and controls (eps=1.0, sk=8, flow=12, dual_cap=True). The only difference is particle count."
+}

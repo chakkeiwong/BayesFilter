@@ -1,0 +1,204 @@
+{
+  "status": "FROZEN",
+  "controls": {
+    "1": {
+      "guide": {
+        "l1": 1e-05,
+        "calibration_admissible": true
+      },
+      "stable": {
+        "l1": 0.001,
+        "calibration_admissible": true
+      },
+      "epsilon": 0.05,
+      "defense_calibration_admissible": true
+    },
+    "4": {
+      "guide": {
+        "l1": 0.001,
+        "calibration_admissible": true
+      },
+      "stable": {
+        "l1": 0.001,
+        "calibration_admissible": true
+      },
+      "epsilon": 0.05,
+      "defense_calibration_admissible": true
+    }
+  },
+  "selection_ledger": [
+    {
+      "dimension": 1,
+      "family": "guide",
+      "candidates": [
+        {
+          "name": "guide-l1e-05",
+          "l1": 1e-05,
+          "eligible": true,
+          "mse": 0.0015166745922378726,
+          "valid_sequences": 3
+        },
+        {
+          "name": "guide-l0.001",
+          "l1": 0.001,
+          "eligible": true,
+          "mse": 0.0015542724687081346,
+          "valid_sequences": 3
+        }
+      ],
+      "selected": {
+        "name": "guide-l1e-05",
+        "l1": 1e-05,
+        "eligible": true,
+        "mse": 0.0015166745922378726,
+        "valid_sequences": 3
+      }
+    },
+    {
+      "dimension": 1,
+      "family": "stable",
+      "candidates": [
+        {
+          "name": "stable-l1e-05",
+          "l1": 1e-05,
+          "eligible": true,
+          "mse": 0.002470375731180998,
+          "valid_sequences": 3
+        },
+        {
+          "name": "stable-l0.001",
+          "l1": 0.001,
+          "eligible": true,
+          "mse": 0.0017053187436475183,
+          "valid_sequences": 3
+        }
+      ],
+      "selected": {
+        "name": "stable-l0.001",
+        "l1": 0.001,
+        "eligible": true,
+        "mse": 0.0017053187436475183,
+        "valid_sequences": 3
+      }
+    },
+    {
+      "dimension": 1,
+      "family": "epsilon",
+      "curve": [
+        {
+          "epsilon": 0.05,
+          "valid_sequences": 3,
+          "mean_delta": -0.00010458583545914825,
+          "reference_mse": 0.0017053187436475183,
+          "calibration_nonharm_pass": true,
+          "second_moment_multiplier": 20.0
+        },
+        {
+          "epsilon": 0.2,
+          "valid_sequences": 3,
+          "mean_delta": -0.00016505938322961626,
+          "reference_mse": 0.0017053187436475183,
+          "calibration_nonharm_pass": true,
+          "second_moment_multiplier": 5.0
+        },
+        {
+          "epsilon": 0.5,
+          "valid_sequences": 3,
+          "mean_delta": 2.1995225738963098e-05,
+          "reference_mse": 0.0017053187436475183,
+          "calibration_nonharm_pass": true,
+          "second_moment_multiplier": 2.0
+        }
+      ],
+      "selected": 0.05,
+      "selection": "smallest_passing"
+    },
+    {
+      "dimension": 4,
+      "family": "guide",
+      "candidates": [
+        {
+          "name": "guide-l1e-05",
+          "l1": 1e-05,
+          "eligible": true,
+          "mse": 0.002273579364026283,
+          "valid_sequences": 3
+        },
+        {
+          "name": "guide-l0.001",
+          "l1": 0.001,
+          "eligible": true,
+          "mse": 0.002172963155143729,
+          "valid_sequences": 3
+        }
+      ],
+      "selected": {
+        "name": "guide-l0.001",
+        "l1": 0.001,
+        "eligible": true,
+        "mse": 0.002172963155143729,
+        "valid_sequences": 3
+      }
+    },
+    {
+      "dimension": 4,
+      "family": "stable",
+      "candidates": [
+        {
+          "name": "stable-l1e-05",
+          "l1": 1e-05,
+          "eligible": true,
+          "mse": 0.0030939291686721757,
+          "valid_sequences": 3
+        },
+        {
+          "name": "stable-l0.001",
+          "l1": 0.001,
+          "eligible": true,
+          "mse": 0.0027521859658929484,
+          "valid_sequences": 3
+        }
+      ],
+      "selected": {
+        "name": "stable-l0.001",
+        "l1": 0.001,
+        "eligible": true,
+        "mse": 0.0027521859658929484,
+        "valid_sequences": 3
+      }
+    },
+    {
+      "dimension": 4,
+      "family": "epsilon",
+      "curve": [
+        {
+          "epsilon": 0.05,
+          "valid_sequences": 3,
+          "mean_delta": -5.5847680119370614e-05,
+          "reference_mse": 0.0027521859658929484,
+          "calibration_nonharm_pass": true,
+          "second_moment_multiplier": 20.0
+        },
+        {
+          "epsilon": 0.2,
+          "valid_sequences": 3,
+          "mean_delta": -1.5720360456334657e-05,
+          "reference_mse": 0.0027521859658929484,
+          "calibration_nonharm_pass": true,
+          "second_moment_multiplier": 5.0
+        },
+        {
+          "epsilon": 0.5,
+          "valid_sequences": 3,
+          "mean_delta": 0.00044185390590479435,
+          "reference_mse": 0.0027521859658929484,
+          "calibration_nonharm_pass": false,
+          "second_moment_multiplier": 2.0
+        }
+      ],
+      "selected": 0.05,
+      "selection": "smallest_passing"
+    }
+  ],
+  "nonclaim": "Frozen diagnostics do not establish promotion; failed calibration remains a veto."
+}

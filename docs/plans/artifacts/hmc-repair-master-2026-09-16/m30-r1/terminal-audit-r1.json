@@ -1,0 +1,2393 @@
+{
+  "phase": "M30",
+  "targets": [
+    {
+      "target": "gaussian",
+      "static": {
+        "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/gaussian-full-static-gpu-r1/fits/replication-0000",
+        "design_identity": "27e4c033294f9867f56b34fcd834ad454922094d60142aa10f6a999a1f2a3dbc",
+        "design_file_sha256": "9615cfe84e9f376c297c3a0624dc06aaadd23e9243e0e5623fd134915f576d0f",
+        "source_identity": "628a0a3a2d1a6305c1df1b38b196bb45b12d2930f7712df0d9f7520f772e39c7",
+        "summary": {
+          "candidate_count": 94,
+          "verified_count": 24,
+          "receipts": 157,
+          "tensor_count": 84,
+          "selected_posteriors": [
+            {
+              "candidate_id": "inference_validation:718c103ce80cf0bbfd92:candidate:000001",
+              "L": 3,
+              "epsilon": 1.189207115002721,
+              "passed": true,
+              "hard_vetoes": [],
+              "warmup_cap": false,
+              "retained_cap": false,
+              "warmup": 30000,
+              "retained": 4000,
+              "fixed_status": "assessed",
+              "final_check": {
+                "bulk_ess": [
+                  4915.859444219956,
+                  12488.27087276196
+                ],
+                "bulk_tail_ess_method": "bayesfilter.stan_initial_positive_monotone_ess.v1",
+                "chain_count": 4,
+                "consumer_diagnostic": null,
+                "diagnostics_all_finite": true,
+                "draw_count_per_chain": 4000,
+                "finite_rhat_count": 2,
+                "folded_rank_normalized_split_rhat": [
+                  1.0005416395406608,
+                  1.0001760499361194
+                ],
+                "hard_vetoes": [],
+                "information_passed": true,
+                "input_all_finite": true,
+                "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+                "max_finite_rhat": 1.0011730334037798,
+                "max_folded_rank_normalized_split_rhat": 1.0005416395406608,
+                "max_rank_normalized_split_rhat": 1.0011730334037798,
+                "mcse_sd_ratio": [
+                  0.014741158109466088,
+                  0.008957070149701832
+                ],
+                "mean_ess": [
+                  4601.895911727886,
+                  12464.304465197547
+                ],
+                "mean_mcse": [
+                  0.014750982660046149,
+                  0.009014639360258555
+                ],
+                "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+                "modern_rhat": {
+                  "chain_count": 4,
+                  "diagnostics_all_finite": true,
+                  "draw_count_per_chain": 4000,
+                  "finite_rhat_count": 2,
+                  "folded_rank_normalized_split_rhat": [
+                    1.0005416395406608,
+                    1.0001760499361194
+                  ],
+                  "hard_vetoes": [],
+                  "input_all_finite": true,
+                  "max_finite_rhat": 1.0011730334037798,
+                  "max_folded_rank_normalized_split_rhat": 1.0005416395406608,
+                  "max_rank_normalized_split_rhat": 1.0011730334037798,
+                  "nonfinite_rhat_count": 0,
+                  "parameter_count": 2,
+                  "passed": true,
+                  "rank_normalized_split_rhat": [
+                    1.0011730334037798,
+                    1.0001176681125608
+                  ],
+                  "rhat": [
+                    1.0011730334037798,
+                    1.0001760499361194
+                  ],
+                  "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                  "rhat_threshold": 1.01,
+                  "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+                  "split_chain_count": 8,
+                  "split_draw_count_per_chain": 2000
+                },
+                "nonfinite_rhat_count": 0,
+                "parameter_count": 2,
+                "passed": true,
+                "precision": {
+                  "batch_metadata": {
+                    "batch_count": 63,
+                    "batch_size": 63,
+                    "per_chain_long_run_variance": [
+                      [
+                        3.778499633077571,
+                        1.8821478311951934
+                      ],
+                      [
+                        3.0719773224704405,
+                        1.0218075324961597
+                      ],
+                      [
+                        3.3087460251120224,
+                        1.4274040800272316
+                      ],
+                      [
+                        4.471074548197409,
+                        1.2398320208388032
+                      ]
+                    ],
+                    "per_chain_plain_long_run_variance": [
+                      [
+                        3.500209758030386,
+                        1.5078865493079556
+                      ],
+                      [
+                        2.981166273870887,
+                        1.2368619938208154
+                      ],
+                      [
+                        3.1814823540511665,
+                        1.3722413951724943
+                      ],
+                      [
+                        3.800737276424854,
+                        1.201551001641183
+                      ]
+                    ],
+                    "small_batch_size": 21,
+                    "unused_terminal_draws": 31
+                  },
+                  "passed": true,
+                  "policy": {
+                    "batch_provenance": "sqrt(n), literature baseline",
+                    "batch_size": null,
+                    "jit_compile": true,
+                    "lugsail_c": 0.5,
+                    "lugsail_r": 3,
+                    "method": "lugsail",
+                    "min_batches": 20,
+                    "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+                    "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+                    "schema": "bayesfilter.hmc_precision_policy.v1",
+                    "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+                    "targets": [
+                      {
+                        "kind": "quantile",
+                        "mcse_absolute_max": 0.05,
+                        "mcse_sd_ratio_max": null,
+                        "name": "x",
+                        "probability": 0.5
+                      },
+                      {
+                        "kind": "quantile",
+                        "mcse_absolute_max": 0.05,
+                        "mcse_sd_ratio_max": null,
+                        "name": "y",
+                        "probability": 0.5
+                      },
+                      {
+                        "kind": "mean",
+                        "mcse_absolute_max": 0.05,
+                        "mcse_sd_ratio_max": null,
+                        "name": "x",
+                        "probability": null
+                      },
+                      {
+                        "kind": "mean",
+                        "mcse_absolute_max": 0.05,
+                        "mcse_sd_ratio_max": null,
+                        "name": "y",
+                        "probability": null
+                      }
+                    ]
+                  },
+                  "schema": "bayesfilter.hmc_precision_report.v1",
+                  "status": "precision_met",
+                  "targets": [
+                    {
+                      "estimate": 0.0311390678813237,
+                      "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                      "kind": "quantile",
+                      "mcse": 0.01557472578560748,
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio": 0.015564352599984685,
+                      "mcse_sd_ratio_max": null,
+                      "name": "x",
+                      "passed": true,
+                      "probability": 0.5,
+                      "valid": true
+                    },
+                    {
+                      "estimate": 0.01291819312467224,
+                      "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                      "kind": "quantile",
+                      "mcse": 0.011240352577458368,
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio": 0.01116856953673948,
+                      "mcse_sd_ratio_max": null,
+                      "name": "y",
+                      "passed": true,
+                      "probability": 0.5,
+                      "valid": true
+                    },
+                    {
+                      "estimate": 0.04129709671985981,
+                      "estimator": "lugsail",
+                      "kind": "mean",
+                      "mcse": 0.01511947085345243,
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio": 0.01510940087984004,
+                      "mcse_sd_ratio_max": null,
+                      "name": "x",
+                      "passed": true,
+                      "probability": null,
+                      "valid": true
+                    },
+                    {
+                      "estimate": -0.011168408161979311,
+                      "estimator": "lugsail",
+                      "kind": "mean",
+                      "mcse": 0.009330051802305773,
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio": 0.00927046830758717,
+                      "mcse_sd_ratio_max": null,
+                      "name": "y",
+                      "passed": true,
+                      "probability": null,
+                      "valid": true
+                    }
+                  ]
+                },
+                "quantity_names": [
+                  "x",
+                  "y"
+                ],
+                "rank_normalized_split_rhat": [
+                  1.0011730334037798,
+                  1.0001176681125608
+                ],
+                "rhat": [
+                  1.0011730334037798,
+                  1.0001760499361194
+                ],
+                "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "rhat_threshold": 1.01,
+                "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+                "split_chain_count": 8,
+                "split_draw_count_per_chain": 2000,
+                "stage": "retained",
+                "tail_ess": [
+                  6572.44624273365,
+                  10633.525407931462
+                ]
+              }
+            }
+          ],
+          "tuning_completion": "complete"
+        },
+        "outer_seconds": 627.1352221879642,
+        "runtime": {
+          "cpu_threads": {
+            "inter_op": "1",
+            "intra_op": "1"
+          },
+          "device_scope": "gpu",
+          "gpu_intentionally_hidden": false,
+          "gpu_tensor_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "jit_compile": true,
+          "memory_policy": {
+            "all_physical_devices_memory_growth": true,
+            "configured_before_logical_device_initialization": true,
+            "full_device_preallocation_disabled": true,
+            "logical_device_memory_limit_required_for_hard_cap": true,
+            "memory_growth_is_hard_memory_cap": false,
+            "mode": "memory_growth",
+            "physical_devices": [
+              {
+                "device": "/physical_device:GPU:0",
+                "device_details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "memory_growth": true
+              }
+            ],
+            "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+            "tf_force_gpu_allow_growth": "true"
+          },
+          "physical_gpu_details": [
+            {
+              "details": {
+                "compute_capability": [
+                  8,
+                  9
+                ],
+                "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+              },
+              "name": "/physical_device:GPU:0"
+            }
+          ],
+          "python": "3.13.13",
+          "tensorflow": "2.20.0",
+          "tf32": true,
+          "tfp": "0.25.0",
+          "visible_devices": "1"
+        },
+        "resources": {
+          "after": {
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 653824,
+                "peak": 41681664
+              }
+            },
+            "live_objects": {
+              "bayesfilter.inference.hmc.ReusableFullChainHMCRunner": 148,
+              "tensorflow.core.framework.function_pb2.FunctionDef": 183,
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 1376,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 202,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionContext": 183,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 1494,
+              "tensorflow.python.eager.context.FunctionCallOptions": 1,
+              "tensorflow.python.eager.polymorphic_function.atomic_function.AtomicFunction": 1159,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunction": 183,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunctionGarbageCollector": 183,
+              "tensorflow.python.eager.polymorphic_function.concrete_function._DelayedRewriteGradientFunctions": 183,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 201,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.func_graph.FuncGraph": 199,
+              "tensorflow.python.framework.ops.Graph": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph": 16,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileBodyFuncGraph": 480,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileCondFuncGraph": 480
+            },
+            "max_rss_kib": 6436624,
+            "pid": 760576,
+            "proc_status": {
+              "Threads": "276",
+              "VmHWM": "6482920 kB",
+              "VmRSS": "6482920 kB"
+            },
+            "registered_tf_functions": 1251
+          },
+          "before": {
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 1280,
+                "peak": 2048
+              }
+            },
+            "live_objects": {
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 20,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 21,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 22,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 20,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1
+            },
+            "max_rss_kib": 745472,
+            "pid": 760576,
+            "proc_status": {
+              "Threads": "9",
+              "VmHWM": "748328 kB",
+              "VmRSS": "748328 kB"
+            },
+            "registered_tf_functions": 3
+          }
+        }
+      },
+      "dynamic": {
+        "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/gaussian-full-dynamic-gpu-r1/fits/replication-0000",
+        "design_identity": "27e4c033294f9867f56b34fcd834ad454922094d60142aa10f6a999a1f2a3dbc",
+        "design_file_sha256": "9615cfe84e9f376c297c3a0624dc06aaadd23e9243e0e5623fd134915f576d0f",
+        "source_identity": "628a0a3a2d1a6305c1df1b38b196bb45b12d2930f7712df0d9f7520f772e39c7",
+        "summary": {
+          "candidate_count": 94,
+          "verified_count": 24,
+          "receipts": 157,
+          "tensor_count": 84,
+          "selected_posteriors": [
+            {
+              "candidate_id": "inference_validation:718c103ce80cf0bbfd92:candidate:000001",
+              "L": 3,
+              "epsilon": 1.189207115002721,
+              "passed": true,
+              "hard_vetoes": [],
+              "warmup_cap": false,
+              "retained_cap": false,
+              "warmup": 30000,
+              "retained": 4000,
+              "fixed_status": "assessed",
+              "final_check": {
+                "bulk_ess": [
+                  4915.859444219956,
+                  12488.27087276196
+                ],
+                "bulk_tail_ess_method": "bayesfilter.stan_initial_positive_monotone_ess.v1",
+                "chain_count": 4,
+                "consumer_diagnostic": null,
+                "diagnostics_all_finite": true,
+                "draw_count_per_chain": 4000,
+                "finite_rhat_count": 2,
+                "folded_rank_normalized_split_rhat": [
+                  1.0005416395406608,
+                  1.0001760499361194
+                ],
+                "hard_vetoes": [],
+                "information_passed": true,
+                "input_all_finite": true,
+                "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+                "max_finite_rhat": 1.0011730334037798,
+                "max_folded_rank_normalized_split_rhat": 1.0005416395406608,
+                "max_rank_normalized_split_rhat": 1.0011730334037798,
+                "mcse_sd_ratio": [
+                  0.014741158109466088,
+                  0.008957070149701832
+                ],
+                "mean_ess": [
+                  4601.895911727886,
+                  12464.304465197547
+                ],
+                "mean_mcse": [
+                  0.014750982660046149,
+                  0.009014639360258555
+                ],
+                "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+                "modern_rhat": {
+                  "chain_count": 4,
+                  "diagnostics_all_finite": true,
+                  "draw_count_per_chain": 4000,
+                  "finite_rhat_count": 2,
+                  "folded_rank_normalized_split_rhat": [
+                    1.0005416395406608,
+                    1.0001760499361194
+                  ],
+                  "hard_vetoes": [],
+                  "input_all_finite": true,
+                  "max_finite_rhat": 1.0011730334037798,
+                  "max_folded_rank_normalized_split_rhat": 1.0005416395406608,
+                  "max_rank_normalized_split_rhat": 1.0011730334037798,
+                  "nonfinite_rhat_count": 0,
+                  "parameter_count": 2,
+                  "passed": true,
+                  "rank_normalized_split_rhat": [
+                    1.0011730334037798,
+                    1.0001176681125608
+                  ],
+                  "rhat": [
+                    1.0011730334037798,
+                    1.0001760499361194
+                  ],
+                  "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                  "rhat_threshold": 1.01,
+                  "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+                  "split_chain_count": 8,
+                  "split_draw_count_per_chain": 2000
+                },
+                "nonfinite_rhat_count": 0,
+                "parameter_count": 2,
+                "passed": true,
+                "precision": {
+                  "batch_metadata": {
+                    "batch_count": 63,
+                    "batch_size": 63,
+                    "per_chain_long_run_variance": [
+                      [
+                        3.778499633077571,
+                        1.8821478311951934
+                      ],
+                      [
+                        3.0719773224704405,
+                        1.0218075324961597
+                      ],
+                      [
+                        3.3087460251120224,
+                        1.4274040800272316
+                      ],
+                      [
+                        4.471074548197409,
+                        1.2398320208388032
+                      ]
+                    ],
+                    "per_chain_plain_long_run_variance": [
+                      [
+                        3.500209758030386,
+                        1.5078865493079556
+                      ],
+                      [
+                        2.981166273870887,
+                        1.2368619938208154
+                      ],
+                      [
+                        3.1814823540511665,
+                        1.3722413951724943
+                      ],
+                      [
+                        3.800737276424854,
+                        1.201551001641183
+                      ]
+                    ],
+                    "small_batch_size": 21,
+                    "unused_terminal_draws": 31
+                  },
+                  "passed": true,
+                  "policy": {
+                    "batch_provenance": "sqrt(n), literature baseline",
+                    "batch_size": null,
+                    "jit_compile": true,
+                    "lugsail_c": 0.5,
+                    "lugsail_r": 3,
+                    "method": "lugsail",
+                    "min_batches": 20,
+                    "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+                    "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+                    "schema": "bayesfilter.hmc_precision_policy.v1",
+                    "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+                    "targets": [
+                      {
+                        "kind": "quantile",
+                        "mcse_absolute_max": 0.05,
+                        "mcse_sd_ratio_max": null,
+                        "name": "x",
+                        "probability": 0.5
+                      },
+                      {
+                        "kind": "quantile",
+                        "mcse_absolute_max": 0.05,
+                        "mcse_sd_ratio_max": null,
+                        "name": "y",
+                        "probability": 0.5
+                      },
+                      {
+                        "kind": "mean",
+                        "mcse_absolute_max": 0.05,
+                        "mcse_sd_ratio_max": null,
+                        "name": "x",
+                        "probability": null
+                      },
+                      {
+                        "kind": "mean",
+                        "mcse_absolute_max": 0.05,
+                        "mcse_sd_ratio_max": null,
+                        "name": "y",
+                        "probability": null
+                      }
+                    ]
+                  },
+                  "schema": "bayesfilter.hmc_precision_report.v1",
+                  "status": "precision_met",
+                  "targets": [
+                    {
+                      "estimate": 0.0311390678813237,
+                      "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                      "kind": "quantile",
+                      "mcse": 0.01557472578560748,
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio": 0.015564352599984685,
+                      "mcse_sd_ratio_max": null,
+                      "name": "x",
+                      "passed": true,
+                      "probability": 0.5,
+                      "valid": true
+                    },
+                    {
+                      "estimate": 0.01291819312467224,
+                      "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                      "kind": "quantile",
+                      "mcse": 0.011240352577458368,
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio": 0.01116856953673948,
+                      "mcse_sd_ratio_max": null,
+                      "name": "y",
+                      "passed": true,
+                      "probability": 0.5,
+                      "valid": true
+                    },
+                    {
+                      "estimate": 0.04129709671985981,
+                      "estimator": "lugsail",
+                      "kind": "mean",
+                      "mcse": 0.01511947085345243,
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio": 0.01510940087984004,
+                      "mcse_sd_ratio_max": null,
+                      "name": "x",
+                      "passed": true,
+                      "probability": null,
+                      "valid": true
+                    },
+                    {
+                      "estimate": -0.011168408161979311,
+                      "estimator": "lugsail",
+                      "kind": "mean",
+                      "mcse": 0.009330051802305773,
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio": 0.00927046830758717,
+                      "mcse_sd_ratio_max": null,
+                      "name": "y",
+                      "passed": true,
+                      "probability": null,
+                      "valid": true
+                    }
+                  ]
+                },
+                "quantity_names": [
+                  "x",
+                  "y"
+                ],
+                "rank_normalized_split_rhat": [
+                  1.0011730334037798,
+                  1.0001176681125608
+                ],
+                "rhat": [
+                  1.0011730334037798,
+                  1.0001760499361194
+                ],
+                "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "rhat_threshold": 1.01,
+                "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+                "split_chain_count": 8,
+                "split_draw_count_per_chain": 2000,
+                "stage": "retained",
+                "tail_ess": [
+                  6572.44624273365,
+                  10633.525407931462
+                ]
+              }
+            }
+          ],
+          "tuning_completion": "complete"
+        },
+        "outer_seconds": 346.5884383870289,
+        "runtime": {
+          "cpu_threads": {
+            "inter_op": "1",
+            "intra_op": "1"
+          },
+          "device_scope": "gpu",
+          "gpu_intentionally_hidden": false,
+          "gpu_tensor_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "jit_compile": true,
+          "memory_policy": {
+            "all_physical_devices_memory_growth": true,
+            "configured_before_logical_device_initialization": true,
+            "full_device_preallocation_disabled": true,
+            "logical_device_memory_limit_required_for_hard_cap": true,
+            "memory_growth_is_hard_memory_cap": false,
+            "mode": "memory_growth",
+            "physical_devices": [
+              {
+                "device": "/physical_device:GPU:0",
+                "device_details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "memory_growth": true
+              }
+            ],
+            "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+            "tf_force_gpu_allow_growth": "true"
+          },
+          "physical_gpu_details": [
+            {
+              "details": {
+                "compute_capability": [
+                  8,
+                  9
+                ],
+                "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+              },
+              "name": "/physical_device:GPU:0"
+            }
+          ],
+          "python": "3.13.13",
+          "tensorflow": "2.20.0",
+          "tf32": true,
+          "tfp": "0.25.0",
+          "visible_devices": "1"
+        },
+        "resources": {
+          "after": {
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 623872,
+                "peak": 39109120
+              }
+            },
+            "live_objects": {
+              "bayesfilter.inference.hmc.ReusableFullChainHMCRunner": 28,
+              "tensorflow.core.framework.function_pb2.FunctionDef": 63,
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 416,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 82,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionContext": 63,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 422,
+              "tensorflow.python.eager.context.FunctionCallOptions": 1,
+              "tensorflow.python.eager.polymorphic_function.atomic_function.AtomicFunction": 319,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunction": 63,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunctionGarbageCollector": 63,
+              "tensorflow.python.eager.polymorphic_function.concrete_function._DelayedRewriteGradientFunctions": 63,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 81,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.func_graph.FuncGraph": 79,
+              "tensorflow.python.framework.ops.Graph": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph": 16,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileBodyFuncGraph": 120,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileCondFuncGraph": 120
+            },
+            "max_rss_kib": 2707968,
+            "pid": 811894,
+            "proc_status": {
+              "Threads": "276",
+              "VmHWM": "2727760 kB",
+              "VmRSS": "2727760 kB"
+            },
+            "registered_tf_functions": 411
+          },
+          "before": {
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 1280,
+                "peak": 2048
+              }
+            },
+            "live_objects": {
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 20,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 21,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 22,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 20,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1
+            },
+            "max_rss_kib": 745472,
+            "pid": 811894,
+            "proc_status": {
+              "Threads": "9",
+              "VmHWM": "747408 kB",
+              "VmRSS": "747408 kB"
+            },
+            "registered_tf_functions": 3
+          }
+        }
+      },
+      "parity": {
+        "left": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/gaussian-full-static-gpu-r1/fits/replication-0000",
+        "right": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/gaussian-full-dynamic-gpu-r1/fits/replication-0000",
+        "exact_tensor_and_numerical_parity": true,
+        "candidate_count": 94,
+        "verified_count": 24,
+        "receipts": 157,
+        "tensor_count": 84,
+        "selected_posteriors": [
+          {
+            "candidate_id": "inference_validation:718c103ce80cf0bbfd92:candidate:000001",
+            "L": 3,
+            "epsilon": 1.189207115002721,
+            "passed": true,
+            "hard_vetoes": [],
+            "warmup_cap": false,
+            "retained_cap": false,
+            "warmup": 30000,
+            "retained": 4000,
+            "fixed_status": "assessed",
+            "final_check": {
+              "bulk_ess": [
+                4915.859444219956,
+                12488.27087276196
+              ],
+              "bulk_tail_ess_method": "bayesfilter.stan_initial_positive_monotone_ess.v1",
+              "chain_count": 4,
+              "consumer_diagnostic": null,
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 4000,
+              "finite_rhat_count": 2,
+              "folded_rank_normalized_split_rhat": [
+                1.0005416395406608,
+                1.0001760499361194
+              ],
+              "hard_vetoes": [],
+              "information_passed": true,
+              "input_all_finite": true,
+              "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+              "max_finite_rhat": 1.0011730334037798,
+              "max_folded_rank_normalized_split_rhat": 1.0005416395406608,
+              "max_rank_normalized_split_rhat": 1.0011730334037798,
+              "mcse_sd_ratio": [
+                0.014741158109466088,
+                0.008957070149701832
+              ],
+              "mean_ess": [
+                4601.895911727886,
+                12464.304465197547
+              ],
+              "mean_mcse": [
+                0.014750982660046149,
+                0.009014639360258555
+              ],
+              "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+              "modern_rhat": {
+                "chain_count": 4,
+                "diagnostics_all_finite": true,
+                "draw_count_per_chain": 4000,
+                "finite_rhat_count": 2,
+                "folded_rank_normalized_split_rhat": [
+                  1.0005416395406608,
+                  1.0001760499361194
+                ],
+                "hard_vetoes": [],
+                "input_all_finite": true,
+                "max_finite_rhat": 1.0011730334037798,
+                "max_folded_rank_normalized_split_rhat": 1.0005416395406608,
+                "max_rank_normalized_split_rhat": 1.0011730334037798,
+                "nonfinite_rhat_count": 0,
+                "parameter_count": 2,
+                "passed": true,
+                "rank_normalized_split_rhat": [
+                  1.0011730334037798,
+                  1.0001176681125608
+                ],
+                "rhat": [
+                  1.0011730334037798,
+                  1.0001760499361194
+                ],
+                "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "rhat_threshold": 1.01,
+                "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+                "split_chain_count": 8,
+                "split_draw_count_per_chain": 2000
+              },
+              "nonfinite_rhat_count": 0,
+              "parameter_count": 2,
+              "passed": true,
+              "precision": {
+                "batch_metadata": {
+                  "batch_count": 63,
+                  "batch_size": 63,
+                  "per_chain_long_run_variance": [
+                    [
+                      3.778499633077571,
+                      1.8821478311951934
+                    ],
+                    [
+                      3.0719773224704405,
+                      1.0218075324961597
+                    ],
+                    [
+                      3.3087460251120224,
+                      1.4274040800272316
+                    ],
+                    [
+                      4.471074548197409,
+                      1.2398320208388032
+                    ]
+                  ],
+                  "per_chain_plain_long_run_variance": [
+                    [
+                      3.500209758030386,
+                      1.5078865493079556
+                    ],
+                    [
+                      2.981166273870887,
+                      1.2368619938208154
+                    ],
+                    [
+                      3.1814823540511665,
+                      1.3722413951724943
+                    ],
+                    [
+                      3.800737276424854,
+                      1.201551001641183
+                    ]
+                  ],
+                  "small_batch_size": 21,
+                  "unused_terminal_draws": 31
+                },
+                "passed": true,
+                "policy": {
+                  "batch_provenance": "sqrt(n), literature baseline",
+                  "batch_size": null,
+                  "jit_compile": true,
+                  "lugsail_c": 0.5,
+                  "lugsail_r": 3,
+                  "method": "lugsail",
+                  "min_batches": 20,
+                  "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+                  "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+                  "schema": "bayesfilter.hmc_precision_policy.v1",
+                  "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+                  "targets": [
+                    {
+                      "kind": "quantile",
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio_max": null,
+                      "name": "x",
+                      "probability": 0.5
+                    },
+                    {
+                      "kind": "quantile",
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio_max": null,
+                      "name": "y",
+                      "probability": 0.5
+                    },
+                    {
+                      "kind": "mean",
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio_max": null,
+                      "name": "x",
+                      "probability": null
+                    },
+                    {
+                      "kind": "mean",
+                      "mcse_absolute_max": 0.05,
+                      "mcse_sd_ratio_max": null,
+                      "name": "y",
+                      "probability": null
+                    }
+                  ]
+                },
+                "schema": "bayesfilter.hmc_precision_report.v1",
+                "status": "precision_met",
+                "targets": [
+                  {
+                    "estimate": 0.0311390678813237,
+                    "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                    "kind": "quantile",
+                    "mcse": 0.01557472578560748,
+                    "mcse_absolute_max": 0.05,
+                    "mcse_sd_ratio": 0.015564352599984685,
+                    "mcse_sd_ratio_max": null,
+                    "name": "x",
+                    "passed": true,
+                    "probability": 0.5,
+                    "valid": true
+                  },
+                  {
+                    "estimate": 0.01291819312467224,
+                    "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                    "kind": "quantile",
+                    "mcse": 0.011240352577458368,
+                    "mcse_absolute_max": 0.05,
+                    "mcse_sd_ratio": 0.01116856953673948,
+                    "mcse_sd_ratio_max": null,
+                    "name": "y",
+                    "passed": true,
+                    "probability": 0.5,
+                    "valid": true
+                  },
+                  {
+                    "estimate": 0.04129709671985981,
+                    "estimator": "lugsail",
+                    "kind": "mean",
+                    "mcse": 0.01511947085345243,
+                    "mcse_absolute_max": 0.05,
+                    "mcse_sd_ratio": 0.01510940087984004,
+                    "mcse_sd_ratio_max": null,
+                    "name": "x",
+                    "passed": true,
+                    "probability": null,
+                    "valid": true
+                  },
+                  {
+                    "estimate": -0.011168408161979311,
+                    "estimator": "lugsail",
+                    "kind": "mean",
+                    "mcse": 0.009330051802305773,
+                    "mcse_absolute_max": 0.05,
+                    "mcse_sd_ratio": 0.00927046830758717,
+                    "mcse_sd_ratio_max": null,
+                    "name": "y",
+                    "passed": true,
+                    "probability": null,
+                    "valid": true
+                  }
+                ]
+              },
+              "quantity_names": [
+                "x",
+                "y"
+              ],
+              "rank_normalized_split_rhat": [
+                1.0011730334037798,
+                1.0001176681125608
+              ],
+              "rhat": [
+                1.0011730334037798,
+                1.0001760499361194
+              ],
+              "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "rhat_threshold": 1.01,
+              "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 2000,
+              "stage": "retained",
+              "tail_ess": [
+                6572.44624273365,
+                10633.525407931462
+              ]
+            }
+          }
+        ],
+        "tuning_completion": "complete",
+        "excluded_from_comparison": [
+          "elapsed/runtime clocks",
+          "output paths",
+          "full binding/evidence integrity hashes that include clocks (individually verified)"
+        ],
+        "observations_and_receipts_equal": true,
+        "posterior_decisions_equal": true,
+        "numerical_receipts_compared": 157,
+        "observation_count": 157,
+        "source_closure_and_full_geometry_equal": true
+      },
+      "replays": {
+        "static": {
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/gaussian-static-gpu-r2",
+          "sha256": "19185489c839197cc7b6ba738f2a93cbe5ff2482fdf9a44e13d575e51c5f6970",
+          "runner_groups": 6,
+          "all_archived_tensor_fingerprints_independently_checked": true,
+          "source_difference_paths": [],
+          "first_call_seconds_including_reuse": 68.54501580691431,
+          "two_warmed_repeats_seconds": 2.3228838390205055,
+          "cells": [
+            {
+              "L": 3,
+              "count": 8,
+              "epsilon": 1.189207115002721,
+              "reused": false,
+              "construction_seconds": 0.0025278410175815225,
+              "call_seconds": [
+                14.235943518928252,
+                0.04487649106886238,
+                0.04094548407010734
+              ]
+            },
+            {
+              "L": 3,
+              "count": 136,
+              "epsilon": 1.189207115002721,
+              "reused": false,
+              "construction_seconds": 0.00252550991717726,
+              "call_seconds": [
+                10.718683561077341,
+                0.11301113094668835,
+                0.10447848099283874
+              ]
+            },
+            {
+              "L": 3,
+              "count": 256,
+              "epsilon": 1.189207115002721,
+              "reused": false,
+              "construction_seconds": 0.002519689965993166,
+              "call_seconds": [
+                10.921696893055923,
+                0.1803407829720527,
+                0.17640290595591068
+              ]
+            },
+            {
+              "L": 25,
+              "count": 8,
+              "epsilon": 1.189207115002721,
+              "reused": false,
+              "construction_seconds": 0.0027584119234234095,
+              "call_seconds": [
+                10.32192253798712,
+                0.045781273976899683,
+                0.03743678599130362
+              ]
+            },
+            {
+              "L": 25,
+              "count": 136,
+              "epsilon": 1.189207115002721,
+              "reused": false,
+              "construction_seconds": 0.0022924370132386684,
+              "call_seconds": [
+                10.944830518914387,
+                0.28425307502038777,
+                0.28269233694300056
+              ]
+            },
+            {
+              "L": 25,
+              "count": 256,
+              "epsilon": 1.189207115002721,
+              "reused": false,
+              "construction_seconds": 0.002414767979644239,
+              "call_seconds": [
+                11.401938776951283,
+                0.505233564064838,
+                0.5074315270176157
+              ]
+            }
+          ],
+          "resources": {
+            "pid": 736632,
+            "proc_status": {
+              "VmHWM": "1820284 kB",
+              "VmRSS": "1820284 kB",
+              "Threads": "276"
+            },
+            "max_rss_kib": 1729044,
+            "live_objects": {
+              "bayesfilter.inference.hmc.IndependentChainHMCRunner": 6,
+              "bayesfilter.inference.hmc.ReusableFullChainHMCRunner": 24,
+              "tensorflow.core.framework.function_pb2.FunctionDef": 26,
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 228,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 47,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionContext": 26,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 254,
+              "tensorflow.python.eager.context.FunctionCallOptions": 1,
+              "tensorflow.python.eager.polymorphic_function.atomic_function.AtomicFunction": 182,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunction": 26,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunctionGarbageCollector": 26,
+              "tensorflow.python.eager.polymorphic_function.concrete_function._DelayedRewriteGradientFunctions": 26,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 46,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.func_graph.FuncGraph": 26,
+              "tensorflow.python.framework.ops.Graph": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph": 10,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileBodyFuncGraph": 73,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileCondFuncGraph": 73
+            },
+            "registered_tf_functions": 216,
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 136192,
+                "peak": 541952
+              }
+            }
+          }
+        },
+        "dynamic": {
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/gaussian-dynamic-gpu-r1",
+          "sha256": "949d3a3c517a2806fff837c01910fa937c0a2b2ce6dfffbaf48ded35eedb1b60",
+          "runner_groups": 3,
+          "all_archived_tensor_fingerprints_independently_checked": true,
+          "source_difference_paths": [
+            "bayesfilter/inference/hmc.py"
+          ],
+          "first_call_seconds_including_reuse": 37.243133094976656,
+          "two_warmed_repeats_seconds": 3.425843474105932,
+          "cells": [
+            {
+              "L": 3,
+              "count": 8,
+              "epsilon": 1.189207115002721,
+              "reused": false,
+              "construction_seconds": 0.002410575980320573,
+              "call_seconds": [
+                14.330712320050225,
+                0.0535473320633173,
+                0.04556613904424012
+              ]
+            },
+            {
+              "L": 3,
+              "count": 136,
+              "epsilon": 1.189207115002721,
+              "reused": false,
+              "construction_seconds": 0.0025136059848591685,
+              "call_seconds": [
+                10.836918127024546,
+                0.1450178170343861,
+                0.13786927110049874
+              ]
+            },
+            {
+              "L": 3,
+              "count": 256,
+              "epsilon": 1.189207115002721,
+              "reused": false,
+              "construction_seconds": 0.0023609050549566746,
+              "call_seconds": [
+                10.777958311024122,
+                0.23773654794786125,
+                0.23652920592576265
+              ]
+            },
+            {
+              "L": 25,
+              "count": 8,
+              "epsilon": 1.189207115002721,
+              "reused": true,
+              "construction_seconds": 2.0399456843733788e-06,
+              "call_seconds": [
+                0.04943427490070462,
+                0.04323452094104141,
+                0.04295550798997283
+              ]
+            },
+            {
+              "L": 25,
+              "count": 136,
+              "epsilon": 1.189207115002721,
+              "reused": true,
+              "construction_seconds": 2.370099537074566e-06,
+              "call_seconds": [
+                0.44280509394593537,
+                0.4404625390889123,
+                0.4380770529387519
+              ]
+            },
+            {
+              "L": 25,
+              "count": 256,
+              "epsilon": 1.189207115002721,
+              "reused": true,
+              "construction_seconds": 2.5100307539105415e-06,
+              "call_seconds": [
+                0.8053049680311233,
+                0.8035156870028004,
+                0.8013318530283868
+              ]
+            }
+          ],
+          "resources": {
+            "pid": 750674,
+            "proc_status": {
+              "VmHWM": "1459304 kB",
+              "VmRSS": "1459304 kB",
+              "Threads": "276"
+            },
+            "max_rss_kib": 1392272,
+            "live_objects": {
+              "bayesfilter.inference.hmc.IndependentChainHMCRunner": 3,
+              "bayesfilter.inference.hmc.ReusableFullChainHMCRunner": 12,
+              "tensorflow.core.framework.function_pb2.FunctionDef": 14,
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 132,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 35,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionContext": 14,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 146,
+              "tensorflow.python.eager.context.FunctionCallOptions": 1,
+              "tensorflow.python.eager.polymorphic_function.atomic_function.AtomicFunction": 98,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunction": 14,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunctionGarbageCollector": 14,
+              "tensorflow.python.eager.polymorphic_function.concrete_function._DelayedRewriteGradientFunctions": 14,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 34,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.func_graph.FuncGraph": 14,
+              "tensorflow.python.framework.ops.Graph": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph": 10,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileBodyFuncGraph": 37,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileCondFuncGraph": 37
+            },
+            "registered_tf_functions": 132,
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 119040,
+                "peak": 541952
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": "beta-binomial",
+      "static": {
+        "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/beta-binomial-full-static-gpu-r1/fits/replication-0000",
+        "design_identity": "6490c5a243d421a79e592559ad8257013f75bdd15c1b8476ad800023ce0e686d",
+        "design_file_sha256": "fbe21b138d593300e59b33f00e60c20431d48b78391bd727bd297a3c4e41003b",
+        "source_identity": "628a0a3a2d1a6305c1df1b38b196bb45b12d2930f7712df0d9f7520f772e39c7",
+        "summary": {
+          "candidate_count": 100,
+          "verified_count": 16,
+          "receipts": 158,
+          "tensor_count": 94,
+          "selected_posteriors": [
+            {
+              "candidate_id": "inference_validation:398ac3e281a18f54baad:candidate:000001",
+              "L": 3,
+              "epsilon": 2.82696078980962,
+              "passed": true,
+              "hard_vetoes": [],
+              "warmup_cap": false,
+              "retained_cap": false,
+              "warmup": 2000,
+              "retained": 5000,
+              "fixed_status": "assessed",
+              "final_check": {
+                "bulk_ess": [
+                  1781.7439207673608
+                ],
+                "bulk_tail_ess_method": "bayesfilter.stan_initial_positive_monotone_ess.v1",
+                "chain_count": 4,
+                "consumer_diagnostic": null,
+                "diagnostics_all_finite": true,
+                "draw_count_per_chain": 5000,
+                "finite_rhat_count": 1,
+                "folded_rank_normalized_split_rhat": [
+                  1.0002935102936357
+                ],
+                "hard_vetoes": [],
+                "information_passed": true,
+                "input_all_finite": true,
+                "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+                "max_finite_rhat": 1.0035710446299073,
+                "max_folded_rank_normalized_split_rhat": 1.0002935102936357,
+                "max_rank_normalized_split_rhat": 1.0035710446299073,
+                "mcse_sd_ratio": [
+                  0.023750814779029152
+                ],
+                "mean_ess": [
+                  1772.7315511308893
+                ],
+                "mean_mcse": [
+                  0.0027347061063414647
+                ],
+                "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+                "modern_rhat": {
+                  "chain_count": 4,
+                  "diagnostics_all_finite": true,
+                  "draw_count_per_chain": 5000,
+                  "finite_rhat_count": 1,
+                  "folded_rank_normalized_split_rhat": [
+                    1.0002935102936357
+                  ],
+                  "hard_vetoes": [],
+                  "input_all_finite": true,
+                  "max_finite_rhat": 1.0035710446299073,
+                  "max_folded_rank_normalized_split_rhat": 1.0002935102936357,
+                  "max_rank_normalized_split_rhat": 1.0035710446299073,
+                  "nonfinite_rhat_count": 0,
+                  "parameter_count": 1,
+                  "passed": true,
+                  "rank_normalized_split_rhat": [
+                    1.0035710446299073
+                  ],
+                  "rhat": [
+                    1.0035710446299073
+                  ],
+                  "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                  "rhat_threshold": 1.01,
+                  "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+                  "split_chain_count": 8,
+                  "split_draw_count_per_chain": 2500
+                },
+                "nonfinite_rhat_count": 0,
+                "parameter_count": 1,
+                "passed": true,
+                "precision": {
+                  "batch_metadata": {
+                    "batch_count": 71,
+                    "batch_size": 70,
+                    "per_chain_long_run_variance": [
+                      [
+                        0.1831035872576423
+                      ],
+                      [
+                        0.17148317480484443
+                      ],
+                      [
+                        0.09781137738753283
+                      ],
+                      [
+                        0.1972682514316031
+                      ]
+                    ],
+                    "per_chain_plain_long_run_variance": [
+                      [
+                        0.15385268951106307
+                      ],
+                      [
+                        0.15232927365729598
+                      ],
+                      [
+                        0.09891231636864957
+                      ],
+                      [
+                        0.156038013808209
+                      ]
+                    ],
+                    "small_batch_size": 23,
+                    "unused_terminal_draws": 30
+                  },
+                  "passed": true,
+                  "policy": {
+                    "batch_provenance": "sqrt(n), literature baseline",
+                    "batch_size": null,
+                    "jit_compile": true,
+                    "lugsail_c": 0.5,
+                    "lugsail_r": 3,
+                    "method": "lugsail",
+                    "min_batches": 20,
+                    "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+                    "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+                    "schema": "bayesfilter.hmc_precision_policy.v1",
+                    "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+                    "targets": [
+                      {
+                        "kind": "quantile",
+                        "mcse_absolute_max": 0.005,
+                        "mcse_sd_ratio_max": null,
+                        "name": "probability",
+                        "probability": 0.5
+                      },
+                      {
+                        "kind": "mean",
+                        "mcse_absolute_max": 0.005,
+                        "mcse_sd_ratio_max": null,
+                        "name": "probability",
+                        "probability": null
+                      }
+                    ]
+                  },
+                  "schema": "bayesfilter.hmc_precision_report.v1",
+                  "status": "precision_met",
+                  "targets": [
+                    {
+                      "estimate": 0.4073930650681098,
+                      "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                      "kind": "quantile",
+                      "mcse": 0.0029987655742381714,
+                      "mcse_absolute_max": 0.005,
+                      "mcse_sd_ratio": 0.02604416085308095,
+                      "mcse_sd_ratio_max": null,
+                      "name": "probability",
+                      "passed": true,
+                      "probability": 0.5,
+                      "valid": true
+                    },
+                    {
+                      "estimate": 0.40981641624317744,
+                      "estimator": "lugsail",
+                      "kind": "mean",
+                      "mcse": 0.0028497069824843894,
+                      "mcse_absolute_max": 0.005,
+                      "mcse_sd_ratio": 0.024749592856996273,
+                      "mcse_sd_ratio_max": null,
+                      "name": "probability",
+                      "passed": true,
+                      "probability": null,
+                      "valid": true
+                    }
+                  ]
+                },
+                "quantity_names": [
+                  "probability"
+                ],
+                "rank_normalized_split_rhat": [
+                  1.0035710446299073
+                ],
+                "rhat": [
+                  1.0035710446299073
+                ],
+                "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "rhat_threshold": 1.01,
+                "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+                "split_chain_count": 8,
+                "split_draw_count_per_chain": 2500,
+                "stage": "retained",
+                "tail_ess": [
+                  1603.0977634516396
+                ]
+              }
+            }
+          ],
+          "tuning_completion": "complete"
+        },
+        "outer_seconds": 575.1654654580634,
+        "runtime": {
+          "cpu_threads": {
+            "inter_op": "1",
+            "intra_op": "1"
+          },
+          "device_scope": "gpu",
+          "gpu_intentionally_hidden": false,
+          "gpu_tensor_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "jit_compile": true,
+          "memory_policy": {
+            "all_physical_devices_memory_growth": true,
+            "configured_before_logical_device_initialization": true,
+            "full_device_preallocation_disabled": true,
+            "logical_device_memory_limit_required_for_hard_cap": true,
+            "memory_growth_is_hard_memory_cap": false,
+            "mode": "memory_growth",
+            "physical_devices": [
+              {
+                "device": "/physical_device:GPU:0",
+                "device_details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "memory_growth": true
+              }
+            ],
+            "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+            "tf_force_gpu_allow_growth": "true"
+          },
+          "physical_gpu_details": [
+            {
+              "details": {
+                "compute_capability": [
+                  8,
+                  9
+                ],
+                "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+              },
+              "name": "/physical_device:GPU:0"
+            }
+          ],
+          "python": "3.13.13",
+          "tensorflow": "2.20.0",
+          "tf32": true,
+          "tfp": "0.25.0",
+          "visible_devices": "1"
+        },
+        "resources": {
+          "after": {
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 746752,
+                "peak": 8542720
+              }
+            },
+            "live_objects": {
+              "tensorflow.core.framework.function_pb2.FunctionDef": 46,
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 1214,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 65,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionContext": 45,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 1058,
+              "tensorflow.python.eager.context.FunctionCallOptions": 1,
+              "tensorflow.python.eager.polymorphic_function.atomic_function.AtomicFunction": 992,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunction": 45,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunctionGarbageCollector": 46,
+              "tensorflow.python.eager.polymorphic_function.concrete_function._DelayedRewriteGradientFunctions": 46,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 64,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.func_graph.FuncGraph": 204,
+              "tensorflow.python.framework.ops.Graph": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph": 16,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileBodyFuncGraph": 465,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileCondFuncGraph": 465
+            },
+            "max_rss_kib": 5997212,
+            "pid": 827297,
+            "proc_status": {
+              "Threads": "276",
+              "VmHWM": "6077928 kB",
+              "VmRSS": "6077928 kB"
+            },
+            "registered_tf_functions": 1084
+          },
+          "before": {
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 1280,
+                "peak": 2048
+              }
+            },
+            "live_objects": {
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 20,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 21,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 22,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 20,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1
+            },
+            "max_rss_kib": 747520,
+            "pid": 827297,
+            "proc_status": {
+              "Threads": "9",
+              "VmHWM": "747740 kB",
+              "VmRSS": "747740 kB"
+            },
+            "registered_tf_functions": 3
+          }
+        }
+      },
+      "dynamic": {
+        "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/beta-binomial-full-dynamic-gpu-r1/fits/replication-0000",
+        "design_identity": "6490c5a243d421a79e592559ad8257013f75bdd15c1b8476ad800023ce0e686d",
+        "design_file_sha256": "fbe21b138d593300e59b33f00e60c20431d48b78391bd727bd297a3c4e41003b",
+        "source_identity": "628a0a3a2d1a6305c1df1b38b196bb45b12d2930f7712df0d9f7520f772e39c7",
+        "summary": {
+          "candidate_count": 100,
+          "verified_count": 16,
+          "receipts": 158,
+          "tensor_count": 94,
+          "selected_posteriors": [
+            {
+              "candidate_id": "inference_validation:398ac3e281a18f54baad:candidate:000001",
+              "L": 3,
+              "epsilon": 2.82696078980962,
+              "passed": true,
+              "hard_vetoes": [],
+              "warmup_cap": false,
+              "retained_cap": false,
+              "warmup": 2000,
+              "retained": 5000,
+              "fixed_status": "assessed",
+              "final_check": {
+                "bulk_ess": [
+                  1781.7439207673608
+                ],
+                "bulk_tail_ess_method": "bayesfilter.stan_initial_positive_monotone_ess.v1",
+                "chain_count": 4,
+                "consumer_diagnostic": null,
+                "diagnostics_all_finite": true,
+                "draw_count_per_chain": 5000,
+                "finite_rhat_count": 1,
+                "folded_rank_normalized_split_rhat": [
+                  1.0002935102936357
+                ],
+                "hard_vetoes": [],
+                "information_passed": true,
+                "input_all_finite": true,
+                "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+                "max_finite_rhat": 1.0035710446299073,
+                "max_folded_rank_normalized_split_rhat": 1.0002935102936357,
+                "max_rank_normalized_split_rhat": 1.0035710446299073,
+                "mcse_sd_ratio": [
+                  0.023750814779029152
+                ],
+                "mean_ess": [
+                  1772.7315511308893
+                ],
+                "mean_mcse": [
+                  0.0027347061063414647
+                ],
+                "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+                "modern_rhat": {
+                  "chain_count": 4,
+                  "diagnostics_all_finite": true,
+                  "draw_count_per_chain": 5000,
+                  "finite_rhat_count": 1,
+                  "folded_rank_normalized_split_rhat": [
+                    1.0002935102936357
+                  ],
+                  "hard_vetoes": [],
+                  "input_all_finite": true,
+                  "max_finite_rhat": 1.0035710446299073,
+                  "max_folded_rank_normalized_split_rhat": 1.0002935102936357,
+                  "max_rank_normalized_split_rhat": 1.0035710446299073,
+                  "nonfinite_rhat_count": 0,
+                  "parameter_count": 1,
+                  "passed": true,
+                  "rank_normalized_split_rhat": [
+                    1.0035710446299073
+                  ],
+                  "rhat": [
+                    1.0035710446299073
+                  ],
+                  "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                  "rhat_threshold": 1.01,
+                  "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+                  "split_chain_count": 8,
+                  "split_draw_count_per_chain": 2500
+                },
+                "nonfinite_rhat_count": 0,
+                "parameter_count": 1,
+                "passed": true,
+                "precision": {
+                  "batch_metadata": {
+                    "batch_count": 71,
+                    "batch_size": 70,
+                    "per_chain_long_run_variance": [
+                      [
+                        0.1831035872576423
+                      ],
+                      [
+                        0.17148317480484443
+                      ],
+                      [
+                        0.09781137738753283
+                      ],
+                      [
+                        0.1972682514316031
+                      ]
+                    ],
+                    "per_chain_plain_long_run_variance": [
+                      [
+                        0.15385268951106307
+                      ],
+                      [
+                        0.15232927365729598
+                      ],
+                      [
+                        0.09891231636864957
+                      ],
+                      [
+                        0.156038013808209
+                      ]
+                    ],
+                    "small_batch_size": 23,
+                    "unused_terminal_draws": 30
+                  },
+                  "passed": true,
+                  "policy": {
+                    "batch_provenance": "sqrt(n), literature baseline",
+                    "batch_size": null,
+                    "jit_compile": true,
+                    "lugsail_c": 0.5,
+                    "lugsail_r": 3,
+                    "method": "lugsail",
+                    "min_batches": 20,
+                    "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+                    "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+                    "schema": "bayesfilter.hmc_precision_policy.v1",
+                    "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+                    "targets": [
+                      {
+                        "kind": "quantile",
+                        "mcse_absolute_max": 0.005,
+                        "mcse_sd_ratio_max": null,
+                        "name": "probability",
+                        "probability": 0.5
+                      },
+                      {
+                        "kind": "mean",
+                        "mcse_absolute_max": 0.005,
+                        "mcse_sd_ratio_max": null,
+                        "name": "probability",
+                        "probability": null
+                      }
+                    ]
+                  },
+                  "schema": "bayesfilter.hmc_precision_report.v1",
+                  "status": "precision_met",
+                  "targets": [
+                    {
+                      "estimate": 0.4073930650681098,
+                      "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                      "kind": "quantile",
+                      "mcse": 0.0029987655742381714,
+                      "mcse_absolute_max": 0.005,
+                      "mcse_sd_ratio": 0.02604416085308095,
+                      "mcse_sd_ratio_max": null,
+                      "name": "probability",
+                      "passed": true,
+                      "probability": 0.5,
+                      "valid": true
+                    },
+                    {
+                      "estimate": 0.40981641624317744,
+                      "estimator": "lugsail",
+                      "kind": "mean",
+                      "mcse": 0.0028497069824843894,
+                      "mcse_absolute_max": 0.005,
+                      "mcse_sd_ratio": 0.024749592856996273,
+                      "mcse_sd_ratio_max": null,
+                      "name": "probability",
+                      "passed": true,
+                      "probability": null,
+                      "valid": true
+                    }
+                  ]
+                },
+                "quantity_names": [
+                  "probability"
+                ],
+                "rank_normalized_split_rhat": [
+                  1.0035710446299073
+                ],
+                "rhat": [
+                  1.0035710446299073
+                ],
+                "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "rhat_threshold": 1.01,
+                "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+                "split_chain_count": 8,
+                "split_draw_count_per_chain": 2500,
+                "stage": "retained",
+                "tail_ess": [
+                  1603.0977634516396
+                ]
+              }
+            }
+          ],
+          "tuning_completion": "complete"
+        },
+        "outer_seconds": 285.50962492707185,
+        "runtime": {
+          "cpu_threads": {
+            "inter_op": "1",
+            "intra_op": "1"
+          },
+          "device_scope": "gpu",
+          "gpu_intentionally_hidden": false,
+          "gpu_tensor_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "jit_compile": true,
+          "memory_policy": {
+            "all_physical_devices_memory_growth": true,
+            "configured_before_logical_device_initialization": true,
+            "full_device_preallocation_disabled": true,
+            "logical_device_memory_limit_required_for_hard_cap": true,
+            "memory_growth_is_hard_memory_cap": false,
+            "mode": "memory_growth",
+            "physical_devices": [
+              {
+                "device": "/physical_device:GPU:0",
+                "device_details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "memory_growth": true
+              }
+            ],
+            "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+            "tf_force_gpu_allow_growth": "true"
+          },
+          "physical_gpu_details": [
+            {
+              "details": {
+                "compute_capability": [
+                  8,
+                  9
+                ],
+                "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+              },
+              "name": "/physical_device:GPU:0"
+            }
+          ],
+          "python": "3.13.13",
+          "tensorflow": "2.20.0",
+          "tf32": true,
+          "tfp": "0.25.0",
+          "visible_devices": "1"
+        },
+        "resources": {
+          "after": {
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 743680,
+                "peak": 8577536
+              }
+            },
+            "live_objects": {
+              "bayesfilter.inference.hmc.ReusableFullChainHMCRunner": 28,
+              "tensorflow.core.framework.function_pb2.FunctionDef": 74,
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 459,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 94,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionContext": 74,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 463,
+              "tensorflow.python.eager.context.FunctionCallOptions": 1,
+              "tensorflow.python.eager.polymorphic_function.atomic_function.AtomicFunction": 348,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunction": 74,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunctionGarbageCollector": 74,
+              "tensorflow.python.eager.polymorphic_function.concrete_function._DelayedRewriteGradientFunctions": 74,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 93,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.func_graph.FuncGraph": 92,
+              "tensorflow.python.framework.ops.Graph": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph": 16,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileBodyFuncGraph": 129,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileCondFuncGraph": 129
+            },
+            "max_rss_kib": 2574616,
+            "pid": 873871,
+            "proc_status": {
+              "Threads": "276",
+              "VmHWM": "2725224 kB",
+              "VmRSS": "2725224 kB"
+            },
+            "registered_tf_functions": 440
+          },
+          "before": {
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 1280,
+                "peak": 2048
+              }
+            },
+            "live_objects": {
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 20,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 21,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 22,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 20,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1
+            },
+            "max_rss_kib": 739328,
+            "pid": 873871,
+            "proc_status": {
+              "Threads": "9",
+              "VmHWM": "747380 kB",
+              "VmRSS": "747380 kB"
+            },
+            "registered_tf_functions": 3
+          }
+        }
+      },
+      "parity": {
+        "left": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/beta-binomial-full-static-gpu-r1/fits/replication-0000",
+        "right": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/beta-binomial-full-dynamic-gpu-r1/fits/replication-0000",
+        "exact_tensor_and_numerical_parity": true,
+        "candidate_count": 100,
+        "verified_count": 16,
+        "receipts": 158,
+        "tensor_count": 94,
+        "selected_posteriors": [
+          {
+            "candidate_id": "inference_validation:398ac3e281a18f54baad:candidate:000001",
+            "L": 3,
+            "epsilon": 2.82696078980962,
+            "passed": true,
+            "hard_vetoes": [],
+            "warmup_cap": false,
+            "retained_cap": false,
+            "warmup": 2000,
+            "retained": 5000,
+            "fixed_status": "assessed",
+            "final_check": {
+              "bulk_ess": [
+                1781.7439207673608
+              ],
+              "bulk_tail_ess_method": "bayesfilter.stan_initial_positive_monotone_ess.v1",
+              "chain_count": 4,
+              "consumer_diagnostic": null,
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 5000,
+              "finite_rhat_count": 1,
+              "folded_rank_normalized_split_rhat": [
+                1.0002935102936357
+              ],
+              "hard_vetoes": [],
+              "information_passed": true,
+              "input_all_finite": true,
+              "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+              "max_finite_rhat": 1.0035710446299073,
+              "max_folded_rank_normalized_split_rhat": 1.0002935102936357,
+              "max_rank_normalized_split_rhat": 1.0035710446299073,
+              "mcse_sd_ratio": [
+                0.023750814779029152
+              ],
+              "mean_ess": [
+                1772.7315511308893
+              ],
+              "mean_mcse": [
+                0.0027347061063414647
+              ],
+              "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+              "modern_rhat": {
+                "chain_count": 4,
+                "diagnostics_all_finite": true,
+                "draw_count_per_chain": 5000,
+                "finite_rhat_count": 1,
+                "folded_rank_normalized_split_rhat": [
+                  1.0002935102936357
+                ],
+                "hard_vetoes": [],
+                "input_all_finite": true,
+                "max_finite_rhat": 1.0035710446299073,
+                "max_folded_rank_normalized_split_rhat": 1.0002935102936357,
+                "max_rank_normalized_split_rhat": 1.0035710446299073,
+                "nonfinite_rhat_count": 0,
+                "parameter_count": 1,
+                "passed": true,
+                "rank_normalized_split_rhat": [
+                  1.0035710446299073
+                ],
+                "rhat": [
+                  1.0035710446299073
+                ],
+                "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "rhat_threshold": 1.01,
+                "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+                "split_chain_count": 8,
+                "split_draw_count_per_chain": 2500
+              },
+              "nonfinite_rhat_count": 0,
+              "parameter_count": 1,
+              "passed": true,
+              "precision": {
+                "batch_metadata": {
+                  "batch_count": 71,
+                  "batch_size": 70,
+                  "per_chain_long_run_variance": [
+                    [
+                      0.1831035872576423
+                    ],
+                    [
+                      0.17148317480484443
+                    ],
+                    [
+                      0.09781137738753283
+                    ],
+                    [
+                      0.1972682514316031
+                    ]
+                  ],
+                  "per_chain_plain_long_run_variance": [
+                    [
+                      0.15385268951106307
+                    ],
+                    [
+                      0.15232927365729598
+                    ],
+                    [
+                      0.09891231636864957
+                    ],
+                    [
+                      0.156038013808209
+                    ]
+                  ],
+                  "small_batch_size": 23,
+                  "unused_terminal_draws": 30
+                },
+                "passed": true,
+                "policy": {
+                  "batch_provenance": "sqrt(n), literature baseline",
+                  "batch_size": null,
+                  "jit_compile": true,
+                  "lugsail_c": 0.5,
+                  "lugsail_r": 3,
+                  "method": "lugsail",
+                  "min_batches": 20,
+                  "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+                  "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+                  "schema": "bayesfilter.hmc_precision_policy.v1",
+                  "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+                  "targets": [
+                    {
+                      "kind": "quantile",
+                      "mcse_absolute_max": 0.005,
+                      "mcse_sd_ratio_max": null,
+                      "name": "probability",
+                      "probability": 0.5
+                    },
+                    {
+                      "kind": "mean",
+                      "mcse_absolute_max": 0.005,
+                      "mcse_sd_ratio_max": null,
+                      "name": "probability",
+                      "probability": null
+                    }
+                  ]
+                },
+                "schema": "bayesfilter.hmc_precision_report.v1",
+                "status": "precision_met",
+                "targets": [
+                  {
+                    "estimate": 0.4073930650681098,
+                    "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                    "kind": "quantile",
+                    "mcse": 0.0029987655742381714,
+                    "mcse_absolute_max": 0.005,
+                    "mcse_sd_ratio": 0.02604416085308095,
+                    "mcse_sd_ratio_max": null,
+                    "name": "probability",
+                    "passed": true,
+                    "probability": 0.5,
+                    "valid": true
+                  },
+                  {
+                    "estimate": 0.40981641624317744,
+                    "estimator": "lugsail",
+                    "kind": "mean",
+                    "mcse": 0.0028497069824843894,
+                    "mcse_absolute_max": 0.005,
+                    "mcse_sd_ratio": 0.024749592856996273,
+                    "mcse_sd_ratio_max": null,
+                    "name": "probability",
+                    "passed": true,
+                    "probability": null,
+                    "valid": true
+                  }
+                ]
+              },
+              "quantity_names": [
+                "probability"
+              ],
+              "rank_normalized_split_rhat": [
+                1.0035710446299073
+              ],
+              "rhat": [
+                1.0035710446299073
+              ],
+              "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "rhat_threshold": 1.01,
+              "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 2500,
+              "stage": "retained",
+              "tail_ess": [
+                1603.0977634516396
+              ]
+            }
+          }
+        ],
+        "tuning_completion": "complete",
+        "excluded_from_comparison": [
+          "elapsed/runtime clocks",
+          "output paths",
+          "full binding/evidence integrity hashes that include clocks (individually verified)"
+        ],
+        "observations_and_receipts_equal": true,
+        "posterior_decisions_equal": true,
+        "numerical_receipts_compared": 158,
+        "observation_count": 158,
+        "source_closure_and_full_geometry_equal": true
+      },
+      "replays": {
+        "static": {
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/beta-binomial-static-gpu-r1",
+          "sha256": "817f15c2bfa3b59261157112eef7458590d6713a7335f185496cd5954730c5e5",
+          "runner_groups": 6,
+          "all_archived_tensor_fingerprints_independently_checked": true,
+          "source_difference_paths": [],
+          "first_call_seconds_including_reuse": 69.60078768921085,
+          "two_warmed_repeats_seconds": 1.8810187469935045,
+          "cells": [
+            {
+              "L": 3,
+              "count": 8,
+              "epsilon": 2.82696078980962,
+              "reused": false,
+              "construction_seconds": 0.005886995000764728,
+              "call_seconds": [
+                14.489733827067539,
+                0.04128750099334866,
+                0.039359999005682766
+              ]
+            },
+            {
+              "L": 3,
+              "count": 136,
+              "epsilon": 2.82696078980962,
+              "reused": false,
+              "construction_seconds": 0.002922351937741041,
+              "call_seconds": [
+                10.969957259949297,
+                0.09877489600330591,
+                0.09024937206413597
+              ]
+            },
+            {
+              "L": 3,
+              "count": 256,
+              "epsilon": 2.82696078980962,
+              "reused": false,
+              "construction_seconds": 0.0023794660810381174,
+              "call_seconds": [
+                11.036447231075726,
+                0.15470298007130623,
+                0.1496236639795825
+              ]
+            },
+            {
+              "L": 25,
+              "count": 8,
+              "epsilon": 2.5923344742364924,
+              "reused": false,
+              "construction_seconds": 0.002352455980144441,
+              "call_seconds": [
+                11.022940381080844,
+                0.04531770898029208,
+                0.036413040943443775
+              ]
+            },
+            {
+              "L": 25,
+              "count": 136,
+              "epsilon": 2.82696078980962,
+              "reused": false,
+              "construction_seconds": 0.00233547599054873,
+              "call_seconds": [
+                10.483781634015031,
+                0.2190313689643517,
+                0.21762736490927637
+              ]
+            },
+            {
+              "L": 25,
+              "count": 256,
+              "epsilon": 2.5923344742364924,
+              "reused": false,
+              "construction_seconds": 0.002246535033918917,
+              "call_seconds": [
+                11.59792735602241,
+                0.3950912900036201,
+                0.3935395610751584
+              ]
+            }
+          ],
+          "resources": {
+            "pid": 743599,
+            "proc_status": {
+              "VmHWM": "1773468 kB",
+              "VmRSS": "1773468 kB",
+              "Threads": "276"
+            },
+            "max_rss_kib": 1683752,
+            "live_objects": {
+              "bayesfilter.inference.hmc.IndependentChainHMCRunner": 6,
+              "bayesfilter.inference.hmc.ReusableFullChainHMCRunner": 24,
+              "tensorflow.core.framework.function_pb2.FunctionDef": 26,
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 228,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 47,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionContext": 26,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 254,
+              "tensorflow.python.eager.context.FunctionCallOptions": 1,
+              "tensorflow.python.eager.polymorphic_function.atomic_function.AtomicFunction": 182,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunction": 26,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunctionGarbageCollector": 26,
+              "tensorflow.python.eager.polymorphic_function.concrete_function._DelayedRewriteGradientFunctions": 26,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 46,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.func_graph.FuncGraph": 26,
+              "tensorflow.python.framework.ops.Graph": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph": 10,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileBodyFuncGraph": 73,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileCondFuncGraph": 73
+            },
+            "registered_tf_functions": 216,
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 93952,
+                "peak": 535552
+              }
+            }
+          }
+        },
+        "dynamic": {
+          "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/beta-binomial-dynamic-gpu-r1",
+          "sha256": "39436cd2bfa789674bec63dd7279981ef198017b3c6a57ed9e9d86538dd91890",
+          "runner_groups": 3,
+          "all_archived_tensor_fingerprints_independently_checked": true,
+          "source_difference_paths": [
+            "bayesfilter/inference/hmc.py"
+          ],
+          "first_call_seconds_including_reuse": 38.36137521988712,
+          "two_warmed_repeats_seconds": 3.0072131368797272,
+          "cells": [
+            {
+              "L": 3,
+              "count": 8,
+              "epsilon": 2.82696078980962,
+              "reused": false,
+              "construction_seconds": 0.005413356004282832,
+              "call_seconds": [
+                14.7830689890543,
+                0.04224378208164126,
+                0.04057691490743309
+              ]
+            },
+            {
+              "L": 3,
+              "count": 136,
+              "epsilon": 2.82696078980962,
+              "reused": false,
+              "construction_seconds": 0.0024820949183776975,
+              "call_seconds": [
+                11.34946509602014,
+                0.1271012359065935,
+                0.12133880809415132
+              ]
+            },
+            {
+              "L": 3,
+              "count": 256,
+              "epsilon": 2.82696078980962,
+              "reused": false,
+              "construction_seconds": 0.0023293039994314313,
+              "call_seconds": [
+                11.092111960984766,
+                0.21269918303005397,
+                0.20687401399482042
+              ]
+            },
+            {
+              "L": 25,
+              "count": 8,
+              "epsilon": 2.5923344742364924,
+              "reused": true,
+              "construction_seconds": 2.049957402050495e-06,
+              "call_seconds": [
+                0.045468991971574724,
+                0.03961611201521009,
+                0.03923785896040499
+              ]
+            },
+            {
+              "L": 25,
+              "count": 136,
+              "epsilon": 2.82696078980962,
+              "reused": true,
+              "construction_seconds": 2.66998540610075e-06,
+              "call_seconds": [
+                0.3888069229433313,
+                0.3840761339524761,
+                0.38289480202365667
+              ]
+            },
+            {
+              "L": 25,
+              "count": 256,
+              "epsilon": 2.5923344742364924,
+              "reused": true,
+              "construction_seconds": 2.1400628611445427e-06,
+              "call_seconds": [
+                0.7024532589130104,
+                0.6980114629259333,
+                0.7125428289873526
+              ]
+            }
+          ],
+          "resources": {
+            "pid": 754313,
+            "proc_status": {
+              "VmHWM": "1422800 kB",
+              "VmRSS": "1422800 kB",
+              "Threads": "276"
+            },
+            "max_rss_kib": 1356296,
+            "live_objects": {
+              "bayesfilter.inference.hmc.IndependentChainHMCRunner": 3,
+              "bayesfilter.inference.hmc.ReusableFullChainHMCRunner": 12,
+              "tensorflow.core.framework.function_pb2.FunctionDef": 14,
+              "tensorflow.core.function.capture.capture_container.FunctionCaptures": 132,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionCache": 35,
+              "tensorflow.core.function.polymorphism.function_cache.FunctionContext": 14,
+              "tensorflow.core.function.polymorphism.function_type.FunctionType": 146,
+              "tensorflow.python.eager.context.FunctionCallOptions": 1,
+              "tensorflow.python.eager.polymorphic_function.atomic_function.AtomicFunction": 98,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunction": 14,
+              "tensorflow.python.eager.polymorphic_function.concrete_function.ConcreteFunctionGarbageCollector": 14,
+              "tensorflow.python.eager.polymorphic_function.concrete_function._DelayedRewriteGradientFunctions": 14,
+              "tensorflow.python.eager.polymorphic_function.polymorphic_function.Function": 34,
+              "tensorflow.python.framework.combinations.EagerGraphCombination": 1,
+              "tensorflow.python.framework.func_graph.FuncGraph": 14,
+              "tensorflow.python.framework.ops.Graph": 1,
+              "tensorflow.python.framework.ops._DefaultGraphStack": 1,
+              "tensorflow.python.keras.backend._DummyEagerGraph": 1,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph": 10,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileBodyFuncGraph": 37,
+              "tensorflow.python.ops.control_flow_v2_func_graphs.WhileCondFuncGraph": 37
+            },
+            "registered_tf_functions": 132,
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 94720,
+                "peak": 535552
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "sampler_executed": false,
+  "passed": true,
+  "normalization": [
+    "declared clocks",
+    "output root",
+    "reuse option and dependent binding hash",
+    "ensemble invocation count",
+    "first cache-call flag",
+    "checked dynamic-L metadata",
+    "result/evidence integrity hashes independently verified then replaced by normalized digest"
+  ]
+}

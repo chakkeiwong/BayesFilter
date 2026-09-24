@@ -1,0 +1,758 @@
+{
+  "actionable_markdown": "# Actionable Math Document Rigor Audit\n\nSource: `ledh_younis_kdm_score.tex`\nSource SHA-256: `5a7562526417f1fd54d285d6d592b5243eff4ed69bcfbb2de7addf9fe465736c`\nCoverage: `partial_coverage`; selected `0`; distinct issues `0`; open `0`; actionable proposals `0`; resolved by context `0`.\n\nDetailed evidence pointer: `source_reports`; forensic rendering: `forensic_markdown`.\n\n## Issue Ledger\n\n- No semantic issue record was produced for the selected scope.\n## Non-Claims\n\n- Context closure means the document states the scoped exposition condition; it is not a proof certificate.\n- Candidate patches are bounded human-review text and do not establish source-specific truth.\n- This focused audit does not certify general readability, pedagogy, or whole-document correctness.\n",
+  "backend_env": "mathdevmcp-backends",
+  "backend_provenance": {
+    "certification_boundary": "LeanDojo availability is proof-search evidence only. A proof is certified only by direct Lean checking with no placeholders, or by another certifying backend under the scoped contract.",
+    "doctor": {
+      "capabilities": {
+        "latexml": {
+          "available": true,
+          "backend_env": null,
+          "backend_prefix": null,
+          "backend_requested": null,
+          "detail": "available",
+          "diagnostic_hint": null,
+          "environment_scope": null,
+          "kind": "executable",
+          "name": "latexml",
+          "path": "/usr/bin/latexml",
+          "status": "available",
+          "version": "latexml (LaTeXML version 0.8.6)"
+        },
+        "lean": {
+          "available": false,
+          "backend_env": null,
+          "backend_prefix": null,
+          "backend_requested": null,
+          "detail": "version check failed: Command '['/home/chakwong/.elan/bin/lean', '--version']' timed out after 10 seconds",
+          "diagnostic_hint": null,
+          "environment_scope": null,
+          "kind": "executable",
+          "name": "lean",
+          "path": "/home/chakwong/.elan/bin/lean",
+          "status": "unavailable",
+          "version": null
+        },
+        "lean_dojo": {
+          "available": true,
+          "backend_env": "mathdevmcp-backends",
+          "backend_prefix": "/home/chakwong/anaconda3/envs/mathdevmcp-backends",
+          "backend_requested": true,
+          "detail": "Python module lean_dojo imports in backend env",
+          "diagnostic_hint": null,
+          "environment_scope": "backend_python",
+          "kind": "python",
+          "name": "lean_dojo",
+          "path": "/home/chakwong/anaconda3/envs/mathdevmcp-backends/bin/python",
+          "status": "available",
+          "version": "4.20.0"
+        },
+        "pandoc": {
+          "available": true,
+          "backend_env": null,
+          "backend_prefix": null,
+          "backend_requested": null,
+          "detail": "available",
+          "diagnostic_hint": null,
+          "environment_scope": null,
+          "kind": "executable",
+          "name": "pandoc",
+          "path": "/usr/bin/pandoc",
+          "status": "available",
+          "version": "pandoc 2.9.2.1"
+        },
+        "sage": {
+          "available": true,
+          "backend_env": null,
+          "backend_prefix": null,
+          "backend_requested": null,
+          "detail": "available",
+          "diagnostic_hint": null,
+          "environment_scope": null,
+          "kind": "executable",
+          "name": "sage",
+          "path": "/usr/bin/sage",
+          "status": "available",
+          "version": "SageMath version 9.5, Release Date: 2022-01-30"
+        },
+        "sympy": {
+          "available": true,
+          "backend_env": "mathdevmcp-backends",
+          "backend_prefix": "/home/chakwong/anaconda3/envs/mathdevmcp-backends",
+          "backend_requested": true,
+          "detail": "Python module sympy imports in backend env",
+          "diagnostic_hint": null,
+          "environment_scope": "backend_python",
+          "kind": "python",
+          "name": "sympy",
+          "path": "/home/chakwong/anaconda3/envs/mathdevmcp-backends/bin/python",
+          "status": "available",
+          "version": "1.14.0"
+        }
+      },
+      "conflicts": [],
+      "integrations": {
+        "jixia": {
+          "available": true,
+          "detail": "executable exists",
+          "git_commit": "755fde27a9cf",
+          "install_hint": "Build jixia from the pinned source commit with the exact target Lean toolchain.",
+          "kind": "lean_executable",
+          "lean_toolchain": "leanprover/lean4:v4.29.0",
+          "name": "jixia",
+          "path": "/home/chakwong/MathDevMCP/.localresources/hypothesis_search_survey/code/jixia/.lake/build/bin/jixia",
+          "profile": "lean-static-analysis",
+          "resolved_available": true,
+          "resolved_scope": "executable",
+          "resolved_version": null,
+          "resolved_version_status": "not_applicable",
+          "role": "Lean declaration, symbol, elaboration, line proof-state, and AST extraction.",
+          "source": "https://github.com/frenzymath/jixia",
+          "supported_version": null,
+          "version": null,
+          "version_status": "not_applicable"
+        },
+        "lean_dojo": {
+          "available": false,
+          "backend_available": true,
+          "backend_detail": "Python module lean_dojo imports in backend env",
+          "backend_version": "4.20.0",
+          "backend_version_status": "match",
+          "detail": "Python module lean_dojo is not importable in active Python",
+          "git_commit": null,
+          "install_hint": "scripts/setup_backend_env.sh",
+          "kind": "backend_python_package",
+          "lean_toolchain": "leanprover/lean4:v4.20.0",
+          "name": "lean_dojo",
+          "profile": "backend",
+          "resolved_available": true,
+          "resolved_scope": "backend_python",
+          "resolved_version": "4.20.0",
+          "resolved_version_status": "match",
+          "role": "Isolated LeanDojo backend evidence for Lean theorem-proving workflows.",
+          "source": "https://github.com/lean-dojo/LeanDojo",
+          "supported_version": "4.20.0",
+          "version": null,
+          "version_status": "missing"
+        },
+        "lean_explore": {
+          "available": false,
+          "backend_available": true,
+          "backend_detail": "Python module lean_explore imports in backend env",
+          "backend_version": "1.2.1",
+          "backend_version_status": "match",
+          "detail": "Python module lean_explore is not importable in active Python",
+          "git_commit": "3a52d6b9922f",
+          "install_hint": "python -m pip install -e \".[lean-search]\"",
+          "kind": "python_package",
+          "lean_toolchain": null,
+          "name": "lean_explore",
+          "profile": "lean-search",
+          "resolved_available": true,
+          "resolved_scope": "backend_python",
+          "resolved_version": "1.2.1",
+          "resolved_version_status": "match",
+          "role": "Summary-first Lean declaration search via API, local backend, or MCP.",
+          "source": "https://github.com/justincasher/lean-explore",
+          "supported_version": "1.2.1",
+          "version": null,
+          "version_status": "missing"
+        },
+        "leansearchv2": {
+          "available": false,
+          "backend_available": true,
+          "backend_detail": "Python module leansearchv2 imports in backend env",
+          "backend_version": "0.1.0",
+          "backend_version_status": "match",
+          "detail": "Python module leansearchv2 is not importable in active Python",
+          "git_commit": "94f4888cbaf9",
+          "install_hint": "Use the LeanSearch-v2 HTTP service/client in a separate GPU/model environment.",
+          "kind": "service_or_local_package",
+          "lean_toolchain": null,
+          "name": "leansearchv2",
+          "profile": "lean-search-deep",
+          "resolved_available": true,
+          "resolved_scope": "backend_python",
+          "resolved_version": "0.1.0",
+          "resolved_version_status": "match",
+          "role": "Global premise retrieval and decompose-retrieve-filter-judge search pattern.",
+          "source": "https://github.com/frenzymath/LeanSearch-v2",
+          "supported_version": "0.1.0",
+          "version": null,
+          "version_status": "missing"
+        },
+        "mcp": {
+          "available": true,
+          "backend_available": true,
+          "backend_detail": "Python module mcp imports in backend env",
+          "backend_version": "1.28.1",
+          "backend_version_status": "mismatch",
+          "detail": "Python module imports in active Python",
+          "git_commit": null,
+          "install_hint": "python -m pip install -e \".[mcp]\"",
+          "kind": "python_package",
+          "lean_toolchain": null,
+          "name": "mcp",
+          "profile": "mcp",
+          "resolved_available": true,
+          "resolved_scope": "active_python",
+          "resolved_version": "1.27.0",
+          "resolved_version_status": "match",
+          "role": "Agent-facing MCP server runtime.",
+          "source": "https://pypi.org/project/mcp/",
+          "supported_version": "1.27.0",
+          "version": "1.27.0",
+          "version_status": "match"
+        },
+        "pantograph": {
+          "available": false,
+          "backend_available": true,
+          "backend_detail": "Python module pantograph imports in backend env",
+          "backend_version": "0.3.15",
+          "backend_version_status": "match",
+          "detail": "Python module pantograph is not importable in active Python",
+          "git_commit": "f8aee320ee55",
+          "install_hint": "python -m pip install -e \".[pantograph]\" in a Python 3.11 backend env with matching Lean/lake",
+          "kind": "backend_python_package",
+          "lean_toolchain": null,
+          "name": "pantograph",
+          "profile": "pantograph",
+          "resolved_available": true,
+          "resolved_scope": "backend_python",
+          "resolved_version": "0.3.15",
+          "resolved_version_status": "match",
+          "role": "Optional Lean proof-state interaction backend; direct Lean remains the certification boundary.",
+          "source": "https://github.com/stanford-centaur/PyPantograph",
+          "supported_version": "0.3.15",
+          "version": null,
+          "version_status": "missing"
+        },
+        "sympy": {
+          "available": true,
+          "backend_available": true,
+          "backend_detail": "Python module sympy imports in backend env",
+          "backend_version": "1.14.0",
+          "backend_version_status": "match",
+          "detail": "Python module imports in active Python",
+          "git_commit": null,
+          "install_hint": "python -m pip install -e \".[symbolic]\"",
+          "kind": "python_package",
+          "lean_toolchain": null,
+          "name": "sympy",
+          "profile": "symbolic",
+          "resolved_available": true,
+          "resolved_scope": "active_python",
+          "resolved_version": "1.14.0",
+          "resolved_version_status": "match",
+          "role": "Bounded symbolic algebra and equality checks.",
+          "source": "https://www.sympy.org/",
+          "supported_version": "1.14.0",
+          "version": "1.14.0",
+          "version_status": "match"
+        }
+      },
+      "metadata": {
+        "contract": "doctor_report",
+        "schema_version": "1.0"
+      },
+      "ok": true,
+      "python": {
+        "executable": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "path_head": [
+          "/home/chakwong/.codex/tmp/arg0/codex-arg0gnpZjX",
+          "/home/chakwong/.vscode-server/bin/645f29cc3176500b4b5762ba887cf2a7f0ffdf2c/bin/remote-cli",
+          "/home/chakwong/.elan/bin",
+          "/home/chakwong/.local/bin",
+          "/home/chakwong/.grok/bin"
+        ],
+        "prefix": "/home/chakwong/anaconda3/envs/tftwogpu",
+        "version": "3.11.15"
+      }
+    },
+    "lean_readiness": {
+      "certification_boundary": "Readiness diagnostics are not proof; only successful Lean checking of supplied source can certify a scoped Lean artifact.",
+      "direct_lean": {
+        "path": "/home/chakwong/.elan/bin/lean",
+        "status": "inconclusive",
+        "tiny_theorem_check": {
+          "reason": "Lean executable is unavailable.",
+          "status": "inconclusive"
+        },
+        "version": {
+          "reason": "Version check timed out.",
+          "status": "inconclusive",
+          "version": null
+        }
+      },
+      "lake_project": {
+        "path": "/home/chakwong/.elan/bin/lake",
+        "status": "inconclusive",
+        "toolchain_file": {
+          "exists": false,
+          "path": "/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score/lean-toolchain",
+          "toolchain": null
+        },
+        "version": {
+          "reason": "Version check timed out.",
+          "status": "inconclusive",
+          "version": null
+        }
+      },
+      "lean_dojo": {
+        "backend_env": "mathdevmcp-backends",
+        "backend_prefix": "/home/chakwong/anaconda3/envs/mathdevmcp-backends",
+        "backend_requested": true,
+        "detail": "Python module lean_dojo imports in backend env",
+        "diagnostic_hint": null,
+        "environment_scope": "backend_python",
+        "path": "/home/chakwong/anaconda3/envs/mathdevmcp-backends/bin/python",
+        "status": "available"
+      },
+      "metadata": {
+        "contract": "lean_readiness",
+        "schema_version": "1.0"
+      },
+      "reason": "Lean readiness diagnostics completed.",
+      "status": "inconclusive"
+    }
+  },
+  "coverage": {
+    "available_labeled_equation_count": 132,
+    "concrete_repair_count": 0,
+    "diagnostic_abstention_count": 0,
+    "distinct_issue_count": 0,
+    "gap_count": 0,
+    "partial_coverage": true,
+    "proposal_count": 0,
+    "resolved_by_existing_context_count": 0,
+    "selected_count": 0,
+    "status": "partial_coverage",
+    "target_file": "ledh_younis_kdm_score.tex",
+    "target_file_only": true
+  },
+  "document_inventory": {
+    "equation_localization": {
+      "by_environment": {
+        "align": 101,
+        "equation": 101
+      },
+      "metadata": {
+        "contract": "equation_localization_summary",
+        "schema_version": "1.0"
+      },
+      "reason": "Equation rows were localized with source spans.",
+      "row_count": 202,
+      "status": "localized_with_uncertainty",
+      "uncertain_row_count": 108
+    },
+    "label_ref_hygiene": {
+      "duplicate_labels": [],
+      "label_count": 164,
+      "missing_refs": [],
+      "ref_count": 117,
+      "unique_label_count": 164
+    },
+    "labeled_equation_count": 132,
+    "line_count": 3600,
+    "section_count": 32,
+    "sections": [
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 76,
+        "section_path": [
+          "The model score and the finite filter"
+        ],
+        "title": "The model score and the finite filter"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 173,
+        "section_path": [
+          "The executed atom program"
+        ],
+        "title": "The executed atom program"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 279,
+        "section_path": [
+          "What the Younis construction supplies"
+        ],
+        "title": "What the Younis construction supplies"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 402,
+        "section_path": [
+          "What the Younis construction supplies",
+          "The precise scope of IWSG unbiasedness"
+        ],
+        "title": "The precise scope of IWSG unbiasedness"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 579,
+        "section_path": [
+          "Why positive bandwidth is a target change"
+        ],
+        "title": "Why positive bandwidth is a target change"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 673,
+        "section_path": [
+          "From Section 3.6 to the integrated experiments"
+        ],
+        "title": "From Section 3.6 to the integrated experiments"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 733,
+        "section_path": [
+          "From Section 3.6 to the integrated experiments",
+          "Phase 4A: integrated kernelized observation weighting"
+        ],
+        "title": "Phase 4A: integrated kernelized observation weighting"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 825,
+        "section_path": [
+          "From Section 3.6 to the integrated experiments",
+          "Phase 4B: a complete mixture-resampling reference"
+        ],
+        "title": "Phase 4B: a complete mixture-resampling reference"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1038,
+        "section_path": [
+          "From Section 3.6 to the integrated experiments",
+          "The matrix Gaussian score comparison"
+        ],
+        "title": "The matrix Gaussian score comparison"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1117,
+        "section_path": [
+          "From Section 3.6 to the integrated experiments",
+          "Why the next direction changes"
+        ],
+        "title": "Why the next direction changes"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 1175,
+        "section_path": [
+          "Mixture proposals with the original model correction"
+        ],
+        "title": "Mixture proposals with the original model correction"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1260,
+        "section_path": [
+          "Mixture proposals with the original model correction",
+          "An analytically adapted Gaussian example"
+        ],
+        "title": "An analytically adapted Gaussian example"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1299,
+        "section_path": [
+          "Mixture proposals with the original model correction",
+          "Retained ancestry and a flow proposal"
+        ],
+        "title": "Retained ancestry and a flow proposal"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 1378,
+        "section_path": [
+          "Proposal-quality branch: twisting, iAPF, covariance, and SGQF"
+        ],
+        "title": "Proposal-quality branch: twisting, iAPF, covariance, and SGQF"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1399,
+        "section_path": [
+          "Proposal-quality branch: twisting, iAPF, covariance, and SGQF",
+          "Twisted particle filters and auxiliary lookahead"
+        ],
+        "title": "Twisted particle filters and auxiliary lookahead"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1434,
+        "section_path": [
+          "Proposal-quality branch: twisting, iAPF, covariance, and SGQF",
+          "The iterated auxiliary particle filter"
+        ],
+        "title": "The iterated auxiliary particle filter"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1456,
+        "section_path": [
+          "Proposal-quality branch: twisting, iAPF, covariance, and SGQF",
+          "Alternative covariance geometries"
+        ],
+        "title": "Alternative covariance geometries"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1475,
+        "section_path": [
+          "Proposal-quality branch: twisting, iAPF, covariance, and SGQF",
+          "Structured Gaussian quadrature as a proposal source"
+        ],
+        "title": "Structured Gaussian quadrature as a proposal source"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1544,
+        "section_path": [
+          "Proposal-quality branch: twisting, iAPF, covariance, and SGQF",
+          "Systematic proposal test"
+        ],
+        "title": "Systematic proposal test"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 1567,
+        "section_path": [
+          "Directional finite-difference validation ladder"
+        ],
+        "title": "Directional finite-difference validation ladder"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 1692,
+        "section_path": [
+          "A model score that averages over ancestors"
+        ],
+        "title": "A model score that averages over ancestors"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1821,
+        "section_path": [
+          "A model score that averages over ancestors",
+          "Why degenerate transitions obstruct this recursion"
+        ],
+        "title": "Why degenerate transitions obstruct this recursion"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 1882,
+        "section_path": [
+          "A model score that averages over ancestors",
+          "A disturbance-coordinate proposal and its score"
+        ],
+        "title": "A disturbance-coordinate proposal and its score"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 2544,
+        "section_path": [
+          "A model score that averages over ancestors",
+          "Using both past and future information"
+        ],
+        "title": "Using both past and future information"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 2566,
+        "section_path": [
+          "Selective mixture gradients and control variates"
+        ],
+        "title": "Selective mixture gradients and control variates"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 2690,
+        "section_path": [
+          "Selective mixture gradients and control variates",
+          "What a control variate can accomplish"
+        ],
+        "title": "What a control variate can accomplish"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 2740,
+        "section_path": [
+          "Other options and their place in the investigation"
+        ],
+        "title": "Other options and their place in the investigation"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 2863,
+        "section_path": [
+          "Structural support and deferred extensions"
+        ],
+        "title": "Structural support and deferred extensions"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 3136,
+        "section_path": [
+          "Implementation state and remaining gaps"
+        ],
+        "title": "Implementation state and remaining gaps"
+      },
+      {
+        "kind": "subsection",
+        "level": 3,
+        "line": 3344,
+        "section_path": [
+          "Implementation state and remaining gaps",
+          "Checks on the existing finite-program endpoints"
+        ],
+        "title": "Checks on the existing finite-program endpoints"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 3399,
+        "section_path": [
+          "The next discriminating comparison"
+        ],
+        "title": "The next discriminating comparison"
+      },
+      {
+        "kind": "section",
+        "level": 2,
+        "line": 3537,
+        "section_path": [
+          "Source and experiment locations"
+        ],
+        "title": "Source and experiment locations"
+      }
+    ]
+  },
+  "editorial_integration": {
+    "metadata_supplied": false,
+    "records": [],
+    "schema_version": "exposition_surface_diagnostics@1"
+  },
+  "forensic_markdown": "# Math Document Rigor Audit\n\nTarget: `/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex`\n\n## Executive Summary\n\n- Coverage status: `partial_coverage`\n- Selected targets: 0 / 132 labeled equation rows\n- Gaps: 0\n- Proposals: 0\n- Concrete repairs: 0\n- Diagnostic abstentions: 0\n- This report is diagnostic and proposal-oriented; it is not a proof of the document.\n\n## Backend Provenance\n\n- Active Python: `/home/chakwong/anaconda3/envs/tftwogpu/bin/python`\n- LeanDojo status: `available`\n- LeanDojo environment scope: `backend_python`\n- LeanDojo backend env: `mathdevmcp-backends`\n- Certification boundary: LeanDojo availability is proof-search evidence only. A proof is certified only by direct Lean checking with no placeholders, or by another certifying backend under the scoped contract.\n\n## Document Inventory\n\n- Lines: 3600\n- Sections: 32\n- Equation rows: 202\n- Labeled equation rows: 132\n- Duplicate labels: 0\n- Missing refs: 0\n\n## Tool Uses\n\n| Tool | Purpose | Status | Output contract | Arguments |\n| --- | --- | --- | --- | --- |\n| `locate_equations_in_file` | Localize display equations in the exact target file. | `completed` | `equation_rows` | `{\"root\": \"/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score\", \"tex_path\": \"/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex\"}` |\n| `summarize_equation_localization` | Summarize equation localization uncertainty. | `completed` | `equation_localization_summary` | `{\"row_count\": 202}` |\n| `doctor_report` | Record active/backend Python and external backend capability provenance. | `available` | `doctor_report` | `{}` |\n| `lean_readiness` | Record direct Lean, Lake, and LeanDojo readiness without promoting readiness to proof. | `inconclusive` | `lean_readiness` | `{\"root\": \"/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score\"}` |\n\n## Concrete Repair Ledger\n\n- No concrete repair payload met the substantive proposal contract.\n\n## Diagnostic Abstention Ledger\n\n- No diagnostic abstentions were recorded.\n\n## Gap And Proposal Ledger\n\n## Non-Claims\n\n- `document_rigor_audit_not_document_proof`: The report is a rigor gap/proposal ledger, not a proof of the document.\n- `partial_coverage_not_exhaustive`: Limited target selection is not an exhaustive full-document audit.\n- `leandojo_not_certificate`: LeanDojo proof search is not a certificate unless the reconstructed Lean source passes direct Lean checking without placeholders.\n",
+  "gaps": [],
+  "issues": [],
+  "lifecycle_comparison": null,
+  "metadata": {
+    "contract": "math_document_rigor_audit",
+    "schema_version": "1.0"
+  },
+  "non_claims": [
+    {
+      "code": "document_rigor_audit_not_document_proof",
+      "text": "The report is a rigor gap/proposal ledger, not a proof of the document."
+    },
+    {
+      "code": "partial_coverage_not_exhaustive",
+      "text": "Limited target selection is not an exhaustive full-document audit."
+    },
+    {
+      "code": "leandojo_not_certificate",
+      "text": "LeanDojo proof search is not a certificate unless the reconstructed Lean source passes direct Lean checking without placeholders."
+    }
+  ],
+  "proposal_ledgers": {
+    "concrete_repairs": [],
+    "diagnostic_abstentions": []
+  },
+  "proposals": [],
+  "report_profile": "actionable",
+  "semantic_issues": [],
+  "source": {
+    "canonical_path": "/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex",
+    "file": "ledh_younis_kdm_score.tex",
+    "source_digest": "5a7562526417f1fd54d285d6d592b5243eff4ed69bcfbb2de7addf9fe465736c"
+  },
+  "source_reports": {},
+  "target_selection": {
+    "available_labeled_equation_count": 132,
+    "context_after": 1,
+    "context_before": 4,
+    "max_labels": 2,
+    "mode": "focus_labels",
+    "partial_coverage": true,
+    "requested_focus_labels": [
+      "prop:fd-cubic-weights",
+      "prop:fd-mse"
+    ],
+    "selected_count": 0,
+    "targets": []
+  },
+  "tex_path": "/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex",
+  "tool_uses": [
+    {
+      "arguments": {
+        "root": "/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score",
+        "tex_path": "/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex"
+      },
+      "output_contract": "equation_rows",
+      "purpose": "Localize display equations in the exact target file.",
+      "status": "completed",
+      "tool": "locate_equations_in_file"
+    },
+    {
+      "arguments": {
+        "row_count": 202
+      },
+      "output_contract": "equation_localization_summary",
+      "purpose": "Summarize equation localization uncertainty.",
+      "status": "completed",
+      "tool": "summarize_equation_localization"
+    },
+    {
+      "arguments": {},
+      "output_contract": "doctor_report",
+      "purpose": "Record active/backend Python and external backend capability provenance.",
+      "status": "available",
+      "tool": "doctor_report"
+    },
+    {
+      "arguments": {
+        "root": "/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score"
+      },
+      "output_contract": "lean_readiness",
+      "purpose": "Record direct Lean, Lake, and LeanDojo readiness without promoting readiness to proof.",
+      "status": "inconclusive",
+      "tool": "lean_readiness"
+    }
+  ]
+}

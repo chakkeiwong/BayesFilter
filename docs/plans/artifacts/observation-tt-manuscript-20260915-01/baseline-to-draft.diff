@@ -1,0 +1,463 @@
+--- docs/plans/artifacts/observation-tt-manuscript-20260915-01/baseline-attempt05_observation_aware_tt_algorithm_note.tex
++++ docs/plans/artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_observation_aware_tt_algorithm_note.tex
+@@ -5,6 +5,7 @@
+ \usepackage{mathtools}
+ \usepackage{booktabs,longtable,array}
+ \usepackage{xcolor}
++\usepackage{graphicx}
+ \usepackage{hyperref}
+ \setlength{\emergencystretch}{3em}
+ 
+@@ -22,7 +23,7 @@
+ \title{Observation-Guided Tensor-Train Filtering for Stochastic Volatility\\
+ \large The attempt05 Failure, Rejected Repairs, and an Executable SGQF Proposal}
+ \author{Corrected mathematical and implementation audit}
+-\date{Revised 2026-09-14}
++\date{Revised 2026-09-15}
+ 
+ \begin{document}
+ \maketitle
+@@ -76,6 +77,18 @@
+ still exceed simple heuristics in several observation regimes. The tested
+ configuration therefore remains unpromoted; four particle seeds on one
+ observation sequence do not establish a ranking.
++The continuation in Section~\ref{sec:sgqf-preservation} examines why fitting can
++lose accuracy already present in the correlated SGQF joint. Analytical
++initialization helps some difficult fits, but its finite polynomial conversion
++and subsequent refinement can both introduce error. A calibrated defensive
++mixture and an explicit option to retain SGQF therefore precede the independent
++filtering comparison. That comparison completes twelve new sequences in each
++dimension. All references pass, but the candidate remains unpromoted: it has
++observed losses to simple proposals in two scalar observation regimes, and
++the signed SGQF quadrature fails on one four-dimensional sequence. Favorable
++results on the other eleven sequences do not establish reliability when the
++guide fails. The fitting safeguard remains empirical rather than a guarantee
++that TT refinement preserves SGQF accuracy on unseen data.
+ \end{abstract}
+ 
+ \section{Question, Evidence, and Decision}
+@@ -4583,8 +4596,422 @@
+ The repair used float64 TensorFlow on the RTX5080 with XLA and verified
+ memory growth. The terminal run took $48.465$ seconds after reloading fits,
+ so that time is not an end-to-end fitting cost. Three full launch slots and
+-the single allowed solver repair have now been used. The authorized numerical
+-comparison is complete; further experimentation requires a new bounded plan.
++the single allowed solver repair were used in that campaign. Its numerical
++comparison is complete. The subsequently authorized continuation uses separate,
++reviewed initialization, safety and independent-filtering protocols, discussed
++next.
++
++\clearpage
++\section{Preserving what SGQF already knows}
++\label{sec:sgqf-preservation}
++
++The available SGQF approximation already contains a useful starting point for
++the adjacent-state density. The earlier implementation used that information
++to place regression rows, but initialized the TT with generic coefficients.
++This distinction matters: giving an optimizer informative sample locations
++does not give it the function values of a good approximation as its initial
++state. We now construct the Gaussian joint explicitly, initialize the TT from
++it, and retain the original Gaussian as an alternative whenever the fitted
++correction fails to earn its place.
++
++\subsection{The Gaussian joint and the proposal conditioned on a particle}
++
++Let $z=X_{t-1}$ and $x=X_t$. Suppose the preceding Gaussian guide is
++$N(m,P)$ and the transition is $x=Az+\sigma\varepsilon$. Prediction gives
++$x\sim N(Am,S)$ with $S=APA^{\mathsf T}+\sigma^2I$. Gaussian conditioning
++then gives the backward conditional
++\begin{equation}
++ q^-(z\mid x)=N\bigl(z;m+K(x-Am),B\bigr),\qquad
++ K=PA^{\mathsf T}S^{-1},\quad B=P-KSK^{\mathsf T}.
++ \label{eq:sgqf-preserve-backward}
++\end{equation}
++The observation depends on $x$ only. Consequently, within this Gaussian
++incoming model, conditioning additionally on $y_t$ changes the marginal of
++$x$ but leaves $z\mid x$ unchanged: the likelihood factor cancels from the
++conditional ratio. Let $q_t(x)=N(x;m_t,P_t)$ be the likelihood-weighted SGQF
++Gaussian approximation after the observation. Its associated approximate
++joint is therefore
++\begin{equation}
++ q_G(z,x)=q_t(x)q^-(z\mid x).
++ \label{eq:sgqf-preserve-joint}
++\end{equation}
++This is a correlated Gaussian joint, not merely the product of the two
++filtering marginals. Its approximation enters through the Gaussian incoming
++law and the Gaussian closure $q_t$. Even exact quadrature of the posterior
++moments would not make a general nonlinear posterior Gaussian.
++
++For clarity, write $z=m+K(x-Am)+\eta$, where $x\sim N(m_t,P_t)$ and
++$\eta\sim N(0,B)$ independently. The joint moments follow directly:
++\begin{align}
++ b&=\mathbb E[z]=m+K(m_t-Am),&
++ R&=\operatorname{Var}(z)=B+KP_tK^{\mathsf T},\notag\\
++ \operatorname{Cov}(x,z)&=P_tK^{\mathsf T}.&&
++ \label{eq:sgqf-preserve-joint-moments}
++\end{align}
++The previous-state marginal is now $N(b,R)$, because the new observation
++also informs the previous state. It need not equal the earlier filtering
++guide $N(m,P)$. To propagate a particular existing particle $z$, condition
++this same joint in the other direction:
++\begin{equation}
++ q_G(x\mid z)=N\bigl(x;m_t+H(z-b),V\bigr),\qquad
++ H=P_tK^{\mathsf T}R^{-1},\quad
++ V=P_t-P_tK^{\mathsf T}R^{-1}KP_t.
++ \label{eq:sgqf-preserve-forward}
++\end{equation}
++Thus SGQF supplies both an ancestor-dependent proposal and an exactly
++available retained current marginal $q_t$. The earlier standalone SGQF
++particle proposal drew from $q_t$ without this ancestor dependence. The two
++proposals must be compared separately. In the linear-Gaussian observation
++limit, with exact incoming moments and update, these equations recover the
++Gaussian adjacent-state posterior and its conditional; that limit and the
++identity $\log q_G(x\mid z)=\log q_G(z,x)-\log q_G(z)$ pass independent
++implementation checks.
++
++The exact conditional is now callable by the same particle-filter consumer
++as the TT conditional. If step $t$ chooses either proposal $q_t^{\rm prop}$,
++the incremental weight remains
++\begin{equation}
++ w_t^{(i)}\ \propto\ w_{t-1}^{(i)}
++ \frac{f_\theta(x_t^{(i)}\mid x_{t-1}^{(i)})
++       g_\theta(y_t\mid x_t^{(i)})}
++      {q_t^{\rm prop}(x_t^{(i)}\mid x_{t-1}^{(i)})}.
++ \label{eq:sgqf-preserve-weight}
++\end{equation}
++The denominator is the density actually sampled, including its selected
++mixture if applicable. Choosing a Gaussian at one time and a TT at the next
++does not change this identity. A mixed-step endpoint test checks the
++implementation rather than only the existence of the Gaussian formula.
++
++\subsection{What is lost when the Gaussian becomes a finite TT}
++
++Use the same standardized coordinates and product Gaussian reference
++$\rho$ as the regression. In this paragraph, $q_G$ denotes the corresponding
++joint density in those coordinates, including the affine Jacobian. The
++Gaussian amplitude to be represented is $a_G=\sqrt{q_G/\rho}$. Expanding it
++in the orthonormal Hermite basis gives coefficients
++$c_\alpha=\int a_G\psi_\alpha\rho$ and total squared norm one. Let
++$\mathcal I$ retain coordinate degrees zero through three. If
++$\widetilde c$ is the rank-three TT approximation to the retained coefficient
++tensor, orthogonality separates the conversion error:
++\begin{equation}
++ \left\|a_G-\sum_{\alpha\in\mathcal I}
++                 \widetilde c_\alpha\psi_\alpha\right\|_{L^2(\rho)}^2
++ =\underbrace{1-\sum_{\alpha\in\mathcal I}c_\alpha^2}
++                   _{\text{polynomial truncation}}
++  +\underbrace{\sum_{\alpha\in\mathcal I}
++                    (c_\alpha-\widetilde c_\alpha)^2}
++                   _{\text{rank compression}}.
++ \label{eq:sgqf-conversion-error}
++\end{equation}
++The first residual lies outside the retained polynomial space and the second
++inside it, so their inner product is zero. This is a conversion diagnostic,
++not a bound on the best TT approximation to the nonlinear filtering target.
++The coefficients are computed analytically and checked against independent
++low-dimensional quadrature. Constructing their full tensor is feasible for
++the present $d\leq4$ diagnostic; it grows exponentially with dimension and
++does not establish a scalable initializer.
++
++In the four-dimensional first-transition example with Gaussian incoming law,
++the squared amplitude error is $0.002887$: polynomial truncation contributes
++$0.002850$ and rank compression $0.0000371$. Most of this particular
++conversion loss therefore comes from degree restriction. The nonlinear target
++provides a separate comparison. On common audit rows, the median squared
++Hellinger discrepancy is $0.001866$ for the unchanged SGQF joint,
++$0.003206$ after conversion without defense, $0.005384$ after adding the
++inherited 5\% defensive component, and $0.007671$ after SGQF-initialized
++fitting. These values estimate $H^2(p,q)=1-\int\sqrt{pq}$ using normalized
++importance sums; they are not the squared signed-amplitude norm in
++\eqref{eq:sgqf-conversion-error}. They show that conversion, mixture choice
++and refinement can each discard accuracy already present in SGQF.
++
++The controlled initialization comparison keeps target, rows, degree, rank,
++training normalization and optimization budget fixed. L1 weights are selected
++using validation signed-amplitude error; audit rows never select them. With
++the inherited 5\% mixture, the generic and SGQF starts produce median audit
++$H^2$ of $0.009101$ and $0.007671$ on the preceding example. The SGQF start
++also has lower descriptive median error in the other three d4 cases, while
++d1 differences are at most $1.51\times10^{-9}$. This supports testing the
++initialization, but does not demonstrate converged fitting. Finite alternating
++core updates with an L1 penalty need not minimize the final normalized-density
++discrepancy, and changing coefficients can move away from a useful Gaussian.
++
++Later recursive targets require particular care. At d4 time 18, the audit
++discrepancy falls from $0.204194$ for SGQF to $0.090554$ for the SGQF-start
++TT. The target in that comparison includes the \emph{saved preceding TT
++marginal}. It is not the exact filtering law, so the result cannot establish
++that SGQF has become this inaccurate relative to the true filter. A subsequent
++fresh-row check finds target importance ESS as low as $11.94$ among $8192$
++rows, with one row carrying $28.69\%$ of the normalized target mass. Such
++concentration also limits our ability to estimate discrepancy and select a
++fit reliably.
++
++Each observation creates a new target and a separate fit. To preserve the
++available Gaussian empirically, the validation selector now compares it with
++the TT candidates and saves the choice before audit rows are generated. On
++the 24 exposed-target initialization cases, this safeguard is no worse than
++SGQF on validation in all 24, by construction, and on audit in 23. The remaining
++case is worse by $0.000017008$. It also misses the lower audit-error candidate
++at d4 time 18. Selection thus supplies an empirical fallback, not an unseen-data
++performance guarantee. A pointwise density lower bound would be a different,
++and unhelpful, requirement: if two normalized densities satisfy
++$q_1\geq q_0$ everywhere, then $\int(q_1-q_0)=0$ implies equality almost
++everywhere. The useful safeguard concerns a stated error criterion.
++
++\subsection{Calibrating defense at the conditional that is actually sampled}
++
++The defensive Gaussian has a specific numerical purpose: it keeps the
++conditional proposal defined when its polynomial mass vanishes. Its joint
++fraction, however, does not equal the fraction seen by every ancestor. Let
++$h(u,v)$ be the fitted amplitude, $u$ the current coordinates and $v$ the
++previous coordinates. Define the total and conditional polynomial masses by
++$Z=\int h^2\rho(u)\rho(v)\,du\,dv$ and
++$c(v)=\int h(u,v)^2\rho(u)\,du$. For joint Gaussian fraction $a$, put
++$\tau=aZ/(1-a)$. Integrating the joint over $u$ and dividing gives
++\begin{align}
++ q_a(u\mid v)&=\frac{h(u,v)^2+\tau}{c(v)+\tau}\rho(u),\notag\\
++ q_a(u\mid v)&=(1-e(v))q_0(u\mid v)+e(v)\rho(u),\qquad
++ e(v)=\frac{a}{(1-a)c(v)/Z+a},\quad c(v)>0.
++ \label{eq:sgqf-defense-conditional}
++\end{align}
++At zero conditional polynomial mass the first expression is exactly
++$\rho(u)$. At small positive mass the Gaussian component dominates. If
++$c(v)/Z=1/4$ and $a=0.05$, its fraction is already $0.173913$, so a batch of
++512 proposals uses the Gaussian component about 89 times in expectation.
++That is a substantial perturbation of a healthy polynomial conditional.
++
++The safety calibration fixes two numerical situations before examining target
++errors. A healthy conditional has $c/Z\geq1/4$, within a factor four of the
++average mass. A stress conditional has $c/Z\leq\sqrt{\epsilon_{64}}$, where
++$\epsilon_{64}$ is double-precision machine epsilon. These are explicit
++calibration hypotheses; they do not classify every scientifically important
++tail. Couple protected and unprotected samplers to use the same polynomial
++draw whenever the mixture selects that component. Then their conditional
++total-variation distance is at most $e$, and the expected number of changed
++draws among $N$ is at most $Ne$. For $N=512$, allow at most one changed draw
++at the healthy boundary and at most one unprotected draw at the stress
++boundary. Writing $r_h=1/4$ and $r_s=\sqrt{\epsilon_{64}}$, the two
++inequalities reduce to
++\begin{equation}
++ Ne(r_h)\leq1,\quad N[1-e(r_s)]\leq1
++ \quad\Longleftrightarrow\quad
++ \frac{(N-1)r_s}{1+(N-1)r_s}\leq a\leq
++ \frac{r_h}{N-1+r_h}.
++ \label{eq:sgqf-defense-calibration}
++\end{equation}
++For example, the first inequality follows by multiplying through the positive
++denominator to get $(N-1)a\leq(1-a)r_h$. The second similarly gives
++$(N-1)(1-a)r_s\leq a$. The resulting interval is
++$[7.6144\times10^{-6},\,4.88998\times10^{-4}]$.
++
++Figure~\ref{fig:sgqf-defense-calibration} shows why reducing defense has a
++limit: it changes fewer healthy proposals, but eventually fails to rescue the
++stress conditional often enough. The smallest passing entry in the fixed
++grid is $a=10^{-5}$. It permits at most $0.02048$ changed healthy draws and
++$0.76180$ unprotected stress draws in expectation. The choice was frozen
++before observing target discrepancies, so it is a safety calibration rather
++than an error-minimizing parameter choice.
++\begin{figure}[htbp]
++\centering
++\includegraphics[width=.96\linewidth]{../observation-tt-manuscript-20260915-01/defense-calibration.pdf}
++\caption{Both safety requirements can hold simultaneously. The shaded interval
++keeps the expected number of changed healthy draws and unprotected stress
++draws below one out of 512. The two curves are evaluated at the declared
++conditional-mass boundaries; they do not describe nonlinear target coverage.}
++\label{fig:sgqf-defense-calibration}
++\end{figure}
++
++The compiled sampler passes 96 stress configurations spanning constant and
++nonconstant current polynomials, zero conditional mass and amplitude
++rescalings. Maximum direct-density disagreement is below $1.43\times10^{-14}$.
++These checks establish the stated implementation identities within their
++tested scope. They do not make TT fitting reliable: at fixed fitted cores,
++fresh-row comparisons still include early cases where SGQF has lower
++discrepancy. The next question is consequently downstream. With this small
++defense and the option to select the exact Gaussian conditional fixed in
++advance, does the complete filter compare favorably on new observation
++sequences?
++
++\subsection{An independent filtering comparison}
++\label{sec:sgqf-independent-filtering}
++
++The reviewed continuation generated twelve independent observation sequences
++in each of $d=1$ and $d=4$, with $T=20$. Each proposal uses 512 particles and
++four particle-filter replications. Its eight methods include the transition,
++stationary-prior, SGQF marginal and SGQF joint conditionals, alongside the
++scalar predictive, scalar guided, pair TT and SGQF-safeguarded pair TT
++proposals. The safeguarded method performs its per-observation fitting under
++frozen controls and compares generic-start TT, SGQF-start TT and the exact
++SGQF joint on validation discrepancy. At time zero it uses SGQF directly.
++The selected current marginal enters the next fitting target. No filtering
++outcome or audit score changes the frozen fitting or selection rules.
++
++Independent sequences, rather than four repeated particle runs on one
++sequence, supply the units for paired uncertainty. The primary error is
++mean-squared filtering-mean error normalized by each coordinate's stationary
++variance, averaged over the four particle replications. Comparisons are made
++overall and for near-zero, ordinary and large coordinate observations, using
++$|y_j|/\beta\leq0.5$, $0.5<|y_j|/\beta<2$ and $|y_j|/\beta\geq2$.
++One-dimensional references use a grid refinement check; four-dimensional
++references use replicated bootstrap filters at increasing particle counts
++with declared precision and agreement screens. A regime with insufficient
++sequence coverage, or a reference that fails its screen, remains inconclusive.
++The sequence bootstrap jointly accounts for the predeclared heuristic
++comparisons. Clearing those simple proposals is the primary filtering
++criterion; comparisons among the TT variants remain descriptive. Lower fit
++discrepancy cannot replace the downstream comparison.
++
++The completed candidate fails this criterion. In one dimension it has
++observed losses to the transition proposal on ordinary observations and to
++the analytical SGQF joint conditional on large observations. In four
++dimensions the shared SGQF guide fails on one sequence, leaving the complete
++comparison unavailable. All twenty-four references nevertheless pass their
++declared screens. The scalar grids agree within $7.11\times10^{-16}$
++stationary standard deviations for the mean and $7.11\times10^{-15}$ for
++log evidence. Nine four-dimensional references use four runs of 65536
++particles, and three require the predeclared enlargement to four runs of
++131072. Their largest mean MCSE is $0.01735$ stationary standard deviations
++and largest log-evidence MCSE is $0.05060$, below limits $0.02$ and $0.10$;
++all two-scale agreement checks also pass. These are resolution and Monte
++Carlo precision checks, not exactness proofs for the four-dimensional filter.
++
++Table~\ref{tab:sgqf-independent-mse} uses equal sequence weights after
++averaging squared errors over particle replications and the relevant
++coordinate-time cells within each sequence. Every four-dimensional method
++uses the same eleven successful-guide sequences. Their apparently favorable
++TT results therefore describe the subset on which the guide succeeds; they
++cannot be used to remove its failure from the reliability assessment.
++
++\begin{table}[htbp]
++\centering
++\small
++\begin{tabular}{clrrrr}
++\toprule
++$d$ & Proposal & All & Near zero & Ordinary & Large\\
++\midrule
++1 & Transition & 0.0021600 & 0.0030579 & 0.0011964 & 0.0020561\\
++1 & Stationary prior & 0.0051131 & 0.0056793 & 0.0018754 & 0.0098854\\
++1 & SGQF marginal & 0.0037369 & 0.0049775 & 0.0027870 & 0.0030887\\
++1 & SGQF joint & 0.0018482 & 0.0024519 & 0.0014518 & 0.0011200\\
++1 & Predictive TT & 0.0015124 & 0.0019170 & 0.0012909 & 0.0007813\\
++1 & Guided TT & 0.0016963 & 0.0018042 & 0.0013399 & 0.0017197\\
++1 & Original pair TT & 0.0016075 & 0.0017946 & 0.0012691 & 0.0015217\\
++1 & SGQF-preserving TT & 0.0016702 & 0.0019506 & 0.0014199 & 0.0013987\\
++\midrule
++4 & Transition & 0.0066377 & 0.0093457 & 0.0041904 & 0.0065428\\
++4 & Stationary prior & 0.0212687 & 0.0279851 & 0.0143865 & 0.0221852\\
++4 & SGQF marginal & 0.0060415 & 0.0086580 & 0.0041741 & 0.0039220\\
++4 & SGQF joint & 0.0029703 & 0.0034087 & 0.0022337 & 0.0033048\\
++4 & Predictive TT & 0.0072739 & 0.0105720 & 0.0052669 & 0.0038474\\
++4 & Guided TT & 0.0066699 & 0.0090306 & 0.0053657 & 0.0034635\\
++4 & Original pair TT & 0.0026151 & 0.0032617 & 0.0021797 & 0.0020670\\
++4 & SGQF-preserving TT & 0.0023614 & 0.0029321 & 0.0019547 & 0.0018882\\
++\bottomrule
++\end{tabular}
++\caption{Normalized filtering-mean MSE on independent sequences. All twelve scalar sequences enter the upper panel. The lower panel uses the same eleven successful-guide sequences for every method; it is descriptive and excludes the guide failure only to make the available comparisons matched. The failure still blocks promotion. These squared, variance-normalized errors differ from the RMSE in Table~\ref{tab:pair-conditional-errors}; they are not a numerical before/after comparison with that earlier exposed sequence.}
++\label{tab:sgqf-independent-mse}
++\end{table}
++
++For uncertainty, the paired unit is the independent observation sequence.
++The 9999 bootstrap resamples retain the dependence between methods and
++regimes. Each interval is centered on the observed candidate-minus-heuristic
++MSE difference, with half-width equal to the observed sequence standard error
++times the 95th percentile of the maximum absolute standardized bootstrap
++deviation. Complete, adequately covered contrasts enter this maximum; a
++failed comparison receives no interval. All sixteen scalar contrasts qualify,
++whereas every four-dimensional contrast is incomplete. The resulting
++simultaneous critical value is $2.725897$. At least eight sequences and
++twenty-four cells per regime, and a half-width no larger than $0.01$, were
++required in advance. Twelve sequences support only an approximate bootstrap
++analysis, without a finite-sample coverage guarantee.
++
++The two scalar observed losses are small and not statistically established.
++The ordinary-observation difference against transition is $+0.00022344$,
++with simultaneous interval from $-0.00018662$ to $0.00063349$. The
++large-observation difference against joint SGQF is $+0.00027871$, with
++interval from $-0.00050373$ to $0.00106115$. Both intervals include zero. Either positive
++observed difference nevertheless blocks advancement under the predeclared
++heuristic rule. This distinction prevents a failure to demonstrate
++noninferiority from being reported as evidence of inferiority.
++
++Seven scalar intervals have negative upper limits: near-zero observations
++against transition; all, near-zero and ordinary observations against the
++stationary prior; and the same three groups against the SGQF marginal.
++They support only these specified directional comparisons under the
++bootstrap assumptions. None of the four contrasts against joint SGQF has a
++negative upper limit. Its all-observation difference is $-0.00017804$ with
++interval $[-0.00058381,0.00022773]$. The stationary-prior comparison on
++large observations also misses the precision requirement, with half-width
++$0.010486$. Thus the data do not support an overall ranking, improvement
++over joint SGQF, or equivalence in the unresolved regimes.
++
++The four-dimensional failure occurs at zero-based time 18 of sequence 8,
++when the observation is approximately
++$(-3.1916,2.7754,-0.3507,0.1547)$ and $\beta=0.4$. Every signed
++sparse-quadrature level from 2 through 5 estimates positive posterior mass
++but an invalid covariance. Their minimum eigenvalues are approximately
++$-6.68\times10^{-12}$, $-0.001137$, $-1.08550$ and $-0.080229$.
++The Gaussian conditioning formulas remain correct, but they require a
++positive-definite covariance that this quadrature calculation does not
++supply. The larger negative eigenvalues at the higher levels weaken a
++pure roundoff explanation. An unchanged CPU replay reproduces the failure.
++No ridge, covariance clipping or replacement proposal was substituted after
++seeing the data. Six guide-dependent methods consequently have no complete
++result on this sequence, while the two unguided methods finish.
++
++The other particle runs contain no nonfinite stored numerical values or
++recorded conditional-CDF bracket failure; the largest recorded inversion
++residual is $1.44\times10^{-14}$. These checks support the completed
++conditional consumers. They cannot turn the missing guided result into a
++successful filter or certify its population accuracy.
++
++The saved fits also clarify what initialization and empirical selection
++accomplish. On the 209 four-dimensional transitions with a valid guide,
++validation selects the SGQF-started TT 191 times, the generic TT ten times
++and the unchanged SGQF joint eight times. In one dimension the corresponding
++counts over 228 transitions are 59, 145 and 24. Every initial proposal uses
++SGQF. These are decisions along dependent approximate filtering paths, not
++independent replications of an initialization comparison.
++
++Although validation selection cannot lose on its own comparison rows,
++fresh audit rows reveal losses to SGQF in nine scalar and one
++four-dimensional transition fits. The largest increases in $H^2$ are
++$0.002248$ and $0.002169$. The finite-row safeguard therefore provides no
++population guarantee. Minimum target-weight ESS on the 8192 audit rows is
++5859 in one dimension and 985 in four; the four-dimensional validation
++minimum is 269 out of 4096. Those concentrations help explain the
++uncertainty in selecting a fit. They are not downstream filtering criteria.
++The next retained target also depends on the preceding approximation, so
++even an accurately measured discrepancy on that target cannot by itself
++establish agreement with the true filtering distribution.
++
++There is a measurable computational cost to attempting both fits. In the
++same campaign, median fit/total time per sequence is $0.170/0.647$ seconds
++for scalar joint SGQF and $5.594/6.593$ for the safeguarded TT. The
++four-dimensional values are $0.189/0.665$ and $43.520/45.624$. Shared guide
++construction is recorded separately, and the ordered campaign reuses
++compiled kernels, so these are descriptive timings rather than an equal
++cold-start benchmark.
++
++The experiment rejects the tested candidate while leaving two distinguishable
++repair questions. Signed quadrature must first provide valid moments on the
++observations where the guide is needed. Separately, TT conversion and
++validation selection must preserve useful accuracy already present in the
++analytical joint. The current observation sequences have now been inspected;
++a repair needs fresh calibration and confirmation sequences under a reviewed
++protocol. A lower fitting discrepancy or a favorable table conditioned on
++guide success would not answer both questions.
++
++The initialization, defense-calibration and independent-filtering records are
++respectively
++\path{docs/plans/observation-aware-tt-sgqf-initialization-20260915-result.md},
++\path{docs/plans/observation-aware-tt-defense-consumer-20260915-result.md}, and
++\path{docs/plans/observation-aware-tt-independent-filtering-20260915-result.md}.
++They preserve commands, exact inputs, frozen controls, failed cases and
++inference tables. The independent terminal interpretation review agrees with
++the stated rejection and uncertainty limits. This section remains a
++provisional manuscript addition pending human reading feedback; its
++initialization/selection extensions do not establish source-faithful TT-cross,
++scalable high-dimensional fitting, total parameter gradients or HMC readiness.
+ 
+ \appendix
+ \section{Artifact Provenance and Corrections}

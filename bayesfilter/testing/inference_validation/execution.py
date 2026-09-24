@@ -42,7 +42,7 @@ def plan_suite(suite):
         available=spec.available
         reason=spec.unavailable_reason
         if (available and not spec.pipeline_available
-                and design.engine in {"search", "accuracy", "stopping", "sbc"}
+                and design.engine in {"search", "accuracy", "stopping", "sbc", "reference_mean"}
                 and design.scenario.route in {"ordinary", "prepared", "fixed_transport"}):
             available = False
             reason = spec.pipeline_unavailable_reason or "target lacks a shared posterior pipeline adapter"
@@ -77,32 +77,56 @@ def configure_worker(design):
     import tensorflow_probability as tfp
     from bayesfilter.runtime.gpu_memory_policy import configure_tensorflow_gpu_memory_growth
     memory=configure_tensorflow_gpu_memory_growth(tf,require_gpu=design.device=="gpu")
+    placement = {}
+    if design.device == "gpu":
+        physical = tf.config.list_physical_devices("GPU")
+        with tf.device("/GPU:0"):
+            probe = tf.constant([1.], tf.float64) + tf.constant([2.], tf.float64)
+        if "GPU" not in probe.device or float(probe[0]) != 3.:
+            raise RuntimeError("GPU worker placement probe failed")
+        placement = {"gpu_tensor_device": probe.device,
+            "physical_gpu_details": [{"name": device.name,
+                "details": tf.config.experimental.get_device_details(device)} for device in physical]}
     return {"python":platform.python_version(),"tensorflow":tf.__version__,"tfp":tfp.__version__,
             "device_scope":design.device,"gpu_intentionally_hidden":design.device=="cpu_reference",
             "memory_policy":memory,"jit_compile":design.device=="gpu",
             "tf32":tf.config.experimental.tensor_float_32_execution_enabled(),
             "cpu_threads":{"intra_op":os.environ["TF_NUM_INTRAOP_THREADS"],"inter_op":os.environ["TF_NUM_INTEROP_THREADS"]},
-            "visible_devices":os.environ.get("CUDA_VISIBLE_DEVICES")}
+            "visible_devices":os.environ.get("CUDA_VISIBLE_DEVICES"), **placement}
 
 
-def worker(design_file,root,budget,attempt=1):
+def worker(design_file,root,budget,attempt=1,*,profile_execution=False):
     root=Path(root); design=ValidationDesign.from_payload(read_json(design_file))
     started=time.monotonic()
     profile = None
+    requested = profile_execution or design.options.get("profile_execution", False)
     try:
-        runtime=configure_worker(design)
+        isolated = design.options.get("isolate_fits", False)
+        runtime = ({"device_scope": design.device,
+                    "framework_initialization": "isolated fit children only",
+                    "child_manifests": "replication-*/process-attempt-*-manifest.json"}
+                   if isolated else configure_worker(design))
         manifest={"design":design.payload(),"runtime":runtime,
             "source":source_state(),"command":sys.argv,"started_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
             "environment":sys.executable,"data_version":design.options.get("data_version", "declared synthetic law"),
             "plan_file":design.options.get("plan_file","docs/plans/bayesfilter-inference-validation-execution-2026-09-15.md"),
-            "result_file":str(root/f"attempt-{attempt:03d}-result.json")}
+            "result_file":str(root/f"attempt-{attempt:03d}-result.json"),
+            "profiling":{"requested":requested,
+                "scope":"isolated_numerical_children" if isolated else "numerical_worker",
+                "status_files":"replication-*/process-attempt-*-profile.json" if isolated
+                    else f"attempt-{attempt:03d}-profile.json"}}
         write_json(root/f"attempt-{attempt:03d}-manifest.json",manifest)
         deadline=started+budget
-        if design.options.get("profile_execution", False):
-            import cProfile
-            profile = cProfile.Profile()
-            profile.enable()
-        if design.scenario.route=="external":
+        if requested and not isolated:
+            from .profiling import HostProfile
+            profile = HostProfile(root/f"attempt-{attempt:03d}", requested=True,
+                                  scope="numerical_worker")
+            profile.start()
+        if isolated:
+            from .fit_process import run_isolated_replications
+            assessment = run_isolated_replications(design, root, deadline=deadline,
+                                                   profile_execution=requested)
+        elif design.scenario.route=="external":
             from .references.external import load_reference
             from .engines.statistics import accuracy_assessment
             observed=read_json(design.options["observations"])
@@ -126,6 +150,9 @@ def worker(design_file,root,budget,attempt=1):
         elif design.engine=="acceptance":
             from .engines.acceptance import run
             assessment=run(design,root,deadline)
+        elif design.engine=="reference_mean":
+            from .engines.reference_mean import run
+            assessment=run(design,root,deadline)
         elif design.engine=="stopping" and design.scenario.route=="reference":
             from .engines.diagnostics import run
             assessment=run(design,root,deadline)
@@ -133,13 +160,14 @@ def worker(design_file,root,budget,attempt=1):
             from .engines.pipeline import run
             assessment=run(design,root,deadline)
         result={"schema":"bayesfilter.inference_validation_result.v1","design_identity":design.identity,
-                "execution_status":"complete","assessment":assessment,"runtime":runtime,
+                "execution_status":("failed" if isolated and assessment.get("execution_failures") else "complete"),
+                "assessment":assessment,"runtime":runtime,
                 "elapsed_seconds":time.monotonic()-started,"coverage":design.coverage_key()}
         from .controls import response
         result["test_response"]=response(design,assessment)
         write_json(root/f"attempt-{attempt:03d}-result.json",result)
         write_json(root/"result.json",result)
-        return 0
+        return 1 if isolated and assessment.get("execution_failures") else 0
     except Exception as exc:
         write_json(root/f"attempt-{attempt:03d}-failure.json",{"execution_status":"failed","exception":type(exc).__name__,
             "reason":str(exc),"traceback":traceback.format_exc(),"elapsed_seconds":time.monotonic()-started})
@@ -147,17 +175,10 @@ def worker(design_file,root,budget,attempt=1):
         return 1
     finally:
         if profile is not None:
-            profile.disable()
-            try:
-                profile.dump_stats(str(root/f"attempt-{attempt:03d}-host.prof"))
-            except OSError as exc:
-                # Profiling is explanatory. Preserve the engine outcome and its
-                # failure record when a profile cannot be written.
-                import warnings
-                warnings.warn(f"host profile unavailable: {exc}", RuntimeWarning)
+            profile.finish()
 
 
-def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
+def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_execution=False):
     """One ordinary advisory lock prevents accidental concurrent budget writers."""
     import fcntl
     root=Path(root).resolve()
@@ -169,13 +190,17 @@ def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
         raise ValueError("max_jobs must be positive")
     if type(max_workers) is not int or not 1 <= max_workers <= 32:
         raise ValueError("max_workers must be an integer in [1,32]")
+    if type(profile_execution) is not bool:
+        raise ValueError("profile_execution execution flag must be a boolean")
     root.mkdir(parents=True,exist_ok=True)
     with (root/".coordinator.lock").open("a+b") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return _run_suite(suite,root,resume=resume,max_jobs=max_jobs,max_workers=max_workers)
+        return _run_suite(suite,root,resume=resume,max_jobs=max_jobs,max_workers=max_workers,
+                          profile_execution=profile_execution)
 
 
-def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
+def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_execution=False):
+    from .profiling import profile_report
     root=Path(root).resolve(); plan=plan_suite(suite); sources=source_state()
     index_path=root/"run_index.json"
     if index_path.exists():
@@ -190,7 +215,11 @@ def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
     for job in plan["jobs"]:
         d=ValidationDesign.from_payload(job["design"]); key=d.design_id
         prior=index["jobs"].get(key,{"attempts":[]})
-        if prior.get("status")=="complete": continue
+        if prior.get("status")=="complete":
+            if profile_execution or d.options.get("profile_execution", False):
+                prior["profiling"] = profile_report(root/key,
+                    isolated=d.options.get("isolate_fits", False), requested=True)
+            continue
         if prior.get("status")=="running":
             # The previous coordinator died without recording worker exit. We
             # cannot assume unused time or safely launch a duplicate worker.
@@ -208,6 +237,8 @@ def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
         design_path=job_root/"design.json"; write_json(design_path,d.payload())
         attempt=len(prior["attempts"])+1; log=job_root/f"attempt-{attempt:03d}.log"
         command=[sys.executable,"-m","bayesfilter.testing.inference_validation","_worker",str(design_path),str(job_root),str(remaining),str(attempt)]
+        if profile_execution:
+            command.append("--profile-execution")
         pending.append((d,prior,remaining,attempt,log,command,job_root))
     index["max_workers"]=max_workers
     # Only this coordinator writes the index. Threads supervise independent
@@ -233,6 +264,9 @@ def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1):
                     "result":str(result_path) if record["exit_code"]==0 else None}
                 if record["exit_code"]==0:
                     index["jobs"][d.design_id]["result_sha256"]=file_hash(result_path)
+                if profile_execution or d.options.get("profile_execution", False):
+                    index["jobs"][d.design_id]["profiling"] = profile_report(job_root,
+                        isolated=d.options.get("isolate_fits", False), requested=True)
                 write_json(index_path,index)
                 print(f"{d.design_id}: {record['status']} ({record['elapsed_seconds']:.2f}s)",flush=True)
     write_json(index_path,index)

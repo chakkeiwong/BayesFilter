@@ -1,0 +1,137 @@
+{
+  "cpu_only": true,
+  "gpu_devices_intentionally_hidden": true,
+  "jit_compile": false,
+  "role": "independent diagnostic; no promotion or stochastic ranking",
+  "tensorflow": "2.19.1",
+  "command": [
+    "docs/plans/artifacts/zhao-cui-audit-20260911-01/diagnostic_audit.py",
+    "--output",
+    "docs/plans/artifacts/zhao-cui-audit-20260911-01/diagnostic-result-01.json"
+  ],
+  "checkout": "/home/chakwong/BayesFilterZhaoCui",
+  "wall_seconds": 2.224480289994972,
+  "source_sha256": {
+    "bayesfilter/highdim/zhao_cui_algorithm3_tf.py": "ba08772c3ebcbb208a303f470d95747e6e3aaec993fcdc5b7e134c003d14f387",
+    "bayesfilter/highdim/zhao_cui_algorithm2_preparation_tf.py": "447a4240c4cf9e5d690555eeaad047fdc58e0d55e7a08ed88f17a150dee55740",
+    "bayesfilter/highdim/gaussian_hermite_tt_transport_tf.py": "e3c69a7d9588a0874f9d326a168d6b2a8358f0deb5765aeff18ce8f93ed46f95",
+    "bayesfilter/highdim/hermite_gram_tf.py": "4d5061a65a2bb777e5ebd6fc4a0124e0459d9b53abc4d12b5bf04f2a8acaddbb",
+    "bayesfilter/highdim/transport.py": "9e44d5c6dfcc8741f03840745aff0ea10175d8e2cae5504e1fd1b70bd075320c",
+    "bayesfilter/highdim/squared_tt_engine_v0_tf.py": "1d9aef4e01327bac331069ec54289c2e6feb9199d37f243be89f9617bbf27aad"
+  },
+  "checks": {
+    "rank_activation": {
+      "target": "h(x,y)=1+0.25*x*y; positive on all diagnostic rows",
+      "config": {
+        "basis_degree": 1,
+        "rank": 2,
+        "row_count": 81,
+        "sweeps": 4,
+        "ridge": 1e-10,
+        "tau": 1e-06,
+        "coordinate_half_width": 3.0,
+        "seed": 1701,
+        "condition_number_veto": 100000000000000.0,
+        "quadrature_order": null,
+        "branch_gram_floor": 1e-12,
+        "row_design": "mc"
+      },
+      "inherited_initialization_coefficients": [
+        [
+          0.9999999998999997,
+          0.0
+        ],
+        [
+          -1.4332917620032997e-17,
+          0.0
+        ]
+      ],
+      "inherited_effective_rank": 1,
+      "inherited_fit": {
+        "worst_condition": 671.0886400335547,
+        "weighted_fit_rms": 0.234375
+      },
+      "exact_rank_two_warm_start_fit": {
+        "worst_condition": 1.0000000008602226,
+        "weighted_fit_rms": 1.0349461333523675e-10
+      },
+      "exact_warm_start_max_coefficient_error": 1.0000011929633956e-10,
+      "rank_activation_defect_reproduced": true
+    },
+    "gram_quadrature": {
+      "degree": 5,
+      "max_absolute_quadrature_error": 2.6645352591003757e-15,
+      "minimum_eigenvalue": 2.1865676514754111e-10,
+      "pass": true
+    },
+    "bounded_initial_density": {
+      "maximum_log_density_jacobian_error": 1.6321954898756985e-10,
+      "pass": true
+    },
+    "prepare_compile_score": {
+      "preparation_target_max_log_error": 1.7763568394002505e-15,
+      "path_sum_value_error": 0.0,
+      "path_sum_score_max_error": 4.163336342344337e-17,
+      "finite_difference_score_max_error": 1.844080443902385e-12,
+      "identity_ancestry_wiring": true,
+      "config": {
+        "basis_degree": 2,
+        "rank": 2,
+        "row_count": 128,
+        "sweeps": 2,
+        "ridge": 1e-10,
+        "tau": 1e-06,
+        "coordinate_half_width": 3.0,
+        "seed": 1701,
+        "condition_number_veto": 100000000000000.0,
+        "quadrature_order": null,
+        "branch_gram_floor": 1e-12,
+        "row_design": "mc"
+      },
+      "pass": true
+    },
+    "guide_checks": {
+      "flat_likelihood_covariance_max_error": 8.881784197001252e-16,
+      "two_point_exact_algebra_error": 1.1102230246251565e-16,
+      "observation_response": [
+        {
+          "observation": 0.0,
+          "mean": 0.0,
+          "variance": 1.0
+        },
+        {
+          "observation": 1.0,
+          "mean": 0.7615941559557647,
+          "variance": 0.41997434161402614
+        },
+        {
+          "observation": 3.0,
+          "mean": 0.9950547536867306,
+          "variance": 0.00986603716544019
+        }
+      ],
+      "invalid_covariances_rejected": [
+        "asymmetric sigma-point covariance",
+        "sigma-point covariance fails relative SPD check"
+      ],
+      "linear_gaussian_exact_posterior_at_y1": {
+        "mean": 0.5,
+        "variance": 0.5
+      },
+      "pass": true,
+      "nonclaim": "positive sigma-point projection is not exact Gaussian posterior updating"
+    },
+    "finite_output_guard": {
+      "accepted": true,
+      "valid": true,
+      "log_likelihood": "-inf",
+      "weight_sums": [
+        2.0,
+        2.0,
+        2.0,
+        2.0
+      ],
+      "guard_defect_reproduced": true
+    }
+  }
+}

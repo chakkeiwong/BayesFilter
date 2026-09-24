@@ -1,0 +1,186 @@
+{
+  "comparison_target": "model_score",
+  "derivative_id": "analytical_recursion",
+  "derivative_target": "finite_program_score",
+  "diagnostics": {
+    "candidate_configuration": {
+      "controls": {
+        "coordinate_cap": 0.4,
+        "coordinate_cap_power": 8,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_steps": 1,
+        "correction_strength": 0.2,
+        "correction_trust_radius": 0.5,
+        "flow_substeps": 2,
+        "pairwise_rms_cap": 2.0,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.02,
+        "reset_balance_steps": 3,
+        "reset_epsilon": 2.0,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "reset_sinkhorn_steps": 3
+      },
+      "within_fraction": 0.5
+    },
+    "canonical_status": "alternative_covariance_candidate_not_younis_filter_reproduction",
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 64,
+    "component_count": 8,
+    "component_lifecycle": "independent_prediction_observation_conditioning_and_evidence_reweighting",
+    "controls": {
+      "coordinate_cap": 0.4,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_steps": 1,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.5,
+      "flow_substeps": 2,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 3,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 3
+    },
+    "covariance_provider": "local_gaussian_mixture_assumed_density_filter",
+    "data_model": "affine_gaussian_all_six_parameters",
+    "data_seed": [
+      1237914354,
+      2013504185
+    ],
+    "data_version": "58b9af2876ff57b974584c4a45fbada27f24965e865607cfd4fb4b9cf614ad8a",
+    "derivative_semantics": "analytical_total_initial_moments_flow_genut_contract_e",
+    "final_component_log_weights": [
+      -1.3268797397613525,
+      -1.6822950839996338,
+      -1.8211333751678467,
+      -1.8918821811676025,
+      -3.817660093307495,
+      -3.3964216709136963,
+      -2.469508409500122,
+      -2.3431880474090576
+    ],
+    "final_provider_covariance": [
+      [
+        0.14066877961158752,
+        -0.01293253991752863,
+        -0.035477690398693085,
+        -0.03495638072490692
+      ],
+      [
+        -0.01293253991752863,
+        0.1446620225906372,
+        -0.02087188884615898,
+        -0.03438679128885269
+      ],
+      [
+        -0.035477690398693085,
+        -0.02087188884615898,
+        0.3977924585342407,
+        0.02493833750486374
+      ],
+      [
+        -0.03495638072490692,
+        -0.03438679128885269,
+        0.02493833750486374,
+        0.42520755529403687
+      ]
+    ],
+    "horizon": 3,
+    "initial_seed": [
+      645316538,
+      122181617
+    ],
+    "parameter_dimension": 6,
+    "particle_count": 64,
+    "process_seed": [
+      1819949672,
+      272432464
+    ],
+    "resampling_seed": [
+      816064842,
+      383317574
+    ],
+    "reset_contract_id": "contract_e_chol_v1",
+    "reset_seed": [
+      857155426,
+      2072196894
+    ],
+    "score_consumer": "mixture_schedule -> shared executor -> scheduled prediction/conditioning moments",
+    "score_squared_error": 0.42301708459854126,
+    "state_dimension": 4,
+    "tuning_status": "mechanics_or_tuning_candidate",
+    "uses_autodiff": false,
+    "value_squared_error": 0.06848422437906265,
+    "within_fraction": 0.5
+  },
+  "inference_status": "mechanics_only",
+  "initial_terms": true,
+  "numerical_validity": "pass",
+  "oracle_score": [
+    -2.0368263721466064,
+    -0.6763408780097961,
+    -0.8047178387641907,
+    -0.44821715354919434,
+    1.3209985494613647,
+    -0.05772070586681366
+  ],
+  "oracle_value": -6.567152976989746,
+  "proposal_law": "independent_conditioned_gaussian_mixture_moments_shared_ledh",
+  "runtime": {
+    "allocator_current_bytes": 134144,
+    "allocator_peak_bytes": 167795712,
+    "backend": "tensorflow",
+    "cpu_threads": 4,
+    "device": "GPU",
+    "dtype": "float32",
+    "gpu_intentionally_hidden": false,
+    "jit_compile": true,
+    "kernel_calls": 6,
+    "kernel_wall_seconds": 18.1266395499988,
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "reference_exception": false,
+    "score_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "tensorflow_version": "2.20.0-dev0+selfbuilt",
+    "tf32": true,
+    "traces": 1,
+    "value_device": "/job:localhost/replica:0/task:0/device:GPU:0"
+  },
+  "score": [
+    -1.4667552709579468,
+    -0.8942033052444458,
+    -0.7773637771606445,
+    -0.43847230076789856,
+    1.4071842432022095,
+    0.14795085787773132
+  ],
+  "value": -6.305458068847656,
+  "value_target": "finite_particle_log_likelihood"
+}

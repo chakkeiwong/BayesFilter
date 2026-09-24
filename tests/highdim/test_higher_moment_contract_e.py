@@ -490,7 +490,8 @@ def test_coordinatewise_bounded_cap_manual_jvp_matches_forward_accumulator():
     )
 
 
-def test_coordinatewise_standardized_cap_restores_affine_moments_and_is_opt_in():
+@pytest.mark.parametrize("cap", [0.98, 4.0, 8.0])
+def test_coordinatewise_standardized_cap_restores_affine_moments_and_is_opt_in(cap):
     source, weights, points, source_tangent, weights_tangent, points_tangent = _fixture(
         n=48, d=3
     )
@@ -532,7 +533,7 @@ def test_coordinatewise_standardized_cap_restores_affine_moments_and_is_opt_in()
         weights_tangent[:, None],
         points,
         points_tangent[:, :, None],
-        coordinatewise_standardized_cap=0.98,
+        coordinatewise_standardized_cap=cap,
         **common,
     )
     output_mean = tf.reduce_mean(capped["particles"], axis=0)
@@ -552,7 +553,8 @@ def test_coordinatewise_standardized_cap_restores_affine_moments_and_is_opt_in()
     assert bool(capped["valid"].numpy())
 
 
-def test_coordinatewise_standardized_cap_manual_jvp_matches_forward_accumulator():
+@pytest.mark.parametrize("cap", [0.98, 4.0, 8.0])
+def test_coordinatewise_standardized_cap_manual_jvp_matches_forward_accumulator(cap):
     source, weights, points, source_tangent, weights_tangent, points_tangent = _fixture(
         n=32, d=3
     )
@@ -572,7 +574,7 @@ def test_coordinatewise_standardized_cap_manual_jvp_matches_forward_accumulator(
             floor=1e-6,
             pairwise_correction_steps=2,
             pairwise_strength=0.01,
-            coordinatewise_standardized_cap=0.98,
+            coordinatewise_standardized_cap=cap,
         )["particles"]
 
     with tf.autodiff.ForwardAccumulator(
@@ -593,9 +595,23 @@ def test_coordinatewise_standardized_cap_manual_jvp_matches_forward_accumulator(
         floor=1e-6,
         pairwise_correction_steps=2,
         pairwise_strength=0.01,
-        coordinatewise_standardized_cap=0.98,
+        coordinatewise_standardized_cap=cap,
     )["particles_tangent"][:, :, 0]
     tf.debugging.assert_near(automatic, manual, atol=8e-9, rtol=8e-9)
+
+
+@pytest.mark.parametrize("controls", [
+    {"coordinatewise_standardized_cap": float("nan")},
+    {"coordinatewise_standardized_cap": float("inf")},
+    {"coordinatewise_standardized_cap": -1.0},
+    {"coordinatewise_bounded_cap": 1.0},
+    {"coordinatewise_bounded_cap": .9, "coordinatewise_standardized_cap": 4.0},
+])
+def test_coordinatewise_cap_domains_still_reject_invalid_inputs(controls):
+    source, weights, points, dsource, dweights, dpoints = _fixture(n=32, d=3)
+    with pytest.raises(ValueError):
+        higher_moment_shape_jvp(source, weights, dsource[:, :, None], dweights[:, None],
+                               points, dpoints[:, :, None], correction_steps=1, strength=.02, **controls)
 
 
 def test_projected_cumulant_reduces_complete_tensor_residual_and_restores_affine_moments():

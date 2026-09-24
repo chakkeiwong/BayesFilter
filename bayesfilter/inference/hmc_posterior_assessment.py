@@ -24,6 +24,7 @@ class HMCPosteriorAssessmentPolicy:
     warmup_consecutive_checks: int = 1
     precision: HMCPrecisionPolicy | None = None
     quantities_id: str | None = None
+    binary_quantity_names: tuple[str, ...] = ()
 
     def __post_init__(self):
         for name in ("warmup_bulk_ess_min", "warmup_tail_ess_min", "retained_bulk_ess_min", "retained_tail_ess_min"):
@@ -36,6 +37,12 @@ class HMCPosteriorAssessmentPolicy:
             raise TypeError("precision must be HMCPrecisionPolicy")
         if self.quantities_id is not None and (not isinstance(self.quantities_id, str) or not self.quantities_id):
             raise ValueError("quantities_id must be a nonempty string")
+        if not isinstance(self.binary_quantity_names, (tuple, list)) or any(
+                not isinstance(n, str) or not n for n in self.binary_quantity_names):
+            raise ValueError("binary_quantity_names must contain nonempty names")
+        object.__setattr__(self, "binary_quantity_names", tuple(self.binary_quantity_names))
+        if len(set(self.binary_quantity_names)) != len(self.binary_quantity_names):
+            raise ValueError("binary_quantity_names must be unique")
 
     def payload(self):
         return {"schema": "bayesfilter.hmc_posterior_assessment.v1", **asdict(self),
@@ -80,6 +87,41 @@ def assess_posterior(samples, names, *, policy, stage, rhat, extra=None, quantit
             names += tuple(quantities)
             from bayesfilter.inference.hmc_convergence import rank_normalized_split_rhat_summary
             rhat = rank_normalized_split_rhat_summary(values, rhat_max=rhat["rhat_threshold"])
+    if policy.binary_quantity_names:
+        unknown = set(policy.binary_quantity_names)-set(names)
+        if unknown:
+            raise ValueError("declared binary quantities are absent: " + ", ".join(sorted(unknown)))
+        for name in policy.binary_quantity_names:
+            event = values[..., names.index(name)]
+            if not bool(tf.reduce_all((event == 0.) | (event == 1.))):
+                raise ValueError("declared binary quantity contains values other than 0/1: " + name)
+        # Bernoulli distributions have one probability parameter. Folding at
+        # median 1/2 makes every observation 1/2 even when I varies; the folded
+        # diagnostic is then undefined and contains no probability information.
+        # Keep the raw report, and use rank split R-hat for explicitly typed
+        # events while retaining max(rank, folded) for continuous quantities.
+        from bayesfilter.inference.hmc_convergence import rank_normalized_split_rhat_summary
+        if "rank_normalized_split_rhat" not in rhat:
+            rhat = rank_normalized_split_rhat_summary(values, rhat_max=rhat["rhat_threshold"])
+        raw_rhat = rhat
+        required = tuple(raw_rhat["rank_normalized_split_rhat"][i]
+            if n in policy.binary_quantity_names else raw_rhat["rhat"][i] for i,n in enumerate(names))
+        finite_required = [v for v in required if v is not None and math.isfinite(v)]
+        all_required_finite = len(finite_required) == len(required)
+        vetoes = tuple(v for v in raw_rhat["hard_vetoes"] if v != "nonfinite_rank_normalized_rhat")
+        if not all_required_finite:
+            vetoes += ("nonfinite_required_quantity_rhat",)
+        rhat = {**raw_rhat, "schema":"bayesfilter.quantity_aware_rhat_summary.v1",
+            "raw_all_quantities_rank_folded_summary":raw_rhat,
+            "rhat":required, "passed":bool(all_required_finite and not vetoes
+                and max(finite_required) <= raw_rhat["rhat_threshold"]),
+            "diagnostics_all_finite":all_required_finite,
+            "finite_rhat_count":len(finite_required), "nonfinite_rhat_count":len(required)-len(finite_required),
+            "max_finite_rhat":max(finite_required) if finite_required else None,
+            "hard_vetoes":vetoes,
+            "rhat_definition":"continuous: max(rank, folded rank) split R-hat; declared binary: rank split R-hat",
+            "quantity_rhat_roles":tuple("binary_probability_rank_split" if n in policy.binary_quantity_names
+                else "continuous_rank_and_folded_split" for n in names)}
     finite = bool(tf.reduce_all(tf.math.is_finite(values)))
     if not finite:
         return {"passed": False, "modern_rhat": rhat, "health_failures": ("nonfinite_monitored_quantity",),
@@ -89,8 +131,22 @@ def assess_posterior(samples, names, *, policy, stage, rhat, extra=None, quantit
         return tuple(float(v) if math.isfinite(float(v)) else None for v in tf.unstack(x))
     bulk_floor = getattr(policy, stage + "_bulk_ess_min")
     tail_floor = getattr(policy, stage + "_tail_ess_min")
+    event_ess = {}
+    event_valid = True
+    for name in policy.binary_quantity_names:
+        index = names.index(name)
+        event = values[..., index]
+        event_valid = event_valid and bool(tf.reduce_any(event == 0.) & tf.reduce_any(event == 1.))
+        # With both outcomes, pooled rank normalization is a+b*I, b>0.
+        # ESS is affine invariant, so rank bulk ESS equals the split-chain
+        # ESS of this event indicator (and its complement). The binary 95%
+        # quantile's CDF can be constant; its quantile ESS remains undefined.
+        event_ess[name] = safe_array(ess["bulk"])[index]
+    information_tail = tf.stack([ess["bulk"][i] if n in event_ess else ess["tail"][i]
+                                 for i, n in enumerate(names)])
     information = ((bulk_floor == 0. or bool(tf.reduce_all(tf.math.is_finite(ess["bulk"]) & (ess["bulk"] >= bulk_floor))))
-                   and (tail_floor == 0. or bool(tf.reduce_all(tf.math.is_finite(ess["tail"]) & (ess["tail"] >= tail_floor)))))
+                   and (tail_floor == 0. or bool(tf.reduce_all(tf.math.is_finite(information_tail) & (information_tail >= tail_floor))))
+                   and event_valid)
     mean = mean_precision(values)
     precision = precision_report(values, names, policy.precision if stage == "retained" else None)
     # Preserve existing summary fields for consumers. The common decision and
@@ -102,6 +158,10 @@ def assess_posterior(samples, names, *, policy, stage, rhat, extra=None, quantit
             "modern_rhat": rhat, "information_passed": information,
             "bulk_tail_ess_method": STAN_ESS_VERSION,
             "quantity_names": names, "bulk_ess": safe_array(ess["bulk"]), "tail_ess": safe_array(ess["tail"]),
+            "binary_event_ess": event_ess,
+            "information_tail_floor_ess": safe_array(information_tail),
+            "information_tail_floor_role": tuple("binary_event_probability_ess" if n in event_ess
+                else "continuous_quantile_tail_ess" for n in names),
             "mean_mcse": safe_array(mean["mcse"]), "mean_ess": safe_array(mean["mean_ess"]),
             "mcse_sd_ratio": safe_array(mean["mcse_sd_ratio"]),
             "mean_mcse_method": mean["estimator"], "precision": precision, "consumer_diagnostic": extra,

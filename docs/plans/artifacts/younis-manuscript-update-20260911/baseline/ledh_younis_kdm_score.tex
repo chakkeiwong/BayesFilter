@@ -1,0 +1,1409 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{natbib}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{proposition}{Proposition}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\KDM}{\ensuremath{\mathrm{KDM}}}
+\newcommand{\LEDH}{\ensuremath{\mathrm{LEDH}}}
+\newcommand{\GenUT}{\ensuremath{\mathrm{GenUT}}}
+\newcommand{\OT}{\ensuremath{\mathrm{OT}}}
+
+\title{Younis Kernel Mixtures and the Score of the\\
+LEDH--OT--GenUT Dual-Cap Trust-Region Filter}
+\author{BayesFilter research note}
+\date{10 September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The question in this note is deliberately narrow.  Can the
+kernel-density-mixture construction of Younis and Sudderth
+\citep{younis2023,younis2024} help compute the score of the executed
+LEDH--OT--GenUT filter with its dual-cap trust-region correction?  The answer
+cannot be obtained by calling a smoothed derivative a correction to the
+existing score.  A positive-bandwidth mixture changes the finite state
+measure and therefore changes the scalar being differentiated.  Younis's
+importance-weighted sample gradient (IWSG) gives a principled derivative for
+a mixture expectation with a proposal frozen at the evaluation point; it is
+not, without an additional argument, the total derivative of the
+atom-based filter program.  This note defines the distinct programs, derives
+the complete mixture and Gaussian-convolution differentials, identifies the
+support problem for degenerate DSGE states, and sets out a bounded experiment.
+The existing LEDH--OT--\GenUT{} total derivative remains the baseline.  The
+implemented observation-only KDM program passes total-derivative checks for
+its own scalar, but a paired linear--Gaussian experiment does not show lower
+score error.  The source audit also resolves a more basic issue: Younis's KDM
+is a continuous resampling law, whereas Contract--E is already the reset of
+the requested filter.  Replacing Contract--E does not implement the requested
+algorithm; retaining both defines a new, combined finite program.  That
+combined fixed-anchor program is now implemented as an exact all-components
+reference.  A later paper-and-author-code audit found that the first version
+prematurely normalized the IWSG ratios.  That normalization left the next
+posterior weights unchanged but subtracted a random finite-sample term from
+the next log normalizer and its derivative.  The repaired primary route now
+carries the raw ratio divided by the particle count, as required by the IWSG
+expectation identity; the old centered route is a separately labelled
+self-normalized program.  A new two-state Gaussian campaign finds higher
+model-score mean squared error for the calibrated repaired program in both
+tested particle/horizon scopes, with paired intervals supporting the losses.
+The derivative checks pass, but score improvement does not follow.  Neither
+route is the derivative of the unchanged atom program.  Extending the method
+to parameter-dependent DSGE support also requires a state-motion derivative;
+a volume Jacobian alone is insufficient.
+\end{abstract}
+
+\section{The question and the target}
+
+The repository uses \LEDH{} particle flow, PF--PF proposal weights,
+entropy-regularized \OT{}, \GenUT{} moment restoration, and a dual-cap
+trust-region correction.  The spelling \LEDH{} follows the repository's
+Li--Coates route \citep{li2017particle}; if a different method is intended by
+\lq\lq LEDG\rq\rq, its definition must replace the notation before
+implementation.
+
+The present research question is not whether a generic particle smoother can
+be attached to the project.  The question is whether a Younis-style
+continuous mixture can improve the computation of the score associated with
+the actual finite filter.  Nemeth, Scibior--Wood, PaRIS, and Del Moral are
+therefore not competing implementation directions in this note.  Corenflos
+is part of the existing differentiable-\OT{} context
+\citep{corenflos2021differentiable}.  These methods may delimit what is being
+computed, but the proposed experiment is a KDM experiment.
+
+There are two score notions that must be kept separate:
+\begin{align}
+  \ell(\theta) &= \log p_\theta(y_{1:T}), &
+  s(\theta) &= \nabla_\theta \ell(\theta), \label{eq:exact-score}\\
+  L_0^N(\theta;\xi) &= \text{value of the executed finite filter}, &
+  S_0^N(\theta;\xi) &= \nabla_\theta L_0^N(\theta;\xi). \label{eq:finite-score}
+\end{align}
+The first is the exact observed-data score.  The second is the total
+derivative of the finite program for a fixed observation sequence and fixed
+random stream $\xi$.  The second is the immediate target of the present code
+audit.  Equality between the two is not assumed at finite particle count.
+
+The experiments below use four active labels and one historical diagnostic
+label.  \texttt{ATOM-FINITE} denotes the
+canonical scalar $L_0^N$ in \eqref{eq:finite-score}.  \texttt{KDM-FINITE}
+denotes a scalar in which a declared positive-bandwidth operation has replaced
+an atom operation, with score $\nabla_\theta L_h^N$.
+\texttt{RESKDM-IWSG-FINITE} denotes the particular combined program that
+retains Contract--E and then carries raw fixed-anchor full-mixture importance
+weights into the next transition.  \texttt{RESKDM-SN-FINITE} denotes the
+historical variant that first self-normalizes those ratios.  \texttt{MODEL-IS}
+denotes an importance-sampling estimator
+whose proposal may be a KDM but whose density ratio targets the underlying
+state-space factor.  A correct
+\texttt{MODEL-IS} ratio preserves the model normalizer in expectation under
+its support assumptions; it does not make the finite Contract--E reset equal
+to \texttt{ATOM-FINITE}.  These labels are not interchangeable.  In
+particular, \texttt{RESKDM-SN-FINITE} is wrong relative to a claim that it
+executes the raw IWSG normalizer.
+
+\section{The executed atom program}
+
+Let $x_{t,i}^{-}$ and $w_{t,i}^{-}$ denote the cloud and normalized weights
+immediately before the observation update.  The finite program can be written
+schematically as
+\begin{align}
+ x_{t,i}^{-}
+   &= \Phi_{t,\theta}(x_{t-1,i}^{+},\xi_t), \\
+ x_{t,i}^{\mathrm{out}}
+   &= F_{t,\theta}^{\mathrm{LEDH}}(x_{t,i}^{-};\xi_t), \\
+ a_{t,i}
+   &= \log w_{t,i}^{-}
+      +\log p_\theta(x_{t,i}^{\mathrm{out}}\mid x_{t-1,i}^{+})
+      +\log g_\theta(y_t\mid x_{t,i}^{\mathrm{out}})
+      +\log |J_{t,i}|
+      -\log q_{t,\theta}(x_{t,i}^{-}\mid x_{t-1,i}^{+},y_t), \\
+ Z_t
+   &= \sum_{i=1}^{N}\exp(a_{t,i}), \\
+ w_{t,i}^{+}
+   &= \exp(a_{t,i})/Z_t, \\
+ x_t^{+}
+   &= R_\theta(x_t^{\mathrm{out}},w_t^{+};\xi_t), \label{eq:atom-program}\\
+ L_0^N(\theta;\xi)
+   &= \sum_{t=1}^{T}\log Z_t,\qquad
+ S_0^N(\theta;\xi)=\nabla_\theta L_0^N(\theta;\xi).
+\end{align}
+Here $x_{t,i}^{\mathrm{out}}$ is the post-flow state, $J_{t,i}$ is the
+forward flow Jacobian, and $q_{t,\theta}$ is the pre-flow proposal density.
+$\Phi$ includes the declared transition and UKF covariance lifecycle, while
+$F^{\mathrm{LEDH}}$ is the flow map; the displayed terms make the PF--PF
+correction explicit.  In a
+bootstrap/no-flow special case, the proposal and transition terms cancel and
+$a_{t,i}=\log w_{t,i}^{-}+\log g_\theta(y_t\mid x_{t,i}^{-})$.  The reset $R$
+includes the Sinkhorn/\OT{} map, Contract--E moments, \GenUT{} corrections,
+and the dual-cap trust-region map.  This form matches the canonical score
+route, whose weight logits contain transition, observation, log-determinant,
+and proposal terms.  No such term may be silently dropped from the value or
+its tangent.
+
+For the auxiliary sidecar it is useful to expose the same code path as a
+prior-observation factorization.  Define
+\begin{align}
+ b_{t,i} &= \log w_{t,i}^{-}
+      +\log p_\theta(x_{t,i}^{\mathrm{out}}\mid x_{t-1,i}^{+})
+      +\log |J_{t,i}|
+      -\log q_{t,\theta}(x_{t,i}^{-}\mid x_{t-1,i}^{+},y_t),\\
+ B_t &= \log\sum_i\exp(b_{t,i}),\qquad
+ \bar w_{t,i}=\exp(b_{t,i}-B_t),\\
+ a_{t,i} &= b_{t,i}+\log g_\theta(y_t\mid x_{t,i}^{\mathrm{out}}),\qquad
+ Z_t=\sum_i\exp(a_{t,i}).
+ \label{eq:prior-observation-factorization}
+\end{align}
+The implementation records $\bar w_t$ as
+\texttt{prior\_observation\_weights}; these are the weights that may be
+used with a new observation functional.  The posterior weights in
+\eqref{eq:atom-program} are $w_t^+$ and must not be reused as $\bar w_t$.
+
+The derivative in \eqref{eq:finite-score} is a total derivative.  Thus a
+tangent through $x_t^{-}$, $w_t^{-}$, the observation factor, the \OT{} map,
+the Contract--E residual design, the higher moments, and the dual caps is
+included whenever that dependence is part of the declared finite scalar.
+Holding a cloud fixed and differentiating only the observation factor is a
+different partial derivative.
+
+The executable analytical endpoint evaluates one arbitrary parameter
+direction per call.  For a scalar parameter this number is the score.  For
+$p>1$, a full score vector requires $p$ calls with the model tangent set to
+the coordinate directions (or another spanning basis); each call is still a
+total derivative through the entire finite recurrence.  The present Phase~4A
+and Phase~4B LGSSM fixtures have one parameter.  No result below establishes a
+multi-parameter Phase~4B assembly call site.
+
+The single-cloud analytical score authority inspected for this note is:
+\begin{itemize}[leftmargin=2em]
+  \item \texttt{canonical\_value\_and\_analytical\_score}\\
+        \path{bayesfilter/highdim/ledh_canonical_score_tf.py};
+  \item the batch wrapper
+        \texttt{canonical\_batch\_value\_score}\\
+        \path{bayesfilter/highdim/ledh_canonical_batch_}\\
+        \path{tf.py}.\\
+        It accepts both the historical \texttt{substeps} keyword and the
+        authority-aligned \texttt{flow\_substeps} alias, and rejects
+        conflicting values.
+\end{itemize}
+The separate lower-level GenUT candidate/diagnostic is:
+\begin{itemize}[leftmargin=2em]
+  \item \texttt{finite\_value\_score}\\
+        \path{bayesfilter/highdim/cubature_genut_filter.py}.
+\end{itemize}
+Calling it is not evidence that the LEDH PF--PF flow and Contract--E reset
+were executed.  The registry mismatch found during the audit has been repaired:
+the registry now names the exported
+\texttt{canonical\_value\_and\_analytical\_score}, and the governance test
+resolves every registered entry point to a callable.  This closes discovery
+only; it does not implement KDM or prove numerical score validity.  The existing
+Section~3.6 prior-weight sidecar is diagnostic work from an isolated worktree;
+it is not an integrated route in this checkout and is not a Younis IWSG
+implementation through the reset.  The analytical function defaults to
+\texttt{reset\_policy=none}, a diagnostic slice.  A canonical baseline
+invocation must explicitly select \texttt{reset\_policy=contract\_e} and the
+owner-registered dual-cap and trust-region settings.
+
+\section{What the Younis construction supplies}
+
+Younis and Sudderth begin with a weighted empirical cloud and replace its
+Dirac representation by a regularized mixture
+\begin{equation}
+ \mu_h^N(\dd z)
+   = \sum_{i=1}^{N} w_i k_{B_i}(z-x_i)\,\dd z,
+ \qquad
+ m_\theta(z)=\sum_{i=1}^{N}
+       w_i(\theta)k_{B_i(\theta)}(z-x_i(\theta)).
+ \label{eq:kdm}
+\end{equation}
+For their mixture-density particle filter, this mixture replaces discrete
+resampling.  With a common Gaussian bandwidth one may generate an anchor
+sample by
+\begin{equation}
+ I_j\sim\operatorname{Cat}(w_1,\ldots,w_N),\qquad
+ z_j=x_{I_j}+L\varepsilon_j,\qquad
+ \varepsilon_j\sim N(0,I),\quad LL^\mathsf{T}=B.
+ \label{eq:younis-sampling}
+\end{equation}
+The 2024 construction stratifies the uniforms used for the categorical draw.
+The label $I_j$ generates the sample, but the differentiable density is the
+marginal sum in \eqref{eq:kdm}; it is not the density of the selected
+component.  Thus every component can contribute to the gradient at every
+sample location.  This is the source of the $N$-by-$N$ work in a
+gradient-bearing resampling step.
+
+Their IWSG construction fixes a proposal at the current parameter value.  With
+\begin{equation}
+ q_0(z)=m_{\theta_0}(z),\qquad
+ \rho_j(\theta)=\frac{m_\theta(z_j)}{q_0(z_j)},\qquad
+ z_j\sim q_0,
+ \label{eq:iwsg-ratio}
+\end{equation}
+the finite estimator of a mixture expectation and its derivative are
+\begin{align}
+ \widehat I(\theta)
+   &=\frac{1}{M}\sum_{j=1}^{M}\rho_j(\theta)\phi_\theta(z_j),\\
+ \dd\widehat I
+   &=\frac{1}{M}\sum_{j=1}^{M}
+       \left\{\dd\rho_j\,\phi_\theta(z_j)
+              +\rho_j\,\dd\phi_\theta(z_j)\right\}.
+ \label{eq:iwsg}
+\end{align}
+At $\theta=\theta_0$, $\rho_j=1$.  The locations $z_j$ are held fixed in
+this differentiation; parameter dependence is represented by the mixture
+density ratio.  This is not the total JVP of an inverse-CDF draw or of a
+parameter-dependent component index.  Equations~\eqref{eq:iwsg-ratio}--
+\eqref{eq:iwsg} establish the derivative of a mixture expectation.  They do
+not by themselves establish the derivative of an arbitrary nonlinear
+operation that couples the complete set $(z_1,\ldots,z_M)$.  For such an
+operation $H_\theta$, ordinary importance sampling on the joint sample would
+instead use
+\begin{equation}
+ R_M(\theta)=\prod_{j=1}^M\rho_j(\theta),\qquad
+ \dd\{R_M H_\theta\}\big|_{\theta_0}
+ =\dd H_{\theta_0}+H_{\theta_0}
+   \sum_{j=1}^M\dd\log m_\theta(z_j)\big|_{\theta_0}.
+ \label{eq:joint-mixture-ratio}
+\end{equation}
+This joint ratio is exact for an expectation under independent mixture draws,
+but its variance can grow rapidly with $M$.  Feeding individual IWSG weights
+through a nonlinear \OT{} reset defines a finite weighted-particle algorithm;
+it is not silently promoted to the joint identity
+\eqref{eq:joint-mixture-ratio}.
+
+The ratio in \eqref{eq:iwsg-ratio} is a raw importance weight.  Replacing it
+by the self-normalized ratio
+\begin{equation}
+ \bar\rho_j(\theta)=\frac{\rho_j(\theta)}{\sum_l\rho_l(\theta)}
+ \label{eq:self-normalized-ratio}
+\end{equation}
+changes the finite estimator.  At the anchor,
+$\dd\log\rho_j=\dd\log m_\theta(z_j)$, whereas
+\begin{equation}
+ \dd\log\bar\rho_j
+ =\dd\log m_\theta(z_j)
+  -\frac1M\sum_l\dd\log m_\theta(z_l).
+ \label{eq:centered-ratio-tangent}
+\end{equation}
+The second expression has been centered by a random sample average and is not
+Equation~(15) of Younis and Sudderth.  Their released MDPF code confirms the
+same ordering: it constructs the unnormalized gradient-injection factor
+$\exp\{\log m-\operatorname{stop}(\log m)\}$, multiplies that factor by the
+next measurement and dynamics weights, and only then normalizes the posterior
+weights \citep{youniscode2023}.  The source code's small additive numerical
+constant is an engineering detail and is not part of the mathematical route
+defined here.
+
+For a Gaussian component, let $u_i=z-x_i$.  Its complete directional
+differential is
+\begin{equation}
+ \dd\log k_{B_i}(u_i)
+ =
+ u_i^\mathsf{T}B_i^{-1}\dd x_i
+ +\frac12\left[
+   u_i^\mathsf{T}B_i^{-1}(\dd B_i)B_i^{-1}u_i
+   -\operatorname{tr}(B_i^{-1}\dd B_i)
+ \right].
+ \label{eq:component-tangent}
+\end{equation}
+Therefore
+\begin{equation}
+ \dd m_\theta(z)
+ =\sum_i\left[
+       (\dd w_i)k_{B_i}(u_i)
+       +w_i k_{B_i}(u_i)\dd\log k_{B_i}(u_i)
+     \right]. \label{eq:mixture-tangent}
+\end{equation}
+Equation~\eqref{eq:mixture-tangent} is the term that a KDM score path must
+carry for every cloud, weight, or bandwidth dependence declared to vary with
+$\theta$.  A bandwidth or cloud may instead be a genuinely fixed numerical
+design, in which case its zero tangent is part of the scalar's definition.
+Stopping a dependence that the declared scalar retains is a partial
+derivative; declaring a quantity fixed before defining the scalar is not.
+
+The source papers establish this mixture-gradient construction for learned,
+discriminative state-density objectives.  In particular, the 2023 MDPF uses
+the mixture both for posterior-state loss evaluation and for resampling; the
+2024 paper again gives the marginalized ratio and separates resampling and
+posterior bandwidths.  Neither paper derives the observed-data score of a
+generative state-space model, an \LEDH{} flow, an \OT{} reset, \GenUT{}
+moments, or dual-cap constraints.  Their complexity discussion makes the
+computational boundary explicit: evaluating the mixture gradient at every
+resampled location creates all-pairs interactions.  The papers' linear-cost
+inference path sets forward resampling weights to uniform and does not compute
+these gradients.  It cannot be transplanted to a score path without a new
+approximation and error analysis.
+
+\section{Why positive bandwidth is a target change}
+
+The atom cloud is
+\begin{equation}
+ \mu_0^N(\dd z)=\sum_i w_i\delta_{x_i}(\dd z).
+ \label{eq:atom-measure}
+\end{equation}
+For a test function $\phi$,
+\begin{equation}
+ \int\phi(z)\mu_h^N(\dd z)
+ =\sum_i w_i\int\phi(x_i+u)K_{B_i}(\dd u),
+ \label{eq:smoothed-functional}
+\end{equation}
+which is not generally $\sum_i w_i\phi(x_i)$.  This gives the following
+simple boundary.
+
+\begin{proposition}
+If at least one component kernel has nonzero bandwidth, then, in general,
+the KDM functional and the atom functional are different.  Consequently a
+positive-bandwidth derivative cannot be called $S_0^N$ without an exact
+correction or a separately proved limiting argument.
+\end{proposition}
+
+\begin{proof}
+If the two functionals were equal for every smooth test function, convolution
+by every component kernel would act as the identity on the values at its
+component mean.  A non-degenerate Gaussian (or any ordinary smoothing
+kernel) does not have this property.  Choose a smooth function with nonzero
+curvature in a direction with positive kernel variance; its kernel average
+differs from its value at the mean.  The finite sums then differ unless an
+accidental cancellation occurs.  Differentiating the two unequal functionals
+cannot restore equality for all parameter directions.
+\end{proof}
+
+The case $B=0$ is an explicit atom branch, not a request to evaluate a
+singular Gaussian density.  A zero-bandwidth parity test must therefore not
+form a Cholesky factor or an inverse of $B=0$ and then infer that the result is
+the atom program.
+
+For a linear-Gaussian observation model, a Gaussian state kernel gives the
+useful exact convolution
+\begin{equation}
+ \overline g_\theta(y\mid x,B)
+ = \int g_\theta(y\mid x+u)N(u;0,B)\,\dd u
+ = N\!\left(y;C_\theta x,\,
+       R_\theta+C_\theta B C_\theta^\mathsf{T}\right).
+ \label{eq:linear-convolution}
+\end{equation}
+Write
+\begin{align}
+ S_i &= R_\theta+C_\theta B_i C_\theta^\mathsf{T}, &
+ \mu_i &= C_\theta x_i, &
+ r_i &= S_i^{-1}(y-\mu_i).
+\end{align}
+For fixed data $y$, the total directional differential used below is
+\begin{align}
+ \dd\mu_i
+   &= (\dd C)x_i+C\,\dd x_i,\\
+ \dd S_i
+   &= \dd R+(\dd C)B_iC^\mathsf{T}
+      +C(\dd B_i)C^\mathsf{T}+CB_i(\dd C)^\mathsf{T},\\
+ \dd\log \overline g_i
+   &=r_i^\mathsf{T}\dd\mu_i
+     +\frac12\left\{
+       r_i^\mathsf{T}(\dd S_i)r_i
+       -\operatorname{tr}(S_i^{-1}\dd S_i)
+     \right\}.
+ \label{eq:linear-convolution-tangent}
+\end{align}
+Thus state, observation-map, observation-covariance, and bandwidth tangents
+are all required when those quantities vary.  Positive semidefinite $B_i$ is
+permitted here, including rank-deficient $B_i$, because only the strictly
+positive definite observation covariance $S_i$ is factored.  This statement
+does not assert an ambient Lebesgue density for a singular state kernel.
+The corresponding observation increment
+\begin{equation}
+ \overline Z_t
+ =\sum_i w_{t,i}^{-}\overline g_\theta(y_t\mid x_{t,i}^{-},B_{t,i}),
+ \qquad
+ \overline L_h^N=\sum_t\log\overline Z_t
+ \label{eq:smoothed-value}
+\end{equation}
+is a well-defined new finite program.  It equals the atom increment only at
+zero bandwidth or in special accidental cases.  If it is fed into the
+subsequent reset, it defines an even larger new program.
+
+The same distinction applies to a KDM placed after the reset.  Replacing
+$x_t^+$ by a draw from \eqref{eq:kdm} changes the input to the next
+transition and therefore changes all later normalizers.  The change may be
+scientifically useful, but it is not an implementation detail.
+
+\section{Legitimate ways KDM can enter}
+
+\subsection{An auxiliary estimator or control variate}
+
+The lowest-risk use keeps \eqref{eq:atom-program} and its value unchanged.
+A KDM is formed from the actual cloud and produces a separately named mixture
+score or force.  With the canonical finite value retained as the energy, the
+mixture field is a proposal field, not the canonical score.  A control-variate
+version must retain the exact residual:
+\begin{equation}
+ L_0^N=A_h+\left(L_0^N-A_h\right),\qquad
+ \dd L_0^N=\dd A_h+\dd\left(L_0^N-A_h\right).
+ \label{eq:residual}
+\end{equation}
+Dropping the residual changes the target.  A coefficient estimated on
+calibration paths must be frozen before validation, and its uncertainty must
+be measured on disjoint paths.  This route tests whether the KDM contains
+useful score information without silently changing the filter.
+
+\subsection{A KDM proposal with an exact model-target ratio}
+
+There is one direct KDM use that leaves the generative model factors in the
+importance ratio, but it is a BayesFilter extension rather than the Younis
+MDPF.  The treatment of ancestry must be fixed before writing the ratio.  If
+an ancestor $A$ is retained, draw it with a frozen probability $r_{t,0}(a)$,
+then draw a pre-flow state from a complete conditional mixture
+$q^{\KDM}_{t,0}(x_0\mid a,y_t)$.  Apply the ancestor-specific LEDH map
+$x_1=F_{t,\theta,a}(x_0)$, with forward Jacobian $J_{t,a}$.  The induced joint
+proposal density is
+\begin{equation}
+ q_t(j,x_1)
+ = r_{t,0}(j)q^{\KDM}_{t,0}(x_0\mid j,y_t)
+   \,|\det J_{t,j}(x_0)|^{-1},
+ \qquad x_0=F_{t,\theta,j}^{-1}(x_1).
+ \label{eq:kdm-proposal-density}
+\end{equation}
+The corresponding unnormalised weight is
+\begin{equation}
+ \widetilde w_t
+ = \frac{w^-_{t-1,J}
+     f_\theta(x_1\mid x^+_{t-1,J})
+     g_\theta(y_t\mid x_1)
+     |\det J_{t,J}(x_0)|}
+    {r_{t,0}(J)q^{\KDM}_{t,0}(x_0\mid J,y_t)}.
+ \label{eq:kdm-proposal-weight}
+\end{equation}
+Here ``complete'' means the sum over every kernel component within the
+conditional mixture for the retained ancestor, not the kernel of the component
+that generated $x_0$.  If ancestry is marginalized instead, the numerator must
+also be marginalized,
+\begin{equation}
+ \widetilde w_t(x_0)
+ =\frac{g_\theta(y_t\mid x_1)|\det J_t(x_0)|
+   \sum_a w^-_{t-1,a}f_\theta(x_1\mid x^+_{t-1,a})}
+  {q^{\KDM}_{t,0}(x_0)}.
+ \label{eq:kdm-proposal-marginal-weight}
+\end{equation}
+This second expression is valid only when the flow map does not depend on an
+ancestor that has been marginalized.  Mixing a marginalized denominator with
+the conditional numerator in \eqref{eq:kdm-proposal-weight} is wrong.
+
+An auxiliary-particle lookahead may guide $r_{t,0}$, but its approximate
+predictive likelihood cannot replace either the exact transition factor
+$f_\theta$ or the observation factor $g_\theta$.  Under the usual support,
+invertibility, and differentiation-under-the-integral conditions, the sample
+average $\widehat Z_t$ and its derivative are unbiased for the one-step
+particle predictive integral conditional on the incoming cloud.  The ratio
+$\dd\widehat Z_t/\widehat Z_t$ is generally biased for its logarithmic
+derivative.  Moreover, the deterministic Contract--E reset changes the next
+incoming cloud, so this one-step identity is not a proof that the complete
+finite-horizon algorithm is an unbiased likelihood or score estimator.
+
+Following the fixed-denominator principle of Younis IWSG, this conditional
+LEDH extension freezes $r_{t,0}$ and $q^{\KDM}_{t,0}$ at an anchor $\theta_0$ while
+differentiating the model numerator and LEDH map.  Younis and Sudderth do not
+derive this conditional LEDH construction.  If an implementation instead
+recomputes the proposal as $\theta$ changes, it needs a separate derivation
+that couples the sampling map, proposal density, ancestor selection, and state
+map.  Merely subtracting proposal or selection log-density tangents from a
+fixed-sample importance weight is wrong for the anchored model-normalizer
+derivative.  This arm is therefore labelled
+\texttt{MODEL-IS} and is compared separately with both the canonical
+\texttt{ATOM-FINITE} score and the exact Kalman score.
+
+At the atom reset itself, an ordinary density ratio cannot repair the change:
+a finite atom measure and an absolutely continuous KDM are mutually singular.
+The KDM proposal must be inserted before a continuous transition, or the route
+must define a new measure and a new finite target explicitly.
+
+\subsection{Phase 4A: integrated kernelized observation weighting}
+
+The first integrated experiment replaces only the point observation factor in
+\eqref{eq:prior-observation-factorization}.  With the ordinary
+pre-observation PF--PF logit $b_{t,i}$, define
+\begin{align}
+ a^h_{t,i}&=b_{t,i}+\log\overline g_\theta(
+   y_t\mid x_{t,i}^{\mathrm{out}},B_{t,i}),\\
+ Z^h_t&=\sum_i\exp(a^h_{t,i}), &
+ \alpha^h_{t,i}&=\exp(a^h_{t,i})/Z^h_t,\\
+ L_{\mathrm{obsKDM}}^N&=\sum_t\log Z^h_t, &
+ S_{\mathrm{obsKDM}}^N&=\dd L_{\mathrm{obsKDM}}^N.
+ \label{eq:observation-kdm-program}
+\end{align}
+Its one-step tangent is
+\begin{align}
+ \dd\log Z^h_t
+ =\sum_i\alpha^h_{t,i}
+   \left(\dd b_{t,i}+\dd\log\overline g_{t,i}\right),\qquad
+ \dd\alpha^h_{t,i}
+ =\alpha^h_{t,i}\left[
+   \dd a^h_{t,i}-\dd\log Z^h_t\right].
+ \label{eq:observation-kdm-weight-tangent}
+\end{align}
+The executed program passes $(x_t^{\mathrm{out}},\dd x_t^{\mathrm{out}},
+\alpha_t^h,\dd\alpha_t^h)$ into the existing Contract--E reset and the
+existing \GenUT{}/dual-cap correction.  Their output and tangent feed the next
+time step.  Equations~\eqref{eq:linear-convolution-tangent} and
+\eqref{eq:observation-kdm-weight-tangent} therefore define a total derivative
+of this complete finite program, not a conditional observation derivative.
+
+The reset also carries the particle-local UKF covariance with the same
+target-by-source transport used for the state.  If $A_{ri}$ is the normalized
+Sinkhorn transport from source particle $i$ to reset particle $r$, then the
+covariance recursion and its total tangent are
+\begin{align}
+ P'_{r} &= \sum_i A_{ri}P_i, &
+ \dd P'_{r} &= \sum_i (\dd A_{ri})P_i+
+                    \sum_i A_{ri}\dd P_i.\label{eq:covariance-carry}
+\end{align}
+The carried $P'_r$, not the old source ordering, is consumed by the next UKF
+prediction.  Here $P_i$ denotes a particle-local conditional covariance; no
+between-cloud scatter term is added.  This same-transport carry is the
+declared Contract--E extension of categorical triple resampling.  A previous
+implementation omitted it at the analytical endpoint; that call-chain bug
+was repaired and is now covered by endpoint and two-step tests.
+
+This program is deliberately called \emph{kernelized observation weighting}.
+It is not the complete Bayesian update of a Gaussian mixture: it does not
+propagate the conditional posterior mean and covariance of every mixture
+component.  It is consequently not a full Younis mixture-density particle
+filter.  Positive bandwidth is labelled \texttt{KDM-FINITE}; the explicit
+$B=0,\dd B=0$ branch is labelled \texttt{ATOM-FINITE} and must reproduce the
+canonical trajectory.
+
+A second insertion point represents the post-reset cloud by a continuous
+mixture before the next transition.  It defines the distinct
+\texttt{RESKDM-IWSG-FINITE} scalar and is derived and implemented separately
+in the next subsection; it is not part of the Phase~4A
+observation-weighting scalar.
+
+The first paired experiment now answers the narrow Phase~4A question for one
+small linear--Gaussian cell.  With $N=32$, $T=5$, 20 calibration paths, and
+100 disjoint validation paths, calibration selected $\rho=0.8$ in
+$B=\rho^2Q$.  The atom score MSE was $3.3366$ and the kernelized-observation
+MSE was $3.4980$, a relative change of $-4.84\%$ when positive values denote
+improvement.  The paired 95\% bootstrap interval for the MSE difference was
+$[-0.223,0.597]$, so the two scores are not statistically ranked.  Inspection
+of all prespecified bandwidths on this now-consumed holdout showed no positive
+point improvement; $\rho=1.6$ was worse with interval $[0.189,2.399]$.
+
+The mechanism is visible in the score errors.  From $\rho=0$ to $\rho=0.8$,
+their sample standard deviation decreased from $1.616$ to $1.580$, but their
+mean moved from $-0.868$ to $-1.014$.  The modest variance reduction was more
+than offset by additional bias.  This rejects Phase~4A for promotion in this
+scope.  It does not test the complete Younis resampling operation described
+next, and it does not license tuning on the inspected validation paths.
+
+For a finite IWSG normalizer,
+\begin{align}
+ \widehat Z_h(\theta)
+   &=\frac{1}{M}\sum_j
+       \rho_j(\theta)g_\theta(y_t\mid z_j),\\
+ \dd\log\widehat Z_h
+   &=\frac{\sum_j\rho_jg_j
+       \left(\dd\log\rho_j+\dd\log g_j\right)}
+           {\sum_j\rho_jg_j}.
+ \label{eq:iwsg-normalizer}
+\end{align}
+Equation~\eqref{eq:iwsg-normalizer} is a derivative of the KDM
+importance-sampling program.  It is not an identity with the atom program.
+
+\subsection{Phase 4B: a complete mixture-resampling reference}
+
+The source operation can now be stated without an ancestry ambiguity.  Let
+$(c_{t,i},\alpha_{t,i},P_{t,i})$ denote the locations, normalized weights, and
+particle-local UKF covariance marks presented to a continuous resampler.  If
+the KDM replaces Contract--E, these are the weighted post-flow particles.  In
+the combined BayesFilter reference selected below, they are the Contract--E
+output, its carried covariances, and uniform weights
+$\alpha_{t,i}=1/N$ with $\dd\alpha_{t,i}=0$.  In either case define the
+marginalized resampling density
+\begin{equation}
+ m_{t,\theta}(z)=\sum_{i=1}^N
+   \alpha_{t,i}(\theta)k_{B_t(\theta)}
+      (z-c_{t,i}(\theta)).
+ \label{eq:phase4b-mixture}
+\end{equation}
+The first reference uses the source paper's common Gaussian bandwidth and an
+ordinary full-rank linear--Gaussian fixture.  The complete sequential route is
+not called source-faithful because its Contract--E placement and covariance
+marks are BayesFilter extensions.  A DSGE version must replace this density by
+the chart density in Section~6.
+
+At an anchor $\theta_0$, stratified categorical uniforms and Gaussian noises
+generate fixed locations $z_{t,j}$ from $m_{t,\theta_0}$.  Component labels are
+recorded to replay the draw, but are marginalized in every density evaluation.
+For a nearby $\theta$, define
+\begin{align}
+ r_{t,j}(\theta)
+   &=\frac{m_{t,\theta}(z_{t,j})}
+           {m_{t,\theta_0}(z_{t,j})}, &
+ \eta_{t,j}(\theta)
+   &=\frac{1}{N}r_{t,j}(\theta),
+ \label{eq:phase4b-iwsg-weights}\\
+ \gamma_{t,ji}(\theta)
+   &=\frac{\alpha_{t,i}k_{B_t}(z_{t,j}-c_{t,i})}
+           {m_{t,\theta}(z_{t,j})}. &&
+ \label{eq:phase4b-responsibilities}
+\end{align}
+At the anchor, $r_{t,j}=1$ and $\eta_{t,j}=1/N$.  The locations are fixed in the IWSG
+differential, so $\dd z_{t,j}=0$, while
+\begin{align}
+ \dd\log r_{t,j}
+   &=\sum_i\gamma_{t,ji}
+      \left\{\dd\log\alpha_{t,i}
+             +\dd\log k_{B_t}(z_{t,j}-c_{t,i})\right\},\\
+ \dd\log\eta_{t,j}&=\dd\log r_{t,j}, &
+ \dd\eta_{t,j}&=\eta_{t,j}\dd\log r_{t,j}.
+ \label{eq:phase4b-weight-tangent}
+\end{align}
+Equations~\eqref{eq:component-tangent} and
+\eqref{eq:phase4b-weight-tangent} include the cloud, weight, and bandwidth
+terms.  Evaluating all $\gamma_{t,ji}$ is the required $N^2$ operation.  The
+sum of the $\eta_{t,j}$ tangents is generally nonzero for a finite sample;
+forcing it to zero would replace the raw IWSG correction by
+\eqref{eq:self-normalized-ratio}.
+
+Younis's particles carry locations and weights, not the UKF covariance used by
+the LEDH implementation.  The following mark transport is therefore an
+explicit BayesFilter extension:
+\begin{align}
+ \widetilde P_{t,j}
+   &=\sum_i\gamma_{t,ji}P_{t,i}, &
+ \dd\widetilde P_{t,j}
+   &=\sum_i(\dd\gamma_{t,ji})P_{t,i}
+     +\sum_i\gamma_{t,ji}\dd P_{t,i},\\
+ \dd\gamma_{t,ji}
+   &=\gamma_{t,ji}\left\{
+       \dd\log\alpha_{t,i}+\dd\log k_{t,ji}
+       -\dd\log m_{t,\theta}(z_{t,j})\right\}.
+ \label{eq:phase4b-covariance-mark}
+\end{align}
+No between-component scatter is added: the kernel perturbation has already
+been realized in $z_{t,j}$, and $P_{t,i}$ remains the local UKF algorithmic
+mark.  This choice is testable, but it is not a result from the source paper.
+The prespecified comparator instead carries the covariance mark of the fixed
+anchor label,
+\begin{equation}
+ \widetilde P_{t,j}^{\mathrm{label}}=P_{t,I_{t,j}},\qquad
+ \dd\widetilde P_{t,j}^{\mathrm{label}}=\dd P_{t,I_{t,j}}.
+ \label{eq:phase4b-selected-mark}
+\end{equation}
+The label has no tangent.  Both policies retain the same marginalized mixture
+density and raw IWSG weights; only the downstream UKF mark differs.  Neither
+mark policy is supplied by Younis and Sudderth, so their comparison diagnoses a
+BayesFilter extension rather than source fidelity.
+
+That comparison is uninformative when all component marks and their tangents
+are equal.  If $P_{t,i}=P_t$ and $\dd P_{t,i}=\dd P_t$, then
+$\sum_i\gamma_{t,ji}=1$ and $\sum_i\dd\gamma_{t,ji}=0$ give
+\begin{equation}
+ \widetilde P_{t,j}=P_t,\qquad
+ \dd\widetilde P_{t,j}
+   =\Bigl(\sum_i\dd\gamma_{t,ji}\Bigr)P_t
+      +\Bigl(\sum_i\gamma_{t,ji}\Bigr)\dd P_t
+   =\dd P_t.
+ \label{eq:phase4b-equal-marks}
+\end{equation}
+The fixed-label policy gives the same result.  Linear Gaussian prediction and
+update preserve equal initial covariance marks, and normalized Contract--E
+transport preserves their equality.  The matrix experiment below therefore
+cannot select between these policies; floating-point differences in their
+calibration scores have no scientific meaning.  Heterogeneous-mark tests are
+needed to check the distinction, and nonlinear evidence is needed to choose
+between them for a nonlinear filter.
+
+There are now two possible placements, and they must not share a name.
+Replacing Contract--E by mixture resampling gives the source MDPF placement
+but removes the requested Contract--E, \GenUT{}, and dual-cap reset.  Retaining
+Contract--E and then applying \eqref{eq:phase4b-iwsg-weights} before the next
+transition executes both mechanisms.  The latter is the declared Phase~4B
+BayesFilter reference.  Its fixed locations, raw IWSG weights, and covariance
+marks become the parents of the next transition; all later PF--PF,
+flow-Jacobian, reset, and cap terms are then differentiated normally.
+
+To make the finite scalar explicit, let $h_{t+1,j}(\theta)$ contain the full
+next-step PF--PF multiplier for child $j$: transition density, observation
+density, flow Jacobian, and proposal denominator.  The post-resampling
+increment is
+\begin{equation}
+ Z_{t+1}^{\mathrm{IWSG}}(\theta)
+ =\sum_{j=1}^N\eta_{t,j}(\theta)h_{t+1,j}(\theta)
+ =\frac1N\sum_{j=1}^N r_{t,j}(\theta)h_{t+1,j}(\theta).
+ \label{eq:phase4b-next-normalizer}
+\end{equation}
+The posterior weights are normalized only after the product
+$\eta_{t,j}h_{t+1,j}$ is formed.  This preserves the raw importance-sampling
+normalizer in \eqref{eq:phase4b-next-normalizer}.  Call the resulting scalar
+\begin{equation}
+ L_{\mathrm{resKDM,IWSG}}^N(\theta;\xi,z^0,q^0)
+ =\sum_{t=1}^T\log Z_t^{\mathrm{IWSG}},\qquad
+ S_{\mathrm{resKDM,IWSG}}^N=\dd L_{\mathrm{resKDM,IWSG}}^N.
+ \label{eq:phase4b-finite-target}
+\end{equation}
+This is the combined \texttt{RESKDM-IWSG-FINITE} program.  It is neither
+$L_0^N$ nor the Younis MDPF alone.  A two-pass evaluation is required: an
+anchor pass generates every sequential $z_{t,j}$ and denominator
+$m_{t,\theta_0}(z_{t,j})$; a replay pass evaluates the same fixed sample bank
+and its total tangent for other $\theta$.  Re-anchoring inside an HMC
+trajectory would change the finite energy and is forbidden.
+
+The raw IWSG weights are part of this new finite scalar, not auxiliary
+metadata.  In particular, if $\omega_{t+1,j}$ denotes the incoming weight used
+by the next PF--PF step, then
+\begin{equation}
+ \log\omega_{t+1,j}=\log r_{t,j}-\log N,\qquad
+ \dd\log\omega_{t+1,j}=\dd\log r_{t,j}.
+ \label{eq:phase4b-incoming-weight}
+\end{equation}
+The next normalizer must consume both quantities.  Resetting the numerical
+weights to $1/N$ while retaining only the sampled locations, or retaining the
+weight values while discarding their tangent, removes the IWSG mechanism.
+
+Prematurely normalizing the ratios defines a different scalar.  Because the
+subsequent posterior softmax removes common scale, the state and posterior
+weight recurrences agree, but the accumulated normalizer does not.  With the
+same samples and covariance-mark policy,
+\begin{equation}
+ L_{\mathrm{resKDM,SN}}^N
+ =L_{\mathrm{resKDM,IWSG}}^N
+  -\sum_{t=1}^{T-1}\log\left\{\frac1N\sum_{j=1}^N r_{t,j}\right\}.
+ \label{eq:phase4b-self-normalized-difference}
+\end{equation}
+The first Phase~4B implementation computed this
+\texttt{RESKDM-SN-FINITE} scalar.  Its finite-difference agreement was correct
+for that scalar but did not validate the intended raw-IWSG score.  The repaired
+route implements \eqref{eq:phase4b-incoming-weight}; an executable regression
+requires a generally nonzero sum of raw weight tangents and rejects the
+centered tangent in \eqref{eq:centered-ratio-tangent} as its incoming score.
+
+There are also two distinct meanings of ``unbiased'' that must not be
+conflated.  Equations~\eqref{eq:iwsg-ratio}--\eqref{eq:iwsg} give the ordinary
+importance-sampling identity for a single mixture expectation.  For a
+nonlinear function of the complete resampled cloud, the exact joint identity
+is \eqref{eq:joint-mixture-ratio}.  The sequential use of raw individual
+weights in \eqref{eq:phase4b-incoming-weight} follows the IWSG
+gradient-injection ordering, while using their scale in a generative evidence
+normalizer is a BayesFilter extension.  Its analytical derivative is the total
+derivative of $L_{\mathrm{resKDM,IWSG}}^N$ as defined here, but neither the
+source paper nor the present derivation proves that it is an unbiased estimator of
+$\nabla_\theta\log p_\theta(y_{1:T})$, of the expected stochastic-filter loss,
+or of $S_0^N$.  Those are empirical or additional-theory questions.
+
+The zero-bandwidth limit requires separating the locations from their IWSG
+derivative.  In this combined route, the component weights are exactly $1/N$
+and the $j$th stratified position is $(j-1+u_j)/N$, with $0\le u_j<1$.
+Consequently the selected label is $I_j=j$: each component is selected once.
+The earlier statement that this particular route tends to repeated component
+locations was wrong.  With $B=h^2Q$ and $L_QL_Q^\mathsf{T}=Q$, its anchor
+sample is $z_j=c_j+hL_Q\varepsilon_j$, which tends to $c_j$.
+
+This location limit does not establish score parity.  For distinct centres,
+fixed positive-definite $Q$, and a parameter-independent bandwidth scale $h$,
+the selected component dominates the mixture as $h\to0$.  At the anchor,
+its leading location contribution to the IWSG differential is
+\begin{equation}
+ \dd\log m_\theta(z_j)\big|_{\theta_0}
+ \simeq \frac{1}{h}\varepsilon_j^\mathsf{T}L_Q^{-1}\dd c_j.
+ \label{eq:phase4b-small-bandwidth-tangent}
+\end{equation}
+Thus the fixed-sample tangent can grow while the forward locations converge.
+Repeated centres require a separate mixture-limit analysis.  At $B=0$ the
+ambient Gaussian density is undefined, so Phase~4B does not implement a
+zero-bandwidth score branch equal to \texttt{ATOM-FINITE}.  Its checks are instead anchor
+identity, complete-mixture density, analytical-versus-finite-difference
+tangents, sequential replay, and comparison with both the canonical score and
+the Kalman score.
+
+The exact all-components reference costs $O(N^2)$ per mixture-gradient
+evaluation and $O(TN^2)$ for a sequential gradient.  Sparse neighbors, random
+features, and low-rank approximations would be new algorithms; they are not
+permitted in the reference and require separate error analyses if considered
+later.
+
+\section{Degenerate DSGE support}
+
+The relevant support belongs to the distribution being approximated.
+Deterministic directions in a transition conditional on one ancestor do not,
+by themselves, imply that the predictive or filtering marginal lies on a
+lower-dimensional surface.  For example, consider the state
+$x_t=(m_t,m_{t-1})$ of an AR(2) process with independent standard normal
+innovations $\varepsilon_t$, so that
+\begin{equation}
+ x_t=A x_{t-1}+G\varepsilon_t,\qquad
+ A=\begin{bmatrix}\phi_1&\phi_2\\1&0\end{bmatrix},\quad
+ G=\begin{bmatrix}\sigma\\0\end{bmatrix},\quad
+ [G,AG]=\begin{bmatrix}\sigma&\phi_1\sigma\\0&\sigma\end{bmatrix}.
+ \label{eq:ar2-support-distinction}
+\end{equation}
+Conditional on $x_{t-1}$, the transition has rank-one covariance and fixes
+$x_{t,2}=x_{t-1,1}$.  Starting from a known initial state, the covariance
+after two independent shocks is $GG^\mathsf{T}+AGG^\mathsf{T}A^\mathsf{T}$.
+It is positive definite when $\sigma\ne0$, because the displayed matrix has
+determinant $\sigma^2$.  Multiplication by a strictly positive Gaussian
+observation likelihood does not reduce that marginal support.  Earlier
+uncertainty can therefore fill directions that receive no new shock at the
+current time.
+
+For finitely many fixed ancestors, however, the conditional mixture in this
+example lies on parallel lines with different offsets $x_{t,2}=x_{t-1,1}^i$.
+These components do not have one common affine support.  A shared tangent
+basis alone cannot justify evaluating all their densities at every ambient
+sample as though their offsets agreed.  Nor does a reset of the filtering
+marginal necessarily retain a particular old ancestor: a constraint on the
+two-slice pair $(x_{t-1},x_t)$ must not be imposed without that conditioning.
+Consequently, support must be checked separately for the transition factor,
+the KDM insertion distribution, and the reset output.
+
+When the distribution to be approximated does have a common affine support,
+a constrained construction injects noise through its stochastic coordinates:
+\begin{equation}
+ u=G_\theta L_\beta\varepsilon,\qquad
+ B_\theta=G_\theta H_\beta G_\theta^\mathsf{T},\qquad
+ \varepsilon\sim N(0,I).
+ \label{eq:innovation-kernel}
+\end{equation}
+For a linear support constraint $D x=c$, the kernel must satisfy
+$D G_\theta=0$.  For a nonlinear manifold, a chart or retraction
+$x=\rho_\theta(v,\varepsilon)$ is required, together with the appropriate
+coordinate-space density and Jacobian.  When $B_\theta$ is rank deficient,
+there is no ordinary full-dimensional Lebesgue density.  The implementation
+must evaluate the mixture in innovation or chart coordinates rather than
+pretending that $B_\theta$ is a full SPD ambient covariance.
+
+This constrained kernel is an extension motivated by the DSGE target, not a
+claim from the Younis papers.  Its first tests are rank, constraint residual,
+and finite-difference tests for the $G_\theta$ and $H_\beta$ tangents.  A
+positive bandwidth that leaves the support is a hard failure even if its
+numerical score looks smoother.
+
+The Phase~2 diagnostic implements the fixed-chart special case: a shared
+orthonormal basis $U\in\R^{d\times r}$ is frozen, the Gaussian mixture is
+evaluated in $U^\mathsf{T}x$ coordinates, and the orthogonal residual is checked
+for both values and tangents.  This gives a rank-aware density with respect to
+the chart measure for a fixed linear support.  It does not yet differentiate a
+parameter-dependent $G_\theta$, chart, or retraction.  Moreover, a moving
+support requires more than a density Jacobian.  A fixed ambient sample need
+not remain on the support at neighboring parameter values, so the
+fixed-ambient IWSG ratio used in the full-rank reference may cease to exist.
+
+An exact example makes the missing term explicit.  Let $U\sim N(0,1)$,
+$X_\theta=(U,\theta U)$, and $Y=X_\theta+V$, where $V\sim N(0,I_2)$ is
+independent.  The state lies on a line that rotates with $\theta$, while the
+observation has covariance
+\begin{equation}
+ C_\theta=\begin{bmatrix}2&\theta\\\theta&1+\theta^2\end{bmatrix},
+ \qquad
+ C'_\theta=\begin{bmatrix}0&1\\1&2\theta\end{bmatrix}.
+ \label{eq:moving-support-covariance}
+\end{equation}
+The Gaussian score is
+$\tfrac12\{y^\mathsf{T}C_\theta^{-1}C'_\theta C_\theta^{-1}y
+-\operatorname{tr}(C_\theta^{-1}C'_\theta)\}$, which equals $1/2$ at
+$\theta=0$ and $y=(1,1)$.  A sample $(u,0)$ anchored at zero lies outside
+the perturbed line for every $u\ne0$ and $\theta\ne0$.  The two state laws
+are mutually singular, so the perturbed law has no importance density with
+respect to the anchor law.  The chart's arc-length factor is
+$J_\theta=\sqrt{1+\theta^2}$; its logarithmic derivative is zero at the
+anchor and cannot account for the nonzero observation score.
+
+Keeping the innovation $u$ fixed instead gives a differentiable integral,
+where $\phi$ is the standard normal density:
+\begin{align}
+ p_\theta(y)
+   &=\int \phi(u)\,\mathcal N(y;(u,\theta u),I_2)\,\dd u,\\
+ \frac{\partial p_\theta(y)}{\partial\theta}
+   &=\int \phi(u)\,\mathcal N(y;(u,\theta u),I_2)
+                 u(y_2-\theta u)\,\dd u.
+ \label{eq:moving-support-score}
+\end{align}
+At zero, $E[U\mid Y=y]=y_1/2$, recovering the score $y_1y_2/2$.
+The extra term comes from movement of the state inside the observation
+factor, even though the innovation density is unchanged.
+
+For a regular chart $x=\rho_\theta(v)$ on a fixed coordinate domain, let
+$m_\theta(v)$ be the coordinate mixture density and $F_\theta(x)$ the
+downstream likelihood integrand.  The corresponding differentiation rule is
+\begin{align}
+ I(\theta)&=\int F_\theta(\rho_\theta(v))m_\theta(v)\,\dd v,\\
+ \partial_\theta I
+ &=\int\!\left[
+   (\partial_\theta F_\theta)(x)
+   +\nabla_xF_\theta(x)^\mathsf{T}\partial_\theta\rho_\theta(v)
+   +F_\theta(x)\partial_\theta\log m_\theta(v)
+   \right]m_\theta(v)\,\dd v.
+ \label{eq:chart-total-expectation}
+\end{align}
+This requires the usual integrability conditions for differentiating under
+the integral.  An anchored proposal in $v$ can provide the raw mixture ratio,
+but it cannot remove the chart-motion term.  If a surface-density convention
+is used, its volume factor must be included consistently in the density and
+measure.  Component-dependent supports require an explicitly defined common
+measure or a mixed discrete and continuous formulation.
+
+The affine specialization gives an explicit finite calculation in which all
+these terms can be checked.  Suppose every component uses the same injective
+chart $x=a_\theta+G_\theta v$, where $G_\theta\in\R^{d\times r}$ has full
+column rank.  Let $v_j$ be fixed coordinate samples and let $q_0(v_j)>0$
+be their frozen proposal density.  With coordinate means $c_i$, SPD
+bandwidths $B_i$, and normalized positive weights $\alpha_i$, define
+\begin{align}
+ m_\theta(v)&=\sum_i\alpha_i\mathcal N(v;c_i,B_i),\qquad
+ x_j=a_\theta+G_\theta v_j,\qquad
+ \dd x_j=\dd a_\theta+(\dd G_\theta)v_j,
+ \label{eq:affine-chart-state}\\
+ b_j&=\frac{m_\theta(v_j)}{Nq_0(v_j)},\qquad
+ \dd\log b_j=\dd\log m_\theta(v_j).
+ \label{eq:affine-chart-iwsg}
+\end{align}
+Here $\dd$ denotes any one parameter-direction differential; multiple
+directions obey the same equations.  All mixture components contribute.
+Writing $z_{ji}=B_i^{-1}(v_j-c_i)$, the complete component and mixture
+differentials are
+\begin{align}
+ \eta_{ji}&=\frac{\dd\alpha_i}{\alpha_i}
+       +z_{ji}^{\mathsf T}\dd c_i
+       +\frac12\left[z_{ji}^{\mathsf T}(\dd B_i)z_{ji}
+                     -\operatorname{tr}(B_i^{-1}\dd B_i)\right],\\
+ \gamma_{ji}&=\frac{\alpha_i\mathcal N(v_j;c_i,B_i)}{m_\theta(v_j)},\qquad
+ \dd\log m_\theta(v_j)=\sum_i\gamma_{ji}\eta_{ji},\\
+ \dd\gamma_{ji}&=\gamma_{ji}
+                  \left(\eta_{ji}-\dd\log m_\theta(v_j)\right).
+ \label{eq:affine-chart-mixture-differential}
+\end{align}
+No coordinate-sample differential appears because the $v_j$ are fixed.
+The ambient state differential in \eqref{eq:affine-chart-state} generally
+remains nonzero.
+
+The surface-volume factor clarifies why it must not be added again to the
+importance ratio.  Set $M=G_\theta^\mathsf{T}G_\theta$ and
+$J_\theta=\sqrt{\det M}$.  Then
+\begin{equation}
+ \dd\log J_\theta=\tfrac12\operatorname{tr}(M^{-1}\dd M),\qquad
+ \dd M=(\dd G_\theta)^\mathsf{T}G_\theta
+                 +G_\theta^\mathsf{T}\dd G_\theta.
+ \label{eq:affine-chart-volume}
+\end{equation}
+At the moving point $x_j$, the surface densities of the target and the
+proposal pushed through the \emph{current} chart are respectively
+$m_\theta(v_j)/J_\theta$ and $q_0(v_j)/J_\theta$.  Their ratio is
+$m_\theta(v_j)/q_0(v_j)$: the common volume cancels.  The log target surface
+density has differential $\dd\log m_\theta(v_j)-\dd\log J_\theta$, while
+the log proposal surface density has differential $-\dd\log J_\theta$.
+This construction uses a moving ambient proposal generated by fixed
+coordinates; it does not assert that the perturbed law has a density relative
+to the frozen ambient anchor law in the rotating-line counterexample.
+
+The same chart can carry covariance marks when those marks are defined in
+its coordinates.  For SPD coordinate marks $P_i^v$, define
+\begin{align}
+ \widetilde P_j^v&=\sum_i\gamma_{ji}P_i^v,\qquad
+ \dd\widetilde P_j^v=\sum_i\bigl[(\dd\gamma_{ji})P_i^v
+                                  +\gamma_{ji}\dd P_i^v\bigr],\\
+ \widetilde P_j^x&=G_\theta\widetilde P_j^vG_\theta^\mathsf{T},\\
+ \dd\widetilde P_j^x&=(\dd G_\theta)\widetilde P_j^vG_\theta^\mathsf{T}
+       +G_\theta(\dd\widetilde P_j^v)G_\theta^\mathsf{T}
+       +G_\theta\widetilde P_j^v(\dd G_\theta)^\mathsf{T}.
+ \label{eq:affine-chart-marks}
+\end{align}
+The ambient mark is allowed to be singular.  These equations specify the
+transport of marks defined in this common chart; they do not infer a full
+DSGE UKF covariance lifecycle from a singular process covariance.
+
+To expose the state-motion term at a consumer, take an observation
+$y\mid x\sim\mathcal N(H_\theta x+o_\theta,R_\theta)$, with $y$ fixed and
+$R_\theta$ SPD.  The finite log normalizer and its total differential are
+\begin{align}
+ \widehat L(\theta)&=\log\sum_j b_j g_\theta(y\mid x_j),\qquad
+ \pi_j=\frac{b_jg_\theta(y\mid x_j)}{\sum_\ell b_\ell g_\theta(y\mid x_\ell)},\\
+ \dd\widehat L&=\sum_j\pi_j
+       \bigl[\dd\log m_\theta(v_j)+\dd\log g_\theta(y\mid x_j)\bigr].
+ \label{eq:affine-chart-normalizer}
+\end{align}
+There is no subtraction of $\dd\log\sum_j b_j$; that would differentiate
+a self-normalized finite value.  With
+$e_j=y-H_\theta x_j-o_\theta$ and $s_j=R_\theta^{-1}e_j$, the observation
+term is explicitly
+\begin{equation}
+ \dd\log g_\theta(y\mid x_j)
+ =s_j^\mathsf{T}\bigl[(\dd H_\theta)x_j
+                      +H_\theta\dd x_j+\dd o_\theta\bigr]
+ +\tfrac12\left[s_j^\mathsf{T}(\dd R_\theta)s_j
+               -\operatorname{tr}(R_\theta^{-1}\dd R_\theta)\right].
+ \label{eq:affine-chart-observation}
+\end{equation}
+The term $H_\theta\dd x_j$ is exactly what a zero outgoing state tangent
+would omit.  Differentiating this finite sum needs no exchange of derivative
+and integral.  Relating it to a limiting likelihood still needs an importance
+sampling argument and appropriate integrability conditions.  Its derivative
+is neither the unchanged atom-program derivative nor, at finite $N$, the
+exact model score.
+
+Support preservation by the reset is a separate question.  On the parabola
+$x=(u,u^2)$, a convex barycentre with weights $\lambda_i$ obeys
+\begin{equation}
+ \bar x_2-\bar x_1^2
+   =\sum_i\lambda_i u_i^2-\left(\sum_i\lambda_i u_i\right)^2
+   =\operatorname{Var}_\lambda(u).
+ \label{eq:curved-support-barycentre}
+\end{equation}
+Thus even exact barycentric averaging leaves this curve whenever the weighted
+variance is positive.  Contract--E adds residual injection and affine moment
+restoration, so barycentric failure alone does not prove its final residual;
+the actual reset must be evaluated.  On a common affine subspace, ambient
+ridge and residual injection can likewise introduce normal-direction
+variation.  Projecting the result or performing the reset in chart
+coordinates changes the specified finite reset and requires its own
+derivation; it cannot silently count as the existing Contract--E program.
+
+The existing subspace kernel rejects points outside the rotating line,
+and the independent observation-score check
+recovers $1/2$ and its finite difference.  The affine equations above now have
+a diagnostic implementation with a Gaussian observation consumer.  Its
+two-direction tests perturb each mixture, chart, mark and observation input
+separately and jointly.  The largest absolute difference from an independent
+central-difference calculation is $6.11\times10^{-11}$ on these fixtures.
+An executable wiring check follows that consumer to the existing complete
+mixture evaluator.  Deliberately zeroing its outgoing state tangent changes
+the computed normalizer derivative while leaving the value unchanged.
+
+The reset probes are untuned CPU/float64 references, not measurements of
+production filtering accuracy.  They use eight particles, Sinkhorn
+$\epsilon=0.2$, 20 iterations plus five balance iterations, and ridge
+$10^{-5}$, followed by the actual diagonal and pairwise correction with both
+caps enabled.  On the line $x_2=0$, the maximum absolute constraint residual
+is $0.00374$ after Contract--E and $6.52\times10^{-7}$ after correction.  On
+$x_2=x_1^2$, the corresponding residuals are $0.918$ and $1.187$.  Both
+correction calls return numerical validity.  That flag therefore does not
+certify either of these support constraints.  These counterexamples concern
+prescribed common supports; they do not impose an old ancestor's conditional
+support on every filtering marginal.
+
+The shared finite
+LEDH executor still factors a full-rank process covariance and uses full-rank
+Gaussian PF--PF factors.  A target-specific innovation-coordinate flow,
+reset, density recurrence, and their analytical differentials must be
+specified together before an end-to-end DSGE implementation can be claimed.
+Its initial state and covariance tangents are also set to zero: a
+parameter-dependent initial law requires explicit derivatives at that entry
+point, whereas the completed reference campaigns held those inputs fixed.
+
+\section{Bounded validation program}
+
+The first diagnostic is a TensorFlow reconstruction of the Younis mixture
+algebra with an analytical tangent.  The proposal-corrected LEDH arm is a
+separate extension, not a source theorem.  The evaluator must expose cloud,
+weight, and bandwidth derivatives and provide a small all-pairs reference.  The
+claim-bearing call chain must resolve from the actual canonical endpoint to
+this evaluator; a standalone function is not evidence of integration.
+
+The following gates are required:
+\begin{enumerate}[leftmargin=2em]
+  \item For Phase~4A, at zero bandwidth, value and score match the canonical
+        fixed-stream program within the declared numerical tolerance.
+  \item The Phase~4A zero-bandwidth branch is an atom calculation; no Cholesky
+        factor or inverse of a zero covariance is used to manufacture the
+        limit.  Phase~4B makes no zero-bandwidth parity claim.
+  \item At positive bandwidth, the result records
+        $\overline L_h^N-L_0^N$ and is not labelled value-preserving.
+  \item Finite differences of the declared $L_h^N$ agree with its complete
+        analytical tangent when state, observation matrix, process and
+        observation covariances, bandwidth, and model parameters are
+        perturbed separately and jointly.
+  \item Before any future degenerate DSGE extension is admitted, its fixture
+        must have zero support violation and a correct rank-aware density
+        calculation.  That extension is deferred while existing repository
+        models are tested.
+  \item Any route claiming linear cost has an explicit no-$N^2$ memory and
+        work check.  The all-pairs implementation remains diagnostic.
+  \item On a linear-Gaussian model, score error is compared with the Kalman
+        score over paired paths and independent fixed streams.  Bias and
+        variance are reported separately.
+  \item For a \texttt{MODEL-IS} arm, the proposal-density identity is checked
+        separately from the post-reset finite value; the complete mixture
+        denominator, support, and forward Jacobian must all be present.
+  \item For Phase~4B, every anchor sample is replayed exactly, its forward
+        importance ratio is one, every component contributes to the
+        marginalized density, and the $N^2$ responsibility and covariance-mark
+        tangents agree with finite differences.
+  \item The sequential Phase~4B endpoint is tested at $T\ge2$ so that the
+        post-reset KDM state, weight, and covariance marks demonstrably affect
+        a later normalizer.  A one-step density helper is not integration
+        evidence.
+  \item The next PF--PF step consumes the raw IWSG log weights and their
+        uncentered tangents from \eqref{eq:phase4b-incoming-weight}; executable
+        ablations must detect either one being discarded or prematurely
+        normalized.
+  \item The score-quality fixture has at least two state dimensions.  Its
+        executed trace must contain a nonzero off-diagonal pairwise target mask,
+        a finite nonzero pairwise correction displacement, and both pairwise and
+        coordinate-cap diagnostics.  Merely setting nonzero options in a scalar
+        model does not execute the pairwise algorithm.
+\end{enumerate}
+
+The first score-quality campaign used a two-state model.  Its dynamics are
+$x_t=A(\theta)x_{t-1}+\epsilon_t$, and its measurements satisfy
+$y_t=Hx_t+\nu_t$.  The matrices are
+\begin{align}
+ A(\theta)
+ &=
+ \begin{bmatrix}0&0.12\\-0.08&0.10\end{bmatrix}
+ +\theta\begin{bmatrix}1&0\\0&0.7\end{bmatrix},
+ &\theta_0&=0.72,\\
+ H&=\begin{bmatrix}1&0.25\\-0.15&0.9\end{bmatrix},
+ &Q&=\begin{bmatrix}0.12&0.025\\0.025&0.09\end{bmatrix},\\
+ R&=\begin{bmatrix}0.22&0.035\\0.035&0.18\end{bmatrix},
+ &P_0&=\begin{bmatrix}0.8&0.12\\0.12&0.6\end{bmatrix}.
+ \label{eq:phase4b-matrix-lgssm}
+\end{align}
+Here $x_{-1}\sim N(0,P_0)$ and the first observation follows one transition.
+At $\theta_0$, $A(\theta_0)$ is stable.  An independent analytical Kalman
+recursion differentiates its prediction, innovation covariance, gain, posterior
+mean, and posterior covariance with $\dd A=\operatorname{diag}(1,0.7)$.  The
+first particle scopes were $(N,T)=(32,5)$ and $(64,20)$.  The smaller scope ran
+first; both scopes completed within the total compute budget.  This matrix
+fixture replaces the earlier scalar proposal,
+which was wrong for testing the full pairwise correction because that
+correction is identically absent in one dimension.
+
+Each scope used 40 calibration paths, 30 separate power-pilot paths, and 500
+untouched validation paths.  The bandwidths selected from the declared grid
+were $\rho=0.8$ and $0.4$, respectively.  Relative to the exact Kalman score,
+the validation result was
+\begin{center}
+\begin{tabular}{lrrl}
+\toprule
+$(N,T)$ & Atom MSE & KDM MSE & KDM minus atom, 95\% interval\\
+\midrule
+$(32,5)$ & 3.94210 & 4.45250 & $[0.07106,\,0.94986]$\\
+$(64,20)$ & 3.86260 & 10.13463 & $[5.10083,\,7.55881]$\\
+\bottomrule
+\end{tabular}
+\end{center}
+The intervals use 4,000 paired path bootstrap resamples.  They support higher
+MSE for the calibrated KDM candidate in each tested scope.  Both frozen
+low/high absolute-score groups also had higher KDM point MSE than the atom
+and observation-KDM comparators; the high-score small-scope interval alone
+crossed zero.  The simpler bootstrap particle comparator had larger MSE,
+which does not rescue the loss to the unmodified filter.
+
+The primary criterion required an interval demonstrating at least ten percent
+MSE reduction.  Neither scope passed it.  The pilots requested 8,900 and
+4,160 paths for the specified twenty-percent improvement alternative, so the
+500-path cap also left both scopes underpowered for that design.  The
+negative result is therefore a rejection of these calibrated candidates,
+not a completed search over KDM methods.  Their numerical controls remain
+unpromoted hypotheses, and changing $N$ and $T$ together does not isolate
+either effect.  In the smaller scope, a slight observed variance reduction
+was offset by greater squared bias; in the larger scope both increased.
+These bias/variance decompositions are descriptive.  Small bandwidth was
+especially unstable: the calibration MSE at $\rho=0.025$ reached
+$1.63\times10^9$ and $9.18\times10^{35}$.  This is consistent with the
+small-bandwidth tangent in \eqref{eq:phase4b-small-bandwidth-tangent}, not
+evidence that a small value perturbation gives a small score perturbation.
+
+The comparator ladder is:
+\begin{enumerate}[leftmargin=2em]
+  \item the current canonical analytical total JVP with no KDM;
+  \item a constrained innovation-jitter proposal with no KDM score
+        replacement;
+  \item a plain bootstrap particle score on the non-degenerate
+        linear-Gaussian reference;
+  \item the KDM auxiliary route with the canonical score retained;
+  \item the Phase~4A observation-KDM route with its new target; and
+  \item the Phase~4B post-reset IWSG-resampling route with its new target.
+\end{enumerate}
+The Kalman solution is an oracle, not a heuristic.  Comparisons must be
+conditional on short and long horizons, degenerate and non-degenerate
+support, separated and overlapping modes, and small and large particle
+counts.  Effective sample size, mode coverage, runtime, and bandwidth
+sensitivity explain a result; they do not establish score correctness.
+The completed Phase~4A small-cell diagnostic contains only the exact Kalman
+oracle and the canonical atom comparator.  It cannot satisfy this full
+promotion ladder and is reported only as a rejection in its tested scope.
+
+\section{Code boundary and next step}
+
+The current canonical endpoints are the two functions named in
+Section~2, with the source-route initialization in
+\texttt{bayesfilter/highdim/ledh\_pfpf\_genut\_initial\_rqmc\_tf.py}.  The
+existing prior-weight sidecar captures a corrected pre-observation cloud, but
+it does not implement the Younis IWSG mixture gradient through the integrated
+\LEDH{}--\OT{}--\GenUT{} reset.  It must not be relabelled as that method.
+
+The registry call-chain repair is complete.  Phase~1 is now implemented as the
+diagnostic module
+\path{bayesfilter/highdim/ledh_younis_kdm_tf.py}.  Its route ID is
+\begin{center}
+\texttt{ledh\_younis\_kdm\_algebra\_}\texttt{diagnostic\_v1}
+\end{center}
+Its global and
+conditional mixture kernels expose the all-pairs density and complete cloud,
+weight, and covariance tangents.  The source-matched fixed-proposal IWSG
+kernel has no sample-location tangent and keeps the proposal density at its
+supplied anchor.  The conditional kernel is labelled as a proposal-density
+evaluator, not a model-score estimator.  The separate anchored
+\texttt{MODEL-IS} PF--PF kernel contains every value term in
+\eqref{eq:kdm-proposal-density}--\eqref{eq:kdm-proposal-weight} and requires
+an explicit per-particle certificate that the forward map is invertible; a
+finite log determinant alone is not accepted as that certificate.  Its
+tangent excludes proposal and selection derivatives because their sampling
+law is frozen at the anchor.  The module is diagnostic-only and is not in the
+canonical registry or call chain.
+
+The bounded Phase~1 test suite passes its complete-tangent, rank, anchor,
+proposal, and XLA-smoke checks.  Phase~2A adds
+
+\begin{itemize}[leftmargin=2em]
+  \item the controlled one-step linear-Gaussian normalizer\\
+        \texttt{make\_linear\_gaussian\_kdm\_}\\
+        \texttt{normalizer\_kernel}, whose
+        positive branch is \texttt{KDM-FINITE} and whose explicit zero branch
+        is \texttt{ATOM-FINITE}; and
+  \item an opt-in \texttt{return\_trace=True} surface on the analytical
+        endpoint, used to build the sidecar from the actual post-flow cloud
+        and weights under the Contract--E/dual-cap settings.
+\end{itemize}
+
+The Phase~2A finite-difference and endpoint tests pass, and the Phase~2B
+fixed-chart support tests pass.  Phase~3 now provides
+\texttt{canonical\_linear\_gaussian\_kdm\_auxiliary}.  It reads the actual
+analytical trace, reconstructs the zero-bandwidth value and score from
+\eqref{eq:prior-observation-factorization}, and reports a separately labelled
+positive-bandwidth functional without feeding it into the reset.  In
+particular, it uses $\bar w_t$, not $w_t^+$; using $w_t^+$ would apply the
+current observation twice.
+
+Phase~4A is now implemented in
+\path{bayesfilter/highdim/ledh_younis_kdm_integrated_tf.py}.  The route
+\texttt{ledh\_younis\_kdm\_integrated\_observation\_weighting\_v1} calls the
+same internal finite-program executor as the registered canonical wrapper and
+substitutes only the observation factor.  The code implements
+\eqref{eq:linear-convolution-tangent}, feeds the resulting weights and
+tangents through Contract--E and both correction caps, and returns the actual
+multi-step trace.  Its fixed-shape factory defaults to XLA compilation.
+
+The implementation audit also repaired three pre-existing total-derivative
+gaps in the shared analytical executor: generic Gaussian transition and
+observation fallbacks now include direct covariance-density tangents; a model
+may supply the total tangent of its observation Jacobian; and every resulting
+$\dd H$ term enters the LEDH flow.  The flow log determinant now uses an
+XLA-compatible QR/triangular-solve identity rather than an unsupported matrix
+determinant/inverse pair.  Rebuilt-model finite differences test these terms.
+
+Phase~4A is a correct total derivative of its declared
+\texttt{KDM-FINITE} scalar; it is wrong if described as the derivative of
+\texttt{ATOM-FINITE}.  The current one-cell experiment gives no evidence that
+it reduces model-score error, and the all-bandwidth inspection indicates that
+its small variance reduction is offset by additional bias.  The complete
+rows, manifest, and source hashes are recorded under
+\path{docs/benchmarks/artifacts/ledh_younis_kdm_}\\
+\path{phase4_20260908/campaign-attempt05-n32t5-all-rho-f32-current/}.
+
+Phase~4B is no longer blocked by an unspecified mixture or ancestry rule:
+Equations~\eqref{eq:phase4b-mixture}--\eqref{eq:phase4b-finite-target} define
+the source-matched raw mixture ratio, the BayesFilter covariance marks,
+the insertion point after Contract--E, and the two-pass anchor/replay rule.
+The exact $N$-by-$N$ operation is implemented in
+\path{bayesfilter/highdim/ledh_younis_kdm_resampling_tf.py}.  Its anchor and
+replay endpoints call the shared canonical executor after Contract--E and both
+correction caps, enforce one common full-rank Gaussian bandwidth at each time,
+and expose both raw and self-normalized ratio diagnostics with complete
+tangents.  The repaired route carries raw ratios divided by $N$, not
+self-normalized ratios, into the next PF--PF normalizer.  The
+responsibility-mean and fixed-label covariance-mark policies are separate,
+explicit routes.  One-at-a-time and joint finite
+differences, exact anchor replay, canonical no-hook parity, and isolated
+two-step state/weight/covariance wiring tests pass.  Bounded float64 and
+float32/no-TF32 GPU/XLA smokes of the earlier self-normalized route are
+superseded for derivative certification.  On 9 September, four fresh smokes
+of the repaired raw-IWSG program passed for both precisions and both covariance
+mark policies at $D=2,N=8,T=2$.  These checks establish implementation
+consistency for \texttt{RESKDM-IWSG-FINITE}.  The subsequent matrix campaign
+supplies the separate negative model-score result reported above.  The
+conditional \texttt{MODEL-IS} proposal
+remains an extension and is not a substitute for this combined program.
+The canonical trace now retains, rather than discards, higher-moment validity,
+the off-diagonal target mask, pairwise pre/post-cap displacement, pairwise cap
+scale, and coordinate-cap activity.  The new matrix Kalman recursion and
+fixed-stream bootstrap comparator pass analytical-versus-finite-difference
+tests.  A terminal audit reproduced both campaign summaries from the raw rows
+and verified source hashes, split counts, validity flags, and complete
+correction diagnostics.  Its receipts are retained under
+\path{docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/campaign01/}.
+The campaign completed, but its planned power requirement was not met.  The
+affine-chart diagnostic in
+\path{bayesfilter/highdim/ledh_younis_kdm_affine_chart_reference_tf.py}
+now implements \eqref{eq:affine-chart-state}--\eqref{eq:affine-chart-observation},
+including two-direction and heterogeneous-coordinate-mark tests.  All 35
+focused CPU/float64 reference checks pass.  It is not wired into the
+multi-step LEDH executor and has not been validated on GPU/XLA.  Further DSGE
+implementation is deferred: the immediate task is to finish testing the
+existing repository models.  This requires checking every parameter component
+of each model adapter, the complete filter that consumes it, and then
+model-score error under fresh model-specific calibration.  An existing model
+that the current executor cannot represent must remain explicitly untested;
+it must not be replaced by a different full-rank model to fill a results table.
+
+The first cross-model audit exposes why component fidelity is not enough.
+The generalized-SV adapter evaluates the actual heteroskedastic likelihood,
+but its flow also depends on the process covariance and on the observation
+map.  Write its parameters as
+$\theta=(a_s,a_h,\log\sigma_s,\log\sigma_h,\log\beta)$ and perturb them in
+direction $v$.  The process covariance and flow observation map obey
+\begin{align}
+ Q&=\operatorname{diag}(\sigma_s^2,\sigma_h^2),
+ &\dd Q&=\operatorname{diag}(2\sigma_s^2v_3,2\sigma_h^2v_4),\\
+ H&=[\beta,0], &\dd H&=[\beta v_5,0],\\
+ \dd(Hx)&=H\,\dd x+(\dd H)x.
+ \label{eq:repository-gsv-flow-tangent}
+\end{align}
+Here parameter components are numbered from one.  The adapter previously
+omitted $\dd Q$, $\dd H$, and the second term in the last line.  Correct
+differentiation of the likelihood at a supplied state cannot restore those
+missing derivatives of the state produced by the flow.  The KSC adapter had
+the same problem with its flow observation offset: the differential of
+$h+\mu_{\rm mix}+2\log\beta$ is $\dd h+2\dd\log\beta$, not just $\dd h$.
+Finite differences that rebuild both adapters at the perturbed parameters
+expose these omissions.  They are implementation errors relative to the
+total-derivative claim, not evidence against KDM.  The KSC mixture must also
+remain distinct from exact transformed SV: replacing log-chi-square noise by
+seven Gaussian components changes the observation density, so an
+observation-transform Jacobian does not imply equal scores.
+
+After these repairs and a graph-construction repair for Austria SIR, the first
+cross-model batch passes 39 checks.  All five existing adapters---diagonal
+LGSSM, native generalized SV, KSC, predator--prey, and the current Austria SIR
+recurrence---pass coordinate-by-coordinate and mixed-direction finite
+differences through the two-step canonical and raw-IWSG replay endpoints.
+The largest scaled discrepancy is $2.50\times10^{-8}$.  These are CPU/float64
+reference tests with fixed initial clouds and covariances.  The executor still
+initializes their tangents to zero, whereas a stationary SV initial law depends
+on its persistence and innovation scale.  Its total model-score derivative
+therefore needs additional initialization terms.  The continuous SIR
+recurrence also omits the susceptible clipping in the repository simulator
+and its latent-preclip representation.  Its derivative test does not establish
+either model identity.  Both discrepancies must be resolved before those
+models enter the score-accuracy comparisons; the remaining repository models
+are still untested by this batch.
+
+Fresh Phase~4A endpoint calibration after the covariance-carry repair passes
+for float64 and for float32 without TF32.  Its float32 TF32 arm still fails the
+declared graph/XLA and atom-identity tolerances, so TF32 remains unadmitted for
+that diagnostic route.  Phase~4B has so far been checked only in float64 and
+float32 without TF32.  The reduced registered fused batch lane is also
+excluded: its current body does not execute the
+Contract--E/\GenUT{}/dual-cap reset.  No HMC promotion or canonical default
+change is authorized.  A positive result at finite bandwidth would support a
+new, explicitly named regularized program; it would not retroactively make its
+derivative the score of \eqref{eq:atom-program}.
+
+\bibliographystyle{plainnat}
+\bibliography{ledh_younis_kdm_score}
+
+\end{document}

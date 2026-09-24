@@ -72,23 +72,29 @@ def test_corrupt_cached_tensor_fails_closed(tmp_path):
         cache(tmp_path, bridge, current.scope).evaluate(current.checkpoint()["map"], 16, (83, 1))
 
 
-@pytest.mark.parametrize("base,inc,at_cap,minimum_met,resolved,status", [
-    ((-2., -1.), (-1.5, -.5), False, True, True, "continue_training"),
-    ((-2., -1.), (.5, 1.5), False, True, True, "deterioration_repair_trigger"),
-    ((-2., -1.), (-.5, .5), False, True, False, "expand_validation_or_continue"),
-    ((-2., -1.), (-.5, .5), True, True, False, "cap_learning_observed"),
-    ((.1, .5), (-.5, .5), True, True, True, "cap_learning_unresolved"),
-    ((-2., -1.), (-.5, .5), False, False, True, "continue_training"),
+@pytest.mark.parametrize("base,inc,at_cap,minimum_met,eligible,status", [
+    ((-2., -1.), (-1.5, -.5), False, True, True, "hmc_trial_nominee"),
+    ((-2., -1.), (.5, 1.5), False, True, False, "deterioration_repair_trigger"),
+    ((-2., -1.), (-.5, .5), False, True, True, "hmc_trial_nominee"),
+    ((-2., -1.), (-.5, .5), True, True, True, "hmc_trial_nominee"),
+    ((.1, .5), (-.5, .5), True, True, False, "cap_learning_unresolved"),
+    ((-2., -1.), (-.5, .5), False, False, False, "continue_training"),
+    ((-.02, -.01), (-.5, .5), False, True, True, "hmc_trial_nominee"),
+    ((-2., -1.), (.01, .02), False, True, False, "deterioration_repair_trigger"),
+    ((-1., 1.), (-.5, .5), False, True, False, "continue_training"),
 ])
-def test_validation_precision_is_required_only_for_unresolved_decisions(base, inc, at_cap, minimum_met, resolved, status):
+def test_learning_screen_permits_trials_without_fine_plateau_precision(base, inc, at_cap, minimum_met, eligible, status):
     def stats(bounds):
         return {"lower": bounds[0], "upper": bounds[1], "half_width": (bounds[1]-bounds[0])/2}
     decision = assess_training_rung(baseline=stats(base), increment=stats(inc), reliability=True,
         prior_plateaus=1, at_cap=at_cap, minimum_improvement=.04, maximum_half_width=.02,
         plateau_comparisons=2, minimum_updates_met=minimum_met)
-    assert decision["validation_resolved"] is resolved
+    assert decision["validation_resolved"] is True
     assert decision["status"] == status
-    assert decision["development_eligible"] is False
+    assert decision["hmc_trial_eligible"] is eligible
+    assert decision["development_eligible"] is eligible
+    assert decision["precision_role"] == "explanatory_only"
+    assert decision["posterior_qualified"] is False
 
 
 def test_precise_pre_floor_plateau_is_preserved_without_early_promotion():
@@ -101,13 +107,67 @@ def test_precise_pre_floor_plateau_is_preserved_without_early_promotion():
     assert decision["development_eligible"] is False
 
 
+@pytest.mark.parametrize("bounds,resolved,eligible,status", [
+    ((-120., -80.), True, True, "hmc_trial_nominee"),
+    ((-1., 1.), False, False, "continue_training"),
+    ((.1, 1.), True, False, "continue_training"),
+])
+def test_plateau_cannot_substitute_for_learning(bounds, resolved, eligible, status):
+    base = {"lower": bounds[0], "upper": bounds[1], "half_width": (bounds[1]-bounds[0])/2}
+    inc = {"lower": -.01, "upper": .01, "half_width": .01}
+    decision = assess_training_rung(baseline=base, increment=inc, reliability=True,
+        prior_plateaus=1, at_cap=False, minimum_improvement=.04, maximum_half_width=.02,
+        plateau_comparisons=2, minimum_updates_met=True)
+    assert decision["precision_screen"] is True
+    assert decision["baseline_learning_resolved"] is resolved
+    assert decision["validation_resolved"] is True
+    assert decision["hmc_trial_eligible"] is eligible
+    assert decision["development_eligible"] is eligible
+    assert decision["status"] == status
+    assert decision["posterior_qualified"] is False
+
+
+def test_numerical_veto_blocks_learned_map_trial():
+    decision = assess_training_rung(
+        baseline={"lower": -2., "upper": -1., "half_width": .5},
+        increment={"lower": -.01, "upper": .01, "half_width": .01},
+        reliability=False, prior_plateaus=2, at_cap=True,
+        minimum_improvement=.04, maximum_half_width=.02, plateau_comparisons=2)
+    assert decision["status"] == "numerically_invalid"
+    assert not decision["hmc_trial_eligible"]
+    assert not decision["development_eligible"]
+
+
+def test_actual_training_bounds_validation_and_continues_nominees(tmp_path):
+    config, bridge = tiny_protocol(), four_dimensional_bridge()
+    config["training"].update(cohort_min_updates=2, rungs=[1, 2, 4])
+    config["validation"]["bank_sizes"] = [16, 32, 64]
+    result = run_training_cohort(config, bridge, tmp_path / "bounded", method="neutra",
+        memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=180.)
+    cohort = json.loads(Path(result["checkpoint"]).read_text())["cohort"]
+    nominees = []
+    for item in cohort.values():
+        assert item["session"]["level_updates"] >= 2
+        for assessment in item["assessments"]:
+            assert len(assessment["looks"]) == 1
+            assert assessment["looks"][0]["baseline"]["rows"] == 16
+            assert assessment["validation_bank_cap"] == 16
+            if assessment["updates"] < 2:
+                assert not assessment["decision"]["hmc_trial_eligible"]
+        first = next((a for a in item["assessments"] if a["decision"]["hmc_trial_eligible"]), None)
+        if first is not None:
+            nominees.append(first)
+            assert item["session"]["level_updates"] == config["training"]["rungs"][-1]
+    assert nominees, "the Gaussian fixture must exercise early trial nomination"
+
+
 def test_calibration_resumes_into_full_protocol_without_rng_or_optimizer_drift(tmp_path):
     config, bridge = tiny_protocol(), four_dimensional_bridge()
     config["training"]["cohort_min_updates"] = 2
     config["validation"]["bank_sizes"] = [16, 32]
     kwargs = dict(memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=180.)
     calibration = run_training_cohort(config, bridge, tmp_path / "calibration", calibration_only=True, **kwargs)
-    assert calibration["calibration_complete"] and not calibration["cohort_complete"]
+    assert calibration["sanity_pilot_complete"] and not calibration["calibration_complete"] and not calibration["cohort_complete"]
     first = json.loads(Path(calibration["checkpoint"]).read_text())
     assert len(first["cohort"]) == 2
     for name, item in first["cohort"].items():

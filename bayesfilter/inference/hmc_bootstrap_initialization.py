@@ -123,9 +123,9 @@ def initialize_bootstrap_step(*, adapter, geometry, config, progress_callback=No
     Initial/retained invalidity or a runtime exception stops the scope.
     """
     import tensorflow as tf
-    from bayesfilter.inference.hmc_bootstrap import build_bootstrap_fixed_mass_adapter
-    # Compatibility alias resolves to the same implementation after extraction.
-    from bayesfilter.inference.hmc_kernel_tuning import _bootstrap_leapfrog_payload
+    from bayesfilter.inference.hmc_bootstrap import (
+        build_bootstrap_fixed_mass_adapter, _bootstrap_leapfrog_payload,
+    )
     from bayesfilter.inference.hmc_preparation import HMCPreparationFailure, _progress_json_value
     if type(probe_count) is not int or probe_count <= 1 or type(max_rounds) is not int or max_rounds <= 0:
         raise ValueError("bootstrap initialization needs multiple probes and a positive round cap")

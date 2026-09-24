@@ -1,0 +1,816 @@
+diff --git a/bayesfilter/highdim/ledh_canonical_score_stages_tf.py b/bayesfilter/highdim/ledh_canonical_score_stages_tf.py
+index 270b0ae210c233a3502b3bd7039b2b1b404cbd00..187447d815f8c5a2d54b25e6da84df9c20b5f944 100644
+--- a/bayesfilter/highdim/ledh_canonical_score_stages_tf.py
++++ b/bayesfilter/highdim/ledh_canonical_score_stages_tf.py
+@@ -489,6 +489,7 @@ def quadrature_update_with_parameter_tangent(
+     kappa: float = 0.0,
+     jitter: float = 1.0e-12,
+     point_rule: tuple[Tensor, Tensor] | None = None,
++    return_evidence: bool = False,
+ ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+     """S5: unscented update with analytical parameter tangent."""
+ 
+@@ -591,7 +592,17 @@ def quadrature_update_with_parameter_tangent(
+         (d_predicted_covariances - d_ksk)
+         + tf.linalg.matrix_transpose(d_predicted_covariances - d_ksk)
+     )
+-    return post_means, post_covs, d_post_means, d_post_covs
++    result = (post_means, post_covs, d_post_means, d_post_covs)
++    if return_evidence:
++        inverse_innovation = tf.linalg.cholesky_solve(chol, innovation[..., None])[..., 0]
++        logdet = 2 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol)), axis=-1)
++        constant = tf.cast(obs_dim, dtype) * tf.math.log(2 * tf.acos(tf.cast(-1., dtype)))
++        log_evidence = -.5 * (constant + logdet + tf.reduce_sum(innovation * inverse_innovation, -1))
++        d_log_evidence = -tf.reduce_sum(d_innovation * inverse_innovation, -1)
++        d_log_evidence += .5 * tf.einsum("ni,nij,nj->n", inverse_innovation, d_innovation_cov, inverse_innovation)
++        d_log_evidence -= .5 * tf.linalg.trace(tf.linalg.cholesky_solve(chol, d_innovation_cov))
++        return (*result, log_evidence, d_log_evidence)
++    return result
+ 
+ 
+ def ukf_predict_with_parameter_tangent(*args, **kwargs):
+diff --git a/bayesfilter/highdim/ledh_canonical_score_tf.py b/bayesfilter/highdim/ledh_canonical_score_tf.py
+index 3bf672694403b054344c4820b3e912b002f381e9..36267d54a6eee314557a69131884c166be6849d7 100644
+--- a/bayesfilter/highdim/ledh_canonical_score_tf.py
++++ b/bayesfilter/highdim/ledh_canonical_score_tf.py
+@@ -114,6 +114,7 @@ def _value_and_analytical_score_impl(
+     annealed_stages: int = 1,
+     annealed_seed: int = 0,
+     moment_provider: tuple[Callable, Callable] | None = None,
++    moment_schedule: Mapping[str, Tensor] | None = None,
+ ) -> (
+     tuple[Tensor, Tensor | None]
+     | tuple[Tensor, Tensor | None, tuple[dict[str, Tensor | int], ...]]
+@@ -232,6 +233,19 @@ def _value_and_analytical_score_impl(
+ 
+     moment_predict, moment_update = (moment_provider if moment_provider is not None else
+                                     (ukf_predict_with_parameter_tangent, ukf_update_with_parameter_tangent))
++    if moment_schedule is not None and moment_provider is not None:
++        raise ValueError("choose a recursive provider or an independent filter schedule")
++
++    def scheduled_moments(t, prefix):
++        return tuple(tf.broadcast_to(moment_schedule[prefix + name][t],
++                     [count, dim, dim] if "covariances" in name else [count, dim])
++                     for name in ("means", "covariances", "d_means", "d_covariances"))
++
++    def predict_at(t, *args, **kwargs):
++        return scheduled_moments(t, "predicted_") if moment_schedule is not None else moment_predict(*args, **kwargs)
++
++    def update_at(t, *args, **kwargs):
++        return scheduled_moments(t, "post_") if moment_schedule is not None else moment_update(*args, **kwargs)
+ 
+     def time_loop_body(t, states, d_states, covariances, d_covariances, incoming_log_weights, d_incoming_log_weights, total, d_total):
+         observation = observations[t]
+@@ -245,7 +259,7 @@ def _value_and_analytical_score_impl(
+             predicted_covs,
+             d_predicted_means,
+             d_predicted_covs,
+-        ) = moment_predict(
++        ) = predict_at(t,
+             states,
+             covariances,
+             d_states,
+@@ -376,7 +390,7 @@ def _value_and_analytical_score_impl(
+             post_covs,
+             _d_post_means,
+             d_post_covs,
+-        ) = moment_update(
++        ) = update_at(t,
+             predicted_means,
+             predicted_covs,
+             d_predicted_means,
+diff --git a/bayesfilter/score_study/adapters.py b/bayesfilter/score_study/adapters.py
+index acfe29be9c814a59945a1eab5a35dbc77cf63518..06ea14020aa89b01949c1d5070ba5420e23a4b2e 100644
+--- a/bayesfilter/score_study/adapters.py
++++ b/bayesfilter/score_study/adapters.py
+@@ -12,6 +12,9 @@ from .runtime import configure_runtime, memory_usage
+ 
+ 
+ def evaluate_gaussian(row, context):
++    from .tuning import TUNABLE_PROPOSALS, candidate_configuration, selected_row
++    if row.get("role") == "claim" and row["proposal"] in TUNABLE_PROPOSALS:
++        row = selected_row(row, context)
+     settings = context["study"]["settings"]
+     runtime = configure_runtime(device=settings["device"], tf32=settings["tf32"],
+                                 jit_compile=settings["jit_compile"])
+@@ -79,6 +82,12 @@ def evaluate_gaussian(row, context):
+             if not bool((minimum_eigenvalue > 0).numpy()):
+                 raise ValueError("Gaussian covariance validity veto")
+             calls = 1
++        elif proposal == "fitted_twist":
++            from .fitted_twist_adapter import execute_fitted_twist
++            kernel, fitted_output, fitted_diagnostics, calls = execute_fitted_twist(
++                row, settings, theta, observations, seed)
++            value, score = fitted_output[:2]
++            diagnostics.update(fitted_diagnostics)
+         elif proposal == "twist":
+             from .twist_tf import make_twist_kernel
+             kernel = make_twist_kernel(d, o, N, T, row["twist_power"], settings["dtype"], settings["jit_compile"])
+@@ -101,13 +110,9 @@ def evaluate_gaussian(row, context):
+                                derivative_semantics="fixed_ancestor_a.e._finite_program" if resampling else "fixed_base_noise_finite_program",
+                                expectation_gradient_unbiasedness="not_claimed")
+             calls = 1
+-        elif proposal in ("ledh", "integrated_kdm", "resampling_kdm", "sgqf"):
++        elif proposal in ("ledh", "integrated_kdm", "resampling_kdm", "sgqf", "kdm_covariance"):
+             from .canonical_adapter_tf import make_canonical_kernel
+-            if row.get("role") == "claim":
+-                from .tuning import consume_selection
+-                controls = consume_selection(row, context)
+-            else:
+-                controls = row["controls"]
++            controls = row["controls"]
+             if proposal == "ledh":
+                 kernel = make_canonical_kernel(d, o, N, T, tuple(sorted(controls.items())), settings["dtype"], settings["jit_compile"])
+                 outputs = [kernel(theta, direction, observations, initial, process, reset_design)
+@@ -119,6 +124,19 @@ def evaluate_gaussian(row, context):
+                 outputs = [kernel(theta, direction, observations, initial, process, reset_design)
+                            for direction in tf.unstack(tf.eye(6, dtype=dtype))]
+                 diagnostics.update(covariance_provider=metadata, canonical_status="alternative_covariance_candidate")
++            elif proposal == "kdm_covariance":
++                from .mixture_covariance_tf import make_mixture_covariance_kernel
++                kernel = make_mixture_covariance_kernel(d, o, N, T, tuple(sorted(controls.items())),
++                    row["within_fraction"], settings["dtype"], settings["jit_compile"])
++                outputs = [kernel(theta, direction, observations, initial, process, reset_design)
++                           for direction in tf.unstack(tf.eye(6, dtype=dtype))]
++                schedule = outputs[0][2]
++                diagnostics.update(covariance_provider="local_gaussian_mixture_assumed_density_filter",
++                    within_fraction=row["within_fraction"], component_count=2*d,
++                    component_lifecycle="independent_prediction_observation_conditioning_and_evidence_reweighting",
++                    canonical_status="alternative_covariance_candidate_not_younis_filter_reproduction",
++                    final_component_log_weights=schedule["component_log_weights"][-1].numpy().tolist(),
++                    final_provider_covariance=schedule["post_covariances"][-1].numpy().tolist())
+             else:
+                 from .kdm_adapter_tf import make_kdm_kernel
+                 bandwidth = row["bandwidth_scale"]
+@@ -144,7 +162,8 @@ def evaluate_gaussian(row, context):
+             diagnostics.update(reset_contract_id="contract_e_chol_v1", controls=controls,
+                                chunk_policy="dpf_transport_exact_divisor_cap3000_v1", chunk_size=N,
+                                score_consumer=({"ledh": "make_canonical_kernel -> canonical_value_and_analytical_score",
+-                                                "sgqf": "make_covariance_kernel -> shared executor -> SGQFCovarianceProvider"}.get(proposal, "make_kdm_kernel -> KDM consumer -> shared canonical executor")),
++                                                "sgqf": "make_covariance_kernel -> shared executor -> SGQFCovarianceProvider",
++                                                "kdm_covariance": "mixture_schedule -> shared executor -> scheduled prediction/conditioning moments"}.get(proposal, "make_kdm_kernel -> KDM consumer -> shared canonical executor")),
+                                derivative_semantics="analytical_total_initial_moments_flow_genut_contract_e",
+                                tuning_status="verified_selection" if row.get("role") == "claim" else "mechanics_or_tuning_candidate")
+             calls = 6
+@@ -161,6 +180,8 @@ def evaluate_gaussian(row, context):
+                        traces=kernel.experimental_get_tracing_count(), **memory_usage(settings["device"]))
+     diagnostics["score_squared_error"] = float(tf.reduce_sum((score - oracle[1])**2).numpy())
+     diagnostics["value_squared_error"] = float(((value - oracle[0])**2).numpy())
++    if proposal in TUNABLE_PROPOSALS:
++        diagnostics["candidate_configuration"] = candidate_configuration(row)
+     estimator = context["registry"].estimators[row["estimator"]]
+     return {"value": value_number, "score": score_numbers,
+             "oracle_value": float(oracle[0].numpy()), "oracle_score": oracle[1].numpy().tolist(),
+diff --git a/bayesfilter/score_study/contracts.py b/bayesfilter/score_study/contracts.py
+index 56d295a609524d2152f5a2fa0d0edfc6b9ac9057..9927bf02dcff3a9e59422ac23fedb3d315fcf199 100644
+--- a/bayesfilter/score_study/contracts.py
++++ b/bayesfilter/score_study/contracts.py
+@@ -176,8 +176,8 @@ def validate_study(study: dict, registry: Registry) -> list[dict]:
+             raise ValueError("row dataset is outside its declared partition")
+         if role == "claim" and row["estimator"] == "symmetric_fd" and not row.get("fd_selection"):
+             raise ValueError("claim FD requires a repository-issued FD selection")
+-        if role == "claim" and row["proposal"] == "ledh" and row["estimator"] != "symmetric_fd" and not row.get("tuning_selection"):
+-            raise ValueError("claim LEDH requires a repository-issued tuning selection")
++        if role == "claim" and row["proposal"] in ("ledh", "sgqf", "kdm_covariance", "integrated_kdm", "resampling_kdm", "twist", "fitted_twist") and row["estimator"] != "symmetric_fd" and not row.get("tuning_selection"):
++            raise ValueError("claim LEDH/provider requires a repository-issued tuning selection")
+         dependencies = row.get("depends_on", [])
+         if set(dependencies) - set(ids):
+             raise ValueError("unknown prerequisite row")
+diff --git a/bayesfilter/score_study/fitted_twist_adapter.py b/bayesfilter/score_study/fitted_twist_adapter.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..a9192c6ed5dc38fa8a9d680afc93a0c0bcd92cfe
+--- /dev/null
++++ b/bayesfilter/score_study/fitted_twist_adapter.py
+@@ -0,0 +1,67 @@
++"""Offline fixed-iteration fitting followed by an independent psi-APF run.
++
++The fit is conditional on a declared nominal parameter and the observations.
++All fitted coefficients are frozen for the final finite-program derivative.
++This is the log-quadratic local adaptation documented in fitted_twist_tf.
++"""
++from .contracts import digest
++
++
++def execute_fitted_twist(row, settings, theta, observations, seed):
++    import tensorflow as tf
++    from .fitted_twist_tf import make_fitted_twist_kernel, make_recursive_fit_kernel
++    d,o,N,T=(settings[k] for k in ("dimension","observation_dimension","particles","horizon"))
++    iterations=row["fit_iterations"]
++    initial_variance=row["fit_initial_variance"]
++    floor_ratio=row["fit_floor_ratio"]
++    if type(iterations) is not int or not 1 <= iterations <= 20:
++        raise ValueError("declare between one and twenty offline fit iterations")
++    if not 0 < initial_variance < float("inf") or not 0 < floor_ratio < float("inf"):
++        raise ValueError("positive finite initial variance and floor ratio required")
++    # The full positive Gaussian terminal fit is presently justified only in
++    # this fixture. A subspace/ridge extension must be evaluated separately.
++    if d != 1 or o != 1:
++        raise ValueError("fitted_twist currently requires dimension=observation_dimension=1")
++    dtype=theta.dtype
++    fit_theta=tf.constant(row["fit_theta"],dtype)
++    tf.debugging.assert_equal(tf.shape(fit_theta),[6])
++    kernel=make_fitted_twist_kernel(d,o,N,T,settings["dtype"],settings["jit_compile"])
++    fitter=make_recursive_fit_kernel(d,o,N,T,floor_ratio,settings["dtype"],settings["jit_compile"])
++    centers=tf.zeros([T,d],dtype)
++    covariances=tf.eye(d,batch_shape=[T],dtype=dtype)*tf.cast(initial_variance,dtype)
++    log_floors=tf.fill([T],tf.math.log(tf.cast(floor_ratio,dtype))-
++        .5*tf.cast(d,dtype)*tf.math.log(tf.cast(2*3.141592653589793*initial_variance,dtype)))
++    seed_records={}
++    def streams(label,fitting):
++        def draw(name,shape,normal):
++            stream=label+"_"+name
++            draw_seed=seed(stream,replicate=0,group="offline_fitted_twist") if fitting else seed(stream)
++            seed_records[stream]=draw_seed
++            return (tf.random.stateless_normal if normal else tf.random.stateless_uniform)(shape,draw_seed,dtype=dtype)
++        return (draw("initial",[N,d],True),draw("process",[T,N,d],True),
++                draw("ancestors",[T+1,N],False),draw("mixture",[T,N],False))
++    iterations_out=[]
++    for iteration in range(iterations):
++        fitted_run=kernel(fit_theta,observations,*streams(f"fit{iteration}",True),centers,covariances,log_floors)
++        centers,covariances,log_floors,valid,residual=fitter(fit_theta,observations,fitted_run[2])
++        if not bool(valid.numpy()):
++            raise ValueError(f"offline psi fit rank/positive-precision veto at iteration {iteration}")
++        iterations_out.append({"iteration":iteration,"fit_log_value":float(fitted_run[0].numpy()),
++                               "log_fit_rmse":residual.numpy().tolist()})
++    frozen={"centers":centers.numpy().tolist(),"covariances":covariances.numpy().tolist(),
++            "log_floors":log_floors.numpy().tolist(),"fit_theta":fit_theta.numpy().tolist()}
++    final=kernel(theta,observations,*streams("final_twist",False),centers,covariances,log_floors)
++    fitting_seeds={tuple(v) for k,v in seed_records.items() if not k.startswith("final_")}
++    final_seeds={tuple(v) for k,v in seed_records.items() if k.startswith("final_")}
++    if fitting_seeds & final_seeds:
++        raise ValueError("offline fitting and final streams overlap")
++    return kernel,final,{"fit":frozen,"fit_digest":digest(frozen),"fit_iterations":iterations_out,
++        "fit_seed_records":seed_records,"fit_stopping":"fixed_declared_iteration_count",
++        "fit_method":"local_full_log_quadratic_qr_with_positive_precision_guard",
++        "fit_parameter_derivative":"frozen_coefficients_at_declared_nominal_theta",
++        "final_randomness":"independent_of_offline_fit_streams",
++        "initial_normalizer":"mean_f_x0_psi1","terminal_future_factor":1.,
++        "sampling_law":"normalized_gaussian_transition_times_gaussian_plus_positive_floor",
++        "derivative_semantics":"fixed_ancestor_and_mixture_labels_a.e._frozen_fit_finite_program",
++        "expectation_gradient_unbiasedness":"not_claimed",
++        "canonical_status":"separate_fitted_psi_apf_local_adaptation"},2*iterations+1
+diff --git a/bayesfilter/score_study/fitted_twist_tf.py b/bayesfilter/score_study/fitted_twist_tf.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f0d43e0c59a7d514b90b597381450436039279bf
+--- /dev/null
++++ b/bayesfilter/score_study/fitted_twist_tf.py
+@@ -0,0 +1,146 @@
++"""Frozen Gaussian-plus-floor psi-APF and offline recursive fitting.
++
++Uses Guarniero--Johansen--Lee equations (5)--(6), Algorithm 3 and the
++independent final run of Algorithm 4. Log-quadratic least squares and fixed
++iteration count are explicit local adaptations, not their equation (15) fit
++or adaptive stopping rule. Fitted psi is frozen when differentiating theta.
++"""
++from functools import lru_cache
++import tensorflow as tf
++from .gaussian_tf import (parameterized_model,chol_tangent,gaussian_log_density_and_tangent,symmetric)
++
++
++def gaussian_floor_log(x,dx,center,covariance,log_floor):
++    lg,dlg=gaussian_log_density_and_tangent(x-center,dx,covariance,
++        tf.zeros([6,1,x.shape[-1],x.shape[-1]],x.dtype))
++    total=tf.reduce_logsumexp(tf.stack([lg,tf.fill(tf.shape(lg),log_floor)],-1),-1)
++    return total,tf.exp(lg-total)[None,:]*dlg
++
++
++def normalizer(mean,dmean,Q,dQ,center,V,log_floor):
++    lg,dlg=gaussian_log_density_and_tangent(center-mean,-dmean,Q+V,dQ[:,None,:,:])
++    total=tf.reduce_logsumexp(tf.stack([lg,tf.fill(tf.shape(lg),log_floor)],-1),-1)
++    probability=tf.exp(lg-total)
++    return total,probability[None,:]*dlg,probability
++
++
++def twisted_transition(mean,dmean,Q,dQ,center,V,probability,noise,uniform):
++    S=Q+V; L=tf.linalg.cholesky(S)
++    K=tf.transpose(tf.linalg.cholesky_solve(L,tf.transpose(Q)))
++    dK=tf.linalg.matrix_transpose(tf.linalg.cholesky_solve(L,
++        tf.linalg.matrix_transpose(dQ-K@dQ)))
++    C=symmetric(Q-K@Q)
++    dC=symmetric(dQ-dK@Q-K@dQ)
++    LC=tf.linalg.cholesky(C); LQ=tf.linalg.cholesky(Q)
++    residual=center-mean
++    adapted=mean+tf.einsum("ij,nj->ni",K,residual)+tf.einsum("ij,nj->ni",LC,noise)
++    dadapted=dmean+tf.einsum("pij,nj->pni",dK,residual)-tf.einsum("ij,pnj->pni",K,dmean)
++    dadapted+=tf.einsum("pij,nj->pni",chol_tangent(LC,dC),noise)
++    prior=mean+tf.einsum("ij,nj->ni",LQ,noise)
++    dprior=dmean+tf.einsum("pij,nj->pni",chol_tangent(LQ,dQ),noise)
++    choose=uniform<probability
++    return tf.where(choose[:,None],adapted,prior),tf.where(choose[None,:,None],dadapted,dprior)
++
++
++@lru_cache(maxsize=12)
++def make_fitted_twist_kernel(d,o,N,T,dtype_name="float64",jit_compile=True):
++    dtype=tf.as_dtype(dtype_name)
++    @tf.function(input_signature=[tf.TensorSpec([6],dtype),tf.TensorSpec([T,o],dtype),
++        tf.TensorSpec([N,d],dtype),tf.TensorSpec([T,N,d],dtype),tf.TensorSpec([T+1,N],dtype),
++        tf.TensorSpec([T,N],dtype),tf.TensorSpec([T,d],dtype),tf.TensorSpec([T,d,d],dtype),
++        tf.TensorSpec([T],dtype)],jit_compile=jit_compile)
++    def kernel(theta,observations,initial_noise,noise,uniforms,mixture_uniforms,centers,covariances,log_floors):
++        A,dA,H,dH,m,dm,P,dP,Q,dQ,R,dR=parameterized_model(theta,d,o)
++        L=tf.linalg.cholesky(P)
++        x=m+tf.einsum("ij,nj->ni",L,initial_noise)
++        dx=dm[:,None,:]+tf.einsum("pij,nj->pni",chol_tangent(L,dP),initial_noise)
++        def predict(x,dx):
++            return tf.einsum("ij,nj->ni",A,x),tf.einsum("pij,nj->pni",dA,x)+tf.einsum("ij,pnj->pni",A,dx)
++        def future(x,dx,t):
++            return normalizer(*predict(x,dx),Q,dQ,centers[t],covariances[t],log_floors[t])
++        def resample(x,dx,logw,dlogw,u):
++            w=tf.nn.softmax(logw)
++            indices=tf.searchsorted(tf.cumsum(w),u,side="right")
++            indices=tf.minimum(indices,N-1)
++            return tf.gather(x,indices),tf.gather(dx,indices,axis=1),tf.reduce_logsumexp(logw)-tf.math.log(tf.cast(N,dtype)),tf.reduce_sum(w[None,:]*dlogw,-1)
++        initial_log,initial_dlog,_=future(x,dx,0)
++        x,dx,total,dtotal=resample(x,dx,initial_log,initial_dlog,uniforms[0])
++        arrays=tf.TensorArray(dtype,size=T,element_shape=[N,d])
++        def step(t,x,dx,total,dtotal,clouds):
++            mean,dmean=predict(x,dx)
++            _,_,probability=normalizer(mean,dmean,Q,dQ,centers[t],covariances[t],log_floors[t])
++            x,dx=twisted_transition(mean,dmean,Q,dQ,centers[t],covariances[t],probability,noise[t],mixture_uniforms[t])
++            clouds=clouds.write(t,x)
++            residual=observations[t]-tf.einsum("ij,nj->ni",H,x)
++            dr=-tf.einsum("pij,nj->pni",dH,x)-tf.einsum("ij,pnj->pni",H,dx)
++            lg,dlg=gaussian_log_density_and_tangent(residual,dr,R,dR[:,None,:,:])
++            lp,dlp=gaussian_floor_log(x,dx,centers[t],covariances[t],log_floors[t])
++            lf,dlf=tf.cond(t+1<T,lambda:future(x,dx,t+1)[:2],
++                lambda:(tf.zeros([N],dtype),tf.zeros([6,N],dtype)))
++            x,dx,term,dterm=resample(x,dx,lg+lf-lp,dlg+dlf-dlp,uniforms[t+1])
++            return t+1,x,dx,total+term,dtotal+dterm,clouds
++        result=tf.while_loop(lambda t,*_:t<T,step,(0,x,dx,total,dtotal,arrays),parallel_iterations=1)
++        return result[3],result[4],result[5].stack()
++    return kernel
++
++
++def quadratic_features(points):
++    d=points.shape[-1]
++    columns=[tf.ones_like(points[:,0])]+list(tf.unstack(points,axis=1))
++    columns += [-.5*points[:,i]**2 for i in range(d)]
++    columns += [-points[:,i]*points[:,j] for i in range(d) for j in range(i+1,d)]
++    return tf.stack(columns,-1)
++
++
++def fit_log_quadratic(points,targets,floor_ratio):
++    """Full-rank QR fit; reject nonpositive precision instead of clipping it."""
++    d=points.shape[-1];dtype=points.dtype
++    features=quadratic_features(points)
++    scale=tf.maximum(tf.sqrt(tf.reduce_mean(features**2,0)),tf.cast(1.,dtype))
++    scaled=features/scale
++    singular=tf.linalg.svd(scaled,compute_uv=False)
++    eps=tf.cast(2**-23 if dtype==tf.float32 else 2**-52,dtype)
++    rank_valid=tf.reduce_min(singular)>eps*tf.cast(max(scaled.shape),dtype)*singular[0]
++    q,r=tf.linalg.qr(scaled,full_matrices=False)
++    coefficient=tf.linalg.triangular_solve(r,tf.transpose(q)@targets[:,None],lower=False)[:,0]/scale
++    precision=tf.linalg.diag(coefficient[1+d:1+2*d])
++    pairs=[(i,j) for i in range(d) for j in range(i+1,d)]
++    if pairs:
++        indices=pairs+[(j,i) for i,j in pairs]
++        values=tf.concat([coefficient[1+2*d:],coefficient[1+2*d:]],0)
++        precision=tf.tensor_scatter_nd_add(precision,indices,values)
++    eigenvalues=tf.linalg.eigvalsh(precision)
++    valid=rank_valid & (tf.reduce_min(eigenvalues)>eps*tf.cast(d,dtype)*tf.reduce_max(tf.abs(eigenvalues)))
++    factor=tf.linalg.cholesky(precision)
++    covariance=tf.linalg.cholesky_solve(factor,tf.eye(d,dtype=dtype))
++    center=tf.linalg.cholesky_solve(factor,coefficient[1:1+d,None])[:,0]
++    log_peak=tf.reduce_sum(tf.math.log(tf.linalg.diag_part(factor)))-.5*tf.cast(d,dtype)*tf.math.log(2*tf.acos(tf.cast(-1.,dtype)))
++    log_floor=tf.math.log(tf.cast(floor_ratio,dtype))+log_peak
++    rmse=tf.sqrt(tf.reduce_mean((features@coefficient[:,None]-targets[:,None])**2))
++    return tuple(tf.where(valid,x,tf.cast(float("nan"),dtype)) for x in (center,covariance,log_floor)),(valid,rmse,singular)
++
++
++@lru_cache(maxsize=12)
++def make_recursive_fit_kernel(d,o,N,T,floor_ratio,dtype_name="float64",jit_compile=True):
++    if not 0<floor_ratio<1: raise ValueError("declare a positive floor ratio below one")
++    feature_count=1+2*d+d*(d-1)//2
++    if N<feature_count: raise ValueError("too few fit points for full quadratic")
++    dtype=tf.as_dtype(dtype_name)
++    @tf.function(input_signature=[tf.TensorSpec([6],dtype),tf.TensorSpec([T,o],dtype),
++        tf.TensorSpec([T,N,d],dtype)],jit_compile=jit_compile)
++    def fit(theta,observations,clouds):
++        A,_,H,_,_,_,_,_,Q,_,R,_=parameterized_model(theta,d,o)
++        centers=tf.TensorArray(dtype,size=T); covariances=tf.TensorArray(dtype,size=T)
++        floors=tf.TensorArray(dtype,size=T); errors=tf.TensorArray(dtype,size=T)
++        def step(t,center,V,log_floor,valid,centers,covariances,floors,errors):
++            x=clouds[t]
++            residual=observations[t]-tf.einsum("ij,nj->ni",H,x)
++            lg,_=gaussian_log_density_and_tangent(residual,tf.zeros([6,N,o],dtype),R,tf.zeros([6,1,o,o],dtype))
++            lf=tf.cond(t+1<T,lambda:normalizer(tf.einsum("ij,nj->ni",A,x),tf.zeros([6,N,d],dtype),
++                Q,tf.zeros([6,d,d],dtype),center,V,log_floor)[0],lambda:tf.zeros([N],dtype))
++            (center,V,log_floor),(ok,error,_)=fit_log_quadratic(x,lg+lf,floor_ratio)
++            return t-1,center,V,log_floor,valid&ok,centers.write(t,center),covariances.write(t,V),floors.write(t,log_floor),errors.write(t,error)
++        out=tf.while_loop(lambda t,*_:t>=0,step,(T-1,tf.zeros([d],dtype),tf.eye(d,dtype=dtype),
++            tf.zeros([],dtype),tf.constant(True),centers,covariances,floors,errors),parallel_iterations=1)
++        return out[5].stack(),out[6].stack(),out[7].stack(),out[4],out[8].stack()
++    return fit
+diff --git a/bayesfilter/score_study/mixture_covariance_tf.py b/bayesfilter/score_study/mixture_covariance_tf.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..e6ab7d46afbd5a7c9234a94126400c5183e83a40
+--- /dev/null
++++ b/bayesfilter/score_study/mixture_covariance_tf.py
+@@ -0,0 +1,102 @@
++"""Persistent Gaussian-mixture assumed-density covariance provider for LEDH.
++
++This is a local KDM covariance candidate, not a reproduction of Younis' learned
++filter. Components are conditioned and reweighted at every observation. Their
++weighted within/between moments drive the existing LEDH flow. LEDH's reset
++continues to act on its particle cloud; this independent filter retains its own
++component identities. All initial, weight and covariance tangents are total.
++"""
++from functools import lru_cache
++import tensorflow as tf
++from bayesfilter.highdim.ledh_canonical_score_stages_tf import (
++    quadrature_predict_with_parameter_tangent, quadrature_update_with_parameter_tangent)
++from bayesfilter.highdim.ledh_canonical_score_tf import _value_and_analytical_score_impl
++from .gaussian_tf import parameterized_model, chol_tangent
++from .canonical_adapter_tf import gaussian_direction_inputs, make_canonical_kernel
++
++
++def mixture_moments(means, covariances, dmeans, dcovariances, logits, dlogits):
++    weights = tf.nn.softmax(logits)
++    dweights = weights * (dlogits - tf.reduce_sum(weights*dlogits))
++    mean = tf.einsum("n,ni->i",weights,means)
++    dmean = tf.einsum("n,ni->i",dweights,means)+tf.einsum("n,ni->i",weights,dmeans)
++    centered,dcentered = means-mean,dmeans-dmean
++    spread = covariances+tf.einsum("ni,nj->nij",centered,centered)
++    dspread = dcovariances+tf.einsum("ni,nj->nij",dcentered,centered)+tf.einsum("ni,nj->nij",centered,dcentered)
++    covariance = tf.einsum("n,nij->ij",weights,spread)
++    dcovariance = tf.einsum("n,nij->ij",dweights,spread)+tf.einsum("n,nij->ij",weights,dspread)
++    return mean,covariance,dmean,dcovariance
++
++
++def mixture_schedule(model,theta,observations,means,covariances,dmeans,dcovariances):
++    """Fixed-count Gaussian mixture: predict, condition, reweight, persist."""
++    dtype = theta.dtype
++    count,dimension = means.shape
++    horizon = observations.shape[0]
++    logits = tf.fill([count],-tf.math.log(tf.cast(count,dtype)))
++    dlogits = tf.zeros_like(logits)
++    arrays = tuple(tf.TensorArray(dtype,size=horizon) for _ in range(14))
++    def step(t,m,P,dm,dP,l,dl,*buffers):
++        pred = quadrature_predict_with_parameter_tangent(m,P,dm,dP,
++            lambda x:model.transition_mean_fn(theta,x),
++            lambda x,dx:model.transition_mean_tangent_fn(theta,x,dx),model.process_covariance,
++            d_process_noise_covariance=model.process_covariance_tangent_fn(theta),jitter=0.)
++        aggregate_prediction = mixture_moments(*pred,l,dl)
++        update = quadrature_update_with_parameter_tangent(*pred,model.observation_fn,
++            model.observation_tangent_fn,model.observation_covariance,observations[t],
++            d_observation_covariance=model.observation_covariance_tangent_fn(theta),
++            jitter=0.,return_evidence=True)
++        m,P,dm,dP,logg,dlogg = update
++        eigenvalues = tf.linalg.eigvalsh(P)
++        eps = tf.cast(2**-23 if dtype == tf.float32 else 2**-52,dtype)
++        margin = eps*tf.cast(dimension,dtype)*tf.reduce_max(tf.abs(eigenvalues),-1)
++        valid = tf.reduce_all(tf.reduce_min(eigenvalues,-1)>margin)
++        valid &= tf.reduce_all(tf.math.is_finite(eigenvalues))
++        m,P,dm,dP,logg,dlogg = (tf.where(valid,x,tf.cast(float("nan"),dtype))
++                               for x in (m,P,dm,dP,logg,dlogg))
++        raw,draw = l+logg,dl+dlogg
++        normalization = tf.reduce_logsumexp(raw)
++        weights = tf.nn.softmax(raw)
++        l,dl = raw-normalization,draw-tf.reduce_sum(weights*draw)
++        aggregate_update = mixture_moments(m,P,dm,dP,l,dl)
++        values = (*aggregate_prediction,*aggregate_update,m,P,dm,dP,l,dl)
++        return (t+1,m,P,dm,dP,l,dl,*(a.write(t,v) for a,v in zip(buffers,values)))
++    result = tf.while_loop(lambda t,*_:t<horizon,step,
++        (0,means,covariances,dmeans,dcovariances,logits,dlogits,*arrays),parallel_iterations=1)
++    names = [prefix+name for prefix in ("predicted_","post_")
++             for name in ("means","covariances","d_means","d_covariances")]
++    names += ["component_means","component_covariances","d_component_means",
++              "d_component_covariances","component_log_weights","d_component_log_weights"]
++    return dict(zip(names,[a.stack() for a in result[7:]]))
++
++
++def gaussian_mixture_initial(theta,direction,d,o,within_fraction):
++    """Positive 2d-point mixture matching the Gaussian initial first two moments."""
++    _,_,_,_,m,dm,P,dP,*_ = parameterized_model(theta,d,o)
++    dm,dP = tf.tensordot(direction,dm,1),tf.tensordot(direction,dP,1)
++    L = tf.linalg.cholesky(P); dL = chol_tangent(L,dP)
++    design = tf.concat([tf.eye(d,dtype=theta.dtype),-tf.eye(d,dtype=theta.dtype)],0)
++    design *= tf.sqrt(tf.cast(d*(1-within_fraction),theta.dtype))
++    means = m+tf.einsum("ij,nj->ni",L,design)
++    dmeans = dm+tf.einsum("ij,nj->ni",dL,design)
++    return means,tf.broadcast_to(within_fraction*P,[2*d,d,d]),dmeans,tf.broadcast_to(within_fraction*dP,[2*d,d,d])
++
++
++@lru_cache(maxsize=16)
++def make_mixture_covariance_kernel(d,o,N,T,controls_tuple,within_fraction,dtype_name="float64",jit_compile=True):
++    if not 0 < within_fraction <= 1: raise ValueError("within fraction must be in (0,1]")
++    make_canonical_kernel(d,o,N,T,controls_tuple,dtype_name,jit_compile)
++    dtype = tf.as_dtype(dtype_name)
++    @tf.function(input_signature=[tf.TensorSpec([6],dtype),tf.TensorSpec([6],dtype),
++        tf.TensorSpec([T,o],dtype),tf.TensorSpec([N,d],dtype),tf.TensorSpec([T,N,d],dtype),
++        tf.TensorSpec([N,d],dtype)],jit_compile=jit_compile)
++    def kernel(theta,direction,observations,initial_noise,noise,design):
++        model,initial,dinitial,P,dP,*_ = gaussian_direction_inputs(theta,direction,initial_noise,d,o)
++        schedule = mixture_schedule(model,theta,observations,
++            *gaussian_mixture_initial(theta,direction,d,o,within_fraction))
++        value,score,trace = _value_and_analytical_score_impl(model,theta,initial,
++            tf.broadcast_to(P,[N,d,d]),noise,observations,with_score=True,return_trace=True,
++            initial_state_tangent=dinitial,initial_covariance_tangent=tf.broadcast_to(dP,[N,d,d]),
++            reset_design=design,moment_schedule=schedule,**dict(controls_tuple))
++        return value,score[0],schedule,tuple(x["predicted_covariances"] for x in trace)
++    return kernel
+diff --git a/bayesfilter/score_study/registry.py b/bayesfilter/score_study/registry.py
+index 591c36d1a8c42a4498c068c7e53c5af0423a9662..fd16515b3b7183bfa25f4a480498f2377cc870a7 100644
+--- a/bayesfilter/score_study/registry.py
++++ b/bayesfilter/score_study/registry.py
+@@ -24,13 +24,15 @@ def default_registry() -> Registry:
+         Proposal("resampling_kdm", regular, "contract_e_then_raw_full_mixture_iwsg"),
+         Proposal("kdm", regular, "corrected_kernel_mixture", "blocked", "0D KDM/trace/callback identities"),
+         Proposal("sgqf", regular, "sgqf_moments_shared_ledh_contract_e"),
++        Proposal("kdm_covariance", regular, "independent_conditioned_gaussian_mixture_moments_shared_ledh"),
+         Proposal("twist", regular, "gaussian_power_psi_apf_with_initial_terminal_correction"),
++        Proposal("fitted_twist", regular, "offline_log_quadratic_frozen_gaussian_floor_psi_apf_local_adaptation"),
+         Proposal("iapf", regular, "fitted_corrected_auxiliary_twist", "blocked", "0E fixed twist and fitted controls"),
+     )}
+     estimators = {x.id: x for x in (
+         Estimator("exact_gaussian", "model_score", ("kalman",), "bayesfilter.score_study.adapters:evaluate_gaussian", (), True),
+         Estimator("symmetric_fd", "finite_difference_score", ("kalman", "ukf", "bootstrap", "adapted", "prior_sis", "adapted_sis", "ledh"), "bayesfilter.score_study.fd_adapter_tf:evaluate_finite_difference", (), True, derivative="symmetric_fd_original_value_endpoint"),
+-        Estimator("analytical_filter", "finite_program_score", ("bootstrap", "ukf", "adapted", "prior_sis", "adapted_sis", "ledh", "sgqf", "twist", "iapf"), "bayesfilter.score_study.adapters:evaluate_gaussian", (), True),
++        Estimator("analytical_filter", "finite_program_score", ("bootstrap", "ukf", "adapted", "prior_sis", "adapted_sis", "ledh", "sgqf", "kdm_covariance", "twist", "fitted_twist", "iapf"), "bayesfilter.score_study.adapters:evaluate_gaussian", (), True),
+         Estimator("integrated_kdm_analytical", "integrated_kdm_program_score", ("integrated_kdm",), "bayesfilter.score_study.adapters:evaluate_gaussian", (), True),
+         Estimator("resampling_iwsg_analytical", "frozen_iwsg_log_program_score", ("resampling_kdm",), "bayesfilter.score_study.adapters:evaluate_gaussian", (), True),
+         Estimator("iwsg", "kdm_expectation_gradient", ("kdm",), None, (), True, prerequisite="0D"),
+diff --git a/bayesfilter/score_study/tuning.py b/bayesfilter/score_study/tuning.py
+index 88e65571061541bee45b9b2024bffdb30556b32f..ebd4aedbd1768f99beb2f3ba7f243d0372f982cb 100644
+--- a/bayesfilter/score_study/tuning.py
++++ b/bayesfilter/score_study/tuning.py
+@@ -14,6 +14,33 @@ from .contracts import digest, validate_result, validate_study
+ from .coordinator import fingerprint, write_json
+ from .registry import default_registry
+ 
++TUNABLE_PROPOSALS = frozenset(("ledh", "sgqf", "kdm_covariance", "integrated_kdm",
++                              "resampling_kdm", "twist", "fitted_twist"))
++
++
++def candidate_configuration(row):
++    """Every tunable provider input, including the covariance/psi family."""
++    proposal = row["proposal"]
++    if proposal == "ledh":
++        return row["controls"]
++    keys = {"sgqf": ("controls", "sgqf_level"),
++            "kdm_covariance": ("controls", "within_fraction"),
++            "integrated_kdm": ("controls", "bandwidth_scale"),
++            "resampling_kdm": ("controls", "bandwidth_scale"),
++            "twist": ("twist_power",),
++            "fitted_twist": ("fit_theta", "fit_iterations", "fit_initial_variance", "fit_floor_ratio")}
++    return {key: row[key] for key in keys[proposal]}
++
++
++def selected_row(row, context):
++    """Resolve a frozen configuration without allowing a contradictory row."""
++    selected = consume_selection(row, context)
++    values = {"controls": selected} if row["proposal"] == "ledh" else selected
++    for key, value in values.items():
++        if key in row and row[key] != value:
++            raise ValueError("claim row contradicts selected provider configuration")
++    return {**row, **values}
++
+ 
+ def scope(study, row):
+     s = study["settings"]
+@@ -21,8 +48,8 @@ def scope(study, row):
+     # regime does not. Every execution/numerical setting is included.
+     return {"model": row["model"], "proposal": row["proposal"], "estimator": row["estimator"],
+             "comparison_target": row["comparison_target"], "settings": s,
+-            "reset_contract_id": "contract_e_chol_v1",
+-            "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1",
++            "reset_contract_id": "contract_e_chol_v1" if row["proposal"] not in ("twist", "fitted_twist") else "not_applicable",
++            "chunk_policy_id": "dpf_transport_exact_divisor_cap3000_v1" if row["proposal"] not in ("twist", "fitted_twist") else "not_applicable",
+             "parameter_dimension": 6,
+             "candidate_family": study.get("tuning_candidate_family", [])}
+ 
+@@ -35,7 +62,7 @@ def _derive_selection(source_run):
+     validate_study(study, registry)
+     if state["fingerprint"] != fingerprint(study, registry):
+         raise ValueError("tuning evidence source/registry is stale")
+-    rows = [r for r in study["rows"] if r["proposal"] == "ledh" and r.get("role") in ("calibration", "validation")]
++    rows = [r for r in study["rows"] if r["proposal"] in TUNABLE_PROPOSALS and r.get("role") in ("calibration", "validation")]
+     if not rows:
+         raise ValueError("no completed calibration/validation candidates")
+     from .runtime import configure_runtime
+@@ -52,10 +79,12 @@ def _derive_selection(source_run):
+         validate_result(result, row, registry)
+         if digest(result) != saved["result_digest"]:
+             raise ValueError("tuning numerical evidence digest mismatch")
+-        if result["diagnostics"].get("controls") != row["controls"]:
++        configuration = candidate_configuration(row)
++        executed = result["diagnostics"].get("candidate_configuration", result["diagnostics"].get("controls"))
++        if executed != configuration:
+             raise ValueError("candidate controls differ from executed controls")
+-        candidate = digest(row["controls"])
+-        record = records.setdefault(candidate, {"controls": row["controls"], "calibration": {}, "validation": {}})
++        candidate = digest(configuration)
++        record = records.setdefault(candidate, {"controls": configuration, "calibration": {}, "validation": {}})
+         key = (row["dataset"], row["replicate"])
+         if key in record[row["role"]]:
+             raise ValueError("duplicate tuning replicate")
+diff --git a/tests/highdim/test_younis_score_master_fitted_twist_tf.py b/tests/highdim/test_younis_score_master_fitted_twist_tf.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..204928489b6a7d5245cc0f7f29e91d3ebbf6ce40
+--- /dev/null
++++ b/tests/highdim/test_younis_score_master_fitted_twist_tf.py
+@@ -0,0 +1,61 @@
++"""Normalized proposal law, fit target and total finite-score tests."""
++import tensorflow as tf
++from bayesfilter.score_study.fitted_twist_tf import (normalizer,gaussian_floor_log,
++    fit_log_quadratic,make_recursive_fit_kernel,make_fitted_twist_kernel)
++from bayesfilter.score_study.gaussian_tf import gaussian_log_density_and_tangent,parameterized_model
++
++
++def logn(x,m,C):
++    d=x.shape[-1]
++    return gaussian_log_density_and_tangent(x-m,tf.zeros([6,*x.shape],x.dtype),C,
++        tf.zeros([6,1,d,d],x.dtype))[0]
++
++
++def test_actual_two_component_proposal_matches_normalized_f_times_psi():
++    dtype=tf.float64;Q=tf.constant([[.8,.1],[.1,.7]],dtype)
++    V=tf.constant([[.5,-.1],[-.1,.6]],dtype);m=tf.constant([[.2,-.4]],dtype)
++    center=tf.constant([1.,.5],dtype);floor=tf.constant(-2.,dtype)
++    z=tf.constant([[.4,-.5],[1.,2.],[-2.,.2]],dtype)
++    lt,_,p=normalizer(m,tf.zeros([6,1,2],dtype),Q,tf.zeros([6,2,2],dtype),center,V,floor)
++    K=tf.transpose(tf.linalg.solve(Q+V,tf.transpose(Q)))
++    cm=m+tf.einsum("ij,nj->ni",K,center-m);C=Q-K@Q
++    logq=tf.reduce_logsumexp(tf.stack([tf.math.log(p)+logn(z,cm,C),
++        tf.math.log(1-p)+logn(z,m,Q)]),axis=0)
++    lp,_=gaussian_floor_log(z,tf.zeros([6,3,2],dtype),center,V,floor)
++    tf.debugging.assert_near(logq,logn(z,m,Q)+lp-lt,atol=2e-12,rtol=2e-12)
++
++
++def test_quadratic_fit_recovers_gaussian_and_rejects_unbounded_fit():
++    x=tf.reshape(tf.linspace(tf.constant(-3.,tf.float64),tf.constant(4.,tf.float64),31),[-1,1])
++    target=-.5*(x[:,0]-.7)**2/.8+2.
++    (center,V,_),(valid,error,_)=fit_log_quadratic(x,target,.02)
++    assert bool(valid);assert float(error)<2e-12
++    tf.debugging.assert_near(center,tf.constant([.7],tf.float64),atol=2e-12)
++    tf.debugging.assert_near(V,tf.constant([[.8]],tf.float64),atol=2e-12)
++    (_,bad,_),(valid,_,_)=fit_log_quadratic(x,-target,.02)
++    assert not bool(valid); assert bool(tf.reduce_any(tf.math.is_nan(bad)))
++
++
++def test_recursive_fit_is_conditioned_and_frozen_score_matches_its_value():
++    dtype=tf.float64;N=16;T=2
++    theta=tf.constant([.62,-.8,-.6,.9,.25,-.3],dtype)
++    obs=tf.constant([[.5],[-.3]],dtype)
++    clouds=tf.random.stateless_normal([T,N,1],[91,1],dtype=dtype)
++    fit=make_recursive_fit_kernel(1,1,N,T,.01)
++    centers,V,floors,valid,errors=fit(theta,obs,clouds)
++    assert bool(valid);assert bool(tf.reduce_all(tf.math.is_finite(errors)))
++    _,_,H,_,_,_,_,_,_,_,R,_=parameterized_model(theta,1,1)
++    tf.debugging.assert_near(centers[-1],obs[-1]/H[0,0],atol=2e-11)
++    tf.debugging.assert_near(V[-1],R/(H[0,0]**2),atol=2e-11)
++    kernel=make_fitted_twist_kernel(1,1,N,T)
++    initial=tf.random.stateless_normal([N,1],[91,2],dtype=dtype)
++    noise=tf.random.stateless_normal([T,N,1],[91,3],dtype=dtype)
++    uniform=tf.random.stateless_uniform([T+1,N],[91,4],dtype=dtype)
++    mix=tf.random.stateless_uniform([T,N],[91,5],dtype=dtype)
++    args=(obs,initial,noise,uniform,mix,centers,V,floors)
++    value,score,_=kernel(theta,*args)
++    for direction in tf.unstack(tf.eye(6,dtype=dtype)):
++        h=tf.constant(1e-6,dtype)
++        fd=(kernel(theta+h*direction,*args)[0]-kernel(theta-h*direction,*args)[0])/(2*h)
++        tf.debugging.assert_near(tf.reduce_sum(score*direction),fd,rtol=3e-5,atol=2e-7)
++    assert bool(tf.math.is_finite(value));assert kernel.experimental_get_tracing_count()==1
+diff --git a/tests/highdim/test_younis_score_master_mixture_covariance_tf.py b/tests/highdim/test_younis_score_master_mixture_covariance_tf.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..987700c8a427d718818f5d9e04805ef55d8f6cdb
+--- /dev/null
++++ b/tests/highdim/test_younis_score_master_mixture_covariance_tf.py
+@@ -0,0 +1,58 @@
++"""Independent identities and actual LEDH consumption of mixture covariance."""
++import tensorflow as tf
++from bayesfilter.score_study.mixture_covariance_tf import (
++    gaussian_mixture_initial,mixture_moments,mixture_schedule,make_mixture_covariance_kernel)
++from bayesfilter.score_study.canonical_adapter_tf import gaussian_direction_inputs
++from bayesfilter.score_study.gaussian_tf import parameterized_model,make_gaussian_kernel
++from test_younis_score_master_canonical_tf import CONTROLS
++
++
++THETA = [.62,-.8,-.6,.9,.25,-.3]
++
++
++def test_initial_mixture_matches_mean_covariance_and_total_tangents():
++    theta = tf.constant(THETA,tf.float64)
++    direction = tf.constant([.1,.2,.3,.4,.5,.6],tf.float64)
++    components = gaussian_mixture_initial(theta,direction,2,1,.5)
++    got = mixture_moments(*components,tf.zeros([4],tf.float64),tf.zeros([4],tf.float64))
++    _,_,_,_,m,dm,P,dP,*_ = parameterized_model(theta,2,1)
++    for a,b in zip(got,(m,P,tf.tensordot(direction,dm,1),tf.tensordot(direction,dP,1))):
++        tf.debugging.assert_near(a,b,atol=2e-12,rtol=2e-12)
++
++
++def test_identical_components_recover_kalman_and_conditioned_components_persist():
++    theta = tf.constant(THETA,tf.float64); direction=tf.ones([6],tf.float64)
++    obs=tf.constant([[.5],[-.3],[.9]],tf.float64)
++    model,*_=gaussian_direction_inputs(theta,direction,tf.zeros([8,2],tf.float64),2,1)
++    exact=mixture_schedule(model,theta,obs,*gaussian_mixture_initial(theta,direction,2,1,1.))
++    kf=make_gaussian_kernel(2,1,6)
++    for t in range(3):
++        ref=kf(obs[:t+1],*parameterized_model(theta,2,1))
++        tf.debugging.assert_near(exact["post_means"][t],ref[2],atol=2e-11)
++        tf.debugging.assert_near(exact["post_covariances"][t],ref[3],atol=2e-11)
++    mixed=mixture_schedule(model,theta,obs,*gaussian_mixture_initial(theta,direction,2,1,.5))
++    changed=mixture_schedule(model,theta,-obs,*gaussian_mixture_initial(theta,direction,2,1,.5))
++    assert float(tf.reduce_max(tf.abs(mixed["component_log_weights"]-changed["component_log_weights"])))>.01
++    A,*_=parameterized_model(theta,2,1)
++    predicted=tf.einsum("ij,nj->ni",A,mixed["component_means"][0])
++    aggregate=tf.einsum("n,ni->i",tf.nn.softmax(mixed["component_log_weights"][0]),predicted)
++    tf.debugging.assert_near(mixed["predicted_means"][1],aggregate,atol=2e-11)
++
++
++def test_actual_ledh_consumes_schedule_and_total_derivative():
++    theta=tf.constant(THETA,tf.float64);direction=tf.constant([.1,.2,-.3,.4,.5,-.2],tf.float64)
++    obs=tf.constant([[.5],[-.3]],tf.float64)
++    initial=tf.random.stateless_normal([8,2],[12,1],dtype=tf.float64)
++    noise=tf.random.stateless_normal([2,8,2],[12,2],dtype=tf.float64)
++    design=tf.random.stateless_normal([8,2],[12,3],dtype=tf.float64)
++    kernel=make_mixture_covariance_kernel(2,1,8,2,tuple(sorted(CONTROLS.items())),.5)
++    result=kernel(theta,direction,obs,initial,noise,design)
++    for t,cov in enumerate(result[3]):
++        tf.debugging.assert_near(cov,tf.broadcast_to(result[2]["predicted_covariances"][t],[8,2,2]),atol=2e-12)
++    h=tf.constant(2e-5,tf.float64)
++    plus=kernel(theta+h*direction,direction,obs,initial,noise,design)
++    minus=kernel(theta-h*direction,direction,obs,initial,noise,design)
++    tf.debugging.assert_near(result[1],(plus[0]-minus[0])/(2*h),rtol=2e-5,atol=2e-7)
++    tf.debugging.assert_near(result[2]["post_d_covariances"],
++        (plus[2]["post_covariances"]-minus[2]["post_covariances"])/(2*h),rtol=2e-5,atol=2e-8)
++    assert kernel.experimental_get_tracing_count()==1
+diff --git a/tests/highdim/test_younis_score_master_provider_consumers_tf.py b/tests/highdim/test_younis_score_master_provider_consumers_tf.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..8b5186a95b43092465bc0c85046db96c09c85930
+--- /dev/null
++++ b/tests/highdim/test_younis_score_master_provider_consumers_tf.py
+@@ -0,0 +1,73 @@
++"""Actual master consumers, independent fit streams and provider scope checks."""
++from copy import deepcopy
++from pathlib import Path
++import os
++import subprocess
++import sys
++from bayesfilter.score_study.adapters import evaluate_gaussian
++from bayesfilter.score_study.registry import default_registry
++from bayesfilter.score_study.tuning import candidate_configuration, scope
++
++
++def fixture(proposal):
++    from bayesfilter.score_study.runtime import configure_runtime
++    configure_runtime(device="CPU",tf32=False,jit_compile=True)
++    from tests.highdim.test_younis_score_master_canonical_tf import CONTROLS
++    settings=dict(dimension=1,observation_dimension=1,horizon=2,particles=16,
++        dtype="float64",device="CPU",tf32=False,jit_compile=True,
++        theta=[.62,-.8,-.6,.9,.25,-.3],data_theta=[.62,-.8,-.6,.9,.25,-.3])
++    row=dict(id="provider",model="gaussian_all_parameters",proposal=proposal,
++        estimator="analytical_filter",comparison_target="model_score",comparison="approximation_error",
++        dataset=100,replicate=0,role="mechanics",controls=CONTROLS.copy(),within_fraction=.5,
++        fit_iterations=2,fit_initial_variance=4.,fit_floor_ratio=.01,fit_theta=settings["theta"])
++    context=dict(study=dict(seed=841,settings=settings,evidence_class="mechanics"),registry=default_registry())
++    return row,context
++
++
++def _check_fitted_consumer():
++    row,context=fixture("fitted_twist")
++    result=evaluate_gaussian(row,context)
++    other=evaluate_gaussian({**row,"replicate":1},context)
++    a,b=result["diagnostics"],other["diagnostics"]
++    assert a["fit"]==b["fit"]
++    assert a["fit_digest"]==b["fit_digest"]
++    fit_seeds={tuple(v) for k,v in a["fit_seed_records"].items() if k.startswith("fit")}
++    final_seeds={tuple(v) for k,v in a["fit_seed_records"].items() if k.startswith("final")}
++    assert not fit_seeds & final_seeds
++    assert a["fit_seed_records"]["final_twist_initial"]!=b["fit_seed_records"]["final_twist_initial"]
++    assert result["value"]!=other["value"]
++    assert a["candidate_configuration"]==candidate_configuration(row)
++    assert result["runtime"]["traces"]==1
++
++
++def _check_mixture_consumer():
++    row,context=fixture("kdm_covariance")
++    import tensorflow as tf
++    result=evaluate_gaussian(row,context)
++    diag=result["diagnostics"]
++    assert diag["candidate_configuration"]==candidate_configuration(row)
++    weights=tf.exp(tf.constant(diag["final_component_log_weights"],tf.float64))
++    tf.debugging.assert_near(tf.reduce_sum(weights),tf.constant(1.,tf.float64))
++    assert abs(float(weights[0]-weights[1]))>1e-6
++    assert diag["final_provider_covariance"][0][0]>0
++    assert len(result["score"])==6
++    changed=deepcopy(row);changed["within_fraction"]=.8
++    assert candidate_configuration(changed)!=candidate_configuration(row)
++    changed_study=deepcopy(context["study"]);changed_study["settings"]["horizon"]=3
++    assert scope(changed_study,row)!=scope(context["study"],row)
++
++
++def _isolated_check(name):
++    result=subprocess.run([sys.executable,"-c",
++        "import runpy,sys; runpy.run_path(sys.argv[1])[sys.argv[2]]()",str(Path(__file__).resolve()),name],
++        cwd=Path(__file__).resolve().parents[2],env={**os.environ,"CUDA_VISIBLE_DEVICES":"-1",
++        "BAYESFILTER_PRELOAD_CUSTOM_OP":"0"},capture_output=True,text=True,timeout=180)
++    assert result.returncode==0,result.stdout+result.stderr
++
++
++def test_fitted_consumer_freezes_common_offline_fit_before_independent_final_replicates():
++    _isolated_check("_check_fitted_consumer")
++
++
++def test_mixture_master_consumer_emits_conditioned_persistent_covariance_and_full_scope():
++    _isolated_check("_check_mixture_consumer")

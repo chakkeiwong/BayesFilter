@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-09-22. This reference describes the common candidate-set
+Last checked: 2026-09-23. This reference describes the common candidate-set
 procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
 HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
 classifies public tuners, preparation helpers, chain runners, and historical
@@ -18,7 +18,7 @@ first-admission or efficiency-winner schedulers.
 | --- | --- | --- |
 | `HMCKernelTuningConfig` or omitted ordinary config | Operational windowed mass preparation, or explicit fixed identity; exact TF/TFP value and score. | All verified members can seek checked numerical replay. |
 | `HMCControllerConfig` plus numerical `candidate_set_adapter` | Caller already obtained repository-issued frozen geometry and starts. | Same controller, evidence, and replay checks. |
-| `FixedTransportHMCKernelTuningConfig` plus `frozen_transport_payload` | Reconstruct the frozen diagonal-affine or dense-IAF map; identity mass in latent coordinates. | Same controller and checked numerical replay. |
+| `FixedTransportHMCKernelTuningConfig` plus `frozen_transport_payload` | Reconstruct a frozen diagonal-affine, legacy dense-IAF, or configured IAF/conditional-DSF map; identity mass in latent coordinates. See [NeuTra implementation](neutra-implementation.md). | Same controller and checked numerical replay. |
 | `TensorFlowHMCKernelTuningConfig` plus `runner_binding` | Affine preparation and the declared position-only proposal field with exact endpoint potential. | Conditional mechanics only; no exact-score retained-member authority. |
 
 Unsupported custom transports or bare runner callbacks fail before execution.
@@ -32,6 +32,35 @@ to explicit candidate IDs.
 The registry schema is `bayesfilter.hmc_tuning_capability_registry.v2`; the
 position-field runner schema is `bayesfilter.hmc_tuning_runner_binding.v2`.
 Import their constants rather than copying the strings.
+
+### Supplied whitening and difficult geometry
+
+Positive funnel tuning tests assume a frozen whitening or partial-whitening
+map. An exact noncentered chart is a useful analytic control; a supplied
+nonlinear map with known residual curvature tests partial whitening. Learning
+such a map is an upstream task with its own validation. Ordinary affine mass
+adaptation cannot remove a funnel's position-dependent conditional scale.
+An empty centered-coordinate search is a useful bounded-failure outcome, not
+by itself a defect in epsilon/L tuning or a requirement to extend the search
+until something passes.
+
+Use `tune_fixed_transport_hmc_kernel` for a supported frozen map, with its
+exact transformed density and score including the Jacobian. Its
+`initial_position` is in **latent coordinates**. To compare maps at identical
+model starts, apply the inverse coordinate chart and inverse map first, then
+check the forward roundtrip. Map changes require new tuning scopes and fresh
+verification. An imperfect map may leave no usable pair within the declared
+budget; record that residual-geometry outcome. All verified members remain
+retained, and convergence and precision in model quantities are assessed
+separately.
+
+The validation fixture `supplied_funnel_map("residual")` composes exact
+noncentering with `delta(v)=0.5*tanh(v/6)`. It bounds the remaining
+child-coordinate curvature between `exp(-1)` and `exp(1)`; it does not bound
+the entire Hessian or guarantee model-coordinate posterior precision. The
+older `partial` fixtures bound only the applied log-scale and retain unbounded
+tail stiffness. These are analytic test maps, with no transport-training claim;
+the tuning chapter derives their transformed densities.
 
 ## Search, qualification, and retention
 
@@ -236,6 +265,14 @@ subsequent bootstrap and operational mass checks still run; startup nomination
 cannot issue a tuning artifact. The q20 pricing and classical tuning consumers
 explicitly enable this repair; unrelated consumers retain their existing policy.
 
+The geometry's full `artifact_hash` retains bootstrap-probe wall times for
+audit. New ordinary candidate scopes use its separate `numerical_hash`, which
+excludes only those probe clock fields. Clock variation therefore cannot change
+the candidate random streams. The full geometry hash remains in the execution
+binding, while seeds, numerical probe outcomes, mass, starts and target still
+bind the numerical identity. Existing saved checkpoints retain their original
+scope and streams.
+
 Bootstrap decisions use the mean Metropolis probability
 `mean(exp(min(log_accept_ratio, 0)))` over **every recorded proposal**, including
 rejections. Discarded burnin is excluded. The historical `acceptance_rate` field
@@ -391,6 +428,21 @@ the measurement and verification allocations. An explicit
 grants replay authority. The route uses batched chains and rejects threaded
 chain execution. Both preparation configs default to XLA; position-field
 non-XLA diagnostics must supply `non_xla_reason`.
+For exact-score TFP bindings, `execution_config.reuse_leapfrog_graphs=True`
+optionally shares a compiled runner across L values at each chunk size. The
+default is `False`. The cache belongs to one frozen binding and preserves
+its target, geometry, chain topology, trace policy and backend. Serial and
+threaded execution retain separate scalar-chain streams; this option does not
+switch to batched chains. The full execution artifact records the option;
+within the same source snapshot it does not change numerical seeds. Changing
+source still changes scope identity and may change seeds. Checkpoint/resume
+preserves the recorded option. The position-field route rejects it because it
+uses a different transition implementation.
+
+Sharing graphs can save first-call compilation while slowing warmed calls, so
+evaluate complete fits for the actual workload. It changes neither candidate
+qualification nor posterior criteria and is not evidence of convergence.
+
 Historical candidate-policy fields in `TensorFlowHMCKernelTuningConfig.payload()`
 are explicitly labeled as metadata for the historical graph helper. The active
 result's shared search and execution configs determine candidate stages.
@@ -540,6 +592,41 @@ chains trapped together in a missed mode may still pass. A failed screen
 continues within the declared cap. Exhaustion reports inconclusive equilibration
 or insufficient retained evidence, never sufficient burn-in by fiat.
 
+A short recent window can contain too little effective information even after
+initialization bias has decayed. Increasing `warmup_max_results` alone leaves
+the information per readiness check unchanged. Declare the recent-window
+length and total allowance together, assess their cost with pilot dependence
+estimates, and validate the resulting posterior policy on fresh replications.
+A changed policy needs a new checkpoint; it does not change tuning membership.
+
+The shared keyword configuration and `SequentialExactTransitionConfig` retain
+the default maximum of 10,000 per chain. A reviewed larger allocation can set
+`max_results_per_chain` explicitly, together with a nonempty
+`count_budget_reason`, and set the warmup/retained maxima within that bound.
+The result records `count_budget_policy="explicit_nondefault_posterior_allocation"`.
+This optional finite budget changes neither diagnostic thresholds nor the
+canonical default allocation. The reason records the scientific justification;
+it does not certify sufficiency. Default configuration payloads are unchanged.
+Validation designs pass this same option in `options.posterior_count_budget`;
+their posterior and fixed-comparator counts must fit its declared limit.
+They can declare the existing mean estimator with `options.posterior_precision_method`;
+omitting it preserves lugsail. This option changes no tuning decision.
+
+For estimator experiments, `options.posterior_precision_settings` accepts
+`batch_size`, `min_batches`, `lugsail_r`, and `lugsail_c`.
+`options.posterior_assessment_settings` accepts `warmup_bulk_ess_min`,
+`warmup_tail_ess_min`, `retained_bulk_ess_min`, `retained_tail_ess_min`, and
+`warmup_consecutive_checks`. These configure the existing posterior policies;
+omitting them preserves their defaults. The stopped and fixed-count reports
+use the same declared mean estimator and batch settings. Inadequate batches
+remain unavailable; exposing a setting does not establish its calibration.
+
+Validation fit directories now bind the library source, complete design, data, fit/stream IDs
+and runner-reuse setting before reading completed summaries or numerical
+checkpoints. A changed policy requires a fresh directory. Historical fit
+directories lacking this identity remain readable as evidence, but cannot be
+silently resumed under a new policy.
+
 Bulk/tail ESS uses the Stan/ArviZ initial-positive, initial-monotone recursion,
 identified by `bulk_tail_ess_method` in the assessment policy and result. The
 preserved-transition reporting API in `hmc_posterior_diagnostics` uses that
@@ -569,6 +656,14 @@ even with favorable R-hat. Retain the unmet target, inspect the quantity-level
 report and other predeclared members, and distinguish insufficient sampling
 precision from numerical tuning failure. Lugsail does not estimate burn-in bias.
 
+For four independent unit-variance stationary AR(1) chains with correlation
+0.995, the long-chain mean variance is approximately `399/(4*n)`. MCSE 0.05
+then needs about 39,900 retained draws per chain, beyond a 10,000 cap. This is
+a derived planning comparison, not a universal HMC count or sufficient burn-in.
+The actual controller must be tested separately from fixed-count intervals.
+The [M25 continuation](../plans/bayesfilter-hmc-gap-closure-continuation-2026-09-22.md)
+keeps readiness, interval coverage and precision delivery separate.
+
 The mean estimators are `autocorrelation`, `batch_means`, and `lugsail`.
 Autocorrelation retains the explicitly identified TFP 0.25 positive-pairs
 estimator; it is not Stan's initial-monotone estimator. Batch means use complete
@@ -580,6 +675,23 @@ operational floor, not calibrated coverage. All are configurable. Negative,
 zero, nonfinite or underbatched estimates cannot grant precision; raw per-chain
 LRV and excluded terminal counts are reported. Quantile ties yielding zero
 width are unavailable evidence, including unobserved rare events.
+
+Quantile precision uses TFP positive-pairs indicator ESS with a pooled
+percentile that preserves equal interpolation endpoints exactly. The method
+identifier is
+`vehtari_quantile_order_statistics_tfp_positive_pairs_tie_preserving.v2`;
+it appears in each result and in the precision policy's `quantile_estimator`.
+Earlier interpolation could move a tied cutoff slightly and change the
+indicator ESS. Recompute older reports from saved draws; do not reuse a
+checkpoint under the new policy identity. Independent NumPy/SciPy order
+statistics and official TFP ESS tests cover IID, persistent, antithetic, skew,
+tied, constant, odd-length and unobserved-event cases.
+
+The approximate quantile MCSE and its symmetric `estimate +/- 1.96*MCSE`
+diagnostic interval differ from a direct 95% order-statistic interval at finite
+counts. The September 24 saved-array comparison did not justify promoting a
+different interval rule. Formula agreement is separate from actual stopped
+coverage calibration.
 
 These MCSE calculations assume the relevant moments and mixing/CLT conditions.
 Lugsail estimates retained mean uncertainty; it does not estimate burn-in.
@@ -622,7 +734,8 @@ split, while tail cutoffs use the full pooled draws. Both tail indicators use
 remain nonpromotable. Public schemas and threshold values are unchanged, but
 older convergence reports need recomputation from their saved draws. The
 explicitly named TFP mean/quantile precision option and the covariance-window
-ESS heuristic are separate; this repair does not change either computation.
+ESS heuristic are separate. The later quantile-cutoff repair described above
+preserves its TFP ESS convention while correcting the tied indicator cutoff.
 
 The separate legacy Phase 29 warmup screen still uses configured adjacent-epoch
 drift thresholds as heuristic rejection criteria. Its standardized differences
@@ -634,6 +747,29 @@ See [the posterior example](../examples/hmc_posterior_precision.py) and
 [the active repair master program](../plans/bayesfilter-hmc-repair-master-program-2026-09-16.md).
 
 ## Testing the procedure and its diagnostics
+
+The validation CLI also accepts `engine="reference_mean"` for a declared
+ordinary normal-conjugate full fit. Specify `tau`, `sigma`, and `n`, nominal
+alarm `alpha`, `posterior_members="selected"`, `member_rule="first_verified"`,
+the lugsail mean estimator, and
+`options.reference_mean_alarm={"mcse_sd_max": ...}`. Its absolute
+`mcse_tolerance` must equal that ratio times the known conditional posterior SD.
+Each replication generates fresh data, runs full public preparation/tuning and
+posterior assessment, then independently recomputes lugsail MCSE from the saved
+model-coordinate draws. The detector is
+`normal_conjugate_per_fit_reference_mean_lugsail.v1`.
+For repeated fits, set `options.isolate_fits=true` and an explicit
+`options.fit_process_timeout_seconds` within the total design budget. Each
+complete fit then runs in a fresh process; an abnormal exit cannot turn a saved
+numerical alarm into valid detection evidence.
+
+The alarm compares the posterior-mean error against the independent exact
+conditional mean at the declared normal critical value. Missing, capped or
+unqualified fits count as possible null alarms and defect nondetections; they
+remain in the full planned denominator. Source, design, selected member and
+stream identities are preserved. This is a diagnostic validation engine, not
+a tuning entry point. Its achieved null size and defect power remain open
+until the declared independent confirmation passes.
 
 The [inference validation suites](../validation/README.md) exercise the existing
 public procedure through separate numerical, invariance, search, SBC, reference
@@ -654,6 +790,37 @@ fresh datasets and independent complete fits, with one declared output per fit;
 candidate siblings never inflate replication counts. Failed fits remain in the
 denominator. Data-dependent likelihood quantities help detect fitting procedures
 that ignore the observations even when parameter ranks appear uniform.
+
+Pipeline reports distinguish `requested_members`, requested
+`posterior_unavailable_members`, and `unassessed_by_design_members`.
+`all_members_without_posterior_output` includes both unavailable requested
+members and deliberately unassessed siblings. Historical reports before this
+accounting correction included the siblings in `posterior_unavailable_members`;
+inspect their individual records rather than treating that count as failed fits.
+
+For a bounded sibling study, numerical validation designs can declare
+`member_rule="shortest_verified_l"`, `posterior_members="selected"` and a
+positive `posterior_member_count`. This orders distinct verified L values
+increasingly and takes the smallest candidate ID within each of the requested
+L values. The list is saved before posterior sampling; a shortage stays
+explicit, and changing it on resume fails. Each ordinal member slot has its
+own `member_slot_assessments`, with complete fits as the denominator. Siblings
+are not pooled into independent replications or selected using posterior
+outcomes. Shorter trajectories are a cost-oriented development hypothesis,
+not a guarantee of faster mixing. Every verified tuning candidate is retained.
+
+Numerical `search`, `accuracy` and `stopping` validation designs may declare
+`options.isolate_fits=true` and `options.fit_process_timeout_seconds` to run
+each complete fit in a fresh process. The timeout must fit within the design's
+total budget. The coordinator does not initialize TensorFlow; each child checks
+device policy, retains the full tuning and posterior evidence, and exits
+normally. Exit receipts and resource measurements distinguish a saved result
+from successful shutdown. Failed processes and missing outputs remain in the
+replication denominator. Resume requires the same source/design, preserves
+earlier attempts and consumes the remaining fit budget. A completed assessment
+from an abnormal exit is preserved for inspection and is not automatically
+rerun or counted as a successful replication. This optional validation setting
+does not alter the tuner, member selection, numerical defaults or HMC kernels.
 
 Fixed-kernel invariance tests use the reversible random-position construction
 or independent two-sample experiments. Adapting warmup draws cannot replace
@@ -693,10 +860,19 @@ The Gaussian mechanics experiment independently reconstructs the Metropolis
 log ratio from the analytic density and actual TFP endpoint momenta, and checks
 the selected state against the accepted mask. This directly tests the energy
 calculation, including the reversed-ratio defect. It does not measure the power
-of distributional tests. `options.profile_execution=true` saves an attempt's
-host profile, including engine failures. Profile time can include TensorFlow
-compilation and execution; it is not a separate GPU kernel timing. An unwritable
-profile is reported without hiding the numerical outcome.
+of distributional tests. The validation CLI's `run --profile-execution` saves
+an attempt's host profile, including numerical failures. This execution flag
+preserves the design identity and seeds for paired comparisons. With isolated
+fits, profiling runs inside each numerical child after framework imports;
+setup time is recorded separately. Python-frame profiling avoids an observed
+Python 3.13/TensorFlow interaction that loses outer calls with native builtins
+tracing enabled. Profile time includes compilation and execution at Python
+call boundaries; it is not GPU kernel timing. The run index reports child
+profile paths and availability. Resume reports missing historical profiles as
+unavailable without rerunning completed fits, and a profile failure preserves
+the numerical outcome. The legacy `options.profile_execution` setting remains
+supported, but changing that design option changes its identity; use the CLI
+flag for exact paired comparisons.
 
 Validation of native automatic initialization passes no supplied search
 configuration. A fixed epsilon declared before preparation is a different

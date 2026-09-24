@@ -68,6 +68,50 @@ def test_missing_interval_is_unavailable():
     assert not row["available"] and not row["covered"]
 
 
+@pytest.mark.parametrize("method", ["autocorrelation", "lugsail", "batch_means"])
+def test_interval_uses_the_declared_precision_estimator(method):
+    from bayesfilter.inference.hmc_precision import mean_precision
+    values = GaussianAR1Transition(.8, jit_compile=False)(
+        tf.zeros((4, 1), tf.float64), num_results=500, seed=(119, 931),
+        stage="fixed")["posterior_samples"]
+    row = mean_interval(values, jit_compile=False, method=method)
+    expected = mean_precision(values, method=method, jit_compile=False)
+    assert row["method"] == method + "_normal_95"
+    assert row["estimator"] == expected["estimator"]
+    assert row["mcse"] == pytest.approx(float(expected["mcse"][0]))
+    assert row["interval"][1] - row["estimate"] == pytest.approx(1.959963984540054 * row["mcse"])
+    missing = mean_interval(values[:0], jit_compile=False, method=method)
+    assert missing["method"] == row["method"] and not missing["available"]
+
+
+def test_invalid_interval_method_fails_even_when_draws_are_missing():
+    with pytest.raises(ValueError, match="estimator"):
+        mean_interval(tf.zeros((0, 4, 1), tf.float64), jit_compile=False, method="unknown")
+
+
+def test_actual_controller_interval_matches_its_autocorrelation_policy():
+    from bayesfilter.inference.neutra_hmc import SequentialExactTransitionConfig, run_sequential_exact_transition
+    from bayesfilter.inference.hmc_precision import HMCPrecisionPolicy, HMCPrecisionTarget
+    from bayesfilter.inference.hmc_posterior_assessment import HMCPosteriorAssessmentPolicy
+    transition = GaussianAR1Transition(0., jit_compile=False)
+    config = SequentialExactTransitionConfig(transition.signature, (731, 121), (812, 341),
+        warmup_chunk_results=250, warmup_min_results=500, warmup_check_window_results=500,
+        warmup_max_results=1000, retained_chunk_results=500, retained_min_results=500,
+        retained_max_results=1000, assessment_policy=HMCPosteriorAssessmentPolicy(
+            precision=HMCPrecisionPolicy((HMCPrecisionTarget('x', mcse_absolute_max=.15),),
+                                         method='autocorrelation', jit_compile=False)))
+    result = run_sequential_exact_transition(transition_program=transition,
+        initial_transition_state=tf.zeros((4, 1), tf.float64), posterior_state_fn=lambda x:x,
+        parameter_names=('x',), config=config)
+    assert result['retained_checks']
+    final = result['retained_checks'][-1]
+    actual = final[final['diagnostic_role']]['precision']['targets'][0]
+    interval = mean_interval(result['private_retained_beta_one'], method='autocorrelation', jit_compile=False)
+    assert interval['estimator'] == actual['estimator']
+    assert interval['estimate'] == actual['estimate']
+    assert interval['mcse'] == actual['mcse']
+
+
 @pytest.mark.parametrize("rho", [float("nan"), 1., -1., 1.1])
 def test_invalid_transition_is_rejected(rho):
     with pytest.raises(ValueError):

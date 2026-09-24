@@ -1,0 +1,166 @@
+--- master-before.md
++++ docs/plans/younis-kdm-score-master-program-2026-09-14.md
+@@ -53,6 +53,12 @@
+ follow-up. Claude's bounded Phase 4C review gave a REVISE verdict and marked
+ other sections unchecked; it did not approve those sections. The dependency,
+ tuning, and SGQF amendments are additional findings from this program review.
++
++The [execution plan](younis-score-master-execution-plan-2026-09-14.md) turns
++this specification into implementation packages E0--E7. Its first milestone
++is a runnable baseline study; full active-method integration and scientific
++comparison are later milestones. Every implementation package and scientific
++phase now requires the repair and next-phase refresh procedure below.
+ 
+ ## Project implementation constraints
+ 
+@@ -149,8 +155,11 @@
+ validate_registries_and_supports()
+ 
+ candidate_status = initialize_active_candidates_and_predeclared_repairs()
+-for task in topological_order(active_tasks):
++phase_state = load_current_plans_dependencies_and_budget()
++while task := next_ready_task(active_tasks, candidate_status, phase_state):
++    require_current_phase_plan_and_applicable_boundary_dispositions(task)
+     matrix = generate_eligible_rows(task, candidate_status, declared_scopes)
++    record_blocked_and_excluded_rows_with_reasons(task)
+     for row in matrix:
+         validate_target_measure_support(row)
+         verify_named_prerequisites(row)
+@@ -159,15 +168,23 @@
+             validate_tuning_scope(tuning, row)
+             require_repository_issued_tuning_artifact(tuning)
+         for dataset in row.declared_partition:
+-            oracle = oracle_registry[row.model].get(dataset, row.parameter)
++            oracle = model_registry[row.model].oracle_provider.get(dataset, row.parameter)
+             for seed in row.declared_seeds:
+-                result = execute_one_row(row, dataset, seed, oracle)
+-                write_immutable_result(result)
++                result = execute_one_row_recording_success_or_failure(row, dataset, seed, oracle)
++                write_result_to_new_attempt_directory(result)
+     decision = aggregate_under_declared_evidence_role(task.results)
+     apply_vetoes_and_heuristic_gate(decision)
+-    write_phase_note_and_checkpoint(decision)
+-    update_candidate_status(decision)
+-    queue_predeclared_repairs_unless_continuation_veto_or_budget_exhausted()
++    issues = classify_validity_defects_candidate_failures_and_uncertainty(decision)
++    repairs = select_in_scope_repairs(issues, phase_state.remaining_budget)
++    complete_available_repairs_and_impacted_regressions(repairs)
++    invalidate_affected_evidence_and_recompute_decision(task)
++    record_unresolved_issues_and_block_only_dependent_rows()
++    update_candidate_status_from_verified_evidence()
++    refresh_next_phase_plans_from_actual_results_or_terminal_disposition()
++    audit_refreshed_dependencies_scopes_partitions_tests_commands_and_budget()
++    write_phase_closeout_and_checkpoint()
++    phase_state = reload_current_plans_dependencies_and_budget()
++write_complete_program_row_accounting_including_unresolved_work()
+ ```
+ 
+ The coordinator may schedule independent rows in parallel, but each row must
+@@ -175,13 +192,19 @@
+ source revision needed to reproduce it. Parallel scheduling must not change
+ random-number coupling within a paired comparison.
+ 
++Repair completion is a workflow obligation, not a promise that the coordinator
++can invent or fix numerical methods automatically. The supervising developer
++or agent performs source/mathematical repairs; the coordinator records source
++changes, executes declared checks/retries, and refuses reuse of affected stale
++evidence. A phase with remaining required repairs stays partial or blocked.
++
+ ### Result schema
+ 
+ Every row writes machine-readable JSON plus a human-readable Markdown note with
+ at least:
+ 
+ ```text
+-program_id, phase_id, row_id, git_commit
++program_id, phase_id, phase_plan_version, row_id, attempt_id, git_commit
+ model_id, dataset_id, regime_id, parameter_id, horizon, particle_count
+ support_class, measure_id, target_id, score_kind, normalization_kind
+ proposal_id, resampling_id, estimator_id, variance_reduction_id
+@@ -190,6 +213,7 @@
+ seed, paired_seed_group, wall_time, peak_memory
+ oracle_id, oracle_status, score_error, value_error, diagnostics
+ hard_veto_status, heuristic_verdict, inference_status, artifact_paths
++execution_status, blocked_prerequisites, repair_status, invalidated_evidence
+ ```
+ 
+ The aggregation layer computes paired confidence intervals, bias/variance/MSE
+@@ -359,8 +383,11 @@
+ 
+ These values are an explicit planning envelope, not inherited scientific
+ defaults. A row may stop early when a hard veto fires, when its target identity
+-fails, or when an implementation failure has been reproduced three times with
+-the same cause. A viable row may stop replication when its predeclared paired
++fails, or when a repeated implementation failure has an established cause.
++Stop unchanged retries and enter the phase-boundary repair process; this is
++not a veto on a justified repair or an independent row. Three unsuccessful
++repair trials for one cause require diagnostic reassessment and an explicit
++remaining-budget disposition. A viable row may stop replication when its predeclared paired
+ interval is sufficiently narrow for the decision question; otherwise it is
+ reported as descriptive-only at the maximum replication count. A candidate
+ that fails a promotion criterion but has a planned repair continues to that
+@@ -1348,6 +1375,51 @@
+ external branches and cannot supply active claim evidence. Phases 8 and 9 are
+ terminal validation and audit, not sources of new tuning data.
+ 
++### Between-phase repair and refresh
++
++Every phase, including a failed or terminal phase, ends with an explicit
++repair pass and a refresh of its successors. A scientific gate passing does
++not waive unresolved defects in the computation that produced its evidence.
++
++1. Reconcile planned, completed, failed, blocked, and omitted rows. State
++   whether the finding invalidates the harness, mathematical target,
++   implementation, numerical result, or evidence, or only rejects a candidate.
++2. For each repairable issue, record its affected rows/callers, cause or
++   smallest diagnostic, proposed correction, regression checks, scope and
++   partition consequences, and remaining compute/attempt budget.
++3. Perform the feasible corrections and applicable candidate repairs. Run
++   focused regressions and affected consumer/integration checks, invalidate
++   dependent evidence when necessary, and recompute the phase decision. An
++   edit without verification does not close the issue. Do not relax the
++   target, baseline, or scientific criterion to obtain a pass.
++4. Give every unresolved issue a disposition. Missing validity prerequisites
++   block their dependent rows; independent verified work can continue. An
++   inconclusive comparison remains unresolved, and a valid negative result
++   can close its experiment without making the candidate successful. Mark a
++   phase partial when its required work remains unfinished.
++5. Refresh each next-phase plan using the actual findings: question, eligible
++   rows and repairs, prerequisites, baselines, evidence roles, controls and
++   tuning scopes, data/stream partitions, tests, exact commands/environment,
++   budget, and stop conditions. Record a brief skeptical audit and link the
++   revised plan before the corresponding dependent work begins. For the last
++   phase, refresh the final disposition and any justified follow-up instead.
++
++Repairs informed by claim outcomes create a new candidate version with fresh
++calibration, validation, and claim partitions. An infrastructure retry that
++preserves the numerical program may reuse its streams in a fresh attempt
++directory; it cannot select a favorable result or overwrite the failure.
++Source or scope changes require checking which previous evidence and tuning
++remain applicable. Unknown control-variate centers or proposal normalizers
++cannot be fixed by changing a status label.
++
++The closeout note and machine-readable issue dispositions are sufficient;
++routine repairs and next-phase refreshes do not require a new external review
++or renewed permission within an authorized campaign. The coordinator must
++test repair/resume, stale-evidence invalidation, shared-code effects, blocked
++branches, budget exhaustion, and the terminal repair case. The
++[execution plan](younis-score-master-execution-plan-2026-09-14.md) specifies
++those tests and the initial build order.
++
+ ## Required artifacts
+ 
+ Each phase produces:
+@@ -1360,7 +1432,11 @@
+   wall time, tuning scope, and artifact paths;
+ - raw structured results and uncertainty calculations;
+ - a decision table separating hard vetoes, descriptive evidence, statistical
+-  ranking, and default readiness; and
++  ranking, and default readiness;
++- a repair record with verified fixes, unresolved issue dispositions, affected
++  evidence, and remaining budget;
++- a refreshed next-phase plan (or terminal disposition), linked to the actual
++  results and checked prerequisites; and
+ - a red-team note stating the strongest alternative explanation, the result
+   that would overturn the conclusion, and the weakest evidence.
+ 

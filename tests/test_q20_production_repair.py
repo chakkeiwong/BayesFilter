@@ -170,11 +170,11 @@ def test_nonzero_map_export_and_loss_assessment():
 
 
 @pytest.mark.parametrize("base,inc,precise,cap,previous,expected", [
-    (-1., -.3, True, False, 0, "continue_training"),
-    (-1., 0., True, False, 1, "plateau_nominee"),
+    (-1., -.3, True, False, 0, "hmc_trial_nominee"),
+    (-1., 0., True, False, 1, "hmc_trial_nominee"),
     (-1., .3, True, False, 0, "deterioration_repair_trigger"),
     (0., 0., False, True, 0, "cap_learning_unresolved"),
-    (-1., -.3, True, True, 0, "cap_learning_observed"),
+    (-1., -.3, True, True, 0, "hmc_trial_nominee"),
 ])
 def test_learning_dispositions(base, inc, precise, cap, previous, expected):
     def stats(value):
@@ -192,7 +192,10 @@ def test_production_entrypoint_has_explicit_modes_and_nonpromotion():
     result=subprocess.run([sys.executable,"docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py","validate"],
                           check=True,capture_output=True,text=True)
     report=json.loads(result.stdout)
-    assert set(report["stages"]) >= {"train","tune","sample","reference","compare","confirmation"}
+    assert set(report["stages"]) >= {"train","tune","sample","reference","assess"}
+    assert not set(report["stages"]) & {"compare", "confirmation", "replica_exchange", "price-preparation"}
+    assert report["methods"] == ["neutra", "ensemble"]
+    assert report["success_policy"] == "first_valid_estimate"
     assert report["promotion_eligible"] is False
     assert report["budget_required_before_numerical_work"] is True
 
@@ -201,6 +204,7 @@ def test_cohort_restart_runs_both_positive_temperatures(tmp_path):
     import json
     from bayesfilter.inference.q20_production_training import run_training_cohort
     config, bridge = tiny_protocol(), four_dimensional_bridge()
+    config["training"]["cohort_min_updates"] = 2
     kwargs = dict(memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
     paused = run_training_cohort(config, bridge, tmp_path/"first", stop_after_rung=1, **kwargs)
     assert paused["status"] == "paused_at_requested_rung"
@@ -210,6 +214,22 @@ def test_cohort_restart_runs_both_positive_temperatures(tmp_path):
     for name,candidate in checkpoint["cohort"].items():
         assert candidate["session"]["map"]["beta"] == 1.
         direct=name.startswith("direct-")
-        assert candidate["session"]["iteration"] == (2 if direct else 4)
+        # A requested rung now covers every temperature before returning.
+        # Resume continues beta one; it cannot rewind the completed beta-half
+        # phase and must preserve its one actual update in the lifetime count.
+        assert candidate["session"]["iteration"] == (2 if direct else 3)
         assert set(candidate["exports"]) == ({"1.0"} if direct else {"0.5", "1.0"})
-        assert len(candidate["assessments"]) == (2 if direct else 4)
+        assert len(candidate["assessments"]) == (2 if direct else 3)
+
+
+def test_plain_training_completion_does_not_train_ensemble_schedules(tmp_path):
+    import json
+    from bayesfilter.inference.q20_production_training import run_training_cohort
+    config, bridge = tiny_protocol(), four_dimensional_bridge()
+    result = run_training_cohort(config, bridge, tmp_path/"plain", method="neutra",
+        memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
+    assert result["method_complete"] and not result["cohort_complete"]
+    state = json.loads(Path(result["checkpoint"]).read_text())
+    assert len(state["cohort"]) == len(config["training"]["roots"])
+    assert all(name.startswith("direct-") for name in state["cohort"])
+    assert all(set(item["exports"]) == {"1.0"} for item in state["cohort"].values())

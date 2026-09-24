@@ -1,0 +1,106 @@
+{
+  "schema": "hmc.roadmap.resolved_inventory.v1",
+  "baseline": "e9fee584704a465fc6ab984e3a8cc53980f335d0",
+  "rows": [
+    {
+      "phase": "M32",
+      "role": "engineering",
+      "targets": [
+        "rotated_gaussian",
+        "dirichlet",
+        "funnel_residual_chart"
+      ],
+      "comparators": [
+        "static",
+        "dynamic"
+      ],
+      "independent_fits": 6,
+      "fit_cap_seconds": 800,
+      "criterion": "all candidate evidence, receipts, retained/warmup tensors and posterior decisions exactly equal",
+      "gpu_seconds_limit": 5400,
+      "cpu_exception": "same fixtures in tests; no GPU evidence",
+      "funding": "funded_device_pending"
+    },
+    {
+      "phase": "M33",
+      "role": "engineering",
+      "target": "existing public validation call chain",
+      "criterion": "batch/lugsail/readiness controls reach runtime and fixed/stopped report; changed policy fails resume",
+      "funding": "funded",
+      "confirmation": "underfunded"
+    },
+    {
+      "phase": "M34",
+      "role": "activation_only",
+      "target": "normal_conjugate",
+      "parameters": {
+        "tau": 2,
+        "sigma": 1,
+        "n": 6
+      },
+      "arms": [
+        "baseline",
+        "noop",
+        "location_shift_0.25",
+        "location_shift_0.5"
+      ],
+      "independent_fits": 4,
+      "fit_cap_seconds": 700,
+      "member_rule": "first_verified",
+      "output_rule": "first_verified_id_last_retained_draw_chain0.v1",
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "measurement_draws": 128,
+      "posterior_cap": 10000,
+      "mcse_tolerance": 0.05,
+      "criterion": "actual translated density reaches ordinary preparation/tuning/posterior and fixed endpoint extractor",
+      "funding": "funded_device_pending",
+      "confirmation": "underfunded"
+    },
+    {
+      "phase": "M35",
+      "role": "engineering",
+      "targets": [
+        "mixture"
+      ],
+      "starts": [
+        "dispersed",
+        "mode_dispersed"
+      ],
+      "criterion": "global indicator, missed-mode veto and complete denominator checks",
+      "funding": "funded",
+      "global_exploration": "not_promoted"
+    },
+    {
+      "phase": "M36",
+      "role": "input_inventory",
+      "criterion": "exact two consumer bundles present before fresh integration",
+      "funding": "input_dependent"
+    },
+    {
+      "phase": "M37",
+      "role": "protocol_and_engineering",
+      "targets": [
+        "banana",
+        "mixture"
+      ],
+      "criterion": "target-specific protocol and actual batch/graph/freeze/reload checks",
+      "training_quality": "unpriced_underfunded",
+      "funding": "bounded_engineering_only"
+    },
+    {
+      "phase": "M38",
+      "role": "integration_and_disposition",
+      "criterion": "affected tests, guide, budget and requirement status agree",
+      "funding": "funded"
+    }
+  ],
+  "confirmation_criteria_unchanged": true,
+  "design_arithmetic": "design-arithmetic.json"
+}

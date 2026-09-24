@@ -1,0 +1,96 @@
+{
+  "role": "independent CPU/reference audit; no scientific promotion",
+  "cpu_only": true,
+  "gpu_devices_intentionally_hidden": true,
+  "jit_compile": false,
+  "tensorflow": "2.19.1",
+  "command": [
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/zhao-cui-audit-20260911-02/derivation_code_audit.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/zhao-cui-audit-20260911-02/derivation-code-audit-rerun.json"
+  ],
+  "checkout": "/home/chakwong/BayesFilterZhaoCui",
+  "git_commit": "47176bce7cdaa91ddd4466c39f90a11ad005c800",
+  "wall_seconds": 2.0558620670053642,
+  "source_sha256": {
+    "bayesfilter/highdim/zhao_cui_algorithm3_tf.py": "ba08772c3ebcbb208a303f470d95747e6e3aaec993fcdc5b7e134c003d14f387",
+    "bayesfilter/highdim/gaussian_hermite_tt_transport_tf.py": "e3c69a7d9588a0874f9d326a168d6b2a8358f0deb5765aeff18ce8f93ed46f95",
+    "bayesfilter/highdim/zhao_cui_algorithm2_preparation_tf.py": "447a4240c4cf9e5d690555eeaad047fdc58e0d55e7a08ed88f17a150dee55740",
+    "bayesfilter/highdim/transport.py": "9e44d5c6dfcc8741f03840745aff0ea10175d8e2cae5504e1fd1b70bd075320c",
+    "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py": "ac21d3c8d6afa5a9879a2f55ddebc0d1f97029d5e3945808ec0187a8f38e182e",
+    "bayesfilter/highdim/squared_tt_engine_v0_tf.py": "1d9aef4e01327bac331069ec54289c2e6feb9199d37f243be89f9617bbf27aad"
+  },
+  "script_sha256": "7a7bd029e8d6b7509e36f38fb5ef1e1229b4bbc3ec0691f271048ef55e858eb0",
+  "checks": {
+    "coupled_upper_law": {
+      "amplitude": "1+0.4*x*c+0.2*x*y",
+      "conditional_mass_quadrature_error": 6.661338147750939e-16,
+      "independent_upper_cdf_error": 1.1102230246251565e-16,
+      "log_density_error": 2.220446049250313e-16,
+      "physical_point_error": 0.0,
+      "physical_jacobian_error": 0.0,
+      "marginal_log_density_error": 4.440892098500626e-16,
+      "pass": true
+    },
+    "numerical_vs_smooth_law": {
+      "numerical_density": [
+        0.5168719176304328,
+        0.6769181991122388
+      ],
+      "smooth_TT_density": [
+        0.5185507400555043,
+        0.6806000000000001
+      ],
+      "numerical_jacobian_error": 2.471556292960031e-11,
+      "smooth_TT_density_gap": 0.0036818008877612662,
+      "different_law_reproduced": true,
+      "pass": true
+    },
+    "c2_model_and_full_frozen_score": {
+      "covariance_error": 1.1102230246251565e-16,
+      "covariance_derivative_error": 4.193351221815078e-10,
+      "value_error": 0.0,
+      "score_error": 1.9903056980297151e-10,
+      "score": [
+        -0.8467767400385563,
+        -4.349721454723189
+      ],
+      "independent_finite_difference": [
+        -0.8467767402375869,
+        -4.349721454621758
+      ],
+      "covariance_derivative_max": 0.975669677507947,
+      "parameters": [
+        0.45,
+        -0.2
+      ],
+      "sigma": 0.8,
+      "coupling": [
+        [
+          0.0,
+          0.12
+        ],
+        [
+          -0.04,
+          0.0
+        ]
+      ],
+      "pass": true,
+      "scope": "real C2 model wired to generic compiler in this diagnostic; no C2 campaign runner or fit-quality claim"
+    },
+    "consumer_inventory": {
+      "call_sites": {
+        "compile_algorithm3": [
+          "tests/highdim/test_zhao_cui_algorithm3_tf.py:106"
+        ],
+        "likelihood_weighted_sigma_point_chart": [],
+        "prepare_algorithm2_proposals": [
+          "tests/highdim/test_zhao_cui_algorithm3_tf.py:207"
+        ]
+      },
+      "classification": "static named-consumer inventory; diagnostic files excluded",
+      "guide_has_runtime_consumer": false,
+      "algorithm3_has_benchmark_consumer": false
+    }
+  }
+}
