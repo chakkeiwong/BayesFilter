@@ -29,6 +29,53 @@ from bayesfilter.highdim.ledh_canonical_score_stages_tf import (
 
 Tensor = tf.Tensor
 
+ANCESTRY_POLICIES = (
+    "existing_one_to_one",
+    "hilbert_inverse_cdf",
+    "hilbert_permutation_one_to_one",
+)
+STATE_MAP_POLICIES = ("adaptive_empirical", "fixed_supplied")
+
+
+def _sqmc_ancestor_indices(
+    states: Tensor,
+    incoming_log_weights: Tensor,
+    ancestor_uniforms: Tensor,
+    *,
+    ancestry_policy: str,
+    state_map_location: Tensor,
+    state_map_scale: Tensor,
+    hilbert_bits: int,
+    state_map_policy: str,
+) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    """Delegate realized fixed-index ancestry to the established SQMC helper."""
+    from bayesfilter.highdim.ledh_pfpf_genut_initial_rqmc_tf import (
+        _transition_ancestors,
+    )
+
+    result = _transition_ancestors(
+        states,
+        tf.nn.softmax(incoming_log_weights),
+        ancestor_uniforms,
+        ancestry_policy=ancestry_policy,
+        state_map_location=state_map_location,
+        state_map_scale=state_map_scale,
+        hilbert_bits=hilbert_bits,
+        state_map_policy=state_map_policy,
+    )
+    ancestry_valid = tf.constant(True)
+    if ancestry_policy == "hilbert_permutation_one_to_one":
+        ancestry_valid = (
+            result["equal_weight_valid"]
+            & result["ancestry_permutation_valid"]
+        )
+    return (
+        result["selected_row_identities"],
+        result["hilbert_ties"],
+        result["state_map_saturation"],
+        ancestry_valid,
+    )
+
 
 @dataclass(frozen=True)
 class NonlinearScoreModel:
@@ -115,6 +162,12 @@ def _value_and_analytical_score_impl(
     annealed_seed: int = 0,
     moment_provider: tuple[Callable, Callable] | None = None,
     moment_schedule: Mapping[str, Tensor] | None = None,
+    ancestry_policy: str = "existing_one_to_one",
+    process_ancestor_uniforms: Tensor | None = None,
+    state_map_location: Tensor | None = None,
+    state_map_scale: Tensor | None = None,
+    hilbert_bits: int = 12,
+    state_map_policy: str = "adaptive_empirical",
 ) -> (
     tuple[Tensor, Tensor | None]
     | tuple[Tensor, Tensor | None, tuple[dict[str, Tensor | int], ...]]
@@ -183,8 +236,30 @@ def _value_and_analytical_score_impl(
         )
     horizon = int(observations.shape[0])
     dim = int(initial_states.shape[1])
+    particle_count = int(initial_states.shape[0])
     count = tf.shape(initial_states)[0]
     obs_dim = int(observations.shape[1])
+    if ancestry_policy not in ANCESTRY_POLICIES:
+        raise ValueError(f"unsupported ancestry policy: {ancestry_policy}")
+    if state_map_policy not in STATE_MAP_POLICIES:
+        raise ValueError(f"unsupported state-map policy: {state_map_policy}")
+    if ancestry_policy != "existing_one_to_one" and reset_policy != "contract_e":
+        raise ValueError("SQMC ancestry requires reset_policy='contract_e'")
+    if process_ancestor_uniforms is None:
+        process_ancestor_uniforms = tf.zeros([horizon, particle_count], dtype)
+    process_ancestor_uniforms = tf.ensure_shape(
+        tf.cast(process_ancestor_uniforms, dtype), [horizon, particle_count]
+    )
+    if state_map_location is None:
+        state_map_location = tf.zeros([dim], dtype)
+    if state_map_scale is None:
+        state_map_scale = tf.ones([dim], dtype)
+    state_map_location = tf.ensure_shape(
+        tf.cast(state_map_location, dtype), [dim]
+    )
+    state_map_scale = tf.ensure_shape(tf.cast(state_map_scale, dtype), [dim])
+    if state_map_policy == "fixed_supplied":
+        tf.debugging.assert_positive(state_map_scale)
     eye = tf.eye(dim, dtype=dtype)
     process_chol = tf.linalg.cholesky(model.process_covariance)
     obs_chol = tf.linalg.cholesky(model.observation_covariance)
@@ -219,6 +294,7 @@ def _value_and_analytical_score_impl(
     d_incoming_log_weights = tf.zeros_like(uniform_log_weights)
     total = tf.zeros([], dtype)
     d_total = tf.zeros([], dtype)
+    program_valid = tf.constant(True)
 
     def mean_fn(points):
         return model.transition_mean_fn(theta, points)
@@ -228,7 +304,7 @@ def _value_and_analytical_score_impl(
 
     # Phase 1 while-loop: convert time loop (2026-09-14)
     # Reference: deleted implementation at 5cc59cfa~1, lines 691-714
-    def time_loop_cond(t, _states, _d_states, _covs, _d_covs, _in_log_w, _d_in_log_w, _total, _d_total):
+    def time_loop_cond(t, _states, _d_states, _covs, _d_covs, _in_log_w, _d_in_log_w, _program_valid, _total, _d_total):
         return t < horizon
 
     moment_predict, moment_update = (moment_provider if moment_provider is not None else
@@ -248,7 +324,34 @@ def _value_and_analytical_score_impl(
     def update_at(t, *args, **kwargs):
         return scheduled_moments(t, "post_") if moment_schedule is not None else moment_update(*args, **kwargs)
 
-    def time_loop_body(t, states, d_states, covariances, d_covariances, incoming_log_weights, d_incoming_log_weights, total, d_total):
+    def time_loop_body(t, states, d_states, covariances, d_covariances, incoming_log_weights, d_incoming_log_weights, program_valid, total, d_total):
+        # SQMC ordering uses the fixed particle extent of this invocation.
+        states = tf.ensure_shape(states, [particle_count, dim])
+        (
+            ancestor_indices,
+            hilbert_ties,
+            state_map_saturation,
+            ancestry_valid,
+        ) = _sqmc_ancestor_indices(
+            states,
+            incoming_log_weights,
+            process_ancestor_uniforms[t],
+            ancestry_policy=ancestry_policy,
+            state_map_location=state_map_location,
+            state_map_scale=state_map_scale,
+            hilbert_bits=hilbert_bits,
+            state_map_policy=state_map_policy,
+        )
+        program_valid = program_valid & ancestry_valid
+        states = tf.gather(states, ancestor_indices)
+        d_states = tf.gather(d_states, ancestor_indices)
+        covariances = tf.gather(covariances, ancestor_indices)
+        d_covariances = tf.gather(d_covariances, ancestor_indices)
+        incoming_log_weights = tf.gather(incoming_log_weights, ancestor_indices)
+        d_incoming_log_weights = tf.gather(
+            d_incoming_log_weights, ancestor_indices
+        )
+
         observation = observations[t]
         noise = noises[t]
         step_incoming_log_weights = incoming_log_weights
@@ -455,6 +558,30 @@ def _value_and_analytical_score_impl(
                 balance_steps=reset_balance_steps,
                 ridge=reset_ridge,
             )
+            reset_row_error = tf.reduce_max(
+                tf.abs(tf.reduce_sum(reset_transport, axis=1) - 1.0)
+            )
+            reset_column_residual = (
+                tf.reduce_mean(reset_transport, axis=0) - step_weights
+            )
+            reset_column_tv_error = 0.5 * tf.reduce_sum(
+                tf.abs(reset_column_residual)
+            )
+            d_reset_column_residual = (
+                tf.reduce_mean(d_reset_transport, axis=0) - d_step_weights
+            )
+            reset_valid = (
+                tf.reduce_all(tf.math.is_finite(reset_states))
+                & tf.reduce_all(tf.math.is_finite(d_reset_states))
+                & tf.reduce_all(tf.math.is_finite(reset_covariances))
+                & tf.reduce_all(tf.math.is_finite(d_reset_covariances))
+                & tf.reduce_all(tf.math.is_finite(reset_transport))
+                & tf.reduce_all(tf.math.is_finite(d_reset_transport))
+                & tf.reduce_all(tf.math.is_finite(d_reset_column_residual))
+                & (reset_row_error <= tf.cast(1.0e-6, dtype))
+                & (reset_column_tv_error <= tf.cast(1.0e-4, dtype))
+            )
+            program_valid = program_valid & reset_valid
             if correction_steps > 0 or pairwise_steps > 0:
                 from bayesfilter.highdim.ledh_unified_correction_tf import (
                     batched_higher_moment_shape_jvp,
@@ -499,6 +626,7 @@ def _value_and_analytical_score_impl(
                 neg_inf = tf.constant(float("-inf"), dtype)
                 total = tf.where(corrected["valid"], total, neg_inf)
                 d_total = tf.where(corrected["valid"], d_total, tf.zeros([], dtype))
+                program_valid = program_valid & corrected["valid"]
                 reset_states = corrected["particles"]
                 d_reset_states = corrected["particles_tangent"][:, :, 0]
                 higher_moment_record = {
@@ -575,7 +703,16 @@ def _value_and_analytical_score_impl(
             numerical_valid = numerical_valid & tf.reduce_all(valid_reset)
 
         # Overall validity: both callbacks and numerical operations must succeed
-        overall_valid = tf.reduce_all(callback_valid) & numerical_valid
+        program_valid = (
+            program_valid
+            & tf.reduce_all(callback_valid)
+            & numerical_valid
+            & tf.math.is_finite(total)
+            & tf.math.is_finite(d_total)
+            & tf.reduce_all(tf.math.is_finite(new_states))
+            & tf.reduce_all(tf.math.is_finite(new_covariances))
+        )
+        overall_valid = program_valid
 
         # When invalid, return -inf for log probability (NaN would propagate differently)
         neg_inf = tf.constant(float("-inf"), dtype)
@@ -590,12 +727,17 @@ def _value_and_analytical_score_impl(
             new_d_covariances,
             new_incoming_log_weights,
             new_d_incoming_log_weights,
+            program_valid,
             total,
             d_total,
         )
         if return_trace:
             step_record = {
                 "time_index": t,
+                "ancestor_indices": ancestor_indices,
+                "program_valid": program_valid,
+                "hilbert_tie_count": hilbert_ties,
+                "state_map_saturation_rate": state_map_saturation,
                 "incoming_log_weights": step_incoming_log_weights,
                 "d_incoming_log_weights": d_step_incoming_log_weights,
                 "pre_flow": pre_flow,
@@ -639,11 +781,12 @@ def _value_and_analytical_score_impl(
 
     initial_loop = (tf.constant(0, tf.int32), states, d_states, covariances,
                     d_covariances, incoming_log_weights, d_incoming_log_weights,
-                    total, d_total)
+                    program_valid, total, d_total)
     state_shapes = (tf.TensorShape([]), tf.TensorShape([None, dim]),
                     tf.TensorShape([None, dim]), tf.TensorShape([None, dim, dim]),
                     tf.TensorShape([None, dim, dim]), tf.TensorShape([None]),
-                    tf.TensorShape([None]), tf.TensorShape([]), tf.TensorShape([]))
+                    tf.TensorShape([None]), tf.TensorShape([]),
+                    tf.TensorShape([]), tf.TensorShape([]))
     if return_trace:
         # One traced numerical step; TensorArrays carry all diagnostic fields
         # through the time loop. Python callbacks must return their metadata,
@@ -710,6 +853,12 @@ def canonical_value_and_analytical_score(
     coordinate_cap_power: int = 8,
     annealed_stages: int = 1,
     annealed_seed: int = 0,
+    ancestry_policy: str = "existing_one_to_one",
+    process_ancestor_uniforms: Tensor | None = None,
+    state_map_location: Tensor | None = None,
+    state_map_scale: Tensor | None = None,
+    hilbert_bits: int = 12,
+    state_map_policy: str = "adaptive_empirical",
 ) -> (
     tuple[Tensor, Tensor | None]
     | tuple[Tensor, Tensor | None, tuple[dict[str, Tensor | int], ...]]
@@ -760,6 +909,12 @@ def canonical_value_and_analytical_score(
         coordinate_cap_power=coordinate_cap_power,
         annealed_stages=annealed_stages,
         annealed_seed=annealed_seed,
+        ancestry_policy=ancestry_policy,
+        process_ancestor_uniforms=process_ancestor_uniforms,
+        state_map_location=state_map_location,
+        state_map_scale=state_map_scale,
+        hilbert_bits=hilbert_bits,
+        state_map_policy=state_map_policy,
     )
 
 

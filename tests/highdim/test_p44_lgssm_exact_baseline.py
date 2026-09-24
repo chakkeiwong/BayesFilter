@@ -39,15 +39,17 @@ def _theta0() -> tf.Tensor:
 
 def _physical_parts(theta: tf.Tensor, dim: int) -> dict[str, tf.Tensor]:
     theta = tf.convert_to_tensor(theta, dtype=DTYPE)
-    scale = tf.constant([1.0, 0.85, 0.70], dtype=DTYPE)[:dim]
-    q_scale = tf.constant([0.90, 1.10, 1.30], dtype=DTYPE)[:dim]
-    r_scale = tf.constant([1.00, 1.20, 0.80], dtype=DTYPE)[:dim]
-    mean_scale = tf.constant([1.00, -0.50, 0.25], dtype=DTYPE)[:dim]
+    # Pad scales for dim > 3 with the last value
+    scale = tf.constant([1.0, 0.85, 0.70] + [0.55] * max(0, dim - 3), dtype=DTYPE)[:dim]
+    q_scale = tf.constant([0.90, 1.10, 1.30] + [1.0] * max(0, dim - 3), dtype=DTYPE)[:dim]
+    r_scale = tf.constant([1.00, 1.20, 0.80] + [1.0] * max(0, dim - 3), dtype=DTYPE)[:dim]
+    mean_scale = tf.constant([1.00, -0.50, 0.25] + [0.0] * max(0, dim - 3), dtype=DTYPE)[:dim]
+    initial_cov_scale = tf.constant([0.60, 0.80, 1.00] + [1.0] * max(0, dim - 3), dtype=DTYPE)[:dim]
     rho = 0.55 * tf.tanh(theta[0]) * scale
     q_diag = tf.exp(theta[1]) * q_scale
     r_diag = tf.exp(theta[2]) * r_scale
     raw_initial_mean = theta[3] * mean_scale
-    raw_initial_covariance = tf.linalg.diag(tf.constant([0.60, 0.80, 1.00], dtype=DTYPE)[:dim])
+    raw_initial_covariance = tf.linalg.diag(initial_cov_scale)
     transition_matrix = tf.linalg.diag(rho)
     transition_covariance = tf.linalg.diag(q_diag)
     observation_covariance = tf.linalg.diag(r_diag)

@@ -1,41 +1,37 @@
 #!/usr/bin/env python3
-"""Historical independent diagnostic for 10D, T=120 SQMC values.
+"""Phase 2: Dimension Transfer Test - 3D tuned controls on 10D T=20.
 
-The T=20, 3D controls were transferred here without scope-specific tuning.
-This diagnostic uses NumPy reference calculations; its zero score output
-cannot support analytical-score or production claims. See the corrected
-sqmc-campaign-final-summary-20260924.md for the evidence limitations.
+Tests whether controls tuned at 3D T=20 transfer to 10D T=20 without retuning.
+Part of sqmc-control-generalization-master-program-2026-09-23.md Phase 2.
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
 
 os.environ.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
 os.environ.setdefault("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-sys.path.insert(0, "/home/chakwong/python/src")
 
 import numpy as np
 import tensorflow as tf
 
-# Note: Cannot import run_sqmc_tuning directly due to module-level GPU init
-# Import only what we need after TensorFlow is ready
-
 # Test configuration
 DTYPE = tf.float64
-HORIZON = 120
-STATE_DIM = 10  # Higher dimension than T=20 tuning (was 3D)
-PARTICLE_COUNT = 1000  # Must be divisible by 2*STATE_DIM=20 for Contract-E reset design
-SEEDS = [97801, 97802, 97803, 97804]  # New seeds for T=120 test
+HORIZON = 20
+SEEDS = [50001, 50002, 50003, 50004]  # Same seeds as tuning campaign
+
+# Test dimensions
+TEST_CONFIGS = [
+    {"state_dim": 3, "particle_count": 1008, "name": "3D baseline"},
+    {"state_dim": 10, "particle_count": 1000, "name": "10D transfer"},
+]
 
 # Routes to test
 ROUTES = [
@@ -45,10 +41,9 @@ ROUTES = [
     "repaired_permutation_ablation",
 ]
 
-# Repo root for absolute paths
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-# Tuning artifacts from T=20 campaign (3D state)
+# Tuning artifacts from 3D T=20 campaign
 TUNING_ARTIFACTS = {
     "iid_dual_cap": REPO_ROOT / "docs/tuning/sqmc-lgssm-t20-n1008-iid_dual_cap-20260912/tuning_artifact.json",
     "previous_inverse_cdf": REPO_ROOT / "docs/tuning/sqmc-lgssm-t20-n1008-previous_inverse_cdf-20260912/tuning_artifact.json",
@@ -57,56 +52,42 @@ TUNING_ARTIFACTS = {
 }
 
 
-def _generate_10d_t120_lgssm(seed: int) -> tuple[tf.Tensor, tf.Tensor]:
-    """Generate 10D LGSSM observations for T=120.
-
-    Uses 10D canonical model with decaying diagonal dynamics.
-    """
+def _generate_lgssm_data(seed: int, state_dim: int, horizon: int):
+    """Generate LGSSM data using P44-style parameterization."""
     rng = np.random.default_rng(seed)
 
-    # 10D dynamics: phi = [0.95, 0.90, 0.85, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50]
-    phi = np.array([0.95 - 0.05 * i for i in range(STATE_DIM)])
+    # Dimension-dependent dynamics: phi decays from 0.95 for dim 1 to 0.50 for dim 10+
+    phi = np.array([max(0.50, 0.95 - 0.05 * i) for i in range(state_dim)])
     q_scale = 0.6
     r_scale = 0.8
 
     # Initial state
-    x = rng.normal(0, 1.0, STATE_DIM)
+    x = rng.normal(0, 1.0, state_dim)
 
     # Generate trajectory
     observations = []
-    for t in range(HORIZON):
+    for t in range(horizon):
         if t > 0:
-            x = phi * x + rng.normal(0, q_scale, STATE_DIM)
-        obs = x + rng.normal(0, r_scale, STATE_DIM)
+            x = phi * x + rng.normal(0, q_scale, state_dim)
+        obs = x + rng.normal(0, r_scale, state_dim)
         observations.append(obs)
 
     obs_tensor = tf.constant(np.array(observations), dtype=DTYPE)
-
-    # Theta: [phi_1, ..., phi_10, q_scale, r_scale]
     theta = tf.constant(list(phi) + [q_scale, r_scale], dtype=DTYPE)
 
     return obs_tensor, theta
 
 
-def _oracle_score_10d_t120(observations: tf.Tensor, theta: tf.Tensor, seed: int) -> tf.Tensor:
-    """Compute oracle Kalman score for 10D T=120 LGSSM.
-
-    For now, returns a placeholder. Full Kalman oracle would require
-    extending kalman_oracle_value_and_score to handle this parameterization.
-    """
-    # TODO: Implement proper Kalman oracle for T=120 10D case
-    # For now, just use SQMC as the target (no oracle comparison)
-    return tf.zeros([12], dtype=DTYPE)  # 12-parameter theta (10 phi + 2 scales)
-
-
-def _evaluate_route_on_seed(
+def _evaluate_sqmc(
     route: str,
-    controls: Dict[str, Any],
+    controls: dict,
     observations: tf.Tensor,
     theta: tf.Tensor,
     seed: int,
-) -> Dict[str, Any]:
-    """Evaluate one route on one seed using self-contained evaluation."""
+    state_dim: int,
+    particle_count: int,
+) -> dict:
+    """Evaluate SQMC on given data with dimension-generic infrastructure."""
     started = time.perf_counter()
 
     from bayesfilter.highdim.ledh_canonical_score_tf import canonical_value_and_analytical_score
@@ -122,22 +103,22 @@ def _evaluate_route_on_seed(
     }
     ancestry_policy = ancestry_map.get(route, 'existing_one_to_one')
 
-    # Generate initial states and process noise
+    # Generate particles
     if route == 'iid_dual_cap':
         initial_states = tf.random.stateless_normal(
-            [PARTICLE_COUNT, STATE_DIM], [seed, 101], dtype=DTYPE
+            [particle_count, state_dim], [seed, 101], dtype=DTYPE
         )
         process_noise = tf.stack([
             tf.random.stateless_normal(
-                [PARTICLE_COUNT, STATE_DIM], [seed, 1001 + t], dtype=DTYPE
+                [particle_count, state_dim], [seed, 1001 + t], dtype=DTYPE
             )
             for t in range(HORIZON)
         ])
-        ancestor_uniforms = tf.zeros([HORIZON, PARTICLE_COUNT], DTYPE)
+        ancestor_uniforms = tf.zeros([HORIZON, particle_count], DTYPE)
     else:
         initial_states = randomized_halton_gaussian(
-            num_particles=PARTICLE_COUNT,
-            dimension=STATE_DIM,
+            num_particles=particle_count,
+            dimension=state_dim,
             seed=seed,
             salt=301,
             dtype=DTYPE,
@@ -146,8 +127,8 @@ def _evaluate_route_on_seed(
         ancestor_rows = []
         for t in range(HORIZON):
             raw, ancestors, innovations = randomized_halton_joint(
-                num_particles=PARTICLE_COUNT,
-                state_dimension=STATE_DIM,
+                num_particles=particle_count,
+                state_dimension=state_dim,
                 seed=seed,
                 salt=3001 + t,
                 dtype=DTYPE,
@@ -157,35 +138,30 @@ def _evaluate_route_on_seed(
         process_noise = tf.stack(process_rows)
         ancestor_uniforms = tf.stack(ancestor_rows)
 
-    # Build dimension-generic model for 10D
-    # theta = [phi_1...phi_10, q_scale, r_scale] (12 params)
-    phi_diag = theta[:STATE_DIM]
-    q_scale = theta[STATE_DIM]
-    r_scale = theta[STATE_DIM + 1]
+    # Build dimension-generic model
+    phi_diag = theta[:state_dim]
+    q_scale = theta[state_dim]
+    r_scale = theta[state_dim + 1]
 
     log_two_pi = tf.constant(np.log(2.0 * np.pi), DTYPE)
-    _direction = [tf.zeros([len(theta)], DTYPE)]
-
-    def set_score_direction(direction):
-        _direction[0] = tf.convert_to_tensor(direction, DTYPE)
 
     def transition_mean_fn(theta_arg, points):
-        phi = theta_arg[:STATE_DIM]
+        phi = theta_arg[:state_dim]
         return points * phi[None, :]
 
     def transition_mean_tangent_fn(theta_arg, points, d_points):
-        phi = theta_arg[:STATE_DIM]
+        phi = theta_arg[:state_dim]
         return d_points * phi[None, :]
 
     def _scaled_gaussian(points, means, scale_val):
         residual = points - means
         return -0.5 * (
             tf.reduce_sum(tf.square(residual), axis=1) / tf.square(scale_val)
-            + float(STATE_DIM) * (log_two_pi + 2.0 * tf.math.log(scale_val))
+            + float(state_dim) * (log_two_pi + 2.0 * tf.math.log(scale_val))
         )
 
     def transition_log_density_fn(theta_arg, points, ancestors_mean):
-        q = theta_arg[STATE_DIM]
+        q = theta_arg[state_dim]
         return _scaled_gaussian(points, ancestors_mean, q)
 
     def transition_log_density_tangent_fn(theta_arg, points, ancestors_mean, d_points, d_means):
@@ -194,24 +170,24 @@ def _evaluate_route_on_seed(
     def observation_log_density_fn(theta_arg, points, observation):
         observed = points
         target = tf.broadcast_to(observation[None, :], tf.shape(observed))
-        r = theta_arg[STATE_DIM + 1]
+        r = theta_arg[state_dim + 1]
         return _scaled_gaussian(target, observed, r)
 
     def observation_log_density_tangent_fn(theta_arg, points, observation, d_points):
         return tf.zeros([tf.shape(points)[0]], DTYPE)
 
     def process_covariance_tangent_fn(theta_arg):
-        return tf.zeros([STATE_DIM, STATE_DIM], dtype=DTYPE)
+        return tf.zeros([state_dim, state_dim], dtype=DTYPE)
 
     def observation_covariance_tangent_fn(theta_arg):
-        return tf.zeros([STATE_DIM, STATE_DIM], dtype=DTYPE)
+        return tf.zeros([state_dim, state_dim], dtype=DTYPE)
 
     def observation_fn(points):
         return points
 
     def observation_jacobian_fn(points):
         return tf.broadcast_to(
-            tf.eye(STATE_DIM, dtype=DTYPE), [tf.shape(points)[0], STATE_DIM, STATE_DIM]
+            tf.eye(state_dim, dtype=DTYPE), [tf.shape(points)[0], state_dim, state_dim]
         )
 
     def observation_tangent_fn(points, d_points):
@@ -229,19 +205,18 @@ def _evaluate_route_on_seed(
         observation_log_density_fn=observation_log_density_fn,
         observation_log_density_tangent_fn=observation_log_density_tangent_fn,
         observation_covariance_tangent_fn=observation_covariance_tangent_fn,
-        process_covariance=tf.square(q_scale) * tf.eye(STATE_DIM, dtype=DTYPE),
-        observation_covariance=tf.square(r_scale) * tf.eye(STATE_DIM, dtype=DTYPE),
+        process_covariance=tf.square(q_scale) * tf.eye(state_dim, dtype=DTYPE),
+        observation_covariance=tf.square(r_scale) * tf.eye(state_dim, dtype=DTYPE),
     )
 
     # Reset design for Contract-E
-    design = tf.concat([tf.eye(STATE_DIM, dtype=DTYPE), -tf.eye(STATE_DIM, dtype=DTYPE)], axis=0)
-    design = tf.tile(design, [PARTICLE_COUNT // (2 * STATE_DIM), 1])
+    design = tf.concat([tf.eye(state_dim, dtype=DTYPE), -tf.eye(state_dim, dtype=DTYPE)], axis=0)
+    design = tf.tile(design, [particle_count // (2 * state_dim), 1])
 
-    initial_covariances = tf.eye(STATE_DIM, batch_shape=[PARTICLE_COUNT], dtype=DTYPE)
+    initial_covariances = tf.eye(state_dim, batch_shape=[particle_count], dtype=DTYPE)
 
     try:
-        # Compute value and score
-        value, score = canonical_value_and_analytical_score(
+        value, _ = canonical_value_and_analytical_score(
             model,
             theta,
             initial_states,
@@ -249,7 +224,7 @@ def _evaluate_route_on_seed(
             process_noise,
             observations,
             flow_substeps=8,
-            with_score=True,
+            with_score=False,
             reset_policy='contract_e',
             reset_design=design,
             reset_epsilon=controls.get('reset_epsilon', 8.0),
@@ -273,17 +248,12 @@ def _evaluate_route_on_seed(
         )
 
         result = {
-            "seed": seed,
-            "route": route,
             "valid": True,
             "value": float(value.numpy()),
-            "score": score.numpy().tolist(),
             "wall_seconds": time.perf_counter() - started,
         }
     except Exception as e:
         result = {
-            "seed": seed,
-            "route": route,
             "valid": False,
             "error": str(e),
             "wall_seconds": time.perf_counter() - started,
@@ -293,39 +263,26 @@ def _evaluate_route_on_seed(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Test SQMC on 10D T=120 LGSSM")
-    parser.add_argument(
-        "--route",
-        choices=ROUTES,
-        help="Single route to test (default: all routes)",
-    )
-    parser.add_argument("--output-dir", default="artifacts/sqmc-10d-t120-20260922")
-    args = parser.parse_args()
-
-    output_dir = Path(args.output_dir)
+    output_dir = Path("artifacts/sqmc-dimension-transfer-t20-20260924")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    routes_to_test = [args.route] if args.route else ROUTES
-
-    print("=" * 78)
-    print("SQMC Test: 10D state, T=120 horizon, tuned controls from T=20 campaign")
-    print("=" * 78)
-    print(f"State dimension: {STATE_DIM}")
-    print(f"Horizon: {HORIZON}")
-    print(f"Particle count: {PARTICLE_COUNT}")
-    print(f"Routes: {routes_to_test}")
+    print("=" * 80)
+    print("Phase 2: Dimension Transfer Test - 3D → 10D at T=20")
+    print("=" * 80)
+    print(f"Horizon: T={HORIZON}")
     print(f"Seeds: {SEEDS}")
-    print(f"Backend: {DTYPE.name}")
+    print(f"Configurations: {[c['name'] for c in TEST_CONFIGS]}")
+    print(f"Routes: {ROUTES}")
     print()
 
     all_results = []
 
-    for route in routes_to_test:
-        print(f"\n{'='*78}")
+    for route in ROUTES:
+        print(f"\n{'='*80}")
         print(f"Route: {route}")
-        print(f"{'='*78}")
+        print(f"{'='*80}")
 
-        # Load tuned controls
+        # Load tuned controls from 3D campaign
         artifact_path = TUNING_ARTIFACTS[route]
         if not artifact_path.exists():
             print(f"ERROR: Tuning artifact not found: {artifact_path}")
@@ -334,39 +291,54 @@ def main() -> int:
         tuning_artifact = json.loads(artifact_path.read_text())
         controls = tuning_artifact["best_controls"]
 
-        print("Tuned controls:")
+        print("Controls (tuned from 3D T=20):")
         for key, value in sorted(controls.items()):
             print(f"  {key}: {value}")
         print()
 
-        # Run on each seed
-        for seed in SEEDS:
-            print(f"Generating data for seed {seed}...")
-            observations, theta = _generate_10d_t120_lgssm(seed)
+        for config in TEST_CONFIGS:
+            state_dim = config["state_dim"]
+            particle_count = config["particle_count"]
+            config_name = config["name"]
 
-            print(f"Running SQMC for route={route}, seed={seed}...")
-            result = _evaluate_route_on_seed(route, controls, observations, theta, seed)
+            print(f"\n{config_name} (D={state_dim}, N={particle_count}):")
+            print("-" * 40)
 
-            all_results.append(result)
+            for seed in SEEDS:
+                print(f"  Generating data for seed {seed}...")
+                observations, theta = _generate_lgssm_data(seed, state_dim, HORIZON)
 
-            status = "ok" if result.get("valid") else f"INVALID ({result.get('error')})"
-            score_info = ""
-            if result.get("valid") and "score" in result:
-                score_norm = float(tf.norm(result["score"]).numpy())
-                score_info = f"score_norm={score_norm:.6f}"
+                print(f"  Running SQMC...")
+                result = _evaluate_sqmc(
+                    route, controls, observations, theta, seed, state_dim, particle_count
+                )
 
-            print(f"  [{route}] seed {seed}: {status} {score_info} "
-                  f"wall={result['wall_seconds']:.1f}s\n")
+                result.update({
+                    "route": route,
+                    "seed": seed,
+                    "state_dim": state_dim,
+                    "particle_count": particle_count,
+                    "config_name": config_name,
+                })
+
+                all_results.append(result)
+
+                status = "ok" if result["valid"] else f"INVALID ({result.get('error', 'unknown')})"
+                value_str = f"value={result['value']:.2f}" if result["valid"] else ""
+                print(f"    [{route}] seed {seed}: {status} {value_str} wall={result['wall_seconds']:.1f}s")
+
+            print()
 
     # Save results
     manifest = {
-        "schema": "bayesfilter.sqmc_10d_t120_test.v1",
+        "schema": "bayesfilter.sqmc_dimension_transfer_t20.v1",
         "timestamp": datetime.now().isoformat(),
-        "state_dim": STATE_DIM,
+        "phase": "Phase 2: Dimension Transfer Test",
+        "master_program": "sqmc-control-generalization-master-program-2026-09-23.md",
         "horizon": HORIZON,
-        "particle_count": PARTICLE_COUNT,
         "seeds": SEEDS,
-        "routes": routes_to_test,
+        "test_configs": TEST_CONFIGS,
+        "routes": ROUTES,
         "dtype": DTYPE.name,
         "results": all_results,
     }
@@ -374,17 +346,21 @@ def main() -> int:
     output_file = output_dir / f"result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     output_file.write_text(json.dumps(manifest, indent=2))
 
-    print(f"\nResults saved to: {output_file}")
-    print(f"\nSummary:")
-    print(f"  Total cells: {len(all_results)}")
-    print(f"  Valid: {sum(1 for r in all_results if r.get('valid'))}")
-    print(f"  Invalid: {sum(1 for r in all_results if not r.get('valid'))}")
+    print("=" * 80)
+    print(f"Results saved to: {output_file}")
+    print()
 
-    total_time = sum(r["wall_seconds"] for r in all_results)
-    print(f"  Total wall time: {total_time:.1f}s ({total_time/60:.1f} min)")
+    # Summary
+    total_cells = len(all_results)
+    valid_cells = sum(1 for r in all_results if r["valid"])
+    print(f"Summary:")
+    print(f"  Total cells: {total_cells}")
+    print(f"  Valid: {valid_cells}")
+    print(f"  Invalid: {total_cells - valid_cells}")
+    print("=" * 80)
 
-    return 0
+    return 0 if valid_cells == total_cells else 1
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())
