@@ -174,6 +174,11 @@ TEST_GROUPS = {
         "tests/test_filter_repair_geometry_fit.py::test_fit_target_changes_and_resource_ownership",
         "tests/test_filter_repair_geometry_fit.py::test_fit_cache_binds_identity_numerical_settings_and_releases_old_target"),
     "svd_graph_attribution_gpu": ("tests/test_filter_repair_svd_graph_attribution.py",),
+    **{f"dz5_score_oracle_{mode}_{device}": (
+        f"tests/test_filter_repair_dz5_score_oracle.py::test_dz5_fresh_score_oracle[{jit}]",)
+        for mode, jit in (("graph", "False"), ("xla", "True")) for device in ("cpu", "gpu")},
+    "dz5_score_replay_localize_cpu": (
+        "tests/test_filter_repair_dz5_score_oracle.py::test_dz5_graph_replay_thread_localization",),
     "dz5_snapshot_import_cpu": ("tests/test_filter_repair_dz5_snapshot.py",),
     "dz5_merged_import_cpu": ("tests/test_filter_repair_dz5_merged.py::test_merged_dz5_snapshot_import",),
     **{f"merged_ledh_boundary_{device}": ("tests/test_filter_repair_merged_ledh_boundary.py",)
@@ -1163,6 +1168,7 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "dz5_score_replay_localize_cpu": "Short-horizon thread/replay attribution; cannot qualify the full DZ5 score oracle.",
     **{f"ledh_flow_cost_{arm}_{device}": "Isolated qualified flow dependency costs; full public value/score integration and CPU compiler RSS remain separate gates."
         for arm in ("prior_graph", "native_graph", "native_xla") for device in ("cpu", "gpu")},
     "ledh_value_localize_cpu": "Frozen-reset attribution for a preserved full-value numerical veto; not admission.",
@@ -1709,6 +1715,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    "dz5_score_oracle_graph_gpu": "GPU",
+    "dz5_score_oracle_xla_gpu": "GPU",
     "merged_ledh_boundary_gpu": "GPU",
     "merged_ledh_models_gpu": "GPU",
     "ledh_seed_compatibility_gpu": "GPU",

@@ -1,0 +1,188 @@
+{
+  "schema": "filter_repair_dz5_score_verification.v1",
+  "through_run": 3870,
+  "parent_commit": "4c37f9f40",
+  "records": [
+    {
+      "run": 3863,
+      "device": "CPU",
+      "key": [
+        "test",
+        "dz5_score_oracle_graph_cpu",
+        "after",
+        "covariance",
+        "on",
+        1,
+        0,
+        "CPU"
+      ],
+      "state": "failed",
+      "elapsed_seconds": 467.10182413400616,
+      "tests": 1,
+      "failures": 1
+    },
+    {
+      "run": 3864,
+      "device": "CPU",
+      "key": [
+        "test",
+        "dz5_score_oracle_graph_cpu",
+        "after",
+        "covariance",
+        "on",
+        1,
+        0,
+        "CPU"
+      ],
+      "state": "failed",
+      "elapsed_seconds": 453.11691809794866,
+      "tests": 1,
+      "failures": 1
+    },
+    {
+      "run": 3865,
+      "device": "CPU",
+      "key": [
+        "test",
+        "dz5_score_oracle_xla_cpu",
+        "after",
+        "covariance",
+        "on",
+        1,
+        0,
+        "CPU"
+      ],
+      "state": "failed",
+      "elapsed_seconds": 251.05559149198234,
+      "tests": 1,
+      "failures": 1
+    },
+    {
+      "run": 3866,
+      "device": "CPU",
+      "key": [
+        "test",
+        "dz5_score_oracle_xla_cpu",
+        "after",
+        "covariance",
+        "on",
+        1,
+        0,
+        "CPU"
+      ],
+      "state": "passed",
+      "elapsed_seconds": 248.54057609196752,
+      "tests": 1,
+      "failures": 0
+    },
+    {
+      "run": 3867,
+      "device": "GPU",
+      "key": [
+        "test",
+        "dz5_score_oracle_xla_gpu",
+        "after",
+        "covariance",
+        "on",
+        1,
+        0,
+        "GPU"
+      ],
+      "state": "passed",
+      "elapsed_seconds": 48.6157283509383,
+      "tests": 1,
+      "failures": 0
+    },
+    {
+      "run": 3868,
+      "device": "GPU",
+      "key": [
+        "test",
+        "dz5_score_oracle_graph_gpu",
+        "after",
+        "covariance",
+        "on",
+        1,
+        0,
+        "GPU"
+      ],
+      "state": "failed",
+      "elapsed_seconds": 30.534209568053484,
+      "tests": 1,
+      "failures": 1
+    },
+    {
+      "run": 3869,
+      "device": "CPU",
+      "key": [
+        "test",
+        "dz5_score_replay_localize_cpu",
+        "after",
+        "covariance",
+        "on",
+        1,
+        0,
+        "CPU"
+      ],
+      "state": "passed",
+      "elapsed_seconds": 71.217210790026,
+      "tests": 1,
+      "failures": 0
+    },
+    {
+      "run": 3870,
+      "device": "CPU",
+      "key": [
+        "test",
+        "policy",
+        "after",
+        "covariance",
+        "on",
+        1,
+        0,
+        "CPU"
+      ],
+      "state": "passed",
+      "elapsed_seconds": 8.633194840047508,
+      "tests": 129,
+      "failures": 0
+    }
+  ],
+  "unit_workers": 8,
+  "unit_charged_seconds": 1578.81525336497,
+  "charged_seconds": {
+    "CPU": 77325.86985146503,
+    "GPU": 75683.39178097835
+  },
+  "remaining_hours": {
+    "CPU": 34.52059170792638,
+    "GPU": 30.976835616394904
+  },
+  "archive": "dz5-score-evidence-03870.tar.gz",
+  "archive_sha256": "132ebe47c4f9bb91df2cccd19af5c54787a566e87bbbaad090f989f0fdd5e5f3",
+  "analysis": "dz5-score-oracle-analysis-03867.json",
+  "analysis_sha256": "06c525ecd1e5e9a6233a9af057be1e1786ced7f37c97c7a4adf037f8ed1e25f8",
+  "analyzer_sha256": "08ae566613e0a3ab0dea9348942899dbeb48e223919326b7fdf0b603d10331fe",
+  "snapshot_manifest_sha256": "cbe75052fe85fcff58a7cbdc337e77e6507cf4240340308347993e88445c516d",
+  "qualified_xla_runs": [
+    3866,
+    3867
+  ],
+  "preserved_failures": [
+    3863,
+    3864,
+    3865,
+    3868
+  ],
+  "short_replay_localization_run": 3869,
+  "policy_run": 3870,
+  "policy_tests": 129,
+  "terminal_acceptance": false,
+  "main_promotion": false,
+  "adapter_admission": false,
+  "open_graph_findings": [
+    "CPU 96-step score replay differs despite op determinism; two-step diagnostic does not reproduce.",
+    "GPU graph smaller-step finite-difference max scaled error 1.00448 remains outside unchanged gate."
+  ],
+  "next": "Bounded campaign-driver memory repair; follow-up graph localization, public initializer/staged supervision, LEDH public integration and terminal F01-F20."
+}
