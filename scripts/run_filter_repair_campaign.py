@@ -174,6 +174,13 @@ TEST_GROUPS = {
         "tests/test_filter_repair_geometry_fit.py::test_fit_cache_binds_identity_numerical_settings_and_releases_old_target"),
     "svd_graph_attribution_gpu": ("tests/test_filter_repair_svd_graph_attribution.py",),
     "dz5_snapshot_import_cpu": ("tests/test_filter_repair_dz5_snapshot.py",),
+    "dz5_merged_import_cpu": ("tests/test_filter_repair_dz5_merged.py::test_merged_dz5_snapshot_import",),
+    **{f"dz5_merged_target_{batch}_{device}": (
+        f"tests/test_filter_repair_dz5_merged.py::test_merged_dz5_target_graph_xla[{batch}]",)
+        for batch in (1, 4, 46, 68) for device in ("cpu", "gpu")},
+    **{f"dz5_archived_target_{batch}_{device}": (
+        f"tests/test_filter_repair_dz5_merged.py::test_archived_dz5_target_graph_xla[{batch}]",)
+        for batch in (1, 4, 46, 68) for device in ("cpu", "gpu")},
     "dense_execution_reporting_cpu": ("tests/test_filter_repair_dense_execution_reporting.py",),
     "svd_cost_analysis_cpu": ("tests/test_filter_repair_svd_cost_analysis.py",),
     "dense_isotropic_initialization_cpu": ("tests/test_filter_repair_dense_isotropic_initialization.py",),
@@ -1311,6 +1318,10 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "dz5_remaining_target_cpu": tuple(f"dz5_{source}_target_{batch}_cpu"
+        for batch in (4, 46, 68) for source in ("merged", "archived")),
+    "dz5_target_gpu": tuple(f"dz5_{source}_target_{batch}_gpu"
+        for batch in (1, 4, 46, 68) for source in ("merged", "archived")),
     **{f"remote_integration_{device}": (
         f"remote_integration_hermite_{device}",
         f"remote_integration_hermite_consumers_{device}",
@@ -1663,6 +1674,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_BATCHES["dz5_target_gpu"]},
     **{name: "GPU" for name in TEST_GROUPS if name.startswith("remote_integration_") and name.endswith("_gpu")},
     **{group: "GPU" for group in TEST_BATCHES["remaining_svd_cost_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["remaining_svd_qualification_gpu"]},

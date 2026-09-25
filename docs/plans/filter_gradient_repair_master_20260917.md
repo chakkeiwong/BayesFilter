@@ -1,21 +1,28 @@
 # Complete filter and gradient execution repair
 
-Current checkpoint, 2026-09-25 through 03786: remote main `5e16df06f` is
-integrated in the repair worktree and ready for its merge commit. Conflicts
-preserve the native Hermite recurrence, new reverse/batched behavior and retired
-GenUT boundary. Empty-suffix and derivative-boundary defects found in integration
-are repaired. All 162 focused checks pass on each backend, including 87 filter/
-derivative and six canonical-IAF checks; 129 policy checks pass. The partial guard
-is 237 sources / 1346 exact shape/reporting allowances. Read the
-[integration record](bayesfilter-filter-gradient-remote-integration-subplan-2026-09-25.md).
+The [merged endpoint audit](filter_gradient_merged_endpoint_audit_20260925.md)
+now names concrete new LEDH Python-loop/NumPy violations and the bounded repair
+sequence; these remain terminal blockers alongside actual-consumer integration.
 
-Next commit/push this repair-branch merge and create the merged-commit DZ5 snapshot,
-then continue actual target qualification. Promotion to main remains blocked by
-public/actual DZ5 integration, reporting/isotropic issues, native capacity and
-terminal F01--F20 dispositions. New remote algorithm modules require the final
-call-chain audit; the refreshed syntax inventory is not a compliance certificate.
-Charges: 73975.777126 CPU / 74613.162079 GPU seconds, leaving
-11.451173 / 31.274122 hours. No worker is active.
+Current checkpoint, 2026-09-25 through 03808: merge `9d8202b77` is pushed.
+The actual CDF target passes graph/XLA, independent archived-source and CPU/GPU
+comparisons at B=1/4/46/68, including invalid-row isolation, changed operands,
+exact replay, one trace, stable HLO, source checks and verified GPU growth.
+All 129 policy checks pass. Read the [target result](filter_gradient_dz5_target_result_20260925.md)
+and [E5 record](filter_gradient_dz5_snapshot_integration_20260924.md).
+
+Next execute the [merged endpoint repair unit](filter_gradient_merged_endpoint_audit_20260925.md),
+then continue the independent fresh score oracle and complete public initializer/
+staged-supervisor integration. New registered LEDH paths contain Python numerical
+loops, NumPy and unsupported batch-native training eligibility. Those findings
+have explicit repair/claim-blocking plans. Reporting/isotropic discrepancies,
+cold/RSS/native capacity and terminal F01--F20 dispositions remain open. Main
+promotion remains blocked. The source guard is partial: 237 sources / 1346 exact
+allowances, with no new numerical-loop, NumPy or non-XLA waiver.
+
+Charges through 03808 are 75306.143808 CPU / 75188.859048 GPU seconds; remaining
+budget is 11.081627 CPU / 31.114206 GPU hours. The E5 target unit used 24 workers /
+1929.137249 seconds including bounded driver probes. No worker is active.
 Earlier checkpoints below are superseded for current status only.
 
 Current checkpoint, 2026-09-25 through 03762: all 48 matched remaining-SVD

@@ -16,6 +16,7 @@ CHILD = r'''
 import hashlib
 import importlib
 import json
+import math
 import os
 import sys
 import traceback
@@ -32,6 +33,15 @@ report = {'schema': 'filter_repair_dz5_snapshot_import.v1', 'passed': False,
 
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+def diagnostic_json(value):
+    if isinstance(value, float) and not math.isfinite(value):
+        return str(value)
+    if isinstance(value, dict):
+        return {key: diagnostic_json(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [diagnostic_json(item) for item in value]
+    return value
 
 try:
     manifest = json.loads(Path('/tmp/dz5-source/manifest.json').read_text())
@@ -97,35 +107,48 @@ try:
 except BaseException as error:
     report.update(error=f'{type(error).__name__}: {error}', traceback=traceback.format_exc())
 finally:
-    (OUT / 'dz5-snapshot-import.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n')
+    (OUT / 'dz5-snapshot-import.json').write_text(json.dumps(diagnostic_json(report), indent=2, allow_nan=False)+'\n')
 sys.exit(0 if report['passed'] else 1)
 '''
 
 
-def test_dz5_candidate_snapshot_isolates_actual_imports(request):
-    assert os.environ['CUDA_VISIBLE_DEVICES'] == '-1'
+def run_isolated_snapshot(request, *, snapshot, child, scope,
+                          child_timeout_seconds=120):
+    """Run a diagnostic against read-only project trees, preserving child logs."""
     directory = Path(request.config.getoption('xmlpath')).parent
     child_path = directory / 'isolated-dz5-import.py'
     with child_path.open('x') as stream:
-        stream.write(CHILD)
-    command = ['bwrap', '--die-with-parent', '--ro-bind', '/', '/', '--dev', '/dev', '--tmpfs', '/tmp',
-        '--ro-bind', str(SNAPSHOT), '/tmp/dz5-source',
+        stream.write(child)
+    gpu = os.environ['CUDA_VISIBLE_DEVICES'] != '-1'
+    # CUDA names its helper threads through /proc/self/task/*/comm. A read-only
+    # proc bind makes cuInit fail with EROFS before any target can execute.
+    devices = ['--dev-bind', '/dev', '/dev', '--proc', '/proc'] if gpu else ['--dev', '/dev']
+    command = ['bwrap', '--die-with-parent', '--ro-bind', '/', '/', *devices, '--tmpfs', '/tmp',
+        '--ro-bind', str(snapshot), '/tmp/dz5-source',
         '--bind', str(directory), '/tmp/dz5-output',
-        '--ro-bind', str(SNAPSHOT / str(MF).lstrip('/')), str(MF),
-        '--ro-bind', str(SNAPSHOT / str(BF).lstrip('/')), str(BF),
+        '--ro-bind', str(snapshot / str(MF).lstrip('/')), str(MF),
+        '--ro-bind', str(snapshot / str(BF).lstrip('/')), str(BF),
         '--chdir', str(MF), sys.executable, '-B', '/tmp/dz5-output/isolated-dz5-import.py']
     environment = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'PYTHONPATH': str(BF),
         'MPLCONFIGDIR': '/tmp/matplotlib', 'XDG_CACHE_HOME': '/tmp/cache'}
     with (directory / 'isolated-dz5-command.json').open('x') as stream:
-        json.dump({'command': command, 'child_sha256': hashlib.sha256(CHILD.encode()).hexdigest(),
-            'snapshot_manifest_sha256': hashlib.sha256((SNAPSHOT / 'manifest.json').read_bytes()).hexdigest(),
-            'scope': 'import_and_fixture_CPU_reference_only'}, stream, indent=2)
+        json.dump({'command': command, 'child_sha256': hashlib.sha256(child.encode()).hexdigest(),
+            'snapshot_manifest_sha256': hashlib.sha256((snapshot / 'manifest.json').read_bytes()).hexdigest(),
+            'scope': scope, 'child_timeout_seconds': child_timeout_seconds,
+            'cuda_visible_devices': environment['CUDA_VISIBLE_DEVICES']}, stream, indent=2)
     with (directory / 'isolated-dz5-import.log').open('x') as log:
         process = subprocess.run(command, env=environment, stdout=log,
-            stderr=subprocess.STDOUT, timeout=120, check=False)
+            stderr=subprocess.STDOUT, timeout=child_timeout_seconds, check=False)
     report_path = directory / 'dz5-snapshot-import.json'
     report = json.loads(report_path.read_text()) if report_path.exists() else {}
     assert process.returncode == 0, {
         'error': report.get('error'), 'traceback': report.get('traceback'),
         'log': (directory / 'isolated-dz5-import.log').read_text()}
     assert report['passed'] and not report['unexpected_modules']
+    return report
+
+
+def test_dz5_candidate_snapshot_isolates_actual_imports(request):
+    assert os.environ['CUDA_VISIBLE_DEVICES'] == '-1'
+    run_isolated_snapshot(request, snapshot=SNAPSHOT, child=CHILD,
+        scope='import_and_fixture_CPU_reference_only')
