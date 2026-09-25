@@ -53,3 +53,18 @@ passes (terminal gate/status) must be reviewed so iterators are not exhausted or
 large manifests reloaded once per test group. Existing monkeypatched record
 fixtures must continue to exercise budget/interrupt/selection semantics. The
 independent baseline loader comes from committed4c37f9f40, not a rewritten proxy.
+
+03871 passes budget/source/retry semantics;03872 passes all129 policy checks.
+Initial cost03873prior /03874streamed preserve identical3870-record counts,
+charges and exact attempts. RSS after loading is2,701,922,304 versus37,388,288
+bytes. The streamed helper's lifetime ru_maxrss is532,676,608 bytes even though
+its pre/post current RSS is32,657,408/37,388,288. That maximum includes process
+history before the timed loader and cannot establish this operation's peak.
+Preserve the initial cohort including the already-running03875. Add sampling
+of current RSS during the timed operation plus the lifetime peak before timing,
+then run three fresh matched repeats without further source edits. This repairs
+the measurement contract, not the loader or numerical target. Extend this local
+unit from10 to12 workers under the same1800-second/global budget; finish with
+one policy renewal after the instrumentation change. No extra compute category,
+comparison gate or scientific claim is introduced. The original retained-RSS
+observation remains valid; the initial lifetime peak is not loader attribution.

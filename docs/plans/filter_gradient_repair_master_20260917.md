@@ -4,36 +4,40 @@ The [merged endpoint audit](filter_gradient_merged_endpoint_audit_20260925.md)
 now names concrete new LEDH Python-loop/NumPy violations and the bounded repair
 sequence; these remain terminal blockers alongside actual-consumer integration.
 
-Current checkpoint through03870, 2026-09-25: the fresh DZ5 CDF analytical-score
-oracle passes all23parameters at both original finite-difference steps on
-CPU/GPU XLA, including exact replay, one trace, HLO and source audit. Independent
-standard-library reconstruction and six corrupt-record tests pass. See the
-[fresh score result](filter_gradient_dz5_score_result_20260925.md) and
-`artifacts/filter-gradient-repair-20260917/dz5-score-verification-03870.json`.
-CPU graph exact replay and GPU graph smaller-step finite differences remain
-vetoed; the short CPU diagnostic does not localize the96-step replay cause.
-No tolerance or admission was changed. Policy03870passes129checks.
+Current checkpoint through 03882, 2026-09-25: the supervisor record-retention
+repair is qualified. Three matched fresh-process repeats reduce sampled peak RSS
+from 2.70 GB to 39.4 MB while preserving exact charges, run numbering and source-
+sensitive retry counts. Final policy 03882 passes 129 checks. See the
+[driver memory result](filter_gradient_campaign_driver_memory_result_20260925.md)
+and `artifacts/filter-gradient-repair-20260917/driver-history-verification-03882.json`.
+This is bookkeeping memory; target XLA/compiler-memory findings remain open.
 
-The prior [LEDH native result](filter_gradient_ledh_native_result_20260925.md)
-remains dependency/factory qualification only. Full-value dual-trust FP32 parity,
-public wrapper/score/KDM consumer integration, endpoint capacity/memory,
-public initializer/staged supervisor, reporting/isotropic findings and F01--F20
-remain open. Guard scope remains244sources/1346existing allowances. Main stays
-unmerged. Next execute the [driver record-memory repair](filter_gradient_campaign_driver_memory_20260925.md),
-then continue graph localization and actual consumer integration.
+The [fresh DZ5 score result](filter_gradient_dz5_score_result_20260925.md) qualifies
+all 23 coordinates at both original finite-difference steps on CPU/GPU XLA,
+with exact replay, one trace, HLO and loaded-source checks. CPU graph score replay
+and GPU graph smaller-step finite differences remain vetoed. Two-observation
+CPU diagnostics do not reproduce the 96-step replay issue; the next bounded
+localization must identify its first differing prefix/operator.
 
-Preserve numerical methods/seeded streams, inherited predator--prey full-step k4
+The [LEDH native result](filter_gradient_ledh_native_result_20260925.md) qualifies
+shared dependencies and the new dynamic score factory only. Full-value dual-trust
+FP32 parity, public value/score/KDM integration, public initializer/staged
+supervisor, reporting/isotropic findings, target capacity/memory and F01--F20
+terminal dispositions remain open. Guard covers 244 sources / 1346 existing
+allowances. Main remains unmerged. Two narrow reporting proposals await the
+user's async decision; independent work continues.
+
+Preserve numerical methods/seeded streams, inherited predator--prey full-step k4,
 and canonical author-profile NeuTra. No MacroFinance source edits, CDF restart,
-package install, stale admission refresh or canonical LEDH rebuild is included.
-Two narrowly bounded reporting proposals await the user's async decision;
-independent work continues. No repair worker is active.
+package install, stale admission refresh or canonical LEDH rebuild. No repair
+worker is active. One numerical worker at a time; no subagents.
 
-Charges through03870: 77325.869851CPU /
-75683.391781GPU seconds; 34.520592CPU /
-30.976836GPU hours remain under56/52-hour caps.
-Branch`repair/filter-gradient-xla-validation-20260918`; shared raw root
+Charges through 03882: 77431.927005 CPU /
+75683.391781 GPU seconds; 34.491131 CPU /
+30.976836 GPU hours remain under 56/52-hour caps.
+Branch `repair/filter-gradient-xla-validation-20260918`; shared raw root
 `/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
-Last pushed checkpoint before this unit is4c37f9f40.
+Last pushed checkpoint before this unit is b1f294345.
 
 Older checkpoints below preserve historical scope and instructions only.
 

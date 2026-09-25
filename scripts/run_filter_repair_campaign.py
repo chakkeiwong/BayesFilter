@@ -124,6 +124,10 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "driver_history_semantics_cpu": ("tests/test_filter_repair_driver_history.py", "-k", "not fresh_driver_history_memory"),
+    **{f"driver_history_memory_{arm}_cpu": (
+        f"tests/test_filter_repair_driver_history.py::test_fresh_driver_history_memory[{arm}]",)
+        for arm in ("prior", "streamed")},
     "remote_integration_hermite_cpu": ("tests/test_filter_repair_remote_integration.py",),
     "remote_integration_hermite_consumers_cpu": (
         "tests/highdim/test_pair_block_tt_remedy.py",
@@ -1168,6 +1172,8 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"driver_history_memory_{arm}_cpu": "Fresh-process supervisor record loading only; not target XLA or device memory evidence."
+        for arm in ("prior", "streamed")},
     "dz5_score_replay_localize_cpu": "Short-horizon thread/replay attribution; cannot qualify the full DZ5 score oracle.",
     **{f"ledh_flow_cost_{arm}_{device}": "Isolated qualified flow dependency costs; full public value/score integration and CPU compiler RSS remain separate gates."
         for arm in ("prior_graph", "native_graph", "native_xla") for device in ("cpu", "gpu")},
@@ -1965,7 +1971,35 @@ def source_hashes():
 
 
 def records():
-    return [json.loads(p.read_text()) for p in sorted(OUTPUT.glob("run-*/run.json"))]
+    """Read history one record at a time, including its full source identity."""
+    return (json.loads(p.read_text()) for p in sorted(OUTPUT.glob("run-*/run.json")))
+
+
+def history_summary(rows, key=None, hashes=None):
+    """Retain budget fields and count exact attempts without retaining sources.
+
+    Historical manifests carry thousands of source hashes each. Holding all of
+    them while a numerical worker runs wastes gigabytes of supervisor memory.
+    Compare the complete source dictionary before discarding each record.
+    """
+    charges = []
+    attempts = 0
+    for row in rows:
+        charges.append({field: row[field] for field in
+            ("device", "timeout_seconds", "elapsed_seconds") if field in row})
+        if key is not None and row["key"] == key and row["source_sha256"] == hashes:
+            attempts += 1
+    return charges, attempts
+
+
+def latest_record():
+    """Read the final record without retaining the rest of the history."""
+    latest = None
+    for row in records():
+        latest = row
+    if latest is None:
+        raise RuntimeError("No campaign run record exists")
+    return latest
 
 
 def charged_seconds(rows, device):
@@ -2044,19 +2078,18 @@ def ensure_baseline():
 
 
 def run_job(args):
-    rows = records()
     device = args.device
     timeout = getattr(args, "test_timeout_seconds", 900) if args.action == "test" else 300
     if args.action == "measure":
         timeout = MEASUREMENT_TIMEOUT_SECONDS.get(args.fixture, 300)
     if args.action == "test" and timeout not in TEST_TIMEOUT_SECONDS:
         raise ValueError("Test timeout must be one of the bounded registered limits")
-    if charged_seconds(rows, device) + timeout > BUDGET_SECONDS[device]:
-        raise RuntimeError(f"{device} campaign budget exhausted")
     key = [args.action, args.group, args.arm, args.fixture, args.jit, args.size, args.repeat, device]
     hashes = source_hashes()
-    attempts = [row for row in rows if row["key"] == key and row["source_sha256"] == hashes]
-    if len(attempts) >= 3:
+    rows, attempts = history_summary(records(), key, hashes)
+    if charged_seconds(rows, device) + timeout > BUDGET_SECONDS[device]:
+        raise RuntimeError(f"{device} campaign budget exhausted")
+    if attempts >= 3:
         raise RuntimeError("Three attempts consumed for this exact job; inspect/repair scope before retry")
     if device == "GPU" and getattr(args, "gpu_preflight", None) is None:
         prepare_gpu(args, "test_gpu_index" if args.action == "test" else "measurement_gpu_index")
@@ -2176,17 +2209,19 @@ def gate():
     pending = [item["id"] for item in ledger["findings"] if item["status"] != "closed" or not item.get("evidence") or any(not (ROOT / path).is_file() for path in item.get("evidence", []))]
     if {item["id"] for item in ledger["findings"]} != {f"F{i:02d}" for i in range(1, 21)}:
         pending.append("incomplete_finding_inventory")
-    rows = records()
     current = source_hashes()
-    missing = []
-    for group in mandatory_test_groups():
-        candidates = [row for row in rows if row["key"][:3] == ["test", group, "after"]
-                      and row["state"] == "passed" and row["source_sha256"] == current
-                      and row["device"] == TEST_DEVICES.get(group, "CPU")
-                      and test_evidence(row)["passed"]]
-        if not candidates:
-            missing.append(group)
-    comparisons = [row for row in rows if row["key"][0] == "compare" and row["state"] == "passed" and row["source_sha256"] == current]
+    qualified = set()
+    comparisons = False
+    for row in records():
+        if row["state"] != "passed" or row["source_sha256"] != current:
+            continue
+        if row["key"][0] == "compare":
+            comparisons = True
+        elif row["key"][0] == "test" and row["key"][2] == "after":
+            group = row["key"][1]
+            if row["device"] == TEST_DEVICES.get(group, "CPU") and test_evidence(row)["passed"]:
+                qualified.add(group)
+    missing = [group for group in mandatory_test_groups() if group not in qualified]
     complete = not pending and not missing and bool(comparisons) and policy["passed"]
     print(json.dumps({"merge_allowed": complete, "open_findings": pending, "missing_current_tests": missing, "current_comparison": bool(comparisons), "source_policy": policy}, indent=2))
     return 0 if complete else 1
@@ -2316,7 +2351,7 @@ def run_matrix(args):
             if device == "GPU":
                 prepare_gpu(job, "measurement_gpu_index")
             code = run_job(job)
-            row = records()[-1]
+            row = latest_record()
             if not Path(row["result"]).is_file():
                 raise RuntimeError(f"Missing measurement artifact after exit {code}: {row['log']}")
             value = json.loads(Path(row["result"]).read_text())
@@ -2384,7 +2419,7 @@ def main():
     with (OUTPUT / "campaign.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         if args.action == "status":
-            rows = records()
+            rows, _ = history_summary(records())
             print(json.dumps({"branch": git("branch", "--show-current"), "baseline": BASELINE, "runs": len(rows), "budget_seconds": BUDGET_SECONDS, "charged_seconds": {d: charged_seconds(rows, d) for d in BUDGET_SECONDS}, "artifact_root": str(OUTPUT)}, indent=2))
             return 0
         if args.action == "gate":
