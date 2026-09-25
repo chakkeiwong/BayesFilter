@@ -39,6 +39,11 @@ Metropolis omits the spatial derivative of the flow density. The current
 target callback still returns its existing score and validity status; no
 replacement target evaluator is introduced. Random streams are reproducible
 within this port, but are not bitwise identical to JAX streams.
+The replay permutation sorts independent FP64 random keys because this
+TensorFlow build cannot compile `StatelessShuffle` on GPU. Distinct iid keys
+induce a uniform permutation; finite-precision ties are a negligible RNG
+limitation at the declared minibatch counts. The complete replay path has its
+own compiled GPU smoke in addition to CPU reference checks.
 
 The q20 harness binds frozen maps to the beta-1 adapter signature used by the
 existing configured NeuTra consumer. It records the underlying target and

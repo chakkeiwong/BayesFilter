@@ -46,6 +46,15 @@ prefixes were resumed into new output directories. No trained result from the
 earlier boundary is used. The experiment plan and interruption notes preserve
 the exact costs and counters.
 
+The first real GPU replay call exposed another integration gap:
+`StatelessShuffle` was unsupported by XLA_GPU. Initial compiled tests had
+covered AIS and loss updates separately but had not compiled replay selection.
+The repair uses a permutation induced by independent FP64 random keys and
+adds a compiled replay regression. A complete GPU/XLA smoke now executes
+initialization, replay selection, two actual optimizer updates and checkpoint
+round-trip successfully. This closes that engineering failure; the q20 fits
+remain untrained at the wall-clock deadline.
+
 ## Mathematical checks and their limits
 
 | Claim | Checked argument | Remaining condition or limitation |
@@ -98,8 +107,9 @@ formal certificates. The raw `*-final-audit.json` results retain those limits.
 
 ## Engineering and rendered-document checks
 
-Fifteen focused CPU-hidden reference/mechanics checks pass: 13 regression tests
-in 48.66 seconds and two additional fixed-kernel Gaussian tests in 6.63 seconds.
+The final suite passes all sixteen focused CPU-hidden reference/mechanics
+checks in 72.01 seconds. The complete GPU/XLA replay smoke passes separately
+in 15.97 seconds, including two optimizer updates and checkpoint round-trip.
 They cover bridge/replay algebra, detached gradients, inverse parameter
 derivatives, Gaussian weights and moments, distinct replay sampling, JSON
 checkpoint continuation, invalid-target rejection, correction clipping versus

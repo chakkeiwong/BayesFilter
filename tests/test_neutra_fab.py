@@ -126,8 +126,9 @@ def test_fixed_kernel_ais_recovers_shifted_normal_normalizer_and_moment(transiti
         assert float(tf.abs(mean-expectation)) < 5*float(se)
 
 
-def test_replay_distinct_indices_correction_and_resume():
-    cfg = config(replay_capacity=128, replay_min_size=64, updates_per_pass=2)
+@pytest.mark.parametrize("jit_compile", [False, True])
+def test_replay_distinct_indices_correction_and_resume(jit_compile):
+    cfg = config(replay_capacity=128, replay_min_size=64, updates_per_pass=2, jit_compile=jit_compile)
     trainer = FABTrainer(flow(), normal, cfg, target_signature="b"*64, seed=(9, 8))
     for _ in range(5):  # Author fills floor(64/16)+1 batches, not four.
         assert not trainer.step()["updates"]

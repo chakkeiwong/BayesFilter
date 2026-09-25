@@ -334,7 +334,11 @@ class FABTrainer:
         gumbel = -tf.math.log(-tf.math.log(uniform))
         indices = tf.math.top_k(replay.log_w + gumbel,
             k=self.config.batch_size * self.config.updates_per_pass).indices
-        return tf.random.experimental.stateless_shuffle(indices, keys[1])
+        # StatelessShuffle has no XLA_GPU kernel in the supported TF build.
+        # Sorting independent random keys gives a uniform permutation for
+        # distinct keys. FP64 keys make finite-RNG ties negligible at this size.
+        order = tf.argsort(tf.random.stateless_uniform(tf.shape(indices), keys[1], dtype=tf.float64))
+        return tf.gather(indices, order)
 
     def _replay_add(self, replay, x, log_w, log_q):
         indices = tf.reshape((tf.range(self.config.batch_size) + replay.index) % self.config.replay_capacity, [-1, 1])

@@ -55,9 +55,17 @@ def main():
     parser.add_argument("--replay", action="store_true")
     parser.add_argument("--calibrate-only", action="store_true")
     parser.add_argument("--resume", type=Path)
+    parser.add_argument("--deadline-utc", default="2026-09-25T10:00:00+00:00",
+        help="Campaign deadline as timezone-aware ISO timestamp; 'none' only after an owner-approved extension to bounded completion")
     args = parser.parse_args()
     if args.worker_seconds <= 0 or args.passes < 1:
         raise ValueError("positive bounds required")
+    deadline = None if args.deadline_utc == "none" else datetime.fromisoformat(args.deadline_utc)
+    if deadline is not None:
+        if deadline.tzinfo is None:
+            raise ValueError("campaign deadline requires a timezone")
+        if datetime.now(timezone.utc) >= deadline:
+            raise ValueError("campaign deadline has passed; no GPU initialization performed")
     if os.environ.get("TF_FORCE_GPU_ALLOW_GROWTH", "").lower() != "true":
         raise RuntimeError("memory growth must be enabled in launch environment")
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -72,7 +80,8 @@ def main():
         "environment": sys.executable, "started_utc": datetime.now(timezone.utc).isoformat(),
         "plan": "docs/plans/bayesfilter-fab-iaf-plan-2026-09-25.md",
         "output": str(args.output), "result": str(args.output / "result.json"),
-        "worker_seconds": args.worker_seconds, "root_seed": args.seed,
+        "worker_seconds": args.worker_seconds, "campaign_deadline_utc": args.deadline_utc,
+        "root_seed": args.seed,
         "seeds": {role: seed(args.seed, role) for role in ["map", "fab", "probe", "coverage"]},
         "requested_gpu": args.gpu, "gpu_memory_growth_env": True,
         "purpose": "exploratory_calibration_or_training_not_posterior_promotion"}
@@ -124,9 +133,9 @@ def main():
 
         def elapsed():
             return time.monotonic() - began
-        deadline = datetime.fromisoformat("2026-09-25T10:00:00+00:00")
         def time_available(reserve=0.):
-            return elapsed() + reserve < args.worker_seconds and datetime.now(timezone.utc) < deadline
+            return elapsed() + reserve < args.worker_seconds and (
+                deadline is None or datetime.now(timezone.utc) < deadline)
 
         # One compiled batch checks radii on each signed coordinate axis and
         # common points for map dtype sensitivity. It can expose tail problems,
@@ -158,8 +167,25 @@ def main():
         save(args.output / "initial-checkpoint.json", trainer.checkpoint())
         if not args.calibrate_only:
             from bayesfilter.inference.neutra_post_training import PostTrainingProbe
-            initial_probe = PostTrainingProbe(flow.as_dtype("float64"), bridge, 1., jit_compile=True)
-            initial_report = initial_probe(seed(args.seed, "probe"))
+            initial_report = None
+            if args.resume:
+                previous_probe = args.resume.parent / "initial-1000.json"
+                previous_initial = args.resume.parent / "initial-checkpoint.json"
+                if previous_probe.exists() and previous_initial.exists():
+                    old = json.loads(previous_initial.read_text())
+                    candidate = json.loads(previous_probe.read_text())
+                    if (old["parameters"] == flow.parameter_state()
+                            and old["transport_config"] == cfg.payload()
+                            and old["target_signature"] == target_signature
+                            and candidate["seed"] == list(seed(args.seed, "probe"))):
+                        initial_report = candidate
+                        manifest["initial_probe_reused"] = {"path":str(previous_probe),
+                            "sha256":hashlib.sha256(previous_probe.read_bytes()).hexdigest(),
+                            "basis":"identical map parameters, configuration, target signature and probe seed"}
+                        save(args.output / "manifest.json", manifest)
+            if initial_report is None:
+                initial_probe = PostTrainingProbe(flow.as_dtype("float64"), bridge, 1., jit_compile=True)
+                initial_report = initial_probe(seed(args.seed, "probe"))
             save(args.output / "initial-1000.json", initial_report)
             if not (initial_report["complete"] and initial_report["finite"]
                     and initial_report["valid_rows"] == initial_report["rows"]):

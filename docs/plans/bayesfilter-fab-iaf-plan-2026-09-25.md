@@ -319,3 +319,68 @@ unweighted cloud can still have a one-sided or concentrated weighted measure;
 recording both exposes that distinction. Finite empirical weights do not prove
 finite population variance or exhaustive coverage. Pass for the bounded
 diagnostic with these limits.
+
+## GPU replay compilation repair
+
+The first replay call failed on GPU because this TensorFlow build has no
+`StatelessShuffle` XLA_GPU kernel. This is an implementation-compatibility
+failure, not evidence against FAB or the posterior. The earlier XLA tests
+compiled AIS and the update independently but omitted compiled replay
+selection. Add that case, and run a complete tiny GPU replay cycle before
+resuming the expensive target. Replace the shuffle by sorting iid FP64
+random keys, preserving the uniform-permutation law for distinct keys;
+machine-precision ties are negligible at 128 selected rows. The preceding
+Gumbel top-k weighting and without-replacement selection stay unchanged.
+
+Seed 1/2 failed after 41 complete initialization passes, with zero optimizer
+updates. Seed 0 was deliberately interrupted at 40 complete passes before the
+same failure. Resume the last completed checkpoints, not the failure snapshot:
+the latter can contain newly adapted steps from the unsuccessful partial pass.
+All elapsed cost is charged. Total spent through those attempts is 5,982.020
+worker-seconds. Preserve every result, including the compatibility tracebacks.
+
+Bound the full GPU replay smoke to 150 seconds. Then resume each seed with
+a 2,300-second internal bound, 2,350-second external timeout and at most
+80/79/79 additional passes into `replay-seed-{0,1,2}-r3`. This keeps the
+120-lifetime-pass ceiling. Three external timeouts, the smoke and the three
+350-second weighted diagnostics would total 14,232.020 seconds including all
+prior attempts, below 14,400. These are ceilings, not promised training counts.
+The one-hour worker allocation is redistributed within the unchanged total
+cap, with compilation failures explicitly charged.
+
+The harness may reuse an existing initial 1,000-point report only after exact
+equality of the map parameters, transport configuration, target signature and
+probe seed. It records the source file and hash. This avoids repeating the same
+unchanged-map diagnostic after infrastructure retries. Final-map diagnostics
+remain mandatory. No data or promotion criterion changes.
+
+Skeptical review: the fix changes a backend primitive while retaining the
+sampling operation. The actual complete replay consumer must compile on GPU;
+a CPU check or an AIS-only GPU pass cannot close this failure. Pass for the
+focused repair and checkpoint continuation after that GPU smoke succeeds.
+
+## Deadline reconciliation
+
+The complete GPU replay smoke passed in 15.971 seconds, including actual
+optimizer updates, distinct replay selection and a JSON checkpoint round trip.
+The subsequent wall-clock check returned Sep25 18:52 Asia/Shanghai, after the
+owner's 18:00 campaign deadline. No new q20 training worker was launched.
+Routine implementation repair and final documentation continue; campaign
+continuation awaits the requested deadline extension.
+
+Actual charged GPU worker time is 5,997.991 seconds (1.666 hours), leaving
+8,402.009 seconds (2.334 hours) within the 14,400-second FAB allocation. The
+broader preserved campaign balance would be 17,039.168 seconds after these
+charges, but it does not override the current FAB allocation or wall deadline.
+Seed 0 has 40 complete passes and 1,280 replay rows; seeds 1 and 2 each have
+41 passes and 1,312 rows. All three have zero q20 optimizer updates. Their
+initial 1,000-point probes are complete and finite; no final trained-map probe
+or posterior estimate exists.
+
+`artifacts/neutra-fab-2026-09-25/prepared-continuation.json` contains exact
+conditional commands for the three resumes and preserves checkpoint hashes.
+They require the pending owner deadline extension before launch. The harness
+now checks an expired deadline before GPU initialization and records any
+explicitly supplied replacement deadline. Disabling the calendar deadline is
+appropriate only for the requested owner extension to bounded completion;
+the per-worker and aggregate compute ceilings remain in force.
