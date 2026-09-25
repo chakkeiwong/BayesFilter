@@ -16,7 +16,8 @@ variants) follow the same template; each addition must extend
 
 from __future__ import annotations
 
-import numpy as np
+import math
+
 import tensorflow as tf
 
 from bayesfilter.highdim.ledh_canonical_score_tf import NonlinearScoreModel
@@ -43,19 +44,12 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
     RK4 dynamics rather than an eye() transition matrix.
     """
 
-    from bayesfilter.highdim.models import zhao_cui_sir_austria_model
+    from bayesfilter.highdim.models import _zhao_cui_sir_austria_adjacency_xla
 
-    base = zhao_cui_sir_austria_model()
-    adjacency = tf.cast(base._adjacency_matrix, dtype)  # noqa: SLF001
+    adjacency = tf.cast(_zhao_cui_sir_austria_adjacency_xla(), dtype)
     degree = tf.reduce_sum(adjacency, axis=1)
     step = tf.constant(0.005, dtype)
-    infectious_matrix = tf.stack(
-        [
-            tf.one_hot(2 * index + 1, 18, dtype=dtype)
-            for index in range(9)
-        ],
-        axis=0,
-    )
+    infectious_matrix = tf.one_hot(2 * tf.range(9) + 1, 18, dtype=dtype)
 
     def physical(theta):
         return (
@@ -116,8 +110,7 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
         )
 
     def transition_mean_fn(theta, points):
-        current = points
-        for _ in range(4):
+        def body(index, current):
             k1 = rhs(theta, current)
             k2 = rhs(theta, current + 0.5 * step * k1)
             k3 = rhs(theta, current + 0.5 * step * k2)
@@ -125,6 +118,14 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
             # vendored gate 2026-08-24): k4 at 0.5*step, not step.
             k4 = rhs(theta, current + 0.5 * step * k3)
             current = current + step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+            return index + 1, current
+
+        _, current = tf.while_loop(
+            lambda index, current: index < 4,
+            body,
+            (tf.constant(0), points),
+            parallel_iterations=1,
+        )
         return current
 
     def transition_mean_tangent_fn(theta, points, d_points):
@@ -134,8 +135,7 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
         # the assembly calls with d_points carrying the state tangent and
         # the parameter direction is fixed per call (d_theta one-hot).
         d_theta = _current_direction[0]
-        current, d_current = points, d_points
-        for _ in range(4):
+        def body(index, current, d_current):
             k1 = rhs(theta, current)
             d1 = rhs_tangent(theta, current, d_current, d_theta)
             k2 = rhs(theta, current + 0.5 * step * k1)
@@ -167,6 +167,14 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
             d_current = d_current + step / 6.0 * (
                 d1 + 2.0 * d2 + 2.0 * d3 + d4
             )
+            return index + 1, current, d_current
+
+        _, _, d_current = tf.while_loop(
+            lambda index, current, d_current: index < 4,
+            body,
+            (tf.constant(0), points, d_points),
+            parallel_iterations=1,
+        )
         return d_current
 
     _current_direction = [tf.constant([1.0, 0.0, 0.0], dtype)]
@@ -195,7 +203,7 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
     # the score assembly carries no dR term, so a model with R(theta)
     # must supply the density callback pair and the covariance tangent
     # (same convention as the dlgssm q/r wiring).
-    log_two_pi = tf.constant(np.log(2.0 * np.pi), dtype)
+    log_two_pi = tf.constant(math.log(2.0 * math.pi), dtype)
 
     def observation_log_density_fn(theta, points, observation):
         observed = tf.einsum("oi,ni->no", infectious_matrix, points)
@@ -315,7 +323,7 @@ def generalized_sv_canonical_model(theta_fixed: Tensor):
         return -0.5 * (
             tf.square(residual) * tf.exp(-h)
             + h
-            + tf.constant(np.log(2.0 * np.pi), DTYPE)
+            + tf.constant(math.log(2.0 * math.pi), DTYPE)
         )
 
     def observation_log_density_tangent_fn(theta, points, observation, d_points):
@@ -417,13 +425,20 @@ def predator_prey_canonical_model(theta_fixed: Tensor):
         )
 
     def transition_mean_fn(theta, points):
-        current = points
-        for _ in range(20):
+        def body(index, current):
             k1 = rhs(theta, current)
             k2 = rhs(theta, current + 0.5 * step * k1)
             k3 = rhs(theta, current + 0.5 * step * k2)
             k4 = rhs(theta, current + step * k3)
             current = current + step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+            return index + 1, current
+
+        _, current = tf.while_loop(
+            lambda index, current: index < 20,
+            body,
+            (tf.constant(0), points),
+            parallel_iterations=1,
+        )
         return current
 
     _direction = [tf.zeros([6], DTYPE)]
@@ -433,8 +448,7 @@ def predator_prey_canonical_model(theta_fixed: Tensor):
 
     def transition_mean_tangent_fn(theta, points, d_points):
         d_theta = _direction[0]
-        current, d_current = points, d_points
-        for _ in range(20):
+        def body(index, current, d_current):
             k1 = rhs(theta, current)
             d1 = rhs_tangent(theta, current, d_current, d_theta)
             k2 = rhs(theta, current + 0.5 * step * k1)
@@ -454,6 +468,14 @@ def predator_prey_canonical_model(theta_fixed: Tensor):
             )
             current = current + step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
             d_current = d_current + step / 6.0 * (d1 + 2.0 * d2 + 2.0 * d3 + d4)
+            return index + 1, current, d_current
+
+        _, _, d_current = tf.while_loop(
+            lambda index, current, d_current: index < 20,
+            body,
+            (tf.constant(0), points, d_points),
+            parallel_iterations=1,
+        )
         return d_current
 
     model = NonlinearScoreModel(
@@ -498,7 +520,7 @@ def diagonal_lgssm_canonical_model(theta_fixed: Tensor):
         d_theta = _direction[0]
         return d_points * theta[:3][None, :] + points * d_theta[:3][None, :]
 
-    log_two_pi = tf.constant(np.log(2.0 * np.pi), DTYPE)
+    log_two_pi = tf.constant(math.log(2.0 * math.pi), DTYPE)
 
     def _scaled_gaussian(points, means, scale):
         residual = points - means
@@ -627,7 +649,7 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
     def transition_mean_tangent_fn(theta, points, d_points):
         d_theta = _direction[0]
         gamma = gamma_of(theta)
-        normalizer = tf.constant(1.0 / np.sqrt(2.0 * np.pi), DTYPE)
+        normalizer = tf.constant(1.0 / math.sqrt(2.0 * math.pi), DTYPE)
         dgamma = normalizer * tf.exp(-0.5 * tf.square(theta[0])) * d_theta[0]
         return dgamma * points + gamma * d_points
 
@@ -647,7 +669,7 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
             * (
                 tf.square(w[:, None] - means[None, :]) / variances[None, :]
                 + tf.math.log(variances)[None, :]
-                + tf.constant(np.log(2.0 * np.pi), DTYPE)
+                + tf.constant(math.log(2.0 * math.pi), DTYPE)
             )
         )
         return tf.reduce_logsumexp(terms, axis=1)
@@ -661,7 +683,7 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
             * (
                 tf.square(w[:, None] - means[None, :]) / variances[None, :]
                 + tf.math.log(variances)[None, :]
-                + tf.constant(np.log(2.0 * np.pi), DTYPE)
+                + tf.constant(math.log(2.0 * math.pi), DTYPE)
             )
         )
         responsibilities = tf.nn.softmax(terms, axis=1)

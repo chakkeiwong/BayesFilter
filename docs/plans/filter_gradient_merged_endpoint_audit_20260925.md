@@ -20,7 +20,7 @@ Initial inspected findings:
 | Endpoint or source | Checked fact | Disposition and next evidence |
 |---|---|---|
 | `ledh_alg1_contract.py:165` → `ledh_canonical_filter_tf.py:85` | The registered canonical single-cloud value entry resolves to a host time loop at line 167; finite-state decisions materialize tensors at lines 174--180; resampling uses NumPy at lines 301--306. `_replication_generator` also uses NumPy SeedSequence. | Confirmed execution-policy violation. Trace each actual consumer and compare the existing analytical/value recurrences before choosing a shared native implementation. Block execution-readiness claims for this path; no new canonical-algorithm rebuild is authorized. |
-| `ledh_canonical_models_tf.py` | Four numerical RK4 loops at lines 120/138/421/437 and NumPy constants at lines 198/318/501/630/650/664 remain. | Inspect callback call chains and compiled graph growth. Convert numerical recurrences to native TensorFlow while preserving steps, tangent equations, dtypes and constants; do not silently permit numerical unrolling. |
+| `ledh_canonical_models_tf.py` | Four numerical RK4 loops and NumPy constants remained at the merged baseline. | Repaired through 03815: native TensorFlow loops/constants and shared Austria adjacency. Eight checks pass per CPU/GPU backend. Complete caller/default qualification and costs remain open; the inherited predator--prey source discrepancy below remains unresolved. |
 | `ledh_canonical_neutra_targets_tf.py:521` at merged baseline | The KSC fused-model builder imported NumPy to calculate two normalizing constants. | Repaired and callback-qualified in 03809/03810 with frozen-source and independent tangent checks. Complete LEDH target integration remains open. |
 | `pruned_srukf_tf.py:206` | An inner non-JIT value call is enclosed by the public default-XLA analytical/autodiff factory at lines 190--199. | Literal `jit_compile=False` is not by itself an enclosing-XLA violation. Verify actual public HLO, derivatives, trace stability and numeric-only return values. Classify its score as autodiff, not an analytical recursion. |
 | `ledh_younis_kdm_resampling_tf.py:593/602` | Two component factories request graph functions. | Trace their enclosing public factories and actual consumers before deciding whether XLA is bypassed. No compliance conclusion yet. |
@@ -115,3 +115,145 @@ parity plus independent tangents constrains this constant-only change, but canno
 certify a filter path whose remaining loops and compilation boundary have not
 been qualified. Existing signatures intentionally remain stable because no
 numerical definition or dataset changed; no historical admission is refreshed.
+
+Next bounded repair (checkpoint `ea3a6582a`): replace the four model RK4 Python
+recurrences by `tf.while_loop` with one body and unchanged stage arithmetic;
+replace the Austria extraction-matrix comprehension by tensor indices and the
+remaining NumPy constants by `math`. Preserve every model signature, time step,
+parameter chart and tangent. These callbacks intentionally share their caller's
+compilation boundary: adding independent decorators would capture the mutable
+direction setters and could freeze the wrong derivative. The public score
+wrapper's enclosing default-XLA gap remains a separate repair.
+
+Source anchors inspected before implementation: Zhao--Cui paper section 6.3,
+equation (37), extracted text lines 2250--2312 (SIR, four 0.005 substeps); section
+6.4, equation (38), lines 2410--2456 (predator--prey, twenty 0.1 substeps).
+Author files under `third_party/audit/tensor-ssm-paper-demo/models`: extracting
+`matlab/document.xml` from each `.mlx` and numbering `''.join(tree.itertext())`
+lines gives `sir_austria/sir_step.mlx` lines 5--18 (four steps, half-step k4),
+`sir_austria/odefun.mlx` lines 7--23 (adjacency and RHS),
+`pp/predator_step.mlx` lines 24--37 (twenty steps, **half-step k4**), and
+`pp/odefun.mlx` lines 2--9 (author parameter order and affine K/a charts).
+The Austria stage replacement is `source_faithful` at these cited operations;
+its existing parameter inference/tangents are local adaptations, not paper
+claims. The existing predator--prey adapter uses the paper's physical parameter
+order and full-step k4. Relative to the vendored implementation this is an
+inherited `extension_or_invention`, preserved by the authorized execution-only
+repair. No author-source-equivalence claim is eligible from this result. Record
+this discrepancy as an open model-fidelity finding; silently adopting the
+author quirk here would violate the frozen numerical comparator contract.
+
+Current import search finds this module in the algorithm registry and three
+diagnostic test modules; the fused target has separate callbacks. This local
+repair therefore cannot qualify the fused target or the registered complete
+filter. Verify all five exported model factories against exact merged source
+`9d8202b77` with three-row initial/changed/exact-replay fixtures, full callback
+records, one explicit input signature, unchanged HLO and no host callbacks.
+Check analytical transition/density/covariance tangents independently with
+centered differences at 1e-4 and 5e-5, perturbing parameter and state together.
+Use original callback comparison tolerances 1e-12 absolute/relative and derivative
+tolerances 1e-7 absolute/relative; report all discrepancies, without changing
+tolerances. A bounded float32 Austria execution comparison uses 1e-5
+absolute/relative and independent 1e-2/5e-3 steps at 2e-3 derivative tolerance;
+it is a dtype smoke, not float64 qualification. Explicit graph/reference arms
+are diagnostic exceptions. Require native loop bodies for both recurrence
+pairs and add the repaired module to the exact source guard with no allowances.
+
+Run CPU and GPU callback groups, then the policy group: at most three workers
+of 300 seconds each, leaving two workers for unchanged-fixture localization
+within the existing five-worker / 2378.759638-second allowance. A numerical or
+source failure vetoes qualification and triggers localization; neither a failed
+candidate nor inherited source divergence rejects the research direction.
+No full-filter score, seeded-stream, training, reset, tuning, admission, main
+promotion or performance claim follows. Separate-process cold/warm/RSS/allocator
+comparisons remain required after correctness, as in the parent plan.
+
+Skeptical pre-run review: no invalidated historical LEDH result is a baseline;
+the comparator is executable merged source. Tangent tests use supplied direction
+tensors inside the traced factory, so they cannot pass by retaining a stale
+Python direction. Source-anchor inspection exposed the predator--prey mismatch
+above; preserve and disclose it rather than claim author equivalence. Callback
+HLO is deliberately not treated as whole-filter default-XLA evidence. This
+bounded mechanism test is adequate to select the execution repair, with broader
+consumer, performance and scientific gates still open. Primary-agent review;
+no independent reviewer used.
+
+Attempt 03812: five checks pass; both Austria dtype cases stop at factory
+construction, before any numerical comparison. The existing factory constructs
+`SpatialSIRSSM`, whose host configuration validation calls `.numpy()` on a
+symbolic tensor. This is an enclosing-construction limitation, not an RK4
+numerical failure. Localize by using the existing
+`models._zhao_cui_sir_austria_adjacency_xla` authority in the candidate and
+checking its matrix exactly against the original host constructor. Do not copy
+an adjacency table into this module. The exact original factory remains
+unchanged and is constructed outside tracing, as its existing API requires;
+make one original reference graph for each fixed initial/changed factory
+configuration and reuse the initial graph for replay. Candidate graph/XLA each
+keep one signature and accept changed parameters/directions without rebuilding.
+This documents the comparator's fixed-covariance construction boundary rather
+than patching the baseline's numerical source. Add the matrix check and retry
+within the existing unit's remaining four workers. All frozen inputs, numerical
+tolerances and derivative checks remain unchanged. Reference compilation counts
+are one per fixed factory, not one across two different factory configurations.
+
+Second repair result through 03815: all eight focused checks pass on CPU 03813
+and GPU2 03814, with 129 policy checks passing 03815. One frozen 3369-file source
+closure binds these successful runs. The model module now has four native
+TensorFlow RK4 recurrences, a tensor extraction matrix and standard-library
+constants, with no Python numerical loop or NumPy import. Austria uses the
+existing shared adjacency tensor; exact comparison against the host constructor
+passes. The failed pre-localization 03812 remains in the evidence archive.
+
+Every factory passes initial/changed/replay and independent transition/density/
+available-covariance tangent checks. All float64 original, graph/XLA and
+cross-device comparisons stay below 0.000315 of their 1e-12 absolute/relative
+limit. The maximum finite-difference scaled discrepancy is 0.005656 of the
+declared 1e-7 derivative limit. Austria float32 remains a separate dtype smoke:
+original comparison is below 0.01276 of its limit, cross-device below 0.007406,
+and the derivative check reaches 0.773166 of its looser predeclared limit. It
+does not inherit float64 accuracy. Both RK4 models retain two native loop bodies
+(value and tangent), one candidate trace, unchanged HLO on changed operands,
+exact replay and no host callbacks. All returned candidate tensors are on the
+requested device; GPU growth was verified before initialization on UUID
+`GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba`.
+
+The independent standard-library analyzer also passes all saved CPU/GPU numeric
+records and validates the JUnit counts and common source freeze. Evidence:
+`artifacts/filter-gradient-repair-20260917/merged-ledh-models-verification-03815.json`,
+its analysis JSON and archive (including failed and successful runs, HLO, logs
+and candidate source). Reproduce with
+`python3 docs/plans/artifacts/filter-gradient-repair-20260917/analyze-merged-ledh-models-03815.py <raw-artifact-root>`.
+
+| Decision | Criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Accept the callback execution repair in the tested scope | Exact original-source parity and independent tangents on CPU/GPU | No numerical, replay, trace, device or callback veto fired after the constructor repair | Complete filter/score callers and additional model regimes | Qualify enclosing endpoints | Canonical LEDH or author-source admission |
+| Preserve predator--prey arithmetic | Authorized execution-only comparator contract | Vendored source mismatch blocks author-equivalence claims | The intended full-step versus author half-step target | Separate model-fidelity disposition; do not silently change the algorithm | Author equivalence |
+| Expand the exact guard | Complete repaired module has no forbidden nodes | No new allowance | Guard still covers only part of the repository | Continue endpoint discovery and caller checks | Repository-wide policy compliance |
+| Keep cost/memory gate open | Runs combine graph/reference/XLA in each process | No isolated performance or memory evidence | Compilation overhead and native retention | Matched fresh-process before/after unit after caller repair | Speedup, memory improvement or leak freedom |
+
+This audit unit has used seven of eight workers and 93.205779 of 2400 seconds.
+One worker / 2306.794221 seconds remains under its total cap; the per-worker
+limits still apply. Cumulative charges are 75364.243198 CPU / 75223.965436 GPU
+seconds, leaving 11.065488 CPU / 31.104454 GPU hours. The partial source guard
+now covers 238 sources / 1346 exact allowances, without a new waiver. Focused
+test and runner Ruff checks pass; the model retains three pre-existing lint
+findings, one fewer than baseline. No worker remains active. Main promotion and
+F01--F20 terminal acceptance remain blocked.
+
+Post-run skeptical review: the factory-construction failure was preserved and
+fixed through a shared tensor authority with exact matrix verification. The
+baseline was not numerically patched. Successful callback results do not certify
+missing covariance tangents or other complete-model derivative contracts;
+only supplied callback pairs were tested. A paired CPU/GPU record comparison
+adds backend coverage but does not make these combined-process runs performance
+benchmarks. No tolerance, reset, seeded stream, score implementation or admission
+identity changed. This is primary-agent review, not independent terminal review.
+
+Further caller inspection: `score_study/canonical_adapter_tf.py::make_canonical_kernel`
+already supplies a stable default-XLA outer wrapper for its Gaussian fixture
+(lines 38--76). `ledh_canonical_batch_tf.py` and the fused wrapper still call the
+raw shared score, so their actual outer consumers need classification. The
+exported `ledh_younis_kdm_tf.py::canonical_linear_gaussian_kdm_auxiliary` explicitly
+uses eager orchestration around that score call; its JIT option applies to later
+components. These are source-level findings, not executed wrapper qualification.
+Do not infer that the score-study wrapper makes every public caller compiled.

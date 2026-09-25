@@ -177,6 +177,8 @@ TEST_GROUPS = {
     "dz5_merged_import_cpu": ("tests/test_filter_repair_dz5_merged.py::test_merged_dz5_snapshot_import",),
     **{f"merged_ledh_boundary_{device}": ("tests/test_filter_repair_merged_ledh_boundary.py",)
         for device in ("cpu", "gpu")},
+    **{f"merged_ledh_models_{device}": ("tests/test_filter_repair_merged_ledh_models.py",)
+        for device in ("cpu", "gpu")},
     **{f"dz5_merged_target_{batch}_{device}": (
         f"tests/test_filter_repair_dz5_merged.py::test_merged_dz5_target_graph_xla[{batch}]",)
         for batch in (1, 4, 46, 68) for device in ("cpu", "gpu")},
@@ -1677,6 +1679,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     "merged_ledh_boundary_gpu": "GPU",
+    "merged_ledh_models_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["dz5_target_gpu"]},
     **{name: "GPU" for name in TEST_GROUPS if name.startswith("remote_integration_") and name.endswith("_gpu")},
     **{group: "GPU" for group in TEST_BATCHES["remaining_svd_cost_gpu"]},

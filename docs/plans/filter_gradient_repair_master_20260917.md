@@ -4,29 +4,38 @@ The [merged endpoint audit](filter_gradient_merged_endpoint_audit_20260925.md)
 now names concrete new LEDH Python-loop/NumPy violations and the bounded repair
 sequence; these remain terminal blockers alongside actual-consumer integration.
 
-Current checkpoint, 2026-09-25 through 03811: remote merge `9d8202b77` and
-frozen DZ5 comparison `801354b77` are pushed. Actual CDF target graph/XLA,
-archived-source and CPU/GPU comparisons pass B=1/4/46/68, including invalid rows,
-replay, stable traces/HLO and source/device checks. Read the [target result](filter_gradient_dz5_target_result_20260925.md).
+Current checkpoint, 2026-09-25 through 03815: the merged LEDH model callback
+repair passes eight checks on each CPU/GPU backend and all 129 policy checks.
+Four RK4 recurrences now use native TensorFlow loops; the module has no NumPy
+or Python numerical loop. Austria uses the shared tensor adjacency authority.
+Five factories plus an Austria float32 smoke pass original-source parity,
+independent tangents, changed operands, exact replay, stable HLO and device
+checks. The failed construction attempt 03812 is preserved. Read the
+[endpoint audit and result](filter_gradient_merged_endpoint_audit_20260925.md).
 
-The first [merged endpoint repair](filter_gradient_merged_endpoint_audit_20260925.md)
-now passes three focused checks per device and all 129 policy checks. The LEDH
-row-mapped target's unsupported NeuTra eligibility labels are corrected; the
-actual training binder rejects it before evaluation. KSC callbacks no longer
-import NumPy and pass frozen-reference and independent tangent checks. Existing
-canonical numerical methods, datasets and admissions remain unchanged.
+The inherited predator--prey full-step k4 differs from the vendored author's
+half-step. Preserve current arithmetic under the execution-only scope and block
+source-equivalence claims. Row-mapped LEDH training remains ineligible. The
+actual frozen DZ5 target comparison remains qualified in its earlier scope;
+read the [target result](filter_gradient_dz5_target_result_20260925.md).
 
-Next repair the registered LEDH host/model recurrences and qualify their actual
-XLA boundaries under the remaining five-worker/2378.759638-second audit unit.
-Continue the fresh DZ5 score oracle and public initializer/staged-supervisor
-integration afterward. Reporting/isotropic discrepancies, cold/RSS/native capacity
-and terminal F01--F20 dispositions remain open. Main promotion is blocked. The
-partial guard remains 237 sources / 1346 exact allowances; no new numerical-loop,
-NumPy or non-XLA waiver was added.
+Next finish the registered LEDH host/score caller/default audit and plan the
+shared native endpoint repair; do not mistake callback HLO for the enclosing
+filter. Then continue the fresh DZ5 score oracle and public initializer/staged
+supervisor. Matched before/after costs, reporting/isotropic discrepancies,
+cold/RSS/native capacity and F01--F20 terminal dispositions remain open. Main
+promotion is blocked. Guard: 238 sources / 1346 exact allowances; no new waiver.
 
-Charges through 03811 are 75320.454192 CPU / 75195.789026 GPU seconds, leaving
-11.077652 CPU / 31.112281 GPU hours. No worker is active. Exact repair source
-hashes are preserved in the linked receipt. Earlier checkpoints retain historical scope.
+The current endpoint unit has one of eight workers / 2306.794221 of 2400 seconds
+remaining. Charges through 03815 are 75364.243198 CPU / 75223.965436 GPU seconds,
+leaving 11.065488 CPU / 31.104454 GPU hours under unchanged 32/52-hour caps.
+No worker is active. Current evidence receipt:
+`artifacts/filter-gradient-repair-20260917/merged-ledh-models-verification-03815.json`.
+Repair worktree: `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`.
+Branch: `repair/filter-gradient-xla-validation-20260918`; prior pushed commit
+`ea3a6582a`. Stable runner: `scripts/run_filter_repair_campaign.py`. Raw evidence
+is in `/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
+Older checkpoints below preserve historical scope and instructions only.
 
 Current checkpoint, 2026-09-25 through 03762: all 48 matched remaining-SVD
 cost workers are complete. The saved CPU/GPU analyses reproduce exactly from
