@@ -210,6 +210,22 @@ TEST_GROUPS = {
         "tests/test_filter_repair_dz5_addition_order.py::test_ordered_add_primitive",),
     "kdm_auxiliary_legacy_cpu": (
         "tests/highdim/test_ledh_younis_kdm_tf.py::test_auxiliary_api_uses_canonical_trace_and_has_no_feedback",),
+    **{f"genut_transitive_{dtype}_{device}": (
+        f"tests/test_filter_repair_genut_transitive.py::test_complete_reduced_correction[{dtype}]", "-s")
+       for dtype in ("f64", "f32") for device in ("cpu", "gpu")},
+    **{f"genut_transitive_consumers_{device}": (
+        "tests/test_filter_repair_genut_transitive.py::test_actual_reset_consumer",
+        "tests/test_filter_repair_genut_transitive.py::test_austria_observation_callback",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_transitive_cross_mode_{device}": (
+        "tests/test_filter_repair_genut_transitive.py::test_f32_cross_mode_complete_record",)
+       for device in ("cpu", "gpu")},
+    "genut_transitive_moment_localization_gpu": (
+        "tests/test_filter_repair_genut_transitive.py::test_f32_moment_localization", "-s"),
+    **{f"genut_transitive_cost_{arm}_{mode}_{device}": (
+        f"tests/test_filter_repair_genut_transitive.py::test_reduced_correction_cost[{arm}-{mode}]",)
+       for arm in ("original", "native") for mode in ("graph", "xla") for device in ("cpu", "gpu")
+       if (arm, mode, device) != ("original", "xla", "gpu")},
     **{f"ledh_safety_{device}": (
         "tests/test_filter_repair_ledh_safety_stages.py::test_guarded_shared_helper_wiring",
         "tests/test_filter_repair_ledh_safety_stages.py::test_safety_shapes_and_rejections",)
@@ -1300,6 +1316,7 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "genut_transitive_moment_localization_gpu": "Explicit TF32 accuracy control; no default qualification or numerical gate waiver.",
     "kdm_auxiliary_localization_cpu": "Complete baseline rejection localization; cannot waive KDM endpoint repair or qualification.",
     "dz5_ordered_add_primitive_cpu": "Independent no-inline addition cancellation/derivative diagnostic; no actual target or runtime qualification.",
     **{f"dz5_ordered_add_overlay_{horizon}_cpu": "Explicit source-overlay addition-order diagnostic; cannot qualify unchanged runtime or admit the target."
@@ -1866,7 +1883,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     **{group: "GPU" for group in TEST_GROUPS
-       if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_")) and group.endswith("_gpu")},
+       if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_", "genut_transitive_")) and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS
        if group.startswith("kdm_") and group.endswith("_gpu")},
     "dz5_score_oracle_graph_gpu": "GPU",

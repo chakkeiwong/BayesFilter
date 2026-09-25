@@ -22,9 +22,10 @@ FP64/FP32 stage, analytical finite-difference, changed-input, exact-replay,
 consumer, HLO and policy checks on CPU and GPU 2. The repaired stage traces
 once and its graphs contain native `While` control and no Python callbacks.
 The exact-source guard now covers 253 modules with 1,359 exact allowances and
-reports no violations or stale exceptions. Three fixed configuration-time
-allowances cover the higher-moment optional-field check and the mandated
-transport chunk selector; they do not waive numerical loops.
+reports no violations or stale exceptions. Five fixed configuration-time
+allowances cover three TensorSpec-schema comprehensions, the higher-moment
+optional-field check and the mandated transport chunk selector; they do not
+waive numerical loops.
 
 | Arm | Device | Cold seconds | Warm median ms | RSS after compile / replay, MiB |
 | --- | --- | ---: | ---: | ---: |

@@ -1,4 +1,9 @@
-"""Primal-only dual-cap GenUT shape correction for LEDH reset clouds."""
+"""Primal-only dual-cap GenUT shape correction for LEDH reset clouds.
+
+This existing reduced correction is not the canonical trust-region algorithm
+and cannot establish canonical LEDH admission. Call it inside the consumer's
+enclosing XLA program; its numerical recurrences use TensorFlow control flow.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +12,7 @@ import tensorflow as tf
 
 Tensor = tf.Tensor
 DUAL_CAP_PRIMAL_ID = "dual_cap_genut_primal_b098_p8_radial2_v1"
+CANONICAL_LEDH_ADMITTED = False
 
 
 def _sym(value: Tensor) -> Tensor:
@@ -22,14 +28,18 @@ def _right_solve(lower: Tensor, rows: Tensor) -> Tensor:
 def _weighted_moments(points: Tensor, weights: Tensor) -> tuple[Tensor, Tensor]:
     mean = tf.reduce_sum(weights[:, None] * points, axis=0)
     centered = points - mean[None, :]
-    covariance = tf.einsum("n,ni,nj->ij", weights, centered, centered)
+    covariance = tf.reduce_sum(
+        weights[:, None, None] * centered[:, :, None] * centered[:, None, :], axis=0
+    )
     return mean, _sym(covariance)
 
 
 def _uniform_moments(points: Tensor) -> tuple[Tensor, Tensor]:
     mean = tf.reduce_mean(points, axis=0)
     centered = points - mean[None, :]
-    covariance = tf.einsum("ni,nj->ij", centered, centered) / tf.cast(
+    covariance = tf.reduce_sum(
+        centered[:, :, None] * centered[:, None, :], axis=0
+    ) / tf.cast(
         tf.shape(points)[0], points.dtype
     )
     return mean, _sym(covariance)
@@ -42,8 +52,12 @@ def _standardize_uniform(points: Tensor) -> Tensor:
 
 def _pair_moments(standardized: Tensor, weights: Tensor) -> tuple[Tensor, Tensor]:
     squared = tf.square(standardized)
-    co_skew = tf.einsum("n,ni,nj->ij", weights, squared, standardized)
-    co_kurtosis = tf.einsum("n,ni,nj->ij", weights, squared, squared)
+    co_skew = tf.reduce_sum(
+        weights[:, None, None] * squared[:, :, None] * standardized[:, None, :], axis=0
+    )
+    co_kurtosis = tf.reduce_sum(
+        weights[:, None, None] * squared[:, :, None] * squared[:, None, :], axis=0
+    )
     off_diagonal = 1.0 - tf.eye(
         tf.shape(standardized)[1], dtype=standardized.dtype
     )
@@ -110,9 +124,9 @@ def _pairwise_iteration(
     residual4 = off_diagonal * (target_co_kurtosis - co_kurtosis)
 
     squared = tf.square(standardized)
-    row3 = tf.linalg.matmul(standardized, residual3, transpose_b=True)
-    column3 = tf.linalg.matmul(squared, residual3)
-    row4 = tf.linalg.matmul(squared, residual4, transpose_b=True)
+    row3 = tf.reduce_sum(standardized[:, None, :] * residual3[None, :, :], axis=2)
+    column3 = tf.reduce_sum(squared[:, :, None] * residual3[None, :, :], axis=1)
+    row4 = tf.reduce_sum(squared[:, None, :] * residual4[None, :, :], axis=2)
     dimension_scale = tf.cast(
         tf.maximum(tf.shape(standardized)[1] - 1, 1), standardized.dtype
     )
@@ -125,7 +139,11 @@ def _pairwise_iteration(
     cross = tf.reduce_mean(
         standardized[:, :, None] * direction[:, None, :], axis=0
     )
-    projected = direction - tf.linalg.matmul(standardized, _sym(cross))
+    # An explicit contraction avoids the XLA GPU GEMM fusion layout conflict
+    # between the two orientations in this symmetric factor.
+    projected = direction - tf.reduce_sum(
+        standardized[:, :, None] * _sym(cross)[None, :, :], axis=1
+    )
     rms = tf.sqrt(
         tf.reduce_mean(tf.square(projected)) + tf.cast(floor, standardized.dtype)
     )
@@ -164,7 +182,7 @@ def dual_cap_genut_primal(
     coordinate_cap: float = 0.98,
     coordinate_cap_power: int = 8,
 ) -> dict[str, Tensor]:
-    """Apply the owner-selected dual-cap family without derivative work."""
+    """Apply the existing reduced dual-cap correction without derivative work."""
 
     source = tf.convert_to_tensor(source)
     weights = tf.convert_to_tensor(weights, source.dtype)
@@ -206,31 +224,53 @@ def dual_cap_genut_primal(
     )
 
     standardized = _standardize_uniform(reset_points)
-    for _ in range(diagonal_steps):
-        standardized = _diagonal_iteration(
-            standardized,
+
+    def diagonal_body(index, current):
+        corrected = _diagonal_iteration(
+            current,
             target_skew,
             target_kurtosis,
             strength=diagonal_strength,
             floor=diagonal_floor,
         )
+        return index + 1, corrected
+
+    _, standardized = tf.while_loop(
+        lambda index, _current: index < diagonal_steps,
+        diagonal_body,
+        (tf.constant(0), standardized),
+        parallel_iterations=1,
+    )
 
     maximum_pre_cap_rms = tf.zeros([], source.dtype)
     maximum_post_cap_rms = tf.zeros([], source.dtype)
     minimum_radial_scale = tf.ones([], source.dtype)
     if source.shape[1] > 1:
-        for _ in range(pairwise_steps):
-            standardized, pre_rms, post_rms, minimum_scale = _pairwise_iteration(
-                standardized,
+        def pairwise_body(index, current, maximum_pre, maximum_post, minimum_scale):
+            corrected, pre_rms, post_rms, scale = _pairwise_iteration(
+                current,
                 target_co_skew,
                 target_co_kurtosis,
                 strength=pairwise_strength,
                 floor=pairwise_floor,
                 particle_rms_cap=pairwise_particle_rms_cap,
             )
-            maximum_pre_cap_rms = tf.maximum(maximum_pre_cap_rms, pre_rms)
-            maximum_post_cap_rms = tf.maximum(maximum_post_cap_rms, post_rms)
-            minimum_radial_scale = tf.minimum(minimum_radial_scale, minimum_scale)
+            return (
+                index + 1,
+                corrected,
+                tf.maximum(maximum_pre, pre_rms),
+                tf.maximum(maximum_post, post_rms),
+                tf.minimum(minimum_scale, scale),
+            )
+
+        (_, standardized, maximum_pre_cap_rms, maximum_post_cap_rms,
+         minimum_radial_scale) = tf.while_loop(
+            lambda index, *_state: index < pairwise_steps,
+            pairwise_body,
+            (tf.constant(0), standardized, maximum_pre_cap_rms,
+             maximum_post_cap_rms, minimum_radial_scale),
+            parallel_iterations=1,
+        )
 
     pre_coordinate_cap = standardized
     cap = tf.cast(coordinate_cap, source.dtype)
@@ -240,8 +280,8 @@ def dual_cap_genut_primal(
     capped = pre_coordinate_cap / denominator
     cap_derivative = tf.pow(1.0 + scaled_power, -1.0 / power - 1.0)
     standardized = _standardize_uniform(capped)
-    particles = target_mean[None, :] + tf.linalg.matmul(
-        standardized, target_cholesky, transpose_b=True
+    particles = target_mean[None, :] + tf.reduce_sum(
+        standardized[:, None, :] * target_cholesky[None, :, :], axis=2
     )
 
     output_mean, output_covariance = _uniform_moments(particles)

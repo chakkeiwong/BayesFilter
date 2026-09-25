@@ -448,7 +448,22 @@
     "bayesfilter/highdim/ledh_unified_correction_tf.py": null,
     "bayesfilter/highdim/higher_moment_contract_e.py": null,
     "bayesfilter/highdim/genut_shape_lm_tf.py": null,
-    "bayesfilter/highdim/transport_chunk_policy.py": null
+    "bayesfilter/highdim/transport_chunk_policy.py": null,
+    "bayesfilter/diagnostics.py": null,
+    "bayesfilter/highdim/cubature_genut_adapters.py": null,
+    "bayesfilter/highdim/cubature_genut_filter.py": null,
+    "bayesfilter/highdim/diagnostics.py": null,
+    "bayesfilter/highdim/dual_cap_genut_primal_tf.py": null,
+    "bayesfilter/highdim/fixed_branch.py": null,
+    "bayesfilter/highdim/genut_guided_proposal_tf.py": null,
+    "bayesfilter/highdim/ledh_pfpf_genut_model_callbacks_tf.py": null,
+    "bayesfilter/highdim/validation.py": null,
+    "bayesfilter/inference/posterior_adapter.py": null,
+    "bayesfilter/nonlinear/cut_tf.py": null,
+    "bayesfilter/nonlinear/svd_cut_tf.py": null,
+    "bayesfilter/results_tf.py": null,
+    "bayesfilter/structural.py": null,
+    "bayesfilter/structural_tf.py": null
   },
   "exceptions": [
     {
@@ -12728,6 +12743,574 @@
       "ast_sha256": "4be1ba5f4583afe7b61769f7b184dae553b823543892bf419f87003792e75348",
       "role": "host_validation",
       "reason": "Owner-mandated dpf_transport_exact_divisor_cap3000_v1 selector executes on static particle-count configuration before tracing. Divisor search does not execute inside the numerical graph."
+    },
+    {
+      "path": "bayesfilter/diagnostics.py",
+      "function": "_freeze_mapping",
+      "line": 20,
+      "kind": "python_iteration",
+      "ast_sha256": "a6d0683bc95fdfbc6bef436a42e1d6fbbc54b6c1109b4c5ae854a42985246ff6",
+      "role": "fixed_schema",
+      "reason": "Freeze mapping keys and preserve completed values; no tensor arithmetic."
+    },
+    {
+      "path": "bayesfilter/highdim/cubature_genut_filter.py",
+      "function": "BoundedFeatureShapeTeacher.__post_init__",
+      "line": 57,
+      "kind": "python_iteration",
+      "ast_sha256": "a63e7ba21322407177708b125ebbccb82dc0ae7729657e740bdbc652188be652",
+      "role": "fixed_schema",
+      "reason": "Validate ten fixed teacher tensor fields and their static ranks/extents; no time or sample recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/cubature_genut_filter.py",
+      "function": "BoundedFeatureShapeTeacher.__post_init__",
+      "line": 72,
+      "kind": "python_iteration",
+      "ast_sha256": "22b3515b778bbdca7214ac04dc744d0bee144eb1b52017e4d228e5ab0ca6e74b",
+      "role": "fixed_schema",
+      "reason": "Validate ten fixed teacher tensor fields and their static ranks/extents; no time or sample recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/cubature_genut_filter.py",
+      "function": "_restore_cloud_jvp_core",
+      "line": 457,
+      "kind": "python_iteration",
+      "ast_sha256": "916db763b66e9d8e5b0e9f88d432365f58d6c64c30b72586387cb3f61deb55ba",
+      "role": "fixed_schema",
+      "reason": "Select six fixed named tensor outputs from the transport record without evaluating numerical updates."
+    },
+    {
+      "path": "bayesfilter/highdim/diagnostics.py",
+      "function": "HighDimValidationResult.__post_init__",
+      "line": 105,
+      "kind": "python_iteration",
+      "ast_sha256": "a769a56a9a7da40f638706ed2c0fa9b3acc800f78663ddbeb90afb96b6116ceb",
+      "role": "host_reporting",
+      "reason": "Freeze already-computed diagnostic mapping, preserving each value."
+    },
+    {
+      "path": "bayesfilter/highdim/diagnostics.py",
+      "function": "freeze_mapping",
+      "line": 154,
+      "kind": "python_iteration",
+      "ast_sha256": "3cb275026f12e475e12df3c71dcc9ebe257ad3978d1bb0b6deaed69f713e46e2",
+      "role": "fixed_schema",
+      "reason": "Freeze mapping string keys with unchanged values."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_branch.py",
+      "function": "BranchHash.__post_init__",
+      "line": 25,
+      "kind": "python_iteration",
+      "ast_sha256": "0554cd01a48192fec43efa8fa7c0b45952a660be1193c86fdb44a74a746d96ed",
+      "role": "host_validation",
+      "reason": "Validate characters of a hexadecimal identity string."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_branch.py",
+      "function": "_canonicalize",
+      "line": 81,
+      "kind": "python_iteration",
+      "ast_sha256": "89a2d5556fc89299c30b677ad3698d2327bf27d82d7752177a603dbc3000ab16",
+      "role": "host_reporting",
+      "reason": "Canonical JSON serialization of an identity mapping or sequence; no tensor numerical computation."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_branch.py",
+      "function": "_canonicalize",
+      "line": 86,
+      "kind": "python_iteration",
+      "ast_sha256": "d0863e75d92f23c4d99043edebfd9ff569d46101669367b524d930040545b85a",
+      "role": "host_reporting",
+      "reason": "Canonical JSON serialization of an identity mapping or sequence; no tensor numerical computation.",
+      "occurrences": 2
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_branch.py",
+      "function": "_canonicalize_tensor",
+      "line": 111,
+      "kind": "python_iteration",
+      "ast_sha256": "a4de3f3aa4de4206351274f29bd290c33ca4ef1642aad949a65ed0016f1d90af",
+      "role": "host_reporting",
+      "reason": "Encode completed tensor scalars into stable standard-library bytes, integers or booleans solely for an identity digest."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_branch.py",
+      "function": "_canonicalize_tensor",
+      "line": 113,
+      "kind": "python_iteration",
+      "ast_sha256": "976b7cefb6bed4b1e49ba432b01ba74f6fc4fdf716d4a7f67aef197a01f0b6e3",
+      "role": "host_reporting",
+      "reason": "Encode completed tensor scalars into stable standard-library bytes, integers or booleans solely for an identity digest."
+    },
+    {
+      "path": "bayesfilter/highdim/fixed_branch.py",
+      "function": "_canonicalize_tensor",
+      "line": 115,
+      "kind": "python_iteration",
+      "ast_sha256": "2b161d9b2a74cd4913e27638ad8ce0f668f13815b2e527abc20bec6cb80892e9",
+      "role": "host_reporting",
+      "reason": "Encode completed tensor scalars into stable standard-library bytes, integers or booleans solely for an identity digest."
+    },
+    {
+      "path": "bayesfilter/highdim/genut_guided_proposal_tf.py",
+      "function": "_static_row_slice",
+      "line": 35,
+      "kind": "python_iteration",
+      "ast_sha256": "38634882a01ae77f6e11741ebcf489ba85fc19ef13d609662d376f7e71727196",
+      "role": "fixed_schema",
+      "reason": "Check and encode statically known trailing TensorShape extents; tensor slicing remains in the enclosing graph."
+    },
+    {
+      "path": "bayesfilter/highdim/genut_guided_proposal_tf.py",
+      "function": "_static_row_slice",
+      "line": 38,
+      "kind": "python_iteration",
+      "ast_sha256": "9b967e650d1e4a6fed3803734ffb88852939936841e9e06123fd9c3a2ae20f24",
+      "role": "fixed_schema",
+      "reason": "Check and encode statically known trailing TensorShape extents; tensor slicing remains in the enclosing graph."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "_normalize_text_tuple",
+      "line": 79,
+      "kind": "python_iteration",
+      "ast_sha256": "8ae99c0e55539f0cb2678dbb7398555ce7c824d956ebefd58c8260408f930162",
+      "role": "host_validation",
+      "reason": "Normalize and check nonempty manifest text strings."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "_normalize_text_tuple",
+      "line": 80,
+      "kind": "python_iteration",
+      "ast_sha256": "618bc2185bd57926fb53b2057bdf3a881e85529de5bea2d0e309d1173220ee83",
+      "role": "host_validation",
+      "reason": "Normalize and check nonempty manifest text strings."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "_freeze_mapping",
+      "line": 95,
+      "kind": "python_iteration",
+      "ast_sha256": "a6d0683bc95fdfbc6bef436a42e1d6fbbc54b6c1109b4c5ae854a42985246ff6",
+      "role": "fixed_schema",
+      "reason": "Freeze mapping keys and preserve completed values; no tensor arithmetic."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30ModelSuiteRegistryRow.__post_init__",
+      "line": 126,
+      "kind": "python_iteration",
+      "ast_sha256": "48b6df5b4b216ad35f09f8e94f8ea12b5c76131ae76a7048d95731749f613980",
+      "role": "host_validation",
+      "reason": "Validate fixed textual source/code anchors and metadata statuses; no algorithm execution."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30ModelSuiteRegistryRow.__post_init__",
+      "line": 148,
+      "kind": "python_iteration",
+      "ast_sha256": "8cf602c103a6a8a37e7245d9be52347ab0f65f0b43170957f04ffc9512024d51",
+      "role": "host_validation",
+      "reason": "Validate fixed textual source/code anchors and metadata statuses; no algorithm execution."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30ModelSuiteFixtureManifest.__post_init__",
+      "line": 188,
+      "kind": "python_iteration",
+      "ast_sha256": "64439b67046a0703fb3014ae6429eecb9865b3575f7176aa625e2a2865d728ff",
+      "role": "host_validation",
+      "reason": "Validate fixture metadata text, static ranks and explicit veto/nonclaim fields."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30ModelSuiteFixtureManifest.__post_init__",
+      "line": 219,
+      "kind": "python_iteration",
+      "ast_sha256": "b9201ada96d8576efffa50fa9d4d17144c2e342bbfb5a9c8ca2e3b729b38d39f",
+      "role": "host_validation",
+      "reason": "Validate fixture metadata text, static ranks and explicit veto/nonclaim fields."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30ModelSuiteFixtureManifest.__post_init__",
+      "line": 220,
+      "kind": "python_iteration",
+      "ast_sha256": "b9616b97d48df25d0f7289f760c938f0ceae11be6d39b2c2a468d9930ce78c8c",
+      "role": "host_validation",
+      "reason": "Validate fixture metadata text, static ranks and explicit veto/nonclaim fields."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30ModelSuiteFixtureManifest.__post_init__",
+      "line": 222,
+      "kind": "python_iteration",
+      "ast_sha256": "60b83913438d0727e7fb54aa0cae4acd67ed14c6cb39ee1ac99cbc274f96df1a",
+      "role": "host_validation",
+      "reason": "Validate fixture metadata text, static ranks and explicit veto/nonclaim fields."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30ModelSuiteResultManifest.__post_init__",
+      "line": 252,
+      "kind": "python_iteration",
+      "ast_sha256": "554e53d8eb1bb7618b4c0455354890aab030135cb8d9cc0644149ccec820162e",
+      "role": "host_validation",
+      "reason": "Validate completed result metadata and evidence-anchor strings."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30ModelSuiteResultManifest.__post_init__",
+      "line": 267,
+      "kind": "python_iteration",
+      "ast_sha256": "fda1a27d21b0dd03901af1736c883771aa297c86a7f1f766a6087e57904c811c",
+      "role": "host_validation",
+      "reason": "Validate completed result metadata and evidence-anchor strings."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30ModelSuiteResultManifest.__post_init__",
+      "line": 269,
+      "kind": "python_iteration",
+      "ast_sha256": "5717ba962d62de3b77dfcfc6884ea3454ba88630a994e750174577d1c0d0a5ad",
+      "role": "host_validation",
+      "reason": "Validate completed result metadata and evidence-anchor strings."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30Cut4StatisticalComparatorManifest.__post_init__",
+      "line": 338,
+      "kind": "python_iteration",
+      "ast_sha256": "cfaefffc17d1bc5656b5d3a351f3c3d587c696662c2f3625bd5bb10dbe4124bb",
+      "role": "host_validation",
+      "reason": "Validate fixed completed comparator metadata, scalar interval fields, finiteness and required nonclaim strings; no filter/gradient computation."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30Cut4StatisticalComparatorManifest.__post_init__",
+      "line": 362,
+      "kind": "python_iteration",
+      "ast_sha256": "eaaecc28359340e12fdf0f90f89b82f667987a43995833d822efcbea2c04311e",
+      "role": "host_validation",
+      "reason": "Validate fixed completed comparator metadata, scalar interval fields, finiteness and required nonclaim strings; no filter/gradient computation."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30Cut4StatisticalComparatorManifest.__post_init__",
+      "line": 370,
+      "kind": "python_iteration",
+      "ast_sha256": "3dad22a9f253c234cd78936b3c31273d71f8b0f7fd376f02c2b25358fa0c9d08",
+      "role": "host_validation",
+      "reason": "Validate fixed completed comparator metadata, scalar interval fields, finiteness and required nonclaim strings; no filter/gradient computation."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30Cut4StatisticalComparatorManifest.__post_init__",
+      "line": 379,
+      "kind": "python_iteration",
+      "ast_sha256": "924a0f38e5cdcd417c4c2ab4af9393b5233f81ee713b88b5d148778e5bcf87a4",
+      "role": "host_validation",
+      "reason": "Validate fixed completed comparator metadata, scalar interval fields, finiteness and required nonclaim strings; no filter/gradient computation."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30Cut4StatisticalComparatorManifest.__post_init__",
+      "line": 397,
+      "kind": "python_iteration",
+      "ast_sha256": "14709ae11c4a3f8976b53a7a30e7151e03e5ccfcce98c7a88d61b4547ab8b698",
+      "role": "host_validation",
+      "reason": "Validate fixed completed comparator metadata, scalar interval fields, finiteness and required nonclaim strings; no filter/gradient computation."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30PredatorPreyComparisonManifest.__post_init__",
+      "line": 472,
+      "kind": "python_iteration",
+      "ast_sha256": "7299533bd8893d3e46f37f2a7f7ef41e5dbd809f8ebdc662abe7f273e58e167c",
+      "role": "host_validation",
+      "reason": "Copy completed settings/metrics and check fixed matching settings and scalar metric finiteness."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30PredatorPreyComparisonManifest.__post_init__",
+      "line": 473,
+      "kind": "python_iteration",
+      "ast_sha256": "613c29b428e9081bbb1ae9960ada14df3eacd520b82c0c3b90377497d7b46782",
+      "role": "host_validation",
+      "reason": "Copy completed settings/metrics and check fixed matching settings and scalar metric finiteness."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30PredatorPreyComparisonManifest.__post_init__",
+      "line": 474,
+      "kind": "python_iteration",
+      "ast_sha256": "fc5d7c54aa606490806abf80ac50d944bf6bf3672a8e645ae19443c09623a683",
+      "role": "host_validation",
+      "reason": "Copy completed settings/metrics and check fixed matching settings and scalar metric finiteness."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30PredatorPreyComparisonManifest.__post_init__",
+      "line": 484,
+      "kind": "python_iteration",
+      "ast_sha256": "886616527f76330f52d36b23f3c3ec27b4a86c1d97483f9f614e80dbcdc7ffa3",
+      "role": "host_validation",
+      "reason": "Copy completed settings/metrics and check fixed matching settings and scalar metric finiteness."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30PredatorPreyComparisonManifest.__post_init__",
+      "line": 491,
+      "kind": "python_iteration",
+      "ast_sha256": "cf1b8938520995039f16c581cf747b24e4fa4acafb99b7abe2e94462428565b9",
+      "role": "host_validation",
+      "reason": "Copy completed settings/metrics and check fixed matching settings and scalar metric finiteness."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "p30_model_suite_registry",
+      "line": 664,
+      "kind": "python_iteration",
+      "ast_sha256": "294ae64960fe3cc1753086ad6bb09a47bff431674e140c03370a7736dd8bd159",
+      "role": "fixed_schema",
+      "reason": "Index fixed model registry records by model identifier."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "StressRunManifest.__post_init__",
+      "line": 706,
+      "kind": "python_iteration",
+      "ast_sha256": "49319130d4f912aae1a2abfb131c903c542729599c17094cb9aac51a4b9a5054",
+      "role": "host_validation",
+      "reason": "Freeze manifest fields and check the five required host resource-budget keys."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "StressRunManifest.__post_init__",
+      "line": 725,
+      "kind": "python_iteration",
+      "ast_sha256": "564a55e7603a339d343e33b6d5735c6aa52fc1c610ef2dfb8e9a37437e909a9b",
+      "role": "host_validation",
+      "reason": "Freeze manifest fields and check the five required host resource-budget keys."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "_normalize_optional_text_tuple",
+      "line": 762,
+      "kind": "python_iteration",
+      "ast_sha256": "8ae99c0e55539f0cb2678dbb7398555ce7c824d956ebefd58c8260408f930162",
+      "role": "host_validation",
+      "reason": "Normalize and check optional manifest text strings."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "_normalize_optional_text_tuple",
+      "line": 763,
+      "kind": "python_iteration",
+      "ast_sha256": "618bc2185bd57926fb53b2057bdf3a881e85529de5bea2d0e309d1173220ee83",
+      "role": "host_validation",
+      "reason": "Normalize and check optional manifest text strings."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30StressLadderRowManifest.__post_init__",
+      "line": 809,
+      "kind": "python_iteration",
+      "ast_sha256": "70c6fcad00c1904db5330a90817a9ebe6ab5cca7d1d439d9ba95a156fadd687f",
+      "role": "host_validation",
+      "reason": "Validate declared fixed/varied axes, scalar resource budgets and required nonclaim strings; no numerical workload."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30StressLadderRowManifest.__post_init__",
+      "line": 811,
+      "kind": "python_iteration",
+      "ast_sha256": "6fad9195f10fb337fd13a3530d60ceaedb2253c7af633ff2823fea507297f640",
+      "role": "host_validation",
+      "reason": "Validate declared fixed/varied axes, scalar resource budgets and required nonclaim strings; no numerical workload."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30StressLadderRowManifest.__post_init__",
+      "line": 814,
+      "kind": "python_iteration",
+      "ast_sha256": "8d8eb0835344767cff877d9e9dfaa4bf7a7665e8d0f3cdc902175085f6c2c291",
+      "role": "host_validation",
+      "reason": "Validate declared fixed/varied axes, scalar resource budgets and required nonclaim strings; no numerical workload."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30StressLadderRowManifest.__post_init__",
+      "line": 866,
+      "kind": "python_iteration",
+      "ast_sha256": "ff4ab277f13b2a083dbbbb3f7987f0661c78ac7f3b0de2614df6a3cb37f573a0",
+      "role": "host_validation",
+      "reason": "Validate declared fixed/varied axes, scalar resource budgets and required nonclaim strings; no numerical workload."
+    },
+    {
+      "path": "bayesfilter/highdim/validation.py",
+      "function": "P30StressLadderRowManifest.__post_init__",
+      "line": 872,
+      "kind": "python_iteration",
+      "ast_sha256": "0767fe1872fa3ead35585a691286c7e939c327f441bf50eb6decafa6da638815",
+      "role": "host_validation",
+      "reason": "Validate declared fixed/varied axes, scalar resource budgets and required nonclaim strings; no numerical workload."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "ValueScoreCapability.__post_init__",
+      "line": 121,
+      "kind": "python_iteration",
+      "ast_sha256": "aab193142dfe0084a907b112d8e283d525f8051ee1a0fdc60e6e61c8401d73d7",
+      "role": "fixed_schema",
+      "reason": "Normalize textual nonclaims in capability metadata."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "NonlinearSSMStaticShape.__post_init__",
+      "line": 238,
+      "kind": "python_iteration",
+      "ast_sha256": "6487e37e2a307bd71840eff906d4967c8e485d29db3256c2725c10643819062d",
+      "role": "fixed_schema",
+      "reason": "Validate the five static model dimension fields before tracing."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "NonlinearSSMAdapterContract.__post_init__",
+      "line": 428,
+      "kind": "python_iteration",
+      "ast_sha256": "a6943e39e582823ccbf5fd73d21e40253b7729b332386d15dc6e95054577fba7",
+      "role": "fixed_schema",
+      "reason": "Normalize and validate parameter-name strings."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "NonlinearSSMAdapterContract.__post_init__",
+      "line": 433,
+      "kind": "python_iteration",
+      "ast_sha256": "0f83c70ffa3a6f505007c447a7e4b735e9f6cd0eab6e93b61df315b2fee07f32",
+      "role": "fixed_schema",
+      "reason": "Normalize and validate parameter-name strings."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "_coerce_shape",
+      "line": 588,
+      "kind": "python_iteration",
+      "ast_sha256": "8cf95d5be5a4c1d888da8d1aa4b90f19314ef6fec4a630a5c4b31f712bc4aa68",
+      "role": "fixed_schema",
+      "reason": "Validate and normalize static tensor dimensions."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "_coerce_shape",
+      "line": 591,
+      "kind": "python_iteration",
+      "ast_sha256": "bc29cda0dbc18a0aa5ae97fa865d1995f5d7c63ea87786778033e09d54a7d528",
+      "role": "fixed_schema",
+      "reason": "Validate and normalize static tensor dimensions."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "_shape_size",
+      "line": 598,
+      "kind": "python_iteration",
+      "ast_sha256": "8b62a918d2b425207437a3da93a53f20117eed33fcb5ccaf58ac54bd651c2e19",
+      "role": "fixed_schema",
+      "reason": "Multiply static TensorShape extents for shape metadata; no runtime state or parameter data."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "_normalize_for_json",
+      "line": 612,
+      "kind": "python_iteration",
+      "ast_sha256": "dd5c3c914298f0ccd6d04fbd6d92d533dbccf8b955af0a9fac69c63e28e99e71",
+      "role": "host_reporting",
+      "reason": "Serialize host identity mappings and sequences using standard-library types."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "_normalize_for_json",
+      "line": 614,
+      "kind": "python_iteration",
+      "ast_sha256": "c7df287f6b7db230f1cd4dea6909a376c1b01cf6066593e851cb07a0a1e6f69d",
+      "role": "host_reporting",
+      "reason": "Serialize host identity mappings and sequences using standard-library types."
+    },
+    {
+      "path": "bayesfilter/inference/posterior_adapter.py",
+      "function": "_reject_process_local_identity",
+      "line": 620,
+      "kind": "python_iteration",
+      "ast_sha256": "f8882a8328ce10ad8ee1442cf2002c70b0cdcad19e18b58ca55e2a5ddb9f3151",
+      "role": "host_validation",
+      "reason": "Check fixed regular-expression patterns against an identity string."
+    },
+    {
+      "path": "bayesfilter/results_tf.py",
+      "function": "_freeze_mapping",
+      "line": 30,
+      "kind": "python_iteration",
+      "ast_sha256": "a6d0683bc95fdfbc6bef436a42e1d6fbbc54b6c1109b4c5ae854a42985246ff6",
+      "role": "fixed_schema",
+      "reason": "Freeze mapping keys and preserve completed values; no tensor arithmetic."
+    },
+    {
+      "path": "bayesfilter/results_tf.py",
+      "function": "TFFilterDerivativeResult.__post_init__",
+      "line": 103,
+      "kind": "python_iteration",
+      "ast_sha256": "333db6f6f2a29bc686ffc9b3fda5805820c64d05900871bd68566bf3585990e6",
+      "role": "host_reporting",
+      "reason": "Freeze completed trace mappings at the host result boundary; no filter updates."
+    },
+    {
+      "path": "bayesfilter/structural.py",
+      "function": "_as_tuple",
+      "line": 22,
+      "kind": "python_iteration",
+      "ast_sha256": "69b44470c102b380fce54bd3a3bb94ce98d21ee008fd7485c04934b4f9c4bfb2",
+      "role": "fixed_schema",
+      "reason": "Normalize integer state-partition indices at configuration time."
+    },
+    {
+      "path": "bayesfilter/structural.py",
+      "function": "StatePartition.validate",
+      "line": 91,
+      "kind": "python_iteration",
+      "ast_sha256": "af5fe98108b8a42b3f75e84565be82c25c7dcdb39b4d2cb30f0d7c7002068130",
+      "role": "fixed_schema",
+      "reason": "Check state-index bounds and uniqueness in configured partitions."
+    },
+    {
+      "path": "bayesfilter/structural.py",
+      "function": "StatePartition.validate",
+      "line": 94,
+      "kind": "python_iteration",
+      "ast_sha256": "a4c4ea6278c1c4084cf88df234adb64df915019b0e8c6d43cc6292c19f7fcaae",
+      "role": "fixed_schema",
+      "reason": "Check state-index bounds and uniqueness in configured partitions."
+    },
+    {
+      "path": "bayesfilter/structural_tf.py",
+      "function": "_freeze",
+      "line": 56,
+      "kind": "python_iteration",
+      "ast_sha256": "a6d0683bc95fdfbc6bef436a42e1d6fbbc54b6c1109b4c5ae854a42985246ff6",
+      "role": "fixed_schema",
+      "reason": "Freeze mapping keys while preserving computed values."
+    },
+    {
+      "path": "bayesfilter/structural_tf.py",
+      "function": "TFStructuralStateSpace.__post_init__",
+      "line": 107,
+      "kind": "python_iteration",
+      "ast_sha256": "4946ed15a699c69b15bef040437bcf066324b89104fae827ffecac11a019cee2",
+      "role": "fixed_schema",
+      "reason": "Convert and validate five fixed tensor fields against declared ranks; no numerical recurrence."
     }
   ]
 }
