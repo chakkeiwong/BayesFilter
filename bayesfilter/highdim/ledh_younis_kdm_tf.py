@@ -14,10 +14,11 @@ must not use this module as an admitted production lane.
 from __future__ import annotations
 
 import math
-from typing import Any, Callable, Mapping
+from collections.abc import Callable, Mapping
+from inspect import signature as callable_signature
+from typing import Any
 
 import tensorflow as tf
-
 
 Tensor = tf.Tensor
 
@@ -947,14 +948,11 @@ def make_anchored_pfpf_kdm_weight_kernel(
             & normalized_ancestor_weights
             & normalized_selection_probs
         )
-        for field in (
-            log_weights,
-            transition_log_density,
-            observation_log_density,
-            forward_log_det,
-            proposal_log_density,
-        ):
-            finite = finite & tf.math.is_finite(field)
+        finite = (finite & tf.math.is_finite(log_weights)
+                  & tf.math.is_finite(transition_log_density)
+                  & tf.math.is_finite(observation_log_density)
+                  & tf.math.is_finite(forward_log_det)
+                  & tf.math.is_finite(proposal_log_density))
         finite = finite & tf.reduce_all(tf.math.is_finite(d_log_weights), axis=0)
         finite = finite & tf.reduce_all(tf.math.is_finite(ancestor_log_weights))
         finite = finite & tf.reduce_all(tf.math.is_finite(ancestor_log_selection_probs))
@@ -1437,32 +1435,32 @@ def make_subspace_gaussian_kdm_kernel(
     return kernel
 
 
-def canonical_linear_gaussian_kdm_auxiliary(
+def make_canonical_linear_gaussian_kdm_auxiliary_program(
     model: Any,
-    theta: Tensor,
-    initial_states: Tensor,
-    initial_covariances: Tensor,
-    noises: Tensor,
-    observations: Tensor,
-    observation_matrix: Tensor,
-    d_observation_matrix: Tensor,
-    bandwidths: Tensor,
-    d_bandwidths: Tensor,
     *,
+    theta_shape: tuple[int, ...],
+    particle_count: int,
+    state_dimension: int,
+    observation_dimension: int,
+    horizon: int,
     canonical_options: Mapping[str, Any],
+    dtype: tf.dtypes.DType | str = tf.float64,
+    theta_dtype: tf.dtypes.DType | str | None = None,
     jit_compile: bool = True,
     model_tolerance: float = 1.0e-8,
-) -> Mapping[str, Any]:
-    """Evaluate a KDM auxiliary on the actual canonical analytical trace.
+) -> Callable[..., Mapping[str, Tensor]]:
+    """Own one native KDM auxiliary with fixed callbacks and configuration.
 
-    This eager orchestration calls the canonical value/score authority once,
-    then evaluates an atom reconstruction and a positive-bandwidth observation
-    functional on the resulting frozen canonical trajectory.  The KDM value
-    never feeds back into the reset or later states.  The model must use the
-    canonical Gaussian observation fallback with a linear observation map.
+    The returned tensor-only function accepts theta, initial states/covariances,
+    noises, observations, observation matrix/tangent and bandwidths/tangents.
+    Callbacks and Python closure cells must remain fixed throughout this owner's
+    lifetime. Rebuild the owner when they change. No global cache is used.
+    Steps retain their complete public fields as time-stacked tensors; the public
+    compatibility wrapper formats them only after the numerical recurrence.
+    KDM is diagnostic only and never feeds back into the analytical trajectory.
     """
-
     from bayesfilter.highdim.ledh_canonical_score_tf import (
+        _value_and_analytical_score_impl,
         canonical_value_and_analytical_score,
     )
 
@@ -1491,6 +1489,237 @@ def canonical_linear_gaussian_kdm_auxiliary(
     if float(model_tolerance) <= 0.0:
         raise ValueError("model_tolerance must be positive")
 
+    callable_signature(canonical_value_and_analytical_score).bind_partial(**options)
+    particle_count = _static_positive("particle_count", particle_count)
+    state_dimension = _static_positive("state_dimension", state_dimension)
+    observation_dimension = _static_positive("observation_dimension", observation_dimension)
+    if isinstance(horizon, bool) or int(horizon) < 0:
+        raise ValueError("horizon must be a nonnegative integer")
+    horizon = int(horizon)
+    dtype = _dtype_from_value(dtype)
+    theta_dtype = dtype if theta_dtype is None else _dtype_from_value(theta_dtype)
+    common = {
+        "particle_count": particle_count,
+        "state_dimension": state_dimension,
+        "observation_dimension": observation_dimension,
+        "direction_count": 1,
+        "dtype": dtype,
+        "jit_compile": jit_compile,
+    }
+    atom_kernel = make_linear_gaussian_kdm_normalizer_kernel(
+        bandwidth_is_zero=True, **common
+    )
+    kdm_kernel = make_linear_gaussian_kdm_normalizer_kernel(
+        bandwidth_is_zero=False, **common
+    )
+    zero_bandwidth = tf.zeros(
+        [particle_count, state_dimension, state_dimension], dtype
+    )
+    zero_d_bandwidth = tf.zeros(
+        [1, particle_count, state_dimension, state_dimension], dtype
+    )
+
+    signature = [
+        tf.TensorSpec(theta_shape, theta_dtype),
+        tf.TensorSpec([particle_count, state_dimension], dtype),
+        tf.TensorSpec([particle_count, state_dimension, state_dimension], dtype),
+        tf.TensorSpec([horizon, particle_count, state_dimension], dtype),
+        tf.TensorSpec([horizon, observation_dimension], dtype),
+        tf.TensorSpec([observation_dimension, state_dimension], dtype),
+        tf.TensorSpec([observation_dimension, state_dimension], dtype),
+        tf.TensorSpec([horizon, particle_count, state_dimension, state_dimension], dtype),
+        tf.TensorSpec([horizon, particle_count, state_dimension, state_dimension], dtype),
+    ]
+
+    @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
+    def program(theta, initial_states, initial_covariances, noises, observations,
+                observation_matrix, d_observation_matrix, bandwidths, d_bandwidths):
+        if horizon == 0:
+            # The empty finite sum is independent of every operand. Avoid tracing
+            # out-of-bounds observation slices in an unreachable XLA loop body.
+            zero, zero_score = tf.zeros([], dtype), tf.zeros([1], dtype)
+            return {
+                "canonical_value": zero, "canonical_score": zero_score,
+                "atom_reconstruction_value": zero, "atom_reconstruction_score": zero_score,
+                "atom_value_error": zero, "atom_score_error": zero_score,
+                "kdm_auxiliary_value": zero, "kdm_auxiliary_score": zero_score,
+                "value_shift": zero, "score_shift": zero_score,
+                "canonical_value_unchanged": tf.constant(True),
+                "kdm_feedback_into_canonical": tf.constant(False),
+                "valid": tf.constant(True), "model_valid": tf.constant(True),
+                "steps": {
+                    "base_log_normalizer": tf.zeros([0], dtype),
+                    "atom_observation_value": tf.zeros([0], dtype),
+                    "kdm_observation_value": tf.zeros([0], dtype),
+                    "value_shift": tf.zeros([0], dtype),
+                    "valid": tf.zeros([0], tf.bool),
+                },
+            }
+        canonical_value, canonical_score, trace = _value_and_analytical_score_impl(
+            model,
+            theta,
+            initial_states,
+            initial_covariances,
+            noises,
+            observations,
+            with_score=True,
+            return_trace=True,
+            _stacked_trace=True,
+            **options,
+        )
+        d_observation_covariance = (
+            model.observation_covariance_tangent_fn(theta)
+            if model.observation_covariance_tangent_fn is not None
+            else tf.zeros_like(model.observation_covariance)
+        )
+        zero_observation_tangent = tf.zeros([1, observation_dimension], dtype)
+        atom_total = tf.zeros([], dtype)
+        atom_score = tf.zeros([1], dtype)
+        kdm_total = tf.zeros([], dtype)
+        kdm_score = tf.zeros([1], dtype)
+        step_records = {
+            "base_log_normalizer": tf.TensorArray(dtype, size=horizon, element_shape=[]),
+            "atom_observation_value": tf.TensorArray(dtype, size=horizon, element_shape=[]),
+            "kdm_observation_value": tf.TensorArray(dtype, size=horizon, element_shape=[]),
+            "value_shift": tf.TensorArray(dtype, size=horizon, element_shape=[]),
+            "valid": tf.TensorArray(tf.bool, size=horizon, element_shape=[]),
+        }
+        all_models_valid = tf.constant(True)
+        all_valid = tf.constant(True)
+
+        def time_step(time_index, atom_total, atom_score, kdm_total, kdm_score,
+                      all_valid, all_models_valid, step_records):
+            record = tf.nest.map_structure(lambda value: value[time_index], trace)
+            children = record["children"]
+            d_children = record["d_children"]
+            expected_observation = tf.einsum("od,nd->no", observation_matrix, children)
+            actual_observation = model.observation_fn(children)
+            expected_observation_tangent = tf.einsum(
+                "od,nd->no", d_observation_matrix, children
+            ) + tf.einsum("od,nd->no", observation_matrix, d_children)
+            actual_observation_tangent = model.observation_tangent_fn(children, d_children)
+            scale = tf.maximum(
+                tf.reduce_max(tf.abs(expected_observation)), tf.constant(1.0, dtype)
+            )
+            model_valid = (
+                tf.reduce_max(tf.abs(actual_observation - expected_observation))
+                <= tf.cast(model_tolerance, dtype) * scale
+            ) & (
+                tf.reduce_max(
+                    tf.abs(actual_observation_tangent - expected_observation_tangent)
+                )
+                <= tf.cast(model_tolerance, dtype) * scale
+            )
+            arguments = (
+                children,
+                record["prior_observation_weights"],
+                observation_matrix,
+                model.observation_covariance,
+                record["observation"],
+                d_children[tf.newaxis, :, :],
+                record["d_prior_observation_weights"][tf.newaxis, :],
+                d_observation_matrix[tf.newaxis, :, :],
+                d_observation_covariance[tf.newaxis, :, :],
+                zero_observation_tangent,
+            )
+            atom = atom_kernel(
+                arguments[0],
+                arguments[1],
+                zero_bandwidth,
+                *arguments[2:7],
+                zero_d_bandwidth,
+                *arguments[7:],
+            )
+            kdm = kdm_kernel(
+                arguments[0],
+                arguments[1],
+                bandwidths[time_index],
+                *arguments[2:7],
+                d_bandwidths[time_index][tf.newaxis, :, :, :],
+                *arguments[7:],
+            )
+            base_value = record["prior_observation_log_normalizer"]
+            base_score = record["d_prior_observation_log_normalizer"][tf.newaxis]
+            atom_total += base_value + atom["value"]
+            atom_score += base_score + atom["score"]
+            kdm_total += base_value + kdm["value"]
+            kdm_score += base_score + kdm["score"]
+            step_valid = model_valid & atom["valid"] & kdm["valid"]
+            all_valid &= step_valid
+            step_record = {
+                "base_log_normalizer": base_value,
+                "atom_observation_value": atom["value"],
+                "kdm_observation_value": kdm["value"],
+                "value_shift": kdm["value"] - atom["value"],
+                "valid": step_valid,
+            }
+            step_records = tf.nest.map_structure(
+                lambda buffer, value: buffer.write(time_index, value), step_records, step_record)
+            return (time_index + 1, atom_total, atom_score, kdm_total, kdm_score,
+                    all_valid, all_models_valid & model_valid, step_records)
+
+        (_, atom_total, atom_score, kdm_total, kdm_score, all_valid,
+         all_models_valid, step_records) = tf.while_loop(
+            lambda time_index, *_: time_index < horizon, time_step,
+            (tf.constant(0), atom_total, atom_score, kdm_total, kdm_score,
+             all_valid, all_models_valid, step_records),
+            maximum_iterations=horizon, parallel_iterations=1)
+        step_records = tf.nest.map_structure(lambda buffer: buffer.stack(), step_records)
+        nan = tf.constant(float("nan"), dtype)
+        atom_total = tf.where(all_models_valid, atom_total, nan)
+        atom_score = tf.where(all_models_valid, atom_score, nan)
+        kdm_total = tf.where(all_models_valid, kdm_total, nan)
+        kdm_score = tf.where(all_models_valid, kdm_score, nan)
+        atom_value_error = atom_total - canonical_value
+        atom_score_error = atom_score - canonical_score
+        all_valid &= (tf.abs(atom_value_error) <= tf.cast(model_tolerance, dtype)) & (
+            tf.reduce_max(tf.abs(atom_score_error)) <= tf.cast(model_tolerance, dtype)
+        )
+        return {
+            "canonical_value": canonical_value,
+            "canonical_score": canonical_score,
+            "atom_reconstruction_value": atom_total,
+            "atom_reconstruction_score": atom_score,
+            "atom_value_error": atom_value_error,
+            "atom_score_error": atom_score_error,
+            "kdm_auxiliary_value": kdm_total,
+            "kdm_auxiliary_score": kdm_score,
+            "value_shift": kdm_total - canonical_value,
+            "score_shift": kdm_score - canonical_score,
+            "canonical_value_unchanged": tf.constant(True),
+            "kdm_feedback_into_canonical": tf.constant(False),
+            "valid": all_valid,
+            "steps": step_records,
+            "model_valid": all_models_valid,
+        }
+
+    return program
+
+
+def canonical_linear_gaussian_kdm_auxiliary(
+    model: Any,
+    theta: Tensor,
+    initial_states: Tensor,
+    initial_covariances: Tensor,
+    noises: Tensor,
+    observations: Tensor,
+    observation_matrix: Tensor,
+    d_observation_matrix: Tensor,
+    bandwidths: Tensor,
+    d_bandwidths: Tensor,
+    *,
+    canonical_options: Mapping[str, Any],
+    jit_compile: bool = True,
+    model_tolerance: float = 1.0e-8,
+) -> Mapping[str, Any]:
+    """Evaluate the native auxiliary and present complete public step records.
+
+    Retain ``make_canonical_linear_gaussian_kdm_auxiliary_program`` for repeated
+    calls with fixed callbacks/configuration. This compatibility API deliberately
+    rebuilds its owner, so mutable Python callback closures retain call semantics.
+    Model mismatch raises ValueError at this completed eager assertion boundary;
+    an enclosing graph receives false validity and NaN auxiliary results.
+    """
     theta = tf.convert_to_tensor(theta)
     initial_states = tf.convert_to_tensor(initial_states)
     dtype = initial_states.dtype
@@ -1517,147 +1746,27 @@ def canonical_linear_gaussian_kdm_auxiliary(
         [horizon, particle_count, state_dimension, state_dimension],
     )
 
-    canonical_value, canonical_score, trace = canonical_value_and_analytical_score(
-        model,
-        theta,
-        initial_states,
-        initial_covariances,
-        noises,
-        observations,
-        with_score=True,
-        return_trace=True,
-        **options,
-    )
-    d_observation_covariance = (
-        model.observation_covariance_tangent_fn(theta)
-        if model.observation_covariance_tangent_fn is not None
-        else tf.zeros_like(model.observation_covariance)
-    )
-    zero_observation_tangent = tf.zeros([1, observation_dimension], dtype)
-    atom_total = tf.zeros([], dtype)
-    atom_score = tf.zeros([1], dtype)
-    kdm_total = tf.zeros([], dtype)
-    kdm_score = tf.zeros([1], dtype)
-    step_records = []
-    all_valid = tf.constant(True)
-
-    for time_index, record in enumerate(trace):
-        children = record["children"]
-        d_children = record["d_children"]
-        expected_observation = tf.einsum("od,nd->no", observation_matrix, children)
-        actual_observation = model.observation_fn(children)
-        expected_observation_tangent = tf.einsum(
-            "od,nd->no", d_observation_matrix, children
-        ) + tf.einsum("od,nd->no", observation_matrix, d_children)
-        actual_observation_tangent = model.observation_tangent_fn(children, d_children)
-        scale = tf.maximum(
-            tf.reduce_max(tf.abs(expected_observation)), tf.constant(1.0, dtype)
-        )
-        model_valid = (
-            tf.reduce_max(tf.abs(actual_observation - expected_observation))
-            <= tf.cast(model_tolerance, dtype) * scale
-        ) & (
-            tf.reduce_max(
-                tf.abs(actual_observation_tangent - expected_observation_tangent)
-            )
-            <= tf.cast(model_tolerance, dtype) * scale
-        )
-        if not bool(model_valid.numpy()):
-            raise ValueError(
-                "observation callbacks do not match the supplied linear map/tangent"
-            )
-
-        common = dict(
-            particle_count=particle_count,
-            state_dimension=state_dimension,
-            observation_dimension=observation_dimension,
-            direction_count=1,
-            dtype=dtype,
-            jit_compile=jit_compile,
-        )
-        atom_kernel = make_linear_gaussian_kdm_normalizer_kernel(
-            bandwidth_is_zero=True, **common
-        )
-        kdm_kernel = make_linear_gaussian_kdm_normalizer_kernel(
-            bandwidth_is_zero=False, **common
-        )
-        zero_bandwidth = tf.zeros(
-            [particle_count, state_dimension, state_dimension], dtype
-        )
-        zero_d_bandwidth = tf.zeros(
-            [1, particle_count, state_dimension, state_dimension], dtype
-        )
-        arguments = (
-            children,
-            record["prior_observation_weights"],
-            observation_matrix,
-            model.observation_covariance,
-            record["observation"],
-            d_children[tf.newaxis, :, :],
-            record["d_prior_observation_weights"][tf.newaxis, :],
-            d_observation_matrix[tf.newaxis, :, :],
-            d_observation_covariance[tf.newaxis, :, :],
-            zero_observation_tangent,
-        )
-        atom = atom_kernel(
-            arguments[0],
-            arguments[1],
-            zero_bandwidth,
-            *arguments[2:7],
-            zero_d_bandwidth,
-            *arguments[7:],
-        )
-        kdm = kdm_kernel(
-            arguments[0],
-            arguments[1],
-            bandwidths[time_index],
-            *arguments[2:7],
-            d_bandwidths[time_index][tf.newaxis, :, :, :],
-            *arguments[7:],
-        )
-        base_value = record["prior_observation_log_normalizer"]
-        base_score = record["d_prior_observation_log_normalizer"][tf.newaxis]
-        atom_total += base_value + atom["value"]
-        atom_score += base_score + atom["score"]
-        kdm_total += base_value + kdm["value"]
-        kdm_score += base_score + kdm["score"]
-        step_valid = model_valid & atom["valid"] & kdm["valid"]
-        all_valid &= step_valid
-        step_records.append(
-            {
-                "time_index": time_index,
-                "base_log_normalizer": base_value,
-                "atom_observation_value": atom["value"],
-                "kdm_observation_value": kdm["value"],
-                "value_shift": kdm["value"] - atom["value"],
-                "valid": step_valid,
-            }
-        )
-
-    atom_value_error = atom_total - canonical_value
-    atom_score_error = atom_score - canonical_score
-    all_valid &= (tf.abs(atom_value_error) <= tf.cast(model_tolerance, dtype)) & (
-        tf.reduce_max(tf.abs(atom_score_error)) <= tf.cast(model_tolerance, dtype)
-    )
+    program = make_canonical_linear_gaussian_kdm_auxiliary_program(
+        model, theta_shape=tuple(theta.shape), particle_count=particle_count,
+        state_dimension=state_dimension, observation_dimension=observation_dimension,
+        horizon=horizon, canonical_options=canonical_options, dtype=dtype,
+        theta_dtype=theta.dtype, jit_compile=jit_compile, model_tolerance=model_tolerance)
+    numerical = dict(program(theta, initial_states, initial_covariances, noises,
+                             observations, observation_matrix, d_observation_matrix,
+                             bandwidths, d_bandwidths))
+    model_valid = numerical.pop("model_valid")
+    if tf.executing_eagerly() and not bool(model_valid.numpy()):
+        raise ValueError("observation callbacks do not match the supplied linear map/tangent")
+    stacked_steps = numerical.pop("steps")
+    # Fixed output presentation only; all numerical accumulation is already done.
+    steps = tuple({"time_index": index, **tf.nest.map_structure(
+        lambda value, index=index: value[index], stacked_steps)} for index in range(horizon))
     return {
         "route_id": AUXILIARY_ROUTE_ID,
         "route_role": AUXILIARY_ROLE,
         "canonical_target_label": ATOM_FINITE_TARGET,
         "auxiliary_target_label": KDM_FINITE_TARGET,
-        "canonical_value": canonical_value,
-        "canonical_score": canonical_score,
-        "atom_reconstruction_value": atom_total,
-        "atom_reconstruction_score": atom_score,
-        "atom_value_error": atom_value_error,
-        "atom_score_error": atom_score_error,
-        "kdm_auxiliary_value": kdm_total,
-        "kdm_auxiliary_score": kdm_score,
-        "value_shift": kdm_total - canonical_value,
-        "score_shift": kdm_score - canonical_score,
-        "canonical_value_unchanged": tf.constant(True),
-        "kdm_feedback_into_canonical": tf.constant(False),
-        "valid": all_valid,
-        "steps": tuple(step_records),
+        **numerical, "steps": steps,
     }
 
 
@@ -1702,15 +1811,16 @@ __all__ = [
     "MODEL_IS_TARGET",
     "RESKDM_IWSG_FINITE_TARGET",
     "RESKDM_SELF_NORMALIZED_FINITE_TARGET",
-    "ROUTE_ID",
     "ROUTE_CLASSIFICATION",
+    "ROUTE_ID",
     "atom_expectation",
     "canonical_linear_gaussian_kdm_auxiliary",
+    "make_anchored_pfpf_kdm_weight_kernel",
+    "make_canonical_linear_gaussian_kdm_auxiliary_program",
     "make_conditional_gaussian_kdm_kernel",
     "make_full_mixture_iwsg_resampling_kernel",
     "make_gaussian_kdm_kernel",
     "make_iwsg_kernel",
     "make_linear_gaussian_kdm_normalizer_kernel",
-    "make_anchored_pfpf_kdm_weight_kernel",
     "make_subspace_gaussian_kdm_kernel",
 ]

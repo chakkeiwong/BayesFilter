@@ -122,6 +122,7 @@ def _value_and_analytical_score_impl(
     flow_substeps: int = 24,
     with_score: bool,
     return_trace: bool = False,
+    _stacked_trace: bool = False,
     initial_state_tangent: Tensor | None = None,
     initial_covariance_tangent: Tensor | None = None,
     observation_factor_override: Callable[
@@ -805,9 +806,11 @@ def _value_and_analytical_score_impl(
             (*initial_loop, buffers), maximum_iterations=horizon,
             parallel_iterations=1)
         stacked = tf.nest.map_structure(lambda buf: buf.stack(), loop_result[-1])
+        total, d_total = loop_result[-3:-1]
+        if _stacked_trace:
+            return total, d_total[None] if with_score else None, stacked
         trace = tuple(tf.nest.map_structure(lambda value, _index=index: value[_index], stacked)
                       for index in range(horizon))
-        total, d_total = loop_result[-3:-1]
         return total, d_total[None] if with_score else None, trace
     loop_result = tf.while_loop(
         time_loop_cond, time_loop_body, initial_loop,

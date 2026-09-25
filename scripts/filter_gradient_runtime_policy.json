@@ -437,8 +437,11 @@
     "bayesfilter/highdim/ledh_flow_perparticle_tf.py": null,
     "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": null,
     "bayesfilter/highdim/ledh_canonical_score_tf.py": [
-      "make_analytical_score_program"
-    ]
+      "make_analytical_score_program",
+      "_value_and_analytical_score_impl"
+    ],
+    "bayesfilter/highdim/ledh_younis_kdm_tf.py": null,
+    "bayesfilter/highdim/ledh_unified_reset_tf.py": null
   },
   "exceptions": [
     {
@@ -12607,6 +12610,72 @@
       "ast_sha256": "81b191a2a1a1947a5609dc59448469e3f9a284ff2c89eaf66ffa7ef8c8bf7f13",
       "role": "fixed_schema",
       "reason": "Build a shape-only round-robin index schedule before numerical rotations; every numerical sweep/rotation executes in the existing TensorFlow loop."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "function": "_value_and_analytical_score_impl.scheduled_moments",
+      "kind": "python_iteration",
+      "ast_sha256": "51fbae9247721ba844d9f3b02112275593be1854aec68b5892da819ce205176a",
+      "role": "fixed_schema",
+      "reason": "Select the four fixed mean/covariance and tangent fields and broadcast each once; numerical time recurrence stays in TensorFlow."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "function": "_value_and_analytical_score_impl.time_loop_body",
+      "kind": "python_iteration",
+      "ast_sha256": "6c3db765aa426e15ed06aaae3139b7f975eba0c78a5be94253b82c4bd93a24b2",
+      "role": "fixed_schema",
+      "reason": "Unwrap/rename the fixed correction result dictionary; no numerical particle, time or direction recurrence is expressed by this schema iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "function": "_value_and_analytical_score_impl.time_loop_body",
+      "kind": "python_iteration",
+      "ast_sha256": "732dec5fcec088bbfef16583831f0e6a89d1ede6c10a18e9ae69e9e87180d0d5",
+      "role": "fixed_schema",
+      "reason": "Unwrap/rename the fixed correction result dictionary; no numerical particle, time or direction recurrence is expressed by this schema iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "function": "_value_and_analytical_score_impl",
+      "kind": "non_xla_function",
+      "ast_sha256": "f76e99f0ba5f72cfc68ee16926c9c3f32f24ce00636801f77edab06258bec00d",
+      "role": "enclosed_graph",
+      "reason": "Trace the shared time-step schema once; the owned KDM auxiliary compiles this function within its enclosing XLA boundary.",
+      "enclosing_endpoint": "bayesfilter.highdim.ledh_younis_kdm_tf.make_canonical_linear_gaussian_kdm_auxiliary_program",
+      "compilation_test": "tests/test_filter_repair_kdm_auxiliary.py::test_native_auxiliary_complete_records"
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "function": "_value_and_analytical_score_impl",
+      "kind": "python_iteration",
+      "ast_sha256": "d332a4f08f9ed41e1664422bd7f906f5e633588327867be6230b6af906830a66",
+      "role": "fixed_schema",
+      "reason": "Construct the fixed loop-state TensorSpecs once before tracing."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "function": "_value_and_analytical_score_impl",
+      "kind": "python_iteration",
+      "ast_sha256": "3923ea7de9f4df5510d36005504bf2f03f30dd0f896355f6d3e5b219581c09f5",
+      "role": "host_reporting",
+      "reason": "Format the completed stacked analytical trace for the public diagnostic tuple; KDM requests the private stacked return and bypasses this presentation entirely."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_younis_kdm_tf.py",
+      "function": "make_canonical_linear_gaussian_kdm_auxiliary_program",
+      "kind": "python_iteration",
+      "ast_sha256": "63c713b88af2a3f0c4aaa82c6839e81a5c884bb67bb16c325b25806f6a3cab6a",
+      "role": "host_validation",
+      "reason": "Validate the two reserved configuration keyword names before tracing; no numerical operands are iterated."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_younis_kdm_tf.py",
+      "function": "canonical_linear_gaussian_kdm_auxiliary",
+      "kind": "python_iteration",
+      "ast_sha256": "1a85402f7a1391556960151e33105fb8d16123d3476c8936fe4689940fab021c",
+      "role": "host_reporting",
+      "reason": "Present completed time-stacked outputs as the compatibility tuple of step dictionaries; no state, score, selection, or recurrence feeds back from these records."
     }
   ]
 }

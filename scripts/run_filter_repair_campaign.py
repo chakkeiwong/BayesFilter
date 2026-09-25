@@ -210,6 +210,56 @@ TEST_GROUPS = {
         "tests/test_filter_repair_dz5_addition_order.py::test_ordered_add_primitive",),
     "kdm_auxiliary_legacy_cpu": (
         "tests/highdim/test_ledh_younis_kdm_tf.py::test_auxiliary_api_uses_canonical_trace_and_has_no_feedback",),
+    "kdm_auxiliary_localization_cpu": (
+        "tests/test_filter_repair_kdm_auxiliary.py::test_baseline_auxiliary_rejection_localization",),
+    "kdm_auxiliary_controls_cpu": (
+        "tests/test_filter_repair_kdm_auxiliary.py::test_original_auxiliary_valid_and_rejected_controls",),
+    "kdm_auxiliary_ownership_cpu": (
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_auxiliary_public_ownership_and_errors",
+        "tests/highdim/test_ledh_younis_kdm_tf.py::test_auxiliary_api_uses_canonical_trace_and_has_no_feedback",
+        "tests/highdim/test_ledh_unified_reset.py",),
+    "kdm_reset_regression_cpu": ("tests/highdim/test_ledh_unified_reset.py",),
+    "kdm_auxiliary_regression_cpu": (
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_auxiliary_public_ownership_and_errors",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_auxiliary_complete_records[2-graph]",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_auxiliary_complete_records[8-graph]",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_shared_reset_matches_original[same_mode-f64]",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_shared_reset_matches_original[same_mode-f32]",
+        "tests/highdim/test_ledh_younis_kdm_tf.py",
+        "tests/highdim/test_ledh_unified_reset.py",),
+    **{f"kdm_auxiliary_cost_{arm}_{device}": (
+        f"tests/test_filter_repair_kdm_auxiliary.py::test_auxiliary_matched_cost[{arm}]",)
+        for arm in ("original", "graph", "xla") for device in ("cpu", "gpu")},
+    **{f"kdm_owner_memory_{mode}_{device}": (
+        f"tests/test_filter_repair_kdm_auxiliary.py::test_single_owner_memory_attribution[{mode}]",)
+        for mode in ("graph", "xla") for device in ("cpu", "gpu")},
+    **{f"kdm_public_enclosing_{device}": (
+        "tests/test_filter_repair_kdm_auxiliary.py::test_auxiliary_public_enclosing_xla",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_auxiliary_empty_horizon_preserves_original",)
+        for device in ("cpu", "gpu")},
+    "kdm_graph_retention_cpu": (
+        "tests/test_filter_repair_kdm_auxiliary.py::test_auxiliary_graph_retention_attribution",),
+    "kdm_final_qualification_cpu": (
+        "tests/test_filter_repair_kdm_auxiliary.py::test_saved_kdm_cost_evidence",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_kdm_cost_analysis_rejects_corruption",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_auxiliary_public_enclosing_xla",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_auxiliary_graph_retention_attribution",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_shared_reset_matches_original[same_mode-f64]",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_shared_reset_matches_original[same_mode-f32]",
+        "tests/highdim/test_ledh_younis_kdm_tf.py",
+        "tests/highdim/test_ledh_unified_reset.py",),
+    **{f"kdm_auxiliary_native_{mode}_{device}": (
+        f"tests/test_filter_repair_kdm_auxiliary.py::test_native_auxiliary_complete_records[2-{mode}]",
+        f"tests/test_filter_repair_kdm_auxiliary.py::test_native_auxiliary_complete_records[8-{mode}]",)
+        for mode in ("graph", "xla") for device in ("cpu", "gpu")},
+    **{f"kdm_shared_reset_{device}": (
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_shared_reset_matches_original[same_mode-f64]",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_shared_reset_matches_original[same_mode-f32]",)
+        for device in ("cpu", "gpu")},
+    **{f"kdm_shared_reset_cross_mode_{device}": (
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_shared_reset_matches_original[eager-f64]",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_shared_reset_matches_original[eager-f32]",)
+        for device in ("cpu", "gpu")},
     "dz5_ordered_add_evidence_cpu": (
         "tests/test_filter_repair_dz5_addition_order.py::test_saved_addition_order_evidence",
         "tests/test_filter_repair_dz5_addition_order.py::test_addition_oracle_rejects_corruption"),
@@ -1205,7 +1255,7 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
-    "kdm_auxiliary_legacy_cpu": "Preserved baseline KDM auxiliary integration failure; Python-loop/NumPy/XLA debt remains open and this group cannot qualify a repair.",
+    "kdm_auxiliary_localization_cpu": "Complete baseline rejection localization; cannot waive KDM endpoint repair or qualification.",
     "dz5_ordered_add_primitive_cpu": "Independent no-inline addition cancellation/derivative diagnostic; no actual target or runtime qualification.",
     **{f"dz5_ordered_add_overlay_{horizon}_cpu": "Explicit source-overlay addition-order diagnostic; cannot qualify unchanged runtime or admit the target."
         for horizon in (48, 96)},
@@ -1770,6 +1820,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS
+       if group.startswith("kdm_") and group.endswith("_gpu")},
     "dz5_score_oracle_graph_gpu": "GPU",
     "dz5_score_oracle_xla_gpu": "GPU",
     "merged_ledh_boundary_gpu": "GPU",
@@ -2081,6 +2133,9 @@ def require_unshared_cost_preflight(args):
     """Decline new public-cost workers before charging shared-device timing."""
     if (args.action != "test" or args.device != "GPU"
             or args.group not in ("svd_graph_attribution_gpu",
+                                 "kdm_auxiliary_cost_original_gpu",
+                                 "kdm_auxiliary_cost_graph_gpu",
+                                 "kdm_auxiliary_cost_xla_gpu",
                                  *TEST_BATCHES["ledh_flow_cost_gpu"],
                                  *TEST_BATCHES["remaining_svd_cost_gpu"],
                                  *TEST_BATCHES["posterior_public_memory_gpu"],

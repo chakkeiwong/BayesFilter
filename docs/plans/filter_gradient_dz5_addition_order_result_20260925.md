@@ -1,6 +1,7 @@
 # DZ5 addition-order diagnostic result
 
-Work in progress under the [bounded plan](filter_gradient_dz5_addition_order_unit_20260925.md).
+Completed diagnostic: the candidate is rejected under the
+[bounded plan](filter_gradient_dz5_addition_order_unit_20260925.md).
 No numerical runtime change has been installed. The diagnostic uses the unchanged
 source snapshot plus a verbatim, checksummed executable overlay; module-file
 checksums alone must not be presented as its executed source identity.

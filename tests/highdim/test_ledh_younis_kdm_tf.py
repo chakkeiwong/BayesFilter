@@ -7,6 +7,7 @@ import os
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from bayesfilter.highdim.ledh_younis_kdm_tf import (
@@ -887,7 +888,8 @@ def test_kdm_atom_sidecar_reads_the_actual_canonical_endpoint_trace():
     assert np.isfinite(value.numpy())
 
 
-def test_auxiliary_api_uses_canonical_trace_and_has_no_feedback():
+@pytest.mark.parametrize("reset_steps", [2, 8])
+def test_auxiliary_api_uses_canonical_trace_and_has_no_feedback(reset_steps):
     model = _trace_model()
     rng = np.random.default_rng(131)
     initial_states = tf.constant(rng.normal(size=(4, 2)), DTYPE)
@@ -903,8 +905,8 @@ def test_auxiliary_api_uses_canonical_trace_and_has_no_feedback():
         "reset_policy": "contract_e",
         "reset_design": design,
         "reset_epsilon": 2.0,
-        "reset_sinkhorn_steps": 2,
-        "reset_balance_steps": 2,
+        "reset_sinkhorn_steps": reset_steps,
+        "reset_balance_steps": reset_steps,
         "correction_steps": 4,
         "correction_strength": 0.2,
         "correction_lm_damping": 1.0e-2,
@@ -940,7 +942,7 @@ def test_auxiliary_api_uses_canonical_trace_and_has_no_feedback():
     result = auxiliary_at(0.6)
     assert result["route_id"] == AUXILIARY_ROUTE_ID
     assert result["route_role"] == AUXILIARY_ROLE
-    assert bool(result["valid"].numpy())
+    assert bool(result["valid"].numpy()) == (reset_steps == 8)
     assert bool(result["canonical_value_unchanged"].numpy())
     assert not bool(result["kdm_feedback_into_canonical"].numpy())
     assert result["canonical_target_label"] == ATOM_FINITE_TARGET
@@ -958,6 +960,12 @@ def test_auxiliary_api_uses_canonical_trace_and_has_no_feedback():
     )
     np.testing.assert_allclose(result["canonical_value"].numpy(), direct_value.numpy())
     np.testing.assert_allclose(result["canonical_score"].numpy(), direct_score.numpy())
+    if reset_steps == 2:
+        # The first reset's column-mass residual exceeds the existing 1e-4 gate.
+        # Preserve the original fixture as rejection evidence; do not weaken it.
+        assert np.isneginf(result["canonical_value"].numpy())
+        np.testing.assert_array_equal(result["canonical_score"].numpy(), [0.])
+        return
     epsilon = 2.0e-5
     finite_difference = (
         auxiliary_at(0.6 + epsilon)["kdm_auxiliary_value"].numpy()
