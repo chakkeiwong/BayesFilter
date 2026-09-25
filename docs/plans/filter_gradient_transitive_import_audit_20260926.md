@@ -1,5 +1,12 @@
 # Transitive GenUT import audit, September 26
 
+The table and findings below preserve the initial 03993/04037 snapshot.
+Current update through 04108: latent SIR and the active public TTSIRT methods
+are repaired and guarded; the policy suite passes with 270 sources / 1,424
+exact allowances. See the latent-SIR and mixed-KR result notes of September 26.
+Historical KR/private helpers remain diagnostic loops, not active native
+consumers. GenUT report equivalence and target-size memory remain open.
+
 The run-03993 discovery follows static repository imports from KDM. Its 80 modules are an overapproximation, including conditional and diagnostic imports; this is not executed call-chain coverage. Fifteen previously uncovered modules are now in the exact-source guard. Their 64 syntax sites require 63 distinct AST allowances (two identical serialization comprehensions share one digest with occurrences=2). No numerical recurrence was allow-listed.
 
 | Module | Reviewed iteration sites | Disposition |

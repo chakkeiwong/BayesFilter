@@ -124,6 +124,10 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"latent_sir_review_{device}": (
+        "tests/test_compiled_tensor_program_tf.py",
+        "tests/test_filter_repair_latent_sir.py", "-k", "not simulation_cost")
+       for device in ("cpu", "gpu")},
     **{f"latent_sir_paths_{horizon}_{device}": (
         f"tests/test_filter_repair_latent_sir.py::test_complete_fixed_noise_paths[{horizon}-1]",
         f"tests/test_filter_repair_latent_sir.py::test_complete_fixed_noise_paths[{horizon}-2]",
@@ -140,6 +144,11 @@ TEST_GROUPS = {
     **{f"latent_sir_cost_{arm}_{device}": (
         f"tests/test_filter_repair_latent_sir.py::test_simulation_cost[{arm}]",)
        for arm in ("original", "graph", "xla") for device in ("cpu", "gpu")},
+    **{f"mixed_kr_transport_{device}": ("tests/test_filter_repair_mixed_kr.py", "-k", "not public_log_cost")
+       for device in ("cpu", "gpu")},
+    **{f"mixed_kr_cost_{arm}_{count}_{device}": (
+        f"tests/test_filter_repair_mixed_kr.py::test_public_log_cost[{arm}-{count}]",)
+       for arm in ("previous", "graph", "xla") for count in (3, 128) for device in ("cpu", "gpu")},
     "driver_history_semantics_cpu": ("tests/test_filter_repair_driver_history.py", "-k", "not fresh_driver_history_memory"),
     **{f"driver_history_memory_{arm}_cpu": (
         f"tests/test_filter_repair_driver_history.py::test_fresh_driver_history_memory[{arm}]",)
@@ -1899,7 +1908,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     **{group: "GPU" for group in TEST_GROUPS
-       if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_", "genut_transitive_", "latent_sir_")) and group.endswith("_gpu")},
+       if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_", "genut_transitive_", "latent_sir_", "mixed_kr_")) and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS
        if group.startswith("kdm_") and group.endswith("_gpu")},
     "dz5_score_oracle_graph_gpu": "GPU",

@@ -84,7 +84,9 @@ def test_complete_pullback_keeps_inputs_tensor_captures_and_resources(
 
         _, value = tf.while_loop(lambda index, _: index < 3, step,
                                 (tf.constant(0), tf.zeros_like(x)), maximum_iterations=3)
-        return value, 2. * value, tf.constant(3)
+        # Unused numeric outputs receive a zero cotangent; status leaves have
+        # no derivative. Neither may erase input, capture or variable VJPs.
+        return value, 2. * value, tf.constant(3), tf.reduce_all(tf.math.is_finite(value)), 3. * value
 
     def enclosing(x):
         def branch(scale):
@@ -107,6 +109,8 @@ def test_complete_pullback_keeps_inputs_tensor_captures_and_resources(
         expected_value = 6. * coefficient * query**2 + 3. * linear * query
         tf.debugging.assert_near(values[0], expected_value, atol=1e-12, rtol=1e-12)
         tf.debugging.assert_near(values[1], 2. * expected_value, atol=1e-12, rtol=1e-12)
+        if not nested:
+            tf.debugging.assert_equal(values[3], True)
         expected = (3. * (12. * coefficient * query + 3. * linear),
                     18. * query**2, 9. * tf.reduce_sum(query))
         for actual, reference in zip(gradients, expected, strict=True):

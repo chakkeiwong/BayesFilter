@@ -241,25 +241,38 @@ def latent_preclip_simulation_program(model, time_steps, *, jit_compile=True):
         kappa = base.kappa * tf.exp(theta[0])
         nu = base.nu * tf.exp(theta[1])
         observation_covariance = base.observation_covariance * tf.exp(2.0 * theta[2])
+        finite_initial_noise = tf.reduce_all(tf.math.is_finite(initial_noise))
+        finite_transition_noise = tf.reduce_all(tf.math.is_finite(transition_noise))
+        finite_observation_noise = tf.reduce_all(tf.math.is_finite(observation_noise))
         valid = (tf.reduce_all(tf.math.is_finite(theta))
                  & tf.reduce_all(tf.math.is_finite(kappa)) & tf.reduce_all(kappa > 0.)
                  & tf.reduce_all(tf.math.is_finite(nu)) & tf.reduce_all(nu > 0.)
-                 & tf.reduce_all(tf.math.is_finite(observation_covariance)))
+                 & tf.reduce_all(tf.math.is_finite(observation_covariance))
+                 & finite_initial_noise & finite_transition_noise
+                 & finite_observation_noise)
         # Invalid parameters still produce a defined computation, then the host
         # guard rejects it. These selections do not alter any accepted operand.
         kappa = tf.where(valid, kappa, base.kappa)
         nu = tf.where(valid, nu, base.nu)
         observation_covariance = tf.where(valid, observation_covariance, base.observation_covariance)
+        # The shared model validators intentionally fail closed on nonfinite
+        # tensors. Replace invalid external noise before entering that authority
+        # and carry the original finite-input result in ``valid`` instead of
+        # allowing an assertion to abort the compiled status return.
+        initial_noise = tf.where(tf.math.is_finite(initial_noise), initial_noise, tf.zeros_like(initial_noise))
+        transition_noise = tf.where(
+            tf.math.is_finite(transition_noise), transition_noise, tf.zeros_like(transition_noise)
+        )
+        observation_noise = tf.where(
+            tf.math.is_finite(observation_noise), observation_noise, tf.zeros_like(observation_noise)
+        )
         # The scaled-model constructor symmetrizes each covariance. Preserve
         # that finite operation even though the base matrices are symmetric.
         initial_chol = tf.linalg.cholesky(0.5 * (base.initial_covariance + tf.transpose(base.initial_covariance)))
-        process_chol = tf.linalg.cholesky(0.5 * (base.process_covariance + tf.transpose(base.process_covariance)))
         observation_chol = tf.linalg.cholesky(0.5 * (observation_covariance + tf.transpose(observation_covariance)))
         valid = (valid & tf.reduce_all(tf.math.is_finite(initial_chol))
-                 & tf.reduce_all(tf.math.is_finite(process_chol))
                  & tf.reduce_all(tf.math.is_finite(observation_chol))
                  & tf.reduce_all(tf.linalg.diag_part(initial_chol) > 0.)
-                 & tf.reduce_all(tf.linalg.diag_part(process_chol) > 0.)
                  & tf.reduce_all(tf.linalg.diag_part(observation_chol) > 0.))
         latent = base.initial_mean + tf.linalg.matvec(initial_chol, initial_noise)
         physical = latent
@@ -271,12 +284,15 @@ def latent_preclip_simulation_program(model, time_steps, *, jit_compile=True):
         physicals = tf.TensorArray(DTYPE, count, element_shape=[n]).write(0, physical)
         observations = tf.TensorArray(DTYPE, count, element_shape=[m]).write(0, observe(physical, observation_noise[0]))
         if time_steps:
+            # The original T=0 simulator never factors the unused process
+            # covariance. Check this factor only when a transition consumes it.
+            process_chol = tf.linalg.cholesky(0.5 * (base.process_covariance + tf.transpose(base.process_covariance)))
+            valid = (valid & tf.reduce_all(tf.math.is_finite(process_chol))
+                     & tf.reduce_all(tf.linalg.diag_part(process_chol) > 0.))
+
             def step(index, previous_physical, latents, physicals, observations):
                 mean = base._transition_mean_with_rates(previous_physical[None, :], kappa, nu)[0]
-                # Keep the source simulator's column-Cholesky/vector product
-                # order.  A mathematically equivalent row product can round
-                # differently under XLA and break the seeded source-law path.
-                latent = mean + tf.linalg.matvec(process_chol, transition_noise[index - 1])
+                latent = mean + tf.linalg.matmul(transition_noise[index - 1][None, :], process_chol, transpose_b=True)[0]
                 physical = base._apply_process_noise_policy(latent[None, :])[0]
                 return (index + 1, physical, latents.write(index, latent),
                         physicals.write(index, physical),
@@ -287,10 +303,12 @@ def latent_preclip_simulation_program(model, time_steps, *, jit_compile=True):
                 (tf.constant(1), physical, latents, physicals, observations),
                 maximum_iterations=time_steps, parallel_iterations=1,
             )
-        latent_path, physical_path = latents.stack(), physicals.stack()
-        valid = valid & tf.reduce_all(tf.math.is_finite(latent_path)) & tf.reduce_all(tf.math.is_finite(physical_path))
+        latent_path, physical_path, observation_path = latents.stack(), physicals.stack(), observations.stack()
+        valid = (valid & tf.reduce_all(tf.math.is_finite(latent_path))
+                 & tf.reduce_all(tf.math.is_finite(physical_path))
+                 & tf.reduce_all(tf.math.is_finite(observation_path)))
         return {"latent_path": latent_path, "physical_path": physical_path,
-                "observations": observations.stack()}, valid
+                "observations": observation_path}, valid
 
     owner = tensor_program(simulate, signature, jit_compile)
     _SIMULATION_PROGRAMS[key] = (model, owner)

@@ -1,52 +1,38 @@
 # Complete filter and gradient execution repair
 
-Current checkpoint through 04058, September 26. The prior pushed commit is
-`271051c90`; the latent SIR execution unit is committed on the same repair
-branch. Read `filter_gradient_latent_sir_result_20260926.md` for its exact
-result, and `filter_gradient_transitive_genut_result_20260926.md` plus
-`filter_gradient_transitive_import_audit_20260926.md` for the preceding GenUT
-continuation and source coverage.
+Current checkpoint through 04108, September 26. Prior pushed commit:
+`5bbce48b5`. The SIR terminal follow-up passes 04061/04062 (34 checks per
+backend) and refreshed costs 04063--04068. The mixed KR/TTSIRT public logarithms
+now execute through default-XLA owners, with one shared log-density/potential
+owner. Final dedicated tests 04092/04093 and consumers 04106/04107 pass.
+Policy 04108 passes 129 checks across 270 guarded sources / 1,424 exact
+allowances. See `filter_gradient_latent_sir_result_20260926.md` and
+`filter_gradient_mixed_kr_transport_result_20260926.md` for exact evidence.
 
-The latent pre-clipping SIR simulator now uses a retained TensorFlow program
-with native `tf.while_loop` time control and default XLA compilation. The
-shared SpatialSIRSSM RK4/RHS authority accepts tensor rate operands, preserving
-the existing algorithm, clipping convention, covariance orientation, supplied
-noise and invalid-parameter rejection. The complete pullback helper ignores
-boolean/integer status leaves while retaining numeric derivatives. CPU/GPU path,
-boundary, pullback, consumer and policy checks pass in 04038--04050 and
-04057--04058; six fresh original/graph/XLA cost arms pass in 04051--04056.
-The legacy source-law consumer now uses the already-frozen `5e-12` FP64 bound
-because XLA fusion differs from eager by at most `5.56e-17`; exact replay is
-still exact. The target remains explicitly `extension_or_invention`, with no
-canonical LEDH or Zhao--Cui filtering admission.
+Fresh cost cohort 04094--04105 preserves values (maximum error 2.22e-16),
+identical inputs and 3,391 source hashes. Sharing the log owner removes the
+earlier observed 22 MiB CPU / 31 MiB GPU overhead: final XLA RSS is within
+0.5/1.3 MiB of the preceding partially compiled wrappers. These are descriptive
+fixture costs, not target-capacity or performance-ranking evidence. Historical
+KR and obsolete private helpers retain diagnostic loops; active method coverage
+does not imply the entire file is loop-free or canonical scientific admission.
 
-Two GenUT correction recurrences and the Austria callback matrix construction
-are native. The audit guard now covers 269 sources / 1,422 exact allowances;
-129 policy tests pass. GPU investigation found a compiler fusion abort in the
-original and initial candidate, plus TF32 moment drift. The final tensor
-contractions compile with TF32 enabled and pass CPU/GPU FP64/FP32 numerical
-checks, independent moments, replay and consumer checks. Original FP32 GPU
-XLA remains unavailable; its graph comparator is explicitly labeled.
+Charges through 04108: 85502.823304 CPU / 77468.094682 GPU seconds, leaving
+32.249216 CPU / 30.481085 GPU process-hours under unchanged 56/52-hour caps.
+The extra 24 CPU hours are already included. No campaign worker is active.
+Remote main `5e16df06f586c16bc58fb76bc62d4f6451e7690d` is contained in this
+branch; main remains unmerged. Canonical LEDH rebuilding is excluded; the
+current NeuTra architecture remains `bayesfilter_neutra_iaf_author_v1`.
 
-Strict cross-mode report tests 04036/04037 still fail by one cap-active count
-out of 216 near the 1e-7 displacement predicate. No tolerance was waived.
-CPU repaired XLA uses about 54 MiB less RSS than original XLA in the fresh
-fixture cohort; cold time is 0.720 versus 1.557 seconds and warm time is similar.
-GPU costs are descriptive because sharing was observed. New N*d*d reductions
-still need target-scale capacity qualification. All failed attempts, final
-costs and source snapshots r1--r11 are preserved in the 04037 evidence archive.
-
-Charges through 04058: 84740.235162 CPU / 77050.122941 GPU seconds, leaving
-32.461046 CPU / 30.597188 GPU process-hours under unchanged 56/52-hour caps.
-No campaign worker is active. The added 24 CPU hours are already counted.
-Main remains unmerged. Canonical LEDH rebuild is excluded by user direction.
-
-Next execute the registered mixed KR transport closure under the same source and
-budget rules. Existing original precision disposition, repeated XLA native
-retention, DZ5 graph replay/GPU graph finite-difference failures, external
-callback autodiff/pfor, public LEDH/reset integration, initializer/supervisor,
-reporting/isotropic cases, target capacity and F01--F20 terminal dispositions
-remain open. Pending reporting proposals are not approved by elapsed time.
+Next: diagnose the GenUT one-of-216 FP32 cap-active report mismatch with
+captured operands and high-precision arithmetic, without changing the 1e-7
+predicate or comparison tolerance. Then qualify N*d*d capacity and continue
+public-consumer/LEDH-reset and initializer/supervisor integration. Original
+precision dispositions, repeated-constructor XLA retention, DZ5 graph replay
+and GPU graph finite differences, external callback pfor, reporting/isotropic
+proposals and final F01--F20 dispositions remain open. Main merge remains
+blocked until the master gate passes. Pending reporting proposals are not
+approved by elapsed time.
 
 Older checkpoints below preserve historical scope and instructions only.
 

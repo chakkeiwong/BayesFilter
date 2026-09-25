@@ -82,6 +82,12 @@ def transport_program(transport, operation, count, conditioning_dimension=0, *, 
         # direct graph diagnostics must not reuse XLA-only intermediates.
         has_coordinates = mode in ("inverse", "forward", "log_jacobian") and dr > 0
         code = _status(tf.constant(0), tf.reduce_all(tf.math.is_finite(condition)) & tf.reduce_all(tf.math.is_finite(values)), 1)
+        if mode == "log_normalizer":
+            normalizer = density_program(transport.density, "normalizer", jit_compile=jit_compile)[0]
+            z = normalizer.python_function(cores, tau)
+            code = _status(code, tf.math.is_finite(z), 1)
+            code = _status(code, z > normalizer_floor, 2)
+            return tf.math.log(z), code
         if has_coordinates:
             coordinate = coordinate_program(transport, mode, count, suffix=suffix, jit_compile=False)
             normalizer = density_program(transport.density, "normalizer", jit_compile=jit_compile)[0]
@@ -123,6 +129,9 @@ def transport_program(transport, operation, count, conditioning_dimension=0, *, 
         pdf = tf.exp(log_relative)*reference_density(joint, tuple(range(dimension)))
         if mode == "pdf":
             return pdf, code
+        if mode == "log_density":
+            log_pdf = tf.math.log(pdf)
+            return {"potential": -log_pdf, "proposal_log_density": log_pdf}, code
         if mode != "conditional_logpdf":
             raise ValueError("unknown TTSIRT numerical operation")
         raw_prefix, _ = prefix_pdf(cores, tau, tf.transpose(condition))
@@ -142,7 +151,8 @@ def evaluate_transport(transport, operation, condition, values, *, jit_compile=T
     if tf.inside_function():
         result, code = program.python_function(*transport_arguments(transport), condition, values)
         # The same status veto must survive even if enclosing XLA drops Assert.
-        return tf.where(code == 0, result, tf.constant(float("nan"), result.dtype))
+        return tf.nest.map_structure(
+            lambda value: tf.where(code == 0, value, tf.constant(float("nan"), value.dtype)), result)
     result, code = call_tensor_program(program, (*transport_arguments(transport), condition, values),
                                        jit_compile=jit_compile)
     check_transport_status(code)

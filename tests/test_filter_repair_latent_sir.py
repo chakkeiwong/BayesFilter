@@ -10,7 +10,7 @@ import os
 import subprocess
 import sys
 import time
-from dataclasses import fields
+from dataclasses import fields, replace
 from pathlib import Path
 from types import ModuleType
 
@@ -163,6 +163,37 @@ def test_simulator_pullback_diagnostic(request):
         "claim_bearing_analytical_score": False})
     np.testing.assert_allclose(actual.numpy(), expected.numpy(), rtol=5.e-10, atol=5.e-12)
     np.testing.assert_allclose(actual.numpy(), finite_difference.numpy(), rtol=2.e-5, atol=1.e-8)
+
+
+def test_unused_process_factor_and_nonfinite_noise(request):
+    model, inputs = _fixture(1, 0)
+    # Finite but indefinite process covariance is unused at T=0. The frozen
+    # simulator accepts this case; eager/XLA must not introduce a false veto.
+    base = replace(model.physical_model.base_model, process_covariance=-tf.eye(2, dtype=D))
+    unused = replace(model, physical_model=replace(model.physical_model, base_model=base))
+    original, source_sha = _original_model(unused)
+    expected = original.simulate_from_standard_normals(*inputs)
+    checked = []
+    for jit_compile in (False, True):
+        actual = unused.simulate_from_standard_normals(*inputs, jit_compile=jit_compile)
+        _assert_record_equal(actual, expected, atol=5.e-12, rtol=5.e-12)
+        for horizon in (0, 1):
+            healthy, operands = _fixture(1, horizon)
+            owner = candidate.latent_preclip_simulation_program(healthy, horizon, jit_compile=jit_compile)
+            for index in (1, 2, 3):
+                if index == 2 and horizon == 0:
+                    continue
+                invalid = list(operands)
+                invalid[index] = tf.fill(invalid[index].shape, tf.constant(float("nan"), D))
+                _, valid = owner(*invalid)
+                assert not bool(valid)
+                with pytest.raises(ValueError, match="nonfinite_value"):
+                    healthy.simulate_from_standard_normals(*invalid, jit_compile=jit_compile)
+                checked.append([jit_compile, horizon, index])
+    _write(request, "latent-sir-validity-review.json", {
+        "reference_sha256": source_sha, "unused_process_factor_preserved": True,
+        "nonfinite_noise_rejected": checked,
+    })
 
 
 @pytest.mark.parametrize("arm", ["original", "graph", "xla"])

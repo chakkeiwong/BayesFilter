@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Mapping, Sequence
 
 import tensorflow as tf
 
 from bayesfilter.highdim.diagnostics import HighDimStatus, freeze_mapping
-from bayesfilter.highdim.squared_tt import SquaredTTDensity, trapezoid_integral
+from bayesfilter.highdim.squared_tt import SquaredTTDensity
 
 
 @dataclass(frozen=True)
@@ -63,7 +63,11 @@ class KRInversionResult:
 
 @dataclass(frozen=True)
 class KRTransport:
-    """Lower-triangular KR map built from Phase-2 grid conditionals."""
+    """Historical diagnostic-only KR map built from Phase-2 grid conditionals.
+
+    The scalar Python recurrence is retained as an independent reference and
+    is not a production, filtering, HMC, or default execution route.
+    """
 
     density: SquaredTTDensity
     coordinate_order: tuple[int, ...]
@@ -438,17 +442,25 @@ class FixedTTSIRTTransport:
         return evaluate_transport(self, "pdf", tf.zeros([0, values.shape[1]], tf.float64),
                                   values, jit_compile=jit_compile)
 
-    def potential(self, local_points: tf.Tensor) -> tf.Tensor:
-        return -tf.math.log(self.eval_pdf(local_points))
+    def potential(self, local_points: tf.Tensor, *, jit_compile=True) -> tf.Tensor:
+        from bayesfilter.highdim.ttsirt_native_tf import evaluate_transport
+        values = _validate_map_points("local_points", local_points, self.dimension)
+        return evaluate_transport(self, "log_density", tf.zeros([0, values.shape[1]], tf.float64),
+                                  values, jit_compile=jit_compile)["potential"]
 
     def proposal_log_density(
         self,
         *,
         local_points: tf.Tensor,
         reference_points: tf.Tensor,
+        jit_compile=True,
     ) -> tf.Tensor:
         del reference_points
-        return tf.math.log(self.eval_pdf(local_points))
+        from bayesfilter.highdim.ttsirt_native_tf import evaluate_transport
+        values = _validate_map_points("local_points", local_points, self.dimension)
+        return evaluate_transport(self, "log_density",
+                                  tf.zeros([0, values.shape[1]], tf.float64),
+                                  values, jit_compile=jit_compile)["proposal_log_density"]
 
     def conditional_proposal_log_density(self, *, conditioning_points, generated_points, jit_compile=True):
         return self._conditional_evaluate("conditional_logpdf", conditioning_points, generated_points,
@@ -477,8 +489,11 @@ class FixedTTSIRTTransport:
     def marginalize(self, keep_axes: tuple[int, ...]):
         return self.density.marginal_density(tuple(int(axis) for axis in keep_axes))
 
-    def log_normalizer(self) -> tf.Tensor:
-        return tf.math.log(self.density.normalizer())
+    def log_normalizer(self, *, jit_compile=True) -> tf.Tensor:
+        from bayesfilter.highdim.ttsirt_native_tf import evaluate_transport
+        return evaluate_transport(self, "log_normalizer", tf.zeros([0, 0], tf.float64),
+                                  tf.zeros([self.dimension, 0], tf.float64),
+                                  jit_compile=jit_compile)
 
     def _axis_grid(self, axis: int) -> tf.Tensor:
         del axis

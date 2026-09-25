@@ -60,7 +60,7 @@ and memory-growth provenance. Share-aware GPU results are descriptive only.
 These fixture costs cannot close target-scale capacity or repeated-constructor
 native memory retention.
 
-Budget inside existing caps: at most 16 CPU / 12 GPU supervised invocations,
+Budget inside existing caps: at most 20 CPU / 14 GPU supervised invocations,
 3600 CPU / 3600 GPU process-seconds. Through 04037 the remaining budget is
 32.488836 CPU / 30.624976 GPU hours, already including the user's extra CPU
 allocation. Use the stable campaign runner and versioned artifacts, one worker
@@ -125,3 +125,26 @@ groups 04038--04045 and GPU-3 groups 04046--04050 pass. Fresh cost arms
 unit qualifies the tested latent SIR execution scope only; mixed KR transport,
 target-scale capacity, repeated-constructor native retention and the master
 program's other open findings remain next work.
+
+Terminal review follow-up: the previous result is provisional. The simulator
+must reject nonfinite observations, and at T=0 it must not factor or reject an
+unused process covariance (the original only checks its finite constructor
+values). Direct tests now cover each supplied-noise input and the T=0 unused
+factor, plus mixed boolean/integer/numeric output pullbacks through the shared
+helper's nested/resource suite. Restore the frozen simulator's original row
+matrix noise operation: the earlier column-product trial did not cure the
+legacy bitwise comparison. Its rounding attribution was not proved by that
+trial. The FP64 tolerance remains the predeclared 5e-12; no discrete or replay
+criterion changes. Renew final path/boundary checks and cost arms after these
+edits. The invocation reserve increases locally to 20 CPU / 14 GPU inside the
+same 3600-second per-device and global ceilings, with no change of target or
+hardware class. Duplicate policy run 04058 is preserved and charged. Four
+unsupervised CPU localization commands also consumed 27.2 wall seconds and
+are charged separately; they are explanatory only, not qualification evidence.
+
+Terminal follow-up completed: 04060 preserved the nonfinite-noise failure;
+04061/04062 pass 34 checks per backend, including the shared pullback suite.
+Refreshed costs 04063--04068 replace earlier costs for the final source.
+Supplemental receipt `supplemental-compute-sir-kr-direct-20260926-r1.json`
+charges 180 CPU seconds conservatively for the direct localizations, including
+the earlier 27.2 seconds; this is explanatory cost, not qualification evidence.
