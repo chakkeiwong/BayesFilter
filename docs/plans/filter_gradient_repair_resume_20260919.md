@@ -1,48 +1,49 @@
 # Filter and gradient repair recovery
 
-Current checkpoint through 03986, September 26: the completed native KDM
-repair (`6000ae63a`) and precision follow-up (`04643213e`) are pushed. The native
-ownership follow-up is complete. CPU/GPU allocation categories show roughly
-252/200 MiB additional live host heap per rebuilt XLA owner. Compiling mixture
-functions only through their owner does not resolve the slope; no such runtime
-change is installed. Python graph collection and low live GPU allocation do
-not free this native retention. Installed TensorFlow headers document a cache
-without eviction; runtime logging confirms one new compilation per owner but
-does not expose its exact live allocation owner.
+Current checkpoint through 04004, September 26: the native KDM
+repair and the shared LEDH safety/stage repair are implemented on branch
+`repair/filter-gradient-xla-validation-20260918`. The KDM repair is pushed at
+`66df4de03`; the safety/stage changes are staged in the current worktree and
+have not yet been committed.
 
-An explicit bounded process lifecycle passes complete-record comparisons and
-20 exact replays per retained owner on CPU and GPU, with changed callbacks and
-confirmed child termination. Reuse one owner while callbacks/configuration are
-fixed; changing tensor operands does not require reconstruction. General
-repeated-constructor safety inside a long-lived process remains open. See
-[the ownership result](filter_gradient_kdm_native_ownership_result_20260926.md).
-03986 passes all 129 policy checks (246 sources / 1354 exact allowances).
-The raw data, installed headers and hash-verified executed source revisions are
-archived in `kdm-native-ownership-evidence-03986.tar.gz` and its receipt.
+The safety helper now uses direct TensorFlow broadcasting for validity masks and
+rejects nonfinite Cholesky factors while preserving squeezed shapes. The LGSSM
+flow and multi-step analytical stage recurrences use native `tf.while_loop` and
+the existing native determinant authority. CPU/GPU FP64 and FP32 records,
+analytical finite differences, changed inputs, exact replay, HLO and downstream
+score/reset consumers pass. The frozen original determinant cannot compile in
+XLA CPU/GPU; this is retained as a graph comparator limitation.
 
-Charges through 03986: 84266.552285 CPU / 76562.823298 GPU seconds,
-leaving 32.592624 CPU / 30.732549 GPU process-hours under
-56/52-hour caps. The additional 24 CPU hours are already included. This unit
-used 351.184418 CPU / 207.219570 GPU seconds including all child wall time. No worker
-is active. One numerical worker at a time; freeze numerical sources during it.
+Runs 03987, 03991--03997 and 04004 pass the focused checks and policy suite;
+failed localization attempts 03988--03990 are preserved. The final policy has
+253 guarded sources, 1,359 exact allowances, no violations and no stale
+exceptions. The direct KDM/LEDH call-chain is guarded; an 80-module static
+import overapproximation still has 17 optional/reference or metadata modules
+outside the guard. This is audit debt, not a claim that the whole repository is
+policy-clean. Candidate-only GenUT, latent-SIR, transport and metadata routes
+remain open in F01--F20.
 
-Precision remains as recorded through 03975: original and repaired XLA are
-identical and independently accurate at the unchanged tolerance; the original
-eager comparator is inaccurate, largely because of GPU TF32. No severe
-ill-conditioning is established. The original cross-mode terminal disposition
-remains open. DZ5 graph replay/GPU graph FD, external callback autodiff/pfor,
-public LEDH integration/reset qualification, initializer/staged supervisor,
-reporting/isotropic cases, target capacity and F01--F20 dispositions remain open.
-Two reporting proposals await previous answers. Main remains unmerged.
+Descriptive stage cost arms 03998--04003 pass. CPU cold/warm medians are
+original graph 1.143 s/3.642 ms, repaired graph 0.411 s/6.634 ms and repaired
+XLA 0.824 s/0.903 ms. GPU 2 medians are 2.081 s/10.070 ms, 2.376 s/53.679 ms
+and 1.493 s/4.736 ms. These single-process fixture costs are not a statistical
+ranking or target-capacity claim. The KDM repeated-construction native memory
+gap remains open; explicit bounded worker lifetime is qualified.
 
-Worktree `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`, branch
-`repair/filter-gradient-xla-validation-20260918`. Raw root:
-`/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
-No subagents, MacroFinance edits, package changes, CDF restart, stale admission
-refresh, historical NeuTra promotion or premature main merge. Canonical NeuTra
-remains the shared author-profile IAF; canonical LEDH rebuild is excluded.
+Charges through 04004: 84425.456798 CPU / 76718.624339 GPU seconds,
+leaving 32.548484 CPU / 30.689271 GPU process-hours under
+56/52-hour caps. This safety/stage unit used 158.904513 CPU / 155.801041
+GPU seconds, including failed localization attempts 03988--03990. The complete
+run files/source snapshots are hash-verified in
+`ledh-safety-stage-evidence-04004.tar.gz` and its receipt. No worker is active.
 
-Next: execute [the safety/stage call-chain plan](filter_gradient_ledh_safety_callchain_20260926.md).
-Remove the Cholesky rank loop, preserve squeezed mask shape, explicitly reject
-nonfinite factors, repair stage reference recurrences and guard the full shared
-helper closure. Then continue the master consumer and terminal repairs.
+Open master gaps remain: original cross-mode precision disposition, repeated
+XLA native retention, DZ5 graph replay/GPU graph finite-difference failures,
+external callback autodiff/pfor debt, public LEDH integration/reset qualification,
+initializer/staged supervisor, reporting/isotropic cases, target capacity and
+F01--F20 terminal dispositions. Main remains unmerged; canonical LEDH rebuild is
+excluded by user direction.
+
+Next: commit and push this safety/stage phase, then continue the remaining
+transitive filtering/gradient call-chain audit under a new bounded plan. Do not
+silently add broad allow-list waivers or promote optional modules.

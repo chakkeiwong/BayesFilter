@@ -210,6 +210,24 @@ TEST_GROUPS = {
         "tests/test_filter_repair_dz5_addition_order.py::test_ordered_add_primitive",),
     "kdm_auxiliary_legacy_cpu": (
         "tests/highdim/test_ledh_younis_kdm_tf.py::test_auxiliary_api_uses_canonical_trace_and_has_no_feedback",),
+    **{f"ledh_safety_{device}": (
+        "tests/test_filter_repair_ledh_safety_stages.py::test_guarded_shared_helper_wiring",
+        "tests/test_filter_repair_ledh_safety_stages.py::test_safety_shapes_and_rejections",)
+       for device in ("cpu", "gpu")},
+    **{f"ledh_stages_{dtype}_{device}": (
+        f"tests/test_filter_repair_ledh_safety_stages.py::test_native_stages_complete_records[{dtype}]",)
+       for dtype in ("f64", "f32") for device in ("cpu", "gpu")},
+    **{f"ledh_safety_consumers_{device}": (
+        "tests/highdim/test_ledh_canonical_score_stages.py",
+        "tests/highdim/test_ledh_canonical_score_recursion.py",
+        "tests/highdim/test_ledh_canonical_score_ukf_tangent.py",
+        "tests/highdim/test_ledh_unified_reset.py",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_auxiliary_complete_records[8-xla]",
+        "tests/test_filter_repair_kdm_auxiliary.py::test_native_auxiliary_complete_records[2-xla]",)
+       for device in ("cpu", "gpu")},
+    **{f"ledh_stage_cost_{arm}_{mode}_{device}": (
+        f"tests/test_filter_repair_ledh_safety_stages.py::test_stage_cost[{arm}-{mode}]",)
+       for arm in ("original", "native") for mode in ("graph", "xla") for device in ("cpu", "gpu")},
     "kdm_auxiliary_localization_cpu": (
         "tests/test_filter_repair_kdm_auxiliary.py::test_baseline_auxiliary_rejection_localization",),
     "kdm_auxiliary_controls_cpu": (
@@ -1847,6 +1865,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS
+       if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_")) and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS
        if group.startswith("kdm_") and group.endswith("_gpu")},
     "dz5_score_oracle_graph_gpu": "GPU",

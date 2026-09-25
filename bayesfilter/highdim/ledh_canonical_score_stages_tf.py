@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import tensorflow as tf
 
+from bayesfilter.ops.slogdet_tf import determinant_tf
+
 Tensor = tf.Tensor
 
 
@@ -82,8 +84,12 @@ def flow_value_and_parameter_tangent_lgssm(
     log_det = tf.zeros([tf.shape(states)[0]], dtype)
     d_log_det = tf.zeros([tf.shape(states)[0]], dtype)
 
-    for step_index in range(substeps):
-        lam = tf.constant((step_index + 1) / substeps, dtype=dtype)
+    # Match the original Python-double schedule before the target-dtype cast.
+    schedule = tf.cast(tf.cast(tf.range(1, substeps + 1), tf.float64)
+                       / tf.constant(substeps, tf.float64), dtype)
+
+    def flow_step(step_index, actual, d_actual, log_det, d_log_det):
+        lam = schedule[step_index]
         php = tf.einsum("oi,nij,pj->nop", h, predicted, h)
         d_php = tf.einsum("oi,nij,pj->nop", h, d_predicted, h)
         innovation = lam * php + r[None]
@@ -151,14 +157,18 @@ def flow_value_and_parameter_tangent_lgssm(
         # theta-product and its parameter derivative:
         # d log|det(I+eps A)| = eps tr[(I+eps A)^{-1} dA]
         step_matrix = eye[None] + eps * a_matrix
-        log_det = log_det + tf.math.log(
-            tf.abs(tf.linalg.det(step_matrix))
-        )
+        log_det = log_det + tf.math.log(tf.abs(determinant_tf(step_matrix)))
         if with_tangent:
             step_inv = tf.linalg.inv(step_matrix)
             d_log_det = d_log_det + eps * tf.linalg.trace(
                 tf.einsum("nij,njk->nik", step_inv, d_a_matrix)
             )
+        return step_index + 1, actual, d_actual, log_det, d_log_det
+
+    _, actual, d_actual, log_det, d_log_det = tf.while_loop(
+        lambda step_index, *_: step_index < substeps,
+        flow_step, (tf.constant(0), actual, d_actual, log_det, d_log_det),
+        maximum_iterations=substeps, parallel_iterations=1)
 
     if with_tangent:
         return actual, d_actual[..., None], log_det, d_log_det
@@ -179,7 +189,7 @@ def multi_step_value_and_score_lgssm(
     substeps: int,
     with_tangent: bool,
 ) -> tuple[Tensor, Tensor | None]:
-    """Multi-step value + analytical score, gated recursion slice.
+    """Independent LGSSM reference slice with an analytical score.
 
     Slice semantics (recorded honestly): particles carry as post-flow
     children step to step with equal-weight reset (reset_policy='none'
@@ -218,7 +228,13 @@ def multi_step_value_and_score_lgssm(
         "ij,njk,lk->nil", d_transition, covariances, transition
     ) + tf.einsum("ij,njk,lk->nil", transition, covariances, d_transition)
 
-    for time_index in range(horizon):
+    if horizon == 0:
+        return total, d_total[None] if with_tangent else None
+
+    schedule = tf.cast(tf.cast(tf.range(1, substeps + 1), tf.float64)
+                       / tf.constant(substeps, tf.float64), dtype)
+
+    def time_step(time_index, states, d_states, weights_log, total, d_total):
         observation = observations[time_index]
         noise = noises[time_index]
         anchors = tf.einsum("ij,nj->ni", transition, states)
@@ -233,8 +249,8 @@ def multi_step_value_and_score_lgssm(
         d_actual = d_pre_flow
         log_det = tf.zeros([count], dtype)
         d_log_det = tf.zeros([count], dtype)
-        for step_index in range(substeps):
-            lam = tf.constant((step_index + 1) / substeps, dtype=dtype)
+        def flow_step(step_index, actual, d_actual, log_det, d_log_det):
+            lam = schedule[step_index]
             php = tf.einsum("oi,nij,pj->nop", h, predicted, h)
             d_php = tf.einsum("oi,nij,pj->nop", h, base_d_predicted, h)
             innovation_chol = tf.linalg.cholesky(
@@ -290,11 +306,17 @@ def multi_step_value_and_score_lgssm(
             )
             actual = new_actual
             step_matrix = eye[None] + eps * a_matrix
-            log_det += tf.math.log(tf.abs(tf.linalg.det(step_matrix)))
+            log_det += tf.math.log(tf.abs(determinant_tf(step_matrix)))
             step_inv = tf.linalg.inv(step_matrix)
             d_log_det += eps * tf.linalg.trace(
                 tf.einsum("nij,njk->nik", step_inv, d_a_matrix)
             )
+            return step_index + 1, actual, d_actual, log_det, d_log_det
+
+        _, actual, d_actual, log_det, d_log_det = tf.while_loop(
+            lambda step_index, *_: step_index < substeps,
+            flow_step, (tf.constant(0), actual, d_actual, log_det, d_log_det),
+            maximum_iterations=substeps, parallel_iterations=1)
 
         children, d_children = actual, d_actual
         transition_log, d_transition_log = _gaussian_log_density_and_tangent(
@@ -326,7 +348,14 @@ def multi_step_value_and_score_lgssm(
 
         states = children
         d_states = d_children
-        weights_log = tf.fill([count], -tf.math.log(tf.cast(count, dtype)))
+        weights_log = tf.ensure_shape(
+            tf.fill([count], -tf.math.log(tf.cast(count, dtype))), weights_log.shape)
+        return time_index + 1, states, d_states, weights_log, total, d_total
+
+    _, _, _, _, total, d_total = tf.while_loop(
+        lambda time_index, *_: time_index < horizon,
+        time_step, (tf.constant(0), states, d_states, weights_log, total, d_total),
+        maximum_iterations=horizon, parallel_iterations=1)
 
     if with_tangent:
         return total, d_total[None]

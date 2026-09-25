@@ -15,7 +15,7 @@ def safe_cholesky(
     matrix: tf.Tensor,
     name: str = "cholesky"
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    """Safe Cholesky decomposition with NaN detection.
+    """Cholesky decomposition with per-matrix nonfinite-factor rejection.
 
     TensorFlow's tf.linalg.cholesky returns NaN when the input matrix is not
     positive definite (e.g., due to numerical errors, ill-conditioning, or
@@ -37,19 +37,19 @@ def safe_cholesky(
     Returns
     -------
     valid : tf.Tensor
-        Boolean scalar. True if decomposition succeeded (no NaN), False otherwise.
+        Boolean batch mask with all singleton axes squeezed, preserving the
+        existing API. Unbatched and singleton-batch inputs return a scalar.
+        True means the computed factor is finite, not that it is well conditioned.
     chol : tf.Tensor
         Cholesky factor L such that matrix = L @ L^T when valid=True.
         Returns zeros when valid=False for clean propagation through graph.
 
     Notes
     -----
-    **Why NaN detection instead of eigenvalue pre-check:**
+    **Why factor inspection instead of an eigenvalue pre-check:**
 
-    - **Performance**: O(n²) NaN scan vs O(n³) eigenvalue decomposition
+    - **Performance**: O(n²) finite scan vs O(n³) eigenvalue decomposition
     - **XLA-compatible**: Pure TensorFlow ops, no Python control flow
-    - **Equally reliable**: Cholesky already produces NaN on ill-conditioned
-      matrices; we're just detecting it rather than letting it propagate
     - **Empirically validated**: Phase 4a logs show Cholesky returning NaN
       with warning messages, not crashing
 
@@ -57,8 +57,13 @@ def safe_cholesky(
 
     - Negative eigenvalues (indefinite matrices)
     - Zero eigenvalues (singular matrices)
-    - Ill-conditioned matrices (κ > 10^12 for ridge=1e-5)
     - Numerical errors accumulating to non-positive-definite result
+    - Nonfinite factors, including infinity
+
+    A finite factor can still be ill-conditioned. This helper does not compute
+    a condition number, check symmetry or establish an error bound; callers
+    requiring those properties must check them separately. Numerical operations
+    are TensorFlow-native and inherit compilation from their enclosing owner.
 
     **Example usage:**
 
@@ -84,24 +89,22 @@ def safe_cholesky(
         # On failure, TensorFlow returns NaN in the output tensor
         chol_attempt = tf.linalg.cholesky(matrix)
 
-        # Check for NaN in each batch element
+        # Check each batch element; finite factors need no numerical alteration.
         # For shape [..., n, n], reduce over last two dimensions only
         # This gives per-batch validity flags for batched inputs
-        has_nan = tf.reduce_any(
-            tf.math.is_nan(chol_attempt),
+        is_valid = tf.reduce_all(
+            tf.math.is_finite(chol_attempt),
             axis=[-2, -1]
         )
-        is_valid = tf.logical_not(has_nan)
 
         # Expand is_valid for broadcasting if needed
         # For batched inputs, we need [..., 1, 1] shape for tf.where
-        while len(is_valid.shape) < len(chol_attempt.shape):
-            is_valid = tf.expand_dims(is_valid, axis=-1)
+        broadcast_valid = is_valid[..., tf.newaxis, tf.newaxis]
 
         # Return zeros when invalid (for clean propagation)
         # This prevents NaN from contaminating downstream computations
         chol = tf.where(
-            is_valid,
+            broadcast_valid,
             chol_attempt,
             tf.zeros_like(chol_attempt)
         )

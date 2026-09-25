@@ -441,7 +441,14 @@
       "_value_and_analytical_score_impl"
     ],
     "bayesfilter/highdim/ledh_younis_kdm_tf.py": null,
-    "bayesfilter/highdim/ledh_unified_reset_tf.py": null
+    "bayesfilter/highdim/ledh_unified_reset_tf.py": null,
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": null,
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": null,
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": null,
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": null,
+    "bayesfilter/highdim/higher_moment_contract_e.py": null,
+    "bayesfilter/highdim/genut_shape_lm_tf.py": null,
+    "bayesfilter/highdim/transport_chunk_policy.py": null
   },
   "exceptions": [
     {
@@ -12676,6 +12683,51 @@
       "ast_sha256": "1a85402f7a1391556960151e33105fb8d16123d3476c8936fe4689940fab021c",
       "role": "host_reporting",
       "reason": "Present completed time-stacked outputs as the compatibility tuple of step dictionaries; no state, score, selection, or recurrence feeds back from these records."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_unified_correction_tf.py",
+      "function": "_output_signature",
+      "line": 64,
+      "kind": "python_iteration",
+      "ast_sha256": "8a8ea1b8c5a2d8be2be63e2c3baf91390bb76c67676076bd270e60efbbe6291f",
+      "role": "fixed_schema",
+      "reason": "Construct fixed named TensorSpec output fields for the batched correction before tracing. No numerical sample, direction, flow or time recurrence is executed by these comprehensions."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_unified_correction_tf.py",
+      "function": "_output_signature",
+      "line": 67,
+      "kind": "python_iteration",
+      "ast_sha256": "119a829759bea9130de09e96076780ddf5d4602bde5d6e3b0655c5cbe422283d",
+      "role": "fixed_schema",
+      "reason": "Construct fixed named TensorSpec output fields for the batched correction before tracing. No numerical sample, direction, flow or time recurrence is executed by these comprehensions."
+    },
+    {
+      "path": "bayesfilter/highdim/ledh_unified_correction_tf.py",
+      "function": "_output_signature",
+      "line": 70,
+      "kind": "python_iteration",
+      "ast_sha256": "0f6e64deeec220f472f988b5e1684b82a42d08213a8d9b39b271c1989536f96a",
+      "role": "fixed_schema",
+      "reason": "Construct fixed named TensorSpec output fields for the batched correction before tracing. No numerical sample, direction, flow or time recurrence is executed by these comprehensions."
+    },
+    {
+      "path": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "function": "higher_moment_shape_jvp",
+      "line": 1124,
+      "kind": "python_iteration",
+      "ast_sha256": "acd1cf1b7db45e01a690b80c3da1bde717fe0932fca32c9957b692abc9cfda2a",
+      "role": "host_validation",
+      "reason": "Validate presence of the fixed eight optional target/tangent fields before tracing; counts Python None settings, never tensor values or a numerical axis."
+    },
+    {
+      "path": "bayesfilter/highdim/transport_chunk_policy.py",
+      "function": "select_transport_chunk_size",
+      "line": 38,
+      "kind": "python_iteration",
+      "ast_sha256": "4be1ba5f4583afe7b61769f7b184dae553b823543892bf419f87003792e75348",
+      "role": "host_validation",
+      "reason": "Owner-mandated dpf_transport_exact_divisor_cap3000_v1 selector executes on static particle-count configuration before tracing. Divisor search does not execute inside the numerical graph."
     }
   ]
 }
