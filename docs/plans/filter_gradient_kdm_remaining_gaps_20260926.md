@@ -105,3 +105,54 @@ its static rank-expansion loop and squeezed validity shape); guarding the outer
 KDM module is not whole-repository compliance. The current work preserves that
 helper's shape semantics. No failing native allocation or numerical gate is
 silently converted into a passing terminal disposition.
+
+Execution detail for the native-ownership unit: first make the alternative in a
+test-only factory patch which calls the existing mixture function's
+`python_function` within the enclosing graph. This preserves one numerical
+authority and leaves the public standalone XLA default unchanged. Compare six
+successive owners in separate graph/XLA processes for the current nested and
+enclosing-only arms, recording checkpoints after every build (including 1/3/6),
+`mallinfo2`, `/proc/self/smaps` categories, function registration, graph release,
+exact replay and completed outputs. Do not mix HLO extraction or a second arm
+into a memory worker: compiler inspection can itself retain extra state.
+Qualification workers separately compare full valid/rejected records, changed
+inputs, finite differences, optimized HLO and stable tracing. Commands use the
+stable runner's `kdm_native_allocation_{nested,enclosing}_{graph,xla}_{cpu,gpu}`
+and `kdm_enclosing_qualification_{cpu,gpu}` groups with 300-second timeouts.
+
+Skeptical pre-execution review: glibc allocated bytes explain allocation
+categories, not the owning C++ object; anonymous mappings do not alone prove a
+leak. The graph arm and the previously stable retained-owner arm are necessary
+controls. A successful numerical comparison with a persisting memory slope
+rejects the ownership change as a memory repair. No runtime change is eligible
+on memory evidence alone, and no fixture result closes target capacity. The
+seed-131 8/8 reset control and 2/2 rejected control remain diagnostic inputs,
+not newly tuned defaults. The existing 8 CPU / 4 GPU worker suballocation and
+1800/900-second ceilings remain in force; preserve every failed attempt.
+
+The installed TensorFlow `device_compilation_cache.h:62-66` explicitly says
+that compiled HLO, executables and metadata are cache-owned and no eviction
+policy is implemented. Add one diagnostic CPU worker (`kdm_cache_attribution_cpu`)
+with `TF_CPP_MIN_LOG_LEVEL=0` and
+`TF_CPP_VMODULE=device_compiler=2,device_compilation_cache=2` to the same
+suballocation. Preserve its exact environment in the run manifest and inspect
+cache entry counts and compilation/reuse signatures. Logging costs are not
+performance evidence. Header comments alone do not establish that this process
+used that path or attribute every retained byte; require the runtime witness.
+
+03976--03980 show roughly 250 MiB more glibc live allocation per XLA build in
+both ownership arms. Nested compilation is rejected as the memory repair; no
+runtime candidate is installed. Full CPU/GPU candidate HLO qualification is
+therefore unnecessary for adoption. 03980's pytest capture hid the requested
+cache log; retry with `-s`, preserving that harness limitation and its charge.
+Use the remaining worker slots to test explicit process lifetimes: three serial
+children at callback scales 1, 1.01, 1, each with one retained XLA owner and 20
+replays, completed original-record comparisons, changed tensor inputs, one
+trace, per-child/native parent snapshots and confirmed process reaping. The
+changed scale is an explicit diagnostic callback, never a numerical default.
+The stable runner groups are `kdm_process_lifetime_cpu/gpu`, timeout 300 seconds,
+with each child bounded to 60 seconds. The parent is supervisory only; exactly
+one numerical child runs at once. This tests an explicit caller lifecycle; it
+does not silently move the public numerical API into a subprocess or prove
+unrestricted constructor safety. All attempts remain within the same 8 CPU /
+4 GPU workers and 1800/900-second allocation, with one final policy worker.

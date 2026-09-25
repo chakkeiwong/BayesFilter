@@ -1,61 +1,51 @@
 # Complete filter and gradient execution repair
 
-Current checkpoint through 03975, September 26: native KDM execution repair
-is committed and pushed at `6000ae63a`. The auxiliary has a stable-signature
-XLA owner and native time recurrence, and the shared reset uses a native
-Sinkhorn recurrence. CPU/GPU complete records, derivatives, rejection behavior,
-changed operands, exact replay, public API and empty horizon pass. The final
-30-check component suite and 18 matched cost workers pass. The latest policy
-worker 03975 passes 129 checks (246 guarded sources / 1354 exact allowances).
+Current checkpoint through 03986, September 26: the completed native KDM
+repair (`6000ae63a`) and precision follow-up (`04643213e`) are pushed. The native
+ownership follow-up is complete. CPU/GPU allocation categories show roughly
+252/200 MiB additional live host heap per rebuilt XLA owner. Compiling mixture
+functions only through their owner does not resolve the slope; no such runtime
+change is installed. Python graph collection and low live GPU allocation do
+not free this native retention. Installed TensorFlow headers document a cache
+without eviction; runtime logging confirms one new compilation per owner but
+does not expose its exact live allocation owner.
 
-The precision follow-up is complete: the original and repaired FP32 XLA reset
-outputs are identical and match an independently checked FP64 reference from
-the same rounded inputs. Maximum unchanged-tolerance units are CPU XLA 0.321
-versus eager 1.025; GPU XLA 0.062 versus eager 180.983 with TF32 and 1.550 with
-TF32 explicitly disabled. The original eager comparator is inaccurate at this
-tolerance. Condition numbers around 60--153 do not establish severe
-ill-conditioning. Original cross-mode failures remain preserved as an open
-terminal disposition; no tolerance, ridge, dtype or default changed.
+An explicit bounded process lifecycle passes complete-record comparisons and
+20 exact replays per retained owner on CPU and GPU, with changed callbacks and
+confirmed child termination. Reuse one owner while callbacks/configuration are
+fixed; changing tensor operands does not require reconstruction. General
+repeated-constructor safety inside a long-lived process remains open. See
+[the ownership result](filter_gradient_kdm_native_ownership_result_20260926.md).
+03986 passes all 129 policy checks (246 sources / 1354 exact allowances).
+The raw data, installed headers and hash-verified executed source revisions are
+archived in `kdm-native-ownership-evidence-03986.tar.gz` and its receipt.
 
-Repeated XLA construction retains native host memory despite collection of
-later Python graphs and constant registered-function counts. Six builds grow
-RSS to 2556 MiB CPU / 2472 MiB GPU; graph controls level off at 834/1363 MiB.
-Live GPU allocation returns to 7168 bytes. Allocator trimming reduces RSS but
-leaves the slope (CPU 1069 to 2428 MiB after trim). A single retained owner is
-stable over 20 calls. Exact native ownership is unresolved. See the
-[precision/memory result](filter_gradient_kdm_precision_memory_result_20260926.md)
-and [next repair plan](filter_gradient_kdm_remaining_gaps_20260926.md).
+Charges through 03986: 84266.552285 CPU / 76562.823298 GPU seconds,
+leaving 32.592624 CPU / 30.732549 GPU process-hours under
+56/52-hour caps. The additional 24 CPU hours are already included. This unit
+used 351.184418 CPU / 207.219570 GPU seconds including all child wall time. No worker
+is active. One numerical worker at a time; freeze numerical sources during it.
 
-Charges through 03975: 83915.367867 CPU / 76355.603728 GPU seconds,
-leaving 32.690176 CPU / 30.790110 GPU process-hours under the
-unchanged 56/52-hour caps. The extra 24 CPU hours are already included. This
-follow-up used 267.818416 CPU / 179.780318 GPU seconds, including two policy
-checks (12 planned CPU workers plus the final 8.633437-second policy check;
-6 GPU workers). No worker is active. The full 03957--03975 raw files and source
-supplements are verified in `kdm-followup-verification-03975.json` and its archive.
-Earlier 03904--03956 evidence remains in the linked two prior receipts.
-
-DZ5 default graph replay/GPU graph finite-difference failures remain open.
-Its addition overlay is rejected; explicit arithmetic-optimizer-disabled CPU
-reference 03901 remains qualified. Frozen external callback autodiff/pfor debt
-remains. Public LEDH value/score integration, reset qualification, public
-initializer/staged supervisor, reporting/isotropic cases, target capacity and
-F01--F20 terminal dispositions remain open. Two reporting proposals await
-previous user answers. Main is unmerged; no canonical LEDH rebuild is authorized.
+Precision remains as recorded through 03975: original and repaired XLA are
+identical and independently accurate at the unchanged tolerance; the original
+eager comparator is inaccurate, largely because of GPU TF32. No severe
+ill-conditioning is established. The original cross-mode terminal disposition
+remains open. DZ5 graph replay/GPU graph FD, external callback autodiff/pfor,
+public LEDH integration/reset qualification, initializer/staged supervisor,
+reporting/isotropic cases, target capacity and F01--F20 dispositions remain open.
+Two reporting proposals await previous answers. Main remains unmerged.
 
 Worktree `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`, branch
 `repair/filter-gradient-xla-validation-20260918`. Raw root:
 `/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
-One numerical worker at a time, with runtime/scripts/tests frozen during it.
 No subagents, MacroFinance edits, package changes, CDF restart, stale admission
 refresh, historical NeuTra promotion or premature main merge. Canonical NeuTra
-remains the shared author-profile IAF. Remote main `5e16df06f` is integrated;
-the repair branch was pushed after a clean fetch with no conflicts.
+remains the shared author-profile IAF; canonical LEDH rebuild is excluded.
 
-Next: execute the native-ownership unit in the remaining-gaps plan: compare
-allocated/free/mapped native bytes and nested compilation ownership before
-changing runtime ownership. Preserve mutable callbacks and the existing
-explicit retained-owner path. Then continue the master consumer/terminal repairs.
+Next: execute [the safety/stage call-chain plan](filter_gradient_ledh_safety_callchain_20260926.md).
+Remove the Cholesky rank loop, preserve squeezed mask shape, explicitly reject
+nonfinite factors, repair stage reference recurrences and guard the full shared
+helper closure. Then continue the master consumer and terminal repairs.
 
 Older checkpoints below preserve historical scope and instructions only.
 

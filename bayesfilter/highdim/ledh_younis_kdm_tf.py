@@ -1455,6 +1455,10 @@ def make_canonical_linear_gaussian_kdm_auxiliary_program(
     noises, observations, observation matrix/tangent and bandwidths/tangents.
     Callbacks and Python closure cells must remain fixed throughout this owner's
     lifetime. Rebuild the owner when they change. No global cache is used.
+    Retain this function for repeated evaluations. XLA executable memory can
+    survive owner collection, so workloads changing callback/configuration
+    repeatedly should bound their worker-process lifetime. Tensor operands may
+    change without rebuilding the owner when their signature stays fixed.
     Steps retain their complete public fields as time-stacked tensors; the public
     compatibility wrapper formats them only after the numerical recurrence.
     KDM is diagnostic only and never feeds back into the analytical trajectory.

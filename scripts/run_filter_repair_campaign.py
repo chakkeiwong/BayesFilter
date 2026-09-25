@@ -255,6 +255,17 @@ TEST_GROUPS = {
         "tests/test_filter_repair_kdm_precision.py::test_independent_rounded_precision_authority",),
     "kdm_followup_evidence_cpu": (
         "tests/test_filter_repair_kdm_precision.py::test_saved_precision_and_memory_evidence",),
+    **{f"kdm_native_allocation_{ownership}_{mode}_{device}": (
+        f"tests/test_filter_repair_kdm_native_memory.py::test_native_allocation_categories[{ownership}-{mode}]",)
+       for ownership in ("nested", "enclosing") for mode in ("graph", "xla") for device in ("cpu", "gpu")},
+    **{f"kdm_enclosing_qualification_{device}": (
+        "tests/test_filter_repair_kdm_native_memory.py::test_enclosing_qualification",)
+       for device in ("cpu", "gpu")},
+    "kdm_cache_attribution_cpu": (
+        "-s", "tests/test_filter_repair_kdm_native_memory.py::test_native_allocation_categories[nested-xla]",),
+    **{f"kdm_process_lifetime_{device}": (
+        "tests/test_filter_repair_kdm_native_memory.py::test_bounded_process_lifetime",)
+       for device in ("cpu", "gpu")},
     "kdm_final_qualification_cpu": (
         "tests/test_filter_repair_kdm_auxiliary.py::test_saved_kdm_cost_evidence",
         "tests/test_filter_repair_kdm_auxiliary.py::test_kdm_cost_analysis_rejects_corruption",
@@ -2220,6 +2231,9 @@ def run_job(args):
     env = os.environ.copy()
     env.update({"CUDA_VISIBLE_DEVICES": args.gpu_uuid if device == "GPU" else "-1", "TF_FORCE_GPU_ALLOW_GROWTH": "true", "BAYESFILTER_TEST_DEVICE_SCOPE": "visible" if device == "GPU" else "cpu", "TF_NUM_INTRAOP_THREADS": "2", "TF_NUM_INTEROP_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MPLBACKEND": "Agg", "PYTHONHASHSEED": "0"})
     if args.action == "test":
+        if args.group == "kdm_cache_attribution_cpu":
+            env["TF_CPP_MIN_LOG_LEVEL"] = "0"
+            env["TF_CPP_VMODULE"] = "device_compiler=2,device_compilation_cache=2"
         if args.group == "block_buffer_attribution_gpu":
             env["XLA_FLAGS"] = (env.get("XLA_FLAGS", "") +
                 f" --xla_dump_to={directory / 'xla'} --xla_dump_hlo_as_text"
@@ -2276,6 +2290,10 @@ def run_job(args):
         record["environment"]["XLA_FLAGS"] = env["XLA_FLAGS"]
         record["diagnostic_xla_dump"] = {"path": str(directory / "xla"),
             "module_pattern": "inference_execute", "timing_eligible": False}
+    if args.action == "test" and args.group == "kdm_cache_attribution_cpu":
+        record["environment"].update({key: env[key] for key in
+                                      ("TF_CPP_MIN_LOG_LEVEL", "TF_CPP_VMODULE")})
+        record["diagnostic_cache_logging_timing_eligible"] = False
     if getattr(args, "gpu_preflight", None) is not None:
         record["gpu_preflight"] = args.gpu_preflight
         record["gpu_uuid"] = args.gpu_uuid
