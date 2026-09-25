@@ -538,6 +538,73 @@ def test_single_owner_memory_attribution(jit_compile, request):
     assert reference() is None
 
 
+@pytest.mark.parametrize("jit_compile", [False, True], ids=["graph", "xla"])
+@pytest.mark.parametrize("count", [1, 3, 6])
+def test_repeated_owner_release(count, jit_compile, request):
+    """Bound repeated construction without hiding outputs or native retention."""
+    _repeated_owner_release(count, jit_compile, request, trim_allocator=False)
+
+
+@pytest.mark.parametrize("jit_compile", [False, True], ids=["graph", "xla"])
+def test_repeated_owner_allocator_attribution(jit_compile, request):
+    """Linux diagnostic only: distinguish free glibc pages from live retention."""
+    _repeated_owner_release(6, jit_compile, request, trim_allocator=True)
+
+
+def _repeated_owner_release(count, jit_compile, request, *, trim_allocator):
+    from tensorflow.python.eager import context
+
+    from tests.test_filter_repair_gap_diagnostics import memory_snapshot
+
+    model, inputs, options = _fixture()
+    gpu = os.environ.get("BAYESFILTER_TEST_DEVICE_SCOPE") == "visible"
+    if trim_allocator:
+        import ctypes
+
+        trim = ctypes.CDLL(None).malloc_trim
+        trim.argtypes, trim.restype = [ctypes.c_size_t], ctypes.c_int
+
+    def snapshot():
+        return {**memory_snapshot(gpu), "registered_functions": len(context.context().list_function_names())}
+
+    before, rounds = snapshot(), []
+    first = None
+    for index in range(count):
+        owner = _owner(model, inputs, options, jit_compile)
+        begin = time.perf_counter()
+        result = owner(*inputs)
+        for tensor in tf.nest.flatten(result):
+            tensor.numpy()
+        elapsed = time.perf_counter() - begin
+        arrays = _json(result)
+        if first is None:
+            first = arrays
+        else:
+            assert arrays == first
+        references = {"owner": weakref.ref(owner),
+                      "graph": weakref.ref(owner.get_concrete_function().graph)}
+        compiled = snapshot()
+        del owner, result, tensor
+        collections = []
+        for _ in range(3):
+            collected = gc.collect()
+            collections.append({"collected": collected,
+                "released": {name: ref() is None for name, ref in references.items()}})
+        before_trim = snapshot()
+        trimmed = trim(0) if trim_allocator else None
+        rounds.append({"index": index, "cold_seconds": elapsed, "compiled": compiled,
+                       "collections": collections, "before_trim": before_trim,
+                       "malloc_trim_return": trimmed, "released": snapshot()})
+    report = {"role": "bounded_repeated_construction_no_native_eviction_claim",
+              "count": count, "jit_compile": jit_compile, "before": before,
+              "diagnostic_malloc_trim": trim_allocator,
+              "rounds": rounds, "first": first}
+    output = Path(request.config.getoption("xmlpath")).parent / "kdm-repeated-owner.json"
+    output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
+    assert first["valid"] is True
+    assert all(row["collections"][-1]["released"]["owner"] for row in rounds)
+
+
 def test_auxiliary_public_enclosing_xla():
     model, inputs, options = _fixture()
 

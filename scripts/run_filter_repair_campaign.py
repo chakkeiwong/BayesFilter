@@ -233,12 +233,28 @@ TEST_GROUPS = {
     **{f"kdm_owner_memory_{mode}_{device}": (
         f"tests/test_filter_repair_kdm_auxiliary.py::test_single_owner_memory_attribution[{mode}]",)
         for mode in ("graph", "xla") for device in ("cpu", "gpu")},
+    **{f"kdm_owner_rebuild_{count}_{mode}_{device}": (
+        f"tests/test_filter_repair_kdm_auxiliary.py::test_repeated_owner_release[{count}-{mode}]",)
+        for count in (1, 3, 6) for mode in ("graph", "xla") for device in ("cpu", "gpu")},
+    **{f"kdm_allocator_attribution_{mode}_cpu": (
+        f"tests/test_filter_repair_kdm_auxiliary.py::test_repeated_owner_allocator_attribution[{mode}]",)
+        for mode in ("graph", "xla")},
     **{f"kdm_public_enclosing_{device}": (
         "tests/test_filter_repair_kdm_auxiliary.py::test_auxiliary_public_enclosing_xla",
         "tests/test_filter_repair_kdm_auxiliary.py::test_auxiliary_empty_horizon_preserves_original",)
         for device in ("cpu", "gpu")},
     "kdm_graph_retention_cpu": (
         "tests/test_filter_repair_kdm_auxiliary.py::test_auxiliary_graph_retention_attribution",),
+    **{f"kdm_rounded_precision_{device}": (
+        "tests/test_filter_repair_kdm_precision.py::test_reset_rounded_input_precision_reference[tf32]",)
+        for device in ("cpu", "gpu")},
+    **{f"kdm_rounded_precision_no_tf32_{device}": (
+        "tests/test_filter_repair_kdm_precision.py::test_reset_rounded_input_precision_reference[no_tf32]",)
+        for device in ("cpu", "gpu")},
+    "kdm_independent_precision_cpu": (
+        "tests/test_filter_repair_kdm_precision.py::test_independent_rounded_precision_authority",),
+    "kdm_followup_evidence_cpu": (
+        "tests/test_filter_repair_kdm_precision.py::test_saved_precision_and_memory_evidence",),
     "kdm_final_qualification_cpu": (
         "tests/test_filter_repair_kdm_auxiliary.py::test_saved_kdm_cost_evidence",
         "tests/test_filter_repair_kdm_auxiliary.py::test_kdm_cost_analysis_rejects_corruption",

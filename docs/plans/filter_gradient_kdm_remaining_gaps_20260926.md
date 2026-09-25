@@ -57,3 +57,51 @@ and one stable retained owner does not bound repeated construction. Rounded-inpu
 FP64 is essential for a fair precision comparison. The original eager result
 is a frozen implementation comparator, not an exact mathematical oracle. Those
 distinctions prevent a false numerical repair or a false memory-leak claim.
+
+03957/03958 execute the first diagnostic. CPU XLA is closer to the FP64 reference
+than eager (0.321 versus 1.025 unchanged tolerance units), while GPU XLA is
+0.062 units versus approximately 181 for GPU eager/graph. Original and repaired
+XLA are identical. Factor condition numbers are approximately 60--153 on CPU;
+these do not support a severe-ill-conditioning classification. GPU results
+require a fresh explicit FP32-no-TF32 reference arm to distinguish TensorFloat32
+arithmetic from algorithm or reset-factor effects. Keep both failures and the
+same numerical tolerance; do not change the production TF32 setting. Then check
+the rounded-input FP64 primal with an independent NumPy diagnostic implementation
+and directional finite differences before considering any comparator correction.
+
+The first follow-up is complete through 03972; see
+[the precision/memory result](filter_gradient_kdm_precision_memory_result_20260926.md).
+Use the final two CPU workers in this unit for an explicit Linux allocator
+diagnostic: repeat the same six constructions in graph/XLA mode, call glibc
+`malloc_trim(0)` only after output release and garbage collection, and compare
+before/after RSS with the retained function/graph/device counts. This test-only
+operation can distinguish free host-allocator pages from still-live native
+compiler allocations. It must not be installed in runtime as a speculative fix.
+If trimming does not remove the slope, the next bounded unit must attribute
+native compilation ownership before any cache/lifetime implementation change.
+
+03973 confirms that allocator trimming returns roughly 140--160 MiB but leaves
+the construction slope: post-trim RSS grows from 1069 to 2428 MiB over six XLA
+builds. The next unit is therefore a native ownership repair, with at most
+8 CPU workers / 1800 seconds and 4 GPU workers / 900 seconds inside the same
+global caps. Record glibc allocated/free/mapped bytes (`mallinfo2`) and process
+mapping categories across 1/3/6 constructions. Test enclosing compilation with
+the two mixture functions compiled only by their owner, while the standalone
+mixture API retains its own XLA default. Compare optimized HLO, complete outputs,
+one-trace replay and memory slope before accepting any change; this tests whether
+redundant nested compiler ownership contributes to the retained host allocation.
+
+If nested ownership does not explain the slope, preserve the rejection and test
+one bounded process lifetime per changing callback/configuration, with explicit
+retained owners within that process. Do not introduce hidden callback caches,
+global context resets, allocator-trimming side effects or eager fallback into
+the public numerical API. There are currently no non-test repository consumers
+of this KDM auxiliary; callers needing repeated evaluation already have the
+explicit stable-signature factory. This bounds an authorized engineering repair
+without pretending the general constructor lifetime is fixed.
+
+The full-call-chain audit must still include `ledh_numerical_safety_tf` (including
+its static rank-expansion loop and squeezed validity shape); guarding the outer
+KDM module is not whole-repository compliance. The current work preserves that
+helper's shape semantics. No failing native allocation or numerical gate is
+silently converted into a passing terminal disposition.
