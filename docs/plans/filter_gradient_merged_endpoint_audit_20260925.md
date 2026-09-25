@@ -361,3 +361,49 @@ interrupted September 23 ledger, although its log ends in a passed test; no
 matching campaign/controller process is live now. Preserve that record and its
 conservative full 300-second charge. It is not a currently running worker and
 has not been silently promoted to qualified timing evidence.
+
+## Native endpoint continuation (03819--03858)
+
+The next unit is recorded in [the native endpoint plan](filter_gradient_ledh_native_endpoint_20260925.md)
+and [the dependency cost plan](filter_gradient_ledh_flow_cost_20260925.md).
+The old public value entry remains blocked and unchanged. A separate supplied-
+input program now carries the existing recurrence with TensorFlow time/stage
+loops, native systematic cumulative/search resampling, finite-state branches,
+and fixed-capacity diagnostics. The shared LEDH flow substep loop is also native
+and uses a batched pivoted-LU determinant because GPU XLA has no compatible
+MatrixDeterminant kernel. Explicit binary32 quotient rounding preserves the old
+Python-cast stage coefficients under GPU XLA.
+
+Seed compatibility is qualified independently: NumPy SeedSequence/PCG64 integer
+state/raw words are exact, and the native Philox Box--Muller path preserves old
+normal values at predeclared float64/float32 rounding bounds. The complete
+supplied-input value checks pass for one-step, composed, annealed, changed-input,
+replay, invalid-state and invalid-observation cases. The dual-cap/trust-region
+case remains a numerical veto: CPU final ESS differs by 2.53058928e-5 and GPU
+value by 1.68284015e-5 against the unchanged 1e-6 gate. FP64 reset eager/graph/
+XLA agree below 1e-14; FP32 reset rounding is the observed mechanism, with no
+runtime dtype or tolerance change. The native output exposes reset validity and
+conditioning diagnostics; it does not upgrade `program_valid` or admit an
+invalid reset.
+
+The analytical-score owner is a mechanics-only prototype. Its lazy trace can
+freeze a mutable direction despite the original documentation claiming fixed
+captures at construction. Replace it with a pure model builder driven by dynamic
+theta/direction operands and qualify with independent finite differences before
+using it. Source inspection finds score-study already builds inside its graph;
+actual public/row-mapped consumer wiring remains incomplete. Younis KDM's auxiliary
+also performs numerical Python recurrence over trace records and needs repair.
+
+The qualified flow cost cohort (three CPU/GPU repeats) passes all numerical and
+device provenance checks. Median warm XLA/prior-graph ratios are 0.134 CPU and
+0.316 GPU; CPU XLA incremental sampled RSS is 177.45 MiB, about 125 MiB above prior graph, while GPU live
+allocator peaks are lower. These are small dependency costs and do not establish
+full endpoint performance or capacity. Policy audit now covers 243 sources,
+1346 exact existing allowances, and no new numerical-loop/NumPy allowance.
+These results close neither the public wrapper nor F01--F20.
+
+Continuation03859--03862 replaces the unsafe score prototype with dynamic
+model-builder/direction and initial-law tangent operands. CPU/GPU frozen-source
+and five-point checks pass; policy renews129 checks with244 guarded sources and
+unchanged1346 allowances. This qualifies the new factory only, not existing
+consumer migration. See [result](filter_gradient_ledh_native_result_20260925.md).

@@ -22,11 +22,13 @@ supersedes it for the canonical lane.
 
 from __future__ import annotations
 
-from typing import Callable
-
 import math
+from collections.abc import Callable
 
 import tensorflow as tf
+
+from bayesfilter.ops.legacy_fraction_tf import legacy_fraction
+from bayesfilter.ops.slogdet_tf import determinant_tf
 
 Tensor = tf.Tensor
 
@@ -100,8 +102,8 @@ def ledh_flow_per_particle(
     total_offset = tf.zeros_like(anchors)
     forward_log_det = tf.zeros([count], dtype)
 
-    for step_index in range(substeps):
-        lam = tf.cast((step_index + 1) / substeps, dtype)
+    def substep(step_index, auxiliary, actual, total_matrix, total_offset, forward_log_det):
+        lam = legacy_fraction(step_index + 1, substeps, dtype)
         h_jac = observation_jacobian_fn(auxiliary)
         h_val = observation_fn(auxiliary)
         residual_e = h_val - tf.einsum("nod,nd->no", h_jac, auxiliary)
@@ -147,8 +149,14 @@ def ledh_flow_per_particle(
             + eps * b_vector
         )
         forward_log_det += tf.math.log(
-            tf.abs(tf.linalg.det(step_matrix))
+            tf.abs(determinant_tf(step_matrix))
         )
+        return step_index + 1, auxiliary, actual, total_matrix, total_offset, forward_log_det
+
+    _, auxiliary, actual, total_matrix, total_offset, forward_log_det = tf.while_loop(
+        lambda step_index, *_: step_index < substeps, substep,
+        (tf.constant(0), auxiliary, actual, total_matrix, total_offset, forward_log_det),
+        parallel_iterations=1, maximum_iterations=substeps)
 
     return {
         "post_flow_states": actual,

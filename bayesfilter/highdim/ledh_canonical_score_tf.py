@@ -16,8 +16,8 @@ gates; it never ships.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Callable, Mapping
 
 import tensorflow as tf
 
@@ -188,14 +188,9 @@ def _value_and_analytical_score_impl(
     score cells must use the production program (contract_e reset, and
     annealed mode where the scope's calibration says so).
 
-    annealed_stages > 1 selects the within-step annealed telescope (Q1.2):
-    tempered flow stages (P/k, R*k) with systematic resampling between
-    stages and the SMC normalizer telescope as the step increment; stage
-    tangents are analytical, and realized resampling indices are held
-    fixed in the tangent (the same convention the oracle differentiates).
-    The score-lane annealed mode uses the uncapped flow prior; the value
-    lane's eigenvalue cap (`flow_prior_cap`) is an efficiency lever not
-    wired here.
+    Only annealed_stages=1 is implemented. Other values are rejected;
+    the value lane's annealed telescope and flow-prior cap are not wired
+    into this analytical recursion.
 
     Multi-parameter models call this per direction; the per-direction
     tangent callbacks close over the direction (same convention as the
@@ -810,7 +805,7 @@ def _value_and_analytical_score_impl(
             (*initial_loop, buffers), maximum_iterations=horizon,
             parallel_iterations=1)
         stacked = tf.nest.map_structure(lambda buf: buf.stack(), loop_result[-1])
-        trace = tuple(tf.nest.map_structure(lambda value: value[index], stacked)
+        trace = tuple(tf.nest.map_structure(lambda value, _index=index: value[_index], stacked)
                       for index in range(horizon))
         total, d_total = loop_result[-3:-1]
         return total, d_total[None] if with_score else None, trace
@@ -918,6 +913,85 @@ def canonical_value_and_analytical_score(
     )
 
 
+def make_analytical_score_program(
+    model_builder: Callable[[Tensor, Tensor], NonlinearScoreModel],
+    *,
+    dtype: tf.DType,
+    theta_shape: tuple[int, ...],
+    initial_state_shape: tuple[int, int],
+    horizon: int,
+    observation_dimension: int,
+    jit_compile: bool = True,
+    **static_options,
+):
+    """Own a stable default-XLA boundary for one analytical score direction.
+
+    ``model_builder(theta, direction)`` must be a pure builder: construct the
+    callbacks from these symbolic operands and fixed configuration inside the
+    graph. Do not return an external model with mutable direction cells. Python
+    tracing is lazy; external mutable configuration is not snapshotted here.
+
+    The returned function takes theta, direction, initial states/covariances,
+    noises, observations, and initial-state/covariance directional tangents.
+    Explicit zero tangents declare a fixed initial law. All supplied tangents
+    must correspond to the same direction. Reset design and other static
+    options declare fixed configuration, not parameter-dependent inputs.
+
+    Trace formatting is a separate diagnostic boundary. This factory preserves
+    the existing analytical finite program; it does not establish LEDH admission
+    or make the no-reset diagnostic slice a likelihood estimator for T > 1.
+    ``jit_compile=False`` is an explicit reference/debug exception.
+    """
+    if not callable(model_builder):
+        raise TypeError("model_builder must build a model from theta and direction")
+    if "return_trace" in static_options or "with_score" in static_options:
+        raise ValueError("owned analytical score program returns value and score only")
+    if "initial_state_tangent" in static_options or "initial_covariance_tangent" in static_options:
+        raise ValueError("initial-law tangents must be dynamic program operands")
+    if static_options.get("annealed_stages", 1) != 1:
+        raise ValueError("owned analytical score program requires annealed_stages=1")
+    dtype = tf.as_dtype(dtype)
+    theta_spec = tf.TensorSpec(theta_shape, dtype)
+    initial_spec = tf.TensorSpec(initial_state_shape, dtype)
+    covariance_spec = tf.TensorSpec(
+        [initial_state_shape[0], initial_state_shape[1], initial_state_shape[1]],
+        dtype,
+    )
+    noise_spec = tf.TensorSpec(
+        [horizon, initial_state_shape[0], initial_state_shape[1]],
+        dtype,
+    )
+    observation_spec = tf.TensorSpec(
+        [horizon, observation_dimension], dtype
+    )
+
+    @tf.function(
+        input_signature=[
+            theta_spec, theta_spec, initial_spec, covariance_spec,
+            noise_spec, observation_spec, initial_spec, covariance_spec,
+        ],
+        jit_compile=jit_compile,
+        autograph=False,
+    )
+    def program(theta, direction, initial_states, initial_covariances, noises,
+                observations, initial_state_tangent, initial_covariance_tangent):
+        model = model_builder(theta, direction)
+        return canonical_value_and_analytical_score(
+            model,
+            theta,
+            initial_states,
+            initial_covariances,
+            noises,
+            observations,
+            with_score=True,
+            initial_state_tangent=initial_state_tangent,
+            initial_covariance_tangent=initial_covariance_tangent,
+            **static_options,
+        )
+
+    return program
+
+
 def _flow_substep_body_impl(
     step_index: tf.Tensor,
     actual: Tensor,
@@ -949,7 +1023,6 @@ def _flow_substep_body_impl(
          updated_d_auxiliary, updated_log_det, updated_d_log_det)
     """
     dtype = actual.dtype
-    step_int = tf.cast(step_index, tf.int32)
     lam = tf.cast(step_index + 1, dtype) / tf.cast(substeps, dtype)
     h_jac = model.observation_jacobian_fn(auxiliary)
     d_h_jac = (
@@ -1168,4 +1241,5 @@ def _cholesky_forward_diff_local(chol: Tensor, d_matrix: Tensor) -> Tensor:
 __all__ = [
     "NonlinearScoreModel",
     "canonical_value_and_analytical_score",
+    "make_analytical_score_program",
 ]

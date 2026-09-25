@@ -60,7 +60,8 @@ BASELINE_PARENT_PACKAGES = (
 )
 # September 19 owner authorization adds 24 CPU / 48 GPU process-hours to
 # the original cumulative 8 CPU / 4 GPU hours; prior charges remain counted.
-BUDGET_SECONDS = {"CPU": 32 * 3600, "GPU": 52 * 3600}
+# Owner added 24 CPU hours on 2026-09-25; GPU allocation is unchanged.
+BUDGET_SECONDS = {"CPU": 56 * 3600, "GPU": 52 * 3600}
 TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
 # The original eager full fitter takes 294 s for two replicates (run 01303).
 # Reserve the same bounded ceiling for both source arms at either extent.
@@ -179,6 +180,24 @@ TEST_GROUPS = {
         for device in ("cpu", "gpu")},
     **{f"merged_ledh_models_{device}": ("tests/test_filter_repair_merged_ledh_models.py",)
         for device in ("cpu", "gpu")},
+    **{f"ledh_seed_compatibility_{device}": ("tests/test_filter_repair_ledh_seed_compatibility.py",)
+        for device in ("cpu", "gpu")},
+    **{f"ledh_random_native_{device}": ("tests/test_filter_repair_ledh_random_native.py",)
+        for device in ("cpu", "gpu")},
+    **{f"ledh_value_native_{device}": ("-k", "not localization and not precision_reference and not isolated_cost",
+        "tests/test_filter_repair_ledh_value_native.py", "tests/test_filter_repair_slogdet.py")
+        for device in ("cpu", "gpu")},
+    **{f"ledh_score_native_{device}": ("tests/test_filter_repair_ledh_score_native.py",)
+        for device in ("cpu", "gpu")},
+    "ledh_value_localize_cpu": ("tests/test_filter_repair_ledh_value_native.py::test_dual_reset_localization",),
+    "ledh_value_precision_cpu": ("tests/test_filter_repair_ledh_value_native.py::test_dual_reset_precision_reference",),
+    "ledh_flow_localize_gpu": ("tests/test_filter_repair_ledh_value_native.py::test_flow_fraction_localization",),
+    **{f"ledh_native_components_{device}": ("-k", "not dual_trust and not localization and not precision_reference and not isolated_cost",
+        "tests/test_filter_repair_ledh_value_native.py", "tests/test_filter_repair_slogdet.py",
+        "tests/test_filter_repair_ledh_random_native.py") for device in ("cpu", "gpu")},
+    **{f"ledh_flow_cost_{arm}_{device}": (
+        f"tests/test_filter_repair_ledh_value_native.py::test_flow_isolated_cost[{arm}]",)
+        for arm in ("prior_graph", "native_graph", "native_xla") for device in ("cpu", "gpu")},
     "pruned_enclosing_gpu": (
         "tests/test_filter_repair_pruned_enclosing.py", "tests/test_pruned_srukf_tf.py",
         "tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py",
@@ -1144,6 +1163,11 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"ledh_flow_cost_{arm}_{device}": "Isolated qualified flow dependency costs; full public value/score integration and CPU compiler RSS remain separate gates."
+        for arm in ("prior_graph", "native_graph", "native_xla") for device in ("cpu", "gpu")},
+    "ledh_value_localize_cpu": "Frozen-reset attribution for a preserved full-value numerical veto; not admission.",
+    "ledh_value_precision_cpu": "Independent FP64 reset precision diagnosis; no runtime dtype or tolerance change.",
+    "ledh_flow_localize_gpu": "Preserved cast-pair excess-precision localization, superseded by exact fraction regression.",
     **{f"remaining_svd_cost_{arm}_{dimension}_{device}": "Matched affected-consumer costs; independent numerical veto, caller collection and separate capacity disposition required."
         for device in ("cpu", "gpu") for dimension in (3, 5)
         for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla")},
@@ -1669,6 +1693,9 @@ TEST_BATCHES.update({f"dense_controller_complete_{device}": (
     f"precision_operator_{device}", *TEST_BATCHES[f"dense_rng_{device}"],
     *TEST_BATCHES[f"dense_controller_{device}"], *TEST_BATCHES[f"dense_controller_edges_{device}"])
     for device in ("cpu", "gpu")})
+TEST_BATCHES.update({f"ledh_flow_cost_{device}": tuple(
+    f"ledh_flow_cost_{arm}_{device}" for arm in ("prior_graph", "native_graph", "native_xla"))
+    for device in ("cpu", "gpu")})
 
 
 def mandatory_test_groups():
@@ -1684,6 +1711,13 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 TEST_DEVICES = {
     "merged_ledh_boundary_gpu": "GPU",
     "merged_ledh_models_gpu": "GPU",
+    "ledh_seed_compatibility_gpu": "GPU",
+    "ledh_random_native_gpu": "GPU",
+    "ledh_value_native_gpu": "GPU",
+    "ledh_score_native_gpu": "GPU",
+    "ledh_flow_localize_gpu": "GPU",
+    "ledh_native_components_gpu": "GPU",
+    **{group: "GPU" for group in TEST_BATCHES["ledh_flow_cost_gpu"]},
     "pruned_enclosing_gpu": "GPU",
     **{group: "GPU" for group in TEST_BATCHES["dz5_target_gpu"]},
     **{name: "GPU" for name in TEST_GROUPS if name.startswith("remote_integration_") and name.endswith("_gpu")},
@@ -1956,6 +1990,7 @@ def require_unshared_cost_preflight(args):
     """Decline new public-cost workers before charging shared-device timing."""
     if (args.action != "test" or args.device != "GPU"
             or args.group not in ("svd_graph_attribution_gpu",
+                                 *TEST_BATCHES["ledh_flow_cost_gpu"],
                                  *TEST_BATCHES["remaining_svd_cost_gpu"],
                                  *TEST_BATCHES["posterior_public_memory_gpu"],
                                  *TEST_BATCHES["sequential_public_cost_gpu"],

@@ -4,39 +4,37 @@ The [merged endpoint audit](filter_gradient_merged_endpoint_audit_20260925.md)
 now names concrete new LEDH Python-loop/NumPy violations and the bounded repair
 sequence; these remain terminal blockers alongside actual-consumer integration.
 
-Current checkpoint, 2026-09-25 through 03818: model callback repair and the
-pruned SRUKF enclosing-factory audit are complete in their bounded scopes.
-Eight model checks pass on each CPU/GPU backend; four RK4 recurrences now use
-native TensorFlow and the model module has no NumPy/Python numerical loop.
-GPU 03818 passes 149 checks (public pruned factory, 19 existing cases, 129
-policy checks). Its inner non-JIT value call is enclosed by the default-XLA
-factory; the score is autodiff. Replay, independent scores and invalid-row
-isolation pass. HLO differs only in eight diagnostic operation-name labels;
-all other program text matches. Read the [audit/result](filter_gradient_merged_endpoint_audit_20260925.md).
+Current checkpoint, 2026-09-25 through03862: shared LEDH flow/seed dependencies
+and the new dynamic analytical-score owner pass focused CPU/GPU qualification.
+Independent five-point score errors are at most5.33e-12. All129 policy checks
+pass on the settled source; guard scope is244 sources/1346 existing allowances,
+with no new numerical-loop or NumPy exemption. See the
+[native result](filter_gradient_ledh_native_result_20260925.md) and checksum receipt
+`artifacts/filter-gradient-repair-20260917/ledh-native-verification-03862.json`.
 
-Preserve the predator--prey full-step k4 under the execution-only contract;
-it differs from the vendored author's half-step, so source-equivalence claims
-remain blocked. Row-mapped LEDH training remains ineligible. The earlier
-[frozen DZ5 target result](filter_gradient_dz5_target_result_20260925.md) retains
-its exact source scope and does not establish independent score admission.
+Full public value integration stays blocked by the dual-trust FP32 comparison
+(CPU ESS2.53058928e-5/GPU value1.68284015e-5 against1e-6). Native reset diagnostics
+expose the already-invalid old reset. No precision/tolerance change is made.
+The independently reproduced flow-cost cohort is dependency evidence only:
+warm XLA/prior ratios0.134CPU/0.316GPU; CPU incremental sampled RSS177.45MiB,
+about125MiB above prior. Memory attribution/capacity and graph regressions stay open.
+Actual score consumers and the Younis KDM numerical host trace loop remain to repair.
 
-Next: plan and execute shared native LEDH host-value/public-score repair after
-checking seed compatibility and actual caller ownership. Younis wrappers need
-enclosing-call classification. Then continue the fresh DZ5 score oracle and
-public initializer/staged supervisor. Matched costs, reporting/isotropic
-findings, cold/RSS/native capacity and F01--F20 terminal dispositions remain
-open. Main promotion is blocked. Guard: 238 sources / 1346 allowances, no new waiver.
+Next: fresh DZ5 five-point analytical score oracle on the frozen qualifier's
+23-parameter/96-observation fixture, then public initializer/staged supervisor.
+Endpoint memory/capacity, reporting/isotropic findings and F01--F20 dispositions
+remain open. Main stays unmerged. Preserve numerical methods, seeded streams,
+the inherited predator--prey full-step k4 and canonical author-profile NeuTra.
+No MacroFinance edit, CDF restart, package install, stale admission refresh or
+canonical LEDH rebuild is included in this execution repair.
 
-Both endpoint allocations are closed: first 8 workers / 98.081282 seconds;
-infrastructure continuation 2 workers / 46.227568 seconds. Charges through
-03818: 75364.243198 CPU / 75275.068507 GPU seconds, leaving 11.065488 CPU /
-31.090259 GPU hours under unchanged 32/52-hour caps. No worker is active.
-Receipts: `artifacts/filter-gradient-repair-20260917/merged-ledh-models-verification-03815.json`
-and `pruned-enclosing-verification-03818.json` in the same directory.
-Repair worktree: `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`.
-Branch: `repair/filter-gradient-xla-validation-20260918`; model repair commit
-`2fef13d59`. Stable runner: `scripts/run_filter_repair_campaign.py`. Raw evidence:
+Charges through03862 (including120CPU supplemental seconds):
+75826.204536CPU /75604.241843GPU seconds;
+34.937165CPU /30.998822GPU hours remain
+under56/52-hour caps. No repair worker is active. Branch remains
+`repair/filter-gradient-xla-validation-20260918`; raw evidence root is
 `/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
+
 Older checkpoints below preserve historical scope and instructions only.
 
 Current checkpoint, 2026-09-25 through 03762: all 48 matched remaining-SVD
