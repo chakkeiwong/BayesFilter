@@ -1,5 +1,19 @@
 # Complete filter and gradient execution repair
 
+Active continuation: the [addition-order unit](filter_gradient_dz5_addition_order_unit_20260925.md)
+tests a narrow diagnostic intervention in the rectangular SRUKF transition
+tangent. See its [interim result](filter_gradient_dz5_addition_order_result_20260925.md)
+and the concise recovery checkpoint for live worker state. No numerical runtime
+repair is installed or qualified by a source-overlay diagnostic. All prior
+failures and terminal gates below remain in force; budgets already include the
+latest 24-CPU-hour extension.
+
+The KDM auxiliary gap is separately documented in
+[its repair plan](filter_gradient_kdm_native_repair_20260926.md) and
+[result](filter_gradient_kdm_native_result_20260926.md). The public auxiliary
+still has Python trace orchestration, eager `.numpy()` validation and per-step
+kernel construction; the preserved baseline validity failure keeps it open.
+
 Current checkpoint through 03903, 2026-09-25: the full 96-observation DZ5
 CPU graph reference passes its original two-step score oracle and exact replay
 with explicit `arithmetic_optimization=False` (03901). Independent analysis

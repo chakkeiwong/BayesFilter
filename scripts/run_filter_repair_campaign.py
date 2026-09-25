@@ -206,6 +206,16 @@ TEST_GROUPS = {
     "dz5_score_oracle_graph_arithmetic_off_cpu": (
         "tests/test_filter_repair_dz5_replay_localization.py::test_dz5_full_graph_oracle_arithmetic_off",),
     "dz5_replay_evidence_cpu": ("tests/test_filter_repair_dz5_replay_evidence.py",),
+    "dz5_ordered_add_primitive_cpu": (
+        "tests/test_filter_repair_dz5_addition_order.py::test_ordered_add_primitive",),
+    "kdm_auxiliary_legacy_cpu": (
+        "tests/highdim/test_ledh_younis_kdm_tf.py::test_auxiliary_api_uses_canonical_trace_and_has_no_feedback",),
+    "dz5_ordered_add_evidence_cpu": (
+        "tests/test_filter_repair_dz5_addition_order.py::test_saved_addition_order_evidence",
+        "tests/test_filter_repair_dz5_addition_order.py::test_addition_oracle_rejects_corruption"),
+    **{f"dz5_ordered_add_overlay_{horizon}_cpu": (
+        f"tests/test_filter_repair_dz5_addition_order.py::test_dz5_transition_add_order_overlay[{horizon}]",)
+        for horizon in (48, 96)},
     "dz5_snapshot_import_cpu": ("tests/test_filter_repair_dz5_snapshot.py",),
     "dz5_merged_import_cpu": ("tests/test_filter_repair_dz5_merged.py::test_merged_dz5_snapshot_import",),
     **{f"merged_ledh_boundary_{device}": ("tests/test_filter_repair_merged_ledh_boundary.py",)
@@ -1195,6 +1205,10 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "kdm_auxiliary_legacy_cpu": "Preserved baseline KDM auxiliary integration failure; Python-loop/NumPy/XLA debt remains open and this group cannot qualify a repair.",
+    "dz5_ordered_add_primitive_cpu": "Independent no-inline addition cancellation/derivative diagnostic; no actual target or runtime qualification.",
+    **{f"dz5_ordered_add_overlay_{horizon}_cpu": "Explicit source-overlay addition-order diagnostic; cannot qualify unchanged runtime or admit the target."
+        for horizon in (48, 96)},
     **{f"driver_history_memory_{arm}_cpu": "Fresh-process supervisor record loading only; not target XLA or device memory evidence."
         for arm in ("prior", "streamed")},
     "dz5_score_replay_localize_cpu": "Short-horizon thread/replay attribution; cannot qualify the full DZ5 score oracle.",

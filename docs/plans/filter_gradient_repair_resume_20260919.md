@@ -1,5 +1,25 @@
 # Filter and gradient repair recovery
 
+Active continuation: [addition-order unit](filter_gradient_dz5_addition_order_unit_20260925.md),
+with interim [result](filter_gradient_dz5_addition_order_result_20260925.md).
+03906 passes graph/CPU-XLA primitive checks after two preserved harness-export
+failures (03904/03905). 03907 passes the 48-observation five-call actual target
+overlay and executed-graph checks. 03908 rejects the overlay at 96 observations
+because score replay changes by `9.43600753089413e-12` in 3,846 entries while
+values/statuses remain equal. No numerical runtime source changed. Do not launch
+another numerical worker or edit runtime/scripts/tests until it terminates.
+The overlay is rejected for installation; keep its raw evidence and do not
+refresh a runtime snapshot from it. The overlay alone cannot close a master
+finding.
+The 24-CPU-hour extension is already included in the caps below.
+
+The addition-order candidate did not pass the full gate: 03908 preserved value
+equality but changed the 96-observation score by `9.43600753089413e-12`.
+03909--03910 independent evidence checks pass. The candidate remains diagnostic
+only. The KDM native repair was also held after 03911 candidate and 03912
+restored-baseline validity failures; see the linked KDM result. No runtime
+source repair is installed in this continuation.
+
 Current checkpoint through 03903, 2026-09-25: the full 96-observation DZ5
 CPU graph reference passes its original two-step score oracle and exact replay
 with explicit `arithmetic_optimization=False` (03901). Independent analysis
