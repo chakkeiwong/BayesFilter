@@ -8,8 +8,9 @@ Lebesgue density while preserving the simulator's physical-state law.
 
 from __future__ import annotations
 
+from collections import OrderedDict
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping
 
 import tensorflow as tf
 
@@ -18,12 +19,13 @@ from bayesfilter.highdim.models import (
     SpatialSIRSSM,
     parameterized_zhao_cui_sir_austria_model,
 )
-
+from bayesfilter.ops.compiled_tensor_program_tf import tensor_program
 
 DTYPE = tf.float64
 LATENT_PRECLIP_TARGET_ID = "zhao_cui_sir_austria_latent_preclip_simulator_law_v1"
 LATENT_PRECLIP_REPRESENTATION_CLASS = "extension_or_invention"
 LATENT_PRECLIP_CANONICAL_STATUS = "not_yet_contract_e_chol_canonical"
+_SIMULATION_PROGRAMS = OrderedDict()
 
 
 def _as_rows(values: tf.Tensor, width: int, name: str) -> tf.Tensor:
@@ -155,8 +157,14 @@ class LatentPreclipSIRSSM:
         initial_noise: tf.Tensor,
         transition_noise: tf.Tensor,
         observation_noise: tf.Tensor,
+        *,
+        jit_compile: bool = True,
     ) -> Mapping[str, tf.Tensor]:
-        """Return paired latent, physical, and observed paths for fixed noise."""
+        """Return fixed-noise paths through one retained XLA owner by default.
+
+        This host API checks the compiled validity result before returning
+        paths. Explicit ``jit_compile=False`` is a reference/debug exception.
+        """
 
         initial_noise = tf.reshape(
             tf.convert_to_tensor(initial_noise, DTYPE), [self.state_dim()]
@@ -171,35 +179,17 @@ class LatentPreclipSIRSSM:
         if observation_noise.shape != (time_steps + 1, self.observation_dim()):
             raise ValueError("observation_noise must have shape [T+1,observation_dim]")
 
-        scaled = self.physical_model.scaled_model(theta)
-        initial_chol = tf.linalg.cholesky(scaled.initial_covariance)
-        observation_chol = tf.linalg.cholesky(scaled.observation_covariance)
-        latent = scaled.initial_mean + tf.linalg.matvec(initial_chol, initial_noise)
-        latent_path = [latent]
-        physical_path = [latent]
-        observations = [
-            self.physical_model.infectious_components(latent)[0]
-            + tf.linalg.matvec(observation_chol, observation_noise[0])
-        ]
-        for time_index in range(1, int(time_steps) + 1):
-            latent = self.transition_push_from_standard_normal(
-                theta,
-                latent[tf.newaxis, :],
-                transition_noise[time_index - 1][tf.newaxis, :],
-                time_index,
-            )[0]
-            physical = self.physical_state(latent, time_index=time_index)[0]
-            latent_path.append(latent)
-            physical_path.append(physical)
-            observations.append(
-                self.physical_model.infectious_components(physical)[0]
-                + tf.linalg.matvec(observation_chol, observation_noise[time_index])
-            )
-        return {
-            "latent_path": tf.stack(latent_path),
-            "physical_path": tf.stack(physical_path),
-            "observations": tf.stack(observations),
-        }
+        parameters = tf.convert_to_tensor(theta, DTYPE)
+        if parameters.shape == (1, self.parameter_dim()):
+            parameters = parameters[0]
+        if parameters.shape != (self.parameter_dim(),):
+            raise ValueError("theta: invalid_shape")
+        result, valid = latent_preclip_simulation_program(
+            self, int(time_steps), jit_compile=jit_compile
+        )(parameters, initial_noise, transition_noise, observation_noise)
+        if not bool(valid.numpy()):
+            raise ValueError("SIR parameters or latent state: nonfinite_value")
+        return result
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -226,6 +216,87 @@ class LatentPreclipSIRSSM:
                 "hmc_or_leaderboard_readiness",
             ),
         }
+
+
+def latent_preclip_simulation_program(model, time_steps, *, jit_compile=True):
+    """Retain one fixed-noise owner; return paths and an explicit validity flag.
+
+    The flag is required because XLA may omit TensorFlow assertion operations.
+    Graph consumers must propagate it; the host simulation method checks it.
+    Retain a fixed owner and bound worker lifetime when configurations change.
+    """
+    if int(time_steps) < 0:
+        raise ValueError("transition horizon must be nonnegative")
+    key = (id(model), int(time_steps), bool(jit_compile))
+    if key in _SIMULATION_PROGRAMS:
+        _SIMULATION_PROGRAMS.move_to_end(key)
+        return _SIMULATION_PROGRAMS[key][1]
+    base = model.physical_model.base_model
+    n, m = model.state_dim(), model.observation_dim()
+    count = int(time_steps) + 1
+    signature = (tf.TensorSpec([3], DTYPE), tf.TensorSpec([n], DTYPE),
+                 tf.TensorSpec([time_steps, n], DTYPE), tf.TensorSpec([count, m], DTYPE))
+
+    def simulate(theta, initial_noise, transition_noise, observation_noise):
+        kappa = base.kappa * tf.exp(theta[0])
+        nu = base.nu * tf.exp(theta[1])
+        observation_covariance = base.observation_covariance * tf.exp(2.0 * theta[2])
+        valid = (tf.reduce_all(tf.math.is_finite(theta))
+                 & tf.reduce_all(tf.math.is_finite(kappa)) & tf.reduce_all(kappa > 0.)
+                 & tf.reduce_all(tf.math.is_finite(nu)) & tf.reduce_all(nu > 0.)
+                 & tf.reduce_all(tf.math.is_finite(observation_covariance)))
+        # Invalid parameters still produce a defined computation, then the host
+        # guard rejects it. These selections do not alter any accepted operand.
+        kappa = tf.where(valid, kappa, base.kappa)
+        nu = tf.where(valid, nu, base.nu)
+        observation_covariance = tf.where(valid, observation_covariance, base.observation_covariance)
+        # The scaled-model constructor symmetrizes each covariance. Preserve
+        # that finite operation even though the base matrices are symmetric.
+        initial_chol = tf.linalg.cholesky(0.5 * (base.initial_covariance + tf.transpose(base.initial_covariance)))
+        process_chol = tf.linalg.cholesky(0.5 * (base.process_covariance + tf.transpose(base.process_covariance)))
+        observation_chol = tf.linalg.cholesky(0.5 * (observation_covariance + tf.transpose(observation_covariance)))
+        valid = (valid & tf.reduce_all(tf.math.is_finite(initial_chol))
+                 & tf.reduce_all(tf.math.is_finite(process_chol))
+                 & tf.reduce_all(tf.math.is_finite(observation_chol))
+                 & tf.reduce_all(tf.linalg.diag_part(initial_chol) > 0.)
+                 & tf.reduce_all(tf.linalg.diag_part(process_chol) > 0.)
+                 & tf.reduce_all(tf.linalg.diag_part(observation_chol) > 0.))
+        latent = base.initial_mean + tf.linalg.matvec(initial_chol, initial_noise)
+        physical = latent
+
+        def observe(state, error):
+            return state[1::2] + tf.linalg.matvec(observation_chol, error)
+
+        latents = tf.TensorArray(DTYPE, count, element_shape=[n]).write(0, latent)
+        physicals = tf.TensorArray(DTYPE, count, element_shape=[n]).write(0, physical)
+        observations = tf.TensorArray(DTYPE, count, element_shape=[m]).write(0, observe(physical, observation_noise[0]))
+        if time_steps:
+            def step(index, previous_physical, latents, physicals, observations):
+                mean = base._transition_mean_with_rates(previous_physical[None, :], kappa, nu)[0]
+                # Keep the source simulator's column-Cholesky/vector product
+                # order.  A mathematically equivalent row product can round
+                # differently under XLA and break the seeded source-law path.
+                latent = mean + tf.linalg.matvec(process_chol, transition_noise[index - 1])
+                physical = base._apply_process_noise_policy(latent[None, :])[0]
+                return (index + 1, physical, latents.write(index, latent),
+                        physicals.write(index, physical),
+                        observations.write(index, observe(physical, observation_noise[index])))
+
+            _, _, latents, physicals, observations = tf.while_loop(
+                lambda index, *_: index < count, step,
+                (tf.constant(1), physical, latents, physicals, observations),
+                maximum_iterations=time_steps, parallel_iterations=1,
+            )
+        latent_path, physical_path = latents.stack(), physicals.stack()
+        valid = valid & tf.reduce_all(tf.math.is_finite(latent_path)) & tf.reduce_all(tf.math.is_finite(physical_path))
+        return {"latent_path": latent_path, "physical_path": physical_path,
+                "observations": observations.stack()}, valid
+
+    owner = tensor_program(simulate, signature, jit_compile)
+    _SIMULATION_PROGRAMS[key] = (model, owner)
+    if len(_SIMULATION_PROGRAMS) > 16:
+        _SIMULATION_PROGRAMS.popitem(last=False)
+    return owner
 
 
 def latent_preclip_zhao_cui_sir_austria_model() -> LatentPreclipSIRSSM:
@@ -256,6 +327,6 @@ __all__ = [
     "LATENT_PRECLIP_REPRESENTATION_CLASS",
     "LATENT_PRECLIP_TARGET_ID",
     "LatentPreclipSIRSSM",
-    "latent_preclip_zhao_cui_sir_austria_model",
     "latent_preclip_two_node_spatial_sir_model",
+    "latent_preclip_zhao_cui_sir_austria_model",
 ]

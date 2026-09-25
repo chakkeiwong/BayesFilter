@@ -707,11 +707,18 @@ class SpatialSIRSSM:
     def transition_mean(self, x_prev: tf.Tensor) -> tf.Tensor:
         """Return the deterministic RK4 mean in P30 equation ``eq:p27-sir6``."""
 
+        return self._transition_mean_with_rates(x_prev, self.kappa, self.nu)
+
+    def _transition_mean_with_rates(
+        self, x_prev: tf.Tensor, kappa: tf.Tensor, nu: tf.Tensor
+    ) -> tf.Tensor:
+        """Shared RK4 authority with tensor rate operands and fixed geometry."""
+
         state = _as_row_matrix(x_prev, self.state_dim(), "x_prev")
         step = self.delta / tf.cast(self._rk4_substeps, tf.float64)
         _, state = tf.while_loop(
             lambda index, _: index < self._rk4_substeps,
-            lambda index, value: (index + 1, self._rk4_step(value, step)),
+            lambda index, value: (index + 1, self._rk4_step_with_rates(value, step, kappa, nu)),
             (tf.constant(0), state), parallel_iterations=1,
             maximum_iterations=self._rk4_substeps,
         )
@@ -839,16 +846,22 @@ class SpatialSIRSSM:
         }
 
     def _rk4_step(self, state: tf.Tensor, step: tf.Tensor) -> tf.Tensor:
-        k1 = self._rhs(state)
-        k2 = self._rhs(state + 0.5 * step * k1)
-        k3 = self._rhs(state + 0.5 * step * k2)
+        return self._rk4_step_with_rates(state, step, self.kappa, self.nu)
+
+    def _rk4_step_with_rates(self, state, step, kappa, nu):
+        k1 = self._rhs_with_rates(state, kappa, nu)
+        k2 = self._rhs_with_rates(state + 0.5 * step * k1, kappa, nu)
+        k3 = self._rhs_with_rates(state + 0.5 * step * k2, kappa, nu)
         if self.rk4_variant == "zhao_cui_sir_step":
-            k4 = self._rhs(state + 0.5 * step * k3)
+            k4 = self._rhs_with_rates(state + 0.5 * step * k3, kappa, nu)
         else:
-            k4 = self._rhs(state + step * k3)
+            k4 = self._rhs_with_rates(state + step * k3, kappa, nu)
         return state + (step / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
     def _rhs(self, state: tf.Tensor) -> tf.Tensor:
+        return self._rhs_with_rates(state, self.kappa, self.nu)
+
+    def _rhs_with_rates(self, state, kappa, nu):
         values = _as_row_matrix(state, self.state_dim(), "state")
         susceptible = values[:, 0::2]
         infectious = values[:, 1::2]
@@ -860,9 +873,9 @@ class SpatialSIRSSM:
             tf.linalg.matmul(infectious, self._adjacency_matrix, transpose_b=True)
             - infectious * self._neighbor_degree[tf.newaxis, :]
         )
-        infection = self.kappa[tf.newaxis, :] * susceptible * infectious
+        infection = kappa[tf.newaxis, :] * susceptible * infectious
         d_susceptible = -infection + 0.5 * susceptible_neighbor
-        d_infectious = infection - self.nu[tf.newaxis, :] * infectious + 0.5 * infectious_neighbor
+        d_infectious = infection - nu[tf.newaxis, :] * infectious + 0.5 * infectious_neighbor
         return tf.reshape(
             tf.stack([d_susceptible, d_infectious], axis=2),
             [tf.shape(values)[0], self.state_dim()],

@@ -77,3 +77,51 @@ execution-only repair plan. It does not admit canonical LEDH, Zhao--Cui
 production filtering, HMC, posterior correctness or the whole master program.
 Implementation may proceed after confirming the exact validation contracts;
 no new approval is required inside the existing campaign.
+
+The frozen baseline for this unit is now Git `013978671`. Validation inspection
+confirms that scaled-model construction checks finite theta, positive finite
+rates and finite scaled covariance. XLA can omit TensorFlow assertions, so the
+compiled owner returns an explicit validity flag checked by the host API.
+Nonfinite/nonpositive Cholesky diagonals are fail-closed guards with known-good
+regressions; no ridge is added. Observation noise remains a supplied operand.
+A shared rate-operand RK4/RHS authority replaces parameter-dependent dataclass
+construction inside simulation. The original `SpatialSIRSSM` methods delegate
+to the same authority, preserving their expression order. Use the existing
+`tensor_program` boundary so simulator pullbacks keep loop tapes inside XLA.
+The bounded 16-owner cache controls Python ownership only; it is not a promise
+of native executable eviction. Public simulation checks status on the host;
+graph consumers of the owner must propagate its validity result.
+
+Attempt 04041 (CPU boundary) exposed a shared execution-boundary defect rather
+than a simulator numerical mismatch: the complete pullback received the
+compiled boolean validity leaf as a numeric `grad_ys` tensor. TensorFlow
+rightly rejected that status output with `TypeError`. The repair in
+`bayesfilter/ops/compiled_tensor_program_tf.py` maps non-floating output specs
+to `None` cotangents before `tf.compat.v1.gradients`; numeric leaves retain
+their complete pullback. This is a fixed output-schema operation and adds no
+numerical loop or pfor path. Attempt 04042 reran both boundary tests and passed
+(including the simulator-vs-frozen pullback and finite-difference diagnostic).
+The source policy audit remained 269 sources / 1,422 allowances with no new
+allowance. Continue with existing consumers under the unchanged contract.
+
+Attempt 04043 then found one legacy consumer assertion that required bitwise
+equality between the eager source-style path and the default XLA owner. The
+graph arm is bitwise equal; the XLA arm differs only in the fused FP64
+arithmetic (maximum absolute difference `5.551115123125783e-17`, with the
+largest observed physical-path difference `3.469446951953614e-18`). The
+operation order and clipping decisions are unchanged, and exact replay of the
+same owner remains a separate gate. This is within the plan's already frozen
+`5e-12` FP64 path contract, so the consumer assertion is being changed to that
+explicit bound rather than installing a new waiver or changing implementation
+arithmetic. Attempt 04044 confirmed the same localized behavior before this
+assertion update; preserve both failed records.
+
+Final unit evidence is recorded in
+`filter_gradient_latent_sir_result_20260926.md`. CPU path/boundary/consumer
+groups 04038--04045 and GPU-3 groups 04046--04050 pass. Fresh cost arms
+04051--04056 and campaign/policy checks 04057--04058 pass. The unit charged
+100.043930 CPU seconds and 100.036030 GPU seconds after 04037, leaving
+32.461046 CPU and 30.597188 GPU process-hours under the unchanged caps. The
+unit qualifies the tested latent SIR execution scope only; mixed KR transport,
+target-scale capacity, repeated-constructor native retention and the master
+program's other open findings remain next work.

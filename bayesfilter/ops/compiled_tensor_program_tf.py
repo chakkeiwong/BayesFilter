@@ -66,7 +66,15 @@ def tensor_program(function, signature, jit_compile):
         handles = tuple(graph.capture(variable.handle) for variable in variables)
         sources = (*arguments, *tensor_captures, *handles)
         outputs = concrete._call_flat(list(arguments), captured_inputs=bound_captures(tensor_captures))
-        return tf.compat.v1.gradients(tf.nest.flatten(outputs), sources, grad_ys=cotangent,
+        # Boolean and integer outputs can be returned by a finite program as
+        # status/metadata fields, but TensorFlow has no default derivative for
+        # them.  A ``None`` cotangent excludes those leaves while preserving
+        # the numeric pullback of every differentiable output.
+        gradient_ys = tf.nest.map_structure(
+            lambda value, spec: value if spec.dtype.is_floating or spec.dtype.is_complex else None,
+            cotangent, output_specs,
+        )
+        return tf.compat.v1.gradients(tf.nest.flatten(outputs), sources, grad_ys=gradient_ys,
                                       unconnected_gradients=tf.UnconnectedGradients.ZERO)
 
     derivative_concrete = None
