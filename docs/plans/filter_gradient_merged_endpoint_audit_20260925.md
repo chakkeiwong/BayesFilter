@@ -22,7 +22,7 @@ Initial inspected findings:
 | `ledh_alg1_contract.py:165` → `ledh_canonical_filter_tf.py:85` | The registered canonical single-cloud value entry resolves to a host time loop at line 167; finite-state decisions materialize tensors at lines 174--180; resampling uses NumPy at lines 301--306. `_replication_generator` also uses NumPy SeedSequence. | Confirmed execution-policy violation. Trace each actual consumer and compare the existing analytical/value recurrences before choosing a shared native implementation. Block execution-readiness claims for this path; no new canonical-algorithm rebuild is authorized. |
 | `ledh_canonical_models_tf.py` | Four numerical RK4 loops and NumPy constants remained at the merged baseline. | Repaired through 03815: native TensorFlow loops/constants and shared Austria adjacency. Eight checks pass per CPU/GPU backend. Complete caller/default qualification and costs remain open; the inherited predator--prey source discrepancy below remains unresolved. |
 | `ledh_canonical_neutra_targets_tf.py:521` at merged baseline | The KSC fused-model builder imported NumPy to calculate two normalizing constants. | Repaired and callback-qualified in 03809/03810 with frozen-source and independent tangent checks. Complete LEDH target integration remains open. |
-| `pruned_srukf_tf.py:206` | An inner non-JIT value call is enclosed by the public default-XLA analytical/autodiff factory at lines 190--199. | Literal `jit_compile=False` is not by itself an enclosing-XLA violation. Verify actual public HLO, derivatives, trace stability and numeric-only return values. Classify its score as autodiff, not an analytical recursion. |
+| `pruned_srukf_tf.py:206` | An inner non-JIT value call is enclosed by the public default-XLA autodiff factory at lines 190--199. | Qualified through 03818 for the tested public factory: HLO, independent covariance/score, changed-input/replay and invalid-row checks pass. This is an autodiff score. Module-wide schema-loop dispositions and per-call value-owner reuse remain separate. |
 | `ledh_younis_kdm_resampling_tf.py:593/602` | Two component factories request graph functions. | Trace their enclosing public factories and actual consumers before deciding whether XLA is bypassed. No compliance conclusion yet. |
 | `ledh_canonical_neutra_targets_tf.py:70` → `ledh_canonical_batch_fused_tf.py:225--276` at merged baseline | The target calls the so-called fused routine, which maps a single-cloud evaluator over each parameter row and direction. The default is sequential `tf.map_fn`; the alternative pfor only changes the direction map. The registry incorrectly labeled the route NeuTra-eligible. | Eligibility labels are corrected; 03809/03810 prove the public training binder rejects the actual factory object before evaluation. The alternate while-loop wrapper is also a row mapping. Implementing a new canonical batch algorithm is outside this campaign's agreed scope. |
 | `ledh_canonical_score_tf.py:825` | The public analytical wrapper calls the native executor directly without a default-XLA boundary. Its optional traced-step helper at line 794 also omits JIT. | Inventory public and enclosing callers; distinguish valid enclosing XLA from eager public execution. Add a stable shared wrapper or explicitly classify diagnostic-only entry where appropriate, preserving recursive derivative composition. |
@@ -257,3 +257,107 @@ exported `ledh_younis_kdm_tf.py::canonical_linear_gaussian_kdm_auxiliary` explic
 uses eager orchestration around that score call; its JIT option applies to later
 components. These are source-level findings, not executed wrapper qualification.
 Do not infer that the score-study wrapper makes every public caller compiled.
+
+Final worker contract: audit the public
+`bayesfilter.nonlinear.make_pruned_srukf_value_and_score` factory on GPU with its
+JIT argument omitted. Inspect actual HLO and `_XlaMustCompile`, compare its
+complete numeric return against the explicit graph exception, and independently
+compare likelihood/score with the existing covariance-recursion reference and
+two centered-difference steps (1e-4, 1e-5). Use the existing B=2, T=3, three-
+parameter fixture, changed operands, exact replay and a NaN in only row 1.
+Keep existing value 1e-11, score 1e-10 graph/XLA, and independent derivative
+rtol 2e-6 / atol 2e-7 tolerances. Require one trace, unchanged HLO, no callbacks
+or pfor, exact status agreement and an unchanged valid row under invalid-row
+injection. This score is **autodiff**, not an analytical recursive score.
+
+Run the existing pruned SRUKF diagnostic suite, the focused enclosing test and
+the four policy test modules in one final GPU worker, capped at 300 seconds.
+This completes this unit's eight-worker allocation. It changes no runtime
+source, guard allowance or numerical definition. Source inspection shows
+fixed-schema construction/validation loops as distinct from native temporal
+recurrence; the per-call value convenience function also creates a new compiled
+owner, whose reuse/capacity is not qualified by this factory test. The factory
+is the precise endpoint under test. A failure blocks this classification and
+triggers a new bounded localization unit, never an eager fallback or relaxed
+tolerance. Skeptical review: independent covariance checks avoid accepting only
+autodiff self-parity, and public-facade lookup tests actual export resolution.
+No claim of module-wide loop compliance, memory improvement or analytical
+provenance is supported. Primary-agent review; no independent reviewer used.
+
+Attempt 03816 ended at collection: the new diagnostic imported the sibling
+reference as a top-level module instead of `tests.test_pruned_srukf_tf`. No
+numerical test executed. Preserve the failed worker and repair only that import
+and its lint layout. The first audit allocation closes at eight workers /
+98.081282 seconds; unused time does not authorize additional workers in that
+allocation. Open a focused infrastructure continuation of at most three workers
+/ 900 seconds within the unchanged global 32 CPU / 52 GPU hours, running the
+same registered group with the same data, algorithms, devices, tolerances and
+stop conditions. Stop after the group passes; further numerical failure needs
+localization before retry. This is a harness retry under the authorized campaign,
+not a scientific scope change. Pre-run review confirms no target or criterion
+changed and the import fix restores the intended independent reference.
+
+03817: 148 existing/policy checks pass. The new check passes public export
+resolution, default-XLA attribute, graph parity, independent covariance values
+and finite-difference scores, changed inputs, bitwise replay, invalid-row
+isolation and one trace; it then fails literal HLO text equality. The displayed
+diff is exporter metadata such as `op_name="ones_3/_9"` versus `ones_3/_0`.
+No numerical mismatch occurred. Next save both full HLO exports and allow
+removal of **only `op_name` metadata strings** when checking program identity;
+every remaining HLO byte, including constants, shapes, operations, operands,
+control flow and other metadata must match. Record whether raw exports match.
+This narrow inspection distinguishes exporter labels from changed numerical
+programs and does not weaken any numeric, replay or trace criterion. Any other
+HLO difference remains a veto. Continue within the remaining two workers of
+the infrastructure unit; no runtime source or allowance changes. Review:
+label equality is a proxy for program equality and proved too strict; preserving
+raw exports and independently comparing all non-label text answers the intended
+gate without hiding compiler-program changes.
+
+Pruned result 03818: all 149 checks pass on GPU2 (one focused public check,
+19 existing pruned diagnostics, 129 policy checks). The actual public facade
+resolves to the inspected factory, its default carries `_XlaMustCompile=True`,
+all outputs reside on GPU, and the complete filter plus autodiff score reaches
+one native XLA program. Original graph comparison, independent covariance
+values and centered-difference scores pass; the largest independent score
+scaled discrepancy is 0.008185 of the predeclared limit. Changed inputs keep
+one trace. Replay and the valid row under invalid-row injection are bitwise
+unchanged. The invalid row returns the original -inf value/NaN score/false status.
+No host callback, pfor or native QR op appears in the graph.
+
+Independent post-run inspection confirms exactly eight differing `op_name`
+metadata strings between the two saved HLO exports; all non-label text is
+identical. Raw exports are preserved, not overwritten or described as identical.
+All 3370 frozen source hashes match. The earlier collection and metadata-only
+failures 03816/03817 remain in
+`artifacts/filter-gradient-repair-20260917/pruned-enclosing-evidence-03818.tar.gz`.
+Receipt: `pruned-enclosing-verification-03818.json` in the same directory.
+
+| Decision | Criterion | Veto status | Main uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Classify the inner non-JIT call as enclosed by XLA for this public factory | Actual default, HLO, independent values/scores and invalid-row isolation pass | No numerical or program-identity veto | Other callers and per-call value-owner lifetime | Keep broader endpoint/capacity audit open | Module-wide compliance or memory improvement |
+| Classify this score as autodiff | Inspected GradientTape total-likelihood path and independent score check | No analytical-recursion claim allowed | Additional structural-rank regimes | Retain original score provenance | Analytical recursive implementation |
+| Close this bounded audit allocation | Model repairs and selected factory audit completed with preserved failures | Larger registered LEDH host/score gaps remain | Native value RNG compatibility, enclosing score ownership and consumer wiring | Next bounded shared-endpoint repair plan | F01--F20 or main promotion |
+
+The original eight-worker unit closes at 98.081282 seconds. Its narrow
+infrastructure continuation closes after two of three workers / 46.227568
+seconds; no remaining retry is needed. Cumulative charges through 03818:
+75364.243198 CPU / 75275.068507 GPU seconds, leaving 11.065488 CPU / 31.090259
+GPU hours. Source guard remains 238 sources / 1346 allowances. Focused test/
+runner lint and whitespace checks pass. No runtime edit was needed for the
+pruned factory and no allowance changed. No worker is active.
+
+Review: accepting an inner false-JIT literal as a violation would have caused
+an unnecessary nested compilation change. Actual public-call evidence resolves
+that finding without changing its numerical program. The standalone value
+convenience function constructs a fresh compiled owner per call; this test
+cannot dispose of its reuse or capacity cost. Complete LEDH host-value, public
+score, Younis enclosing-call, seed compatibility and before/after cost work
+remain required. Main stays unmerged.
+
+Final budget reconciliation reproduces the cumulative charges from every run
+record plus supplemental charges. Historical 03728 still says `running` in its
+interrupted September 23 ledger, although its log ends in a passed test; no
+matching campaign/controller process is live now. Preserve that record and its
+conservative full 300-second charge. It is not a currently running worker and
+has not been silently promoted to qualified timing evidence.

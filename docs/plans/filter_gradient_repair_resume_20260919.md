@@ -1,36 +1,38 @@
 # Filter and gradient repair recovery
 
-Current checkpoint, 2026-09-25 through 03815: the merged LEDH model callback
-repair passes eight checks on each CPU/GPU backend and all 129 policy checks.
-Four RK4 recurrences now use native TensorFlow loops; the module has no NumPy
-or Python numerical loop. Austria uses the shared tensor adjacency authority.
-Five factories plus an Austria float32 smoke pass original-source parity,
-independent tangents, changed operands, exact replay, stable HLO and device
-checks. The failed construction attempt 03812 is preserved. Read the
-[endpoint audit and result](filter_gradient_merged_endpoint_audit_20260925.md).
+Current checkpoint, 2026-09-25 through 03818: model callback repair and the
+pruned SRUKF enclosing-factory audit are complete in their bounded scopes.
+Eight model checks pass on each CPU/GPU backend; four RK4 recurrences now use
+native TensorFlow and the model module has no NumPy/Python numerical loop.
+GPU 03818 passes 149 checks (public pruned factory, 19 existing cases, 129
+policy checks). Its inner non-JIT value call is enclosed by the default-XLA
+factory; the score is autodiff. Replay, independent scores and invalid-row
+isolation pass. HLO differs only in eight diagnostic operation-name labels;
+all other program text matches. Read the [audit/result](filter_gradient_merged_endpoint_audit_20260925.md).
 
-The inherited predator--prey full-step k4 differs from the vendored author's
-half-step. Preserve current arithmetic under the execution-only scope and block
-source-equivalence claims. Row-mapped LEDH training remains ineligible. The
-actual frozen DZ5 target comparison remains qualified in its earlier scope;
-read the [target result](filter_gradient_dz5_target_result_20260925.md).
+Preserve the predator--prey full-step k4 under the execution-only contract;
+it differs from the vendored author's half-step, so source-equivalence claims
+remain blocked. Row-mapped LEDH training remains ineligible. The earlier
+[frozen DZ5 target result](filter_gradient_dz5_target_result_20260925.md) retains
+its exact source scope and does not establish independent score admission.
 
-Next finish the registered LEDH host/score caller/default audit and plan the
-shared native endpoint repair; do not mistake callback HLO for the enclosing
-filter. Then continue the fresh DZ5 score oracle and public initializer/staged
-supervisor. Matched before/after costs, reporting/isotropic discrepancies,
-cold/RSS/native capacity and F01--F20 terminal dispositions remain open. Main
-promotion is blocked. Guard: 238 sources / 1346 exact allowances; no new waiver.
+Next: plan and execute shared native LEDH host-value/public-score repair after
+checking seed compatibility and actual caller ownership. Younis wrappers need
+enclosing-call classification. Then continue the fresh DZ5 score oracle and
+public initializer/staged supervisor. Matched costs, reporting/isotropic
+findings, cold/RSS/native capacity and F01--F20 terminal dispositions remain
+open. Main promotion is blocked. Guard: 238 sources / 1346 allowances, no new waiver.
 
-The current endpoint unit has one of eight workers / 2306.794221 of 2400 seconds
-remaining. Charges through 03815 are 75364.243198 CPU / 75223.965436 GPU seconds,
-leaving 11.065488 CPU / 31.104454 GPU hours under unchanged 32/52-hour caps.
-No worker is active. Current evidence receipt:
-`artifacts/filter-gradient-repair-20260917/merged-ledh-models-verification-03815.json`.
+Both endpoint allocations are closed: first 8 workers / 98.081282 seconds;
+infrastructure continuation 2 workers / 46.227568 seconds. Charges through
+03818: 75364.243198 CPU / 75275.068507 GPU seconds, leaving 11.065488 CPU /
+31.090259 GPU hours under unchanged 32/52-hour caps. No worker is active.
+Receipts: `artifacts/filter-gradient-repair-20260917/merged-ledh-models-verification-03815.json`
+and `pruned-enclosing-verification-03818.json` in the same directory.
 Repair worktree: `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`.
-Branch: `repair/filter-gradient-xla-validation-20260918`; prior pushed commit
-`ea3a6582a`. Stable runner: `scripts/run_filter_repair_campaign.py`. Raw evidence
-is in `/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
+Branch: `repair/filter-gradient-xla-validation-20260918`; model repair commit
+`2fef13d59`. Stable runner: `scripts/run_filter_repair_campaign.py`. Raw evidence:
+`/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
 Older checkpoints below preserve historical scope and instructions only.
 
 Current checkpoint, 2026-09-25 through 03762: remaining-SVD costs are complete
