@@ -1,9 +1,15 @@
-"""Batch-native adapter over the canonical LEDH analytical score engine.
+"""Row-mapped adapter over the canonical LEDH analytical score engine.
 
 The algorithmic finite program lives only in ``ledh_canonical_score_tf``.
 This module adapts per-point callbacks and explicit ``[B,K,P]`` directions to
 that authority with TensorFlow ``map_fn`` control flow. There is no Python row
-or direction loop in the traced graph, no pfor/vectorized-map, and no autodiff.
+or direction loop in the default traced graph and no autodiff. The optional
+direction-only pfor mode is a separate reviewed diagnostic.
+
+The historical ``fused`` name does not make this batch-native: each batch row
+still invokes the scalar target independently. Both this wrapper and its
+while-loop alternative are ineligible for NeuTra training. Native tensor loops
+alone do not satisfy the batch-native target policy.
 
 Primal cloud reductions therefore inherit the canonical single-cloud semantics;
 the explicit B and K axes are retained by the adapter. Contract-E reset,

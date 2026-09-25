@@ -1,4 +1,4 @@
-"""Canonical NeuTra target factory (P7 rebind).
+"""Compatibility target factory over the canonical LEDH score program.
 
 Replaces the bootstrap-lane `make_genut_neutra_target` binding: NeuTra
 targets are now built on the CANONICAL LEDH-PF-PF stack (UKF lifecycle,
@@ -7,18 +7,20 @@ observation datasets and stateless noise streams are reused so the DATA
 scope is unchanged; target signatures are FRESH by design — comparability
 with pre-2026-08-21 artifacts is severed per the invalidation notice.
 
-Bridge semantics: each model binds a `PerPointScoreModel` (fused lane) and
-a `NonlinearScoreModel` (single-cloud authority) built from the same
-model functions; the fused lane is the NeuTra-eligible batch backend, the
-single-cloud lane is the parity oracle's subject.
+The historical factory name does not establish NeuTra training eligibility.
+Its wrapper maps a single-cloud evaluator over rows and directions, so it is
+ineligible under the batch-native training policy. Keep it for diagnostic
+comparisons; the public NeuTra binder rejects it before optimizer updates.
+It does not select or qualify a learned transport architecture.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, ClassVar, Mapping
 
 import tensorflow as tf
 
@@ -34,6 +36,10 @@ DTYPE = tf.float64
 
 @dataclass(frozen=True)
 class CanonicalNeuTraTarget:
+    """Diagnostic row-mapped target; canonical algorithm naming is not admission."""
+
+    neutra_training_eligible: ClassVar[bool] = False
+    batching_policy_id: ClassVar[str] = "row_mapped_scalar_target_diagnostic_only_v1"
     model_id: str
     parameter_names: tuple[str, ...]
     fused_model: PerPointScoreModel
@@ -95,10 +101,12 @@ def make_canonical_neutra_target(
     noise_seed: int = 140000,
     substeps: int = 12,
 ) -> CanonicalNeuTraTarget:
-    """Build a canonical-lane NeuTra target on the frozen datasets.
+    """Build a diagnostic LEDH target on the frozen datasets.
 
     The per-point fused model callbacks receive theta rows [M, P] aligned
     with points [M, d] and must be elementwise in the row dimension.
+    The surrounding evaluator still maps scalar targets per training row;
+    this factory cannot issue a batch-native NeuTra training binding.
     """
 
     name = str(model).lower().replace("-", "_")
@@ -518,8 +526,6 @@ def _ksc_fused_model() -> PerPointScoreModel:
     mixture observation density (per-point mirror of the corrected
     single-cloud model)."""
 
-    import numpy as _np
-
     weights = tf.constant(
         [0.00730, 0.10556, 0.00002, 0.04395, 0.34001, 0.24566, 0.25750],
         DTYPE,
@@ -536,7 +542,7 @@ def _ksc_fused_model() -> PerPointScoreModel:
     mixture_var = tf.reduce_sum(
         weights * (variances + tf.square(means))
     ) - tf.square(mixture_mean)
-    log_two_pi = tf.constant(float(_np.log(2.0 * _np.pi)), DTYPE)
+    log_two_pi = tf.constant(math.log(2.0 * math.pi), DTYPE)
 
     def gamma_of(theta_rows):
         return 0.5 * (
@@ -552,7 +558,7 @@ def _ksc_fused_model() -> PerPointScoreModel:
     def transition_mean_tangent_fn(theta_rows, points, d_points, d_theta_rows):
         gamma = gamma_of(theta_rows)
         normalizer = tf.constant(
-            float(1.0 / _np.sqrt(2.0 * _np.pi)), DTYPE
+            1.0 / math.sqrt(2.0 * math.pi), DTYPE
         )
         dgamma = (
             normalizer

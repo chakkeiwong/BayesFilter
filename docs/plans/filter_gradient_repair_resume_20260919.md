@@ -1,25 +1,28 @@
 # Filter and gradient repair recovery
 
-Current checkpoint, 2026-09-25 through 03808: merge `9d8202b77` is pushed.
-The actual CDF target passes graph/XLA, independent archived-source and CPU/GPU
-comparisons at B=1/4/46/68, including invalid-row isolation, changed operands,
-exact replay, one trace, stable HLO, source checks and verified GPU growth.
-All 129 policy checks pass. Read the [target result](filter_gradient_dz5_target_result_20260925.md)
-and [E5 record](filter_gradient_dz5_snapshot_integration_20260924.md).
+Current checkpoint, 2026-09-25 through 03811: remote merge `9d8202b77` and
+frozen DZ5 comparison `801354b77` are pushed. Actual CDF target graph/XLA,
+archived-source and CPU/GPU comparisons pass B=1/4/46/68, including invalid rows,
+replay, stable traces/HLO and source/device checks. Read the [target result](filter_gradient_dz5_target_result_20260925.md).
 
-Next execute the [merged endpoint repair unit](filter_gradient_merged_endpoint_audit_20260925.md),
-then continue the independent fresh score oracle and complete public initializer/
-staged-supervisor integration. New registered LEDH paths contain Python numerical
-loops, NumPy and unsupported batch-native training eligibility. Those findings
-have explicit repair/claim-blocking plans. Reporting/isotropic discrepancies,
-cold/RSS/native capacity and terminal F01--F20 dispositions remain open. Main
-promotion remains blocked. The source guard is partial: 237 sources / 1346 exact
-allowances, with no new numerical-loop, NumPy or non-XLA waiver.
+The first [merged endpoint repair](filter_gradient_merged_endpoint_audit_20260925.md)
+now passes three focused checks per device and all 129 policy checks. The LEDH
+row-mapped target's unsupported NeuTra eligibility labels are corrected; the
+actual training binder rejects it before evaluation. KSC callbacks no longer
+import NumPy and pass frozen-reference and independent tangent checks. Existing
+canonical numerical methods, datasets and admissions remain unchanged.
 
-Charges through 03808 are 75306.143808 CPU / 75188.859048 GPU seconds; remaining
-budget is 11.081627 CPU / 31.114206 GPU hours. The E5 target unit used 24 workers /
-1929.137249 seconds including bounded driver probes. No worker is active.
-Earlier checkpoints below are superseded for current status only.
+Next repair the registered LEDH host/model recurrences and qualify their actual
+XLA boundaries under the remaining five-worker/2378.759638-second audit unit.
+Continue the fresh DZ5 score oracle and public initializer/staged-supervisor
+integration afterward. Reporting/isotropic discrepancies, cold/RSS/native capacity
+and terminal F01--F20 dispositions remain open. Main promotion is blocked. The
+partial guard remains 237 sources / 1346 exact allowances; no new numerical-loop,
+NumPy or non-XLA waiver was added.
+
+Charges through 03811 are 75320.454192 CPU / 75195.789026 GPU seconds, leaving
+11.077652 CPU / 31.112281 GPU hours. No worker is active. Exact repair source
+hashes are preserved in the linked receipt. Earlier checkpoints retain historical scope.
 
 Current checkpoint, 2026-09-25 through 03762: remaining-SVD costs are complete
 with 48 accepted workers. The CPU/GPU analyses reproduce exactly and all receipt
