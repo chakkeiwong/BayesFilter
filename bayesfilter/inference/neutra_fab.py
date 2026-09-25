@@ -33,7 +33,7 @@ import tensorflow as tf
 from bayesfilter.inference.neutra_transport import NeuTraTransport, _hash
 
 AUTHOR_REVISION = "c9f991366ca94b2678a7ed620bc9e12655cfef1d"
-CHECKPOINT_SCHEMA = "bayesfilter.neutra.fab_training.v1"
+CHECKPOINT_SCHEMA = "bayesfilter.neutra.fab_training.v2"
 
 
 def intermediate_log_prob(log_q, log_p, beta, alpha=2.):
@@ -48,8 +48,48 @@ def replay_log_correction(log_q_old, log_q, alpha=2.):
 
 
 def fab_weighted_loss(log_q, log_weights):
-    """Paper Eq. 7: weighted SUM, not the author's additional factor 1/N."""
-    return -tf.reduce_sum(tf.nn.softmax(tf.stop_gradient(log_weights)) * log_q)
+    """Author fab_without_buffer.py: mean after normalizing the weights."""
+    return -tf.reduce_mean(tf.nn.softmax(tf.stop_gradient(log_weights)) * log_q)
+
+
+def fab_replay_loss(log_q, old_q, correction_clip):
+    """Author detached replay loss, uncapped priority correction and clipping rate."""
+    adjustment = replay_log_correction(old_q, log_q)
+    maximum = tf.constant(math.inf if correction_clip is None else math.log(correction_clip), log_q.dtype)
+    correction = tf.exp(tf.minimum(adjustment, maximum))
+    return (-tf.reduce_mean(correction*log_q), adjustment,
+        tf.reduce_mean(tf.cast(adjustment > maximum, log_q.dtype)))
+
+
+class FABAdam:
+    """TensorFlow form of Optax scale_by_adam followed by scale(-lr).
+
+    In particular epsilon is added after bias correction, outside sqrt(v_hat).
+    All constants have the parameter dtype; Keras' FP32 learning-rate variable
+    and its uncorrected-moment epsilon convention are not used here.
+    """
+    def __init__(self, parameters, config):
+        self.config = config
+        # TF places int32 resources on CPU even for a GPU optimizer. An int64
+        # resource on the parameter device keeps the complete update XLA-able;
+        # its value still follows Optax's saturating int32 count semantics.
+        with tf.device(parameters[0].device):
+            self.iterations = tf.Variable(0, dtype=tf.int64, trainable=False)
+        self.m = tuple(tf.Variable(tf.zeros_like(p), trainable=False) for p in parameters)
+        self.v = tuple(tf.Variable(tf.zeros_like(p), trainable=False) for p in parameters)
+        self.variables = (self.iterations, *self.m, *self.v)
+
+    def apply_gradients(self, pairs):
+        self.iterations.assign(tf.minimum(self.iterations+1, tf.constant(2**31-1, tf.int64)))
+        for (g, p), m, v in zip(pairs, self.m, self.v):
+            b1 = tf.constant(self.config.beta1, p.dtype)
+            b2 = tf.constant(self.config.beta2, p.dtype)
+            m.assign((1-b1)*g + b1*m)
+            v.assign((1-b2)*tf.square(g) + b2*v)
+            count = tf.cast(self.iterations, p.dtype)
+            m_hat, v_hat = m/(1-b1**count), v/(1-b2**count)
+            p.assign_add(-tf.constant(self.config.learning_rate, p.dtype)
+                * m_hat/(tf.sqrt(v_hat) + tf.constant(self.config.adam_epsilon, p.dtype)))
 
 
 class Point(NamedTuple):
@@ -149,9 +189,7 @@ class FABTrainer:
         self.target_signature, self.seed = target_signature, tuple(seed)
         self.dtype, self.dimension = transport.dtype, transport.parameter_dim
         self.variables = transport.trainable_variables
-        self.optimizer = tf.keras.optimizers.Adam(config.learning_rate, beta_1=config.beta1,
-            beta_2=config.beta2, epsilon=config.adam_epsilon)
-        self.optimizer.build(self.variables)
+        self.optimizer = FABAdam(self.variables, config)
         self.steps = tf.fill([config.intermediate_distributions], tf.constant(config.initial_step_size, self.dtype))
         self.betas = tf.linspace(tf.cast(0., self.dtype), tf.cast(1., self.dtype), config.intermediate_distributions + 2)
         self.pass_index = 0
@@ -160,6 +198,11 @@ class FABTrainer:
         spec = [tf.TensorSpec([b, d], self.dtype), tf.TensorSpec([2], tf.int32),
                 tf.TensorSpec([config.intermediate_distributions], self.dtype)]
         self.ais = tf.function(self._ais, input_signature=spec, jit_compile=config.jit_compile, autograph=False)
+        self.ais_from_random = tf.function(self._ais_from_random, input_signature=[
+            spec[0], spec[2], tf.TensorSpec([config.intermediate_distributions, config.hmc_steps, b, d], self.dtype),
+            tf.TensorSpec([config.intermediate_distributions, config.hmc_steps, b], self.dtype),
+            tf.TensorSpec([b], tf.int32)],
+            jit_compile=config.jit_compile, autograph=False)
         self.draw = tf.function(self._draw, input_signature=[tf.TensorSpec([2], tf.int32)],
                                 jit_compile=config.jit_compile, autograph=False)
         self.update = tf.function(self._update, input_signature=[tf.TensorSpec([b, d], self.dtype),
@@ -171,6 +214,10 @@ class FABTrainer:
                 tf.TensorSpec([capacity], self.dtype), tf.TensorSpec([], tf.int32), tf.TensorSpec([], tf.int32))
             self.replay_sample = tf.function(self._replay_sample,
                 input_signature=[rs, tf.TensorSpec([2], tf.int32)], jit_compile=config.jit_compile, autograph=False)
+            self.replay_select = tf.function(self._replay_select, input_signature=[rs,
+                tf.TensorSpec([capacity], self.dtype),
+                tf.TensorSpec([b * config.updates_per_pass], tf.int32)],
+                jit_compile=config.jit_compile, autograph=False)
             self.replay_add = tf.function(self._replay_add, input_signature=[rs,
                 tf.TensorSpec([b, d], self.dtype), tf.TensorSpec([b], self.dtype), tf.TensorSpec([b], self.dtype)],
                 jit_compile=config.jit_compile, autograph=False)
@@ -211,7 +258,10 @@ class FABTrainer:
     def _hmc(self, point, key, beta, step_size):
         keys = tf.random.experimental.stateless_split(key, 2)
         momentum = tf.random.stateless_normal(tf.shape(point.x), keys[0], dtype=self.dtype)
-        initial_momentum = momentum
+        log_uniform = tf.math.log(tf.random.stateless_uniform([self.config.batch_size], keys[1], dtype=self.dtype))
+        return self._hmc_from_random(point, momentum, log_uniform, beta, step_size)
+
+    def _integrate(self, point, momentum, beta, step_size):
         momentum += .5 * step_size * self._score(point, beta)
 
         def body(i, proposal, p, path_valid):
@@ -221,12 +271,15 @@ class FABTrainer:
 
         _, proposal, momentum, path_valid = tf.while_loop(lambda i, *_: i < self.config.leapfrog_steps,
             body, (tf.constant(0), point, momentum, point.valid), parallel_iterations=1)
+        return proposal, momentum, path_valid
+
+    def _hmc_from_random(self, point, initial_momentum, log_uniform, beta, step_size):
+        proposal, momentum, path_valid = self._integrate(point, initial_momentum, beta, step_size)
         log_accept = (self._log_prob(proposal, beta) - self._log_prob(point, beta)
             + .5 * tf.reduce_sum(initial_momentum**2 - momentum**2, -1))
         valid = path_valid & tf.math.is_finite(log_accept)
         log_accept = tf.where(valid, tf.minimum(log_accept, 0.), tf.cast(-math.inf, self.dtype))
-        uniform = tf.random.stateless_uniform([self.config.batch_size], keys[1], dtype=self.dtype)
-        accepted = tf.math.log(uniform) < log_accept
+        accepted = log_uniform < log_accept
         kept = Point(*(tf.where(accepted[:, None] if new.shape.rank == 2 else accepted, new, old)
                        for new, old in zip(proposal, point)))
         return kept, tf.reduce_mean(tf.exp(log_accept)), tf.reduce_mean(tf.cast(accepted, self.dtype)), tf.reduce_sum(tf.cast(~valid, tf.int32))
@@ -235,18 +288,45 @@ class FABTrainer:
         """Author metropolis.py: symmetric Gaussian random walk and MH ratio."""
         keys = tf.random.experimental.stateless_split(key, 2)
         noise = tf.random.stateless_normal(tf.shape(point.x), keys[0], dtype=self.dtype)
+        log_uniform = tf.math.log(tf.random.stateless_uniform([self.config.batch_size], keys[1], dtype=self.dtype))
+        return self._metropolis_from_random(point, noise, log_uniform, beta, step_size)
+
+    def _metropolis_from_random(self, point, noise, log_uniform, beta, step_size):
         proposal = self._point(point.x + step_size * noise)
         log_accept = self._log_prob(proposal, beta) - self._log_prob(point, beta)
         valid = point.valid & proposal.valid & tf.math.is_finite(log_accept)
         log_accept = tf.where(valid, tf.minimum(log_accept, 0.), tf.cast(-math.inf, self.dtype))
-        uniform = tf.random.stateless_uniform([self.config.batch_size], keys[1], dtype=self.dtype)
-        accepted = tf.math.log(uniform) < log_accept
+        accepted = log_uniform < log_accept
         kept = Point(*(tf.where(accepted[:, None] if new.shape.rank == 2 else accepted, new, old)
                        for new, old in zip(proposal, point)))
         return kept, tf.reduce_mean(tf.exp(log_accept)), tf.reduce_mean(tf.cast(accepted, self.dtype)), tf.reduce_sum(tf.cast(~valid, tf.int32))
 
     def _ais(self, x, key, steps):
+        keys = tf.random.experimental.stateless_split(key, 3)
+        shape = [self.config.intermediate_distributions, self.config.hmc_steps, self.config.batch_size]
+        noise = tf.random.stateless_normal(shape + [self.dimension], keys[0], dtype=self.dtype)
+        log_uniform = tf.math.log(tf.random.stateless_uniform(shape, keys[1], dtype=self.dtype))
         point = self._point(x)
+        replacements = tf.cond(tf.reduce_any(point.valid),
+            lambda: tf.cast(tf.random.stateless_categorical(
+                tf.where(point.valid, tf.zeros_like(point.log_q), tf.fill(tf.shape(point.log_q),
+                    tf.constant(-math.inf, self.dtype)))[None, :], self.config.batch_size, keys[2])[0], tf.int32),
+            lambda: tf.zeros([self.config.batch_size], tf.int32))
+        return self._ais_from_point(point, steps, noise, log_uniform, replacements)
+
+    def _ais_from_random(self, x, steps, noise, log_uniform, replacements):
+        """Shared AIS numerical body; native and reference draws use this body."""
+        point = self._point(x)
+        return self._ais_from_point(point, steps, noise, log_uniform, replacements)
+
+    def _replace_invalid_initial(self, point, replacements):
+        """Author SMC copies uniformly chosen valid initial rows into bad rows."""
+        return Point(*(tf.where(point.valid[:, None] if value.shape.rank == 2 else point.valid,
+            value, tf.gather(value, replacements)) for value in point))
+
+    def _ais_from_point(self, point, steps, noise, log_uniform, replacements):
+        n_initial_invalid = tf.reduce_sum(tf.cast(~point.valid, tf.int32))
+        point = self._replace_invalid_initial(point, replacements)
         initial_valid = tf.reduce_all(point.valid)
         # Author ordering: weight beta0->beta1, then mutate at betak and
         # increment to beta(k+1). There is no final beta=1 mutation.
@@ -254,14 +334,16 @@ class FABTrainer:
         acc = tf.zeros_like(steps)
         movement = tf.zeros_like(steps)
         invalid = tf.zeros_like(steps, dtype=tf.int32)
+        increments = tf.TensorArray(self.dtype, size=self.config.intermediate_distributions+1,
+            element_shape=[self.config.batch_size]).write(0, log_w)
+        positions = tf.TensorArray(self.dtype, size=self.config.intermediate_distributions+1,
+            element_shape=[self.config.batch_size, self.dimension]).write(0, point.x)
 
-        def stage(k, point, log_w, steps, acc, movement, invalid):
-            stage_key = tf.random.experimental.stateless_fold_in(key, k)
+        def stage(k, point, log_w, steps, acc, movement, invalid, increments, positions):
             beta = self.betas[k + 1]
             def transition(j, point, epsilon, a_sum, moved_sum, bad_sum):
-                kernel = self._hmc if self.config.transition_operator == "hmc" else self._metropolis
-                point, a, moved, bad = kernel(point,
-                    tf.random.experimental.stateless_fold_in(stage_key, j), beta, epsilon)
+                kernel = self._hmc_from_random if self.config.transition_operator == "hmc" else self._metropolis_from_random
+                point, a, moved, bad = kernel(point, noise[k, j], log_uniform[k, j], beta, epsilon)
                 if self.config.adapt_step_size and self.config.transition_operator == "hmc":
                     epsilon *= tf.where(a > self.config.target_acceptance,
                         tf.constant(self.config.step_size_multiplier, self.dtype),
@@ -277,19 +359,23 @@ class FABTrainer:
                 epsilon *= tf.where(a / self.config.hmc_steps > self.config.target_acceptance,
                     tf.constant(self.config.step_size_multiplier, self.dtype),
                     tf.constant(1. / self.config.step_size_multiplier, self.dtype))
-            log_w += self._log_prob(point, self.betas[k + 2]) - self._log_prob(point, beta)
+            increment = self._log_prob(point, self.betas[k + 2]) - self._log_prob(point, beta)
+            log_w += increment
             index = tf.reshape(k, [1, 1])
             return (k + 1, point, log_w, tf.tensor_scatter_nd_update(steps, index, [epsilon]),
                 tf.tensor_scatter_nd_update(acc, index, [a / self.config.hmc_steps]),
                 tf.tensor_scatter_nd_update(movement, index, [moved / self.config.hmc_steps]),
-                tf.tensor_scatter_nd_update(invalid, index, [bad]))
-        _, point, log_w, steps, acc, movement, invalid = tf.while_loop(
+                tf.tensor_scatter_nd_update(invalid, index, [bad]),
+                increments.write(k+1, increment), positions.write(k+1, point.x))
+        _, point, log_w, steps, acc, movement, invalid, increments, positions = tf.while_loop(
             lambda k, *_: k < self.config.intermediate_distributions, stage,
-            (tf.constant(0), point, log_w, steps, acc, movement, invalid), parallel_iterations=1)
+            (tf.constant(0), point, log_w, steps, acc, movement, invalid, increments, positions), parallel_iterations=1)
         weights = tf.nn.softmax(log_w)
         valid = initial_valid & tf.reduce_all(point.valid) & tf.reduce_all(tf.math.is_finite(log_w))
         return {"x": point.x, "log_w": log_w, "log_q": point.log_q, "valid": valid,
             "steps": steps, "acceptance": acc, "movement": movement, "invalid_proposals": invalid,
+            "log_weight_increments": increments.stack(), "stage_positions": positions.stack(),
+            "initial_invalid_count": n_initial_invalid,
             "ess_fraction": 1. / (self.config.batch_size * tf.reduce_sum(weights**2)),
             "max_weight": tf.reduce_max(weights),
             "log_mean_weight": tf.reduce_logsumexp(log_w) - tf.math.log(tf.cast(self.config.batch_size, self.dtype))}
@@ -298,10 +384,8 @@ class FABTrainer:
         x = tf.stop_gradient(x)
         with tf.GradientTape() as tape:
             log_q = self.transport.log_prob(x)
-            adjustment = replay_log_correction(old_q, log_q)
-            maximum = tf.constant(math.inf if self.config.correction_clip is None else math.log(self.config.correction_clip), self.dtype)
-            correction = tf.exp(tf.minimum(adjustment, maximum))
-            loss = tf.cond(from_replay, lambda: -tf.reduce_mean(correction * log_q),
+            replay_loss, adjustment, correction_clipped = fab_replay_loss(log_q, old_q, self.config.correction_clip)
+            loss = tf.cond(from_replay, lambda: replay_loss,
                 lambda: fab_weighted_loss(log_q, log_w))
         grads = tape.gradient(loss, self.variables)
         norm = tf.linalg.global_norm(grads)
@@ -323,7 +407,7 @@ class FABTrainer:
         valid = tf.cond(finite, apply, lambda: tf.constant(False))
         return {"valid": valid, "loss": loss, "gradient_norm": norm,
             "gradient_clipped": norm > tf.cast(math.inf if self.config.gradient_clip is None else self.config.gradient_clip, self.dtype),
-            "correction_clipped_fraction": tf.reduce_mean(tf.cast(adjustment > maximum, self.dtype)),
+            "correction_clipped_fraction": correction_clipped,
             "log_w_adjustment": adjustment, "log_q": log_q,
             "iteration": tf.identity(self.optimizer.iterations)}
 
@@ -332,16 +416,25 @@ class FABTrainer:
         keys = tf.random.experimental.stateless_split(key, 2)
         uniform = tf.random.stateless_uniform(tf.shape(replay.log_w), keys[0], dtype=self.dtype)
         gumbel = -tf.math.log(-tf.math.log(uniform))
-        indices = tf.math.top_k(replay.log_w + gumbel,
-            k=self.config.batch_size * self.config.updates_per_pass).indices
         # StatelessShuffle has no XLA_GPU kernel in the supported TF build.
         # Sorting independent random keys gives a uniform permutation for
         # distinct keys. FP64 keys make finite-RNG ties negligible at this size.
-        order = tf.argsort(tf.random.stateless_uniform(tf.shape(indices), keys[1], dtype=tf.float64))
+        order = tf.argsort(tf.random.stateless_uniform(
+            [self.config.batch_size * self.config.updates_per_pass], keys[1], dtype=tf.float64))
+        return self._replay_select(replay, gumbel, order)
+
+    def _replay_select(self, replay, gumbel, order):
+        indices = tf.math.top_k(replay.log_w + gumbel,
+            k=self.config.batch_size * self.config.updates_per_pass).indices
         return tf.gather(indices, order)
 
     def _replay_add(self, replay, x, log_w, log_q):
-        indices = tf.reshape((tf.range(self.config.batch_size) + replay.index) % self.config.replay_capacity, [-1, 1])
+        flat_indices = (tf.range(self.config.batch_size) + replay.index) % self.config.replay_capacity
+        indices = tf.reshape(flat_indices, [-1, 1])
+        valid = tf.reduce_all(tf.math.is_finite(x), -1) & tf.math.is_finite(log_w) & tf.math.is_finite(log_q)
+        x = tf.where(valid[:, None], x, tf.gather(replay.x, flat_indices))
+        log_w = tf.where(valid, log_w, tf.gather(replay.log_w, flat_indices))
+        log_q = tf.where(valid, log_q, tf.gather(replay.log_q_old, flat_indices))
         return Replay(tf.tensor_scatter_nd_update(replay.x, indices, x),
             tf.tensor_scatter_nd_update(replay.log_w, indices, log_w),
             tf.tensor_scatter_nd_update(replay.log_q_old, indices, log_q),
@@ -350,15 +443,19 @@ class FABTrainer:
 
     def _replay_adjust(self, replay, indices, log_q, adjustment):
         indices2 = tf.reshape(indices, [-1, 1])
+        valid = tf.math.is_finite(log_q) & tf.math.is_finite(adjustment)
+        new_weight = tf.where(valid, tf.gather(replay.log_w, indices)+adjustment,
+            tf.fill(tf.shape(adjustment), tf.constant(-math.inf, self.dtype)))
+        log_q = tf.where(valid, log_q, tf.zeros_like(log_q))
         return Replay(replay.x, tf.tensor_scatter_nd_update(replay.log_w, indices2,
-            tf.gather(replay.log_w, indices) + adjustment),
+            new_weight),
             tf.tensor_scatter_nd_update(replay.log_q_old, indices2, log_q), replay.index, replay.size)
 
     def step(self, *, train=True):
         """One fresh AIS pass and its declared updates; host boundary validates."""
         result = self.ais(self.draw(self._key(0)), self._key(1), self.steps)
         if not bool(result["valid"].numpy()):
-            raise ValueError("invalid FAB AIS pass; initial q draws must not be silently conditioned")
+            raise ValueError("invalid FAB AIS pass; initial q draws have no valid replacements or a validity check failed")
         self.steps = result["steps"]
         updates = []
         if self.config.replay_capacity:
@@ -440,7 +537,7 @@ class FABTrainer:
                 raise ValueError("invalid FAB replay counters")
             if not bool(tf.reduce_all(tf.math.is_finite(replay.x))) or not bool(tf.reduce_all(tf.math.is_finite(replay.log_q_old))):
                 raise ValueError("invalid FAB replay values")
-            if int(tf.reduce_sum(tf.cast(tf.math.is_finite(replay.log_w), tf.int32))) != r["size"]:
+            if int(tf.reduce_sum(tf.cast(tf.math.is_finite(replay.log_w), tf.int32))) > r["size"]:
                 raise ValueError("invalid FAB replay weight count")
         self.transport.restore_parameters(checkpoint["parameters"])
         for var, value in pending:

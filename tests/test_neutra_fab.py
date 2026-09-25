@@ -42,7 +42,7 @@ def test_bridge_and_replay_algebra():
     tf.debugging.assert_near(replay_log_correction(q, q2) + replay_log_correction(q2, q3), q-q3)
 
 
-def test_paper_loss_has_exact_detached_score_gradient_and_scale():
+def test_author_loss_has_exact_detached_score_gradient_and_scale():
     mu = tf.Variable(.3, dtype=tf.float64)
     x = tf.constant([-1., 0., 1., 2.], tf.float64)
     with tf.GradientTape(persistent=True) as tape:
@@ -50,7 +50,7 @@ def test_paper_loss_has_exact_detached_score_gradient_and_scale():
         dependent_weights = mu*x
         loss = fab_weighted_loss(log_q, dependent_weights)
         corr = replay_log_correction(tf.zeros_like(log_q), log_q)
-    expected = -tf.reduce_sum(tf.nn.softmax(dependent_weights) * (x-mu))
+    expected = -tf.reduce_mean(tf.nn.softmax(dependent_weights) * (x-mu))
     tf.debugging.assert_near(tape.gradient(loss, mu), expected, atol=1.e-12)
     assert tape.gradient(corr, mu) is None
 

@@ -12,8 +12,9 @@ finds every important region, or that a trained map is ready for posterior HMC.
 Author FAB repository: `lollcat/fab-jax`, revision
 `c9f991366ca94b2678a7ed620bc9e12655cfef1d`, preserved under
 `.localresources/fab-jax-c9f9913`. Its MIT notice is retained in the derived
-TensorFlow module. The author repository was read; its dependencies were not
-installed and its JAX implementation was not executed.
+TensorFlow module. The author repository was read and executed in an isolated
+Python 3.11 CPU environment; direct parity evidence is recorded in
+`bayesfilter-fab-equivalence-results-2026-09-26.md`.
 
 | Mechanism | Source anchor | Disposition |
 |---|---|---|
@@ -21,7 +22,7 @@ installed and its JAX implementation was not executed.
 | AIS ordering | `fabjax/sampling/smc.py:78` and `:122` | Same initial increment, interior mutation, next increment, and omission of a terminal mutation |
 | HMC | `fabjax/sampling/mcmc/hmc.py:20`, `blackjax_hmc_rewrite.py` | Identity-mass leapfrog, MH correction, adaptation after each mutation; stricter path validity checks |
 | Gaussian Metropolis | `fabjax/sampling/mcmc/metropolis.py:17` | Same symmetric proposal and MH ratio; scale held fixed within each temperature and adapted once afterward |
-| Detached fresh loss | `fabjax/train/fab_without_buffer.py:33`; paper Eq. 7 | Deliberate paper-based scaling: weighted sum; author JAX adds a factor 1/batch by taking a mean |
+| Detached fresh loss | `fabjax/train/fab_without_buffer.py:33`; paper Eq. 7 | Mean after normalized weights, now matching the pinned JAX implementation; the overall batch scaling is not an equivalence difference |
 | Replay correction | `fabjax/train/fab_with_buffer.py:20`; paper §3.2 and Algorithm 1 | Detached old/current density ratio; capped loss correction and uncapped priority update |
 | Replay initialization | `fabjax/train/fab_with_buffer.py:122` | Corrected to `floor(minimum/batch)+1` passes. Configured 40-batch minimum means 41 fill passes |
 | Replay sampling | `fabjax/buffer/prioritised_buffer.py:10` and `:82` | Gumbel top-k without replacement and shuffle; distinct indices across the update minibatches |
@@ -30,14 +31,25 @@ installed and its JAX implementation was not executed.
 | Frozen consumer binding | `run_q20_configured_hmc_2026_09_24.py:105` | Export binds to the beta-1 adapter signature used by the existing consumer; underlying target signature recorded separately |
 
 The parameterized components are ported, not a bitwise JAX execution. TensorFlow
-stateless random streams differ from JAX streams. TensorFlow/Keras Adam retains
-the local optimizer convention, including its epsilon placement; it is not an
-Optax optimizer reproduction. The target callback remains the existing native
+stateless random streams differ from JAX streams. `FABAdam` now reproduces the
+author's Optax Adam equations, including post-bias-correction epsilon placement;
+the direct FP64 optimizer-state comparison is recorded in the equivalence result.
+The target callback remains the existing native
 batched FP64 value/score/status computation. The FP32/TF32 map is evaluated in
 FP64 for the final represented-map diagnostics. The Metropolis port does not
 need the flow's spatial derivative but retains the target callback's supplied
-score/status check. Initial invalid draws veto an attempt rather than being
-replaced, a deliberate stricter departure from the author code.
+score/status check. Initial invalid draws use the author's valid-row replacement
+operation; an all-invalid initial batch still fails closed because it has no valid
+replacement law. The local target/status and finite-score checks remain stricter
+than the author's default point check.
+
+The direct JAX comparison is documented in
+`docs/plans/bayesfilter-fab-equivalence-results-2026-09-26.md`; it executes the
+pinned author functions rather than a rewritten reference. FP64 and FP32 without
+TF32 passed the finite common-draw component and complete-iteration checks.
+TF32 remains outside the declared parity screen because seven entries exceeded
+the predeclared FP32 bound. This is a numerical precision qualification, not a
+source-algorithm mismatch.
 
 The initial implementation began replay one batch too early. The first three
 exploratory workers were interrupted before their first optimizer update,
