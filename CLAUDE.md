@@ -2,6 +2,20 @@
 
 Claude Code reviewers and workers must follow `AGENTS.md`.
 
+## Canonical NeuTra Architecture Rule
+
+Owner directive, 2026-09-25: superseded local NeuTra implementations, saved
+configurations and results are **HISTORICAL — UNFAITHFUL TO THE AUTHOR'S CODE**.
+The current canonical architecture is `bayesfilter_neutra_iaf_author_v1`, the
+configured repaired IAF defined in `docs/reference/neutra-implementation.md`.
+Review the actual masks, initialization, ELU networks, reversal and free bias
+outside the conditional scale cap; shared-core use alone is insufficient.
+Legacy readers and facades retain historical semantics. NAF is a separately
+identified alternative. Before approving a departure, require the substantive
+source-grounded explanation and bounded validation specified in
+`docs/plans/bayesfilter-neutra-canonical-architecture-policy-2026-09-25.md`.
+Do not infer posterior correctness or causation from this architectural policy.
+
 ## Backend Rule
 
 The repository implementation backend is TensorFlow / TensorFlow Probability.
@@ -117,6 +131,43 @@ fallback, or any row-mapped scalar target is a hard veto for NeuTra training,
 including smoke and CPU-only training. Existing violations are migration debt,
 not precedent for approval.
 
+## Configuration-Status-First Reporting Rule
+
+Adopted 2026-08-25 after the Q3 board presented non-production,
+untuned score cells beside exact references without a banner, inviting
+days of debugging the wrong object.
+
+Any artifact, report, or user-facing summary that shows benchmark or
+comparison numbers must state, BEFORE any number is shown or quoted:
+
+1. which program each cell ran — `production` or a named variant, with
+   the configuration diff from production;
+2. per-scope tuning status — the tuning artifact path, or UNTUNED. An
+   UNTUNED or non-production cell carries no per-model claim and must
+   not be presented as the production algorithm's performance;
+3. what must NOT be debugged or concluded from the table.
+
+Enforcement is artifact-layer, not narrative: leaderboard cells carry
+`program` and `tuning` fields, report builders hard-refuse unlabeled
+cells (G-5-style quarantine), and the estimand gate
+(`test_production_score_lane_value_is_likelihood_estimand`) pins the
+production score-lane program to the exact-reference anchor. Chat
+summaries of results must lead with the same configuration-status
+information — a plan-file caveat does not discharge this duty.
+
+Amendment 2026-08-26 (owner finding #2, same failure class): a REQUIRED
+mechanism of the production program (the dual-cap trust region — the
+designed covariance-explosion control) was silently omitted from
+claim-bearing cells because a code default (`dual_cap_enabled=False`)
+quietly defined "production" downward, and the gap register then
+misclassified activation as a pending decision. Rule: the production
+program is DEFINED IN CODE (`LEDH_PRODUCTION_PROGRAM_V1` in
+`ledh_alg1_contract.py`), "production" labels are validated against it
+(wiring gate), and omitting a required mechanism must surface as a
+labeled deviation in the configuration-status table — never as a
+default. Warm-start parameter values inside the registry are declared
+as such in `tuning`; the mechanism itself is not optional.
+
 <!-- BEGIN GLOBAL SCIENTIFIC CODING AGENT POLICY -->
 
 # Global Scientific Coding Agent Policy
@@ -125,6 +176,56 @@ This policy is intended for all projects where an agent writes code, runs
 experiments, interprets numerical results, or helps with scientific documents.
 It is project-independent. Project-local `AGENTS.md` or `CLAUDE.md` files may
 add stricter rules for a specific repository.
+
+## Context, Tool Output, And Recovery Discipline
+
+- Keep the active question, current stage, checked findings, evidence paths,
+  remaining execution budget, and exact next action in one concise checkpoint.
+  Replace completed-task instructions with the next task; keep detailed history
+  in linked result files instead of expanding the checkpoint indefinitely.
+- Read only the source ranges and structured-result fields needed for the next
+  decision. Normally return at most about 2,000 tokens per tool response and
+  4,000 per combined batch. Per-command budgets add up: bound the outer tool
+  response too. These are context budgets, not limits on scientific rigor.
+- Search for file names or counts first, then inspect selected matching lines.
+  When output is truncated, narrow the query or read another exact range;
+  do not automatically increase the output allowance or repeat a broad dump.
+- Preserve complete command logs on disk and return exit status, key findings,
+  and artifact paths. Do not print entire nested tool results or recursively
+  reproduce old outputs. Parse only the exact saved session and selected fields
+  when investigating an incident; never dump raw session JSONL or instruction
+  payloads into the active research conversation.
+- Use explicit working directories and cross-checkout paths. Save findings
+  after each substantive result and before a large operation. Checkpoint well
+  before the configured compaction threshold; no universal threshold or output
+  setting proves that a model provider can complete compaction.
+- While compaction is unreliable, use fresh research conversations at completed
+  stage boundaries, initialized from the concise checkpoint and governing
+  instructions. Keep incident investigation separate. Resuming or forking a
+  failed conversation can retain its oversized history. Continue authorized
+  work within a healthy stage; this rule creates no new approval gate and does
+  not authorize launching another agent without the applicable authorization.
+- After repeated pre-turn compaction failures, preserve the failed session and
+  recover from the checkpoint. Do not inflate the declared context window,
+  remove applicable instructions, or disable safeguards to force old history
+  through. Tool-output discipline reduces pressure; provider faults require
+  separate diagnosis. Distinguish character counts, active-context token counts,
+  and cumulative billing counts in incident reports.
+
+## Post-Compaction Verification Protocol
+
+- Treat a compaction summary as a memory aid. The user's current directive and
+  earlier authorization remain authoritative; a new steering message normally
+  refines the active task rather than replacing it.
+- Before modifying files or resuming an experiment, verify the checkout, branch,
+  relevant working-tree changes, and concise active checkpoint. Read exact plan
+  sections only as needed; do not reload every master plan, incident report, or
+  unrelated dirty file to reconstruct context.
+- Confirm that the next action answers the active question and respects the
+  existing scope, evidence contract, and remaining budget. Preserve unrelated
+  edits. Resolve routine ambiguity from current user messages and saved evidence;
+  ask only if a material unresolved choice affects correctness, permissions,
+  cost, privacy, irreversible state, publication, or project direction.
 
 ## Academic Research Governance And Proportionality
 
@@ -428,6 +529,64 @@ add stricter rules for a specific repository.
 - Treat default changes as a higher evidence bar than optional features. A
   promising result may justify an optional path while still being insufficient
   for a new default.
+
+## Heuristic Dominance And Sanity-Check Gate
+
+- Origin note: this gate exists because a procedurally impeccable RL campaign
+  (all hard gates, drift audits, and predeclared screens passing) still
+  produced learned policies that lost to cash and to a trivial buy-and-hold
+  strategy exactly in the situations the research question cared about, and
+  no audit caught it, because the comparison was never specified. Internal
+  consistency checking cannot detect external inadequacy; unwritten
+  practitioner baselines are invisible to an agent unless a rule forces
+  their construction.
+- Before interpreting or reporting any learned, optimized, or otherwise
+  complex method, apply the Heuristic Dominance Gate:
+  1. Enumerate the salient situations: the states, regimes, or input classes
+     the method is supposed to exploit or handle (for example: deeply
+     inverted and deeply steep yield curves for a curve-timing policy; high
+     and low volatility regimes; boundary and interior states; small and
+     large sample sizes).
+  2. Construct, do not merely cite, the cheap heuristic adversary set: the
+     three to seven simplest strategies a competent practitioner would reach
+     for in each salient situation, each with a one-line rationale. Domain
+     examples: static single-asset holds, buy-and-hold/immunization, equal
+     weight, myopic plug-in optima, and the conditional oracle where
+     computable (portfolios); random walk and historical mean (forecasting);
+     the plain Kalman filter or unadjusted estimator (filtering/estimation).
+  3. Evaluate the complex method against every heuristic conditionally on
+     each salient situation, not only unconditionally. Averages are where
+     complex methods hide; salient tails are where practitioners look and
+     where research questions usually live.
+  4. A complex method losing to any heuristic in any salient situation is
+     the headline of the result note, not a footnote, and is a promotion
+     veto regardless of how the method compares to its complex competitors.
+     A relative comparison between two complex methods is uninterpretable as
+     progress until both clear the heuristic set.
+- The two load-bearing requirements are "construct" (the agent must generate
+  the adversary set from problem structure; naming a category or reusing a
+  convenient default baseline does not satisfy the gate) and "conditionally"
+  (an unconditional average that pools salient and non-salient situations
+  does not satisfy the gate).
+- Sanity checks are vetoes, never tuning targets. Do not train against,
+  select on, or otherwise optimize toward the heuristic set; that converts a
+  falsification instrument into a Goodhart target.
+- The gate is asymmetric by design: passing it proves little, because
+  heuristics are weak adversaries; failing it proves a lot. It filters
+  embarrassments; it does not certify quality. Where an exact or
+  near-exact oracle is computable, distance-to-oracle remains the
+  certifying metric and should be reported alongside the heuristic table.
+- Treat heuristic underperformance as the empirical base rate, not a
+  surprise: Meese-Rogoff (1983, random walk vs structural exchange-rate
+  models), Welch-Goyal (2008, historical mean vs return predictors), and
+  DeMiguel-Garlappi-Uppal (2009, 1/N vs optimized portfolios) are the
+  canonical precedents. Plans should budget for this outcome.
+- Mechanize the gate where possible: evidence-contract templates must carry
+  mandatory "heuristic adversary set (constructed, with rationale)" and
+  "conditional evaluation situations" fields, and campaign drivers or
+  result-assembly code should compute the heuristic table and record an
+  explicit machine-readable heuristic-dominance verdict in the decision
+  object, so the check survives an agent that forgets to think about it.
 
 ## Statistical Evidence Discipline
 

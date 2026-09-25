@@ -18,7 +18,7 @@ from bayesfilter.inference.hmc_candidate_set_execution import (
 )
 from bayesfilter.inference.hmc_candidate_set_adapters import run_typed_hmc_candidate_set
 from bayesfilter.inference.hmc_verification import HMCAcceptancePolicy
-from bayesfilter.inference.hmc_preparation import HMCPreparationProgress
+from bayesfilter.inference.hmc_preparation import HMCPreparationProgress, expanded_preparation_bound
 
 
 def _preflight_output(output_dir):
@@ -128,7 +128,7 @@ def _domain(search, factor, repairs, upper=None):
     low = min(proposals) / factor ** (repairs + 1)
     high = max(proposals) * factor ** (repairs + 1) if upper is None else upper
     if high < max(proposals):
-        raise ValueError("epsilon proposal exceeds the declared final-metric safety bound")
+        raise ValueError("epsilon proposal exceeds the declared final-metric exploration bound")
     return low, high
 
 
@@ -138,10 +138,11 @@ def run_shared_ordinary_tuning(*, adapter: Any, initial_position: Any, config: A
         max_work_items=None):
     import tensorflow as tf
     from bayesfilter.inference.hmc import PrecomputedMassArtifact, stable_adapter_signature
-    from bayesfilter.inference.hmc_kernel_tuning import (
-        HMCKernelTuningConfig, prepare_operational_windowed_mass_handoff,
-        initialize_hmc_kernel_geometry, _public_geometry_config, _fixed_mass_step_upper_bound,
+    from bayesfilter.inference.hmc_configuration import (
+        HMCKernelTuningConfig, _public_geometry_config, _fixed_mass_step_upper_bound,
     )
+    from bayesfilter.inference.hmc_preparation import prepare_operational_windowed_mass_handoff
+    from bayesfilter.inference.hmc_geometry import initialize_hmc_kernel_geometry
     from bayesfilter.hmc_ordinary_selection_policy import ORDINARY_BROAD_PRIMARY_L_GRID
 
     _preflight_output(output_dir)
@@ -179,6 +180,8 @@ def run_shared_ordinary_tuning(*, adapter: Any, initial_position: Any, config: A
                 progress_callback=progress.phase)
             epsilon = preparation["windowed_stage"].operational_warmup_result.final_kernel_state.epsilon
             upper = _fixed_mass_step_upper_bound(preparation["windowed_stage"])
+            upper = expanded_preparation_bound(upper, factor=cfg.step_repair_factor,
+                steps=cfg.candidate_search_bound_expansion_steps)
             scope = preparation["target_scope"]
         else:
             progress.phase("identity_geometry_started")
@@ -212,7 +215,8 @@ def run_shared_ordinary_tuning(*, adapter: Any, initial_position: Any, config: A
             epsilon_domain=_domain(search, cfg.step_repair_factor, cfg.max_attempts, upper),
             repair_factor=cfg.step_repair_factor, max_repairs_per_family=cfg.max_attempts)
         if preparation is not None:
-            binding = bind_hmc_candidate_set_execution_from_preparation(preparation=preparation, **common)
+            binding = bind_hmc_candidate_set_execution_from_preparation(preparation=preparation,
+                preparation_bound_expansion_steps=cfg.candidate_search_bound_expansion_steps, **common)
         else:
             binding = bind_hmc_candidate_set_execution(initial_position=starts, mass_artifact=mass,
                                                       target_scope=scope, **common)
@@ -245,7 +249,9 @@ def run_shared_fixed_transport_tuning(*, base_adapter, fixed_transport, initial_
         "selection_policy", "selection_replications", "selection_num_results", "selection_num_burnin_steps",
         "selection_seed_base", "budget_schedule", "tune_num_results",
         "screen_seed_base", "verification_seed_base", "fixed_grid_base_step_size_candidates",
-        "fixed_grid_num_leapfrog_steps", "fixed_grid_fallback_acceptance_max", "output_filename"))
+        "fixed_grid_num_leapfrog_steps", "fixed_grid_fallback_acceptance_max", "output_filename",
+        "report_modern_rank_normalized_verification", "verification_min_retained_results_per_chain",
+        "verification_rhat_max", "verification_coordinate_system"))
     if cfg.selection_acceptance_band != cfg.acceptance_band:
         raise ValueError("retired selection_acceptance_band must migrate to execution_config.acceptance_policy")
     lineage, paths = _provenance(base_adapter, target_lineage, source_paths)

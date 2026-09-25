@@ -1,0 +1,159 @@
+{
+  "bandwidth_policy": "common_full_rank_gaussian_covariance_per_time_v1",
+  "covariance_mark_policy": "fixed_selected_component_mark_v1",
+  "derivative_semantics": "fixed_anchor_total_directional_derivative_v1",
+  "diagnostics": {
+    "anchor_replay_score_error": 0.0,
+    "anchor_replay_score_tolerance": 4.0552128859737896e-14,
+    "anchor_replay_value_error": 0.0,
+    "anchor_replay_value_tolerance": 1.8605162930792334e-13,
+    "anchor_valid": true,
+    "anchor_value": -6.546109753303416,
+    "finite_difference_score": -1.4268011910018872,
+    "higher_moment_valid": true,
+    "incoming_log_weight_recurrence_error": 0.0,
+    "incoming_log_weight_tangent_recurrence_error": 0.0,
+    "maximum_anchor_importance_weight_sum_error": 2.220446049250313e-16,
+    "maximum_anchor_log_ratio_error": 0.0,
+    "maximum_coordinatewise_post_cap_absolute": 0.9496732967077247,
+    "maximum_coordinatewise_pre_cap_absolute": 1.9847305475691501,
+    "maximum_nonzero_importance_weight_sum_tangent": 0.9712853680347864,
+    "maximum_nonzero_incoming_weight_tangent": 1.1363628385599611,
+    "maximum_pairwise_post_cap_particle_rms": 1.3523607398928978,
+    "maximum_pairwise_pre_cap_particle_rms": 1.8356107528653207,
+    "maximum_responsibility_row_sum_error": 2.220446049250313e-16,
+    "maximum_weight_sum_error": 2.220446049250313e-16,
+    "maximum_weight_tangent_sum_error": 2.0816681711721685e-16,
+    "mean_coordinatewise_cap_active_fraction": 0.8125,
+    "minimum_bandwidth_eigenvalue": 0.06437950064818669,
+    "minimum_coordinatewise_cap_derivative": 0.0013147829141523847,
+    "minimum_pairwise_particle_cap_scale": 0.7367361178190489,
+    "off_diagonal_pairwise_target_mask_count": 4,
+    "pair_count": 128,
+    "pairwise_configured_every_step": true,
+    "replay_score": -1.4268011907952807,
+    "replay_valid": true,
+    "replay_value": -6.546109753303416,
+    "sample_replay_error": 0.0,
+    "score_absolute_error": 2.0660650967840866e-10,
+    "score_relative_error": 1.4480399300292944e-10
+  },
+  "environment": {
+    "conda_default_env": "tftwogpu",
+    "cuda_visible_devices": "1",
+    "gpu_allocator_bytes": {
+      "current": 99584,
+      "peak": 226816
+    },
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "logical_gpus": [
+      "/device:GPU:0"
+    ],
+    "python": "3.11.15",
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "tf_force_gpu_allow_growth": "true",
+    "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+  },
+  "incoming_weight_policy": "raw_iwsg_ratio_over_particle_count_v1",
+  "manifest": {
+    "command": "docs/benchmarks/run_ledh_younis_kdm_phase4b_gpu_smoke.py --output-dir docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/attempt02_float64_selected --dtype float64 --tf32 false --jit-compile true --covariance-mark-policy fixed_selected_component_mark_v1",
+    "git_commit": "284d65fbc3d75b379ea96b3f090e902ca7a048ed",
+    "output": "docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/attempt02_float64_selected/result.json",
+    "plan": "docs/plans/bayesfilter-ledh-younis-kdm-phase4b-resampling-reference-plan-2026-09-08.md",
+    "random_seeds": [
+      [
+        20260908,
+        11
+      ],
+      [
+        20260908,
+        13
+      ],
+      [
+        20260908,
+        17
+      ],
+      [
+        20260908,
+        19
+      ],
+      [
+        20260908,
+        23
+      ]
+    ],
+    "source_sha256": {
+      "bayesfilter/highdim/higher_moment_contract_e.py": "54378333bdc802388e7d688d6686eea5ad1089c42b98d8aaee20403ad04672d3",
+      "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "f9c88fc605789f425312d29a8882956fd90ecb6c90707e387e8f58f1cb762d74",
+      "bayesfilter/highdim/ledh_canonical_score_tf.py": "a87928049fe5f47bfa5e899f9b5e5de38bb817eac417d235f31dd94a89d8c26a",
+      "bayesfilter/highdim/ledh_younis_kdm_resampling_tf.py": "cc85b71a27b5aed686cf90b452013054f73eff0314248aaee59146311903e68b",
+      "bayesfilter/highdim/ledh_younis_kdm_tf.py": "2b92d0960510e497e1086693f38af0adf0556cf8d1c3d185dc9a8bd5490dbdcd",
+      "docs/benchmarks/run_ledh_younis_kdm_phase4b_gpu_smoke.py": "64229b29869f1cfbe14927c420de375a84c6318472a6529ee3b4dc4e55c44042",
+      "docs/plans/bayesfilter-ledh-younis-kdm-phase4b-resampling-reference-plan-2026-09-08.md": "918525c2ba6caa71302cc4149d32266ba23a418d4a1436c57b4ab4a27739f5fd"
+    },
+    "wall_time_seconds": 24.86440886300261
+  },
+  "nonclaims": [
+    "This is not the derivative of the unchanged ATOM-FINITE scalar.",
+    "This smoke does not measure model-score bias or variance.",
+    "This smoke does not establish DSGE, HMC, canonical, or production readiness."
+  ],
+  "normalization_tolerance_policy": "max_configured_or_8n_machine_epsilon_v1",
+  "operation_semantics": "contract_e_dual_cap_then_fixed_anchor_raw_ratio_marginal_kdm_resampling_v2",
+  "route_classification": "combined_contract_e_younis_raw_iwsg_with_bayesfilter_extensions_diagnostic_only",
+  "route_id": "ledh_contract_e_then_younis_iwsg_resampling_reference_v2",
+  "schema": "bayesfilter.ledh_younis_kdm_phase4b_gpu_smoke.v4",
+  "scientific_status": "IMPLEMENTATION_SMOKE_ONLY_NO_SCORE_QUALITY_CLAIM",
+  "scope": {
+    "dimension": 2,
+    "horizon": 2,
+    "particle_count": 8
+  },
+  "score_output_semantics": "one_total_directional_derivative_per_call_v1",
+  "settings": {
+    "coordinate_cap": 0.95,
+    "correction_steps": 1,
+    "dtype": "float64",
+    "effective_normalization_tolerance": 1e-08,
+    "finite_difference_step": 1e-05,
+    "flow_substeps": 4,
+    "jit_compile": true,
+    "machine_epsilon": 2.220446049250313e-16,
+    "pairwise_steps": 1,
+    "relative_tolerance": 2e-05,
+    "replay_roundoff_multiplier": 128.0,
+    "reset_balance_steps": 2,
+    "reset_sinkhorn_steps": 4,
+    "tf32_enabled": false
+  },
+  "source_scope": "younis_2023_eq14_15_raw_ratio_and_author_code_b0e2fd5_with_bayesfilter_contract_e_bandwidth_and_mark_extensions_v1",
+  "status": "PASS",
+  "target_label": "RESKDM-IWSG-FINITE",
+  "timings_seconds": {
+    "anchor_compile_plus_first": 11.28665352200187,
+    "replay_compile_plus_first": 11.292564841001877,
+    "replay_warm": 0.05309531100647291
+  }
+}

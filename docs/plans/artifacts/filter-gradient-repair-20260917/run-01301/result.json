@@ -1,0 +1,168 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "fixed_fitting",
+  "size": 1,
+  "jit": "off",
+  "device": "GPU",
+  "source_root": "/tmp/bayesfilter-filter-repair-baseline-3582b4ac",
+  "worker_sha256": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "filter_repair_preparation_worker.py": "234ebd6bdc1cadf06fccb54d9b664ce06df87c1c6b1dbd1f017a62073348439a",
+    "filter_repair_preparation_fixtures.py": "bf2dcbdd3d775d3547a82005abe2a06a9ab36fd9b3c94df036e91600eca80af4"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 20357120,
+      "VmRSS": 20357120
+    },
+    "prepared": {
+      "VmHWM": 1009061888,
+      "VmRSS": 1009061888,
+      "gpu": {
+        "current": 8192,
+        "peak": 8448
+      }
+    }
+  },
+  "status": "failed",
+  "phase": "trace",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4090"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "2",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": "index, name, uuid, driver_version\n0, NVIDIA GeForce RTX 4090, GPU-08d989e5-2702-1b9d-c1ef-7795ff299e02, 595.91.07\n1, NVIDIA GeForce RTX 4090, GPU-225f4834-d8ad-f91a-2378-03ad0524381b, 595.91.07\n2, NVIDIA GeForce RTX 4090, GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba, 595.91.07\n3, NVIDIA GeForce RTX 4090, GPU-b8045e28-4433-ec7a-77a5-db0636748322, 595.91.07",
+  "trust_basis": "trusted_escalated_gpu_diagnostic",
+  "timing_scope": "complete_public_fixed_center_fit_selection_audit_records",
+  "numerical_backend": "legacy_numpy_geometry_reporting_diagnostic_only",
+  "preparation_seconds": 1.01674919197103,
+  "dimensions": {
+    "dimension": 3,
+    "replicates": 2,
+    "training_rows": 9,
+    "selection_rows": 6,
+    "audit_rows": 6,
+    "boundary": "complete_fixed_center_fit_selection_audit",
+    "random_inputs": false
+  },
+  "input_sha256": "bcb00c1706f16225108e0dd802665c52330bb8b233517b1ade0204bc1ffa17b2",
+  "input_shapes": [
+    [
+      3
+    ],
+    [
+      2,
+      9,
+      3
+    ],
+    [
+      2,
+      9,
+      3
+    ],
+    [
+      2,
+      6,
+      3
+    ],
+    [
+      2,
+      6,
+      3
+    ],
+    [
+      6,
+      3
+    ],
+    [
+      6,
+      3
+    ],
+    [
+      4
+    ],
+    [
+      4
+    ],
+    [],
+    [
+      3
+    ],
+    [],
+    [],
+    [],
+    []
+  ],
+  "input_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "bool",
+    "int32",
+    "float64",
+    "float64",
+    "float64",
+    "bool",
+    "float64"
+  ],
+  "error_type": "NotImplementedError",
+  "error": "Traceback (most recent call last):\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/scripts/filter_repair_benchmark_worker.py\", line 700, in main\n    measure(args, result)\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/scripts/filter_repair_preparation_worker.py\", line 24, in measure_preparation\n    measure(args, result)\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/scripts/filter_repair_benchmark_worker.py\", line 615, in measure\n    concrete = None if args.jit == \"eager\" else target.get_concrete_function()\n                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py\", line 1256, in get_concrete_function\n    concrete = self._get_concrete_function_garbage_collected(*args, **kwargs)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py\", line 1226, in _get_concrete_function_garbage_collected\n    self._initialize(args, kwargs, add_initializers_to=initializers)\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py\", line 696, in _initialize\n    self._concrete_variable_creation_fn = tracing_compilation.trace_function(\n                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py\", line 178, in trace_function\n    concrete_function = _maybe_define_function(\n                        ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py\", line 283, in _maybe_define_function\n    concrete_function = _create_concrete_function(\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py\", line 310, in _create_concrete_function\n    traced_func_graph = func_graph_module.func_graph_from_py_func(\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/func_graph.py\", line 1060, in func_graph_from_py_func\n    func_outputs = python_func(*func_args, **func_kwargs)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py\", line 599, in wrapped_fn\n    out = weak_wrapped_fn().__wrapped__(*args, **kwds)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/scripts/filter_repair_preparation_fixtures.py\", line 58, in evaluate\n    result = geometry.fit_fixed_center_curvature(tf.zeros([dimension], dtype), center,\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/bayesfilter-filter-repair-baseline-3582b4ac/bayesfilter/inference/fixed_center_curvature.py\", line 285, in fit_fixed_center_curvature\n    fixed_center = _vector(center, \"center\")\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/bayesfilter-filter-repair-baseline-3582b4ac/bayesfilter/inference/fixed_center_curvature.py\", line 1067, in _vector\n    array = np.asarray(value, dtype=float)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/tensor.py\", line 627, in __array__\n    raise NotImplementedError(\nNotImplementedError: Cannot convert a symbolic tf.Tensor (zeros:0) to a numpy array. This error may indicate that you're trying to pass a Tensor to a NumPy call, which is not supported.\n",
+  "imported_source_sha256": {
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+    "bayesfilter/inference/factor_correlation_geometry.py": "de5a85fae7cb05943ae8d504473c7775115b56c46294738fa506493e45b6a6bc",
+    "bayesfilter/inference/mass_matrix.py": "6a959080a1de9c3894697bda39667777596b73f469a32e5a7676a7032dbd53b3",
+    "bayesfilter/inference/hmc_diagnostics.py": "a33073bf16336b8c47a54d56f85295dd70c1b198eb09967b3a1f581c0ee87dd1",
+    "bayesfilter/runtime/runner.py": "d0e49fb3ca650e2374674c31c05ed6d31c66ada364cd43e24c10f30bb0b76dcf",
+    "bayesfilter/inference/hmc_artifact_identity.py": "947f5498e4cf8007f8e54c1ad8e9cec84186f6830b8b7067acc405f0985dc105",
+    "bayesfilter/inference/hmc_verification.py": "9ff0f90a83775a157421dc435a8813a968a0ab1015ecdb00ed3ad0ed674e4d7c",
+    "bayesfilter/inference/hmc_tuning.py": "c1f2ccde7d86a330b79de55ddf3154f692642184ddc74d4831ff978bd20bd78a",
+    "bayesfilter/inference/fixed_l_finite_bracket.py": "4bb83fac9253c72e548d8a36aa5668c98f980431cfee50d684222f51ddf006a7",
+    "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+    "bayesfilter/inference/batched_value_score.py": "25dd24e5aeb56c0c32a22d21723761e100eff5ec6fbb9018dd613f0717dba13e",
+    "bayesfilter/inference/tuning_contract.py": "bbb110186a9f49a6a4baf3bea21ae52c60cb7ddbe1180a781a5433810a3dce58",
+    "bayesfilter/inference/hmc.py": "be4e04804c3af3d8a619073771e84d7bffb72bbe9a2aaf8cede1b67773145ea4",
+    "bayesfilter/inference/score_curvature_tf.py": "b8d005fb61aece006f44cb81a9b2d45d0e5cacd9190ba672b704317c86c420e6",
+    "bayesfilter/inference/fixed_center_curvature.py": "7f44129bf82eacf539726640336a9e14c0642ee51a604cc754e136d56aa186a0"
+  },
+  "wall_seconds": 4.690128947957419
+}

@@ -21,7 +21,7 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 ROOT = Path(__file__).resolve().parents[2]
 BENCHMARK_DIR = ROOT / "docs/benchmarks"
 sys.path.insert(0, str(BENCHMARK_DIR))
-import diagnose_c2_n4_frozen_target_20260828 as stage1_support
+import diagnose_c2_n4_frozen_target_20260828 as stage1_support  # noqa: E402
 
 PLAN = ROOT / "docs/plans/bayesfilter-n4-root-cause-diagnostic-plan-2026-08-28.md"
 REFERENCE = (

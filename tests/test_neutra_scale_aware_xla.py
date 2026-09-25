@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from bayesfilter.inference.neutra_artifacts import _DenseAutoregressiveIAFComponent
 from bayesfilter.inference.neutra_scale_aware_training import ScaleAwareUpdatePolicy
-from neutra_scale_aware_fixtures import build
+from tests.neutra_scale_aware_fixtures import build
 
 
 def assert_state_close(actual, expected, tolerance=1e-10):

@@ -1,0 +1,165 @@
+{
+  "budget": {
+    "max_attempts": 24,
+    "max_attempts_per_row": 1,
+    "wall_seconds": 2900
+  },
+  "evidence_class": "target_specific_calibration",
+  "partitions": {
+    "calibration": [
+      1201,
+      1203
+    ],
+    "claim": [
+      1221
+    ],
+    "validation": [
+      1211,
+      1213
+    ]
+  },
+  "phase": "0F",
+  "plan": "docs/plans/younis-score-iapf-relative-shape-repair-2026-09-17.md",
+  "required_proposals": [
+    "iapf"
+  ],
+  "rows": [
+    {
+      "comparison": "approximation_error",
+      "comparison_target": "model_score",
+      "coupling_group": "baseline",
+      "dataset": 1221,
+      "estimator": "nonlinear_analytical",
+      "iapf": {
+        "fit_dtype": "float64",
+        "fit_objective": "relative_shape",
+        "fit_theta": [
+          0.62,
+          -0.8,
+          -0.6,
+          0.9,
+          0.25,
+          -0.3
+        ],
+        "fit_tolerance": 1e-07,
+        "floor_ratio": 0.01,
+        "k": 1,
+        "max_backtracks": 30,
+        "max_fit_steps": 2000,
+        "max_iterations": 4,
+        "max_particles": 128,
+        "mean_bound": 4.0,
+        "sd_lower": 0.2,
+        "sd_upper": 4.0,
+        "tau": 100.0
+      },
+      "id": "selected-1221-0",
+      "model": "nonlinear_scalar",
+      "proposal": "iapf",
+      "replicate": 0,
+      "role": "claim",
+      "tuning_selection": "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-relative-shape-repair-20260917-01/launch02/curved-selected-selection.json"
+    },
+    {
+      "comparison": "approximation_error",
+      "comparison_target": "model_score",
+      "coupling_group": "baseline",
+      "dataset": 1221,
+      "estimator": "nonlinear_analytical",
+      "iapf": {
+        "fit_dtype": "float64",
+        "fit_objective": "relative_shape",
+        "fit_theta": [
+          0.62,
+          -0.8,
+          -0.6,
+          0.9,
+          0.25,
+          -0.3
+        ],
+        "fit_tolerance": 1e-07,
+        "floor_ratio": 0.01,
+        "k": 1,
+        "max_backtracks": 30,
+        "max_fit_steps": 2000,
+        "max_iterations": 4,
+        "max_particles": 128,
+        "mean_bound": 4.0,
+        "sd_lower": 0.2,
+        "sd_upper": 4.0,
+        "tau": 100.0
+      },
+      "id": "selected-1221-1",
+      "model": "nonlinear_scalar",
+      "proposal": "iapf",
+      "replicate": 1,
+      "role": "claim",
+      "tuning_selection": "/home/chakwong/BayesFilter/docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/iapf-relative-shape-repair-20260917-01/launch02/curved-selected-selection.json"
+    }
+  ],
+  "schema": "younis_score_study_v1",
+  "seed": 1000,
+  "settings": {
+    "data_theta": [
+      0.62,
+      -0.8,
+      -0.6,
+      0.9,
+      0.25,
+      -0.3
+    ],
+    "device": "GPU",
+    "dimension": 1,
+    "dtype": "float32",
+    "horizon": 2,
+    "jit_compile": true,
+    "observation_curve": 0.12,
+    "observation_dimension": 1,
+    "particles": 16,
+    "prepared_data_regime": "nonlinear_iapf_shape_repair_20260917_curved",
+    "reference": {
+      "points": 401,
+      "radius": 9.0,
+      "relative_tolerance": 1e-07,
+      "tail_tolerance": 1e-09
+    },
+    "tf32": true,
+    "theta": [
+      0.62,
+      -0.8,
+      -0.6,
+      0.9,
+      0.25,
+      -0.3
+    ],
+    "transition_curve": 0.35
+  },
+  "tuning_candidate_family": [
+    {
+      "iapf": {
+        "fit_dtype": "float64",
+        "fit_objective": "relative_shape",
+        "fit_theta": [
+          0.62,
+          -0.8,
+          -0.6,
+          0.9,
+          0.25,
+          -0.3
+        ],
+        "fit_tolerance": 1e-07,
+        "floor_ratio": 0.01,
+        "k": 1,
+        "max_backtracks": 30,
+        "max_fit_steps": 2000,
+        "max_iterations": 4,
+        "max_particles": 128,
+        "mean_bound": 4.0,
+        "sd_lower": 0.2,
+        "sd_upper": 4.0,
+        "tau": 100.0
+      }
+    }
+  ],
+  "version": 1
+}

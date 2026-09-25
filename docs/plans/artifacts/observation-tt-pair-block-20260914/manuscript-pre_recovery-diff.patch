@@ -1,0 +1,254 @@
+--- docs/plans/artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_note_before_sampler_recovery_20260914.tex
++++ docs/plans/artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_observation_aware_tt_algorithm_note.tex
+@@ -68,6 +68,14 @@
+ derives the resulting proposal density, Jacobian, particle weights, and
+ same-scalar analytical score, and separates the source-faithful Algorithm~3
+ baseline from the UKF-guided extension that still requires executable tests.
++The paired-current/previous construction in Section~\ref{sec:paired-repair}
++now has a completed diagnostic comparison. An incorrect conditional Gram
++contraction was localized and repaired without refitting the saved proposals.
++The repaired pair proposal passes the declared filtering-mean and log-evidence
++screens in one and four dimensions, but its observed conditional mean errors
++still exceed simple heuristics in several observation regimes. The tested
++configuration therefore remains unpromoted; four particle seeds on one
++observation sequence do not establish a ranking.
+ \end{abstract}
+ 
+ \section{Question, Evidence, and Decision}
+@@ -4169,6 +4177,40 @@
+ conditional is zero almost everywhere and the remaining law is $\rho_d$.
+ \end{proof}
+ 
++The normalizer in this proposition can be computed from the left without
++enumerating the full coefficient tensor. To make both copies of the amplitude
++explicit, start with $E_0=[1]$ and set
++\begin{equation}
++ E_i=\sum_{k=0}^p (D_i^k)^{\mathsf T}E_{i-1}D_i^k,\qquad
++ (E_i)_{bc}=\sum_{a,a',k}(E_{i-1})_{aa'}
++                 (D_i^k)_{ab}(D_i^k)_{a'c},\qquad Z(v)=E_d.
++ \label{eq:pair-forward-gram}
++\end{equation}
++Here $v$ is fixed in every $D_i^k(v_i)$. After integrating $u_1,\ldots,u_i$,
++$E_i$ is the Gram matrix of the remaining bond coefficients: multiplying by
++the next core introduces two Hermite factors, and orthonormality leaves their
++common index $k$. This proves the recursion by induction. Each term is a
++congruence of a positive semidefinite matrix, so the resulting scalar is
++nonnegative. Equivalently, fully expanding the scalar TT gives coefficients
++$a_{k_1\ldots k_d}(v)$ with
++$Z(v)=\sum_{k_1,\ldots,k_d}a_{k_1\ldots k_d}(v)^2$.
++This second expression is more expensive but supplies an independent small
++test of the recursion.
++
++The two left bond indices $a$ and $a'$ are essential. Reusing $a$ in both
++cores instead produces $\sum_{a,a',k}E_{aa'}D_{ab}^kD_{ac}^k$, which is
++generally a different quantity. For example, take
++\begin{equation}
++ E=\begin{pmatrix}1&-2\\-2&4\end{pmatrix}
++   =\begin{pmatrix}1\\-2\end{pmatrix}\begin{pmatrix}1&-2\end{pmatrix},
++ \qquad D=\begin{pmatrix}1\\0\end{pmatrix}.
++ \label{eq:pair-gram-counterexample}
++\end{equation}
++The correct contraction is $D^{\mathsf T}ED=1$; the repeated-index expression
++gives $-1$. A negative computed mass in this example is an algebraic error,
++even in exact arithmetic. This distinction proved decisive in the sampling
++failure reported below.
++
+ In particular, each carried particle $z^{(j)}$ is mapped to
+ $v^{(j)}=T_z^{-1}(z^{(j)})$, contracts a different batch of cores, and receives
+ its own mixture probability. The sampled physical proposal and correction are
+@@ -4285,9 +4327,11 @@
+ \label{prop:pair-weighted-fit}
+ Let $\ell_j=\log H(w_j)^2$ and define the training-only scale
+ \begin{equation}
+- \log c=\operatorname{logsumexp}_j(\ell_j+\log W_j)-\log N,
+- \quad b_j=\exp\{(\ell_j-\log c)/2\},\quad
+- L(C)=\frac1{2N}\sum_jW_j(h_C(w_j)-b_j)^2+\lambda\sum_i\|C_i\|_1.
++ \begin{aligned}
++ \log c&=\operatorname{logsumexp}_j(\ell_j+\log W_j)-\log N,\\
++ b_j&=\exp\{(\ell_j-\log c)/2\},\\
++ L(C)&=\frac1{2N}\sum_jW_j(h_C(w_j)-b_j)^2+\lambda\sum_i\|C_i\|_1.
++ \end{aligned}
+  \label{eq:pair-weighted-objective}
+ \end{equation}
+ For one unfrozen core with design $D$ and coefficient vector $a$, its quadratic
+@@ -4369,8 +4413,178 @@
+ The tests compare pair and scalar evaluations, exact quadrature marginals,
+ particle conditionals against independent quadratic CDF algebra, physical
+ Jacobian corrections, importance-weighted reference moments, and saved-core
+-reloads. MathDevMCP checks are scoped to the stated algebraic obligations;
+-its detailed outcome and the fresh execution results are reported below.
++reloads. A new regression also compares \eqref{eq:pair-forward-gram} with the
++fully expanded coefficient norm for signed rank-three cores and multiple
++conditioning particles. The two focused suites contain thirteen passing
++tests after the contraction repair, including a compiled normalization check.
++
++\subsection{What the completed pair experiment establishes}
++\label{sec:pair-completed-results}
++
++The repaired pair proposal passes the declared reference screens in both
++dimensions, but still fails the comparison with simple proposals. In one
++dimension, the transition bootstrap has smaller observed mean errors for
++ordinary and large observations. In four dimensions, the SGQF Gaussian has a
++slightly smaller error for large observations. Under the rule specified before
++execution, these losses prevent promotion of the tested pair configuration.
++They do not establish statistical inferiority: all comparisons use four
++particle seeds on one observation sequence.
++
++The representation diagnostic first fitted the initial transition under a
++Gaussian incoming law, keeping its calibration, validation and audit rows
++separate. For $d=4$, the common Gaussian audit gave relative amplitude RMS
++errors $0.442461$ for grouped scalar TT, $0.108114$ for interleaved scalar TT,
++and $0.116883$ for the selected weighted pair TT. These values show why a
++grouped scalar fit alone is an inadequate test of the joint representation.
++They do not isolate the effect of pair cores: the scalar and pair fitters use
++different initializations, and pair cores contain more coefficients at the
++same nominal rank.
++
++Validation selected pair rank three, four sweeps and 128 proximal steps.
++The prescribed eight-sweep, 256-step solver repair gave common-audit error
++$0.131604$ and validation error $0.068324$, compared with $0.065773$ for
++the selected fit. Selection used the validation errors, not the common audit.
++The KKT residual was $0.010057$ before this repair and $0.011450$ afterward,
++both above the $0.001$ diagnostic threshold. Thus neither execution time nor
++decreasing block objectives establishes converged fitting here. The available
++solver repair was tried; it did not remove that uncertainty.
++
++The downstream comparison used the recursive retained TT density, $T=20$,
++512 particles, degree three and 1024 rows per split. Setting
++$\tau=Z(0.05/0.95)$ assigns five percent of the joint proposal mass to the
++Gaussian base. A positive base component ensures full support, but the
++particular five-percent value is an inherited hypothesis without calibration
++evidence here; it remains an unresolved choice affecting proposal coverage
++and variance. The same frozen d4 configuration was applied to d1 as a transfer
++diagnostic. The saved campaign stopped while sampling the four-dimensional
++pair proposal. A replay of its
++saved cores, charts and random inputs localized the failure to $t=2$, sampler
++seed 210102. The conditional mass was $-0.008694$, while the CDF bracket was
++valid and the inverse residual was $5.55\times10^{-16}$.
++
++The cause was precisely the repeated-index error in
++\eqref{eq:pair-gram-counterexample}. The implementation used the left bond
++index twice in its forward Gram contraction. Correcting that index restored
++\eqref{eq:pair-forward-gram}; no mass clipping, ridge or CDF tolerance change
++was introduced. The independent coefficient-norm test failed before the
++correction and passed afterward. The fitting and retained-density routines
++do not call the defective normalizer, so their saved cores remained usable.
++
++The terminal comparison reloaded those fits and recomputed every particle and
++reference arm. All saved proposal files retained identical hashes, and the
++four-dimensional pair runs exactly matched a separate replay through the
++consumer. The one-dimensional pair runs also matched the original launch:
++with one core there is no nontrivial internal bond on which the erroneous
++index can act. All corrected conditional masses were positive, with minima
++$0.030365$ in d1 and $0.007332$ in d4. Maximum inverse-CDF residuals were
++$5.55\times10^{-16}$ and $9.99\times10^{-16}$, respectively.
++The repair reused already exposed downstream observations; it is a corrected
++comparison on the frozen sequence, not a new holdout experiment.
++
++The scalar reference is independent physical-space quadrature. The
++four-dimensional reference averages four transition filters with 32,768
++particles each; its log-evidence standard error across seeds is $0.016875$.
++Table~\ref{tab:pair-reference} gives the pair estimates. The predeclared
++log-evidence screen allows an absolute discrepancy of $0.15$ plus
++$3.182446$ times the combined seed standard error. Filtering means use the
++analogous coordinate-by-time rule, with additive tolerance $0.15\sigma$.
++All six proposals passed both screens in both dimensions. These broad
++diagnostic tolerances are neither simultaneous confidence guarantees nor
++evidence of efficiency.
++
++\begin{table}[htbp]
++\centering
++\begin{tabular}{crrrr}
++\toprule
++$d$ & Pair log evidence & Seed SE & Reference & Difference\\
++\midrule
++1 & $-20.975034$ & $0.050027$ & $-20.972621$ & $-0.002413$\\
++4 & $-63.677796$ & $0.071604$ & $-63.641241$ & $-0.036555$\\
++\bottomrule
++\end{tabular}
++\caption{The pair estimates pass the prescribed log-evidence screen.
++Each estimate averages four particle seeds on the same observation sequence;
++the standard error describes particle variation, not sequence generalization.}
++\label{tab:pair-reference}
++\end{table}
++
++The more discriminating comparison conditions on observation magnitude.
++Classify an observation by $\max_j|y_j|/\beta$: at most $0.5$ is near zero,
++at least $2$ is large, and the remainder is ordinary. The cheap alternatives
++are the transition bootstrap, which uses the exact conditional dynamics;
++the stationary prior, which tests the value of conditioning; and the SGQF
++Gaussian, which tests the added value of TT fitting beyond the moment guide.
++Table~\ref{tab:pair-conditional-errors} compares the four-seed average
++filtering mean with the reference, pooling only the indicated observations
++and state coordinates.
++
++\begin{table}[htbp]
++\centering
++\begin{tabular}{clrrr}
++\toprule
++$d$ & Proposal & Near zero & Ordinary & Large\\
++\midrule
++1 & Transition bootstrap & 0.030203 & 0.018188 & 0.014385\\
++  & Stationary prior     & 0.036207 & 0.025927 & 0.029007\\
++  & SGQF Gaussian        & 0.079116 & 0.050992 & 0.018675\\
++  & Scalar predictive TT & 0.013610 & 0.024908 & 0.016814\\
++  & Scalar guided TT     & 0.015054 & 0.026387 & 0.021022\\
++  & Pair TT              & 0.016192 & 0.024908 & 0.019715\\
++\midrule
++4 & Transition bootstrap & 0.090113 & 0.035104 & 0.054022\\
++  & Stationary prior     & 0.073189 & 0.070619 & 0.104458\\
++  & SGQF Gaussian        & 0.045774 & 0.044386 & 0.047386\\
++  & Scalar predictive TT & 0.065791 & 0.052730 & 0.058269\\
++  & Scalar guided TT     & 0.065547 & 0.057570 & 0.059305\\
++  & Pair TT              & 0.027447 & 0.034611 & 0.048544\\
++\bottomrule
++\end{tabular}
++\caption{Conditional mean RMSE remains descriptive. The pair proposal does
++not clear all three simple alternatives: its d1 ordinary/large errors exceed
++the transition errors, and its large-observation errors exceed the SGQF
++Gaussian in both dimensions. The three regimes contain 7/10/3 observations
++in d1 and 1/9/10 in d4; the d4 near-zero column contains only one timepoint.}
++\label{tab:pair-conditional-errors}
++\end{table}
++
++In d4, the pair errors are descriptively smaller than both scalar TT errors
++in every observed regime. Yet the large-observation comparison with SGQF is
++$0.048544$ against $0.047386$. The prescribed heuristic comparison therefore
++withholds promotion even though that difference is small and its statistical
++significance is unknown. The first-transition amplitude error alone could
++not have settled this question: downstream performance also depends on
++recursive fitting, proposal variability and importance weighting.
++
++\begin{samepage}
++The strongest alternative explanation for the apparent pair advantage over
++scalar TT is a combination of extra coefficients, initialization and particle
++variation. A matched-capacity comparison with converged fitting and multiple
++independent observation sequences would distinguish these explanations.
++The present failure rejects the frozen configuration for promotion; it leaves
++the representation mathematically viable. Further selection must use fresh
++calibration and reserve new observation sequences for final evaluation.
++\par
++\end{samepage}
++
++MathDevMCP's eight proposition audits were inconclusive because their bounded
++algebraic backend did not encode the integral and tensor statements. The
++document-wide derivation audit also failed to execute. Nine scoped identities,
++one weight identity and the additional quadratic-form identity were checked;
++the old contraction has the explicit checked counterexample above. Those
++results support the named algebraic steps, not a proof certificate for this
++whole note. The finite-difference score check in the filtering driver concerns
++the scalar guided proposal with frozen proposals and realized resampling;
++it does not check pair gradients or derivatives through fitting. HMC
++readiness and a statistically supported ordering remain unestablished.
++
++The reproducible comparison and decision record are in
++{\def\UrlBreaks{\do\/\do\-\do\_}%
++\path{docs/plans/observation-tt-pair-block-remedy-20260914-result.md}}.
++The repair used float64 TensorFlow on the RTX5080 with XLA and verified
++memory growth. The terminal run took $48.465$ seconds after reloading fits,
++so that time is not an end-to-end fitting cost. Three full launch slots and
++the single allowed solver repair have now been used. The authorized numerical
++comparison is complete; further experimentation requires a new bounded plan.
+ 
+ \appendix
+ \section{Artifact Provenance and Corrections}

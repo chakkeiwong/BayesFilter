@@ -1,0 +1,128 @@
+{
+  "comparison_target": "model_score",
+  "derivative_id": "analytical_recursion",
+  "derivative_target": "finite_program_score",
+  "diagnostics": {
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 8,
+    "controls": {
+      "coordinate_cap": 0.4,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_steps": 1,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.5,
+      "flow_substeps": 2,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 3,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 3
+    },
+    "data_model": "affine_gaussian_all_six_parameters",
+    "data_seed": [
+      602453854,
+      667548640
+    ],
+    "data_version": "4cf47b96b03e7d9a6fd7d4a86695d92757ed2f1d18312f329fc5ee7f890a1dc9",
+    "derivative_semantics": "analytical_total_initial_moments_flow_genut_contract_e",
+    "horizon": 3,
+    "initial_seed": [
+      1242229927,
+      1376404979
+    ],
+    "kdm_control_center": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "kdm_control_component_seed": [
+      1504256782,
+      1392223119
+    ],
+    "kdm_control_law": "fixed_prior_pilot_mixture_translation_log_scale_density_score",
+    "kdm_control_pilot_components": 4,
+    "kdm_control_pilot_provenance": "untuned_mechanics_hypothesis",
+    "kdm_control_pilot_seed": [
+      115927157,
+      1523062488
+    ],
+    "kdm_control_shared_innovations": "initial",
+    "kdm_zero_control": [
+      -0.07760720002634822,
+      0.4453389942747407,
+      -0.2908966180668452
+    ],
+    "parameter_dimension": 6,
+    "particle_count": 8,
+    "process_seed": [
+      1836537964,
+      701919427
+    ],
+    "resampling_seed": [
+      1085054562,
+      424004739
+    ],
+    "reset_contract_id": "contract_e_chol_v1",
+    "reset_seed": [
+      1066953203,
+      1082482727
+    ],
+    "score_consumer": "make_canonical_kernel -> canonical_value_and_analytical_score",
+    "score_squared_error": 5.778411020851673,
+    "state_dimension": 2,
+    "tuning_status": "mechanics_or_tuning_candidate",
+    "uses_autodiff": false,
+    "value_squared_error": 0.27802128091045036
+  },
+  "inference_status": "mechanics_only",
+  "initial_terms": true,
+  "numerical_validity": "pass",
+  "oracle_score": [
+    0.7210079451986984,
+    0.048032393350991964,
+    0.057960041923643124,
+    0.20866544582616364,
+    0.7488759885320804,
+    -0.04745248924046476
+  ],
+  "oracle_value": -3.6667597368313096,
+  "proposal_law": "canonical_ledh_pfpf_contract_e",
+  "runtime": {
+    "allocator_current_bytes": null,
+    "allocator_peak_bytes": null,
+    "backend": "tensorflow",
+    "cpu_threads": 4,
+    "device": "CPU",
+    "dtype": "float64",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": true,
+    "kernel_calls": 6,
+    "kernel_wall_seconds": 0.008675736986333504,
+    "memory_policy": {
+      "mode": "cpu_reference_gpu_intentionally_hidden",
+      "physical_devices": []
+    },
+    "reason": "CPU reference; GPU intentionally hidden",
+    "reference_exception": true,
+    "score_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+    "tensorflow_version": "2.20.0-dev0+selfbuilt",
+    "tf32": false,
+    "traces": 1,
+    "value_device": "/job:localhost/replica:0/task:0/device:CPU:0"
+  },
+  "score": [
+    2.5390158724975964,
+    -1.1487689537806323,
+    0.24506371468564647,
+    -0.6569021535527718,
+    0.5522335731942719,
+    0.41949658685717084
+  ],
+  "value": -3.139482503385326,
+  "value_target": "finite_particle_log_likelihood"
+}

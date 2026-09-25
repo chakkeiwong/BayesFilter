@@ -20,6 +20,36 @@ VALIDITIES = frozenset({"valid", "candidate_data_invalid", "shared_execution_inv
 
 
 @dataclass(frozen=True)
+class HMCCandidateExecutionFailure:
+    """A declared target-domain failure, with no fabricated acceptance data."""
+
+    exception_type: str
+    message: str
+    chunk_index: int
+
+    def payload(self) -> dict[str, Any]:
+        if (not isinstance(self.exception_type, str) or not self.exception_type
+                or not isinstance(self.message, str)
+                or type(self.chunk_index) is not int or self.chunk_index < 0):
+            raise ValueError("invalid candidate execution failure")
+        return {"schema": "bayesfilter.hmc_candidate_execution_failure.v1",
+                "classification": "declared_target_domain", "exception_type": self.exception_type,
+                "message": self.message, "chunk_index": self.chunk_index}
+
+    def analysis(self) -> dict[str, Any]:
+        return {**HMCCandidateDecision("failed", "candidate_data_invalid",
+                hard_vetoes=("declared_target_domain_failure",), repair_eligible=False).payload(),
+                "acceptance": None, "execution_failure": self.payload()}
+
+    @classmethod
+    def from_payload(cls, value: Mapping[str, Any]) -> "HMCCandidateExecutionFailure":
+        result = cls(value["exception_type"], value["message"], value["chunk_index"])
+        if result.payload() != dict(value):
+            raise ValueError("invalid target-domain failure record")
+        return result
+
+
+@dataclass(frozen=True)
 class HMCCandidateDecision:
     acceptance_decision: str
     evidence_validity: str = "valid"

@@ -412,11 +412,19 @@ def test_v3_artifact_rejects_unexpected_top_level_payload() -> None:
 def test_v3_artifact_accepts_historical_v2_warmup_without_adaptation_status() -> None:
     payload = json.loads(json.dumps(_artifact()))
     payload["warmup"].pop("metric_adaptation_status")
+    payload["warmup"]["config"].pop("metric_evidence_policy")
     payload["artifact_sha256"] = canonical_sha256(
         {key: value for key, value in payload.items() if key != "artifact_sha256"}
     )
 
     validate_hmc_tuning_engineering_artifact(payload)
+
+
+def test_warmup_reader_rejects_unknown_metric_policy_before_replay() -> None:
+    payload = json.loads(json.dumps(_artifact()))
+    payload["warmup"]["config"]["metric_evidence_policy"] = "unknown"
+    with pytest.raises(ValueError, match="metric_evidence_policy"):
+        validate_hmc_tuning_engineering_artifact(payload)
 
 
 @pytest.mark.parametrize(

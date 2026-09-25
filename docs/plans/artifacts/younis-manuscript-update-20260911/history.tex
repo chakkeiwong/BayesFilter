@@ -1,0 +1,58 @@
+\section{From Section 3.6 to the integrated experiments}
+\label{sec:history}
+
+The earliest question was whether an inexpensive smooth observation
+functional could provide useful score information alongside the GenUT
+filter. The Section 3.6 sidecar was designed as a separate deterministic
+proposal force, with the canonical value retained for endpoint correction.
+That was a legitimate mechanics experiment, but it was not a construction of
+the canonical total score and it never supplied a known-mean control variate.
+
+Its first repair concerned observation timing. Let $w_i^-$ be normalized
+weights before the current observation, $g_i$ its likelihood at particle $i$,
+and $Z=\sum_i w_i^-g_i$. The posterior weights are $w_i^+=w_i^-g_i/Z$.
+The historical capture hook ran before reset but after this observation
+update. Reusing its $w_i^+$ in a second likelihood average therefore gave
+\begin{equation}
+ \widetilde Z=\sum_iw_i^+g_i
+ =\frac{\sum_iw_i^-g_i^2}{Z},\qquad
+ \widetilde Z-Z=\frac{\operatorname{Var}_{w^-}(g)}{Z}.
+ \label{eq:historical-double-observation}
+\end{equation}
+For two equally weighted particles with likelihoods 1 and 3, the intended
+increment is 2, while the reused posterior weights give 2.5. The word
+``pre-reset'' did not make the captured weights pre-observation. The repaired
+sidecar used the actual prior observation weights and differentiated its
+declared observation covariance dependence, while holding the captured cloud,
+weights, and kernel fixed. It remained a conditional derivative.
+
+The September 3 pilot used one-step diagonal LGSSMs: $(d,N,T)=(1,4,1)$ and
+$(3,6,1)$. Four calibration paths and eight streams per scope selected the
+grid boundary $\rho=0.8$; eight disjoint validation paths and eight streams
+per scope supplied the holdout comparison. The recorded relative
+path-level squared-bias changes were 6.6082 with interval
+$[-0.2825,19.4854]$ and 0.2209 with interval $[-0.9342,1.5096]$.
+Both intervals crossed zero, and the recorded stream-MCSE ratios, ranging
+from 0.1756 to 0.4709, failed the threshold 0.10. These tiny CPU/non-XLA
+diagnostics supplied no ranking or bias-reduction evidence. Separate
+reversibility and volume checks passed at about machine precision, but
+proposal mechanics did not establish score accuracy, HMC mixing, or posterior
+correctness. The sidecar remained isolated and unpromoted.
+
+The next stages sought to remove the conditional-derivative restriction.
+Phases 1--3 implemented complete mixture differentials, a fixed-chart support
+reference, and an auxiliary functional constructed from the actual canonical
+trace. Phase 4A then fed kernelized observation weights and their tangents
+through the complete reset. Phase 4B added the source paper's mixture
+resampling mechanism after Contract--E and carried the resulting weights and
+covariance marks into later time steps. These changes made the full feedback
+testable. They also defined new finite programs; no residual correction made
+them equal to the original atom program.
+
+The chronology therefore does not support a claim that a control variate was
+completed and then simplified. The executed work moved from an auxiliary
+conditional functional to separately named integrated experiments. This was
+useful for determining whether those mechanisms improved model-score error.
+It did not solve the original target-preserving control-variate problem.
+The negative results below are the reason to reconsider the insertion point
+and the score estimator together.

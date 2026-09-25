@@ -1,0 +1,62 @@
+F
+=================================== FAILURES ===================================
+______________ test_actual_tuning_member_and_posterior[identity] _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-317/test_actual_tuning_member_and_0')
+method = 'identity'
+
+    @pytest.mark.parametrize("method", ["identity", "neutra"])
+    def test_actual_tuning_member_and_posterior(tmp_path, method):
+        config, bridge = protocol(), four_dimensional_bridge()
+        export = None
+        if method == "neutra":
+            trained = run_training_cohort(config, bridge, tmp_path / "training",
+                memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
+            cohort = json.loads(Path(trained["checkpoint"]).read_text())["cohort"]
+            export = next(iter(cohort.values()))["exports"]["1.0"]
+>       tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_q20_master_integration.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:145: in tune_scope
+    execution, search = tuning_configs(config, label)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/q20_production_hmc.py:88: in tuning_configs
+    acceptance_policy=HMCAcceptancePolicy(target=h["target_acceptance"],
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = HMCAcceptancePolicy(target=0.7, practical_region=(0.05, 0.9999), repair_region=(0.001, 0.99999), chain_count=4, block_...=0.95, min_normalized_return_displacement=0.0001, max_abs_log_accept_energy_proxy=1000.0, allowed_cost_stop_reasons=())
+
+    def __post_init__(self) -> None:
+        target = float(self.target)
+        practical = tuple(float(item) for item in self.practical_region)
+        repair = tuple(float(item) for item in self.repair_region)
+        if not math.isfinite(target):
+            raise ValueError("target must be finite")
+        if len(practical) != 2 or not 0.0 < practical[0] < practical[1] < 1.0:
+            raise ValueError("practical_region must be ordered inside (0, 1)")
+        if len(repair) != 2 or not 0.0 < repair[0] < repair[1] < 1.0:
+            raise ValueError("repair_region must be ordered inside (0, 1)")
+        if not repair[0] <= practical[0] <= target <= practical[1] <= repair[1]:
+            raise ValueError(
+                "target must lie in practical_region and practical_region in repair_region"
+            )
+        if not (
+            abs(target - 0.5 * sum(practical)) <= 1.0e-12
+            and abs(target - 0.5 * sum(repair)) <= 1.0e-12
+        ):
+>           raise ValueError(
+                "practical_region and repair_region must be centered on target"
+            )
+E           ValueError: practical_region and repair_region must be centered on target
+
+bayesfilter/inference/hmc_verification.py:548: ValueError
+----------------------------- Captured stderr call -----------------------------
+2026-09-16 04:13:37.900749: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_integration.py::test_actual_tuning_member_and_posterior[identity]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 365 warnings in 4.03s

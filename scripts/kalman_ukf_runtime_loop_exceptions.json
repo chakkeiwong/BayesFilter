@@ -6,7 +6,8 @@
     "fixed_tensor_state_schema": "Packs or updates a fixed tuple/dictionary of tensor histories or input signatures. Numerical date, chain and parameter axes stay in tensors.",
     "host_artifact_reporting": "Assembles host provenance or report records after the numerical result; not a target evaluation.",
     "host_diagnostic_orchestration": "Dispatches separately compiled diagnostics for declared fixture dimensions; not a filter recurrence.",
-    "input_validation": "Checks fixed input fields before/at tracing. Numerical invalid-state propagation is separately tested where required."
+    "input_validation": "Checks fixed input fields before/at tracing. Numerical invalid-state propagation is separately tested where required.",
+    "trace_time_index_schedule": "Constructs constant permutation indices from a static matrix dimension before tracing numerical rotations; matrix values, sweeps and batches execute in TensorFlow loops."
   },
   "exceptions": [
     {
@@ -799,6 +800,46 @@
       "ast_sha256": "fc53b51c6ab2f65685123d859bc3f00320d9fbc908f40c8c8a7ae29e97090964",
       "role": "host_artifact_reporting",
       "iteration": "(float(item) for item in STRUCTURAL_PARAMETER_LOWER)"
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "_refined_symmetric_eigh",
+      "ast_sha256": "cebe89fb8ac208a6be944e1da28a7581ebeea771a1f195ee7ae8b26ba42f39e3",
+      "role": "trace_time_index_schedule",
+      "iteration": "for _ in range(tournament_size - 1):\n    pairs = [(first, second) for first, second in zip(circle[:tournament_size // 2], reversed(circle[tournament_size // 2:])) if first < dimension and second < dimension]\n    active_indices = [first for first, _ in pairs] + [second for _, second in pairs]\n    permutations.append(active_indices + [index for index in range(dimension) if index not in active_indices])\n    circle = [circle[0], circle[-1], *circle[1:-1]]",
+      "review": "M19 merge: inspected static Python circle/pairs/permutations only; tensor rotations use tf.while_loop. No numeric state is iterated here."
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "_refined_symmetric_eigh",
+      "ast_sha256": "4083395976d9ea6685bf66bdbdf481c82a4bf02942e38ada5354acf3ecd70b7f",
+      "role": "trace_time_index_schedule",
+      "iteration": "[(first, second) for first, second in zip(circle[:tournament_size // 2], reversed(circle[tournament_size // 2:])) if first < dimension and second < dimension]",
+      "review": "M19 merge: inspected static Python circle/pairs/permutations only; tensor rotations use tf.while_loop. No numeric state is iterated here."
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "_refined_symmetric_eigh",
+      "ast_sha256": "ee2c33fd03cb4ec8019ac6dcb2b0070515cd153ffc19ffe6bd702c4276af1768",
+      "role": "trace_time_index_schedule",
+      "iteration": "[first for first, _ in pairs]",
+      "review": "M19 merge: inspected static Python circle/pairs/permutations only; tensor rotations use tf.while_loop. No numeric state is iterated here."
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "_refined_symmetric_eigh",
+      "ast_sha256": "d1ba4aa9a1f1d73ad832c722d52793364e21e4a72f36d52fb403a900f8fe1d30",
+      "role": "trace_time_index_schedule",
+      "iteration": "[second for _, second in pairs]",
+      "review": "M19 merge: inspected static Python circle/pairs/permutations only; tensor rotations use tf.while_loop. No numeric state is iterated here."
+    },
+    {
+      "path": "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+      "function": "_refined_symmetric_eigh",
+      "ast_sha256": "81b191a2a1a1947a5609dc59448469e3f9a284ff2c89eaf66ffa7ef8c8bf7f13",
+      "role": "trace_time_index_schedule",
+      "iteration": "[index for index in range(dimension) if index not in active_indices]",
+      "review": "M19 merge: inspected static Python circle/pairs/permutations only; tensor rotations use tf.while_loop. No numeric state is iterated here."
     }
   ]
 }

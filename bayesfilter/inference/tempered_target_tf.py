@@ -585,7 +585,15 @@ class FixedBetaBridgeAdapter:
     def log_prob_and_grad_status(
         self, theta: Any
     ) -> tuple[tf.Tensor, tf.Tensor, Mapping[str, tf.Tensor]]:
-        value, score, status = self.bridge.value_score_status(theta, self.beta)
+        # Scalar HMC probes and retained [draw,chain,D] checks use the same
+        # batch-native value program. This reshapes axes; it never maps scalar
+        # evaluations over training rows.
+        theta = tf.convert_to_tensor(theta, tf.float64)
+        if theta.shape.rank is None or theta.shape.rank < 1 or not theta.shape.is_fully_defined() or theta.shape[-1] != self.parameter_dim:
+            raise TemperedBridgeError("fixed-beta state requires static leading axes and parameter dimension")
+        leading = tuple(theta.shape[:-1])
+        rows = tf.reshape(theta, [-1, self.parameter_dim])
+        value, score, status = self.bridge.value_score_status(rows, self.beta)
         valid = tf.convert_to_tensor(status["bridge_valid"], tf.bool)
         invalid_value = tf.fill(
             tf.shape(value), tf.constant(float("nan"), tf.float64)
@@ -593,15 +601,25 @@ class FixedBetaBridgeAdapter:
         invalid_score = tf.fill(
             tf.shape(score), tf.constant(float("nan"), tf.float64)
         )
-        return (
-            tf.where(valid, value, invalid_value),
-            tf.where(valid[:, tf.newaxis], score, invalid_score),
-            dict(status),
-        )
+        shaped_status = {key: (tf.reshape(item, leading + tuple(item.shape[1:]))
+            if tf.is_tensor(item) and item.shape.rank and item.shape[0] == rows.shape[0] else item)
+            for key, item in status.items()}
+        return (tf.reshape(tf.where(valid, value, invalid_value), leading),
+                tf.reshape(tf.where(valid[:, tf.newaxis], score, invalid_score), theta.shape), shaped_status)
 
     def target_status_telemetry(self, theta: Any) -> Mapping[str, tf.Tensor]:
-        _value, _score, status = self.bridge.value_score_status(theta, self.beta)
-        return dict(status)
+        _value, _score, status = self.log_prob_and_grad_status(theta)
+        result = dict(status)
+        # The q20 batched target publishes a minimum innovation eigenvalue but
+        # does not publish a condition estimate. The shared HMC trace contract
+        # admits this as core telemetry; retaining a lone optional field makes
+        # traces falsely appear schema-incomplete. Keep both optional fields or
+        # neither, without inventing a condition estimate.
+        optional = ("min_innovation_eigenvalue", "innovation_condition_estimate")
+        if not all(key in result for key in optional):
+            for key in optional:
+                result.pop(key, None)
+        return result
 
 
 def make_q20_tempered_bridge(

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import math
+
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 import tensorflow as tf
-import tensorflow_probability as tfp
+
+from bayesfilter.inference.hmc_ess import STAN_ESS_VERSION
 
 
 RANK_NORMALIZED_SPLIT_RHAT_DEFINITION = (
@@ -46,83 +49,8 @@ class RankNormalizedHMCThresholds:
 
 
 def _real_fft_cross_chain_ess(states: Any) -> tf.Tensor:
-    """Match TFP cross-chain ESS without a complex-to-real cast.
-
-    TFP 0.25 computes real-input autocorrelation by promoting the signal to
-    ``complex128`` for a full FFT and casting the inverse transform back to
-    ``float64``.  This helper keeps the same cross-chain variance correction
-    and Geyer positive-pair truncation, but uses TensorFlow's real FFT pair.
-    It is intentionally scoped to the rank-3, sample-major HMC diagnostic
-    contract used by this module.
-    """
-
-    values = tf.convert_to_tensor(states, dtype=tf.float64)
-    if values.shape.rank != 3:
-        raise ValueError("states must have shape [draw, chain, parameter]")
-    static_shape = values.shape.as_list()
-    if any(dim is None for dim in static_shape):
-        raise ValueError("states must have a fully static shape")
-    draw_count, chain_count, parameter_count = (int(dim) for dim in static_shape)
-    if draw_count < 2 or chain_count < 2 or parameter_count < 1:
-        raise ValueError("states must contain at least two draws and chains")
-
-    # Match TFP's next power-of-two padding, which is at least twice the draw
-    # count. The transformed axis is last for tf.signal.rfft.
-    fft_size = 1 << (max(2, 2 * draw_count) - 1).bit_length()
-    centered = tf.transpose(values, [1, 2, 0])
-    centered -= tf.reduce_mean(centered, axis=-1, keepdims=True)
-    centered = tf.pad(centered, [[0, 0], [0, 0], [0, fft_size - draw_count]])
-    spectrum = tf.signal.rfft(centered, fft_length=[fft_size])
-    power = spectrum * tf.math.conj(spectrum)
-    autocovariance = tf.transpose(
-        tf.signal.irfft(power, fft_length=[fft_size])[..., :draw_count],
-        [2, 0, 1],
-    )
-    lag_denominator = tf.cast(
-        tf.range(draw_count, 0, -1), tf.float64
-    )[:, tf.newaxis, tf.newaxis]
-    autocovariance /= lag_denominator
-
-    chain_means = tf.reduce_mean(values, axis=0)
-    chain_mean_centered = chain_means - tf.reduce_mean(
-        chain_means, axis=0, keepdims=True
-    )
-    chain_count_tensor = tf.cast(chain_count, tf.float64)
-    between_chain_variance_div_n = (
-        chain_count_tensor
-        / (chain_count_tensor - 1.0)
-        * tf.reduce_mean(tf.square(chain_mean_centered), axis=0)
-    )
-    biased_within_chain_variance = tf.reduce_mean(autocovariance[0], axis=0)
-    approx_variance = (
-        biased_within_chain_variance + between_chain_variance_div_n
-    )
-    mean_auto_covariance = tf.reduce_mean(autocovariance, axis=1)
-    auto_corr = 1.0 - (
-        biased_within_chain_variance[tf.newaxis, :] - mean_auto_covariance
-    ) / approx_variance[tf.newaxis, :]
-
-    lag = tf.cast(tf.range(draw_count), tf.float64)
-    weighted_auto_corr = ((float(draw_count) - lag) / float(draw_count))[
-        :, tf.newaxis
-    ] * auto_corr
-    pair_count = draw_count // 2
-    pair_auto_corr = tf.reshape(
-        auto_corr[: 2 * pair_count], [pair_count, 2, parameter_count]
-    )
-    pair_sums = tf.reduce_sum(pair_auto_corr, axis=1)
-    negative_pair_mask = tf.cast(pair_sums < 0.0, tf.float64)
-    cumulative_negative_pairs = tf.cumsum(negative_pair_mask, axis=0)
-    active_pair_mask = tf.maximum(1.0 - cumulative_negative_pairs, 0.0)
-    pair_weighted_auto_corr = tf.reshape(
-        weighted_auto_corr[: 2 * pair_count],
-        [pair_count, 2, parameter_count],
-    )
-    weighted_pair_sums = tf.reduce_sum(pair_weighted_auto_corr, axis=1)
-    weighted_pair_sums *= active_pair_mask
-    return chain_count_tensor * float(draw_count) / (
-        -1.0 + 2.0 * tf.reduce_sum(weighted_pair_sums, axis=0)
-    )
+    from bayesfilter.inference.hmc_ess import stan_cross_chain_ess
+    return stan_cross_chain_ess(states)
 
 
 def rank_normalized_split_rhat_summary(
@@ -151,7 +79,7 @@ def rank_normalized_split_rhat_summary(
     input_all_finite = bool(tf.reduce_all(tf.math.is_finite(values)).numpy())
     if not input_all_finite:
         return {
-            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
             "rhat_definition": RANK_NORMALIZED_SPLIT_RHAT_DEFINITION,
             "rhat_threshold": threshold,
             "passed": False,
@@ -190,7 +118,7 @@ def rank_normalized_split_rhat_summary(
         and max_finite <= threshold
     )
     return {
-        "schema": "bayesfilter.rank_normalized_split_rhat_summary.v1",
+        "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
         "rhat_definition": RANK_NORMALIZED_SPLIT_RHAT_DEFINITION,
         "rhat_threshold": threshold,
         "passed": passed,
@@ -202,12 +130,12 @@ def rank_normalized_split_rhat_summary(
         "split_draw_count_per_chain": draw_count // 2,
         "split_chain_count": 2 * chain_count,
         "rank_normalized_split_rhat": tuple(
-            float(item) for item in rank_rhat.numpy().reshape(-1)
+            float(item) if math.isfinite(float(item)) else None for item in rank_rhat.numpy().reshape(-1)
         ),
         "folded_rank_normalized_split_rhat": tuple(
-            float(item) for item in folded_rhat.numpy().reshape(-1)
+            float(item) if math.isfinite(float(item)) else None for item in folded_rhat.numpy().reshape(-1)
         ),
-        "rhat": tuple(float(item) for item in rhat.numpy().reshape(-1)),
+        "rhat": tuple(float(item) if math.isfinite(float(item)) else None for item in rhat.numpy().reshape(-1)),
         "max_rank_normalized_split_rhat": _maximum_finite_tensor_value(rank_rhat),
         "max_folded_rank_normalized_split_rhat": _maximum_finite_tensor_value(
             folded_rhat
@@ -262,35 +190,18 @@ def rank_normalized_hmc_diagnostics(
         rhat_max=thresholds.rhat_max,
     )
     rank_rhat = tf.constant(
-        rhat_summary["rank_normalized_split_rhat"],
+        [float("nan") if value is None else value for value in rhat_summary["rank_normalized_split_rhat"]],
         dtype=tf.float64,
     )
     folded_rhat = tf.constant(
-        rhat_summary["folded_rank_normalized_split_rhat"],
+        [float("nan") if value is None else value for value in rhat_summary["folded_rank_normalized_split_rhat"]],
         dtype=tf.float64,
     )
-    rhat = tf.constant(rhat_summary["rhat"], dtype=tf.float64)
-    rank_values = _rank_normalize(values)
-    split_rank = _split_chains(rank_values)
-    bulk_ess = _real_fft_cross_chain_ess(split_rank)
-
-    q05 = tfp.stats.percentile(
-        values,
-        5.0,
-        axis=(0, 1),
-        interpolation="linear",
-    )
-    q95 = tfp.stats.percentile(
-        values,
-        95.0,
-        axis=(0, 1),
-        interpolation="linear",
-    )
-    lower_indicator = tf.cast(values <= q05[tf.newaxis, tf.newaxis, :], tf.float64)
-    upper_indicator = tf.cast(values >= q95[tf.newaxis, tf.newaxis, :], tf.float64)
-    lower_ess = _real_fft_cross_chain_ess(_split_chains(lower_indicator))
-    upper_ess = _real_fft_cross_chain_ess(_split_chains(upper_indicator))
-    tail_ess = tf.minimum(lower_ess, upper_ess)
+    rhat = tf.constant([float("nan") if value is None else value for value in rhat_summary["rhat"]], dtype=tf.float64)
+    from bayesfilter.inference.hmc_posterior_diagnostics import rank_normalized_bulk_tail_ess
+    ess = rank_normalized_bulk_tail_ess(tf.transpose(values, (1, 0, 2)))
+    bulk_ess, tail_ess = ess["bulk"], ess["tail"]
+    lower_ess, upper_ess = ess["lower_5pct"], ess["upper_95pct"]
 
     finite_diagnostics = tf.logical_and(
         tf.math.is_finite(rhat),
@@ -321,7 +232,7 @@ def rank_normalized_hmc_diagnostics(
         for index, name in enumerate(names)
     )
     return {
-        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v2",
         "passed": bool(tf.reduce_all(parameter_pass).numpy()),
         "input_all_finite": True,
         "diagnostics_all_finite": bool(tf.reduce_all(finite_diagnostics).numpy()),
@@ -331,15 +242,17 @@ def rank_normalized_hmc_diagnostics(
         "split_draw_count_per_chain": draw_count // 2,
         "split_chain_count": 2 * chain_count,
         "thresholds": thresholds.payload(),
+        "bulk_tail_ess_method": STAN_ESS_VERSION,
         "definitions": {
             "rank_transform": "Blom average-rank normal score",
             "rhat": RANK_NORMALIZED_SPLIT_RHAT_DEFINITION,
             "bulk_ess": "split-chain cross-chain ESS of rank-normalized draws",
             "tail_ess": "minimum split-chain cross-chain ESS of pooled q05/q95 indicators",
             "autocorrelation_truncation": (
-                "Geyer initial positive pairs; TFP 0.25 formula parity via "
+                "Stan/ArviZ initial positive and monotone pairs via "
                 "TensorFlow real FFT"
             ),
+            "tail_indicator": "x <= q at both pooled q05 and q95 cutoffs",
             "quantile_interpolation": "linear",
         },
         "max_rhat": float(tf.reduce_max(rhat).numpy()),
@@ -359,64 +272,14 @@ def rank_normalized_hmc_diagnostics(
 
 
 def _rank_normalize(values: tf.Tensor) -> tf.Tensor:
-    shape = tf.shape(values)
-    flat = tf.reshape(values, [-1, shape[-1]])
-    count = tf.shape(flat)[0]
-
-    def rank_column(column: tf.Tensor) -> tf.Tensor:
-        order = tf.argsort(column, stable=True)
-        sorted_column = tf.gather(column, order)
-        new_group = tf.concat(
-            [
-                tf.constant([True]),
-                tf.not_equal(sorted_column[1:], sorted_column[:-1]),
-            ],
-            axis=0,
-        )
-        group = tf.cumsum(tf.cast(new_group, tf.int32)) - 1
-        ranks = tf.cast(tf.range(1, count + 1), tf.float64)
-        rank_sum = tf.math.segment_sum(ranks, group)
-        group_count = tf.math.segment_sum(tf.ones_like(ranks), group)
-        sorted_ranks = tf.gather(rank_sum / group_count, group)
-        return tf.gather(sorted_ranks, tf.argsort(order, stable=True))
-
-    ranks = tf.map_fn(
-        rank_column,
-        tf.transpose(flat, [1, 0]),
-        fn_output_signature=tf.TensorSpec(shape=(None,), dtype=tf.float64),
-    )
-    ranks = tf.transpose(ranks, [1, 0])
-    probability = (ranks - 3.0 / 8.0) / (tf.cast(count, tf.float64) + 1.0 / 4.0)
-    normal = tfp.distributions.Normal(
-        loc=tf.constant(0.0, tf.float64),
-        scale=tf.constant(1.0, tf.float64),
-    )
-    return tf.reshape(normal.quantile(probability), shape)
+    from bayesfilter.inference.hmc_diagnostic_math import _rank_normalize as implementation
+    return implementation(values)
 
 
-def _rank_normalized_split_rhat_components(
-    values: tf.Tensor,
-) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-    rank_values = _rank_normalize(values)
-    pooled_median = tfp.stats.percentile(
-        values,
-        50.0,
-        axis=(0, 1),
-        interpolation="linear",
-    )
-    folded_values = tf.abs(values - pooled_median[tf.newaxis, tf.newaxis, :])
-    folded_rank_values = _rank_normalize(folded_values)
-    rank_rhat = tfp.mcmc.potential_scale_reduction(
-        _split_chains(rank_values),
-        independent_chain_ndims=1,
-        split_chains=False,
-    )
-    folded_rhat = tfp.mcmc.potential_scale_reduction(
-        _split_chains(folded_rank_values),
-        independent_chain_ndims=1,
-        split_chains=False,
-    )
-    return rank_rhat, folded_rhat, tf.maximum(rank_rhat, folded_rhat)
+def _rank_normalized_split_rhat_components(values: tf.Tensor):
+    from bayesfilter.inference.hmc_posterior_diagnostics import rank_normalized_split_rhat
+    summary = rank_normalized_split_rhat(tf.transpose(values, (1, 0, 2)))
+    return summary["bulk"], summary["folded"], summary["maximum"]
 
 
 def _maximum_finite_tensor_value(values: tf.Tensor) -> float | None:
@@ -460,13 +323,14 @@ def _failed_nonfinite_payload(
         for name in parameter_names
     )
     return {
-        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v1",
+        "schema": "bayesfilter.rank_normalized_hmc_diagnostics.v2",
         "passed": False,
         "input_all_finite": False,
         "diagnostics_all_finite": False,
         "draw_count_per_chain": draw_count,
         "chain_count": chain_count,
         "parameter_count": len(parameter_names),
+        "bulk_tail_ess_method": STAN_ESS_VERSION,
         "split_draw_count_per_chain": draw_count // 2,
         "split_chain_count": 2 * chain_count,
         "thresholds": thresholds.payload(),

@@ -123,6 +123,20 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "remote_integration_hermite_cpu": ("tests/test_filter_repair_remote_integration.py",),
+    "remote_integration_hermite_consumers_cpu": (
+        "tests/highdim/test_pair_block_tt_remedy.py",
+        "tests/highdim/test_observation_guided_tt_tf.py",
+        "tests/highdim/test_c2_ukf_guided_tt_dmis_tf.py"),
+    "remote_integration_eigen_cpu": ("tests/test_principal_sqrt_eigen_refinement_tf.py",),
+    "remote_integration_genut_primitives_cpu": ("tests/highdim/test_genut_shape_lm_tf.py",),
+    "remote_integration_neutra_cpu": (
+        "tests/test_neutra_single_authority.py::test_author_free_bias_is_outside_cap_and_has_unrestricted_gradient",
+        "tests/test_neutra_single_authority.py::test_hoffman_profile_masks_match_author_tfp_blocks",
+        "tests/test_neutra_single_authority.py::test_conditional_map_jacobian_score_inverse_and_logdet[iaf]",
+        "tests/test_neutra_single_authority.py::test_layerwise_vaitl_score_matches_density_score[iaf]",
+        "tests/test_neutra_single_authority.py::test_frozen_loader_roundtrip_and_tamper_rejection[iaf]",
+        "tests/test_neutra_single_authority.py::test_existing_iaf_facades_cannot_contain_numerical_forks"),
     "remaining_svd_cost_analysis_cpu": ("tests/test_filter_repair_remaining_svd_cost_analysis.py",),
     **{f"remaining_svd_cost_{arm}_{dimension}_{device}": (
         f"tests/test_filter_repair_remaining_svd_cost.py::test_remaining_consumer_svd_cost[{arm}-{dimension}]",)
@@ -1004,9 +1018,6 @@ TEST_GROUPS = {
     "primitives": ("tests/highdim/test_retained_moments.py", "tests/test_filter_repair_primitives.py"),
     "kalman": ("tests/test_compiled_filter_parity_tf.py", "tests/test_compiled_kalman_ukf_runtime.py"),
     "sgqf": ("tests/test_fixed_sgqf_tf.py", "tests/test_fixed_sgqf_scores_tf.py", "tests/test_fixed_sgqf_integration_tf.py", "tests/test_predator_prey_sgqf_neutra_target.py"),
-    "genut": ("tests/highdim/test_cubature_genut_batch.py", "tests/highdim/test_genut_batch_primal_parity.py", "tests/highdim/test_genut_batch_general_route_parity.py", "tests/highdim/test_ledh_contract_e_canonical_lgssm_phase5.py"),
-    "genut_graph": ("tests/highdim/test_genut_batch_primal_parity.py::test_public_score_traces_in_graph_and_xla",),
-    "genut_targets": ("tests/test_genut_neutra_targets.py",),
     "dense_ledh": ("tests/test_experimental_batched_ledh_pfpf_ot_tf.py",),
     "particle": ("tests/test_filter_repair_particles.py",),
     "sinkhorn": ("tests/test_filter_repair_sinkhorn.py",),
@@ -1096,6 +1107,8 @@ TEST_GROUPS.update({f"remaining_svd_{part}_{device}": TEST_GROUPS[original]
         ("public_second", "geometry_public_second_cpu"),
         ("public_capacity", "geometry_public_capacity_cpu"))
     for device in ("cpu", "gpu")})
+TEST_GROUPS.update({name.removesuffix("_cpu") + "_gpu": cases
+    for name, cases in tuple(TEST_GROUPS.items()) if name.startswith("remote_integration_")})
 
 # Exact intermediate comparisons remain callable historical diagnostics. Each
 # has the same-scope original-source authority as a mandatory replacement.
@@ -1298,6 +1311,14 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"remote_integration_{device}": (
+        f"remote_integration_hermite_{device}",
+        f"remote_integration_hermite_consumers_{device}",
+        f"remote_integration_neutra_{device}",
+        f"remote_integration_eigen_{device}",
+        f"remote_integration_genut_primitives_{device}",
+        f"remaining_svd_requalification_{device}",
+        "policy") for device in ("cpu", "gpu")},
     **{f"remaining_svd_cost_{device}": tuple(f"remaining_svd_cost_{arm}_{dimension}_{device}"
         for dimension in (3, 5) for arm in ("prior_graph", "prior_xla", "after_graph", "after_xla"))
         for device in ("cpu", "gpu")},
@@ -1638,10 +1659,11 @@ def mandatory_test_groups():
     return tuple(group for group in TEST_GROUPS if group not in EXPLANATORY_TEST_GROUPS)
 
 
-FIXTURES = ("rectangular", "factor", "covariance", "sinkhorn_jvp", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "genut", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
+FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
 TEST_DEVICES = {
+    **{name: "GPU" for name in TEST_GROUPS if name.startswith("remote_integration_") and name.endswith("_gpu")},
     **{group: "GPU" for group in TEST_BATCHES["remaining_svd_cost_gpu"]},
     **{group: "GPU" for group in TEST_BATCHES["remaining_svd_qualification_gpu"]},
     "remaining_svd_scale_gpu": "GPU",

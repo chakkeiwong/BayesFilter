@@ -13,6 +13,37 @@ from bayesfilter.inference.hmc_candidate_set_tuning import (
 )
 
 
+def test_stable_hash_preserves_canonical_scalar_bytes():
+    import hashlib
+    from bayesfilter.inference.hmc_candidate_set_tuning import _sha256
+    payload = {"unicode": "λ", "2": (True, None, -0.0, 1.25, 2), 1: "one"}
+    expected = b'{"1":"one","2":[true,null,-0.0,1.25,2],"unicode":"\\u03bb"}'
+    assert _sha256(payload) == hashlib.sha256(expected).hexdigest()
+
+
+def test_stable_hash_preserves_mapping_precedence_for_scalar_subclasses():
+    import hashlib
+    from collections.abc import Mapping
+    from bayesfilter.inference.hmc_candidate_set_tuning import _sha256
+
+    class IntegerMapping(int, Mapping):
+        def __iter__(self): return iter(("key",))
+        def __len__(self): return 1
+        def __getitem__(self, key):
+            if key != "key": raise KeyError(key)
+            return .25
+
+    assert _sha256({"hybrid": IntegerMapping(7)}) == hashlib.sha256(
+        b'{"hybrid":{"key":0.25}}').hexdigest()
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_stable_hash_rejects_nested_nonfinite_scalars(value):
+    from bayesfilter.inference.hmc_candidate_set_tuning import _sha256
+    with pytest.raises(ValueError, match="hash payload contains a non-finite float"):
+        _sha256({"samples": ([1., value],)})
+
+
 def _scope(name: str = "scope") -> HMCCandidateSetScope:
     return HMCCandidateSetScope(
         scope_id=name,

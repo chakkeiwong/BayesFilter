@@ -23,6 +23,8 @@ def tuning_seed_inventory(evidence, partial=(), *, attempted_chunks=()) -> set[t
     seeds = {tuple(row["seed"]) for row in evidence}
     for row in evidence:
         seeds.update(tuple(chunk["seed"]) for chunk in row.get("chunks", ()))
+        if "attempted_seed" in row:
+            seeds.add(tuple(row["attempted_seed"]))
     for chunks in partial:
         seeds.update(tuple(chunk["seed"]) for chunk in chunks)
     seeds.update(chunk_seed(seed, index) for seed, index in attempted_chunks)

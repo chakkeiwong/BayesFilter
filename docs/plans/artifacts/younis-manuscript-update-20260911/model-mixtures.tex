@@ -1,0 +1,131 @@
+\section{Mixture proposals with the original model correction}
+\label{sec:model-mixtures}
+
+There is a continuous mixture already present in a particle filter whenever
+the physical transition has a continuous density. Let
+$\{x_{t-1}^j,W_{t-1}^j\}_{j=1}^N$ approximate the filtering distribution
+after observation $t-1$, with $\sum_jW_{t-1}^j=1$. Propagating that measure
+through the actual transition density gives
+\begin{equation}
+ a_t(x)=\sum_{j=1}^N W_{t-1}^j f_\theta(x\mid x_{t-1}^j),\qquad
+ u_t(x)=g_\theta(y_t\mid x)a_t(x).
+ \label{eq:physical-predictive-mixture}
+\end{equation}
+The first density predicts the state; the second incorporates the current
+observation but is not normalized. The transition's process covariance is
+part of the model. It is not an artificial bandwidth added to make an atom
+cloud differentiable. When $f_\theta$ is Gaussian, $a_t$ is already a Gaussian
+mixture, so Younis-style mixture calculus can be studied on this physical
+predictive distribution directly.
+
+Choose an evaluable proposal $q_t$ whose support contains that of $u_t$, and
+draw $x_t^i\sim q_t$. The correct importance calculation is
+\begin{equation}
+ v_t^i=\frac{u_t(x_t^i)}{q_t(x_t^i)},\qquad
+ \widehat z_t=\frac1N\sum_i v_t^i,\qquad
+ W_t^i=\frac{v_t^i}{\sum_k v_t^k}.
+ \label{eq:model-marginal-weights}
+\end{equation}
+Conditionally on the incoming cloud and a proposal fixed before these draws,
+\begin{equation}
+ \mathbb E_{q_t}[\widehat z_t\mid\mathcal F_{t-1}]
+ =\int \frac{u_t(x)}{q_t(x)}q_t(x)\,\dd x
+ =\int u_t(x)\,\dd x.
+ \label{eq:conditional-model-normalizer}
+\end{equation}
+Here $\mathcal F_{t-1}$ includes the previous weighted particles and any
+proposal design fixed from them and the observed data. A kernel can change
+where particles are drawn without changing the numerator in this identity.
+The cancellation fails if the denominator is merely the density of the
+selected component rather than the actual marginal proposal, or if the
+proposal is refitted to the same draws without a justified adaptive weighting
+scheme.
+
+This is the useful connection to the marginal particle filter.
+\citet[Algorithm 2, Theorem 2, equations (9)--(12)]{lai2022vmpf} integrate out
+the ancestor index and evaluate full transition and proposal mixtures. Their
+estimator-coupling argument establishes an unbiased likelihood normalizer for
+the specified recursion. It also explains a local Rao--Blackwell variance
+reduction; the paper explicitly does not claim that the complete MPF always
+has lower variance than every corresponding SMC run. Its variational
+objective, equation (13), is $\mathbb E\log\widehat Z$, which is not
+$\log Z$. Unbiased differentiation of that objective would not settle the
+model-score question in Section~\ref{sec:question}.
+
+The associated author implementation evaluates the transition mixture with
+\texttt{reduce\_logsumexp}, adds the observation log density, and subtracts
+the proposal log density \citep{laicode2022}. These operations support
+\eqref{eq:model-marginal-weights}. They do not establish compatibility with
+BayesFilter's analytical derivative, initialization, GPU/XLA, or tuning
+requirements. The proposed generative mixture route is not implemented by
+merely calling the existing observation-KDM endpoint.
+
+The distinction between numerator and proposal also determines how much of
+the current LEDH machinery can be reused. Its flow, UKF information, GenUT
+moments, and OT couplings may supply proposal centers, covariances, or
+deterministic transformations. The numerator must still use the intended
+incoming filtering weights and the actual transition and observation
+densities. Replacing those weights by uniform reset weights and those states
+by uncorrected reset locations changes $a_t$. Equation~\eqref{eq:conditional-model-normalizer}
+then certifies an integral of that changed approximation, not the original
+model recursion. A deterministic transformation may be used as a proposal
+only when its induced density, including every necessary Jacobian, is known.
+
+A defensive mixture can protect proposal support when a guided component
+misses a plausible mode. For a fixed $0<\eta<1$, let
+\begin{equation}
+ q_t(x)=(1-\eta)q_t^{\rm guided}(x)+\eta a_t(x).
+ \label{eq:defensive-mixture}
+\end{equation}
+Since $q_t\ge\eta a_t$, the incremental weight satisfies
+$v_t(x)\le g_\theta(y_t\mid x)/\eta$. A bounded observation likelihood
+therefore gives a bounded incremental weight. It does not bound every score
+derivative, and the mixing fraction remains a scope-specific proposal choice
+to calibrate. An arbitrary positive fraction is not justified as a default.
+
+\subsection{An analytically adapted Gaussian example}
+
+The first implementation can be checked in a model where the best local
+proposal is available exactly. Suppose
+$f_\theta(x\mid x_{t-1}^j)=\mathcal N(x;m_j,Q)$ and
+$g_\theta(y_t\mid x)=\mathcal N(y_t;Hx,R)$, with $Q$ and $R$ positive
+definite. In the matrix-LGSSM test, $m_j=A(\theta)x_{t-1}^j$.
+Multiplying the two Gaussian densities gives
+\begin{equation}
+ f_\theta(x\mid x_{t-1}^j)g_\theta(y_t\mid x)
+ =c_j\,\mathcal N(x;\widetilde m_j,\widetilde Q),
+ \label{eq:adapted-component-product}
+\end{equation}
+where completing the square, or conditioning a joint Gaussian, yields
+\begin{align}
+ V&=HQH^\mathsf T+R,& c_j&=\mathcal N(y_t;Hm_j,V),\\
+ K&=QH^\mathsf T V^{-1},&
+ \widetilde m_j&=m_j+K(y_t-Hm_j),\\
+ \widetilde Q&=Q-QH^\mathsf T V^{-1}HQ.&
+ \label{eq:adapted-component-parameters}
+\end{align}
+The component evidence $c_j$ tells us how plausible ancestor $j$ is after the
+new observation. Its conditional Gaussian moves the proposal toward that
+observation. Thus the normalized predictive update is the mixture
+\begin{equation}
+ q_t^*(x)=\sum_j\frac{W_{t-1}^jc_j}{z_t^*}
+                   \mathcal N(x;\widetilde m_j,\widetilde Q),
+ \qquad z_t^*=\sum_j W_{t-1}^jc_j.
+ \label{eq:fully-adapted-mixture}
+\end{equation}
+Substituting $q_t^*=u_t/z_t^*$ into
+\eqref{eq:model-marginal-weights} makes every incremental weight equal to
+$z_t^*$. The current-step proposal variance vanishes conditionally on the
+incoming cloud. Earlier particle approximation remains, so this is not an
+exact finite-particle Kalman filter. The example isolates the improvement
+available from conditional integration and proposal adaptation before any
+extra kernel smoothing is introduced. In particular, $Q$ here is the physical
+process covariance, not the carried UKF mark or an added kernel bandwidth.
+
+\subsection{Retained ancestry and a flow proposal}
+
+The same model correction can be formulated on a joint ancestor--state
+space. This is useful when the flow depends on the selected ancestor and
+its inverse cannot be marginalized cheaply. The distinction determines the
+correct numerator as well as the denominator; the following existing
+\texttt{MODEL-IS} derivation is retained for that reason.

@@ -3,7 +3,8 @@
 
 This chapter gives a self-contained account of neural-transport Hamiltonian
 Monte Carlo (NeuTra HMC) and documents the BayesFilter implementation and
-experiments available in July 2026.  The construction was introduced by
+experiments available in July 2026, followed by a September 2026 investigation
+of weak nonlinear learning in the q20 target. The construction was introduced by
 \citet{hoffman2019neutra}; the derivation and implementation below do not
 require the reader to consult that paper.  The HMC and transport mathematics,
 diagnostics, and five common truth-tail targets are derived explicitly.  Eight
@@ -291,6 +292,8 @@ sample-axis loop belongs to the active training/HMC route.  A valid segmented
 resume restores weights, both Adam moments, completed step, seed schedule, and
 learning-rate schedule.
 
+\input{chapters/ch26b_neutra_training_repair}
+
 \section{Geometry induced in source space}
 
 NeuTra may also be understood as a learned position-dependent metric.  With
@@ -401,17 +404,51 @@ size is
 \begin{equation}
  N_{\rm eff}=\frac{MN}{1+2\sum_{t\ge1}\rho_t},
 \end{equation}
-with a stable positive-sequence estimator used in computation.  Bulk ESS uses
-rank-normalized draws; tail ESS evaluates lower and upper tail indicators and
-takes the conservative tail value.  These are finite-run diagnostics, not
-proofs of convergence.
+The preserved-transition diagnostic API uses biased lag autocovariances,
+unbiased within-chain variance and Geyer's initial positive and monotone
+sequences, including the final even-lag improvement used by Stan
+\texttt{posterior} and ArviZ.  Its estimated integrated autocorrelation time
+is bounded below by $1/\log_{10}(S)$ for $S$ input draws.  This finite-sample
+safeguard prevents unstable negative ESS estimates; it is not a theoretical
+upper bound on an antithetic chain's true ESS.  Constant pooled samples remain
+non-promotable.
 
-The current serious protocol uses four chains, warm-up modern R-hat at most
+Bulk ESS uses split, rank-normalized draws.  Tail ESS is the minimum of the
+split-chain ESS values for the quantile-CDF indicators $I(x\le q_{0.05})$ and
+$I(x\le q_{0.95})$.  The latter complements $I(x>q_{0.95})$, whereas an
+inclusive upper-tail indicator differs when rejected proposals repeat a
+cutoff value.  Linear percentile interpolation preserves equal endpoints
+exactly.  These are finite-run diagnostics, not proofs of convergence.
+
+The preserved-transition API retains its unsplit-chain convention for pooled
+posterior-mean ESS and MCSE, $\operatorname{SD}(x)/\sqrt{N_{\rm eff,mean}}$.
+Its per-chain MCSE uses the same estimator with one chain.  ArviZ's public
+mean-ESS diagnostic instead splits chains, so a reference comparison must
+state which convention it checks.  Bulk/tail diagnostics still use split
+chains.  This reporting correction does not change HMC transitions or
+retroactively alter archived diagnostic reports.
+
+The public \path{rank_normalized_hmc_diagnostics} entry point uses these same
+bulk/tail and split/folded R-hat implementations. Its inputs retain the order
+draw, chain, parameter; the preserved-transition API uses chain, draw,
+parameter. Thresholds and output schemas remain unchanged. The separately named
+TFP mean/quantile precision option and the temporal-ESS heuristic used during
+covariance adaptation have their own estimator conventions; this reporting
+repair does not change them.
+
+The historical case-study protocol below used four chains, warm-up modern R-hat at most
 $1.05$, retained modern R-hat at most $1.01$, minimum bulk ESS $1000$, minimum
 tail ESS $400$, and caps of $10{,}000$ warm-up and retained draws per chain.
 The value $1000$ is a conservative convenience rule, not a theorem.  The
 structural result below missed it narrowly and is labeled with the disclosed
 post-result owner adjudication rather than called an automated pass.
+
+New posterior runs declare ESS and precision requirements using the assessment
+policy in Chapter~\ref{ch:bf-diagnostics}. The rank and R-hat calculations have
+version \path{bayesfilter.hmc_diagnostic_math.v2}; bulk and tail ESS use
+\path{bayesfilter.stan_initial_positive_monotone_ess.v1}.
+Historical numerical reports below have not been recomputed with these
+estimators and cannot establish current threshold passage.
 
 TFP's fixed HamiltonianMonteCarlo kernel did not expose native divergence flags
 for these runs.  The preserved hard screen defines an energy failure as a

@@ -1,0 +1,155 @@
+{
+  "comparison_target": "model_score",
+  "derivative_id": "analytical_recursion",
+  "derivative_target": "finite_program_score",
+  "diagnostics": {
+    "candidate_configuration": {
+      "coordinate_cap": 0.4,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_steps": 1,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.5,
+      "flow_substeps": 2,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 3,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 3
+    },
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 128,
+    "controls": {
+      "coordinate_cap": 0.4,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_steps": 1,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.5,
+      "flow_substeps": 2,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 3,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 3
+    },
+    "data_model": "scalar_sine_transition_quadratic_observation",
+    "data_seed": [
+      1635249568,
+      1513227087
+    ],
+    "data_version": "d7dbb291abfd9996b27fa59c9733b17e4c0ca25b4ff4557928a2f090f1061ccd",
+    "derivative_semantics": "analytical_total_initial_law_flow_genut_contract_e",
+    "horizon": 4,
+    "initial_seed": [
+      971110565,
+      1595559403
+    ],
+    "observation_curve": 0.03,
+    "oracle_kind": "refined_numerical_grid_not_exact",
+    "parameter_dimension": 6,
+    "particle_count": 128,
+    "process_seed": [
+      1149339012,
+      24809871
+    ],
+    "reference_controls": {
+      "points": 601,
+      "radius": 10.0,
+      "relative_tolerance": 1e-07,
+      "tail_tolerance": 1e-09
+    },
+    "reference_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+    "reference_domain_relative_error": 1.8495289648502296e-16,
+    "reference_dtype": "float64",
+    "reference_max_tail_mass": 3.3306690738754696e-16,
+    "reference_mesh_relative_error": 2.7742934472753447e-16,
+    "resampling_seed": [
+      1578371061,
+      1756587159
+    ],
+    "reset_contract_id": "contract_e_chol_v1",
+    "reset_seed": [
+      147326016,
+      931553151
+    ],
+    "score_consumer": "nonlinear model -> shared LEDH executor with ledh",
+    "score_squared_error": 0.005494879754205275,
+    "state_dimension": 1,
+    "transition_curve": 0.1,
+    "uses_autodiff": false,
+    "value_squared_error": 0.0012560616127104058
+  },
+  "inference_status": "descriptive_only",
+  "initial_terms": true,
+  "numerical_validity": "pass",
+  "oracle_score": [
+    -0.6194389823399203,
+    -1.0657293111540982,
+    -1.3330758715627142,
+    -1.4010935664693625,
+    0.31262266828476876,
+    -0.30001679275692866
+  ],
+  "oracle_value": -3.5076393703607405,
+  "proposal_law": "canonical_ledh_pfpf_contract_e",
+  "runtime": {
+    "allocator_current_bytes": 25344,
+    "allocator_peak_bytes": 580608,
+    "backend": "tensorflow",
+    "cpu_threads": 4,
+    "device": "GPU",
+    "dtype": "float32",
+    "gpu_intentionally_hidden": false,
+    "jit_compile": true,
+    "kernel_calls": 6,
+    "kernel_wall_seconds": 0.21707401699677575,
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "reference_exception": false,
+    "score_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "tensorflow_version": "2.20.0-dev0+selfbuilt",
+    "tf32": true,
+    "traces": 1,
+    "value_device": "/job:localhost/replica:0/task:0/device:GPU:0"
+  },
+  "score": [
+    -0.6804006099700928,
+    -1.0320298671722412,
+    -1.332577109336853,
+    -1.3833733797073364,
+    0.322829931974411,
+    -0.31499895453453064
+  ],
+  "value": -3.5430803298950195,
+  "value_target": "finite_particle_log_likelihood"
+}

@@ -590,3 +590,21 @@ def test_installed_tfp_infinity_bisects_but_nan_aborts():
 
     assert count_requests(float("inf")) > 100
     assert count_requests(float("nan")) <= 3
+
+
+def test_xla_counters_are_accelerator_placeable_and_accounting_is_unchanged():
+    """Int32 resources are host-only; int64 counters preserve whole-program XLA.
+
+    This runs on the process-visible default device (CPU oracle or configured
+    GPU). The GPU runner must establish and verify memory growth before tests.
+    """
+    cfg = _config(jit_compile=True)
+    result = locate_batched_local_center(
+        _quadratic(), [[-0.5, 0.8], [0.8, -0.7], [1.0, 1.2]],
+        [0.5, 2.0], config=cfg,
+    )
+    assert bool(result.accepted) and bool(result.replay_consistent)
+    assert result.target_callback_batches.dtype == tf.int64
+    assert result.best_evaluation_indices.dtype == tf.int64
+    np.testing.assert_allclose(result.center, [0.2, -0.15], atol=1e-7)
+    _accounting(result, 3, cfg)

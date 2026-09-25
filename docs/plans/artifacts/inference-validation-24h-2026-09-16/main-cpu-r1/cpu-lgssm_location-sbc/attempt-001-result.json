@@ -1,0 +1,198 @@
+{
+  "assessment": {
+    "accuracy_established": false,
+    "availability_interval": [
+      0.15811388300841897,
+      1.0
+    ],
+    "completed": 2,
+    "conditional_tests_only": false,
+    "datasets": [
+      {
+        "data": [
+          -5.025944595747449,
+          -3.7889928729816647,
+          -4.665211132559711,
+          -4.251032809716766,
+          -3.586793318476545,
+          -2.500774278811627
+        ],
+        "dataset_id": 0,
+        "fit_independence": "fresh full fit randomness conditional on dataset",
+        "fit_outputs_active": [
+          [
+            -2.297351648181491
+          ],
+          [
+            -4.176372238690306
+          ]
+        ],
+        "fits": [
+          {
+            "fit_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/main-cpu-r1/cpu-lgssm_location-sbc/dataset-0000/fit-0000/pipeline.json",
+            "member_id": "inference_validation:af8518ad84bf9b58d98b:candidate:000007",
+            "runtime_passed": true
+          },
+          {
+            "fit_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/main-cpu-r1/cpu-lgssm_location-sbc/dataset-0000/fit-0001/pipeline.json",
+            "member_id": "inference_validation:af8518ad84bf9b58d98b:candidate:000014",
+            "runtime_passed": true
+          }
+        ],
+        "output_rule": "last_retained_transition_first_chain",
+        "ranks": {
+          "bounded_radius": 1,
+          "log_likelihood": 1,
+          "parameter_0": 1
+        },
+        "status": "complete",
+        "truth_assessor_only": [
+          -3.455135318452474
+        ]
+      },
+      {
+        "data": [
+          1.3447980638247035,
+          -0.04547792475876089,
+          -0.04118202067363691,
+          -1.0188848164456088,
+          -0.3895872924503572,
+          0.6793483980913253
+        ],
+        "dataset_id": 1,
+        "fit_independence": "fresh full fit randomness conditional on dataset",
+        "fit_outputs_active": [
+          [
+            0.5536637101555157
+          ],
+          [
+            -0.404357951407889
+          ]
+        ],
+        "fits": [
+          {
+            "fit_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/main-cpu-r1/cpu-lgssm_location-sbc/dataset-0001/fit-0000/pipeline.json",
+            "member_id": "inference_validation:af8518ad84bf9b58d98b:candidate:000007",
+            "runtime_passed": true
+          },
+          {
+            "fit_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/main-cpu-r1/cpu-lgssm_location-sbc/dataset-0001/fit-0001/pipeline.json",
+            "member_id": "inference_validation:af8518ad84bf9b58d98b:candidate:000012",
+            "runtime_passed": true
+          }
+        ],
+        "output_rule": "last_retained_transition_first_chain",
+        "ranks": {
+          "bounded_radius": 2,
+          "log_likelihood": 1,
+          "parameter_0": 2
+        },
+        "status": "complete",
+        "truth_assessor_only": [
+          0.7710161535563025
+        ]
+      }
+    ],
+    "finding": "no_discrepancy_detected",
+    "independent_unit": "simulated dataset; independent complete fits within each dataset",
+    "missing_fit_policy": "conditional ranks are descriptive only; incomplete SBC cannot establish unconditional calibration",
+    "null_assumptions": "independent fits return correct conditional posterior outputs; randomized ties; fixed reporting rule",
+    "planned": 2,
+    "planned_fits": 4,
+    "small_run_limit": "few datasets only demonstrate execution; inspect power before a calibration claim",
+    "tested_procedure": "ordinary",
+    "tests": {
+      "bounded_radius": {
+        "accuracy_established": false,
+        "counts": [
+          0,
+          1,
+          1
+        ],
+        "finding": "no_discrepancy_detected",
+        "kind": "rank_uniformity",
+        "null": "iid discrete uniform ranks; exact multinomial Monte Carlo comparison",
+        "p_value": 1.0,
+        "replications": 2,
+        "statistic": 1.0,
+        "threshold": 0.016666666666666666
+      },
+      "log_likelihood": {
+        "accuracy_established": false,
+        "counts": [
+          0,
+          2,
+          0
+        ],
+        "finding": "no_discrepancy_detected",
+        "kind": "rank_uniformity",
+        "null": "iid discrete uniform ranks; exact multinomial Monte Carlo comparison",
+        "p_value": 0.338,
+        "replications": 2,
+        "statistic": 4.000000000000001,
+        "threshold": 0.016666666666666666
+      },
+      "parameter_0": {
+        "accuracy_established": false,
+        "counts": [
+          0,
+          1,
+          1
+        ],
+        "finding": "no_discrepancy_detected",
+        "kind": "rank_uniformity",
+        "null": "iid discrete uniform ranks; exact multinomial Monte Carlo comparison",
+        "p_value": 1.0,
+        "replications": 2,
+        "statistic": 1.0,
+        "threshold": 0.016666666666666666
+      }
+    },
+    "unstarted_datasets": 0
+  },
+  "coverage": {
+    "control": "baseline",
+    "device": "cpu_reference",
+    "engine": "sbc",
+    "family": "state_space",
+    "phase": "development",
+    "route": "ordinary",
+    "start": "dispersed",
+    "target": "lgssm_location",
+    "transport": "none"
+  },
+  "design_identity": "5fbe4d4c8264c46a65d4f9d60968f78aab5bcab71c01d3a375cab7919e15c00e",
+  "elapsed_seconds": 199.86405463004485,
+  "execution_status": "complete",
+  "runtime": {
+    "cpu_threads": {
+      "inter_op": "1",
+      "intra_op": "2"
+    },
+    "device_scope": "cpu_reference",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": false,
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tf32": true,
+    "tfp": "0.25.0",
+    "visible_devices": "-1"
+  },
+  "schema": "bayesfilter.inference_validation_result.v1",
+  "test_response": {
+    "control": "baseline",
+    "power_established": false,
+    "status": "baseline_observed"
+  }
+}

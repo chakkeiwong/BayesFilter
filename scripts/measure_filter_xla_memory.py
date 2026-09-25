@@ -36,24 +36,6 @@ def host_memory():
 
 
 def build_fixture(tf, name, jit):
-    if name == "sinkhorn_jvp":
-        from bayesfilter.highdim.cubature_genut_batch_tf import (
-            _sinkhorn_barycentric_batch_jvp,
-        )
-        from bayesfilter.highdim.transport_chunk_policy import validate_transport_chunks
-
-        b, count, d, p = 4, 128, 4, 4
-        validate_transport_chunks(count, row_chunk_size=count, col_chunk_size=count)
-        points = tf.reshape(tf.sin(tf.cast(tf.range(b * count * d), tf.float64) * 0.37), [b, count, d])
-        weights = tf.nn.softmax(0.1 * tf.reshape(tf.cos(tf.cast(tf.range(b * count), tf.float64)), [b, count]), axis=1)
-        tangent = tf.reshape(0.01 * tf.cos(tf.cast(tf.range(b * count * d * p), tf.float64) * 0.13), [b, count, d, p])
-        weight_tangent = tf.zeros([b, count, p], tf.float64)
-
-        def evaluate(x, w, dx, dw):
-            result = _sinkhorn_barycentric_batch_jvp(x, w, dx, dw, epsilon=0.5, sinkhorn_steps=12, balance_steps=4)
-            return (result["particles"], result["particles_tangent"], result["minimum_row_mass"], result["post_quotient_column_tv_error"], tf.cast(result["marginal_valid"], tf.float64))
-
-        return evaluate, (points, weights, tangent, weight_tangent), {"batch": b, "particles": count, "parameters": p, "state": d, "iterations": 16, "row_chunk": count, "column_chunk": count, "scope": "transport primitive only, no LEDH admission"}
     if name in {"factor", "rectangular"}:
         from bayesfilter.testing.compiled_filter_runtime_fixture_tf import (
             fixture_result,
@@ -115,7 +97,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", choices=("CPU", "GPU"), required=True)
     parser.add_argument("--gpu", default="2")
-    parser.add_argument("--fixture", choices=("factor", "rectangular", "covariance", "sinkhorn_jvp"), required=True)
+    parser.add_argument("--fixture", choices=("factor", "rectangular", "covariance"), required=True)
     parser.add_argument("--jit", choices=("on", "off"), required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()

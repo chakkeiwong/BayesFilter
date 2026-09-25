@@ -13,6 +13,51 @@ import tensorflow as tf
 DEFAULT_RELATIVE_PIVOT_TOLERANCE = 1.0e-12
 
 
+def batched_semidefinite_stack_qr_lower(stack: tf.Tensor) -> tf.Tensor:
+    """Direct lower factor for [B,N,K], K>=N, permitting exact zero pivots.
+
+    Scaled Householder reflections avoid Gram matrices and inversion of state
+    pivots. Exact zero columns use the identity reflection. Derivatives follow
+    that fixed structural branch; rank-changing parameter points need separate
+    qualification. This does not replace the strict full-rank QR contract.
+    """
+
+    stack = tf.convert_to_tensor(stack, tf.float64)
+    if stack.shape.rank != 3 or not stack.shape.is_fully_defined():
+        raise ValueError("stack must have static shape [B,N,K]")
+    batch, dimension, columns = stack.shape.as_list()
+    if columns < dimension or min(batch, dimension) <= 0:
+        raise ValueError("stack requires positive B,N and K >= N")
+    matrix = tf.linalg.matrix_transpose(stack)
+    positions = tf.range(columns)[None, :]
+
+    def body(index, matrix):
+        column = matrix[:, :, index]
+        column = tf.where(positions >= index, column, tf.zeros_like(column))
+        scale = tf.reduce_max(tf.abs(column), axis=1, keepdims=True)
+        nonzero = scale > 0.0
+        unit = column / tf.where(nonzero, scale, tf.ones_like(scale))
+        squared_norm = tf.reduce_sum(tf.square(unit), axis=1, keepdims=True)
+        norm = tf.sqrt(tf.where(nonzero, squared_norm, tf.ones_like(squared_norm)))
+        pivot = tf.gather(unit, index, axis=1)[:, None]
+        signed_norm = tf.where(pivot >= 0.0, norm, -norm)
+        reflector = unit + tf.cast(positions == index, tf.float64) * signed_norm
+        reflector = tf.where(nonzero, reflector, tf.zeros_like(reflector))
+        denominator = tf.reduce_sum(tf.square(reflector), axis=1, keepdims=True)
+        multiplier = 2.0 / tf.where(nonzero, denominator, tf.ones_like(denominator))
+        projection = tf.einsum("bk,bkj->bj", reflector, matrix)
+        matrix -= reflector[:, :, None] * (multiplier * projection)[:, None, :]
+        column_mask = (positions > index)[:, :, None] & (tf.range(dimension)[None, None, :] == index)
+        matrix = tf.where(column_mask, tf.zeros_like(matrix), matrix)
+        return index + 1, matrix
+
+    _, matrix = tf.while_loop(lambda index, *_: index < dimension, body, (tf.constant(0), matrix), parallel_iterations=1, maximum_iterations=dimension)
+    triangular = matrix[:, :dimension, :]
+    diagonal = tf.linalg.diag_part(triangular)
+    signs = tf.where(diagonal >= 0.0, tf.ones_like(diagonal), -tf.ones_like(diagonal))
+    return tf.linalg.matrix_transpose(triangular * signs[:, :, None])
+
+
 def _as_float(value: Any, name: str) -> tf.Tensor:
     tensor = tf.convert_to_tensor(value, dtype=tf.float64, name=name)
     return tensor
@@ -169,4 +214,4 @@ def batched_stack_qr_lower(
     return factor, d_factor, diagnostics
 
 
-__all__ = ["DEFAULT_RELATIVE_PIVOT_TOLERANCE", "batched_stack_qr_lower"]
+__all__ = ["DEFAULT_RELATIVE_PIVOT_TOLERANCE", "batched_stack_qr_lower", "batched_semidefinite_stack_qr_lower"]

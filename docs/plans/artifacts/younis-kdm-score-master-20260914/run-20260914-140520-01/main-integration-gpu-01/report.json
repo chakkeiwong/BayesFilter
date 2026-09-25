@@ -1,0 +1,110 @@
+{
+  "attempts": 9,
+  "default_ready": false,
+  "execution_status": "incomplete",
+  "rows": [
+    {
+      "attempt": 1,
+      "engineering_status": "pass",
+      "execution_status": "complete",
+      "id": "kalman_0",
+      "numerical_validity": "pass",
+      "proposal": "kalman",
+      "result_digest": "78ea2dd581474e38d583d2d497834059bbb9f9cbb318356e536ee8e41db20cff",
+      "result_path": "attempts/kalman_0/attempt-001/result.json",
+      "scientific_decision": "mechanics_only"
+    },
+    {
+      "attempt": 1,
+      "engineering_status": "pass",
+      "execution_status": "complete",
+      "id": "bootstrap_0",
+      "numerical_validity": "pass",
+      "proposal": "bootstrap",
+      "result_digest": "437d2f966c5a0bbcb01a6ab92387f949566c3eb5fe97ab11d172913e88e94b40",
+      "result_path": "attempts/bootstrap_0/attempt-001/result.json",
+      "scientific_decision": "mechanics_only"
+    },
+    {
+      "attempt": 1,
+      "engineering_status": "pass",
+      "execution_status": "complete",
+      "id": "adapted_0",
+      "numerical_validity": "pass",
+      "proposal": "adapted",
+      "result_digest": "48390a3c46d180179eb32082207b2f9d27283acbe7fcb401268e2d1f7f9706d9",
+      "result_path": "attempts/adapted_0/attempt-001/result.json",
+      "scientific_decision": "mechanics_only"
+    },
+    {
+      "attempt": 1,
+      "engineering_status": "pass",
+      "execution_status": "complete",
+      "id": "ledh_0",
+      "numerical_validity": "pass",
+      "proposal": "ledh",
+      "result_digest": "6cd155a124894ba1a88fcfa6866cf2e53c9d25736dab189c78e0fbc0b9f56c1d",
+      "result_path": "attempts/ledh_0/attempt-001/result.json",
+      "scientific_decision": "mechanics_only"
+    },
+    {
+      "attempt": 1,
+      "engineering_status": "pass",
+      "execution_status": "complete",
+      "id": "sgqf_0",
+      "numerical_validity": "pass",
+      "proposal": "sgqf",
+      "result_digest": "7d26fbfacb67dbe7dfb885c48b0073fd8a8fc18ff0466cdbb9eed33ea7fce115",
+      "result_path": "attempts/sgqf_0/attempt-001/result.json",
+      "scientific_decision": "mechanics_only"
+    },
+    {
+      "attempt": 1,
+      "engineering_status": "pass",
+      "execution_status": "complete",
+      "id": "kdm_covariance_0",
+      "numerical_validity": "pass",
+      "proposal": "kdm_covariance",
+      "result_digest": "94699694ddab05036a9617d5b8f2a8434daac9d3f9f7c50ae035a240fb3696a5",
+      "result_path": "attempts/kdm_covariance_0/attempt-001/result.json",
+      "scientific_decision": "mechanics_only"
+    },
+    {
+      "attempt": 1,
+      "engineering_status": "pass",
+      "execution_status": "complete",
+      "id": "fitted_twist_0",
+      "numerical_validity": "pass",
+      "proposal": "fitted_twist",
+      "result_digest": "903eca24a096568b69630872d3af00c86e9df0701031fa1b90ebfeae7073204b",
+      "result_path": "attempts/fitted_twist_0/attempt-001/result.json",
+      "scientific_decision": "mechanics_only"
+    },
+    {
+      "attempt": 1,
+      "engineering_status": "failed",
+      "execution_status": "failed",
+      "id": "integrated_kdm_0",
+      "numerical_validity": "not_admitted",
+      "proposal": "integrated_kdm",
+      "reasons": [
+        "in user code:\n\n    File \"/home/chakwong/BayesFilter/bayesfilter/score_study/kdm_adapter_tf.py\", line 57, in kernel  *\n        result = integrated_linear_gaussian_kdm_value_and_analytical_score(\n    File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_younis_kdm_integrated_tf.py\", line 534, in integrated_linear_gaussian_kdm_value_and_analytical_score  *\n        factor_valid = tf.stack([record[\"valid\"] for record in factor_records])\n    File \"/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/core/function/capture/capture_container.py\", line 144, in capture_by_value\n        graph._validate_in_scope(tensor)  # pylint: disable=protected-access\n\n    InaccessibleTensorError: <tf.Tensor 'All_21:0' shape=() dtype=bool> is out of scope and cannot be used here. Use return values, explicit Python locals or TensorFlow collections to access it.\n    Please see https://www.tensorflow.org/guide/function#all_outputs_of_a_tffunction_must_be_return_values for more information.\n    \n    <tf.Tensor 'All_21:0' shape=() dtype=bool> was defined here:\n        File \"/home/chakwong/BayesFilter/scripts/run_younis_score_master.py\", line 86, in <module>\n        File \"/home/chakwong/BayesFilter/scripts/run_younis_score_master.py\", line 80, in main\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/coordinator.py\", line 219, in execute\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/adapters.py\", line 149, in evaluate_gaussian\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/adapters.py\", line 149, in <listcomp>\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/kdm_adapter_tf.py\", line 56, in kernel\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/kdm_adapter_tf.py\", line 57, in kernel\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_younis_kdm_integrated_tf.py\", line 522, in integrated_linear_gaussian_kdm_value_and_analytical_score\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 625, in _value_and_analytical_score_impl\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 632, in _value_and_analytical_score_impl\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 354, in time_loop_body\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 322, in _observation_density\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 324, in _observation_density\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_younis_kdm_integrated_tf.py\", line 487, in observation_factor_override\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_younis_kdm_integrated_tf.py\", line 297, in linear_gaussian_kdm_observation_factors\n    \n    The tensor <tf.Tensor 'All_21:0' shape=() dtype=bool> cannot be accessed from FuncGraph(name=kernel, id=125518811666880), because it was defined in FuncGraph(name=time_loop_body, id=125518272871616), which is out of scope.\n"
+      ],
+      "scientific_decision": "not_evaluated"
+    },
+    {
+      "attempt": 1,
+      "engineering_status": "failed",
+      "execution_status": "failed",
+      "id": "resampling_kdm_0",
+      "numerical_validity": "not_admitted",
+      "proposal": "resampling_kdm",
+      "reasons": [
+        "in user code:\n\n    File \"/home/chakwong/BayesFilter/bayesfilter/score_study/kdm_adapter_tf.py\", line 62, in kernel  *\n        result = _run_resampling_program(\n    File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_younis_kdm_resampling_tf.py\", line 456, in _run_resampling_program  *\n        step_valid = tf.stack([record[\"kdm_step_valid\"] for record in resampling_records])\n    File \"/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/core/function/capture/capture_container.py\", line 144, in capture_by_value\n        graph._validate_in_scope(tensor)  # pylint: disable=protected-access\n\n    InaccessibleTensorError: <tf.Tensor 'and_7:0' shape=() dtype=bool> is out of scope and cannot be used here. Use return values, explicit Python locals or TensorFlow collections to access it.\n    Please see https://www.tensorflow.org/guide/function#all_outputs_of_a_tffunction_must_be_return_values for more information.\n    \n    <tf.Tensor 'and_7:0' shape=() dtype=bool> was defined here:\n        File \"/home/chakwong/BayesFilter/scripts/run_younis_score_master.py\", line 86, in <module>\n        File \"/home/chakwong/BayesFilter/scripts/run_younis_score_master.py\", line 80, in main\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/coordinator.py\", line 219, in execute\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/adapters.py\", line 149, in evaluate_gaussian\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/adapters.py\", line 149, in <listcomp>\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/kdm_adapter_tf.py\", line 56, in kernel\n        File \"/home/chakwong/BayesFilter/bayesfilter/score_study/kdm_adapter_tf.py\", line 62, in kernel\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_younis_kdm_resampling_tf.py\", line 443, in _run_resampling_program\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 625, in _value_and_analytical_score_impl\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 632, in _value_and_analytical_score_impl\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 552, in time_loop_body\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_score_tf.py\", line 553, in time_loop_body\n        File \"/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_younis_kdm_resampling_tf.py\", line 386, in post_reset_transform\n    \n    The tensor <tf.Tensor 'and_7:0' shape=() dtype=bool> cannot be accessed from FuncGraph(name=kernel, id=125517737291968), because it was defined in FuncGraph(name=time_loop_body, id=125517206012096), which is out of scope.\n"
+      ],
+      "scientific_decision": "not_evaluated"
+    }
+  ],
+  "statistically_supported_ranking": false,
+  "wall_seconds": 40.24615325800187
+}

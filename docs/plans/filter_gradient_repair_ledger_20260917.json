@@ -6,7 +6,8 @@
     {
       "id": "F01",
       "status": "open",
-      "scope": "GenUT value/score loops and score provenance"
+      "scope": "GenUT value/score loops and score provenance",
+      "remote_retirement": "Main43de3cb6c removed the old bootstrap GenUT lane. Active tests/fixtures retired; no canonical replacement admission inferred; final finding stays open."
     },
     {
       "id": "F02",
@@ -139,34 +140,49 @@
     }
   ],
   "latest_syntax_inventory": {
-    "run": 3422,
-    "working_tree_python_files": 3060,
-    "parsed_files": 3059,
+    "run": 3786,
+    "tracked_python_files": 7474,
+    "parsed_files": 7473,
     "parse_errors": 1,
-    "parse_error_role": "unchanged historical vendor syntax; counts are search leads, not compliance verdicts"
+    "ownership_counts": {
+      "external_reference_source": 245,
+      "owned_source": 1023,
+      "package_test_support": 112,
+      "owned_document_harness": 950,
+      "archived_document_artifact_python": 3763,
+      "test": 1381
+    },
+    "owned_source_modules": 1973,
+    "owned_name_matched_modules": 1004,
+    "owned_loop_syntax_sites": 31371,
+    "owned_numpy_import_sites": 285,
+    "resolved_static_call_edges": 238909,
+    "working_tree_python_files": 7474,
+    "untracked_python_files": 0,
+    "parse_error_role": "Unchanged historical vendor; counts are search leads, not violations."
   },
   "current_checkpoint": {
-    "through_run": 3762,
-    "based_on_commit": "ea94aac9611cfeda826b0088bcc7aef7353e4bc4",
-    "record": "filter_gradient_remaining_svd_cost_result_20260925.md",
-    "receipt": "artifacts/filter-gradient-repair-20260917/remaining-svd-cost-receipt-03760.json",
+    "through_run": 3786,
+    "based_on_commit": "3128687bd",
+    "record": "bayesfilter-filter-gradient-remote-integration-subplan-2026-09-25.md",
+    "receipt": "artifacts/filter-gradient-repair-20260917/remote-integration-verification-03785.json",
     "terminal_acceptance": false,
     "active_job": null,
     "all_finding_dispositions_open": true,
-    "guarded_sources": 239,
-    "exact_exceptions": 1340,
-    "guard_coverage": "Partial; no new exceptions, no numerical-loop or NumPy waiver.",
-    "status": "48 matched cost workers complete; independent analyses reproduce exactly. Candidate numerics and caller ownership pass; prior XLA fails. Cold/host and D5 GPU warm triggers remain open; remote integration and actual DZ5 qualification are next.",
+    "guarded_sources": 237,
+    "exact_exceptions": 1346,
+    "guard_coverage": "Partial; only reviewed shape/signature/schedule and completed-report allowances; no numerical-loop, NumPy or non-XLA waiver.",
+    "status": "Remote main integrated with resolved native-Hermite and retirement conflicts; 162 focused checks per backend plus policy pass. Actual DZ5, capacity and terminal audit remain open.",
     "charged_seconds": {
-      "CPU": 73366.07750559614,
-      "GPU": 74145.13260247167
+      "CPU": 73975.77712637016,
+      "GPU": 74613.16207853558
     },
     "remaining_hours": {
-      "CPU": 11.620534026223293,
-      "GPU": 31.40412983264676
+      "CPU": 11.451173020452734,
+      "GPU": 31.274121644851228
     },
     "remote_main": "5e16df06f586c16bc58fb76bc62d4f6451e7690d",
-    "latest_policy_run": 3762,
+    "latest_policy_run": 3782,
     "policy_checks": 129,
     "cost_analyzer_run": 3761,
     "cost_analyzer_checks": 25,
@@ -3138,6 +3154,56 @@
         "D5 GPU warm candidate-XLA/graph ratio 1.509",
         "Actual public/DZ5 capacity and native lifecycle"
       ]
+    },
+    "remote_integration_unit": {
+      "through_run": 3785,
+      "repair_parent": "3128687bd",
+      "remote_parent": "5e16df06f586c16bc58fb76bc62d4f6451e7690d",
+      "passed_cpu_runs": [
+        3767,
+        3768,
+        3769,
+        3770,
+        3771,
+        3772,
+        3773,
+        3783
+      ],
+      "passed_gpu_runs": [
+        3776,
+        3777,
+        3778,
+        3779,
+        3780,
+        3781,
+        3784
+      ],
+      "focused_checks_per_backend": 162,
+      "policy_checks": 129,
+      "last_policy_run": 3782,
+      "preserved_failures": {
+        "03765": "Empty suffix and incomplete-Gram derivative boundary; repaired.",
+        "03775": "All assertions pass but two tests overwrite device visibility; fixed test defaults; evidence invalidated."
+      },
+      "cpu_gpu_source_difference": [
+        "tests/highdim/test_observation_guided_tt_tf.py",
+        "tests/highdim/test_pair_block_tt_remedy.py"
+      ],
+      "source_difference_disposition": "Only standalone test device defaults changed; every numerical runtime byte matches across CPU/GPU matrices.",
+      "guarded_sources": 237,
+      "exact_exceptions": 1346,
+      "charged_seconds": {
+        "CPU": 73856.45005723315,
+        "GPU": 74613.16207853558
+      },
+      "used_workers": 24,
+      "used_seconds": 1077.7290968379239,
+      "raw_archive": "remote-integration-evidence-03785.tar.gz",
+      "raw_archive_sha256": "24a4332084bf8c13fc3428338b729592ff03d540ddfb9d6c714dd07290544736",
+      "terminal_acceptance": false,
+      "main_promotion": false,
+      "plan": "bayesfilter-filter-gradient-remote-integration-subplan-2026-09-25.md",
+      "final_inventory_run": 3786
     }
   },
   "diagnosis_checkpoint_02636": {
@@ -3630,5 +3696,33 @@
     "latest_policy_run": 3707,
     "policy_checks": 129,
     "cost_analyzer_run": 3708
+  },
+  "historical_current_checkpoint_03762": {
+    "through_run": 3785,
+    "based_on_commit": "3128687bd",
+    "record": "bayesfilter-filter-gradient-remote-integration-subplan-2026-09-25.md",
+    "receipt": "artifacts/filter-gradient-repair-20260917/remote-integration-verification-03785.json",
+    "terminal_acceptance": false,
+    "active_job": null,
+    "all_finding_dispositions_open": true,
+    "guarded_sources": 237,
+    "exact_exceptions": 1346,
+    "guard_coverage": "Partial; no new exceptions, no numerical-loop or NumPy waiver.",
+    "status": "Remote main integrated with resolved native-Hermite and retirement conflicts; 162 focused checks per backend plus policy pass. Actual DZ5, capacity and terminal audit remain open.",
+    "charged_seconds": {
+      "CPU": 73856.45005723315,
+      "GPU": 74613.16207853558
+    },
+    "remaining_hours": {
+      "CPU": 11.484319428546348,
+      "GPU": 31.274121644851228
+    },
+    "remote_main": "5e16df06f586c16bc58fb76bc62d4f6451e7690d",
+    "latest_policy_run": 3782,
+    "policy_checks": 129,
+    "cost_analyzer_run": 3761,
+    "cost_analyzer_checks": 25,
+    "canonical_neutra_architecture": "bayesfilter_neutra_iaf_author_v1",
+    "main_promotion": false
   }
 }

@@ -176,6 +176,8 @@ def run_shared_position_field_tuning(*, adapter, initial_position, config, outpu
                       max_work_items=max_work_items)
     if execution_config is not None and not isinstance(execution_config, HMCCandidateExecutionConfig):
         raise TypeError("execution_config must be HMCCandidateExecutionConfig")
+    if execution_config is not None and execution_config.reuse_leapfrog_graphs:
+        raise ValueError("reuse_leapfrog_graphs requires the exact-score TFP execution binding")
     if parameter_scales is None:
         raise ValueError("position-field preparation requires parameter_scales")
     if execution_config is None and config.verification_results < HMCAcceptancePolicy().min_decisions_per_chain:

@@ -1,0 +1,52 @@
+\subsection{Why the next direction changes}
+\label{sec:pivot}
+
+The tested all-IWSG candidate is rejected for the two matrix-Gaussian scopes.
+Its derivative agrees with its declared finite program, yet its model-score
+MSE is higher. In the smaller scope, the descriptive error mean and variance
+changed from $-1.08143$ and $2.77816$ for the canonical score to $-1.32100$
+and $2.71290$ for Phase 4B. In the larger scope they changed from $-0.98767$
+and $2.89289$ to $-1.57710$ and $7.66270$. The second scope therefore shows
+both more squared error in the mean and more variation across paths. These
+across-path decompositions are descriptive; they do not separately estimate
+the conditional bias at each fixed dataset.
+
+The result is not adequately explained by saying that the KDM derivative is
+different from the atom derivative. Both are candidates for approximating
+the exact model score, and a different estimator could have smaller error.
+The more useful question is why the new approximation should be closer to
+the model. Adding Gaussian observation covariance changes the observation
+factor. Adding a second reset changes future particles. Evaluating narrow
+kernels with fixed-location importance gradients can amplify noise. None of
+these operations, by itself, corrects the original model-score bias.
+
+The earlier restriction to the executed finite derivative made unrelated
+score recursions appear inadmissible. That restriction protected the meaning
+of the canonical API, but it was too narrow as a research objective. A
+Fisher-score estimator can be a valid candidate for the underlying model
+without being the derivative of the existing OT-reset scalar. It must be
+named and validated accordingly. Likewise, a centered control variate can
+reduce variance without removing the bias of its baseline. The distinction
+changes what an experiment must measure; it does not relax the mathematics.
+
+One historical cost argument also needs correction. The Section 3.6 memo
+grouped PaRIS with inherently quadratic ancestor calculations. The exact
+ancestor sum is quadratic, but PaRIS replaces that sum with sampled backward
+ancestors and has an expected linear-cost result under stated mixing and
+acceptance assumptions \citep[Section 3.1, Algorithm 2; Section 3.2.4,
+Theorem 10]{olsson2014paris}. Those assumptions do not hold automatically in
+every repository model, particularly when transition densities are singular
+or backward acceptance becomes small. Nevertheless, ``always quadratic''
+was an incorrect reason to exclude it. The all-components IWSG experiments
+already incurred quadratic work, making a measured comparison with
+ancestor-averaged methods more relevant than that earlier exclusion suggests.
+
+The next direction therefore assigns different jobs to three components.
+An evaluable mixture proposes particles. The original model densities specify
+their importance correction. A posterior-score recursion averages over the
+ancestor uncertainty that remains. Selective pathwise and importance-weight
+gradients are an additional way to reduce variance when mixture expectations
+must be differentiated. This combination has not been tested here. It is
+preferred as the next hypothesis because every component has a clear role in
+the model-score calculation, not because the existing negative results prove
+it will perform better.

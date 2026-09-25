@@ -1,0 +1,681 @@
+{
+  "phase": "M29",
+  "passed": true,
+  "sampler_executed_by_audit": false,
+  "full_audit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/terminal-audit-r1.json",
+  "full_audit_sha256": "aa2cea2b24cec54d167250d1dfe913b3f9b888aee38784bf6d268077c8157266",
+  "cost_attribution": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/cost-attribution-r2.json",
+  "cost_attribution_sha256": "240d2f4d8368e2a2f409c359320d20a7d52e3fceee4c9049449cb6135f304b19",
+  "source_identity": "71ef22422903ca463337c99801ca632b91c7cba8675cb7d437bcfe43f70cce53",
+  "base_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+  "independent_fits": 2,
+  "pairs": [
+    {
+      "target": "gaussian",
+      "design_id": "m29-gpu-gaussian-2026092391",
+      "descriptive_profile_overhead_seconds": 7.248621168080717,
+      "confirmation_384_fits_gpu_hours_at_observed_unprofiled_price": 65.91930030473819,
+      "parity": {
+        "exact_tensor_and_numerical_parity": true,
+        "candidate_count": 92,
+        "verified_count": 22,
+        "receipts": 155,
+        "tensor_count": 84,
+        "tuning_completion": "complete",
+        "all_observations_and_receipts_equal": true,
+        "all_posterior_decisions_and_independent_assessments_equal": true
+      },
+      "selected_posteriors": [
+        {
+          "candidate_id": "inference_validation:718c103ce80cf0bbfd92:candidate:000001",
+          "L": 3,
+          "epsilon": 1.189207115002721,
+          "passed": true,
+          "hard_vetoes": [],
+          "warmup_cap": false,
+          "retained_cap": false,
+          "warmup": 30000,
+          "retained": 4000,
+          "fixed_status": "assessed"
+        }
+      ],
+      "arms": {
+        "off": {
+          "normal_exit": true,
+          "elapsed_seconds": 617.9934403569205,
+          "setup_seconds": 3.0790902769658715,
+          "runtime": {
+            "cpu_threads": {
+              "inter_op": "1",
+              "intra_op": "1"
+            },
+            "device_scope": "gpu",
+            "gpu_intentionally_hidden": false,
+            "gpu_tensor_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "jit_compile": true,
+            "memory_policy": {
+              "all_physical_devices_memory_growth": true,
+              "configured_before_logical_device_initialization": true,
+              "full_device_preallocation_disabled": true,
+              "logical_device_memory_limit_required_for_hard_cap": true,
+              "memory_growth_is_hard_memory_cap": false,
+              "mode": "memory_growth",
+              "physical_devices": [
+                {
+                  "device": "/physical_device:GPU:0",
+                  "device_details": {
+                    "compute_capability": [
+                      8,
+                      9
+                    ],
+                    "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                  },
+                  "memory_growth": true
+                }
+              ],
+              "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+              "tf_force_gpu_allow_growth": "true"
+            },
+            "physical_gpu_details": [
+              {
+                "details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "name": "/physical_device:GPU:0"
+              }
+            ],
+            "python": "3.13.13",
+            "tensorflow": "2.20.0",
+            "tf32": true,
+            "tfp": "0.25.0",
+            "visible_devices": "1"
+          },
+          "pipeline_timing": {
+            "compilation_separated": false,
+            "invocation_seconds": 606.7865315289237,
+            "preparation_seconds": 37.904822775977664,
+            "tuning_or_reload_seconds": 462.32087919907644
+          },
+          "member_timing": [
+            {
+              "candidate_id": "inference_validation:718c103ce80cf0bbfd92:candidate:000001",
+              "timing": {
+                "compilation_separated": false,
+                "construction_seconds": 31.7597088329494,
+                "controller_seconds": 50.56762647093274
+              },
+              "fixed_seconds": 60.32113572093658
+            }
+          ],
+          "resources_after": {
+            "registered_tf_functions": 1139,
+            "max_rss_kib": 5966404,
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 628480,
+                "peak": 39209984
+              }
+            }
+          }
+        },
+        "on": {
+          "normal_exit": true,
+          "elapsed_seconds": 625.2420615250012,
+          "setup_seconds": 2.9831132990075275,
+          "runtime": {
+            "cpu_threads": {
+              "inter_op": "1",
+              "intra_op": "1"
+            },
+            "device_scope": "gpu",
+            "gpu_intentionally_hidden": false,
+            "gpu_tensor_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "jit_compile": true,
+            "memory_policy": {
+              "all_physical_devices_memory_growth": true,
+              "configured_before_logical_device_initialization": true,
+              "full_device_preallocation_disabled": true,
+              "logical_device_memory_limit_required_for_hard_cap": true,
+              "memory_growth_is_hard_memory_cap": false,
+              "mode": "memory_growth",
+              "physical_devices": [
+                {
+                  "device": "/physical_device:GPU:0",
+                  "device_details": {
+                    "compute_capability": [
+                      8,
+                      9
+                    ],
+                    "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                  },
+                  "memory_growth": true
+                }
+              ],
+              "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+              "tf_force_gpu_allow_growth": "true"
+            },
+            "physical_gpu_details": [
+              {
+                "details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "name": "/physical_device:GPU:0"
+              }
+            ],
+            "python": "3.13.13",
+            "tensorflow": "2.20.0",
+            "tf32": true,
+            "tfp": "0.25.0",
+            "visible_devices": "1"
+          },
+          "pipeline_timing": {
+            "compilation_separated": false,
+            "invocation_seconds": 612.9948427970521,
+            "preparation_seconds": 39.12340479902923,
+            "tuning_or_reload_seconds": 479.9081535199657
+          },
+          "member_timing": [
+            {
+              "candidate_id": "inference_validation:718c103ce80cf0bbfd92:candidate:000001",
+              "timing": {
+                "compilation_separated": false,
+                "construction_seconds": 19.085381202050485,
+                "controller_seconds": 50.91150745097548
+              },
+              "fixed_seconds": 60.718961364007555
+            }
+          ],
+          "resources_after": {
+            "registered_tf_functions": 1007,
+            "max_rss_kib": 5927628,
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 658432,
+                "peak": 40968448
+              }
+            }
+          }
+        }
+      },
+      "profile": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-on-gpu-r1/fits/m29-gpu-gaussian-2026092391/replication-0000/process-attempt-001-host.prof",
+        "sha256": "5e8b46c23b1b9b96dd55ef3627128d3a91b2f3c40426082d1d89bf276e9f3c17",
+        "python_calls": 79562818,
+        "profile_seconds": 616.0400888079995,
+        "required_functions_found": [
+          "execute_pipeline",
+          "run_fixed_comparator",
+          "run_hmc_posterior",
+          "run_replication",
+          "tune_hmc_kernel"
+        ],
+        "stages_and_framework_calls": [
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/engines/pipeline.py",
+            "line": 146,
+            "function": "run_replication",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 0.017510945,
+            "cumulative_seconds": 615.4036914760001
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/procedures.py",
+            "line": 218,
+            "function": "execute_pipeline",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 0.0036976540000000003,
+            "cumulative_seconds": 613.339073953
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/inference/hmc_tuning_dispatch.py",
+            "line": 29,
+            "function": "tune_hmc_kernel",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 0.00034033500000000004,
+            "cumulative_seconds": 479.46877157600005
+          },
+          {
+            "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/execute.py",
+            "line": 28,
+            "function": "quick_execute",
+            "primitive_calls": 21732,
+            "calls": 21732,
+            "self_seconds": 455.85202395100004,
+            "cumulative_seconds": 455.87302309700004
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/procedures.py",
+            "line": 183,
+            "function": "run_fixed_comparator",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 0.012851184000000002,
+            "cumulative_seconds": 60.719398341
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/inference/hmc_posterior_assessment.py",
+            "line": 137,
+            "function": "run_hmc_posterior",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 2.646e-05,
+            "cumulative_seconds": 50.908334291
+          },
+          {
+            "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py",
+            "line": 144,
+            "function": "trace_function",
+            "primitive_calls": 3056,
+            "calls": 3339,
+            "self_seconds": 0.024997577,
+            "cumulative_seconds": 47.881263183
+          },
+          {
+            "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py",
+            "line": 188,
+            "function": "_maybe_define_function",
+            "primitive_calls": 3056,
+            "calls": 3339,
+            "self_seconds": 0.036085674000000005,
+            "cumulative_seconds": 47.651697153
+          },
+          {
+            "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py",
+            "line": 295,
+            "function": "_create_concrete_function",
+            "primitive_calls": 183,
+            "calls": 184,
+            "self_seconds": 0.006291008000000001,
+            "cumulative_seconds": 46.740568763000006
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/fit_process.py",
+            "line": 23,
+            "function": "resource_snapshot",
+            "primitive_calls": 2,
+            "calls": 2,
+            "self_seconds": 0.871941582,
+            "cumulative_seconds": 0.8739741750000001
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/storage.py",
+            "line": 20,
+            "function": "write_json",
+            "primitive_calls": 11,
+            "calls": 11,
+            "self_seconds": 0.000999094,
+            "cumulative_seconds": 0.47381756
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/storage.py",
+            "line": 35,
+            "function": "write_tensor",
+            "primitive_calls": 4,
+            "calls": 4,
+            "self_seconds": 0.000206808,
+            "cumulative_seconds": 0.035287304000000005
+          }
+        ],
+        "interpretation": "Python host frames including waits; nested cumulative times overlap; no device kernel timing"
+      },
+      "saved_chunk_costs": {
+        "unique_cache_keys": 29,
+        "calls": 198,
+        "first_call_seconds": 313.7068839066196,
+        "warmed_call_seconds": 41.239661997766234,
+        "interpretation": "First calls include construction, trace, compilation, execution and capture. Later calls differ in states/seeds and are descriptive only; subtraction does not estimate compilation time."
+      }
+    },
+    {
+      "target": "beta_binomial",
+      "design_id": "m29-gpu-beta-binomial-2026092392",
+      "descriptive_profile_overhead_seconds": 56.22663468797691,
+      "confirmation_384_fits_gpu_hours_at_observed_unprofiled_price": 65.39410314783454,
+      "parity": {
+        "exact_tensor_and_numerical_parity": true,
+        "candidate_count": 100,
+        "verified_count": 18,
+        "receipts": 171,
+        "tensor_count": 94,
+        "tuning_completion": "complete",
+        "all_observations_and_receipts_equal": true,
+        "all_posterior_decisions_and_independent_assessments_equal": true
+      },
+      "selected_posteriors": [
+        {
+          "candidate_id": "inference_validation:398ac3e281a18f54baad:candidate:000001",
+          "L": 3,
+          "epsilon": 2.82696078980962,
+          "passed": true,
+          "hard_vetoes": [],
+          "warmup_cap": false,
+          "retained_cap": false,
+          "warmup": 2000,
+          "retained": 5000,
+          "fixed_status": "assessed"
+        }
+      ],
+      "arms": {
+        "off": {
+          "normal_exit": true,
+          "elapsed_seconds": 613.0697170109488,
+          "setup_seconds": 2.9783468049718067,
+          "runtime": {
+            "cpu_threads": {
+              "inter_op": "1",
+              "intra_op": "1"
+            },
+            "device_scope": "gpu",
+            "gpu_intentionally_hidden": false,
+            "gpu_tensor_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "jit_compile": true,
+            "memory_policy": {
+              "all_physical_devices_memory_growth": true,
+              "configured_before_logical_device_initialization": true,
+              "full_device_preallocation_disabled": true,
+              "logical_device_memory_limit_required_for_hard_cap": true,
+              "memory_growth_is_hard_memory_cap": false,
+              "mode": "memory_growth",
+              "physical_devices": [
+                {
+                  "device": "/physical_device:GPU:0",
+                  "device_details": {
+                    "compute_capability": [
+                      8,
+                      9
+                    ],
+                    "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                  },
+                  "memory_growth": true
+                }
+              ],
+              "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+              "tf_force_gpu_allow_growth": "true"
+            },
+            "physical_gpu_details": [
+              {
+                "details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "name": "/physical_device:GPU:0"
+              }
+            ],
+            "python": "3.13.13",
+            "tensorflow": "2.20.0",
+            "tf32": true,
+            "tfp": "0.25.0",
+            "visible_devices": "1"
+          },
+          "pipeline_timing": {
+            "compilation_separated": false,
+            "invocation_seconds": 602.71145737404,
+            "preparation_seconds": 42.66433626494836,
+            "tuning_or_reload_seconds": 517.2664615750546
+          },
+          "member_timing": [
+            {
+              "candidate_id": "inference_validation:398ac3e281a18f54baad:candidate:000001",
+              "timing": {
+                "compilation_separated": false,
+                "construction_seconds": 17.269438402960077,
+                "controller_seconds": 35.60458685096819
+              },
+              "fixed_seconds": 30.92366694100201
+            }
+          ],
+          "resources_after": {
+            "registered_tf_functions": 1280,
+            "max_rss_kib": 6270544,
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 808448,
+                "peak": 8559104
+              }
+            }
+          }
+        },
+        "on": {
+          "normal_exit": true,
+          "elapsed_seconds": 669.2963516989257,
+          "setup_seconds": 2.985379970050417,
+          "runtime": {
+            "cpu_threads": {
+              "inter_op": "1",
+              "intra_op": "1"
+            },
+            "device_scope": "gpu",
+            "gpu_intentionally_hidden": false,
+            "gpu_tensor_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+            "jit_compile": true,
+            "memory_policy": {
+              "all_physical_devices_memory_growth": true,
+              "configured_before_logical_device_initialization": true,
+              "full_device_preallocation_disabled": true,
+              "logical_device_memory_limit_required_for_hard_cap": true,
+              "memory_growth_is_hard_memory_cap": false,
+              "mode": "memory_growth",
+              "physical_devices": [
+                {
+                  "device": "/physical_device:GPU:0",
+                  "device_details": {
+                    "compute_capability": [
+                      8,
+                      9
+                    ],
+                    "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                  },
+                  "memory_growth": true
+                }
+              ],
+              "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+              "tf_force_gpu_allow_growth": "true"
+            },
+            "physical_gpu_details": [
+              {
+                "details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "name": "/physical_device:GPU:0"
+              }
+            ],
+            "python": "3.13.13",
+            "tensorflow": "2.20.0",
+            "tf32": true,
+            "tfp": "0.25.0",
+            "visible_devices": "1"
+          },
+          "pipeline_timing": {
+            "compilation_separated": false,
+            "invocation_seconds": 658.0907713619526,
+            "preparation_seconds": 48.097913017030805,
+            "tuning_or_reload_seconds": 562.5862127169967
+          },
+          "member_timing": [
+            {
+              "candidate_id": "inference_validation:398ac3e281a18f54baad:candidate:000001",
+              "timing": {
+                "compilation_separated": false,
+                "construction_seconds": 22.18453332199715,
+                "controller_seconds": 37.915474826004356
+              },
+              "fixed_seconds": 33.28265389997978
+            }
+          ],
+          "resources_after": {
+            "registered_tf_functions": 1280,
+            "max_rss_kib": 6276768,
+            "gpu_allocator_bytes": {
+              "/device:GPU:0": {
+                "current": 789248,
+                "peak": 8802048
+              }
+            }
+          }
+        }
+      },
+      "profile": {
+        "path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-on-gpu-r1/fits/m29-gpu-beta-binomial-2026092392/replication-0000/process-attempt-001-host.prof",
+        "sha256": "f9b6d62a6430b4f03e562443fb3e99ced08c904329b19f68534fdccf8bfab462",
+        "python_calls": 91179491,
+        "profile_seconds": 659.854296450002,
+        "required_functions_found": [
+          "execute_pipeline",
+          "run_fixed_comparator",
+          "run_hmc_posterior",
+          "run_replication",
+          "tune_hmc_kernel"
+        ],
+        "stages_and_framework_calls": [
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/engines/pipeline.py",
+            "line": 146,
+            "function": "run_replication",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 0.012019091,
+            "cumulative_seconds": 659.1760474150001
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/procedures.py",
+            "line": 218,
+            "function": "execute_pipeline",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 0.0035596620000000003,
+            "cumulative_seconds": 658.442713667
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/inference/hmc_tuning_dispatch.py",
+            "line": 29,
+            "function": "tune_hmc_kernel",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 0.00030451100000000004,
+            "cumulative_seconds": 562.091854163
+          },
+          {
+            "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/execute.py",
+            "line": 28,
+            "function": "quick_execute",
+            "primitive_calls": 23997,
+            "calls": 23997,
+            "self_seconds": 477.238041509,
+            "cumulative_seconds": 477.26083167200005
+          },
+          {
+            "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py",
+            "line": 144,
+            "function": "trace_function",
+            "primitive_calls": 3406,
+            "calls": 3723,
+            "self_seconds": 0.030353185,
+            "cumulative_seconds": 54.638852043
+          },
+          {
+            "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py",
+            "line": 188,
+            "function": "_maybe_define_function",
+            "primitive_calls": 3406,
+            "calls": 3723,
+            "self_seconds": 0.044405792,
+            "cumulative_seconds": 54.378318538
+          },
+          {
+            "file": "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py",
+            "line": 295,
+            "function": "_create_concrete_function",
+            "primitive_calls": 212,
+            "calls": 213,
+            "self_seconds": 0.00784487,
+            "cumulative_seconds": 53.317662764000005
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/inference/hmc_posterior_assessment.py",
+            "line": 137,
+            "function": "run_hmc_posterior",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 1.238e-05,
+            "cumulative_seconds": 37.912586520000005
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/procedures.py",
+            "line": 183,
+            "function": "run_fixed_comparator",
+            "primitive_calls": 1,
+            "calls": 1,
+            "self_seconds": 0.000552528,
+            "cumulative_seconds": 33.283043230000004
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/fit_process.py",
+            "line": 23,
+            "function": "resource_snapshot",
+            "primitive_calls": 2,
+            "calls": 2,
+            "self_seconds": 0.9410802370000001,
+            "cumulative_seconds": 0.9423124850000001
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/storage.py",
+            "line": 20,
+            "function": "write_json",
+            "primitive_calls": 11,
+            "calls": 11,
+            "self_seconds": 0.002366145,
+            "cumulative_seconds": 0.537043285
+          },
+          {
+            "file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3/bayesfilter/testing/inference_validation/storage.py",
+            "line": 35,
+            "function": "write_tensor",
+            "primitive_calls": 4,
+            "calls": 4,
+            "self_seconds": 0.00012883,
+            "cumulative_seconds": 0.012765944000000001
+          }
+        ],
+        "interpretation": "Python host frames including waits; nested cumulative times overlap; no device kernel timing"
+      },
+      "saved_chunk_costs": {
+        "unique_cache_keys": 33,
+        "calls": 225,
+        "first_call_seconds": 369.97767004708294,
+        "warmed_call_seconds": 29.692533057532273,
+        "interpretation": "First calls include construction, trace, compilation, execution and capture. Later calls differ in states/seeds and are descriptive only; subtraction does not estimate compilation time."
+      }
+    }
+  ],
+  "tests": {
+    "focused_regressions": 43,
+    "documentation_contract": 15
+  },
+  "charged_seconds": {
+    "cpu_reference": 668.1526323368307,
+    "gpu": 2525.601570591796
+  },
+  "remaining_budget_seconds": {
+    "cpu_reference": 74979.67865046971,
+    "gpu": 77294.48905148171
+  },
+  "interpretation": "Engineering replay and host cost evidence. No speed ranking, posterior coverage, global exploration, learned-map or default promotion."
+}

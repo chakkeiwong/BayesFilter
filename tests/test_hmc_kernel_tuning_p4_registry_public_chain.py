@@ -10,7 +10,7 @@ import pytest
 
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
 import bayesfilter.inference.hmc_warmup as hmc_warmup
-from bayesfilter.inference import HMCKernelTuningConfig, tune_hmc_kernel
+from bayesfilter.inference import HMCKernelTuningConfig
 from tests.test_hmc_kernel_tuning_fixed_mass_step import (
     _ToyGaussianAdapter,
     _bootstrap,
@@ -75,7 +75,7 @@ def test_public_p4_source_coverage_is_complete_deterministic_and_hash_bound() ->
     )
 
 
-def test_p4_phase7_loop_requires_typed_registry_and_non_p4_does_not_create_one(
+def test_historical_phase7_loop_requires_typed_registry_and_non_p4_does_not_create_one(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     geometry = _geometry()
@@ -133,7 +133,9 @@ def test_p4_phase7_loop_requires_typed_registry_and_non_p4_does_not_create_one(
             diagnostic_roles={},
         ),
     )
-    result = tune_hmc_kernel(
+    # These injected Phase 7 helpers belong to the historical wrapper. The
+    # public dispatcher now returns a candidate set and does not call this loop.
+    result = hmc_kernel_tuning._run_canonical_hmc_tuning(
         adapter=_ToyGaussianAdapter(),
         initial_position=[0.0, 0.0],
         config=HMCKernelTuningConfig.smoke(

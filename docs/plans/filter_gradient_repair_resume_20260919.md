@@ -1,5 +1,23 @@
 # Filter and gradient repair recovery
 
+Current checkpoint, 2026-09-25 through 03786: remote main `5e16df06f` is
+integrated in the repair worktree and ready for its merge commit. Conflicts
+preserve the native Hermite recurrence, new reverse/batched behavior and retired
+GenUT boundary. Empty-suffix and derivative-boundary defects found in integration
+are repaired. All 162 focused checks pass on each backend, including 87 filter/
+derivative and six canonical-IAF checks; 129 policy checks pass. The partial guard
+is 237 sources / 1346 exact shape/reporting allowances. Read the
+[integration record](bayesfilter-filter-gradient-remote-integration-subplan-2026-09-25.md).
+
+Next commit/push this repair-branch merge and create the merged-commit DZ5 snapshot,
+then continue actual target qualification. Promotion to main remains blocked by
+public/actual DZ5 integration, reporting/isotropic issues, native capacity and
+terminal F01--F20 dispositions. New remote algorithm modules require the final
+call-chain audit; the refreshed syntax inventory is not a compliance certificate.
+Charges: 73975.777126 CPU / 74613.162079 GPU seconds, leaving
+11.451173 / 31.274122 hours. No worker is active.
+Earlier checkpoints below are superseded for current status only.
+
 Current checkpoint, 2026-09-25 through 03762: remaining-SVD costs are complete
 with 48 accepted workers. The CPU/GPU analyses reproduce exactly and all receipt
 hashes match; 25 final analyzer and 129 policy checks pass. Numerical candidate

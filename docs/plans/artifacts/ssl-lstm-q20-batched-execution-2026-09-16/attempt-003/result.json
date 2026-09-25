@@ -1,0 +1,38 @@
+{
+  "schema": "bayesfilter.q20.batched_execution_tests.v1",
+  "command": [
+    "timeout",
+    "--signal=TERM",
+    "--kill-after=5s",
+    "295s",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_q20_master_integration.py::test_actual_tuning_member_and_posterior",
+    "tests/test_hmc_candidate_set_execution.py::test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence"
+  ],
+  "started_at": "2026-09-16T04:29:29.868183+00:00",
+  "git_commit": "d31e1b7618f613b9f7a7ec7ace7f11556870fb4e",
+  "source_patch_sha256": "09b92d1837e4bd5b1e1fcb2c8f0ad9fbf6b1d271b12954d73716ddacad9831d4",
+  "compiled_op_sha256": "2feb93135f2359e60aca446f52f8468b104199b4d398d4fe6057030df20f23d6",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "2",
+    "OMP_NUM_THREADS": "2"
+  },
+  "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "gpu_intentionally_hidden": true,
+  "role": "tiny_CPU_reference_integration_only",
+  "thread_count_provenance": "convenience CPU test oversubscription bound, not production setting",
+  "seeds": "fixed mechanics seeds in the checked test source",
+  "data_version": "synthetic Gaussian fixtures, no q20 data experiment",
+  "plan_file": "docs/plans/bayesfilter-ssl-lstm-q20-batched-execution-repair-2026-09-16.md",
+  "result_file": "docs/plans/artifacts/ssl-lstm-q20-batched-execution-2026-09-16/attempt-003/result.json",
+  "log_file": "docs/plans/artifacts/ssl-lstm-q20-batched-execution-2026-09-16/attempt-003/pytest.log",
+  "repair": "Preserve concurrent retained timing and model-transform changes; check batched metadata and checkpoint replay.",
+  "exit_code": 0,
+  "wall_seconds": 60.22097450698493
+}

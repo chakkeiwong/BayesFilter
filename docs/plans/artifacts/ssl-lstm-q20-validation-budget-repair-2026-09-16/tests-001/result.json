@@ -1,0 +1,37 @@
+{
+  "command": [
+    "timeout",
+    "--signal=TERM",
+    "--kill-after=5s",
+    "395s",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "--disable-warnings",
+    "tests/test_q20_training_validation.py",
+    "tests/test_q20_production_repair.py",
+    "tests/test_q20_campaign_costs.py",
+    "tests/test_q20_master_program.py::test_calibration_master_prices_only_training_and_preserves_partial_cohort",
+    "tests/test_q20_master_program.py::test_real_pricing_worker_stops_early_and_resume_does_not_repeat",
+    "tests/test_q20_master_integration.py"
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "2",
+    "OMP_NUM_THREADS": "2"
+  },
+  "started_at": "2026-09-16T10:30:55.930440+00:00",
+  "git_commit": "d31e1b7618f613b9f7a7ec7ace7f11556870fb4e",
+  "source_patch_sha256": "41a1bf6eda422d2ea22cb149f114cbc96b2efc92d79e78cc5b13bfc05e955a02",
+  "cpu_reference": true,
+  "gpu_intentionally_hidden": true,
+  "seeds": "fixed test fixture seeds",
+  "data_version": "synthetic Gaussian fixtures",
+  "plan_file": "docs/plans/bayesfilter-ssl-lstm-q20-validation-budget-repair-plan-2026-09-16.md",
+  "result_file": "docs/plans/artifacts/ssl-lstm-q20-validation-budget-repair-2026-09-16/tests-001/result.json",
+  "exit_code": 0,
+  "wall_seconds": 225.00565584900323
+}

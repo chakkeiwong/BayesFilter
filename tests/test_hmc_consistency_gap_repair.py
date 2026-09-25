@@ -206,7 +206,7 @@ def test_collection_resolves_each_search_and_completeness_without_order_dependen
 
 @pytest.mark.parametrize("option", ["search_config", "execution_config"])
 def test_invalid_config_is_rejected_before_preparation(option):
-    with patch("bayesfilter.inference.hmc_kernel_tuning.prepare_operational_windowed_mass_handoff") as prepare:
+    with patch("bayesfilter.inference.hmc_preparation.prepare_operational_windowed_mass_handoff") as prepare:
         with pytest.raises(TypeError, match=option):
             tune_hmc_kernel(adapter=GaussianTarget(), initial_position=[0., 0.],
                 config=HMCKernelTuningConfig.smoke(target_scope="candidate-bridge-test"),
@@ -220,7 +220,7 @@ def test_all_supplied_l_grids_obey_the_preparation_cap_before_work(grid_kind):
     search = (_config(grid=(26,), epsilons=((26, (.25,)),)) if grid_kind == "primary"
               else _config(grid=(3,), epsilons=((3, (.25,)),), **kwargs))
     preparation = HMCKernelTuningConfig.smoke(target_scope="candidate-bridge-test")
-    with patch("bayesfilter.inference.hmc_kernel_tuning.prepare_operational_windowed_mass_handoff") as prepare:
+    with patch("bayesfilter.inference.hmc_preparation.prepare_operational_windowed_mass_handoff") as prepare:
         with pytest.raises(ValueError, match="max_leapfrog_steps"):
             tune_hmc_kernel(adapter=GaussianTarget(), initial_position=[0., 0.],
                 config=preparation,
@@ -277,7 +277,7 @@ def test_preparation_failure_is_preserved_and_requires_fresh_retry_directory(tmp
     def fail(**kwargs):
         kwargs["progress_callback"]("geometry_completed", {"diagnostic": "fixture"})
         raise RuntimeError("injected preparation failure")
-    with patch("bayesfilter.inference.hmc_kernel_tuning.prepare_operational_windowed_mass_handoff", fail):
+    with patch("bayesfilter.inference.hmc_preparation.prepare_operational_windowed_mass_handoff", fail):
         with pytest.raises(RuntimeError, match="injected preparation"):
             tune_hmc_kernel(adapter=GaussianTarget(), initial_position=[0., 0.],
                 config=HMCKernelTuningConfig.smoke(target_scope="candidate-bridge-test"), output_dir=tmp_path)
@@ -298,7 +298,8 @@ def test_preparation_deadline_stops_between_phases_and_persists_reason(tmp_path)
                 clock[0] = 2.
                 progress.phase("geometry_completed")
     record = json.loads((tmp_path / "preparation_progress.json").read_text())
-    assert record["status"] == "failed"
+    assert record["status"] == "deferred"
+    assert record["failure"]["type"] == "HMCPreparationBudgetExceeded"
     assert record["elapsed_seconds"] == 2.
 
 

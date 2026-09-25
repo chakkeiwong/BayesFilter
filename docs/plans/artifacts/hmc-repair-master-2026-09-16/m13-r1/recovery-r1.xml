@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="27" time="54.894" timestamp="2026-09-21T00:06:33.040790+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_preparation_recovery" name="test_public_recovery_config_reaches_actual_warmup" time="0.001" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_rejects_invalid_caps[-1]" time="0.001" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_rejects_invalid_caps[True]" time="0.000" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_rejects_invalid_caps[0.5]" time="0.000" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_rejects_invalid_caps[3]" time="0.001" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_rejects_fixed_identity" time="0.000" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_default_calls_original_attempt_unchanged" time="3.664" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_real_multimodel_recovery_preserves_failed_draws_and_resets[gaussian]" time="3.459" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_real_multimodel_recovery_preserves_failed_draws_and_resets[rotated_gaussian]" time="3.715" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_real_multimodel_recovery_preserves_failed_draws_and_resets[beta_binomial]" time="3.507" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_real_multimodel_recovery_preserves_failed_draws_and_resets[lgssm_location]" time="3.701" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_real_multimodel_recovery_preserves_failed_draws_and_resets[banana]" time="3.516" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_real_multimodel_recovery_preserves_failed_draws_and_resets[funnel_noncentered]" time="3.593" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_shared_retained_and_unclassified_failures_do_not_restart[accepted]" time="0.521" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_shared_retained_and_unclassified_failures_do_not_restart[retained]" time="0.486" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_shared_retained_and_unclassified_failures_do_not_restart[score]" time="0.515" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_shared_retained_and_unclassified_failures_do_not_restart[step]" time="0.520" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_shared_retained_and_unclassified_failures_do_not_restart[unclassified]" time="0.527" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_shared_retained_and_unclassified_failures_do_not_restart[telemetry]" time="0.724" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_shared_retained_and_unclassified_failures_do_not_restart[execution]" time="0.474" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_exhaustion_preserves_every_failed_attempt_and_work" time="0.696"><failure message="bayesfilter.inference.hmc_warmup._ReasonableEpsilonSharedInvalidity: reasonable-epsilon HMC proposal execution failed">kwargs = {'current_state': &lt;tf.Tensor: shape=(2,), dtype=float64, numpy=array([0.2, 0.2])&gt;, 'kernel': &lt;tensorflow_probability.python.mcmc.hmc.HamiltonianMonteCarlo object at 0x7f604c5487d0&gt;, 'num_burnin_steps': 0, 'num_results': 2, ...}
+result = StatesAndTrace(
+  all_states=&lt;tf.Tensor 'mcmc_sample_chain/trace_scan/TensorArrayV2Stack/TensorListStack:0' shape=(2, ...eed=&lt;tf.Tensor 'mcmc_sample_chain/trace_scan/TensorArrayV2Stack_15/TensorListStack:0' shape=(2, 2) dtype=int32&gt;
+    )
+)
+
+    def sample(**kwargs):
+        result = original(**kwargs)
+        if not hasattr(result, "all_states"):
+            return result
+        calls.append(kwargs)
+        if len(calls) != call_index and not every:
+            return result
+&gt;       states, trace = result.all_states, dict(result.trace)
+                                           ^^^^^^^^^^^^^^^^^^
+E       ValueError: dictionary update sequence element #0 has length 8; 2 is required
+
+tests/test_hmc_preparation_recovery.py:54: ValueError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f6046776090&gt;
+
+    def test_exhaustion_preserves_every_failed_attempt_and_work(monkeypatch):
+        _inject(monkeypatch,every=True)
+        with pytest.raises(RejectedPreparationProposal) as caught:
+&gt;           warmup.run_operational_windowed_warmup(**_kwargs(restarts=1))
+
+tests/test_hmc_preparation_recovery.py:153: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/hmc_warmup.py:6138: in run_operational_windowed_warmup
+    return run_with_preparation_recovery(_run_operational_windowed_warmup_attempt, arguments)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_preparation_recovery.py:295: in run_with_preparation_recovery
+    probe = warmup.find_reasonable_epsilon(adapter=affine, current_state=checkpoint.active_latent,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def find_reasonable_epsilon(
+        *,
+        adapter: Any,
+        current_state: Any,
+        initial_step_size: float,
+        seed: tuple[int, int],
+        max_attempts: int = 20,
+        lower_acceptance: float = 0.25,
+        upper_acceptance: float = 0.75,
+        num_leapfrog_steps: int = 1,
+        momentum_probe_count: int = 1,
+        probe_num_results: int = 1,
+        target_status_trace_policy: str = "none",
+        jit_compile: bool = False,
+        hard_veto_nonfinite: bool = False,
+        preparation_step_ceiling: float | None = None,
+        _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
+        _g2_seed_key_prefix: str | None = None,
+        _g2_seed_base_key: str | None = None,
+    ) -&gt; ReasonableEpsilonResult:
+        """Bracket epsilon using the fixed trajectory that will consume it.
+    
+        The strict fixed-L repair sets ``hard_veto_nonfinite=True``: a failed
+        target, score, acceptance, proposal, or displacement terminates the
+        bracket, instead of halving epsilon and retrying a failed trajectory.
+        Ordinary metric qualification may set ``probe_num_results &gt; 1`` to check
+        short fixed-step chains. The historical one-step branch stays unchanged.
+        """
+    
+        import tensorflow as tf
+        import tensorflow_probability as tfp
+        from bayesfilter.inference.fixed_l_finite_bracket import (
+            FixedLFiniteBracketError,
+            classify_tuning_exception,
+            finite_transition_health,
+        )
+    
+        step = float(initial_step_size)
+        if not math.isfinite(step) or step &lt;= 0.0:
+            raise ValueError("initial_step_size must be positive and finite")
+        if preparation_step_ceiling is not None:
+            if (not math.isfinite(preparation_step_ceiling) or preparation_step_ceiling &lt;= 0
+                    or step &gt; preparation_step_ceiling or probe_num_results &lt; 2
+                    or _g2_seed_use_registry is not None or hard_veto_nonfinite):
+                raise ValueError("contracted preparation probe requires a finite ceiling and sequential ordinary probes")
+        attempt_limit = _strict_integer(max_attempts, name="max_attempts", minimum=1)
+        lower = float(lower_acceptance)
+        upper = float(upper_acceptance)
+        if (
+            not all(math.isfinite(value) for value in (lower, upper))
+            or not 0.0 &lt; lower &lt; upper &lt; 1.0
+        ):
+            raise ValueError("reasonable-epsilon acceptance bracket must lie inside (0, 1)")
+        normalized_seed = _strict_seed(seed, name="seed")
+        if _g2_seed_use_registry is not None:
+            if not isinstance(_g2_seed_use_registry, G2PreboundarySeedUseRegistry):
+                raise TypeError("_g2_seed_use_registry must be a G2 seed registry")
+            _strict_ascii_identifier(_g2_seed_key_prefix, name="G2 seed key prefix")
+            _strict_ascii_identifier(_g2_seed_base_key, name="G2 seed base key")
+        elif _g2_seed_key_prefix is not None or _g2_seed_base_key is not None:
+            raise ValueError("G2 seed labels require a G2 seed registry")
+        leapfrog_steps = _strict_integer(
+            num_leapfrog_steps,
+            name="num_leapfrog_steps",
+            minimum=1,
+        )
+        probe_count = _strict_integer(
+            momentum_probe_count,
+            name="momentum_probe_count",
+            minimum=1,
+        )
+        probe_results = _strict_integer(probe_num_results, name="probe_num_results", minimum=1)
+        if probe_results &gt; 1 and (_g2_seed_use_registry is not None or hard_veto_nonfinite):
+            raise ValueError("sequential epsilon probes are ordinary preparation only")
+        target_status_policy = _target_status_policy(target_status_trace_policy)
+        state = _float64_tensor(current_state)
+        if (
+            state.shape.rank is None
+            or state.shape.rank &lt; 1
+            or any(dim == 0 for dim in state.shape)
+            or not bool(tf.reduce_all(tf.math.is_finite(state)).numpy())
+        ):
+            raise ValueError("reasonable-epsilon current_state must be non-empty and finite")
+        target = reviewed_value_score_target_fn(adapter, dtype=state.dtype)
+        initial_value, initial_score = adapter.log_prob_and_grad(state)
+        if not _all_finite_tensors((initial_value, initial_score)):
+            raise (_ReasonableEpsilonSharedInvalidity if probe_results &gt; 1 else ValueError)(
+                "reasonable-epsilon current_state target value and score must be finite"
+            )
+        target_status_shape = tuple(int(item) for item in tf.shape(state)[:-1].numpy())
+        if target_status_policy == "per_chain_step" and _target_status_failed(
+            adapter,
+            state,
+            expected_shape=target_status_shape,
+        ):
+            raise (_ReasonableEpsilonSharedInvalidity if probe_results &gt; 1 else ValueError)(
+                "reasonable-epsilon current_state target-status telemetry is nonvalid"
+            )
+        attempts: list[ReasonableEpsilonAttempt] = []
+        high_acceptance_step: float | None = None
+        low_acceptance_step: float | None = None
+        proposal_seed_list: list[tuple[int, int]] = []
+        for proposal_index in range(probe_count):
+            if _g2_seed_use_registry is None:
+                # Preserve the historical non-registry stream exactly. The G2
+                # registry branch below is the only path that changes derivation.
+                proposal_seed = _seed(normalized_seed, proposal_index)
+            else:
+                proposal_seed = _g2_domain_separated_seed(
+                    normalized_seed,
+                    base_key=_g2_seed_base_key,
+                    domain_label=_G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
+                    index=proposal_index,
+                )
+                try:
+                    proposal_seed = _g2_seed_use_registry.consume(
+                        derivation_site_id=(
+                            _G2_REASONABLE_PROPOSAL_SEED_DERIVATION_SITE_ID
+                        ),
+                        terminal_gate_site_id=(
+                            _G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID
+                        ),
+                        key=f"{_g2_seed_key_prefix}/proposal/{proposal_index:02d}",
+                        owner_file="hmc_warmup.py",
+                        owner_qualname="find_reasonable_epsilon",
+                        terminal_consumer="tensorflow_stateless_rng",
+                        derivation={
+                            "kind": "warmup_domain_hash",
+                            "base_key": _g2_seed_base_key,
+                            "domain_label": _G2_REASONABLE_PROPOSAL_SEED_DOMAIN,
+                            "index": proposal_index,
+                        },
+                        indices=(
+                            {"name": "proposal_index", "value": proposal_index},
+                        ),
+                        seed=proposal_seed,
+                        interface_hop_site_ids=(
+                            _G2_REASONABLE_PROPOSAL_SEED_INTERFACE_HOPS
+                        ),
+                    )
+                except _G2SeedRegistryError as exc:
+                    raise g2_preboundary_shared_invalidity_exception(
+                        _g2_seed_use_registry,
+                        stage=_G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID,
+                        cause=exc,
+                    ) from None
+            proposal_seed_list.append(proposal_seed)
+        proposal_seeds = tuple(proposal_seed_list)
+    
+        def is_declared_target_domain_failure(error: BaseException) -&gt; bool:
+            classifier = getattr(adapter, "classify_target_exception", None)
+            if not callable(classifier):
+                return False
+            try:
+                result = classifier(error)
+            except Exception as exc:  # noqa: BLE001 - classifier is adapter authority.
+                raise RuntimeError(
+                    "target exception classifier failed during epsilon search"
+                ) from exc
+            if not _is_boolean_scalar(result):
+                raise TypeError("classify_target_exception must return a boolean")
+            return bool(result)
+    
+        for index in range(attempt_limit):
+            kernel = tfp.mcmc.HamiltonianMonteCarlo(
+                target_log_prob_fn=target,
+                step_size=tf.constant(step, dtype=state.dtype),
+                num_leapfrog_steps=leapfrog_steps,
+            )
+            if bool(jit_compile):
+                bootstrap_results = tf.function(
+                    kernel.bootstrap_results,
+                    jit_compile=True,
+                    reduce_retracing=True,
+                )
+                results = bootstrap_results(state)
+            else:
+                results = kernel.bootstrap_results(state)
+            if not _kernel_result_value_score_finite(results.accepted_results):
+                raise (_ReasonableEpsilonSharedInvalidity if probe_results &gt; 1 else ValueError)(
+                    "reasonable-epsilon bootstrap target evidence is nonfinite")
+            if probe_results &gt; 1:
+                def sequential_probe(proposal_seed: Any) -&gt; Any:
+                    return _run_reasonable_epsilon_probe_chain(
+                        kernel=kernel, state=state, results=results,
+                        seed=proposal_seed, num_results=probe_results,
+                    )
+    
+                one_step = tf.function(
+                    sequential_probe,
+                    input_signature=[tf.TensorSpec([2], tf.int32)],
+                    jit_compile=bool(jit_compile), autograph=False,
+                )
+            elif bool(jit_compile):
+                @tf.function(jit_compile=True, reduce_retracing=True)
+                def one_step(proposal_seed: tf.Tensor):
+                    return kernel.one_step(
+                        state,
+                        results,
+                        seed=tf.convert_to_tensor(proposal_seed, tf.int32),
+                    )
+            else:
+                def one_step(proposal_seed: tf.Tensor):
+                    return kernel.one_step(
+                        state,
+                        results,
+                        seed=tf.convert_to_tensor(proposal_seed, tf.int32),
+                    )
+            acceptance_probabilities: list[float] = []
+            finite = True
+            health_failure_list: list[str] = []
+            for proposal_seed in proposal_seeds:
+                try:
+                    next_state, next_results = one_step(
+                        tf.constant(proposal_seed, dtype=tf.int32)
+                    )
+                except tf.errors.InvalidArgumentError as exc:
+                    if hard_veto_nonfinite:
+                        raise FixedLFiniteBracketError(
+                            classify_tuning_exception(adapter, exc), str(exc),
+                            num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
+                        ) from exc
+                    if not is_declared_target_domain_failure(exc):
+                        raise (_ReasonableEpsilonSharedInvalidity if probe_results &gt; 1 else RuntimeError)(
+                            "unclassified TensorFlow InvalidArgumentError during "
+                            "reasonable-epsilon search"
+                        ) from exc
+                    finite = False
+                    health_failure_list.append("target_domain_execution_failure")
+                    break
+                except tf.errors.InternalError as exc:
+                    if hard_veto_nonfinite:
+                        raise FixedLFiniteBracketError(
+                            classify_tuning_exception(adapter, exc), str(exc),
+                            num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
+                        ) from exc
+                    if (
+                        "covariance must be positive definite" not in str(exc)
+                        or not is_declared_target_domain_failure(exc)
+                    ):
+                        raise (_ReasonableEpsilonSharedInvalidity if probe_results &gt; 1 else RuntimeError)(
+                            "reasonable-epsilon HMC proposal execution failed"
+                        ) from exc
+                    finite = False
+                    health_failure_list.append("target_domain_execution_failure")
+                    break
+                except tf.errors.OpError as exc:
+                    if hard_veto_nonfinite:
+                        raise FixedLFiniteBracketError(
+                            "tensorflow", str(exc), num_leapfrog_steps=leapfrog_steps,
+                            consumed_epsilon=step,
+                        ) from exc
+                    raise (_ReasonableEpsilonSharedInvalidity if probe_results &gt; 1 else RuntimeError)(
+                        "reasonable-epsilon HMC proposal execution failed"
+                    ) from exc
+                except Exception as exc:  # noqa: BLE001 - non-target runner failure is fatal.
+                    if hard_veto_nonfinite:
+                        raise FixedLFiniteBracketError(
+                            classify_tuning_exception(adapter, exc), str(exc),
+                            num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
+                        ) from exc
+&gt;                   raise (_ReasonableEpsilonSharedInvalidity if probe_results &gt; 1 else RuntimeError)(
+                        "reasonable-epsilon HMC proposal execution failed"
+                    ) from exc
+E                   bayesfilter.inference.hmc_warmup._ReasonableEpsilonSharedInvalidity: reasonable-epsilon HMC proposal execution failed
+
+bayesfilter/inference/hmc_warmup.py:2895: _ReasonableEpsilonSharedInvalidity</failure></testcase><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_after_metric_change_keeps_only_valid_checkpoint" time="8.086" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_contracted_probe_accepts_high_acceptance_without_expanding" time="0.336" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_reader_rejects_corrupt_accounting[restart_count]" time="3.474" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_reader_rejects_corrupt_accounting[successful_seed]" time="3.448" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_reader_rejects_corrupt_accounting[discarded_transition_count]" time="3.457" /><testcase classname="tests.test_hmc_preparation_recovery" name="test_recovery_reader_rejects_corrupt_accounting[transition_work_limit]" time="3.448" /></testsuite></testsuites>

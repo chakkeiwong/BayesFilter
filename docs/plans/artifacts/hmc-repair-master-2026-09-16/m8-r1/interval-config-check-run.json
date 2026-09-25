@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-c",
+    "import sys; sys.path.insert(0,\"docs/plans/artifacts/hmc-repair-master-2026-09-16/m8-r1/source-gpu-r6\"); from bayesfilter.inference import HMCControllerConfig; grid=(3,5,9,13,18,25); epsilon=.9594791119520742; interior=tuple(epsilon*2**(j/4) for j in (1,2,3)); c=HMCControllerConfig(primary_l_grid=grid,epsilon_by_l=tuple((l,interior) for l in grid),total_budget_units=109,repair_reserve_units=1,candidate_reserve_units=6,allow_repair_from_free_pool=False,pilot_enabled=False,evidence_rungs=(1,2,4),refinement_rounds=0,max_candidates=18,max_wall_time_seconds=840.); print(c.payload())"
+  ],
+  "cwd": "/home/ubuntu/python/BayesFilter",
+  "started_utc": "2026-09-19T07:13:36.626614+00:00",
+  "elapsed_seconds": 0.11460877791978419,
+  "returncode": 0,
+  "device": "cpu_reference",
+  "gpu_intentionally_hidden": true,
+  "environment": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "plan_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+  "git_commit": "d86dadf68ea57772642c6802990f46a3c6a04c30",
+  "log": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m8-r1/interval-config-check.log"
+}

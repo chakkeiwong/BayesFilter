@@ -1,0 +1,1 @@
+The first independent Stan comparator used N-lag scaling based on an outdated function comment. Inspection of the actual official autocovariance body (lines 584–602) shows division by N. This preliminary comparator is invalid and not used for conclusions; the corrected calibration is in the parent directory. Other estimators were unchanged.

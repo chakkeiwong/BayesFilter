@@ -215,8 +215,10 @@ def _validate_reasonable_epsilon_payload(
         ):
             raise ValueError(f"{name} nonclaims changed")
         return float(payload["selected_step_size"])
-    if set(payload) != base_fields or status != "passed":
+    if set(payload) not in (base_fields, base_fields | {"qualification_source"}) or status != "passed":
         raise ValueError(f"{name} field set or status is invalid")
+    if payload.get("qualification_source") is not None:
+        raise ValueError(f"{name} qualification source is invalid for probed evidence")
     if payload.get("diagnostic_role") != "reasonable_epsilon_engineering_bracket":
         raise ValueError(f"{name} diagnostic role is invalid")
     if tuple(str(item) for item in payload.get("nonclaims", ())) != (
@@ -231,19 +233,33 @@ def _validate_reasonable_epsilon_payload(
     attempts = payload.get("attempts")
     if not isinstance(attempts, (tuple, list)) or not attempts:
         raise ValueError(f"{name} attempts are missing")
-    allowed_health = {"target_status_telemetry_failure"}
+    allowed_health = {"target_status_telemetry_failure", "target_domain_execution_failure"}
     final_step = None
     final_usable = False
+    attempt_shape = None
+    probe_design = None
     for index, attempt in enumerate(attempts):
-        if not isinstance(attempt, Mapping) or set(attempt) != {
+        attempt_fields = {
             "step_size",
             "mean_acceptance_probability",
             "finite",
             "engineering_health_failures",
             "usable",
             "seed",
-        }:
+        }
+        probe_fields = {
+            "num_leapfrog_steps", "probe_count", "probe_seeds",
+            "minimum_acceptance_probability", "maximum_acceptance_probability",
+        }
+        if not isinstance(attempt, Mapping) or set(attempt) not in (
+            attempt_fields, attempt_fields | probe_fields,
+            attempt_fields | probe_fields | {"probe_num_results"},
+        ):
             raise ValueError(f"{name} attempt field set is invalid")
+        if attempt_shape is None:
+            attempt_shape = set(attempt)
+        elif set(attempt) != attempt_shape:
+            raise ValueError(f"{name} attempt formats cannot be mixed")
         step = _finite_real(
             attempt.get("step_size"),
             name=f"{name} attempt step_size",
@@ -270,7 +286,32 @@ def _validate_reasonable_epsilon_payload(
             raise ValueError(f"{name} nonfinite attempt carries acceptance")
         if usable is not (finite and not health_codes):
             raise ValueError(f"{name} attempt usable flag is inconsistent")
-        _strict_seed(attempt.get("seed"), name=f"{name} attempt seed")
+        seed = _strict_seed(attempt.get("seed"), name=f"{name} attempt seed")
+        if probe_fields <= set(attempt):
+            leapfrog = _strict_scalar_integer(attempt["num_leapfrog_steps"], name=f"{name} probe L")
+            count = _strict_scalar_integer(attempt["probe_count"], name=f"{name} probe count")
+            probe_results = _strict_scalar_integer(attempt.get("probe_num_results", 1), name=f"{name} probe results")
+            if probe_results < 1:
+                raise ValueError(f"{name} probe results must be positive")
+            seeds = attempt["probe_seeds"]
+            if leapfrog < 1 or count < 1 or not isinstance(seeds, (tuple, list)) or len(seeds) != count:
+                raise ValueError(f"{name} probe metadata is invalid")
+            seeds = tuple(_strict_seed(item, name=f"{name} probe seed") for item in seeds)
+            if seeds[0] != seed or len(set(seeds)) != count:
+                raise ValueError(f"{name} probe seeds are inconsistent")
+            if probe_design is None:
+                probe_design = (leapfrog, seeds, probe_results)
+            elif (leapfrog, seeds, probe_results) != probe_design:
+                raise ValueError(f"{name} fixed probe design changed between attempts")
+            minimum = attempt["minimum_acceptance_probability"]
+            maximum = attempt["maximum_acceptance_probability"]
+            if finite:
+                minimum = _finite_real(minimum, name=f"{name} probe minimum")
+                maximum = _finite_real(maximum, name=f"{name} probe maximum")
+                if not 0.0 <= minimum <= value <= maximum <= 1.0:
+                    raise ValueError(f"{name} probe acceptance range is inconsistent")
+            elif minimum is not None or maximum is not None:
+                raise ValueError(f"{name} nonfinite probe carries acceptance range")
         if index == len(attempts) - 1:
             final_step = step
             final_usable = usable
@@ -308,7 +349,7 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
         "reports_posterior_convergence",
         "nonclaims",
     }
-    optional_fields = {"metric_adaptation_status"}
+    optional_fields = {"metric_adaptation_status", "preparation_recovery"}
     if (
         not required_fields <= set(warmup)
         or set(warmup) - required_fields - optional_fields
@@ -367,7 +408,7 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
         "step_size_ceiling",
         "step_adaptation_rate",
     }
-    optional_config_fields = {"mass_policy"}
+    optional_config_fields = {"mass_policy", "metric_evidence_policy", "metric_probe_num_results", "preparation_max_restarts"}
     if not required_config_fields <= set(config) or (
         set(config) - required_config_fields - optional_config_fields
     ):
@@ -412,9 +453,21 @@ def _validate_operational_warmup_payload(warmup: Mapping[str, Any]) -> None:
             name="warmup config step_adaptation_rate",
         ),
         mass_policy=str(config.get("mass_policy", "windowed_adaptive")),
+        metric_evidence_policy=config.get("metric_evidence_policy", "temporal_information"),
+        metric_probe_num_results=config.get("metric_probe_num_results", 1),
+        preparation_max_restarts=config.get("preparation_max_restarts", 0),
         **optional_real_config,
     )
     configured_steps = typed_config.warmup_steps
+    recovery = warmup.get("preparation_recovery")
+    if recovery is not None:
+        from bayesfilter.inference.hmc_preparation_recovery import validate_recovery_payload
+        validate_recovery_payload(recovery, config=typed_config,
+            successful_seed=warmup["seed_root"], successful_coordinate=warmup["initial_coordinate_signature"],
+            successful_probe=warmup["reasonable_epsilon"], successful_windows=warmup["windows"],
+            validate_probe=_validate_reasonable_epsilon_payload)
+    elif typed_config.preparation_max_restarts:
+        raise ValueError("enabled preparation recovery is missing its attempt ledger")
     windows = warmup.get("windows")
     if not isinstance(windows, (tuple, list)) or not windows:
         raise ValueError("operational warmup window ledger is missing")

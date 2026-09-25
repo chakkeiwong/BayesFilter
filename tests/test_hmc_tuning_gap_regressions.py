@@ -122,8 +122,10 @@ def test_operational_warmup_survives_legacy_compatibility_projection_failure(
     def fail_compatibility_projection(*_args, **_kwargs):
         raise RuntimeError("compatibility projection failure sentinel")
 
+    from bayesfilter.inference import hmc_mass_adaptation
+
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "run_windowed_mass_adaptation_diagnostic",
         fail_compatibility_projection,
     )

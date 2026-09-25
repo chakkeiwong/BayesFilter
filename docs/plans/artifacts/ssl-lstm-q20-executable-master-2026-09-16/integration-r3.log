@@ -1,0 +1,61 @@
+F
+=================================== FAILURES ===================================
+______________ test_actual_tuning_member_and_posterior[identity] _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-319/test_actual_tuning_member_and_0')
+method = 'identity'
+
+    @pytest.mark.parametrize("method", ["identity", "neutra"])
+    def test_actual_tuning_member_and_posterior(tmp_path, method):
+        config, bridge = protocol(), four_dimensional_bridge()
+        if method == "identity":
+            config["tuning"]["initial_epsilon"] = 1.1
+        export = None
+        if method == "neutra":
+            trained = run_training_cohort(config, bridge, tmp_path / "training",
+                memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
+            cohort = json.loads(Path(trained["checkpoint"]).read_text())["cohort"]
+            export = next(iter(cohort.values()))["exports"]["1.0"]
+>       tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_q20_master_integration.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:177: in tune_scope
+    binding = bind_hmc_candidate_set_execution(initial_position=starts, mass_artifact=mass,
+bayesfilter/inference/hmc_candidate_set_execution.py:717: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:678: in _issue_binding
+    "source_closure": closure, "probe": _probe(active, starts,
+bayesfilter/inference/hmc_candidate_set_execution.py:262: in _probe
+    if target_status_telemetry_has_failure(telemetry, expected_shape=(4,)):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+telemetry = {'bridge_beta_valid': <tf.Tensor: shape=(4,), dtype=bool, numpy=array([ True,  True,  True,  True])>, 'bridge_valid': ...rue,  True,  True])>, 'status_code': <tf.Tensor: shape=(4,), dtype=int32, numpy=array([0, 0, 0, 0], dtype=int32)>, ...}
+
+    def target_status_telemetry_has_failure(
+        telemetry: Mapping[str, Any],
+        *,
+        expected_shape: tuple[int, ...],
+    ) -> bool:
+        """Validate one per-chain-step target-status trace and return its veto bit."""
+    
+        if not isinstance(telemetry, Mapping):
+            raise TypeError("target_status_telemetry trace must be a mapping")
+        missing = tuple(
+            key for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS if key not in telemetry
+        )
+        if missing:
+>           raise ValueError(
+                "target_status_telemetry missing required fields: " + ", ".join(missing)
+            )
+E           ValueError: target_status_telemetry missing required fields: floor_count_value
+
+bayesfilter/inference/hmc_verification.py:170: ValueError
+----------------------------- Captured stderr call -----------------------------
+2026-09-16 04:15:46.728854: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_integration.py::test_actual_tuning_member_and_posterior[identity]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 365 warnings in 3.72s

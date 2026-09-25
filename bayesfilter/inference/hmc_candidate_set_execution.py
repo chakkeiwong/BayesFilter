@@ -1,7 +1,7 @@
 """Repository TF/TFP observations and frozen geometry for candidate-set HMC.
 
 The host owns scheduling, evidence and persistence. Numerical transitions use
-the same independent-chain TensorFlow runner during tuning and retained replay.
+the same declared TensorFlow chain topology during tuning and retained replay.
 No caller observation callback can supply this module's executable binding.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMCInfrastructureFailure, HMCSharedInvalidity,
 )
 from bayesfilter.inference.hmc_verification import HMCAcceptancePolicy
-from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision
+from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision, HMCCandidateExecutionFailure
 from bayesfilter.inference.hmc_candidate_runtime import chunk_seed, before_numerical_chunk
 
 EXECUTION_SCHEMA = "bayesfilter.hmc_candidate_execution.v1"
@@ -129,6 +129,7 @@ class HMCCandidateExecutionConfig:
     chunk_max_results: int = 256
     preparation_elapsed_seconds: float = 0.0
     pilot_num_results: int | None = None
+    reuse_leapfrog_graphs: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.acceptance_policy, HMCAcceptancePolicy):
@@ -145,17 +146,21 @@ class HMCCandidateExecutionConfig:
         object.__setattr__(self, "seed", _seed(self.seed))
         if type(self.use_xla) is not bool:
             raise TypeError("use_xla must be boolean")
+        if type(self.reuse_leapfrog_graphs) is not bool:
+            raise TypeError("reuse_leapfrog_graphs must be boolean")
         if not self.use_xla and not str(self.non_xla_reason or "").strip():
             raise ValueError("non-XLA execution requires an explicit non_xla_reason")
         if self.target_status_trace_policy not in {"none", "per_chain_step"}:
             raise ValueError("declare none or per_chain_step target status")
-        if self.chain_mode not in {"serial", "threaded"}:
-            raise ValueError("chain_mode must be serial or threaded")
+        if self.chain_mode not in {"serial", "threaded", "batched"}:
+            raise ValueError("chain_mode must be serial, threaded or batched")
 
     def payload(self) -> Mapping[str, Any]:
         payload = {**asdict(self), "acceptance_policy": self.acceptance_policy.payload()}
         if self.pilot_num_results is None:
             payload.pop("pilot_num_results")
+        if not self.reuse_leapfrog_graphs:
+            payload.pop("reuse_leapfrog_graphs")
         return payload
 
     @classmethod
@@ -174,7 +179,8 @@ class HMCCandidateExecutionConfig:
 def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping[str, str]:
     # Include numerical, coordinate, evidence and replay implementations. The
     # consumer must include data/preparation dependencies beyond its adapter file.
-    names = ("hmc", "hmc_budget_ladder", "hmc_kernel_tuning", "hmc_artifact_identity",
+    names = ("hmc", "hmc_status", "hmc_budget_ladder", "hmc_kernel_tuning", "hmc_geometry", "hmc_artifact_identity",
+             "hmc_bootstrap", "hmc_bootstrap_initialization", "hmc_bootstrap_checkpoint", "hmc_mass_adaptation", "hmc_configuration", "hmc_preparation_common", "hmc_preparation_recovery",
              "mass_matrix", "hmc_tuning", "fixed_l_finite_bracket", "hmc_coordinates",
              "hmc_warmup", "hmc_tuning_state", "hmc_kernel_selection", "hmc_diagnostics",
              "hmc_candidate_set_execution", "hmc_candidate_set_retained",
@@ -182,9 +188,11 @@ def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping
              "hmc_candidate_set_checkpoint", "hmc_candidate_set_public", "hmc_candidate_set_position_field",
              "hmc_candidate_decisions", "hmc_candidate_proposals", "hmc_candidate_runtime", "hmc_preparation",
              "hmc_candidate_set_artifacts", "hmc_verification", "hmc_convergence",
+             "hmc_diagnostic_math", "hmc_posterior_diagnostics", "hmc_precision", "hmc_posterior_assessment", "neutra_hmc",
              "tuning_contract", "hmc_tuning_dispatch", "fixed_transport_hmc_tuning_tf",
              "posterior_adapter", "batched_value_score",
-             "neutra_artifacts", "fixed_transport_hmc_mechanics_tf")
+             "neutra_artifacts", "neutra_transport", "neutra_transport_core",
+             "fixed_transport_hmc_mechanics_tf")
     paths = {Path(__file__).with_name(name + ".py").resolve() for name in names}
     paths.add(Path(__file__).parents[1] / "runtime" / "gpu_memory_policy.py")
     paths.update(Path(__file__).parents[1] / (name + ".py") for name in (
@@ -218,7 +226,7 @@ def _rebuild_geometry(adapter: Any, layers: Sequence[Mapping[str, Any]], target_
             mass = PrecomputedMassArtifact.from_payload(
                 layer["artifact"], expected_adapter_signature=stable_adapter_signature(adapter))
             if kind == "bootstrap_mass":
-                from bayesfilter.inference.hmc_kernel_tuning import _build_bootstrap_fixed_mass_adapter
+                from bayesfilter.inference.hmc_bootstrap import _build_bootstrap_fixed_mass_adapter
                 adapter = _build_bootstrap_fixed_mass_adapter(
                     adapter=adapter, mass_artifact=mass,
                     mass_signature=mass_artifact_signature(mass), target_scope=target_scope)
@@ -313,10 +321,12 @@ class HMCCandidateExecutionBinding:
             raise ValueError("target capability mismatch")
         self.binding_hash = _sha256(self._spec)
         self._evidence: dict[str, Mapping[str, Any]] = {}
+        self._analysis_cache: dict[str, Mapping[str, Any]] = {}
+        self._persisted_files: dict[str, tuple[int, int]] = {}
         self._partial: dict[str, list[Mapping[str, Any]]] = {}
         self._checkpoint_callback = None
         self._deadline = None
-        self._runners: dict[tuple[int, int], Any] = {}
+        self._runners: dict[tuple[int | None, int], Any] = {}
         self.validate()
 
     @property
@@ -404,6 +414,24 @@ class HMCCandidateExecutionBinding:
             state = transform.latent_to_position(state)
         return tf.reshape(state, shape)
 
+    def active_positions(self, positions: Any) -> Any:
+        """Invert the issued frozen geometry without changing any layer."""
+        import tensorflow as tf
+        state = tf.convert_to_tensor(positions, tf.float64)
+        shape = state.shape
+        state = tf.reshape(state, [-1, shape[-1]])
+        for transform in self._transforms:
+            if hasattr(transform, "transport"):
+                state = transform.transport.inverse_theta_to_z_batch(state)
+            else:
+                # Geometry was validated when issued. Use tensor algebra here;
+                # the host-side affine convenience method tests Python bools
+                # and cannot run inside an enclosing XLA transition graph.
+                affine = transform.transform
+                state = tf.transpose(tf.linalg.solve(affine.factor,
+                    tf.transpose(state - affine.center)))
+        return tf.reshape(state, shape)
+
     def work_seed(self, work: HMCWorkItem) -> tuple[int, int]:
         digest = hashlib.sha256(json.dumps({
             "seed": self.config.seed, "scope": self.scope.payload(),
@@ -412,11 +440,19 @@ class HMCCandidateExecutionBinding:
         }, sort_keys=True).encode()).digest()
         return tuple(int.from_bytes(digest[i:i+4], "big") & 0x7fffffff for i in (0, 4))
 
+    def _runner_cache_key(self, candidate: HMCTuningCandidateRecord, count: int) -> tuple[int | None, int]:
+        # Cache ownership is the binding: target, frozen geometry, dtype/shape,
+        # chain topology, trace policy and backend cannot cross this boundary.
+        return (None if self.config.reuse_leapfrog_graphs else candidate.leapfrog_steps, count)
+
     def _run(self, candidate: HMCTuningCandidateRecord, state: Any, count: int, seed: tuple[int, int]) -> Any:
-        from bayesfilter.inference.hmc import FullChainHMCConfig, build_independent_chain_tfp_hmc_runner
+        from bayesfilter.inference.hmc import (
+            FullChainHMCConfig, ReusableFullChainHMCRunner,
+            build_independent_chain_tfp_hmc_runner,
+        )
 
         HMCTuningCandidateRecord.from_payload(self.scope, candidate.payload())
-        key = (candidate.leapfrog_steps, count)
+        key = self._runner_cache_key(candidate, count)
         if key not in self._runners:
             config = FullChainHMCConfig(
                 num_results=count, num_burnin_steps=0, step_size=candidate.epsilon,
@@ -424,10 +460,22 @@ class HMCCandidateExecutionBinding:
                 use_xla=self.config.use_xla, target_scope=self._spec["target_scope"],
                 target_status_trace_policy=self.config.target_status_trace_policy,
                 capture_candidate_health=True)
-            self._runners[key] = build_independent_chain_tfp_hmc_runner(
-                self._active_adapter, self.initial_active_state, config)
+            factory = (ReusableFullChainHMCRunner if self.config.chain_mode == "batched"
+                       else build_independent_chain_tfp_hmc_runner)
+            self._runners[key] = factory(
+                self._active_adapter, self.initial_active_state, config,
+                **({"dynamic_num_leapfrog_steps": True} if self.config.reuse_leapfrog_graphs else {}))
+        runtime_l = ({"num_leapfrog_steps": candidate.leapfrog_steps}
+                     if self.config.reuse_leapfrog_graphs else {})
+        if self.config.chain_mode == "batched":
+            result = self._runners[key].run(current_state=state, seed=seed,
+                                            step_size=candidate.epsilon, **runtime_l)
+            return replace(result, metadata={**result.metadata,
+                "execution_mode": "batched", "chain_count": int(state.shape[0]),
+                "single_batched_sample_chain_invocation": True,
+                "seed_layout": "tfp_stateless_vector_state_independent_chain_rows"})
         return self._runners[key].run(current_state=state, root_seed=seed,
-                                      step_size=candidate.epsilon, mode=self.config.chain_mode)
+                                      step_size=candidate.epsilon, mode=self.config.chain_mode, **runtime_l)
 
     def health_failures(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> tuple[str, ...]:
         import tensorflow as tf
@@ -501,6 +549,60 @@ class HMCCandidateExecutionBinding:
         stage = "measurement" if work.stage == "pilot" else work.stage
         return getattr(self.config, stage + "_num_results") * work.evidence_multiplier
 
+    def evidence_analysis(self, numerical: Mapping[str, Any]) -> Mapping[str, Any]:
+        """Recompute successful evidence or validate a typed native failure."""
+        # Numerical evidence is host JSON and can be mutated by a caller.
+        # Hash its current content before using a cached numerical analysis.
+        digest = _sha256(numerical)
+        if digest in self._analysis_cache:
+            return _json_copy(self._analysis_cache[digest])
+        if "execution_failure" in numerical:
+            failure = HMCCandidateExecutionFailure.from_payload(numerical["execution_failure"])
+            if numerical.get("samples") is not None or numerical.get("trace") is not None:
+                raise ValueError("failed execution cannot fabricate complete samples")
+            work = HMCWorkItem.from_payload(numerical["work"])
+            chunks = numerical["chunks"]
+            root = self.work_seed(work)
+            total = self.work_count(work) + self.config.num_warmup_steps
+            if (failure.chunk_index != len(chunks) or tuple(numerical["seed"]) != root
+                    or tuple(numerical["attempted_seed"]) != chunk_seed(root, len(chunks))
+                    or sum(c["count"] for c in chunks) >= total
+                    or any(type(c["count"]) is not int or c["count"] != self.config.chunk_max_results
+                           or tuple(c["seed"]) != chunk_seed(root, i) for i, c in enumerate(chunks))):
+                raise ValueError("failed execution chunk/seed inventory mismatch")
+            analysis = failure.analysis()
+        else:
+            analysis = self.analyze(_tensor_from_payload(numerical["initial_state"]),
+                                   _tensor_from_payload(numerical["samples"]),
+                                   _trace_from_payload(numerical["trace"]))
+        self._analysis_cache[digest] = _json_copy(analysis)
+        return analysis
+
+    def _target_failure(self, exc: Exception, work: HMCWorkItem,
+                        candidate: HMCTuningCandidateRecord, chunks: list, seed: tuple[int, int]):
+        classifier = getattr(self._base_adapter, "classify_target_exception", None)
+        if not callable(classifier):
+            return None
+        declared = classifier(exc)
+        if type(declared) is not bool:
+            raise TypeError("classify_target_exception must return a boolean")
+        if not declared:
+            return None
+        failure = HMCCandidateExecutionFailure(type(exc).__name__, str(exc), len(chunks))
+        analysis = failure.analysis()
+        numerical = {"schema": "bayesfilter.hmc_candidate_numerical_failure.v1",
+            "binding_hash": self.binding_hash, "candidate": candidate.payload(), "work": work.payload(),
+            "seed": seed, "initial_state": _tensor_payload(self.initial_active_state),
+            "execution_failure": failure.payload(), "analysis": analysis,
+            "chunks": [{"count": c["count"], "seed": c["seed"]} for c in chunks],
+            "attempted_seed": chunk_seed(seed, len(chunks)), "samples_device": "unavailable"}
+        digest = _sha256(numerical)
+        self._evidence[digest] = _json_copy(numerical)
+        self._partial.pop(work.work_item_id, None)
+        return {**analysis, "numerical_evidence_hash": digest,
+                "stream_id": work.work_item_id + ":" + _sha256({"seed": seed}),
+                "draw_range": (0, 0), "seed_lineage": seed}
+
     def work_cost(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord, *, remaining=True) -> Mapping[str, Any]:
         count = self.work_count(work) + self.config.num_warmup_steps
         if remaining:
@@ -534,13 +636,18 @@ class HMCCandidateExecutionBinding:
                                    chains=int(self.initial_active_state.shape[0]), index=len(chunks))
             current_seed = chunk_seed(seed, len(chunks))
             chunk_started = time.monotonic()
-            key = (candidate.leapfrog_steps, take)
+            key = self._runner_cache_key(candidate, take)
             first_runner_call = key not in self._runners
             try:
                 result = self._run(candidate, state, take, current_seed)
             except (tf.errors.ResourceExhaustedError, tf.errors.UnavailableError,
                     tf.errors.DeadlineExceededError, tf.errors.AbortedError) as exc:
                 raise HMCInfrastructureFailure(type(exc).__name__ + ": " + str(exc)) from exc
+            except Exception as exc:
+                failure = self._target_failure(exc, work, candidate, chunks, seed)
+                if failure is None:
+                    raise
+                return failure
             chunk = {"count": take, "seed": current_seed, "initial_state": _tensor_payload(state),
                      "work": work.payload(), "binding_hash": self.binding_hash,
                      "samples": _tensor_payload(result.samples), "trace": _trace_payload(result.trace),
@@ -597,10 +704,22 @@ def _issue_binding(*, adapter: Any, layers: Sequence[Mapping[str, Any]], initial
     starts = tf.convert_to_tensor(initial_active_state, dtype=tf.float64)
     closure = _source_closure(adapter, source_paths)
     kind = "fixed_transport" if layers[0]["kind"] == "frozen_transport" else "ordinary"
-    preparation_identity = _sha256({"layers": layers, "lineage": target_lineage, "preparation": preparation})
+    numerical_preparation = dict(preparation)
+    if "numerical_geometry_hash" in numerical_preparation:
+        # Keep the full artifact hash in the binding for integrity. Probe clock
+        # variation must not choose a different candidate random stream.
+        numerical_preparation.pop("geometry_hash")
+    preparation_identity = _sha256({"layers": layers, "lineage": target_lineage,
+                                   "preparation": numerical_preparation})
     numerical_policy = dict(config.payload())
     numerical_policy.pop("preparation_elapsed_seconds")
-    transition_identity = _sha256({"runner": "independent_chain_tfp_fixed_hmc",
+    # Runner reuse is recorded in the complete execution binding. It changes
+    # graph lifetime, not the target/transition or numerical random streams;
+    # same-source static/dynamic diagnostics must be able to use identical seeds.
+    numerical_policy.pop("reuse_leapfrog_graphs", None)
+    runner_kind = ("batched_chain_tfp_fixed_hmc" if config.chain_mode == "batched"
+                   else "independent_chain_tfp_fixed_hmc")
+    transition_identity = _sha256({"runner": runner_kind,
                                     "config": numerical_policy, "source": closure})
     scope = HMCCandidateSetScope(
         scope_id=scope_id, search_id=search_id, target_signature=stable_adapter_signature(adapter),
@@ -662,11 +781,11 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
         target_lineage: Mapping[str, Any], config: HMCCandidateExecutionConfig,
         source_paths: Sequence[str | Path], scope_id: str, search_id: str,
         epsilon_domain: tuple[float, float], repair_factor: float,
-        max_repairs_per_family: int) -> HMCCandidateExecutionBinding:
+        max_repairs_per_family: int, preparation_bound_expansion_steps: int = 0) -> HMCCandidateExecutionBinding:
     """Revalidate an operational windowed handoff and preserve both affine layers."""
-    from bayesfilter.inference.hmc_kernel_tuning import (
-        build_operational_fixed_mass_hmc_adapter, _fixed_mass_step_upper_bound,
-    )
+    from bayesfilter.inference.hmc_mass_adaptation import build_operational_fixed_mass_hmc_adapter
+    from bayesfilter.inference.hmc_configuration import _fixed_mass_step_upper_bound
+    from bayesfilter.inference.hmc_preparation import expanded_preparation_bound
 
     _runtime_policy()
     geometry, windowed = preparation["geometry"], preparation["windowed_stage"]
@@ -680,7 +799,14 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
     upper = _fixed_mass_step_upper_bound(windowed)
     if upper is None:
         raise ValueError("operational preparation requires a final-metric epsilon bound")
-    domain = (epsilon_domain[0], min(epsilon_domain[1], upper))
+    expanded = expanded_preparation_bound(upper, factor=repair_factor, steps=preparation_bound_expansion_steps)
+    domain = (epsilon_domain[0], min(epsilon_domain[1], expanded))
+    exploration = {"schema": "bayesfilter.hmc_preparation_search_domain.v1",
+        "preparation_upper": upper, "expansion_steps": preparation_bound_expansion_steps,
+        "factor": repair_factor, "exploration_upper": expanded, "resolved_domain": domain,
+        "role": "finite_exploration_cap; each pair requires measurement and fresh verification"}
+    if preparation_bound_expansion_steps:
+        search_id = _sha256({"parent_search_id": search_id, "domain_policy": exploration})[:20]
     final = windowed.operational_warmup_result.final_kernel_state
     binding = _issue_binding(adapter=adapter,
         layers=[{"kind": "bootstrap_mass", "artifact": geometry.mass_artifact.to_payload(include_arrays=True)},
@@ -688,8 +814,11 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
         initial_active_state=checked["initial_position"], target_scope=checked["target_scope"],
         target_lineage=target_lineage,
         preparation={"source": "operational_windowed_handoff", "geometry_hash": geometry.artifact_hash,
+                     "numerical_geometry_hash": geometry.numerical_hash,
+                     "geometry_identity_policy": "exclude_bootstrap_probe_wall_seconds_v1",
                      "start_lineage": checked["start_lineage"], "final_adapter_signature": checked["final_adapter_signature"],
-                     "epsilon_proposal_bound": {"upper": upper, "role": "proposal_safety_only",
+                     "search_domain_policy": exploration,
+                     "epsilon_proposal_bound": {"upper": upper, "role": "preparation_probe_bound_only",
                          "coordinate_signature": final.transform.signature,
                          "metric_signature": final.momentum_metric.signature}},
         config=config, source_paths=source_paths, scope_id=scope_id, search_id=search_id,
@@ -697,3 +826,29 @@ def bind_hmc_candidate_set_execution_from_preparation(*, adapter: Any, preparati
     if binding.scope.adapter_signature != checked["final_adapter_signature"]:
         raise ValueError("reconstructed preparation adapter mismatch")
     return binding
+
+
+def bind_hmc_candidate_set_execution_new_starts(*, binding: HMCCandidateExecutionBinding,
+        initial_position: Any, config: HMCCandidateExecutionConfig,
+        scope_id: str, search_id: str, max_repairs_per_family: int = 0) -> HMCCandidateExecutionBinding:
+    """Issue an unverified scope with identical geometry and fresh physical starts.
+
+    This transfers no measurement or verification authority. The caller must
+    run the public tuner and obtain new verified members. It is useful for
+    independent confirmation of a preselected exact pair.
+    """
+    if not isinstance(binding, HMCCandidateExecutionBinding):
+        raise TypeError("an issued execution binding is required")
+    binding.validate()
+    if config.use_xla != binding.config.use_xla:
+        raise ValueError("new starts cannot change the qualified backend")
+    spec = binding._spec
+    return _issue_binding(adapter=binding._base_adapter, layers=spec["layers"],
+        initial_active_state=binding.active_positions(initial_position),
+        target_scope=spec["target_scope"], target_lineage=spec["target_lineage"],
+        preparation={"source": "unchanged_geometry_new_starts",
+                     "parent_binding_hash": binding.binding_hash,
+                     "epsilon_proposal_bound": spec["preparation"].get("epsilon_proposal_bound")},
+        config=config, source_paths=tuple(spec["source_closure"]), scope_id=scope_id,
+        search_id=search_id, epsilon_domain=binding.scope.epsilon_domain,
+        repair_factor=binding.scope.repair_factor, max_repairs_per_family=max_repairs_per_family)

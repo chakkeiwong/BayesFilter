@@ -39,6 +39,7 @@ from bayesfilter.inference.hmc_tuning import (
     WindowedMassAdaptationConfig,
     WindowedWarmupWindow,
     build_windowed_warmup_schedule,
+    _validate_metric_evidence_policy,
 )
 from bayesfilter.inference.hmc_verification import (
     _all_close,
@@ -234,8 +235,8 @@ _G2_P4_SEED_INTERFACE_HOPS = (
     "hmc_warmup.build_phase7_engineering_probe_bank.stateless_normal_rng_call.v1",
 )
 
-# These two hop chains are owned by hmc_kernel_tuning, but the registry lives in
-# this module and must validate their exact order without importing its caller.
+# Bootstrap and windowed preparation retain historical seed-site IDs after
+# extraction. The registry validates their order without importing its callers.
 _G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS_CONTRACT = (
     "hmc_kernel_tuning.run_hmc_bootstrap_screen.screen_config_seed_pass_through.v1",
     "hmc_kernel_tuning._bootstrap_screen_config.seed_pass_through.v1",
@@ -345,7 +346,7 @@ _G2_SEED_GATE_SEMANTIC_CONTRACTS = {
             "hmc_kernel_tuning.run_hmc_bootstrap_screen.round_seed_derivation.v1"
         ),
         "derivation_owner_qualname": "run_hmc_bootstrap_screen",
-        "owner_file": "hmc_kernel_tuning.py",
+        "owner_file": "hmc_bootstrap.py",
         "owner_qualname": "run_hmc_bootstrap_screen",
         "terminal_consumer": "hmc_runner_interface",
         "interface_hop_site_ids": (
@@ -358,7 +359,7 @@ _G2_SEED_GATE_SEMANTIC_CONTRACTS = {
             "hmc_kernel_tuning._run_p4_windowed_boundary_attempt.stage_seed_derivation.v1"
         ),
         "derivation_owner_qualname": "_run_p4_windowed_boundary_attempt",
-        "owner_file": "hmc_kernel_tuning.py",
+        "owner_file": "hmc_mass_adaptation.py",
         "owner_qualname": "_run_p4_windowed_boundary_attempt",
         "terminal_consumer": "hmc_runner_interface",
         "interface_hop_site_ids": (
@@ -618,6 +619,8 @@ def _validated_g2_seed_registry_evidence(value: Any) -> Mapping[str, Any] | None
             if entry["owner_file"] not in {
                 "hmc_warmup.py",
                 "hmc_kernel_tuning.py",
+                "hmc_bootstrap.py",
+                "hmc_mass_adaptation.py",
             }:
                 return None
             if entry["terminal_consumer"] not in _G2_SEED_TERMINAL_CONSUMERS:
@@ -1270,7 +1273,10 @@ class G2PreboundarySeedUseRegistry:
                 owner_qualname,
                 name="owner qualname",
             )
-            if owner_file not in {"hmc_warmup.py", "hmc_kernel_tuning.py"}:
+            if owner_file not in {
+                "hmc_warmup.py", "hmc_kernel_tuning.py", "hmc_bootstrap.py",
+                "hmc_mass_adaptation.py",
+            }:
                 raise ValueError("registry owner file is invalid")
             if terminal_consumer not in _G2_SEED_TERMINAL_CONSUMERS:
                 raise ValueError("terminal consumer is invalid")
@@ -1785,22 +1791,49 @@ def _unbiased_covariance_and_correlation(states: Any) -> tuple[Any, Any, Any]:
     return covariance, variances, correlation
 
 
+def metric_covariance_state_requirements(dimension: int) -> tuple[int, int]:
+    """Inherited dense/diagonal count floors, not convergence guarantees."""
+    dimension = _strict_integer(dimension, name="dimension", minimum=1)
+    return max(64, 4 * dimension), max(32, 2 * int(math.ceil(math.log2(dimension + 1))))
+
+
+def metric_schedule_capacity(config: WindowedMassAdaptationConfig, dimension: int) -> Mapping[str, Any]:
+    """Report whether any scheduled single-chain window can meet count floors."""
+    dense, diagonal = metric_covariance_state_requirements(dimension)
+    lengths = tuple(window.length for window in build_windowed_warmup_schedule(config) if window.update_mass)
+    maximum = max(lengths, default=0)
+    return {
+        "slow_window_lengths": lengths,
+        "dense_min_states": dense,
+        "diagonal_min_states": diagonal,
+        "dense_state_count_reachable": maximum >= dense,
+        "diagonal_state_count_reachable": maximum >= diagonal,
+        "mass_policy": config.mass_policy,
+        "diagnostic_role": "schedule_capacity_only",
+        "adequacy_guaranteed": False,
+    }
+
+
 def assess_metric_covariance(
     latent_states: Any,
     *,
     shrinkage: float = 0.25,
     dense_min_states: int | None = None,
     diagonal_min_states: int | None = None,
+    metric_evidence_policy: str = "temporal_information",
 ) -> MetricAdequacyDecision:
-    """Assess a unit-equivariant position covariance in correlation space.
+    """Assess a finite-window position covariance in correlation space.
 
     Numerical decisions in this active adaptation path are TensorFlow-owned.
     The covariance is materialized only when constructing the immutable public
-    decision boundary.
+    decision boundary. Covariance pools states using N-1 centering; temporal
+    information is calculated within chains. Neither this heuristic adequacy
+    assessment nor a split-R-hat report establishes posterior convergence.
     """
 
     import tensorflow as tf
 
+    policy = _validate_metric_evidence_policy(metric_evidence_policy, mass_policy="windowed_adaptive")
     temporal = tf.cast(tf.convert_to_tensor(latent_states), tf.float64)
     rank = temporal.shape.rank
     if rank not in {2, 3} or any(dim is None for dim in temporal.shape):
@@ -1817,9 +1850,12 @@ def assess_metric_covariance(
     chain_states = temporal[:, None, :] if not explicit_chains else temporal
     dimension = int(chain_states.shape[-1])
     states = tf.reshape(chain_states, (-1, dimension))
+    if int(chain_states.shape[1]) <= 0:
+        raise ValueError("latent_states must contain at least one chain")
     n = int(states.shape[0])
+    default_dense, default_diagonal = metric_covariance_state_requirements(dimension)
     dense_required = (
-        max(64, 4 * dimension)
+        default_dense
         if dense_min_states is None
         else _strict_integer(
             dense_min_states,
@@ -1828,7 +1864,7 @@ def assess_metric_covariance(
         )
     )
     diagonal_required = (
-        max(32, 2 * int(math.ceil(math.log2(dimension + 1))))
+        default_diagonal
         if diagonal_min_states is None
         else _strict_integer(
             diagonal_min_states,
@@ -1847,7 +1883,12 @@ def assess_metric_covariance(
     min_ess = float(tf.reduce_min(ess_tensor).numpy())
     dense_min_ess = max(8, dimension + 1)
     diagonal_min_ess = max(4, int(math.ceil(math.log2(dimension + 1))))
-    split_rhat = _split_rhat_by_coordinate(chain_states)
+    rhat_error_type = None
+    try:
+        split_rhat = _split_rhat_by_coordinate(chain_states)
+    except Exception as exc:  # Reporting cannot veto adaptation.
+        split_rhat = None
+        rhat_error_type = type(exc).__name__
     split_rhat_finite = bool(
         split_rhat is not None
         and tf.reduce_all(tf.math.is_finite(split_rhat)).numpy()
@@ -1855,15 +1896,6 @@ def assess_metric_covariance(
     max_split_rhat = (
         float(tf.reduce_max(split_rhat).numpy()) if split_rhat_finite else None
     )
-    dense_chain_compatible = bool(
-        not explicit_chains
-        or (split_rhat_finite and max_split_rhat <= 1.10)
-    ) if split_rhat is not None else not explicit_chains
-    diagonal_chain_compatible = bool(
-        not explicit_chains
-        or (split_rhat_finite and max_split_rhat <= 1.25)
-    ) if split_rhat is not None else not explicit_chains
-
     empirical, empirical_diagonal, correlation = (
         _unbiased_covariance_and_correlation(states)
     )
@@ -1923,21 +1955,34 @@ def assess_metric_covariance(
             & (dense_candidate_eigenvalues > 0.0)
         ).numpy()
     )
+    within_variances = tf.math.reduce_variance(chain_states, axis=0)
+    every_chain_coordinate_moves = bool(tf.reduce_all(
+        tf.math.is_finite(within_variances) & (within_variances > 0.0)).numpy())
     dense_checks = {
         "state_count_sufficient": n >= dense_required,
-        "effective_information_sufficient": min_ess >= dense_min_ess,
-        "cross_chain_location_compatible": dense_chain_compatible,
+        **({"effective_information_sufficient": min_ess >= dense_min_ess}
+           if policy == "temporal_information" else {}),
         "full_raw_rank": standardized_rank == dimension,
         "raw_condition_acceptable": standardized_condition <= 1.0e8,
         "regularization_discrepancy_acceptable": dense_discrepancy <= 0.50,
         "candidate_covariance_finite_positive": dense_candidate_finite_positive,
+        "within_chain_variances_finite_positive": every_chain_coordinate_moves,
     }
     common = {
         "state_count": n,
+        "input_rank": rank,
+        "draw_count_per_chain": int(chain_states.shape[0]),
+        "chain_count": int(chain_states.shape[1]),
         "dimension": dimension,
         "dense_min_states": dense_required,
         "diagonal_min_states": diagonal_required,
         "covariance_backend": "tensorflow_float64_unbiased_n_minus_1",
+        "covariance_pooling": "all_states_centered_at_pooled_mean",
+        "adequacy_role": "finite_window_metric_proposal_heuristic",
+        "metric_evidence_policy": policy,
+        "temporal_information_used_for_metric_decision": policy == "temporal_information",
+        "dense_temporal_information_sufficient": min_ess >= dense_min_ess,
+        "diagonal_temporal_information_sufficient": min_ess >= diagonal_min_ess,
         "ess_method": "geyer_initial_positive_sequence_fft_autocorrelation",
         "ess_positive_variance_rule": "finite_and_strictly_positive_scale_free",
         "effective_sample_size_by_coordinate": ess_by_coordinate,
@@ -1946,14 +1991,16 @@ def assess_metric_covariance(
         "diagonal_min_effective_sample_size": diagonal_min_ess,
         "cross_chain_compatibility_method": (
             "not_applicable_single_chain"
-            if not explicit_chains
-            else "split_rhat_adaptation_adequacy_only"
+            if int(chain_states.shape[1]) == 1
+            else "split_rhat_reporting_only"
         ),
         "cross_chain_compatibility_status": (
             "not_applicable"
-            if not explicit_chains
-            else "available" if split_rhat_finite else "undefined_fail_closed"
+            if int(chain_states.shape[1]) == 1
+            else "available" if split_rhat_finite else "unavailable_reporting_only"
         ),
+        "rhat_used_for_metric_decision": False,
+        "rhat_reporting_error_type": rhat_error_type,
         "split_rhat_by_coordinate": (
             None
             if split_rhat is None
@@ -1976,6 +2023,7 @@ def assess_metric_covariance(
         "dense_relative_frobenius_discrepancy": dense_discrepancy,
         "dense_discrepancy_space": "correlation",
         "dense_checks": dense_checks,
+        "dense_failed_checks": tuple(key for key, passed in dense_checks.items() if not passed),
     }
     if all(dense_checks.values()):
         return MetricAdequacyDecision(
@@ -1988,7 +2036,8 @@ def assess_metric_covariance(
                 "clipped_eigenvalue_count": 0,
                 "regularization_method": "shrink_correlations_preserve_variances",
                 "absolute_regularization_applied": False,
-                "dense_information_gate_passed": True,
+                "dense_information_gate_passed": min_ess >= dense_min_ess,
+                "dense_proposal_checks_passed": True,
                 "diagonal_fallback_used": False,
             },
         )
@@ -2004,9 +2053,10 @@ def assess_metric_covariance(
     )
     diagonal_checks = {
         "state_count_sufficient": n >= diagonal_required,
-        "effective_information_sufficient": min_ess >= diagonal_min_ess,
-        "cross_chain_location_compatible": diagonal_chain_compatible,
+        **({"effective_information_sufficient": min_ess >= diagonal_min_ess}
+           if policy == "temporal_information" else {}),
         "raw_variances_finite_positive": diagonal_finite_positive,
+        "within_chain_variances_finite_positive": every_chain_coordinate_moves,
         "regularization_discrepancy_acceptable": diagonal_discrepancy <= 0.75,
     }
     report = {
@@ -2014,7 +2064,9 @@ def assess_metric_covariance(
         "diagonal_relative_euclidean_discrepancy": diagonal_discrepancy,
         "diagonal_discrepancy_space": "correlation",
         "diagonal_checks": diagonal_checks,
-        "dense_information_gate_passed": False,
+        "diagonal_failed_checks": tuple(key for key, passed in diagonal_checks.items() if not passed),
+        "dense_information_gate_passed": min_ess >= dense_min_ess,
+        "dense_proposal_checks_passed": False,
     }
     if all(diagonal_checks.values()):
         return MetricAdequacyDecision(
@@ -2408,6 +2460,7 @@ class ReasonableEpsilonAttempt:
     minimum_acceptance_probability: float | None = None
     maximum_acceptance_probability: float | None = None
     engineering_health_failures: tuple[str, ...] = ()
+    probe_num_results: int = 1
 
     def __post_init__(self) -> None:
         step = float(self.step_size)
@@ -2473,6 +2526,8 @@ class ReasonableEpsilonAttempt:
         object.__setattr__(self, "minimum_acceptance_probability", minimum)
         object.__setattr__(self, "maximum_acceptance_probability", maximum)
         object.__setattr__(self, "engineering_health_failures", health_failures)
+        object.__setattr__(self, "probe_num_results", _strict_integer(
+            self.probe_num_results, name="probe_num_results", minimum=1))
 
     @property
     def usable(self) -> bool:
@@ -2491,6 +2546,7 @@ class ReasonableEpsilonAttempt:
             "engineering_health_failures": self.engineering_health_failures,
             "usable": self.usable,
             "seed": self.seed,
+            **({"probe_num_results": self.probe_num_results} if self.probe_num_results != 1 else {}),
         }
 
 
@@ -2559,6 +2615,22 @@ class ReasonableEpsilonResult:
         }
 
 
+class _ReasonableEpsilonSharedInvalidity(RuntimeError):
+    """A sequential probe cannot recover retained or unclassified invalidity."""
+
+
+def _metric_boundary_epsilon_probe(**kwargs: Any) -> ReasonableEpsilonResult:
+    """A returned failed bracket may reject a metric; broken probes are fatal."""
+    try:
+        return find_reasonable_epsilon(**kwargs)
+    except Exception as exc:
+        if kwargs.get("probe_num_results", 1) > 1:
+            raise _ReasonableEpsilonSharedInvalidity(
+                f"sequential metric probe failed: {type(exc).__name__}: {exc}"
+            ) from exc
+        raise
+
+
 def find_reasonable_epsilon(
     *,
     adapter: Any,
@@ -2570,9 +2642,11 @@ def find_reasonable_epsilon(
     upper_acceptance: float = 0.75,
     num_leapfrog_steps: int = 1,
     momentum_probe_count: int = 1,
+    probe_num_results: int = 1,
     target_status_trace_policy: str = "none",
     jit_compile: bool = True,
     hard_veto_nonfinite: bool = False,
+    preparation_step_ceiling: float | None = None,
     _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
     _g2_seed_key_prefix: str | None = None,
     _g2_seed_base_key: str | None = None,
@@ -2582,6 +2656,8 @@ def find_reasonable_epsilon(
     The strict fixed-L repair sets ``hard_veto_nonfinite=True``: a failed
     target, score, acceptance, proposal, or displacement terminates the
     bracket, instead of halving epsilon and retrying a failed trajectory.
+    Ordinary metric qualification may set ``probe_num_results > 1`` to check
+    short fixed-step chains. The historical one-step branch stays unchanged.
     """
 
     import tensorflow as tf
@@ -2595,6 +2671,11 @@ def find_reasonable_epsilon(
     step = float(initial_step_size)
     if not math.isfinite(step) or step <= 0.0:
         raise ValueError("initial_step_size must be positive and finite")
+    if preparation_step_ceiling is not None:
+        if (not math.isfinite(preparation_step_ceiling) or preparation_step_ceiling <= 0
+                or step > preparation_step_ceiling or probe_num_results < 2
+                or _g2_seed_use_registry is not None or hard_veto_nonfinite):
+            raise ValueError("contracted preparation probe requires a finite ceiling and sequential ordinary probes")
     attempt_limit = _strict_integer(max_attempts, name="max_attempts", minimum=1)
     lower = float(lower_acceptance)
     upper = float(upper_acceptance)
@@ -2621,6 +2702,9 @@ def find_reasonable_epsilon(
         name="momentum_probe_count",
         minimum=1,
     )
+    probe_results = _strict_integer(probe_num_results, name="probe_num_results", minimum=1)
+    if probe_results > 1 and (_g2_seed_use_registry is not None or hard_veto_nonfinite):
+        raise ValueError("sequential epsilon probes are ordinary preparation only")
     target_status_policy = _target_status_policy(target_status_trace_policy)
     state = _float64_tensor(current_state)
     if (
@@ -2633,7 +2717,7 @@ def find_reasonable_epsilon(
     target = reviewed_value_score_target_fn(adapter, dtype=state.dtype)
     initial_value, initial_score = adapter.log_prob_and_grad(state)
     if not _all_finite_tensors((initial_value, initial_score)):
-        raise ValueError(
+        raise (_ReasonableEpsilonSharedInvalidity if probe_results > 1 else ValueError)(
             "reasonable-epsilon current_state target value and score must be finite"
         )
     target_status_shape = tuple(int(item) for item in tf.shape(state)[:-1].numpy())
@@ -2642,7 +2726,7 @@ def find_reasonable_epsilon(
         state,
         expected_shape=target_status_shape,
     ):
-        raise ValueError(
+        raise (_ReasonableEpsilonSharedInvalidity if probe_results > 1 else ValueError)(
             "reasonable-epsilon current_state target-status telemetry is nonvalid"
         )
     attempts: list[ReasonableEpsilonAttempt] = []
@@ -2726,8 +2810,21 @@ def find_reasonable_epsilon(
         else:
             results = kernel.bootstrap_results(state)
         if not _kernel_result_value_score_finite(results.accepted_results):
-            raise ValueError("reasonable-epsilon bootstrap target evidence is nonfinite")
-        if bool(jit_compile):
+            raise (_ReasonableEpsilonSharedInvalidity if probe_results > 1 else ValueError)(
+                "reasonable-epsilon bootstrap target evidence is nonfinite")
+        if probe_results > 1:
+            def sequential_probe(proposal_seed: Any) -> Any:
+                return _run_reasonable_epsilon_probe_chain(
+                    kernel=kernel, state=state, results=results,
+                    seed=proposal_seed, num_results=probe_results,
+                )
+
+            one_step = tf.function(
+                sequential_probe,
+                input_signature=[tf.TensorSpec([2], tf.int32)],
+                jit_compile=bool(jit_compile), autograph=False,
+            )
+        elif bool(jit_compile):
             @tf.function(jit_compile=True, reduce_retracing=True)
             def one_step(proposal_seed: tf.Tensor):
                 return kernel.one_step(
@@ -2757,7 +2854,7 @@ def find_reasonable_epsilon(
                         num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
                     ) from exc
                 if not is_declared_target_domain_failure(exc):
-                    raise RuntimeError(
+                    raise (_ReasonableEpsilonSharedInvalidity if probe_results > 1 else RuntimeError)(
                         "unclassified TensorFlow InvalidArgumentError during "
                         "reasonable-epsilon search"
                     ) from exc
@@ -2774,7 +2871,7 @@ def find_reasonable_epsilon(
                     "covariance must be positive definite" not in str(exc)
                     or not is_declared_target_domain_failure(exc)
                 ):
-                    raise RuntimeError(
+                    raise (_ReasonableEpsilonSharedInvalidity if probe_results > 1 else RuntimeError)(
                         "reasonable-epsilon HMC proposal execution failed"
                     ) from exc
                 finite = False
@@ -2786,7 +2883,7 @@ def find_reasonable_epsilon(
                         "tensorflow", str(exc), num_leapfrog_steps=leapfrog_steps,
                         consumed_epsilon=step,
                     ) from exc
-                raise RuntimeError(
+                raise (_ReasonableEpsilonSharedInvalidity if probe_results > 1 else RuntimeError)(
                     "reasonable-epsilon HMC proposal execution failed"
                 ) from exc
             except Exception as exc:  # noqa: BLE001 - non-target runner failure is fatal.
@@ -2795,7 +2892,7 @@ def find_reasonable_epsilon(
                         classify_tuning_exception(adapter, exc), str(exc),
                         num_leapfrog_steps=leapfrog_steps, consumed_epsilon=step,
                     ) from exc
-                raise RuntimeError(
+                raise (_ReasonableEpsilonSharedInvalidity if probe_results > 1 else RuntimeError)(
                     "reasonable-epsilon HMC proposal execution failed"
                 ) from exc
             if hard_veto_nonfinite:
@@ -2817,14 +2914,34 @@ def find_reasonable_epsilon(
                 and _kernel_result_value_score_finite(next_results.accepted_results)
             )
             if not retained_finite:
-                raise ValueError(
+                raise (_ReasonableEpsilonSharedInvalidity if probe_results > 1 else ValueError)(
                     "reasonable-epsilon accepted or retained state is nonfinite"
                 )
+            if probe_results > 1 and target_status_policy == "per_chain_step":
+                if any(_target_status_failed(adapter, next_state[row],
+                        expected_shape=target_status_shape) for row in range(probe_results)):
+                    raise _ReasonableEpsilonSharedInvalidity(
+                        "reasonable-epsilon accepted or retained target status is nonvalid"
+                    )
+            if probe_results > 1:
+                before = tf.concat([state[None], next_state[:-1]], axis=0)
+                accepted_mask = next_results.is_accepted
+                if accepted_mask.dtype != tf.bool:
+                    raise _ReasonableEpsilonSharedInvalidity("probe acceptance decision must be boolean")
+                expected_state = tf.where(accepted_mask[..., None], next_results.proposed_state, before)
+                if not bool(tf.reduce_all(tf.equal(next_state, expected_state))):
+                    raise _ReasonableEpsilonSharedInvalidity("probe accepted-state consistency failed")
             probe_finite = bool(
                 tf.reduce_all(tf.math.is_finite(log_accept)).numpy()
                 and _all_finite_tensors((next_results.proposed_state,))
                 and _kernel_result_value_score_finite(next_results.proposed_results)
             )
+            if probe_results > 1:
+                proposal = next_results.proposed_results
+                probe_finite = probe_finite and _all_finite_tensors((
+                    proposal.initial_momentum, proposal.final_momentum,
+                    proposal.log_acceptance_correction, next_results.proposed_state - before,
+                ))
             if not probe_finite:
                 finite = False
                 break
@@ -2832,12 +2949,14 @@ def find_reasonable_epsilon(
                 float(tf.reduce_mean(tf.exp(tf.minimum(log_accept, 0.0))).numpy())
             )
             if target_status_policy == "per_chain_step":
-                proposal_failed = _target_status_failed(
+                proposal_failed = (any(_target_status_failed(
+                    adapter, next_results.proposed_state[row], expected_shape=target_status_shape,
+                ) for row in range(probe_results)) if probe_results > 1 else _target_status_failed(
                     adapter,
                     next_results.proposed_state,
                     expected_shape=target_status_shape,
-                )
-                retained_failed = _target_status_failed(
+                ))
+                retained_failed = False if probe_results > 1 else _target_status_failed(
                     adapter,
                     next_state,
                     expected_shape=target_status_shape,
@@ -2873,9 +2992,11 @@ def find_reasonable_epsilon(
             if mean_accept is None
             else max(acceptance_probabilities),
             engineering_health_failures=health_failures,
+            probe_num_results=probe_results,
         )
         attempts.append(attempt)
-        if attempt.usable and mean_accept is not None and lower <= mean_accept <= upper:
+        if (attempt.usable and mean_accept is not None and mean_accept >= lower
+                and (mean_accept <= upper or preparation_step_ceiling is not None)):
             return ReasonableEpsilonResult("passed", step, tuple(attempts))
         if attempt.usable and mean_accept is not None and mean_accept > upper:
             high_acceptance_step = step
@@ -2897,8 +3018,21 @@ def find_reasonable_epsilon(
             or _all_close(next_step, step, rtol=1.0e-12, atol=0.0)
         ):
             break
-        step = next_step
+        step = next_step if preparation_step_ceiling is None else min(next_step, preparation_step_ceiling)
     return ReasonableEpsilonResult("inconclusive_bracket", None, tuple(attempts))
+
+
+def _run_reasonable_epsilon_probe_chain(
+    *, kernel: Any, state: Any, results: Any, seed: Any, num_results: int,
+) -> Any:
+    """Keep every transition's endpoint evidence in a discarded fixed-step probe."""
+    import tensorflow_probability as tfp
+
+    return tfp.mcmc.sample_chain(
+        num_results=num_results, num_burnin_steps=0, current_state=state,
+        previous_kernel_results=results, kernel=kernel,
+        trace_fn=lambda _state, kernel_results: kernel_results, seed=seed,
+    )
 
 
 def _all_finite_tensors(values: Sequence[Any]) -> bool:
@@ -2940,6 +3074,29 @@ def _target_status_failed(
         payload,
         expected_shape=expected_shape,
     )
+
+
+def _bounded_metric_boundary_step(log_average: Any, *, step_size_upper_bound: float) -> float:
+    """Nominate a fresh metric probe from the bounded dual-averaging average.
+
+    The old coordinate ceiling only bounds the initial hypothesis. The new
+    coordinate probe must independently qualify its step and may expand it.
+    This host-side boundary clips in log space before exponentiating.
+    """
+    import tensorflow as tf
+
+    log_step = tf.convert_to_tensor(log_average, dtype=tf.float64)
+    if log_step.shape.rank != 0 or not bool(tf.math.is_finite(log_step).numpy()):
+        raise ValueError("metric-boundary log average must be a finite scalar")
+    upper = float(step_size_upper_bound)
+    if not math.isfinite(upper) or upper <= 0.0:
+        raise ValueError("metric-boundary step ceiling must be positive and finite")
+    if bool((log_step >= tf.math.log(tf.constant(upper, tf.float64))).numpy()):
+        return upper
+    step = float(tf.exp(log_step).numpy())
+    if not math.isfinite(step) or step <= 0.0:
+        raise ValueError("metric-boundary averaged step must be positive and finite")
+    return min(step, upper)
 
 
 def _validate_operational_window_trace(
@@ -3003,7 +3160,19 @@ def _validate_operational_window_trace(
         )
     )
     if not bool(finite_trace.numpy()):
-        raise ValueError("operational warmup produced a nonfinite trace")
+        failures = []
+        for name, values in (
+            ("log_accept_ratio", log_accept),
+            ("target_log_prob", target_values),
+            ("step_size", step_trace),
+            ("proposed_step_size", proposed_step_trace),
+            ("consumed_step_size", consumed_step_trace),
+        ):
+            indices = tf.reshape(tf.where(~tf.math.is_finite(values)), [-1])
+            count = int(tf.size(indices).numpy())
+            if count:
+                failures.append(f"{name}: count={count}, first_index={int(indices[0].numpy())}")
+        raise ValueError("operational warmup produced a nonfinite trace (" + "; ".join(failures) + ")")
     upper_bound = tf.constant(float(step_size_upper_bound), dtype=tf.float64)
     invalid_step = tf.reduce_any(
         tf.concat(
@@ -5512,6 +5681,8 @@ class OperationalWindowedWarmupResult:
         _Phase7EngineeringProbeBankQualification | None
     ) = None
     status: str = "passed"
+    preparation_recovery: Mapping[str, Any] | None = None
+    discarded_attempts: tuple[Any, ...] = ()
     algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION
 
@@ -5779,6 +5950,7 @@ class OperationalWindowedWarmupResult:
 
     def public_payload(self) -> Mapping[str, Any]:
         return {
+            **({"preparation_recovery": self.preparation_recovery} if self.preparation_recovery is not None else {}),
             "schema": "bayesfilter.hmc_operational_windowed_warmup.v2",
             "status": self.status,
             "metric_adaptation_status": self.metric_adaptation_status,
@@ -5832,6 +6004,7 @@ class OperationalWindowedWarmupCloseout:
     boundary_payload: Mapping[str, Any]
     elapsed_s: float
     status: str = "partial_timeout_closeout"
+    discarded_attempts: tuple[Any, ...] = ()
 
     def __post_init__(self) -> None:
         algorithm_id = str(self.algorithm_id)
@@ -5955,6 +6128,43 @@ def run_operational_windowed_warmup(
     execution_segment_size: int | None = None,
     segment_callback: OperationalWarmupSegmentCallback | None = None,
     stage_callback: OperationalWarmupStageCallback | None = None,
+    recovery_callback: Callable[[str, Mapping[str, Any]], None] | None = None,
+) -> OperationalWindowedWarmupResult | OperationalWindowedWarmupCloseout:
+    """Run preparation, optionally discarding and restarting classified failures."""
+    arguments = dict(locals())
+    if not config.preparation_max_restarts:
+        arguments.pop("recovery_callback")
+        return _run_operational_windowed_warmup_attempt(**arguments)
+    from bayesfilter.inference.hmc_preparation_recovery import run_with_preparation_recovery
+    return run_with_preparation_recovery(_run_operational_windowed_warmup_attempt, arguments)
+
+
+def _run_operational_windowed_warmup_attempt(
+    *,
+    adapter: Any,
+    initial_transform: AffineCoordinateTransform,
+    initial_canonical_theta: Any,
+    initial_step_size: float,
+    initial_step_size_upper_bound: float | None = None,
+    initial_step_qualification_source: str | None = None,
+    trajectory_policy: WarmupTrajectoryPolicy,
+    config: WindowedMassAdaptationConfig,
+    target_accept_prob: float,
+    seed: tuple[int, int],
+    target_scope: str,
+    engineering_probe_config: Phase7EngineeringProbeBankConfig | None = None,
+    initial_position_covariance_estimate_signature: str | None = None,
+    _g2_seed_use_registry: G2PreboundarySeedUseRegistry | None = None,
+    _g2_p4_action_tracker: _G2P4BoundaryActionTracker | None = None,
+    chain_execution_mode: str = "tf_function",
+    jit_compile: bool = True,
+    target_status_trace_policy: str = "none",
+    algorithm_id: str = OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+    route_contract_version: str = HMC_ROUTE_CONTRACT_VERSION,
+    boundary_callback: OperationalWarmupBoundaryCallback | None = None,
+    execution_segment_size: int | None = None,
+    segment_callback: OperationalWarmupSegmentCallback | None = None,
+    stage_callback: OperationalWarmupStageCallback | None = None,
 ) -> OperationalWindowedWarmupResult | OperationalWindowedWarmupCloseout:
     """Run real interleaved TF/TFP HMC warmup with operational metric rebuilds."""
 
@@ -5973,6 +6183,8 @@ def run_operational_windowed_warmup(
             "engineering_probe_config must be a Phase7EngineeringProbeBankConfig"
         )
     if engineering_probe_config is not None:
+        if config.metric_probe_num_results != 1:
+            raise ValueError("longer metric probes are not qualified for the G2 engineering route")
         if not isinstance(_g2_seed_use_registry, G2PreboundarySeedUseRegistry):
             raise TypeError("P4-E requires a caller-owned G2 seed-use registry")
         if not isinstance(_g2_p4_action_tracker, _G2P4BoundaryActionTracker):
@@ -6311,6 +6523,17 @@ def run_operational_windowed_warmup(
                 ),
                 "target_log_prob": inner.accepted_results.target_log_prob,
             }
+            if config.preparation_max_restarts:
+                proposal = inner.proposed_results
+                trace["recovery_proposed_state"] = inner.proposed_state
+                trace["recovery_proposal_finite"] = tf.reduce_all(tf.stack([
+                    tf.reduce_all(tf.math.is_finite(value)) for value in tf.nest.flatten((
+                        inner.proposed_state, proposal.target_log_prob, proposal.grads_target_log_prob,
+                        proposal.initial_momentum, proposal.final_momentum, proposal.log_acceptance_correction))
+                ]))
+                trace["recovery_retained_score_finite"] = tf.reduce_all(tf.stack([
+                    tf.reduce_all(tf.math.is_finite(value))
+                    for value in tf.nest.flatten(inner.accepted_results.grads_target_log_prob)]))
             divergence = _native_divergence(inner)
             if divergence is not None:
                 trace["divergence"] = divergence
@@ -6338,6 +6561,15 @@ def run_operational_windowed_warmup(
             )
 
         if active_runner is None:
+            graph_options = {}
+            if config.preparation_max_restarts:
+                graph_options["input_signature"] = [
+                    tf.TensorSpec(current_latent.shape, current_latent.dtype),
+                    tf.nest.map_structure(lambda value: None if value is None else
+                        tf.TensorSpec(tf.convert_to_tensor(value).shape, tf.convert_to_tensor(value).dtype),
+                        previous_kernel_results),
+                    tf.TensorSpec([], tf.int32), tf.TensorSpec([2], tf.int32),
+                ]
             active_runner = (
                 run_window
                 if chain_execution_mode == "eager"
@@ -6345,6 +6577,7 @@ def run_operational_windowed_warmup(
                     run_window,
                     jit_compile=bool(jit_compile),
                     reduce_retracing=True,
+                    **graph_options,
                 )
             )
         window_start = time.perf_counter()
@@ -6496,6 +6729,16 @@ def run_operational_windowed_warmup(
             window=window,
             stage_started=stage_started,
         )
+        if config.preparation_max_restarts:
+            from bayesfilter.inference.hmc_preparation_recovery import rejected_proposal_failure
+            failure = rejected_proposal_failure(
+                trace=trace, latent_draws=latent_draws_tensor, checkpoint=kernel_state,
+                validate_trace=_validate_operational_window_trace, expected_draw_count=window.length,
+                step_size_upper_bound=window_step_upper_bound, target_status_trace_policy=target_status_policy,
+                seed=normalized_seed, initial_coordinate_signature=initial_transform.signature,
+                completed_windows=tuple(results), failed_window=window, initial_probe=reasonable)
+            if failure is not None:
+                raise failure
         trace_health = _validate_operational_window_trace(
             trace=trace,
             expected_draw_count=window.length,
@@ -6537,6 +6780,7 @@ def run_operational_windowed_warmup(
         target_value_map_residual = None
         target_score_map_residual = None
         if window.update_mass:
+            metric_boundary_diagnostics: dict[str, Any] = {}
             stage_started = time.perf_counter()
             emit_stage(
                 "stage_start",
@@ -6544,8 +6788,9 @@ def run_operational_windowed_warmup(
                 window=window,
             )
             metric_decision = assess_metric_covariance(
-                tf.reshape(latent_draws, (-1, active_transform.dimension)),
+                latent_draws,
                 shrinkage=config.mass_shrinkage,
+                metric_evidence_policy=config.metric_evidence_policy,
             )
             emit_stage(
                 "stage_complete",
@@ -6640,7 +6885,12 @@ def run_operational_windowed_warmup(
                     ),
                     [-1],
                 )
-                candidate_epsilon_start = float(tf.exp(averaged_log_step[-1]).numpy())
+                metric_boundary_diagnostics["candidate_step_nomination"] = {
+                    "method": "bounded_dual_averaging_average",
+                    "unbounded_log_average": float(averaged_log_step[-1].numpy()),
+                    "old_coordinate_step_ceiling": window_step_upper_bound,
+                    "new_coordinate_qualification_required": True,
+                }
                 try:
                     mapped_latent = candidate_transform.theta_to_latent(final_theta)
                     candidate_adapter = _AffineWarmupAdapter(
@@ -6706,6 +6956,10 @@ def run_operational_windowed_warmup(
                     window=window,
                 )
                 try:
+                    candidate_epsilon_start = _bounded_metric_boundary_step(
+                        averaged_log_step[-1], step_size_upper_bound=window_step_upper_bound,
+                    )
+                    metric_boundary_diagnostics["candidate_epsilon_start"] = candidate_epsilon_start
                     metric_boundary_seed = _seed(
                         normalized_seed,
                         window.index,
@@ -6737,13 +6991,14 @@ def run_operational_windowed_warmup(
                             _G2_METRIC_BOUNDARY_SEED_INTERFACE_HOPS
                         ),
                     )
-                    candidate_reasonable = find_reasonable_epsilon(
+                    candidate_reasonable = _metric_boundary_epsilon_probe(
                         adapter=candidate_adapter,
                         current_state=mapped_latent,
                         initial_step_size=candidate_epsilon_start,
                         seed=metric_boundary_seed,
                         num_leapfrog_steps=trajectory_policy.num_leapfrog_steps,
                         momentum_probe_count=4,
+                        probe_num_results=config.metric_probe_num_results,
                         target_status_trace_policy=target_status_policy,
                         jit_compile=jit_compile,
                         _g2_seed_use_registry=_g2_seed_use_registry,
@@ -6760,6 +7015,7 @@ def run_operational_windowed_warmup(
                             else None
                         ),
                     )
+                    metric_boundary_diagnostics["candidate_reasonable_epsilon"] = candidate_reasonable.payload()
                     if (
                         not candidate_reasonable.passed
                         or candidate_reasonable.selected_step_size is None
@@ -6767,6 +7023,8 @@ def run_operational_windowed_warmup(
                         raise ValueError(
                             "metric-boundary reasonable epsilon search was inconclusive"
                         )
+                except _ReasonableEpsilonSharedInvalidity:
+                    raise
                 except (
                     TypeError,
                     ValueError,
@@ -6778,6 +7036,9 @@ def run_operational_windowed_warmup(
                         stage="reasonable_epsilon",
                         error=exc,
                     )
+                metric_decision = replace(metric_decision, report={
+                    **metric_decision.report, **metric_boundary_diagnostics,
+                })
                 emit_stage(
                     "stage_complete",
                     stage="metric_boundary_reasonable_epsilon",

@@ -63,7 +63,7 @@ def build_mechanics_config() -> TensorFlowHMCKernelTuningConfig:
         parameter_dimension=2,
         evidence_role="diagnostic_only",
         mass_window_results=(1,),
-        step_adaptation_results=1,
+        step_adaptation_results=64,
         verification_results=64,
         max_leapfrog_steps=5,
         initial_step_size=0.1,

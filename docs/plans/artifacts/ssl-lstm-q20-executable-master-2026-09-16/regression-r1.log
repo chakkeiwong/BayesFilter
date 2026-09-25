@@ -1,0 +1,198 @@
+........................................................FFF
+=================================== FAILURES ===================================
+____________ test_tuner_fails_closed_when_cap_telemetry_is_missing _____________
+
+    def test_tuner_fails_closed_when_cap_telemetry_is_missing() -> None:
+        config = FixedTransportHMCKernelTuningConfig(
+            initial_step_size=0.03,
+            step_size_candidates=(0.03, 0.04),
+            maximum_candidate_step_size=0.05,
+            leapfrog_grid=(3, 5),
+            chain_count=4,
+            budget_schedule=(2,),
+            tune_num_results=2,
+            screen_num_results=2,
+            screen_num_burnin_steps=1,
+            verification_num_results=2,
+            verification_num_burnin_steps=1,
+            acceptance_band=(0.6, 0.8),
+            repair_band=(0.5, 0.9),
+            chain_execution_mode="eager",
+            use_xla=False,
+            target_scope="step_cap_fixture:fixed_transport",
+        )
+        base = GaussianAdapter()
+>       result = tune_fixed_transport_hmc_kernel(
+            base_adapter=base,
+            fixed_transport=IdentityTransport(),
+            initial_position=np.zeros(2),
+            config=config,
+            run_full_chain=MissingCapTelemetryRunner(),
+        )
+
+tests/test_fixed_transport_hmc_step_cap.py:309: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def tune_fixed_transport_hmc_kernel(
+        *, base_adapter: Any, fixed_transport: Any, initial_position: Any,
+        config: FixedTransportHMCKernelTuningConfig | HMCControllerConfig | None = None,
+        output_dir: str | Path | None = None,
+        run_full_chain: RunFullChainFn = _run_full_chain_tfp_hmc,
+        passthrough_exceptions: tuple[type[Exception], ...] = (),
+        candidate_set_adapter: Any | None = None,
+        frozen_transport_payload: Mapping[str, Any] | None = None,
+        search_config: HMCControllerConfig | None = None,
+        execution_config: Any | None = None, target_lineage: Any | None = None,
+        source_paths: Any = (), max_work_items: int | None = None,
+    ) -> Any:
+        """Prepare frozen transport coordinates and run the common candidate set.
+    
+        Durable numerical replay requires the repository's frozen transport payload
+        or an already issued numerical binding. Custom callback runners are retired.
+        """
+        require_active_hmc_tuning_route("tune_fixed_transport_hmc_kernel")
+        if run_full_chain is not _run_full_chain_tfp_hmc or passthrough_exceptions:
+>           raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+E           ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding
+
+bayesfilter/inference/fixed_transport_hmc_tuning_tf.py:842: ValueError
+_____ test_tuner_stops_before_building_runner_for_repaired_step_above_cap ______
+
+    def test_tuner_stops_before_building_runner_for_repaired_step_above_cap() -> None:
+        from dataclasses import replace
+    
+        class HighAcceptanceRunner(MissingCapTelemetryRunner):
+            def __call__(self, adapter, initial_state, config):
+                result = super().__call__(adapter, initial_state, config)
+                diagnostics = dict(result.diagnostics)
+                diagnostics.update(
+                    {
+                        "maximum_candidate_step_size": 0.15,
+                        "step_size_cap_telemetry_complete": True,
+                        "step_size_cap_within_bound": True,
+                        "applied_step_size_max": 0.1,
+                    }
+                )
+                if config.tuning_policy.num_adaptation_steps == 0:
+                    diagnostics["acceptance_rate"] = tf.constant(0.9, tf.float64)
+                return replace(result, diagnostics=diagnostics)
+    
+        config = FixedTransportHMCKernelTuningConfig(
+            initial_step_size=0.1,
+            step_size_candidates=(0.1, 0.12),
+            maximum_candidate_step_size=0.15,
+            leapfrog_grid=(3, 5),
+            tuning_policy="legacy_directional_diagnostic_v1",
+            selection_policy="acceptance_target_distance",
+            chain_count=4,
+            budget_schedule=(2, 2),
+            tune_num_results=2,
+            screen_num_results=2,
+            screen_num_burnin_steps=1,
+            verification_num_results=2,
+            verification_num_burnin_steps=1,
+            acceptance_band=(0.6, 0.8),
+            repair_band=(0.5, 0.9),
+            chain_execution_mode="eager",
+            use_xla=False,
+            target_scope="step_cap_fixture:fixed_transport",
+        )
+>       result = tune_fixed_transport_hmc_kernel(
+            base_adapter=GaussianAdapter(),
+            fixed_transport=IdentityTransport(),
+            initial_position=np.zeros(2),
+            config=config,
+            run_full_chain=HighAcceptanceRunner(),
+        )
+
+tests/test_fixed_transport_hmc_step_cap.py:359: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def tune_fixed_transport_hmc_kernel(
+        *, base_adapter: Any, fixed_transport: Any, initial_position: Any,
+        config: FixedTransportHMCKernelTuningConfig | HMCControllerConfig | None = None,
+        output_dir: str | Path | None = None,
+        run_full_chain: RunFullChainFn = _run_full_chain_tfp_hmc,
+        passthrough_exceptions: tuple[type[Exception], ...] = (),
+        candidate_set_adapter: Any | None = None,
+        frozen_transport_payload: Mapping[str, Any] | None = None,
+        search_config: HMCControllerConfig | None = None,
+        execution_config: Any | None = None, target_lineage: Any | None = None,
+        source_paths: Any = (), max_work_items: int | None = None,
+    ) -> Any:
+        """Prepare frozen transport coordinates and run the common candidate set.
+    
+        Durable numerical replay requires the repository's frozen transport payload
+        or an already issued numerical binding. Custom callback runners are retired.
+        """
+        require_active_hmc_tuning_route("tune_fixed_transport_hmc_kernel")
+        if run_full_chain is not _run_full_chain_tfp_hmc or passthrough_exceptions:
+>           raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+E           ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding
+
+bayesfilter/inference/fixed_transport_hmc_tuning_tf.py:842: ValueError
+_______________ test_successful_handoff_binds_the_configured_cap _______________
+
+    def test_successful_handoff_binds_the_configured_cap() -> None:
+        from bayesfilter.inference import build_verified_fixed_transport_hmc_handoff_from_tuning_result
+    
+        config = FixedTransportHMCKernelTuningConfig(
+            initial_step_size=0.1,
+            step_size_candidates=(0.05, 0.1),
+            maximum_candidate_step_size=0.2,
+            leapfrog_grid=(3, 5),
+            chain_count=4,
+            budget_schedule=(2,),
+            tune_num_results=2,
+            screen_num_results=2,
+            screen_num_burnin_steps=1,
+            verification_num_results=2,
+            verification_num_burnin_steps=1,
+            acceptance_band=(0.6, 0.8),
+            repair_band=(0.5, 0.9),
+            chain_execution_mode="eager",
+            use_xla=False,
+            target_scope="step_cap_fixture:fixed_transport",
+        )
+        base = GaussianAdapter()
+        transport = IdentityTransport()
+>       result = tune_fixed_transport_hmc_kernel(
+            base_adapter=base,
+            fixed_transport=transport,
+            initial_position=np.zeros(2),
+            config=config,
+            run_full_chain=CappedFakeHMC(),
+        )
+
+tests/test_fixed_transport_hmc_step_cap.py:393: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def tune_fixed_transport_hmc_kernel(
+        *, base_adapter: Any, fixed_transport: Any, initial_position: Any,
+        config: FixedTransportHMCKernelTuningConfig | HMCControllerConfig | None = None,
+        output_dir: str | Path | None = None,
+        run_full_chain: RunFullChainFn = _run_full_chain_tfp_hmc,
+        passthrough_exceptions: tuple[type[Exception], ...] = (),
+        candidate_set_adapter: Any | None = None,
+        frozen_transport_payload: Mapping[str, Any] | None = None,
+        search_config: HMCControllerConfig | None = None,
+        execution_config: Any | None = None, target_lineage: Any | None = None,
+        source_paths: Any = (), max_work_items: int | None = None,
+    ) -> Any:
+        """Prepare frozen transport coordinates and run the common candidate set.
+    
+        Durable numerical replay requires the repository's frozen transport payload
+        or an already issued numerical binding. Custom callback runners are retired.
+        """
+        require_active_hmc_tuning_route("tune_fixed_transport_hmc_kernel")
+        if run_full_chain is not _run_full_chain_tfp_hmc or passthrough_exceptions:
+>           raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+E           ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding
+
+bayesfilter/inference/fixed_transport_hmc_tuning_tf.py:842: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_fixed_transport_hmc_step_cap.py::test_tuner_fails_closed_when_cap_telemetry_is_missing
+FAILED tests/test_fixed_transport_hmc_step_cap.py::test_tuner_stops_before_building_runner_for_repaired_step_above_cap
+FAILED tests/test_fixed_transport_hmc_step_cap.py::test_successful_handoff_binds_the_configured_cap
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 3 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+3 failed, 56 passed, 4211 warnings in 93.86s (0:01:33)

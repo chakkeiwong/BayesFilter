@@ -13,6 +13,7 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -124,7 +125,11 @@ def is_guarded(path, function):
 def loop_digest(node):
     # Lint exception identity, not execution authorization. A changed loop body
     # must be inspected again; function-name allowlists could hide new numerics.
-    return hashlib.sha256(ast.dump(node, include_attributes=False).encode()).hexdigest()
+    # Python 3.13 began omitting empty fields by default. Keep the 3.12 dump
+    # representation so unchanged reviewed loops retain their lint identity.
+    options = {"show_empty": True} if sys.version_info >= (3, 13) else {}
+    payload = ast.dump(node, include_attributes=False, **options)
+    return hashlib.sha256(payload.encode()).hexdigest()
 
 
 def classify(path, function, node, exceptions):

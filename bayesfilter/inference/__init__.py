@@ -9,6 +9,12 @@ from __future__ import annotations
 from importlib import import_module
 
 __all__ = [
+    'NeuTraTransportConfig',
+    'NeuTraTransport',
+    'NeuTraOptimizerConfig',
+    'NeuTraTransportTrainer',
+
+    "HMCPrecisionTarget", "HMCPrecisionPolicy", "HMCPosteriorAssessmentPolicy", "run_hmc_posterior",
     "HMC_STAGE_RESUME_SCHEMA",
     "HMC_STAGE_SEQUENCE_RESULT_SCHEMA",
     "ORDINARY_HMC_TUNING_ROUTE",
@@ -657,6 +663,37 @@ _EXPORT_MODULES = (
 )
 
 _DIRECT_EXPORTS = {
+    "admit_hmc_uncertainty_nomination_for_confirmation": "bayesfilter.inference.hmc_uncertainty_retuning",
+    "HMCKernelTuningConfig": "bayesfilter.inference.hmc_configuration",
+    "HMCTuneVerifyRepairLoopConfig": "bayesfilter.inference.hmc_configuration",
+    "HMCGeometryScaledBudgetTimingPolicy": "bayesfilter.inference.hmc_configuration",
+    "resolve_ordinary_hmc_selection_policy": "bayesfilter.inference.hmc_configuration",
+    "ORDINARY_SHARED_EPSILON_SCREEN_POLICY_ID": "bayesfilter.inference.hmc_configuration",
+    "ORDINARY_LEGACY_JOINT_L_EPSILON_POLICY_ID": "bayesfilter.inference.hmc_configuration",
+    "ORDINARY_ENGINEERING_JOINT_L_EPSILON_POLICY_ID": "bayesfilter.inference.hmc_configuration",
+    "prepare_operational_windowed_mass_handoff": "bayesfilter.inference.hmc_preparation",
+    "HMCStagedTimeoutPolicy": "bayesfilter.inference.hmc_mass_adaptation",
+    "HMCWindowedMassStageConfig": "bayesfilter.inference.hmc_mass_adaptation",
+    "HMCWindowedMassStageResult": "bayesfilter.inference.hmc_mass_adaptation",
+    "WINDOWED_MASS_STAGE_NONCLAIMS": "bayesfilter.inference.hmc_mass_adaptation",
+    "run_hmc_windowed_mass_stage": "bayesfilter.inference.hmc_mass_adaptation",
+    "build_operational_fixed_mass_hmc_adapter": "bayesfilter.inference.hmc_mass_adaptation",
+    "BOOTSTRAP_SCREEN_NONCLAIMS": "bayesfilter.inference.hmc_bootstrap",
+    "HMCBootstrapRepairRound": "bayesfilter.inference.hmc_bootstrap",
+    "HMCBootstrapScreenConfig": "bayesfilter.inference.hmc_bootstrap",
+    "HMCBootstrapScreenResult": "bayesfilter.inference.hmc_bootstrap",
+    "run_hmc_bootstrap_screen": "bayesfilter.inference.hmc_bootstrap",
+    "BootstrapFixedMassAdapter": "bayesfilter.inference.hmc_bootstrap",
+    "build_bootstrap_fixed_mass_adapter": "bayesfilter.inference.hmc_bootstrap",
+    "GEOMETRY_INITIALIZATION_NONCLAIMS": "bayesfilter.inference.hmc_geometry",
+    "HMCGeometryInitializationConfig": "bayesfilter.inference.hmc_geometry",
+    "HMCGeometryInitializationResult": "bayesfilter.inference.hmc_geometry",
+    "initialize_hmc_kernel_geometry": "bayesfilter.inference.hmc_geometry",
+    "HMCPrecisionTarget": "bayesfilter.inference.hmc_precision",
+    "HMCPrecisionPolicy": "bayesfilter.inference.hmc_precision",
+    "HMCPosteriorAssessmentPolicy": "bayesfilter.inference.hmc_posterior_assessment",
+    "run_hmc_posterior": "bayesfilter.inference.hmc_posterior_assessment",
+
     "BATCHED_LOCAL_CENTER_NONCLAIMS": "bayesfilter.inference.batched_local_center",
     "BatchedLocalCenterConfig": "bayesfilter.inference.batched_local_center",
     "BatchedLocalCenterResult": "bayesfilter.inference.batched_local_center",
@@ -742,6 +779,12 @@ _DIRECT_EXPORTS = {
     ),
     "HMCTuningRunnerBinding": "bayesfilter.inference.tuning_contract",
 }
+
+
+_DIRECT_EXPORTS['NeuTraTransportConfig'] = "bayesfilter.inference.neutra_transport"
+_DIRECT_EXPORTS['NeuTraTransport'] = "bayesfilter.inference.neutra_transport"
+_DIRECT_EXPORTS['NeuTraOptimizerConfig'] = "bayesfilter.inference.neutra_transport"
+_DIRECT_EXPORTS['NeuTraTransportTrainer'] = "bayesfilter.inference.neutra_transport"
 
 
 def __getattr__(name: str):

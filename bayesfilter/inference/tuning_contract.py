@@ -765,7 +765,7 @@ HMC_TUNING_ROUTE_REGISTRY: tuple[HMCTuningRouteRecord, ...] = (
         module="bayesfilter.inference.fixed_transport_candidate_selection",
         role="diagnostic",
         artifact_authority=False,
-        replacement="tune_hmc_kernel",
+        replacement="tune_fixed_transport_hmc_kernel",
         nonclaims=(
             "diagnostic compatibility payload only",
             "cannot issue a canonical numerical handoff",
@@ -1358,8 +1358,14 @@ def hmc_tuning_capability_registry_payload() -> Mapping[str, Any]:
     return {
         "schema": HMC_TUNING_CAPABILITY_REGISTRY_SCHEMA,
         "interfaces": tuple(record.payload() for record in capabilities),
+        "posterior_assessment": {
+            "entry_point": "run_hmc_posterior", "role": "posterior_runner_not_tuner",
+            "requires_verified_member": True, "tuning_artifact_authority": False,
+            "policy": "HMCPosteriorAssessmentPolicy", "precision_policy": "HMCPrecisionPolicy",
+        },
         "candidate_set_retained_bridge": {
-            "schema": "bayesfilter.hmc_candidate_retained_member.v1",
+            "schema": "bayesfilter.hmc_candidate_retained_member.v2",
+            "portable_schema": "bayesfilter.hmc_candidate_retained_member.v1",
             "status": "supported_with_repository_numerical_binding",
             "binding_factory": "bind_hmc_candidate_set_execution",
             "preparation_factory": "bind_hmc_candidate_set_execution_from_preparation",
@@ -1369,7 +1375,8 @@ def hmc_tuning_capability_registry_payload() -> Mapping[str, Any]:
                 "build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_result",
             ),
             "loader": "load_hmc_candidate_retained_runner",
-            "coordinates": ("ordinary_affine_mass", "frozen_affine_diag", "frozen_dense_iaf"),
+            "coordinates": ("ordinary_affine_mass", "frozen_affine_diag", "frozen_dense_iaf",
+                            "frozen_configured_iaf", "frozen_configured_naf_dsf"),
             "rhat_role": "reporting_only",
             "callback_observations_can_grant_numerical_authority": False,
             "posterior_convergence_authority": False,

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="4" time="1.704" timestamp="2026-09-18T16:06:57.847079+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_posteriordb_targets" name="test_density_score_and_model_coordinate_order[eight_schools-eight_schools_noncentered]" time="0.179" /><testcase classname="tests.inference_validation.test_posteriordb_targets" name="test_density_score_and_model_coordinate_order[sblrc-blr]" time="0.224" /><testcase classname="tests.inference_validation.test_posteriordb_targets" name="test_real_consumer_adapter_reaches_public_tuner" time="0.508"><failure message="TypeError: bind_hmc_candidate_set_execution() missing 2 required keyword-only arguments: 'target_lineage' and 'source_paths'">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-457/test_real_consumer_adapter_rea0')
+
+    def test_real_consumer_adapter_reaches_public_tuner(tmp_path):
+        from bayesfilter.inference import (HMCControllerConfig,HMCCandidateExecutionConfig,HMCAcceptancePolicy,
+            PrecomputedMassArtifact,bind_hmc_candidate_set_execution,tune_hmc_kernel)
+        target = PosteriordbTarget("eight_schools-eight_schools_noncentered",case_data("eight_schools"),jit_compile=False)
+        starts = tf.zeros((4,10),tf.float64)
+        mass = PrecomputedMassArtifact(position=[0.]*10,covariance=tf.eye(10,dtype=tf.float64),
+            factor=tf.eye(10,dtype=tf.float64),adapter_signature=target.adapter_signature(),
+            position_role="test_origin",covariance_source="identity smoke; not automatic preparation")
+&gt;       binding = bind_hmc_candidate_set_execution(adapter=target,initial_position=starts,mass_artifact=mass,
+            target_scope="inference_validation",scope_id="posteriordb-test",search_id="public-endpoint",
+            epsilon_domain=(.01,2.),repair_factor=2.,max_repairs_per_family=0,
+            config=HMCCandidateExecutionConfig(measurement_num_results=64,verification_num_results=64,
+                num_warmup_steps=8,seed=(813,915),use_xla=False,non_xla_reason="CPU endpoint unit smoke",
+                target_status_trace_policy="none",acceptance_policy=HMCAcceptancePolicy()))
+E       TypeError: bind_hmc_candidate_set_execution() missing 2 required keyword-only arguments: 'target_lineage' and 'source_paths'
+
+tests/inference_validation/test_posteriordb_targets.py:70: TypeError</failure></testcase><testcase classname="tests.inference_validation.test_posteriordb_targets" name="test_invalid_consumer_inputs_are_rejected" time="0.001" /></testsuite></testsuites>

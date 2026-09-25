@@ -57,6 +57,7 @@ def main() -> int:
         selection_num_burnin_steps=1,
         chain_execution_mode="eager",
         use_xla=False,
+        tuning_policy="legacy_directional_diagnostic_v1",
         target_scope=factor_adapter.target_scope,
     )
     candidate = FixedTransportHMCCandidateResult(

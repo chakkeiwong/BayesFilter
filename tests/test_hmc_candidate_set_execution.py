@@ -83,9 +83,10 @@ def make_binding(*, target=None, config=None, **overrides):
     return bind_hmc_candidate_set_execution(**(values | overrides))
 
 
-@pytest.fixture(scope="module")
-def tuned():
-    binding = make_binding()
+@pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
+def tuned(request):
+    binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+        reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
     config = HMCControllerConfig(primary_l_grid=(2, 3),
         epsilon_by_l=((2, (1.1, 1.3, 1.5)), (3, (1.1, 1.3, 1.5))),
         total_budget_units=40, repair_reserve_units=3)
@@ -110,9 +111,11 @@ def test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence(tuned):
         seen_seeds.add(tuple(evidence["seed"]))
         samples = _tensor_from_payload(evidence["samples"])
         work = evidence["work"]
+        issued_work = next(w for w in result.work_items if w.work_item_id == work["work_item_id"])
         assert work["stage"] == receipt.stage
         multiplier = result.config.evidence_rungs[work["evidence_rung"]]
         assert work["evidence_multiplier"] == multiplier
+        assert issued_work.evidence_multiplier == multiplier
         base_draws = {
             "measurement": binding.config.measurement_num_results,
             "verification": binding.config.verification_num_results,
@@ -125,7 +128,10 @@ def test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence(tuned):
 
 
 def test_member_export_reload_and_continuation_match_direct_runner(tuned, tmp_path):
-    from bayesfilter.inference.hmc import FullChainHMCConfig, build_independent_chain_tfp_hmc_runner
+    from bayesfilter.inference.hmc import (
+        FullChainHMCConfig, ReusableFullChainHMCRunner,
+        build_independent_chain_tfp_hmc_runner,
+    )
     binding, result = tuned
     candidate_id = result.verified_candidate_ids[-1]  # Explicit member, not a nominee.
     runner = build_retained_bound_hmc_archive_runner_from_candidate_set_result(
@@ -141,11 +147,15 @@ def test_member_export_reload_and_continuation_match_direct_runner(tuned, tmp_pa
     assert not np.array_equal(first["final_active_state"], runner.initial_active_state)
     assert payload["predecessor"]["content_hash"] == first["content_hash"]
     assert not payload["warmup_draws_included"] and not payload["tuning_draws_included"]
-    baseline = build_independent_chain_tfp_hmc_runner(binding._active_adapter, binding.initial_active_state,
+    factory = (ReusableFullChainHMCRunner if binding.config.chain_mode == "batched"
+               else build_independent_chain_tfp_hmc_runner)
+    baseline = factory(binding._active_adapter, binding.initial_active_state,
         FullChainHMCConfig(num_results=12, num_burnin_steps=0, step_size=runner.candidate.epsilon,
             num_leapfrog_steps=runner.candidate.leapfrog_steps, seed=(19,42), use_xla=False,
             target_scope="candidate-bridge-test"))
-    direct = baseline.run(current_state=first["final_active_state"], mode="serial")
+    direct = baseline.run(current_state=first["final_active_state"],
+                          **({} if binding.config.chain_mode == "batched" else {"mode": "serial"}))
+    assert payload["runtime"]["execution_mode"] == binding.config.chain_mode
     np.testing.assert_array_equal(second["samples"], direct.samples)
     with pytest.raises(ValueError, match="fresh"):
         reloaded.run(num_results=8, seed=(19, 41), output_dir=tmp_path / "reuse", previous_archive=second["archive_path"])
@@ -210,7 +220,7 @@ def test_durable_reload_rejects_drift_or_corruption(tuned, tmp_path, damage):
     binding, result = tuned
     runner = build_retained_bound_hmc_archive_runner_from_candidate_set_result(candidate_set_result=result,
         candidate_id=result.verified_candidate_ids[0], retained_binding=binding)
-    path = runner.export(tmp_path / "member.json")
+    path = runner.export(tmp_path / "member.json", portable=True)
     payload = json.loads(path.read_text())
     target = GaussianTarget()
     if damage == "target":
@@ -245,10 +255,51 @@ def test_dispatch_rejects_wrong_target_or_start_before_work(tuned):
 
 
 @pytest.mark.parametrize("overrides", [dict(measurement_num_results=63), dict(verification_num_results=0),
-    dict(num_warmup_steps=-1), dict(seed=(1,)), dict(non_xla_reason=None), dict(use_xla="true")])
+    dict(num_warmup_steps=-1), dict(seed=(1,)), dict(non_xla_reason=None), dict(use_xla="true"),
+    dict(chain_mode="unknown")])
 def test_execution_config_rejects_invalid_evidence_budgets(overrides):
     with pytest.raises((ValueError, TypeError)):
         execution_config(**overrides)
+
+
+def test_batched_binding_xla_preserves_independent_rows_and_dynamic_inputs(monkeypatch):
+    from bayesfilter.inference import hmc
+    from bayesfilter.inference.hmc_candidate_set_tuning import HMCTuningCandidateRecord
+
+    def forbid_scalar_runners(*_args, **_kwargs):
+        raise AssertionError("batched execution must not dispatch scalar chains")
+
+    monkeypatch.setattr(hmc, "build_independent_chain_tfp_hmc_runner", forbid_scalar_runners)
+    binding = make_binding(config=execution_config(chain_mode="batched", use_xla=True,
+                                                   non_xla_reason=None))
+    candidate = HMCTuningCandidateRecord.create(binding.scope, leapfrog_steps=2,
+                                                epsilon=.2, creation_ordinal=1)
+    starts = tf.zeros_like(binding.initial_active_state)
+    first = binding._run(candidate, starts, 4, (31, 7))
+    replay = binding._run(candidate, starts, 4, (31, 7))
+    tf.debugging.assert_equal(first.samples, replay.samples)
+    momenta = first.trace["initial_momentum"][0]
+    assert bool(tf.reduce_all(tf.reduce_any(momenta[1:] != momenta[:1], axis=-1)))
+    shifted = tf.tensor_scatter_nd_update(starts, [[0, 0]], [1.])
+    independent = binding._run(candidate, shifted, 4, (31, 7))
+    tf.debugging.assert_equal(first.samples[:, 1:], independent.samples[:, 1:])
+    assert bool(tf.reduce_any(first.samples[:, 0] != independent.samples[:, 0]))
+    changed_seed = binding._run(candidate, starts, 4, (31, 8))
+    assert bool(tf.reduce_any(first.samples != changed_seed.samples))
+    child = HMCTuningCandidateRecord.create(binding.scope, leapfrog_steps=2,
+                                            epsilon=.3, creation_ordinal=2)
+    changed_step = binding._run(child, starts, 4, (31, 7))
+    assert bool(tf.reduce_any(first.samples != changed_step.samples))
+    assert binding.health_failures(starts, first.samples, first.trace) == ()
+    assert first.trace["proposed_target_status_telemetry"]["status_code"].shape == (4, 4)
+    assert len(binding._runners) == 1
+    compiled = next(iter(binding._runners.values()))._runner
+    concrete = compiled.get_concrete_function()
+    assert compiled.experimental_get_tracing_count() == 1
+    assert concrete.function_def.attr["_XlaMustCompile"].b
+    definition = concrete.graph.as_graph_def()
+    nodes = list(definition.node) + [node for fn in definition.library.function for node in fn.node_def]
+    assert not any("PyFunc" in node.op or "HostCompute" in node.op for node in nodes)
 
 
 def test_finite_guard_and_candidate_health_wrappers_compose():
@@ -273,15 +324,23 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
     from bayesfilter.inference import bind_hmc_candidate_set_execution_from_preparation
     from bayesfilter.inference.hmc_kernel_tuning import (
         build_operational_fixed_mass_hmc_adapter, run_hmc_windowed_mass_stage,
-        OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+        OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID, HMCBootstrapScreenConfig,
     )
     adapter = fixture._RotatedGaussianAdapter()
     geometry = fixture.initialize_hmc_kernel_geometry(adapter=adapter, initial_position=[.4,-.3],
         initial_covariance=[[1.4,.3],[.3,.8]],
         config=fixture.HMCGeometryInitializationConfig(covariance_jitter=0.0))
+    def bootstrap_fixture(_adapter, _state, config):
+        count = int(config.num_results)
+        result = fixture._runtime_shaped_result(warmup_steps=count,
+            acceptance_trace=([True, True, False, True] * count)[:count])
+        # Bootstrap now consumes Metropolis probabilities, independently of
+        # the binary reporting field. Declare a passing probability trace.
+        result.trace["log_accept_ratio"] = tf.fill([count], tf.math.log(tf.constant(.7, tf.float64)))
+        return result
     bootstrap = fixture.run_hmc_bootstrap_screen(adapter=adapter, geometry=geometry,
-        run_full_chain=lambda _adapter, _state, config: fixture._runtime_shaped_result(
-            warmup_steps=int(config.num_results), acceptance_trace=[True,True,False,True]*4))
+        config=HMCBootstrapScreenConfig(screen_num_results=12),
+        run_full_chain=bootstrap_fixture)
     stage = run_hmc_windowed_mass_stage(adapter=adapter, geometry=geometry, bootstrap=bootstrap,
         config=fixture._stage_config(algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
                                      chain_execution_mode="tf_function"),
@@ -319,6 +378,13 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
     assert bound["coordinate_signature"] == final.transform.signature
     assert bound["metric_signature"] == final.momentum_metric.signature
     assert binding.scope.epsilon_domain[1] == bound["upper"]
+    expanded = bind_hmc_candidate_set_execution_from_preparation(**kwargs, preparation_bound_expansion_steps=1)
+    assert expanded.scope.epsilon_domain[1] == pytest.approx(bound["upper"] * kwargs["repair_factor"])
+    assert expanded.scope.search_id != binding.scope.search_id
+    assert expanded.scope.mass_signature == binding.scope.mass_signature
+    assert expanded.scope.start_bank_signature == binding.scope.start_bank_signature
+    assert not expanded._evidence
+    assert expanded._spec["preparation"]["search_domain_policy"]["expansion_steps"] == 1
     epsilons = tuple(bound["upper"] * factor for factor in (.6, .8, 1.))
     result = run_typed_hmc_candidate_set(binding.typed_adapter,
         HMCControllerConfig(primary_l_grid=(2,3), epsilon_by_l=((2,epsilons),(3,epsilons)),
@@ -336,17 +402,31 @@ def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
         bind_hmc_candidate_set_execution_from_preparation(**(kwargs | {"preparation": bad}))
 
 
-@pytest.mark.parametrize("kind", ["affine", "dense_iaf"])
-def test_supported_frozen_transports_use_numerical_controller_and_durable_geometry(kind, tmp_path):
+@pytest.mark.parametrize("kind", ["affine", "dense_iaf", "configured_iaf", "configured_naf_dsf"])
+@pytest.mark.parametrize("reuse", [False, True])
+def test_supported_frozen_transports_use_numerical_controller_and_durable_geometry(kind, reuse, tmp_path):
     target = GaussianTarget()
     if kind == "affine":
         payload = {"schema": "bayesfilter.neutra.frozen_affine_diag.v1", "transport_id": "test-affine",
             "dimension": 2, "target_signature": target.adapter_signature(), "log_jacobian_available": True,
             "shift": [.2,-.1], "raw_scale": [.1,.05]}
-    else:
+    elif kind == "dense_iaf":
         from tests.test_dense_iaf_neutra_artifact_loader import _payload
         payload = _payload(target_signature=target.adapter_signature())
-    binding = make_binding(mass_artifact=None, frozen_transport_payload=payload, start_coordinates="active")
+    else:
+        from bayesfilter.inference.neutra_transport import NeuTraTransport, NeuTraTransportConfig
+        config = (NeuTraTransportConfig.hoffman_author_iaf(2, conditional_scale_cap=2., seed=(47, 11))
+                  if kind == "configured_iaf" else NeuTraTransportConfig.huang_dsf(
+                      2, hidden_layers=(4,), stages=1, mixture_components=3, seed=(47, 11)))
+        payload = NeuTraTransport(config).frozen_payload(target_signature=target.adapter_signature())
+    # This fixture checks codec/controller/retained replay, not acceptance
+    # calibration. Source-bound seed changes can leave the narrower generic
+    # fixture with no statistically verified survivor. Use an explicit broad
+    # engineering band; production policies and all hard vetoes stay intact.
+    binding = make_binding(mass_artifact=None, frozen_transport_payload=payload, start_coordinates="active",
+                           config=execution_config(reuse_leapfrog_graphs=reuse,
+                               acceptance_policy=HMCAcceptancePolicy(practical_region=(.41, .99),
+                                                                    repair_region=(.405, .995))))
     probes = tf.constant([[.2,-.5],[-.3,.4]], tf.float64)
     value, score = binding._active_adapter.log_prob_and_grad(probes)
     raw = binding.position_samples(probes)

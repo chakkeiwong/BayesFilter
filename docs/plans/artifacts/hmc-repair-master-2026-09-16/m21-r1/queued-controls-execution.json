@@ -1,0 +1,42 @@
+{
+  "steps": [
+    {
+      "name": "mutation-tests-r1",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/inference_validation/test_full_fit_mutations.py",
+        "tests/inference_validation/test_definitions.py",
+        "tests/inference_validation/test_controller_stopping.py",
+        "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r1/mutation-tests-r1.xml"
+      ],
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "returncode": 0,
+      "elapsed_seconds": 5.77868174307514,
+      "timeout_seconds": 180,
+      "device": "cpu_reference"
+    },
+    {
+      "name": "public-controls-pilot-r1",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "bayesfilter.testing.inference_validation",
+        "run",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r1/public-controls-pilot.json",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r1/public-controls-cpu-r1",
+        "--max-workers",
+        "2"
+      ],
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r1/source-r1",
+      "returncode": 0,
+      "elapsed_seconds": 484.21044113801327,
+      "timeout_seconds": 1500,
+      "device": "cpu_reference"
+    }
+  ],
+  "waiting_not_numerical_work_seconds": 1565.3806729129283
+}

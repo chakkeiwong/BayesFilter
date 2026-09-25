@@ -3066,6 +3066,8 @@ def test_phase7_checkpoint_writer_emits_boundary_before_windowed_execute_error(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
 ) -> None:
+    from bayesfilter.inference import hmc_mass_adaptation
+
     writer_config = SequentialRHatCheckpointWriterConfig(
         checkpoint_dir=tmp_path,
         checkpoint_label="boundary",
@@ -3108,12 +3110,12 @@ def test_phase7_checkpoint_writer_emits_boundary_before_windowed_execute_error(
             raise RuntimeError("windowed execute blocked after boundary checkpoint")
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "build_fixed_size_hmc_chunk_runner",
         lambda *_args, **_kwargs: _FailingChunkRunner(),
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "write_sequential_rhat_boundary_handoff_checkpoint",
         fake_boundary_writer,
     )

@@ -24,6 +24,7 @@ from bayesfilter.inference.batched_value_score import (
     reviewed_value_score_target_fn,
 )
 from bayesfilter.inference.posterior_adapter import value_score_capability
+from bayesfilter.inference.hmc_status import cache_hmc_target_status, cached_target_status
 
 
 @dataclass(frozen=True)
@@ -515,6 +516,7 @@ def build_fixed_transport_one_step_transition(
     step_size: float,
     num_leapfrog_steps: int,
     use_xla: bool = True,
+    capture_health: bool = False,
 ) -> Callable[[tf.Tensor, tf.Tensor], tuple[tf.Tensor, ...]]:
     """Build the shared pure-tensor primitive for one exact HMC transition.
 
@@ -550,6 +552,8 @@ def build_fixed_transport_one_step_transition(
         num_leapfrog_steps=leapfrog,
         state_gradients_are_stopped=True,
     )
+    if capture_health:
+        kernel = cache_hmc_target_status(kernel, adapter.target_status_telemetry)
 
     @tf.function(
         input_signature=(
@@ -564,7 +568,7 @@ def build_fixed_transport_one_step_transition(
     ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         results = kernel.bootstrap_results(state)
         next_state, next_results = kernel.one_step(state, results, seed=seed)
-        return (
+        output = (
             tf.ensure_shape(next_state, shape),
             tf.ensure_shape(next_results.is_accepted, [shape[0]]),
             tf.ensure_shape(next_results.log_accept_ratio, [shape[0]]),
@@ -575,6 +579,24 @@ def build_fixed_transport_one_step_transition(
                 next_results.accepted_results.grads_target_log_prob[0], shape
             ),
         )
+        if capture_health:
+            # Rejected proposals still need valid endpoint health. A finite
+            # large energy error is explanatory; no magnitude veto here.
+            proposed = next_results.proposed_results
+            numeric = (state, next_state, next_results.proposed_state,
+                       next_results.log_accept_ratio, proposed.target_log_prob,
+                       proposed.grads_target_log_prob[0],
+                       next_results.accepted_results.target_log_prob,
+                       next_results.accepted_results.grads_target_log_prob[0])
+            healthy = tf.reduce_all(tf.stack([
+                tf.reduce_all(tf.math.is_finite(x)) for x in numeric]))
+            for status in (cached_target_status(results), cached_target_status(next_results),
+                           cached_target_status(next_results, proposed=True)):
+                healthy &= (tf.reduce_all(status["status_code"] == 0)
+                            & tf.reduce_all(status["valid_pre_regularized_score"])
+                            & tf.reduce_all(status["floor_count_value"] >= 0))
+            return (*output, healthy)
+        return output
 
     return transition
 

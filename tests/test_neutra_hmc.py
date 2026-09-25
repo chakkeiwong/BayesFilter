@@ -69,6 +69,44 @@ def _config(**overrides):
     return neutra_hmc.SequentialNeuTraHMCConfig(**values)
 
 
+@pytest.mark.parametrize("budget_allowed", [True, False])
+def test_simplex_model_dimensions_and_empty_retained_chunks(monkeypatch, budget_allowed):
+    _fake_programs(monkeypatch)
+    _script_rhat(monkeypatch, (True, True))
+    transform = lambda x: tf.nn.softmax(tf.concat([x, tf.zeros_like(x[..., :1])], -1), -1)
+    result = neutra_hmc.run_sequential_neutra_hmc(adapter=object(),
+        initial_state=tf.zeros((4,2),tf.float64),model_transform=transform,
+        parameter_names=("p0","p1","p2"),config=_config(),
+        budget_check=lambda _: budget_allowed)
+    assert result["private_retained_z"].shape[-1] == 2
+    assert result["private_retained_raw"].shape[-1] == 3
+    if budget_allowed:
+        assert bool(tf.reduce_all(abs(tf.reduce_sum(result["private_retained_raw"],-1)-1.)<1e-12))
+    else:
+        assert result["private_retained_raw"].shape == (0,4,3)
+
+
+def test_simplex_continuation_preserves_active_state(monkeypatch):
+    _fake_programs(monkeypatch)
+    _script_rhat(monkeypatch, (True,))
+    transform = lambda x: tf.nn.softmax(tf.concat([x,tf.zeros_like(x[...,:1])],-1),-1)
+    latent=tf.zeros((4,4,2),tf.float64)
+    result=neutra_hmc.run_retained_neutra_hmc_continuation(adapter=object(),
+        prefix_latent=latent,prefix_model=transform(latent),model_transform=transform,
+        parameter_names=("p0","p1","p2"),config=_config(),next_chunk_index=1,
+        retained_diagnostic_fn=lambda _: {"passed":True})
+    assert result["private_retained_z"].shape == (8,4,2)
+    assert result["private_retained_raw"].shape == (8,4,3)
+
+
+def test_model_transform_cannot_change_chain_axis(monkeypatch):
+    _fake_programs(monkeypatch)
+    with pytest.raises(neutra_hmc.NeuTraHMCError, match="draw/chain"):
+        neutra_hmc.run_sequential_neutra_hmc(adapter=object(),
+            initial_state=tf.zeros((4,2),tf.float64),model_transform=lambda x:x[:,:1],
+            parameter_names=("x","y"),config=_config())
+
+
 def test_sequential_controller_retains_warmup_excludes_it_and_reuses_programs(
     monkeypatch,
 ) -> None:
@@ -116,7 +154,7 @@ def test_sequential_controller_retains_warmup_excludes_it_and_reuses_programs(
 
 def test_sequential_controller_extends_for_full_diagnostic(monkeypatch) -> None:
     _fake_programs(monkeypatch)
-    _script_rhat(monkeypatch, (True,))
+    _script_rhat(monkeypatch, (True, True, True))
     checks = iter(({"passed": False}, {"passed": True}))
 
     result = neutra_hmc.run_sequential_neutra_hmc(
@@ -211,6 +249,7 @@ def test_retained_continuation_uses_real_chunk_config_and_checkpoints(
     monkeypatch,
 ) -> None:
     builds, calls = _fake_programs(monkeypatch)
+    _script_rhat(monkeypatch, (True, True))
     diagnostics = iter(
         (
             {"passed": False, "hard_vetoes": ()},

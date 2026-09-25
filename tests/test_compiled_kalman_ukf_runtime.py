@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import ast
 from dataclasses import replace
 from pathlib import Path
 
@@ -32,6 +33,13 @@ def test_runtime_audit_has_no_unclassified_numerical_iteration():
     report = _runtime_audit_module().audit()
     assert report["guard_violations"] == []
     assert report["stale_exceptions"] == []
+
+
+def test_loop_lint_identity_preserves_empty_fields_across_python_versions():
+    module = _runtime_audit_module()
+    tree = ast.parse("tuple(tf.TensorSpec(value.shape, value.dtype) for value in state)")
+    node = next(n for n in ast.walk(tree) if isinstance(n, ast.GeneratorExp))
+    assert module.loop_digest(node) == "85f88c433c5f18114321fb61db5d7f87782894fb1bccf656038cd4c455339c1c"
 
 
 def test_runtime_audit_does_not_exempt_new_numerics_in_a_schema_function():
