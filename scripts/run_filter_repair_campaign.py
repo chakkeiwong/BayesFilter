@@ -183,6 +183,29 @@ TEST_GROUPS = {
         for mode, jit in (("graph", "False"), ("xla", "True")) for device in ("cpu", "gpu")},
     "dz5_score_replay_localize_cpu": (
         "tests/test_filter_repair_dz5_score_oracle.py::test_dz5_graph_replay_thread_localization",),
+    **{f"dz5_prefix_replay_{route}_{horizon}_cpu": (
+        f"tests/test_filter_repair_dz5_replay_localization.py::test_dz5_graph_prefix_replay[{horizon}-{route}]",)
+        for route in ("direct", "public", "public_tuple") for horizon in (2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96)},
+    **{f"dz5_oracle_prefix_replay_{horizon}_cpu": (
+        f"tests/test_filter_repair_dz5_replay_localization.py::test_dz5_original_oracle_prefix_replay[{horizon}]",)
+        for horizon in (8, 16, 32, 48, 64, 96)},
+    **{f"dz5_late_step_replay_{horizon}_cpu": (
+        f"tests/test_filter_repair_dz5_replay_localization.py::test_dz5_frozen_late_step_threads[{horizon}]",)
+        for horizon in (48, 64)},
+    "dz5_carried_history_replay_cpu": (
+        "tests/test_filter_repair_dz5_replay_localization.py::test_dz5_graph_carried_history",),
+    "dz5_step_operands_replay_cpu": (
+        "tests/test_filter_repair_dz5_replay_localization.py::test_dz5_first_difference_step_operands",),
+    "dz5_mean_tangent_history_cpu": (
+        "tests/test_filter_repair_dz5_replay_localization.py::test_dz5_graph_mean_tangent_history",),
+    **{f"dz5_replay_control_{control}_cpu": (
+        f"tests/test_filter_repair_dz5_replay_localization.py::test_dz5_original_prefix_execution_control[{control}]",)
+        for control in ("arithmetic_off", "one_thread")},
+    "dz5_addition_graph_cpu": (
+        "tests/test_filter_repair_dz5_replay_localization.py::test_dz5_optimized_addition_graph",),
+    "dz5_score_oracle_graph_arithmetic_off_cpu": (
+        "tests/test_filter_repair_dz5_replay_localization.py::test_dz5_full_graph_oracle_arithmetic_off",),
+    "dz5_replay_evidence_cpu": ("tests/test_filter_repair_dz5_replay_evidence.py",),
     "dz5_snapshot_import_cpu": ("tests/test_filter_repair_dz5_snapshot.py",),
     "dz5_merged_import_cpu": ("tests/test_filter_repair_dz5_merged.py::test_merged_dz5_snapshot_import",),
     **{f"merged_ledh_boundary_{device}": ("tests/test_filter_repair_merged_ledh_boundary.py",)
@@ -1175,6 +1198,18 @@ EXPLANATORY_TEST_GROUPS = {
     **{f"driver_history_memory_{arm}_cpu": "Fresh-process supervisor record loading only; not target XLA or device memory evidence."
         for arm in ("prior", "streamed")},
     "dz5_score_replay_localize_cpu": "Short-horizon thread/replay attribution; cannot qualify the full DZ5 score oracle.",
+    **{f"dz5_prefix_replay_{route}_{horizon}_cpu": "Prefix replay attribution only; completed diagnostics may preserve replay failures and never qualify a target."
+        for route in ("direct", "public", "public_tuple") for horizon in (2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96)},
+    **{f"dz5_oracle_prefix_replay_{horizon}_cpu": "Original harness with prepared prefix; reports all replay/oracle failures without qualifying a target."
+        for horizon in (8, 16, 32, 48, 64, 96)},
+    **{f"dz5_late_step_replay_{horizon}_cpu": "Identical frozen late-step operands with thread controls; explanatory only, including when replay fails."
+        for horizon in (48, 64)},
+    "dz5_carried_history_replay_cpu": "Instrumented carried histories of the unchanged filter; explanatory, cannot qualify full oracle or runtime.",
+    "dz5_step_operands_replay_cpu": "Frozen first-difference update intermediates and thread controls; diagnostic-only instrumentation, no runtime qualification.",
+    "dz5_mean_tangent_history_cpu": "Mean-tangent inputs in the original time loop; explanatory only, including unreproduced failures.",
+    **{f"dz5_replay_control_{control}_cpu": "Original graph prefix with explicit execution control; cannot alone establish operator cause or qualify a target."
+        for control in ("arithmetic_off", "one_thread")},
+    "dz5_addition_graph_cpu": "Actual optimized graph and independent AddN buffer-order diagnostic; no target qualification.",
     **{f"ledh_flow_cost_{arm}_{device}": "Isolated qualified flow dependency costs; full public value/score integration and CPU compiler RSS remain separate gates."
         for arm in ("prior_graph", "native_graph", "native_xla") for device in ("cpu", "gpu")},
     "ledh_value_localize_cpu": "Frozen-reset attribution for a preserved full-value numerical veto; not admission.",

@@ -1,43 +1,51 @@
 # Complete filter and gradient execution repair
 
-The [merged endpoint audit](filter_gradient_merged_endpoint_audit_20260925.md)
-now names concrete new LEDH Python-loop/NumPy violations and the bounded repair
-sequence; these remain terminal blockers alongside actual-consumer integration.
+Current checkpoint through 03903, 2026-09-25: the full 96-observation DZ5
+CPU graph reference passes its original two-step score oracle and exact replay
+with explicit `arithmetic_optimization=False` (03901). Independent analysis
+03902 verifies raw derivatives, XLA comparisons and complete trajectory records;
+policy 03903 passes all 129 checks. Default CPU graph replay and GPU graph
+finite-difference failures remain preserved. Read the
+[replay result](filter_gradient_dz5_replay_result_20260925.md).
 
-Current checkpoint through 03882, 2026-09-25: the supervisor record-retention
-repair is qualified. Three matched fresh-process repeats reduce sampled peak RSS
-from 2.70 GB to 39.4 MB while preserving exact charges, run numbering and source-
-sensitive retry counts. Final policy 03882 passes 129 checks. See the
-[driver memory result](filter_gradient_campaign_driver_memory_result_20260925.md)
-and `artifacts/filter-gradient-repair-20260917/driver-history-verification-03882.json`.
-This is bookkeeping memory; target XLA/compiler-memory findings remain open.
+The first reproduced carried-state difference is the mean tangent at observation
+35 (03896), followed by factor tangents and score at 36. Frozen single-step
+controls pass. The installed TensorFlow AddN primitive demonstrably changes
+summation order with buffer eligibility; actual optimized filter graphs contain
+new AddN rewrites. The exact failing filter node is not yet proved. Numerical
+qualification also does not remove the frozen external MacroFinance callbacks'
+autodiff/pfor debt; no whole-target policy-compliance claim is eligible.
 
-The [fresh DZ5 score result](filter_gradient_dz5_score_result_20260925.md) qualifies
-all 23 coordinates at both original finite-difference steps on CPU/GPU XLA,
-with exact replay, one trace, HLO and loaded-source checks. CPU graph score replay
-and GPU graph smaller-step finite differences remain vetoed. Two-observation
-CPU diagnostics do not reproduce the 96-step replay issue; the next bounded
-localization must identify its first differing prefix/operator.
+This unit completed 21 workers / 4325.923902 CPU seconds, including the preserved
+03894 file-handoff failure. No GPU time was used. Charges through 03903 are
+81757.850907 CPU / 75683.391781 GPU seconds, leaving 33.289486 CPU /
+30.976836 GPU hours under the existing 56/52-hour caps. No worker is active.
+Receipt: `artifacts/filter-gradient-repair-20260917/dz5-replay-verification-03903.json`.
+The 24.6-MiB tracked archive holds metadata, logs, graphs, frozen inputs and
+source; large NPZ histories/operand records remain in the shared raw root,
+individually checksummed in the receipt. It is not a self-contained bulk-data archive.
 
-The [LEDH native result](filter_gradient_ledh_native_result_20260925.md) qualifies
-shared dependencies and the new dynamic score factory only. Full-value dual-trust
-FP32 parity, public value/score/KDM integration, public initializer/staged
-supervisor, reporting/isotropic findings, target capacity/memory and F01--F20
-terminal dispositions remain open. Guard covers 244 sources / 1346 existing
-allowances. Main remains unmerged. Two narrow reporting proposals await the
-user's async decision; independent work continues.
+Public LEDH value/score/KDM integration, valid/rejected reset qualification,
+public initializer/staged supervisor, reporting/isotropic findings, target
+capacity/memory and F01--F20 terminal dispositions remain open. Guard coverage
+is 244 sources / 1346 existing allowances; no runtime waiver was added.
+Two reporting proposals still await the user's existing async decision.
+Main remains unmerged. The separate supervisor memory repair remains qualified.
 
-Preserve numerical methods/seeded streams, inherited predator--prey full-step k4,
-and canonical author-profile NeuTra. No MacroFinance source edits, CDF restart,
-package install, stale admission refresh or canonical LEDH rebuild. No repair
-worker is active. One numerical worker at a time; no subagents.
+Continue on `/tmp/bayesfilter-filter-gradient-xla-validation-20260918`, branch
+`repair/filter-gradient-xla-validation-20260918`, with the stable campaign runner.
+Raw root: `/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
+One numerical worker at a time; freeze runtime/scripts/tests while it runs.
+No subagents, MacroFinance source edits, CDF restart, package mutation, stale
+admission refresh, canonical LEDH rebuild or historical NeuTra promotion.
+Preserve numerical methods/seeded streams and inherited predator--prey k4.
+Canonical NeuTra remains the shared author-profile IAF. Fetched remote main
+`5e16df06f` is already contained. Base of this unit: pushed `6ed86f8d8`.
 
-Charges through 03882: 77431.927005 CPU /
-75683.391781 GPU seconds; 34.491131 CPU /
-30.976836 GPU hours remain under 56/52-hour caps.
-Branch `repair/filter-gradient-xla-validation-20260918`; shared raw root
-`/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917`.
-Last pushed checkpoint before this unit is b1f294345.
+Next: retain the controlled DZ5 reference; isolate the actual graph addition
+before any default repair. Independently proceed with the LEDH valid/rejected
+reset and public-consumer repair already mapped in the master program. Preserve
+all prior numerical vetoes; successful diagnostics cannot replace terminal gates.
 
 Older checkpoints below preserve historical scope and instructions only.
 
