@@ -1,36 +1,42 @@
 # Complete filter and gradient execution repair
 
-Current checkpoint through 04108, September 26. Prior pushed commit:
-`5bbce48b5`. The SIR terminal follow-up passes 04061/04062 (34 checks per
-backend) and refreshed costs 04063--04068. The mixed KR/TTSIRT public logarithms
-now execute through default-XLA owners, with one shared log-density/potential
-owner. Final dedicated tests 04092/04093 and consumers 04106/04107 pass.
-Policy 04108 passes 129 checks across 270 guarded sources / 1,424 exact
-allowances. See `filter_gradient_latent_sir_result_20260926.md` and
-`filter_gradient_mixed_kr_transport_result_20260926.md` for exact evidence.
+Current checkpoint through 04140, September 26. Prior pushed commit:
+`be3a9a662`. SIR terminal follow-up 04061/04062, refreshed costs 04063--04068,
+and mixed KR/TTSIRT shared-owner tests 04092/04093 are qualified for their
+bounded execution scopes. Consumers 04106/04107 pass 12 checks per backend.
+Policy 04108, 04138 and 04140 pass 129 checks; the current source guard covers
+270 sources with 1,424 exact allowances. See the SIR, mixed-KR and GenUT result
+notes for exact evidence.
 
-Fresh cost cohort 04094--04105 preserves values (maximum error 2.22e-16),
-identical inputs and 3,391 source hashes. Sharing the log owner removes the
-earlier observed 22 MiB CPU / 31 MiB GPU overhead: final XLA RSS is within
-0.5/1.3 MiB of the preceding partially compiled wrappers. These are descriptive
-fixture costs, not target-capacity or performance-ranking evidence. Historical
-KR and obsolete private helpers retain diagnostic loops; active method coverage
-does not imply the entire file is loop-free or canonical scientific admission.
+GenUT cap localization 04109--04113 explains the one-of-216 FP32 report
+mismatch: XLA rewrites power/division into multiply by a negative power, and
+FP32 rounding crosses the existing 1e-7 reporting predicate. Identical operand
+replays, 80-digit Decimal, exact instrumentation and a diagnostic optimization
+barrier reproduce the mechanism on CPU/GPU. The strict report comparison stays
+open; no barrier, threshold, tolerance or runtime precision change was made.
 
-Charges through 04108: 85502.823304 CPU / 77468.094682 GPU seconds, leaving
-32.249216 CPU / 30.481085 GPU process-hours under unchanged 56/52-hour caps.
+Reduced-primal capacity 04114--04134 passes native finite/value/replay,
+radial-cap and independent-moment checks through N=10,000,d=18 on CPU/GPU.
+GPU XLA allocator peak is 6.3 MiB versus 49.3 MiB for native graph at that
+fixture. A matched CPU d=18 probe 04139 finds native XLA median warm time 134.5
+ms versus 42.0 ms for frozen original XLA (3.21x descriptive ratio), despite
+smaller HLO; this remains an open performance limitation. FP64 references
+04135--04137 show the non-report full-record failures in several original arms,
+while native non-report fields pass against FP64. No comparator tolerance was
+weakened. Capacity evidence is bounded to the reduced primal and does not
+qualify full LEDH/reset consumers.
+
+Charges through 04140: 85657.405133 CPU / 77576.305836 GPU seconds, leaving
+32.206276 CPU / 30.451026 GPU process-hours under unchanged 56/52-hour caps.
 The extra 24 CPU hours are already included. No campaign worker is active.
-Remote main `5e16df06f586c16bc58fb76bc62d4f6451e7690d` is contained in this
-branch; main remains unmerged. Canonical LEDH rebuilding is excluded; the
-current NeuTra architecture remains `bayesfilter_neutra_iaf_author_v1`.
+Remote main `5e16df06f586c16bc58fb76bc62d4f6451e7690d` remains contained in this
+branch; main is not merged. Canonical LEDH rebuilding remains excluded; current
+NeuTra architecture is `bayesfilter_neutra_iaf_author_v1`.
 
-Next: diagnose the GenUT one-of-216 FP32 cap-active report mismatch with
-captured operands and high-precision arithmetic, without changing the 1e-7
-predicate or comparison tolerance. Then qualify N*d*d capacity and continue
-public-consumer/LEDH-reset and initializer/supervisor integration. Original
-precision dispositions, repeated-constructor XLA retention, DZ5 graph replay
-and GPU graph finite differences, external callback pfor, reporting/isotropic
-proposals and final F01--F20 dispositions remain open. Main merge remains
+Next: decide and qualify an uncertainty-aware cap-report contract without
+silently selecting graph or XLA rounding; continue registered public-consumer,
+LEDH/reset, initializer/supervisor, DZ5, repeated-constructor and F01--F20
+terminal repairs. Target/full-consumer capacity remains open. Main merge stays
 blocked until the master gate passes. Pending reporting proposals are not
 approved by elapsed time.
 

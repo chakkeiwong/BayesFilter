@@ -1,5 +1,14 @@
 # Transitive GenUT execution and cost result
 
+September 26 follow-up through 04140: the cap-report mismatch is now traced
+to XLA's power/division rewrite on identical operands. Exact instrumentation,
+80-digit Decimal and a diagnostic optimization barrier reproduce the mechanism
+on CPU/GPU; the strict reporting gate remains open with no waiver. See
+`filter_gradient_genut_cap_diagnostic_result_20260926.md`. Reduced-primal capacity
+through 04134, FP64 attribution 04135--04137 and matched CPU timing 04139 are
+reported in `filter_gradient_genut_capacity_result_20260926.md`. The original
+result below retains its evidence scope and costs.
+
 The reduced primal GenUT correction now uses TensorFlow control flow for its
 diagonal and pairwise iterations. The Austria observation callback builds its
 fixed infectious-coordinate matrix with one batched `tf.one_hot`. Fifteen

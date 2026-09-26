@@ -247,6 +247,22 @@ TEST_GROUPS = {
        for device in ("cpu", "gpu")},
     "genut_transitive_moment_localization_gpu": (
         "tests/test_filter_repair_genut_transitive.py::test_f32_moment_localization", "-s"),
+    **{f"genut_transitive_cap_diagnostic_{device}": (
+        "tests/test_filter_repair_genut_cap_diagnostic.py::test_cap_operand_localization",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_transitive_cap_lowering_{device}": (
+        "tests/test_filter_repair_genut_cap_diagnostic.py::test_cap_lowering_same_operands",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_transitive_capacity_{arm}_{mode}_{count}_{dimension}_{device}": (
+        f"tests/test_filter_repair_genut_capacity.py::test_capacity_cost[{arm}-{mode}-{count}-{dimension}]",)
+       for arm in ("original", "native") for mode in ("graph", "xla")
+       for count, dimension in ((1000, 3), (10000, 3), (10000, 18)) for device in ("cpu", "gpu")
+       if (arm, mode, device) != ("original", "xla", "gpu")},
+    **{f"genut_transitive_capacity_fp64_{count}_{dimension}_cpu": (
+        f"tests/test_filter_repair_genut_capacity.py::test_full_fp64_reference[{count}-{dimension}]",)
+       for count, dimension in ((1000, 3), (10000, 3), (10000, 18))},
+    "genut_transitive_capacity_matched_cpu": (
+        "tests/test_filter_repair_genut_capacity.py::test_matched_cpu_xla_cost",),
     **{f"genut_transitive_cost_{arm}_{mode}_{device}": (
         f"tests/test_filter_repair_genut_transitive.py::test_reduced_correction_cost[{arm}-{mode}]",)
        for arm in ("original", "native") for mode in ("graph", "xla") for device in ("cpu", "gpu")
