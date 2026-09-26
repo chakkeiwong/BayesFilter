@@ -1,5 +1,10 @@
 # LEDH safety and analytical stage execution repair
 
+September 26 update: committed-source refresh 04153--04160 passes 23
+safety/stage/consumer checks per backend. Policy 04164 passes 129 checks with
+270 sources / 1,424 exact allowances. The import counts and costs below retain
+their historical snapshot; no canonical or full-public admission follows.
+
 The shared Cholesky safety helper and the LGSSM analytical stage slice now run
 through native TensorFlow control flow. The Cholesky helper no longer expands
 rank with a Python loop; it broadcasts the validity mask directly, preserves

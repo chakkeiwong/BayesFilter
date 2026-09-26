@@ -26,7 +26,7 @@ GPU UUID was held constant and sampled monitoring found no foreign compute
 process. Memory growth was configured before device initialization. Allocator
 values exclude CUDA context and compiler memory; host RSS includes compiler and
 returned arrays. The GPU graph-to-XLA peak difference at N=10,000,d=18 is about
-43 MiB. Repeated constructor/executable retention was not tested.
+41.05 MiB. Repeated constructor/executable retention was not tested.
 
 Original graph/XLA and repaired graph/XLA were run on the same frozen FP32
 inputs. The strict complete-record comparison remains separate: the known
@@ -58,7 +58,13 @@ installed in runtime code.
 | CPU d=18 performance | Open limitation | Native XLA is descriptively slower in matched probe |
 | Main merge/terminal master gate | Blocked | F01--F20 and public integrations remain open |
 
-Raw run records through 04140, compact source/HLO evidence and per-array hashes
-are preserved in `genut-capacity-evidence-04140.tar.gz` with receipt
-`genut-capacity-verification-04140.json`. The campaign policy suite passes
+Raw run records through 04140, source/HLO evidence, full numerical arrays and
+analyzers are preserved in `genut-capacity-evidence-04140-r2.tar.gz` with receipt
+`genut-capacity-verification-04140-r2.json`. The earlier compact r1 archive used
+an overly narrow filename pattern that omitted per-run capacity JSON/NPZ files;
+r2 repairs the archival omission and preserves r1. The campaign policy suite passes
 again in 04140 with 270 guarded sources and 1,424 exact allowances.
+
+Subsequent reduction-layout and highest-precision dot diagnostics are recorded
+in `filter_gradient_genut_reduction_layout_result_20260926.md`; neither changes
+the runtime or closes the CPU cost finding.

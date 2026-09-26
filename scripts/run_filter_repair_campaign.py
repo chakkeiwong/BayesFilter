@@ -263,6 +263,11 @@ TEST_GROUPS = {
        for count, dimension in ((1000, 3), (10000, 3), (10000, 18))},
     "genut_transitive_capacity_matched_cpu": (
         "tests/test_filter_repair_genut_capacity.py::test_matched_cpu_xla_cost",),
+    "genut_transitive_layout_cpu": (
+        "tests/test_filter_repair_genut_layout.py::test_layout_attribution",),
+    **{f"genut_transitive_highest_dot_{device}": (
+        "tests/test_filter_repair_genut_layout.py::test_highest_dot_attribution",)
+       for device in ("cpu", "gpu")},
     **{f"genut_transitive_cost_{arm}_{mode}_{device}": (
         f"tests/test_filter_repair_genut_transitive.py::test_reduced_correction_cost[{arm}-{mode}]",)
        for arm in ("original", "native") for mode in ("graph", "xla") for device in ("cpu", "gpu")
@@ -1357,6 +1362,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "genut_transitive_layout_cpu": "Uninstalled reduction-layout diagnostic; cannot substitute for runtime qualification.",
+    **{f"genut_transitive_highest_dot_{device}": "Uninstalled highest-precision XLA dot diagnostic; no runtime or reporting gate waiver."
+       for device in ("cpu", "gpu")},
     "genut_transitive_moment_localization_gpu": "Explicit TF32 accuracy control; no default qualification or numerical gate waiver.",
     "kdm_auxiliary_localization_cpu": "Complete baseline rejection localization; cannot waive KDM endpoint repair or qualification.",
     "dz5_ordered_add_primitive_cpu": "Independent no-inline addition cancellation/derivative diagnostic; no actual target or runtime qualification.",
