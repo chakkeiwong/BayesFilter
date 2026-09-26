@@ -1,5 +1,22 @@
 # Filter and gradient repair resume checkpoint
 
+Checkpoint through 04167, September 26. Remote main `5eb6dcff5` is merged
+without conflicts at `07996dd81`; main promotion remains blocked. The optional
+FAB integration passes 04165, canonical IAF integration passes 04166, and all
+129 policy checks pass 04167. The FAB addition is outside the 270-source filter
+guard and is not declared fully audited. See
+`filter_gradient_remote_fab_integration_20260926.md` and the immutable
+`remote-fab-integration-verification-04167.json` receipt. No worker is active.
+
+Charges: 85979.249155 CPU / 77830.415020 GPU seconds, leaving 32.116875 CPU /
+30.380440 GPU process-hours under unchanged 56/52-hour caps. The added 24 CPU
+hours are already included. Next qualify the uninstalled highest-precision dot
+candidate's TensorFlow pullback and graph compatibility under a bounded unit,
+then continue public-consumer repairs. The prior numerical findings below
+remain open; no terminal F01--F20 or main-merge gate is closed by integration.
+
+Previous numerical checkpoint:
+
 Current checkpoint through 04164, September 26. Prior pushed commit:
 `a6609df85`. No numerical worker is active. The SIR and public TTSIRT log
 execution repairs are committed; see their September 26 result notes.

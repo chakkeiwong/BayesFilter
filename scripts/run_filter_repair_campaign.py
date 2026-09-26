@@ -160,6 +160,7 @@ TEST_GROUPS = {
         "tests/highdim/test_c2_ukf_guided_tt_dmis_tf.py"),
     "remote_integration_eigen_cpu": ("tests/test_principal_sqrt_eigen_refinement_tf.py",),
     "remote_integration_genut_primitives_cpu": ("tests/highdim/test_genut_shape_lm_tf.py",),
+    "remote_integration_fab_cpu": ("tests/test_neutra_fab.py", "tests/test_fab_campaign_diagnostics.py"),
     "remote_integration_neutra_cpu": (
         "tests/test_neutra_single_authority.py::test_author_free_bias_is_outside_cap_and_has_unrestricted_gradient",
         "tests/test_neutra_single_authority.py::test_hoffman_profile_masks_match_author_tfp_blocks",
