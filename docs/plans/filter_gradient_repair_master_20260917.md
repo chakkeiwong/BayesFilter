@@ -1,5 +1,12 @@
 # Complete filter and gradient execution repair
 
+Through 04264, remote main `52888d771` is merged without conflicts in
+`f8cb52e32`. The 19 FAB, one bounded FP64 GenUT derivative and 129 policy checks
+pass. Receipt: `remote-fab-integration-verification-04264.json`. Charges are
+86999.514766 CPU / 78707.470026 GPU seconds. No worker is active. Next execute
+[public staged-locator integration](filter_gradient_staged_public_integration_20260927.md).
+Main promotion and all unresolved numerical findings remain open.
+
 Checkpoint through 04261, September 27. Repair branch HEAD `9f0a5508f` plus
 this checkpoint contains the GenUT diagnostic follow-up and corrected cost
 cohort. The loop-bound runtime repair remains installed; precision alternatives
@@ -34,9 +41,8 @@ Charges through 04261: 86888.150888 CPU / 78707.470026 GPU seconds, leaving
 31.864403 CPU / 30.136814 GPU hours under the 56/52-hour caps. The added 24 CPU
 hours are already included. No numerical worker is active.
 
-Next commit this checkpoint and integrate fetched remote main `52888d771`
-(FAB-only changes) into the repair branch, then run focused FAB, GenUT and
-policy checks before pushing. Continue public staged-locator/initializer and
+Remote FAB integration and its checks are complete as recorded above.
+Continue public staged-locator/initializer and
 consumer call-chain coverage, reporting/numerical failures, DZ5 integration,
 native memory/capacity attribution and terminal source-frozen F01--F20 review.
 Canonical NeuTra remains `bayesfilter_neutra_iaf_author_v1`; the user excluded
