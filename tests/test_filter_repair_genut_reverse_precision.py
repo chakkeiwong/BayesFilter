@@ -2,6 +2,7 @@
 
 import hashlib
 import inspect
+import subprocess
 from pathlib import Path
 from types import ModuleType
 
@@ -14,6 +15,13 @@ from bayesfilter.highdim import dual_cap_genut_primal_tf as current
 from tests import filter_repair_genut_reverse_candidate as reverse_candidate
 from tests.test_filter_repair_genut_dot_pullback import _program_gradient
 from tests.test_filter_repair_genut_transitive import _fixture, _write
+
+REFERENCE_COMMIT = "5c9aa438e"
+
+
+def _reference_source():
+    return subprocess.check_output(["git", "show",
+        f"{REFERENCE_COMMIT}:bayesfilter/highdim/dual_cap_genut_primal_tf.py"], text=True)
 
 
 def _coefficients(shape):
@@ -28,18 +36,20 @@ def _fields(result):
             "weight_gradient": gradients[1], "reset_gradient": gradients[2]}
 
 
-def _compare(actual, expected):
+def _compare(actual, expected, tolerance=2e-5):
     return {key: {"passed": bool(np.allclose(np.asarray(value, dtype=np.float64),
-                      np.asarray(expected[key], dtype=np.float64), rtol=2e-5, atol=2e-5)),
+                      np.asarray(expected[key], dtype=np.float64), rtol=tolerance, atol=tolerance)),
                   "max_abs_error": float(np.max(np.abs(np.asarray(value, dtype=np.float64) -
                       np.asarray(expected[key], dtype=np.float64))))}
             for key, value in actual.items()}
 
 
-def _independent_reference(inputs, coefficients):
+def _independent_reference(inputs, coefficients, *, steps=2):
     rounded = tuple(tf.cast(value, tf.float64) for value in inputs)
-    owner = _program_gradient(current.dual_cap_genut_primal, rounded, jit=False,
-        coefficients=coefficients)
+    module = ModuleType("_genut_reverse_independent_graph_reference")
+    exec(compile(_reference_source(), "<genut-frozen-fp64-reference>", "exec"), module.__dict__)  # noqa: S102
+    owner = _program_gradient(module.dual_cap_genut_primal, rounded, jit=False,
+        coefficients=coefficients, steps=steps)
     reference = owner(*rounded)
     directions = tuple(tf.reshape(tf.sin(tf.cast(tf.range(tf.size(x)), tf.float64) + .31), x.shape)
                        / tf.cast(tf.size(x), tf.float64) for x in rounded)
@@ -82,11 +92,12 @@ def test_reverse_precision_toggle(request):
 
 
 def _substitution(kind):
-    source = inspect.getsource(current)
+    source = _reference_source()
     if kind in ("cholesky", "both", "all"):
         assert source.count("tf.linalg.cholesky(") == 2
         source = source.replace("tf.linalg.cholesky(", "native_cholesky(")
-    if kind in ("solve", "both", "solve_matrix", "all", "solve_diagonal_primal"):
+    if kind in ("solve", "both", "solve_matrix", "all", "solve_diagonal_primal",
+                "solve_gram_primal", "solve_rhs_primal"):
         assert source.count("tf.linalg.triangular_solve(") == 1
         source = source.replace("tf.linalg.triangular_solve(", "native_triangular_solve(")
     if kind in ("matrix_solve", "solve_matrix", "all"):
@@ -99,10 +110,11 @@ def _substitution(kind):
         before = "tf.linalg.matvec(jacobian, residual, transpose_a=True)"
         assert source.count(before) == 1
         source = source.replace(before, "native_transposed_matvec(jacobian, residual)")
-    if kind in ("diagonal_primal", "solve_diagonal_primal"):
+    if kind in ("diagonal_primal", "solve_diagonal_primal", "gram_primal", "solve_gram_primal"):
         before = "tf.linalg.matmul(jacobian, jacobian, transpose_a=True)"
         assert source.count(before) == 1
         source = source.replace(before, "precise_gram(jacobian)")
+    if kind in ("diagonal_primal", "solve_diagonal_primal", "rhs_primal", "solve_rhs_primal"):
         before = "tf.linalg.matvec(jacobian, residual, transpose_a=True)"
         assert source.count(before) == 1
         source = source.replace(before, "precise_transposed_matvec(jacobian, residual)")
@@ -129,6 +141,61 @@ def test_reverse_precision_additional_sites(request):
 def test_reverse_precision_primal_products(request):
     _site_trial(("diagonal_primal", "solve_diagonal_primal"), "solve_diagonal_primal",
         "genut-reverse-primal-products.json", request, require_bitwise=False)
+
+
+def test_reverse_precision_individual_products(request):
+    _site_trial(("gram_primal", "rhs_primal", "solve_gram_primal", "solve_rhs_primal"), None,
+        "genut-reverse-individual-products.json", request, require_bitwise=False)
+
+
+@pytest.mark.parametrize("dtype", [tf.float32, tf.float64], ids=["f32", "f64"])
+def test_precision_candidate_extents(dtype, request):
+    module, source = _substitution("solve_gram_primal")
+    original = ModuleType("_genut_precision_prior_value")
+    exec(compile(_reference_source(), "<genut-precision-prior>", "exec"), original.__dict__)  # noqa: S102
+    report = {"role": "uninstalled_precision_candidate_extent_qualification",
+              "reference_commit": REFERENCE_COMMIT, "candidate": "solve_gram_primal",
+              "source_sha256": hashlib.sha256(source.encode()).hexdigest(), "dtype": dtype.name,
+              "cases": []}
+    try:
+        for dimension in (1, 3, 18):
+            inputs = _fixture(dtype, dimension)
+            coefficients = _coefficients(inputs[0].shape)
+            for steps in (0, 4):
+                reference, fd = _independent_reference(inputs, coefficients, steps=steps)
+                changed = (inputs[0] + .1, inputs[1], inputs[2] - .03)
+                changed_reference, _ = _independent_reference(changed, coefficients, steps=steps)
+                for jit in (False, True):
+                    owner = _program_gradient(module.dual_cap_genut_primal, inputs, jit=jit,
+                        coefficients=coefficients, steps=steps)
+                    before = _program_gradient(original.dual_cap_genut_primal, inputs, jit=jit,
+                        coefficients=coefficients, steps=steps)
+                    actual, previous = _fields(owner(*inputs)), _fields(before(*inputs))
+                    tolerance = 2e-5 if dtype == tf.float32 else 2e-10
+                    row = {"dimension": dimension, "steps": steps, "jit_compile": jit,
+                           "actual": actual, "previous": previous, "reference": reference,
+                           "reference_fd": fd, "comparison": _compare(actual, reference, tolerance),
+                           "previous_comparison": _compare(actual, previous, tolerance)}
+                    report["cases"].append(row)
+                    # Keep every discrete field in saved comparisons. The
+                    # established cross-precision report gate stays separate.
+                    replay = _fields(owner(*inputs))
+                    assert all(np.array_equal(value.numpy(), replay[key].numpy())
+                        for key, value in actual.items())
+                    updated = _fields(owner(*changed))
+                    row.update(changed=updated, changed_reference=changed_reference,
+                        changed_comparison=_compare(updated, changed_reference, tolerance))
+                    assert all(np.all(np.isfinite(value.numpy())) for value in actual.values())
+                    assert all(np.all(np.isfinite(value.numpy())) for value in updated.values())
+                    assert owner.experimental_get_tracing_count() == 1
+    finally:
+        _write(request, f"genut-precision-extents-{dtype.name}.json", report)
+    assert all(value["passed"] for row in report["cases"] for key, value in row["comparison"].items()
+        if key != "fraction_coordinatewise_cap_active"), "Candidate fails the unchanged independent FP64 bound"
+    assert all(value["passed"] for row in report["cases"] for key, value in row["changed_comparison"].items()
+        if key != "fraction_coordinatewise_cap_active"), "Changed operands fail the unchanged independent FP64 bound"
+    assert all(value["passed"] for row in report["cases"] for key, value in row["previous_comparison"].items()
+        if not key.endswith("_gradient")), "Candidate changes complete original same-mode forward records"
 
 
 def _site_trial(kinds, required, filename, request, *, require_bitwise=True):
@@ -166,8 +233,9 @@ def _site_trial(kinds, required, filename, request, *, require_bitwise=True):
                 assert all(np.all(np.isfinite(x.numpy())) for x in result.values())
     finally:
         _write(request, filename, report)
-    assert all(field["passed"] for arm in report["arms"] if arm["kind"] == required
-               for key, field in arm["comparison"].items() if key != "fraction_coordinatewise_cap_active")
+    if required is not None:
+        assert all(field["passed"] for arm in report["arms"] if arm["kind"] == required
+                   for key, field in arm["comparison"].items() if key != "fraction_coordinatewise_cap_active")
 
 
 @pytest.mark.parametrize("dtype", [tf.float32, tf.float64], ids=["f32", "f64"])

@@ -1,57 +1,55 @@
 # Complete filter and gradient execution repair
 
-Checkpoint through 04187, September 26. Pushed commit `28cbdb536` contains
-remote main `5eb6dcff5` through conflict-free merge `07996dd81`. Integration
-04165--04167 passes (18 FAB, 6 canonical IAF, 129 policy checks). Main promotion
-remains blocked and F01--F20 remain open.
+Checkpoint through 04207, September 26. Pushed commit `5c9aa438e` contains the
+bounded GenUT reverse-compilation repair and preceding remote integration.
+Remote main `5eb6dcff5` is contained through `07996dd81`. No worker is active.
+The Gram/triangular precision candidate remains uninstalled. Main promotion
+and F01--F20 terminal dispositions remain open.
 
-The active numerical change is limited to fixed reverse-storage bounds on the
-two GenUT loops. Unchanged current XLA derivatives failed compilation in 04171;
-04172 exposed the zero-trip TensorList compiler case. Bounds preserve the loop
-conditions and use one storage slot at zero steps. CPU FP64/FP32 04173/04174 and
-GPU FP64 04177 pass zero/two/four steps, original records and finite differences.
-GPU FP32 04178 fails unchanged gradient bounds; it is not qualified.
+The two runtime GenUT loops now declare fixed reverse-storage bounds, retaining
+zero actual iterations for zero configured steps. Complete current-runtime
+primal and reset/callback renewals 04194--04199 pass on CPU/GPU. Policy 04200
+passes 129 checks; coverage remains 270 sources/1,424 exact allowances.
+No new NumPy/numerical-loop allowance, default TF32 change, tolerance waiver,
+canonical LEDH rebuild or MacroFinance edit is installed.
 
-Highest-dot custom pullbacks using native reductions pass nine CPU/GPU primitive
-checks (04169/04179), including mixed second derivatives and collection, and
-full-program CPU/GPU comparisons (04175/04176/04180). The first recursive custom
-pullback failed graph capture (04168). No dot candidate is installed in runtime.
-Full FP32 GPU correctness is blocked by the underlying current gradient defect.
+TF32 causes two localized defects: diagonal Gram primal rounding in graph mode
+and the triangular-solve factor pullback in XLA. Individual attribution 04188
+selects only these two changes. Other trial substitutions are unnecessary for
+the tested defect. The uninstalled candidate passes all six GPU XLA extent
+cells (dimensions 1/3/18, zero/four iterations), including changed inputs,
+against independent FP64 smooth values/derivatives. FP64 CPU/GPU pass all
+12 graph/XLA cells (04191/04193). Primitive GPU renewal 04207 passes eight cases.
 
-Independent rounded-input FP64 diagnostics 04181/04182 show healthy covariance
-condition 1.3561, and source/weight/reset gradient errors in both GPU modes only
-with TF32 enabled. 04183 passes eight primitive checks. 04184 identifies the
-triangular-solve factor pullback as sufficient to repair GPU XLA, preserving
-all forward output bits. Cholesky/matrix-solve/Gram/matvec pullback trials do not
-repair graph mode (04184/04185). Graph forward values themselves vary with TF32;
-XLA forward values do not. The next diagnostic replaces only the two diagonal
-primal contractions plus the triangular-solve pullback, preserving equations,
-controls and tolerances. All these substitutions remain diagnostic candidates.
+FP32 CPU 04190 still fails dimension-18/four-step weight gradients in graph
+and XLA, also failing in the original implementation. FP32 GPU 04192 fails
+graph dimension-18 changed zero-step and four-step weight gradients. At the
+four-step GPU graph fixture, several original forward fields are also wrong
+against independent FP64; the candidate values pass. All original comparisons
+are retained. Small gradient magnitude alone does not establish ill-conditioning.
+The candidate cannot yet support general precision or cost qualification.
 
-04186 passes the combined diagonal-primal/triangular-pullback trial in both GPU
-modes against independent FP64. XLA forward values are bitwise identical; every
-graph forward field passes the unchanged bound. 04187 passes 129 policy checks.
-No worker is active. Raw evidence/source snapshots are archived and verified in
-`genut-reverse-verification-04187.json`. See the result note
-`filter_gradient_genut_reverse_precision_result_20260926.md`. Plans:
-`filter_gradient_genut_dot_pullback_unit_20260926.md`,
-`filter_gradient_genut_reverse_precision_unit_20260926.md` and the prepared,
-unexecuted `filter_gradient_genut_bounded_gradient_cost_20260926.md`.
-The cost cohort is deferred until derivative correctness. No rejected derivative
-may support speed ranking. The thresholded cap report remains a separate open
-failure; no changed threshold, tolerance waiver or TF32 default is installed.
+Cross-mode complete-record gates 04201/04202 still fail on the thresholded cap
+report. 04203--04206 reproduce its prior operand/lowering cause. No reporting
+semantics changed. Highest-dot pullbacks pass earlier primitive/full-program
+checks, but remain diagnostic and inherit unresolved full-program precision.
 
-Charges through 04187: 86138.423980 CPU / 78093.035559 GPU seconds;
-remaining 32.072660 CPU / 30.307490 GPU hours under unchanged
-56/52-hour caps. The user's
-added 24 CPU hours are already counted. No agents, package changes, external
-MacroFinance edits or canonical LEDH rebuilding are in scope. Canonical NeuTra
-remains `bayesfilter_neutra_iaf_author_v1`.
+See `filter_gradient_genut_reverse_precision_result_20260926.md` and immutable
+`genut-precision-extent-verification-04207.json`. Archives contain every raw run file,
+including rejected trials, and available source variants. Next execute
+`filter_gradient_genut_weight_precision_followup_20260926.md`: split weight-use
+branches with exact-forward/FP64-total checks to localize cancellation and
+rounding. No new runner group or test for that unit has been written yet.
+The prepared `filter_gradient_genut_bounded_gradient_cost_20260926.md` cohort
+is deferred until precision repair/disposition; no new candidate memory or
+speed claim is established.
 
-Next qualify the individual diagonal products and smallest sufficient precision repair,
-then measure isolated before/after memory and costs, renew affected consumers,
-archive evidence and commit/push. Broader staged/public API, initializer,
-full-reset, DZ5, native-retention and terminal source-freeze gaps remain.
+Charges through 04207: 86432.436514 CPU / 78463.779462 GPU seconds,
+leaving 31.990990 CPU / 30.204506 GPU hours under unchanged
+56/52-hour caps. The user's added 24 CPU hours are already included. Broader
+staged/public API, initializer, full reset, DZ5, native-retention and terminal
+source-freeze work remains. Canonical NeuTra stays
+`bayesfilter_neutra_iaf_author_v1`; canonical LEDH rebuilding remains excluded.
 
 Older checkpoints below preserve historical scope and instructions only.
 

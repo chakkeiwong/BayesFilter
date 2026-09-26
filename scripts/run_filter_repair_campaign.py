@@ -286,7 +286,10 @@ TEST_GROUPS = {
        for device in ("cpu", "gpu")},
     **{f"genut_reverse_precision_{case}_{device}": (
         f"tests/test_filter_repair_genut_reverse_precision.py::test_reverse_{case}",)
-       for case in ("precision_substitutions", "precision_additional_sites", "precision_primal_products", "primitives") for device in ("cpu", "gpu")},
+       for case in ("precision_substitutions", "precision_additional_sites", "precision_primal_products", "precision_individual_products", "primitives") for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_extent_{dtype}_{device}": (
+        f"tests/test_filter_repair_genut_reverse_precision.py::test_precision_candidate_extents[{dtype}]",)
+       for dtype in ("f32", "f64") for device in ("cpu", "gpu")},
     **{f"genut_transitive_cost_{arm}_{mode}_{device}": (
         f"tests/test_filter_repair_genut_transitive.py::test_reduced_correction_cost[{arm}-{mode}]",)
        for arm in ("original", "native") for mode in ("graph", "xla") for device in ("cpu", "gpu")
@@ -1384,7 +1387,9 @@ EXPLANATORY_TEST_GROUPS = {
     **{f"genut_reverse_precision_toggle_{device}": "TF32 toggle/FP64 localization; cannot waive the failed current FP32 GPU gradient gate."
        for device in ("cpu", "gpu")},
     **{f"genut_reverse_precision_{case}_{device}": "Uninstalled pullback attribution/primitive checks; runtime gates remain separate."
-       for case in ("precision_substitutions", "precision_additional_sites", "precision_primal_products", "primitives") for device in ("cpu", "gpu")},
+       for case in ("precision_substitutions", "precision_additional_sites", "precision_primal_products", "precision_individual_products", "primitives") for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_extent_{dtype}_{device}": "Uninstalled precision-candidate qualification; actual runtime and cost gates remain separate."
+       for dtype in ("f32", "f64") for device in ("cpu", "gpu")},
     **{f"genut_dot_pullback_{case}_{device}": "Uninstalled dot/pullback diagnostic; cannot close runtime or canonical-score qualification."
        for case in ("primitive", "complete_f32", "complete_f64") for device in ("cpu", "gpu")},
     "genut_dot_pullback_complete_gpu": "Uninstalled dot/pullback diagnostic; cannot close runtime or canonical-score qualification.",

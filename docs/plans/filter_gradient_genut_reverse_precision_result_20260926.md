@@ -66,3 +66,51 @@ either individually necessary. All numerical results above use a 72-by-3
 reduced-primal fixture. Larger dimensions, default iteration counts and actual
 consumers can overturn the current candidate's viability. The prepared cost
 cohort remains deferred; there is no new supported speed ranking.
+
+## Extent qualification through 04207
+
+Individual attribution 04188 selects two changes: the diagonal Gram primal
+reduction and triangular-solve factor pullback. The right-hand-side product,
+Cholesky, general-solve and other pullback substitutions are unnecessary for
+the tested TF32 failure. Frozen numerical references now use commit `5c9aa438e`.
+
+The extent sweep covers dimensions 1/3/18, zero/four iterations, both precisions,
+both execution modes, changed operands, exact replay, fixed scalar coefficients
+and FP64 finite differences. Each backend/precision records twelve cells.
+
+| Precision/backend | Result | Remaining discrepancy |
+| --- | --- | --- |
+| FP64 CPU 04191 | All 12 cells pass | None in this fixture scope |
+| FP64 GPU 04193 | All 12 cells pass | None in this fixture scope |
+| FP32 CPU 04190 | Dimensions 1/3 and zero-step cases pass | Dimension 18/four-step weight gradient in graph and XLA, including changed input |
+| FP32 GPU 04192 | All six XLA cells pass smooth values/gradients | Graph dimension 18: changed zero-step weight gradient and four-step weight gradients |
+
+The FP32 CPU residual already occurs in the original implementation. At weight
+coordinate 18, the FP64 reference is -0.0619231299. Candidate graph gives
+-0.0618879795 and original graph -0.0618917942; both exceed the unchanged
+2.12385e-5 bound. Other weight-gradient coordinates reach magnitude 111.64,
+but that contrast alone does not prove ill-conditioning or identify the
+rounding source. The full CPU capture 04190 preserves all twelve cells after
+the earlier first-failure capture 04189. No tolerance was widened.
+
+At dimension 18/four steps, the GPU graph candidate also differs from the old
+graph in particles, pairwise-cap statistics and scalar loss beyond the old
+comparison bounds. Those candidate values pass independent FP64; the original
+graph is an inaccurate comparator in this scope. Every original comparison is
+preserved. The candidate's remaining weight-gradient failures still prevent
+general adoption; a rejected comparator does not make the candidate correct.
+
+The selected triangular primitive passes GPU renewal 04207 (eight cases in the
+primitive group). Current-runtime primal/consumer renewals 04194--04199 pass
+on CPU/GPU, and 04200 passes all 129 policy checks without new allowances.
+The unchanged cross-mode complete-record gates fail again in 04201/04202;
+04203--04206 reproduce the already-established cap operand/lowering mechanism.
+These renewals do not close the cap-report gate.
+
+The precision candidate remains uninstalled. Only the bounded-loop compilation
+repair is active on the repair branch. The next unit must localize the residual
+weight-gradient error and determine whether it is repairable rounding or a
+precision limitation requiring an explicit error disposition. Do not call it
+ill-conditioned before obtaining evidence. The prepared fresh-process cost
+cohort remains deferred, so no new memory or speed claim is made for this
+candidate. Main promotion and the broader master-program gaps remain open.

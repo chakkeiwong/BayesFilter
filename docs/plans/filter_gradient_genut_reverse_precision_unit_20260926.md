@@ -93,3 +93,31 @@ same-mode comparison results, rather than falsely requiring bitwise unchanged
 forward output for a primal precision intervention. No tolerance is relaxed
 and any thresholded-report difference remains explicit. This new diagnostic
 still does not install a runtime repair or accept changed report semantics.
+
+04186 passes the combined trial in both modes. 04188 isolates the graph cause
+to the Gram product `J^T J`; changing the right-hand-side contraction alone
+does not fix it. The smallest demonstrated repair is therefore the Gram
+primal reduction and triangular-solve factor pullback. Freeze the pre-repair
+numerical source at `5c9aa438e` for subsequent diagnostic substitutions and
+FP64 references. No Cholesky, general-solve or right-hand-side substitution
+is selected.
+
+Qualify that candidate at dimensions 1/3/18, zero/default-four iterations,
+FP32/FP64, graph/XLA, changed inputs and exact replay. Use frozen-coefficient
+FP64 derivatives/finite differences and complete prior same-mode forward
+records; retain the known cross-precision cap report separately. Four extent
+groups (two CPU, two GPU) and one GPU primitive renewal complete this unit's
+remaining allocation. The larger state dimension is a correctness fixture,
+not full target capacity. The subsequent fresh-process cost cohort remains
+necessary before runtime precision adoption.
+
+04189 passes the first ten FP32 CPU extent/mode cases and then fails a weight
+gradient at dimension 18/four iterations/graph. Coordinate 18 is -0.061888
+versus FP64 -0.061923; its 3.52e-5 error exceeds the unchanged 2.12e-5 bound.
+The original FP32 graph also fails there (3.13e-5 error). Preserve the failure;
+do not attribute it to the precision candidate, call it ill-conditioned without
+evidence, or relax its tolerance. Complete the remaining extent captures before
+asserting the recorded numerical criteria so the first discrepancy does not
+hide other modes or changed-input failures. Finite/validity and execution
+failures still stop immediately. One CPU retry is reserved under the original
+eight-worker CPU allocation; cost/adoption remain deferred.
