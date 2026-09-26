@@ -205,3 +205,34 @@ reserve; preserve their results as bounded prefixes if they stop early.
 checkpoint hash, and resumes the optimizer/replay exactly in a fresh directory.
 Only the unchanged initial probe is reused; final diagnostics are rerun on the
 continued map. Continuation is charged to the same total allocation.
+
+The first completed q20 prefix gives a direct full-diagnostic measurement:
+944.821 total seconds minus 292.155 seconds at the last update = 652.665
+seconds. It supersedes the GPU-0 extrapolation for scheduling (5% margin).
+The first FAB and RKL workers already loaded the older reserve; their valid
+prefixes remain eligible for exact continuation, not for matched-update claims.
+
+Independent prior-bank target values are identical within a seed/target and
+are now cached with the sampling-law identity, target source hash and validity.
+Every arm recomputes its own map draws and log-density on the bank. The cache
+never contains a learned-map value, and cannot change the importance measure.
+A CPU/XLA reference check gives identical cached/uncached diagnostics and
+rejects a changed bank. This eliminates duplicated target evaluation across
+paired arms and continuations. When the reference cache exists, reserve 75%
+of the measured full diagnostic (conservative scheduling hypothesis: the
+1,000-point probe remains, one of two coverage target banks is removed).
+All final maps still receive 1,000 probe points and both 4,096-point coverage
+banks. Actual phase times are recorded separately in new results.
+
+The continuation queue waits for the initial six arms, deducts their recorded
+process wall time and the 30.022-second timing check from 16,200 seconds, and
+resumes only incomplete arms. It prioritizes a seed's reverse-KL continuation
+before its FAB continuation to reuse the fixed target bank. Allocations use
+measured seconds/update plus 115% of measured diagnostic cost (75% of that
+cost if the bank is cached), plus 80 seconds for recompilation and I/O, rounded
+up to 25 seconds. These are scheduling hypotheses; an external timeout and
+global accounting enforce the actual budget. Unused reservations return to
+the queue. Insufficient budget is reported as incomplete, never convergence.
+The one-update-to-two-update GPU continuation smoke completed in 27.521
+seconds, including all final diagnostics, and the three focused artifact/
+importance/cache regressions pass.
