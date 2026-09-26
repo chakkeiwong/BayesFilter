@@ -258,6 +258,7 @@ def main() -> int:
     parser.add_argument("--updates-per-pass", type=int, default=4)
     parser.add_argument("--post-rows", type=int, default=1000)
     parser.add_argument("--coverage-rows", type=int, default=4096)
+    parser.add_argument("--resume-from", type=Path)
     args = parser.parse_args()
     if args.updates < 1 or args.batch_size < 2 or args.worker_seconds <= 0:
         raise ValueError("updates, batch size and worker time must be positive")
@@ -406,13 +407,26 @@ def main() -> int:
             },
         )
         save(args.output / "manifest.json", manifest)
-        save(args.output / "initial-checkpoint.json", {
+        initial_checkpoint = {
             "schema": "bayesfilter.neutra.fab_iaf_campaign.initial.v1",
             "target": args.target,
             "target_signature": target_signature,
             "transport_config": map_config.payload(),
             "parameters": flow.parameter_state(),
-        })
+        }
+        save(args.output / "initial-checkpoint.json", initial_checkpoint)
+        previous = args.resume_from.resolve() if args.resume_from is not None else None
+        if previous is not None:
+            if json.loads((previous / "initial-checkpoint.json").read_text()) != host(initial_checkpoint):
+                raise ValueError("continuation initial map/target/configuration differs")
+            previous_manifest = json.loads((previous / "manifest.json").read_text())
+            if any(previous_manifest[k] != manifest[k] for k in ("arm", "target", "seed", "target_signature", "tf32", "optimizer_config")):
+                raise ValueError("continuation scientific configuration differs")
+            resume_checkpoint = json.loads((previous / "checkpoint.json").read_text())
+            trainer.restore(resume_checkpoint)
+            manifest["continuation"] = {"run": str(previous), "checkpoint_hash": resume_checkpoint["checkpoint_hash"],
+                                        "role": "exact_state_resume_same_scientific_contract"}
+            save(args.output / "manifest.json", manifest)
 
         def elapsed() -> float:
             return time.monotonic() - started
@@ -427,19 +441,25 @@ def main() -> int:
             return True
 
         progress = []
-        pass_count = 0
-        update_count = 0
+        update_count = int(trainer.optimizer.iterations.numpy())
+        pass_count = int(trainer.pass_index) if args.arm == "fab" else update_count
         diagnostic_started = time.monotonic()
-        initial_probe_runner = PostTrainingProbe(initial_flow, bridge, 1.0, rows=args.post_rows,
-                                                batch_size=20, jit_compile=True)
         probe_seed = digest(args.seed, "probe")
-        initial_latent = initial_probe_runner.latent_bank(probe_seed)
-        initial_blocks = [initial_probe_runner.batch(initial_latent[:20])]
-        steady_started = time.monotonic()
-        initial_blocks.extend(initial_probe_runner.batch(initial_latent[i:i + 20])
-                              for i in range(20, args.post_rows, 20))
-        steady_probe_seconds = (time.monotonic() - steady_started) * args.post_rows / (args.post_rows - 20)
-        initial_probe = initial_probe_runner.summarize(initial_blocks, probe_seed)
+        if previous is not None:
+            initial_probe = json.loads((previous / "initial-post-training-1000.json").read_text())
+            if initial_probe["seed"] != list(probe_seed) or initial_probe["rows"] != args.post_rows:
+                raise ValueError("continuation initial probe seed/size differs")
+            steady_probe_seconds = json.loads((previous / "timing.json").read_text())["steady_probe_seconds"]
+        else:
+            initial_probe_runner = PostTrainingProbe(initial_flow, bridge, 1.0, rows=args.post_rows,
+                                                    batch_size=20, jit_compile=True)
+            initial_latent = initial_probe_runner.latent_bank(probe_seed)
+            initial_blocks = [initial_probe_runner.batch(initial_latent[:20])]
+            steady_started = time.monotonic()
+            initial_blocks.extend(initial_probe_runner.batch(initial_latent[i:i + 20])
+                                  for i in range(20, args.post_rows, 20))
+            steady_probe_seconds = (time.monotonic() - steady_started) * args.post_rows / (args.post_rows - 20)
+            initial_probe = initial_probe_runner.summarize(initial_blocks, probe_seed)
         save(args.output / "initial-post-training-1000.json", initial_probe)
         if not (initial_probe["complete"] and initial_probe["finite"] and initial_probe["valid_rows"] == args.post_rows):
             raise ValueError("initial 1,000-point verification failed")
@@ -448,8 +468,17 @@ def main() -> int:
         # 1.5 is a scheduling margin, not a scientific threshold; 40 seconds
         # reserves fresh diagnostic graphs. External timeout enforces the cap.
         diagnostic_reserve = steady_probe_seconds * (1.0 + 2.0 * args.coverage_rows / args.post_rows) * 1.5 + 40.
+        pricing_path = ROOT / "docs/plans/artifacts/neutra-fab-iaf-training-2026-09-26/coverage-pricing-r1.json"
+        if args.target == "q20" and pricing_path.exists():
+            pricing = json.loads(pricing_path.read_text())
+            if pricing["target_signature"] != target_signature or pricing["batch_size"] != 64:
+                raise ValueError("coverage pricing target/batch changed")
+            diagnostic_reserve = 1.1 * (steady_probe_seconds + max(pricing["call_seconds"][1:]) * args.coverage_rows / 32) + 40.
+            manifest["coverage_pricing"] = {"path": str(pricing_path), "sha256": hashlib.sha256(pricing_path.read_bytes()).hexdigest(),
+                                             "scheduling_margin": 1.1, "compile_reserve_seconds": 40.}
+            save(args.output / "manifest.json", manifest)
         result.update(initial_probe_seconds=initial_probe_seconds, steady_probe_seconds=steady_probe_seconds,
-                      diagnostic_reserve_seconds=diagnostic_reserve)
+                      diagnostic_reserve_seconds=diagnostic_reserve, starting_optimizer_updates=update_count)
         save(args.output / "timing.json", result)
         save(args.output / "checkpoint.json", trainer.checkpoint())
         while update_count < args.updates:

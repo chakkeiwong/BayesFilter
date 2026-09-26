@@ -183,3 +183,25 @@ The analytic reference, untrained map and independent Gaussian/prior proposal
 are basic sanity comparators for the learned arms. They do not authorize a
 new default. The bounded ladder may proceed; exhausted budget or failed
 coverage yields an unresolved training-quality verdict, not promotion.
+
+Measured scheduling follow-up: the initial q20 probe costs about 105--112
+steady seconds for 50 native batches, so per-row extrapolation reserves
+1,487--1,582 seconds. This is not a measurement of the 64-row coverage graph.
+Before further launches, price that exact graph for three calls (one compile,
+two steady calls) on an available GPU, without optimizer updates. This is a
+debugging-only timing check, capped at 120 seconds and charged to the 16,200
+total; it cannot support a fit or performance-ranking claim. Use its measured
+batch cost plus a recorded margin for the remaining workers. Existing valid
+prefixes are preserved, and any necessary continuation uses exact checkpoint
+restore, the same target/configuration and remaining total budget.
+
+The timing check completed in 30.022 seconds. Its compile-inclusive call cost
+18.211 seconds; steady 64-row calls cost 5.204 and 5.089 seconds. New workers
+reserve `1.1*(measured_1000_probe_steady + 128*5.204)+40` seconds: 10% is an
+explicit scheduling margin, and 40 seconds is a compile allowance, neither a
+scientific threshold. The first two workers had already loaded the larger
+reserve; preserve their results as bounded prefixes if they stop early.
+`--resume-from` validates initial state, target, arm, seed, optimizer config and
+checkpoint hash, and resumes the optimizer/replay exactly in a fresh directory.
+Only the unchanged initial probe is reused; final diagnostics are rerun on the
+continued map. Continuation is charged to the same total allocation.
