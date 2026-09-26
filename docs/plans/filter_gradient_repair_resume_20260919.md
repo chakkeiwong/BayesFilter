@@ -1,65 +1,54 @@
 # Filter and gradient repair resume checkpoint
 
-Checkpoint through 04167, September 26. Remote main `5eb6dcff5` is merged
-without conflicts at `07996dd81`; main promotion remains blocked. The optional
-FAB integration passes 04165, canonical IAF integration passes 04166, and all
-129 policy checks pass 04167. The FAB addition is outside the 270-source filter
-guard and is not declared fully audited. See
-`filter_gradient_remote_fab_integration_20260926.md` and the immutable
-`remote-fab-integration-verification-04167.json` receipt. No worker is active.
+Checkpoint through 04187, September 26. Pushed commit `28cbdb536` contains
+remote main `5eb6dcff5` through conflict-free merge `07996dd81`. Integration
+04165--04167 passes (18 FAB, 6 canonical IAF, 129 policy checks). Main promotion
+remains blocked and F01--F20 remain open.
 
-Charges: 85979.249155 CPU / 77830.415020 GPU seconds, leaving 32.116875 CPU /
-30.380440 GPU process-hours under unchanged 56/52-hour caps. The added 24 CPU
-hours are already included. Next qualify the uninstalled highest-precision dot
-candidate's TensorFlow pullback and graph compatibility under a bounded unit,
-then continue public-consumer repairs. The prior numerical findings below
-remain open; no terminal F01--F20 or main-merge gate is closed by integration.
+The active numerical change is limited to fixed reverse-storage bounds on the
+two GenUT loops. Unchanged current XLA derivatives failed compilation in 04171;
+04172 exposed the zero-trip TensorList compiler case. Bounds preserve the loop
+conditions and use one storage slot at zero steps. CPU FP64/FP32 04173/04174 and
+GPU FP64 04177 pass zero/two/four steps, original records and finite differences.
+GPU FP32 04178 fails unchanged gradient bounds; it is not qualified.
 
-Previous numerical checkpoint:
+Highest-dot custom pullbacks using native reductions pass nine CPU/GPU primitive
+checks (04169/04179), including mixed second derivatives and collection, and
+full-program CPU/GPU comparisons (04175/04176/04180). The first recursive custom
+pullback failed graph capture (04168). No dot candidate is installed in runtime.
+Full FP32 GPU correctness is blocked by the underlying current gradient defect.
 
-Current checkpoint through 04164, September 26. Prior pushed commit:
-`a6609df85`. No numerical worker is active. The SIR and public TTSIRT log
-execution repairs are committed; see their September 26 result notes.
-GenUT CPU/GPU FP64/FP32, reset/callback and native-cost refresh 04141--04152
-passes. LEDH safety/stage/consumer refresh 04153--04160 passes 23 checks per
-backend without canonical admission. Policy 04164 passes 129 checks over
-270 guarded sources / 1,424 exact allowances. All these checks are bounded
-endpoint evidence, not whole-repository closure.
+Independent rounded-input FP64 diagnostics 04181/04182 show healthy covariance
+condition 1.3561, and source/weight/reset gradient errors in both GPU modes only
+with TF32 enabled. 04183 passes eight primitive checks. 04184 identifies the
+triangular-solve factor pullback as sufficient to repair GPU XLA, preserving
+all forward output bits. Cholesky/matrix-solve/Gram/matvec pullback trials do not
+repair graph mode (04184/04185). Graph forward values themselves vary with TF32;
+XLA forward values do not. The next diagnostic replaces only the two diagonal
+primal contractions plus the triangular-solve pullback, preserving equations,
+controls and tolerances. All these substitutions remain diagnostic candidates.
 
-GenUT cap-report root cause is resolved: XLA's division/power rewrite changes
-FP32 rounding across the unchanged 1e-7 reporting predicate. Strict cross-mode
-report equivalence remains open. Reduced-primal capacity passes independent
-moments and exact replay through N=10,000,d=18; GPU XLA peaks at 6 MiB versus
-47.05 MiB for native graph. This does not establish full reset/score capacity.
-Original comparator failures are localized against independent FP64 records.
+04186 passes the combined diagonal-primal/triangular-pullback trial in both GPU
+modes against independent FP64. XLA forward values are bitwise identical; every
+graph forward field passes the unchanged bound. 04187 passes 129 policy checks.
+No worker is active. Raw evidence/source snapshots are archived and verified in
+`genut-reverse-verification-04187.json`. See the result note
+`filter_gradient_genut_reverse_precision_result_20260926.md`. Plans:
+`filter_gradient_genut_dot_pullback_unit_20260926.md`,
+`filter_gradient_genut_reverse_precision_unit_20260926.md` and the prepared,
+unexecuted `filter_gradient_genut_bounded_gradient_cost_20260926.md`.
+The cost cohort is deferred until derivative correctness. No rejected derivative
+may support speed ranking. The thresholded cap report remains a separate open
+failure; no changed threshold, tolerance waiver or TF32 default is installed.
 
-CPU d=18 native XLA remains slower than the original. Last-axis layout trial
-04161 passes numerics but is slower and is rejected. Highest-precision XLA dot
-trial 04162/04163 passes CPU/GPU same-mode comparisons, reduces CPU d=18 median
-from 80.7 to 34.8 ms, but slows GPU d=3 (1.38 to 1.78 ms) and has no TensorFlow
-registered gradient. Neither trial changes runtime. See
-`filter_gradient_genut_reduction_layout_result_20260926.md` and its unit for
-next qualification: native pullback, graph compatibility, ownership, isolated
-memory and evidence for any static size dispatch. No unreviewed score or
-backend change is allowed. Reporting semantics need a validated uncertainty
-contract; no tolerance waiver or mode-specific normalization is installed.
+Charges through 04187: 86138.423980 CPU / 78093.035559 GPU seconds;
+remaining 32.072660 CPU / 30.307490 GPU hours under unchanged
+56/52-hour caps. The user's
+added 24 CPU hours are already counted. No agents, package changes, external
+MacroFinance edits or canonical LEDH rebuilding are in scope. Canonical NeuTra
+remains `bayesfilter_neutra_iaf_author_v1`.
 
-Evidence archive `genut-capacity-evidence-04140-r2.tar.gz` repairs r1's omitted
-per-run capacity JSON/NPZ files and contains full raw data/analyzers. r1 remains
-preserved. Refresh/trial evidence is in `genut-refresh-layout-evidence-04164.tar.gz`.
-Git write/NVIDIA discovery failures were sandbox restrictions; trusted retries
-passed. No evidence supports a disk or GPU hardware failure.
-
-Charges through 04164: 85892.592118 CPU / 77830.415020 GPU seconds, leaving
-32.140947 CPU / 30.380440 GPU process-hours under unchanged 56/52-hour caps.
-The user's added 24 CPU hours are already included. Remote main
-`5e16df06f586c16bc58fb76bc62d4f6451e7690d` is contained in the branch. Main is
-not merged; F01--F20 terminal dispositions and current-source terminal coverage
-remain open. Canonical LEDH rebuilding is excluded; NeuTra remains
-`bayesfilter_neutra_iaf_author_v1`.
-
-Next continue bounded highest-dot qualification and unresolved public-consumer
-repairs, especially staged locator error/ownership integration, full reset,
-initializer/supervisor, DZ5 and repeated-constructor retention. Pending
-reporting/isotropic proposals are not approved by elapsed time. The merge gate
-must not turn green merely because registered diagnostics passed.
+Next qualify the individual diagonal products and smallest sufficient precision repair,
+then measure isolated before/after memory and costs, renew affected consumers,
+archive evidence and commit/push. Broader staged/public API, initializer,
+full-reset, DZ5, native-retention and terminal source-freeze gaps remain.

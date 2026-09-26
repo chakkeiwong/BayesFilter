@@ -240,6 +240,9 @@ def dual_cap_genut_primal(
         diagonal_body,
         (tf.constant(0), standardized),
         parallel_iterations=1,
+        # XLA traces the zero-trip gradient body before pruning it, so its
+        # TensorList needs one slot even when the unchanged condition is false.
+        maximum_iterations=max(diagonal_steps, 1),
     )
 
     maximum_pre_cap_rms = tf.zeros([], source.dtype)
@@ -270,6 +273,7 @@ def dual_cap_genut_primal(
             (tf.constant(0), standardized, maximum_pre_cap_rms,
              maximum_post_cap_rms, minimum_radial_scale),
             parallel_iterations=1,
+            maximum_iterations=max(pairwise_steps, 1),
         )
 
     pre_coordinate_cap = standardized

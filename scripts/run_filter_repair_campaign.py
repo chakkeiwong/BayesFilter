@@ -269,6 +269,24 @@ TEST_GROUPS = {
     **{f"genut_transitive_highest_dot_{device}": (
         "tests/test_filter_repair_genut_layout.py::test_highest_dot_attribution",)
        for device in ("cpu", "gpu")},
+    **{f"genut_dot_pullback_primitive_{device}": (
+        "tests/test_filter_repair_genut_dot_pullback.py::test_dot_value_pullback_and_mixed_derivative",
+        "tests/test_filter_repair_genut_dot_pullback.py::test_dot_rejects_invalid_configuration")
+       for device in ("cpu", "gpu")},
+    **{f"genut_dot_pullback_complete_{dtype}_{device}": (
+        f"tests/test_filter_repair_genut_dot_pullback.py::test_complete_genut_value_and_derivative[{dtype}]",)
+       for dtype in ("f32", "f64") for device in ("cpu", "gpu")},
+    "genut_dot_pullback_complete_gpu": (
+        "tests/test_filter_repair_genut_dot_pullback.py::test_complete_genut_value_and_derivative",),
+    **{f"genut_transitive_gradient_{dtype}_{device}": (
+        f"tests/test_filter_repair_genut_dot_pullback.py::test_current_genut_bounded_derivative[{dtype}]",)
+       for dtype in ("f32", "f64") for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_toggle_{device}": (
+        "tests/test_filter_repair_genut_reverse_precision.py::test_reverse_precision_toggle",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_{case}_{device}": (
+        f"tests/test_filter_repair_genut_reverse_precision.py::test_reverse_{case}",)
+       for case in ("precision_substitutions", "precision_additional_sites", "precision_primal_products", "primitives") for device in ("cpu", "gpu")},
     **{f"genut_transitive_cost_{arm}_{mode}_{device}": (
         f"tests/test_filter_repair_genut_transitive.py::test_reduced_correction_cost[{arm}-{mode}]",)
        for arm in ("original", "native") for mode in ("graph", "xla") for device in ("cpu", "gpu")
@@ -1363,6 +1381,13 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"genut_reverse_precision_toggle_{device}": "TF32 toggle/FP64 localization; cannot waive the failed current FP32 GPU gradient gate."
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_{case}_{device}": "Uninstalled pullback attribution/primitive checks; runtime gates remain separate."
+       for case in ("precision_substitutions", "precision_additional_sites", "precision_primal_products", "primitives") for device in ("cpu", "gpu")},
+    **{f"genut_dot_pullback_{case}_{device}": "Uninstalled dot/pullback diagnostic; cannot close runtime or canonical-score qualification."
+       for case in ("primitive", "complete_f32", "complete_f64") for device in ("cpu", "gpu")},
+    "genut_dot_pullback_complete_gpu": "Uninstalled dot/pullback diagnostic; cannot close runtime or canonical-score qualification.",
     "genut_transitive_layout_cpu": "Uninstalled reduction-layout diagnostic; cannot substitute for runtime qualification.",
     **{f"genut_transitive_highest_dot_{device}": "Uninstalled highest-precision XLA dot diagnostic; no runtime or reporting gate waiver."
        for device in ("cpu", "gpu")},
@@ -1933,7 +1958,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     **{group: "GPU" for group in TEST_GROUPS
-       if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_", "genut_transitive_", "latent_sir_", "mixed_kr_")) and group.endswith("_gpu")},
+       if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_", "genut_transitive_", "genut_dot_pullback_", "genut_reverse_precision_", "latent_sir_", "mixed_kr_")) and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS
        if group.startswith("kdm_") and group.endswith("_gpu")},
     "dz5_score_oracle_graph_gpu": "GPU",
