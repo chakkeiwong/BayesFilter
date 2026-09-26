@@ -26,7 +26,7 @@ sys.path.insert(0, str(ROOT))
 def save(path: Path, value) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
+    temporary.write_text(json.dumps(host(value), indent=2, allow_nan=False) + "\n")
     temporary.replace(path)
 
 
@@ -37,8 +37,19 @@ def host(value):
         return [host(v) for v in value]
     if hasattr(value, "numpy"):
         return host(value.numpy())
-    if isinstance(value, float) and not math.isfinite(value):
-        return None
+    # TensorFlow scalar tensors become NumPy scalars at the boundary.  Use
+    # ``item`` for scalars and ``tolist`` for arrays without importing NumPy
+    # into this campaign's runtime path.  The latter also handles nested
+    # arrays after recursively normalizing their elements.
+    if hasattr(value, "item"):
+        try:
+            return host(value.item())
+        except (TypeError, ValueError):
+            pass
+    if hasattr(value, "tolist"):
+        return host(value.tolist())
+    if isinstance(value, (int, float)):
+        return value if math.isfinite(value) else None
     return value
 
 
