@@ -33,3 +33,31 @@ def test_independent_bank_weights_use_sampling_density():
     actual = campaign.diagonal_gaussian_log_prob(tf.constant([[2., -1.]], tf.float64), [1., 1.], [2., 3.])
     expected = -math.log(2 * math.pi * 6) - .5 * ((1 / 2)**2 + (-2 / 3)**2)
     assert float(actual[0]) == pytest.approx(expected, abs=1e-12)
+
+
+def test_reference_cache_preserves_diagnostic_and_rejects_different_bank(tmp_path):
+    class NormalFlow:
+        def forward_and_logdet(self, z):
+            return z, tf.zeros(tf.shape(z)[0], tf.float64)
+
+        def log_prob(self, x):
+            return campaign.diagonal_gaussian_log_prob(x, [0.] * 4, [1.] * 4)
+
+    class Bridge:
+        parameter_dim = 4
+        signature = "a" * 64
+
+        def value_score_status(self, x, beta):
+            del beta
+            return NormalFlow().log_prob(x), -x, {"bridge_valid": tf.ones(tf.shape(x)[0], tf.bool)}
+
+    flow, bridge = NormalFlow(), Bridge()
+    kwargs = dict(rows=32, seed=(12, 34), reference_cache=tmp_path / "bank.json")
+    first = campaign.coverage_diagnostic(flow, flow, bridge, [0.] * 4, [1.] * 4, None, **kwargs)
+    cached = campaign.coverage_diagnostic(flow, flow, bridge, [0.] * 4, [1.] * 4, None, **kwargs)
+    assert not first["reference_target_cache_reused"] and cached["reference_target_cache_reused"]
+    assert first["map_base"] == cached["map_base"]
+    assert first["independent_prior_bank"] == cached["independent_prior_bank"]
+    assert first["map_base"]["ess"] == pytest.approx(32.)
+    with pytest.raises(ValueError, match="identity"):
+        campaign.coverage_diagnostic(flow, flow, bridge, [1.] * 4, [1.] * 4, None, **kwargs)

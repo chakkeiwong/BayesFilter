@@ -145,7 +145,7 @@ def diagonal_gaussian_log_prob(points, center, scale):
     return -0.5 * tf.reduce_sum(tf.square(z) + math.log(2.0 * math.pi), -1) - tf.reduce_sum(tf.math.log(scale))
 
 
-def coverage_diagnostic(flow, initial_flow, bridge, center, scale, target_data, *, rows, seed):
+def coverage_diagnostic(flow, initial_flow, bridge, center, scale, target_data, *, rows, seed, reference_cache=None):
     """Independent support checks; each importance denominator matches its draws."""
     import tensorflow as tf
 
@@ -153,13 +153,28 @@ def coverage_diagnostic(flow, initial_flow, bridge, center, scale, target_data, 
     if rows % batch:
         raise ValueError("coverage rows must be whole native batches of 32")
     signature = [tf.TensorSpec([batch, dimension], tf.float64)]
+    cache_identity = {"schema": "bayesfilter.fab_campaign.reference_bank.v1", "bridge_signature": bridge.signature,
+                      "center": list(center), "scale": list(scale), "rows": rows, "seed": list(seed),
+                      "dtype": "float64", "tf32": False,
+                      "target_source_sha256": hashlib.sha256((ROOT / "bayesfilter/nonlinear/ssl_lstm_complexity_batched_target_tf.py").read_bytes()).hexdigest()}
+    cached = None
+    if reference_cache is not None and reference_cache.exists():
+        cached = json.loads(reference_cache.read_text())
+        if cached["identity"] != cache_identity or len(cached["log_p"]) != rows or not cached["all_valid"]:
+            raise ValueError("independent reference cache identity/validity mismatch")
+        if not all(isinstance(x, (float, int)) and math.isfinite(x) for x in cached["log_p"]):
+            raise ValueError("nonfinite independent reference cache")
 
-    @tf.function(input_signature=signature, jit_compile=True, autograph=False)
-    def evaluate(latent):
+    @tf.function(input_signature=signature + [tf.TensorSpec([batch], tf.float64)], jit_compile=True, autograph=False)
+    def evaluate(latent, reference_log_p):
         mapped, ld = flow.forward_and_logdet(latent)
         reference = tf.constant(center, tf.float64) + tf.constant(scale, tf.float64) * latent
         points = tf.concat([mapped, reference], axis=0)
-        log_p, score, valid = target_log_score(bridge, points)
+        if cached is None:
+            log_p, score, valid = target_log_score(bridge, points)
+        else:
+            mapped_log_p, score, valid = target_log_score(bridge, mapped)
+            log_p = tf.concat([mapped_log_p, reference_log_p], 0)
         base_log = diagonal_gaussian_log_prob(latent, [0.] * dimension, [1.] * dimension)
         log_g = diagonal_gaussian_log_prob(reference, center, scale)
         reference_log_q = flow.log_prob(reference)
@@ -170,15 +185,28 @@ def coverage_diagnostic(flow, initial_flow, bridge, center, scale, target_data, 
         return {"points": points, "log_weights": tf.concat([log_p[:batch] - (base_log - ld), log_p[batch:] - log_g], 0),
                 "reference_log_p_over_q": log_p[batch:] - reference_log_q,
                 "reference_log_p_over_initial_q": log_p[batch:] - initial_log_q,
+                "reference_log_p": log_p[batch:],
                 "valid": tf.reduce_all(valid) & finite & tf.reduce_all(tf.math.is_finite(points))}
 
     # Small stateless Gaussian banks are generated with TensorFlow's native CPU
     # kernel; process sharding would add overhead without expensive target work.
     with tf.device("/CPU:0"):
         latent = tf.random.stateless_normal([rows, dimension], seed, dtype=tf.float64)
-    blocks = [evaluate(latent[i:i + batch]) for i in range(0, rows, batch)]
+    reference_values = tf.constant(cached["log_p"], tf.float64) if cached is not None else tf.zeros([rows], tf.float64)
+    blocks = [evaluate(latent[i:i + batch], reference_values[i:i + batch]) for i in range(0, rows, batch)]
     if not all(bool(b["valid"]) for b in blocks):
         raise ValueError("independent coverage target/density evaluation was invalid")
+    if reference_cache is not None and cached is None:
+        reference_cache.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"identity": cache_identity, "all_valid": True,
+                   "log_p": host(tf.concat([b["reference_log_p"] for b in blocks], 0)),
+                   "role": "immutable_target_values_only_no_learned_map_quantities"}
+        try:
+            with reference_cache.open("x") as destination:
+                json.dump(payload, destination, allow_nan=False)
+        except FileExistsError:
+            if json.loads(reference_cache.read_text())["identity"] != cache_identity:
+                raise ValueError("concurrent reference cache identity mismatch")
     map_points = tf.concat([b["points"][:batch] for b in blocks], 0)
     ref_points = tf.concat([b["points"][batch:] for b in blocks], 0)
     map_log_weights = tf.concat([b["log_weights"][:batch] for b in blocks], 0)
@@ -213,6 +241,8 @@ def coverage_diagnostic(flow, initial_flow, bridge, center, scale, target_data, 
         "independent_prior_bank": host(summarize(ref_log_weights, ref_points)),
         "reference_sampling_law": "diagonal_gaussian_center_scale_in_manifest",
         "reference_log_weight_definition": "log_p_minus_log_g_not_log_p_minus_log_q",
+        "reference_target_cache_reused": cached is not None,
+        "reference_target_cache": str(reference_cache) if reference_cache is not None else None,
         "role": "descriptive_coverage_diagnostic_not_exhaustive_mode_discovery"}
     weights = tf.nn.softmax(ref_log_weights)
     for name in ("reference_log_p_over_q", "reference_log_p_over_initial_q"):
@@ -477,6 +507,24 @@ def main() -> int:
             manifest["coverage_pricing"] = {"path": str(pricing_path), "sha256": hashlib.sha256(pricing_path.read_bytes()).hexdigest(),
                                              "scheduling_margin": 1.1, "compile_reserve_seconds": 40.}
             save(args.output / "manifest.json", manifest)
+        observed_path = ROOT / "docs/plans/artifacts/neutra-fab-iaf-training-2026-09-26/q20-r1/reverse_kl-seed0-gpu2/result.json"
+        if args.target == "q20" and observed_path.exists():
+            observed = json.loads(observed_path.read_text())
+            last_progress = json.loads((observed_path.parent / "progress.json").read_text())[-1]
+            if observed.get("post_training_complete") and observed.get("coverage_complete"):
+                measured_seconds = observed["wall_seconds"] - last_progress["elapsed_seconds"]
+                diagnostic_reserve = 1.05 * measured_seconds
+                reference_path = ROOT / f"docs/plans/artifacts/neutra-fab-iaf-training-2026-09-26/reference-cache/q20-seed{args.seed}.json"
+                if reference_path.exists():
+                    # One of the two equal-sized target banks is already
+                    # evaluated. Reserve 75% of the observed full diagnostic
+                    # for the unchanged probe, map bank, density and summaries.
+                    diagnostic_reserve *= 0.75
+                manifest["observed_diagnostic_pricing"] = {"path": str(observed_path),
+                    "sha256": hashlib.sha256(observed_path.read_bytes()).hexdigest(),
+                    "measured_seconds": measured_seconds, "scheduling_margin": 1.05}
+                manifest["observed_diagnostic_pricing"]["cached_reference_fraction"] = 0.75 if reference_path.exists() else 1.0
+                save(args.output / "manifest.json", manifest)
         result.update(initial_probe_seconds=initial_probe_seconds, steady_probe_seconds=steady_probe_seconds,
                       diagnostic_reserve_seconds=diagnostic_reserve, starting_optimizer_updates=update_count)
         save(args.output / "timing.json", result)
@@ -551,6 +599,7 @@ def main() -> int:
 
         # The probe evaluates the exact represented map in FP64.  It is a
         # standard post-training verification and remains geometry evidence.
+        final_diagnostics_started = time.monotonic()
         evaluation_map = flow.as_dtype("float64")
         probe = PostTrainingProbe(
             evaluation_map, bridge, 1.0,
@@ -559,6 +608,7 @@ def main() -> int:
             jit_compile=True,
         )(digest(args.seed, "probe"))
         save(args.output / "post-training-1000.json", probe)
+        result["post_training_seconds"] = time.monotonic() - final_diagnostics_started
         if not (
             probe["complete"]
             and probe["finite"]
@@ -566,10 +616,13 @@ def main() -> int:
         ):
             raise ValueError("post-training 1,000-point verification failed")
 
+        coverage_started = time.monotonic()
         coverage = coverage_diagnostic(
             evaluation_map, initial_flow, bridge, center, scale, target_data,
-            rows=args.coverage_rows, seed=digest(args.seed, "coverage"))
+            rows=args.coverage_rows, seed=digest(args.seed, "coverage"),
+            reference_cache=(ROOT / f"docs/plans/artifacts/neutra-fab-iaf-training-2026-09-26/reference-cache/q20-seed{args.seed}.json") if args.target == "q20" else None)
         save(args.output / "coverage.json", coverage)
+        result["coverage_seconds"] = time.monotonic() - coverage_started
         frozen = evaluation_map.frozen_payload(
             target_signature=target_signature,
             training_state_hash=trainer.checkpoint()["checkpoint_hash"],
