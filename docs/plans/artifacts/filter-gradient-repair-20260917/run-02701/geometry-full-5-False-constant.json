@@ -1,0 +1,2073 @@
+{
+  "original": {
+    "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+    "accepted": true,
+    "status": "usable",
+    "dimension": 5,
+    "rank": 4,
+    "center_refinement_accepted": false,
+    "intercept": 0.0,
+    "lambda0": 1.0,
+    "best_evaluated_value": 0.0,
+    "best_evaluated_source": "center",
+    "best_evaluated_index": 0,
+    "exact_evaluation_count": 31,
+    "diagnostics": {
+      "config": {
+        "rank": 4,
+        "sample_count": 16,
+        "min_samples_per_parameter": 1,
+        "trust_radius": 1.0,
+        "pilot_radius": 0.15,
+        "pilot_direction_count": 6,
+        "holdout_fraction": 0.25,
+        "eigenvalue_floor": 1.0,
+        "max_condition_number": 1000.0,
+        "fit_max_iterations": 300,
+        "fit_tolerance": 1e-08,
+        "holdout_rmse_abs_tolerance": 0.05,
+        "holdout_rmse_rel_tolerance": 0.1,
+        "center_score_improvement_factor": 0.95,
+        "center_log_prob_tolerance": 1e-08,
+        "constrain_center_refinement_to_trust_region": true,
+        "seed": [
+          20260708,
+          2667732701
+        ]
+      },
+      "dimension": 5,
+      "rank": 4,
+      "regression_parameter_count": 11,
+      "required_finite_samples": 11,
+      "sample_count": 16,
+      "center_log_prob": 0.0,
+      "center_score_norm": 0.0,
+      "coordinate_system": "whitened_center_plus_scale_times_z",
+      "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+      "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+      "classification": "extension_or_invention",
+      "reports_map_quality": false,
+      "reports_hmc_convergence": false,
+      "reports_default_readiness": false,
+      "finite_sample_count": 16,
+      "nonfinite_sample_count": 0,
+      "pilot": {
+        "pilot_direction_count": 6,
+        "finite_positive_curvature_count": 0,
+        "curvature_min": null,
+        "curvature_max": null,
+        "curvature_source": "central_score_difference_directional_curvature",
+        "center_score_norm": 0.0,
+        "sketch_eigenvalues": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "basis_source": "identity_fallback",
+        "evaluation_route": "scalar_value_and_score_loop",
+        "evaluation_batch_size": 1
+      },
+      "design_evaluation_route": "scalar_value_and_score_loop",
+      "fit": {
+        "status": "usable",
+        "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+        "optimizer_converged": true,
+        "optimizer_failed": false,
+        "optimizer_iterations": 0,
+        "loss": 0.0,
+        "score_rmse": 0.0,
+        "score_design_rank": 0,
+        "score_design_condition_number": null,
+        "score_lstsq_residual_sum_squares": null,
+        "raw_lambda0": 0.0,
+        "raw_mu": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "mu_clipped_count": 0,
+        "intercept": 0.0,
+        "linear_term": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lambda0": 1.0,
+        "mu": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "precision": null,
+        "condition_bound": 1.0
+      },
+      "train_rmse": 0.0,
+      "holdout_count": 4,
+      "holdout_rmse": 0.0,
+      "holdout_threshold": 0.1,
+      "holdout_passed": true,
+      "precision_eigen_summary": {
+        "finite": true,
+        "positive": true,
+        "min": 1.0,
+        "max": 1.0,
+        "condition_number": 1.0,
+        "eigenvalues": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "covariance_eigen_summary": {
+        "finite": true,
+        "positive": true,
+        "min": 1.0,
+        "max": 1.0,
+        "condition_number": 1.0,
+        "eigenvalues": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "center_refinement": {
+        "accepted": false,
+        "reason": "actual_improvement_not_positive;predicted_improvement_not_positive;improvement_ratio_nonfinite",
+        "z_norm": 0.0,
+        "step_method": "exact_spd_quadratic_trust_region",
+        "trust_region_constrained": true,
+        "boundary_active": false,
+        "lagrange_multiplier": 0.0,
+        "predicted_improvement": 0.0,
+        "actual_improvement": 0.0,
+        "actual_to_predicted_improvement_ratio": null,
+        "center_log_prob": 0.0,
+        "refined_log_prob": 0.0,
+        "center_score_norm": 0.0,
+        "refined_score_norm": 0.0,
+        "refined_score": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "refined_target_finite": true,
+        "exact_evaluation_count": 1,
+        "refined_center": [
+          0.0,
+          0.01,
+          0.02,
+          0.03,
+          0.04
+        ]
+      },
+      "best_evaluated_replay": {
+        "attempted": true,
+        "evaluation_index": 30,
+        "valid": true,
+        "matches": true,
+        "value": 0.0,
+        "source": "center"
+      },
+      "artifact_hash": "548b9a730c2eb702"
+    },
+    "nonclaims": [
+      "low-rank quadratic geometry diagnostic only",
+      "not a certified MAP covariance",
+      "not posterior correctness evidence",
+      "not HMC convergence evidence",
+      "not sampler superiority evidence",
+      "not default-readiness evidence",
+      "not source-faithful Zhao-Cui evidence"
+    ],
+    "mu": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "precision_eigen_summary": {
+      "finite": true,
+      "positive": true,
+      "min": 1.0,
+      "max": 1.0,
+      "condition_number": 1.0,
+      "eigenvalues": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "covariance_eigen_summary": {
+      "finite": true,
+      "positive": true,
+      "min": 1.0,
+      "max": 1.0,
+      "condition_number": 1.0,
+      "eigenvalues": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "center": [
+      0.0,
+      0.01,
+      0.02,
+      0.03,
+      0.04
+    ],
+    "scale": [
+      0.8,
+      0.9,
+      1.0,
+      1.1,
+      1.2000000000000002
+    ],
+    "precision": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "covariance": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "q_basis": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.0,
+        -0.0,
+        1.0,
+        0.0
+      ],
+      [
+        -0.0,
+        -0.0,
+        -0.0,
+        1.0
+      ],
+      [
+        -0.0,
+        -0.0,
+        -0.0,
+        -0.0
+      ]
+    ],
+    "linear_term": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "refined_center": null,
+    "best_evaluated_position": [
+      0.0,
+      0.01,
+      0.02,
+      0.03,
+      0.04
+    ],
+    "best_evaluated_score": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "original_calls": {
+    "rows": 31,
+    "calls": 31,
+    "positions": [
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0150379240260105,
+        -0.03174090919271318,
+        0.00828935033347218,
+        0.16153668298611293,
+        -0.04947395234590545
+      ],
+      [
+        -0.0150379240260105,
+        0.05174090919271319,
+        0.03171064966652782,
+        -0.10153668298611293,
+        0.12947395234590545
+      ],
+      [
+        0.003111762249036596,
+        0.02322906455037948,
+        -0.11507070559941811,
+        -0.02489269844974977,
+        -0.007006627378978156
+      ],
+      [
+        -0.003111762249036596,
+        -0.00322906455037948,
+        0.1550707055994181,
+        0.08489269844974977,
+        0.08700662737897816
+      ],
+      [
+        -0.04462679651406064,
+        -0.018426757243054405,
+        -0.09308048407148266,
+        -0.05185887686508174,
+        0.030290996156711453
+      ],
+      [
+        0.04462679651406064,
+        0.0384267572430544,
+        0.13308048407148265,
+        0.11185887686508174,
+        0.04970900384328855
+      ],
+      [
+        -0.02911922892880628,
+        0.09628893281440981,
+        0.043411618388974275,
+        0.03387580549390469,
+        0.1682500280826618
+      ],
+      [
+        0.02911922892880628,
+        -0.07628893281440982,
+        -0.0034116183889742746,
+        0.026124194506095308,
+        -0.08825002808266177
+      ],
+      [
+        -0.036335194184431034,
+        -0.06580001380917282,
+        -0.035602448365363415,
+        0.06768305552680469,
+        -0.07433760541244469
+      ],
+      [
+        0.036335194184431034,
+        0.0858000138091728,
+        0.07560244836536341,
+        -0.007683055526804691,
+        0.15433760541244468
+      ],
+      [
+        -0.045348814918114884,
+        -0.08698885544166245,
+        0.026818653336936494,
+        0.06021751243793193,
+        -0.0594784396754724
+      ],
+      [
+        0.045348814918114884,
+        0.10698885544166244,
+        0.013181346663063507,
+        -0.00021751243793193334,
+        0.1394784396754724
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ],
+      [
+        0.0,
+        0.01,
+        0.02,
+        0.03,
+        0.04
+      ]
+    ],
+    "extents": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "source_sha256": {
+    "bayesfilter/inference/_exact_incumbent.py": "21191dd057380adafc6530cb15ef640666a2f3afb637bd90f4e98d3209ca5ed0",
+    "bayesfilter/inference/quadratic_geometry.py": "6a4865e98d97a441bf0146d1f581fa93f53f5ce1892ad81ebd69fc2526857fea"
+  },
+  "inputs": [
+    [
+      0.0,
+      0.01,
+      0.02,
+      0.03,
+      0.04
+    ],
+    [
+      0.8,
+      0.9,
+      1.0,
+      1.1,
+      1.2000000000000002
+    ],
+    [
+      [
+        0.3448049316296533,
+        -0.8507363008327155,
+        -0.21481102049042247,
+        2.1934602581081695,
+        -1.3677003096927
+      ],
+      [
+        0.051825936992730866,
+        0.19584720053668092,
+        -1.7996659944380777,
+        -0.6648943421861485,
+        -0.5219255872430351
+      ],
+      [
+        -0.676627276884769,
+        -0.38311449814382453,
+        -1.3716125015962843,
+        -0.9026447747027295,
+        -0.09813799995970675
+      ],
+      [
+        -0.36647750239101473,
+        0.9653171535742414,
+        0.23571589632678006,
+        0.035475352870648284,
+        1.0760529886333576
+      ],
+      [
+        -0.7887142519566919,
+        -1.4625440835706396,
+        -0.9655529731719782,
+        0.5948885570163361,
+        -1.654588633188702
+      ],
+      [
+        -1.0623164573217825,
+        -2.0195624124006564,
+        0.1277840255747232,
+        0.5148064489583902,
+        -1.5535515655225773
+      ]
+    ],
+    [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    [
+      726,
+      503
+    ]
+  ],
+  "candidate": {
+    "False": {
+      "payload": {
+        "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+        "accepted": true,
+        "status": "usable",
+        "dimension": 5,
+        "rank": 4,
+        "center_refinement_accepted": false,
+        "intercept": 0.0,
+        "lambda0": 1.0,
+        "best_evaluated_value": 0.0,
+        "best_evaluated_source": "center",
+        "best_evaluated_index": 0,
+        "exact_evaluation_count": 31,
+        "diagnostics": {
+          "config": {
+            "rank": 4,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 1.0,
+            "pilot_radius": 0.15,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 1.0,
+            "max_condition_number": 1000.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 0.05,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": true,
+            "seed": [
+              20260708,
+              2667732701
+            ],
+            "random_stream": "geometry_tf_philox_cpu_xla_v1"
+          },
+          "random_stream": "geometry_tf_philox_cpu_xla_v1",
+          "dimension": 5,
+          "rank": 4,
+          "regression_parameter_count": 11,
+          "required_finite_samples": 11,
+          "sample_count": 16,
+          "center_log_prob": 0.0,
+          "center_score_norm": 0.0,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "pilot": {
+            "pilot_direction_count": 6,
+            "finite_positive_curvature_count": 0,
+            "curvature_min": null,
+            "curvature_max": null,
+            "curvature_source": "central_score_difference_directional_curvature",
+            "center_score_norm": 0.0,
+            "sketch_eigenvalues": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "basis_source": "identity_fallback",
+            "evaluation_route": "scalar_value_and_score_loop",
+            "evaluation_batch_size": 1
+          },
+          "finite_sample_count": 16,
+          "nonfinite_sample_count": 0,
+          "design_evaluation_route": "scalar_value_and_score_loop",
+          "fit": {
+            "loss": 0.0,
+            "score_rmse": 0.0,
+            "score_design_rank": 0,
+            "raw_lambda0": 0.0,
+            "raw_mu": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mu_clipped_count": 0,
+            "intercept": 0.0,
+            "linear_term": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "lambda0": 1.0,
+            "mu": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "precision": null,
+            "condition_bound": 1.0,
+            "status": "usable",
+            "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+            "optimizer_converged": true,
+            "optimizer_failed": false,
+            "optimizer_iterations": 0,
+            "score_design_condition_number": null,
+            "score_lstsq_residual_sum_squares": null
+          },
+          "train_rmse": 0.0,
+          "holdout_count": 4,
+          "holdout_rmse": 0.0,
+          "holdout_threshold": 0.1,
+          "holdout_passed": true,
+          "precision_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 1.0,
+            "max": 1.0,
+            "condition_number": 1.0,
+            "eigenvalues": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "covariance_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 1.0,
+            "max": 1.0,
+            "condition_number": 1.0,
+            "eigenvalues": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "center_refinement": {
+            "accepted": false,
+            "reason": "actual_improvement_not_positive;predicted_improvement_not_positive;improvement_ratio_nonfinite",
+            "z_norm": 0.0,
+            "refined_center": [
+              0.0,
+              0.01,
+              0.02,
+              0.03,
+              0.04
+            ],
+            "step_method": "exact_spd_quadratic_trust_region",
+            "trust_region_constrained": true,
+            "boundary_active": false,
+            "lagrange_multiplier": 0.0,
+            "predicted_improvement": 0.0,
+            "exact_evaluation_count": 1,
+            "refined_target_finite": true,
+            "actual_improvement": -0.0,
+            "actual_to_predicted_improvement_ratio": null,
+            "center_log_prob": 0.0,
+            "refined_log_prob": 0.0,
+            "center_score_norm": 0.0,
+            "refined_score_norm": 0.0,
+            "refined_score": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "best_evaluated_replay": {
+            "attempted": true,
+            "valid": true,
+            "matches": true,
+            "evaluation_index": 30,
+            "value": 0.0,
+            "source": "center"
+          },
+          "artifact_hash": "b783b03bdf9446eb"
+        },
+        "nonclaims": [
+          "low-rank quadratic geometry diagnostic only",
+          "not a certified MAP covariance",
+          "not posterior correctness evidence",
+          "not HMC convergence evidence",
+          "not sampler superiority evidence",
+          "not default-readiness evidence",
+          "not source-faithful Zhao-Cui evidence"
+        ],
+        "center": [
+          0.0,
+          0.01,
+          0.02,
+          0.03,
+          0.04
+        ],
+        "scale": [
+          0.8,
+          0.9,
+          1.0,
+          1.1,
+          1.2000000000000002
+        ],
+        "precision": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "covariance": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "q_basis": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "linear_term": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "refined_center": null,
+        "best_evaluated_position": [
+          0.0,
+          0.01,
+          0.02,
+          0.03,
+          0.04
+        ],
+        "best_evaluated_score": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "mu": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "precision_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 1.0,
+          "max": 1.0,
+          "condition_number": 1.0,
+          "eigenvalues": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "covariance_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 1.0,
+          "max": 1.0,
+          "condition_number": 1.0,
+          "eigenvalues": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "calls": {
+        "rows": 31,
+        "calls": 31,
+        "positions": [
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.015037924026010499,
+            -0.03174090919271318,
+            0.00828935033347218,
+            0.16153668298611293,
+            -0.04947395234590545
+          ],
+          [
+            -0.015037924026010499,
+            0.05174090919271319,
+            0.03171064966652782,
+            -0.10153668298611293,
+            0.12947395234590545
+          ],
+          [
+            0.003111762249036596,
+            0.023229064550379482,
+            -0.11507070559941811,
+            -0.02489269844974977,
+            -0.007006627378978156
+          ],
+          [
+            -0.003111762249036596,
+            -0.003229064550379482,
+            0.1550707055994181,
+            0.08489269844974977,
+            0.08700662737897816
+          ],
+          [
+            -0.04462679651406064,
+            -0.018426757243054405,
+            -0.09308048407148266,
+            -0.05185887686508174,
+            0.030290996156711453
+          ],
+          [
+            0.04462679651406064,
+            0.0384267572430544,
+            0.13308048407148265,
+            0.11185887686508174,
+            0.04970900384328855
+          ],
+          [
+            -0.02911922892880628,
+            0.09628893281440981,
+            0.043411618388974275,
+            0.03387580549390469,
+            0.1682500280826618
+          ],
+          [
+            0.02911922892880628,
+            -0.07628893281440982,
+            -0.0034116183889742746,
+            0.026124194506095308,
+            -0.08825002808266177
+          ],
+          [
+            -0.03633519418443103,
+            -0.06580001380917283,
+            -0.035602448365363415,
+            0.0676830555268047,
+            -0.07433760541244469
+          ],
+          [
+            0.03633519418443103,
+            0.08580001380917282,
+            0.07560244836536341,
+            -0.007683055526804698,
+            0.1543376054124447
+          ],
+          [
+            -0.045348814918114884,
+            -0.08698885544166246,
+            0.026818653336936494,
+            0.06021751243793193,
+            -0.0594784396754724
+          ],
+          [
+            0.045348814918114884,
+            0.10698885544166245,
+            0.013181346663063507,
+            -0.00021751243793193334,
+            0.1394784396754724
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ]
+        ],
+        "extents": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "stage": 3,
+      "attempted_rows": 31
+    },
+    "True": {
+      "payload": {
+        "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+        "accepted": true,
+        "status": "usable",
+        "dimension": 5,
+        "rank": 4,
+        "center_refinement_accepted": false,
+        "intercept": 0.0,
+        "lambda0": 1.0,
+        "best_evaluated_value": 0.0,
+        "best_evaluated_source": "center",
+        "best_evaluated_index": 0,
+        "exact_evaluation_count": 31,
+        "diagnostics": {
+          "config": {
+            "rank": 4,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 1.0,
+            "pilot_radius": 0.15,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 1.0,
+            "max_condition_number": 1000.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 0.05,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": true,
+            "seed": [
+              20260708,
+              2667732701
+            ],
+            "random_stream": "geometry_tf_philox_cpu_xla_v1"
+          },
+          "random_stream": "geometry_tf_philox_cpu_xla_v1",
+          "dimension": 5,
+          "rank": 4,
+          "regression_parameter_count": 11,
+          "required_finite_samples": 11,
+          "sample_count": 16,
+          "center_log_prob": 0.0,
+          "center_score_norm": 0.0,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "pilot": {
+            "pilot_direction_count": 6,
+            "finite_positive_curvature_count": 0,
+            "curvature_min": null,
+            "curvature_max": null,
+            "curvature_source": "central_score_difference_directional_curvature",
+            "center_score_norm": 0.0,
+            "sketch_eigenvalues": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "basis_source": "identity_fallback",
+            "evaluation_route": "scalar_value_and_score_loop",
+            "evaluation_batch_size": 1
+          },
+          "finite_sample_count": 16,
+          "nonfinite_sample_count": 0,
+          "design_evaluation_route": "scalar_value_and_score_loop",
+          "fit": {
+            "loss": 0.0,
+            "score_rmse": 0.0,
+            "score_design_rank": 0,
+            "raw_lambda0": 0.0,
+            "raw_mu": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "mu_clipped_count": 0,
+            "intercept": 0.0,
+            "linear_term": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "lambda0": 1.0,
+            "mu": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "precision": null,
+            "condition_bound": 1.0,
+            "status": "usable",
+            "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+            "optimizer_converged": true,
+            "optimizer_failed": false,
+            "optimizer_iterations": 0,
+            "score_design_condition_number": null,
+            "score_lstsq_residual_sum_squares": null
+          },
+          "train_rmse": 0.0,
+          "holdout_count": 4,
+          "holdout_rmse": 0.0,
+          "holdout_threshold": 0.1,
+          "holdout_passed": true,
+          "precision_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 1.0,
+            "max": 1.0,
+            "condition_number": 1.0,
+            "eigenvalues": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "covariance_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 1.0,
+            "max": 1.0,
+            "condition_number": 1.0,
+            "eigenvalues": [
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "center_refinement": {
+            "accepted": false,
+            "reason": "actual_improvement_not_positive;predicted_improvement_not_positive;improvement_ratio_nonfinite",
+            "z_norm": 0.0,
+            "refined_center": [
+              0.0,
+              0.01,
+              0.02,
+              0.03,
+              0.04
+            ],
+            "step_method": "exact_spd_quadratic_trust_region",
+            "trust_region_constrained": true,
+            "boundary_active": false,
+            "lagrange_multiplier": 0.0,
+            "predicted_improvement": 0.0,
+            "exact_evaluation_count": 1,
+            "refined_target_finite": true,
+            "actual_improvement": 0.0,
+            "actual_to_predicted_improvement_ratio": null,
+            "center_log_prob": 0.0,
+            "refined_log_prob": 0.0,
+            "center_score_norm": 0.0,
+            "refined_score_norm": 0.0,
+            "refined_score": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "best_evaluated_replay": {
+            "attempted": true,
+            "valid": true,
+            "matches": true,
+            "evaluation_index": 30,
+            "value": 0.0,
+            "source": "center"
+          },
+          "artifact_hash": "b783b03bdf9446eb"
+        },
+        "nonclaims": [
+          "low-rank quadratic geometry diagnostic only",
+          "not a certified MAP covariance",
+          "not posterior correctness evidence",
+          "not HMC convergence evidence",
+          "not sampler superiority evidence",
+          "not default-readiness evidence",
+          "not source-faithful Zhao-Cui evidence"
+        ],
+        "center": [
+          0.0,
+          0.01,
+          0.02,
+          0.03,
+          0.04
+        ],
+        "scale": [
+          0.8,
+          0.9,
+          1.0,
+          1.1,
+          1.2000000000000002
+        ],
+        "precision": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "covariance": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "q_basis": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "linear_term": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "refined_center": null,
+        "best_evaluated_position": [
+          0.0,
+          0.01,
+          0.02,
+          0.03,
+          0.04
+        ],
+        "best_evaluated_score": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "mu": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "precision_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 1.0,
+          "max": 1.0,
+          "condition_number": 1.0,
+          "eigenvalues": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "covariance_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 1.0,
+          "max": 1.0,
+          "condition_number": 1.0,
+          "eigenvalues": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "calls": {
+        "rows": 31,
+        "calls": 31,
+        "positions": [
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.015037924026010499,
+            -0.03174090919271318,
+            0.00828935033347218,
+            0.16153668298611293,
+            -0.04947395234590545
+          ],
+          [
+            -0.015037924026010499,
+            0.05174090919271319,
+            0.03171064966652782,
+            -0.10153668298611293,
+            0.12947395234590545
+          ],
+          [
+            0.003111762249036596,
+            0.023229064550379482,
+            -0.11507070559941812,
+            -0.02489269844974977,
+            -0.007006627378978156
+          ],
+          [
+            -0.003111762249036596,
+            -0.0032290645503794814,
+            0.15507070559941813,
+            0.08489269844974977,
+            0.08700662737897816
+          ],
+          [
+            -0.04462679651406064,
+            -0.018426757243054405,
+            -0.09308048407148266,
+            -0.05185887686508174,
+            0.030290996156711453
+          ],
+          [
+            0.04462679651406064,
+            0.0384267572430544,
+            0.13308048407148265,
+            0.11185887686508174,
+            0.04970900384328855
+          ],
+          [
+            -0.02911922892880628,
+            0.09628893281440982,
+            0.043411618388974275,
+            0.03387580549390469,
+            0.16825002808266176
+          ],
+          [
+            0.02911922892880628,
+            -0.07628893281440982,
+            -0.003411618388974273,
+            0.026124194506095308,
+            -0.08825002808266177
+          ],
+          [
+            -0.03633519418443103,
+            -0.06580001380917282,
+            -0.03560244836536341,
+            0.06768305552680469,
+            -0.07433760541244469
+          ],
+          [
+            0.03633519418443103,
+            0.08580001380917282,
+            0.07560244836536341,
+            -0.007683055526804697,
+            0.1543376054124447
+          ],
+          [
+            -0.045348814918114884,
+            -0.08698885544166246,
+            0.026818653336936494,
+            0.06021751243793193,
+            -0.0594784396754724
+          ],
+          [
+            0.045348814918114884,
+            0.10698885544166245,
+            0.013181346663063505,
+            -0.00021751243793193212,
+            0.1394784396754724
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ],
+          [
+            0.0,
+            0.01,
+            0.02,
+            0.03,
+            0.04
+          ]
+        ],
+        "extents": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "stage": 3,
+      "attempted_rows": 31
+    }
+  }
+}

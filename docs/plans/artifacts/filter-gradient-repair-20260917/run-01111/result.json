@@ -1,0 +1,747 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "cpu_forecast_shard",
+  "size": 2,
+  "jit": "off",
+  "device": "CPU",
+  "source_root": "/tmp/bayesfilter-filter-gradient-xla-validation-20260918",
+  "worker_sha256": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "filter_repair_forecast_pool_worker.py": "4166aabd3fe4e3faa478bcab44fca44b1c2c73d7c8198246b864f64b74a920fa",
+    "filter_repair_forecast_pool_fixtures.py": "378cd5f850b63d69bd8c8df591295a2334cca42c1118df1bf16a51c3e8d5d1c4"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 20377600,
+      "VmRSS": 20377600
+    },
+    "prepared": {
+      "VmHWM": 589328384,
+      "VmRSS": 589328384
+    },
+    "traced": {
+      "VmHWM": 613543936,
+      "VmRSS": 613543936
+    },
+    "cold_outputs_live": {
+      "VmHWM": 663048192,
+      "VmRSS": 663048192
+    },
+    "cold_outputs_released": {
+      "VmHWM": 663060480,
+      "VmRSS": 663060480
+    }
+  },
+  "status": "passed",
+  "phase": "complete",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": {
+    "machine": "x86_64",
+    "processor": "model name\t: AMD EPYC 7773X 64-Core Processor"
+  },
+  "timing_scope": "complete_seeded_forecast_shard_numerics_and_status",
+  "numerical_execution": "explicit_non_xla_graph_reference",
+  "numerical_backend": "tensorflow",
+  "preparation_seconds": 0.14369790800265037,
+  "dimensions": {
+    "rows": 5,
+    "q": 1,
+    "parameters": 4,
+    "filter_horizon": 30,
+    "forecast_horizon": 10,
+    "replications": 2,
+    "seed_policy": "original_independent_row_philox",
+    "role": "external_cpu_sample_generation",
+    "neutra_training_eligible": false
+  },
+  "input_sha256": "fa9e978c4be0a528ff1f05d358417a587fa441e7da320f5e6bb22b2c243cb440",
+  "input_shapes": [
+    [
+      5,
+      4
+    ],
+    [
+      5,
+      2
+    ]
+  ],
+  "input_dtypes": [
+    "float64",
+    "int32"
+  ],
+  "trace_seconds": 0.6707566510012839,
+  "graph": {
+    "nodes": 1937,
+    "functions": 20,
+    "callbacks": [],
+    "must_compile": false,
+    "nested_xla": [],
+    "xla_ops": []
+  },
+  "cold": {
+    "synchronized_seconds": 0.4511689230275806,
+    "output_copy_seconds": 4.36109839938581e-05,
+    "end_to_end_seconds": 0.45121253401157446
+  },
+  "output_shapes": [
+    [
+      5,
+      2,
+      10
+    ],
+    [
+      5,
+      2,
+      10
+    ],
+    [
+      5,
+      2,
+      10
+    ],
+    [
+      5
+    ]
+  ],
+  "output_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "bool"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:CPU:0",
+    "/job:localhost/replica:0/task:0/device:CPU:0",
+    "/job:localhost/replica:0/task:0/device:CPU:0",
+    "/job:localhost/replica:0/task:0/device:CPU:0"
+  ],
+  "values": [
+    [
+      [
+        [
+          -0.8891002236846071,
+          -0.4436578492590636,
+          -0.038278407308913645,
+          -0.35138043765748816,
+          1.096016793845546,
+          0.41656658229411564,
+          0.9099905776142931,
+          -0.15000252802221842,
+          -0.005159718062795977,
+          -0.3382934598358261
+        ],
+        [
+          0.17381466878884816,
+          -0.35608654859934086,
+          0.525621214527888,
+          -0.12496749809723713,
+          -0.06653938583755806,
+          -0.001665823781809933,
+          0.835723406112113,
+          -0.26178736843468,
+          0.037909167844767826,
+          0.32234834234833865
+        ]
+      ],
+      [
+        [
+          0.12112401531700875,
+          1.1698725044390827,
+          0.21966215694640795,
+          1.0233632985477117,
+          -0.33718133078953033,
+          0.036536140963856295,
+          0.5158679811602002,
+          0.48595642674615797,
+          0.266223506871374,
+          0.2178696362838157
+        ],
+        [
+          -0.8143034447220014,
+          -0.11439537564221203,
+          -0.24679676097928716,
+          -0.33612681059484817,
+          0.2030208142527726,
+          0.21177132554992742,
+          -0.7634568178971032,
+          0.6096267430295716,
+          -0.5017212708447336,
+          1.235733762382572
+        ]
+      ],
+      [
+        [
+          -0.41652650427254245,
+          -0.13580716153314654,
+          0.05236956707331396,
+          -0.3369265681447265,
+          0.08232446853655562,
+          0.2026843954963322,
+          -0.12460236316908191,
+          0.6191832096027468,
+          -0.5779519693417818,
+          0.9990073244230848
+        ],
+        [
+          -0.2794405991032713,
+          -0.4368408741123863,
+          0.003605130146662021,
+          0.01389499859494734,
+          -0.21910184829250062,
+          -0.04400870866555813,
+          -0.20429195402887962,
+          0.2263312987325025,
+          -0.8276078548535122,
+          -1.0124773346095506
+        ]
+      ],
+      [
+        [
+          -0.5656370640238702,
+          1.195175181604017,
+          0.3926017097738243,
+          0.0933387894675371,
+          -0.26907820849857206,
+          0.735304312055916,
+          -0.8467664802499428,
+          -0.1365462572654713,
+          -0.02716053331333182,
+          1.0482769603655495
+        ],
+        [
+          -0.7244844151925209,
+          -0.560643293850327,
+          0.36356039470890933,
+          0.3077833007540347,
+          -0.8490336014049946,
+          0.0006456856073169259,
+          -0.6246701193765074,
+          0.0013069204528500383,
+          -0.15301084874270549,
+          0.6629465918455968
+        ]
+      ],
+      [
+        [
+          0.3804320165601672,
+          -0.07861201648039068,
+          0.8397910876234231,
+          -0.4134681982357295,
+          -0.2450385890823344,
+          -0.028184028918144352,
+          0.17722292848780813,
+          -0.7260965383812961,
+          0.2617515714711012,
+          -0.4989026153574882
+        ],
+        [
+          0.1427566806101359,
+          1.1669848472596314,
+          -0.48493902807145445,
+          0.6979085981927922,
+          -0.1513734727955462,
+          0.9926228260736087,
+          0.2924855052700154,
+          0.05859212034919188,
+          0.9557608775457638,
+          -0.3543866192579404
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ],
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ],
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ],
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ],
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          -0.900544979076147,
+          0.24206054007243105,
+          0.7625017392885403,
+          -0.8698496762971037,
+          1.9156221286993442,
+          1.0255279765872427,
+          -0.16293465920152372,
+          -1.073917027013476,
+          -0.39364180380284797,
+          0.8132933514735949
+        ],
+        [
+          -0.24940406281296668,
+          -0.17601363387261512,
+          0.9338955366810113,
+          0.20501249107205366,
+          -1.0215145306572528,
+          -0.08996767001158454,
+          0.9540029952810879,
+          -0.22422843105396514,
+          0.378610877248664,
+          0.3716120548076153
+        ]
+      ],
+      [
+        [
+          0.9388240709043268,
+          0.7715810436984014,
+          0.8290659149346891,
+          1.987316236387732,
+          0.05499023019424959,
+          -0.329604383443844,
+          1.3169823717838556,
+          0.06746261945147752,
+          -0.7625823400241487,
+          0.08651993447292355
+        ],
+        [
+          -0.24354837606113666,
+          0.16283592394104868,
+          0.015171873093699717,
+          -0.37061578470631307,
+          1.2116200198658529,
+          0.2345029339740815,
+          -0.3007108916799898,
+          0.17919466408147477,
+          -1.322589001932818,
+          0.4099083008134734
+        ]
+      ],
+      [
+        [
+          0.08501017775132702,
+          -1.202604355361025,
+          0.09714712738314796,
+          -1.2209731220927937,
+          -0.023723736228776007,
+          -0.9762266559574169,
+          0.7209145812814713,
+          0.6406591409098468,
+          -0.4144938716959309,
+          1.1068471306720855
+        ],
+        [
+          0.6711175413742856,
+          -1.4994486401376803,
+          -0.34590770741227833,
+          -0.007108900223341669,
+          -1.152056457843055,
+          0.6864424379874894,
+          0.2034492092287653,
+          -0.220311928826498,
+          -0.11403083751230303,
+          -0.9377883078747042
+        ]
+      ],
+      [
+        [
+          -0.8510974973497997,
+          0.8170288936510655,
+          0.03285511891661874,
+          -0.2055779687012388,
+          -0.5088827278077304,
+          0.6534770851800962,
+          -0.8851850114742155,
+          0.024231886972439692,
+          0.1953646898892896,
+          2.1863705989637565
+        ],
+        [
+          -0.15258760139526673,
+          -0.8167219325321877,
+          -0.0943800069016994,
+          2.182698451403354,
+          -1.1811378122859144,
+          0.7409516928536329,
+          0.030876877706750294,
+          0.033813522622063594,
+          -0.3195750152423126,
+          0.7695472651046878
+        ]
+      ],
+      [
+        [
+          0.7165241548663415,
+          -0.7081142670285812,
+          1.6653011426461193,
+          -1.4085693723229515,
+          0.2186590897252208,
+          0.2901671760780248,
+          0.4560406642486326,
+          -0.5863505285798352,
+          -1.4670304730610715,
+          -0.8266587198848324
+        ],
+        [
+          0.7740654285178935,
+          0.8911036839141742,
+          0.7353810042660422,
+          0.16910390385847807,
+          0.13011249547582576,
+          2.9689872018748558,
+          1.1731832760948844,
+          1.3491630509423207,
+          0.8770247521067431,
+          -0.581758436550105
+        ]
+      ]
+    ],
+    [
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  ],
+  "warm": [
+    {
+      "iteration": 0,
+      "synchronized_seconds": 0.034415283997077495,
+      "output_copy_seconds": 3.4199998481199145e-05,
+      "end_to_end_seconds": 0.034449483995558694,
+      "VmHWM": 663064576,
+      "VmRSS": 663064576
+    },
+    {
+      "iteration": 1,
+      "synchronized_seconds": 0.03303812799276784,
+      "output_copy_seconds": 1.8710008589550853e-05,
+      "end_to_end_seconds": 0.03305683800135739,
+      "VmHWM": 663080960,
+      "VmRSS": 663080960
+    },
+    {
+      "iteration": 2,
+      "synchronized_seconds": 0.03307769901584834,
+      "output_copy_seconds": 1.85999961104244e-05,
+      "end_to_end_seconds": 0.03309629901195876,
+      "VmHWM": 663085056,
+      "VmRSS": 663085056
+    },
+    {
+      "iteration": 3,
+      "synchronized_seconds": 0.03293089600629173,
+      "output_copy_seconds": 1.9139988580718637e-05,
+      "end_to_end_seconds": 0.03295003599487245,
+      "VmHWM": 663085056,
+      "VmRSS": 663085056
+    },
+    {
+      "iteration": 4,
+      "synchronized_seconds": 0.03295115698711015,
+      "output_copy_seconds": 1.9201019313186407e-05,
+      "end_to_end_seconds": 0.03297035800642334,
+      "VmHWM": 663085056,
+      "VmRSS": 663085056
+    },
+    {
+      "iteration": 5,
+      "synchronized_seconds": 0.033083219022955745,
+      "output_copy_seconds": 1.7999991541728377e-05,
+      "end_to_end_seconds": 0.033101219014497474,
+      "VmHWM": 663085056,
+      "VmRSS": 663085056
+    },
+    {
+      "iteration": 6,
+      "synchronized_seconds": 0.033174078998854384,
+      "output_copy_seconds": 2.9939983505755663e-05,
+      "end_to_end_seconds": 0.03320401898236014,
+      "VmHWM": 663085056,
+      "VmRSS": 663085056
+    },
+    {
+      "iteration": 7,
+      "synchronized_seconds": 0.03329996101092547,
+      "output_copy_seconds": 3.1499977922067046e-05,
+      "end_to_end_seconds": 0.03333146098884754,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 8,
+      "synchronized_seconds": 0.03350160300033167,
+      "output_copy_seconds": 3.215999458916485e-05,
+      "end_to_end_seconds": 0.033533762994920835,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 9,
+      "synchronized_seconds": 0.033326350996503606,
+      "output_copy_seconds": 3.135998849757016e-05,
+      "end_to_end_seconds": 0.03335771098500118,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 10,
+      "synchronized_seconds": 0.033568693994311616,
+      "output_copy_seconds": 3.1889998354017735e-05,
+      "end_to_end_seconds": 0.033600583992665634,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 11,
+      "synchronized_seconds": 0.03350749297533184,
+      "output_copy_seconds": 3.2051000744104385e-05,
+      "end_to_end_seconds": 0.03353954397607595,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 12,
+      "synchronized_seconds": 0.03343275299994275,
+      "output_copy_seconds": 5.81399945076555e-05,
+      "end_to_end_seconds": 0.033490892994450405,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 13,
+      "synchronized_seconds": 0.03350141298142262,
+      "output_copy_seconds": 3.2101001124829054e-05,
+      "end_to_end_seconds": 0.03353351398254745,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 14,
+      "synchronized_seconds": 0.03359548398293555,
+      "output_copy_seconds": 3.208001726306975e-05,
+      "end_to_end_seconds": 0.03362756400019862,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 15,
+      "synchronized_seconds": 0.03353902400704101,
+      "output_copy_seconds": 3.185999230481684e-05,
+      "end_to_end_seconds": 0.033570883999345824,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 16,
+      "synchronized_seconds": 0.03353239400894381,
+      "output_copy_seconds": 3.225999535061419e-05,
+      "end_to_end_seconds": 0.033564654004294425,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 17,
+      "synchronized_seconds": 0.03458763501839712,
+      "output_copy_seconds": 3.231997834518552e-05,
+      "end_to_end_seconds": 0.03461995499674231,
+      "VmHWM": 663089152,
+      "VmRSS": 663089152
+    },
+    {
+      "iteration": 18,
+      "synchronized_seconds": 0.033534304006025195,
+      "output_copy_seconds": 3.225999535061419e-05,
+      "end_to_end_seconds": 0.03356656400137581,
+      "VmHWM": 663101440,
+      "VmRSS": 663101440
+    },
+    {
+      "iteration": 19,
+      "synchronized_seconds": 0.0335641739948187,
+      "output_copy_seconds": 3.2240001019090414e-05,
+      "end_to_end_seconds": 0.03359641399583779,
+      "VmHWM": 663101440,
+      "VmRSS": 663101440
+    }
+  ],
+  "trace_count": 1,
+  "imported_source_sha256": {
+    "scripts/filter_repair_forecast_pool_worker.py": "4166aabd3fe4e3faa478bcab44fca44b1c2c73d7c8198246b864f64b74a920fa",
+    "scripts/measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "scripts/filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "scripts/filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "scripts/filter_repair_forecast_pool_fixtures.py": "378cd5f850b63d69bd8c8df591295a2334cca42c1118df1bf16a51c3e8d5d1c4",
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/nonlinear/__init__.py": "f0edaabc1fdc132742f578b6351795c78d4aa5826fd88d04ed61a433c47b93ad",
+    "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+    "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+    "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+    "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+    "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+    "bayesfilter/linear/svd_factor_tf.py": "5bbbf1f9e6c4d8782838d202d3213360604c0325a47335e0ce44bfc6870f7e6f",
+    "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+    "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+    "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+    "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+    "bayesfilter/nonlinear/sigma_points_tf.py": "33e066075446c940c29daa13cef31744cf7c0e4fb896ac92505e1d6e5f1cb6e3",
+    "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+    "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+    "bayesfilter/nonlinear/ssl_lstm_protocol.py": "b43b840275ed4fdf30a809f2c534e0a6a1a51c3467948d11d6ec5d8b5cfdb6be",
+    "bayesfilter/nonlinear/fixed_sgqf_tf.py": "3a57a78426bae7acfba7032b72ffd3925c97cf683f92f64ed31361bfafe2ac44",
+    "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+    "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+    "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "5343c84ee5bde947d00319f1cd2aa7c8b6d7ec914514071562575a0750e1ef1d",
+    "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py": "f898c7dc1d199c362de750287a71347dfaa7018b1ab593acc272800564299ba6",
+    "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+    "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+    "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+    "bayesfilter/ops/stateless_random_tf.py": "98827e3195bccf1194f417274563941fd23c089be2f528f558eb216ff2c47336",
+    "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py": "20ad1f2e362d2cb2691b3d2dde4289c4041dff33bf937db802d07e969c194ddf",
+    "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py": "9574785fdd8372b86b33bc960485b8e29920a36f2c326c6294bdaaef5f372767"
+  },
+  "wall_seconds": 5.564293802017346
+}
