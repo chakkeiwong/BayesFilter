@@ -57,3 +57,60 @@ could still alter compiler lowering; same-mode complete values, exact replay,
 independent FP64 checks and saved HLO make that observable. Stop on source/input
 drift, invalid reference, or exhausted allocation; preserve ordinary candidate
 failures for repair rather than promoting them.
+
+Renewal after the first cost cohort found that its JSON summary retained finite
+and replay checks but omitted the materialized arrays and a direct comparison to
+the newly generated FP64 references. That is an artifact completeness gap, not
+evidence of a numerical failure. The renewal adds compressed output arrays,
+SHA-256 hashes, per-field maxima and unchanged `2e-5` comparisons against the
+FP64 graph references on the same saved FP32 operands. It repeats the six
+before/after graph/XLA arms at both extents on CPU and GPU, using fresh process
+directories and the same memory/timing contract. The comparison is descriptive:
+any failed field remains a veto on ranking that arm and does not alter the
+runtime or tolerance policy. The bounded extension uses at most six CPU and six
+GPU workers, each under 300 seconds, within the unchanged global caps.
+
+Review after 04244 rejects 04217--04242 as the planned numerical/cost cohort.
+The pilot harness used `cos(index)`, not the declared frozen FP32
+`cos(index * .11)`, and recomputed those coefficients in FP64 for the reference.
+It therefore compared derivatives of different finite objectives. Its recorded
+FP64 failures cannot establish the size of the runtime error. The earliest
+pilots also omitted full arrays, and HLO inspection preceded collection without
+a separate memory checkpoint. Preserve all pilots, but do not promote their
+speed ratios, post-collection memory interpretation or numerical comparisons.
+04216 was a collection-selector failure. 04243 found missing default GPU group
+registration; 04244 passes all 129 checks after registration. Explicit GPU flags
+in the pilots and their device records did select actual GPUs.
+
+The corrected cohort uses one shared differentiated function with an explicit
+coefficient operand, generated on CPU in FP32 exactly as in the precision
+diagnostic and cast without recomputation for FP64. Save its bytes/hash and
+the same rounded input hashes in every arm. The independent FP64 graph
+reference must pass centered finite differences at two step sizes, separately
+for source, weights and reset. Preserve complete arrays, loss, gradients, exact
+replay and all report fields. The post-run analyzer verifies artifact identities
+and recomputes every comparison from arrays, keeping the cap fraction separate
+from smooth values/gradients without waiving its unresolved gate.
+
+Record memory immediately before and after HLO inspection, release its string
+and all returned arrays before owner collection, and record Python owner
+collection separately from native memory. Save the HLO file itself. The
+uninspected after-replay checkpoint is the primary steady-memory observation;
+post-HLO/collection values cannot establish compiler eviction. No timing ratio
+is interpreted for an arm that fails independent smooth values or gradients.
+
+Reserve ten CPU and six GPU workers, each at most 300 seconds, under the
+unchanged total caps: two FP64 references, twelve corrected cost arms, two
+analysis/policy workers. Actual registered names are
+`genut_bounded_gradient_fp64_<N>_<d>_cpu` and
+`genut_bounded_gradient_cost_<arm>_<N>_<d>_<cpu|gpu>`; explicit devices remain
+required. Freeze sources for this entire corrected cohort. A short harness
+repair can be retried under the unused total reservation with its failure
+recorded. This changes neither numerical controls nor scientific acceptance.
+
+Skeptical review: finite/replay tests alone cannot certify cost comparability.
+An identical coefficient hash, original source, fixed controls, independent
+derivative check and array-level analysis are prerequisites. HLO extraction
+can allocate additional memory and must not be mistaken for a collection leak.
+The corrected design addresses those specific defects; the preexisting GenUT
+precision and report gates remain open even if its cost worker completes.

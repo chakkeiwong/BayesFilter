@@ -290,6 +290,32 @@ TEST_GROUPS = {
     **{f"genut_reverse_precision_extent_{dtype}_{device}": (
         f"tests/test_filter_repair_genut_reverse_precision.py::test_precision_candidate_extents[{dtype}]",)
        for dtype in ("f32", "f64") for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_weight_{device}": (
+        "tests/test_filter_repair_genut_weight_precision.py::test_weight_use_contributions",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_weight_dot_{device}": (
+        "tests/test_filter_repair_genut_weight_precision.py::test_weight_precision_highest_dot",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_moment_primitive_{device}": (
+        "tests/test_filter_repair_genut_weight_precision.py::test_analytical_moment_pullback",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_moment_complete_{device}": (
+        "tests/test_filter_repair_genut_weight_precision.py::test_weight_precision_analytical_moments",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_source_cut_{device}": (
+        "tests/test_filter_repair_genut_weight_precision.py::test_source_feature_error_decomposition",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_forward_{device}": (
+        "tests/test_filter_repair_genut_weight_precision.py::test_whole_program_forward_weight_directions",)
+       for device in ("cpu", "gpu")},
+    **{f"genut_bounded_gradient_cost_{arm}_{count}_{dimension}_{device}": (
+        f"tests/test_filter_repair_genut_bounded_gradient_cost.py::test_bounded_gradient_cost[{count}-{dimension}-{arm}]",)
+       for arm in ("before_graph", "after_graph", "after_xla")
+       for count, dimension in ((1000, 3), (10000, 18)) for device in ("cpu", "gpu")},
+    **{f"genut_bounded_gradient_fp64_{count}_{dimension}_cpu": (
+        f"tests/test_filter_repair_genut_bounded_gradient_cost.py::test_bounded_gradient_fp64_reference[{count}-{dimension}]",)
+       for count, dimension in ((1000, 3), (10000, 18))},
+    "genut_bounded_gradient_analysis_cpu": ("tests/test_filter_repair_genut_gradient_cost_analysis.py",),
     **{f"genut_transitive_cost_{arm}_{mode}_{device}": (
         f"tests/test_filter_repair_genut_transitive.py::test_reduced_correction_cost[{arm}-{mode}]",)
        for arm in ("original", "native") for mode in ("graph", "xla") for device in ("cpu", "gpu")
@@ -1390,6 +1416,22 @@ EXPLANATORY_TEST_GROUPS = {
        for case in ("precision_substitutions", "precision_additional_sites", "precision_primal_products", "precision_individual_products", "primitives") for device in ("cpu", "gpu")},
     **{f"genut_reverse_precision_extent_{dtype}_{device}": "Uninstalled precision-candidate qualification; actual runtime and cost gates remain separate."
        for dtype in ("f32", "f64") for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_weight_{device}": "Independent weight-branch localization; cannot waive unresolved FP32 gradient or reporting gates."
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_weight_dot_{device}": "Uninstalled combined dot/precision diagnostic; cannot waive runtime, report or cost gates."
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_moment_{case}_{device}": "Uninstalled analytical moment regrouping; independent diagnostics only, never a canonical LEDH score."
+       for case in ("primitive", "complete") for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_source_cut_{device}": "Source-feature rounding localization; invalid if the cut changes the forward program or removes its gradient failure."
+       for device in ("cpu", "gpu")},
+    **{f"genut_reverse_precision_forward_{device}": "ForwardAccumulator diagnostic only; cannot replace an analytical LEDH score or qualify a reverse gradient."
+       for device in ("cpu", "gpu")},
+    **{f"genut_bounded_gradient_cost_{arm}_{count}_{dimension}_{device}": "Descriptive GenUT memory/gradient cost arm; no speed ranking for numerically failing or canonical LEDH paths."
+       for arm in ("before_graph", "after_graph", "after_xla")
+       for count, dimension in ((1000, 3), (10000, 18)) for device in ("cpu", "gpu")},
+    **{f"genut_bounded_gradient_fp64_{count}_{dimension}_cpu": "Independent FP64 reference for the bounded GenUT cost cohort; comparison authority only."
+       for count, dimension in ((1000, 3), (10000, 18))},
+    "genut_bounded_gradient_analysis_cpu": "Adverse checks for cost artifact comparisons; no numerical runtime qualification.",
     **{f"genut_dot_pullback_{case}_{device}": "Uninstalled dot/pullback diagnostic; cannot close runtime or canonical-score qualification."
        for case in ("primitive", "complete_f32", "complete_f64") for device in ("cpu", "gpu")},
     "genut_dot_pullback_complete_gpu": "Uninstalled dot/pullback diagnostic; cannot close runtime or canonical-score qualification.",
@@ -1963,7 +2005,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     **{group: "GPU" for group in TEST_GROUPS
-       if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_", "genut_transitive_", "genut_dot_pullback_", "genut_reverse_precision_", "latent_sir_", "mixed_kr_")) and group.endswith("_gpu")},
+       if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_", "genut_transitive_", "genut_dot_pullback_", "genut_reverse_precision_", "genut_bounded_gradient_", "latent_sir_", "mixed_kr_")) and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS
        if group.startswith("kdm_") and group.endswith("_gpu")},
     "dz5_score_oracle_graph_gpu": "GPU",

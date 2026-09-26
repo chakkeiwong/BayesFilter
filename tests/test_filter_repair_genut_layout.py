@@ -97,7 +97,7 @@ def test_layout_attribution(request):
                for key, field in mode["layout_vs_fp64"].items() if key != "fraction_coordinatewise_cap_active")
 
 
-def _highest_dot_candidate():
+def _highest_dot_candidate(source=None):
     from tensorflow.compiler.tf2xla.ops import gen_xla_ops
     from tensorflow.compiler.xla import xla_data_pb2
 
@@ -111,7 +111,7 @@ def _highest_dot_candidate():
             preferred_element_type=left.dtype)
         return tf.ensure_shape(result, [left.shape[1-left_axis], right.shape[1-right_axis]])
 
-    source = inspect.getsource(current)
+    source = inspect.getsource(current) if source is None else source
     replacements = {
         "tf.reduce_sum(\n        weights[:, None, None] * centered[:, :, None] * centered[:, None, :], axis=0\n    )":
         "highest_dot(weights[:, None] * centered, centered, 0, 0)",

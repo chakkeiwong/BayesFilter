@@ -77,3 +77,24 @@ def precise_gram(matrix):
 
 def precise_transposed_matvec(matrix, vector):
     return tf.reduce_sum(matrix * vector[..., :, None], axis=-2)
+
+
+@tf.custom_gradient
+def analytical_weighted_moments(points, weights):
+    """Diagnostic regrouping of the same weighted-moment first derivative."""
+    mean = tf.reduce_sum(weights[:, None] * points, axis=0)
+    centered = points - mean[None, :]
+    covariance = tf.reduce_sum(
+        weights[:, None, None] * centered[:, :, None] * centered[:, None, :], axis=0)
+    covariance = .5 * (covariance + tf.linalg.matrix_transpose(covariance))
+
+    def pullback(grad_mean, grad_covariance):
+        symmetric = .5 * (grad_covariance + tf.transpose(grad_covariance))
+        residual = tf.reduce_sum(weights[:, None] * centered, axis=0)
+        adjusted_mean = grad_mean - 2 * tf.reduce_sum(symmetric * residual[None, :], axis=1)
+        projected = tf.reduce_sum(symmetric[None, :, :] * centered[:, None, :], axis=2)
+        grad_points = weights[:, None] * (adjusted_mean[None, :] + 2 * projected)
+        grad_weights = tf.reduce_sum(points * adjusted_mean[None, :] + centered * projected, axis=1)
+        return grad_points, grad_weights
+
+    return (mean, covariance), pullback
