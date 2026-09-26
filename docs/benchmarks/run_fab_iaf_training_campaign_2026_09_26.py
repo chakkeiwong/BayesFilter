@@ -14,6 +14,7 @@ import json
 import math
 import os
 from pathlib import Path
+import signal
 import subprocess
 import sys
 import time
@@ -135,6 +136,112 @@ def target_log_score(bridge, values):
     return value, score, status["bridge_valid"]
 
 
+def diagonal_gaussian_log_prob(points, center, scale):
+    """Density of the actual independent-bank sampling law, in FP64."""
+    import tensorflow as tf
+
+    scale = tf.convert_to_tensor(scale, tf.float64)
+    z = (points - tf.convert_to_tensor(center, tf.float64)) / scale
+    return -0.5 * tf.reduce_sum(tf.square(z) + math.log(2.0 * math.pi), -1) - tf.reduce_sum(tf.math.log(scale))
+
+
+def coverage_diagnostic(flow, initial_flow, bridge, center, scale, target_data, *, rows, seed):
+    """Independent support checks; each importance denominator matches its draws."""
+    import tensorflow as tf
+
+    dimension, batch = bridge.parameter_dim, 32
+    if rows % batch:
+        raise ValueError("coverage rows must be whole native batches of 32")
+    signature = [tf.TensorSpec([batch, dimension], tf.float64)]
+
+    @tf.function(input_signature=signature, jit_compile=True, autograph=False)
+    def evaluate(latent):
+        mapped, ld = flow.forward_and_logdet(latent)
+        reference = tf.constant(center, tf.float64) + tf.constant(scale, tf.float64) * latent
+        points = tf.concat([mapped, reference], axis=0)
+        log_p, score, valid = target_log_score(bridge, points)
+        base_log = diagonal_gaussian_log_prob(latent, [0.] * dimension, [1.] * dimension)
+        log_g = diagonal_gaussian_log_prob(reference, center, scale)
+        reference_log_q = flow.log_prob(reference)
+        initial_log_q = initial_flow.log_prob(reference)
+        quantities = tf.stack([log_p[:batch], log_p[batch:], base_log - ld,
+                               log_g, reference_log_q, initial_log_q])
+        finite = tf.reduce_all(tf.math.is_finite(quantities)) & tf.reduce_all(tf.math.is_finite(score))
+        return {"points": points, "log_weights": tf.concat([log_p[:batch] - (base_log - ld), log_p[batch:] - log_g], 0),
+                "reference_log_p_over_q": log_p[batch:] - reference_log_q,
+                "reference_log_p_over_initial_q": log_p[batch:] - initial_log_q,
+                "valid": tf.reduce_all(valid) & finite & tf.reduce_all(tf.math.is_finite(points))}
+
+    # Small stateless Gaussian banks are generated with TensorFlow's native CPU
+    # kernel; process sharding would add overhead without expensive target work.
+    with tf.device("/CPU:0"):
+        latent = tf.random.stateless_normal([rows, dimension], seed, dtype=tf.float64)
+    blocks = [evaluate(latent[i:i + batch]) for i in range(0, rows, batch)]
+    if not all(bool(b["valid"]) for b in blocks):
+        raise ValueError("independent coverage target/density evaluation was invalid")
+    map_points = tf.concat([b["points"][:batch] for b in blocks], 0)
+    ref_points = tf.concat([b["points"][batch:] for b in blocks], 0)
+    map_log_weights = tf.concat([b["log_weights"][:batch] for b in blocks], 0)
+    ref_log_weights = tf.concat([b["log_weights"][batch:] for b in blocks], 0)
+
+    @tf.function(input_signature=[tf.TensorSpec([rows], tf.float64), tf.TensorSpec([rows, dimension], tf.float64)],
+                 jit_compile=True, autograph=False)
+    def summarize(log_weights, points):
+        weights = tf.nn.softmax(log_weights)
+        positive = tf.cast(points[:, 2] > 0., tf.float64)
+        output = {
+            "ess": 1.0 / tf.reduce_sum(tf.square(weights)),
+            "ess_fraction": 1.0 / tf.reduce_sum(tf.square(weights)) / rows,
+            "maximum_normalized_weight": tf.reduce_max(weights),
+            "positive_unweighted_fraction": tf.reduce_mean(positive),
+            "positive_weighted_fraction": tf.reduce_sum(weights * positive),
+        }
+        if target_data is not None:
+            from bayesfilter.testing.importance_sampling_tf import gaussian_mixture_log_prob_responsibilities_score
+            _, responsibilities, _ = gaussian_mixture_log_prob_responsibilities_score(
+                points, target_data["probabilities"], target_data["means"], target_data["covariances"])
+            labels = tf.argmin(tf.reduce_sum(tf.square(points[:, None, :] - target_data["means"][None, :, :]), -1), -1)
+            output["nearest_mean_occupancy"] = tf.reduce_mean(tf.one_hot(labels, 3, dtype=tf.float64), 0)
+            output["component_unweighted_mass"] = tf.reduce_mean(responsibilities, 0)
+            output["component_weighted_mass"] = tf.reduce_sum(weights[:, None] * responsibilities, 0)
+            output["raw_component_mass_absolute_error"] = tf.abs(output["component_unweighted_mass"] - target_data["probabilities"])
+            output["weighted_component_mass_absolute_error"] = tf.abs(output["component_weighted_mass"] - target_data["probabilities"])
+        return output
+
+    coverage = {"rows": rows, "batch_size": batch, "seed": list(seed),
+        "map_base": host(summarize(map_log_weights, map_points)),
+        "independent_prior_bank": host(summarize(ref_log_weights, ref_points)),
+        "reference_sampling_law": "diagonal_gaussian_center_scale_in_manifest",
+        "reference_log_weight_definition": "log_p_minus_log_g_not_log_p_minus_log_q",
+        "role": "descriptive_coverage_diagnostic_not_exhaustive_mode_discovery"}
+    weights = tf.nn.softmax(ref_log_weights)
+    for name in ("reference_log_p_over_q", "reference_log_p_over_initial_q"):
+        values = tf.concat([b[name] for b in blocks], 0)
+        coverage[name] = host({"target_weighted_mean": tf.reduce_sum(weights * values),
+                              "maximum_on_bank": tf.reduce_max(values)})
+    if target_data is not None:
+        with tf.device("/CPU:0"):
+            labels = tf.random.stateless_categorical(tf.math.log(target_data["probabilities"])[None, :], rows,
+                                                    (seed[1], seed[0]))[0]
+            normals = tf.random.stateless_normal([rows, dimension], (seed[0], seed[0]), dtype=tf.float64)
+            exact = tf.gather(target_data["means"], labels) + tf.linalg.matvec(
+                tf.gather(tf.linalg.cholesky(target_data["covariances"]), labels), normals)
+
+        @tf.function(input_signature=signature, jit_compile=True, autograph=False)
+        def exact_evaluate(points):
+            log_p, _, valid = target_log_score(bridge, points)
+            ratios = log_p - flow.log_prob(points)
+            return ratios, tf.reduce_all(valid) & tf.reduce_all(tf.math.is_finite(ratios))
+
+        exact_blocks = [exact_evaluate(exact[i:i + batch]) for i in range(0, rows, batch)]
+        if not all(bool(b[1]) for b in exact_blocks):
+            raise ValueError("exact mixture coverage reference was invalid")
+        coverage["exact_component_probabilities"] = host(target_data["probabilities"])
+        coverage["exact_target_draws"] = host(summarize(tf.zeros([rows], tf.float64), exact))
+        coverage["exact_target_draws"]["forward_kl_monte_carlo"] = host(tf.reduce_mean(tf.concat([b[0] for b in exact_blocks], 0)))
+    return coverage
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--arm", choices=("fab", "reverse_kl"), required=True)
@@ -154,8 +261,10 @@ def main() -> int:
     args = parser.parse_args()
     if args.updates < 1 or args.batch_size < 2 or args.worker_seconds <= 0:
         raise ValueError("updates, batch size and worker time must be positive")
-    if args.post_rows != 1000 or args.coverage_rows < 2:
+    if args.post_rows != 1000 or args.coverage_rows < 32 or args.coverage_rows % 32:
         raise ValueError("the campaign requires the standard 1,000-point probe")
+    if args.arm == "fab" and args.updates % args.updates_per_pass:
+        raise ValueError("requested updates must be divisible by updates per pass")
     if os.environ.get("TF_FORCE_GPU_ALLOW_GROWTH", "").lower() != "true":
         raise RuntimeError("TF_FORCE_GPU_ALLOW_GROWTH=true is required before TensorFlow import")
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -166,6 +275,10 @@ def main() -> int:
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
+    def deadline_signal(signum, frame):
+        del signum, frame
+        raise TimeoutError("external worker wall budget expired")
+    signal.signal(signal.SIGTERM, deadline_signal)
     manifest = {
         "schema": "bayesfilter.neutra.fab_iaf_campaign.manifest.v1",
         "command": sys.argv,
@@ -184,6 +297,10 @@ def main() -> int:
         "tf32": False,
         "jit_compile": True,
         "batch_native_target": True,
+        "sample_wise_fallback": False,
+        "environment": sys.executable,
+        "cpu_threads": {"intra": os.environ["TF_NUM_INTRAOP_THREADS"], "inter": os.environ["TF_NUM_INTEROP_THREADS"]},
+        "result": str(args.output / "result.json"),
         "output": str(args.output),
     }
     save(args.output / "manifest.json", manifest)
@@ -222,11 +339,12 @@ def main() -> int:
                 seed=digest(args.seed, "map"),
                 dtype="float32",
             ),
-            hidden_layers=(dimension, dimension),
+            hidden_layers=(16, 16),
             affine_center=center,
             affine_scale=scale,
         )
         flow = NeuTraTransport(map_config)
+        initial_flow = flow.as_dtype("float64")
         if args.arm == "fab":
             fab_config = FABConfig(
                 args.batch_size,
@@ -274,6 +392,9 @@ def main() -> int:
             optimizer_config=optimizer_config,
             transport_dtype="float32",
             target_dtype="float64",
+            data_version=bridge.signature,
+            random_seeds={role: digest(args.seed, role) for role in ("map", "fab", "probe", "coverage")},
+            optimizer_implementation="Optax_form_FABAdam" if args.arm == "fab" else "Keras_Adam_epsilon_placement_differs",
             source_sha256={
                 str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
                 for path in (
@@ -308,8 +429,32 @@ def main() -> int:
         progress = []
         pass_count = 0
         update_count = 0
+        diagnostic_started = time.monotonic()
+        initial_probe_runner = PostTrainingProbe(initial_flow, bridge, 1.0, rows=args.post_rows,
+                                                batch_size=20, jit_compile=True)
+        probe_seed = digest(args.seed, "probe")
+        initial_latent = initial_probe_runner.latent_bank(probe_seed)
+        initial_blocks = [initial_probe_runner.batch(initial_latent[:20])]
+        steady_started = time.monotonic()
+        initial_blocks.extend(initial_probe_runner.batch(initial_latent[i:i + 20])
+                              for i in range(20, args.post_rows, 20))
+        steady_probe_seconds = (time.monotonic() - steady_started) * args.post_rows / (args.post_rows - 20)
+        initial_probe = initial_probe_runner.summarize(initial_blocks, probe_seed)
+        save(args.output / "initial-post-training-1000.json", initial_probe)
+        if not (initial_probe["complete"] and initial_probe["finite"] and initial_probe["valid_rows"] == args.post_rows):
+            raise ValueError("initial 1,000-point verification failed")
+        initial_probe_seconds = time.monotonic() - diagnostic_started
+        # Same target backend: final probe plus 2*coverage_rows evaluations.
+        # 1.5 is a scheduling margin, not a scientific threshold; 40 seconds
+        # reserves fresh diagnostic graphs. External timeout enforces the cap.
+        diagnostic_reserve = steady_probe_seconds * (1.0 + 2.0 * args.coverage_rows / args.post_rows) * 1.5 + 40.
+        result.update(initial_probe_seconds=initial_probe_seconds, steady_probe_seconds=steady_probe_seconds,
+                      diagnostic_reserve_seconds=diagnostic_reserve)
+        save(args.output / "timing.json", result)
+        save(args.output / "checkpoint.json", trainer.checkpoint())
         while update_count < args.updates:
-            if not available(20.0):
+            pass_reserve = max([r["seconds"] for r in progress[-2:]] or [0.])
+            if not available(diagnostic_reserve + pass_reserve):
                 result["status"] = "partial_budget"
                 break
             pass_started = time.monotonic()
@@ -327,6 +472,13 @@ def main() -> int:
                     "ais_positive_count": int(tf.reduce_sum(tf.cast(row["x"][:, 2] > 0., tf.int32))),
                     "update_count_this_pass": len(updates),
                     "update_losses": [host(item["loss"]) for item in updates],
+                    "gradient_norms": [host(item["gradient_norm"]) for item in updates],
+                    "correction_clipped_fractions": [host(item["correction_clipped_fraction"]) for item in updates],
+                    "maximum_ais_weight": host(row["max_weight"]),
+                    "ais_movement": host(row["movement"]),
+                    "ais_invalid_proposals": host(row["invalid_proposals"]),
+                    "mutation_step_sizes": host(row["steps"]),
+                    "replay_rows": int(trainer.replay.size.numpy()) if trainer.replay is not None else 0,
                     "valid": finite,
                 }
             else:
@@ -350,7 +502,10 @@ def main() -> int:
             row_out["elapsed_seconds"] = elapsed()
             progress.append(row_out)
             save(args.output / "progress.json", progress)
-            save(args.output / "checkpoint.json", trainer.checkpoint())
+            checkpoint = trainer.checkpoint()
+            save(args.output / "checkpoint.json", checkpoint)
+            if update_count and update_count % 80 == 0:
+                save(args.output / f"checkpoints/update-{update_count:06d}.json", checkpoint)
             if not finite:
                 raise ValueError("nonfinite or invalid optimizer update")
         else:
@@ -360,7 +515,10 @@ def main() -> int:
             optimizer_updates=update_count,
             requested_updates=args.updates,
             progress_rows=len(progress),
+            training_complete=update_count == args.updates,
         )
+        # Exercise the checkpoint validator on the exact state before export.
+        trainer.restore(json.loads((args.output / "checkpoint.json").read_text()))
 
         # The probe evaluates the exact represented map in FP64.  It is a
         # standard post-training verification and remains geometry evidence.
@@ -379,89 +537,17 @@ def main() -> int:
         ):
             raise ValueError("post-training 1,000-point verification failed")
 
-        @tf.function(
-            input_signature=[tf.TensorSpec([args.coverage_rows, dimension], tf.float64)],
-            jit_compile=True,
-            autograph=False,
-        )
-        def map_coverage_graph(latent):
-            physical, logdet = evaluation_map.forward_and_logdet(latent)
-            log_p, score, valid = target_log_score(bridge, physical)
-            base_log = -0.5 * (
-                tf.reduce_sum(tf.square(latent), axis=-1)
-                + tf.cast(dimension, tf.float64) * tf.math.log(tf.constant(2.0 * math.pi, tf.float64))
-            )
-            return {
-                "map_points": physical,
-                "map_log_weight": log_p - (base_log - logdet),
-                "valid": valid & tf.reduce_all(tf.math.is_finite(score), axis=-1),
-            }
-
-        @tf.function(
-            input_signature=[tf.TensorSpec([args.coverage_rows, dimension], tf.float64)],
-            jit_compile=True,
-            autograph=False,
-        )
-        def physical_coverage_graph(points):
-            log_p, score, valid = target_log_score(bridge, points)
-            log_q_map = evaluation_map.log_prob(points)
-            return {
-                "prior_points": points,
-                "prior_log_weight": log_p - log_q_map,
-                "valid": valid & tf.reduce_all(tf.math.is_finite(score), axis=-1),
-            }
-
-        with tf.device("/CPU:0"):
-            coverage_latent = tf.random.stateless_normal(
-                [args.coverage_rows, dimension], digest(args.seed, "coverage"), dtype=tf.float64
-            )
-            if args.target == "q20":
-                prior_points = tf.constant(center, tf.float64) + tf.constant(scale, tf.float64) * coverage_latent
-            else:
-                prior_points = tf.constant(center, tf.float64) + tf.constant(scale, tf.float64) * coverage_latent
-        map_rows = map_coverage_graph(coverage_latent)
-        prior_rows = physical_coverage_graph(prior_points)
-
-        def summarize(log_weights, points):
-            weights = tf.nn.softmax(log_weights)
-            positive = tf.cast(points[:, 2] > 0., tf.float64)
-            output = {
-                "ess": 1.0 / tf.reduce_sum(tf.square(weights)),
-                "ess_fraction": 1.0 / tf.reduce_sum(tf.square(weights)) / tf.cast(args.coverage_rows, tf.float64),
-                "maximum_normalized_weight": tf.reduce_max(weights),
-                "positive_unweighted_fraction": tf.reduce_mean(positive),
-                "positive_weighted_fraction": tf.reduce_sum(weights * positive),
-            }
-            if target_data is not None:
-                from bayesfilter.testing.importance_sampling_tf import (
-                    gaussian_mixture_log_prob_responsibilities_score,
-                )
-                _, responsibilities, _ = gaussian_mixture_log_prob_responsibilities_score(
-                    points,
-                    target_data["probabilities"],
-                    target_data["means"],
-                    target_data["covariances"],
-                )
-                output["component_weighted_mass"] = tf.reduce_sum(
-                    weights[:, None] * responsibilities, axis=0
-                )
-            return output
-
-        if not bool(tf.reduce_all(map_rows["valid"] & prior_rows["valid"])):
-            raise ValueError("independent coverage target evaluation was invalid")
-        coverage = {
-            "rows": args.coverage_rows,
-            "seed": list(digest(args.seed, "coverage")),
-            "map_base": host(summarize(map_rows["map_log_weight"], map_rows["map_points"])),
-            "independent_prior_bank": host(summarize(prior_rows["prior_log_weight"], prior_points)),
-            "role": "descriptive_coverage_diagnostic_not_exhaustive_mode_discovery",
-        }
+        coverage = coverage_diagnostic(
+            evaluation_map, initial_flow, bridge, center, scale, target_data,
+            rows=args.coverage_rows, seed=digest(args.seed, "coverage"))
         save(args.output / "coverage.json", coverage)
         frozen = evaluation_map.frozen_payload(
             target_signature=target_signature,
             training_state_hash=trainer.checkpoint()["checkpoint_hash"],
         )
         save(args.output / "frozen-map.json", frozen)
+        from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact
+        load_frozen_neutra_artifact(frozen, expected_target_signature=target_signature)
         result.update(
             status="complete" if result.get("status") == "updates_complete" else result["status"],
             post_training_complete=True,
@@ -469,6 +555,8 @@ def main() -> int:
             training_quality_established=False,
             posterior_qualified=False,
             gpu_allocator=tf.config.experimental.get_memory_info("GPU:0"),
+            artifact_sha256={p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                             for p in sorted(args.output.glob("*.json")) if p.name not in {"manifest.json", "result.json"}},
         )
     except Exception as exc:
         result.update(

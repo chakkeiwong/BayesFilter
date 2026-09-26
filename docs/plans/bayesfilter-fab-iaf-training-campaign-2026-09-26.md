@@ -109,3 +109,77 @@ Review completed before execution on 2026-09-26.
   failed checkpoint is reused as a map handoff.
 
 The audit passes. Execution may proceed under this bounded contract.
+
+## Recovery audit and diagnostic repair, before scientific execution
+
+The resumed audit **revised** the harness before any completed scientific arm.
+The first preflight failed at JSON serialization after 15.960 worker seconds;
+its artifacts remain debugging evidence and its map will not be reused.
+Commit `d7194ce40` repairs that boundary (16 focused FAB tests passed).
+
+Three additional errors would have made the original campaign misleading:
+
+1. The runner selected dimension-wide conditioners (width 4), whereas the
+   owner's q20 instance requires `(16,16)`. Both targets and both arms now use
+   three stages and width 16 with the same initial state within a pair.
+2. A draw `x ~ g` from the independent Gaussian/prior bank was assigned `p/q`
+   weights. This is wrong: expectations from that bank require `p/g` weights.
+   The repaired diagnostic records `p/g`, while `log p-log q` on those points
+   is retained only as a support-mismatch diagnostic. Raw learned-map occupancy
+   and exact-target responsibility masses are also required; importance
+   reweighting alone can hide a map that allocates too little mass to a mode.
+3. Initial geometry, finite coverage weights, exact mixture references and
+   replay clipping/movement diagnostics were missing. They are now recorded.
+   Coverage evaluation uses stable batches of 32, avoiding an unpriced
+   4,096-row target compilation. This is a batch loop, not scalar target calls.
+
+Analytic verification uses the identity E_p[r_k(X)] = mixture_probability_k
+for target component responsibilities r_k. It reports raw proposal average
+responsibilities, nearest-mean occupancy, weighted responsibilities and
+absolute errors against the exact component weights. Nearest-mean cells are
+not equated with mixture labels. Exact independent mixture draws provide a
+reference cell occupancy and target-to-map log-density mismatch. For q20 the
+independent reference remains prior importance sampling: low reference ESS
+makes region coverage unresolved, regardless of a finite whitening probe.
+The two arms share each diagnostic bank but banks are independent of training.
+
+The declared Adam hyperparameters match, but FAB uses Optax-form Adam and the
+existing reverse-KL trainer uses Keras Adam (epsilon placement differs). This
+is a comparison of existing trainers, not perfect isolation of the objective.
+The standard reverse-KL estimator and 240 updates are exploratory comparators,
+not the previously calibrated path-gradient/4,096-update training recipe.
+No superiority over that recipe, optimal hyperparameters, converged training,
+or complete investigation of the FAB idea can follow from this short ladder.
+Undertraining and concentrated AIS/replay weights trigger further training or
+exploration design, rather than a negative verdict on FAB itself.
+
+Pricing also shows the original 2,400-second per-worker cap may not fit 101
+FAB passes (the earlier 26.52 seconds/pass already implies 2,679 seconds,
+before diagnostics). Preserve the total 16,200 worker-second allowance but
+allocate at most 3,600 seconds per FAB arm and 1,800 per reverse-KL arm,
+including their diagnostics: 3*(3,600+1,800)=16,200. Workers reserve measured
+diagnostic time and have an external timeout. Budget stops are incomplete
+pairs, never matched-update evidence. Smoke/control allowance remains 600
+worker seconds including the failed preflight. Analytic controls use 240
+updates per arm; the one-update preflights use replay 128/min32/one update,
+solely to exercise the entire artifact chain. Scientific arms use the original
+4096/min1280/four-update settings. Seeds are explicitly 0, 1 and 2.
+
+Exact launch form (absolute tfgpu interpreter; trusted GPU execution):
+
+```sh
+TF_FORCE_GPU_ALLOW_GROWTH=true timeout --signal=TERM --kill-after=10s LIMITs \
+  /home/ubuntu/anaconda3/envs/tfgpu/bin/python \
+  docs/benchmarks/run_fab_iaf_training_campaign_2026_09_26.py \
+  --arm ARM --target TARGET --gpu GPU --seed SEED --updates UPDATES \
+  --worker-seconds LIMIT --output FRESH_VERSIONED_DIRECTORY
+```
+
+Skeptical re-review: the repairs correct the sampling measure and canonical
+configuration without changing the target or FAB authority. Initial/final
+diagnostics distinguish undertraining from invalid implementation; explicit
+raw occupancy prevents importance correction from masquerading as map fit.
+The analytic reference, untrained map and independent Gaussian/prior proposal
+are basic sanity comparators for the learned arms. They do not authorize a
+new default. The bounded ladder may proceed; exhausted budget or failed
+coverage yields an unresolved training-quality verdict, not promotion.
