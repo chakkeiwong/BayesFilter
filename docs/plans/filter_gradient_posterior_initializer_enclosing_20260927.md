@@ -448,3 +448,392 @@ validation-only branch for that known static configuration failure. The numerica
 fit never runs in that branch. Initial-invalid and valid-initial comparisons must
 retain the original error text and physical callbacks for both this case and
 invalid row extents. Other compiler errors continue to propagate, never fallback.
+
+04411 passes the first actual exported D1 call chain, including a spy proving
+three invocations of the same native owner and a veto on recomputed host eigen
+summaries. 04412 passes all four late-row/factor-configuration checks, preserving
+both initial-invalid precedence and all physical callbacks before the original
+exceptions. The first reporting allowance list contained duplicate entries for
+the same AST; the second lacked its occurrence count. Preserve both versions.
+The corrected list uses the existing exact occurrences=2 schema for the two
+identical completed-ledger loops. The guard passes with 276 sources / 1436 exact
+allowances; all nine additions are completed-report traversal only.
+
+Before the full public matrix, label the explicit host-wall route, report the
+actual configured fit JIT mode, and inline the existing eigen-summary body under
+the enclosing function's JIT setting. No eigen formula or default changes.
+Extend full endpoint qualification to D5 with an explicitly configured two-factor
+target: covariance D[diag(1-row_norm(L)^2)+LL^T]D, fixed documented fixture
+loadings, analytic Gaussian scores, and the original factor_2 option. Require
+both factor_2 replicate records to contain computed precision matrices. This
+tests an identifiable family unavailable at D1/D3 and does not promote fitted
+geometry. Compare every public field and callback at the unchanged tolerances;
+a mismatch still stops the cohort. The fixture uses 50 movement-fit iterations
+on both sides; other cases retain eight. CPU qualification precedes GPU.
+
+The remaining public/cost worker partition expands the enclosing reservation to
+96 CPU / 72 GPU workers while retaining the same 10,800 combined seconds and
+global 56/52-hour caps. This gives room for separately executed public cases,
+late exceptions, identifiable factors and repeated cost arms; it is not more
+compute authorization. The 300-second worker limit and one documented
+900-second compiler-capacity retry remain unchanged. Stop on any unit/global
+budget exhaustion. These limits supersede only the earlier worker counts.
+
+Cost-harness review (not yet launched): measure fresh-process prior/public graph/
+public XLA arms at D1/D3, with three warm calls and changed-input calls per worker,
+then three independently repeated interleaved cohorts. Time the complete exported
+call and completed payload, including cold construction and CPU preparation.
+Record RSS/HWM and mapping counts, TensorFlow allocator current/peak, and GPU
+process sharing separately. Reset allocator peak before each call; do reference
+comparisons and IR inspection after timed memory snapshots. Require identical
+source/environment/fixture identities across each cohort and retain failed arms.
+
+Use a fixed, identifiable one-factor Gaussian for these costs, so the condition
+reports have a resolved numerical meaning. This deliberately does not resolve
+historical ill-conditioned report gates. The immediate baseline is the whole
+031692a0b public module with verified dependencies and the unchanged TensorFlow
+random stream. It measures removal of host control since that checkpoint; it is
+not the oldest-original campaign baseline. The old endpoint rebuilds callback
+programs between calls, so no identical-graph compiler-ablation claim follows.
+
+Compare complete numerical payloads at the existing tolerances and independently
+check Gaussian location and covariance. Preserve jit_compile fields verbatim in
+raw evidence, validate the measured owner's actual flag, and treat only those
+boolean execution-setting fields separately in numerical comparison. In the
+old public module the locator switch does not switch every fitting dependency;
+the new graph arm is an explicit non-default diagnostic. Record nested XLA
+function counts rather than calling it wholly uncompiled without inspection.
+A graph numerical failure forbids graph speed ranking and triggers attribution;
+it does not silently become a pass because the final covariance is close.
+Default XLA and prior pairs still require their own complete-record comparison.
+
+Primary cost triggers remain cold >2x, warm >1.2x, host RSS >256 MiB extra or >2x,
+and GPU allocator peak >2x. Triggered arms require attribution rather than silent
+acceptance. Short fixture timings are descriptive, not superiority or real-target
+speed guarantees. A bounded owner and snapshots cannot prove native executable
+cache eviction or broad capacity. Preserve the draft outside the frozen numerical
+cohort until public correctness finishes and this contract is checked against the
+actual harness and analyzer.
+
+Recovery after 04422: all nine exported CPU fixtures and four late-validation
+cases pass, including the identifiable D5 two-factor case. The new exported
+initializer tests had accidentally occupied the already tracked curvature
+public-test filename. After the matrix ended, preserved the new tests as
+`test_filter_repair_posterior_initializer_public.py`, restored the entire prior
+tracked curvature file byte-for-byte from 6bceb767e, and corrected only the new
+runner registrations. Original curvature coverage is retained. The old matrix
+source snapshot preserves the accidental overlap; no run source was edited.
+
+Pre-execution boundary review: exercise the actual exported endpoint with a real
+unsupported XLA string operation, verify zero physical/eager target calls,
+bound-method reuse, receiver/configuration separation and Python owner/program/
+scope collection. Separately require the explicit non-JIT wall-clock exception
+and label; do not turn a compiler error into that path. Run the five original API
+cases in fresh workers, then the exported GPU fixtures and boundary/API matrix.
+These are correctness checks under the existing enclosing reservation. Restore
+all original coverage before cost work. No tolerance or numerical algorithm is
+changed by this recovery. Cache collection does not prove native memory eviction.
+
+Cost draft review while public GPU sources are frozen: use factor_max=1 for
+these D1/D3 one-factor Gaussian costs, so an unnecessary underidentified second
+factor cannot make the timing fixture's report comparison meaningless. The D5
+public qualification separately exercises factor_max=2 with a genuine two-factor
+covariance; it is not a timing substitution. The original, graph and XLA cost
+arms share all numerical settings and operand hashes. Preserve three complete
+warm payloads and the measured costs before reference or compiler-IR inspection,
+so a late diagnostic failure cannot erase the measurement. Compare every report
+field at existing tolerance; only boolean jit_compile metadata may differ.
+
+The independent analyzer rechecks full payloads, Gaussian means/covariances,
+replay, compiled flags and absence of host callbacks. It verifies source,
+environment, physical-device, growth and uncontended timing provenance. Failed
+arms remain visible and produce no performance ratios. Tests inject a corrupted
+condition number, independent mean, replay, compiler flag, source drift and
+missing process repeat to check those vetoes. The three-process cohorts remain
+descriptive; three warm calls per process do not meet or replace the master's
+20-call terminal capacity gate. These immediate-checkpoint measurements time
+completed public calls including payload reporting in every arm; this scope is
+separate from the numerical-kernel timing required by the final master gate.
+
+The cost manifest also records CPU model/affinity, host, Python, TensorFlow/TFP
+versions, explicit XLA flags and host load observations. Compare fixed hardware
+and affinity within the cohort. These factor_max=1 costs do not bound the
+factor_max=2 default or D5 capacity; retain those limits in the results. The
+parent campaign's terminal baseline, 20-call stability and actual-caller gates
+remain required regardless of this smaller cost unit's outcome.
+
+GPU 04432 reaches the 300-second complete-worker limit on the identifiable D5
+fixture without a completed comparison. All preceding eight GPU fixtures pass.
+Preserve 04432 as a capacity failure; captured output does not identify whether
+compilation, reference execution or comparison consumed the deadline. Exercise
+the plan's one 900-second capacity retry with identical sources/inputs, then
+resume only the unexecuted late-validation group. A retry pass cannot erase the
+300-second failure or prove which stage caused it. No tolerance or method change.
+
+The prepared cost analyzer passes 14 synthetic adverse checks in an isolated
+/tmp draft-review directory (0.06 pytest seconds; no TensorFlow/GPU import).
+This covers failed-graph ratio suppression, full-field numerical corruption,
+source drift and missing repeats. The frozen public GPU source tree was not
+changed. The registered analyzer/policy check will bind the installed harness
+to its campaign source identity before numerical cost launches.
+
+Identical-source D5 GPU retry 04433 passes in 411.744036 seconds, retaining full
+records, physical callback order/counts, changed-input reuse, replay and stable
+HLO. The 300-second failure remains a real capacity observation. A read-only
+snapshot at 6:06 elapsed observed 7,207,748 KiB host RSS and 618 MiB GPU process
+reservation; it does not identify the responsible stage or TensorFlow allocator
+peak. The snapshot is posterior-d5-capacity-observation-04433.json. Resume only
+the final GPU validation group; do not rerun the already passing fixtures.
+
+Public correctness is complete through 04434: 13 CPU and 13 GPU checks pass.
+Restore the boundary diagnostic's physical counter, keeping the original
+non-eager callback helper semantics. Install the reviewed cost-only harness and
+analyzer now so boundary/API, policy and cost workers can share one source
+closure. Numerical costs remain blocked until the original API/boundary checks
+pass. The cost batches join the existing uncontended GPU preflight guard, with
+all six GPU arm/dimension registrations covered by its rejection test. Internal
+controller batch discovery excludes these new public/cost groups so earlier
+internal batches do not silently expand. A module documentation correction
+records the already qualified public dispatch; numerical implementation is
+unchanged since 04434.
+
+Original API 04440 exposes a graph-only empty-output failure on the D1 cloud-winner
+fixture (the stage scalar is returned as shape [0], float32). Preserve the failure
+and freeze numerical runtime. Costs are paused. Localize with direct native
+outputs versus declared specs, isolated locator and movement stages, a fresh
+process with Grappler disabled, and the unchanged XLA arm. Disabling Grappler is
+only an explanatory diagnostic; it is not an approved global runtime repair.
+Compare full records to 031692a0b when valid outputs exist. Reserve five CPU
+workers at 300 seconds from the existing unit; inspect the first differing stage
+before any implementation change. A non-XLA failure cannot be waived for costs.
+
+Diagnostic 04441 fails during fixture construction: its existing independent
+Gaussian helper requires NumPy arrays, but the new test passed lists. Restore
+the original array inputs in this diagnostic-only fixture and preserve the
+failed harness. This failure executes no candidate comparison.
+
+04442 reproduces all native graph outputs as empty float32 tensors despite
+nonempty declared schemas. 04443's movement isolation initially omitted explicit
+None eligibility arguments; preserve the harness failure and correct its
+configuration-only call. 04444 with Grappler disabled passes output schemas and
+complete pinned records. This implicates a graph optimization/execution
+interaction, not the report formatter. It does not justify disabling Grappler
+repository-wide. Continue isolating the stage and individual optimization pass;
+keep runtime source frozen and preserve the ordinary graph failure.
+
+04445/04446 isolate healthy movement and zero-iteration locator outputs under
+normal graph optimization. Next test function optimization alone, then preserve
+one function boundary at a time with the documented tf.function _noinline
+attribute in the diagnostic harness. These are topology-only hypotheses, not
+algorithm alternatives. Complete-reference comparisons must pass before any
+local execution annotation is installed. At most four additional 300-second
+CPU workers under the unchanged enclosing/global time caps; no global optimizer
+setting may be added to runtime as a shortcut.
+
+04447 still fails with function optimization disabled, so inlining alone is
+not established as the cause. Use the remaining selective-pass allocation for
+dependency optimization, pruning, arithmetic optimization or constant folding,
+stopping on the first distinguishing pass. Each change remains a fresh-process
+diagnostic; no corresponding global runtime option is authorized for installation.
+
+04448 passes complete records with only dependency optimization disabled. The
+first discriminating pass is therefore TensorFlow dependency optimization on the
+composed graph. Preserve normal options in runtime. Test a local no-inline
+locator boundary as a topology-only repair candidate; if ineffective, inspect
+the explicit dependencies at the enclosing locator/curvature boundaries. No
+arithmetic, algorithm or target decision changes are permitted by this finding.
+
+04449 retains the empty-output failure with a no-inline locator. Test the
+explicit enclosing control edges next: replace the two blanket dependency lists
+(location/curvature entire output histories) with each stage's completed scalar
+status as a diagnostic source transformation. Preserve the exact original and
+changed class sources and hashes in the diagnostic record. Numerical statements
+and shared dependencies remain unchanged. This tests whether the enclosing
+control topology causes dead outputs after dependency optimization; it does not
+admit copied numerical implementations or permit dropping callback-order checks.
+
+04450 still fails after reducing the enclosing status dependencies; reject that
+change. Isolate the terminal curvature stage at the exact Gaussian center and
+try its no-inline boundary (two bounded CPU diagnostics). A failure inside the
+standalone curvature stage would supersede the earlier composition-only
+hypothesis. Preserve this distinction; no runtime repair is installed yet.
+
+Standalone curvature 04451 also returns empty tensors; the problem is therefore
+inside that stage, not solely its enclosing posterior controller. 04452 exposed
+an accidental late-bound diagnostic variable shadowing in the no-inline wrapper;
+fix the harness, preserving its source. Continue with the validated fitter alone
+(one bounded worker) before further topology experiments. Each narrowing step
+must use the same prepared offsets and declared numerical settings.
+
+Validated fitter 04453 reproduces the empty-output schema failure without target
+callbacks. Next invoke its actual captured raw fit function with identical data
+and captured constants, bypassing only partition validation. This single CPU
+check separates the validated boundary from the underlying numerical fitter;
+its outputs remain a diagnostic, not a new runtime route.
+
+Raw fitter 04454 fails without validation or callbacks, localizing the issue to
+its numerical graph. One final execution diagnostic retains TensorFlow's
+functional If/While representation (the representation naturally retained by
+XLA) before graph lowering. The private TensorFlow flag is confined to a fresh
+test process and is not a proposed runtime global mutation. If it passes,
+local graph construction boundaries need review before adopting any repair.
+
+The short localization workers consume the existing time allocation. Repartition
+the worker-count ceiling to 144 CPU / 96 GPU workers while preserving the 10,800
+combined-second unit cap and global 56/52-hour caps. This permits smaller
+root-cause shards and retains all failed charges; it adds no compute hours.
+
+04455 preserves complete records with functional control flow retained. The next
+candidate uses the public tf.experimental.function_executor_type context only
+while constructing/tracing the owner, exiting before numerical calls. In TF
+2.19.1, control_flow_util_v2.py lines 123--128 skips switch/merge lowering in that
+context; eager/context.py lines 2903--2922 defines it as a public context manager
+and lines 1507--1529 use thread-local options restored on exit. Verify restoration
+and normal execution outside the context. This avoids a process-global optimizer
+or private lowering-flag mutation. It is a local execution-policy candidate,
+subject to complete records, callback ordering and original API regression.
+
+04456 timed out at 300 seconds under the construction-only executor context;
+reject that candidate without retry. The next local diagnostic annotates only
+If/While operations built by the actual fixed-center fitting, selection and
+stability authorities with TensorFlow's existing no-lowering attribute. It
+uses a module-local TensorFlow delegate, retains exact numerical bodies and
+records each marked graph operation. The TensorFlow package, global lowering
+flag and optimizer settings remain unchanged. This tests a bounded construction
+annotation before any such helper is installed in runtime.
+
+Recovery through 04457: 04456 timed out and no worker remains active. 04457's
+local fit annotations restore every declared output except the two terminal
+eigen summaries, whose eight scalars still return empty float32 tensors. Their
+conditionals belong to the enclosing owner rather than the three fit modules.
+One additional 300-second diagnostic applies the same local annotation there.
+The promotion criteria remain complete records and callback ordering; the
+annotation is explanatory until installed and qualified with ordinary options.
+No global optimizer change, tolerance change, or numerical replacement is proposed.
+The unmodified Git dependency closure must remain the comparison authority if a
+shared fitter changes. Review: this test discriminates the remaining dead branch
+without changing numerical statements; schema-only success is insufficient.
+All exploratory graph groups are now explicitly explanatory; original API
+regression groups remain mandatory. Through 04457 the enclosing unit used
+7,394.700262 seconds in 83 CPU and 46 GPU workers, leaving 3,405.299738 seconds
+of its 10,800-second reservation. Global caps remain 56 CPU / 52 GPU hours.
+
+04458 passes all declared output schemas and complete records with local
+functional annotations in the fit modules and enclosing owner. Install explicit
+functional-control constructors for non-XLA graph mode at those four boundaries;
+XLA continues to select ordinary TensorFlow constructors. The shared helper
+changes only the existing operation lowering attribute and fails during tracing
+on an unexpected operation type. It does not change predicates, bodies, loop
+bounds, TensorFlow optimizer options, the executor, or global module bindings.
+Private-API compatibility is a material limitation, guarded by the regression.
+
+Reference strengthening: the complete initializer and all numerical imports now
+execute from Git 031692a0b in isolated module names. Add the empty runtime package
+namespace to the existing strict frozen loader so its explicit device-policy
+imports resolve. All frozen sources remain hashed; the three changed shared
+fit modules must be present in that frozen closure, and the new helper must be
+absent. Unchanged sources retain whole-tree byte checks. Stage references use the
+same frozen namespace. This prevents a candidate-against-itself comparison.
+
+Review: 04458's numerical statements were unchanged, but its module delegate
+could affect shared comparison factories. Therefore it is explanatory evidence,
+not final qualification. First run the exact cloud-winner failure against the
+installed code and isolated reference with ordinary optimizer options, then
+qualify ordered callbacks, original API and focused graph construction checks.
+Cost cohorts remain blocked until these required checks pass. No extrapolation
+from this small D1 fixture to native capacity or whole-program completion.
+
+04459 fails before numerical execution: the frozen runtime package exports
+stable_config_hash through its lazy registry, so an empty namespace is
+insufficient. Execute its exact Git __init__ and redirect its import_module
+binding into the frozen loader, preserving the original export map and numerical
+closure. This is a harness repair; no source hash or numerical gate is waived.
+The one new source-policy allowance is fixed-schema graph metadata traversal;
+no numerical Python loop or NumPy exception is added.
+
+04460 passes the installed D1 graph endpoint against the fully isolated frozen
+reference, including complete records, exact callback positions/counts, changed
+inputs, replay, one trace and frozen external gradients. Run the registered CPU
+then GPU graph-qualification shards: the original cloud-winner and sentinel
+regressions, D1/D3 stationary, moving and adverse complete-record cases,
+compiler/cache/wall boundaries, plus representative D1/D3 default XLA renewal.
+The two helper checks verify zero/nonzero loops, both branches, resource counts,
+no global optimizer mutation and fail-closed representation changes. Source
+snapshot: posterior-graph-repair-04461-source. Cost ratios remain prohibited on
+any failed numerical arm; stop and localize rather than expanding tolerances.
+
+04461--04464 pass the helper, original cloud/sentinel, and full D1 graph checks.
+D3 graph 04465 fails full records. Its saved records identify a configuration
+wiring defect: the frozen locator_config.jit_compile flag controls only the
+locator; original movement and fixed-center fitting still call XLA-default
+factories (031692a0b posterior_local_initializer.py:586--589,638--646,898--912;
+fixed_center_curvature.py:356). The new owner had propagated the locator flag
+into every stage, and even reported the factor fitter as non-JIT. The changed
+input also differs in fitted matrices, so this is not merely a condition-number
+report and cannot be waived as ill conditioning.
+
+Correct the owner to preserve XLA for movement and curvature dependencies even
+when the locator/enclosing call is the explicit graph exception. Use ordinary
+TensorFlow conditionals in the owner for the first check. This is the original
+public execution contract, not a new algorithm or hidden fallback; costs must
+record the nested XLA functions. First rerun D3 graph and the original D1 failure.
+If ordinary constructors now pass, discard the provisional private-attribute
+repair from runtime and preserve it only as explanatory evidence. The reference
+loader remains isolated and unchanged. Review: matched per-stage execution
+settings are necessary for a fair comparison; simply ignoring condition-number
+or jit_compile fields would hide the defect. No tolerance or algorithm change.
+
+04466 restores every D3 numerical field and callback comparison at unchanged
+tolerance across original, changed and replayed inputs. Its only six failures
+are the two factor-fit jit_compile labels per invocation, still inferred from
+the locator option. Emit the actual fit compilation setting from the native
+curvature authority and report that completed scalar. Remove the provisional
+functional-control helper, its active tests and allowance, and restore all three
+shared fitting modules byte-for-byte. Their diagnostic implementation and tests
+remain in posterior-graph-repair-04461-source. No private TensorFlow annotation,
+global optimization change or additional policy allowance is in the final repair.
+Rerun the registered CPU/GPU graph qualification with ordinary constructors.
+
+Cost execution allocation after graph qualification: the original enclosing
+unit retains its 10,800-second cap for correctness, failures and policy renewal.
+Move the still-unlaunched matched cost cohort into a separate allocation of
+10,800 combined charged seconds, at most 18 CPU plus 18 GPU workers and four
+short analysis/policy workers. This consumes the same authorized 56 CPU / 52 GPU
+hour campaign totals; it adds no hours. Each cost worker has 300 seconds, with
+no automatic retry after numerical failure. Stop the cost unit on a failed
+arm or source/environment drift, preserve measurements before comparison and
+localize using fresh budgeted diagnostics. Document any later repair before
+starting a new source-frozen cohort; never combine different sources in ratios.
+
+The existing registered commands are run_filter_repair_campaign.py matrix
+--stage tests --test-batch posterior_initializer_cost_cpu (and _gpu), with
+--repeat 0, 1, 2, --test-timeout-seconds 300 and a preflight-qualified GPU index.
+Within each repeat interleave prior/graph/XLA at D1 then D3. CPU comparisons
+precede GPU. Run posterior_initializer_cost_analysis first. Use the installed
+analyzer with explicit root/run bounds/devices and a new output filename, then
+reopen/checksum the analysis and archive all underlying run records.
+
+Skeptical review of cost design: the isolated prior module and candidate have
+separate Python caches; reference execution and IR inspection occur after all
+timed calls. Memory snapshots use bytes and separate RSS/HWM from allocator
+current/peak. The graph control deliberately retains XLA dependencies under the
+original public option and records their count; this is not a pure compiler
+ablation. The Gaussian mean/covariance check is an independent veto in addition
+to full record parity. Same seed, fixture, source, backend and visible UUID are
+required across repeats. Sampled sharing cannot prove exclusivity; three process
+repeats are descriptive, not statistical superiority. Actual DZ5 and native
+20-call capacity remain separate gates. No numerical failure earns a speed ratio.
+
+Residual scope: the final public graph option retains its original XLA
+numerical dependencies. This resolves the exposed regression, not TensorFlow's
+all-graph raw-fitter defect preserved in 04454. No all-non-XLA baseline claim
+is permitted; keep that explanatory failure and its local-annotation candidate
+available for a separate caller-driven repair if such a route is required.
+
+Final correctness qualification through 04488 passes: 11 CPU and 11 GPU checks,
+14 analyzer checks and 147 policy checks. Ordinary constructors preserve full
+records and ordered callbacks after the original per-stage XLA settings are
+restored. The final correctness unit used 9522.019909
+combined seconds, within 10800; no worker remains. Archive and local terminal
+review: filter_gradient_posterior_public_result_20260927.md. Continue the already
+reserved matched cost cohort after committing the qualified source checkpoint.

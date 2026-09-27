@@ -19,6 +19,7 @@ from tests.test_filter_repair_block_capture import stable_hlo
 from tests.test_filter_repair_geometry_control import clean, save
 from tests.test_filter_repair_posterior_movement import (
     REVISION,
+    frozen_posterior_module,
     verified_reference_tree,
 )
 from tests.test_filter_repair_quadratic_batches import _equal_records
@@ -72,7 +73,8 @@ def original_curvature(evaluator, config, thresholds, prepared):
     curvature_attempt_records = []
     seed = tuple(int(value) for value in cfg.seed)
 '''+loop_source
-    namespace = {**vars(original), "evaluator": evaluator, "config": config,
+    reference, _ = frozen_posterior_module()
+    namespace = {**vars(reference), "evaluator": evaluator, "config": config,
         "curvature_thresholds": thresholds, "_sample_ball": sample, "_build_result": capture}
     exec(compile(text, f"{REVISION}:{path}:curvature", "exec"), namespace)  # noqa: S102
     return namespace["run"], {"revision": REVISION, "dependency_sha256": hashes,
@@ -81,11 +83,12 @@ def original_curvature(evaluator, config, thresholds, prepared):
         "adapter": "Prepared offsets and completed result capture only; original recorder/loop unchanged."}
 
 
-def fixture(dimension, batched, case, config):
+def fixture(dimension, batched, case, config, *, precision=None):
     calls, row_count = tf.Variable(0, dtype=tf.int64), tf.Variable(0, dtype=tf.int64)
     positions = tf.Variable(tf.zeros([512, dimension], D))
     extents = tf.Variable(tf.zeros([512], tf.int64))
-    precision = tf.linalg.diag(tf.cast(tf.range(dimension), D) + 2.) + .07
+    if precision is None:
+        precision = tf.linalg.diag(tf.cast(tf.range(dimension), D) + 2.) + .07
 
     def mathematical(cloud):
         delta = cloud - .13

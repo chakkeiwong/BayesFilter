@@ -1,34 +1,40 @@
 # Complete filter and gradient execution repair
 
-Checkpoint through 04410, September 27. The complete prepared posterior
-initializer passes nine distinct checks on both CPU and GPU 2: full pinned public
-payloads, physical callback order/counts, changed starts/scales, replay, one trace,
-stable HLO, frozen derivatives and real compiler failure without eager fallback.
-The construction-suppression failure 04390 and diagnostic NaN-formatting failure
-04395 are repaired and preserved. Policy 04410 passes 141 checks. The evidence
-archive has 106 verified SHA-256 members; see the enclosing result and
-posterior-enclosing-04410-verification.json. Public dispatch is still unchanged.
+Checkpoint through 04488. No worker is active. Final public integration and
+graph compatibility pass 11 CPU checks (04467--04476) and 11 GPU checks
+(04478--04487). Analyzer 04477 passes 14; policy 04488 passes 147. The 276-source
+policy guard has 1436 exact allowances; the graph repair adds none.
 
-Next install the reviewed public-integration drafts only after this checkpoint
-is committed. Drafts in /tmp cover the public wrapper, completed reporting,
-bounded owner, row-count and factor-configuration error precedence, explicit
-frozen-module reference loading and exported-API tests. The plan also requires
-an identifiable larger two-factor fixture: D1/D3 with factor_max=2 does not test
-an identifiable two-factor family. Public comparisons and original API checks
-precede matched original/graph/XLA costs. No numerical worker is active.
+The public locator option retains original XLA movement/curvature dependencies;
+actual fit compilation status is reported. Default enclosing execution remains
+XLA. No private TensorFlow workaround or shared-fitter modification remains.
+Complete D1/D3 graph results, ordered callbacks, changed inputs, replay, single
+trace, frozen gradients and compiler/cache boundaries pass on both backends.
+All 13 exported XLA cases previously passed on CPU/GPU through 04434, including
+D5 two-factor. Reference imports now execute from isolated Git 031692a0b sources.
+Standalone all-graph raw fitter 04454 remains a diagnostic-only failure; the
+public graph option is not an all-non-XLA timing baseline. No tolerance waiver.
 
-Remote main 06590cb5a is merged into the repair branch as 035e19fdd without
-conflicts. Commit and push this completed internal-controller checkpoint;
-main promotion remains blocked. The enclosing reservation remains 10,800 combined
-seconds inside global 56 CPU / 52 GPU-hour caps. The extra 24 CPU hours are already
-included. Charges through 04410: 89855.983997 CPU / 82380.530717 GPU seconds,
-leaving 31.040004 CPU / 29.116519 GPU hours.
+Evidence archives posterior-public-localization-04466 and
+posterior-public-qualification-04488 verify all 326 and 84 members respectively.
+Final source snapshot: posterior-public-stage-jit-04467-source. Result:
+filter_gradient_posterior_public_result_20260927.md.
 
-All F01--F20 terminal findings remain open. Remaining work includes full public
-initializer integration/costs, actual DZ5 consumers, GenUT reporting, native
-capacity and terminal repeated-cost/source review. Canonical NeuTra remains
-bayesfilter_neutra_iaf_author_v1; canonical LEDH rebuilding is excluded. No
-tolerance or ill-conditioning waiver is installed.
+Next commit/push this qualified checkpoint, then run installed cost batches
+posterior_initializer_cost_cpu and _gpu, repeats 0/1/2, 300 seconds per worker.
+Use GPU 2 if preflight still admits it. Sources must remain frozen through all
+36 cost arms. Stop on first numerical failure and preserve measured artifacts.
+The separate 10800-second cost allocation (18 CPU/18 GPU plus four short
+analysis/policy workers) is within unchanged global caps. Costs are unlaunched.
+
+Charged through 04488: 92738.745087 CPU / 85263.964466 GPU seconds; remaining 30.239237
+CPU / 28.315565 GPU hours under 56/52 caps. Extra 24 CPU hours are already included.
+Enclosing correctness unit used 9522.019909/10800 seconds in 104 CPU/56 GPU
+workers (caps144/96). Latest pushed 6bceb767e includes origin/main 06590cb5a;
+fetch remains unchanged. Main stays unmerged and all F01--F20 terminal findings
+remain open. Broader gaps: actual DZ5 consumers, reporting/precision, native
+capacity, repeated terminal costs/review. No subagents. Controlling plan:
+filter_gradient_posterior_initializer_enclosing_20260927.md.
 
 Older checkpoints below preserve historical scope and instructions only.
 

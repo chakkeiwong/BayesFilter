@@ -9,10 +9,10 @@ from pathlib import Path
 import pytest
 import tensorflow as tf
 
-from bayesfilter.inference import posterior_local_initializer as public
 from bayesfilter.inference.joint_center import JointCenterLocatorConfig
 from bayesfilter.inference.quadratic_geometry import LowRankSPDQuadraticGeometryConfig
 from tests.test_filter_repair_geometry_control import clean, save
+from tests.test_filter_repair_posterior_initializer_controller import original_module
 from tests.test_filter_repair_posterior_movement import (
     REVISION,
     verified_reference_tree,
@@ -24,6 +24,7 @@ D = tf.float64
 
 @pytest.mark.parametrize("case", ["accepted", "initial_invalid"])
 def test_original_public_derivative_boundary(case, request):
+    public, _ = original_module()
     sources, hashes = verified_reference_tree()
     path = "bayesfilter/inference/posterior_local_initializer.py"
     oldest = subprocess.check_output(["git", "show", f"3582b4ac:{path}"],

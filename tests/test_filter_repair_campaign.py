@@ -386,7 +386,9 @@ def test_test_roles_exclude_only_reviewed_explanatory_jobs():
 
 @pytest.mark.parametrize("group", ["posterior_public_memory_xla_3_gpu", *(
     f"{family}_public_cost_{arm}_{dimension}_gpu"
-    for family in ("staged", "joint") for arm in ("prior", "graph", "xla") for dimension in (1, 3))])
+    for family in ("staged", "joint") for arm in ("prior", "graph", "xla") for dimension in (1, 3)), *(
+    f"posterior_initializer_cost_{arm}_{dimension}_gpu"
+    for arm in ("prior", "graph", "xla") for dimension in (1, 3))])
 def test_public_cost_preflight_declines_shared_gpu_before_worker_launch(tmp_path, monkeypatch, group):
     import argparse
 

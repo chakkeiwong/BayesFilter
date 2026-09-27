@@ -7,6 +7,7 @@ Third-party imports use the same installed environment as the candidate.
 
 import builtins
 import hashlib
+import importlib
 import subprocess
 import sys
 import types
@@ -33,6 +34,10 @@ class FrozenCheckpoint:
             module.__path__ = []
             return module
         path = name.replace(".", "/") + ".py"
+        if name == "bayesfilter.runtime":
+            # Its frozen lazy registry also exports functions, not just modules.
+            path = "bayesfilter/runtime/__init__.py"
+            module.__path__ = []
         # A supervising consumer may set its own repository as the worker cwd.
         # Frozen BayesFilter references always belong to this checkout's Git DB.
         source = subprocess.check_output(
@@ -47,6 +52,8 @@ class FrozenCheckpoint:
     def _import(self, name, globals=None, locals=None, fromlist=(), level=0):
         if level:
             raise ImportError("Relative imports require an explicit frozen-source binding")
+        if name == "importlib" and tuple(fromlist) == ("import_module",):
+            return types.SimpleNamespace(import_module=self._import_module)
         if name != "bayesfilter" and not name.startswith("bayesfilter."):
             return builtins.__import__(name, globals, locals, fromlist, level)
         if not fromlist or "*" in fromlist:
@@ -56,6 +63,11 @@ class FrozenCheckpoint:
             if not hasattr(module, attribute):
                 setattr(module, attribute, self.load(name + "." + attribute))
         return module
+
+    def _import_module(self, name, package=None):
+        if name == "bayesfilter" or name.startswith("bayesfilter."):
+            return self.load(name)
+        return importlib.import_module(name, package)
 
     def hashes(self):
         return {path: hashlib.sha256(source.encode()).hexdigest()

@@ -2,8 +2,6 @@
 
 import gc
 import hashlib
-import sys
-import types
 import weakref
 
 import pytest
@@ -32,6 +30,7 @@ from tests.test_filter_repair_posterior_curvature_controller import (
 from tests.test_filter_repair_posterior_curvature_controller import fixture
 from tests.test_filter_repair_posterior_movement import (
     REVISION,
+    frozen_posterior_module,
     verified_reference_tree,
 )
 from tests.test_filter_repair_posterior_movement import (
@@ -44,13 +43,8 @@ D = tf.float64
 
 
 def original_module():
-    sources, hashes = verified_reference_tree()
-    path = "bayesfilter/inference/posterior_local_initializer.py"
-    name = f"posterior_public_frozen_{REVISION}"
-    module = types.ModuleType(name)
-    module.__file__ = f"{REVISION}:{path}"
-    sys.modules[name] = module
-    exec(compile(sources[path], module.__file__, "exec"), module.__dict__)  # noqa: S102
+    _, hashes = verified_reference_tree()
+    module, _ = frozen_posterior_module()
     return module, hashes
 
 

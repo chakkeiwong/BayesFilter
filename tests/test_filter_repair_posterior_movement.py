@@ -27,26 +27,70 @@ from bayesfilter.inference.quadratic_geometry_full_tf import (
     make_geometry_program,
     prepare_geometry_inputs,
 )
+from tests.filter_repair_frozen_checkpoint import FrozenCheckpoint
 from tests.test_filter_repair_block_capture import stable_hlo
 from tests.test_filter_repair_geometry_control import clean, save
 from tests.test_filter_repair_quadratic_batches import _equal_records
 
 D = tf.float64
 REVISION = "031692a0b"
+FROZEN_GRAPH_DEPENDENCIES = {
+    "bayesfilter/inference/fixed_center_fitting_tf.py",
+    "bayesfilter/inference/fixed_center_selection_tf.py",
+    "bayesfilter/inference/fixed_center_stability_tf.py",
+}
+
+
+@lru_cache(maxsize=1)
+def frozen_posterior_module():
+    """Execute every numerical dependency from Git under isolated module names."""
+    checkpoint = FrozenCheckpoint(REVISION, "posterior_public")
+    module = checkpoint.load("bayesfilter.inference.posterior_local_initializer")
+    assert FROZEN_GRAPH_DEPENDENCIES <= checkpoint.sources.keys()
+    assert not any("functional_control_flow" in path for path in checkpoint.sources)
+    return module, checkpoint
+
+
+def _verify_public_helper_identity(frozen, current):
+    """Only the full frozen public module may replace these reviewed symbols.
+
+    Complete-public comparisons execute every statement from Git. Stage
+    references additionally share the unchanged helpers checked below; none
+    calls the replaced endpoint, result class or eigen reporter.
+    """
+    replaced = {"initialize_posterior_local_location_scale", "PosteriorLocalInitializerResult",
+        "_eigen_summary", "_initialize_posterior_wall_diagnostic"}
+
+    def retained(source):
+        return [ast.dump(node, include_attributes=False) for node in ast.parse(source).body
+            if not (isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in replaced)]
+
+    assert retained(frozen) == retained(current), "frozen posterior helper/import drift"
 
 
 @lru_cache(maxsize=1)
 def verified_reference_tree():
     root = Path(__file__).resolve().parents[1]
     archive = subprocess.check_output(["git", "archive", REVISION, "bayesfilter"], cwd=root)
+    _, checkpoint = frozen_posterior_module()
     sources, hashes = {}, {}
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
         for member in tar.getmembers():
             if member.isfile() and member.name.endswith(".py"):
                 source = tar.extractfile(member).read()
-                assert (root / member.name).read_bytes() == source, member.name
+                current = (root / member.name).read_bytes()
+                if member.name in FROZEN_GRAPH_DEPENDENCIES:
+                    # Both copies use the pinned numerical authority. The
+                    # reference executes an independent module/cache instance.
+                    assert checkpoint.sources[member.name].encode() == source
+                    assert current == source, member.name
+                elif member.name == "bayesfilter/inference/posterior_local_initializer.py" and current != source:
+                    _verify_public_helper_identity(source.decode(), current.decode())
+                else:
+                    assert current == source, member.name
                 sources[member.name] = source.decode()
                 hashes[member.name] = hashlib.sha256(source).hexdigest()
+    assert all(hashes[path] == digest for path, digest in checkpoint.hashes().items())
     return sources, hashes
 
 
@@ -93,7 +137,8 @@ def original_movement(evaluator, config, movement_config, prepared):
         "center": incumbent.position, "value": incumbent.value, "score": incumbent.score,
         "movement_fits": movement_rows, "ledger": ledger}
 '''
-    namespace = {**vars(original), "config": config, "movement_config": movement_config,
+    reference, _ = frozen_posterior_module()
+    namespace = {**vars(reference), "config": config, "movement_config": movement_config,
         "evaluator": evaluator, "fit_low_rank_spd_quadratic_geometry": fit, "_build_result": capture}
     exec(compile(text, REVISION + ":prepared_movement_reference", "exec"), namespace)  # noqa: S102
     return namespace["run"], geometry_records, {"source_hashes": hashes,

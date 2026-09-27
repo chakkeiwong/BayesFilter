@@ -200,6 +200,7 @@ class PosteriorLocalInitializerResult:
     exact_evaluation_count: int
     diagnostics: Mapping[str, Any]
     nonclaims: tuple[str, ...] = POSTERIOR_LOCAL_INITIALIZER_NONCLAIMS
+    _eigen_summaries: Mapping[str, Any] | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "accepted", bool(self.accepted))
@@ -255,12 +256,13 @@ class PosteriorLocalInitializerResult:
             "diagnostics": self.diagnostics,
             "nonclaims": self.nonclaims,
         }
-        if self.precision_z is not None:
-            payload["precision_z_eigen_summary"] = _eigen_summary(self.precision_z)
-        if self.covariance_theta is not None:
-            payload["covariance_theta_eigen_summary"] = _eigen_summary(
-                self.covariance_theta
-            )
+        if self._eigen_summaries is not None:
+            payload.update(self._eigen_summaries)
+        else:
+            if self.precision_z is not None:
+                payload["precision_z_eigen_summary"] = _eigen_summary(self.precision_z)
+            if self.covariance_theta is not None:
+                payload["covariance_theta_eigen_summary"] = _eigen_summary(self.covariance_theta)
         if include_arrays:
             payload.update(
                 {
@@ -460,6 +462,83 @@ def initialize_posterior_local_location_scale(
     movement_config: LowRankSPDQuadraticGeometryConfig | None = None,
     curvature_thresholds: FixedCenterCurvatureThresholds,
 ) -> PosteriorLocalInitializerResult:
+    """Run the reusable native posterior initializer and report completed results.
+
+    The default encloses localization, movement and curvature in XLA. An explicit
+    non-JIT wall deadline selects the labeled host diagnostic. Compiler failures
+    propagate without an eager retry. Returned initialization tensors are frozen.
+    """
+
+    cfg = PosteriorLocalInitializerConfig() if config is None else config
+    move_cfg = (
+        LowRankSPDQuadraticGeometryConfig(
+            constrain_center_refinement_to_trust_region=True
+        )
+        if movement_config is None
+        else movement_config
+    )
+    if not move_cfg.constrain_center_refinement_to_trust_region:
+        raise ValueError(
+            "movement_config must constrain refinement to the trust region"
+        )
+    initial = _vector(initial_position, "initial_position")
+    dimension = int(initial.shape[0])
+    units = (
+        tf.ones([dimension], tf.float64)
+        if scale is None
+        else _positive_vector(scale, dimension, "scale")
+    )
+    if (
+        batched_value_and_score_fn is not None
+        and eligibility_fn is not None
+        and batched_eligibility_fn is None
+    ):
+        raise ValueError(
+            "batched_eligibility_fn is required when batched values and scalar eligibility are supplied"
+        )
+    if batched_eligibility_fn is not None and batched_value_and_score_fn is None:
+        raise ValueError("batched_eligibility_fn requires batched_value_and_score_fn")
+
+    if cfg.locator_config.max_wall_seconds is not None:
+        diagnostic = _initialize_posterior_wall_diagnostic(
+            value_and_score_fn, initial_position, scale=scale,
+            batched_value_and_score_fn=batched_value_and_score_fn,
+            eligibility_fn=eligibility_fn, batched_eligibility_fn=batched_eligibility_fn,
+            config=cfg, movement_config=move_cfg, curvature_thresholds=curvature_thresholds)
+        return replace(diagnostic, diagnostics={**diagnostic.diagnostics,
+            "execution": "explicit_nondefault_host_wall_clock_diagnostic"})
+    from bayesfilter.inference.posterior_initializer_controller_tf import (
+        posterior_initializer_owner,
+    )
+    from bayesfilter.inference.posterior_initializer_reporting import (
+        posterior_initializer_result,
+    )
+
+    owner = posterior_initializer_owner(value_and_score_fn, dimension, cfg, move_cfg,
+        curvature_thresholds, device=initial.device, batched_callback=batched_value_and_score_fn,
+        eligibility_callback=eligibility_fn, batched_eligibility_callback=batched_eligibility_fn)
+    prepared = owner.prepare_clouds()
+    with owner.invocation_lock:
+        raw = owner(initial, units, prepared["directions"], prepared["movement_offsets"],
+            prepared["permutation_keys"], prepared["curvature_offsets"])
+        return posterior_initializer_result(raw, cfg, move_cfg, curvature_thresholds,
+            eligibility_supplied=eligibility_fn is not None,
+            batched_eligibility_supplied=batched_eligibility_fn is not None)
+
+
+def _initialize_posterior_wall_diagnostic(
+    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    initial_position: Any,
+    *,
+    scale: Any | None = None,
+    batched_value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]]
+    | None = None,
+    eligibility_fn: Callable[[tf.Tensor], tf.Tensor] | None = None,
+    batched_eligibility_fn: Callable[[tf.Tensor], tf.Tensor] | None = None,
+    config: PosteriorLocalInitializerConfig | None = None,
+    movement_config: LowRankSPDQuadraticGeometryConfig | None = None,
+    curvature_thresholds: FixedCenterCurvatureThresholds,
+) -> PosteriorLocalInitializerResult:
     """Build a centered posterior-local initializer without claiming a MAP.
 
     Eligibility callbacks return boolean strict-valid status for the same rows
@@ -468,7 +547,9 @@ def initialize_posterior_local_location_scale(
     HMC-rejection sentinels instead of treating their zero score as stationarity.
     """
 
-    cfg = PosteriorLocalInitializerConfig() if config is None else config
+    if config is None or config.locator_config.jit_compile or config.locator_config.max_wall_seconds is None:
+        raise ValueError("host-wall posterior diagnostic requires an explicit non-JIT deadline")
+    cfg = config
     move_cfg = (
         LowRankSPDQuadraticGeometryConfig(
             constrain_center_refinement_to_trust_region=True
@@ -1156,15 +1237,11 @@ def _positive_vector(value: Any, dimension: int, name: str) -> tf.Tensor:
 
 
 def _eigen_summary(matrix: tf.Tensor) -> Mapping[str, Any]:
-    eigenvalues = tf.linalg.eigvalsh(0.5 * (matrix + tf.transpose(matrix)))
-    return {
-        "minimum": float(tf.reduce_min(eigenvalues)),
-        "maximum": float(tf.reduce_max(eigenvalues)),
-        "condition_number": float(
-            tf.reduce_max(eigenvalues) / tf.reduce_min(eigenvalues)
-        ),
-        "positive": bool(tf.reduce_all(eigenvalues > 0.0)),
-    }
+    from bayesfilter.inference.posterior_initializer_controller_tf import (
+        posterior_eigen_summary,
+    )
+
+    return _json_ready(posterior_eigen_summary(matrix))
 
 
 def _json_ready(value: Any) -> Any:

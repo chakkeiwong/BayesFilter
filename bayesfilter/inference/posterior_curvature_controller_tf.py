@@ -9,8 +9,14 @@ import tensorflow as tf
 from bayesfilter.inference.dense_initializer_cloud_tf import (
     make_dense_initializer_cloud_program,
 )
+from bayesfilter.inference.dense_partition_validation_tf import (
+    make_dense_partition_validation_program,
+)
 from bayesfilter.inference.dense_validated_fit_tf import (
     make_dense_validated_fit_program,
+)
+from bayesfilter.inference.factor_correlation_geometry import (
+    FactorCorrelationGeometryConfig,
 )
 from bayesfilter.inference.posterior_candidate_ledger_tf import candidate_ledger_program
 from bayesfilter.inference.posterior_local_initializer import _cloud_row_counts
@@ -26,6 +32,22 @@ STATUSES = (
     "exact_evaluation_budget_exhausted", "curvature_not_centered_within_attempt_budget",
     "curvature_result", "physical_marginal_scale_invalid", "curvature_fit_exception",
 )
+
+
+def _deferred_configuration_fit(dimension, replicates, training, selection, audit, *, jit_compile):
+    """Preserve partition-validation precedence before a known static fit error."""
+    validate = make_dense_partition_validation_program(dimension, replicates, training, selection,
+        audit, jit_compile=jit_compile)
+
+    @tf.function(input_signature=validate.input_signature, jit_compile=jit_compile, autograph=False)
+    def rejected(center, center_score, offsets, scores):
+        validation = validate(center, center_score, offsets, scores)
+        return {"validation": validation, "fit_ran": tf.constant(False),
+            "fit_error_code": tf.constant(0, I), "usable": tf.constant(False),
+            "fit": {"selection": {"precision": tf.zeros([dimension, dimension], D)},
+                    "covariance": tf.zeros([dimension, dimension], D)}}
+
+    return rejected
 
 
 def make_posterior_curvature_program(evaluator, dimension, config, thresholds, *, jit_compile=True):
@@ -56,12 +78,23 @@ def make_posterior_curvature_program(evaluator, dimension, config, thresholds, *
         target = _callback_program(scalar, dimension, jit_compile)
         cloud = make_dense_initializer_cloud_program(evaluate_rows, dimension, replicates,
             training, selection, audit, jit_compile=jit_compile)
-        fitter = make_dense_validated_fit_program(dimension, replicates, training, selection,
-            audit, thresholds=thresholds, factor_max=config.factor_max,
-            dense_eigenvalue_floor=config.dense_eigenvalue_floor,
-            max_condition_number=config.max_condition_number,
-            shrinkage_weights=config.shrinkage_weights,
-            structured_target_family=config.structured_target_family, jit_compile=jit_compile)
+        # The original creates this configuration only after a complete cloud
+        # passes partition validation. Preserve that exception boundary.
+        try:
+            FactorCorrelationGeometryConfig(factor_count=1,
+                max_condition_number=config.max_condition_number,
+                holdout_score_relative_rmse=thresholds.selection_holdout_relative_rmse_cap)
+            configuration_error = False
+        except ValueError:
+            configuration_error = True
+        fitter = (_deferred_configuration_fit(dimension, replicates, training, selection,
+            audit, jit_compile=jit_compile) if configuration_error else
+            make_dense_validated_fit_program(dimension, replicates, training, selection,
+                audit, thresholds=thresholds, factor_max=config.factor_max,
+                dense_eigenvalue_floor=config.dense_eigenvalue_floor,
+                max_condition_number=config.max_condition_number,
+                shrinkage_weights=config.shrinkage_weights,
+                structured_target_family=config.structured_target_family, jit_compile=jit_compile))
         choose = candidate_ledger_program(maximum, dimension, jit_compile=jit_compile)
         cloud_template = cloud.get_concrete_function().structured_outputs
         fit_template = fitter.get_concrete_function().structured_outputs
@@ -208,7 +241,9 @@ def make_posterior_curvature_program(evaluator, dimension, config, thresholds, *
 
         result, = tf.while_loop(lambda current: (current["status"] == 0) & (current["attempt_count"] < attempts),
             step, (state,), parallel_iterations=1)
-        return tf.nest.map_structure(tf.stop_gradient, result)
+        return tf.nest.map_structure(tf.stop_gradient, {
+            **result, "configuration_error": tf.constant(configuration_error),
+            "fit_jit_compile": tf.constant(jit_compile)})
 
     with scope.activate():
         run.get_concrete_function()
