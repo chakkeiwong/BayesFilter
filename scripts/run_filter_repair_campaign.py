@@ -124,6 +124,15 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"posterior_curvature_controller_{dimension}_{batched}_{case}_{device}": (
+        f"tests/test_filter_repair_posterior_curvature_controller.py::test_prepared_curvature_records[{dimension}-{batched}-{case}]",
+        *(("tests/test_filter_repair_posterior_curvature_controller.py::test_compiler_error_and_owner_release",)
+          if (dimension, batched, case) == (1, False, "stationary") else ()))
+       for dimension, batched, case in ((1, False, "stationary"), (3, True, "stationary"),
+           (1, True, "recenter"), (1, True, "exhaustion"), (3, True, "nonlinear"),
+           (1, False, "invalid_center"), (1, True, "invalid_partial"),
+           (1, True, "budget"), (1, True, "mismatch"), (1, True, "overlap"))
+       for device in ("cpu", "gpu")},
     **{f"posterior_movement_boundaries_{device}": (
         "tests/test_filter_repair_posterior_movement.py", "-k", "stationary or real_compilation_error")
        for device in ("cpu", "gpu")},
@@ -1686,6 +1695,12 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"posterior_curvature_controller_{device}": tuple(f"posterior_curvature_controller_{dimension}_{batched}_{case}_{device}"
+        for dimension, batched, case in ((1, False, "stationary"), (3, True, "stationary"),
+           (1, True, "recenter"), (1, True, "exhaustion"), (3, True, "nonlinear"),
+           (1, False, "invalid_center"), (1, True, "invalid_partial"),
+           (1, True, "budget"), (1, True, "mismatch"), (1, True, "overlap")))
+       for device in ("cpu", "gpu")},
     **{f"posterior_movement_{device}": tuple(f"posterior_movement_{dimension}_{batched}_{case}_{device}"
         for dimension, batched, case in ((1, False, "healthy"), (3, True, "healthy"),
             (1, True, "nonlinear"), (3, False, "budget"), (1, True, "invalid"), (1, True, "mismatch")))
@@ -2059,6 +2074,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_curvature_controller_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_movement_") and group.endswith("_gpu")},
     "posterior_tracker_gpu": "GPU",
     "posterior_ledger_gpu": "GPU",

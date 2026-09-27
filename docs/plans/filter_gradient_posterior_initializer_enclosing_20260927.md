@@ -228,3 +228,31 @@ authorities; no dense-route marginal formula may replace the original physical
 covariance formula. Exceptions remain exceptions and are not renamed numerical
 rejections. Successful prepared-cloud checks qualify this internal recurrence
 only; public RNG, complete endpoint integration and costs remain separate.
+
+Movement and prepared curvature qualification are complete through 04379; see
+the September 27 movement and curvature-controller result notes. Curvature uses
+factor_max=1 mechanics fixtures; the full public matrix must include the existing
+default factor_max=2. No numerical method or tolerance changed.
+
+Next qualify one compiled CPU preparation program for all potential movement
+and curvature clouds. Reuse `geometry_random_tf._draw_kernel` and `_ball_kernel`
+with the existing `geometry_tf_philox_cpu_xla_v1` stream. Host seed/call/role
+hashing is configuration metadata only; every normal/ball draw and loop over
+cloud generation must execute in the native program. Preserve the rank-zero
+omission of the normal draw, subsequent permutation key, per-attempt movement
+seed increments and curvature attempt/partition seeds exactly. CPU placement is
+mandatory even when the enclosing target runs on GPU. Compare every generated
+element and permutation key with the existing preparation helpers at D1/D3,
+different seeds/radii and replay; require one trace and unchanged HLO as keys
+change. Reserve four CPU and two GPU workers and 1,200 combined seconds inside
+the enclosing reservation. One visible-GPU process may test CPU placement; it
+is not a GPU random-stream substitution.
+
+Pre-execution review: the dense initializer's separate RNG module uses a
+different stream and cannot serve as this generator. Reusing the original
+normal/ball authorities avoids that silent substitution. Pre-generating unused
+potential clouds is permitted only because they consume no target evaluations
+and their keys are derived independently from static configuration. Exact draw
+comparison and a counted target are the early discriminating checks. Public
+integration and original complete-endpoint comparisons remain required after
+this preparation dependency passes.

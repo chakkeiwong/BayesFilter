@@ -1,10 +1,11 @@
 # Public single-locator execution result
 
 The repaired public `locate_joint_center` reuses the existing native numerical
-program. CPU qualification passes 34 distinct correctness cases and six public cost
-arms after the explicit CPU renewal 04325. GPU correctness passes all 34 cases. All six GPU cost arms
-preserve same-mode original records, but shared-device observations veto their
-performance acceptance. Main and whole-campaign acceptance remain open.
+program. CPU qualification passes 34 distinct correctness cases and six public
+cost arms after the explicit CPU renewal 04325. GPU correctness passes all 34
+cases. The uncontended six-arm GPU renewal 04363--04368 passes same-mode records
+and independent cost analysis with no declared trigger. The earlier shared
+cohort remains rejected. Main and whole-campaign acceptance remain open.
 
 The factory, affine rounding, result formatter, configuration and input
 validation authorities have identical ASTs to e56307029. Starts/scales are
@@ -104,3 +105,43 @@ is archived. Whitespace checks pass. No numerical tolerance, scientific gate or
 runtime allowance changed. Next execute the separately bounded
 [posterior initializer enclosure](filter_gradient_posterior_initializer_enclosing_20260927.md)
 while preserving the open uncontended GPU cost gate.
+
+## Uncontended GPU renewal, 04363--04368
+
+GPU 2 became available during the curvature CPU checks. All six renewal arms
+pass uncontended preflight and in-run process observations on UUID
+`GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba`. The unchanged archived independent
+analyzer verifies complete source, environment, input and original-reference
+identities, all same-mode records and unchanged HLO. This cohort also has zero
+reported graph/XLA field differences at the existing tolerances; the earlier
+CPU differences remain evidence for their backend. No criterion changed.
+
+| Dimension | Arm | Full cold s | Median warm ms | Warm RSS MiB | GPU allocator peak bytes |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1 | prior | 4.4751 | 3788.885 | 1861.180 | 69120 |
+| 1 | graph | 5.9895 | 16.854 | 1208.012 | 71424 |
+| 1 | xla | 4.4065 | 3.519 | 1224.293 | 55296 |
+| 3 | prior | 4.5679 | 3837.429 | 1866.605 | 70656 |
+| 3 | graph | 6.0700 | 36.902 | 1196.426 | 79872 |
+| 3 | xla | 4.3779 | 5.236 | 1227.598 | 57600 |
+
+The XLA/prior cold ratios are 0.985 and 0.958. Original warm RSS grows about
+562--563 MiB across three calls; repaired graph/XLA growth is below 0.02 MiB.
+The original's optimizer reconstruction explains the large warm-time difference.
+These short observations establish neither a long-term plateau nor native
+executable eviction. XLA's maximum observed RSS is about 827--829 MiB lower
+than prior in these processes. No declared cold, warm, RSS or allocator trigger
+fires. The six workers charge 159.470182 GPU seconds within the 24-worker unit
+reservation. The new evidence receipt is
+`joint-public-gpu-renewal-verification-04368.json`.
+
+| Decision | Primary criterion | Veto / uncertainty | Next action | Not concluded |
+| --- | --- | --- | --- | --- |
+| Close the uncontended single-locator GPU cost subgate | Six same-mode arms and independent provenance/cost analysis pass | One process per arm/extent and three warm calls | Preserve final repeated-cost and full-target checks | Statistical speed guarantee or whole-campaign completion |
+| Retain earlier shared-cohort rejection | Foreign-process observations remain unchanged | Historical timing is unusable | Use only the fresh cohort for this subgate | Retroactive acceptance of 04319--04324 |
+
+This renewal supersedes the initial pending-cost decision above. Post-renewal
+review: the comparison measures public ownership and execution repair, not a
+controlled compiler-only speedup. No foreign process was stopped. The remaining
+weak boundary is longer-lived/native allocation and actual-target coverage,
+both retained in the master program.
