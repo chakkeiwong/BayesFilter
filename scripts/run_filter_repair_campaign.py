@@ -124,6 +124,10 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"posterior_tracker_{device}": ("tests/test_filter_repair_posterior_tracker.py",)
+       for device in ("cpu", "gpu")},
+    **{f"posterior_ledger_{device}": ("tests/test_filter_repair_posterior_ledger.py",)
+       for device in ("cpu", "gpu")},
     **{f"joint_public_cost_{arm}_{dimension}_{device}": (
         f"tests/test_filter_repair_joint_public_cost.py::test_single_public_cost[{arm}-{dimension}]",)
        for arm in ("prior", "graph", "xla") for dimension in (1, 3) for device in ("cpu", "gpu")},
@@ -2043,6 +2047,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    "posterior_tracker_gpu": "GPU",
+    "posterior_ledger_gpu": "GPU",
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("joint_public_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("staged_public_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS

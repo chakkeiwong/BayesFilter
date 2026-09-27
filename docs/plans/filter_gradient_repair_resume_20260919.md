@@ -1,31 +1,29 @@
 # Filter and gradient repair resume checkpoint
 
-Checkpoint through 04326, September 27. Public single-locator execution now
-passes 34 correctness cases on each of CPU and GPU, both actual initializer
-callers, six CPU costs and 141 policy checks. Numerical equations, settings and
-derivative boundaries remain unchanged. See the
-[single-locator result](filter_gradient_single_locator_public_result_20260927.md).
+Checkpoint through 04333, September 27. Public staged and single-locator
+repairs are pushed through `031692a0b`. The new internal posterior candidate
+ledger passes ten CPU/ten GPU checks; the unchanged eligibility tracker passes
+seven per backend inside an enclosing XLA sequence. Two harness failures
+04329/04330 are preserved. Policy 04333 passes 141 checks; the new source is
+fully guarded with no added allowance. See the
+[dependency result](filter_gradient_posterior_ledger_tracker_result_20260927.md)
+and `posterior-ledger-tracker-verification-04333.json` (58 verified members).
 
-GPU costs 04319--04324 preserve all original same-mode records, but another
-research process shared GPU 3 throughout, so independent analysis rejects
-performance acceptance. Both new public cost batches now use the existing
-uncontended preflight guard; every arm is tested. A live retry was declined
-before launching a worker. Repeat all six GPU costs only after uncontended
-compute-GPU admission; leave display GPUs alone. No worker is active.
+No numerical worker is active. Next enclose the bounded movement recurrence
+under the [posterior initializer plan](filter_gradient_posterior_initializer_enclosing_20260927.md),
+reusing the existing geometry authority, tracker and exact-incumbent dependency.
+Pin 031692a0b as the immediate reference. The first dependency substep used
+5 CPU / 2 GPU workers and 39.664974 / 27.186000 seconds; the enclosing unit's
+40 CPU / 24 GPU-worker and 10,800-second reservation remains mostly unused.
+Do not claim the outer initializer is repaired until its complete movement,
+curvature and public caller comparisons pass. Full reference closure remains
+required; the tracker-only class excerpt is not whole-initializer evidence.
 
-All evidence through 04326 is archived with SHA-256 receipts. The correction
-receipt records that standalone 04302 and 04309 were GPU jobs despite earlier
-CPU labels; explicit CPU renewal 04325/04326 fixes coverage. Manifests and budget
-charges were already correct. CPU graph/XLA source-selection discrepancies
-remain visible, and no native executable-eviction or long-term memory claim
-is made. The staged locator result through 04292 remains qualified separately.
-
-Next execute the [posterior initializer enclosure plan](filter_gradient_posterior_initializer_enclosing_20260927.md),
-beginning with native candidate-ledger control that calls the shared exact
-incumbent authority. Pin this single-locator repair commit as the immediate
-execution reference. Its 40 CPU / 24 GPU workers and 10,800 seconds are reserved
-inside existing caps, with a six-CPU/four-GPU, 1,800-second first substep. The
-single-locator outstanding cost renewal has a separate remaining reservation.
+Single-locator correctness passes 34 cases per backend and six CPU costs.
+Its six GPU costs were rejected for shared-device timing. The repaired guard
+now declines such launches. Repeat the full GPU cohort when an uncontended
+compute GPU is available; GPUs 0/1 serve display/remote desktop. GPU 3 shared
+correctness evidence remains explicitly labeled. Do not stop foreign jobs.
 
 All F01--F20 terminal findings and main promotion remain open. Outer initializer
 control, actual external DZ5 target/consumers, GenUT precision/reporting, native
@@ -33,6 +31,6 @@ capacity and final source-frozen review remain. Canonical NeuTra is
 `bayesfilter_neutra_iaf_author_v1`; canonical LEDH rebuilding remains excluded.
 No tolerance or ill-conditioning waiver is installed.
 
-Global charges: 88218.927772 CPU / 80237.778058 GPU seconds; remaining
-31.494742 CPU / 29.711728 GPU hours under 56/52-hour caps. The additional 24 CPU
-hours are already included and must not be counted again.
+Global charges: 88258.592746 CPU / 80264.964058 GPU seconds under 56/52-hour
+caps (about 31.48 CPU / 29.70 GPU hours remaining). The additional 24 CPU hours
+are already included and must not be counted again.

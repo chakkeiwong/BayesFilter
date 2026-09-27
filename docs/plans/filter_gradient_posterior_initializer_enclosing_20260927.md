@@ -112,3 +112,30 @@ The static consumer search across `bayesfilter`, `scripts`, `experiments` and
 `docs/benchmarks` found no direct internal caller of the posterior initializer
 beyond its definition/export. This does not classify dynamic or external users;
 public integration must retain the existing exported-API consumer assertions.
+
+The immediate pinned reference is `031692a0b` (public single-locator correctness
+qualified; its uncontended GPU cost renewal remains open). The first dependency
+uses the exact selector's numerical body in each loop step and changes no
+eligibility or tie rule. CPU qualification proceeds while compute GPUs remain
+shared. The current static scope has no direct internal initializer consumer
+beyond its export; no external target readiness follows from this substep.
+
+The candidate-ledger dependency passes ten CPU and ten GPU cases in
+04327/04328. Tracker fixture 04329 fails before numerical execution because
+loading the entire frozen initializer follows unrelated HMC imports into a
+package unsupported by the strict reference loader. Preserve the failure and
+failed harness snapshot. For this tracker-only question, execute the exact
+frozen class excerpt instead: record full-file/class hashes and statically
+verify every referenced global is TensorFlow or a named standard-library
+builtin. This changes no tracker statement and imports no current project
+numerics into the reference. The complete initializer later still requires
+its complete frozen numerical import closure; this bounded extraction does not
+qualify the whole initializer reference. Retry the same seven cases under the
+existing first-substep reservation.
+
+04330 reaches XLA but rejects the diagnostic callback recorder's dynamic
+`Range(start,end)`: its endpoints depend on a resource counter. Repair the
+recorder to create the fixed row-count range first and add the dynamic offset.
+This records the identical positions in the identical order and changes no
+tracker/target arithmetic. Preserve the failed harness snapshot and retry;
+this localized harness failure remains inside the first-substep reservation.
