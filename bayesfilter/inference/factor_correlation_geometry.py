@@ -573,8 +573,14 @@ def _initial_factor_state(
         tf.ones_like(row_norms),
         tf.constant(0.8 * bound, tf.float64) / tf.maximum(row_norms, 1.0e-15),
     )
+    # Clipped rows have exactly the same norm in real arithmetic. Recomputing
+    # their norms from rounded components can break argmax's first-index tie
+    # rule and select a different parameter chart on another XLA backend.
+    clipped_norms = tf.minimum(
+        tf.reshape(row_norms, [-1]), tf.constant(0.8 * bound, tf.float64)
+    )
     if factor_count == 1:
-        anchor = tf.argmax(tf.abs(loadings[:, 0]), output_type=tf.int32)
+        anchor = tf.argmax(clipped_norms, output_type=tf.int32)
         sign = tf.where(
             tf.gather(loadings[:, 0], anchor) >= 0.0,
             tf.constant(1.0, tf.float64),
@@ -583,7 +589,7 @@ def _initial_factor_state(
         loadings *= sign
         return deviations, loadings, (anchor,)
 
-    anchor_a = tf.argmax(tf.linalg.norm(loadings, axis=1), output_type=tf.int32)
+    anchor_a = tf.argmax(clipped_norms, output_type=tf.int32)
     first = tf.gather(loadings, anchor_a)
     first_norm = tf.maximum(tf.linalg.norm(first), 1.0e-15)
     cosine, sine = first[0] / first_norm, first[1] / first_norm

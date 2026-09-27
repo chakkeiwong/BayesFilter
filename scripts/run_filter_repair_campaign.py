@@ -124,6 +124,27 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "dz5_locator_fixed_outputs_cpu": (
+        "tests/test_filter_repair_dz5_locator_fixed_outputs.py",),
+    "dz5_locator_points_replay_cpu": (
+        "tests/test_filter_repair_dz5_locator_replay.py",),
+    "dz5_locator_trace_readback_cpu": (
+        "tests/test_filter_repair_dz5_locator_readback.py",),
+    "factor_clipped_anchor_trial_cpu": (
+        "tests/test_filter_repair_factor_clipped_anchor.py",),
+    "factor_clipped_anchor_trial_gpu": (
+        "tests/test_filter_repair_factor_clipped_anchor.py",),
+    "factor_clipped_anchor_graph_fit_cpu": (
+        "tests/test_filter_repair_dz5_initializer_fit_localization.py::test_saved_cdf_fit_inputs[graph]",),
+    **{f"factor_clipped_anchor_regression_{device}": (
+        "tests/test_factor_correlation_geometry.py",)
+        for device in ("cpu", "gpu")},
+    **{f"factor_clipped_anchor_fit_{device}": (
+        "tests/test_filter_repair_dz5_initializer_fit_localization.py::test_saved_cdf_fit_inputs[xla]",)
+        for device in ("cpu", "gpu")},
+    **{f"dz5_locator_trace_{arm}_cpu": (
+        f"tests/test_filter_repair_dz5_locator_trajectory.py::test_actual_cdf_locator_trace[{arm}]",)
+        for arm in ("original", "candidate", "original_operands")},
     **{f"principal_angle_{arm}_{device}": (
         f"tests/test_filter_repair_principal_angle_precision.py::test_actual_d23_accuracy_and_costs[{arm}]",)
         for arm in ("before", "after") for device in ("cpu", "gpu")},
@@ -1540,6 +1561,8 @@ TEST_GROUPS = {
     "policy": ("tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py",
         "tests/test_filter_repair_gpu_selection.py", "tests/test_filter_repair_cost_provenance.py"),
 }
+TEST_GROUPS['dz5_locator_final_readback_and_policy_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f"remaining_svd_{part}_{device}": TEST_GROUPS[original]
     for part, original in (("block", "block_score_geometry"),
         ("public_first", "geometry_public_first_cpu"),
@@ -1568,6 +1591,15 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "dz5_locator_final_readback_and_policy_cpu": "Compilation-context readback plus policy renewal; does not waive the original full-consumer comparison.",
+    "dz5_locator_fixed_outputs_cpu": "Call-indexed callback transcript diagnostic; not a value/gradient function, optimizer equivalence, or admission authority.",
+    "dz5_locator_points_replay_cpu": "Saved same-position graph/standalone-XLA score replay; cannot establish full locator or initializer equivalence.",
+    "factor_clipped_anchor_graph_fit_cpu": "Post-repair localization of the preserved graph loading-domain failure; not an XLA default or full-consumer gate.",
+    "dz5_locator_trace_readback_cpu": "First-divergence saved callback comparison, not source admission or whole-trajectory numerical equivalence.",
+    **{f"factor_clipped_anchor_fit_{device}": "Saved-input post-repair fit localization; full-record differences are recorded, not waived. No actual consumer admission."
+        for device in ("cpu", "gpu")},
+    **{f"dz5_locator_trace_{arm}_cpu": "Frozen actual-CDF callback trajectory localization; no full initializer or new source admission."
+        for arm in ("original", "candidate", "original_operands")},
     **{f"principal_angle_before_{device}": "Pinned defective-SVD reproduction and descriptive cost only; repaired precision and regression groups are required."
         for device in ("cpu", "gpu")},
     **{f"dz5_initializer_frozen_fit_{arm}_cpu": "Saved-input localization preserves full-record mismatches; graph retains its documented domain assertion. No complete initializer admission."
@@ -2235,7 +2267,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
-    **{group: "GPU" for group in TEST_GROUPS if group.startswith("principal_angle_") and group.endswith("_gpu")},
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith(("principal_angle_", "factor_clipped_anchor_")) and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_initializer_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_public_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_initializer_") and group.endswith("_gpu")},
