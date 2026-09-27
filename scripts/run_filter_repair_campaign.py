@@ -124,6 +124,15 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "dz5_initializer_mechanisms_and_policy_cpu": (
+        "tests/test_filter_repair_dz5_initializer_fit_localization.py::test_saved_cdf_initialization_and_angle_mechanisms",
+        "tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py",
+        "tests/test_filter_repair_gpu_selection.py", "tests/test_filter_repair_cost_provenance.py"),
+    "dz5_initializer_fit_mechanisms_cpu": (
+        "tests/test_filter_repair_dz5_initializer_fit_localization.py::test_saved_cdf_initialization_and_angle_mechanisms",),
+    **{f"dz5_initializer_frozen_fit_{arm}_cpu": (
+        f"tests/test_filter_repair_dz5_initializer_fit_localization.py::test_saved_cdf_fit_inputs[{arm}]",)
+        for arm in ("original", "graph", "xla")},
     "dz5_initializer_evidence_cpu": (
         "tests/test_filter_repair_dz5_initializer_admission.py",
         "tests/test_filter_repair_dz5_supervision.py",

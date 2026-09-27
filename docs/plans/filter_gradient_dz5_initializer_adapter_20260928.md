@@ -173,3 +173,86 @@ comparator, not a new default or current NeuTra configuration. Its historical
 acceptance is not candidate acceptance. Measure the full cold path; preflight
 start replay and HLO inspection must be timed separately and included in worker
 charges. Preserve all comparison mismatches. No independent review is claimed.
+
+The r1 comparison now has explicit numerical dispositions: preserved CPU and
+GPU results match rejection and252-row accounting but have59 leaves outside
+the unchanged comparison bounds. CPU versus the archived original r1 also has
+59 mismatches. These remain open numerical evidence; accepted-r2 qualification
+cannot erase them. Before claiming full equivalence, compare freshly executed
+original and candidate controllers on the same freshly qualified CDF callback,
+record optimizer histories at the first divergent call, and replay the actual
+positions through independent FP64/finite-difference checks as appropriate.
+Do not infer ill-conditioning from the mismatch alone. A compile-size follow-up
+must preserve exact callback order, values, gradients and complete records;
+197MB unoptimized HLO and15 repeated inverse-gamma operation groups motivate
+that investigation but do not by themselves identify a faulty operation.
+
+If a complete initializer remains in native compilation after15 minutes,
+permit one bounded read-only GDB stack capture of that campaign-owned child
+under its existing worker deadline. Disable auto-loading external debug scripts
+and automatic shared-library symbols, capture short backtraces, then detach.
+Record attachment elapsed time and any observer perturbation. Such a run is
+localization evidence, not matched timing. Do not change system limits, compiler
+flags, sources or active execution while inspecting it. This answers whether
+slow compilation, numerical work or a wait accounts for the missing result.
+
+September 28 recovery review prioritizes fitting localization before the two
+lifetime runs. CPU r2 has a changed factor-2 replicate-1 admission decision
+(historical holdout RMSE .845122, current .126319), and a factor-1 rejected
+Jacobian condition estimate changes from 4.645e5 to 1.086e12. These are real
+discrepancies in the saved records, but the old and new optimizer trajectories
+did not use identical centers. They cannot identify a fitter defect by themselves.
+
+Use three of the remaining workers, each capped at900 CPU seconds, for pinned
+original, candidate graph reference, and candidate XLA curvature fitting on
+the identical saved04572 callback outputs. Recreate its Philox offsets, verify
+positions against the hashed archive within1e-14 absolute, save exact input
+arrays and hashes, and disclose the possible roundoff at this reconstruction
+boundary. Preserve complete fit outputs and all differences at the existing
+controlled-fitter comparison bounds1e-10/1e-10 (the historical full-initializer
+comparison used1e-8/1e-7 and remains separately labeled);
+matching inputs and valid diagnostics qualify localization, not equivalence.
+Compare all three arms and the saved enclosing initializer. A corrupt source,
+input mismatch, nonfinite required input or invalid trace blocks that diagnostic.
+Numerical mismatches trigger the corresponding component repair. These runs
+neither execute the CDF target nor issue renewed target or initializer admission.
+Commands use `test --group dz5_initializer_frozen_fit_{original,graph,xla}_cpu
+--device CPU --test-timeout-seconds 900` with the existing campaign runner.
+The28-worker/14400-second unit and global budgets are unchanged. Lifetime work
+is deferred until this first-divergence check determines the next repair.
+Skeptical review: comparison to historical r2 alone is not a controlled test;
+the crossed saved-input test isolates fitting but cannot explain a changed
+locator trajectory or certify exact full-program intermediates. Those remain
+separate obligations. No independent reviewer or tolerance exception is claimed.
+
+Controlled runs04574/04576 have identical operand hashes. Their selected dense
+consensus geometry agrees at1e-10/1e-10, while5013 other leaves differ. The
+standalone XLA fit exactly reproduces the saved enclosing fit at these bounds.
+Graph run04575 instead hits the explicitly retained loading-domain assertion;
+the XLA path already counts invalid covariance evaluations and rejects that
+factor. Preserve the graph failure and do not retry it unchanged.
+
+The next bounded mechanism check uses one300-second CPU worker, group
+`dz5_initializer_fit_mechanisms_cpu`, leaving one worker for policy renewal.
+Observe original/current weighted precision, eigenspectrum, unclipped/clipped
+row norms, selected anchors and initialized covariance for both replicates and
+factor counts. Hypothesis: clipping equalizes candidate anchor norms, so
+roundoff changes the anchor and optimizer trajectory. An observation without
+reproduced anchor behavior remains explanatory, not a proven cause. Separately
+compare default XLA SVD and explicit binary64-precision XLA SVD on the exact
+same principal-angle overlap matrix against independent diagnostic NumPy/LAPACK.
+Require the refined singular values within1e-14 absolute/relative; preserve
+the complete angles and original full-record discrepancies regardless. This is
+a solver-accuracy diagnostic, not a new equivalence tolerance. No numerical
+runtime, anchor convention, clipping, optimizer, covariance or admission change
+is installed by this check. Review finds no need to run the full CDF target to
+answer either component question. Both tests stay inside the existing unit
+budget, and failure stops only the affected diagnostic.
+
+Mechanism run04577 failed in diagnostic reconstruction before either comparison:
+an untyped left operand in `tf.minimum(1., tensor64)` became float32. Replace it
+with `tf.ones_like(norms)`, matching the inspected original expression. This is
+a harness-only repair; preserve the6.18-second failure. Use the last reserved
+worker for the repaired mechanism check and the existing complete policy group
+together (`dz5_initializer_mechanisms_and_policy_cpu`,300s). That keeps28 workers
+and the14400-second cap unchanged. No numerical failure is retried unchanged.

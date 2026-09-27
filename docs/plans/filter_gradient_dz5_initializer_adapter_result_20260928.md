@@ -1,8 +1,9 @@
 # DZ5 initializer adapter execution result
 
 Status: adapter fixture qualification and all fresh CDF target checks pass.
-Actual r1 rejection is preserved; accepted-r2 and supervisor lifetime
-qualification are pending.
+Actual r1 rejection is preserved. CPU accepted-r2 returned acceptance, with
+unresolved complete-record discrepancies; GPU accepted-r2 also completed.
+Supervisor lifetime qualification remains pending.
 This is part of the filter/gradient execution repair master, not a restart of
 MacroFinance's closed multi-asset campaign or paused financial/BGL successor.
 
@@ -165,3 +166,100 @@ as `dz5-initializer-adapter-04571-evidence.tar.gz` and
 `dz5-initializer-adapter-04571-verification.json`. It excludes the active04572
 worker, which needs a later checkpoint. Through04571 this unit charged
 1131.902120CPU /1284.263164GPU seconds across21workers; no global budget reset.
+
+Accepted-r2 CPU04572 passes full execution/import/XLA/acceptance checks in
+965.120311 supervised seconds. Fresh start replay passed; the complete
+initializer took856.467605s and HLO inspection67.020497s. It returns usable
+`consensus_diagonal_consensus` geometry after822 target rows, with scaled
+center score0.00019283593221471585 below0.02. The original accepted r2 used804
+rows and score0.00003911689594701845. Thus acceptance passes, but full original
+record/callback equivalence remains unresolved. Do not equate those decisions.
+
+The numerical-return host HWM is21718429696bytes (20.23GiB). A brief first
+GDB capture had no symbols and no full saved log; it is inconclusive. The
+repaired capture saves resolved TensorFlow stacks and detaches. The main
+thread was in HLO export (`CompileAndBuildHLOString` / `GetCompilerIr`), after
+`initialize.json` had been written. The full worker includes diagnostic
+inspection; it is not matched timing. Exact second attachment duration was
+not recorded. GPU accepted-r2 qualification is next.
+
+The complete saved r2 comparison preserves7671 mismatched leaves at unchanged
+1e-8/1e-7 bounds, including573 selected-precision/covariance or output-scale
+entries. Most other differences lie in individual fit records. Preserve
+`dz5-initializer-r2-original-comparison-04572.json`; this is the historical
+comparator, not a fresh original-controller execution on current callbacks.
+Accepted execution does not close numerical equivalence. First-divergence
+localization remains required and must preserve the observed witness before
+attributing individual derivative or optimizer stages.
+
+The CPU r2 discrepancy includes internal decisions, not only the final diagonal
+geometry. Factor-2 replicate1 changes from archived rejection (holdout relative
+RMSE0.8451220697783914) to acceptance (0.12631872618987658). A rejected factor-1
+replicate has prediction-Jacobian condition estimate1.0857602789268477e12,
+compared with464517.77326321683 historically. These are descriptive comparisons
+between different optimizer trajectories; they do not establish the cause or
+justify relaxing any gate. The next three CPU workers compare the original,
+current graph and current XLA fitters on identical saved callback inputs before
+spending further time on process-lifetime qualification.
+
+GPU accepted-r2 run04573 completed in834.033579s: start replay25.506780s,
+initializer721.955112s and HLO inspection60.168479s. It accepted after789
+target rows, compared with822 on CPU. Both select consensus-diagonal geometry,
+but the complete current CPU/GPU comparison has6191 mismatched leaves at
+1e-8 absolute/1e-7 relative, saved in
+`dz5-initializer-r2-cpu-gpu-comparison-04573.json`. This is an execution success
+and an open numerical-equivalence veto. It does not support a speed ranking.
+GPU live allocator peak was269443328 bytes; after Python-owner release current
+allocation was7424 bytes and observed owner count zero. Host RSS remained
+21818925056 bytes after release, with HWM22587359232 bytes. This again separates
+device live allocation from retained host/compiler memory; exact native owners
+are not identified by these measurements.
+
+The controlled fitting cohort narrows the numerical issue. Original04574 and
+XLA04576 consume identical center/score/offset/cloud-score tensor hashes;
+regenerated positions match all five archived partitions exactly. The XLA
+fit reproduces every saved full-initializer fit field at1e-10/1e-10. The
+original also agrees on selected precision/covariance and selection, but5013
+other leaves differ, concentrated in alternative factor fits and12 dense
+stability-report fields. Factor-2 replicate0 stops after7 iterations in XLA
+(optimizer_failed=True), while the original takes200 iterations; anchors are
+[13,19] versus[14,18]. Both reject that alternative. The original also accepts
+factor-2 replicate1 on these same inputs, so its historical accepted/rejected
+change cannot be attributed solely to the repaired fitter. Complete numerical
+equivalence remains open.
+
+Graph04575 fails at the deliberately retained loading-domain assertion in
+`factor_correlation_covariance`; no graph numerical record was returned.
+This is a documented reference-mode boundary, not evidence that XLA silently
+admits invalid covariance: its existing guard counts three invalid evaluations
+and rejects the corresponding factor. No unchanged graph retry is planned.
+Inputs, complete failure log and crossed comparison are preserved; numerical
+runtime is still unchanged in this unit. The next diagnostic examines anchor
+clipping ties and principal-angle SVD accuracy without changing either rule.
+
+Mechanism04578 and complete policy renewal passed161 checks after the preserved
+04577 diagnostic dtype failure. All six clipped two-factor rows13,14,16,18,19,21
+have theoretical norm0.7999995999999001. Original replica0 norms differ by one
+or two last-place units, choosing anchor14; current graph/XLA chooses13. The
+weighted pre-clipping norms agree to roughly1e-13. This reproduces a discrete
+chart-choice sensitivity before optimization. A stable anchor convention needs
+its own reviewed numerical comparison; no convention is changed here.
+
+The separate principal-angle calculation has a confirmed accuracy defect in the
+padded XLA SVD: maximum singular-value error7.734272366999306e-8 against LAPACK
+on the identical overlap operand. Explicit binary64 convergence reduces it to
+3.1086244689504383e-15. The first reported angle changes from0.0109094723 degrees
+to0.0059002420, with independent reference0.0059002437. Remaining tiny angle
+error is amplified by acos near1 and is not a waiver of complete-record gates.
+A focused SVD convergence repair is the next implementation unit. The complete
+initializer, anchor/stopping-policy discrepancies and process lifetime remain
+open. No terminal F01--F20 disposition or main merge is authorized by this result.
+
+Evidence through04578 is sealed in
+`artifacts/filter-gradient-repair-20260917/dz5-initializer-adapter-04578-evidence.tar.gz`:
+1002 members,55676322 bytes, SHA-256
+`9e4caf1b8e7eed93b119b55648a04a6da4e9daf242171043fd1099ae0e792ce9`.
+Every member was reopened and independently hash-verified. This supersedes no
+prior artifact;04571 remains the previous delivery checkpoint. The unit used
+28 workers and4427.858692 combined seconds. The extra24 CPU hours were already
+included; global caps remain56 CPU/52 GPU hours. Ruff and whitespace checks pass.
