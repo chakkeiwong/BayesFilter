@@ -2,7 +2,6 @@
 
 import dataclasses
 import hashlib
-import importlib.metadata
 import os
 import platform
 import sys
@@ -11,6 +10,7 @@ from pathlib import Path
 
 import pytest
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 from bayesfilter.inference import posterior_initializer_controller_tf as native
 from bayesfilter.inference import posterior_local_initializer as public
@@ -82,7 +82,7 @@ def test_posterior_initializer_cost(arm, dimension, request):
         "cpu_models": sorted({line.split(":", 1)[1].strip() for line in Path("/proc/cpuinfo").read_text().splitlines()
             if line.startswith("model name")}), "cpu_affinity": sorted(os.sched_getaffinity(0)),
         "python": sys.version, "executable": sys.executable, "tensorflow": tf.__version__,
-        "tensorflow_probability": importlib.metadata.version("tensorflow-probability"),
+        "tensorflow_probability": tfp.__version__,
         "xla_flags": os.environ.get("XLA_FLAGS", "")}
     warm_records = []
     stages = {"prepared": snapshot()}

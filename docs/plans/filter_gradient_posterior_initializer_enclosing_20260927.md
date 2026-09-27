@@ -837,3 +837,27 @@ restored. The final correctness unit used 9522.019909
 combined seconds, within 10800; no worker remains. Archive and local terminal
 review: filter_gradient_posterior_public_result_20260927.md. Continue the already
 reserved matched cost cohort after committing the qualified source checkpoint.
+
+Recovery after 04489: the qualified checkpoint was committed and pushed as
+976c33552, including remote main 06590cb5a. The first CPU cost worker failed
+before any timed public call because the environment imports TensorFlow
+Probability without distribution metadata named tensorflow-probability. Preserve
+04489 as a harness failure and charge its 5.878002 seconds. Record the imported
+module's __version__ instead; no package installation or environment change.
+The numerical runtime, inputs and gates remain unchanged.
+
+Restart all accepted costs from a new frozen source snapshot. Repartition the
+same 10,800-second cost allocation to 19 CPU / 18 GPU cost attempts plus four
+short analysis/policy workers, counting failed 04489 among the CPU attempts.
+The successful matrix still requires exactly 18 CPU and 18 GPU workers. The
+time and global caps are unchanged. Analyzer checks already passed in 04477;
+the reporting-only repair needs the first complete cost worker to verify the
+actual environment field, followed by the existing numerical gates. Stop and
+localize any subsequent failed arm before continuing the cohort.
+
+Skeptical recovery review: module __version__ describes the numerical library
+actually imported and avoids an unsupported packaging assumption. The repair
+executes before timing and changes neither measured numerical work nor the
+baseline. Preserve 04489 separately; do not count it as a successful cost arm
+or combine its source fingerprint with the new cohort. Recheck GPU sharing
+before GPU costs; CPU reference execution remains explicitly CPU-only.

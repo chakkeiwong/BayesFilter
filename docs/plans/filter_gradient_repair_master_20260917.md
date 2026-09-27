@@ -1,40 +1,41 @@
 # Complete filter and gradient execution repair
 
-Checkpoint through 04488. No worker is active. Final public integration and
-graph compatibility pass 11 CPU checks (04467--04476) and 11 GPU checks
-(04478--04487). Analyzer 04477 passes 14; policy 04488 passes 147. The 276-source
-policy guard has 1436 exact allowances; the graph repair adds none.
+Checkpoint through 04527. No worker is active. Complete posterior-initializer
+costs pass all 36 fresh CPU/GPU arms (04490--04525), analyzer 04526 passes 14,
+and policy 04527 passes 147. All accepted arms share 3441 source hashes and
+GPU 2. Both analyses reproduce exactly. Reopened evidence archive verifies
+214 members; see filter_gradient_posterior_initializer_cost_result_20260927.md
+and artifacts/filter-gradient-repair-20260917/posterior-initializer-cost-04527-verification.json.
 
-The public locator option retains original XLA movement/curvature dependencies;
-actual fit compilation status is reported. Default enclosing execution remains
-XLA. No private TensorFlow workaround or shared-fitter modification remains.
-Complete D1/D3 graph results, ordered callbacks, changed inputs, replay, single
-trace, frozen gradients and compiler/cache boundaries pass on both backends.
-All 13 exported XLA cases previously passed on CPU/GPU through 04434, including
-D5 two-factor. Reference imports now execute from isolated Git 031692a0b sources.
-Standalone all-graph raw fitter 04454 remains a diagnostic-only failure; the
-public graph option is not an all-non-XLA timing baseline. No tolerance waiver.
+Default XLA crosses no cost-regression trigger on these D1/D3 factor_max=1
+fixtures. CPU warm medians: prior9.505/20.581s, XLA0.061/0.096s; GPU:
+prior17.155/47.609s, XLA0.093/0.190s. Ratios are descriptive. Graph-control GPU
+allocator peaks trigger2x attribution (1.236/1.302MB versus0.553/0.568MB prior).
+No waiver: longer graph/XLA reuse and owner-return/payload memory follow next.
+Actual DZ5 consumers, reporting/precision, native capacity and terminal
+F01--F20 decisions remain open. Main remains unmerged; no tolerance change.
 
-Evidence archives posterior-public-localization-04466 and
-posterior-public-qualification-04488 verify all 326 and 84 members respectively.
-Final source snapshot: posterior-public-stage-jit-04467-source. Result:
-filter_gradient_posterior_public_result_20260927.md.
+Next install /tmp/install_posterior_capacity_harness.py after this checkpoint
+is committed. It copies the three /tmp/filter_repair_posterior_*capacity*draft.py
+files and registers focused groups, plus a narrowly bound1200-second option
+for the D3 GPU prior's twenty-call check. Run analyzer/timeout checks first,
+then a D1 XLA CPU pilot. Follow filter_gradient_posterior_initializer_capacity_20260927.md:
+7200 combined seconds /20 workers reserved inside unchanged global caps.
+Prior D3 GPU costs47.6s/call, hence1200seconds; D3 GPU owner replacement uses900.
+Other tests use300 except other prior reuse workers at900. Twenty alternating
+warm calls and four successful-owner replacements have complete-record and
+independent-Gaussian vetoes. Observer-only controls and graph-return snapshots
+separate retained and transient allocation without native-eviction claims.
 
-Next commit/push this qualified checkpoint, then run installed cost batches
-posterior_initializer_cost_cpu and _gpu, repeats 0/1/2, 300 seconds per worker.
-Use GPU 2 if preflight still admits it. Sources must remain frozen through all
-36 cost arms. Stop on first numerical failure and preserve measured artifacts.
-The separate 10800-second cost allocation (18 CPU/18 GPU plus four short
-analysis/policy workers) is within unchanged global caps. Costs are unlaunched.
-
-Charged through 04488: 92738.745087 CPU / 85263.964466 GPU seconds; remaining 30.239237
-CPU / 28.315565 GPU hours under 56/52 caps. Extra 24 CPU hours are already included.
-Enclosing correctness unit used 9522.019909/10800 seconds in 104 CPU/56 GPU
-workers (caps144/96). Latest pushed 6bceb767e includes origin/main 06590cb5a;
-fetch remains unchanged. Main stays unmerged and all F01--F20 terminal findings
-remain open. Broader gaps: actual DZ5 consumers, reporting/precision, native
-capacity, repeated terminal costs/review. No subagents. Controlling plan:
-filter_gradient_posterior_initializer_enclosing_20260927.md.
+The source remains based on pushed976c33552, including fetched origin/main
+06590cb5a (unchanged). Only cost harness version reporting changed; runtime is
+byte-identical to qualification04488. Failed04489 metadata attempt is preserved.
+Cost unit charged4227.008302/10800 seconds in39 workers including two checks.
+Campaign charged94229.965768 CPU /87999.752087 GPU seconds; remaining29.825010
+CPU /27.555624 GPU hours under56/52 caps. Extra24CPU hours are already included.
+No subagents. Public correctness:13 XLA cases/backend including D5 two-factor,
+then11 CPU/11 GPU graph/default renewal; 276-source guard/1436 exact allowances.
+Canonical LEDH rebuild stays excluded and unsupported claims stay blocked.
 
 Older checkpoints below preserve historical scope and instructions only.
 
