@@ -111,3 +111,90 @@ D23/DZ5 capacity or factor_max=2 qualification. Those actual-consumer checks,
 the remaining reporting/precision findings and all F01--F20 terminal decisions
 remain separate. This is a local skeptical review; no independent review is
 claimed.
+
+Failure 04536 stops the CPU sequence: the frozen D3 prior terminates with
+SIGSEGV after 243.995367 seconds inside its original quadratic-geometry fit.
+No capacity JSON or JUnit survives, so neither the exact failing call nor its
+resource state is established. Preserve that failure and all prior passed
+candidate results. The 900-second timeout did not fire. Do not rerun the full
+matrix or call this a numerical mismatch, OOM, or mapping-limit failure yet.
+
+Run one diagnostic-only CPU reproduction under the existing GDB wrapper,
+bounded at 900 seconds. A new test-only wrapper invokes the identical prior-D3
+test and records append-only JSONL before/after every public call, including
+RSS/HWM, process-map count, glibc mallinfo2 fields when available, completed
+call number, result digest, and replay/Gaussian validity of completed calls.
+Snapshot each completed call before starting the next. Load TensorFlow symbols
+for the native stack without fetching symbols or modifying the environment.
+This instrumentation diagnoses the crash; its timings cannot replace the
+uninstrumented cost cohort. No runtime, frozen reference, fixture, threshold,
+or completed candidate harness changes. Preserve its wrapper and runner source
+in a fresh versioned snapshot; keep the pre-diagnostic source freeze available.
+
+Repartition the same 7200-second allocation to at most 24 workers, counting
+failed 04536 and up to three short/localization additions. Global caps remain
+unchanged. Stop after the first native backtrace/resource capture and inspect
+the evidence before any retry or extension. Only resume unrelated capacity
+arms after the failure's scope is understood; no successful replacement of a
+failed prior is required to establish the candidate's numerical validity, but
+missing prior capacity cannot support a before/after capacity ratio. The
+terminal analyzer must preserve invalid/missing arms rather than silently
+dropping them. Skeptical review: the GDB diagnostic can alter timing and map
+layout, so compare the actual stack and sequence with 04536 and avoid claiming
+an exact native allocation owner from an RSS slope alone.
+
+04537 reproduces the fault on call eleven. Ten completed calls pass replay and
+independent Gaussian checks; map counts rise from 13,914 after call one to
+63,459 after call ten, about 5,505 per call, against vm.max_map_count=65,530.
+The log emits LLVM "Cannot allocate memory", then defunct JIT resources and
+SIGSEGV in an ORC IRCompileLayer/JitCompiler thread. This establishes a native
+compilation allocation failure; the mapping limit is strongly supported but
+the failed system allocation itself was not captured. The external map observer
+started after the inferior exited and contributes no peak measurement. Do not
+raise system limits, change packages or mutate global caches to make the frozen
+reference pass. Preserve both 04536 and 04537; no further prior-D3 CPU retry.
+
+Resume the remaining candidate/owner and GPU cases under unchanged fixtures.
+The prior CPU D3 capacity cell remains explicitly failed and cannot contribute
+a capacity ratio; each candidate still compares two complete frozen original
+calls after its own twenty-call window. Continue reporting successful and failed
+cells separately. The analyzer must accept a complete disposition matrix with
+explicit failed cells, never fabricate a missing numerical record or ignore its
+failed JUnit. The GDB group is explanatory and remains outside the matrix.
+
+Source review across this diagnostic boundary: all numerical runtime, ordinary
+capacity harness and its imported numerical/reference/observer dependencies
+remain byte-identical. Only the runner's GDB registration, a new diagnostic
+test and the post-run analyzer/tests change. The analyzer shall compare all
+recorded source hashes except these five explicitly listed reporting/diagnostic
+files, emit every difference, and still require exact environment/fixture
+identity. This is an explicit provenance refinement for descriptive capacity
+dispositions, not permission to mix changed numerical sources or to revise the
+already sealed cost cohort. The five paths are run_filter_repair_campaign.py,
+analyze_filter_repair_posterior_initializer_capacity.py under scripts, and
+test_filter_repair_campaign.py,
+test_filter_repair_posterior_initializer_capacity_analysis.py,
+test_filter_repair_posterior_capacity_crash_diagnostic.py under tests. A difference
+in any other source remains a veto. Requalify corruption/source checks before
+resuming; preserve both source snapshots and all failed charges.
+
+Terminal-role review on September 28 found that the newly registered frozen
+prior capacity groups inherited mandatory-current-test status. That would
+incorrectly require rerunning the retired crashing implementation to pass before
+merging a repaired candidate. Classify all four prior capacity groups as
+explanatory comparators, independently of whether they pass. Keep candidate
+graph/XLA reuse, successful owner collection, observer controls and analyzer
+checks mandatory. Add a regression that prevents a baseline from replacing
+those gates. The complete capacity analysis still requires every matrix cell,
+preserves prior failures, and forbids their use in capacity ratios. This changes
+test-role accounting only; it does not qualify the failed prior or weaken any
+current numerical/ownership criterion. Renew the focused analyzer/runner checks
+after the numerical matrix within the existing 24-worker allowance.
+
+The terminal analyzer also requires identical recorded hashes for the full
+690-file frozen reference closure, all 22 per-call memory observations, all 21
+instrumented candidate return observations, and every successful-owner collection
+stage. Reject invalid allocator bounds or device/memory mismatches before using
+those observations. Save this expanded report as analysis schema v3; preserve
+the earlier CPU v2 analysis and its executed source snapshot. These checks do
+not change the numerical workers or their measured records.

@@ -1,41 +1,46 @@
 # Complete filter and gradient execution repair
 
-Checkpoint through 04527. No worker is active. Complete posterior-initializer
-costs pass all 36 fresh CPU/GPU arms (04490--04525), analyzer 04526 passes 14,
-and policy 04527 passes 147. All accepted arms share 3441 source hashes and
-GPU 2. Both analyses reproduce exactly. Reopened evidence archive verifies
-214 members; see filter_gradient_posterior_initializer_cost_result_20260927.md
-and artifacts/filter-gradient-repair-20260917/posterior-initializer-cost-04527-verification.json.
+Checkpoint through 04550. No active numerical worker. Capacity investigation
+complete; archive reopened and all 145 members verified. Result:
+filter_gradient_posterior_initializer_capacity_result_20260927.md.
+Source snapshot: posterior-capacity-terminal-04550-source. Analyzer04549:
+35 passed; policy04550:152 passed. Runtime unchanged from352776f63.
 
-Default XLA crosses no cost-regression trigger on these D1/D3 factor_max=1
-fixtures. CPU warm medians: prior9.505/20.581s, XLA0.061/0.096s; GPU:
-prior17.155/47.609s, XLA0.093/0.190s. Ratios are descriptive. Graph-control GPU
-allocator peaks trigger2x attribution (1.236/1.302MB versus0.553/0.568MB prior).
-No waiver: longer graph/XLA reuse and owner-return/payload memory follow next.
-Actual DZ5 consumers, reporting/precision, native capacity and terminal
-F01--F20 decisions remain open. Main remains unmerged; no tolerance change.
+Eight candidate CPU/GPU reuse cases pass complete original records, independent
+Gaussian checks, twenty-call replay and stable ownership. Four owner replacements
+clear Python weak references but retain native host memory. Graph GPU transient
+peaks arise before formatting; completed current allocation stays flat. The
+original CPU D3 crashes after native allocation failure; preserve04536/04537,
+no further unchanged retry, no invented capacity ratio or exact syscall claim.
+Analysis: posterior-initializer-capacity-cpu-gpu-04548.json (15 valid numerical
+cells, one failed prior cell and two observer controls). Capacity unit used
+3879.772313/7200 seconds and23/24 workers.
 
-Next install /tmp/install_posterior_capacity_harness.py after this checkpoint
-is committed. It copies the three /tmp/filter_repair_posterior_*capacity*draft.py
-files and registers focused groups, plus a narrowly bound1200-second option
-for the D3 GPU prior's twenty-call check. Run analyzer/timeout checks first,
-then a D1 XLA CPU pilot. Follow filter_gradient_posterior_initializer_capacity_20260927.md:
-7200 combined seconds /20 workers reserved inside unchanged global caps.
-Prior D3 GPU costs47.6s/call, hence1200seconds; D3 GPU owner replacement uses900.
-Other tests use300 except other prior reuse workers at900. Twenty alternating
-warm calls and four successful-owner replacements have complete-record and
-independent-Gaussian vetoes. Observer-only controls and graph-return snapshots
-separate retained and transient allocation without native-eviction claims.
+Next: filter_gradient_dz5_initializer_adapter_20260928.md. Review/install the
+prepared adapter only in an isolated source snapshot, qualify actual exported
+D1/D3 accepted/rejected records and NPZ output, renew changed actual CDF target
+dependencies, then measure actual initializer workers under the DZ5 supervisor.
+Allocation24 workers /14400 combined seconds is unstarted and drawn from the
+existing global caps. Prepared helpers:
+/tmp/prepare_dz5_initializer_adapter_snapshot_20260928.py,
+/tmp/test_filter_repair_dz5_initializer_adapter_draft.py,
+/tmp/bayesfilter_estimation_initialization_candidate.py.
+Read current MacroFinance AGENTS.md/memory.md before execution. Its old master
+is closed and financial/BGL successor paused; neither is this campaign's scope.
+The frozen CDF target is engineering regression evidence, not a new campaign.
 
-The source remains based on pushed976c33552, including fetched origin/main
-06590cb5a (unchanged). Only cost harness version reporting changed; runtime is
-byte-identical to qualification04488. Failed04489 metadata attempt is preserved.
-Cost unit charged4227.008302/10800 seconds in39 workers including two checks.
-Campaign charged94229.965768 CPU /87999.752087 GPU seconds; remaining29.825010
-CPU /27.555624 GPU hours under56/52 caps. Extra24CPU hours are already included.
-No subagents. Public correctness:13 XLA cases/backend including D5 two-factor,
-then11 CPU/11 GPU graph/default renewal; 276-source guard/1436 exact allowances.
-Canonical LEDH rebuild stays excluded and unsupported claims stay blocked.
+Charged CPU95591.738717s / GPU90517.751450s; remaining
+CPU29.446739h / GPU26.856180h under56/52h caps.
+The user's additional24 CPU hours are already included; do not add them again.
+One numerical worker at a time. No subagents, package/environment changes,
+global TF cache mutation, system-limit changes, tolerance relaxation or live
+MacroFinance edits. GPU runs require availability check and verified growth.
+
+Actual DZ5 integration, reporting/precision discrepancies, consumer native
+lifecycle and all F01--F20 terminal dispositions remain open. Main stays
+unmerged. Canonical LEDH rebuild excluded; unsupported claims stay blocked.
+Canonical NeuTra remains the author-profile IAF; old maps/configurations are
+historical. Last pushed checkpoint352776f63 includes origin/main06590cb5a.
 
 Older checkpoints below preserve historical scope and instructions only.
 

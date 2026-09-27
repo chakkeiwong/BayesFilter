@@ -62,7 +62,7 @@ BASELINE_PARENT_PACKAGES = (
 # the original cumulative 8 CPU / 4 GPU hours; prior charges remain counted.
 # Owner added 24 CPU hours on 2026-09-25; GPU allocation is unchanged.
 BUDGET_SECONDS = {"CPU": 56 * 3600, "GPU": 52 * 3600}
-TEST_TIMEOUT_SECONDS = (60, 120, 300, 900)
+TEST_TIMEOUT_SECONDS = (60, 120, 300, 900, 1200)
 # The original eager full fitter takes 294 s for two replicates (run 01303).
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
@@ -132,6 +132,22 @@ TEST_GROUPS = {
     **{f"posterior_graph_diagnostic_{mode}": (
         f"tests/test_filter_repair_posterior_graph_diagnostic.py::test_empty_graph_result_localization[{mode}]",)
        for mode in ("full", "no_meta", "locator", "movement", "full_xla", "no_function", "no_inline_locator", "no_inline_movement", "no_inline_curvature", "no_dependency", "no_pruning", "no_arithmetic", "no_constant", "scalar_dependencies", "curvature", "fitter", "raw_fitter", "functional_control", "scoped_executor", "functional_fit_ops", "functional_owner_ops")},
+    "posterior_initializer_capacity_prior_stack_cpu": (
+        "tests/test_filter_repair_posterior_capacity_crash_diagnostic.py", "-s"),
+    "posterior_initializer_capacity_analysis": (
+        "tests/test_filter_repair_posterior_initializer_capacity_analysis.py",
+        "tests/test_filter_repair_campaign.py::test_small_test_reserves_and_enforces_its_timeout_without_expanding_budget",
+        "tests/test_filter_repair_campaign.py::test_capacity_timeout_exception_is_group_and_device_bound",
+        "tests/test_filter_repair_campaign.py::test_capacity_baselines_cannot_replace_candidate_gates"),
+    **{f"posterior_initializer_capacity_reuse_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_posterior_initializer_capacity.py::test_complete_initializer_twenty_call_reuse[{arm}-{dimension}]",)
+        for arm in ("prior", "graph", "xla") for dimension in (1, 3) for device in ("cpu", "gpu")},
+    **{f"posterior_initializer_capacity_owner_{dimension}_{device}": (
+        f"tests/test_filter_repair_posterior_initializer_capacity.py::test_successful_initializer_owner_replacement[{dimension}]",)
+        for dimension in (1, 3) for device in ("cpu", "gpu")},
+    **{f"posterior_initializer_capacity_observer_{device}": (
+        "tests/test_filter_repair_posterior_initializer_capacity.py::test_capacity_observer_without_numerical_calls",)
+        for device in ("cpu", "gpu")},
     "posterior_initializer_cost_analysis": (
         "tests/test_filter_repair_posterior_initializer_cost_analysis.py",),
     **{f"posterior_initializer_cost_{arm}_{dimension}_{device}": (
@@ -1510,6 +1526,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "posterior_initializer_capacity_prior_stack_cpu": "Diagnostic native stack/resource capture after prior D3 capacity crash 04536; not timing or qualification.",
+    **{f"posterior_initializer_capacity_reuse_prior_{dimension}_{device}": "Frozen prior capacity comparator only; preserve failed dispositions and prohibit ratios for invalid cells. Current candidate reuse/owner gates remain mandatory."
+       for dimension in (1, 3) for device in ("cpu", "gpu")},
     **{f"posterior_graph_diagnostic_{mode}": "Uninstalled graph-lowering localization; cannot substitute for complete public API, callback-order, or cost qualification."
        for mode in ("full", "no_meta", "locator", "movement", "full_xla", "no_function", "no_inline_locator", "no_inline_movement", "no_inline_curvature", "no_dependency", "no_pruning", "no_arithmetic", "no_constant", "scalar_dependencies", "curvature", "fitter", "raw_fitter", "functional_control", "scoped_executor", "functional_fit_ops", "functional_owner_ops")},
     **{f"genut_reverse_precision_toggle_{device}": "TF32 toggle/FP64 localization; cannot waive the failed current FP32 GPU gradient gate."
@@ -2500,6 +2519,8 @@ def require_unshared_cost_preflight(args):
                                  *TEST_BATCHES["staged_public_cost_gpu"],
                                  *TEST_BATCHES["joint_public_cost_gpu"],
                                  *TEST_BATCHES["posterior_initializer_cost_gpu"],
+                                 *(group for group in TEST_GROUPS
+                                   if group.startswith("posterior_initializer_capacity_") and group.endswith("_gpu")),
                                  *TEST_BATCHES["svd_cost_gpu"])):
         return
     samples = args.gpu_preflight
@@ -2546,6 +2567,9 @@ def run_job(args):
         timeout = MEASUREMENT_TIMEOUT_SECONDS.get(args.fixture, 300)
     if args.action == "test" and timeout not in TEST_TIMEOUT_SECONDS:
         raise ValueError("Test timeout must be one of the bounded registered limits")
+    if args.action == "test" and timeout == 1200 and (
+            args.group != "posterior_initializer_capacity_reuse_prior_3_gpu" or device != "GPU"):
+        raise ValueError("1200-second capacity timeout is restricted to the D3 GPU prior reuse group")
     key = [args.action, args.group, args.arm, args.fixture, args.jit, args.size, args.repeat, device]
     hashes = source_hashes()
     rows, attempts = history_summary(records(), key, hashes)
@@ -2575,7 +2599,7 @@ def run_job(args):
             ensure_baseline()
             env["FILTER_REPAIR_SOURCE_ROOT"] = str(BASELINE_ROOT)
         command = [sys.executable, "scripts/filter_repair_test_worker.py", "-q", *TEST_GROUPS[args.group], f"--junitxml={directory / 'junit.xml'}"]
-        if args.group == "factor_guard_native_stack":
+        if args.group in ("factor_guard_native_stack", "posterior_initializer_capacity_prior_stack_cpu"):
             if device != "CPU":
                 raise ValueError("The factor crash stack diagnostic is CPU-only")
             command = ["gdb", "-batch", "-return-child-result", "-ex", "set debuginfod enabled off",
@@ -2863,7 +2887,7 @@ def main():
     parser.add_argument("--repeat", type=int, choices=(0, 1, 2), default=0)
     parser.add_argument("--device", choices=("CPU", "GPU"), default="GPU")
     parser.add_argument("--test-timeout-seconds", type=int, choices=TEST_TIMEOUT_SECONDS, default=900,
-                        help="Smaller focused-test reservation; cumulative caps and 900-second ceiling remain fixed")
+                        help="Bounded test reservation; 1200 seconds is restricted to D3 GPU prior capacity reuse")
     parser.add_argument("--test-gpu-index", type=int, choices=(0, 1, 2, 3), default=None,
                         help="Optional physical GPU for tests; default selects an available non-desktop GPU")
     parser.add_argument("--measurement-gpu-index", type=int, choices=(0, 1, 2, 3), default=None,

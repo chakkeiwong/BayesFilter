@@ -883,3 +883,29 @@ def test_sequential_public_consumer_partition_covers_every_existing_case_once():
     assert len(registered) == len(set(registered))
     for device in ("cpu", "gpu"):
         assert set(driver.TEST_BATCHES[f"program_ownership_{device}"]) <= set(driver.mandatory_test_groups())
+
+
+@pytest.mark.parametrize("group,device", [("policy", "CPU"), ("policy", "GPU"),
+    ("posterior_initializer_capacity_reuse_prior_3_gpu", "CPU"),
+    ("posterior_initializer_capacity_reuse_xla_3_gpu", "GPU")])
+def test_capacity_timeout_exception_is_group_and_device_bound(group, device):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    args = argparse.Namespace(action="test", device=device, group=group, test_timeout_seconds=1200)
+    with pytest.raises(ValueError, match="restricted to the D3 GPU prior"):
+        driver.run_job(args)
+
+
+def test_capacity_baselines_cannot_replace_candidate_gates():
+    driver = load("run_filter_repair_campaign")
+    mandatory = set(driver.mandatory_test_groups())
+    assert "posterior_initializer_capacity_analysis" in mandatory
+    for device in ("cpu", "gpu"):
+        assert f"posterior_initializer_capacity_observer_{device}" in mandatory
+        for dimension in (1, 3):
+            prior = f"posterior_initializer_capacity_reuse_prior_{dimension}_{device}"
+            assert prior in driver.EXPLANATORY_TEST_GROUPS and prior not in mandatory
+            assert f"posterior_initializer_capacity_owner_{dimension}_{device}" in mandatory
+            for arm in ("graph", "xla"):
+                assert f"posterior_initializer_capacity_reuse_{arm}_{dimension}_{device}" in mandatory
