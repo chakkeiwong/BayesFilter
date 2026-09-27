@@ -8,10 +8,14 @@ from pathlib import Path
 import pytest
 import tensorflow as tf
 
-from bayesfilter.inference.joint_center import JointCenterStagedConfig
+from bayesfilter.inference.joint_center import (
+    JointCenterStagedConfig,
+    locate_joint_center_staged,
+)
 from bayesfilter.inference.joint_center_staged_tf import (
     StagedJointCenterProgram,
     run_staged_program,
+    staged_joint_center_program,
 )
 from scripts.filter_repair_cost_provenance import GPUProcessMonitor
 from tests.test_filter_repair_block_capture import stable_hlo
@@ -25,7 +29,7 @@ D = tf.float64
 
 @pytest.mark.parametrize("dimension", [1, 3])
 @pytest.mark.parametrize("arm", ["prior", "graph", "xla"])
-def test_staged_center_complete_costs(arm, dimension, request):
+def test_staged_center_complete_costs(arm, dimension, request, public=False):
     original, prior, compatibility = original_staged_source("staged_center_cost_original")
     precision = tf.linalg.diag(tf.cast(tf.range(dimension), D) + 1.3) + .07
     mode = .14 + tf.cast(tf.range(dimension), D) * .03
@@ -55,7 +59,7 @@ def test_staged_center_complete_costs(arm, dimension, request):
     stages = {"prepared": snapshot()}
     with GPUProcessMonitor(gpu) as sharing:
         tick = time.perf_counter()
-        owner = (None if arm == "prior" else StagedJointCenterProgram(callback, dimension,
+        owner = (None if arm == "prior" or public else StagedJointCenterProgram(callback, dimension,
             dataclasses.replace(config, jit_compile=arm == "xla")))
         build_seconds = time.perf_counter() - tick
         stages["built"] = snapshot()
@@ -65,9 +69,12 @@ def test_staged_center_complete_costs(arm, dimension, request):
             if gpu:
                 tf.config.experimental.reset_memory_stats("GPU:0")
             tick = time.perf_counter()
-            if owner is None:
+            if arm == "prior":
                 result = prior.locate_joint_center_staged(callback, operands[0], scale=operands[1],
                     config=prior_config, checkpoint_validator=validator)
+            elif public:
+                result = locate_joint_center_staged(callback, operands[0], scale=operands[1],
+                    config=dataclasses.replace(config, jit_compile=arm == "xla"), checkpoint_validator=validator)
             else:
                 result = run_staged_program(owner, *operands, validator)
             record = clean(dataclasses.asdict(result))
@@ -92,6 +99,18 @@ def test_staged_center_complete_costs(arm, dimension, request):
     expected_changed = prior.locate_joint_center_staged(callback, changed[0], scale=changed[1],
         config=prior_config, checkpoint_validator=lambda _: True)
     original_records = [clean(dataclasses.asdict(value)) for value in (expected, expected_changed)]
+    cross_mode_records = None
+    if public and arm == "graph":
+        # Preserve the prior cross-mode witness. The equivalent-result gate
+        # additionally uses the original's explicit graph mode, with no change
+        # to its arithmetic, fields or comparison tolerances.
+        cross_mode_records = original_records
+        original_records = [clean(dataclasses.asdict(prior.locate_joint_center_staged(
+            callback, operands[0], scale=operands[1], checkpoint_validator=lambda _: True,
+            config=dataclasses.replace(prior_config, jit_compile=False)))) for operands in (inputs, changed)]
+    if public and arm != "prior":
+        owner = staged_joint_center_program(callback, dimension,
+            dataclasses.replace(config, jit_compile=arm == "xla"), device=inputs[0].device)
     programs = {}
     if owner is not None:
         first_state = owner.checkpoint(*inputs)
@@ -115,13 +134,14 @@ def test_staged_center_complete_costs(arm, dimension, request):
         "config": dataclasses.asdict(config),
         "input_sha256": [hashlib.sha256(tf.io.serialize_tensor(x).numpy()).hexdigest() for x in inputs],
         "changed_input_sha256": [hashlib.sha256(tf.io.serialize_tensor(x).numpy()).hexdigest() for x in changed],
-        "gpu": gpu, "jit_compile": arm != "graph", "candidate_installed_publicly": False,
+        "gpu": gpu, "jit_compile": arm != "graph", "candidate_installed_publicly": public,
         "execution_role": {"prior": "original_public_mixed_host_and_xla", "graph": "explicit_internal_graph_reference",
             "xla": "internal_enclosing_xla_candidate"}[arm],
         "build_seconds": build_seconds, "cold": cold, "samples": samples,
         "changed_cost": changed_cost, "stages": stages, "programs": programs,
         "result": first, "changed_result": second,
         "original_result": original_records[0], "original_changed_result": original_records[1],
+        "cross_mode_original_records": cross_mode_records,
         "validator_calls_per_execution": 1, "gpu_process_observation": sharing.payload(),
         "timing_scope": "Full result materialization and validator; owner construction (including checkpoint trace) enters total cold.",
         "comparison_rule": "All original fields unchanged; only graph diagnostic jit_compile reporting differs by design.",
@@ -129,6 +149,11 @@ def test_staged_center_complete_costs(arm, dimension, request):
             "CPU and graph are explicit reference lanes; public candidate integration remains unqualified.",
             "Original recompiles stages per call; reuse comparison is not an identical-graph compiler ablation.",
             "Snapshots do not bound peaks, certify native eviction or close long-term residency."]}
+    if public:
+        report["execution_role"] = {"prior": "original_public_mixed_host_and_xla",
+            "graph": "explicit_public_graph_reference", "xla": "public_two_xla_stages_with_external_validator"}[arm]
+        report["comparison_rule"] = "All original fields unchanged; compare the same JIT mode. Prior cross-mode graph witnesses remain recorded."
+        report["nonclaims"][1] = "CPU and graph are explicit reference lanes; whole-campaign qualification remains open."
     save(request, "staged-center-cost.json", report)
     for actual, expected_record in zip((first, second), original_records, strict=True):
         assert actual["jit_compile"] is (arm != "graph")

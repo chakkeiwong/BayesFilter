@@ -203,7 +203,9 @@
       "python_iteration": []
     },
     "bayesfilter/inference/joint_center.py": {
-      "python_iteration": []
+      "python_iteration": [
+        "locate_joint_center_staged"
+      ]
     },
     "bayesfilter/inference/joint_center_staged_tf.py": null,
     "bayesfilter/inference/posterior_local_initializer.py": {
@@ -8930,12 +8932,12 @@
     },
     {
       "path": "bayesfilter/inference/joint_center.py",
-      "function": "locate_joint_center_staged.wall_guard_passed",
+      "function": "_locate_joint_center_staged_wall_diagnostic.wall_guard_passed",
       "kind": "python_numerical_callback",
       "ast_sha256": "dac8faafd9ef0ed57a7b808666f3da6affa8bb5a481d5f2223b13c163ff2aaa7",
       "occurrences": 1,
       "role": "host_validation",
-      "reason": "Host wall-clock watchdog only, reachable with explicitly requested jit_compile=False; both configurations reject a wall deadline with XLA enabled. No target/filter/score evaluation occurs in this callback. This exact exception does not exempt surrounding numerical replay/selection or certify the endpoint; E6 tracks their enclosing execution."
+      "reason": "Explicit non-JIT host-clock diagnostic only; ordinary public staged calls use reusable native stages. This exact watchdog allowance cannot exempt numerical work or admit a fallback."
     },
     {
       "path": "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",

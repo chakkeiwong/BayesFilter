@@ -518,6 +518,19 @@ TEST_GROUPS = {
         for dimension in (1, 3) for device in ("cpu", "gpu")},
     "staged_center_rounding_cpu": (
         "tests/test_filter_repair_staged_center_rounding.py",),
+    **{f"staged_public_cost_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_staged_public.py::test_public_cost[{arm}-{dimension}]",)
+       for arm in ("prior", "graph", "xla") for dimension in (1, 3) for device in ("cpu", "gpu")},
+    **{f"staged_public_{section}_{device}": (
+        "tests/test_filter_repair_staged_public.py", "-k", selection)
+       for section, selection in (
+           ("records_small", "original_records and (1-quadratic or 1-quartic)"),
+           ("records_smooth", "original_records and (3-quadratic or 3-quartic)"),
+           ("records_stops", "original_records and not quadratic and not quartic"),
+           ("consumers", "existing_consumers"),
+           ("boundaries", "cache_identity or boundary_validation or explicit_graph"),
+           ("failures", "native_error or nested_validator"))
+       for device in ("cpu", "gpu")},
     **{f"staged_center_cost_{arm}_{dimension}_{device}": (
         f"tests/test_filter_repair_staged_center_cost.py::test_staged_center_complete_costs[{arm}-{dimension}]",)
         for arm in ("prior", "graph", "xla") for dimension in (1, 3) for device in ("cpu", "gpu")},
@@ -1645,6 +1658,11 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"staged_public_{device}": tuple(f"staged_public_{section}_{device}" for section in
+        ("boundaries", "records_small", "records_smooth", "records_stops", "consumers", "failures"))
+       for device in ("cpu", "gpu")},
+    **{f"staged_public_cost_{device}": tuple(f"staged_public_cost_{arm}_{dimension}_{device}"
+        for dimension in (1, 3) for arm in ("prior", "graph", "xla")) for device in ("cpu", "gpu")},
     "dz5_remaining_target_cpu": tuple(f"dz5_{source}_target_{batch}_cpu"
         for batch in (4, 46, 68) for source in ("merged", "archived")),
     "dz5_target_gpu": tuple(f"dz5_{source}_target_{batch}_gpu"
@@ -2004,6 +2022,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith("staged_public_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS
        if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_", "genut_transitive_", "genut_dot_pullback_", "genut_reverse_precision_", "genut_bounded_gradient_", "latent_sir_", "mixed_kr_")) and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS

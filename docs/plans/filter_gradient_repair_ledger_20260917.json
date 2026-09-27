@@ -204,28 +204,28 @@
     "parse_error_role": "Unchanged historical vendor; counts are search leads, not violations."
   },
   "current_checkpoint": {
-    "through_run": 4264,
-    "based_on_commit": "9f0a5508f",
-    "record": "filter_gradient_genut_weight_precision_result_20260926.md",
+    "through_run": 4292,
+    "based_on_commit": "f57cb7cb2",
+    "record": "filter_gradient_staged_public_result_20260927.md",
     "cost_record": "filter_gradient_genut_bounded_gradient_cost_result_20260926.md",
-    "receipt": "artifacts/filter-gradient-repair-20260917/genut-bounded-gradient-cost-verification-04261.json",
+    "receipt": "artifacts/filter-gradient-repair-20260917/staged-public-gpu-verification-04292.json",
     "terminal_acceptance": false,
     "active_job": null,
     "all_finding_dispositions_open": true,
     "guarded_sources": 270,
     "exact_exceptions": 1424,
     "guard_coverage": "270 guarded sources; active public TTSIRT methods/native dependencies and latent SIR covered. Historical private loops remain diagnostic and wider integration is open.",
-    "status": "Corrected cost evidence preserved; FAB-only remote update merged and 149 checks pass. FP32/report/public integration and terminal findings remain open.",
+    "status": "Public staged locator passes 24 CPU and 24 GPU correctness cases plus twelve public cost arms. All terminal findings remain open.",
     "charged_seconds": {
-      "CPU": 86999.51476583588,
-      "GPU": 78707.47002561046
+      "CPU": 87735.05265922895,
+      "GPU": 79511.37654912348
     },
     "remaining_hours": {
-      "CPU": 31.833468120601147,
-      "GPU": 30.136813881774874
+      "CPU": 31.62915203910307,
+      "GPU": 29.913506514132365
     },
     "remote_main": "52888d771",
-    "latest_policy_run": 4264,
+    "latest_policy_run": 4280,
     "policy_checks": 129,
     "cost_analysis_run": 4260,
     "cost_analysis_checks": 7,
@@ -255,7 +255,7 @@
     "latent_sir_result": "filter_gradient_latent_sir_result_20260926.md",
     "canonical_neutra_architecture": "bayesfilter_neutra_iaf_author_v1",
     "main_promotion": false,
-    "next": "Execute filter_gradient_staged_public_integration_20260927.md; preserve GenUT and broader unresolved findings.",
+    "next": "Execute single-locator public integration under its bounded plan; preserve broader gaps.",
     "dz5_snapshot": "dz5-candidate-source-score-4c37f9f40-r1",
     "archived_dz5_snapshot": "dz5-archived-cdf-source-31f0067f9-r1",
     "prior_pushed_checkpoint": "9f0a5508f",
@@ -283,7 +283,7 @@
     "kdm_native_graph_run": 3919,
     "kdm_native_installed": true,
     "dz5_addition_overlay_rejected_run": 3908,
-    "receipt_status": "Every raw file from 04208 through 04261 is archived and checksummed in two receipts; corrected cohort harnesses included. Frozen Git/capacity fixture dependencies remain separate.",
+    "receipt_status": "Staged CPU, cache/policy and GPU receipts preserve every unit attempt, analyses and source snapshots.",
     "kdm_final_cpu_run": 3953,
     "kdm_public_gpu_run": 3955,
     "kdm_cost_runs": [
@@ -566,7 +566,44 @@
     "forward_direction_rejected_run": 4215,
     "cost_artifact_gap_run": 4243,
     "remote_main_fetched": "52888d771",
-    "remote_main_merge_pending": false
+    "remote_main_merge_pending": false,
+    "staged_public_correctness_runs": [
+      4266,
+      4267,
+      4268,
+      4269,
+      4270,
+      4272,
+      4279,
+      4281,
+      4282,
+      4283,
+      4284,
+      4285,
+      4286
+    ],
+    "staged_public_cost_runs": [
+      4273,
+      4274,
+      4275,
+      4276,
+      4277,
+      4278,
+      4287,
+      4288,
+      4289,
+      4290,
+      4291,
+      4292
+    ],
+    "staged_public_failed_harness_run": 4271,
+    "staged_public_cpu_tests": 24,
+    "staged_public_gpu_tests": 24,
+    "staged_public_cost_triggers": [],
+    "staged_public_unit_charge": {
+      "CPU": 735.537893,
+      "GPU": 803.906523
+    }
   },
   "historical_quadratic_batch_checkpoint": {
     "through_run": 1879,
@@ -1131,11 +1168,11 @@
     }
   },
   "active_continuation": {
-    "through_run": 4264,
-    "active_job": null,
-    "active_driver_session": null,
-    "status": "Execute filter_gradient_staged_public_integration_20260927.md; preserve GenUT and broader unresolved findings.",
-    "record": "filter_gradient_staged_public_integration_20260927.md"
+    "through_run": 4286,
+    "active_job": "staged_public_cost_gpu",
+    "active_driver_session": 75500,
+    "status": "Complete GPU staged public correctness, then matched costs and policy; archive, review and push before next public controller unit.",
+    "record": "filter_gradient_staged_public_result_20260927.md"
   },
   "historical_quadratic_probe_checkpoint": {
     "through_run": 1987,
@@ -3586,10 +3623,50 @@
     },
     "e6_staged_public": {
       "plan": "filter_gradient_staged_public_integration_20260927.md",
-      "status": "planned",
-      "cpu_worker_cap": 18,
-      "gpu_worker_cap": 8,
-      "charged_seconds_cap": 7200
+      "status": "24 CPU and 24 GPU correctness cases pass; matched GPU costs running",
+      "cpu_worker_cap": 20,
+      "gpu_worker_cap": 16,
+      "charged_seconds_cap": 7200,
+      "cpu_runs": [
+        4265,
+        4266,
+        4267,
+        4268,
+        4269,
+        4270,
+        4271,
+        4272,
+        4273,
+        4274,
+        4275,
+        4276,
+        4277,
+        4278,
+        4279,
+        4280
+      ],
+      "cpu_charged_seconds": 735.537893452951,
+      "cpu_correctness_cases": 24,
+      "policy_run": 4280,
+      "result": "filter_gradient_staged_public_result_20260927.md",
+      "gpu_driver_session": 75500,
+      "gpu_correctness_runs": [
+        4281,
+        4282,
+        4283,
+        4284,
+        4285,
+        4286
+      ],
+      "gpu_correctness_cases": 24
+    },
+    "e6_single_public": {
+      "plan": "filter_gradient_single_locator_public_integration_20260927.md",
+      "status": "planned after staged qualification",
+      "cpu_worker_cap": 20,
+      "gpu_worker_cap": 16,
+      "charged_seconds_cap": 7200,
+      "scope": "Public single-locator enclosure and the actual posterior/quadratic initializer call chains; no outer-initializer qualification implied."
     }
   },
   "diagnosis_checkpoint_02636": {
@@ -4842,7 +4919,7 @@
     "uncovered_static_import_count": 17
   },
   "latest_policy_audit": {
-    "run": 4264,
+    "run": 4280,
     "checks": 129,
     "guarded_sources": 270,
     "exact_allowances": 1424,

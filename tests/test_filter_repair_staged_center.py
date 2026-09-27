@@ -11,10 +11,15 @@ import pytest
 import tensorflow as tf
 import tensorflow_probability as tfp
 
-from bayesfilter.inference.joint_center import JointCenterStagedConfig
+from bayesfilter.inference.joint_center import (
+    JointCenterStagedConfig,
+    locate_joint_center_staged,
+)
 from bayesfilter.inference.joint_center_staged_tf import (
     StagedJointCenterProgram,
+    clear_staged_joint_center_cache,
     run_staged_program,
+    staged_joint_center_program,
 )
 from tests.filter_repair_frozen_checkpoint import FrozenCheckpoint
 from tests.test_filter_repair_block_capture import stable_hlo
@@ -49,7 +54,7 @@ def original_staged_source(label):
 
 @pytest.mark.parametrize("dimension,case", [(1, "quadratic"), (3, "quadratic"), (1, "quartic"),
     (3, "quartic"), (3, "constant"), (3, "invalid"), (3, "cap"), (3, "cap_after"), (3, "reject"), (3, "validator_error")])
-def test_staged_original_records(dimension, case, request):
+def test_staged_original_records(dimension, case, request, public=False):
     original, previous, compatibility = original_staged_source("staged_center_original")
     counter = tf.Variable(0, dtype=tf.int64)
     positions = tf.Variable(tf.zeros([1200, dimension], D))
@@ -83,7 +88,8 @@ def test_staged_original_records(dimension, case, request):
     config = JointCenterStagedConfig(checkpoint_iterations=1, total_iterations=10,
         gradient_tolerance=1e-8, max_objective_evaluations={"cap": 1, "cap_after": 3}.get(case, 120))
     before_config = previous.JointCenterStagedConfig(**dataclasses.asdict(config))
-    owner = StagedJointCenterProgram(target, dimension, config)
+    owner = (staged_joint_center_program(target, dimension, config, device=tf.constant(0., D).device)
+             if public else StagedJointCenterProgram(target, dimension, config))
     reports, hlos, continuing_hlos = [], [], []
     validator_calls = []
 
@@ -104,7 +110,9 @@ def test_staged_original_records(dimension, case, request):
             "validators": list(validator_calls)}
         counter.assign(0)
         validator_calls.clear()
-        actual = run_staged_program(owner, start, scale, validator)
+        actual = (locate_joint_center_staged(target, start, scale=scale, config=config,
+                                            checkpoint_validator=validator)
+                  if public else run_staged_program(owner, start, scale, validator))
         actual_calls = {"calls": int(counter), "positions": positions[:int(counter)].numpy().tolist(),
             "validators": list(validator_calls)}
         reports.append({"actual": clean(dataclasses.asdict(actual)), "original": clean(dataclasses.asdict(expected)),
@@ -123,10 +131,12 @@ def test_staged_original_records(dimension, case, request):
         references["continuation_graph"] = weakref.ref(last_graph)
         del last_graph
     trace_counts = (owner.checkpoint.experimental_get_tracing_count(), owner.continuation.experimental_get_tracing_count())
+    if public:
+        clear_staged_joint_center_cache()
     del first_graph, owner, target
     gc.collect()
     released = {key: ref() is None for key, ref in references.items()}
-    report = {"records": reports, "original_sources": original.hashes(), "original_compatibility": compatibility,
+    report = {"public_endpoint": public, "records": reports, "original_sources": original.hashes(), "original_compatibility": compatibility,
         "trace_counts": trace_counts,
         "checkpoint_hlo_unchanged": len({stable_hlo(hlo) for hlo in hlos}) == 1,
         "continuation_hlo_unchanged": len({stable_hlo(hlo) for hlo in continuing_hlos}) <= 1,
@@ -172,7 +182,7 @@ def test_staged_execution_label_comes_from_actual_program(jit):
     "test_staged_global_cap_can_fire_only_after_checkpoint",
     "test_staged_finite_sentinel_endpoint_is_not_promoted",
 ])
-def test_existing_staged_consumer_assertions_in_xla(name, monkeypatch, request):
+def test_existing_staged_consumer_assertions_in_xla(name, monkeypatch, request, public=False):
     from tests import test_joint_center as consumers
 
     results = []
@@ -181,8 +191,12 @@ def test_existing_staged_consumer_assertions_in_xla(name, monkeypatch, request):
         config = dataclasses.replace(config, jit_compile=True)
         initial = tf.convert_to_tensor(initial_position, D)
         scale = tf.ones_like(initial) if scale is None else tf.convert_to_tensor(scale, D)
-        owner = StagedJointCenterProgram(callback, int(initial.shape[0]), config)
-        result = run_staged_program(owner, initial, scale, checkpoint_validator)
+        if public:
+            result = locate_joint_center_staged(callback, initial, scale=scale, config=config,
+                                               checkpoint_validator=checkpoint_validator)
+        else:
+            owner = StagedJointCenterProgram(callback, int(initial.shape[0]), config)
+            result = run_staged_program(owner, initial, scale, checkpoint_validator)
         results.append(clean(dataclasses.asdict(result)))
         return result
 
@@ -193,7 +207,7 @@ def test_existing_staged_consumer_assertions_in_xla(name, monkeypatch, request):
     else:
         function()
     assert results
-    save(request, name + ".json", {"consumer": name, "jit_compile": True, "results": results})
+    save(request, name + ".json", {"public_endpoint": public, "consumer": name, "jit_compile": True, "results": results})
 
 
 @pytest.mark.parametrize("stage", ["checkpoint", "continuation"])
@@ -280,7 +294,7 @@ def test_continuation_uses_supplied_state_after_unrelated_invocation(request):
 
 
 @pytest.mark.parametrize("stage", ["checkpoint", "continuation"])
-def test_native_compilation_failure_propagates_without_fallback(stage, monkeypatch, request):
+def test_native_compilation_failure_propagates_without_fallback(stage, monkeypatch, request, public=False):
     """Real unsupported XLA op: never execute its Python body or retry eagerly."""
     optimizer = tfp.optimizer.lbfgs_minimize
     fallback_calls, validator_calls = [], []
@@ -310,10 +324,15 @@ def test_native_compilation_failure_propagates_without_fallback(stage, monkeypat
 
     monkeypatch.setattr(tfp.optimizer, "lbfgs_minimize", injected)
     config = JointCenterStagedConfig(checkpoint_iterations=1, total_iterations=10, gradient_tolerance=1e-8)
-    owner = StagedJointCenterProgram(callback, 3, config)
     start, scale = tf.constant([.8, -.4, 1.2], D), tf.constant([.7, 1.1, 1.3], D)
+    owner = (staged_joint_center_program(callback, 3, config, device=start.device)
+             if public else StagedJointCenterProgram(callback, 3, config))
     with pytest.raises(tf.errors.OpError) as caught:
-        run_staged_program(owner, start, scale, validator)
+        if public:
+            locate_joint_center_staged(callback, start, scale=scale, config=config,
+                                      checkpoint_validator=validator)
+        else:
+            run_staged_program(owner, start, scale, validator)
     failed_rows = int(counter)
     assert "EagerPyFunc" in str(caught.value)
     assert fallback_calls == []
@@ -338,19 +357,24 @@ def test_native_compilation_failure_propagates_without_fallback(stage, monkeypat
     thread.join(timeout=2.)
     assert released == [True]
     monkeypatch.setattr(tfp.optimizer, "lbfgs_minimize", optimizer)
-    fresh = StagedJointCenterProgram(callback, 3, config)
+    if public:
+        clear_staged_joint_center_cache()
+    fresh = (staged_joint_center_program(callback, 3, config, device=start.device)
+             if public else StagedJointCenterProgram(callback, 3, config))
     counter.assign(0)
-    recovered = run_staged_program(fresh, start, scale, lambda _: True)
+    recovered = (locate_joint_center_staged(callback, start, scale=scale, config=config,
+                                          checkpoint_validator=lambda _: True)
+                 if public else run_staged_program(fresh, start, scale, lambda _: True))
     assert recovered.endpoint_accepted and recovered.continuation_started
     assert int(counter) == recovered.physical_target_rows
     save(request, f"staged-native-failure-{stage}.json", {
-        "stage": stage, "exception_type": type(caught.value).__name__,
+        "public_endpoint": public, "stage": stage, "exception_type": type(caught.value).__name__,
         "message": str(caught.value), "fallback_calls": fallback_calls,
         "validator_calls": validator_calls, "failed_target_rows": failed_rows,
         "lock_released": released[0], "fresh_result": clean(dataclasses.asdict(recovered))})
 
 
-def test_nested_validator_restores_outer_state_and_exact_calls(request):
+def test_nested_validator_restores_outer_state_and_exact_calls(request, public=False):
     """A reentrant validator must not contaminate the outer optimizer state."""
     original, previous, compatibility = original_staged_source("staged_nested_validator")
     counter = tf.Variable(0, dtype=tf.int64)
@@ -367,7 +391,8 @@ def test_nested_validator_restores_outer_state_and_exact_calls(request):
 
     config = JointCenterStagedConfig(checkpoint_iterations=1, total_iterations=10, gradient_tolerance=1e-8)
     start, scale = tf.constant([1., -.8, 1.2], D), tf.constant([.5, 1.1, 2.], D)
-    owner = StagedJointCenterProgram(callback, 3, config)
+    owner = (staged_joint_center_program(callback, 3, config, device=start.device)
+             if public else StagedJointCenterProgram(callback, 3, config))
     before_config = previous.JointCenterStagedConfig(**dataclasses.asdict(config))
 
     def prior(point, units, validator):
@@ -375,6 +400,9 @@ def test_nested_validator_restores_outer_state_and_exact_calls(request):
             config=before_config, checkpoint_validator=validator)
 
     def candidate(point, units, validator):
+        if public:
+            return locate_joint_center_staged(callback, point, scale=units, config=config,
+                                             checkpoint_validator=validator)
         return run_staged_program(owner, point, units, validator)
 
     records = []
@@ -392,7 +420,7 @@ def test_nested_validator_restores_outer_state_and_exact_calls(request):
         records.append({"outer": clean(dataclasses.asdict(outer)), "inner": nested,
             "validator_calls": calls, "positions": positions[:int(counter)].numpy().tolist(),
             "target_rows": int(counter)})
-    report = {"original": records[0], "actual": records[1], "original_sources": original.hashes(),
+    report = {"public_endpoint": public, "original": records[0], "actual": records[1], "original_sources": original.hashes(),
         "original_compatibility": compatibility}
     save(request, "staged-nested-validator.json", report)
     _equal_records(report["actual"], report["original"])

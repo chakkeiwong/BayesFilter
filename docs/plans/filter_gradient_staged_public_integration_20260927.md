@@ -38,7 +38,7 @@ and lazy tracing to the owner, excluding the validator's unrelated work.
 Replacing/clearing the owner must release its Python graphs and callback;
 this does not claim native executable eviction or a general memory bound.
 
-Reserve up to 18 CPU and 8 GPU workers, 7,200 combined charged seconds, within
+Reserve up to 20 CPU and 16 GPU workers, 7,200 combined charged seconds, within
 the existing 56 CPU / 52 GPU-hour caps. Use registered runner groups and fresh
 numbered outputs, 300-second focused limits with a recorded 900-second retry
 only for a demonstrated compile-time capacity issue. CPU checks precede GPU
@@ -55,6 +55,13 @@ include public construction/materialization and keep HLO inspection outside the
 measured interval. Two extents and graph/XLA memory observations remain
 descriptive; original numerical failures veto speed conclusions.
 
+Public cost comparisons add an original graph-mode record for the graph arm,
+while saving the original XLA records alongside it. The earlier CPU graph/XLA
+tie-selection differences are preserved, not waived or redefined as equal.
+The unchanged complete-record gate applies within each execution mode. The
+original public/XLA arm remains the before cost authority; graph/XLA memory
+observations cannot establish a speed ranking across different selected records.
+
 Skeptical review: global reuse can retain old callbacks or choose a program for
 the wrong device; mutable start values must remain operands. Activating an
 owner scope during the external validator could retain unrelated graphs, so
@@ -64,3 +71,27 @@ Failure records cannot claim target counts after an incomplete device operation.
 These are implementation tests, not HMC, posterior, canonical LEDH or terminal
 F01--F20 admission. Preserve any discrepancy, stop the affected adoption, and
 localize it without changing the original comparison criteria.
+
+CPU 04265--04270 passes public boundary, all ten original-record cases and all
+seven existing consumer assertions. In 04271, both real compiler-error cases
+pass and nested numerical records/call order match; the final trace assertion
+mistakenly inspects a separately constructed, unused internal owner. Repair the
+harness to observe the cached public owner. Preserve the failed artifact and
+rerun the affected three checks within the existing reservation; no runtime,
+comparison criterion or original record changes.
+
+04272 passes all three affected checks. The CPU unit now has 23 distinct
+correctness cases. A static production-call search finds no internal caller
+beyond the exported API; the external MacroFinance staged-continuation script
+calls it with `adapter.log_prob_and_grad`. Its actual target remains unqualified.
+Python creates a fresh bound-method object for each attribute access. Extend
+cache identity to recognize the same method function and receiver by identity,
+without invoking user-defined equality or equating different receivers. Add a
+focused repeated-public-call/collection test after the frozen CPU cost cohort.
+The resulting cache branch must preserve records, one trace and frozen inputs;
+it does not grant the external target numerical or execution-policy status.
+The inspected external script's `staged_config()` explicitly sets
+`jit_compile=False` and `max_wall_seconds=WALL_CAP_SECONDS`, so it continues
+through the documented host-clock diagnostic. Migrating that external consumer
+requires its parent deadline and actual target checks; public wiring cannot
+silently relabel it as XLA.

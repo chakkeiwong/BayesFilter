@@ -1,28 +1,37 @@
-"""Internal operand-bound checkpoint and same-state continuation for L-BFGS.
+"""Operand-bound checkpoint and same-state continuation for L-BFGS.
 
 This program owns numerical stages only. The external validator is a host
 boundary and must run under invocation_lock between checkpoint and continuation.
-Public integration is qualified separately; no eager retry is provided here.
+The public endpoint reuses one owner; no eager retry is provided here.
 """
 
 from threading import RLock
+from types import MethodType
 
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow_probability.python.optimizer.lbfgs import LBfgsOptimizerResults
 
 from bayesfilter.inference.joint_center_tf import STATUSES, rounded_affine_position
+from bayesfilter.inference.program_cache_scope import ProgramCacheScope
 from bayesfilter.inference.quadratic_geometry_control_tf import _callback_program
 
 D = tf.float64
 I = tf.int64
 SOURCES = ("initial", "optimizer_callback", "checkpoint_replay", "endpoint_replay")
+_OWNER_LOCK = RLock()
+_LAST_OWNER = None
 
 
 class StagedJointCenterProgram:
     """Own reusable numerical stages; continuation carries all state explicitly."""
 
     def __init__(self, callback, dimension, config):
+        self.dependency_scope = ProgramCacheScope()
+        with self.dependency_scope.activate():
+            self._initialize(callback, dimension, config)
+
+    def _initialize(self, callback, dimension, config):
         if dimension < 1:
             raise ValueError("dimension must be positive")
         if config.max_wall_seconds is not None:
@@ -212,6 +221,32 @@ class StagedJointCenterProgram:
             jit_compile=config.jit_compile, autograph=False)
 
 
+def staged_joint_center_program(callback, dimension, config, *, device):
+    """Reuse one callback/signature owner; numerical inputs remain operands."""
+    global _LAST_OWNER
+    with _OWNER_LOCK:
+        key = (dimension, config, device)
+        previous = _LAST_OWNER
+        same_callback = previous is not None and (previous[0] is callback or (
+            isinstance(previous[0], MethodType) and isinstance(callback, MethodType)
+            and previous[0].__self__ is callback.__self__ and previous[0].__func__ is callback.__func__))
+        if same_callback and previous[1] == key:
+            return previous[2]
+        _LAST_OWNER = None
+        del previous
+        with tf.device(device):
+            owner = StagedJointCenterProgram(callback, dimension, config)
+        _LAST_OWNER = (callback, key, owner)
+        return owner
+
+
+def clear_staged_joint_center_cache():
+    """Release Python ownership without claiming native executable eviction."""
+    global _LAST_OWNER
+    with _OWNER_LOCK:
+        _LAST_OWNER = None
+
+
 def checkpoint_record(raw):
     """Translate completed numerical fields for the external validator."""
     from bayesfilter.inference.joint_center import JointCenterCheckpoint
@@ -257,7 +292,8 @@ def staged_result(raw, checkpoint, *, validated, validator_calls, continuation_s
 def run_staged_program(program, initial, scale, validator):
     """One external validator boundary; serialize the complete invocation."""
     with program.invocation_lock:
-        first = program.checkpoint(initial, scale)
+        with program.dependency_scope.activate():
+            first = program.checkpoint(initial, scale)
         raw = first[2]
         checkpoint = checkpoint_record(raw)
         validated, calls, continued, status, error = False, 0, False, None, None
@@ -269,7 +305,8 @@ def run_staged_program(program, initial, scale, validator):
                 status, error = "checkpoint_validator_exception", type(exc).__name__
             if validated:
                 continued = True
-                raw = program.continuation(initial, scale, first)
+                with program.dependency_scope.activate():
+                    raw = program.continuation(initial, scale, first)
             elif status is None:
                 status = "checkpoint_rejected"
         if int(raw["status"]) == 1:

@@ -13,14 +13,12 @@ mass-matrix, or HMC evidence. The exact endpoint is replayed before acceptance.
 
 from __future__ import annotations
 
+import math
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-import math
-
-from bayesfilter.ops.host_tensor_io import numeric_tensor
 import tensorflow as tf
 import tensorflow_probability as tfp
 
@@ -28,7 +26,7 @@ from bayesfilter.inference._exact_incumbent import (
     ExactCandidate,
     select_exact_incumbent,
 )
-
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 JOINT_CENTER_NONCLAIMS = (
     "single-start finite-neighborhood locator only",
@@ -727,7 +725,45 @@ def locate_joint_center_staged(
     scale: Any | None = None,
     config: JointCenterStagedConfig | None = None,
 ) -> JointCenterStagedResult:
-    """Replay a checkpoint, validate it once, and resume the same L-BFGS state."""
+    """Run two reusable XLA stages around one external checkpoint validator.
+
+    Starts and scales are operands; continuation preserves the complete L-BFGS
+    state. Compiler/device errors propagate without an eager retry or a result
+    assembled from incomplete counters. Explicit host-wall-clock diagnostics
+    retain their non-JIT controller.
+    """
+    from bayesfilter.inference.joint_center_staged_tf import (
+        run_staged_program,
+        staged_joint_center_program,
+    )
+
+    cfg = JointCenterStagedConfig() if config is None else config
+    if cfg.max_wall_seconds is not None:
+        return _locate_joint_center_staged_wall_diagnostic(
+            value_and_score_fn, initial_position, checkpoint_validator=checkpoint_validator,
+            scale=scale, config=cfg)
+    initial = _vector(initial_position, "initial_position")
+    dimension = int(initial.shape[0])
+    if dimension <= 0:
+        raise ValueError("initial_position must be nonempty")
+    scale_tensor = tf.ones_like(initial) if scale is None else _vector(scale, "scale")
+    if scale_tensor.shape != (dimension,) or not bool(tf.reduce_all(scale_tensor > 0)):
+        raise ValueError("scale must be positive finite with one entry per coordinate")
+    owner = staged_joint_center_program(value_and_score_fn, dimension, cfg, device=initial.device)
+    return run_staged_program(owner, initial, scale_tensor, checkpoint_validator)
+
+
+def _locate_joint_center_staged_wall_diagnostic(
+    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    initial_position: Any,
+    *,
+    checkpoint_validator: Callable[[JointCenterCheckpoint], bool],
+    scale: Any | None = None,
+    config: JointCenterStagedConfig,
+) -> JointCenterStagedResult:
+    """Historical host-clock diagnostic, explicitly non-JIT and never fallback."""
+    if config.jit_compile or config.max_wall_seconds is None:
+        raise ValueError("host-wall diagnostic requires an explicit non-JIT deadline")
 
     cfg = JointCenterStagedConfig() if config is None else config
     initial = _vector(initial_position, "initial_position")
