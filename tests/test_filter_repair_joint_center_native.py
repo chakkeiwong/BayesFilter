@@ -77,12 +77,15 @@ def fixture(dimension, case):
 
 @pytest.mark.parametrize('dimension', [1, 3])
 @pytest.mark.parametrize('case', ['quadratic', 'quartic', 'constant', 'nonfinite', 'cap', 'iterations'])
-def test_native_joint_locator_original_records(dimension, case, request):
+def test_native_joint_locator_original_records(dimension, case, request, public=False):
+    from bayesfilter.inference.joint_center import locate_joint_center
+    from bayesfilter.inference.joint_center_tf import joint_center_program
+
     checkpoint, original, compatibility = original_source('joint_locator_native_original')
     callback, config, reset, record = fixture(dimension, case)
-    program = make_joint_center_program(callback, dimension, config)
+    program = None if public else make_joint_center_program(callback, dimension, config)
     comparisons = []
-    for shift in (0., .11):
+    for shift in (0., .11, 0.):
         start = .6 + shift - tf.cast(tf.range(dimension), D) * .14
         scale = .8 + shift + tf.cast(tf.range(dimension), D) * .09
         reset()
@@ -90,9 +93,13 @@ def test_native_joint_locator_original_records(dimension, case, request):
             config=original.JointCenterLocatorConfig(**dataclasses.asdict(config)))
         expected_calls = record()
         reset()
-        with program.invocation_lock:
-            raw = program(start, scale)
-            actual = joint_center_result(raw, construction_error=program.construction_error)
+        if public:
+            actual = locate_joint_center(callback, start, scale=scale, config=config)
+            program = joint_center_program(callback, dimension, config, device=start.device)
+        else:
+            with program.invocation_lock:
+                raw = program(start, scale)
+                actual = joint_center_result(raw, construction_error=program.construction_error)
         actual_calls = record()
         comparisons.append({'actual': clean(dataclasses.asdict(actual)),
             'expected': clean(dataclasses.asdict(expected)), 'actual_calls': actual_calls,
@@ -183,7 +190,7 @@ def test_native_affine_rounding_matches_separate_binary64_operations(request):
 
 @pytest.mark.parametrize('case', ['interior', 'failed', 'accounting', 'cap',
                                   'endpoint_invalid', 'sentinel', 'invalid_position'])
-def test_native_joint_locator_synthetic_failures(case, monkeypatch, request):
+def test_native_joint_locator_synthetic_failures(case, monkeypatch, request, public=False):
     """Independent controlled optimizer outcomes retain exact status priority."""
     from tensorflow_probability.python.optimizer.lbfgs import LBfgsOptimizerResults
 
@@ -230,8 +237,12 @@ def test_native_joint_locator_synthetic_failures(case, monkeypatch, request):
     expected_calls = clean({'calls': calls.read_value(), 'positions': points[:int(calls)]})
     calls.assign(0)
     points.assign(tf.zeros_like(points))
-    program = make_joint_center_program(callback, 1, config)
-    actual = joint_center_result(program(point, scale))
+    if public:
+        from bayesfilter.inference.joint_center import locate_joint_center
+        actual = locate_joint_center(callback, point, scale=scale, config=config)
+    else:
+        program = make_joint_center_program(callback, 1, config)
+        actual = joint_center_result(program(point, scale))
     actual_calls = clean({'calls': calls.read_value(), 'positions': points[:int(calls)]})
     save(request, f'joint-native-failure-{case}.json',
         {'actual': clean(dataclasses.asdict(actual)), 'expected': clean(dataclasses.asdict(expected)),

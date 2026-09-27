@@ -59,3 +59,58 @@ configuration requires a different owner. A single retained Python program
 cannot prove native executable eviction. Passing this unit cannot close the
 outer initializer, actual DZ5 target, GenUT precision/reporting or terminal
 F01--F20 gates. Preserve failures and localize the first mismatch before adoption.
+
+Pre-execution review, September 27: staged qualification is now complete through
+04292 and archived. The single-locator caller audit confirms the two internal
+consumers above. The original record comparator, not endpoint distance alone,
+is the engineering acceptance criterion. Existing numerical settings are frozen
+for execution parity, not calibrated or promoted for any new target. D1/D3 are
+bounded mechanics fixtures; actual DZ5 qualification stays separate. Cost
+triggers inherit the staged unit: cold above 2x, warm above 1.2x, host RSS above
+256 MiB extra or 2x, or GPU allocator peak above 2x requires attribution before
+cost acceptance. A failed numerical arm cannot enter performance ranking.
+Source/environment/input/reference drift invalidates a cohort and triggers a
+fresh bounded retry; budget exhaustion stops new workers. Compiler failure is
+tested with a real unsupported XLA operation and must not produce an eager
+retry. These checks resolve the wrong-baseline, hidden-fallback and unfair-cost
+risks sufficiently to execute the bounded unit. Results and raw manifests go to
+fresh `run-NNNNN` directories under the existing campaign artifact root. No
+independent reviewer has been used for this localized wiring change.
+
+CPU correctness 04293--04301 passes 32 distinct cases, including both actual
+initializer call chains and a real XLA compilation error. 04302 adds two
+adjacent staged-versus-single assertions and renews the seven public API cases;
+all nine pass, for 34 distinct CPU correctness cases. No runtime correction was
+needed. The only intervening harness changes add those assertions and fix cost
+import formatting; predecessor snapshots are preserved. Original replay tests
+include original, changed and original operands and exact target ordering.
+The AST audit against e56307029 confirms unchanged numerical factory, affine
+rounding, formatter, input validator, configuration and result schemas.
+
+Proceed to six CPU costs, policy, then the same GPU correctness and six cost
+arms using the selector. The existing 20/16-worker and 7,200-second reservation
+covers this sequence (17 CPU and 15 GPU planned, including the API renewal).
+
+Recovery correction through 04324: standalone 04302 and policy 04309 were
+launched without `--device CPU`, so the CLI's documented default selected GPU.
+Their manifests and charges are correct; earlier CPU labels and hand-summed
+CPU charges were wrong. Run the adjacent API assertions explicitly on CPU and
+renew policy after the launch-guard fix. CPU correctness before that retry is
+32 distinct cases; GPU correctness 04310--04318 passes all 34.
+
+All six GPU costs preserve same-mode original records, but a foreign compute
+process is present in every preflight and in-run monitor. The independent
+analyzer correctly rejects timing eligibility. The new public staged/single
+cost groups were omitted from `require_unshared_cost_preflight`; add both
+registered batches and test every new arm. This preserves existing admission
+criteria and prevents wasting workers on known shared-device costs. Keep all
+failed timing evidence. A later uncontended six-arm cohort is required before
+GPU cost acceptance; correctness evidence remains usable.
+
+Allow up to 24 GPU workers for this unit, including the two incorrectly labeled
+standalone GPU workers and one full six-arm cost renewal. The 20 CPU-worker and
+7,200-second combined reservation and global 56/52-hour caps are unchanged.
+This local harness repair/retry changes no target, data, method, criterion,
+hardware class or campaign compute budget. If compute GPUs remain occupied,
+continue the independently authorized CPU enclosure unit and retain this cost
+gate; do not use a desktop GPU or weaken uncontended timing requirements.

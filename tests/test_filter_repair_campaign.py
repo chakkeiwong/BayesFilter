@@ -384,13 +384,16 @@ def test_test_roles_exclude_only_reviewed_explanatory_jobs():
         ("factor_guard_cpu_fixed", "factor_guard_cpu_padded", "factor_guard_cpu_domain"))
 
 
-def test_public_cost_preflight_declines_shared_gpu_before_worker_launch(tmp_path, monkeypatch):
+@pytest.mark.parametrize("group", ["posterior_public_memory_xla_3_gpu", *(
+    f"{family}_public_cost_{arm}_{dimension}_gpu"
+    for family in ("staged", "joint") for arm in ("prior", "graph", "xla") for dimension in (1, 3))])
+def test_public_cost_preflight_declines_shared_gpu_before_worker_launch(tmp_path, monkeypatch, group):
     import argparse
 
     driver = load("run_filter_repair_campaign")
     monkeypatch.setattr(driver, "OUTPUT", tmp_path)
     args = argparse.Namespace(action="test", device="GPU",
-        group="posterior_public_memory_xla_3_gpu", gpu_uuid="GPU-test-2",
+        group=group, gpu_uuid="GPU-test-2",
         gpu_preflight=[{"performance_preflight_uncontended": False}] * 2)
     with pytest.raises(RuntimeError, match="declined before launch"):
         driver.require_unshared_cost_preflight(args)

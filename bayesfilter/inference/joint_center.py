@@ -422,7 +422,45 @@ def locate_joint_center(
     scale: Any | None = None,
     config: JointCenterLocatorConfig | None = None,
 ) -> JointCenterResult:
-    """Run one bounded full-vector L-BFGS locator with exact endpoint replay."""
+    """Run reusable XLA initialization, L-BFGS and exact endpoint replay.
+
+    Starts and scales are operands. Compiler/device errors propagate without
+    an eager retry; an explicit non-JIT deadline selects the host diagnostic.
+    """
+    from bayesfilter.inference.joint_center_tf import (
+        joint_center_program,
+        joint_center_result,
+    )
+
+    cfg = JointCenterLocatorConfig() if config is None else config
+    if cfg.max_wall_seconds is not None:
+        return _locate_joint_center_wall_diagnostic(
+            value_and_score_fn, initial_position, scale=scale, config=cfg)
+    initial = _vector(initial_position, "initial_position")
+    dimension = int(initial.shape[0])
+    if dimension <= 0:
+        raise ValueError("initial_position must be nonempty")
+    scale_tensor = tf.ones_like(initial) if scale is None else _vector(scale, "scale")
+    if scale_tensor.shape != (dimension,) or not bool(tf.reduce_all(scale_tensor > 0)):
+        raise ValueError("scale must be positive finite with one entry per coordinate")
+    program = joint_center_program(value_and_score_fn, dimension, cfg, device=initial.device)
+    with program.invocation_lock:
+        with program.dependency_scope.activate():
+            raw = program(initial, scale_tensor)
+        return joint_center_result(raw, jit_compile=cfg.jit_compile,
+                                   construction_error=program.construction_error)
+
+
+def _locate_joint_center_wall_diagnostic(
+    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    initial_position: Any,
+    *,
+    scale: Any | None = None,
+    config: JointCenterLocatorConfig,
+) -> JointCenterResult:
+    """Historical host-clock diagnostic, explicitly non-JIT and never fallback."""
+    if config.jit_compile or config.max_wall_seconds is None:
+        raise ValueError("host-wall diagnostic requires an explicit non-JIT deadline")
 
     cfg = JointCenterLocatorConfig() if config is None else config
     initial = _vector(initial_position, "initial_position")

@@ -124,6 +124,22 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"joint_public_cost_{arm}_{dimension}_{device}": (
+        f"tests/test_filter_repair_joint_public_cost.py::test_single_public_cost[{arm}-{dimension}]",)
+       for arm in ("prior", "graph", "xla") for dimension in (1, 3) for device in ("cpu", "gpu")},
+    **{f"joint_public_{section}_{device}": (
+        "tests/test_filter_repair_joint_public.py", "-k", selection)
+       for section, selection in (
+           ("records_small", "original_records and (quadratic or quartic or iterations) and 1"),
+           ("records_smooth", "original_records and (quadratic or quartic or iterations) and 3"),
+           ("records_stops", "original_records and (constant or nonfinite or cap)"),
+           ("synthetic", "synthetic_outcomes"),
+           ("api", "existing_public_api"),
+           ("boundaries", "ownership or validation_graph or wall_diagnostic"),
+           ("posterior", "actual_posterior"),
+           ("quadratic", "actual_quadratic"),
+           ("failures", "real_compiler_failure"))
+       for device in ("cpu", "gpu")},
     **{f"latent_sir_review_{device}": (
         "tests/test_compiled_tensor_program_tf.py",
         "tests/test_filter_repair_latent_sir.py", "-k", "not simulation_cost")
@@ -1658,6 +1674,11 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"joint_public_{device}": tuple(f"joint_public_{section}_{device}" for section in
+        ("boundaries", "records_small", "records_smooth", "records_stops", "synthetic", "api",
+         "posterior", "quadratic", "failures")) for device in ("cpu", "gpu")},
+    **{f"joint_public_cost_{device}": tuple(f"joint_public_cost_{arm}_{dimension}_{device}"
+        for dimension in (1, 3) for arm in ("prior", "graph", "xla")) for device in ("cpu", "gpu")},
     **{f"staged_public_{device}": tuple(f"staged_public_{section}_{device}" for section in
         ("boundaries", "records_small", "records_smooth", "records_stops", "consumers", "failures"))
        for device in ("cpu", "gpu")},
@@ -2022,6 +2043,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith("joint_public_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("staged_public_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS
        if group.startswith(("ledh_safety_", "ledh_stages_", "ledh_stage_cost_", "genut_transitive_", "genut_dot_pullback_", "genut_reverse_precision_", "genut_bounded_gradient_", "latent_sir_", "mixed_kr_")) and group.endswith("_gpu")},
@@ -2347,6 +2369,8 @@ def require_unshared_cost_preflight(args):
                                  *TEST_BATCHES["sequential_public_cost_gpu"],
                                  *TEST_BATCHES["block_public_cost_gpu"],
                                  *TEST_BATCHES["staged_center_cost_gpu"],
+                                 *TEST_BATCHES["staged_public_cost_gpu"],
+                                 *TEST_BATCHES["joint_public_cost_gpu"],
                                  *TEST_BATCHES["svd_cost_gpu"])):
         return
     samples = args.gpu_preflight

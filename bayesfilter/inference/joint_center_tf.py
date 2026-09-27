@@ -7,10 +7,12 @@ There is no host numerical feedback or eager optimizer fallback.
 """
 
 from threading import RLock
+from types import MethodType
 
 import tensorflow as tf
 import tensorflow_probability as tfp
 
+from bayesfilter.inference.program_cache_scope import ProgramCacheScope
 from bayesfilter.inference.quadratic_geometry_control_tf import _callback_program
 
 D = tf.float64
@@ -21,6 +23,36 @@ STATUSES = (
     "endpoint_objective_decrease", "converged", "iteration_limit",
 )
 SOURCES = ("initial", "optimizer_callback", "endpoint_replay")
+_OWNER_LOCK = RLock()
+_LAST_OWNER = None
+
+
+def joint_center_program(callback, dimension, config, *, device):
+    """Retain one public program by callback identity and static signature."""
+    global _LAST_OWNER
+    with _OWNER_LOCK:
+        key = (dimension, config, device)
+        previous = _LAST_OWNER
+        same_callback = previous is not None and (previous[0] is callback or (
+            isinstance(previous[0], MethodType) and isinstance(callback, MethodType)
+            and previous[0].__self__ is callback.__self__ and previous[0].__func__ is callback.__func__))
+        if same_callback and previous[1] == key:
+            return previous[2]
+        _LAST_OWNER = None
+        del previous
+        scope = ProgramCacheScope()
+        with tf.device(device), scope.activate():
+            program = make_joint_center_program(callback, dimension, config, jit_compile=config.jit_compile)
+        program.dependency_scope = scope
+        _LAST_OWNER = (callback, key, program)
+        return program
+
+
+def clear_joint_center_cache():
+    """Release Python ownership without claiming native executable eviction."""
+    global _LAST_OWNER
+    with _OWNER_LOCK:
+        _LAST_OWNER = None
 
 
 def make_joint_center_program(callback, dimension, config, *, jit_compile=True):
