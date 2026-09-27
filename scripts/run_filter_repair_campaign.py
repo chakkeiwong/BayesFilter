@@ -124,6 +124,13 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"principal_angle_{arm}_{device}": (
+        f"tests/test_filter_repair_principal_angle_precision.py::test_actual_d23_accuracy_and_costs[{arm}]",)
+        for arm in ("before", "after") for device in ("cpu", "gpu")},
+    **{f"principal_angle_regression_{device}": (
+        "tests/test_filter_repair_principal_angle_precision.py::test_analytic_rotations_rank_and_gate",
+        "tests/test_filter_repair_fixed_stability.py", "tests/test_filter_repair_dense_derivatives.py",)
+        for device in ("cpu", "gpu")},
     "dz5_initializer_mechanisms_and_policy_cpu": (
         "tests/test_filter_repair_dz5_initializer_fit_localization.py::test_saved_cdf_initialization_and_angle_mechanisms",
         "tests/test_filter_repair_campaign.py", "tests/test_filter_repair_policy.py",
@@ -1561,6 +1568,12 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"principal_angle_before_{device}": "Pinned defective-SVD reproduction and descriptive cost only; repaired precision and regression groups are required."
+        for device in ("cpu", "gpu")},
+    **{f"dz5_initializer_frozen_fit_{arm}_cpu": "Saved-input localization preserves full-record mismatches; graph retains its documented domain assertion. No complete initializer admission."
+        for arm in ("original", "graph", "xla")},
+    "dz5_initializer_fit_mechanisms_cpu": "Component localization only; first harness dtype failure is preserved and corrected in the combined mechanism/policy group.",
+    "dz5_initializer_mechanisms_and_policy_cpu": "Root-cause localization plus policy renewal, not an initializer numerical-equivalence gate.",
     **{f"dz5_initializer_consumer_{device}": "Preserved mis-specified acceptance assertion on the historically rejected r1 recipe; mandatory accepted-r2 and explicit rejection gates replace it. No unchanged retry."
        for device in ("cpu", "gpu")},
     "posterior_initializer_capacity_prior_stack_cpu": "Diagnostic native stack/resource capture after prior D3 capacity crash 04536; not timing or qualification.",
@@ -2222,6 +2235,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith("principal_angle_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_initializer_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_public_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_initializer_") and group.endswith("_gpu")},

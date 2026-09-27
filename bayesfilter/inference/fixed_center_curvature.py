@@ -639,7 +639,10 @@ def _precision_geometry_kernel(first, second, tolerance, requested_rank, *, jit_
     overlap = tf.matmul(
         first_vectors * selected, second_vectors * selected, transpose_a=True
     )
-    singular = tf.linalg.svd(overlap, compute_uv=False)
+    # XLA's default SVD convergence leaves O(1e-7) errors on padded overlap
+    # matrices, which acos amplifies for nearly aligned subspaces.
+    singular = (xla_svd(overlap, max_iter=100, epsilon=sys.float_info.epsilon,
+        precision_config="").s if jit_compile else tf.linalg.svd(overlap, compute_uv=False))
     singular = tf.where(
         tf.abs(1.0 - singular) <= 1.0e-12, tf.ones_like(singular), singular
     )
