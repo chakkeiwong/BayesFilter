@@ -1,41 +1,46 @@
 # Complete filter and gradient execution repair
 
-Checkpoint through 04383, September 27. Prepared posterior movement and
-curvature controllers pass eight and eleven checks per CPU/GPU backend.
-Compiled cloud preparation now matches every original draw/key exactly at D1/D3
-and stays on CPU when invoked from GPU. 04380's incorrect curvature radial lower
-bound is preserved; restoring the original minimum_uniform=0.25 repairs it.
-CPU 04381, GPU-placement 04382 and policy 04383 pass (141 policy checks).
-See the [preparation result](filter_gradient_posterior_cloud_preparation_result_20260927.md)
-and posterior-cloud-preparation-verification-04383.json (23 verified members).
-Three exact allowances cover static seed-role hashing only; no numerical loop
-or NumPy allowance was added.
+Checkpoint through 04387, September 27. Prepared movement, curvature and exact
+CPU cloud generation are qualified for their documented scopes. Public-boundary
+CPU/GPU audit now confirms the current accepted public call raises under an
+outer tape; stopping inputs alone does not prevent the construction error.
+The original NumPy implementation disconnected derivatives. A diagnostic
+construction boundary preserves complete payloads and target counts (48 for
+accepted, one for invalid) and exposes no start/scale gradients. See the
+[boundary result](filter_gradient_posterior_public_boundary_result_20260927.md)
+and posterior-public-boundary-verification-04387.json (24 verified members).
+04384/04385 and both failed harness snapshots are preserved. No runtime source
+changed in this audit and it is not public XLA integration.
 
-No worker is active. Before public integration, execute the bounded public
-boundary audit in the [enclosing plan](filter_gradient_posterior_initializer_enclosing_20260927.md):
-actual start/scale derivatives on accepted and invalid public calls, repeat full
-payloads including eigen summaries, and oldest-original source comparison.
-The current result class passes tensors through without an explicit freeze,
-physical scale/log conversion is outside the native fit, and payload eigen
-summaries are eager. Do not assume internal frozen-stage checks establish the
-complete public derivative contract. Reserve three CPU/two GPU workers and
-900 seconds within the enclosing unit. Public wiring, default factor_max=2
-coverage and complete endpoint costs remain open. The immediate reference is
-031692a0b with 690 existing BayesFilter Python files byte-verified.
+No numerical worker is active. First integrate fetched origin/main 06590cb5a
+into the repair branch; it adds FAB reports/evidence only, including one post-run
+analysis script, with no BayesFilter numerical, test, script-runner or AGENTS
+change. Then run CPU policy. Next implement one prepared enclosing initializer
+owner as specified in the [plan](filter_gradient_posterior_initializer_enclosing_20260927.md):
+shared tracker, bounded locator chart resources, movement and curvature stages,
+native payload eigensummaries, frozen output boundary and complete ledgers.
+Construct the owner under tf.init_scope without executing targets. Begin with
+full pinned-module D1/default-factor_max=2 comparison before public dispatch.
+The 031692a0b reference must use its whole public module and a verified unchanged
+numerical import closure; do not substitute extracted stage tests for it.
 
-The enclosing unit has used 31 CPU/20 GPU workers and about 708/848 seconds;
-its existing reservation is 40 CPU/24 GPU workers and 10,800 combined seconds.
-The separate single-locator uncontended GPU cost renewal 04363--04368 passed
-with no declared trigger; its earlier shared cohort remains rejected.
+Enclosing reservation is now 64 CPU/44 GPU workers, still 10,800 combined seconds
+inside unchanged global caps. Used so far: 34 CPU/21 GPU workers and about
+900/962 seconds. This expands worker partitioning, not compute authorization.
+The separate single-locator uncontended GPU cost renewal passed with no trigger;
+its earlier shared cohort remains rejected. Preparation has three exact metadata
+allowances only; all numerical generation is native. Last policy 04383 passed
+141 checks; the next post-merge policy check remains due.
 
-All F01--F20 terminal findings and main promotion remain open. Actual external
-DZ5 consumers, GenUT reporting, native capacity and final frozen-source review
-remain. Canonical NeuTra is bayesfilter_neutra_iaf_author_v1; canonical LEDH
-rebuilding is excluded. No numerical tolerance or ill-conditioning waiver.
+All F01--F20 terminal findings and main promotion remain open. Full public
+initializer integration/costs, actual DZ5 consumers, GenUT reporting, native
+capacity and terminal frozen-source review remain. Canonical NeuTra stays
+bayesfilter_neutra_iaf_author_v1; canonical LEDH rebuilding is excluded.
+No tolerance or ill-conditioning waiver is installed.
 
-Global charges: 88927.144866 CPU / 81245.747845 GPU seconds under 56/52-hour
-caps (31.30 CPU / 29.43 GPU hours remaining). The extra 24 CPU hours are already
-included and must not be added again.
+Global charges: 89119.234178 CPU / 81359.601886 GPU seconds under 56/52-hour
+caps (31.24 CPU / 29.40 GPU hours remaining). The additional 24 CPU hours are
+already included and must not be counted again.
 
 Older checkpoints below preserve historical scope and instructions only.
 

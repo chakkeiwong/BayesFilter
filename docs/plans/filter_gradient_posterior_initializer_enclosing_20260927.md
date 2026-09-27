@@ -56,7 +56,7 @@ differences as separate witnesses. Prove actual XLA execution and no eager
 fallback with a real compiler failure; test Python owner collection without
 claiming native executable eviction.
 
-Reserve 40 CPU and 24 GPU workers, 10,800 combined charged seconds, inside the
+Reserve 64 CPU and 44 GPU workers, 10,800 combined charged seconds, inside the
 existing 56 CPU / 52 GPU-hour caps. Each focused worker normally has 300 seconds;
 a documented compiler-capacity failure may have one 900-second retry. Use the
 existing `scripts/run_filter_repair_campaign.py` command prefix, registered
@@ -294,3 +294,66 @@ derivative must be reported as such. Preserve all existing criteria while
 resolving the boundary; do not silently erase or advertise a new public gradient
 contract. Native result reporting must include the eigen-summary computations,
 not merely the already tested physical covariance and logarithm fields.
+
+04384 exposes the reference boundary: an accepted-path call inside GradientTape
+fails during geometry construction because XlaSelfAdjointEig has no gradient;
+an initial-invalid return exposes identity gradients for the supplied center
+and scale. The original 3582b4ac source converts inputs/results through NumPy,
+disconnecting those derivatives. This is not evidence of a valid differentiable
+initializer. Preserve the failed attempt. Extend the diagnostic to capture this
+specific error, complete ordinary calls outside the tape, and compare a
+stop-gradient input boundary against ordinary full payloads and physical target
+counts. The prospective boundary restores the oldest-original disconnection
+without changing values; it must not be advertised as a new analytical score.
+Use the existing audit budget; no runtime implementation is changed by this
+diagnostic.
+
+04385 shows that stopping the supplied input gradients alone does not fix the
+reference's construction error under an active tape; ordinary calls outside
+the tape do complete. Preserve this narrower failed hypothesis. Capture both
+errors, then test a diagnostic `tf.init_scope` boundary around the reference
+call. That scopes construction away from an unrelated outer tape, preserving
+the oldest-original nondifferentiable role. It is not permission to put eager
+numerical work into the candidate: the new candidate must construct its owner
+outside the tape and execute its numerical work in the enclosing XLA function.
+This is the third CPU audit worker under the same reservation; success still
+requires unchanged complete payloads and callback counts, with no new score claim.
+
+04386/04387 pass the audit on CPU/GPU. Accepted and invalid ordinary calls match
+the isolated reference boundary exactly, with 48 and one physical target rows
+respectively. Full fields, including eigen summaries, replay exactly. The
+accepted public call fails under an outer tape both with ordinary inputs and
+with stopped inputs; isolating construction/execution in the diagnostic scope
+restores the original nondifferentiable behavior. The candidate must isolate
+owner construction from the caller tape and execute one native program with
+frozen outputs. This repairs the accidental tape exposure introduced by the
+earlier NumPy migration, not a mathematically valid public derivative.
+
+The enclosing worker reservation is now 64 CPU / 44 GPU, with the combined
+10,800-second and global 56/52-hour limits unchanged. The original worker count
+underestimated separately needed dependency and boundary checks. This gives
+room for full endpoint/default-factor comparisons and matched costs without
+raising authorized compute. All previous attempts remain charged.
+
+Full integration implementation review: one retained owner must share a single
+eligibility tracker across initial replay, the bounded-chart locator, movement
+and curvature. Construct it inside tf.init_scope, with configuration-sized
+resources for the chart origin/units, then reset and assign those resources in
+the compiled call. Starts/scales/clouds remain operands. Stage ledgers may start
+from the previous exact incumbent, but completed reporting must omit the staged
+proxy row and retain all actual earlier records and global ledger indices.
+Preserve the public initial-invalid precedence, locator-best replay, tracker
+precedence and partial-stage records. Preserve the explicit host-clock diagnostic
+as non-default; no automatic eager fallback is allowed. Native summaries must
+cover result payload eigenspectra as well as norms and logarithms.
+
+For complete original comparisons, execute the full pinned 031692a0b public
+module under an isolated module name. Verify every other pinned BayesFilter
+Python file against current bytes before sharing imports. The replaced public
+module must come entirely from Git, never partially from the candidate. Recheck
+that no numerical dependency imports the replaced initializer; package export
+metadata alone is not a numerical dependency. Start with a stationary D1 case
+using the default factor_max=2, then expand before changing the public dispatch.
+Owner construction must execute zero target calls. Compare full records and
+ordered callbacks before any cost experiment; a discrepancy stops integration
+and triggers first-field attribution, not a new tolerance or optimizer setting.
