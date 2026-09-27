@@ -139,3 +139,92 @@ recorder to create the fixed row-count range first and add the dynamic offset.
 This records the identical positions in the identical order and changes no
 tracker/target arithmetic. Preserve the failed harness snapshot and retry;
 this localized harness failure remains inside the first-substep reservation.
+
+Movement substep, after 04333: execute the exact frozen movement-loop and
+candidate-recording statements from 031692a0b against prepared clouds. Verify
+every Python file in that commit's BayesFilter tree against its current bytes
+before using current imports as the reference dependency closure; fail on any
+drift. New candidate modules are absent from the reference import path. Bind
+only cloud preparation to supplied frozen arrays, preserving each seed and the
+shared geometry program/result formatter. This isolates the recurrence while
+retaining the complete existing geometry algorithm. Compare movement rows,
+ledger rows, final status/incumbent, partial failures and ordered target calls.
+Reference extraction and dependency hashes must be in artifacts; later complete
+public integration still requires a full public-call comparison.
+
+The internal movement owner accepts a finite exact incumbent and uses the
+existing tracker resources supplied by its enclosing owner. It must not reset
+already consumed target rows inside this stage. One native loop calls shared
+geometry, replays its nomination, appends only a valid replay and uses the
+shared exact candidate ledger. Read tracker mismatch before budget status,
+preserving original precedence. Test healthy D1/D3 scalar/batch, nonlinear,
+invalid cloud, budget and status mismatch before wider integration. Reserve
+12 CPU / 10 GPU workers and 3,600 seconds from the enclosing unit. A numerical
+discrepancy blocks public wiring and triggers first-field attribution.
+
+04334 rejects the internal movement candidate during graph construction: the
+history writer tries to scatter an empty D1/rank-zero basis tensor. The exact
+reference completed. Preserve the failed candidate snapshot; skip the write
+only for statically empty schema fields, whose history has no elements.
+This does not alter any computed value or original comparison. Retry the D1
+case before expanding the movement matrix.
+
+D1 scalar 04335 and D3 batch 04336 pass complete movement rows, candidate
+ledgers, tracker/physical callbacks and replay/HLO checks. Before broadening,
+emit the candidate ledger's already-computed score norms in the movement output
+so future public formatting needs no host numerical norm. Add explicit frozen
+derivative assertions, then renew these two cases along with the four adverse
+cases under one source freeze. The prior passing runtime/harness snapshots are
+preserved. This is completion of the prepared numerical record boundary, not
+an algorithm or tolerance change.
+
+After the six-case CPU cohort, add a stationary Gaussian start to exercise the
+early stop at exactly two successful movement fits; the existing D3 healthy
+arithmetic fixture reaches the original movement-attempt limit and is not an
+accepted initializer. Also exercise a real unsupported XLA target operation:
+it must raise without eager execution and preserve tracker state for an owner
+reset. Include these within the existing 12/10-worker movement reservation.
+Keep the numerical runtime fixed if only test coverage or import formatting
+changes, and archive the predecessor harness for the earlier cohort.
+
+Curvature integration audit: `make_dense_initializer_cloud_program` already
+preserves ordered partition evaluation, but its local winner summary lacks the
+complete exact-candidate ledger and its validity contract differs from the
+posterior evaluator. Reusing that helper requires explicit adapters and full
+position eligibility checks through the shared exact authority. The complete
+posterior path also records invalid-partition exits before any row-ledger
+append and replays centers between curvature attempts. Preserve those boundaries
+in the next substep; no dense-initializer shortcut may silently replace them.
+
+Curvature substep after movement qualification: reuse the ordered cloud and
+validated-fit programs, but ignore the cloud helper's local winner summary.
+Append the replay and every row from each completed valid partition to the
+shared exact ledger. If a partition fails, retain preceding ledger rows and
+the original replayed center in the returned failure; no later partition may
+execute. Select the complete exact incumbent before deciding whether to
+re-center, preserving strict ties and finite-position eligibility. Fit only
+after a complete cloud leaves the center unchanged. Preserve full fit records,
+validation/fit exceptions, physical precision and covariance, marginal square
+roots and logarithms as completed tensor outputs. Host formatting may decode
+these decisions but must not perform numerical conversion or reselection.
+
+Compare against exact 031692a0b recorder/curvature-loop statements, using the
+same byte-verified numerical dependency closure as movement. Only cloud delivery
+and completed result capture are adapted. Test stationary and moving D1/D3
+targets, nonlinear or rejected fits, center-invalid, partial-cloud-invalid,
+budget and eligibility failures, copied partition rows, and unchanged-input
+replay. Compare all records and physical call order; stable HLO, trace reuse,
+frozen derivatives and compiler-error behavior remain required. Reserve
+16 CPU / 10 GPU workers and 4,800 seconds within the enclosing reservation;
+use registered groups through the existing runner with 300-second ceilings.
+Begin with a single stationary CPU case before expanding to the matrix.
+
+Skeptical pre-execution review: evaluating all valid partitions before building
+the ledger is equivalent here only because the original center is fixed for
+that entire cloud and candidate recording invokes no target. An invalid
+partition must not contribute any row even if individual earlier rows are
+finite. The inherited fitter and exact-incumbent rule remain the numerical
+authorities; no dense-route marginal formula may replace the original physical
+covariance formula. Exceptions remain exceptions and are not renamed numerical
+rejections. Successful prepared-cloud checks qualify this internal recurrence
+only; public RNG, complete endpoint integration and costs remain separate.

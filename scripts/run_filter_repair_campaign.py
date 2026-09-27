@@ -124,6 +124,14 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"posterior_movement_boundaries_{device}": (
+        "tests/test_filter_repair_posterior_movement.py", "-k", "stationary or real_compilation_error")
+       for device in ("cpu", "gpu")},
+    **{f"posterior_movement_{dimension}_{batched}_{case}_{device}": (
+        f"tests/test_filter_repair_posterior_movement.py::test_prepared_movement_original_records[{dimension}-{batched}-{case}]",)
+       for dimension, batched, case in ((1, False, "healthy"), (3, True, "healthy"),
+           (1, True, "nonlinear"), (3, False, "budget"), (1, True, "invalid"), (1, True, "mismatch"))
+       for device in ("cpu", "gpu")},
     **{f"posterior_tracker_{device}": ("tests/test_filter_repair_posterior_tracker.py",)
        for device in ("cpu", "gpu")},
     **{f"posterior_ledger_{device}": ("tests/test_filter_repair_posterior_ledger.py",)
@@ -1678,6 +1686,10 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    **{f"posterior_movement_{device}": tuple(f"posterior_movement_{dimension}_{batched}_{case}_{device}"
+        for dimension, batched, case in ((1, False, "healthy"), (3, True, "healthy"),
+            (1, True, "nonlinear"), (3, False, "budget"), (1, True, "invalid"), (1, True, "mismatch")))
+       for device in ("cpu", "gpu")},
     **{f"joint_public_{device}": tuple(f"joint_public_{section}_{device}" for section in
         ("boundaries", "records_small", "records_smooth", "records_stops", "synthetic", "api",
          "posterior", "quadratic", "failures")) for device in ("cpu", "gpu")},
@@ -2047,6 +2059,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_movement_") and group.endswith("_gpu")},
     "posterior_tracker_gpu": "GPU",
     "posterior_ledger_gpu": "GPU",
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("joint_public_") and group.endswith("_gpu")},
