@@ -124,6 +124,18 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"posterior_initializer_compiler_{device}": (
+        "tests/test_filter_repair_posterior_initializer_controller.py::test_complete_compiler_failure_and_owner_release",)
+       for device in ("cpu", "gpu")},
+    **{f"posterior_initializer_{dimension}_{batched}_{case}_{device}": (
+        f"tests/test_filter_repair_posterior_initializer_controller.py::test_prepared_complete_public_reference[{dimension}-{batched}-{case}]",)
+       for dimension, batched, case in ((1, True, "stationary"), (3, True, "stationary"),
+           (1, False, "moving"), (3, True, "nonlinear"),
+           (1, False, "invalid_center"), (1, True, "invalid_partial"),
+           (1, True, "budget"), (1, True, "mismatch"))
+       for device in ("cpu", "gpu")},
+    **{f"posterior_initializer_controller_{device}": ("tests/test_filter_repair_posterior_initializer_controller.py",)
+       for device in ("cpu", "gpu")},
     **{f"posterior_public_boundary_audit_{device}": ("tests/test_filter_repair_posterior_public_boundary_audit.py",)
        for device in ("cpu", "gpu")},
     **{f"posterior_cloud_preparation_{device}": ("tests/test_filter_repair_posterior_cloud_preparation.py",)
@@ -2058,6 +2070,18 @@ TEST_BATCHES = {
     "factor_guard_memory": tuple(f"factor_guard_memory_{arm}_{mode}_{dimension}"
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)),
 }
+TEST_BATCHES.update({f"posterior_initializer_remaining_{device}": tuple(
+    group for group in TEST_GROUPS if group.startswith("posterior_initializer_")
+    and not group.startswith(("posterior_initializer_controller_", "posterior_initializer_3_True_stationary_"))
+    and group.endswith(f"_{device}")) for device in ("cpu", "gpu")})
+TEST_BATCHES.update({f"posterior_initializer_adverse_{device}": (
+    *(f"posterior_initializer_{dimension}_{batched}_{case}_{device}" for dimension, batched, case in
+      ((1, False, "invalid_center"), (1, True, "invalid_partial"), (1, True, "budget"), (1, True, "mismatch"))),
+    f"posterior_initializer_compiler_{device}") for device in ("cpu", "gpu")})
+TEST_BATCHES.update({f"posterior_initializer_complete_{device}": tuple(
+    group for group in TEST_GROUPS if group.startswith("posterior_initializer_")
+    and not group.startswith("posterior_initializer_controller_")
+    and group.endswith(f"_{device}")) for device in ("cpu", "gpu")})
 TEST_BATCHES.update({f"dense_controller_complete_{device}": (
     f"precision_operator_{device}", *TEST_BATCHES[f"dense_rng_{device}"],
     *TEST_BATCHES[f"dense_controller_{device}"], *TEST_BATCHES[f"dense_controller_edges_{device}"])
@@ -2078,6 +2102,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_initializer_") and group.endswith("_gpu")},
+    "posterior_initializer_controller_gpu": "GPU",
     "posterior_public_boundary_audit_gpu": "GPU",
     "posterior_cloud_preparation_gpu": "GPU",
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_curvature_controller_") and group.endswith("_gpu")},

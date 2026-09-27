@@ -357,3 +357,94 @@ using the default factor_max=2, then expand before changing the public dispatch.
 Owner construction must execute zero target calls. Compare full records and
 ordered callbacks before any cost experiment; a discrepancy stops integration
 and triggers first-field attribution, not a new tolerance or optimizer setting.
+
+Recovery after 04389: the first complete pinned-module D1/default-factor_max=2
+pilot passed on CPU. It preserved full payloads, physical callback order/counts,
+changed scales, replay, one trace, stable HLO and frozen derivatives. Its exact
+runtime, test, runner and policy sources are preserved under
+posterior-enclosing-pilot-04389-source. Remote main 06590cb5a was merged without
+conflicts as 035e19fdd; post-merge policy 04388 passed all 141 checks.
+
+Broaden the complete-public comparison under the same reservation to D1/D3,
+scalar/batch, nonlinear and displaced starts, initial/partial invalid rows,
+evaluation-budget exhaustion and explicit status mismatch. Vary both starts
+and scales on the same owner. The full-public reference and complete-record
+criteria remain unchanged. Start with D3 stationary and stop the cohort on the
+first discrepancy. Skeptical review: the initial pilot checked only changed
+scales and could miss captured starts or changed strict stopping decisions;
+the expanded operands and adverse cases address that gap before public wiring.
+
+04390 fails during D3 tracing: tf.init_scope invokes TensorFlow record.stop_recording,
+which suppresses forwardprop as well as the outer tape. The factor fitter then
+receives a missing JVP. This is an implementation construction failure, not a
+numerical mismatch. Preserve the complete failure and source snapshot. First
+test tracing without that blanket recording suppression: all owner resources
+are configuration constants and inputs enter only the frozen compiled program.
+Require the same active-tape construction/invocation checks; if they fail,
+localize the exact cross-tape edge before introducing another boundary.
+
+04391 passes the complete D3 comparison under both an active construction tape
+and an active invocation tape after removing blanket recording suppression.
+Local forward derivatives work, full payloads/callbacks agree, and external
+start/scale derivatives remain disconnected. Keep this runtime fixed while
+running the remaining seven complete-reference cases as fresh-process shards.
+The runner adds only the explicit shard list; the runtime docstring now describes
+the verified boundary. No numerical source or criterion changes for this cohort.
+
+04392--04394 pass D1 stationary, D1 displaced scalar and D3 nonlinear complete
+comparisons. 04395 fails solely at the diagnostic formatter: its general-purpose
+clean() emits the string "nan" whereas the public payload converts nonfinite
+numbers to JSON null. Preserve this failure and replace that final formatting
+step with the existing public _json_ready. Do not change the numerical source
+or comparison tolerance. Run the four adverse shards, then a real unsupported
+XLA-operation/owner-release check. This repairs a comparison harness, not target
+eligibility. The nonlinear reference and candidate both reject terminal geometry.
+
+04396--04400 pass all four adverse comparisons and the complete compiler/owner
+boundary. The invalid third locator call is recovered by the original algorithm;
+both implementations report invalid rows and retain the same accepted result.
+It is not evidence of a curvature-partition-invalid full endpoint; that boundary
+is independently covered in prepared curvature checks. The compiler test raises
+on the actual unsupported operation, with no eager calls or physical target rows;
+the Python owner/program/scope are collected. Native executable eviction remains
+unproved. Qualify the nine complete checks on an available compute GPU with this
+numerical source frozen before changing the public dispatch.
+
+Public integration review while the GPU qualification runs: preserve the
+original validation order, including an initially invalid target taking
+precedence over dimension-dependent curvature row-count errors. Native owner
+construction currently calls _cloud_row_counts before any target and would
+change that behavior. The public integration must represent this static late
+error as a deferred terminal status, compile only the valid prefix in that
+configuration, and raise the same error at the completed reporting boundary
+only if the original curvature stage would have been reached. Unused cloud
+storage may use valid configuration-only extents; no curvature target or fit may
+execute in that case. This is an error-precedence repair, not an eager fallback.
+
+Use one retained public owner keyed by callback identity (including bound-method
+receiver identity), dimension, device and validated configuration. Prepare
+clouds on CPU using the qualified generator and execute the complete numerical
+program on the requested device. Results remain frozen and resource invocation
+serialized. Completed reporting traverses history for field names and JSON only;
+all norms, logarithms, selection and eigen summaries come from native outputs.
+Keep an explicit, labeled non-JIT wall-clock diagnostic for the existing opt-in
+configuration. No compiler failure may select it automatically.
+
+When the public module changes, full reference calls still execute its entire
+031692a0b source. Verify every other existing BayesFilter Python dependency
+byte-for-byte, and verify unchanged public-module helpers by AST identity for
+stage references. Explicitly enumerate the replaced entrypoint/result/report
+symbols; all numerical reference calls must stay on frozen or verified shared
+code. New candidate modules are never reference dependencies. Test the exported
+API against full frozen payloads and physical callbacks, including callback
+identity, repeated changed operands, initial-invalid and late-configuration
+precedence, compiler failure, explicit wall diagnostics and original API tests.
+
+The configuration audit also identifies the inherited condition-number rule: the
+posterior configuration permits positive values up to one, while the factor
+configuration rejects them only after a completed valid curvature cloud. Preserve
+that late exception, including partition-validation precedence, by a native
+validation-only branch for that known static configuration failure. The numerical
+fit never runs in that branch. Initial-invalid and valid-initial comparisons must
+retain the original error text and physical callbacks for both this case and
+invalid row extents. Other compiler errors continue to propagate, never fallback.
