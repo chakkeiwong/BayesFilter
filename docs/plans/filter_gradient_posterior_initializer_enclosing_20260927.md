@@ -253,6 +253,44 @@ different stream and cannot serve as this generator. Reusing the original
 normal/ball authorities avoids that silent substitution. Pre-generating unused
 potential clouds is permitted only because they consume no target evaluations
 and their keys are derived independently from static configuration. Exact draw
-comparison and a counted target are the early discriminating checks. Public
+comparison and the absence of any target-call interface are the early checks. Public
 integration and original complete-endpoint comparisons remain required after
 this preparation dependency passes.
+
+The preparation module has three exact fixed-schema allowances, all confined
+to `posterior_seed_keys`: one loop over configured movement seed roles and two
+nested loops over configured curvature attempt/partition identities. They only
+perform versioned seed hashing and metadata packing. No allowance covers a
+random draw, sample row, target call, numerical decision or numerical recurrence.
+The actual generator is fully guarded. This is the static seed-metadata boundary
+already declared above, not permission for Python cloud-generation loops.
+
+04380 catches a preparation implementation error before integration: movement
+draws match, while curvature draws differ. The source `_sample_ball` explicitly
+uses minimum_uniform=0.25 (posterior_local_initializer.py:1122); the new generator
+incorrectly supplied the movement value 0.0 to both. Preserve the failed runtime
+and test. Restore the curvature-only 0.25 argument and rerun exact equality;
+change no RNG identity, seed, radius or comparison criterion. This is a localized
+implementation repair inside the four-CPU/two-GPU preparation reservation.
+
+Public-boundary source audit before wiring: `PosteriorLocalInitializerResult`
+passes tensors through `numeric_tensor`; it does not explicitly freeze all
+derivatives. `_build_result` performs physical scale/log operations outside the
+native fitter, and `payload()` calls an eager `_eigen_summary`. Consequently the
+earlier requirement to keep external derivatives frozen is not yet established
+as parity with the current complete public endpoint. Internal stage checks do
+not answer that question. Before replacing this endpoint, measure the actual
+reference public derivatives with respect to supplied start/scale on an accepted
+stationary Gaussian and an initial-invalid target. Record each returned field,
+target counts, acceptance and derivative presence; use ordinary GradientTape
+gradients, never pfor/Jacobian. Compare repeat payloads, including eigen summaries.
+Also inspect the original 3582b4ac source to distinguish an intended frozen
+boundary from partial derivatives introduced by earlier NumPy removal.
+
+Reserve three CPU/two GPU workers and 900 combined seconds inside the enclosing
+unit for this bounded audit; begin on CPU. This is explanatory reference evidence,
+not new differentiability, numerical or performance admission. A partial
+derivative must be reported as such. Preserve all existing criteria while
+resolving the boundary; do not silently erase or advertise a new public gradient
+contract. Native result reporting must include the eigen-summary computations,
+not merely the already tested physical covariance and logarithm fields.

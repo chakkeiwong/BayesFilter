@@ -124,6 +124,8 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"posterior_cloud_preparation_{device}": ("tests/test_filter_repair_posterior_cloud_preparation.py",)
+       for device in ("cpu", "gpu")},
     **{f"posterior_curvature_controller_{dimension}_{batched}_{case}_{device}": (
         f"tests/test_filter_repair_posterior_curvature_controller.py::test_prepared_curvature_records[{dimension}-{batched}-{case}]",
         *(("tests/test_filter_repair_posterior_curvature_controller.py::test_compiler_error_and_owner_release",)
@@ -2074,6 +2076,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    "posterior_cloud_preparation_gpu": "GPU",
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_curvature_controller_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_movement_") and group.endswith("_gpu")},
     "posterior_tracker_gpu": "GPU",
