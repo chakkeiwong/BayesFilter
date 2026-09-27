@@ -224,19 +224,24 @@
     "parse_error_role": "Unchanged historical vendor; counts are search leads, not violations."
   },
   "current_checkpoint": {
-    "through_run": 4550,
-    "based_on_commit": "352776f63",
-    "status": "Capacity investigation complete and archive verified; actual DZ5 adapter integration next.",
+    "through_run": 4571,
+    "based_on_commit": "876960c1b",
+    "status": "Capacity sealed/pushed; adapter fixtures and fresh target evidence pass; actual consumer executing.",
     "charged_seconds": {
-      "CPU": 95591.73871665674,
-      "GPU": 90517.75145042063
+      "CPU": 98523.64083686452,
+      "GPU": 91802.01461431586
     },
     "remaining_hours": {
-      "CPU": 29.44673924537313,
-      "GPU": 26.856180152660936
+      "CPU": 28.632321989759856,
+      "GPU": 26.49944038491226
     },
-    "active_job": null,
-    "active_session": null,
+    "active_job": [
+      {
+        "run": 4572,
+        "group": "dz5_initializer_accepted_cpu"
+      }
+    ],
+    "active_session": 42260,
     "next": "Review/install isolated DZ5 initializer adapter and execute Gaussian wiring checks, then fresh actual CDF dependency qualification and process lifetime evidence.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
@@ -268,8 +273,8 @@
     "main_promotion": false,
     "remote_main": "06590cb5a",
     "remote_main_integrated": true,
-    "latest_completed_policy_run": 4527,
-    "latest_completed_policy_checks": 147,
+    "latest_completed_policy_run": 4550,
+    "latest_completed_policy_checks": 152,
     "terminal_acceptance": false,
     "all_finding_dispositions_open": true,
     "source_policy_status": "276 guarded sources / 1436 exact allowances; no extra allowance from the graph repair.",
@@ -440,14 +445,48 @@
     "next_consumer_plan": "filter_gradient_dz5_initializer_adapter_20260928.md",
     "next_consumer_allocation": {
       "combined_seconds": 14400,
-      "workers": 24,
-      "started": false,
-      "global_caps_unchanged": true
+      "workers": 28,
+      "started": true,
+      "global_caps_unchanged": true,
+      "used_workers": 22,
+      "used_combined_seconds": 4216.165284103015
     },
     "capacity_combined_analysis": "posterior-initializer-capacity-cpu-gpu-04548.json",
     "capacity_archive": "posterior-initializer-capacity-04550-evidence.tar.gz",
     "capacity_archive_sha256": "765ac35e862eecd5dc1878212088fe6f3c69886344f74c18b7bf1035f3bdade7",
-    "capacity_archive_members": 145
+    "capacity_archive_members": 145,
+    "consumer_snapshot": "dz5-initializer-adapter-20260928-r1",
+    "consumer_failed_runs": [
+      [
+        4568,
+        "dz5_initializer_consumer_cpu"
+      ],
+      [
+        4569,
+        "dz5_initializer_consumer_cpu"
+      ]
+    ],
+    "consumer_review": "filter_gradient_dz5_initializer_adapter_result_20260928.md",
+    "consumer_new_target_admission": "dz5-initializer-adapter-target-admission-20260928-r1.json",
+    "consumer_accepted_input_snapshot": "dz5-initializer-accepted-inputs-20260928-r1",
+    "consumer_baseline_correction": {
+      "r1_original_and_candidate_rejected": true,
+      "candidate_run": 4569,
+      "candidate_scaled_score": 1.0324490979441923,
+      "original_scaled_score": 1.032345508936184,
+      "rows": 252,
+      "full_record_equivalence": false
+    },
+    "consumer_hlo_capacity": {
+      "cpu_r1_hlo_bytes": 196956093,
+      "cpu_r1_unoptimized_instructions": 774754,
+      "numerical_return_hwm_bytes": 21394235392,
+      "post_inspection_hwm_bytes": 24687267840,
+      "next": "qualify GPU and exact accepted-r2 case; no full target capacity claim"
+    },
+    "consumer_archive_through": 4571,
+    "consumer_archive_members": 953,
+    "consumer_archive_sha256": "ea152d55b422976921e05c3c65dbbc5ea98ee2a261aac9435bb5d53b71c632f5"
   },
   "historical_quadratic_batch_checkpoint": {
     "through_run": 1879,

@@ -62,7 +62,7 @@ BASELINE_PARENT_PACKAGES = (
 # the original cumulative 8 CPU / 4 GPU hours; prior charges remain counted.
 # Owner added 24 CPU hours on 2026-09-25; GPU allocation is unchanged.
 BUDGET_SECONDS = {"CPU": 56 * 3600, "GPU": 52 * 3600}
-TEST_TIMEOUT_SECONDS = (60, 120, 300, 900, 1200)
+TEST_TIMEOUT_SECONDS = (60, 120, 300, 900, 1200, 1800, 3600)
 # The original eager full fitter takes 294 s for two replicates (run 01303).
 # Reserve the same bounded ceiling for both source arms at either extent.
 MEASUREMENT_TIMEOUT_SECONDS = {"fixed_fitting": 900}
@@ -124,6 +124,32 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "dz5_initializer_evidence_cpu": (
+        "tests/test_filter_repair_dz5_initializer_admission.py",
+        "tests/test_filter_repair_dz5_supervision.py",
+        "tests/test_filter_repair_dz5_initializer_consumer.py::test_saved_r1_is_rejection_evidence_only",
+        "tests/test_filter_repair_campaign.py::test_dz5_initializer_deadline_exceptions_are_scope_bound"),
+    **{f"dz5_initializer_accepted_{device}": (
+        "tests/test_filter_repair_dz5_initializer_consumer.py::test_declared_initializer_case[True]",)
+        for device in ("cpu", "gpu")},
+    "dz5_initializer_rejected_gpu": (
+        "tests/test_filter_repair_dz5_initializer_consumer.py::test_declared_initializer_case[False]",),
+    **{f"dz5_initializer_consumer_{device}": (
+        "tests/test_filter_repair_dz5_initializer_consumer.py::test_actual_cdf_initializer",)
+        for device in ("cpu", "gpu")},
+    **{f"dz5_initializer_lifetime_{device}": (
+        "tests/test_filter_repair_dz5_initializer_consumer.py::test_actual_initializer_supervisor_lifetime[2]",)
+        for device in ("cpu", "gpu")},
+    **{f"dz5_initializer_target_{batch}_{device}": (
+        f"tests/test_filter_repair_dz5_initializer_target.py::test_current_initializer_target[{batch}]",)
+        for batch, device in ((4, "cpu"), (1, "gpu"), (4, "gpu"), (46, "gpu"), (68, "gpu"))},
+    **{f"dz5_initializer_oracle_{device}": (
+        "tests/test_filter_repair_dz5_initializer_target.py::test_current_initializer_score_oracle",)
+        for device in ("cpu", "gpu")},
+    **{f"dz5_initializer_adapter_{dimension}_{case}_{device}": (
+        f"tests/test_filter_repair_dz5_initializer_adapter.py::test_real_initializer_adapter_records[{dimension}-{case}]",)
+        for dimension, case in ((1, "healthy"), (3, "healthy"), (3, "invalid_locator"), (3, "invalid_cloud"))
+        for device in ("cpu", "gpu")},
     **{f"posterior_public_graph_{dimension}_{batched}_{case}_{device}": (
         f"tests/test_filter_repair_posterior_initializer_public.py::test_exported_graph_reference[{dimension}-{batched}-{case}]",)
        for dimension, batched, case in ((1, True, "stationary"), (3, True, "stationary"),
@@ -1526,6 +1552,8 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"dz5_initializer_consumer_{device}": "Preserved mis-specified acceptance assertion on the historically rejected r1 recipe; mandatory accepted-r2 and explicit rejection gates replace it. No unchanged retry."
+       for device in ("cpu", "gpu")},
     "posterior_initializer_capacity_prior_stack_cpu": "Diagnostic native stack/resource capture after prior D3 capacity crash 04536; not timing or qualification.",
     **{f"posterior_initializer_capacity_reuse_prior_{dimension}_{device}": "Frozen prior capacity comparator only; preserve failed dispositions and prohibit ratios for invalid cells. Current candidate reuse/owner gates remain mandatory."
        for dimension in (1, 3) for device in ("cpu", "gpu")},
@@ -1766,6 +1794,10 @@ EXPLANATORY_TEST_GROUPS = {
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)},
 }
 TEST_BATCHES = {
+    "dz5_initializer_target_gpu": (
+        "dz5_initializer_target_1_gpu", "dz5_initializer_target_4_gpu",
+        "dz5_initializer_target_46_gpu", "dz5_initializer_target_68_gpu",
+        "dz5_initializer_oracle_gpu"),
     **{f"posterior_curvature_controller_{device}": tuple(f"posterior_curvature_controller_{dimension}_{batched}_{case}_{device}"
         for dimension, batched, case in ((1, False, "stationary"), (3, True, "stationary"),
            (1, True, "recenter"), (1, True, "exhaustion"), (3, True, "nonlinear"),
@@ -2181,6 +2213,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_initializer_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_public_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_initializer_") and group.endswith("_gpu")},
     "posterior_initializer_controller_gpu": "GPU",
@@ -2570,6 +2603,13 @@ def run_job(args):
     if args.action == "test" and timeout == 1200 and (
             args.group != "posterior_initializer_capacity_reuse_prior_3_gpu" or device != "GPU"):
         raise ValueError("1200-second capacity timeout is restricted to the D3 GPU prior reuse group")
+    if args.action == "test" and timeout in (1800, 3600):
+        allowed = {
+            1800: {("dz5_initializer_accepted_cpu", "CPU"), ("dz5_initializer_lifetime_gpu", "GPU")},
+            3600: {("dz5_initializer_lifetime_cpu", "CPU")},
+        }
+        if (args.group, device) not in allowed[timeout]:
+            raise ValueError("Extended initializer deadline is restricted to its declared group and device")
     key = [args.action, args.group, args.arm, args.fixture, args.jit, args.size, args.repeat, device]
     hashes = source_hashes()
     rows, attempts = history_summary(records(), key, hashes)
@@ -2887,7 +2927,7 @@ def main():
     parser.add_argument("--repeat", type=int, choices=(0, 1, 2), default=0)
     parser.add_argument("--device", choices=("CPU", "GPU"), default="GPU")
     parser.add_argument("--test-timeout-seconds", type=int, choices=TEST_TIMEOUT_SECONDS, default=900,
-                        help="Bounded test reservation; 1200 seconds is restricted to D3 GPU prior capacity reuse")
+                        help="Bounded test reservation; limits above 900 seconds require an explicitly registered group/device")
     parser.add_argument("--test-gpu-index", type=int, choices=(0, 1, 2, 3), default=None,
                         help="Optional physical GPU for tests; default selects an available non-desktop GPU")
     parser.add_argument("--measurement-gpu-index", type=int, choices=(0, 1, 2, 3), default=None,

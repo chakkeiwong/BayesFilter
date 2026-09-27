@@ -112,3 +112,64 @@ isolation must include transitive original fitters, not just the external
 wrapper. Finite results alone cannot excuse an incorrect row count or a
 numerical record mismatch. This is a local plan review; no independent review is
 claimed. Execution starts only after the current capacity cohort is sealed.
+The capacity cohort was sealed and pushed at `876960c1b` before this unit.
+Fresh local review confirms the adapter delegates every numerical decision to
+the existing shared controller. The Gaussian fixture tests use the regular
+campaign worker to load the frozen external adapter and the current BayesFilter
+files, checking every loaded BayesFilter file against the frozen snapshot before
+and after execution. This explicit reference harness boundary allows the pinned
+original locator/fitter fixtures to remain usable. Actual CDF target runs retain
+the read-only mounts of both complete source trees. The fixture audit also
+rejects forbidden MacroFinance-local filtering/HMC imports. This is accepted
+TF/TFP adapter glue and diagnostic tests, with no model, method or admission change.
+
+The fresh target evidence subset is CPU/GPU batch4 graph/XLA comparison,
+invalid-row isolation and exact replay; GPU batches1/46/68 for the actual
+initializer's static shapes; and CPU/GPU independent five-point score oracles
+at both existing step sizes. The readback issues a new target-only artifact
+for the isolated initializer regression, using only these fresh passing runs
+and their exact frozen closure. It does not update any historical admission or
+authorize training, tuning, HMC, retained sampling or scientific claims. The
+existing real `CreditTargetAdapter` consumes this artifact through its normal
+constructor. Full-chain and statistical admission remain separate gates.
+
+September 28 baseline correction after 04569: the originally selected recipe
+`proposal-contract-r1` is an archived rejection, not an accepted consumer case.
+The current call returns `dense_center_score_above_cap` after252 rows, as the
+original r1 did. Preserve that failure of the initial acceptance assertion and
+qualify it only as an expected rejection. The current scaled score1.032449 and
+historical1.032346 differ; identical rejection/counts are not full numerical
+equivalence. Do not rerun the CPU case unchanged.
+
+The accepted historical initializer call is `proposal-preparation-r2`: use its
+exact `proposal-contract-r2/recipe.json` and `start-point.json`, frozen separately
+in `dz5-initializer-accepted-inputs-20260928-r1`. The only recipe changes are
+the original locator limits80->240 iterations and601->1501 callback batches;
+thresholds, random seeds, radius, dimensions and factor count are unchanged.
+The start is the archived r1 point obtained from the prior, not truth or an old
+map. Verify all its original artifact hashes and its original admission hash,
+then replay its value/score with the freshly qualified current target at the
+original caller's tolerances before using its position. Save a separate fresh
+replay receipt linked to the original point and new target evidence; do not edit
+or restamp the old point/admission. No optimizer state or learned transport is
+loaded. This corrects an engineering fixture choice; it does not restart CDF
+research or retune a scientific target. The accepted case must pass independently
+and does not waive the retained r1 numerical discrepancy.
+
+Actual r1 numerical execution took521.69s on CPU and compilation took roughly
+six minutes; therefore the planned400s child lifetime cap cannot qualify this
+consumer. Before launching accepted/lifetime tests, reserve up to1800s for the
+accepted CPU worker and3600s for a CPU parent with two1700s children, leaving
+cleanup time. GPU accepted work retains900s; a GPU lifetime parent gets1800s
+for two850s children. Runner exceptions must be bound to these exact groups
+and devices and tested. Increase the unit count ceiling from24 to28 workers
+to include the corrected fixture and focused checks; the14400 combined-second
+allocation and global56CPU/52GPU-hour caps remain unchanged. No permission is
+inferred to rerun unchanged numerical failures.
+
+Local skeptical re-review: an early rejection cannot qualify covariance fitting
+or accepted-consumer lifetime. The archived accepted input is an explicit
+comparator, not a new default or current NeuTra configuration. Its historical
+acceptance is not candidate acceptance. Measure the full cold path; preflight
+start replay and HLO inspection must be timed separately and included in worker
+charges. Preserve all comparison mismatches. No independent review is claimed.

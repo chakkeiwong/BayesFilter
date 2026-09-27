@@ -909,3 +909,29 @@ def test_capacity_baselines_cannot_replace_candidate_gates():
             assert f"posterior_initializer_capacity_owner_{dimension}_{device}" in mandatory
             for arm in ("graph", "xla"):
                 assert f"posterior_initializer_capacity_reuse_{arm}_{dimension}_{device}" in mandatory
+
+
+@pytest.mark.parametrize("timeout,group,device,allowed", [
+    (1800, "dz5_initializer_accepted_cpu", "CPU", True),
+    (1800, "dz5_initializer_accepted_cpu", "GPU", False),
+    (1800, "dz5_initializer_lifetime_gpu", "GPU", True),
+    (1800, "dz5_initializer_lifetime_gpu", "CPU", False),
+    (3600, "dz5_initializer_lifetime_cpu", "CPU", True),
+    (3600, "dz5_initializer_lifetime_cpu", "GPU", False),
+    (3600, "policy", "CPU", False),
+    (1800, "policy", "GPU", False),
+])
+def test_dz5_initializer_deadline_exceptions_are_scope_bound(monkeypatch, timeout, group, device, allowed):
+    import argparse
+
+    driver = load("run_filter_repair_campaign")
+    args = argparse.Namespace(action="test", device=device, group=group, test_timeout_seconds=timeout,
+        arm="after", fixture=None, jit="on", size="small", repeat=0)
+
+    def stop_before_launch():
+        raise RuntimeError("deadline accepted; stop before worker launch")
+
+    monkeypatch.setattr(driver, "source_hashes", stop_before_launch)
+    with pytest.raises(RuntimeError if allowed else ValueError,
+            match="deadline accepted" if allowed else "restricted to its declared group"):
+        driver.run_job(args)

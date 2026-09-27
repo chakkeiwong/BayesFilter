@@ -113,7 +113,7 @@ sys.exit(0 if report['passed'] else 1)
 
 
 def run_isolated_snapshot(request, *, snapshot, child, scope,
-                          child_timeout_seconds=120):
+                          child_timeout_seconds=120, read_only_paths=(), supervisor=None):
     """Run a diagnostic against read-only project trees, preserving child logs."""
     directory = Path(request.config.getoption('xmlpath')).parent
     child_path = directory / 'isolated-dz5-import.py'
@@ -129,6 +129,13 @@ def run_isolated_snapshot(request, *, snapshot, child, scope,
         '--ro-bind', str(snapshot / str(MF).lstrip('/')), str(MF),
         '--ro-bind', str(snapshot / str(BF).lstrip('/')), str(BF),
         '--chdir', str(MF), sys.executable, '-B', '/tmp/dz5-output/isolated-dz5-import.py']
+    for path in read_only_paths:
+        # Empty mount points carry no source bytes. Preparing them before the
+        # read-only bind also makes an extracted evidence archive reproducible.
+        if Path(path).is_relative_to(BF) or Path(path).is_relative_to(MF):
+            (snapshot / str(path).lstrip('/')).mkdir(parents=True, exist_ok=True)
+        index = command.index('--chdir')
+        command[index:index] = ['--ro-bind', str(path), str(path)]
     environment = {**os.environ, 'PYTHONDONTWRITEBYTECODE': '1', 'PYTHONPATH': str(BF),
         'MPLCONFIGDIR': '/tmp/matplotlib', 'XDG_CACHE_HOME': '/tmp/cache'}
     with (directory / 'isolated-dz5-command.json').open('x') as stream:
@@ -136,12 +143,19 @@ def run_isolated_snapshot(request, *, snapshot, child, scope,
             'snapshot_manifest_sha256': hashlib.sha256((snapshot / 'manifest.json').read_bytes()).hexdigest(),
             'scope': scope, 'child_timeout_seconds': child_timeout_seconds,
             'cuda_visible_devices': environment['CUDA_VISIBLE_DEVICES']}, stream, indent=2)
-    with (directory / 'isolated-dz5-import.log').open('x') as log:
-        process = subprocess.run(command, env=environment, stdout=log,
-            stderr=subprocess.STDOUT, timeout=child_timeout_seconds, check=False)
+    if supervisor is None:
+        with (directory / 'isolated-dz5-import.log').open('x') as log:
+            process = subprocess.run(command, env=environment, stdout=log,
+                stderr=subprocess.STDOUT, timeout=child_timeout_seconds, check=False)
+        returncode = process.returncode
+    else:
+        receipt = supervisor(command, timeout_seconds=child_timeout_seconds,
+            log_path=directory / 'isolated-dz5-import.log', environment=environment)
+        (directory / 'isolated-dz5-supervisor.json').write_text(json.dumps(receipt, indent=2) + '\n')
+        returncode = receipt['returncode']
     report_path = directory / 'dz5-snapshot-import.json'
     report = json.loads(report_path.read_text()) if report_path.exists() else {}
-    assert process.returncode == 0, {
+    assert returncode == 0, {
         'error': report.get('error'), 'traceback': report.get('traceback'),
         'log': (directory / 'isolated-dz5-import.log').read_text()}
     assert report['passed'] and not report['unexpected_modules']
