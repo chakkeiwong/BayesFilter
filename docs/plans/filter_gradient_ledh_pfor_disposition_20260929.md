@@ -62,3 +62,31 @@ source history. Source agreement alone cannot qualify analytical correctness;
 keep independent score checks and native derivative evidence. Primary-agent
 review only; no independent review asserted. No wider approval boundary is
 crossed by enforcing the repository's existing pfor policy.
+
+Expanded F14 discovery before editing: the whole BayesFilter Python scan also
+finds two vectorized_map calls in ledh_contract_e_streaming_tf.py's analytical
+reset JVP functions, two in inference/batched_value_score.py's optional scalar
+transport fallback, and implicit tape.jacobian pfor in the explicitly reference
+sir_latent_preclip_reference_tf.py grid scout. They were not covered by the278
+source guard; zero pfor exceptions exist in that guard. Record them as remaining
+F14 debt, not approved or closed. Existing filtering.py, structural TP and
+Zhao-Cui training calls explicitly disable pfor and remain separate classified
+model-local/reference derivatives. No new source-faithfulness claim is made.
+
+This first unit repairs only the optional batch branch and retires its two
+exploratory harnesses. Follow-up units must (1) replace Contract E direction
+mapping with one native TensorFlow loop around the unchanged analytical JVP,
+checking independent finite differences/direct moment+weight contributions and
+batch dimensions, (2) replace or reject scalar-transport fallback without
+weakening batch-native training gates, and (3) choose non-pfor Jacobian in the
+reference scout with persistent tape as needed. Inspect each consumer/default,
+compiled boundary and source closure before implementation; add corresponding
+source guards without blanket exceptions. Keep F14 open until all these
+individual dispositions and the original audit sites are verified.
+
+Attempt04707:14 checks pass, including compiled complete-program/directional
+score agreement, independent five-point derivative and the previously failing
+static pfor gate. Two negative tests omitted the required keyword substeps and
+raised TypeError before reaching the mode validator. Localized harness repair1
+adds substeps=2 to those calls; no runtime/numerical change. Preserve the failed
+attempt and retry the same16-check CPU group inside the original allocation.

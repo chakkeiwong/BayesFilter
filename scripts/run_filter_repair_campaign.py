@@ -1728,6 +1728,14 @@ TEST_GROUPS['ledh_streaming_regressions_cpu'] = (
 TEST_GROUPS['ledh_streaming_regressions_gpu'] = TEST_GROUPS['ledh_streaming_regressions_cpu']
 TEST_GROUPS['ledh_streaming_readback_cpu'] = (
     'tests/test_filter_repair_ledh_streaming_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['ledh_pfor_disposition_cpu'] = (
+    'tests/test_filter_repair_ledh_pfor_disposition.py',
+    'tests/highdim/test_ledh_canonical_governance.py',
+    'tests/highdim/test_ledh_canonical_meta_governance.py')
+TEST_GROUPS['ledh_pfor_disposition_gpu'] = (
+    'tests/test_filter_repair_ledh_pfor_disposition.py::test_sequential_complete_program_and_direction_scores',)
+TEST_GROUPS['ledh_pfor_readback_cpu'] = (
+    'tests/test_filter_repair_ledh_pfor_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'ledh_seeded_cost_{arm}_{device}': (
     f'tests/test_filter_repair_ledh_seeded_cost.py::test_isolated_seeded_cost[{arm}]',)
     for arm in ('prior_eager', 'candidate_graph', 'candidate_xla')
@@ -2455,6 +2463,7 @@ TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_validity_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_seeded_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_streaming_') and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_pfor_') and group.endswith('_gpu')},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("factor_precision_symmetry_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_exact_fit_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith(("principal_angle_", "factor_clipped_anchor_")) and group.endswith("_gpu")},
