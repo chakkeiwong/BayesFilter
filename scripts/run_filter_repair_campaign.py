@@ -1736,6 +1736,18 @@ TEST_GROUPS['ledh_pfor_disposition_gpu'] = (
     'tests/test_filter_repair_ledh_pfor_disposition.py::test_sequential_complete_program_and_direction_scores',)
 TEST_GROUPS['ledh_pfor_readback_cpu'] = (
     'tests/test_filter_repair_ledh_pfor_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['remaining_pfor_contract_cpu'] = (
+    'tests/test_filter_repair_remaining_pfor.py::test_streaming_total_analytical_direction_loop',)
+TEST_GROUPS['remaining_pfor_contract_gpu'] = TEST_GROUPS['remaining_pfor_contract_cpu']
+TEST_GROUPS['remaining_pfor_transport_cpu'] = (
+    'tests/test_filter_repair_remaining_pfor.py::test_scalar_transport_fallback_preserves_default_gate',
+    'tests/test_batched_value_score.py')
+TEST_GROUPS['remaining_pfor_transport_gpu'] = (
+    'tests/test_filter_repair_remaining_pfor.py::test_scalar_transport_fallback_preserves_default_gate',)
+TEST_GROUPS['remaining_pfor_reference_cpu'] = (
+    'tests/test_filter_repair_remaining_pfor.py::test_reference_scout_uses_nonpfor_jacobian',)
+TEST_GROUPS['remaining_pfor_readback_cpu'] = (
+    'tests/test_filter_repair_remaining_pfor_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'ledh_seeded_cost_{arm}_{device}': (
     f'tests/test_filter_repair_ledh_seeded_cost.py::test_isolated_seeded_cost[{arm}]',)
     for arm in ('prior_eager', 'candidate_graph', 'candidate_xla')
@@ -2464,6 +2476,7 @@ TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_seeded_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_streaming_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_pfor_') and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('remaining_pfor_') and group.endswith('_gpu')},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("factor_precision_symmetry_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_exact_fit_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith(("principal_angle_", "factor_clipped_anchor_")) and group.endswith("_gpu")},

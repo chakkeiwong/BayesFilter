@@ -1,6 +1,6 @@
 {
   "schema": "filter_gradient_runtime_policy.v1",
-  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance.",
+  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance. September29 remaining-pfor scope: all pfor/implicit-pfor calls in the scalar transport adapter are guarded; Python iteration coverage there is limited to its two touched coordinate/logdet methods. The named independent SIR reference retains its diagnostic NumPy/host-loop role while all pfor calls remain guarded. Contract E streaming is guarded in full.",
   "sources": {
     "bayesfilter/adapters/__init__.py": null,
     "bayesfilter/ops/accurate_svd_tf.py": null,
@@ -510,7 +510,19 @@
     "bayesfilter/inference/posterior_cloud_preparation_tf.py": null,
     "bayesfilter/inference/posterior_initializer_controller_tf.py": null,
     "bayesfilter/inference/posterior_initializer_reporting.py": null,
-    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": null
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": null,
+    "bayesfilter/highdim/ledh_contract_e_streaming_tf.py": null,
+    "bayesfilter/inference/batched_value_score.py": {
+      "python_iteration": [
+        "FixedTransportValueScoreAdapter.latent_to_position",
+        "FixedTransportValueScoreAdapter.log_abs_det_jacobian"
+      ]
+    },
+    "bayesfilter/highdim/sir_latent_preclip_reference_tf.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": []
+    }
   },
   "exceptions": [
     {

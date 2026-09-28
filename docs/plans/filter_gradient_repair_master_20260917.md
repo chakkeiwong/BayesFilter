@@ -1,47 +1,49 @@
 # Complete filter and gradient execution repair
 
-Branch: repair/filter-gradient-xla-validation-20260918 in
-/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Pushed streaming base
-020d794be; current F14 unit follows that checkpoint. Main remains unmerged.
+Branch repair/filter-gradient-xla-validation-20260918 in
+/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Pushed base89f7cfd67;
+current remaining-pfor repair follows it. Main remains unmerged.
 
-Active question: eliminate unapproved optional batch pfor without changing
-sequential analytical scores. Plan: filter_gradient_ledh_pfor_disposition_20260929.md.
-Through 04710; active workers: none.
-Charged/reserved CPU 109215.566037s / GPU 97034.875087s.
-Remaining CPU 25.662343h / GPU 25.045868h.
-Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Closed optional-route allocation8 workers/1800 CPU/1200 GPU seconds; used/reserved
-4 workers/40.681674 CPU/22.263858 GPU seconds.
-One numerical worker at a time. CPU explicit reference; trusted GPU growth
-required. Timing needs unshared non-display hardware. PID2260909 held GPU2/3
-contexts at the latest streaming cost preflight; do not stop unrelated jobs.
+Active plan: filter_gradient_remaining_pfor_execution_20260929.md.
+Through 04719; active workers: none.
+Charged/reserved CPU 109340.306604s / GPU 97102.946939s.
+Remaining CPU 25.627693h / GPU 25.026959h.
+Global caps56 CPU/52 GPU hours include the extra24 CPU hours. Active allocation
+12 workers/3600 CPU/2400 GPU seconds; used/reserved 9 workers,
+124.740567 CPU/68.071852 GPU seconds. One numerical worker at a time.
+CPU is explicit reference; trusted GPU growth/placement must be verified.
+Timing needs unshared non-display hardware; do not stop other campaigns.
 
-Optional batch pfor removal is qualified by16 CPU checks04708, GPU XLA analytical-score/finite-difference check04709 and161 current-source readback/policy checks04710. Two exploratory harnesses are retired before framework import.279 guarded sources,1436 unchanged exact allowances.04707 retains missing-substeps negative-test harness errors. Other five pfor sites remain explicitly open.
+All five remaining library/reference sites are repaired. Fresh Contract E CPU04713/GPU04714 total-derivative checks pass with healthy factors, nonzero direct source/weight terms and1.49e-12 maximum finite-difference error. Scalar transport/default-gate tests pass28 CPU04716 and2 GPU04717 checks; reference scout04718 passes. Final current-source readback/policy04719 passes162 checks;282 scoped guarded sources and1436 existing allowances. Three concrete fixture failures4711/4712/4715 are preserved. A2009-file scan finds no unclassified TensorFlow pfor in the BayesFilter library, one custom log-Jacobian false-positive, and28 runner/benchmark sites across17 files still requiring individual review.
 
-Next: Execute filter_gradient_remaining_pfor_execution_20260929.md with fresh derivative/transport/reference fixtures. Preserve GPU costs and performance follow-up and all other master gates.
+Next: Archive/commit this repaired library checkpoint, then execute filter_gradient_pfor_runner_closure_20260929.md. Keep F14 open for28 runner/benchmark sites; renew streaming performance/GPU costs and remaining master consumer/DZ5 gates without repeating unchanged evidence.
 
-Completed streaming unit04688--04706: exact original RNG scheduling and complete
-buffered numerical records,9 qualification checks per device,43 numerical
-regressions per device,8 healthy CPU capacity workers throughT128/N64,164 final
-readback/policy checks. Removed full-horizon random storage. Fresh-owner native
-RSS persists after Python GC; explicit retained-owner reuse is boundedly
-qualified. CPU streaming warm times are descriptively slower at long horizons;
-GPU uncontended timing/allocator/capacity remains pending. Archive/result:
-filter_gradient_ledh_streaming_memory_result_20260929.md. Prior seeded LM,
-validity-boundary and actual DZ5 evidence retain their documented source scope.
+Pushed completed units:020d794be streaming buffer repair through04706 (exact
+CPU/GPU records, original RNG schedule,9 qualification/43 regression checks
+per device,8 healthy CPU ladder runs,164 readback/policy checks);89f7cfd67
+optional batch pfor removal through04710 (16 CPU/1 GPU/161 readback checks,
+static failure04682 resolved for that route). Linked results preserve failures,
+source scopes and archives. No inference of whole F14/master completion.
 
-Other gates: additional F14 Contract E JVP/scalar-transport/reference scout
-sites, registered analytical-score consumer migration/costs, current-source
-measurement applicability, DZ5 locator121 strict trajectory differences with
-unconverged optimizers,4539 strict fitted-geometry CPU/GPU record differences
-and isotropic-angle reporting, all F01--F20 dispositions. Locator optimized-HLO
-invariant-copy lead is not a causal repair. See terminal_gap_queue_20260928.
+Open memory/performance gates: fresh XLA owners retain native/compiler RSS
+after Python GC; retained-owner reuse is boundedly qualified. T128/N64 CPU
+streaming was43.9ms versus36.9ms buffered (descriptive; paired follow-up planned).
+Uncontended GPU cost/allocator/capacity remains pending because PID2260909 had
+contexts on both non-display GPUs2/3. GPU0 is remote desktop and GPU1 display.
+Recheck availability; no display fallback unless the owner's condition holds.
 
-No live MacroFinance edits, subagents, training, HMC, package/environment or
-system/cache changes, tolerance relaxation, or canonical LEDH rebuild. Preserve
-canonical author-profile NeuTra IAF and original LEDH seed streams. Strong
-reset rejection and unsupported-claim blocks remain. No main merge until all
-master gates pass. Do not silently relax old source-bound readbacks.
+Other master gates: registered analytical-score consumer migration/costs,
+current-source measurement applicability, DZ5 locator121 strict trajectory
+differences and unconverged optimizers,4539 strict fitted-geometry CPU/GPU
+record differences/isotropic angles, all F01--F20 terminal dispositions. Do not
+repeat unrelated dtype/trajectory experiments; inspect the existing locator
+optimized-HLO invariant-copy mechanism lead. See terminal_gap_queue_20260928.
+
+Preserve explicit invalidity reporting, analytical shared numerical authorities,
+LEDH seed streams, author-profile NeuTra IAF, all scientific gates and old
+source-bound readback scopes. No subagents, training, HMC, live MacroFinance
+edits, package/environment or system/cache changes, tolerance relaxation,
+canonical LEDH rebuild or unsupported claims. No main merge before all gates.
 
 Older checkpoints below preserve historical scope and instructions only.
 

@@ -14,10 +14,14 @@ shared LM precision repair. The old TF32 eager tiny-product error is preserved;
 TF32 stays enabled. See filter_gradient_ledh_seeded_public_20260929.md and
 filter_gradient_ledh_lm_precision_20260929.md. Through04706 the streaming buffer
 repair passes CPU/GPU numerical qualification and the CPU horizon/particle
-ladder; see filter_gradient_ledh_streaming_memory_result_20260929.md. Fresh-owner
+ladder; see filter_gradient_ledh_streaming_memory_result_20260929.md. Optional
+batch pfor is removed through04710; five further library/reference sites pass
+CPU/GPU and162 readback/policy checks through04719. See
+filter_gradient_remaining_pfor_execution_result_20260929.md. Fresh-owner
 native/compiler residency, possible CPU slowdown, uncontended GPU costs/capacity,
 analytical-score public migration and F14 remain open. Next executable unit is
-filter_gradient_ledh_pfor_disposition_20260929.md. The locator's
+filter_gradient_pfor_runner_closure_20260929.md for28 sites across17 runners and
+benchmarks. The locator's
 specific fusion lead stays open without more unrelated counter experiments.
 
 | Order | Remaining gap | Next repair or evidence action | Exit gate |
@@ -26,7 +30,7 @@ specific fusion lead stays open without more unrelated counter experiments.
 | 2 | Fitted geometry:4539 strict CPU/GPU record differences, plus strict/isotropic angle reporting | Start from the saved original/candidate records and classify selected versus unselected quantities, symmetry, eigenspace degeneracy and rejection fields. Use the exact-input and precision-symmetry plans as baselines; declare a bounded failing fixture before further numerical changes. | Existing numerical and status gates; explicit unusable/ill-conditioned errors where applicable. Do not demand a usable estimate from an invalid system, silently waive a recorded comparison, or treat eigenvector sign/rotation as a precision defect. |
 | 3 | Registered LEDH value costs/capacity and analytical-score migration | Value wrapper streams original RNG draws inside the shared recurrence; exact CPU/GPU buffered-record comparisons pass and the CPU ladder throughT128/N64 removes O(T*N*d) random storage. Keep process-scoped containment/explicit owner reuse: fresh compiles retain native memory. Before accepting the observed CPU slowdown, use fresh-process randomized paired buffered/streaming replicates (5 pairs, T32/T128,N64,30 warm calls, identical frozen data), then inspect RNG/loop fusion only if the paired effect persists. Bound this follow-up to1200 CPU seconds/10 workers before launch. Renew GPU allocator/cost/capacity when unshared; complete analytical-score consumer integration. | Complete endpoint/consumer evidence, including failed-reset observability, stable signatures, dynamic operands, graph/HLO, independent derivative checks and costs. Passing native components does not qualify the registered consumer. Canonical rebuild remains excluded. |
 | 4 | Current-source applicability of saved timing/memory reports | Continue `filter_gradient_terminal_source_review_20260928.md`: inspect each endpoint's actual runtime dependencies and fixture/harness changes against the22-report evidence index. Renew only affected measurement scopes. | Source/input/hardware/timing-scope provenance and relevant numerical gates. Unchanged broad-snapshot files do not prove a closure; unrelated changes do not require every benchmark to run again. Preserve missing GenUT hash fields and the remaining-SVD receipt's absent direct run references. |
-| 5 | Terminal F01--F20 dispositions and default/import coverage, including preserved F14 failure04682 | First execute filter_gradient_ledh_pfor_disposition_20260929.md: remove the unapproved optional pfor route, explicitly reject requests, retire its exploratory harnesses and retain the existing static gate. Also qualify/repair the two Contract E streaming JVP pfor calls, two scalar-transport fallback calls and reference grid-scout implicit Jacobian under that plan; F14 remains open. Then bind each initial finding to its current public consumer, guarded source, derivative role, independent numerical check and applicable endpoint measurement. Classify diagnostics/retirements explicitly and follow implicit package imports and callbacks. | Every finding has a reviewable terminal disposition. A277-source guard pass is useful but not whole-repository completion; no allowance expansion or relabeling an active violation as diagnostic. |
+| 5 | Terminal F01--F20 dispositions and default/import coverage; broader F14 closure | Optional batch pfor and the five library/reference sites are repaired through04719. Execute filter_gradient_pfor_runner_closure_20260929.md for the28 newly cataloged runner/benchmark sites. Then bind each initial finding to its current public consumer, guarded source, derivative role, independent numerical check and applicable endpoint measurement. Classify diagnostics/retirements explicitly and follow implicit package imports and callbacks. | Every finding has a reviewable terminal disposition. The282-source guard pass is scoped evidence; no allowance expansion or relabeling an active violation as diagnostic. |
 | 6 | Integration and merge | Once the above gates pass, inspect new remote changes, integrate them on this branch, resolve conflicts and run affected checks before final review. | All master gates passed; only then merge and push main. Checkpoint commits/pushes on the repair branch remain authorized. |
 
 Completed evidence to reuse in its stated scope:
@@ -72,6 +76,8 @@ production timing/memory conclusions. After the subsequent LEDH guard unit,
 an arbitrary production compiler flag or a threshold waiver. The registered
 LEDH consumer and endpoint-evidence reviews remain independent actionable work;
 historical locator investigation must not be mistaken for their completion.
+Through04719,25.627693 CPU/25.026959 GPU hours remain; these current charges
+supersede earlier budget snapshots in this file. No numerical worker is active.
 The primary agent reviewed this refresh. No independent review, scientific
 promotion, canonical LEDH claim or whole-program completion is asserted.
 

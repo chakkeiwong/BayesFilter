@@ -81,3 +81,30 @@ NumPy in the scout does not authorize runtime imports. Skip old fixture-driven
 LEDH phase4 tests as new evidence when their data/results predate invalidation;
 build fresh primitive fixtures. Any missing source/ownership/signature or
 numerical drift stops that unit for localization. Primary-agent review only.
+
+Attempt04711 stopped before numerical execution: the fresh fixture supplied
+vector terminal epsilon, but the shared manual finite transport contract
+requires scalar epsilon. Keep epsilon=1 as a scalar; epsilon0/ridge and their
+declared per-batch tangent shapes remain as specified by the shared kernel.
+This is localized fixture repair1/2, preserving controls/distribution/method and
+tolerances; no runtime repair or relaxed gate follows from the fixture error.
+
+Attempt04712 stopped while tracing the unchanged transport annealing schedule:
+the fixture also supplied vector scaling, but the shared direction update
+requires a scalar schedule factor. Localized fixture repair2/2 uses scaling=.8
+as a scalar, preserving epsilon0=[2,2] and its B-by-P tangent. No runtime source
+or tolerance changes. The two fixture issues consume the declared harness
+retry allowance; any further failure must be localized before another launch.
+
+Transport attempt04715:26 existing adapter checks pass. Both new fallback tests
+fail because the reused NoBatchTransport fixture still exposes a batch logdet
+method and uses unsupported XLA LogMatrixDeterminant. This is a concrete
+fixture/call-chain flaw: it cannot exercise the intended missing-batch logdet
+fallback. Replace that reuse with the fresh scalar-only affine fixture already
+required by this plan; assert both batch methods are absent, use its exact
+fixed determinant3.744 and preserve the same matrix/shift/data/gates. No
+runtime change is needed. This mandatory prerequisite review permits a third
+localized fixture repair, increasing only that local retry allowance2 to3;
+the12-worker/3600 CPU/2400 GPU ceilings and global campaign budget are unchanged.
+All three fixture failures are retained. Stop/review any further harness failure
+before another numerical attempt; do not select a passing input or relax gates.
