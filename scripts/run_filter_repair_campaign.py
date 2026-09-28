@@ -124,6 +124,13 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    'dz5_locator_counter_reduction_cpu': (
+        'tests/test_filter_repair_dz5_locator_counter_reduction.py::test_int32_reduction_context',),
+    'dz5_locator_counter_int32_cpu': (
+        'tests/test_filter_repair_dz5_locator_counter_context.py::test_int32_accounting_context',),
+    **{f"dz5_locator_one_iteration_{arm}_cpu": (
+        f"tests/test_filter_repair_dz5_locator_one_iteration.py::test_real_optimizer_one_iteration[{arm}]",)
+        for arm in ('original', 'candidate')},
     "terminal_endpoint_evidence_index_cpu": (
         "tests/test_filter_repair_endpoint_evidence_index.py",),
     "terminal_adapter_imports_cpu": (
@@ -1605,6 +1612,16 @@ TEST_GROUPS['dz5_initializer_renewal_readback_cpu'] = (
 TEST_GROUPS['dz5_locator_first_context_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_context_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['terminal_adapter_policy_cpu'] = TEST_GROUPS['policy']
+TEST_GROUPS['dz5_locator_counter_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_counter_context.py::test_saved_counter_context',
+    *TEST_GROUPS['policy'])
+TEST_GROUPS['dz5_locator_counter_reduction_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_counter_reduction.py::test_saved_reduction_context',
+    'tests/test_filter_repair_dz5_locator_counter_context.py::test_saved_counter_context',
+    *TEST_GROUPS['policy'])
+TEST_GROUPS['dz5_locator_one_iteration_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_one_iteration.py::test_saved_real_optimizer_contexts',
+    'tests/test_filter_repair_dz5_locator_context_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f"remaining_svd_{part}_{device}": TEST_GROUPS[original]
     for part, original in (("block", "block_score_geometry"),
         ("public_first", "geometry_public_first_cpu"),

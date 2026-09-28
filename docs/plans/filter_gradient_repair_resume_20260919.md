@@ -4,11 +4,12 @@ Branch: repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Qualified numerical source checkpoint:4bf50d914 (pushed). Main remains unmerged; origin/main is
 integrated. Check git HEAD for subsequent documentation/source checkpoints.
 
-Active question: finish actual-consumer source renewal, repair reference-import
-isolation, localize the first locator discrepancy, and reconcile endpoint evidence.
-Through 04631; active: none.
-Global charged/reserved CPU 103609.790750s / GPU 96071.347964s.
-Remaining CPU 27.219503h / GPU 25.313514h.
+Active question: localize the remaining locator compiler-context difference
+and reconcile terminal endpoint evidence. Source renewal and adapter import
+isolation are complete for their tested scopes.
+Through 04641; active: none.
+Global charged/reserved CPU 104711.361340s / GPU 96071.347964s.
+Remaining CPU 26.913511h / GPU 25.313514h.
 Caps are56CPU/52GPU process-hours; extra24CPU hours are already counted.
 Symmetry unit closed: 7/12 workers,
 481.384047/2400 combined seconds, no failures.
@@ -17,6 +18,15 @@ trusted eligible device and verified memory growth. GPU0 serves remote desktop
 and GPU1 has active display. Recheck non-desktop occupancy before any GPU job.
 
 Checked findings and evidence:
+- Fresh source renewal: CPU04625 and GPU04626 each pass two complete accepted
+  initializer workers; intended GPU rejection04627 and181 readback/policy
+  checks04628 pass. Parent RSS growth is0.410MiB CPU and0.559MiB GPU. Child
+  native/compiler RSS persists after Python release, with HLO inspection
+  contributing to the final host sample; process exit contains observed growth.
+- Adapter reference isolation: committed/pushed713df846c. All43 exports and
+  three aliases preserved;12 fresh-import/prior checks and160 policy checks
+  pass.277 sources guarded, no new exception. Evidence index verifies282
+  distinct saved run identities; current-source dependency review remains.
 - Symmetry result: filter_gradient_factor_precision_symmetry_result_20260928.md.
   CPU04611/GPU04612 trials and derivatives pass. Exact GPU04613 fit is usable
   (before04607 rejected with error2), CPU04614 remains unchanged. GPU04615 and
@@ -38,10 +48,16 @@ Checked findings and evidence:
   record leaves differ. All14 saved-point graph/XLA target checks pass04590.
   Identical-output controllers reproduce the original exactly04593. Explicit
   input binding and external barriers do not resolve the difference. Both
-  optimizers remain unconverged. No further full trajectory without a smaller
-  graph-context diagnostic; no tolerance changes.
+  optimizers remain unconverged; no tolerance changes.
+- Locator context: truncated dispatch04632--04634 removes the discrepancy;
+  genuine one-iteration04635--04637 reproduces it exactly in three objectives.
+  CPU-only11-attribute accounting-width intervention04638 restores the original
+  first score; reduction-only04640 retaining int64 resources does not. Readbacks
+  pass through04641. See locator_one_iteration_result and
+  locator_counter_context_result dated20260928. No GPU-safe/runtime remedy;
+  keep full trajectories unqualified while bisecting the smaller control.
 
-Next: Execute original/candidate first-objective locator-context diagnostic and readback within its separate1800-second CPU allocation.
+Next: Prepare bounded resource/index-family or optimized-HLO localization using the positive one-iteration control. Preserve int64 GPU resources and the negative single-reduction result. No full trajectory or runtime change without a qualified smaller remedy. Registered LEDH consumer migration, strict fitted/isotropic records, current-source cost review and terminal F01--F20 dispositions remain open.
 Target cohort04618--04624 and fresh r2 admission pass;
 archive dz5-source-renewal-target-04624-evidence.tar.gz has816 verified members.
 Renewal unit (closed_renewed_evidence_passed): 11/14 workers,
@@ -49,8 +65,12 @@ Renewal unit (closed_renewed_evidence_passed): 11/14 workers,
 Plan: filter_gradient_dz5_source_renewal_20260928.md.
 Adapter repair: qualified_real_import_prior_and_policy_checks;
 2/4 workers, 33.546684/1200 CPU seconds.
-Locator first-objective diagnostic: allocated_after_adapter_qualification;
-0/6 workers, 0.000000/1800 CPU seconds.
+Locator first-objective diagnostic: diagnostic_readback_complete_no_runtime_repair_inferred;
+3/6 workers, 172.970612/1800 CPU seconds.
+Genuine one-iteration optimizer control: closed_diagnostic_readback_passed;
+3/6 workers, 459.467097/1800 CPU seconds.
+CPU accounting-width diagnostic: closed_diagnostic_readback_passed;
+4/4 workers, 469.132881/1200 CPU seconds.
 Endpoint evidence index: readback_and_integrity_tests_passed;
 5.906675/600 CPU seconds.
 Old consumer snapshots qualify only their own bytes. Strict precision and

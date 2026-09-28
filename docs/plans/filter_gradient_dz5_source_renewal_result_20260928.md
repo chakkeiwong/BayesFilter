@@ -63,6 +63,10 @@ and the much smaller live device allocation are distinct observations; neither
 is described as whole-device GPU preallocation. Process exit contains the
 observed child residency while parent growth passes the declared256MiB gate.
 This does not prove native in-process eviction or general memory bounds.
+HLO inspection occurs between the after-call and final owner-release samples
+and raises host RSS in these diagnostic children. Those distinct samples are
+preserved; the final resident memory must not be attributed entirely to live
+initializer tensors or treated as an uninstrumented production memory peak.
 GPU rejection04627 passes in751.659 seconds. The unchanged rejected fixture
 returns `dense_center_score_above_cap`, `passed=False`,252 exact evaluations,
 one compiled trace and no host callbacks. Initializer time is662.555 seconds.
