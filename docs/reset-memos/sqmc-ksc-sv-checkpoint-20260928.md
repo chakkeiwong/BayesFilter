@@ -1,8 +1,11 @@
-# KSC checkpoint — full-mixture comparison corrected, 2026-09-29
+# KSC checkpoint — campaign complete, 2026-09-29
 
 Checkout: /home/chakwong/BayesFilter-SQMC, branch sqmc-development.
-Original particle evidence commit b7ed96ec; the commit containing this checkpoint
-records the correction. No push, HMC, package changes or default promotion.
+Particle evidence commit b7ed96ec; full-mixture correction commit c2ae4eb0.
+Requested numerical work and terminal review are complete. No HMC, package
+changes or scientific/default promotion. Merge/push and branch synchronization
+were separately authorized by the owner on 2026-09-29; Git history records them.
+Master summary: docs/benchmarks/sqmc-master-program-final-summary-20260929.md.
 Current result: docs/benchmarks/sqmc-ksc-full-mixture-corrected-results-20260929.md.
 Tables: docs/plans/artifacts/sqmc-ksc-full-mixture-20260929/final-evidence-01/report.md.
 Plan/derivation: docs/plans/sqmc-ksc-full-mixture-correction-20260929.md.
@@ -26,5 +29,7 @@ Includes prior work and unchanged 300s old-hook reserve.
 Deadline 2026-09-30T16:15:40.010888+00:00; two infrastructure retries/unit limit.
 No workers remain. Numerical correction is complete. Repository commit checks
 run with GPU devices hidden. Do not rerun completed research.
-Future work requires the user's chosen follow-up: fresh T120 tuning, N2016,
-more pairs, conditional Monte Carlo uncertainty and broader regimes.
+Next research action: await a selected follow-up; no numerical work remains in
+this campaign. Candidates are fresh T120 tuning, N2016, more pairs, fixed-dataset
+Monte Carlo uncertainty and broader regimes. Wider master-program completion
+and HMC readiness are not established by this closeout.

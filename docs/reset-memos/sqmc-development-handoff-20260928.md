@@ -1,3 +1,10 @@
+> Final completion update, 2026-09-29: the expanded Kalman comparison, KSC
+> comparison and full-seven-mixture correction are complete. Read the
+> [master-program final summary](../benchmarks/sqmc-master-program-final-summary-20260929.md)
+> and [final KSC checkpoint](sqmc-ksc-sv-checkpoint-20260928.md).
+> Retain all four methods; no overall winner or default/HMC promotion.
+> Owner authorized merge/push and branch synchronization separately from research.
+
 > Completion update, 2026-09-28: the renewed expanded comparison is complete.
 > Read `sqmc-development-checkpoint-20260928.md` for current state and
 > `../benchmarks/sqmc-expanded-results-20260926.md` for results. All 32 units,

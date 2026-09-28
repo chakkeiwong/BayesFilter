@@ -1,9 +1,10 @@
 # SQMC completed checkpoint — 2026-09-28
 
 Worktree: /home/chakwong/BayesFilter-SQMC; branch sqmc-development;
-HEAD f3995a06a467f16574f96bbc8a68ccbbc4e30dad. Preserve pre-existing dirty work.
+Expanded comparison commit 479a4616. Preserve all existing work and evidence.
 Effective writes: repository and /tmp. GPU commands require escalation.
-No package/environment change, Git merge/push, publication or HMC was performed.
+No package/environment change, publication or HMC was part of the research.
+Owner authorized merge/push and branch synchronization on 2026-09-29.
 
 Status: REQUESTED EXPANDED COMPARISON COMPLETE. Do not rerun completed research.
 All 8 scopes × 4 routes completed, with 128 valid final cells and all 8,480
@@ -47,6 +48,9 @@ that pilot reuse applies only to P44. Preserve original manifests.
 Next action: read the completed result and terminal review for any user-directed
 follow-up. No outstanding work remains under the requested expanded comparison.
 
-Continuation: the active KSC stage is recorded in
+Completion update, 2026-09-29: the subsequent KSC stage and full-mixture
+correction are also complete. The final master-program campaign summary is
+`docs/benchmarks/sqmc-master-program-final-summary-20260929.md`.
+The final KSC checkpoint is
 `docs/reset-memos/sqmc-ksc-sv-checkpoint-20260928.md`. This completed Kalman
 checkpoint and its linked evidence remain preserved.

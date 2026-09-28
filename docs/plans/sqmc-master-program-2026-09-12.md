@@ -1,9 +1,16 @@
 # SQMC Route Comparison and Tuning: Master Program
 
 **Date:** 2026-09-12  
-**Status:** ACTIVE - Phase 1 Pilot Ready  
-**Branch:** `rqmc-sqmc-4route-comparison`  
-**Latest Commit:** 46b12fa9
+**Status:** Requested expanded Kalman and KSC campaigns complete, 2026-09-29;
+broader multi-model and HMC objectives remain unestablished.  
+**Completion branch:** `sqmc-development`  
+**Latest research commit:** `c2ae4eb0`
+
+The [final campaign summary](../benchmarks/sqmc-master-program-final-summary-20260929.md)
+records the corrected full-seven-mixture comparison, remaining uncertainty and
+decision to retain all four methods. Earlier phase statuses and transfer claims
+below are historical planning context, not instructions to relaunch completed
+work or evidence that the entire master program is complete.
 
 ---
 
