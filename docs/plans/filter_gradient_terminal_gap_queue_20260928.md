@@ -25,9 +25,21 @@ existing exceptions. See filter_gradient_pfor_runner_closure_result_20260929.md.
 Matched CPU costs are now complete through04749: geometric streaming/buffered
 ratios1.08239 atT32 and1.09678 atT128 with conditional95% upper limits above1.10
 trigger profiling. Exact complete shared records pass; RSS is about11MiB lower.
-See filter_gradient_streaming_paired_cost_result_20260929.md. Next executable
-unit is filter_gradient_streaming_profile_20260929.md, followed by the reviewed
-score-study consumer direction repair.
+See filter_gradient_streaming_paired_cost_result_20260929.md. Profiling04750–04755 is complete; the RNG component alone is descriptively
+faster and does not explain full-filter performance. See
+filter_gradient_streaming_profile_result_20260929.md. Gaussian direction repair
+is now qualified through04782: all six cases pass CPU/GPU and162 final
+readback/policy checks. Complete records match exactly; maximum FD error9.49e-12.
+Its descriptive CPU cost screen has lower warm medians but higher cold time and
+91–96MiB higher observed RSS; cost acceptance stays open. Rusage peak counters
+below VmRSS require a bounded measurement diagnostic. See
+filter_gradient_score_study_directions_result_20260929.md and
+filter_gradient_score_direction_cost_result_20260929.md. A bounded
+full-filter compiler-interaction intervention remains separate outstanding work.
+The same read-only audit found nonlinear EKF/UKF and LEDH/SGQF/mixture consumers
+assembling six directions in Python. The next executable follow-up is
+filter_gradient_nonlinear_directions_20260929.md; Gaussian evidence does not
+close those routes.
 The locator's
 specific fusion lead stays open without more unrelated counter experiments.
 
@@ -35,7 +47,7 @@ specific fusion lead stays open without more unrelated counter experiments.
 |---|---|---|---|
 | 1 | DZ5 locator context:121 strict full-record differences; both original and candidate unconverged | Through04661, exact controls and optimized caller traces isolate four gradient fusions with eight unchanged copies of printed2.4 carried through the candidate loop. Original/replay-int32 embed these constants and match complete short records; candidate differs at47 leaves. Test this specific constant-propagation mechanism in a bounded intervention; no more unrelated dtype trials. See `filter_gradient_dz5_locator_optimized_hlo_result_20260928.md`. | Exact inputs and unchanged gates; qualify a smaller remedy before any full trajectory. Keep GPU-compatible resources. Compiler structure alone is not causal proof. Neither a tiny score residual nor an unconverged optimizer is success. |
 | 2 | Fitted geometry:4539 strict CPU/GPU record differences, plus strict/isotropic angle reporting | Start from the saved original/candidate records and classify selected versus unselected quantities, symmetry, eigenspace degeneracy and rejection fields. Use the exact-input and precision-symmetry plans as baselines; declare a bounded failing fixture before further numerical changes. | Existing numerical and status gates; explicit unusable/ill-conditioned errors where applicable. Do not demand a usable estimate from an invalid system, silently waive a recorded comparison, or treat eigenvector sign/rotation as a precision defect. |
-| 3 | Registered LEDH value costs/capacity and analytical-score migration | Value wrapper streams original RNG draws inside the shared recurrence; exact CPU/GPU buffered-record comparisons pass and the CPU ladder throughT128/N64 removes O(T*N*d) random storage. Keep process-scoped containment/explicit owner reuse: fresh compiles retain native memory. Before accepting the observed CPU slowdown, use fresh-process randomized paired buffered/streaming replicates (5 pairs, T32/T128,N64,30 warm calls, identical frozen data), then inspect RNG/loop fusion only if the paired effect persists. The reviewed filter_gradient_streaming_paired_cost_20260929.md corrects the count to20 measured workers plus analysis/retries within24 workers/1200 CPU seconds. Renew GPU allocator/cost/capacity when unshared; complete analytical-score consumer integration. | Complete endpoint/consumer evidence, including failed-reset observability, stable signatures, dynamic operands, graph/HLO, independent derivative checks and costs. Passing native components does not qualify the registered consumer. Canonical rebuild remains excluded. |
+| 3 | Registered LEDH value costs/capacity and analytical-score migration | Streaming CPU paired costs and RNG/HLO profiling are complete through04755; preserve their cost veto and test one bounded full-filter compiler interaction without changing RNG. Gaussian score-study direction consumers are CPU/GPU qualified through04782, with a descriptive cost/memory tradeoff requiring follow-up. Execute the reviewed nonlinear direction continuation next; cross-check OS memory counters and retained owner/compiler residency afterward. Renew GPU costs/capacity only on unshared hardware. | Complete actual-consumer evidence, invalidity, stable signatures, dynamic operands, enclosing HLO, independent derivatives and accepted costs. Component or Gaussian evidence does not qualify an untouched nonlinear consumer. Canonical rebuild remains excluded. |
 | 4 | Current-source applicability of saved timing/memory reports | Continue `filter_gradient_terminal_source_review_20260928.md`: inspect each endpoint's actual runtime dependencies and fixture/harness changes against the22-report evidence index. Renew only affected measurement scopes. | Source/input/hardware/timing-scope provenance and relevant numerical gates. Unchanged broad-snapshot files do not prove a closure; unrelated changes do not require every benchmark to run again. Preserve missing GenUT hash fields and the remaining-SVD receipt's absent direct run references. |
 | 5 | Remaining terminal F01--F20 dispositions and default/import coverage | F14's identified implicit-pfor sites are repaired/retired and qualified through04727. Bind each other finding to its current public consumer, guarded source, derivative role, independent numerical check and applicable endpoint measurement. Classify diagnostics/retirements explicitly and follow implicit package imports and callbacks. | Every finding has a reviewable terminal disposition. The300-source guard pass is scoped evidence; no allowance expansion or relabeling an active violation as diagnostic. |
 | 6 | Integration and merge | Once the above gates pass, inspect new remote changes, integrate them on this branch, resolve conflicts and run affected checks before final review. | All master gates passed; only then merge and push main. Checkpoint commits/pushes on the repair branch remain authorized. |
@@ -99,8 +111,9 @@ reviewed continuation is filter_gradient_score_study_directions_20260929.md. It 
 inside a stable enclosing XLA owner, preserve the existing mathematical
 authorities, initial-law derivatives, diagnostics and per-direction value
 agreement/validity checks, and compare fresh actual-consumer outputs/costs.
-The loop is over parameter directions, not training sample rows. No runtime
-edit or consumer-admission claim follows from this read-only inspection.
+The loop is over parameter directions, not training sample rows. That inspection now has an implementation: the factories provide one enclosing
+TensorFlow direction owner with status flags enforced at the host. Qualification
+is in progress; no consumer-admission claim follows before the recorded checks.
 
 20260929 review:04682 passes46 CPU regression checks and fails the existing
 static pfor test on the optional batch-fused route. No test/gate is removed.

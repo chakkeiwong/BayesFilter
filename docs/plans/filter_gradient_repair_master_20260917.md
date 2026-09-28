@@ -1,24 +1,35 @@
 # Complete filter and gradient execution repair
 
 Branch repair/filter-gradient-xla-validation-20260918 in
-/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Pushed base8f6e94633.
-Main remains unmerged. Active plan: filter_gradient_streaming_profile_20260929.md.
+/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Evidence base54ba5c538; use git HEAD for the latest durable checkpoint.
+Main remains unmerged. Active plan: filter_gradient_score_direction_cost_20260929.md.
 
-Through 04755; active workers: none.
-Charged/reserved CPU 109959.160346s / GPU 97122.849622s.
-Remaining CPU 25.455789h / GPU 25.021431h.
+Through 04782; active workers: none.
+Charged/reserved CPU 110491.548159s / GPU 97352.844807s.
+Remaining CPU 25.307903h / GPU 24.957543h.
 Global caps56 CPU/52 GPU hours include the extra24 CPU hours. Active allocation
-8 workers/900 CPU/0 GPU seconds; used/reserved 6 workers,
-40.675878 CPU/0.000000 GPU seconds. One numerical worker at a time.
+6 workers/1800 CPU/0 GPU seconds; used/reserved 5 workers,
+80.150181 CPU/0.000000 GPU seconds. One numerical worker at a time.
 
-Profiling04750--04755 completed: all six workers passed, including161 final readback/policy checks. Streaming removes one global loop and moves Philox/Box-Muller into the observation loop; three additional reachable copies/six fusions are explanatory only. RNG component warm times are descriptively lower for streaming at both horizons, so raw RNG cost alone does not explain the full-filter slowdown. Full-filter performance remains unaccepted.
+Gaussian score direction repair and cost screen complete through04782. All six actual consumers pass CPU/GPU;162 final readback/policy checks pass. Complete records are exact; maximum FD error9.49e-12. CPU warm ratios0.638016 (diagnosticLEDH)/0.515920 (resamplingKDM), cold ratios1.075618/1.065283, observed RSS increases96.348/90.863MiB. Single-process costs remain descriptive/unaccepted. Rusage peak is below sampledVmRSS; peak accounting requires a bounded diagnostic.
 
-Next: Archive and commit the completed profile, then execute the reviewed score-study analytical direction consumer repair. Preserve the separate full-filter compiler-interaction investigation for a bounded causal intervention; do not change RNG, prefetch past validity gates, or waive performance limits. Remaining GPU, source, DZ5 and terminal gates stay open.
+Next: Archive/commit/push the completed Gaussian evidence, then execute filter_gradient_nonlinear_directions_20260929.md with fresh exact fixtures. Later diagnose OS memory-counter disagreement and matched owner residency/costs per the cost result. Preserve streaming slowdown, uncontended GPU, native-memory, DZ5/geometry and remaining terminal gates; main stays unmerged.
+
+Profiling04750--04755 completed in40.675878 CPU seconds: all six workers pass,
+including161 final checks. RNG-only streaming timings are lower; this does not
+explain the full-filter slowdown or satisfy its cost gate. The result and35-member
+verified archive are committed in54ba5c538.
+
+Gaussian direction qualification04756--04777 is complete: six actual consumers
+pass CPU/GPU and161 terminal checks. Complete direction outputs agree exactly;
+maximum five-point error9.49e-12. Three failures are preserved: incorrect zero-
+design rejection assumption, then two fixed output-schema shape defects.
+Four cases were refreshed after preserving diagnostic failure payload ordering.
 
 Matched CPU cost study04729--04748 is complete;04749 passes161 readback/policy
 checks. Every shared numerical/status field is exact; sources, inputs, RNG,
 threads and affinity match. Streaming geometric warm ratios1.08239(T32) and
-1.09678(T128), with conditional95% upper bounds1.11687/1.15608, trigger current
+1.09678(T128), with conditional95% upper bounds1.11687/1.15608, triggered the completed
 profiling. Median observed RSS is about11MiB lower, but compile-associated RSS
 still about526MiB. No cost acceptance. Failed schema pilot04728 is preserved.
 Archive streaming-paired-04749 has142 verified members,9,968,524 bytes, SHA256
@@ -30,8 +41,9 @@ dispositions. P91 captured-tape XLA failures were repaired with shared loop-loca
 tape ownership. CPU/GPU and163 final readback/policy checks pass;300 guarded
 sources/1436 existing exceptions. No HMC/training or old LEDH route executed.
 
-Other gaps: score-study evaluate_gaussian still assembles six analytical
-directions using Python; execute filter_gradient_score_study_directions_20260929.md.
+Other gaps: nonlinear score-study EKF/UKF and LEDH/SGQF/mixture consumers
+still assemble six directions in Python; next reviewed continuation is
+filter_gradient_nonlinear_directions_20260929.md after this Gaussian unit.
 Registered score owners/costs, source-measurement applicability, native/compiler
 residency, uncontended GPU costs/capacity, DZ5 locator121 strict trajectory
 differences/unconverged optimizers,4539 fitted-geometry CPU/GPU differences,

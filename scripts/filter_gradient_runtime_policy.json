@@ -1,6 +1,6 @@
 {
   "schema": "filter_gradient_runtime_policy.v1",
-  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance. September29 remaining-pfor scope: all pfor/implicit-pfor calls in the scalar transport adapter are guarded; Python iteration coverage there is limited to its two touched coordinate/logdet methods. The named independent SIR reference retains its diagnostic NumPy/host-loop role while all pfor calls remain guarded. Contract E streaming is guarded in full. September29 runner coverage adds pfor/implicit-pfor inspection over17 runner/benchmark files only; other execution/NumPy/default and consumer-admission gates remain in the master. No new exception is granted.",
+  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance. September29 remaining-pfor scope: all pfor/implicit-pfor calls in the scalar transport adapter are guarded; Python iteration coverage there is limited to its two touched coordinate/logdet methods. The named independent SIR reference retains its diagnostic NumPy/host-loop role while all pfor calls remain guarded. Contract E streaming is guarded in full. September29 runner coverage adds pfor/implicit-pfor inspection over17 runner/benchmark files only; other execution/NumPy/default and consumer-admission gates remain in the master. No new exception is granted. September29 score-study coverage adds the Gaussian consumer and six helper/factory scopes. Six exact configuration/output-schema exceptions are reviewed; no numerical Python-loop allowance is added. Other score-study providers and consumers remain outside this bounded closure.",
   "sources": {
     "bayesfilter/adapters/__init__.py": null,
     "bayesfilter/ops/accurate_svd_tf.py": null,
@@ -659,7 +659,24 @@
       "non_xla_function": [],
       "default_jit_disabled": []
     },
-    "bayesfilter/testing/p91_complete_data_diagnostics_tf.py": null
+    "bayesfilter/testing/p91_complete_data_diagnostics_tf.py": null,
+    "bayesfilter/score_study/adapters.py": [
+      "evaluate_gaussian"
+    ],
+    "bayesfilter/score_study/canonical_adapter_tf.py": null,
+    "bayesfilter/score_study/direction_assembly_tf.py": null,
+    "bayesfilter/score_study/covariance_adapter_tf.py": [
+      "make_covariance_kernel"
+    ],
+    "bayesfilter/score_study/mixture_covariance_tf.py": [
+      "make_mixture_covariance_kernel"
+    ],
+    "bayesfilter/score_study/kdm_adapter_tf.py": [
+      "make_kdm_kernel"
+    ],
+    "bayesfilter/score_study/control_diagnostics_tf.py": [
+      "compact_control_diagnostics"
+    ]
   },
   "exceptions": [
     {
@@ -13631,6 +13648,60 @@
       "role": "host_reporting",
       "reason": "Decode completed native histories or enumerate static partition/seed names only; no target calls, numerical selection, norms, logarithms or eigen computation.",
       "occurrences": 2
+    },
+    {
+      "path": "bayesfilter/score_study/adapters.py",
+      "function": "evaluate_gaussian",
+      "line": 25,
+      "kind": "python_iteration",
+      "ast_sha256": "d1d62d9e1f897e0becbe2f55a33c6fced5b878e5189be56321dc2fb4c5e3ab25",
+      "role": "host_validation",
+      "reason": "Read four immutable configuration dimensions; no tensor arithmetic or algorithm iteration."
+    },
+    {
+      "path": "bayesfilter/score_study/canonical_adapter_tf.py",
+      "function": "make_canonical_kernel",
+      "line": 55,
+      "kind": "python_iteration",
+      "ast_sha256": "556511422c018e804ef2c547043fab7b0e8a7c90a0f0ecf9379e6e78d72de4ec",
+      "role": "host_validation",
+      "reason": "Check three fixed control keys before constructing/tracing an owner; no numerical loop."
+    },
+    {
+      "path": "bayesfilter/score_study/covariance_adapter_tf.py",
+      "function": "make_covariance_kernel.kernel",
+      "line": 30,
+      "kind": "python_iteration",
+      "ast_sha256": "3afedfb5fb8cf1a3b28b8f93837fa39a326ce19fc063729b1a78e56e5a2ee1e2",
+      "role": "fixed_schema",
+      "reason": "Pack named trace fields into the declared nested result schema; no numerical computation."
+    },
+    {
+      "path": "bayesfilter/score_study/covariance_adapter_tf.py",
+      "function": "make_covariance_kernel.kernel",
+      "line": 30,
+      "kind": "python_iteration",
+      "ast_sha256": "d0e127d1bf1ea5b13c96cab670036a8d41701c0e5a5fe909c5eb9dffce320094",
+      "role": "fixed_schema",
+      "reason": "Pack named trace fields into the declared nested result schema; no numerical computation."
+    },
+    {
+      "path": "bayesfilter/score_study/mixture_covariance_tf.py",
+      "function": "make_mixture_covariance_kernel.kernel",
+      "line": 107,
+      "kind": "python_iteration",
+      "ast_sha256": "23c2259b0c62d5ad96e24e35255c0db73cd864c00da534300dbb2c63df4a325d",
+      "role": "fixed_schema",
+      "reason": "Select existing prediction tensors for the fixed nested diagnostic result; no numerical computation."
+    },
+    {
+      "path": "bayesfilter/score_study/control_diagnostics_tf.py",
+      "function": "compact_control_diagnostics",
+      "line": 13,
+      "kind": "python_iteration",
+      "ast_sha256": "ab1b95d05001430f7314d49281bdecc72fe74234362b7a02aaba04768f99262f",
+      "role": "fixed_schema",
+      "reason": "Select named higher-moment result fields by key; covariance eigenvalues are batched TensorFlow operations."
     }
   ]
 }

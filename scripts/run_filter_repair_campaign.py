@@ -1779,6 +1779,23 @@ TEST_GROUPS['streaming_profile_hlo_cpu'] = (
     'tests/test_filter_repair_streaming_profile.py::test_saved_hlo_placement_profile',)
 TEST_GROUPS['streaming_profile_readback_cpu'] = (
     'tests/test_filter_repair_streaming_profile_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['score_directions_generic_cpu'] = (
+    'tests/test_filter_repair_score_directions.py', '-k', 'not actual_direction_consumer')
+TEST_GROUPS['score_directions_generic_gpu'] = (
+    'tests/test_filter_repair_score_directions.py::test_generic_direction_owner[True]',
+    'tests/test_filter_repair_score_directions.py::test_direction_value_invariance_is_returned_not_an_ignored_assertion')
+TEST_GROUPS['score_directions_readback_cpu'] = (
+    'tests/test_filter_repair_score_directions_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['score_direction_cost_readback_cpu'] = (
+    'tests/test_filter_repair_score_direction_cost_readback.py',
+    'tests/test_filter_repair_score_directions_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'score_direction_cost_{case}_{arm}_cpu': (
+    f'tests/test_filter_repair_score_direction_cost.py::test_fresh_direction_cost[{case}-{arm}]',)
+    for case in ('ledh_diagnostics', 'resampling_kdm') for arm in ('python_reference', 'enclosing')})
+TEST_GROUPS.update({f'score_directions_{case}_{device}': (
+    f'tests/test_filter_repair_score_directions.py::test_actual_direction_consumer[{case}]',)
+    for case in ('ledh', 'ledh_diagnostics', 'sgqf', 'kdm_covariance', 'integrated_kdm', 'resampling_kdm')
+    for device in ('cpu', 'gpu')})
 TEST_GROUPS.update({f'streaming_profile_rng_{horizon}_{arm}_cpu': (
     f'tests/test_filter_repair_streaming_profile.py::test_rng_component_profile[{horizon}-{arm}]',)
     for horizon in (32, 128) for arm in ('buffered', 'streaming')})
@@ -2519,6 +2536,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('score_directions_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_validity_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_seeded_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_streaming_') and group.endswith('_gpu')},
