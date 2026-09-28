@@ -1,5 +1,16 @@
 # SV Oracle Resolution Record: KSC-SV, Generalized SV, Actual SV
 
+> **KSC correction — 2026-09-29.** The transformation argument below
+> requires the same observation-density family. The current canonical KSC
+> factory evaluates a seven-Gaussian-mixture approximation, while its proposal
+> uses Gaussian moments. Consequently neither exact native-SV score agreement
+> nor a single exact Gaussian Kalman oracle follows for that implementation.
+> CPU enumeration and callback tests, followed by full-consumer GPU checks,
+> support the corrected target/reference treatment in
+> [the current KSC plan](sqmc-ksc-sv-comparison-20260928.md).
+> The older resolution text is retained as historical evidence; its KSC
+> exactness conclusions must not guide new comparisons.
+
 **Date consolidated:** 2026-09-14
 **Status:** RESOLVED — preserved here because the resolution was rediscovered
 several times, each time expensively

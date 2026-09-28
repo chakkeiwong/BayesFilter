@@ -46,3 +46,7 @@ that pilot reuse applies only to P44. Preserve original manifests.
 
 Next action: read the completed result and terminal review for any user-directed
 follow-up. No outstanding work remains under the requested expanded comparison.
+
+Continuation: the active KSC stage is recorded in
+`docs/reset-memos/sqmc-ksc-sv-checkpoint-20260928.md`. This completed Kalman
+checkpoint and its linked evidence remain preserved.

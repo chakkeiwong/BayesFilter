@@ -1,0 +1,42 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790612400.094580 1314658 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790612400.097313 1314658 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790612400.104824 1314658 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790612400.104880 1314658 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790612400.104887 1314658 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790612400.104888 1314658 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1790612401.775631 1314658 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1790612402.540209 1314658 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790612403.077101 1314658 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": false, "nomination_pass": false, "epsilon": 0.4, "maximum_column_tv": 0.0030639330493867655, "wall_seconds": 8.352339627977926}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": false, "nomination_pass": false, "epsilon": 0.4, "maximum_column_tv": 0.008332651574835835, "wall_seconds": 0.08845984301296994}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": false, "epsilon": 1.6, "maximum_column_tv": 5.559584379514924e-05, "wall_seconds": 0.08744180703070015}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": false, "epsilon": 1.6, "maximum_column_tv": 6.635071912078253e-05, "wall_seconds": 0.08468582801287994}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": false, "epsilon": 6.4, "maximum_column_tv": 8.967928233671268e-06, "wall_seconds": 0.08503297599963844}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": false, "epsilon": 6.4, "maximum_column_tv": 9.054378767287283e-06, "wall_seconds": 0.0820397479692474}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": false, "epsilon": 25.6, "maximum_column_tv": 1.9703363966895474e-06, "wall_seconds": 0.08458955801324919}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": false, "epsilon": 25.6, "maximum_column_tv": 2.012213366432803e-06, "wall_seconds": 0.08681096602231264}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": true, "epsilon": 102.4, "maximum_column_tv": 4.834261599677481e-07, "wall_seconds": 0.08484538499033079}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": true, "epsilon": 102.4, "maximum_column_tv": 4.945547130003357e-07, "wall_seconds": 0.08289051300380379}
+{"stage": "calibration", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211001, "valid": true, "error": 0.06129411804779115}
+{"stage": "calibration", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211002, "valid": true, "error": 0.298810080154012}
+{"stage": "calibration", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211001, "valid": true, "error": 0.05943330699792001}
+{"stage": "calibration", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211002, "valid": true, "error": 0.303834601470733}
+{"stage": "validation", "route": "previous_inverse_cdf", "horizon": 10, "seed": 212001, "valid": true, "error": 0.12087841467815473}
+{"stage": "safety_sensitivity", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211001, "valid": true, "error": 0.0613030326400941}
+{"stage": "safety_sensitivity", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211001, "valid": true, "error": 0.06128611949208297}
+WARNING:tensorflow:5 out of the last 9 calls to <function _kernel.<locals>.compute at 0x7e708b8ede40> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+{"stage": "safety_sensitivity", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211001, "valid": true, "error": 0.06065599746829789}
+WARNING:tensorflow:6 out of the last 10 calls to <function _kernel.<locals>.compute at 0x7e708a4e39c0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+{"stage": "safety_sensitivity", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211001, "valid": true, "error": 0.06077356482533141}
+{"stage": "safety_sensitivity", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211001, "valid": true, "error": 0.07305793328773222}
+{"stage": "safety_sensitivity", "route": "previous_inverse_cdf", "horizon": 10, "seed": 211001, "valid": true, "error": 0.04593689931385116}
+{"stage": "final", "route": "previous_inverse_cdf", "horizon": 10, "seed": 214001, "valid": true, "error": 0.0642972235727363}
+{"stage": "final", "route": "previous_inverse_cdf", "horizon": 10, "seed": 214002, "valid": true, "error": 0.09572945547556222}
+{"stage": "final", "route": "previous_inverse_cdf", "horizon": 10, "seed": 214003, "valid": true, "error": 0.16079381344678428}
+{"stage": "final", "route": "previous_inverse_cdf", "horizon": 10, "seed": 214004, "valid": true, "error": 0.4271162374555695}
+{"stage": "final", "route": "previous_inverse_cdf", "horizon": 10, "seed": 214005, "valid": true, "error": 0.20386827392635842}
+{"stage": "final", "route": "previous_inverse_cdf", "horizon": 10, "seed": 214006, "valid": true, "error": 0.039293041612927945}
+{"stage": "final", "route": "previous_inverse_cdf", "horizon": 10, "seed": 214007, "valid": true, "error": 0.12382981064796032}
+{"stage": "final", "route": "previous_inverse_cdf", "horizon": 10, "seed": 214008, "valid": true, "error": 0.18866853213192158}
