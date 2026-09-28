@@ -5,17 +5,17 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 latest committed checkpoint. Main remains unmerged.
 
 Through 04826; active worker runs: none.
-Charged/reserved CPU 111141.443130s / GPU 97801.619105s.
-Remaining CPU 25.127377h / GPU 24.832884h.
+Charged/reserved CPU 111142.629769s / GPU 97801.619105s.
+Remaining CPU 25.127047h / GPU 24.832884h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_nonlinear_direction_cost_20260929.md (complete); at most
-6 workers/1800 CPU/0 GPU seconds.
-Used/reserved 5 workers/63.357384 CPU/0.000000 GPU seconds.
+Active allocation: docs/plans/filter_gradient_os_memory_accounting_20260929.md (complete); at most
+2 workers/120 CPU/0 GPU seconds.
+Used/reserved 2 workers/1.186639 CPU/0.000000 GPU seconds.
 One numerical worker at a time.
 
-Nonlinear repair, calibration and cost screen complete through04826: all ordinary/diagnostic CPU/GPU gates pass; final163 checks pass. Cost ratios are descriptive; UKF/LEDH warm0.190570/0.589810, cold1.003563/1.101679, warm RSS +14.285/105.547MiB. Status and smaps RSS agree while rusage underreports by32.934–56.793MiB. Cost acceptance remains open.
+Allocation-only diagnostic complete: two fresh standard-library processes touch equal544MiB, with no TensorFlow/NumPy/compiler import. Rusage deficits2.262MiB pinned and34.375MiB over32CPUs support per-CPU accounting, consistent with matching-kernel headers. Counter mismatch is not XLA-specific. Real enclosing-owner RSS increases and cost/capacity gates remain open. Actual charge1.186639 CPU seconds, zero GPU.
 
-Next: Archive and push this tested nonlinear checkpoint, then run a bounded allocation-only OS counter diagnostic before continuing remaining full-filter performance/source-applicability/DZ5 gates. No main merge.
+Next: Archive and push the accounting diagnosis; next review a bounded full-filter intervention for the unresolved streaming CPU regression, preserving every RNG draw, final state and validity schedule. Remaining matched owner costs/current-source/F01–F20/DZ5/GPU gates stay open; no main merge.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

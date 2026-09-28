@@ -51,8 +51,12 @@ cost cohort is filter_gradient_nonlinear_direction_cost_20260929.md, binding
 the validated LEDH scope and comparing VmRSS/VmHWM, smaps_rollup and rusage.
 All four measured CPU arms04822–04825 and163 combined readback checks04826
 pass. See filter_gradient_nonlinear_direction_cost_result_20260929.md. The OS
-peak-counter discrepancy reproduces while status and page-map RSS agree;
-an allocation-only counter diagnostic is the next bounded mechanism test.
+peak-counter discrepancy reproduces while status and page-map RSS agree.
+The completed allocation-only diagnostic reproduces it without TensorFlow:
+equal544MiB page touches yield rusage deficits2.262MiB pinned and34.375MiB
+spread over32CPUs, supporting kernel per-CPU accounting. See
+filter_gradient_os_memory_accounting_result_20260929.md. Rusage-only strict
+peak claims remain ineligible; this does not erase measured compiler RSS.
 The locator's
 specific fusion lead stays open without more unrelated counter experiments.
 

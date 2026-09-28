@@ -361,19 +361,19 @@
   },
   "current_checkpoint": {
     "through_run": 4826,
-    "based_on_commit": "d9a534584",
-    "status": "Nonlinear repair, calibration and cost screen complete through04826: all ordinary/diagnostic CPU/GPU gates pass; final163 checks pass. Cost ratios are descriptive; UKF/LEDH warm0.190570/0.589810, cold1.003563/1.101679, warm RSS +14.285/105.547MiB. Status and smaps RSS agree while rusage underreports by32.934\u201356.793MiB. Cost acceptance remains open.",
+    "based_on_commit": "ab31c1410",
+    "status": "Allocation-only diagnostic complete: two fresh standard-library processes touch equal544MiB, with no TensorFlow/NumPy/compiler import. Rusage deficits2.262MiB pinned and34.375MiB over32CPUs support per-CPU accounting, consistent with matching-kernel headers. Counter mismatch is not XLA-specific. Real enclosing-owner RSS increases and cost/capacity gates remain open. Actual charge1.186639 CPU seconds, zero GPU.",
     "charged_seconds": {
-      "CPU": 111141.44313019635,
+      "CPU": 111142.62976930923,
       "GPU": 97801.61910517402
     },
     "remaining_hours": {
-      "CPU": 25.12737690827879,
+      "CPU": 25.12704728630299,
       "GPU": 24.832883581896105
     },
     "active_job": null,
     "active_session": null,
-    "next": "Archive and push this tested nonlinear checkpoint, then run a bounded allocation-only OS counter diagnostic before continuing remaining full-filter performance/source-applicability/DZ5 gates. No main merge.",
+    "next": "Archive and push the accounting diagnosis; next review a bounded full-filter intervention for the unresolved streaming CPU regression, preserving every RNG draw, final state and validity schedule. Remaining matched owner costs/current-source/F01\u2013F20/DZ5/GPU gates stay open; no main merge.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -1275,7 +1275,7 @@
       "state": "complete",
       "result": "docs/plans/filter_gradient_nonlinear_scope_result_20260929.md"
     },
-    "active_allocation_key": "nonlinear_direction_cost_allocation",
+    "active_allocation_key": "os_memory_accounting_allocation",
     "nonlinear_direction_cost_allocation": {
       "state": "complete",
       "start_after_run": 4821,
@@ -1308,6 +1308,39 @@
       "sha256": "a3f038cf5fe93d442f781fa345e441ba2f17c0a99192e4d681d6670ccaeba819",
       "members": 229,
       "bytes": 14183681
+    },
+    "os_memory_accounting_allocation": {
+      "state": "complete",
+      "start_after_run": 4826,
+      "base_charges": {
+        "CPU": 111141.44313019635,
+        "GPU": 97801.61910517402
+      },
+      "max_workers": 2,
+      "max_seconds": {
+        "CPU": 120,
+        "GPU": 0
+      },
+      "group_prefix": "os_memory_accounting_",
+      "plan": "docs/plans/filter_gradient_os_memory_accounting_20260929.md",
+      "supplemental_receipts": [
+        "supplemental-compute-os-memory-20260929-r1.json"
+      ],
+      "progress_notes": "Allocation-only diagnostic complete: two fresh standard-library processes touch equal544MiB, with no TensorFlow/NumPy/compiler import. Rusage deficits2.262MiB pinned and34.375MiB over32CPUs support per-CPU accounting, consistent with matching-kernel headers. Counter mismatch is not XLA-specific. Real enclosing-owner RSS increases and cost/capacity gates remain open. Actual charge1.186639 CPU seconds, zero GPU.",
+      "next_action": "Archive and push the accounting diagnosis; next review a bounded full-filter intervention for the unresolved streaming CPU regression, preserving every RNG draw, final state and validity schedule. Remaining matched owner costs/current-source/F01\u2013F20/DZ5/GPU gates stay open; no main merge.",
+      "used_workers": 2,
+      "used_seconds": {
+        "CPU": 1.1866391128860414,
+        "GPU": 0
+      },
+      "failed_runs": [],
+      "result": "docs/plans/filter_gradient_os_memory_accounting_result_20260929.md",
+      "archive": {
+        "path": "docs/plans/artifacts/filter-gradient-repair-20260917/os-memory-accounting-04826-evidence.tar.gz",
+        "sha256": "75ca1e2f3d0430d242f21af5c1ee5188491f691749401b30596d6f9006a0f224",
+        "members": 11,
+        "bytes": 18421
+      }
     }
   },
   "historical_quadratic_batch_checkpoint": {
