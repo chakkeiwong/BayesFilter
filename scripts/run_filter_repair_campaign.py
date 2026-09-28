@@ -1781,6 +1781,15 @@ TEST_GROUPS['streaming_profile_readback_cpu'] = (
     'tests/test_filter_repair_streaming_profile_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['streaming_state_retirement_cpu'] = (
     'tests/test_filter_repair_streaming_state_retirement.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['fitted_apf_rng_cpu'] = ('tests/test_filter_repair_fitted_apf_rng.py',)
+TEST_GROUPS['fitted_apf_rng_gpu'] = TEST_GROUPS['fitted_apf_rng_cpu']
+TEST_GROUPS['fitted_apf_rng_explicit_cpu'] = ('tests/test_filter_repair_fitted_apf_rng_localization.py',)
+TEST_GROUPS['fitted_apf_rng_explicit_gpu'] = TEST_GROUPS['fitted_apf_rng_explicit_cpu']
+TEST_GROUPS['fitted_apf_rng_readback_cpu'] = (
+    'tests/test_filter_repair_fitted_apf_rng_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['fitted_apf_rng_explicit_readback_cpu'] = (
+    'tests/test_filter_repair_fitted_apf_rng_explicit_readback.py',
+    'tests/test_filter_repair_fitted_apf_rng_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['score_directions_generic_cpu'] = (
     'tests/test_filter_repair_score_directions.py', '-k', 'not actual_direction_consumer')
 TEST_GROUPS['score_directions_generic_gpu'] = (
@@ -1878,6 +1887,10 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    'fitted_apf_rng_cpu': 'Bounded eager/XLA seeded-input diagnostic; mismatch is recorded and cannot qualify a runtime migration.',
+    'fitted_apf_rng_gpu': 'Bounded eager/XLA seeded-input diagnostic; mismatch is recorded and cannot qualify a runtime migration.',
+    'fitted_apf_rng_explicit_cpu': 'Diagnostic localization of stateless key/counter and float conversion; no filter admission.',
+    'fitted_apf_rng_explicit_gpu': 'Diagnostic localization of stateless key/counter and float conversion; no filter admission.',
     **{f'nonlinear_scope_calibrate_{provider}_{count}_cpu':
         'Conditional test-only calibration ladder. Run a later count only after prior calibration failure; validation failure stops selection. Selected untouched checks and terminal readback remain required.'
         for provider in ('ledh', 'sgqf', 'kdm_covariance') for count in (8, 16, 32, 64)},
@@ -2572,6 +2585,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    'fitted_apf_rng_gpu': 'GPU',
+    'fitted_apf_rng_explicit_gpu': 'GPU',
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('nonlinear_scope_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('nonlinear_directions_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('score_directions_') and group.endswith('_gpu')},

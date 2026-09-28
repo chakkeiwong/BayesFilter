@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04833; active worker runs: none.
-Charged/reserved CPU 111344.961817s / GPU 97801.619105s.
-Remaining CPU 25.070844h / GPU 24.832884h.
+Through 04839; active worker runs: none.
+Charged/reserved CPU 111374.689551s / GPU 97813.826679s.
+Remaining CPU 25.062586h / GPU 24.829493h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_streaming_state_layout_20260929.md (complete); at most
-8 workers/1800 CPU/600 GPU seconds.
-Used/reserved 7 workers/202.332048 CPU/0.000000 GPU seconds.
+Active allocation: docs/plans/filter_gradient_fitted_apf_execution_20260929.md (closed); at most
+6 workers/600 CPU/600 GPU seconds.
+Used/reserved 6 workers/29.727734 CPU/12.207573 GPU seconds.
 One numerical worker at a time.
 
-Scalar-Philox-state intervention is rejected and runtime restored byte-for-byte toab31c1410. CPU qualification04827 and four exact complete-record comparisons04828–04831 pass; warm ratios1.156/2.216 fail the nomination screen. Body copies360→363; no causality claimed. Readback04832 and retirement04833 each pass161 checks. Seven workers202.332048 CPU seconds, zeroGPU. Trial source/HLO/harness preserved in64-member archive; live trial harness retired.
+Fitted-APF RNG diagnosis04834–04839 is complete: raw Philox state/words agree, but built-in compiled floating draws differ. Shared explicit normal conversion is exact on CPU/GPU;04839 passes162 readback/policy checks. No numerical runtime change or stream migration. Reuse existing stateless_random_tf FP64 compatibility primitives.
 
-Next: Commit/push the closed negative intervention, then prepare the fixed fitted-twist APF execution repair and live RNG compatibility gates fromfilter_gradient_fitted_apf_execution_20260929.md. Keep adaptive iAPF as its distinct follow-up. Streaming cost, source applicability, owner residency/GPU capacity, DZ5 and terminal F01–F20 remain open.
+Next: Implement and qualify the fixed fitted-APF enclosing owner with preserved stream labels, feature ordering, fit histories, failure behavior and frozen-fit derivatives. FP32 remains a distinct compatibility obligation; adaptive iAPF follows separately.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

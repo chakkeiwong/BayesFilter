@@ -74,3 +74,56 @@ change the baseline. Separate primitive, frozen-array recurrence, live seeded
 wiring and adaptive-shape gates answer those risks. Keep the fixed-fit and
 adaptive-fit scopes distinct; neither Gaussian direction nor LEDH-state tests
 can close them. This plan passes review for preparation only.
+
+Preparation review, after04833: the fixed-fit adapter calls existing stable
+`make_fitted_twist_kernel` and `make_recursive_fit_kernel`; the latter already
+uses a native backward-time loop. Enclose repeated calls to those authorities,
+not copied equations. The normalized-proposal and full-rank/positive-precision
+tests inspected above provide independent checks. Their scalar fixture uses
+N16,T2 and six parameters; it is mechanics evidence, not a tuned default.
+First freeze the RNG compatibility question before implementing the controller:
+moving eager stateless draws into XLA could change its realized input.
+
+Activate a separate four-worker/600 CPU/600 GPU-second seed-preflight allocation
+under the same global caps (CPU, GPU, combined readback, one localized retry),
+300-second timeouts and one numerical process at a time. Fixed seed pairs are
+[9296027,1] and[9296027,2], dtypefloat64, normal shapes[16,1]/[2,16,1], uniform
+shapes[3,16]/[2,16]. Compare full eager draws with a stable enclosing XLA function
+at both seeds on each device. Record exact equality and maximum absolute
+difference for every array, complete arrays/hashes, placement, one trace, HLO,
+and source/device provenance. Exact uniform draws and normal error<=1e-12 are
+the input-compatibility nomination gate. A mismatch is a diagnostic result
+that blocks this simple generator migration; do not tune seeds or relax gates.
+It triggers inspection of TensorFlow's stateless seed/counter/normal-transform
+route, with no stream migration authorization assumed.
+
+This preflight executes no filter fitting, optimizer, training or HMC, and
+does not qualify an endpoint or performance. Preserve its outcome even if a
+later compatibility implementation passes. Self-review: comparing only moments
+would miss different seeded inputs; complete arrays answer the actual question.
+The choices are a bounded compatibility probe, not evidence of filter quality.
+Numerical implementation remains unchanged in this phase.
+
+04834/04835 both show that plain XLA compilation changes the complete seeded
+arrays (normal errors up to3.23 and uniform errors up to0.886). The same mismatch
+on CPU/GPU is preserved, not accepted. Installed TF2.19.1
+`python/ops/random_ops_util.py:92–150,185–208` shows auto-selection calls the
+device key/counter operation, while explicit Philox uses a documented seed
+scramble matching the native kernel. Test this exact branch distinction before
+writing a compatibility implementation: eager auto versus eager explicit
+Philox versus compiled explicit Philox, with key/counter and complete raw
+uint32 words. Also compare the existing shared Philox Box–Muller helper at the
+same explicit key/counter to localize any remaining transform difference.
+Keep the same two seeds, shapes, dtype and gates. Two CPU/GPU localization
+workers plus refreshed readback bring the allocation to6 workers with the
+unchanged600 CPU/600 GPU seconds. No runtime source changes or stream migration.
+Self-review: matching raw words and seed state separately distinguishes a seed
+mapping defect from a normal/uniform conversion difference; distributional
+similarity alone is still insufficient. This is a compatibility diagnosis.
+
+The preflight is complete through04839; see
+`filter_gradient_fitted_apf_rng_result_20260929.md`. Raw words/state agree, but
+built-in floating transformations differ. Existing FP64 compatibility primitives
+in `bayesfilter/ops/stateless_random_tf.py` are the implementation authority to
+reuse. FP32 remains a distinct compatibility obligation. The next phase must
+qualify full inputs and the actual fitted endpoint, not repeat this diagnosis.
