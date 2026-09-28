@@ -1,5 +1,11 @@
 """TensorFlow/XLA weighted forward-KL training for NeuTra transports.
 
+The built-in WeightedDenseIAFTransport/default stages are HISTORICAL —
+UNFAITHFUL TO THE AUTHOR'S CODE (owner directive 2026-09-25). Sharing the core
+does not upgrade their architecture. An explicitly configured canonical IAF
+may use this consumer, but the weighted objective remains a documented training
+alternative. See docs/reference/neutra-implementation.md and the policy notice.
+
 This module trains an explicit transport density on externally generated,
 importance-weighted physical particles.  It is separate from reverse-KL NeuTra:
 the training rows are fixed target-covering evidence rather than samples from

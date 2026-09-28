@@ -1,0 +1,866 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "stochastic_tt_prefit_step",
+  "size": 1,
+  "jit": "off",
+  "device": "GPU",
+  "source_root": "/tmp/bayesfilter-filter-gradient-xla-validation-20260918",
+  "worker_sha256": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "filter_repair_stochastic_worker.py": "2c77dd65ecbec0c8d9cfa2b98b5e8f83deaeb2c8efdba8d4dd6a7a5e565e644c",
+    "filter_repair_stochastic_fixtures.py": "77c7b29693dcfde9c5645148046a96975e3f89bc16c99b24bacbd381c30a345b"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 20262912,
+      "VmRSS": 20262912
+    },
+    "prepared": {
+      "VmHWM": 995602432,
+      "VmRSS": 995602432,
+      "gpu": {
+        "current": 13312,
+        "peak": 13312
+      }
+    },
+    "traced": {
+      "VmHWM": 1006231552,
+      "VmRSS": 1006231552,
+      "gpu": {
+        "current": 13312,
+        "peak": 13312
+      }
+    },
+    "cold_outputs_live": {
+      "VmHWM": 1171959808,
+      "VmRSS": 1171959808,
+      "gpu": {
+        "current": 29952,
+        "peak": 35840
+      }
+    },
+    "cold_outputs_released": {
+      "VmHWM": 1171963904,
+      "VmRSS": 1171963904,
+      "gpu": {
+        "current": 27648,
+        "peak": 35840
+      }
+    }
+  },
+  "status": "passed",
+  "phase": "complete",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4090"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "3",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": "index, name, uuid, driver_version\n0, NVIDIA GeForce RTX 4090, GPU-08d989e5-2702-1b9d-c1ef-7795ff299e02, 595.91.07\n1, NVIDIA GeForce RTX 4090, GPU-225f4834-d8ad-f91a-2378-03ad0524381b, 595.91.07\n2, NVIDIA GeForce RTX 4090, GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba, 595.91.07\n3, NVIDIA GeForce RTX 4090, GPU-b8045e28-4433-ec7a-77a5-db0636748322, 595.91.07",
+  "trust_basis": "trusted_escalated_gpu_diagnostic",
+  "numerical_backend": "tensorflow",
+  "preparation_seconds": 1.4721507470239885,
+  "dimensions": {
+    "dimension": 4,
+    "rows": 4,
+    "ranks": [
+      1,
+      2,
+      2,
+      2,
+      1
+    ],
+    "widths": [
+      2,
+      3,
+      2,
+      3
+    ],
+    "l1_weight": 0.013,
+    "l2_weight": 0.007,
+    "logz_anchor_weight": 0.03,
+    "logz_reference": -1.0,
+    "tau": 1e-06,
+    "classification": "existing_extension_or_invention",
+    "canonical_admitted": false,
+    "boundary": "complete_stochastic_tt_prefit_update",
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "gradient_clip_norm": 10.0,
+    "identical_initial_parameters_and_slots_each_call": true
+  },
+  "input_sha256": "7fc7352c6434101dc03a2a65588a4edbafd51c2b9949a870dacb2756a249cad0",
+  "input_shapes": [
+    [
+      30
+    ],
+    [
+      4,
+      4
+    ],
+    [
+      4
+    ],
+    [
+      4
+    ]
+  ],
+  "input_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "float64"
+  ],
+  "trace_seconds": 0.3365765979979187,
+  "graph": {
+    "nodes": 1024,
+    "functions": 22,
+    "callbacks": [],
+    "must_compile": false,
+    "nested_xla": [],
+    "xla_ops": []
+  },
+  "cold": {
+    "synchronized_seconds": 1.426093347981805,
+    "output_copy_seconds": 0.000520386005518958,
+    "end_to_end_seconds": 1.426613733987324
+  },
+  "output_shapes": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      1,
+      2,
+      2
+    ],
+    [
+      2,
+      3,
+      2
+    ],
+    [
+      2,
+      2,
+      2
+    ],
+    [
+      2,
+      3,
+      1
+    ],
+    [],
+    [],
+    [
+      1,
+      2,
+      2
+    ],
+    [
+      1,
+      2,
+      2
+    ],
+    [
+      2,
+      3,
+      2
+    ],
+    [
+      2,
+      3,
+      2
+    ],
+    [
+      2,
+      2,
+      2
+    ],
+    [
+      2,
+      2,
+      2
+    ],
+    [
+      2,
+      3,
+      1
+    ],
+    [
+      2,
+      3,
+      1
+    ]
+  ],
+  "output_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "int64",
+    "float32",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "values": [
+    1.0895441211956558,
+    1.0895441211956558,
+    2.6758773801257636,
+    0.0,
+    -1.0834855029541948e-05,
+    1.4253043081853836,
+    0.6472646670780344,
+    0.9656054162575665,
+    4.437918214443578,
+    [
+      [
+        [
+          0.14900000846839148,
+          0.15934483563784999
+        ],
+        [
+          0.16968966388670395,
+          0.18003449099622287
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.19037932342950895,
+          0.2007241503017123
+        ],
+        [
+          0.21106897787351153,
+          0.22141380482552486
+        ],
+        [
+          0.2317586556308117,
+          0.24210348006245558
+        ]
+      ],
+      [
+        [
+          0.25244828855553386,
+          0.26279311547100004
+        ],
+        [
+          0.2731379430427498,
+          0.2834827700332961
+        ],
+        [
+          0.29382761939019186,
+          0.3041724440176808
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.31451725659942337,
+          0.3248620835793143
+        ],
+        [
+          0.33520691018648596,
+          0.3455517372783704
+        ]
+      ],
+      [
+        [
+          0.3558965665867632,
+          0.36624139359189667
+        ],
+        [
+          0.3765862202377365,
+          0.386931047350337
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.3972758763602455
+        ],
+        [
+          0.4076207017815105
+        ],
+        [
+          0.41796553109277024
+        ]
+      ],
+      [
+        [
+          0.4283103588976077
+        ],
+        [
+          0.4386551843814374
+        ],
+        [
+          0.44900001364294556
+        ]
+      ]
+    ],
+    1,
+    0.0010000000474974513,
+    [
+      [
+        [
+          0.17184751969007148,
+          0.22216174152970422
+        ],
+        [
+          0.1515904807766002,
+          0.19649125546678278
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.0029531570023629545,
+          0.004935583939951117
+        ],
+        [
+          0.002297967386208082,
+          0.0038608813474912546
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.04897802335691701,
+          0.05506789727123218
+        ],
+        [
+          0.055206409861084584,
+          0.062079768478302516
+        ],
+        [
+          0.0111686389328774,
+          0.012569095276700758
+        ]
+      ],
+      [
+        [
+          0.052137203865401015,
+          0.058619894650702116
+        ],
+        [
+          0.058777418603705535,
+          0.0660953357532767
+        ],
+        [
+          0.011907988703204562,
+          0.013401157689127063
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.00023988467719507115,
+          0.00030324733098749846
+        ],
+        [
+          0.0003047747689750061,
+          0.0003853897654319648
+        ],
+        [
+          1.2473849561298498e-05,
+          1.5798215607478157e-05
+        ]
+      ],
+      [
+        [
+          0.00027182880269023904,
+          0.0003436292048859419
+        ],
+        [
+          0.00034547849377152337,
+          0.0004368593408338382
+        ],
+        [
+          1.4180019495564768e-05,
+          1.7959102740884965e-05
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.03680490096159877,
+          0.03959939583341987
+        ],
+        [
+          0.045132744162890495,
+          0.04855866694362275
+        ]
+      ],
+      [
+        [
+          0.03840276345654119,
+          0.041318496769879996
+        ],
+        [
+          0.047106547524719246,
+          0.050682266599429246
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.00013546007347930956,
+          0.0001568112150371873
+        ],
+        [
+          0.00020369645956729287,
+          0.00023579441353416842
+        ]
+      ],
+      [
+        [
+          0.00014747722410990576,
+          0.00017072181753225864
+        ],
+        [
+          0.00022190268196986356,
+          0.0002568692147655625
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.04126604371365608
+        ],
+        [
+          0.05751517231657875
+        ],
+        [
+          0.04377916047024709
+        ]
+      ],
+      [
+        [
+          0.042492971764776497
+        ],
+        [
+          0.05922460565671748
+        ],
+        [
+          0.045080089092522035
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.00017028863637773772
+        ],
+        [
+          0.00033079950466057516
+        ],
+        [
+          0.00019166148914796476
+        ]
+      ],
+      [
+        [
+          0.0001805652649402095
+        ],
+        [
+          0.0003507553915193696
+        ],
+        [
+          0.0002032214432589727
+        ]
+      ]
+    ]
+  ],
+  "warm": [
+    {
+      "iteration": 0,
+      "synchronized_seconds": 0.008476007991703227,
+      "output_copy_seconds": 0.0005550369969569147,
+      "end_to_end_seconds": 0.009031044988660142,
+      "VmHWM": 1171968000,
+      "VmRSS": 1171968000,
+      "gpu": {
+        "current": 27648,
+        "peak": 35840
+      }
+    },
+    {
+      "iteration": 1,
+      "synchronized_seconds": 0.009005973988678306,
+      "output_copy_seconds": 0.0005109870107844472,
+      "end_to_end_seconds": 0.009516960999462754,
+      "VmHWM": 1171968000,
+      "VmRSS": 1171968000,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 2,
+      "synchronized_seconds": 0.011432839994085953,
+      "output_copy_seconds": 0.000512507016537711,
+      "end_to_end_seconds": 0.011945347010623664,
+      "VmHWM": 1171968000,
+      "VmRSS": 1171968000,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 3,
+      "synchronized_seconds": 0.011225860012928024,
+      "output_copy_seconds": 0.0004142079851590097,
+      "end_to_end_seconds": 0.011640067998087034,
+      "VmHWM": 1171968000,
+      "VmRSS": 1171968000,
+      "gpu": {
+        "current": 27648,
+        "peak": 35840
+      }
+    },
+    {
+      "iteration": 4,
+      "synchronized_seconds": 0.009852249000687152,
+      "output_copy_seconds": 0.00044413699652068317,
+      "end_to_end_seconds": 0.010296385997207835,
+      "VmHWM": 1171968000,
+      "VmRSS": 1171968000,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 5,
+      "synchronized_seconds": 0.009368953004013747,
+      "output_copy_seconds": 0.0004435270093381405,
+      "end_to_end_seconds": 0.009812480013351887,
+      "VmHWM": 1171968000,
+      "VmRSS": 1171968000,
+      "gpu": {
+        "current": 27648,
+        "peak": 35840
+      }
+    },
+    {
+      "iteration": 6,
+      "synchronized_seconds": 0.006585139024537057,
+      "output_copy_seconds": 0.0004490769933909178,
+      "end_to_end_seconds": 0.0070342160179279745,
+      "VmHWM": 1171968000,
+      "VmRSS": 1171968000,
+      "gpu": {
+        "current": 27648,
+        "peak": 35840
+      }
+    },
+    {
+      "iteration": 7,
+      "synchronized_seconds": 0.006822588009526953,
+      "output_copy_seconds": 0.0005963569856248796,
+      "end_to_end_seconds": 0.007418944995151833,
+      "VmHWM": 1171968000,
+      "VmRSS": 1171968000,
+      "gpu": {
+        "current": 27648,
+        "peak": 35840
+      }
+    },
+    {
+      "iteration": 8,
+      "synchronized_seconds": 0.007171445991843939,
+      "output_copy_seconds": 0.0005825860134791583,
+      "end_to_end_seconds": 0.007754032005323097,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 35840
+      }
+    },
+    {
+      "iteration": 9,
+      "synchronized_seconds": 0.007156705018132925,
+      "output_copy_seconds": 0.0005802069790661335,
+      "end_to_end_seconds": 0.0077369119971990585,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 10,
+      "synchronized_seconds": 0.0073471550131216645,
+      "output_copy_seconds": 0.0006110559916123748,
+      "end_to_end_seconds": 0.00795821100473404,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 11,
+      "synchronized_seconds": 0.007343195000430569,
+      "output_copy_seconds": 0.0005941060080658644,
+      "end_to_end_seconds": 0.007937301008496433,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 35840
+      }
+    },
+    {
+      "iteration": 12,
+      "synchronized_seconds": 0.007368215010501444,
+      "output_copy_seconds": 0.00044078700011596084,
+      "end_to_end_seconds": 0.007809002010617405,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 13,
+      "synchronized_seconds": 0.007729692006250843,
+      "output_copy_seconds": 0.0006469259969890118,
+      "end_to_end_seconds": 0.008376618003239855,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 36096
+      }
+    },
+    {
+      "iteration": 14,
+      "synchronized_seconds": 0.007125406002160162,
+      "output_copy_seconds": 0.00040127697866410017,
+      "end_to_end_seconds": 0.007526682980824262,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 15,
+      "synchronized_seconds": 0.006696148979244754,
+      "output_copy_seconds": 0.00038599700201302767,
+      "end_to_end_seconds": 0.007082145981257781,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 16,
+      "synchronized_seconds": 0.00647382001625374,
+      "output_copy_seconds": 0.00038488800055347383,
+      "end_to_end_seconds": 0.006858708016807213,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 17,
+      "synchronized_seconds": 0.006904548004968092,
+      "output_copy_seconds": 0.0003899369912687689,
+      "end_to_end_seconds": 0.007294484996236861,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    },
+    {
+      "iteration": 18,
+      "synchronized_seconds": 0.0069656870036851615,
+      "output_copy_seconds": 0.00039600799209438264,
+      "end_to_end_seconds": 0.007361694995779544,
+      "VmHWM": 1171972096,
+      "VmRSS": 1171972096,
+      "gpu": {
+        "current": 27648,
+        "peak": 36096
+      }
+    },
+    {
+      "iteration": 19,
+      "synchronized_seconds": 0.006587379000848159,
+      "output_copy_seconds": 0.00038978797965683043,
+      "end_to_end_seconds": 0.00697716698050499,
+      "VmHWM": 1171976192,
+      "VmRSS": 1171976192,
+      "gpu": {
+        "current": 27648,
+        "peak": 35584
+      }
+    }
+  ],
+  "trace_count": 1,
+  "imported_source_sha256": {
+    "scripts/filter_repair_stochastic_worker.py": "2c77dd65ecbec0c8d9cfa2b98b5e8f83deaeb2c8efdba8d4dd6a7a5e565e644c",
+    "scripts/measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "scripts/filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "scripts/filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "scripts/filter_repair_stochastic_fixtures.py": "77c7b29693dcfde9c5645148046a96975e3f89bc16c99b24bacbd381c30a345b",
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+    "bayesfilter/highdim/bases.py": "02d5315aec6beab9fe01bd2efd61fb751df2141a7a28c22cc11d2153eeb2e55c",
+    "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+    "bayesfilter/highdim/validation.py": "cc5820ca360c549ad9fa36eabaf6e25bb94d07eb851fce068aa51615c4314b20",
+    "bayesfilter/highdim/tt.py": "82e66f95cfc434996d70893661ee17f2ac35bfbcbfbb31cc0af3a749683354f4",
+    "bayesfilter/highdim/squared_tt.py": "e2a7a64ea7c4d41e38ce243201ff74ed41282d46bc727c77dd806fb5a0963a4d",
+    "bayesfilter/highdim/derivatives.py": "a5351fc1365534e277c6567eac8e1927e30b9cb26a15cf7554bbae824610a017",
+    "bayesfilter/highdim/fitting.py": "b05ad12344847ad9f0b5aeb42c0b67cc78e4d90ad68cbb64848f5312cd164af1",
+    "bayesfilter/highdim/models.py": "e49e3f32db7c01c7682cbd829d6fb534b84595a016bdd8d2a691bf177968ab8f",
+    "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+    "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+    "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+    "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+    "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+    "bayesfilter/ops/slogdet_tf.py": "647a6940ca8f4e764fb4e3f59da282097f11e4ba5bebbb1a939ab79362182787",
+    "bayesfilter/highdim/filtering.py": "8cd5aa1cb66871b32851b889cd2592cc4d416494c941803dd7e3c6dcb4a32e35",
+    "bayesfilter/highdim/ledh_forward_contract.py": "abc0c476b85a280996c82b789ed929a919e9eb9ed96ad4a1f30fe6cd6676b0dc",
+    "bayesfilter/highdim/native_generalized_sv.py": "2cfb4d3abb8b32ff5e9ba256183bf50c752c236638813f25a5f53cbc9164367c",
+    "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": "44047f1e1d6bede46c674cd0d0180bebf958c60b67ab6d477419baee393c72c2",
+    "bayesfilter/highdim/rank_budget.py": "6a62b2b942b7eb766f2abf6b1a532e6bdda87f9a4206aef351edf9efed6a2751",
+    "bayesfilter/ops/fixed_signature_tf.py": "b8f4d2c987ad2e3908ff3ac04827f9b149200ab89836a15a99b6d72c02461e2d",
+    "bayesfilter/highdim/source_route_preparation_tf.py": "3a01abdaf0c6d7efd17da533f98b020d5d561b85d13157485afe45ca144508d0",
+    "bayesfilter/highdim/transport.py": "12d33628fbc1661054d7305ac7e599b7da5bfb2df39008d44e10e1991bd5135a",
+    "bayesfilter/highdim/source_route.py": "8858f1ab33cdc23d9281f4abd9663030fb059e4a2c1eaf013665ba80dd65afcb",
+    "bayesfilter/highdim/score_api.py": "f80353f9412260ddc771894b5ebbd9037ed099bab96483490277f2c4aff680b7",
+    "bayesfilter/nonlinear/__init__.py": "f0edaabc1fdc132742f578b6351795c78d4aa5826fd88d04ed61a433c47b93ad",
+    "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+    "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+    "bayesfilter/nonlinear/srukf_factor_tf.py": "d6002d396d08d21e3f62ebd484640b8a6545390993fe5fb797b5fd0cd2142f37",
+    "bayesfilter/highdim/actual_sv_srukf_tf.py": "854b2292430b77a6baa2e76bc480c5e26ecd03f4f382ab3762c2137c097655bd",
+    "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+    "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+    "bayesfilter/highdim/sv_direct_sgqf_native_tf.py": "256e20dcdb1457e2fa00e50ae3af79535e7c9d093af5311bfda28dd5e392263f",
+    "bayesfilter/nonlinear/fixed_sgqf_compiled_tf.py": "b305f3fa8aecac605a7401dac139aa4b0554e7733f726bd08af985f022432547",
+    "bayesfilter/linear/svd_factor_tf.py": "5bbbf1f9e6c4d8782838d202d3213360604c0325a47335e0ce44bfc6870f7e6f",
+    "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+    "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+    "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+    "bayesfilter/nonlinear/sigma_points_tf.py": "33e066075446c940c29daa13cef31744cf7c0e4fb896ac92505e1d6e5f1cb6e3",
+    "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+    "bayesfilter/nonlinear/svd_cut_tf.py": "951cc8e853b23f46950093d88463c300ecfec9f41e2919fae233820953850fb2",
+    "bayesfilter/highdim/sv_panel_quadrature_native_tf.py": "13cfe6c969bd2a86c485c5d98be16e70c52569a432f020f3329e9e82948f153f",
+    "bayesfilter/nonlinear/fixed_sgqf_tf.py": "3a57a78426bae7acfba7032b72ffd3925c97cf683f92f64ed31361bfafe2ac44",
+    "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+    "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "5343c84ee5bde947d00319f1cd2aa7c8b6d7ec914514071562575a0750e1ef1d",
+    "bayesfilter/highdim/sv_mixture_cut4.py": "e488337a5eee8439641e2df89a17ebc914b1675dd5a108b31a56c37b89c09ba3",
+    "bayesfilter/highdim/transition_route.py": "f5764e42e27b099bd4a2511153368cf866176718ea3cc9bf93a91dead7f4229a",
+    "bayesfilter/highdim/ukf_scout.py": "16214c1c028887b22c94b96b5ee2321e6e72c71fef20e4c846e2a20dc5d0c80a",
+    "bayesfilter/highdim/__init__.py": "9b731a16585ae3e0e3420212670802efea6f5088000bd5f32d0f9f130f5ac9fb",
+    "bayesfilter/highdim/centered_tt_native_tf.py": "d624681a5b4862598c752de6b9d242796fc8dfae3c6bca567a08caaf7d71ecc3",
+    "bayesfilter/ops/stateless_random_tf.py": "e844ec742bfaf4ccc0221c4f3140dae4f959b35a03988c2408a6393f1b595ac7",
+    "bayesfilter/highdim/stochastic_training_native_tf.py": "0ce6fd33a674e2bdd4be6c7fdf4cf51ea9ed454109ac3fdd8e9a8522e6474add",
+    "bayesfilter/highdim/stochastic_density_training.py": "1debc5468ba822b7bbb59e3b0cf890b8b108969995c1ef17dd209f4e780a6d99"
+  },
+  "wall_seconds": 7.7547659749980085
+}

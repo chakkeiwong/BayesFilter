@@ -1,0 +1,1581 @@
+{
+  "original": {
+    "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+    "accepted": true,
+    "status": "usable",
+    "dimension": 3,
+    "rank": 2,
+    "center_refinement_accepted": true,
+    "intercept": -0.06192160979895301,
+    "lambda0": 2.248374323811178,
+    "best_evaluated_value": -0.007926785398263136,
+    "best_evaluated_source": "surrogate_replay",
+    "best_evaluated_index": 29,
+    "exact_evaluation_count": 31,
+    "diagnostics": {
+      "config": {
+        "rank": 2,
+        "sample_count": 16,
+        "min_samples_per_parameter": 1,
+        "trust_radius": 1.0,
+        "pilot_radius": 0.15,
+        "pilot_direction_count": 6,
+        "holdout_fraction": 0.25,
+        "eigenvalue_floor": 1.0,
+        "max_condition_number": 1000.0,
+        "fit_max_iterations": 300,
+        "fit_tolerance": 1e-08,
+        "holdout_rmse_abs_tolerance": 0.05,
+        "holdout_rmse_rel_tolerance": 0.1,
+        "center_score_improvement_factor": 0.95,
+        "center_log_prob_tolerance": 1e-08,
+        "constrain_center_refinement_to_trust_region": true,
+        "seed": [
+          20260708,
+          2667732701
+        ]
+      },
+      "dimension": 3,
+      "rank": 2,
+      "regression_parameter_count": 7,
+      "required_finite_samples": 7,
+      "sample_count": 16,
+      "center_log_prob": -0.06273196900000001,
+      "center_score_norm": 0.5851686367318673,
+      "coordinate_system": "whitened_center_plus_scale_times_z",
+      "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+      "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+      "classification": "extension_or_invention",
+      "reports_map_quality": false,
+      "reports_hmc_convergence": false,
+      "reports_default_readiness": false,
+      "finite_sample_count": 16,
+      "nonfinite_sample_count": 0,
+      "pilot": {
+        "pilot_direction_count": 6,
+        "finite_positive_curvature_count": 6,
+        "curvature_min": 1.449409595930934,
+        "curvature_max": 3.189397475610198,
+        "curvature_source": "central_score_difference_directional_curvature",
+        "center_score_norm": 0.5851686367318673,
+        "sketch_eigenvalues": [
+          9.59115516695906,
+          3.8205621119444353,
+          1.025148350844375
+        ],
+        "basis_source": "directional_curvature_sketch",
+        "evaluation_route": "batched_value_and_score",
+        "evaluation_batch_size": 12
+      },
+      "design_evaluation_route": "batched_value_and_score",
+      "fit": {
+        "status": "usable",
+        "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+        "optimizer_converged": true,
+        "optimizer_failed": false,
+        "optimizer_iterations": 0,
+        "loss": 0.0016168811975323001,
+        "score_rmse": 0.2028779831426985,
+        "score_design_rank": 3,
+        "score_design_condition_number": 4.224702819075287,
+        "score_lstsq_residual_sum_squares": 1.4817411375857668,
+        "raw_lambda0": 2.248374323811178,
+        "raw_mu": [
+          0.048595435620270466,
+          1.2278226743745955
+        ],
+        "mu_clipped_count": 0,
+        "intercept": -0.06192160979895301,
+        "linear_term": [
+          0.20835152,
+          0.32431104000000005,
+          0.4402662
+        ],
+        "lambda0": 2.248374323811178,
+        "mu": [
+          0.048595435620270466,
+          1.2278226743745955
+        ],
+        "precision": null,
+        "condition_bound": 1.5460935313890865
+      },
+      "train_rmse": 0.04021046129469669,
+      "holdout_count": 4,
+      "holdout_rmse": 0.0487313650547132,
+      "holdout_threshold": 0.1,
+      "holdout_passed": true,
+      "precision_eigen_summary": {
+        "finite": true,
+        "positive": true,
+        "min": 2.2483743238111784,
+        "max": 3.476196998185774,
+        "condition_number": 1.5460935313890862,
+        "eigenvalues": [
+          2.2483743238111784,
+          2.296969759431448,
+          3.476196998185774
+        ]
+      },
+      "covariance_eigen_summary": {
+        "finite": true,
+        "positive": true,
+        "min": 0.2876706931517114,
+        "max": 0.44476579785207576,
+        "condition_number": 1.5460935313890865,
+        "eigenvalues": [
+          0.2876706931517114,
+          0.4353561886890154,
+          0.44476579785207576
+        ]
+      },
+      "center_refinement": {
+        "accepted": true,
+        "reason": "accepted",
+        "z_norm": 0.21377183665378896,
+        "step_method": "exact_spd_quadratic_trust_region",
+        "trust_region_constrained": true,
+        "boundary_active": false,
+        "lagrange_multiplier": 0.0,
+        "predicted_improvement": 0.06117122373279102,
+        "actual_improvement": 0.054805183601736876,
+        "actual_to_predicted_improvement_ratio": 0.8959308030380042,
+        "center_log_prob": -0.06273196900000001,
+        "refined_log_prob": -0.007926785398263136,
+        "center_score_norm": 0.5851686367318673,
+        "refined_score_norm": 0.16776523566405444,
+        "refined_score": [
+          0.15775021390415314,
+          -0.05303997291197542,
+          -0.09969938684561877
+        ],
+        "refined_target_finite": true,
+        "exact_evaluation_count": 1,
+        "refined_center": [
+          0.0511738721231086,
+          0.1476796225637985,
+          0.1549240725580056
+        ]
+      },
+      "best_evaluated_replay": {
+        "attempted": true,
+        "evaluation_index": 30,
+        "valid": true,
+        "matches": true,
+        "value": -0.007926785398263136,
+        "source": "surrogate_replay"
+      },
+      "artifact_hash": "79734520a53b163f"
+    },
+    "nonclaims": [
+      "low-rank quadratic geometry diagnostic only",
+      "not a certified MAP covariance",
+      "not posterior correctness evidence",
+      "not HMC convergence evidence",
+      "not sampler superiority evidence",
+      "not default-readiness evidence",
+      "not source-faithful Zhao-Cui evidence"
+    ],
+    "mu": [
+      0.048595435620270466,
+      1.2278226743745955
+    ],
+    "precision_eigen_summary": {
+      "finite": true,
+      "positive": true,
+      "min": 2.2483743238111784,
+      "max": 3.476196998185774,
+      "condition_number": 1.5460935313890862,
+      "eigenvalues": [
+        2.2483743238111784,
+        2.296969759431448,
+        3.476196998185774
+      ]
+    },
+    "covariance_eigen_summary": {
+      "finite": true,
+      "positive": true,
+      "min": 0.2876706931517114,
+      "max": 0.44476579785207576,
+      "condition_number": 1.5460935313890865,
+      "eigenvalues": [
+        0.2876706931517114,
+        0.4353561886890154,
+        0.44476579785207576
+      ]
+    },
+    "center": [
+      0.0,
+      0.01,
+      0.02
+    ],
+    "scale": [
+      0.8,
+      0.9,
+      1.0
+    ],
+    "precision": [
+      [
+        2.512738203738952,
+        -0.10328771766427025,
+        0.47003489892719463
+      ],
+      [
+        -0.10328771766427025,
+        2.296806140867897,
+        -0.1515019168890415
+      ],
+      [
+        0.47003489892719463,
+        -0.1515019168890415,
+        3.2119967368215505
+      ]
+    ],
+    "covariance": [
+      [
+        0.40965461350146815,
+        0.014513110734917357,
+        -0.05926319867442448
+      ],
+      [
+        0.014513110734917357,
+        0.43726020019835277,
+        0.018500669471642698
+      ],
+      [
+        -0.05926319867442448,
+        0.018500669471642698,
+        0.3208778659929816
+      ]
+    ],
+    "q_basis": [
+      [
+        -0.6349410896179462,
+        -0.4464919101430591
+      ],
+      [
+        0.6403639795298993,
+        0.15236623485210415
+      ],
+      [
+        0.43218489843515573,
+        -0.8817196292778083
+      ]
+    ],
+    "linear_term": [
+      0.20835152,
+      0.32431104000000005,
+      0.4402662
+    ],
+    "refined_center": [
+      0.0511738721231086,
+      0.1476796225637985,
+      0.1549240725580056
+    ],
+    "best_evaluated_position": [
+      0.0511738721231086,
+      0.1476796225637985,
+      0.1549240725580056
+    ],
+    "best_evaluated_score": [
+      0.15775021390415314,
+      -0.05303997291197542,
+      -0.09969938684561877
+    ]
+  },
+  "original_calls": {
+    "rows": 31,
+    "calls": 5,
+    "positions": [
+      [
+        0.0,
+        0.01,
+        0.02
+      ],
+      [
+        0.0502100188437464,
+        -0.07796772735763731,
+        -0.07490723287129059
+      ],
+      [
+        -0.11420260047777614,
+        0.043231235041754884,
+        -0.007534662042657396
+      ],
+      [
+        0.10790911298487638,
+        -0.010035963749258888,
+        -0.041725656867796584
+      ],
+      [
+        -0.05388803851918984,
+        0.06609488845574481,
+        -0.09865027383113191
+      ],
+      [
+        0.050380486188287346,
+        -0.09839023960931154,
+        -0.043480870551388995
+      ],
+      [
+        -0.06177726916284631,
+        0.09655483522276116,
+        0.1053684102812169
+      ],
+      [
+        -0.0502100188437464,
+        0.0979677273576373,
+        0.1149072328712906
+      ],
+      [
+        0.11420260047777614,
+        -0.02323123504175488,
+        0.0475346620426574
+      ],
+      [
+        -0.10790911298487638,
+        0.03003596374925889,
+        0.08172565686779658
+      ],
+      [
+        0.05388803851918984,
+        -0.046094888455744804,
+        0.1386502738311319
+      ],
+      [
+        -0.050380486188287346,
+        0.11839023960931153,
+        0.083480870551389
+      ],
+      [
+        0.06177726916284631,
+        -0.07655483522276117,
+        -0.0653684102812169
+      ],
+      [
+        -0.08288015205486643,
+        -0.11239098553383157,
+        -0.47058909331831106
+      ],
+      [
+        -0.16351073504263952,
+        -0.14549038890895388,
+        -0.28533253854141616
+      ],
+      [
+        0.19599917359745778,
+        -0.3714011113722022,
+        -0.07640934203140755
+      ],
+      [
+        0.10738642131356804,
+        0.06876301807885797,
+        0.2048564601293554
+      ],
+      [
+        -0.18282279396614864,
+        -0.01831660669503858,
+        -0.15675676944854394
+      ],
+      [
+        -0.05320655048995328,
+        0.11075112252848585,
+        0.16053954894900502
+      ],
+      [
+        -0.1703946433957227,
+        0.27218033176339856,
+        -0.11677356309347829
+      ],
+      [
+        0.14134615804970158,
+        -0.0976953259818515,
+        -0.39634444225199783
+      ],
+      [
+        0.11025030996813737,
+        0.07789985689459271,
+        -0.18124253078340286
+      ],
+      [
+        -0.05473162142544025,
+        -0.23155600310647628,
+        0.4399042741676389
+      ],
+      [
+        -0.009753666829538654,
+        0.21600261842626084,
+        -0.17913357472324445
+      ],
+      [
+        -0.294541170054671,
+        -0.03590536514024328,
+        0.1276806717197188
+      ],
+      [
+        0.13821255008856514,
+        -0.2565523583064212,
+        0.1702752439213747
+      ],
+      [
+        0.04119576151079436,
+        0.3005725043463759,
+        0.012672444617021349
+      ],
+      [
+        0.12256551933163183,
+        0.029221657286663157,
+        -0.09714392566986822
+      ],
+      [
+        0.08218547102863859,
+        -0.20069270466085032,
+        0.13627838117556054
+      ],
+      [
+        0.0511738721231086,
+        0.1476796225637985,
+        0.1549240725580056
+      ],
+      [
+        0.0511738721231086,
+        0.1476796225637985,
+        0.1549240725580056
+      ]
+    ],
+    "extents": [
+      1,
+      12,
+      16,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "source_sha256": {
+    "bayesfilter/inference/_exact_incumbent.py": "21191dd057380adafc6530cb15ef640666a2f3afb637bd90f4e98d3209ca5ed0",
+    "bayesfilter/inference/quadratic_geometry.py": "6a4865e98d97a441bf0146d1f581fa93f53f5ce1892ad81ebd69fc2526857fea"
+  },
+  "inputs": [
+    [
+      0.0,
+      0.01,
+      0.02
+    ],
+    [
+      0.8,
+      0.9,
+      1.0
+    ],
+    [
+      [
+        0.578613313635481,
+        -0.9010914889367436,
+        -0.8749582615457829
+      ],
+      [
+        -0.6203487428530656,
+        0.16045522836209405,
+        -0.11965466923930879
+      ],
+      [
+        0.353888268836332,
+        -0.05840711547430948,
+        -0.16194358565279984
+      ],
+      [
+        -0.5502360209633159,
+        0.5091284995653631,
+        -0.9692043927084305
+      ],
+      [
+        0.6834348151214193,
+        -1.306990401737957,
+        -0.6889181159053066
+      ],
+      [
+        -0.45976820271051194,
+        0.5725969591590929,
+        0.5082734293066355
+      ]
+    ],
+    [
+      [
+        -0.10360019006858304,
+        -0.1359899839264795,
+        -0.4905890933183111
+      ],
+      [
+        -0.2043884188032994,
+        -0.17276709878772653,
+        -0.3053325385414162
+      ],
+      [
+        0.2449989669968222,
+        -0.4237790126357802,
+        -0.09640934203140755
+      ],
+      [
+        0.13423302664196005,
+        0.0652922423098422,
+        0.18485646012935542
+      ],
+      [
+        -0.22852849245768578,
+        -0.03146289632782064,
+        -0.17675676944854393
+      ],
+      [
+        -0.0665081881124416,
+        0.11194569169831761,
+        0.14053954894900503
+      ],
+      [
+        -0.21299330424465335,
+        0.29131147973710947,
+        -0.1367735630934783
+      ],
+      [
+        0.17668269756212696,
+        -0.11966147331316833,
+        -0.41634444225199785
+      ],
+      [
+        0.1378128874601717,
+        0.07544428543843634,
+        -0.20124253078340285
+      ],
+      [
+        -0.06841452678180031,
+        -0.26839555900719586,
+        0.41990427416763887
+      ],
+      [
+        -0.012192083536923316,
+        0.2288917982514009,
+        -0.19913357472324444
+      ],
+      [
+        -0.36817646256833875,
+        -0.051005961266936975,
+        0.1076806717197188
+      ],
+      [
+        0.17276568761070643,
+        -0.2961692870071347,
+        0.1502752439213747
+      ],
+      [
+        0.05149470188849295,
+        0.32285833816263987,
+        -0.007327555382978652
+      ],
+      [
+        0.15320689916453978,
+        0.021357396985181288,
+        -0.11714392566986823
+      ],
+      [
+        0.10273183878579822,
+        -0.23410300517872257,
+        0.11627838117556055
+      ]
+    ],
+    [
+      726,
+      503
+    ]
+  ],
+  "candidate": {
+    "False": {
+      "payload": {
+        "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+        "accepted": true,
+        "status": "usable",
+        "dimension": 3,
+        "rank": 2,
+        "center_refinement_accepted": true,
+        "intercept": -0.06192160979895304,
+        "lambda0": 2.2483743238111784,
+        "best_evaluated_value": -0.007926785398263136,
+        "best_evaluated_source": "surrogate_replay",
+        "best_evaluated_index": 29,
+        "exact_evaluation_count": 31,
+        "diagnostics": {
+          "config": {
+            "rank": 2,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 1.0,
+            "pilot_radius": 0.15,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 1.0,
+            "max_condition_number": 1000.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 0.05,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": true,
+            "seed": [
+              20260708,
+              2667732701
+            ],
+            "random_stream": "geometry_tf_philox_cpu_xla_v1"
+          },
+          "random_stream": "geometry_tf_philox_cpu_xla_v1",
+          "dimension": 3,
+          "rank": 2,
+          "regression_parameter_count": 7,
+          "required_finite_samples": 7,
+          "sample_count": 16,
+          "center_log_prob": -0.06273196900000001,
+          "center_score_norm": 0.5851686367318673,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "pilot": {
+            "pilot_direction_count": 6,
+            "finite_positive_curvature_count": 6,
+            "curvature_min": 1.449409595930934,
+            "curvature_max": 3.189397475610198,
+            "curvature_source": "central_score_difference_directional_curvature",
+            "center_score_norm": 0.5851686367318673,
+            "sketch_eigenvalues": [
+              9.591155166959062,
+              3.8205621119444353,
+              1.0251483508443748
+            ],
+            "basis_source": "directional_curvature_sketch",
+            "evaluation_route": "batched_value_and_score",
+            "evaluation_batch_size": 12
+          },
+          "finite_sample_count": 16,
+          "nonfinite_sample_count": 0,
+          "design_evaluation_route": "batched_value_and_score",
+          "fit": {
+            "loss": 0.001616881197532303,
+            "score_rmse": 0.20287798314269861,
+            "score_design_rank": 3,
+            "raw_lambda0": 2.2483743238111784,
+            "raw_mu": [
+              0.04859543562027038,
+              1.2278226743745928
+            ],
+            "mu_clipped_count": 0,
+            "intercept": -0.06192160979895304,
+            "linear_term": [
+              0.20835152,
+              0.32431104000000005,
+              0.4402662
+            ],
+            "lambda0": 2.2483743238111784,
+            "mu": [
+              0.04859543562027038,
+              1.2278226743745928
+            ],
+            "precision": null,
+            "condition_bound": 1.5460935313890851,
+            "status": "usable",
+            "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+            "optimizer_converged": true,
+            "optimizer_failed": false,
+            "optimizer_iterations": 0,
+            "score_design_condition_number": 4.224702819075287,
+            "score_lstsq_residual_sum_squares": 1.4817411375857676
+          },
+          "train_rmse": 0.040210461294696714,
+          "holdout_count": 4,
+          "holdout_rmse": 0.04873136505471325,
+          "holdout_threshold": 0.1,
+          "holdout_passed": true,
+          "precision_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 2.248374323811179,
+            "max": 3.4761969981857703,
+            "condition_number": 1.5460935313890845,
+            "eigenvalues": [
+              2.248374323811179,
+              2.2969697594314473,
+              3.4761969981857703
+            ]
+          },
+          "covariance_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 0.2876706931517117,
+            "max": 0.4447657978520761,
+            "condition_number": 1.546093531389086,
+            "eigenvalues": [
+              0.2876706931517117,
+              0.43535618868901593,
+              0.4447657978520761
+            ]
+          },
+          "center_refinement": {
+            "accepted": true,
+            "reason": "accepted",
+            "z_norm": 0.21377183665378896,
+            "refined_center": [
+              0.05117387212310862,
+              0.14767962256379838,
+              0.1549240725580057
+            ],
+            "step_method": "exact_spd_quadratic_trust_region",
+            "trust_region_constrained": true,
+            "boundary_active": false,
+            "lagrange_multiplier": 0.0,
+            "predicted_improvement": 0.06117122373279103,
+            "exact_evaluation_count": 1,
+            "refined_target_finite": true,
+            "actual_improvement": 0.054805183601736876,
+            "actual_to_predicted_improvement_ratio": 0.895930803038004,
+            "center_log_prob": -0.06273196900000001,
+            "refined_log_prob": -0.007926785398263136,
+            "center_score_norm": 0.5851686367318673,
+            "refined_score_norm": 0.16776523566405455,
+            "refined_score": [
+              0.1577502139041531,
+              -0.05303997291197509,
+              -0.0996993868456191
+            ]
+          },
+          "best_evaluated_replay": {
+            "attempted": true,
+            "valid": true,
+            "matches": true,
+            "evaluation_index": 30,
+            "value": -0.007926785398263136,
+            "source": "surrogate_replay"
+          },
+          "artifact_hash": "cfd1bb2c09054e25"
+        },
+        "nonclaims": [
+          "low-rank quadratic geometry diagnostic only",
+          "not a certified MAP covariance",
+          "not posterior correctness evidence",
+          "not HMC convergence evidence",
+          "not sampler superiority evidence",
+          "not default-readiness evidence",
+          "not source-faithful Zhao-Cui evidence"
+        ],
+        "center": [
+          0.0,
+          0.01,
+          0.02
+        ],
+        "scale": [
+          0.8,
+          0.9,
+          1.0
+        ],
+        "precision": [
+          [
+            2.5127382037389525,
+            -0.10328771766427022,
+            0.470034898927194
+          ],
+          [
+            -0.10328771766427022,
+            2.2968061408678975,
+            -0.15150191688904133
+          ],
+          [
+            0.470034898927194,
+            -0.15150191688904133,
+            3.2119967368215487
+          ]
+        ],
+        "covariance": [
+          [
+            0.4096546135014681,
+            0.014513110734917354,
+            -0.05926319867442442
+          ],
+          [
+            0.014513110734917354,
+            0.4372602001983527,
+            0.018500669471642688
+          ],
+          [
+            -0.05926319867442442,
+            0.018500669471642688,
+            0.3208778659929818
+          ]
+        ],
+        "q_basis": [
+          [
+            -0.6349410896179462,
+            -0.44649191014305956
+          ],
+          [
+            0.6403639795298993,
+            0.15236623485210435
+          ],
+          [
+            0.4321848984351561,
+            -0.8817196292778083
+          ]
+        ],
+        "linear_term": [
+          0.20835152,
+          0.32431104000000005,
+          0.4402662
+        ],
+        "refined_center": [
+          0.05117387212310862,
+          0.14767962256379838,
+          0.1549240725580057
+        ],
+        "best_evaluated_position": [
+          0.05117387212310862,
+          0.14767962256379838,
+          0.1549240725580057
+        ],
+        "best_evaluated_score": [
+          0.1577502139041531,
+          -0.05303997291197509,
+          -0.0996993868456191
+        ],
+        "mu": [
+          0.04859543562027038,
+          1.2278226743745928
+        ],
+        "precision_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 2.248374323811179,
+          "max": 3.4761969981857703,
+          "condition_number": 1.5460935313890845,
+          "eigenvalues": [
+            2.248374323811179,
+            2.2969697594314473,
+            3.4761969981857703
+          ]
+        },
+        "covariance_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 0.2876706931517117,
+          "max": 0.4447657978520761,
+          "condition_number": 1.546093531389086,
+          "eigenvalues": [
+            0.2876706931517117,
+            0.43535618868901593,
+            0.4447657978520761
+          ]
+        }
+      },
+      "calls": {
+        "rows": 31,
+        "calls": 5,
+        "positions": [
+          [
+            0.0,
+            0.01,
+            0.02
+          ],
+          [
+            0.050210018843746394,
+            -0.07796772735763731,
+            -0.07490723287129059
+          ],
+          [
+            -0.11420260047777614,
+            0.043231235041754884,
+            -0.007534662042657396
+          ],
+          [
+            0.10790911298487638,
+            -0.010035963749258891,
+            -0.041725656867796584
+          ],
+          [
+            -0.05388803851918984,
+            0.06609488845574481,
+            -0.09865027383113191
+          ],
+          [
+            0.05038048618828734,
+            -0.09839023960931155,
+            -0.043480870551388995
+          ],
+          [
+            -0.0617772691628463,
+            0.09655483522276118,
+            0.1053684102812169
+          ],
+          [
+            -0.050210018843746394,
+            0.0979677273576373,
+            0.1149072328712906
+          ],
+          [
+            0.11420260047777614,
+            -0.02323123504175488,
+            0.0475346620426574
+          ],
+          [
+            -0.10790911298487638,
+            0.03003596374925889,
+            0.08172565686779658
+          ],
+          [
+            0.05388803851918984,
+            -0.04609488845574481,
+            0.1386502738311319
+          ],
+          [
+            -0.05038048618828734,
+            0.11839023960931154,
+            0.083480870551389
+          ],
+          [
+            0.0617772691628463,
+            -0.07655483522276119,
+            -0.0653684102812169
+          ],
+          [
+            -0.08288015205486643,
+            -0.11239098553383157,
+            -0.47058909331831106
+          ],
+          [
+            -0.16351073504263952,
+            -0.14549038890895388,
+            -0.28533253854141616
+          ],
+          [
+            0.19599917359745778,
+            -0.3714011113722022,
+            -0.07640934203140755
+          ],
+          [
+            0.10738642131356804,
+            0.06876301807885797,
+            0.2048564601293554
+          ],
+          [
+            -0.18282279396614864,
+            -0.01831660669503858,
+            -0.15675676944854394
+          ],
+          [
+            -0.05320655048995328,
+            0.11075112252848585,
+            0.16053954894900502
+          ],
+          [
+            -0.1703946433957227,
+            0.27218033176339856,
+            -0.11677356309347829
+          ],
+          [
+            0.14134615804970158,
+            -0.0976953259818515,
+            -0.39634444225199783
+          ],
+          [
+            0.11025030996813737,
+            0.07789985689459271,
+            -0.18124253078340286
+          ],
+          [
+            -0.05473162142544025,
+            -0.23155600310647628,
+            0.4399042741676389
+          ],
+          [
+            -0.009753666829538654,
+            0.21600261842626084,
+            -0.17913357472324445
+          ],
+          [
+            -0.294541170054671,
+            -0.03590536514024328,
+            0.1276806717197188
+          ],
+          [
+            0.13821255008856514,
+            -0.2565523583064212,
+            0.1702752439213747
+          ],
+          [
+            0.04119576151079436,
+            0.3005725043463759,
+            0.012672444617021349
+          ],
+          [
+            0.12256551933163183,
+            0.029221657286663157,
+            -0.09714392566986822
+          ],
+          [
+            0.08218547102863859,
+            -0.20069270466085032,
+            0.13627838117556054
+          ],
+          [
+            0.05117387212310862,
+            0.14767962256379838,
+            0.1549240725580057
+          ],
+          [
+            0.05117387212310862,
+            0.14767962256379838,
+            0.1549240725580057
+          ]
+        ],
+        "extents": [
+          1,
+          12,
+          16,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "stage": 3,
+      "attempted_rows": 31
+    },
+    "True": {
+      "payload": {
+        "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+        "accepted": true,
+        "status": "usable",
+        "dimension": 3,
+        "rank": 2,
+        "center_refinement_accepted": true,
+        "intercept": -0.06192160979895315,
+        "lambda0": 2.2483743238111757,
+        "best_evaluated_value": -0.007926785398263143,
+        "best_evaluated_source": "surrogate_replay",
+        "best_evaluated_index": 29,
+        "exact_evaluation_count": 31,
+        "diagnostics": {
+          "config": {
+            "rank": 2,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 1.0,
+            "pilot_radius": 0.15,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 1.0,
+            "max_condition_number": 1000.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 0.05,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": true,
+            "seed": [
+              20260708,
+              2667732701
+            ],
+            "random_stream": "geometry_tf_philox_cpu_xla_v1"
+          },
+          "random_stream": "geometry_tf_philox_cpu_xla_v1",
+          "dimension": 3,
+          "rank": 2,
+          "regression_parameter_count": 7,
+          "required_finite_samples": 7,
+          "sample_count": 16,
+          "center_log_prob": -0.06273196900000001,
+          "center_score_norm": 0.5851686367318673,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "pilot": {
+            "pilot_direction_count": 6,
+            "finite_positive_curvature_count": 6,
+            "curvature_min": 1.449409595930934,
+            "curvature_max": 3.1893974756101984,
+            "curvature_source": "central_score_difference_directional_curvature",
+            "center_score_norm": 0.5851686367318673,
+            "sketch_eigenvalues": [
+              9.59115516695906,
+              3.8205621119444366,
+              1.0251483508443746
+            ],
+            "basis_source": "directional_curvature_sketch",
+            "evaluation_route": "batched_value_and_score",
+            "evaluation_batch_size": 12
+          },
+          "finite_sample_count": 16,
+          "nonfinite_sample_count": 0,
+          "design_evaluation_route": "batched_value_and_score",
+          "fit": {
+            "loss": 0.0016168811975323053,
+            "score_rmse": 0.2028779831426985,
+            "score_design_rank": 3,
+            "raw_lambda0": 2.2483743238111757,
+            "raw_mu": [
+              0.04859543562027142,
+              1.227822674374596
+            ],
+            "mu_clipped_count": 0,
+            "intercept": -0.06192160979895315,
+            "linear_term": [
+              0.20835152,
+              0.32431104000000005,
+              0.4402662
+            ],
+            "lambda0": 2.2483743238111757,
+            "mu": [
+              0.04859543562027142,
+              1.227822674374596
+            ],
+            "precision": null,
+            "condition_bound": 1.5460935313890871,
+            "status": "usable",
+            "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+            "optimizer_converged": true,
+            "optimizer_failed": false,
+            "optimizer_iterations": 0,
+            "score_design_condition_number": 4.224702819075288,
+            "score_lstsq_residual_sum_squares": 1.4817411375857663
+          },
+          "train_rmse": 0.040210461294696714,
+          "holdout_count": 4,
+          "holdout_rmse": 0.04873136505471324,
+          "holdout_threshold": 0.1,
+          "holdout_passed": true,
+          "precision_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 2.2483743238111757,
+            "max": 3.4761969981857725,
+            "condition_number": 1.5460935313890876,
+            "eigenvalues": [
+              2.2483743238111757,
+              2.296969759431448,
+              3.4761969981857725
+            ]
+          },
+          "covariance_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 0.2876706931517116,
+            "max": 0.44476579785207604,
+            "condition_number": 1.5460935313890862,
+            "eigenvalues": [
+              0.2876706931517116,
+              0.43535618868901577,
+              0.44476579785207604
+            ]
+          },
+          "center_refinement": {
+            "accepted": true,
+            "reason": "accepted",
+            "z_norm": 0.2137718366537891,
+            "refined_center": [
+              0.051173872123108644,
+              0.14767962256379857,
+              0.1549240725580057
+            ],
+            "step_method": "exact_spd_quadratic_trust_region",
+            "trust_region_constrained": true,
+            "boundary_active": false,
+            "lagrange_multiplier": 0.0,
+            "predicted_improvement": 0.061171223732791075,
+            "exact_evaluation_count": 1,
+            "refined_target_finite": true,
+            "actual_improvement": 0.05480518360173687,
+            "actual_to_predicted_improvement_ratio": 0.8959308030380032,
+            "center_log_prob": -0.06273196900000001,
+            "refined_log_prob": -0.007926785398263143,
+            "center_score_norm": 0.5851686367318673,
+            "refined_score_norm": 0.16776523566405468,
+            "refined_score": [
+              0.15775021390415306,
+              -0.05303997291197567,
+              -0.0996993868456191
+            ]
+          },
+          "best_evaluated_replay": {
+            "attempted": true,
+            "valid": true,
+            "matches": true,
+            "evaluation_index": 30,
+            "value": -0.007926785398263143,
+            "source": "surrogate_replay"
+          },
+          "artifact_hash": "eb09bde19875dfb8"
+        },
+        "nonclaims": [
+          "low-rank quadratic geometry diagnostic only",
+          "not a certified MAP covariance",
+          "not posterior correctness evidence",
+          "not HMC convergence evidence",
+          "not sampler superiority evidence",
+          "not default-readiness evidence",
+          "not source-faithful Zhao-Cui evidence"
+        ],
+        "center": [
+          0.0,
+          0.01,
+          0.02
+        ],
+        "scale": [
+          0.8,
+          0.9,
+          1.0
+        ],
+        "precision": [
+          [
+            2.5127382037389503,
+            -0.10328771766427078,
+            0.4700348989271945
+          ],
+          [
+            -0.10328771766427078,
+            2.2968061408678953,
+            -0.15150191688904144
+          ],
+          [
+            0.4700348989271945,
+            -0.15150191688904144,
+            3.2119967368215487
+          ]
+        ],
+        "covariance": [
+          [
+            0.4096546135014686,
+            0.014513110734917484,
+            -0.059263198674424554
+          ],
+          [
+            0.014513110734917484,
+            0.4372602001983532,
+            0.0185006694716427
+          ],
+          [
+            -0.059263198674424554,
+            0.0185006694716427,
+            0.32087786599298185
+          ]
+        ],
+        "q_basis": [
+          [
+            -0.6349410896179464,
+            -0.4464919101430592
+          ],
+          [
+            0.6403639795298991,
+            0.15236623485210432
+          ],
+          [
+            0.432184898435156,
+            -0.8817196292778082
+          ]
+        ],
+        "linear_term": [
+          0.20835152,
+          0.32431104000000005,
+          0.4402662
+        ],
+        "refined_center": [
+          0.051173872123108644,
+          0.14767962256379857,
+          0.1549240725580057
+        ],
+        "best_evaluated_position": [
+          0.051173872123108644,
+          0.14767962256379857,
+          0.1549240725580057
+        ],
+        "best_evaluated_score": [
+          0.15775021390415306,
+          -0.05303997291197567,
+          -0.0996993868456191
+        ],
+        "mu": [
+          0.04859543562027142,
+          1.227822674374596
+        ],
+        "precision_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 2.2483743238111757,
+          "max": 3.4761969981857725,
+          "condition_number": 1.5460935313890876,
+          "eigenvalues": [
+            2.2483743238111757,
+            2.296969759431448,
+            3.4761969981857725
+          ]
+        },
+        "covariance_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 0.2876706931517116,
+          "max": 0.44476579785207604,
+          "condition_number": 1.5460935313890862,
+          "eigenvalues": [
+            0.2876706931517116,
+            0.43535618868901577,
+            0.44476579785207604
+          ]
+        }
+      },
+      "calls": {
+        "rows": 31,
+        "calls": 5,
+        "positions": [
+          [
+            0.0,
+            0.01,
+            0.02
+          ],
+          [
+            0.050210018843746394,
+            -0.0779677273576373,
+            -0.07490723287129059
+          ],
+          [
+            -0.11420260047777614,
+            0.043231235041754884,
+            -0.007534662042657394
+          ],
+          [
+            0.10790911298487638,
+            -0.01003596374925889,
+            -0.041725656867796584
+          ],
+          [
+            -0.05388803851918984,
+            0.06609488845574481,
+            -0.09865027383113192
+          ],
+          [
+            0.05038048618828734,
+            -0.09839023960931154,
+            -0.043480870551389
+          ],
+          [
+            -0.0617772691628463,
+            0.09655483522276118,
+            0.1053684102812169
+          ],
+          [
+            -0.050210018843746394,
+            0.0979677273576373,
+            0.11490723287129058
+          ],
+          [
+            0.11420260047777614,
+            -0.023231235041754884,
+            0.0475346620426574
+          ],
+          [
+            -0.10790911298487638,
+            0.03003596374925889,
+            0.08172565686779658
+          ],
+          [
+            0.05388803851918984,
+            -0.04609488845574481,
+            0.13865027383113193
+          ],
+          [
+            -0.05038048618828734,
+            0.11839023960931154,
+            0.083480870551389
+          ],
+          [
+            0.0617772691628463,
+            -0.07655483522276117,
+            -0.06536841028121691
+          ],
+          [
+            -0.08288015205486643,
+            -0.11239098553383156,
+            -0.47058909331831106
+          ],
+          [
+            -0.16351073504263952,
+            -0.14549038890895388,
+            -0.28533253854141616
+          ],
+          [
+            0.19599917359745778,
+            -0.3714011113722022,
+            -0.07640934203140755
+          ],
+          [
+            0.10738642131356804,
+            0.06876301807885797,
+            0.2048564601293554
+          ],
+          [
+            -0.18282279396614864,
+            -0.018316606695038578,
+            -0.15675676944854394
+          ],
+          [
+            -0.05320655048995328,
+            0.11075112252848586,
+            0.16053954894900502
+          ],
+          [
+            -0.1703946433957227,
+            0.2721803317633985,
+            -0.11677356309347829
+          ],
+          [
+            0.14134615804970158,
+            -0.0976953259818515,
+            -0.39634444225199783
+          ],
+          [
+            0.11025030996813737,
+            0.07789985689459271,
+            -0.18124253078340286
+          ],
+          [
+            -0.05473162142544025,
+            -0.23155600310647628,
+            0.4399042741676389
+          ],
+          [
+            -0.009753666829538654,
+            0.2160026184262608,
+            -0.17913357472324445
+          ],
+          [
+            -0.294541170054671,
+            -0.03590536514024328,
+            0.1276806717197188
+          ],
+          [
+            0.13821255008856514,
+            -0.2565523583064212,
+            0.1702752439213747
+          ],
+          [
+            0.04119576151079436,
+            0.3005725043463759,
+            0.012672444617021349
+          ],
+          [
+            0.12256551933163183,
+            0.02922165728666316,
+            -0.09714392566986822
+          ],
+          [
+            0.08218547102863859,
+            -0.20069270466085032,
+            0.13627838117556054
+          ],
+          [
+            0.051173872123108644,
+            0.14767962256379857,
+            0.1549240725580057
+          ],
+          [
+            0.051173872123108644,
+            0.14767962256379857,
+            0.1549240725580057
+          ]
+        ],
+        "extents": [
+          1,
+          12,
+          16,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "stage": 3,
+      "attempted_rows": 31
+    }
+  }
+}

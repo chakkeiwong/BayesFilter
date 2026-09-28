@@ -1,0 +1,1581 @@
+{
+  "original": {
+    "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+    "accepted": true,
+    "status": "usable",
+    "dimension": 3,
+    "rank": 2,
+    "center_refinement_accepted": true,
+    "intercept": -0.06269999999999994,
+    "lambda0": 2.2274879417835454,
+    "best_evaluated_value": -0.008129182683445209,
+    "best_evaluated_source": "surrogate_replay",
+    "best_evaluated_index": 29,
+    "exact_evaluation_count": 31,
+    "diagnostics": {
+      "config": {
+        "rank": 2,
+        "sample_count": 16,
+        "min_samples_per_parameter": 1,
+        "trust_radius": 1.0,
+        "pilot_radius": 0.15,
+        "pilot_direction_count": 6,
+        "holdout_fraction": 0.25,
+        "eigenvalue_floor": 1.0,
+        "max_condition_number": 1000.0,
+        "fit_max_iterations": 300,
+        "fit_tolerance": 1e-08,
+        "holdout_rmse_abs_tolerance": 0.05,
+        "holdout_rmse_rel_tolerance": 0.1,
+        "center_score_improvement_factor": 0.95,
+        "center_log_prob_tolerance": 1e-08,
+        "constrain_center_refinement_to_trust_region": false,
+        "seed": [
+          20260708,
+          2667732701
+        ]
+      },
+      "dimension": 3,
+      "rank": 2,
+      "regression_parameter_count": 7,
+      "required_finite_samples": 7,
+      "sample_count": 16,
+      "center_log_prob": -0.0627,
+      "center_score_norm": 0.5846708475715204,
+      "coordinate_system": "whitened_center_plus_scale_times_z",
+      "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+      "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+      "classification": "extension_or_invention",
+      "reports_map_quality": false,
+      "reports_hmc_convergence": false,
+      "reports_default_readiness": false,
+      "finite_sample_count": 16,
+      "nonfinite_sample_count": 0,
+      "pilot": {
+        "pilot_direction_count": 6,
+        "finite_positive_curvature_count": 6,
+        "curvature_min": 1.4413352584083383,
+        "curvature_max": 3.1804133708572926,
+        "curvature_source": "central_score_difference_directional_curvature",
+        "center_score_norm": 0.5846708475715204,
+        "sketch_eigenvalues": [
+          9.558144571436856,
+          3.8081910421628704,
+          1.0207477382800798
+        ],
+        "basis_source": "directional_curvature_sketch",
+        "evaluation_route": "batched_value_and_score",
+        "evaluation_batch_size": 12
+      },
+      "design_evaluation_route": "batched_value_and_score",
+      "fit": {
+        "status": "usable",
+        "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+        "optimizer_converged": true,
+        "optimizer_failed": false,
+        "optimizer_iterations": 0,
+        "loss": 0.0016013137684190038,
+        "score_rmse": 0.2007714340939414,
+        "score_design_rank": 3,
+        "score_design_condition_number": 4.225247859066152,
+        "score_lstsq_residual_sum_squares": 1.4511300749329634,
+        "raw_lambda0": 2.2274879417835454,
+        "raw_mu": [
+          0.03963488694585848,
+          1.210410920004691
+        ],
+        "mu_clipped_count": 0,
+        "intercept": -0.06269999999999994,
+        "linear_term": [
+          0.20800000000000002,
+          0.32400000000000007,
+          0.44
+        ],
+        "lambda0": 2.2274879417835454,
+        "mu": [
+          0.03963488694585848,
+          1.210410920004691
+        ],
+        "precision": null,
+        "condition_bound": 1.5433972940098242
+      },
+      "train_rmse": 0.04001641873555158,
+      "holdout_count": 4,
+      "holdout_rmse": 0.048142711106911054,
+      "holdout_threshold": 0.1,
+      "holdout_passed": true,
+      "precision_eigen_summary": {
+        "finite": true,
+        "positive": true,
+        "min": 2.227487941783546,
+        "max": 3.437898861788237,
+        "condition_number": 1.543397294009824,
+        "eigenvalues": [
+          2.227487941783546,
+          2.2671228287294043,
+          3.437898861788237
+        ]
+      },
+      "covariance_eigen_summary": {
+        "finite": true,
+        "positive": true,
+        "min": 0.29087533991033304,
+        "max": 0.44893621251179566,
+        "condition_number": 1.5433972940098235,
+        "eigenvalues": [
+          0.29087533991033304,
+          0.4410877025840034,
+          0.44893621251179566
+        ]
+      },
+      "center_refinement": {
+        "accepted": true,
+        "reason": "accepted",
+        "z_norm": 0.2159925505365656,
+        "step_method": "unconstrained_spd_quadratic_solve",
+        "trust_region_constrained": false,
+        "boundary_active": false,
+        "lagrange_multiplier": 0.0,
+        "predicted_improvement": 0.06175562199661962,
+        "actual_improvement": 0.0545708173165548,
+        "actual_to_predicted_improvement_ratio": 0.8836574801164159,
+        "center_log_prob": -0.0627,
+        "refined_log_prob": -0.008129182683445209,
+        "center_score_norm": 0.5846708475715204,
+        "refined_score_norm": 0.1724072541053463,
+        "refined_score": [
+          0.15716658347092693,
+          -0.05725211848643072,
+          -0.10611496023716405
+        ],
+        "refined_target_finite": true,
+        "exact_evaluation_count": 1,
+        "refined_center": [
+          0.05141670826453653,
+          0.1490840394954769,
+          0.15652874005929102
+        ]
+      },
+      "best_evaluated_replay": {
+        "attempted": true,
+        "evaluation_index": 30,
+        "valid": true,
+        "matches": true,
+        "value": -0.008129182683445209,
+        "source": "surrogate_replay"
+      },
+      "artifact_hash": "64b57c043dba7dcc"
+    },
+    "nonclaims": [
+      "low-rank quadratic geometry diagnostic only",
+      "not a certified MAP covariance",
+      "not posterior correctness evidence",
+      "not HMC convergence evidence",
+      "not sampler superiority evidence",
+      "not default-readiness evidence",
+      "not source-faithful Zhao-Cui evidence"
+    ],
+    "mu": [
+      0.03963488694585848,
+      1.210410920004691
+    ],
+    "precision_eigen_summary": {
+      "finite": true,
+      "positive": true,
+      "min": 2.227487941783546,
+      "max": 3.437898861788237,
+      "condition_number": 1.543397294009824,
+      "eigenvalues": [
+        2.227487941783546,
+        2.2671228287294043,
+        3.437898861788237
+      ]
+    },
+    "covariance_eigen_summary": {
+      "finite": true,
+      "positive": true,
+      "min": 0.29087533991033304,
+      "max": 0.44893621251179566,
+      "condition_number": 1.5433972940098235,
+      "eigenvalues": [
+        0.29087533991033304,
+        0.4410877025840034,
+        0.44893621251179566
+      ]
+    },
+    "center": [
+      0.0,
+      0.01,
+      0.02
+    ],
+    "scale": [
+      0.8,
+      0.9,
+      1.0
+    ],
+    "precision": [
+      [
+        2.4846824545612654,
+        -0.09869798784194143,
+        0.46554176721796414
+      ],
+      [
+        -0.09869798784194143,
+        2.272021491084292,
+        -0.15212800566842366
+      ],
+      [
+        0.46554176721796414,
+        -0.15212800566842366,
+        3.175805686655628
+      ]
+    ],
+    "covariance": [
+      [
+        0.41427398121208586,
+        0.013974931773875994,
+        -0.06005904694586144
+      ],
+      [
+        0.013974931773875994,
+        0.4420243389295211,
+        0.019125340998886166
+      ],
+      [
+        -0.06005904694586144,
+        0.019125340998886166,
+        0.3246009348645252
+      ]
+    ],
+    "q_basis": [
+      [
+        -0.6346693288819303,
+        -0.4464251776082319
+      ],
+      [
+        0.640496971112581,
+        0.15283621253214127
+      ],
+      [
+        0.43238694819821916,
+        -0.8816720778930729
+      ]
+    ],
+    "linear_term": [
+      0.20800000000000002,
+      0.32400000000000007,
+      0.44
+    ],
+    "refined_center": [
+      0.05141670826453653,
+      0.1490840394954769,
+      0.15652874005929102
+    ],
+    "best_evaluated_position": [
+      0.05141670826453653,
+      0.1490840394954769,
+      0.15652874005929102
+    ],
+    "best_evaluated_score": [
+      0.15716658347092693,
+      -0.05725211848643072,
+      -0.10611496023716405
+    ]
+  },
+  "original_calls": {
+    "rows": 31,
+    "calls": 5,
+    "positions": [
+      [
+        0.0,
+        0.01,
+        0.02
+      ],
+      [
+        0.0502100188437464,
+        -0.07796772735763731,
+        -0.07490723287129059
+      ],
+      [
+        -0.11420260047777614,
+        0.043231235041754884,
+        -0.007534662042657396
+      ],
+      [
+        0.10790911298487638,
+        -0.010035963749258888,
+        -0.041725656867796584
+      ],
+      [
+        -0.05388803851918984,
+        0.06609488845574481,
+        -0.09865027383113191
+      ],
+      [
+        0.050380486188287346,
+        -0.09839023960931154,
+        -0.043480870551388995
+      ],
+      [
+        -0.06177726916284631,
+        0.09655483522276116,
+        0.1053684102812169
+      ],
+      [
+        -0.0502100188437464,
+        0.0979677273576373,
+        0.1149072328712906
+      ],
+      [
+        0.11420260047777614,
+        -0.02323123504175488,
+        0.0475346620426574
+      ],
+      [
+        -0.10790911298487638,
+        0.03003596374925889,
+        0.08172565686779658
+      ],
+      [
+        0.05388803851918984,
+        -0.046094888455744804,
+        0.1386502738311319
+      ],
+      [
+        -0.050380486188287346,
+        0.11839023960931153,
+        0.083480870551389
+      ],
+      [
+        0.06177726916284631,
+        -0.07655483522276117,
+        -0.0653684102812169
+      ],
+      [
+        -0.08288015205486643,
+        -0.11239098553383157,
+        -0.47058909331831106
+      ],
+      [
+        -0.16351073504263952,
+        -0.14549038890895388,
+        -0.28533253854141616
+      ],
+      [
+        0.19599917359745778,
+        -0.3714011113722022,
+        -0.07640934203140755
+      ],
+      [
+        0.10738642131356804,
+        0.06876301807885797,
+        0.2048564601293554
+      ],
+      [
+        -0.18282279396614864,
+        -0.01831660669503858,
+        -0.15675676944854394
+      ],
+      [
+        -0.05320655048995328,
+        0.11075112252848585,
+        0.16053954894900502
+      ],
+      [
+        -0.1703946433957227,
+        0.27218033176339856,
+        -0.11677356309347829
+      ],
+      [
+        0.14134615804970158,
+        -0.0976953259818515,
+        -0.39634444225199783
+      ],
+      [
+        0.11025030996813737,
+        0.07789985689459271,
+        -0.18124253078340286
+      ],
+      [
+        -0.05473162142544025,
+        -0.23155600310647628,
+        0.4399042741676389
+      ],
+      [
+        -0.009753666829538654,
+        0.21600261842626084,
+        -0.17913357472324445
+      ],
+      [
+        -0.294541170054671,
+        -0.03590536514024328,
+        0.1276806717197188
+      ],
+      [
+        0.13821255008856514,
+        -0.2565523583064212,
+        0.1702752439213747
+      ],
+      [
+        0.04119576151079436,
+        0.3005725043463759,
+        0.012672444617021349
+      ],
+      [
+        0.12256551933163183,
+        0.029221657286663157,
+        -0.09714392566986822
+      ],
+      [
+        0.08218547102863859,
+        -0.20069270466085032,
+        0.13627838117556054
+      ],
+      [
+        0.05141670826453653,
+        0.1490840394954769,
+        0.15652874005929102
+      ],
+      [
+        0.05141670826453653,
+        0.1490840394954769,
+        0.15652874005929102
+      ]
+    ],
+    "extents": [
+      1,
+      12,
+      16,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "source_sha256": {
+    "bayesfilter/inference/_exact_incumbent.py": "21191dd057380adafc6530cb15ef640666a2f3afb637bd90f4e98d3209ca5ed0",
+    "bayesfilter/inference/quadratic_geometry.py": "6a4865e98d97a441bf0146d1f581fa93f53f5ce1892ad81ebd69fc2526857fea"
+  },
+  "inputs": [
+    [
+      0.0,
+      0.01,
+      0.02
+    ],
+    [
+      0.8,
+      0.9,
+      1.0
+    ],
+    [
+      [
+        0.578613313635481,
+        -0.9010914889367436,
+        -0.8749582615457829
+      ],
+      [
+        -0.6203487428530656,
+        0.16045522836209405,
+        -0.11965466923930879
+      ],
+      [
+        0.353888268836332,
+        -0.05840711547430948,
+        -0.16194358565279984
+      ],
+      [
+        -0.5502360209633159,
+        0.5091284995653631,
+        -0.9692043927084305
+      ],
+      [
+        0.6834348151214193,
+        -1.306990401737957,
+        -0.6889181159053066
+      ],
+      [
+        -0.45976820271051194,
+        0.5725969591590929,
+        0.5082734293066355
+      ]
+    ],
+    [
+      [
+        -0.10360019006858304,
+        -0.1359899839264795,
+        -0.4905890933183111
+      ],
+      [
+        -0.2043884188032994,
+        -0.17276709878772653,
+        -0.3053325385414162
+      ],
+      [
+        0.2449989669968222,
+        -0.4237790126357802,
+        -0.09640934203140755
+      ],
+      [
+        0.13423302664196005,
+        0.0652922423098422,
+        0.18485646012935542
+      ],
+      [
+        -0.22852849245768578,
+        -0.03146289632782064,
+        -0.17675676944854393
+      ],
+      [
+        -0.0665081881124416,
+        0.11194569169831761,
+        0.14053954894900503
+      ],
+      [
+        -0.21299330424465335,
+        0.29131147973710947,
+        -0.1367735630934783
+      ],
+      [
+        0.17668269756212696,
+        -0.11966147331316833,
+        -0.41634444225199785
+      ],
+      [
+        0.1378128874601717,
+        0.07544428543843634,
+        -0.20124253078340285
+      ],
+      [
+        -0.06841452678180031,
+        -0.26839555900719586,
+        0.41990427416763887
+      ],
+      [
+        -0.012192083536923316,
+        0.2288917982514009,
+        -0.19913357472324444
+      ],
+      [
+        -0.36817646256833875,
+        -0.051005961266936975,
+        0.1076806717197188
+      ],
+      [
+        0.17276568761070643,
+        -0.2961692870071347,
+        0.1502752439213747
+      ],
+      [
+        0.05149470188849295,
+        0.32285833816263987,
+        -0.007327555382978652
+      ],
+      [
+        0.15320689916453978,
+        0.021357396985181288,
+        -0.11714392566986823
+      ],
+      [
+        0.10273183878579822,
+        -0.23410300517872257,
+        0.11627838117556055
+      ]
+    ],
+    [
+      726,
+      503
+    ]
+  ],
+  "candidate": {
+    "False": {
+      "payload": {
+        "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+        "accepted": true,
+        "status": "usable",
+        "dimension": 3,
+        "rank": 2,
+        "center_refinement_accepted": true,
+        "intercept": -0.06269999999999998,
+        "lambda0": 2.2274879417835454,
+        "best_evaluated_value": -0.008129182683445221,
+        "best_evaluated_source": "surrogate_replay",
+        "best_evaluated_index": 29,
+        "exact_evaluation_count": 31,
+        "diagnostics": {
+          "config": {
+            "rank": 2,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 1.0,
+            "pilot_radius": 0.15,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 1.0,
+            "max_condition_number": 1000.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 0.05,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": false,
+            "seed": [
+              20260708,
+              2667732701
+            ],
+            "random_stream": "geometry_tf_philox_cpu_xla_v1"
+          },
+          "random_stream": "geometry_tf_philox_cpu_xla_v1",
+          "dimension": 3,
+          "rank": 2,
+          "regression_parameter_count": 7,
+          "required_finite_samples": 7,
+          "sample_count": 16,
+          "center_log_prob": -0.0627,
+          "center_score_norm": 0.5846708475715204,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "pilot": {
+            "pilot_direction_count": 6,
+            "finite_positive_curvature_count": 6,
+            "curvature_min": 1.4413352584083383,
+            "curvature_max": 3.1804133708572926,
+            "curvature_source": "central_score_difference_directional_curvature",
+            "center_score_norm": 0.5846708475715204,
+            "sketch_eigenvalues": [
+              9.55814457143685,
+              3.808191042162871,
+              1.0207477382800776
+            ],
+            "basis_source": "directional_curvature_sketch",
+            "evaluation_route": "batched_value_and_score",
+            "evaluation_batch_size": 12
+          },
+          "finite_sample_count": 16,
+          "nonfinite_sample_count": 0,
+          "design_evaluation_route": "batched_value_and_score",
+          "fit": {
+            "loss": 0.001601313768419001,
+            "score_rmse": 0.2007714340939414,
+            "score_design_rank": 3,
+            "raw_lambda0": 2.2274879417835454,
+            "raw_mu": [
+              0.03963488694585688,
+              1.2104109200046906
+            ],
+            "mu_clipped_count": 0,
+            "intercept": -0.06269999999999998,
+            "linear_term": [
+              0.20800000000000002,
+              0.32400000000000007,
+              0.44
+            ],
+            "lambda0": 2.2274879417835454,
+            "mu": [
+              0.03963488694585688,
+              1.2104109200046906
+            ],
+            "precision": null,
+            "condition_bound": 1.543397294009824,
+            "status": "usable",
+            "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+            "optimizer_converged": true,
+            "optimizer_failed": false,
+            "optimizer_iterations": 0,
+            "score_design_condition_number": 4.225247859066149,
+            "score_lstsq_residual_sum_squares": 1.4511300749329628
+          },
+          "train_rmse": 0.040016418735551555,
+          "holdout_count": 4,
+          "holdout_rmse": 0.04814271110691105,
+          "holdout_threshold": 0.1,
+          "holdout_passed": true,
+          "precision_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 2.227487941783546,
+            "max": 3.437898861788236,
+            "condition_number": 1.5433972940098235,
+            "eigenvalues": [
+              2.227487941783546,
+              2.2671228287294016,
+              3.437898861788236
+            ]
+          },
+          "covariance_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 0.29087533991033304,
+            "max": 0.44893621251179583,
+            "condition_number": 1.5433972940098242,
+            "eigenvalues": [
+              0.29087533991033304,
+              0.4410877025840038,
+              0.44893621251179583
+            ]
+          },
+          "center_refinement": {
+            "accepted": true,
+            "reason": "accepted",
+            "z_norm": 0.2159925505365656,
+            "refined_center": [
+              0.05141670826453648,
+              0.14908403949547694,
+              0.15652874005929104
+            ],
+            "step_method": "unconstrained_spd_quadratic_solve",
+            "trust_region_constrained": false,
+            "boundary_active": false,
+            "lagrange_multiplier": 0.0,
+            "predicted_improvement": 0.06175562199661962,
+            "exact_evaluation_count": 1,
+            "refined_target_finite": true,
+            "actual_improvement": 0.05457081731655478,
+            "actual_to_predicted_improvement_ratio": 0.8836574801164157,
+            "center_log_prob": -0.0627,
+            "refined_log_prob": -0.008129182683445221,
+            "center_score_norm": 0.5846708475715204,
+            "refined_score_norm": 0.17240725410534646,
+            "refined_score": [
+              0.15716658347092705,
+              -0.0572521184864308,
+              -0.10611496023716416
+            ]
+          },
+          "best_evaluated_replay": {
+            "attempted": true,
+            "valid": true,
+            "matches": true,
+            "evaluation_index": 30,
+            "value": -0.008129182683445221,
+            "source": "surrogate_replay"
+          },
+          "artifact_hash": "5d174d53aa2929dc"
+        },
+        "nonclaims": [
+          "low-rank quadratic geometry diagnostic only",
+          "not a certified MAP covariance",
+          "not posterior correctness evidence",
+          "not HMC convergence evidence",
+          "not sampler superiority evidence",
+          "not default-readiness evidence",
+          "not source-faithful Zhao-Cui evidence"
+        ],
+        "center": [
+          0.0,
+          0.01,
+          0.02
+        ],
+        "scale": [
+          0.8,
+          0.9,
+          1.0
+        ],
+        "precision": [
+          [
+            2.4846824545612645,
+            -0.09869798784194071,
+            0.4655417672179644
+          ],
+          [
+            -0.09869798784194071,
+            2.2720214910842915,
+            -0.152128005668424
+          ],
+          [
+            0.4655417672179644,
+            -0.152128005668424,
+            3.175805686655628
+          ]
+        ],
+        "covariance": [
+          [
+            0.41427398121208603,
+            0.013974931773875862,
+            -0.060059046945861505
+          ],
+          [
+            0.013974931773875862,
+            0.44202433892952125,
+            0.019125340998886232
+          ],
+          [
+            -0.060059046945861505,
+            0.019125340998886232,
+            0.3246009348645252
+          ]
+        ],
+        "q_basis": [
+          [
+            -0.6346693288819307,
+            -0.4464251776082319
+          ],
+          [
+            0.6404969711125809,
+            0.1528362125321412
+          ],
+          [
+            0.43238694819821916,
+            -0.881672077893073
+          ]
+        ],
+        "linear_term": [
+          0.20800000000000002,
+          0.32400000000000007,
+          0.44
+        ],
+        "refined_center": [
+          0.05141670826453648,
+          0.14908403949547694,
+          0.15652874005929104
+        ],
+        "best_evaluated_position": [
+          0.05141670826453648,
+          0.14908403949547694,
+          0.15652874005929104
+        ],
+        "best_evaluated_score": [
+          0.15716658347092705,
+          -0.0572521184864308,
+          -0.10611496023716416
+        ],
+        "mu": [
+          0.03963488694585688,
+          1.2104109200046906
+        ],
+        "precision_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 2.227487941783546,
+          "max": 3.437898861788236,
+          "condition_number": 1.5433972940098235,
+          "eigenvalues": [
+            2.227487941783546,
+            2.2671228287294016,
+            3.437898861788236
+          ]
+        },
+        "covariance_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 0.29087533991033304,
+          "max": 0.44893621251179583,
+          "condition_number": 1.5433972940098242,
+          "eigenvalues": [
+            0.29087533991033304,
+            0.4410877025840038,
+            0.44893621251179583
+          ]
+        }
+      },
+      "calls": {
+        "rows": 31,
+        "calls": 5,
+        "positions": [
+          [
+            0.0,
+            0.01,
+            0.02
+          ],
+          [
+            0.050210018843746394,
+            -0.07796772735763731,
+            -0.07490723287129059
+          ],
+          [
+            -0.11420260047777614,
+            0.043231235041754884,
+            -0.007534662042657396
+          ],
+          [
+            0.10790911298487638,
+            -0.010035963749258891,
+            -0.041725656867796584
+          ],
+          [
+            -0.05388803851918984,
+            0.06609488845574481,
+            -0.09865027383113191
+          ],
+          [
+            0.05038048618828734,
+            -0.09839023960931155,
+            -0.043480870551388995
+          ],
+          [
+            -0.0617772691628463,
+            0.09655483522276118,
+            0.1053684102812169
+          ],
+          [
+            -0.050210018843746394,
+            0.0979677273576373,
+            0.1149072328712906
+          ],
+          [
+            0.11420260047777614,
+            -0.02323123504175488,
+            0.0475346620426574
+          ],
+          [
+            -0.10790911298487638,
+            0.03003596374925889,
+            0.08172565686779658
+          ],
+          [
+            0.05388803851918984,
+            -0.04609488845574481,
+            0.1386502738311319
+          ],
+          [
+            -0.05038048618828734,
+            0.11839023960931154,
+            0.083480870551389
+          ],
+          [
+            0.0617772691628463,
+            -0.07655483522276119,
+            -0.0653684102812169
+          ],
+          [
+            -0.08288015205486643,
+            -0.11239098553383157,
+            -0.47058909331831106
+          ],
+          [
+            -0.16351073504263952,
+            -0.14549038890895388,
+            -0.28533253854141616
+          ],
+          [
+            0.19599917359745778,
+            -0.3714011113722022,
+            -0.07640934203140755
+          ],
+          [
+            0.10738642131356804,
+            0.06876301807885797,
+            0.2048564601293554
+          ],
+          [
+            -0.18282279396614864,
+            -0.01831660669503858,
+            -0.15675676944854394
+          ],
+          [
+            -0.05320655048995328,
+            0.11075112252848585,
+            0.16053954894900502
+          ],
+          [
+            -0.1703946433957227,
+            0.27218033176339856,
+            -0.11677356309347829
+          ],
+          [
+            0.14134615804970158,
+            -0.0976953259818515,
+            -0.39634444225199783
+          ],
+          [
+            0.11025030996813737,
+            0.07789985689459271,
+            -0.18124253078340286
+          ],
+          [
+            -0.05473162142544025,
+            -0.23155600310647628,
+            0.4399042741676389
+          ],
+          [
+            -0.009753666829538654,
+            0.21600261842626084,
+            -0.17913357472324445
+          ],
+          [
+            -0.294541170054671,
+            -0.03590536514024328,
+            0.1276806717197188
+          ],
+          [
+            0.13821255008856514,
+            -0.2565523583064212,
+            0.1702752439213747
+          ],
+          [
+            0.04119576151079436,
+            0.3005725043463759,
+            0.012672444617021349
+          ],
+          [
+            0.12256551933163183,
+            0.029221657286663157,
+            -0.09714392566986822
+          ],
+          [
+            0.08218547102863859,
+            -0.20069270466085032,
+            0.13627838117556054
+          ],
+          [
+            0.05141670826453648,
+            0.14908403949547694,
+            0.15652874005929104
+          ],
+          [
+            0.05141670826453648,
+            0.14908403949547694,
+            0.15652874005929104
+          ]
+        ],
+        "extents": [
+          1,
+          12,
+          16,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "stage": 3,
+      "attempted_rows": 31
+    },
+    "True": {
+      "payload": {
+        "schema": "bayesfilter.low_rank_spd_quadratic_geometry.v2",
+        "accepted": true,
+        "status": "usable",
+        "dimension": 3,
+        "rank": 2,
+        "center_refinement_accepted": true,
+        "intercept": -0.06269999999999994,
+        "lambda0": 2.227487941783545,
+        "best_evaluated_value": -0.008129182683445207,
+        "best_evaluated_source": "surrogate_replay",
+        "best_evaluated_index": 29,
+        "exact_evaluation_count": 31,
+        "diagnostics": {
+          "config": {
+            "rank": 2,
+            "sample_count": 16,
+            "min_samples_per_parameter": 1,
+            "trust_radius": 1.0,
+            "pilot_radius": 0.15,
+            "pilot_direction_count": 6,
+            "holdout_fraction": 0.25,
+            "eigenvalue_floor": 1.0,
+            "max_condition_number": 1000.0,
+            "fit_max_iterations": 300,
+            "fit_tolerance": 1e-08,
+            "holdout_rmse_abs_tolerance": 0.05,
+            "holdout_rmse_rel_tolerance": 0.1,
+            "center_score_improvement_factor": 0.95,
+            "center_log_prob_tolerance": 1e-08,
+            "constrain_center_refinement_to_trust_region": false,
+            "seed": [
+              20260708,
+              2667732701
+            ],
+            "random_stream": "geometry_tf_philox_cpu_xla_v1"
+          },
+          "random_stream": "geometry_tf_philox_cpu_xla_v1",
+          "dimension": 3,
+          "rank": 2,
+          "regression_parameter_count": 7,
+          "required_finite_samples": 7,
+          "sample_count": 16,
+          "center_log_prob": -0.0627,
+          "center_score_norm": 0.5846708475715204,
+          "coordinate_system": "whitened_center_plus_scale_times_z",
+          "precision_form": "lambda0_identity_plus_q_diag_mu_q_transpose",
+          "sample_ratio_rule": "finite_sample_count >= min_samples_per_parameter * regression_parameter_count",
+          "classification": "extension_or_invention",
+          "reports_map_quality": false,
+          "reports_hmc_convergence": false,
+          "reports_default_readiness": false,
+          "pilot": {
+            "pilot_direction_count": 6,
+            "finite_positive_curvature_count": 6,
+            "curvature_min": 1.4413352584083383,
+            "curvature_max": 3.1804133708572926,
+            "curvature_source": "central_score_difference_directional_curvature",
+            "center_score_norm": 0.5846708475715204,
+            "sketch_eigenvalues": [
+              9.558144571436854,
+              3.808191042162871,
+              1.0207477382800785
+            ],
+            "basis_source": "directional_curvature_sketch",
+            "evaluation_route": "batched_value_and_score",
+            "evaluation_batch_size": 12
+          },
+          "finite_sample_count": 16,
+          "nonfinite_sample_count": 0,
+          "design_evaluation_route": "batched_value_and_score",
+          "fit": {
+            "loss": 0.0016013137684189997,
+            "score_rmse": 0.2007714340939414,
+            "score_design_rank": 3,
+            "raw_lambda0": 2.227487941783545,
+            "raw_mu": [
+              0.039634886945857345,
+              1.2104109200046922
+            ],
+            "mu_clipped_count": 0,
+            "intercept": -0.06269999999999994,
+            "linear_term": [
+              0.20800000000000002,
+              0.32400000000000007,
+              0.44
+            ],
+            "lambda0": 2.227487941783545,
+            "mu": [
+              0.039634886945857345,
+              1.2104109200046922
+            ],
+            "precision": null,
+            "condition_bound": 1.5433972940098246,
+            "status": "usable",
+            "fit_method": "score_difference_linear_least_squares_with_value_intercept",
+            "optimizer_converged": true,
+            "optimizer_failed": false,
+            "optimizer_iterations": 0,
+            "score_design_condition_number": 4.225247859066149,
+            "score_lstsq_residual_sum_squares": 1.451130074932963
+          },
+          "train_rmse": 0.04001641873555156,
+          "holdout_count": 4,
+          "holdout_rmse": 0.048142711106911054,
+          "holdout_threshold": 0.1,
+          "holdout_passed": true,
+          "precision_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 2.227487941783545,
+            "max": 3.4378988617882382,
+            "condition_number": 1.5433972940098253,
+            "eigenvalues": [
+              2.227487941783545,
+              2.2671228287294025,
+              3.4378988617882382
+            ]
+          },
+          "covariance_eigen_summary": {
+            "finite": true,
+            "positive": true,
+            "min": 0.29087533991033276,
+            "max": 0.44893621251179583,
+            "condition_number": 1.5433972940098257,
+            "eigenvalues": [
+              0.29087533991033276,
+              0.4410877025840039,
+              0.44893621251179583
+            ]
+          },
+          "center_refinement": {
+            "accepted": true,
+            "reason": "accepted",
+            "z_norm": 0.21599255053656555,
+            "refined_center": [
+              0.051416708264536516,
+              0.1490840394954769,
+              0.15652874005929096
+            ],
+            "step_method": "unconstrained_spd_quadratic_solve",
+            "trust_region_constrained": false,
+            "boundary_active": false,
+            "lagrange_multiplier": 0.0,
+            "predicted_improvement": 0.06175562199661964,
+            "exact_evaluation_count": 1,
+            "refined_target_finite": true,
+            "actual_improvement": 0.0545708173165548,
+            "actual_to_predicted_improvement_ratio": 0.8836574801164157,
+            "center_log_prob": -0.0627,
+            "refined_log_prob": -0.008129182683445207,
+            "center_score_norm": 0.5846708475715204,
+            "refined_score_norm": 0.1724072541053462,
+            "refined_score": [
+              0.157166583470927,
+              -0.05725211848643072,
+              -0.10611496023716382
+            ]
+          },
+          "best_evaluated_replay": {
+            "attempted": true,
+            "valid": true,
+            "matches": true,
+            "evaluation_index": 30,
+            "value": -0.008129182683445207,
+            "source": "surrogate_replay"
+          },
+          "artifact_hash": "4063686a19a8b911"
+        },
+        "nonclaims": [
+          "low-rank quadratic geometry diagnostic only",
+          "not a certified MAP covariance",
+          "not posterior correctness evidence",
+          "not HMC convergence evidence",
+          "not sampler superiority evidence",
+          "not default-readiness evidence",
+          "not source-faithful Zhao-Cui evidence"
+        ],
+        "center": [
+          0.0,
+          0.01,
+          0.02
+        ],
+        "scale": [
+          0.8,
+          0.9,
+          1.0
+        ],
+        "precision": [
+          [
+            2.4846824545612645,
+            -0.09869798784194102,
+            0.4655417672179649
+          ],
+          [
+            -0.09869798784194102,
+            2.272021491084291,
+            -0.15212800566842405
+          ],
+          [
+            0.4655417672179649,
+            -0.15212800566842405,
+            3.1758056866556283
+          ]
+        ],
+        "covariance": [
+          [
+            0.4142739812120862,
+            0.01397493177387591,
+            -0.060059046945861554
+          ],
+          [
+            0.01397493177387591,
+            0.4420243389295212,
+            0.019125340998886218
+          ],
+          [
+            -0.060059046945861554,
+            0.019125340998886218,
+            0.32460093486452507
+          ]
+        ],
+        "q_basis": [
+          [
+            -0.6346693288819307,
+            -0.44642517760823197
+          ],
+          [
+            0.640496971112581,
+            0.1528362125321412
+          ],
+          [
+            0.43238694819821927,
+            -0.8816720778930729
+          ]
+        ],
+        "linear_term": [
+          0.20800000000000002,
+          0.32400000000000007,
+          0.44
+        ],
+        "refined_center": [
+          0.051416708264536516,
+          0.1490840394954769,
+          0.15652874005929096
+        ],
+        "best_evaluated_position": [
+          0.051416708264536516,
+          0.1490840394954769,
+          0.15652874005929096
+        ],
+        "best_evaluated_score": [
+          0.157166583470927,
+          -0.05725211848643072,
+          -0.10611496023716382
+        ],
+        "mu": [
+          0.039634886945857345,
+          1.2104109200046922
+        ],
+        "precision_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 2.227487941783545,
+          "max": 3.4378988617882382,
+          "condition_number": 1.5433972940098253,
+          "eigenvalues": [
+            2.227487941783545,
+            2.2671228287294025,
+            3.4378988617882382
+          ]
+        },
+        "covariance_eigen_summary": {
+          "finite": true,
+          "positive": true,
+          "min": 0.29087533991033276,
+          "max": 0.44893621251179583,
+          "condition_number": 1.5433972940098257,
+          "eigenvalues": [
+            0.29087533991033276,
+            0.4410877025840039,
+            0.44893621251179583
+          ]
+        }
+      },
+      "calls": {
+        "rows": 31,
+        "calls": 5,
+        "positions": [
+          [
+            0.0,
+            0.01,
+            0.02
+          ],
+          [
+            0.050210018843746394,
+            -0.07796772735763731,
+            -0.07490723287129059
+          ],
+          [
+            -0.11420260047777614,
+            0.043231235041754884,
+            -0.007534662042657396
+          ],
+          [
+            0.10790911298487638,
+            -0.010035963749258891,
+            -0.041725656867796584
+          ],
+          [
+            -0.05388803851918984,
+            0.06609488845574481,
+            -0.09865027383113191
+          ],
+          [
+            0.05038048618828734,
+            -0.09839023960931155,
+            -0.043480870551388995
+          ],
+          [
+            -0.0617772691628463,
+            0.09655483522276118,
+            0.1053684102812169
+          ],
+          [
+            -0.050210018843746394,
+            0.0979677273576373,
+            0.1149072328712906
+          ],
+          [
+            0.11420260047777614,
+            -0.02323123504175488,
+            0.0475346620426574
+          ],
+          [
+            -0.10790911298487638,
+            0.03003596374925889,
+            0.08172565686779658
+          ],
+          [
+            0.05388803851918984,
+            -0.04609488845574481,
+            0.1386502738311319
+          ],
+          [
+            -0.05038048618828734,
+            0.11839023960931154,
+            0.083480870551389
+          ],
+          [
+            0.0617772691628463,
+            -0.07655483522276119,
+            -0.0653684102812169
+          ],
+          [
+            -0.08288015205486643,
+            -0.11239098553383157,
+            -0.47058909331831106
+          ],
+          [
+            -0.16351073504263952,
+            -0.14549038890895388,
+            -0.28533253854141616
+          ],
+          [
+            0.19599917359745778,
+            -0.3714011113722022,
+            -0.07640934203140755
+          ],
+          [
+            0.10738642131356804,
+            0.06876301807885797,
+            0.2048564601293554
+          ],
+          [
+            -0.18282279396614864,
+            -0.01831660669503858,
+            -0.15675676944854394
+          ],
+          [
+            -0.05320655048995328,
+            0.11075112252848585,
+            0.16053954894900502
+          ],
+          [
+            -0.1703946433957227,
+            0.27218033176339856,
+            -0.11677356309347829
+          ],
+          [
+            0.14134615804970158,
+            -0.0976953259818515,
+            -0.39634444225199783
+          ],
+          [
+            0.11025030996813737,
+            0.07789985689459271,
+            -0.18124253078340286
+          ],
+          [
+            -0.05473162142544025,
+            -0.23155600310647628,
+            0.4399042741676389
+          ],
+          [
+            -0.009753666829538654,
+            0.21600261842626084,
+            -0.17913357472324445
+          ],
+          [
+            -0.294541170054671,
+            -0.03590536514024328,
+            0.1276806717197188
+          ],
+          [
+            0.13821255008856514,
+            -0.2565523583064212,
+            0.1702752439213747
+          ],
+          [
+            0.04119576151079436,
+            0.3005725043463759,
+            0.012672444617021349
+          ],
+          [
+            0.12256551933163183,
+            0.029221657286663157,
+            -0.09714392566986822
+          ],
+          [
+            0.08218547102863859,
+            -0.20069270466085032,
+            0.13627838117556054
+          ],
+          [
+            0.051416708264536516,
+            0.1490840394954769,
+            0.15652874005929096
+          ],
+          [
+            0.051416708264536516,
+            0.1490840394954769,
+            0.15652874005929096
+          ]
+        ],
+        "extents": [
+          1,
+          12,
+          16,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "stage": 3,
+      "attempted_rows": 31
+    }
+  }
+}

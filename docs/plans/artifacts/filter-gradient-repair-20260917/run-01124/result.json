@@ -1,0 +1,1751 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "cpu_forecast_pool",
+  "size": 2,
+  "jit": "eager",
+  "device": "CPU",
+  "source_root": "/tmp/bayesfilter-filter-repair-baseline-3582b4ac",
+  "worker_sha256": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "filter_repair_forecast_pool_worker.py": "c908919c69cae52ca45b73a850668e2574802fc6a8abc61da23cc02e10d9d1ac",
+    "filter_repair_forecast_pool_fixtures.py": "be65a74ae682d40cc87df8e7f99353f6f27536488c234e2dd406d14f11f175f6"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 20385792,
+      "VmRSS": 20385792
+    },
+    "prepared": {
+      "VmHWM": 540803072,
+      "VmRSS": 540803072
+    },
+    "traced": {
+      "VmHWM": 540803072,
+      "VmRSS": 540803072
+    },
+    "cold_outputs_live": {
+      "VmHWM": 541106176,
+      "VmRSS": 541106176
+    },
+    "cold_outputs_released": {
+      "VmHWM": 541106176,
+      "VmRSS": 541106176
+    }
+  },
+  "status": "passed",
+  "phase": "complete",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": {
+    "machine": "x86_64",
+    "processor": "model name\t: AMD EPYC 7773X 64-Core Processor"
+  },
+  "timing_scope": "complete_public_cpu_forecast_pool_with_ipc_validation_and_output_conversion",
+  "numerical_execution": "owned_worker_defaults_with_cpu_xla; parent_is_host_orchestration",
+  "pool_calls": [
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.02609253497212194,
+        0.03914875301416032
+      ],
+      "worker_runtime_max_seconds": 0.03914875301416032,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023507006000727415,
+        0.03527741300058551
+      ],
+      "worker_runtime_max_seconds": 0.03527741300058551,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023757514980388805,
+        0.03836282299016602
+      ],
+      "worker_runtime_max_seconds": 0.03836282299016602,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023228906007716432,
+        0.03531843301607296
+      ],
+      "worker_runtime_max_seconds": 0.03531843301607296,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023033645993564278,
+        0.034949122986290604
+      ],
+      "worker_runtime_max_seconds": 0.034949122986290604,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023030755983199924,
+        0.04128907201811671
+      ],
+      "worker_runtime_max_seconds": 0.04128907201811671,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.02300672500859946,
+        0.034531872981460765
+      ],
+      "worker_runtime_max_seconds": 0.034531872981460765,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.024340314994333312,
+        0.037258983007632196
+      ],
+      "worker_runtime_max_seconds": 0.037258983007632196,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.02322914599790238,
+        0.03591972301364876
+      ],
+      "worker_runtime_max_seconds": 0.03591972301364876,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023628364986507222,
+        0.0342735429876484
+      ],
+      "worker_runtime_max_seconds": 0.0342735429876484,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.02450094500090927,
+        0.037288652994902804
+      ],
+      "worker_runtime_max_seconds": 0.037288652994902804,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023749515996314585,
+        0.03681661302107386
+      ],
+      "worker_runtime_max_seconds": 0.03681661302107386,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.02335088499239646,
+        0.033807993022492155
+      ],
+      "worker_runtime_max_seconds": 0.033807993022492155,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023007034993497655,
+        0.03583669301588088
+      ],
+      "worker_runtime_max_seconds": 0.03583669301588088,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023238494992256165,
+        0.036389093002071604
+      ],
+      "worker_runtime_max_seconds": 0.036389093002071604,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.02312804601388052,
+        0.03723912301938981
+      ],
+      "worker_runtime_max_seconds": 0.03723912301938981,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023338415019679815,
+        0.03680977300973609
+      ],
+      "worker_runtime_max_seconds": 0.03680977300973609,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023368455993477255,
+        0.03512008301913738
+      ],
+      "worker_runtime_max_seconds": 0.03512008301913738,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023234235995914787,
+        0.03434561300673522
+      ],
+      "worker_runtime_max_seconds": 0.03434561300673522,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.022786015004385263,
+        0.03395589301362634
+      ],
+      "worker_runtime_max_seconds": 0.03395589301362634,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    },
+    {
+      "request_id": "filter_repair_identical_seeded_forecast",
+      "rows_hash": "7c10c28293c57a1d85894d6de8efaadb7e734f2e32270a4c7bfd68a40d429656",
+      "seeds_hash": "46db8c1a422ef6029a89eb76bbbb039717288b5745864c3e026666ffd53b721b",
+      "active_worker_count": 2,
+      "worker_pids": [
+        1395121,
+        1395124
+      ],
+      "worker_metadata": [
+        {
+          "pid": 1395121,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        },
+        {
+          "pid": 1395124,
+          "cuda_visible_devices": "-1",
+          "tensorflow_gpu_devices": [],
+          "jit_compile": true,
+          "backend": "scalar_q_general_principal_root_forecast_xla"
+        }
+      ],
+      "worker_runtime_seconds": [
+        0.023061055020662025,
+        0.03662957198685035
+      ],
+      "worker_runtime_max_seconds": 0.03662957198685035,
+      "active_worker_ru_maxrss_sum_bytes": 1598029824,
+      "worker_ru_maxrss_sum_bytes": 1598029824,
+      "parent_ru_maxrss_bytes": 817934336,
+      "aggregate_parent_worker_ru_maxrss_bytes": 2415964160,
+      "backend": "persistent_cpu_principal_root_forecast_pool",
+      "configured_worker_count": 2,
+      "startup_worker_pids": [
+        1395121,
+        1395124
+      ],
+      "startup_worker_ru_maxrss_bytes_by_pid": {
+        "1395121": 794820608,
+        "1395124": 803209216
+      },
+      "startup_worker_ru_maxrss_sum_bytes": 1598029824
+    }
+  ],
+  "worker_sources": [
+    {
+      "pid": 1395121,
+      "source_root": "/tmp/bayesfilter-filter-repair-baseline-3582b4ac",
+      "numerical_ru_maxrss_bytes": 794820608,
+      "shard_signatures": [],
+      "shard_trace_counts": [],
+      "imported_source_sha256": {
+        "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+        "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+        "bayesfilter/inference/cpu_forecast_pool.py": "a66c19becd4d1c45b1816f518fd9982c305ffe26e50838b4ea94689cdd02db54",
+        "bayesfilter/nonlinear/__init__.py": "f0edaabc1fdc132742f578b6351795c78d4aa5826fd88d04ed61a433c47b93ad",
+        "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+        "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+        "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+        "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+        "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+        "bayesfilter/linear/svd_factor_tf.py": "b1f70b77fc840882427e8d7e930414ae011828b328e4decf31cb63e47b35683d",
+        "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+        "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+        "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+        "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+        "bayesfilter/nonlinear/sigma_points_tf.py": "1aa062a50d702e05d69d33cef26dabd8e941c43485f9f249b82b65711c361156",
+        "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+        "bayesfilter/nonlinear/ssl_lstm_protocol.py": "b43b840275ed4fdf30a809f2c534e0a6a1a51c3467948d11d6ec5d8b5cfdb6be",
+        "bayesfilter/nonlinear/fixed_sgqf_tf.py": "305fade8e9d9a5ce02bd294b54814f5c99f9b236944d8c01ffe19a172e1b403d",
+        "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+        "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+        "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "91f59ecad8d62224e3fffe2d1eede2c79ee59e190eae04c493cd50e7ea4865ce",
+        "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py": "f898c7dc1d199c362de750287a71347dfaa7018b1ab593acc272800564299ba6",
+        "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py": "21731e823624d31f0f19c6f6abef05c5e54f960c3f0bf85ee047e8286ade9c44",
+        "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py": "a1f6817944849fb5d4479fa1dce6cc21a33cd0661b70f63474c7cdda8c96f74a"
+      }
+    },
+    {
+      "pid": 1395124,
+      "source_root": "/tmp/bayesfilter-filter-repair-baseline-3582b4ac",
+      "numerical_ru_maxrss_bytes": 803209216,
+      "shard_signatures": [],
+      "shard_trace_counts": [],
+      "imported_source_sha256": {
+        "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+        "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+        "bayesfilter/inference/cpu_forecast_pool.py": "a66c19becd4d1c45b1816f518fd9982c305ffe26e50838b4ea94689cdd02db54",
+        "bayesfilter/nonlinear/__init__.py": "f0edaabc1fdc132742f578b6351795c78d4aa5826fd88d04ed61a433c47b93ad",
+        "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+        "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+        "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+        "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+        "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+        "bayesfilter/linear/svd_factor_tf.py": "b1f70b77fc840882427e8d7e930414ae011828b328e4decf31cb63e47b35683d",
+        "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+        "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+        "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+        "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+        "bayesfilter/nonlinear/sigma_points_tf.py": "1aa062a50d702e05d69d33cef26dabd8e941c43485f9f249b82b65711c361156",
+        "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+        "bayesfilter/nonlinear/ssl_lstm_protocol.py": "b43b840275ed4fdf30a809f2c534e0a6a1a51c3467948d11d6ec5d8b5cfdb6be",
+        "bayesfilter/nonlinear/fixed_sgqf_tf.py": "305fade8e9d9a5ce02bd294b54814f5c99f9b236944d8c01ffe19a172e1b403d",
+        "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+        "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+        "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "91f59ecad8d62224e3fffe2d1eede2c79ee59e190eae04c493cd50e7ea4865ce",
+        "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py": "f898c7dc1d199c362de750287a71347dfaa7018b1ab593acc272800564299ba6",
+        "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py": "21731e823624d31f0f19c6f6abef05c5e54f960c3f0bf85ee047e8286ade9c44",
+        "bayesfilter/nonlinear/ssl_lstm_complexity_predictive_tf.py": "a1f6817944849fb5d4479fa1dce6cc21a33cd0661b70f63474c7cdda8c96f74a"
+      }
+    }
+  ],
+  "pool_final_memory": {
+    "parent_ru_maxrss_bytes": 817934336,
+    "worker_ru_maxrss_sum_bytes": 1598029824,
+    "aggregate_parent_worker_ru_maxrss_bytes": 2415964160
+  },
+  "pool_memory_scope": "sum_of_parent_and_worker_rss_high_water; not_simultaneous_live_memory",
+  "numerical_backend": "tensorflow",
+  "preparation_seconds": 0.018852598004741594,
+  "dimensions": {
+    "rows": 5,
+    "q": 1,
+    "parameters": 4,
+    "filter_horizon": 30,
+    "forecast_horizon": 10,
+    "replications": 2,
+    "seed_policy": "original_independent_row_philox",
+    "role": "external_cpu_sample_generation",
+    "neutra_training_eligible": false,
+    "worker_count": 2,
+    "cores_per_worker": 1
+  },
+  "input_sha256": "fa9e978c4be0a528ff1f05d358417a587fa441e7da320f5e6bb22b2c243cb440",
+  "input_shapes": [
+    [
+      5,
+      4
+    ],
+    [
+      5,
+      2
+    ]
+  ],
+  "input_dtypes": [
+    "float64",
+    "int32"
+  ],
+  "trace_seconds": 3.500026650726795e-07,
+  "graph": {
+    "nodes": 0,
+    "functions": 0,
+    "callbacks": [],
+    "must_compile": false,
+    "nested_xla": [],
+    "xla_ops": []
+  },
+  "execution_exception": "existing_host_execution_reference_only; nested compilation may exist",
+  "cold": {
+    "synchronized_seconds": 8.658089925011154,
+    "output_copy_seconds": 1.6859994502738118e-05,
+    "end_to_end_seconds": 8.658106785005657
+  },
+  "output_shapes": [
+    [
+      5,
+      2,
+      10
+    ],
+    [
+      5,
+      2,
+      10
+    ],
+    [
+      5,
+      2,
+      10
+    ]
+  ],
+  "output_dtypes": [
+    "float64",
+    "float64",
+    "float64"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:CPU:0",
+    "/job:localhost/replica:0/task:0/device:CPU:0",
+    "/job:localhost/replica:0/task:0/device:CPU:0"
+  ],
+  "values": [
+    [
+      [
+        [
+          -0.8891002236846071,
+          -0.4436578492590638,
+          -0.03827840730891362,
+          -0.35138043765748816,
+          1.096016793845546,
+          0.41656658229411586,
+          0.909990577614293,
+          -0.15000252802221836,
+          -0.005159718062795932,
+          -0.338293459835826
+        ],
+        [
+          0.1738146687888482,
+          -0.35608654859934086,
+          0.525621214527888,
+          -0.1249674980972371,
+          -0.06653938583755806,
+          -0.0016658237818099407,
+          0.8357234061121132,
+          -0.2617873684346799,
+          0.03790916784476783,
+          0.3223483423483387
+        ]
+      ],
+      [
+        [
+          0.12112401531700875,
+          1.1698725044390827,
+          0.21966215694640795,
+          1.0233632985477117,
+          -0.3371813307895303,
+          0.03653614096385623,
+          0.5158679811602,
+          0.485956426746158,
+          0.266223506871374,
+          0.21786963628381575
+        ],
+        [
+          -0.8143034447220016,
+          -0.1143953756422122,
+          -0.24679676097928704,
+          -0.3361268105948482,
+          0.2030208142527726,
+          0.21177132554992742,
+          -0.7634568178971033,
+          0.6096267430295714,
+          -0.5017212708447338,
+          1.2357337623825722
+        ]
+      ],
+      [
+        [
+          -0.41652650427254234,
+          -0.13580716153314656,
+          0.052369567073314006,
+          -0.33692656814472655,
+          0.0823244685365556,
+          0.2026843954963322,
+          -0.12460236316908205,
+          0.6191832096027469,
+          -0.5779519693417821,
+          0.9990073244230848
+        ],
+        [
+          -0.2794405991032713,
+          -0.43684087411238637,
+          0.0036051301466620213,
+          0.013894998594947342,
+          -0.21910184829250057,
+          -0.04400870866555819,
+          -0.20429195402887965,
+          0.22633129873250243,
+          -0.8276078548535121,
+          -1.0124773346095508
+        ]
+      ],
+      [
+        [
+          -0.5656370640238703,
+          1.1951751816040168,
+          0.3926017097738243,
+          0.09333878946753713,
+          -0.26907820849857234,
+          0.7353043120559161,
+          -0.8467664802499428,
+          -0.1365462572654715,
+          -0.027160533313332076,
+          1.0482769603655495
+        ],
+        [
+          -0.7244844151925208,
+          -0.5606432938503271,
+          0.3635603947089093,
+          0.30778330075403476,
+          -0.8490336014049945,
+          0.0006456856073167637,
+          -0.6246701193765074,
+          0.0013069204528499303,
+          -0.15301084874270568,
+          0.6629465918455966
+        ]
+      ],
+      [
+        [
+          0.38043201656016723,
+          -0.07861201648039064,
+          0.8397910876234228,
+          -0.41346819823572944,
+          -0.24503858908233436,
+          -0.028184028918144408,
+          0.17722292848780818,
+          -0.7260965383812961,
+          0.2617515714711013,
+          -0.49890261535748825
+        ],
+        [
+          0.14275668061013594,
+          1.1669848472596318,
+          -0.48493902807145467,
+          0.6979085981927919,
+          -0.1513734727955464,
+          0.9926228260736085,
+          0.29248550527001543,
+          0.0585921203491919,
+          0.9557608775457638,
+          -0.3543866192579404
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ],
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ],
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ],
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ],
+      [
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ],
+        [
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491,
+          0.3857118566090491
+        ]
+      ]
+    ],
+    [
+      [
+        [
+          -0.9005449790761472,
+          0.2420605400724308,
+          0.7625017392885404,
+          -0.8698496762971037,
+          1.9156221286993442,
+          1.025527976587243,
+          -0.1629346592015234,
+          -1.0739170270134761,
+          -0.3936418038028483,
+          0.8132933514735948
+        ],
+        [
+          -0.24940406281296665,
+          -0.17601363387261518,
+          0.9338955366810112,
+          0.20501249107205366,
+          -1.0215145306572528,
+          -0.08996767001158472,
+          0.954002995281088,
+          -0.2242284310539651,
+          0.378610877248664,
+          0.37161205480761533
+        ]
+      ],
+      [
+        [
+          0.938824070904327,
+          0.7715810436984013,
+          0.8290659149346891,
+          1.987316236387732,
+          0.05499023019424973,
+          -0.329604383443844,
+          1.3169823717838556,
+          0.06746261945147762,
+          -0.7625823400241488,
+          0.08651993447292344
+        ],
+        [
+          -0.24354837606113677,
+          0.1628359239410485,
+          0.015171873093699878,
+          -0.37061578470631307,
+          1.211620019865853,
+          0.23450293397408156,
+          -0.30071089167998993,
+          0.17919466408147455,
+          -1.3225890019328181,
+          0.40990830081347335
+        ]
+      ],
+      [
+        [
+          0.08501017775132724,
+          -1.2026043553610253,
+          0.09714712738314812,
+          -1.2209731220927937,
+          -0.023723736228775844,
+          -0.9762266559574169,
+          0.7209145812814712,
+          0.6406591409098469,
+          -0.41449387169593116,
+          1.1068471306720855
+        ],
+        [
+          0.6711175413742856,
+          -1.49944864013768,
+          -0.34590770741227844,
+          -0.007108900223341735,
+          -1.1520564578430552,
+          0.6864424379874894,
+          0.20344920922876542,
+          -0.22031192882649808,
+          -0.11403083751230307,
+          -0.9377883078747045
+        ]
+      ],
+      [
+        [
+          -0.8510974973497998,
+          0.8170288936510652,
+          0.032855118916618804,
+          -0.20557796870123884,
+          -0.5088827278077306,
+          0.6534770851800962,
+          -0.8851850114742156,
+          0.024231886972439477,
+          0.19536468988928934,
+          2.1863705989637565
+        ],
+        [
+          -0.15258760139526653,
+          -0.8167219325321878,
+          -0.09438000690170001,
+          2.1826984514033536,
+          -1.1811378122859144,
+          0.7409516928536329,
+          0.030876877706750263,
+          0.03381352262206353,
+          -0.3195750152423128,
+          0.7695472651046876
+        ]
+      ],
+      [
+        [
+          0.7165241548663417,
+          -0.7081142670285812,
+          1.6653011426461193,
+          -1.4085693723229513,
+          0.21865908972522075,
+          0.2901671760780248,
+          0.45604066424863265,
+          -0.5863505285798352,
+          -1.4670304730610713,
+          -0.8266587198848329
+        ],
+        [
+          0.7740654285178937,
+          0.8911036839141747,
+          0.735381004266042,
+          0.16910390385847793,
+          0.1301124954758256,
+          2.9689872018748558,
+          1.1731832760948846,
+          1.3491630509423205,
+          0.8770247521067431,
+          -0.5817584365501051
+        ]
+      ]
+    ]
+  ],
+  "warm": [
+    {
+      "iteration": 0,
+      "synchronized_seconds": 0.0374286430014763,
+      "output_copy_seconds": 2.3600005079060793e-05,
+      "end_to_end_seconds": 0.037452243006555364,
+      "VmHWM": 541110272,
+      "VmRSS": 541110272
+    },
+    {
+      "iteration": 1,
+      "synchronized_seconds": 0.040519382018828765,
+      "output_copy_seconds": 1.7409998690709472e-05,
+      "end_to_end_seconds": 0.040536792017519474,
+      "VmHWM": 541110272,
+      "VmRSS": 541110272
+    },
+    {
+      "iteration": 2,
+      "synchronized_seconds": 0.036544492992106825,
+      "output_copy_seconds": 1.7749989638105035e-05,
+      "end_to_end_seconds": 0.03656224298174493,
+      "VmHWM": 541114368,
+      "VmRSS": 541114368
+    },
+    {
+      "iteration": 3,
+      "synchronized_seconds": 0.03620165298343636,
+      "output_copy_seconds": 1.697000698186457e-05,
+      "end_to_end_seconds": 0.036218622990418226,
+      "VmHWM": 541114368,
+      "VmRSS": 541114368
+    },
+    {
+      "iteration": 4,
+      "synchronized_seconds": 0.04311063201748766,
+      "output_copy_seconds": 1.70299899764359e-05,
+      "end_to_end_seconds": 0.043127662007464096,
+      "VmHWM": 541118464,
+      "VmRSS": 541118464
+    },
+    {
+      "iteration": 5,
+      "synchronized_seconds": 0.03624436300015077,
+      "output_copy_seconds": 1.6699981642886996e-05,
+      "end_to_end_seconds": 0.03626106298179366,
+      "VmHWM": 541118464,
+      "VmRSS": 541118464
+    },
+    {
+      "iteration": 6,
+      "synchronized_seconds": 0.03898896201280877,
+      "output_copy_seconds": 1.7619982827454805e-05,
+      "end_to_end_seconds": 0.039006581995636225,
+      "VmHWM": 541118464,
+      "VmRSS": 541118464
+    },
+    {
+      "iteration": 7,
+      "synchronized_seconds": 0.038378853001631796,
+      "output_copy_seconds": 1.9730010535568e-05,
+      "end_to_end_seconds": 0.038398583012167364,
+      "VmHWM": 541122560,
+      "VmRSS": 541122560
+    },
+    {
+      "iteration": 8,
+      "synchronized_seconds": 0.03613920300267637,
+      "output_copy_seconds": 1.780001912266016e-05,
+      "end_to_end_seconds": 0.03615700302179903,
+      "VmHWM": 541122560,
+      "VmRSS": 541122560
+    },
+    {
+      "iteration": 9,
+      "synchronized_seconds": 0.03868501298711635,
+      "output_copy_seconds": 1.788002555258572e-05,
+      "end_to_end_seconds": 0.03870289301266894,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 10,
+      "synchronized_seconds": 0.038462992990389466,
+      "output_copy_seconds": 1.7550017219036818e-05,
+      "end_to_end_seconds": 0.0384805430076085,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 11,
+      "synchronized_seconds": 0.037212333001662046,
+      "output_copy_seconds": 2.2079999325796962e-05,
+      "end_to_end_seconds": 0.03723441300098784,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 12,
+      "synchronized_seconds": 0.03736181301064789,
+      "output_copy_seconds": 1.7429993022233248e-05,
+      "end_to_end_seconds": 0.037379243003670126,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 13,
+      "synchronized_seconds": 0.03777744201943278,
+      "output_copy_seconds": 1.7490005120635033e-05,
+      "end_to_end_seconds": 0.03779493202455342,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 14,
+      "synchronized_seconds": 0.03901205299189314,
+      "output_copy_seconds": 4.770001396536827e-05,
+      "end_to_end_seconds": 0.03905975300585851,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 15,
+      "synchronized_seconds": 0.03869249200215563,
+      "output_copy_seconds": 1.7620011931285262e-05,
+      "end_to_end_seconds": 0.03871011201408692,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 16,
+      "synchronized_seconds": 0.03719604297657497,
+      "output_copy_seconds": 1.710999640636146e-05,
+      "end_to_end_seconds": 0.037213152972981334,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 17,
+      "synchronized_seconds": 0.035869712999556214,
+      "output_copy_seconds": 1.7350015696138144e-05,
+      "end_to_end_seconds": 0.03588706301525235,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 18,
+      "synchronized_seconds": 0.03569439298007637,
+      "output_copy_seconds": 1.8129998352378607e-05,
+      "end_to_end_seconds": 0.03571252297842875,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    },
+    {
+      "iteration": 19,
+      "synchronized_seconds": 0.038338512007612735,
+      "output_copy_seconds": 1.8580001778900623e-05,
+      "end_to_end_seconds": 0.038357092009391636,
+      "VmHWM": 541126656,
+      "VmRSS": 541126656
+    }
+  ],
+  "trace_count": null,
+  "imported_source_sha256": {
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+    "bayesfilter/inference/cpu_forecast_pool.py": "a66c19becd4d1c45b1816f518fd9982c305ffe26e50838b4ea94689cdd02db54"
+  },
+  "wall_seconds": 13.984552312002052
+}

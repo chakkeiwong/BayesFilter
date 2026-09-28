@@ -1,5 +1,13 @@
 # Completed q20 NeuTra training evaluation
 
+**Architecture status, owner directive 2026-09-25:** the revised IAF fits use
+the current canonical architecture `bayesfilter_neutra_iaf_author_v1`.
+The preserved baseline and legacy-continuation control are **HISTORICAL —
+UNFAITHFUL TO THE AUTHOR'S CODE**; their comparisons remain historical diagnostic
+evidence, not canonical-map results. Conditional NAF is a separately identified
+research alternative. The [policy notice](bayesfilter-neutra-canonical-architecture-policy-2026-09-25.md)
+supersedes earlier architecture labels without changing the measurements below.
+
 **The repaired IAF training improved the declared loss and score criteria in
 all three seeded fits. NAF did not reproduce that improvement: two fits learned
 sharp residual tails despite lower loss. Posterior readiness remains unproved.**
