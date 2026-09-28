@@ -797,15 +797,16 @@ def _local_autodiff_checks(target: GenUTNeuTraTargetAdapter) -> dict[str, Any]:
     manual_transition_tangent = adapter.transition_tangent(
         theta, initial, process_noise, initial_tangent, time_index
     )
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         tape.watch(theta)
         autodiff_initial = adapter.initial_value(theta, initial_noise)
         autodiff_transition = adapter.transition_value(
             theta, autodiff_initial, process_noise, time_index
         )
     autodiff_transition_tangent = tape.batch_jacobian(
-        autodiff_transition, theta
+        autodiff_transition, theta, experimental_use_pfor=False
     )
+    del tape
     manual_observation = adapter.observation_value(
         theta,
         manual_transition,
@@ -819,7 +820,7 @@ def _local_autodiff_checks(target: GenUTNeuTraTargetAdapter) -> dict[str, Any]:
         target.observations[0],
         time_index,
     )
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         tape.watch(theta)
         autodiff_initial = adapter.initial_value(theta, initial_noise)
         autodiff_transition = adapter.transition_value(
@@ -832,8 +833,9 @@ def _local_autodiff_checks(target: GenUTNeuTraTargetAdapter) -> dict[str, Any]:
             time_index,
         )
     autodiff_observation_tangent = tape.batch_jacobian(
-        autodiff_observation, theta
+        autodiff_observation, theta, experimental_use_pfor=False
     )
+    del tape
     return {
         "particle_count": count,
         "transition_value": _comparison(

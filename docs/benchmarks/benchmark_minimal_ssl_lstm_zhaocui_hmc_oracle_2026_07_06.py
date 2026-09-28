@@ -302,7 +302,10 @@ def target_log_prob_batch(
     """Evaluate target log probabilities for a batch of states."""
 
     tensor = tf.constant(np.asarray(theta_batch, dtype=np.float64), dtype=tf.float64)
-    values = tf.vectorized_map(lambda row: adapter._scalar_log_prob_and_grad(row)[0], tensor)
+    values = tf.map_fn(
+        lambda row: adapter._scalar_log_prob_and_grad(row)[0], tensor,
+        fn_output_signature=tf.TensorSpec([], tf.float64), parallel_iterations=1,
+    )
     return np.asarray(values.numpy(), dtype=np.float64)
 
 

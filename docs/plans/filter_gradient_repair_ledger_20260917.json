@@ -122,15 +122,15 @@
     },
     {
       "id": "F14",
-      "status": "open",
+      "status": "closed_scoped_execution_dispositions",
       "scope": "Remaining implicit pfor classification/repair",
       "current_static_failure_04682": {
         "path": "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py",
         "test": "test_batch_claim_paths_ban_python_fanout_and_pfor_apis",
         "preexisting_at": "aabd2b167",
         "default": "sequential",
-        "remaining_action": "Inspect optional pfor approval scope, diagnostic classification and actual callers; preserve failing test until disposition.",
-        "finding_closed": false
+        "remaining_action": "Superseded: optional pfor removed and original gate passes; see terminal_disposition.",
+        "finding_closed": true
       },
       "additional_unclassified_pfor_sites_20260929": [
         "highdim/ledh_contract_e_streaming_tf.py::_contract_e_streaming_jvp_core",
@@ -139,7 +139,7 @@
         "inference/batched_value_score.py::FixedTransportValueScoreAdapter.log_abs_det_jacobian",
         "highdim/sir_latent_preclip_reference_tf.py::prepare_reduced_dense_grids"
       ],
-      "repair_plan": "docs/plans/filter_gradient_ledh_pfor_disposition_20260929.md",
+      "repair_plan": "docs/plans/filter_gradient_pfor_runner_closure_20260929.md",
       "optional_batch_pfor_disposition": {
         "status": "repaired_current_source_qualified",
         "runs": [
@@ -167,9 +167,34 @@
           4715
         ],
         "site_catalog": "docs/plans/filter_gradient_remaining_pfor_discovery_20260929.json",
-        "remaining_runner_benchmark_sites": 28,
-        "remaining_runner_benchmark_files": 17,
+        "remaining_runner_benchmark_sites": 0,
+        "remaining_runner_benchmark_files": 0,
         "finding_closed": false
+      },
+      "terminal_disposition": {
+        "result": "docs/plans/filter_gradient_pfor_runner_closure_result_20260929.md",
+        "runs": [
+          4720,
+          4723,
+          4724,
+          4725,
+          4727
+        ],
+        "preserved_failed_runs": [
+          4721,
+          4722,
+          4726
+        ],
+        "root_scope": [
+          "bayesfilter",
+          "experiments/dpf_implementation/tf_tfp",
+          "scripts",
+          "docs/benchmarks"
+        ],
+        "additional_sites": 28,
+        "discovered_tensorflow_pfor_remaining": 0,
+        "custom_log_jacobian_false_positive_verified": true,
+        "whole_master_complete": false
       }
     },
     {
@@ -296,20 +321,20 @@
     "parse_error_role": "Unchanged historical vendor; counts are search leads, not violations."
   },
   "current_checkpoint": {
-    "through_run": 4719,
-    "based_on_commit": "89f7cfd67",
-    "status": "All five remaining library/reference sites are repaired. Fresh Contract E CPU04713/GPU04714 total-derivative checks pass with healthy factors, nonzero direct source/weight terms and1.49e-12 maximum finite-difference error. Scalar transport/default-gate tests pass28 CPU04716 and2 GPU04717 checks; reference scout04718 passes. Final current-source readback/policy04719 passes162 checks;282 scoped guarded sources and1436 existing allowances. Three concrete fixture failures4711/4712/4715 are preserved. A2009-file scan finds no unclassified TensorFlow pfor in the BayesFilter library, one custom log-Jacobian false-positive, and28 runner/benchmark sites across17 files still requiring individual review.",
+    "through_run": 4727,
+    "based_on_commit": "f95bde207",
+    "status": "All28 discovered runner/benchmark sites have enforced non-pfor dispositions.04720 passes23 CPU helper/rejection checks;04724 CPU and04725 GPU pass three enclosing-XLA P91 cases each. Two captured-tape compiler failures04721/04722 are preserved, localized by04723 and repaired with shared loop-local tape ownership.04726 registration failure is preserved;04727 passes163 current-source/readback/policy checks. Guard scope300 files/1436 existing exceptions. Scoped F14 is closed; whole master remains open.",
     "charged_seconds": {
-      "CPU": 109340.3066040229,
-      "GPU": 97102.94693936575
+      "CPU": 109468.81449015117,
+      "GPU": 97122.8496215919
     },
     "remaining_hours": {
-      "CPU": 25.627692609993638,
-      "GPU": 25.026959183509515
+      "CPU": 25.59199597495801,
+      "GPU": 25.021430660668916
     },
     "active_job": null,
     "active_session": null,
-    "next": "Archive/commit this repaired library checkpoint, then execute filter_gradient_pfor_runner_closure_20260929.md. Keep F14 open for28 runner/benchmark sites; renew streaming performance/GPU costs and remaining master consumer/DZ5 gates without repeating unchanged evidence.",
+    "next": "Execute filter_gradient_streaming_paired_cost_20260929.md: five randomized process pairs at T32/T128,N64,30 warm calls,20 measured workers within1200 CPU seconds. Retain uncontended GPU cost and remaining consumer/DZ5/source gates.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -1041,13 +1066,28 @@
         "CPU": 109340.3066040229,
         "GPU": 97102.94693936575
       },
-      "used_workers": 0,
+      "used_workers": 8,
       "used_seconds": {
-        "CPU": 0,
-        "GPU": 0
+        "CPU": 128.50788612826727,
+        "GPU": 19.902682226151228
       },
-      "status": "reviewed_not_started",
-      "global_caps_unchanged": true
+      "status": "qualified_scoped_F14_disposition_complete",
+      "global_caps_unchanged": true,
+      "failed_runs": [
+        4721,
+        4722,
+        4726
+      ],
+      "progress_notes": "All28 discovered runner/benchmark sites have enforced non-pfor dispositions.04720 passes23 CPU helper/rejection checks;04724 CPU and04725 GPU pass three enclosing-XLA P91 cases each. Two captured-tape compiler failures04721/04722 are preserved, localized by04723 and repaired with shared loop-local tape ownership.04726 registration failure is preserved;04727 passes163 current-source/readback/policy checks. Guard scope300 files/1436 existing exceptions. Scoped F14 is closed; whole master remains open.",
+      "next_action": "Execute filter_gradient_streaming_paired_cost_20260929.md: five randomized process pairs at T32/T128,N64,30 warm calls,20 measured workers within1200 CPU seconds. Retain uncontended GPU cost and remaining consumer/DZ5/source gates.",
+      "localized_harness_retries_used": 1
+    },
+    "pfor_runner_closure_result": "docs/plans/filter_gradient_pfor_runner_closure_result_20260929.md",
+    "pfor_runner_closure_archive": {
+      "archive": "docs/plans/artifacts/filter-gradient-repair-20260917/pfor-runner-04727-evidence.tar.gz",
+      "sha256": "355017c3a37b4de52f56f287d2fcba21efbf3b9749041e797f6678322be6367e",
+      "bytes": 2397345,
+      "members_reopened_and_verified": 86
     }
   },
   "historical_quadratic_batch_checkpoint": {

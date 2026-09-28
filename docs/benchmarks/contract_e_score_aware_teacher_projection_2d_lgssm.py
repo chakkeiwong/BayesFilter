@@ -192,10 +192,12 @@ def _student(
 
 
 def _jacobian(function: Any, theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         tape.watch(theta)
         value = function(theta)
-    return value, tape.jacobian(value, theta)
+    jacobian = tape.jacobian(value, theta, experimental_use_pfor=False)
+    del tape
+    return value, jacobian
 
 
 def _central_difference(function: Any, theta: tf.Tensor) -> np.ndarray:

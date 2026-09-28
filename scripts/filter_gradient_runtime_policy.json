@@ -1,6 +1,6 @@
 {
   "schema": "filter_gradient_runtime_policy.v1",
-  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance. September29 remaining-pfor scope: all pfor/implicit-pfor calls in the scalar transport adapter are guarded; Python iteration coverage there is limited to its two touched coordinate/logdet methods. The named independent SIR reference retains its diagnostic NumPy/host-loop role while all pfor calls remain guarded. Contract E streaming is guarded in full.",
+  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance. September29 remaining-pfor scope: all pfor/implicit-pfor calls in the scalar transport adapter are guarded; Python iteration coverage there is limited to its two touched coordinate/logdet methods. The named independent SIR reference retains its diagnostic NumPy/host-loop role while all pfor calls remain guarded. Contract E streaming is guarded in full. September29 runner coverage adds pfor/implicit-pfor inspection over17 runner/benchmark files only; other execution/NumPy/default and consumer-admission gates remain in the master. No new exception is granted.",
   "sources": {
     "bayesfilter/adapters/__init__.py": null,
     "bayesfilter/ops/accurate_svd_tf.py": null,
@@ -522,7 +522,144 @@
       "python_iteration": [],
       "numpy_import": [],
       "numpy_numerics": []
-    }
+    },
+    "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_source_faithful_repair_tf.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "scripts/p91_gpu_xla_jit_check.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "scripts/p91_hmc_smoke.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "scripts/p91_performance_benchmark.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/benchmark_identifiable_ssl_lstm_oracle_geometry_2026_07_08.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/benchmark_minimal_ssl_lstm_zhaocui_hmc_oracle_2026_07_06.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/benchmark_minimal_ssl_lstm_zhaocui_hmc_tuning_phase5_2026_07_06.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/benchmark_p8p_parameterized_sir_gradient.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/contract_e_score_aware_teacher_projection_2d_lgssm.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/diagnose_contract_e_phase8_common_path_identity.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/diagnose_p8p_sir_rk4_sensitivity_vjp.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/run_contract_e_tp_scalar_sv_prefix.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/run_cubature_exact_sv_score_ladder.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/run_exact_sv_fixed_gaussian_genut_paired.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/run_genut_austria_endpoint_root_cause_20260817.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/run_kalman_qr_cpu_xla_formulation_shootout_2026_07_15.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "docs/benchmarks/run_zhao_cui_moment_teacher_actual_sv.py": {
+      "python_iteration": [],
+      "numpy_import": [],
+      "numpy_numerics": [],
+      "python_numerical_callback": [],
+      "non_xla_function": [],
+      "default_jit_disabled": []
+    },
+    "bayesfilter/testing/p91_complete_data_diagnostics_tf.py": null
   },
   "exceptions": [
     {

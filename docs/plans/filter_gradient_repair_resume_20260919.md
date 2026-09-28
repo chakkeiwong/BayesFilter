@@ -1,35 +1,36 @@
 # Filter and gradient repair resume checkpoint
 
 Branch repair/filter-gradient-xla-validation-20260918 in
-/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Pushed base89f7cfd67;
-current remaining-pfor repair follows it. Main remains unmerged.
+/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Pushed basef95bde207;
+current runner-pfor disposition follows it. Main remains unmerged.
 
-Active plan: filter_gradient_remaining_pfor_execution_20260929.md.
-Through 04719; active workers: none.
-Charged/reserved CPU 109340.306604s / GPU 97102.946939s.
-Remaining CPU 25.627693h / GPU 25.026959h.
+Active plan: filter_gradient_pfor_runner_closure_20260929.md.
+Through 04727; active workers: none.
+Charged/reserved CPU 109468.814490s / GPU 97122.849622s.
+Remaining CPU 25.591996h / GPU 25.021431h.
 Global caps56 CPU/52 GPU hours include the extra24 CPU hours. Active allocation
-12 workers/3600 CPU/2400 GPU seconds; used/reserved 9 workers,
-124.740567 CPU/68.071852 GPU seconds. One numerical worker at a time.
+12 workers/2400 CPU/1800 GPU seconds; used/reserved 8 workers,
+128.507886 CPU/19.902682 GPU seconds. One numerical worker at a time.
 CPU is explicit reference; trusted GPU growth/placement must be verified.
 Timing needs unshared non-display hardware; do not stop other campaigns.
 
-All five remaining library/reference sites are repaired. Fresh Contract E CPU04713/GPU04714 total-derivative checks pass with healthy factors, nonzero direct source/weight terms and1.49e-12 maximum finite-difference error. Scalar transport/default-gate tests pass28 CPU04716 and2 GPU04717 checks; reference scout04718 passes. Final current-source readback/policy04719 passes162 checks;282 scoped guarded sources and1436 existing allowances. Three concrete fixture failures4711/4712/4715 are preserved. A2009-file scan finds no unclassified TensorFlow pfor in the BayesFilter library, one custom log-Jacobian false-positive, and28 runner/benchmark sites across17 files still requiring individual review.
+All28 discovered runner/benchmark sites have enforced non-pfor dispositions.04720 passes23 CPU helper/rejection checks;04724 CPU and04725 GPU pass three enclosing-XLA P91 cases each. Two captured-tape compiler failures04721/04722 are preserved, localized by04723 and repaired with shared loop-local tape ownership.04726 registration failure is preserved;04727 passes163 current-source/readback/policy checks. Guard scope300 files/1436 existing exceptions. Scoped F14 is closed; whole master remains open.
 
-Next: Archive/commit this repaired library checkpoint, then execute filter_gradient_pfor_runner_closure_20260929.md. Keep F14 open for28 runner/benchmark sites; renew streaming performance/GPU costs and remaining master consumer/DZ5 gates without repeating unchanged evidence.
+Next: Execute filter_gradient_streaming_paired_cost_20260929.md: five randomized process pairs at T32/T128,N64,30 warm calls,20 measured workers within1200 CPU seconds. Retain uncontended GPU cost and remaining consumer/DZ5/source gates.
 
-Pushed completed units:020d794be streaming buffer repair through04706 (exact
-CPU/GPU records, original RNG schedule,9 qualification/43 regression checks
-per device,8 healthy CPU ladder runs,164 readback/policy checks);89f7cfd67
-optional batch pfor removal through04710 (16 CPU/1 GPU/161 readback checks,
-static failure04682 resolved for that route). Linked results preserve failures,
-source scopes and archives. No inference of whole F14/master completion.
+Completed units:020d794be streaming buffer repair through04706;89f7cfd67
+optional batch pfor removal through04710;f95bde207 five library/reference
+pfor repairs through04719. The last has fresh CPU/GPU Contract E derivative
+checks, scalar-transport gates, reference-scout checks and162 policy/readback
+checks. It archives52 verified members at3,929,140 bytes; SHA256
+724ec4dd2e3d39b6fac0d57d2182196a624f4e6d93139e4a1a62adbaaa1a54a2.
+Reuse unchanged evidence in its stated source scope, preserving all failures.
 
 Open memory/performance gates: fresh XLA owners retain native/compiler RSS
 after Python GC; retained-owner reuse is boundedly qualified. T128/N64 CPU
 streaming was43.9ms versus36.9ms buffered (descriptive; paired follow-up planned).
-Uncontended GPU cost/allocator/capacity remains pending because PID2260909 had
-contexts on both non-display GPUs2/3. GPU0 is remote desktop and GPU1 display.
+Uncontended GPU cost/allocator/capacity remains pending because other campaigns
+hold contexts on non-display GPUs2/3. GPU0 is remote desktop and GPU1 display.
 Recheck availability; no display fallback unless the owner's condition holds.
 
 Other master gates: registered analytical-score consumer migration/costs,

@@ -84,8 +84,17 @@ def test_pfor_discovery_has_no_unclassified_library_site(request):
                     row['source_sha256'] = hashlib.sha256(source.encode()).hexdigest()
                     current.append(row)
     fields = ('path', 'function', 'kind', 'ast_sha256', 'source_sha256')
-    expected = {tuple(row[field] for field in fields) for row in catalog['sites']}
+    dispositions = json.loads((ROOT / 'docs/plans/filter_gradient_pfor_runner_dispositions_20260929.json').read_text())
+    expected = {tuple(row[field] for field in fields) for row in catalog['sites']
+                if row['path'].startswith('bayesfilter/')}
     assert {tuple(row[field] for field in fields) for row in current} == expected
+    assert dispositions['site_count'] == 28 and len(dispositions['rows']) == 17
+    baseline = [site for row in dispositions['rows'] for site in row['baseline_sites']]
+    assert {tuple(row[field] for field in fields) for row in baseline} == {
+        tuple(row[field] for field in fields) for row in catalog['sites']
+        if not row['path'].startswith('bayesfilter/')}
+    for row in dispositions['rows']:
+        assert hashlib.sha256((ROOT / row['path']).read_bytes()).hexdigest() == row['current_source_sha256']
     library = [row for row in current if row['path'].startswith('bayesfilter/')]
     assert len(library) == 1 and library[0]['function'] == 'ValidationTarget.log_density'
     path = ROOT / library[0]['path']
@@ -97,8 +106,9 @@ def test_pfor_discovery_has_no_unclassified_library_site(request):
     calls = [ast.unparse(node.func) for node in ast.walk(custom) if isinstance(node, ast.Call)]
     assert not any(name.endswith(('jacobian', 'batch_jacobian', 'GradientTape', 'vectorized_map')) for name in calls)
     assert 'tf.nn.log_softmax' in calls and 'tf.nn.softplus' in calls
-    assert len(current) - len(library) == 28
+    assert len(current) - len(library) == 0
     _write(request, 'remaining-pfor-discovery-readback.json', {
         'verified_sites': len(current), 'custom_library_log_jacobian': library,
-        'runner_benchmark_sites_pending_individual_disposition': 28,
+        'runner_benchmark_sites_with_explicit_execution_disposition': 28,
+        'runner_benchmark_sites_pending_individual_disposition': 0,
         'whole_F14_or_master_closed': False})

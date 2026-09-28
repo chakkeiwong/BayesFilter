@@ -90,3 +90,50 @@ algorithm or HMC consumer, and no such qualification is sought. The comparison
 uses independent formulas/current authorities, never an unapproved pfor run.
 The bounded scope, controls, exclusions and stop conditions answer this specific
 execution question. Primary-agent review passes; no independent review asserted.
+
+04720 passes23 helper/rejection checks.04721 passes the mapped target but both
+P91 batched Jacobian owners fail at tf2xla conversion: `Cannot find body function
+while_1_body_*_const_0 for While node while_1`. The shared complete-data density
+contains a four-step RK4 TensorFlow loop. Inspection of TensorFlow backprop.py
+1150–1185 shows jacobian(False) re-enters its tape to reshape/gather inside
+parallel_for/control_flow_ops.py's TensorArray loop. This identifies the failing
+generated derivative/loop path; it does not prove a general TensorFlow defect.
+No numerical mismatch or old pfor comparator follows from this compile failure.
+
+Localized repair: replace those two Jacobian wrappers with one repository-owned
+diagnostic helper that evaluates the same batch-native density once, then uses
+tf.while_loop and one-hot output cotangents with GradientTape.gradient to obtain
+each value row's derivative. No scalar density fallback, analytical filtering
+score, source equation or new source-faithfulness claim is introduced. Test the
+same fixed inputs, two step sizes, scalar reference gradients and enclosing
+XLA/HLO criteria. The shared helper is fully guarded; no new allowance. Record
+the failed04721 and retry under the unchanged12-worker/compute caps. If the same
+compiler failure persists, inspect that graph before another implementation.
+
+04722 repeats exactly the missing-body compile failure for both captured-tape
+owners; the scalar-map target still passes. Before another runtime change,
+export the failing traced GraphDef and verify loop-body/condition definitions.
+This diagnostic differentiates an already missing graph function from a later
+compiler rewrite failure. Preserve the complete GraphDef. Then, if definitions
+are intact, test the smallest ownership change: create the batch density and
+its tape inside the score-direction loop body. This repeats the same batched
+forward calculation for each direction but avoids capturing a tape whose
+saved RK4 loop lives outside the score loop. It changes diagnostic execution
+cost, not the finite scalar or its derivative, and cannot support a speedup
+claim. Two-step finite differences, unchanged scalar checks and full enclosing
+XLA remain required; no row-wise scalar-density fallback is introduced.
+
+04723 exports the failing graph: all three While body/condition pairs are
+defined before XLA, with ten function definitions. The missing `_const_0`
+variant therefore appears during compilation; the saved graph itself is not
+missing a referenced body. Proceed with the loop-local tape ownership change
+above. This evidence narrows the compiler stage, not the exact compiler pass.
+
+04724 CPU and04725 trusted GPU pass all three P91 cases after loop-local tape
+ownership.04726 passes162 readback/policy checks and fails one registration
+test because the new GPU group was absent from TEST_DEVICES. The GPU command
+explicitly used --device GPU, and saved tensor placement, HLO and verified
+growth establish actual GPU execution; the omission affected automatic group
+dispatch, not those numerical results. Add the group to TEST_DEVICES and renew
+readback/policy only. This is localized harness repair1/2 with unchanged scope,
+controls, tolerances and budget; preserve04726.
