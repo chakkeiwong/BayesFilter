@@ -1,5 +1,13 @@
 # KSC mixture comparison and terminal review — 2026-09-29
 
+> **Superseded main comparison:** use the [corrected full-seven-component
+> Gaussian-sum Kalman results](sqmc-ksc-full-mixture-corrected-results-20260929.md).
+> The one-Gaussian column below differentiates a different moment-matched
+> observation likelihood. Its headline comparison is withdrawn as a comparison
+> with Kalman filtering of the full KSC mixture. It remains historical heuristic
+> evidence. Original particle evaluations and their mixture-reference errors are
+> preserved and independently confirmed by the correction.
+
 Configuration: FP64 TensorFlow/GPU/XLA diagnostic comparison, TF32 off, N=1,008, Contract E and dual-cap safeguards enabled. Every route/horizon has separate calibration, frozen controls and disjoint validation. The production FP32/TF32 program was not tested. The target has one latent state and two parameters, theta=(gamma_raw,log_beta)=(1.5,0), Q=1, h0~N(0,1), and transition before observation.
 
 **At T=120, the Gaussian Kalman approximation has lower observed score error than each of the four particle methods in six of eight pairs.** Its mean score-vector error is 0.49483, compared with 1.54362–1.60816 for the particle methods. This is a promotion veto for those cases. All 128 final particle evaluations nevertheless passed the declared validity checks, and all four methods remain research candidates under the owner’s retention decision. No overall method winner or default promotion is established.

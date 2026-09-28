@@ -1,26 +1,30 @@
-# KSC checkpoint — bounded plan complete, 2026-09-29
+# KSC checkpoint — full-mixture comparison corrected, 2026-09-29
 
 Checkout: /home/chakwong/BayesFilter-SQMC, branch sqmc-development.
-Kalman/retention commit: 479a4616. The commit containing this checkpoint records
-the completed KSC stage. No push or merge.
-Plan: docs/plans/sqmc-ksc-sv-comparison-20260928.md.
-Result and terminal review: docs/benchmarks/sqmc-ksc-sv-results-20260929.md.
-Detailed tables: docs/plans/artifacts/sqmc-ksc-sv-20260928/final-evidence-01/report.md.
-Budget: docs/plans/artifacts/sqmc-ksc-sv-20260928/budget.json.
+Original particle evidence commit b7ed96ec; the commit containing this checkpoint
+records the correction. No push, HMC, package changes or default promotion.
+Current result: docs/benchmarks/sqmc-ksc-full-mixture-corrected-results-20260929.md.
+Tables: docs/plans/artifacts/sqmc-ksc-full-mixture-20260929/final-evidence-01/report.md.
+Plan/derivation: docs/plans/sqmc-ksc-full-mixture-correction-20260929.md.
+Active ledger: docs/plans/artifacts/sqmc-ksc-full-mixture-20260929/budget.json
+(links immutable original ledger; do not double-count charges).
 
-Completed: 5 CPU tests, 4-route GPU FD/graph/XLA/N1008 checks, 16 tuned scopes,
-128 valid final cells, 256 particle score coordinates, 96 safeguard checks.
-No invalid candidate scopes, reference failures or infrastructure retries.
-Mixture reference replaced the wrong Gaussian oracle; KSC tangent repaired.
-Gaussian has lower score error in 6/8 T120 pairs for each route, but larger
-likelihood error. Only exploratory T10 SQMC-versus-IID intervals exclude zero;
-no overall ranking or default promotion. Retain all four for further research.
+Complete: all seven observation components retained in Gaussian-sum Kalman
+updates with checked quadrature projection. 8 CPU tests, GPU FD/exact/graph-XLA
+checks, all 32 datasets x 4 resolutions pass. Original 128 particle evaluations
+reused unchanged. Max reference score-coordinate discrepancy 9.77e-15; max
+likelihood discrepancy 5.12e-13. Independent error/SD/SE/paired-interval audit
+passed. No invalid reference cases, infrastructure failures or retries.
+Old one-Gaussian main comparison superseded; historical evidence preserved.
+No overall winner; retain all four. Only exploratory T10 SQMC-versus-IID
+intervals exclude zero; no within-SQMC ordering. Single regime/8 pairs and
+restricted controls remain limitations, no fixed-dataset uncertainty estimate.
 
-Conservative aggregate use 6.780795/12 GPU-hours,
-remaining 5.219205h; includes 300s prior-hook reserve.
-No workers running. Renewal deadline 2026-09-30T16:15:40.010888+00:00.
-
-No numerical work remains in this bounded plan. Read the completed result and
-terminal review for any user-directed follow-up. Repository commit checks run
-with GPU devices hidden. Do not rerun completed research. Future studies: fresh T120 numerical tuning,
-N2016/more pairs, fixed-dataset uncertainty and broader regimes; none promoted.
+Correction charge 51.327502s; aggregate
+6.795053/12 GPU-hours; remaining 5.204947h.
+Includes prior work and unchanged 300s old-hook reserve.
+Deadline 2026-09-30T16:15:40.010888+00:00; two infrastructure retries/unit limit.
+No workers remain. Numerical correction is complete. Repository commit checks
+run with GPU devices hidden. Do not rerun completed research.
+Future work requires the user's chosen follow-up: fresh T120 tuning, N2016,
+more pairs, conditional Monte Carlo uncertainty and broader regimes.
