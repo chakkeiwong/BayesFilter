@@ -68,7 +68,9 @@ filter_gradient_fitted_apf_execution_20260929.md. Ordinary reporting/seed-label
 loops are distinct; no runtime relabeling or allowance is granted. Fixed fitting is now enclosed in XLA and qualified through04857 on CPU/GPU
 for FP32/FP64, with actual public endpoint and intermediate failure coverage.
 See filter_gradient_fitted_apf_fixed_result_20260929.md. Its cost/memory screen
-is next; adaptive iAPF and surrounding eager endpoint preparation still require
+is complete through04862: warm medians are lower but sampled RSS grows about
+100MiB, so cost acceptance stays open. See filter_gradient_fitted_apf_cost_result_20260929.md.
+Adaptive iAPF and surrounding eager endpoint preparation still require
 separate work. Preserve live RNG streams as well as frozen-array parity.
 
 | Order | Remaining gap | Next repair or evidence action | Exit gate |

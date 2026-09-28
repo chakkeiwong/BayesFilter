@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04857; active worker runs: none.
-Charged/reserved CPU 111492.067103s / GPU 98006.280826s.
-Remaining CPU 25.029981h / GPU 24.776033h.
+Through 04862; active worker runs: none.
+Charged/reserved CPU 111537.539357s / GPU 98006.280826s.
+Remaining CPU 25.017350h / GPU 24.776033h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_fitted_apf_execution_20260929.md (closed); at most
-20 workers/4800 CPU/4800 GPU seconds.
-Used/reserved 18 workers/117.377553 CPU/192.454148 GPU seconds.
+Active allocation: docs/plans/filter_gradient_fitted_apf_cost_20260929.md (closed); at most
+6 workers/1800 CPU/0 GPU seconds.
+Used/reserved 5 workers/45.472254 CPU/0.000000 GPU seconds.
 One numerical worker at a time.
 
-Fixed fitted-APF native owner qualified through04857: CPU/GPU, FP32/FP64, complete histories/coefficients/cloud/value/score, changed operands/replay, actual public endpoints and intermediate rank-deficiency rejection. Maximum full-record errors8.89e-16 FP64/5.97e-7 FP32; two-step FD errors<=1.32e-10.04857 passes161 readback/policy checks;312 sources/1457 exact metadata/reference exceptions.04842 eager-versus-compiled primitive failure is preserved and the actual compiled baseline passes04843. Costs, adaptive iAPF and broader endpoint preparation remain open.
+Fixed fitted-APF CPU cost screen04858–04862 passes all four measured arms and162 readback/policy checks. Gaussian/nonlinear warm medians8.078/8.103ms become1.298/1.424ms; cold ratios0.977/1.034. Extra sampled RSS99.105/100.504MiB triggers attribution. These are descriptive single-process results, not cost acceptance. Numerical repair is committed at4629f3bd8; adaptive iAPF and broad endpoint preparation remain open.
 
-Next: Run a separate matched fresh-process cost/memory screen for fixed fitted-APF against archived original adapters, then review compilation/residency and replicated evidence needs. Adaptive iAPF remains a distinct repair; no terminal closure or main merge.
+Next: Preserve the fixed-fit cost cohort; add its approximately100MiB enclosing-owner residency to the shared compiler/lifetime attribution work. Inspect and prepare the separate adaptive iAPF controller repair, including exact stopping, changing particle shapes, fit/cast vetoes and work accounting.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

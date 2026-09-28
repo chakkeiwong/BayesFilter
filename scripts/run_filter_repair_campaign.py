@@ -1795,6 +1795,12 @@ TEST_GROUPS.update({f'fitted_apf_fixed_failure_{device}': (
     for device in ('cpu', 'gpu')})
 TEST_GROUPS['fitted_apf_fixed_readback_cpu'] = (
     'tests/test_filter_repair_fitted_apf_fixed_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'fitted_apf_cost_{model}_{arm}_cpu': (
+    f'tests/test_filter_repair_fitted_apf_cost.py::test_fitted_apf_adapter_cost[{model}-{arm}]',)
+    for model in ('gaussian', 'nonlinear_scalar') for arm in ('original', 'enclosing')})
+TEST_GROUPS['fitted_apf_cost_readback_cpu'] = (
+    'tests/test_filter_repair_fitted_apf_cost_readback.py',
+    'tests/test_filter_repair_fitted_apf_fixed_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['fitted_apf_rng_cpu'] = ('tests/test_filter_repair_fitted_apf_rng.py',)
 TEST_GROUPS['fitted_apf_rng_gpu'] = TEST_GROUPS['fitted_apf_rng_cpu']
 TEST_GROUPS['fitted_apf_rng_explicit_cpu'] = ('tests/test_filter_repair_fitted_apf_rng_localization.py',)
