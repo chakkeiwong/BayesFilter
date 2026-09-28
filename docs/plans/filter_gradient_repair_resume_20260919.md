@@ -4,12 +4,19 @@ Branch: repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Qualified numerical source checkpoint:4bf50d914 (pushed). Main remains unmerged; origin/main is
 integrated. Check git HEAD for subsequent documentation/source checkpoints.
 
-Active question: localize the remaining locator compiler-context difference
-and reconcile terminal endpoint evidence. Source renewal and adapter import
-isolation are complete for their tested scopes.
-Through 04661; active: none.
-Global charged/reserved CPU 108153.762961s / GPU 96071.347964s.
-Remaining CPU 25.957288h / GPU 25.313514h.
+Active question: repair the lost LEDH reset-validity boundary before migrating
+the registered value consumer. Locator optimized comparison is closed with a
+targeted constant/fusion lead; source renewal and import isolation are complete
+for their tested scopes.
+LEDH native boundary now qualified CPU/GPU through04668: failed resets return
+NaN public value, false validity and explicit code/index; raw diagnostics remain.
+Three CPU before/after fixtures preserve all reported raw fields exactly.
+Three guard checks and nine broader regressions pass on each backend; final
+readback/policy04668 passes162 checks. The registered wrapper still uses the
+legacy NumPy/host recurrence and is the next migration target.
+Through 04668; active: none.
+Global charged/reserved CPU 108237.060357s / GPU 96144.148720s.
+Remaining CPU 25.934150h / GPU 25.293292h.
 Caps are56CPU/52GPU process-hours; extra24CPU hours are already counted.
 Symmetry unit closed: 7/12 workers,
 481.384047/2400 combined seconds, no failures.
@@ -65,7 +72,7 @@ Checked findings and evidence:
   This supplies a targeted mechanism lead, not causal proof or a runtime fix.
   See filter_gradient_dz5_locator_optimized_hlo_result_20260928.md.
 
-Next: Qualify the compiler-constant lead with a bounded targeted intervention on the four gradient fusions; preserve exact frozen inputs, controls and all strict failures. Eight unchanged loop operands print2.4 in the candidate; original/replay-int32 embed them. No additional dtype search or full trajectory before a smaller qualified remedy. Continue the independent registered LEDH valid/rejected-reset consumer repair and terminal source applicability queue.
+Next: Migrate the registered LEDH value wrapper onto one seeded native numerical owner using the qualified RNG/value authorities. First review actual callback/configuration ownership, seeded draw scheduling, stable signatures and diagnostic history formatting; do not cache mutable callbacks or duplicate numerical kernels. Qualify actual public consumer CPU/GPU behavior, healthy references, explicit rejected outcomes and costs before removing legacy execution. Native rejection boundary04662--04668 is complete; locator fusion lead and other terminal gaps remain.
 New closed diagnostic allocations (detailed plans/results linked in ledger):
 - Accounting families: 4/6 workers, 675.876765/1800 CPU seconds.
 - Progress split: 3/5 workers, 451.586176/1500 CPU seconds.
@@ -74,6 +81,9 @@ New closed diagnostic allocations (detailed plans/results linked in ledger):
 Earlier renewal, import isolation and diagnostic allocations remain closed.
 Optimized compiler unit: 6/6 workers, 1180.751759/4200 CPU seconds.
 Plan: filter_gradient_dz5_locator_optimized_hlo_20260928.md.
+LEDH validity CPU unit: 5/8 workers, 83.297397/2400 CPU seconds; closed_CPU_owner_qualification_passed.
+GPU validity subunit: 2/4 workers, 72.800756/1200 GPU seconds; closed_GPU_owner_qualification_passed.
+Plan: filter_gradient_ledh_validity_boundary_20260928.md.
 No unchanged renewal cohort or full optimizer trajectory is requested.
 Remaining work order and exit gates: filter_gradient_terminal_gap_queue_20260928.md.
 Old consumer snapshots qualify only their own bytes. Strict precision and

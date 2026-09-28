@@ -77,6 +77,12 @@ def make_canonical_value_program(
     PCG64 stage uniforms. Return numeric, fixed-capacity diagnostics plus count.
     A host adapter must trim completed diagnostic history and attach model_id;
     the existing public adapter is not integrated with this program yet.
+    A failed reset makes the public value unusable even if its particles remain
+    finite. ``raw_value`` and ``finite_program_valid`` retain the old diagnostic
+    result; they must never substitute for ``value``/``program_valid``.
+    Numerical failure codes: 0 = usable, 1 = nonfinite lifecycle, 2 = failed or
+    incomplete reset. ``first_rejected_reset_index`` is -1 if none was executed
+    and rejected; it does not certify that every reset executed.
     Explicit ``jit_compile=False`` is a diagnostic reference exception only.
     """
     dtype = observation_spec.dtype
@@ -423,9 +429,21 @@ def make_canonical_value_program(
         _, _, _, total, valid, ess, marginal_tv, marginal_ok, completed, reset_ok, reset_condition = result
         mask = tf.range(horizon) < completed
         all_resets_valid = (completed == horizon) & tf.reduce_all(reset_ok)
+        numerical_valid = valid & all_resets_valid
+        raw_value = tf.where(valid, total, nan)
+        rejected_resets = mask & ~reset_ok
+        first_rejected_reset = tf.where(
+            tf.reduce_any(rejected_resets),
+            tf.argmax(tf.cast(rejected_resets, tf.int32), output_type=tf.int32),
+            tf.constant(-1, tf.int32),
+        )
         return {
-            "value": tf.where(valid, total, nan),
-            "program_valid": valid,
+            "value": tf.where(numerical_valid, raw_value, nan),
+            "program_valid": numerical_valid,
+            "raw_value": raw_value,
+            "finite_program_valid": valid,
+            "numerical_failure_code": tf.where(numerical_valid, 0, tf.where(valid, 2, 1)),
+            "first_rejected_reset_index": first_rejected_reset,
             "per_step_ess": ess,
             "dual_cap_active": tf.constant(dual_cap_enabled),
             "per_step_marginal_tv_error": marginal_tv,
@@ -441,7 +459,7 @@ def make_canonical_value_program(
             "marginal_steps_completed": completed,
             "per_step_reset_valid": reset_ok,
             "all_resets_valid": all_resets_valid,
-            "numerical_valid": valid & all_resets_valid,
+            "numerical_valid": numerical_valid,
             "per_step_reset_scaled_system_condition": reset_condition,
         }
 

@@ -1656,6 +1656,22 @@ TEST_GROUPS['dz5_locator_optimized_readback_cpu'] = (
     *TEST_GROUPS['policy'])
 TEST_GROUPS['dz5_locator_optimized_inspection_cpu'] = (
     'tests/test_filter_repair_locator_fusion_inspection.py',)
+TEST_GROUPS['ledh_validity_characterization_cpu'] = (
+    'tests/test_filter_repair_ledh_validity_boundary.py::test_checked_validity_boundary',)
+TEST_GROUPS['ledh_validity_boundary_cpu'] = (
+    'tests/test_filter_repair_ledh_validity_boundary.py::test_checked_validity_boundary',)
+TEST_GROUPS['ledh_validity_regressions_cpu'] = (
+    'tests/test_filter_repair_ledh_value_native.py::test_full_value_fixed_inputs',
+    'tests/test_filter_repair_ledh_value_native.py::test_systematic_matches_sequential_numpy')
+TEST_GROUPS['ledh_validity_policy_cpu'] = TEST_GROUPS['policy']
+TEST_GROUPS['ledh_validity_readback_cpu'] = (
+    'tests/test_filter_repair_ledh_validity_boundary.py::test_saved_boundary', *TEST_GROUPS['policy'])
+TEST_GROUPS['ledh_validity_final_readback_cpu'] = (
+    'tests/test_filter_repair_ledh_validity_boundary.py::test_saved_boundary',
+    'tests/test_filter_repair_ledh_validity_boundary.py::test_saved_gpu_boundary',
+    *TEST_GROUPS['policy'])
+TEST_GROUPS['ledh_validity_boundary_gpu'] = TEST_GROUPS['ledh_validity_boundary_cpu']
+TEST_GROUPS['ledh_validity_regressions_gpu'] = TEST_GROUPS['ledh_validity_regressions_cpu']
 TEST_GROUPS['dz5_locator_one_iteration_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_one_iteration.py::test_saved_real_optimizer_contexts',
     'tests/test_filter_repair_dz5_locator_context_readback.py', *TEST_GROUPS['policy'])
@@ -2376,6 +2392,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_validity_') and group.endswith('_gpu')},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("factor_precision_symmetry_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_exact_fit_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith(("principal_angle_", "factor_clipped_anchor_")) and group.endswith("_gpu")},

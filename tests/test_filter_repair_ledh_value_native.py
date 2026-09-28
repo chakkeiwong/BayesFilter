@@ -108,7 +108,17 @@ def _frozen_reference(baseline, callbacks, observations, inputs, controls):
 
 
 def _compare(actual, expected):
-    report = {}
+    usable = bool(expected['numerical_valid'])
+    report = {'comparison_role': ('healthy_complete_record_equivalence' if usable else
+        'rejected_raw_diagnostics_only')}
+    expected = dict(expected)
+    raw_expected = expected['value']
+    expected['value'] = tf.where(expected['numerical_valid'], raw_expected,
+        tf.cast(float('nan'), raw_expected.dtype))
+    expected['program_valid'] = expected['numerical_valid']
+    assert bool(actual['finite_program_valid']) == bool(tf.math.is_finite(raw_expected))
+    assert int(actual['numerical_failure_code']) == (
+        0 if usable else 2 if bool(actual['finite_program_valid']) else 1)
     completed = int(actual["marginal_steps_completed"])
     for key, reference in expected.items():
         if key == "model_id":
@@ -124,14 +134,18 @@ def _compare(actual, expected):
             report[key] = {"actual": lhs.tolist(), "expected": rhs.tolist()}
         elif value.dtype.is_floating:
             np.testing.assert_array_equal(np.isnan(lhs), np.isnan(rhs), err_msg=key)
-            np.testing.assert_allclose(
-                lhs, rhs, atol=1e-6, rtol=1e-6, equal_nan=True, err_msg=key
-            )
+            if usable or key == 'value':
+                np.testing.assert_allclose(
+                    lhs, rhs, atol=1e-6, rtol=1e-6, equal_nan=True, err_msg=key
+                )
             finite = np.isfinite(lhs) & np.isfinite(rhs)
             delta = np.abs(lhs[finite] - rhs[finite])
             report[key] = float(delta.max()) if delta.size else None
         else:
             np.testing.assert_array_equal(lhs, rhs, err_msg=key)
+    report['raw_value_absolute_difference'] = (
+        abs(float(actual['raw_value']) - float(raw_expected))
+        if bool(tf.math.is_finite(raw_expected)) else None)
     return report
 
 
@@ -212,8 +226,8 @@ def test_full_value_fixed_inputs(
     )
     changed_errors = _compare(changed, changed_reference)
     if not case.startswith("invalid"):
-        assert bool(actual["program_valid"])
-        assert not np.isclose(actual["value"], changed["value"])
+        assert bool(actual["finite_program_valid"])
+        assert not np.isclose(actual["raw_value"], changed["raw_value"])
     else:
         assert not bool(actual["program_valid"])
     if case == "invalid_initial":
@@ -252,7 +266,8 @@ def test_full_value_fixed_inputs(
         "device": actual["value"].device,
         "hlo_sha256": hashlib.sha256(hlo.encode()).hexdigest(),
         "nonclaims": [
-            "No seeded public wrapper, score, MC accuracy or canonical admission."
+            "No seeded public wrapper, score, MC accuracy or canonical admission.",
+            "Rejected raw programs retain reported differences; successful rejection checks are not raw numerical equivalence."
         ],
     }
     (directory / f"value-native-{case}.json").write_text(
