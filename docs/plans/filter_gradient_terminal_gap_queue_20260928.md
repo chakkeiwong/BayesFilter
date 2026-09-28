@@ -22,7 +22,12 @@ native/compiler residency, possible CPU slowdown, uncontended GPU costs/capacity
 analytical-score public migration remain open. F14's28 runner/benchmark sites
 now have verified dispositions through04727, with300 guarded sources and1436
 existing exceptions. See filter_gradient_pfor_runner_closure_result_20260929.md.
-Next executable unit is filter_gradient_streaming_paired_cost_20260929.md.
+Matched CPU costs are now complete through04749: geometric streaming/buffered
+ratios1.08239 atT32 and1.09678 atT128 with conditional95% upper limits above1.10
+trigger profiling. Exact complete shared records pass; RSS is about11MiB lower.
+See filter_gradient_streaming_paired_cost_result_20260929.md. Next executable
+unit is filter_gradient_streaming_profile_20260929.md, followed by the reviewed
+score-study consumer direction repair.
 The locator's
 specific fusion lead stays open without more unrelated counter experiments.
 
@@ -82,6 +87,20 @@ Through04719,25.627693 CPU/25.026959 GPU hours remain; these current charges
 supersede earlier budget snapshots in this file. No numerical worker is active.
 The primary agent reviewed this refresh. No independent review, scientific
 promotion, canonical LEDH claim or whole-program completion is asserted.
+
+September29 current-source consumer inspection, while the paired CPU cost
+cohort runs: `bayesfilter/score_study/adapters.py::evaluate_gaussian` calls six directional kernels in
+Python comprehensions for LEDH, SGQF, KDM covariance and the two KDM proposal
+arms (lines125–167 in checkpointd8c23fc41), then stacks values/scores on the
+host side. The individual kernels have XLA boundaries, but the complete
+six-direction analytical score does not. This is concrete remaining consumer
+work under order3/5, not a reason to reopen the now-resolved pfor finding. A
+reviewed continuation is filter_gradient_score_study_directions_20260929.md. It should use one shared native parameter-direction loop
+inside a stable enclosing XLA owner, preserve the existing mathematical
+authorities, initial-law derivatives, diagnostics and per-direction value
+agreement/validity checks, and compare fresh actual-consumer outputs/costs.
+The loop is over parameter directions, not training sample rows. No runtime
+edit or consumer-admission claim follows from this read-only inspection.
 
 20260929 review:04682 passes46 CPU regression checks and fails the existing
 static pfor test on the optional batch-fused route. No test/gate is removed.

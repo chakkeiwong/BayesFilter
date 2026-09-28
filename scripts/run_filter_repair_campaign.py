@@ -1748,6 +1748,33 @@ TEST_GROUPS['remaining_pfor_reference_cpu'] = (
     'tests/test_filter_repair_remaining_pfor.py::test_reference_scout_uses_nonpfor_jacobian',)
 TEST_GROUPS['remaining_pfor_readback_cpu'] = (
     'tests/test_filter_repair_remaining_pfor_readback.py', *TEST_GROUPS['policy'])
+STREAMING_PAIRED_ORDER = (
+    (0, 32, 'buffered'),
+    (0, 32, 'streaming'),
+    (0, 128, 'buffered'),
+    (0, 128, 'streaming'),
+    (1, 128, 'buffered'),
+    (1, 128, 'streaming'),
+    (1, 32, 'streaming'),
+    (1, 32, 'buffered'),
+    (2, 32, 'buffered'),
+    (2, 32, 'streaming'),
+    (2, 128, 'streaming'),
+    (2, 128, 'buffered'),
+    (3, 32, 'buffered'),
+    (3, 32, 'streaming'),
+    (3, 128, 'streaming'),
+    (3, 128, 'buffered'),
+    (4, 32, 'streaming'),
+    (4, 32, 'buffered'),
+    (4, 128, 'streaming'),
+    (4, 128, 'buffered'),
+)
+TEST_GROUPS.update({f'streaming_paired_{pair}_{horizon}_{arm}_cpu': (
+    f'tests/test_filter_repair_streaming_paired_cost.py::test_matched_streaming_cost[{pair}-{horizon}-{arm}]',)
+    for pair, horizon, arm in STREAMING_PAIRED_ORDER})
+TEST_GROUPS['streaming_paired_readback_cpu'] = (
+    'tests/test_filter_repair_streaming_paired_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['pfor_runner_helpers_cpu'] = (
     'tests/test_filter_repair_pfor_runners.py', '-k', 'not p91',
     'tests/test_kalman_qr_cpu_xla_formulation_shootout.py')
@@ -2427,6 +2454,8 @@ TEST_BATCHES = {
     "factor_guard_memory": tuple(f"factor_guard_memory_{arm}_{mode}_{dimension}"
         for arm in ("checkpoint", "candidate") for mode in ("graph", "xla") for dimension in (3, 5)),
 }
+TEST_BATCHES['streaming_paired_cpu'] = tuple(
+    f'streaming_paired_{pair}_{horizon}_{arm}_cpu' for pair, horizon, arm in STREAMING_PAIRED_ORDER)
 TEST_BATCHES.update({f"posterior_initializer_remaining_{device}": tuple(
     group for group in TEST_GROUPS if group.startswith("posterior_initializer_")
     and not group.startswith(("posterior_initializer_controller_", "posterior_initializer_3_True_stationary_", "posterior_initializer_cost_", "posterior_initializer_original_", "posterior_initializer_public_"))
@@ -3119,6 +3148,11 @@ def run_matrix(args):
             check_matrix_state(frozen)
             prepare_gpu(args, "test_gpu_index")
         for group in groups:
+            if batch == "streaming_paired_cpu":
+                unit_rows = [row for row in records() if row["key"][1].startswith("streaming_paired_")]
+                spent = sum(row.get("elapsed_seconds", row["timeout_seconds"]) for row in unit_rows)
+                if len(unit_rows) >= 24 or spent + args.test_timeout_seconds > 1200:
+                    raise RuntimeError("Matched streaming unit compute reservation exhausted")
             check_matrix_state(frozen)
             device = devices[group]
             if any(row["key"][:3] == ["test", group, "after"] and row["state"] == "passed"

@@ -321,20 +321,20 @@
     "parse_error_role": "Unchanged historical vendor; counts are search leads, not violations."
   },
   "current_checkpoint": {
-    "through_run": 4727,
-    "based_on_commit": "f95bde207",
-    "status": "All28 discovered runner/benchmark sites have enforced non-pfor dispositions.04720 passes23 CPU helper/rejection checks;04724 CPU and04725 GPU pass three enclosing-XLA P91 cases each. Two captured-tape compiler failures04721/04722 are preserved, localized by04723 and repaired with shared loop-local tape ownership.04726 registration failure is preserved;04727 passes163 current-source/readback/policy checks. Guard scope300 files/1436 existing exceptions. Scoped F14 is closed; whole master remains open.",
+    "through_run": 4749,
+    "based_on_commit": "d8c23fc41",
+    "status": "All20 matched CPU cost workers04729--04748 pass exact shared records, RNG diagnostics, source/environment and enclosing-XLA gates. Readback04749 passes161 checks. Geometric warm ratios are1.08239 atT32 and1.09678 atT128; conditional95% upper bounds1.11687/1.15608 trigger profiling. Median observed RSS is about11MiB lower for streaming; compile-associated RSS still about526MiB. Failed schema pilot04728 is preserved and excluded by documented harness disposition, not timing. No runtime/gate/seed changes.",
     "charged_seconds": {
-      "CPU": 109468.81449015117,
+      "CPU": 109918.48446818376,
       "GPU": 97122.8496215919
     },
     "remaining_hours": {
-      "CPU": 25.59199597495801,
+      "CPU": 25.467087647726736,
       "GPU": 25.021430660668916
     },
     "active_job": null,
     "active_session": null,
-    "next": "Execute filter_gradient_streaming_paired_cost_20260929.md: five randomized process pairs at T32/T128,N64,30 warm calls,20 measured workers within1200 CPU seconds. Retain uncontended GPU cost and remaining consumer/DZ5/source gates.",
+    "next": "Execute filter_gradient_streaming_profile_20260929.md (saved-HLO comparison and bounded RNG component costs) before accepting streaming performance. Then continue filter_gradient_score_study_directions_20260929.md for actual analytical-score consumer loops. Preserve GPU sharing, source-applicability, DZ5 and other terminal gates.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -1088,6 +1088,54 @@
       "sha256": "355017c3a37b4de52f56f287d2fcba21efbf3b9749041e797f6678322be6367e",
       "bytes": 2397345,
       "members_reopened_and_verified": 86
+    },
+    "streaming_paired_cost_plan": "docs/plans/filter_gradient_streaming_paired_cost_20260929.md",
+    "streaming_paired_cost_allocation": {
+      "workers": 24,
+      "CPU_seconds": 1200,
+      "GPU_seconds": 0,
+      "base_charges_through04727": {
+        "CPU": 109468.81449015117,
+        "GPU": 97122.8496215919
+      },
+      "used_workers": 22,
+      "used_seconds": {
+        "CPU": 449.6699780325871,
+        "GPU": 0
+      },
+      "status": "complete_profile_triggered",
+      "global_caps_unchanged": true,
+      "failed_runs": [
+        4728
+      ],
+      "localized_harness_retries_used": 1,
+      "progress_notes": "All20 matched CPU cost workers04729--04748 pass exact shared records, RNG diagnostics, source/environment and enclosing-XLA gates. Readback04749 passes161 checks. Geometric warm ratios are1.08239 atT32 and1.09678 atT128; conditional95% upper bounds1.11687/1.15608 trigger profiling. Median observed RSS is about11MiB lower for streaming; compile-associated RSS still about526MiB. Failed schema pilot04728 is preserved and excluded by documented harness disposition, not timing. No runtime/gate/seed changes.",
+      "next_action": "Execute filter_gradient_streaming_profile_20260929.md (saved-HLO comparison and bounded RNG component costs) before accepting streaming performance. Then continue filter_gradient_score_study_directions_20260929.md for actual analytical-score consumer loops. Preserve GPU sharing, source-applicability, DZ5 and other terminal gates."
+    },
+    "score_study_direction_plan": "docs/plans/filter_gradient_score_study_directions_20260929.md",
+    "streaming_paired_cost_result": "docs/plans/filter_gradient_streaming_paired_cost_result_20260929.md",
+    "streaming_profile_plan": "docs/plans/filter_gradient_streaming_profile_20260929.md",
+    "streaming_profile_allocation": {
+      "workers": 8,
+      "CPU_seconds": 900,
+      "GPU_seconds": 0,
+      "base_charges_through04749": {
+        "CPU": 109918.48446818376,
+        "GPU": 97122.8496215919
+      },
+      "used_workers": 0,
+      "used_seconds": {
+        "CPU": 0,
+        "GPU": 0
+      },
+      "status": "reviewed_not_started",
+      "global_caps_unchanged": true
+    },
+    "streaming_paired_cost_archive": {
+      "archive": "docs/plans/artifacts/filter-gradient-repair-20260917/streaming-paired-04749-evidence.tar.gz",
+      "bytes": 9968524,
+      "sha256": "5ab3ee9719113d9af0450e4949942bd5abd0ca7f9f0be53ba2a46785e7c2aae8",
+      "members_reopened_and_verified": 142
     }
   },
   "historical_quadratic_batch_checkpoint": {

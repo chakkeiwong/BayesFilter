@@ -1,50 +1,49 @@
 # Complete filter and gradient execution repair
 
 Branch repair/filter-gradient-xla-validation-20260918 in
-/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Pushed basef95bde207;
-current runner-pfor disposition follows it. Main remains unmerged.
+/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Pushed based8c23fc41.
+Main remains unmerged. Active plan: filter_gradient_streaming_paired_cost_20260929.md.
 
-Active plan: filter_gradient_pfor_runner_closure_20260929.md.
-Through 04727; active workers: none.
-Charged/reserved CPU 109468.814490s / GPU 97122.849622s.
-Remaining CPU 25.591996h / GPU 25.021431h.
+Through 04749; active workers: none.
+Charged/reserved CPU 109918.484468s / GPU 97122.849622s.
+Remaining CPU 25.467088h / GPU 25.021431h.
 Global caps56 CPU/52 GPU hours include the extra24 CPU hours. Active allocation
-12 workers/2400 CPU/1800 GPU seconds; used/reserved 8 workers,
-128.507886 CPU/19.902682 GPU seconds. One numerical worker at a time.
-CPU is explicit reference; trusted GPU growth/placement must be verified.
-Timing needs unshared non-display hardware; do not stop other campaigns.
+24 workers/1200 CPU/0 GPU seconds; used/reserved 22 workers,
+449.669978 CPU/0.000000 GPU seconds. One numerical worker at a time.
 
-All28 discovered runner/benchmark sites have enforced non-pfor dispositions.04720 passes23 CPU helper/rejection checks;04724 CPU and04725 GPU pass three enclosing-XLA P91 cases each. Two captured-tape compiler failures04721/04722 are preserved, localized by04723 and repaired with shared loop-local tape ownership.04726 registration failure is preserved;04727 passes163 current-source/readback/policy checks. Guard scope300 files/1436 existing exceptions. Scoped F14 is closed; whole master remains open.
+All20 matched CPU cost workers04729--04748 pass exact shared records, RNG diagnostics, source/environment and enclosing-XLA gates. Readback04749 passes161 checks. Geometric warm ratios are1.08239 atT32 and1.09678 atT128; conditional95% upper bounds1.11687/1.15608 trigger profiling. Median observed RSS is about11MiB lower for streaming; compile-associated RSS still about526MiB. Failed schema pilot04728 is preserved and excluded by documented harness disposition, not timing. No runtime/gate/seed changes.
 
-Next: Execute filter_gradient_streaming_paired_cost_20260929.md: five randomized process pairs at T32/T128,N64,30 warm calls,20 measured workers within1200 CPU seconds. Retain uncontended GPU cost and remaining consumer/DZ5/source gates.
+Next: Execute filter_gradient_streaming_profile_20260929.md (saved-HLO comparison and bounded RNG component costs) before accepting streaming performance. Then continue filter_gradient_score_study_directions_20260929.md for actual analytical-score consumer loops. Preserve GPU sharing, source-applicability, DZ5 and other terminal gates.
 
-Completed units:020d794be streaming buffer repair through04706;89f7cfd67
-optional batch pfor removal through04710;f95bde207 five library/reference
-pfor repairs through04719. The last has fresh CPU/GPU Contract E derivative
-checks, scalar-transport gates, reference-scout checks and162 policy/readback
-checks. It archives52 verified members at3,929,140 bytes; SHA256
-724ec4dd2e3d39b6fac0d57d2182196a624f4e6d93139e4a1a62adbaaa1a54a2.
-Reuse unchanged evidence in its stated source scope, preserving all failures.
+F14's identified implicit-pfor sites are closed through04727. The optional batch
+route and five library/reference sites were repaired; all28 runner/benchmark
+sites now have enforced dispositions. P91 captured-tape XLA failures04721/04722
+were localized by04723 and repaired with shared loop-local tape ownership;
+CPU04724/GPU04725 pass. Final04727 passes163 policy/readback checks over300
+guarded files/1436 existing exceptions. Archive pfor-runner-04727 has86 verified
+members,2,397,345 bytes, SHA256355017c3a37b4de52f56f287d2fcba21efbf3b9749041e797f6678322be6367e.
+No historical LEDH route or HMC/training run executed, no whole-master claim.
 
-Open memory/performance gates: fresh XLA owners retain native/compiler RSS
-after Python GC; retained-owner reuse is boundedly qualified. T128/N64 CPU
-streaming was43.9ms versus36.9ms buffered (descriptive; paired follow-up planned).
-Uncontended GPU cost/allocator/capacity remains pending because other campaigns
-hold contexts on non-display GPUs2/3. GPU0 is remote desktop and GPU1 display.
-Recheck availability; no display fallback unless the owner's condition holds.
+Memory/performance remains open: fresh XLA owners retain native/compiler RSS
+after Python GC; retained-owner reuse is boundedly qualified. Prior T128/N64
+CPU streaming was43.9ms versus36.9ms buffered, which this paired study tests.
+Uncontended GPU cost/allocator/capacity awaits unshared non-display hardware.
+Other campaigns hold GPU2/3 contexts. GPU0 is remote desktop and GPU1 display;
+no display fallback unless the owner's availability condition holds. CPU-only
+runs are explicit references. GPU runs require trusted access and verified growth.
 
-Other master gates: registered analytical-score consumer migration/costs,
-current-source measurement applicability, DZ5 locator121 strict trajectory
-differences and unconverged optimizers,4539 strict fitted-geometry CPU/GPU
-record differences/isotropic angles, all F01--F20 terminal dispositions. Do not
-repeat unrelated dtype/trajectory experiments; inspect the existing locator
-optimized-HLO invariant-copy mechanism lead. See terminal_gap_queue_20260928.
+Other gaps: registered analytical-score consumer migration/costs, current-source
+measurement applicability, DZ5 locator121 strict trajectory differences and
+unconverged optimizers,4539 strict fitted-geometry CPU/GPU record differences,
+isotropic angles and remaining F01--F20 terminal dispositions. Reuse unchanged
+actual-DZ504618--04628/import04629--04630/index04631 evidence. Do not repeat
+unrelated dtype or full-trajectory trials; the locator invariant-copy compiler
+mechanism lead remains the next bounded causal intervention. See terminal queue.
 
-Preserve explicit invalidity reporting, analytical shared numerical authorities,
-LEDH seed streams, author-profile NeuTra IAF, all scientific gates and old
-source-bound readback scopes. No subagents, training, HMC, live MacroFinance
-edits, package/environment or system/cache changes, tolerance relaxation,
-canonical LEDH rebuild or unsupported claims. No main merge before all gates.
+Preserve analytical shared authorities, explicit invalidity reporting, original
+LEDH seed streams, author-profile NeuTra IAF and scientific gates. No subagents,
+training/HMC, live MacroFinance edits, package/system/cache changes, tolerance
+relaxation, canonical LEDH rebuild, unsupported promotion or main merge.
 
 Older checkpoints below preserve historical scope and instructions only.
 

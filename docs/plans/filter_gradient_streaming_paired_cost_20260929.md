@@ -20,7 +20,10 @@ For each horizon, pair and arm, use a separate process. The old queue suggested
 ten workers, but two horizons times five pairs times two arms requires twenty;
 this review corrects that counting error without increasing the global budget.
 Freeze a standard-library randomized order (seed81130), with adjacent arms for
-each pair and randomized horizon order per pair. Register the exact order in
+each pair and randomized horizon order per pair. Counterbalance each horizon
+so either arm runs first in two or three of the five pairs; unconstrained
+shuffling happened to put buffered first in eight of ten pairs and was rejected
+before any measurement as avoidable order imbalance. Register the exact order in
 the runner and save it in the result. Same TF environment and two intra-op/one
 inter-op threads per process; record affinity and load averages. Do not alter
 system affinity, other jobs, clocks or caches to obtain a preferred result.
@@ -77,3 +80,15 @@ justify accepting the earlier regression; the next action is declared before
 measurements. Existing code and fixtures suffice, so new scope-wide numerical
 matrices are unnecessary. Primary-agent review passes; no independent review
 asserted.
+
+04728 stopped the cohort on a harness schema error after all shared numerical
+fields matched exactly (including condition diagnostics). The candidate adds
+process_draws_consumed, final_philox_state and resampling_draws_consumed, so
+whole dictionary equality cannot compare it with the buffered schema. Compare
+every buffered field exactly against its candidate counterpart, explicitly
+require exactly those three extra keys, and retain their values separately.
+Cross-process readback also compares the RNG diagnostics. This repairs schema
+handling; no numerical field or tolerance is removed. Preserve04728 as a failed
+pilot and exclude its timing for this predeclared harness reason, not its speed.
+Restart the whole frozen20-worker cohort before any matched pair completes.
+Localized harness retry1/2, within the unchanged24-worker/1200-second caps.
