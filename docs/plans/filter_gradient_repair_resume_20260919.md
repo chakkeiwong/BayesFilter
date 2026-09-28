@@ -4,11 +4,11 @@ Branch: repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Qualified numerical source checkpoint:4bf50d914 (pushed). Main remains unmerged; origin/main is
 integrated. Check git HEAD for subsequent documentation/source checkpoints.
 
-Active question: renew source and actual-consumer lifetime evidence after the
-SVD, clipped-anchor and final-precision symmetry repairs.
-Through 04625; active: [{'run': 4626, 'group': 'dz5_initializer_lifetime_gpu'}].
-Global charged/reserved CPU 103548.073647s / GPU 95483.739409s.
-Remaining CPU 27.236646h / GPU 25.476739h.
+Active question: finish actual-consumer source renewal, repair reference-import
+isolation, localize the first locator discrepancy, and reconcile endpoint evidence.
+Through 04631; active: none.
+Global charged/reserved CPU 103609.790750s / GPU 96071.347964s.
+Remaining CPU 27.219503h / GPU 25.313514h.
 Caps are56CPU/52GPU process-hours; extra24CPU hours are already counted.
 Symmetry unit closed: 7/12 workers,
 481.384047/2400 combined seconds, no failures.
@@ -41,17 +41,22 @@ Checked findings and evidence:
   optimizers remain unconverged. No further full trajectory without a smaller
   graph-context diagnostic; no tolerance changes.
 
-Next: Fresh r2 target/oracle04618--04624 and admission pass. CPU lifetime04625 passes both accepted workers; parent RSS+0.410MiB then flat, both reaped. GPU lifetime04626 is active, session38448, 1800s parent/850s child; do not start another numerical worker. Next rejected GPU case and renewal readback/policy. The smaller locator-context diagnostic is prepared but not yet allocated/executed.
+Next: Execute original/candidate first-objective locator-context diagnostic and readback within its separate1800-second CPU allocation.
 Target cohort04618--04624 and fresh r2 admission pass;
 archive dz5-source-renewal-target-04624-evidence.tar.gz has816 verified members.
-Active renewal unit: 9/14 workers,
-4345.412393/15000 combined seconds.
+Renewal unit (closed_renewed_evidence_passed): 11/14 workers,
+4955.284692/15000 combined seconds.
 Plan: filter_gradient_dz5_source_renewal_20260928.md.
-Old consumer snapshots qualify only their own bytes. Source-renewed target,
-accepted/rejected consumer, actual supervisor lifetime, strict precision and
-isotropic reporting, matched cost attribution and F01--F20 terminal audit remain
-open. See the master and linked result notes for historical evidence; do not
-reuse old admission or classify numerical mismatches as equivalence.
+Adapter repair: qualified_real_import_prior_and_policy_checks;
+2/4 workers, 33.546684/1200 CPU seconds.
+Locator first-objective diagnostic: allocated_after_adapter_qualification;
+0/6 workers, 0.000000/1800 CPU seconds.
+Endpoint evidence index: readback_and_integrity_tests_passed;
+5.906675/600 CPU seconds.
+Old consumer snapshots qualify only their own bytes. Strict precision and
+isotropic reporting, locator rounding, matched current-source cost attribution,
+registered LEDH consumer migration and F01--F20 terminal dispositions remain
+open. Do not reuse old admission or classify numerical mismatches as equivalence.
 
 Preserve live MacroFinance files and other campaigns. No subagents, training,
 HMC, package/environment mutation, global cache changes, system-limit changes

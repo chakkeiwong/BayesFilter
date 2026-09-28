@@ -124,6 +124,15 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    "terminal_endpoint_evidence_index_cpu": (
+        "tests/test_filter_repair_endpoint_evidence_index.py",),
+    "terminal_adapter_imports_cpu": (
+        "tests/test_filter_repair_adapter_imports.py",
+        "tests/test_bgs_posterior_adapter.py::test_transform_roundtrip_and_frozen_prior_values",
+        "tests/test_bgs_posterior_adapter.py::test_analytical_constrained_prior_score_matches_tape",
+        "tests/test_bgs_posterior_adapter.py::test_frozen_dynare_prior_contributions_match_all_46_rows",
+        "tests/test_bgs_posterior_adapter.py::test_bgs_adapter_is_available_from_public_namespaces",
+        "tests/test_bgs_posterior_adapter.py::test_adapter_source_has_no_numpy_scipy_callbacks_or_sampler"),
     **{f"dz5_locator_first_context_{arm}_cpu": (
         f"tests/test_filter_repair_dz5_locator_context.py::test_first_objective_context[{arm}]",)
         for arm in ("original", "candidate")},
@@ -1595,6 +1604,7 @@ TEST_GROUPS['dz5_initializer_renewal_readback_cpu'] = (
     *TEST_GROUPS['dz5_initializer_evidence_cpu'], *TEST_GROUPS['policy'])
 TEST_GROUPS['dz5_locator_first_context_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_context_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['terminal_adapter_policy_cpu'] = TEST_GROUPS['policy']
 TEST_GROUPS.update({f"remaining_svd_{part}_{device}": TEST_GROUPS[original]
     for part, original in (("block", "block_score_geometry"),
         ("public_first", "geometry_public_first_cpu"),

@@ -75,3 +75,78 @@ later endpoint result already answers it with current dependencies and valid
 hardware/input/timing provenance. Do not translate stale historical harness
 bytes into a blanket equivalence exception. The raw report and differing-file
 detail are in `terminal-cost-readback-20260928-r1`.
+
+The first static closure omitted Python's implicit parent-package execution.
+Following those edges expands the current guarded-root closure to354 modules
+and11 NumPy-containing candidates. Seven additional reference modules are
+reached through the eager `bayesfilter.adapters` initializer, including the
+NumPy Kalman, particle, sigma-point and derivative references. Importing the
+guarded TensorFlow BGS submodule executes that initializer first. This is a
+confirmed source-level reference-isolation defect, not permission to use those
+reference implementations as runtime code.
+
+A minimal lazy-export repair is prepared in `bayesfilter/adapters/__init__.py`.
+It preserves every public export, its original order, and the three renamed BGS
+bindings. Static old/new export comparison, an implicit-parent/lazy-alias audit
+fixture, and the exact source guard pass. The guard adds this package initializer
+without adding any policy exception. The audit now emits implicit package edges
+and resolves lazy alias attributes. A patched-source closure has345 modules and
+the same four explicit diagnostic/reference candidates discussed above. Real
+fresh-process BGS import interception and frozen prior value/score checks remain
+queued after renewal; the repair is not qualified by static checks alone.
+The exact before/after import chains are saved in
+`terminal-adapter-import-review-20260928-r1/parent-closure.json`.
+
+The new standard-library endpoint index now reads both row-local digest pairs
+and named artifact tables. It also reopens the committed single-locator GPU
+renewal archive, verifies its full archive and report hashes, and indexes the
+saved analysis without launching a new worker. This recovers the qualified
+04363--04368 cohort omitted by the old generic reader. The first index is
+preserved as partial format discovery; r2 records its reader source and hash.
+Both attempts are charged (0.966086 and1.066799 CPU seconds), well within the
+separate600-second readback/integrity-test allocation.
+
+The r2 index covers22 reports across ten endpoint families. No recorded file
+hash mismatch was found. GenUT's report does not record row-local artifact
+hashes, and the remaining-SVD receipt has no direct run references; those are
+explicit index limitations requiring their existing analyzers/receipts, not
+newly passing evidence. Most old run source dictionaries cover thousands of
+files rather than actual dependency closures. The index therefore records
+each current source delta without treating an unrelated change as a measured
+regression or allowing it to waive an affected dependency.
+
+For the current posterior-initializer cost report, eight recorded source
+paths have changed: two numerical geometry dependencies, the adapter package
+initializer and five harness/policy/test files. The two numerical changes
+need contextual cost renewal review even though fresh actual-target and
+lifetime checks pass. For the single-locator cost reports, the locator
+implementation itself remains unchanged; the broad source differences alone
+do not justify repeating its complete matrix. This is an evidence-index
+result, not a terminal cost acceptance or whole-program completion claim.
+
+Fresh-process adapter qualification04629 passes12 checks in23.962 seconds.
+The package, direct BGS, public BGS and alias cases install an import blocker
+for the repository NumPy-reference modules; all succeed without loading those
+modules. Explicit MacroFinance reference access remains functional. The exact
+43-export map/order, unknown-name behavior, three BGS aliases and existing
+frozen prior/analytical-score assertions pass. This is actual import and prior
+execution evidence. Full policy04630 passes160 checks in9.584 seconds. The
+adapter unit closes after2 of4 workers and33.547 CPU seconds, with277 guarded
+sources and no added policy exception. Other reference/runtime boundaries and
+all broader F18 obligations remain separately open.
+
+Evidence-index integrity tests04631 pass all6 cases in3.874 seconds: changed
+runtime sources remain visible without automatic acceptance, corrupt result
+and manifest digests fail, absent evidence stays explicit, named artifact
+tables are verified, and archived reports require archive/member identity.
+The r2 readback verifies348 reference entries representing282 distinct runs;
+14 GenUT run/reference identities still lack row-local digest evidence in
+that report. This closes only the bounded index implementation unit (5.907
+CPU seconds including both readbacks), not the contextual cost review.
+
+Terminal review of this repair: the independent frozen export map and real
+import blocker address accidental API drift and reference imports. The
+strongest remaining limitation is dynamic/external dispatch outside the tested
+BGS routes. A newly reached reference module or changed prior result would
+invalidate this scoped conclusion. The index's successful digest checks prove
+preservation of evidence, not mathematical validity or current-source coverage.

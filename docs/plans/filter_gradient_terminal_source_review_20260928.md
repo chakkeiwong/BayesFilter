@@ -53,3 +53,49 @@ or re-run the entire campaign. Add its elapsed time once to the same global CPU
 balance. Before interpreting cost, retain source, input, hardware, graph and
 timing-scope comparability checks. Any malformed result is a harness failure;
 an honest incomplete report is a valid diagnostic and does not close the master.
+
+The import review finds a concrete F18 boundary gap: Python first executes
+`bayesfilter.adapters.__init__` when importing its guarded TensorFlow BGS
+submodule. That initializer eagerly imports the independent NumPy MacroFinance
+reference and reference Kalman/type/result modules. The first static closure
+walk omitted implicit package-parent execution, so its330-module result was
+incomplete for this question. Preserve that limitation explicitly.
+
+Repair only package export dispatch: mirror the repository's existing lazy
+`import_module`/`__getattr__` convention, preserve every `__all__` name and the
+three BGS aliases, and keep explicit reference access working. No numerical
+module, signature, algorithm, precision or default JIT option changes. Check
+the complete old/new export map from AST without importing TensorFlow, then
+qualify real direct BGS and public BGS imports in fresh CPU-reference processes.
+Block NumPy-reference modules in those import tests, but do not block NumPy
+inside TensorFlow's own third-party implementation. Explicit diagnostic access
+must still resolve to the original module. Do not infer broad compliance from
+this one repaired package; extend static discovery to implicit parents before
+terminal classification. Native numerical workers remain serialized; these
+real import/smoke checks run after the active source-renewal unit closes.
+
+Up to four300-second CPU workers/1200 CPU process-seconds may be allocated as a
+separate terminal-import unit after renewal; at most one local harness repair.
+Its focused tests include package/export behavior and unchanged BGS public
+prior value/score and explicit signature checks using the existing test suite.
+The current CDF snapshot does not load this adapters package, as confirmed in
+04625's loaded-module and declared-source closure. Its frozen evidence remains
+specific to r2. Review: source map identity plus real import interception
+answers both API compatibility and reference isolation; a stub-only test would
+not establish actual dependency isolation. No package or environment mutation,
+scientific claim, policy allowance expansion or main merge follows.
+
+Terminal cost reconciliation is a separate standard-library readback unit.
+Index the existing endpoint-specific comparison reports, their referenced run
+manifests and payload hashes, analyzer identity where recorded, and current
+source differences. Preserve unavailable or unverifiable fields as explicit
+gaps. A byte match of recorded dependencies is necessary provenance, not a
+new numerical or performance gate pass; an unrelated source change alone
+does not establish an endpoint regression. Report each changed path so a
+later contextual review can determine which current endpoint needs renewal.
+Do not convert the legacy comparator's1116 missing pairs into a launch matrix.
+Reserve at most600 CPU process-seconds including one120-second readback and
+focused integrity tests, within the existing global cap. No numerical kernel,
+TensorFlow import or GPU is needed by the index itself; its read-only scan
+may run while the one numerical worker executes. Tests must catch tampered
+manifests/results and missing evidence, with no new admission authority.

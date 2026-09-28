@@ -69,11 +69,13 @@ def inspect(path):
     for node in tree.body:
         if isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            if any(isinstance(target, ast.Name) and target.id == "_EXPORT_MODULES" for target in targets):
+            export_table = next((target.id for target in targets if isinstance(target, ast.Name)
+                and target.id in ("_EXPORT_MODULES", "_EXPORT_ATTRIBUTES")), None)
+            if export_table:
                 try:
                     value = ast.literal_eval(node.value)
                     if isinstance(value, dict) and all(isinstance(item, str) for item in value.values()):
-                        row["lazy_exports"] = value
+                        row["lazy_exports" if export_table == "_EXPORT_MODULES" else "lazy_export_attributes"] = value
                 except (ValueError, TypeError):
                     pass
     stack = []
@@ -145,13 +147,23 @@ def audit():
     definitions = {row["module"] + "." + fn["name"] for row in modules.values() for fn in row["functions"]}
     exports = {}
     for row in modules.values():
+        attributes = row.get("lazy_export_attributes", {})
         for name, target in row["lazy_exports"].items():
-            exports[row["module"] + "." + name] = target + "." + name
+            exports[row["module"] + "." + name] = target + "." + attributes.get(name, name)
         if row["path"].endswith("/__init__.py"):
             for item in row["imports"]:
                 if item["name"] and item["name"] != "*":
                     exports[row["module"] + "." + item["name"]] = item["module"] + "." + item["name"]
     edges = []
+    parent_edges = []
+    for name, row in modules.items():
+        parts = name.split(".")
+        for end in range(1, len(parts)):
+            parent = ".".join(parts[:end])
+            if parent in modules and modules[parent]["path"].endswith("/__init__.py"):
+                parent_edges.append({"module": name, "parent": parent,
+                    "path": row["path"], "parent_path": modules[parent]["path"],
+                    "kind": "implicit_package_initialization"})
     for row in modules.values():
         row["numpy_imports"] = [item for item in row["imports"] if item["module"] == "numpy" or item["module"].startswith("numpy.")]
         for call in row.pop("calls"):
@@ -176,7 +188,8 @@ def audit():
     summary = {"tracked_python_files": len(tracked), "parsed_files": len(modules), "parse_errors": len(rows) - len(modules), "ownership_counts": dict(collections.Counter(row["ownership"] for row in rows)), "owned_source_modules": len(owned), "owned_name_matched_modules": sum(row["algorithm_name_match"] for row in owned), "owned_loop_syntax_sites": sum(len(row["loops"]) for row in owned), "owned_numpy_import_sites": sum(len(row["numpy_imports"]) for row in owned), "resolved_static_call_edges": len(edges)}
     summary["working_tree_python_files"] = len(discovered)
     summary["untracked_python_files"] = len(set(discovered) - set(tracked))
-    return {"schema": "bayesfilter.filter_gradient_policy_audit.v2", "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "summary": summary, "modules": rows, "resolved_static_call_edges": edges, "limits": ["Syntax counts are not violation counts or compliance certificates.", "Import/name resolution is static and best-effort; rebinding, method dispatch, closure factories and callbacks need runtime checks.", "Ownership records provenance, not an automatic policy exemption.", "Tracked and nonignored untracked Python files are discovered; ignored files and non-Python implementations are not claimed covered.", "A decorator does not prove execution or enclosing compilation; memory workers inspect reachable GraphDefs and export HLO."]}
+    summary["implicit_package_import_edges"] = len(parent_edges)
+    return {"schema": "bayesfilter.filter_gradient_policy_audit.v2", "git_head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "summary": summary, "modules": rows, "resolved_static_call_edges": edges, "implicit_package_import_edges": parent_edges, "limits": ["Syntax counts are not violation counts or compliance certificates.", "Import/name resolution is static and best-effort; rebinding, method dispatch, closure factories and callbacks need runtime checks.", "Ownership records provenance, not an automatic policy exemption.", "Tracked and nonignored untracked Python files are discovered; ignored files and non-Python implementations are not claimed covered.", "A decorator does not prove execution or enclosing compilation; memory workers inspect reachable GraphDefs and export HLO."]}
 
 
 def main():

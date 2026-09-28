@@ -48,8 +48,29 @@ charge is1911.069 seconds. These observations pass the declared256MiB parent
 growth gate and confirm process-exit containment for this two-worker case;
 they do not prove in-process native eviction or arbitrary signature capacity.
 
-GPU lifetime04626 is active with the existing1800s parent/850s child limits.
-GPU rejection and final saved-evidence/policy readback follow.
+GPU lifetime04626 passes in1635.950 seconds with the unchanged1800s parent/
+850s child limits. Both accepted children are reaped normally in818.209 and
+813.654 seconds. Their complete initializer records match exactly, with789
+exact evaluations each. Initializer times are708.222 and703.213 seconds.
+Each has one trace, no host callbacks and zero observed Python owners after
+release. The parent RSS sequence is738201600,738643968,738787328 bytes:
+585728 bytes (0.559MiB) total growth, with2498 mappings throughout.
+
+Both GPU children have TensorFlow allocator peak269443328 bytes (256.961MiB),
+414976 bytes current after the call and7424 bytes after Python owner release.
+Host RSS after release remains about20.49GiB. The high host/compiler residency
+and the much smaller live device allocation are distinct observations; neither
+is described as whole-device GPU preallocation. Process exit contains the
+observed child residency while parent growth passes the declared256MiB gate.
+This does not prove native in-process eviction or general memory bounds.
+GPU rejection04627 passes in751.659 seconds. The unchanged rejected fixture
+returns `dense_center_score_above_cap`, `passed=False`,252 exact evaluations,
+one compiled trace and no host callbacks. Initializer time is662.555 seconds.
+Thus the test passes by preserving the intended rejection, not by accepting
+the candidate. Saved-evidence/policy readback04628 passes181 checks in22.264
+seconds, including fresh admission, both complete lifetimes, child HLO and
+artifact hashes, reaping, observed Python owner release and parent RSS. The
+renewal unit closes after11 of14 workers, with no failed run in this unit.
 
 Inspection of the preserved04617 comparison further identifies the4539 strict
 CPU/GPU fitted-record differences:62 selection/stability leaves and1663,1150,
@@ -61,5 +82,12 @@ complete-record criterion or establish optimizer convergence.
 
 | Decision | Criterion status | Veto/uncertainty | Next action | Not concluded |
 |---|---|---|---|---|
-| Accept fresh target-only evidence | All seven CPU/GPU target/oracle checks and saved-evidence builder pass | Actual initializer/lifetime validation remains open | Complete CPU/GPU consumer lifetimes and rejected case | Complete initializer equivalence or HMC admission |
-| Keep main unmerged | Final precision repair is qualified separately | Strict full records and terminal master checks remain open | Execute the actual consumer and lifetime checks | Whole-program completion |
+| Close source-renewal execution unit | Seven target/oracle checks, both two-worker accepted lifetimes, intended GPU rejection and181 readback/policy checks pass | Frozen r2 only; CPU/GPU full records are not equivalent | Preserve verified archives and qualify the separate adapter import repair | Complete initializer equivalence or HMC admission |
+| Keep main unmerged | Final precision repair is qualified separately | Strict full records and terminal master checks remain open | Continue first-objective localization and endpoint evidence review | Whole-program completion |
+
+Post-run skeptical review: exact repeat records within each backend support
+repeatability, not CPU/GPU equivalence. Process-exit containment is the observed
+memory mechanism; Python-owner collection does not establish native eviction.
+The weakest generalization is from two fixed-signature children to arbitrary
+target/signature capacity. A growing parent trajectory or unreaped child would
+overturn this scoped containment conclusion. No independent reviewer was used.
