@@ -127,3 +127,68 @@ built-in floating transformations differ. Existing FP64 compatibility primitives
 in `bayesfilter/ops/stateless_random_tf.py` are the implementation authority to
 reuse. FP32 remains a distinct compatibility obligation. The next phase must
 qualify full inputs and the actual fitted endpoint, not repeat this diagnosis.
+
+
+The fixed-controller phase is now executable. The baseline is commit4f0dfeb3d;
+original adapter/kernel bytes and the fixture are frozen in
+`tests/fixtures/filter_repair_fitted_apf_20260929/` with SHA-256 provenance.
+N16,T2,d=o=1, two iterations, initial variance1 and floor ratio0.01 are inherited
+mechanics hypotheses from the existing independent fit test, not tuned defaults.
+Seed9296027 uses the real seed-label authority. Parameters/observations follow
+that independent fixture; nonlinear curves0.08/0.04 exercise the actual nonlinear
+consumer without selecting on fit quality. Invalid precision/rank remains an
+error, never a trigger to increase a ridge or retune this fixture.
+
+Implement a cached, stable enclosing owner over dynamic theta, fit_theta,
+observations and an int32 seed table. Generate streams inside the native
+iteration, call the shared filter/fitter, retain fixed-size histories, stop at
+the first invalid fit and return status before host formatting/error reporting.
+Run the final analytical kernel only if fitting succeeds. Preserve mathematical
+kernel-call accounting (2*iterations+1) in the existing public schema; record
+one enclosing execution separately. Seed-label and completed-report loops are
+host metadata, not numerical exceptions. Reuse FP64 conversion; add FP32
+conversion to the same stateless RNG authority using TensorFlow's uint32-to-
+float/Box–Muller definition if needed. No duplicated filter/fitter authority.
+
+Qualification gates: uniforms exactly equal; normals abs<=1e-12 FP64 and
+<=2e-6 FP32. Full healthy coefficients/history/value/score/cloud records use
+abs/relative2e-10 FP64 and5e-5 FP32, plus identical statuses and seed records.
+Exact replay is required. Two-step centered finite differences at fixed fitted
+coefficients use h=1e-5 and5e-6, abs<=2e-7 andrelative<=3e-5 in FP64; this is a
+finite-program check, not a physical-model score claim. Independent quadratic
+coefficients/proposal-normalization tests and rank/negative-precision failures
+remain required. Intermediate failure must stop later fitting/final execution.
+Changed theta/fit_theta/observations/seeds must reuse one trace; inspect enclosing
+HLO and reject host callbacks. Both ordinary public consumers require live RNG
+wiring checks; a frozen-array result alone cannot close that gate. FP32 behavior
+is recorded separately and cannot be inferred from FP64 success.
+
+Allocate at most20 sequential workers/4800 CPU seconds/4800 GPU seconds within
+the existing global budget. Use runner groups `fitted_apf_fixed_*`,300-second
+qualification timeouts (900 only for a recorded compilation localization),
+versioned campaign run directories, TensorFlow2.19.1 and the existing tf-gpu
+environment. CPU is reference/debug; GPU is trusted with memory growth. No
+concurrent numerical worker. Stop on budget exhaustion, unhealthy hardware,
+missing provenance, changed RNG law or unexplained mismatches; preserve failure
+and localize within the same allocation. Cost screen/replication gets a separate
+allocation after numerics qualify and does not borrow numerical passes as cost
+acceptance.
+
+Skeptical review: the captured original source prevents the repaired primitive
+from serving as its own reference. Testing only final values would miss a
+changed fit/history or fixed-label score, and endpoint-only tests would miss
+internal host loops. Full-record, primitive, finite-difference, HLO and endpoint
+checks address these separately. An untouched nonlinear fixture may legitimately
+fail positive precision; report rejection, not numerical equivalence for a
+usable estimate. Adding FP32 scope closes a supported-dtype omission in the
+preparation plan. Costs and adaptive iAPF remain explicit later obligations.
+
+
+04840 passes5 CPU primitive/independent checks;04841 passes complete Gaussian
+FP64 records and two-step fixed-fit finite differences.04842 GPU passes4 checks
+but its FP64 feature diagnostic fails exact eager/XLA equality by3.47e-18.
+Review found the comparator wrong for the vectorization claim: the actual
+original recursive fitter already encloses these features in XLA. Preserve
+04842, add the original compiled feature reference, and keep exact equality
+against that baseline. Retain eager arrays as an explanatory comparison. No
+runtime or numerical tolerance changes follow from this harness correction.

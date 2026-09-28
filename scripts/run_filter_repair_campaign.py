@@ -1781,6 +1781,20 @@ TEST_GROUPS['streaming_profile_readback_cpu'] = (
     'tests/test_filter_repair_streaming_profile_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['streaming_state_retirement_cpu'] = (
     'tests/test_filter_repair_streaming_state_retirement.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'fitted_apf_fixed_primitives_{device}': (
+    'tests/test_filter_repair_fitted_apf_fixed.py::test_fitted_apf_input_and_feature_primitives',
+    'tests/highdim/test_younis_score_master_fitted_twist_tf.py') for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'fitted_apf_fixed_owner_{model}_{dtype}_{device}': (
+    f'tests/test_filter_repair_fitted_apf_fixed.py::test_fitted_apf_complete_owner[{model}-{dtype}]',)
+    for model in ('gaussian', 'nonlinear_scalar') for dtype in ('float64', 'float32') for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'fitted_apf_fixed_endpoint_{model}_{device}': (
+    f'tests/test_filter_repair_fitted_apf_fixed.py::test_fitted_apf_public_endpoint[{model}]',)
+    for model in ('gaussian', 'nonlinear_scalar') for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'fitted_apf_fixed_failure_{device}': (
+    'tests/test_filter_repair_fitted_apf_fixed.py::test_fitted_apf_intermediate_failure',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS['fitted_apf_fixed_readback_cpu'] = (
+    'tests/test_filter_repair_fitted_apf_fixed_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['fitted_apf_rng_cpu'] = ('tests/test_filter_repair_fitted_apf_rng.py',)
 TEST_GROUPS['fitted_apf_rng_gpu'] = TEST_GROUPS['fitted_apf_rng_cpu']
 TEST_GROUPS['fitted_apf_rng_explicit_cpu'] = ('tests/test_filter_repair_fitted_apf_rng_localization.py',)
@@ -2585,6 +2599,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('fitted_apf_fixed_') and group.endswith('_gpu')},
     'fitted_apf_rng_gpu': 'GPU',
     'fitted_apf_rng_explicit_gpu': 'GPU',
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('nonlinear_scope_') and group.endswith('_gpu')},

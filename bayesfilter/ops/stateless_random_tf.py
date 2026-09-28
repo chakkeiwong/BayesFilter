@@ -5,6 +5,27 @@ import math
 import tensorflow as tf
 
 
+def philox_uniform_float32(shape, seed):
+    """Match TSL Uint32ToFloat, retaining the low 23 Philox bits."""
+    words = tf.random.stateless_uniform(
+        shape, seed, minval=None, maxval=None, dtype=tf.uint32, alg="philox")
+    mantissa = tf.bitwise.bitwise_and(words, tf.constant(0x7FFFFF, tf.uint32))
+    bits = tf.bitwise.bitwise_or(mantissa, tf.constant(127 << 23, tf.uint32))
+    return tf.bitcast(bits, tf.float32) - tf.constant(1., tf.float32)
+
+
+def philox_normal_float32(shape, seed):
+    """Preserve TSL BoxMullerFloat's draw order and double angle product."""
+    count = math.prod(shape)
+    uniforms = philox_uniform_float32([(count + 1) // 2, 2], seed)
+    radius = tf.sqrt(-2.0 * tf.math.log(tf.maximum(
+        uniforms[:, 0], tf.constant(1e-7, tf.float32))))
+    angle = tf.cast(tf.constant(2. * math.pi, tf.float64) *
+                    tf.cast(uniforms[:, 1], tf.float64), tf.float32)
+    values = tf.stack([tf.sin(angle) * radius, tf.cos(angle) * radius], axis=1)
+    return tf.reshape(tf.reshape(values, [-1])[:count], shape)
+
+
 def philox_uniform_float64(shape, seed):
     """Match TensorFlow's non-XLA Philox ``Uint64ToDouble`` conversion.
 

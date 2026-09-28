@@ -684,7 +684,10 @@
       "direction_inputs",
       "make_ledh_kernel",
       "make_moment_filter"
-    ]
+    ],
+    "bayesfilter/score_study/fitted_twist_tf.py": null,
+    "bayesfilter/score_study/fitted_twist_adapter.py": null,
+    "bayesfilter/score_study/fitted_twist_execution_tf.py": null
   },
   "exceptions": [
     {
@@ -13764,6 +13767,87 @@
       "ast_sha256": "9380e52d8170a794e988112629849342f05a63861c644a527e4284550a3f3ac0",
       "role": "independent_reference",
       "reason": "Compare or validate completed independent CPU grid-reference outputs at the endpoint boundary; cannot enter or select a numerical score path."
+    },
+    {
+      "path": "bayesfilter/score_study/fitted_twist_tf.py",
+      "function": "quadratic_features",
+      "line": 188,
+      "kind": "python_iteration",
+      "ast_sha256": "e93bc42abb80d539b89fe06e8476604aaa74abcaa80936723b55d2342da367c7",
+      "role": "fixed_schema",
+      "reason": "Lexicographic coordinate-pair indices only; feature products use TensorFlow gather and multiplication."
+    },
+    {
+      "path": "bayesfilter/score_study/fitted_twist_tf.py",
+      "function": "fit_log_quadratic",
+      "line": 206,
+      "kind": "python_iteration",
+      "ast_sha256": "e93bc42abb80d539b89fe06e8476604aaa74abcaa80936723b55d2342da367c7",
+      "role": "fixed_schema",
+      "reason": "Static upper-triangular precision coordinate indices."
+    },
+    {
+      "path": "bayesfilter/score_study/fitted_twist_tf.py",
+      "function": "fit_log_quadratic",
+      "line": 208,
+      "kind": "python_iteration",
+      "ast_sha256": "8a524280ccc5198087f70032ff5191691bbb88bea2c161f6904bf479587c58a7",
+      "role": "fixed_schema",
+      "reason": "Static reflected coordinate indices for symmetric precision assembly."
+    },
+    {
+      "path": "bayesfilter/score_study/fitted_twist_adapter.py",
+      "function": "execute_fitted_twist",
+      "line": 15,
+      "kind": "python_iteration",
+      "ast_sha256": "6dc36c195cf81c79f8842213315aa846c7793be0431f43a8d687e67a406cff34",
+      "role": "fixed_schema",
+      "reason": "Read fixed dimension/horizon configuration fields."
+    },
+    {
+      "path": "bayesfilter/score_study/fitted_twist_adapter.py",
+      "function": "execute_fitted_twist.stream_seeds",
+      "line": 35,
+      "kind": "python_iteration",
+      "ast_sha256": "0eb20ee4379e0d97cf6d5a5580b87ec8fa71ed29ba09680018d6e10b50ab8232",
+      "role": "fixed_schema",
+      "reason": "Construct four seed labels and records; no tensor draws or numerical execution."
+    },
+    {
+      "path": "bayesfilter/score_study/fitted_twist_adapter.py",
+      "function": "execute_fitted_twist",
+      "line": 41,
+      "kind": "python_iteration",
+      "ast_sha256": "01ff95ebc98ed87c91f159c02e18e2f8bca05b180010bdd2345dfb3bb70f3ff3",
+      "role": "fixed_schema",
+      "reason": "Build the declared iteration seed-label table; the native owner draws all random tensors."
+    },
+    {
+      "path": "bayesfilter/score_study/fitted_twist_adapter.py",
+      "function": "execute_fitted_twist",
+      "line": 43,
+      "kind": "python_iteration",
+      "ast_sha256": "2c98fdee1891cb4f2dce238f13abc8351ff1d8c39cfe23493512e771db2780c4",
+      "role": "host_validation",
+      "reason": "Collect fitting seed identities for stream-disjointness validation."
+    },
+    {
+      "path": "bayesfilter/score_study/fitted_twist_adapter.py",
+      "function": "execute_fitted_twist",
+      "line": 44,
+      "kind": "python_iteration",
+      "ast_sha256": "832cbd7d26bd1381e66b9c8abfe51956da90a6101ead5d233ccc5ffa9a391085",
+      "role": "host_validation",
+      "reason": "Collect final seed identities for stream-disjointness validation."
+    },
+    {
+      "path": "bayesfilter/score_study/fitted_twist_adapter.py",
+      "function": "execute_fitted_twist",
+      "line": 56,
+      "kind": "python_iteration",
+      "ast_sha256": "404116565750a62da48c26a8d3e794c0d992d2a20724b2003637faf895b5b0e2",
+      "role": "host_reporting",
+      "reason": "Format already completed tensor histories as ordinary host records."
     }
   ]
 }

@@ -9,7 +9,7 @@ from .contracts import digest
 
 def execute_fitted_twist(row, settings, theta, observations, seed):
     import tensorflow as tf
-    from .fitted_twist_execution_tf import make_fitted_twist_execution
+    from .fitted_twist_tf import make_fitted_twist_kernel, make_recursive_fit_kernel
     from .conditional_means_tf import model_curves
     curves=model_curves(row,settings)
     d,o,N,T=(settings[k] for k in ("dimension","observation_dimension","particles","horizon"))
@@ -27,41 +27,39 @@ def execute_fitted_twist(row, settings, theta, observations, seed):
     dtype=theta.dtype
     fit_theta=tf.constant(row["fit_theta"],dtype)
     tf.debugging.assert_equal(tf.shape(fit_theta),[6])
-    # Label construction is configuration metadata; random tensor generation
-    # and every numerical fit update execute inside the shared XLA owner.
+    kernel=make_fitted_twist_kernel(d,o,N,T,settings["dtype"],settings["jit_compile"],**curves)
+    fitter=make_recursive_fit_kernel(d,o,N,T,floor_ratio,settings["dtype"],settings["jit_compile"],**curves)
+    centers=tf.zeros([T,d],dtype)
+    covariances=tf.eye(d,batch_shape=[T],dtype=dtype)*tf.cast(initial_variance,dtype)
+    log_floors=tf.fill([T],tf.math.log(tf.cast(floor_ratio,dtype))-
+        .5*tf.cast(d,dtype)*tf.math.log(tf.cast(2*3.141592653589793*initial_variance,dtype)))
     seed_records={}
-    def stream_seeds(label,fitting):
-        records=[]
-        for name in ("initial","process","ancestors","mixture"):
+    def streams(label,fitting):
+        def draw(name,shape,normal):
             stream=label+"_"+name
             draw_seed=seed(stream,replicate=0,group="offline_fitted_twist") if fitting else seed(stream)
             seed_records[stream]=draw_seed
-            records.append(draw_seed)
-        return records
-    table=[stream_seeds(f"fit{iteration}",True) for iteration in range(iterations)]
-    table.append(stream_seeds("final_twist",False))
+            return (tf.random.stateless_normal if normal else tf.random.stateless_uniform)(shape,draw_seed,dtype=dtype)
+        return (draw("initial",[N,d],True),draw("process",[T,N,d],True),
+                draw("ancestors",[T+1,N],False),draw("mixture",[T,N],False))
+    iterations_out=[]
+    for iteration in range(iterations):
+        fitted_run=kernel(fit_theta,observations,*streams(f"fit{iteration}",True),centers,covariances,log_floors)
+        centers,covariances,log_floors,valid,residual=fitter(fit_theta,observations,fitted_run[2])
+        if not bool(valid.numpy()):
+            raise ValueError(f"offline psi fit rank/positive-precision veto at iteration {iteration}")
+        iterations_out.append({"iteration":iteration,"fit_log_value":float(fitted_run[0].numpy()),
+                               "log_fit_rmse":residual.numpy().tolist()})
+    frozen={"centers":centers.numpy().tolist(),"covariances":covariances.numpy().tolist(),
+            "log_floors":log_floors.numpy().tolist(),"fit_theta":fit_theta.numpy().tolist()}
+    final=kernel(theta,observations,*streams("final_twist",False),centers,covariances,log_floors)
     fitting_seeds={tuple(v) for k,v in seed_records.items() if not k.startswith("final_")}
     final_seeds={tuple(v) for k,v in seed_records.items() if k.startswith("final_")}
     if fitting_seeds & final_seeds:
         raise ValueError("offline fitting and final streams overlap")
-    kernel=make_fitted_twist_execution(d,o,N,T,iterations,initial_variance,floor_ratio,
-        settings["dtype"],settings["jit_compile"],**curves)
-    output=kernel(theta,fit_theta,observations,tf.constant(table,tf.int32))
-    invalid=int(output["invalid_iteration"].numpy())
-    if invalid >= 0:
-        raise ValueError(f"offline psi fit rank/positive-precision veto at iteration {invalid}")
-    centers,covariances,log_floors=output["fit"]
-    values=output["fit_log_values"].numpy().tolist()
-    residuals=output["fit_errors"].numpy().tolist()
-    iterations_out=[{"iteration":i,"fit_log_value":value,"log_fit_rmse":residual}
-                    for i,(value,residual) in enumerate(zip(values,residuals))]
-    frozen={"centers":centers.numpy().tolist(),"covariances":covariances.numpy().tolist(),
-            "log_floors":log_floors.numpy().tolist(),"fit_theta":fit_theta.numpy().tolist()}
-    final=output["final"]
     return kernel,final,{"fit":frozen,"fit_digest":digest(frozen),"fit_iterations":iterations_out,"fit_model":curves,
         "fit_observation_digest":digest(observations.numpy().tolist()),
         "fit_seed_records":seed_records,"fit_stopping":"fixed_declared_iteration_count",
-        "fit_execution":"enclosing_tensorflow_loop","fit_enclosing_calls":1,
         "fit_method":"local_full_log_quadratic_qr_with_positive_precision_guard",
         "fit_parameter_derivative":"frozen_coefficients_at_declared_nominal_theta",
         "final_randomness":"independent_of_offline_fit_streams",
