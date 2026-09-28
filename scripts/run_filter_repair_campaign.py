@@ -1646,6 +1646,16 @@ TEST_GROUPS['dz5_locator_derived_replay_cpu'] = (
 TEST_GROUPS['dz5_locator_derived_replay_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_derived_replay.py::test_saved_derived_replay',
     *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'dz5_locator_optimized_{arm}_cpu': (
+    f'tests/test_filter_repair_dz5_locator_optimized_hlo.py::test_optimized_export[{arm}]',)
+    for arm in ('original', 'candidate', 'replay_int32')})
+TEST_GROUPS['dz5_locator_optimized_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_optimized_hlo.py::test_saved_optimized_controls',
+    'tests/test_filter_repair_locator_hlo_reader.py',
+    'tests/test_filter_repair_locator_fusion_inspection.py',
+    *TEST_GROUPS['policy'])
+TEST_GROUPS['dz5_locator_optimized_inspection_cpu'] = (
+    'tests/test_filter_repair_locator_fusion_inspection.py',)
 TEST_GROUPS['dz5_locator_one_iteration_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_one_iteration.py::test_saved_real_optimizer_contexts',
     'tests/test_filter_repair_dz5_locator_context_readback.py', *TEST_GROUPS['policy'])

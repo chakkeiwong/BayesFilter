@@ -7,9 +7,9 @@ integrated. Check git HEAD for subsequent documentation/source checkpoints.
 Active question: localize the remaining locator compiler-context difference
 and reconcile terminal endpoint evidence. Source renewal and adapter import
 isolation are complete for their tested scopes.
-Through 04655; active: none.
-Global charged/reserved CPU 106973.011202s / GPU 96071.347964s.
-Remaining CPU 26.285275h / GPU 25.313514h.
+Through 04661; active: none.
+Global charged/reserved CPU 108153.762961s / GPU 96071.347964s.
+Remaining CPU 25.957288h / GPU 25.313514h.
 Caps are56CPU/52GPU process-hours; extra24CPU hours are already counted.
 Symmetry unit closed: 7/12 workers,
 481.384047/2400 combined seconds, no failures.
@@ -58,15 +58,22 @@ Checked findings and evidence:
   the latter matches every candidate short callback/record exactly. Readbacks
   pass through04655. See locator_reporting_storage_result and
   locator_derived_replay_result dated20260928. Runtime remains unchanged;
-  next inspect optimized lowering, not another full trajectory.
+  optimized comparison04656--04661 now preserves every saved callback/short
+  record exactly.179 final checks pass. Original/candidate/replay-int32 have
+  26/22/26 constant-embedded gradient fusions; four candidate fusions instead
+  carry eight unchanged copies of printed2.4 through loop entries143--150.
+  This supplies a targeted mechanism lead, not causal proof or a runtime fix.
+  See filter_gradient_dz5_locator_optimized_hlo_result_20260928.md.
 
-Next: Prepare and skeptically review a bounded optimized-HLO/lowering comparison of original, candidate and positive replay-int32 one-iteration controls. Replay storage is a sufficient context intervention; int32 increments with int64 storage and removing the replay variable both preserve the candidate. Keep runtime unchanged, no full trajectory before a smaller qualified remedy. Follow the terminal gap queue for other repairs.
+Next: Qualify the compiler-constant lead with a bounded targeted intervention on the four gradient fusions; preserve exact frozen inputs, controls and all strict failures. Eight unchanged loop operands print2.4 in the candidate; original/replay-int32 embed them. No additional dtype search or full trajectory before a smaller qualified remedy. Continue the independent registered LEDH valid/rejected-reset consumer repair and terminal source applicability queue.
 New closed diagnostic allocations (detailed plans/results linked in ledger):
 - Accounting families: 4/6 workers, 675.876765/1800 CPU seconds.
 - Progress split: 3/5 workers, 451.586176/1500 CPU seconds.
 - Reporting storage/arithmetic: 5/6 workers, 900.498167/1800 CPU seconds.
 - Derived replay: 2/4 workers, 233.688754/1200 CPU seconds.
 Earlier renewal, import isolation and diagnostic allocations remain closed.
+Optimized compiler unit: 6/6 workers, 1180.751759/4200 CPU seconds.
+Plan: filter_gradient_dz5_locator_optimized_hlo_20260928.md.
 No unchanged renewal cohort or full optimizer trajectory is requested.
 Remaining work order and exit gates: filter_gradient_terminal_gap_queue_20260928.md.
 Old consumer snapshots qualify only their own bytes. Strict precision and

@@ -1,6 +1,7 @@
 # Remaining master-program repair queue
 
-This is the current work order, refreshed after checkpoint04655. Historical
+This is the current work order, refreshed after checkpoint04661 with the
+optimized-compiler phase complete as an explanatory diagnostic. Historical
 master entries and ledger progress paragraphs retain their original scope;
 they are not instructions to rerun completed cohorts. No F01--F20 terminal
 finding has been closed, and main remains unmerged. Global caps remain56 CPU
@@ -8,7 +9,7 @@ and52 GPU process-hours; the extra24 CPU hours are already included.
 
 | Order | Remaining gap | Next repair or evidence action | Exit gate |
 |---|---|---|---|
-| 1 | DZ5 locator context:121 strict full-record differences; both original and candidate unconverged | Through04655, replay storage width alone restores the original first score. Int32 increments with int64 storage and derived replay counts do not. Prepare a bounded optimized-HLO/lowering comparison of original, candidate and positive replay-int32 controls; use the genuine one-iteration fixture. | Exact inputs and unchanged gates; qualify a smaller remedy before any full trajectory. Keep GPU-compatible resources. Neither a tiny score residual nor an unconverged optimizer is success. |
+| 1 | DZ5 locator context:121 strict full-record differences; both original and candidate unconverged | Through04661, exact controls and optimized caller traces isolate four gradient fusions with eight unchanged copies of printed2.4 carried through the candidate loop. Original/replay-int32 embed these constants and match complete short records; candidate differs at47 leaves. Test this specific constant-propagation mechanism in a bounded intervention; no more unrelated dtype trials. See `filter_gradient_dz5_locator_optimized_hlo_result_20260928.md`. | Exact inputs and unchanged gates; qualify a smaller remedy before any full trajectory. Keep GPU-compatible resources. Compiler structure alone is not causal proof. Neither a tiny score residual nor an unconverged optimizer is success. |
 | 2 | Fitted geometry:4539 strict CPU/GPU record differences, plus strict/isotropic angle reporting | Start from the saved original/candidate records and classify selected versus unselected quantities, symmetry, eigenspace degeneracy and rejection fields. Use the exact-input and precision-symmetry plans as baselines; declare a bounded failing fixture before further numerical changes. | Existing numerical and status gates; explicit unusable/ill-conditioned errors where applicable. Do not demand a usable estimate from an invalid system, silently waive a recorded comparison, or treat eigenvector sign/rotation as a precision defect. |
 | 3 | Registered LEDH value consumer still uses runtime NumPy and host numerical loops | Continue `filter_gradient_ledh_native_endpoint_20260925.md` from its complete-value veto and `filter_gradient_ledh_native_result_20260925.md`. Separate valid and rejected reset fixtures before public wiring; retain the analytical score-owner contract and seeded-input authority. | Complete endpoint/consumer evidence, including failed-reset observability, stable signatures, dynamic operands, graph/HLO, independent derivative checks and costs. Passing native components does not qualify the registered consumer. Canonical rebuild remains excluded. |
 | 4 | Current-source applicability of saved timing/memory reports | Continue `filter_gradient_terminal_source_review_20260928.md`: inspect each endpoint's actual runtime dependencies and fixture/harness changes against the22-report evidence index. Renew only affected measurement scopes. | Source/input/hardware/timing-scope provenance and relevant numerical gates. Unchanged broad-snapshot files do not prove a closure; unrelated changes do not require every benchmark to run again. Preserve missing GenUT hash fields and the remaining-SVD receipt's absent direct run references. |
@@ -48,5 +49,13 @@ from independent outstanding consumer work. Evidence indexing is not numerical
 qualification. Future units require their own bounded allocation within the
 existing total. The family, progress, reporting-storage and derived-replay
 units are closed through04655; none is permission to launch unbounded work.
+The optimized-compiler unit closes at6 workers/1180.751759 CPU seconds against
+its4200-second allocation;179 final checks pass. All three arms reproduce
+complete numerical controls exactly. Export overhead is excluded from
+production timing/memory conclusions. Remaining25.957288 CPU/25.313514 GPU
+hours stay inside the same global cap. Do not turn a context intervention into
+an arbitrary production compiler flag or a threshold waiver. The registered
+LEDH consumer and endpoint-evidence reviews remain independent actionable work;
+historical locator investigation must not be mistaken for their completion.
 The primary agent reviewed this refresh. No independent review, scientific
 promotion, canonical LEDH claim or whole-program completion is asserted.
