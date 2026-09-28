@@ -184,21 +184,21 @@ TEST_GROUPS = {
         "tests/test_filter_repair_dz5_initializer_consumer.py::test_saved_r1_is_rejection_evidence_only",
         "tests/test_filter_repair_campaign.py::test_dz5_initializer_deadline_exceptions_are_scope_bound"),
     **{f"dz5_initializer_accepted_{device}": (
-        "tests/test_filter_repair_dz5_initializer_consumer.py::test_declared_initializer_case[True]",)
+        "tests/test_filter_repair_dz5_initializer_renewal.py::test_declared_initializer_case[True]",)
         for device in ("cpu", "gpu")},
     "dz5_initializer_rejected_gpu": (
-        "tests/test_filter_repair_dz5_initializer_consumer.py::test_declared_initializer_case[False]",),
+        "tests/test_filter_repair_dz5_initializer_renewal.py::test_declared_initializer_case[False]",),
     **{f"dz5_initializer_consumer_{device}": (
         "tests/test_filter_repair_dz5_initializer_consumer.py::test_actual_cdf_initializer",)
         for device in ("cpu", "gpu")},
     **{f"dz5_initializer_lifetime_{device}": (
-        "tests/test_filter_repair_dz5_initializer_consumer.py::test_actual_initializer_supervisor_lifetime[2]",)
+        "tests/test_filter_repair_dz5_initializer_renewal.py::test_actual_initializer_supervisor_lifetime[2]",)
         for device in ("cpu", "gpu")},
     **{f"dz5_initializer_target_{batch}_{device}": (
-        f"tests/test_filter_repair_dz5_initializer_target.py::test_current_initializer_target[{batch}]",)
+        f"tests/test_filter_repair_dz5_initializer_renewal.py::test_current_initializer_target[{batch}]",)
         for batch, device in ((4, "cpu"), (1, "gpu"), (4, "gpu"), (46, "gpu"), (68, "gpu"))},
     **{f"dz5_initializer_oracle_{device}": (
-        "tests/test_filter_repair_dz5_initializer_target.py::test_current_initializer_score_oracle",)
+        "tests/test_filter_repair_dz5_initializer_renewal.py::test_current_initializer_score_oracle",)
         for device in ("cpu", "gpu")},
     **{f"dz5_initializer_adapter_{dimension}_{case}_{device}": (
         f"tests/test_filter_repair_dz5_initializer_adapter.py::test_real_initializer_adapter_records[{dimension}-{case}]",)
@@ -1586,6 +1586,9 @@ TEST_GROUPS['dz5_exact_fit_readback_cpu'] = (
     'tests/test_filter_repair_dz5_exact_fit_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['factor_precision_symmetry_readback_cpu'] = (
     'tests/test_filter_repair_factor_precision_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['dz5_initializer_renewal_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_initializer_renewal.py::test_renewed_target_admission',
+    *TEST_GROUPS['dz5_initializer_evidence_cpu'], *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f"remaining_svd_{part}_{device}": TEST_GROUPS[original]
     for part, original in (("block", "block_score_geometry"),
         ("public_first", "geometry_public_first_cpu"),

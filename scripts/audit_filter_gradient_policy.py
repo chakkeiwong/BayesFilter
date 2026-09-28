@@ -186,7 +186,9 @@ def main():
     args = parser.parse_args()
     report = audit()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    with (gzip.open(args.output, "xt") if args.output.suffix == ".gz" else args.output.open("x")) as handle:
+    # Low compression preserves the inventory while bounding serialization cost
+    # for large source/call graphs; compressed bytes are not an evidence key.
+    with (gzip.open(args.output, "xt", compresslevel=1) if args.output.suffix == ".gz" else args.output.open("x")) as handle:
         json.dump(report, handle, indent=2)
         handle.write("\n")
     if args.markdown:

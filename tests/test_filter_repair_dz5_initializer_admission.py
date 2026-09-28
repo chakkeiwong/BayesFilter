@@ -18,11 +18,17 @@ spec.loader.exec_module(gate)
 @pytest.fixture
 def cohort():
     rows = []
+    manifest_hash = gate.digest(SNAPSHOT / 'manifest.json')
     for path in sorted(SNAPSHOT.parent.glob('run-*/run.json')):
         if int(path.parent.name[4:]) < 4559:
             continue
         run = gate.read(path)
         if run['key'][1] in gate.EXPECTED:
+            report_path = path.parent / 'dz5-snapshot-import.json'
+            if not report_path.is_file():
+                continue
+            if gate.read(report_path)['snapshot_manifest_sha256'] != manifest_hash:
+                continue
             rows.append((int(path.parent.name[4:]), run['key'][1]))
     assert {name for _, name in rows} == gate.EXPECTED, 'Execute the fresh target cohort first'
     return min(n for n, _ in rows), max(n for n, _ in rows)

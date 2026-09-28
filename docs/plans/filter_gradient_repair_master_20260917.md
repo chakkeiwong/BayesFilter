@@ -1,15 +1,14 @@
 # Complete filter and gradient execution repair
 
 Branch: repair/filter-gradient-xla-validation-20260918 in
-/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Source checkpoint
-before final symmetry commit: bdfd60994. Main remains unmerged; origin/main is
+/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Qualified numerical source checkpoint:4bf50d914 (pushed). Main remains unmerged; origin/main is
 integrated. Check git HEAD for subsequent documentation/source checkpoints.
 
 Active question: renew source and actual-consumer lifetime evidence after the
 SVD, clipped-anchor and final-precision symmetry repairs.
-Through 04617; active: none.
-Global charged/reserved CPU 101058.404162s / GPU 93374.009135s.
-Remaining CPU 27.928221h / GPU 26.062775h.
+Through 04624; active: [{'run': 4625, 'group': 'dz5_initializer_lifetime_cpu'}].
+Global charged/reserved CPU 105232.229228s / GPU 93683.739409s.
+Remaining CPU 26.768825h / GPU 25.976739h.
 Caps are56CPU/52GPU process-hours; extra24CPU hours are already counted.
 Symmetry unit closed: 7/12 workers,
 481.384047/2400 combined seconds, no failures.
@@ -42,7 +41,12 @@ Checked findings and evidence:
   optimizers remain unconverged. No further full trajectory without a smaller
   graph-context diagnostic; no tolerance changes.
 
-Next: Archive and commit the qualified final precision repair. Prepare a fresh bounded source-renewal and actual-consumer lifetime unit; strict locator and cross-backend records remain open.
+Next: Fresh r2 target/oracle cohort04618--04624 and source-bound admission pass. CPU lifetime04625 is active, session43954, two complete workers under3600s parent/1700s child bounds; do not launch a numerical worker until it completes. Next GPU rejected case and GPU lifetime, then readback/policy. Strict records and terminal call-chain review remain open.
+Target cohort04618--04624 and fresh r2 admission pass;
+archive dz5-source-renewal-target-04624-evidence.tar.gz has816 verified members.
+Active renewal unit: 8/14 workers,
+4234.342932/15000 combined seconds.
+Plan: filter_gradient_dz5_source_renewal_20260928.md.
 Old consumer snapshots qualify only their own bytes. Source-renewed target,
 accepted/rejected consumer, actual supervisor lifetime, strict precision and
 isotropic reporting, matched cost attribution and F01--F20 terminal audit remain
