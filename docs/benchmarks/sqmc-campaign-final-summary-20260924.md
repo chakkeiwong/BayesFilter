@@ -1,3 +1,5 @@
+Current update (2026-09-25): the subsequent audit and bounded repair are documented in [SQMC repair results](sqmc-repair-results-20260925.md). This document retains the earlier campaign closeout; its completed value cells are not score-accuracy evidence.
+
 # SQMC control transfer campaign: closeout
 
 **Date:** 2026-09-24. **Branch:** `rqmc-sqmc-4route-comparison`.

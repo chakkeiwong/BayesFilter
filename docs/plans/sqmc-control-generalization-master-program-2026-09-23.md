@@ -1,9 +1,15 @@
 # SQMC Control Generalization: Dimension and Horizon Transfer
 
 **Date:** 2026-09-23  
-**Status:** DRAFT - Ready for Execution  
-**Branch:** `rqmc-sqmc-4route-comparison`  
-**Worktree:** `/home/chakwong/BayesFilter/.claude/worktrees/kdm-score-campaign-20260909`
+**Status:** Historical transfer plan; superseded by completed scope-specific
+Kalman and KSC comparisons, 2026-09-29.  
+**Original branch:** `rqmc-sqmc-4route-comparison`  
+**Original worktree:** `/home/chakwong/BayesFilter/.claude/worktrees/kdm-score-campaign-20260909`
+
+Read the [final campaign summary](../benchmarks/sqmc-master-program-final-summary-20260929.md)
+for current results and limitations. The later comparisons tune each route and
+scope separately; they do not establish transfer without retuning. The phase
+instructions below are preserved history and must not trigger a new launch.
 
 ---
 

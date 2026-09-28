@@ -1,0 +1,29 @@
+{
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/highdim/test_sqmc_primitives_tf.py",
+    "tests/highdim/test_sqmc_tuning_scope.py",
+    "tests/highdim/test_ledh_canonical_score_full.py",
+    "-k",
+    "not annealed and not production_score_lane",
+    "--tb=short"
+  ],
+  "environment_overrides": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "2",
+    "OMP_NUM_THREADS": "2"
+  },
+  "classification": "CPU-only reference/regression audit; GPU intentionally hidden",
+  "exit_code": 0,
+  "wall_seconds": 53.77957947700634,
+  "log": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/sqmc-independent-audit-20260925/focused-tests.log",
+  "git_commit": "f3995a06a467f16574f96bbc8a68ccbbc4e30dad",
+  "working_directory": "/home/chakwong/BayesFilter-SQMC",
+  "environment": "tftwogpu",
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/sqmc-independent-audit-20260925/plan.md"
+}

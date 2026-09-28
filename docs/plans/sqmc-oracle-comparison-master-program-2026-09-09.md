@@ -1,5 +1,16 @@
 # SQMC 4-Route Oracle Comparison Master Program
 
+> **KSC correction and supersession — 2026-09-29.** The KSC oracle and
+> execution assumptions below are historical. The current canonical KSC
+> likelihood is a seven-Gaussian mixture; replacing it with its Gaussian
+> moments changes both likelihood and score. A single Kalman filter is not
+> an exact oracle for that mixture. The active bounded KSC campaign uses an
+> independently converged mixture-grid reference, exact-scope tuning and
+> eight final dataset/design pairs. See
+> [the corrected plan](sqmc-ksc-sv-comparison-20260928.md) and
+> [the review](../benchmarks/sqmc-ksc-sv-plan-review-20260928.md).
+> The older program is preserved below as planning history.
+
 **Date:** 2026-09-09  
 **Branch:** `rqmc-sqmc-4route-comparison`  
 **Status:** AUTHORITATIVE - Ready for execution
