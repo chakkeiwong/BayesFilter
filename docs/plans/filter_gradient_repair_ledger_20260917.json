@@ -224,20 +224,20 @@
     "parse_error_role": "Unchanged historical vendor; counts are search leads, not violations."
   },
   "current_checkpoint": {
-    "through_run": 4595,
-    "based_on_commit": "5d398a45b",
-    "status": "Principal-angle SVD and algebraic clipping-anchor repairs under validation; actual-consumer trajectory and lifecycle gaps remain.",
+    "through_run": 4610,
+    "based_on_commit": "23f681a14",
+    "status": "Clipped-anchor CPU repair committed; GPU qualification pending. CPU callback-boundary localization continues under a separate bounded allocation.",
     "charged_seconds": {
-      "CPU": 99723.72022458624,
-      "GPU": 92636.0481938109
+      "CPU": 100867.72969971427,
+      "GPU": 93083.29955103788
     },
     "remaining_hours": {
-      "CPU": 28.2989666042816,
-      "GPU": 26.267764390608082
+      "CPU": 27.981186194523815,
+      "GPU": 26.143527902489478
     },
     "active_job": null,
     "active_session": null,
-    "next": "Archive and commit through 04595. GPU SVD/anchor checks remain queued. Next CPU unit: isolate callback compilation context; input binding alone is ruled out. Then refresh actual-consumer source/target evidence, qualify lifetime, and complete terminal F01-F20 review. Preserve graph failure 04592; no unchanged retry.",
+    "next": "Exact-input diagnosis04606-04610 isolates tiny GPU Cholesky-inverse asymmetry triggering unchanged elementwise symmetry checks. Evaluate explicit final symmetric inverse representation with raw residual diagnostics; preserve conditioning/optimizer/gates. Commit/archive checkpoint, then continue full-consumer/lifetime and terminal F01-F20 work.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -268,8 +268,8 @@
     "main_promotion": false,
     "remote_main": "06590cb5a",
     "remote_main_integrated": true,
-    "latest_completed_policy_run": 4595,
-    "latest_completed_policy_checks": 162,
+    "latest_completed_policy_run": 4610,
+    "latest_completed_policy_checks": 161,
     "terminal_acceptance": false,
     "all_finding_dispositions_open": true,
     "source_policy_status": "276 guarded sources / 1436 exact allowances; no extra allowance from the graph repair.",
@@ -510,10 +510,11 @@
       "first_run": 4579,
       "workers": 16,
       "combined_seconds": 3600,
-      "used_workers": 12,
-      "used_combined_seconds": 1657.617389243911,
+      "used_workers": 16,
+      "used_combined_seconds": 1785.8778514538426,
       "failed_runs": [],
-      "global_caps_unchanged": true
+      "global_caps_unchanged": true,
+      "status": "closed_through04605"
     },
     "principal_angle_cpu_archive": {
       "through_run": 4583,
@@ -523,15 +524,20 @@
     "factor_clipped_anchor_allocation": {
       "workers": 8,
       "combined_seconds": 1800,
-      "used_workers": 5,
-      "used_combined_seconds": 164.80216969992034,
+      "used_workers": 8,
+      "used_combined_seconds": 354.9365572038805,
       "failed_runs": [
         {
           "run": 4592,
           "group": "factor_clipped_anchor_graph_fit_cpu"
+        },
+        {
+          "run": 4604,
+          "group": "factor_clipped_anchor_fit_gpu"
         }
       ],
-      "global_caps_unchanged": true
+      "global_caps_unchanged": true,
+      "status": "closed_with_preserved_failures04592_04604"
     },
     "locator_trajectory_runs": [
       4584,
@@ -544,14 +550,48 @@
     ],
     "factor_clipped_anchor_plan": "docs/plans/filter_gradient_factor_clipped_anchor_repair_20260928.md",
     "active_allocations": [
-      "principal_angle_allocation",
-      "factor_clipped_anchor_allocation"
+      "exact_fit_allocation"
     ],
-    "allocation_note": "Other allocation fields in this accumulated checkpoint are historical; the two named active allocations share unchanged 56 CPU / 52 GPU hour global caps.",
+    "allocation_note": "Other allocation fields in this accumulated checkpoint are historical; the named active allocations share unchanged 56 CPU / 52 GPU hour global caps.",
     "locator_anchor_archive": {
       "path": "docs/plans/artifacts/filter-gradient-repair-20260917/locator-anchor-cpu-04595-evidence.tar.gz",
       "sha256": "a756686f6164ddeca63ac4e17f654a84d9d3540ad16bc7f8791c096baec293ff",
       "verified_members": 84
+    },
+    "locator_boundary_allocation": {
+      "workers": 8,
+      "combined_CPU_seconds": 3600,
+      "used_workers": 3,
+      "used_seconds": 1020.6963328730781,
+      "failed_runs": [],
+      "global_caps_unchanged": true,
+      "status": "closed_negative_barrier_diagnosis"
+    },
+    "principal_angle_GPU_runs": [
+      4599,
+      4600,
+      4601
+    ],
+    "principal_angle_GPU_warm_cost_status": "Observed warm time +21.87% in shared-device descriptive probes; defective baseline, no ranking. Matched uncontended cost attribution remains open. Allocator peak unchanged at70400bytes.",
+    "exact_fit_allocation": {
+      "workers": 8,
+      "combined_seconds": 1800,
+      "used_workers": 5,
+      "used_seconds": 252.16964976803865,
+      "failed_runs": [],
+      "global_caps_unchanged": true
+    },
+    "exact_fit_result": "docs/plans/filter_gradient_dz5_exact_fit_result_20260928.md",
+    "exact_fit_numerical_outcomes": {
+      "4606_before_GPU": "rejected_stability_error1",
+      "4607_after_GPU": "rejected_stability_error2",
+      "4608_before_CPU": "usable",
+      "4609_after_CPU": "usable_exact_same_raw_public_as_before"
+    },
+    "exact_fit_archive": {
+      "path": "docs/plans/artifacts/filter-gradient-repair-20260917/exact-fit-inputs-04610-evidence.tar.gz",
+      "verified_members": 39,
+      "sha256": "dc44b1ea16c490b4f4f43f92464823af68b544cd373b66ece69ec6d5741af05c"
     }
   },
   "historical_quadratic_batch_checkpoint": {

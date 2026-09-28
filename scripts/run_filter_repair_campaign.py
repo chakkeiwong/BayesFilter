@@ -124,6 +124,12 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"dz5_exact_fit_{arm}_{device}": (
+        f"tests/test_filter_repair_dz5_exact_fit.py::test_exact_saved_fit_inputs[{arm}]",)
+        for arm in ("before", "after") for device in ("cpu", "gpu")},
+    **{f"dz5_locator_boundary_{arm}_cpu": (
+        f"tests/test_filter_repair_dz5_locator_trajectory.py::test_actual_cdf_locator_trace[{arm}_barrier]",)
+        for arm in ("original", "candidate")},
     "dz5_locator_fixed_outputs_cpu": (
         "tests/test_filter_repair_dz5_locator_fixed_outputs.py",),
     "dz5_locator_points_replay_cpu": (
@@ -1563,6 +1569,10 @@ TEST_GROUPS = {
 }
 TEST_GROUPS['dz5_locator_final_readback_and_policy_cpu'] = (
     'tests/test_filter_repair_dz5_locator_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['dz5_locator_boundary_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_callback_boundary.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['dz5_exact_fit_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_exact_fit_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f"remaining_svd_{part}_{device}": TEST_GROUPS[original]
     for part, original in (("block", "block_score_geometry"),
         ("public_first", "geometry_public_first_cpu"),
@@ -1591,6 +1601,12 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    "dz5_exact_fit_readback_cpu": "Same-byte fit/matrix diagnostic and policy renewal; numerical rejections remain rejections, no symmetry or equivalence waiver.",
+    **{f"dz5_exact_fit_{arm}_{device}": "Exact saved-operand localization; nonzero raw fit errors remain numerical failures despite artifact-check success."
+        for arm in ("before", "after") for device in ("cpu", "gpu")},
+    "dz5_locator_boundary_readback_cpu": "Callback-barrier saved evidence and policy readback; no full-equivalence or compiler-mechanism conclusion from acceptance alone.",
+    **{f"dz5_locator_boundary_{arm}_cpu": "Diagnostic XLA callback barriers only; no runtime method, original equivalence waiver, or source admission."
+        for arm in ("original", "candidate")},
     "dz5_locator_final_readback_and_policy_cpu": "Compilation-context readback plus policy renewal; does not waive the original full-consumer comparison.",
     "dz5_locator_fixed_outputs_cpu": "Call-indexed callback transcript diagnostic; not a value/gradient function, optimizer equivalence, or admission authority.",
     "dz5_locator_points_replay_cpu": "Saved same-position graph/standalone-XLA score replay; cannot establish full locator or initializer equivalence.",
@@ -2267,6 +2283,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_exact_fit_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith(("principal_angle_", "factor_clipped_anchor_")) and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_initializer_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("posterior_public_") and group.endswith("_gpu")},

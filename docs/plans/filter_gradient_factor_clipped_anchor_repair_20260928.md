@@ -126,3 +126,33 @@ Evidence through 04595 is archived with the locator investigation in
 84 verified members, SHA-256
 `a756686f6164ddeca63ac4e17f654a84d9d3540ad16bc7f8791c096baec293ff`.
 The frozen clipping fixture is also committed as a standalone regression input.
+
+GPU3 became eligible later in the continuation. Trial 04602 passed all 22
+fixture/factor combinations in graph and XLA, including both coordinate orders
+and installed-runtime comparison. Run 04603 passed all 12 existing factor
+geometry regressions (85.652 supervised seconds). The actual saved CDF fit
+replay 04604 failed in 71.839 seconds with `fit_error_code=2`. Numerical GPU
+work uses memory growth and records the selected physical UUID in each manifest.
+
+The failed harness discarded raw fit fields before its assertion. It now saves
+those fields before checking, a pure diagnostic repair. No failed numerical
+run is retried unchanged. Code tracing maps code 2 to an invalid right-hand
+precision in a completed family-stability comparison; without the discarded
+record, the exact family/pair is not known.
+
+An ordinary ZIP member-hash comparison also finds a comparator flaw: CPU04591
+and GPU04604 have identical center, center-score and score-array bytes, but
+different offset bytes. The harness regenerated the same Philox design on
+each device and only checked reconstructed positions at 1e-14; that is not
+identical frozen operands. Therefore 04604 cannot establish a before/after
+GPU failure caused by the anchor repair. Preserve it and perform a separate
+exact-input before/after localization under a new bounded plan. The eight-worker
+anchor allocation is closed, with graph04592 and GPU04604 failures retained.
+The GPU initialization and 12 regression passes remain valid for their scope;
+the actual saved-input consumer gap remains open.
+
+GPU evidence, including failed04604, is preserved in
+`artifacts/filter-gradient-repair-20260917/callback-boundary-gpu-repairs-04605-evidence.tar.gz`,
+SHA-256 `88f352b5d727897d681ae84610ab18c434ed49da2c5063b4731652689f3231ed`.
+The next exact-byte diagnostic is specified in
+[filter_gradient_dz5_exact_fit_inputs_20260928.md](filter_gradient_dz5_exact_fit_inputs_20260928.md).

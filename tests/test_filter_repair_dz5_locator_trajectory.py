@@ -66,9 +66,15 @@ LOCATOR_CHECK = r'''
     trace_scores = tf.Variable(tf.zeros([capacity, 23], tf.float64), trainable=False)
     trace_valid = tf.Variable(tf.zeros([capacity], tf.bool), trainable=False)
     callback = model.training_target.batch_value_score_and_validity
+    use_barriers = LOCATOR_ARM.endswith('_barrier')
+    from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_optimization_barrier
     def measured_callback(points):
         assert points.shape == (1, 23)
+        if use_barriers:
+            points = xla_optimization_barrier(input=[points])[0]
         value, score, valid = callback(points)
+        if use_barriers:
+            value, score, valid = xla_optimization_barrier(input=[value, score, valid])
         index = calls.assign_add(1) - 1
         indices = tf.reshape(index, [1, 1])
         writes = (trace_positions.scatter_nd_update(indices, points),
@@ -84,10 +90,11 @@ LOCATOR_CHECK = r'''
         original_locator_sha256=ORIGINAL_SHA, settings=settings,
         executed_original_source_sha256=hashlib.sha256(source.encode()).hexdigest(),
         original_operand_binding_diagnostic=LOCATOR_ARM == 'original_operands',
+        callback_optimization_barriers='inputs_and_outputs' if use_barriers else 'none',
         observer='fixed_capacity_TensorFlow_callback_trace; no numerical output changed',
         nonclaims=['No current SVD source admission, complete initializer, training, HMC or matched timing.'])
     tick = time.monotonic()
-    if LOCATOR_ARM in ('original', 'original_operands'):
+    if LOCATOR_ARM.startswith('original'):
         location = original.locate_batched_local_center(measured_callback, initial, scale,
             config=original.BatchedLocalCenterConfig(**settings))
         assert len(observed) == 1
@@ -117,7 +124,7 @@ LOCATOR_CHECK = r'''
     assert count == int(location.physical_target_rows)
     assert report['trace_count'] == 1
     assert compiled.function_spec.jit_compile
-    concrete = compiled.get_concrete_function() if LOCATOR_ARM in ('original', 'original_operands') else compiled.get_concrete_function(initial, scale)
+    concrete = compiled.get_concrete_function() if LOCATOR_ARM.startswith('original') else compiled.get_concrete_function(initial, scale)
     definition = concrete.graph.as_graph_def()
     nodes = [*definition.node, *(node for f in definition.library.function for node in f.node_def)]
     report['host_callbacks'] = sorted({node.op for node in nodes if any(term in node.op.lower()
@@ -144,7 +151,7 @@ def child_source(arm):
     return audited_child(merged.target_child().replace(merged.TARGET_CHECK, body + audit))
 
 
-@pytest.mark.parametrize('arm', ['original', 'candidate', 'original_operands'])
+@pytest.mark.parametrize('arm', ['original', 'candidate', 'original_operands', 'original_barrier', 'candidate_barrier'])
 def test_actual_cdf_locator_trace(arm, request):
     report = snapshot_test.run_isolated_snapshot(request, snapshot=SNAPSHOT,
         child=child_source(arm), scope='original_current_CDF_locator_trace_no_new_admission',

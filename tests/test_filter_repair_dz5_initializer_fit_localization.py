@@ -145,6 +145,10 @@ def test_saved_cdf_fit_inputs(arm, request):
             thresholds=thresholds, jit_compile=arm == 'xla', **settings)
         raw = owner(*operands)
         tf.nest.map_structure(lambda value: value.numpy(), raw)
+        # Preserve failed numerical state before the admission assertion.
+        save(request, 'dz5-saved-fit-raw.json', {'arm': arm, 'inputs': provenance,
+            'raw': clean(raw), 'trace_count': owner.experimental_get_tracing_count(),
+            'input_signature': str(owner.input_signature)})
         assert bool(raw['fit_ran']) and int(raw['fit_error_code']) == 0
         result = fixed._fixed_center_result_from_native(raw['fit'], center, score,
             dimension=dimension, replicates=count, training_rows=train, selection_rows=select,
