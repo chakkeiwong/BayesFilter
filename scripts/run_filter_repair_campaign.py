@@ -1775,6 +1775,13 @@ TEST_GROUPS.update({f'streaming_paired_{pair}_{horizon}_{arm}_cpu': (
     for pair, horizon, arm in STREAMING_PAIRED_ORDER})
 TEST_GROUPS['streaming_paired_readback_cpu'] = (
     'tests/test_filter_repair_streaming_paired_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['streaming_profile_hlo_cpu'] = (
+    'tests/test_filter_repair_streaming_profile.py::test_saved_hlo_placement_profile',)
+TEST_GROUPS['streaming_profile_readback_cpu'] = (
+    'tests/test_filter_repair_streaming_profile_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'streaming_profile_rng_{horizon}_{arm}_cpu': (
+    f'tests/test_filter_repair_streaming_profile.py::test_rng_component_profile[{horizon}-{arm}]',)
+    for horizon in (32, 128) for arm in ('buffered', 'streaming')})
 TEST_GROUPS['pfor_runner_helpers_cpu'] = (
     'tests/test_filter_repair_pfor_runners.py', '-k', 'not p91',
     'tests/test_kalman_qr_cpu_xla_formulation_shootout.py')

@@ -321,20 +321,20 @@
     "parse_error_role": "Unchanged historical vendor; counts are search leads, not violations."
   },
   "current_checkpoint": {
-    "through_run": 4749,
-    "based_on_commit": "d8c23fc41",
-    "status": "All20 matched CPU cost workers04729--04748 pass exact shared records, RNG diagnostics, source/environment and enclosing-XLA gates. Readback04749 passes161 checks. Geometric warm ratios are1.08239 atT32 and1.09678 atT128; conditional95% upper bounds1.11687/1.15608 trigger profiling. Median observed RSS is about11MiB lower for streaming; compile-associated RSS still about526MiB. Failed schema pilot04728 is preserved and excluded by documented harness disposition, not timing. No runtime/gate/seed changes.",
+    "through_run": 4755,
+    "based_on_commit": "8f6e94633",
+    "status": "Profiling04750--04755 completed: all six workers passed, including161 final readback/policy checks. Streaming removes one global loop and moves Philox/Box-Muller into the observation loop; three additional reachable copies/six fusions are explanatory only. RNG component warm times are descriptively lower for streaming at both horizons, so raw RNG cost alone does not explain the full-filter slowdown. Full-filter performance remains unaccepted.",
     "charged_seconds": {
-      "CPU": 109918.48446818376,
+      "CPU": 109959.16034593694,
       "GPU": 97122.8496215919
     },
     "remaining_hours": {
-      "CPU": 25.467087647726736,
+      "CPU": 25.455788792795296,
       "GPU": 25.021430660668916
     },
     "active_job": null,
     "active_session": null,
-    "next": "Execute filter_gradient_streaming_profile_20260929.md (saved-HLO comparison and bounded RNG component costs) before accepting streaming performance. Then continue filter_gradient_score_study_directions_20260929.md for actual analytical-score consumer loops. Preserve GPU sharing, source-applicability, DZ5 and other terminal gates.",
+    "next": "Archive and commit the completed profile, then execute the reviewed score-study analytical direction consumer repair. Preserve the separate full-filter compiler-interaction investigation for a bounded causal intervention; do not change RNG, prefetch past validity gates, or waive performance limits. Remaining GPU, source, DZ5 and terminal gates stay open.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -1123,13 +1123,16 @@
         "CPU": 109918.48446818376,
         "GPU": 97122.8496215919
       },
-      "used_workers": 0,
+      "used_workers": 6,
       "used_seconds": {
-        "CPU": 0,
+        "CPU": 40.67587775317952,
         "GPU": 0
       },
       "status": "reviewed_not_started",
-      "global_caps_unchanged": true
+      "global_caps_unchanged": true,
+      "failed_runs": [],
+      "progress_notes": "Profiling04750--04755 completed: all six workers passed, including161 final readback/policy checks. Streaming removes one global loop and moves Philox/Box-Muller into the observation loop; three additional reachable copies/six fusions are explanatory only. RNG component warm times are descriptively lower for streaming at both horizons, so raw RNG cost alone does not explain the full-filter slowdown. Full-filter performance remains unaccepted.",
+      "next_action": "Archive and commit the completed profile, then execute the reviewed score-study analytical direction consumer repair. Preserve the separate full-filter compiler-interaction investigation for a bounded causal intervention; do not change RNG, prefetch past validity gates, or waive performance limits. Remaining GPU, source, DZ5 and terminal gates stay open."
     },
     "streaming_paired_cost_archive": {
       "archive": "docs/plans/artifacts/filter-gradient-repair-20260917/streaming-paired-04749-evidence.tar.gz",
