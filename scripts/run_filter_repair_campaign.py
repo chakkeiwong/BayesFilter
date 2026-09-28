@@ -1801,6 +1801,11 @@ TEST_GROUPS.update({f'fitted_apf_cost_{model}_{arm}_cpu': (
 TEST_GROUPS['fitted_apf_cost_readback_cpu'] = (
     'tests/test_filter_repair_fitted_apf_cost_readback.py',
     'tests/test_filter_repair_fitted_apf_fixed_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['iapf_controller_localization_cpu'] = ('tests/test_filter_repair_iapf_controller_localization.py',)
+TEST_GROUPS['iapf_controller_localization_gpu'] = TEST_GROUPS['iapf_controller_localization_cpu']
+TEST_GROUPS['iapf_controller_readback_cpu'] = ('tests/test_filter_repair_iapf_controller_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['iapf_controller_cpu'] = ('tests/test_filter_repair_iapf_controller.py',)
+TEST_GROUPS['iapf_controller_gpu'] = TEST_GROUPS['iapf_controller_cpu']
 TEST_GROUPS['fitted_apf_rng_cpu'] = ('tests/test_filter_repair_fitted_apf_rng.py',)
 TEST_GROUPS['fitted_apf_rng_gpu'] = TEST_GROUPS['fitted_apf_rng_cpu']
 TEST_GROUPS['fitted_apf_rng_explicit_cpu'] = ('tests/test_filter_repair_fitted_apf_rng_localization.py',)
@@ -1907,6 +1912,8 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    'iapf_controller_localization_gpu': 'GPU CV arithmetic diagnosis after a strict decision mismatch; no controller admission.',
+    'iapf_controller_localization_cpu': 'CV arithmetic diagnosis after a strict decision mismatch; no controller admission.',
     'fitted_apf_rng_cpu': 'Bounded eager/XLA seeded-input diagnostic; mismatch is recorded and cannot qualify a runtime migration.',
     'fitted_apf_rng_gpu': 'Bounded eager/XLA seeded-input diagnostic; mismatch is recorded and cannot qualify a runtime migration.',
     'fitted_apf_rng_explicit_cpu': 'Diagnostic localization of stateless key/counter and float conversion; no filter admission.',
@@ -2606,6 +2613,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('fitted_apf_fixed_') and group.endswith('_gpu')},
+    'iapf_controller_localization_gpu': 'GPU',
+    'iapf_controller_gpu': 'GPU',
     'fitted_apf_rng_gpu': 'GPU',
     'fitted_apf_rng_explicit_gpu': 'GPU',
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('nonlinear_scope_') and group.endswith('_gpu')},

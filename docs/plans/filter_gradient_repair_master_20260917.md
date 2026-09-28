@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04862; active worker runs: none.
-Charged/reserved CPU 111537.539357s / GPU 98006.280826s.
-Remaining CPU 25.017350h / GPU 24.776033h.
+Through 04870; active worker runs: none.
+Charged/reserved CPU 111570.350022s / GPU 98017.683363s.
+Remaining CPU 25.008236h / GPU 24.772866h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_fitted_apf_cost_20260929.md (closed); at most
-6 workers/1800 CPU/0 GPU seconds.
-Used/reserved 5 workers/45.472254 CPU/0.000000 GPU seconds.
+Active allocation: docs/plans/filter_gradient_iapf_controller_20260929.md (closed); at most
+8 workers/600 CPU/600 GPU seconds.
+Used/reserved 8 workers/32.810664 CPU/11.402536 GPU seconds.
 One numerical worker at a time.
 
-Fixed fitted-APF CPU cost screen04858–04862 passes all four measured arms and162 readback/policy checks. Gaussian/nonlinear warm medians8.078/8.103ms become1.298/1.424ms; cold ratios0.977/1.034. Extra sampled RSS99.105/100.504MiB triggers attribution. These are descriptive single-process results, not cost acceptance. Numerical repair is committed at4629f3bd8; adaptive iAPF and broad endpoint preparation remain open.
+Adaptive iAPF decision diagnosis04863–04870 is complete. CPU12 decisions/7 invalid cases pass after runtime window cardinality plus division barriers. GPU still fails the adjacent-threshold action because exp differs by one FP64 unit.04870 verifies the preserved failure with161 checks; no primitive admission or active adaptive runtime change. Fixed-fit repair/cost evidence through04862 remains valid.
 
-Next: Preserve the fixed-fit cost cohort; add its approximately100MiB enclosing-owner residency to the shared compiler/lifetime attribution work. Inspect and prepare the separate adaptive iAPF controller repair, including exact stopping, changing particle shapes, fit/cast vetoes and work accounting.
+Next: Evaluate an explicit numerical-resolution veto for near-threshold adaptive decisions under the Class B fail-closed guard policy; preserve resolved decisions and reject ambiguous cases instead of choosing a different action. Then migrate the complete adaptive recurrence, ledger validation and actual consumers with truthful stage/work accounting.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

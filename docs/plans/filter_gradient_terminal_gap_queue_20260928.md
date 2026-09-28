@@ -71,7 +71,11 @@ See filter_gradient_fitted_apf_fixed_result_20260929.md. Its cost/memory screen
 is complete through04862: warm medians are lower but sampled RSS grows about
 100MiB, so cost acceptance stays open. See filter_gradient_fitted_apf_cost_result_20260929.md.
 Adaptive iAPF and surrounding eager endpoint preparation still require
-separate work. Preserve live RNG streams as well as frozen-array parity.
+separate work. Adaptive decision diagnosis through04870 finds a GPU
+FP64 exponential-rounding difference that flips an adjacent-threshold stopping
+decision. The primitive is unadmitted and the existing adaptive runtime is
+unchanged. Next evaluate an explicit numerical-resolution veto, then full
+controller/ledger migration; see filter_gradient_iapf_controller_result_20260929.md. Preserve live RNG streams as well as frozen-array parity.
 
 | Order | Remaining gap | Next repair or evidence action | Exit gate |
 |---|---|---|---|
