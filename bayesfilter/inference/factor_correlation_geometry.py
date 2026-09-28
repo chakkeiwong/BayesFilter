@@ -415,6 +415,10 @@ def _cached_factor_program(dimension, training_rows, holdout_rows, cfg, jit_comp
         precision = tf.linalg.cholesky_solve(
             chol, tf.eye(dimension, dtype=tf.float64)
         )
+        # The inverse of this SPD covariance is symmetric. Independent solve
+        # columns can differ by roundoff, notably at small GPU off-diagonals.
+        # Project only the completed fit; L-BFGS loss/gradient stay unchanged.
+        precision = 0.5 * (precision + tf.transpose(precision))
 
         train_prediction = tf.einsum("ij,bj->bi", precision, train_z)
         holdout_prediction = tf.einsum("ij,bj->bi", precision, holdout_z)

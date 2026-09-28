@@ -124,6 +124,17 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"factor_precision_symmetry_fit_{device}": (
+        "tests/test_filter_repair_dz5_exact_fit.py::test_exact_saved_fit_inputs[after]",)
+        for device in ("cpu", "gpu")},
+    **{f"factor_precision_symmetry_regression_{device}": (
+        "tests/test_factor_correlation_geometry.py", "tests/test_filter_repair_dense_derivatives.py",
+        "tests/test_filter_repair_dense_condition.py",
+        "tests/test_filter_repair_factor_domain.py::test_runtime_covariance_guard_rejects_invalid_xla_inputs",)
+        for device in ("cpu", "gpu")},
+    **{f"factor_precision_symmetry_trial_{device}": (
+        "tests/test_filter_repair_factor_precision_symmetry.py",)
+        for device in ("cpu", "gpu")},
     **{f"dz5_exact_fit_{arm}_{device}": (
         f"tests/test_filter_repair_dz5_exact_fit.py::test_exact_saved_fit_inputs[{arm}]",)
         for arm in ("before", "after") for device in ("cpu", "gpu")},
@@ -1573,6 +1584,8 @@ TEST_GROUPS['dz5_locator_boundary_readback_cpu'] = (
     'tests/test_filter_repair_dz5_callback_boundary.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['dz5_exact_fit_readback_cpu'] = (
     'tests/test_filter_repair_dz5_exact_fit_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['factor_precision_symmetry_readback_cpu'] = (
+    'tests/test_filter_repair_factor_precision_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f"remaining_svd_{part}_{device}": TEST_GROUPS[original]
     for part, original in (("block", "block_score_geometry"),
         ("public_first", "geometry_public_first_cpu"),
@@ -1601,6 +1614,10 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"factor_precision_symmetry_fit_{device}": "Exact-input repaired fit outcome; complete numerical readback required separately from artifact-check success."
+        for device in ("cpu", "gpu")},
+    **{f"factor_precision_symmetry_trial_{device}": "Diagnostic final inverse projection; runtime unchanged, raw precision/condition failures cannot be waived."
+        for device in ("cpu", "gpu")},
     "dz5_exact_fit_readback_cpu": "Same-byte fit/matrix diagnostic and policy renewal; numerical rejections remain rejections, no symmetry or equivalence waiver.",
     **{f"dz5_exact_fit_{arm}_{device}": "Exact saved-operand localization; nonzero raw fit errors remain numerical failures despite artifact-check success."
         for arm in ("before", "after") for device in ("cpu", "gpu")},
@@ -2283,6 +2300,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: "GPU" for group in TEST_GROUPS if group.startswith("factor_precision_symmetry_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_exact_fit_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith(("principal_angle_", "factor_clipped_anchor_")) and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_initializer_") and group.endswith("_gpu")},
