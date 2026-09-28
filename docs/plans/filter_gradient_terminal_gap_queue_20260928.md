@@ -36,10 +36,23 @@ below VmRSS require a bounded measurement diagnostic. See
 filter_gradient_score_study_directions_result_20260929.md and
 filter_gradient_score_direction_cost_result_20260929.md. A bounded
 full-filter compiler-interaction intervention remains separate outstanding work.
-The same read-only audit found nonlinear EKF/UKF and LEDH/SGQF/mixture consumers
-assembling six directions in Python. The next executable follow-up is
-filter_gradient_nonlinear_directions_20260929.md; Gaussian evidence does not
-close those routes.
+Nonlinear EKF/UKF healthy CPU/GPU checks and all six LEDH-family refusal
+variants are complete through04805. Their consumers now use the shared
+enclosing analytical direction owner; see
+filter_gradient_nonlinear_directions_result_20260929.md. The original LEDH T2
+fixture fails reset balancing identically before/after the repair; severe
+ill-conditioning is not established. Fresh disjoint calibration04806–04808
+nominates eight/eight reset counts independently for all three providers.
+All twelve ordinary/diagnostic untouched CPU/GPU workers04809–04820 pass,
+followed by162 combined readback/policy checks04821. Complete parity max2.22e-16,
+five-point error max7.10e-12; no failed fixture was used to tune controls or
+relax gates. See filter_gradient_nonlinear_scope_result_20260929.md. The active
+cost cohort is filter_gradient_nonlinear_direction_cost_20260929.md, binding
+the validated LEDH scope and comparing VmRSS/VmHWM, smaps_rollup and rusage.
+All four measured CPU arms04822–04825 and163 combined readback checks04826
+pass. See filter_gradient_nonlinear_direction_cost_result_20260929.md. The OS
+peak-counter discrepancy reproduces while status and page-map RSS agree;
+an allocation-only counter diagnostic is the next bounded mechanism test.
 The locator's
 specific fusion lead stays open without more unrelated counter experiments.
 
@@ -47,7 +60,7 @@ specific fusion lead stays open without more unrelated counter experiments.
 |---|---|---|---|
 | 1 | DZ5 locator context:121 strict full-record differences; both original and candidate unconverged | Through04661, exact controls and optimized caller traces isolate four gradient fusions with eight unchanged copies of printed2.4 carried through the candidate loop. Original/replay-int32 embed these constants and match complete short records; candidate differs at47 leaves. Test this specific constant-propagation mechanism in a bounded intervention; no more unrelated dtype trials. See `filter_gradient_dz5_locator_optimized_hlo_result_20260928.md`. | Exact inputs and unchanged gates; qualify a smaller remedy before any full trajectory. Keep GPU-compatible resources. Compiler structure alone is not causal proof. Neither a tiny score residual nor an unconverged optimizer is success. |
 | 2 | Fitted geometry:4539 strict CPU/GPU record differences, plus strict/isotropic angle reporting | Start from the saved original/candidate records and classify selected versus unselected quantities, symmetry, eigenspace degeneracy and rejection fields. Use the exact-input and precision-symmetry plans as baselines; declare a bounded failing fixture before further numerical changes. | Existing numerical and status gates; explicit unusable/ill-conditioned errors where applicable. Do not demand a usable estimate from an invalid system, silently waive a recorded comparison, or treat eigenvector sign/rotation as a precision defect. |
-| 3 | Registered LEDH value costs/capacity and analytical-score migration | Streaming CPU paired costs and RNG/HLO profiling are complete through04755; preserve their cost veto and test one bounded full-filter compiler interaction without changing RNG. Gaussian score-study direction consumers are CPU/GPU qualified through04782, with a descriptive cost/memory tradeoff requiring follow-up. Execute the reviewed nonlinear direction continuation next; cross-check OS memory counters and retained owner/compiler residency afterward. Renew GPU costs/capacity only on unshared hardware. | Complete actual-consumer evidence, invalidity, stable signatures, dynamic operands, enclosing HLO, independent derivatives and accepted costs. Component or Gaussian evidence does not qualify an untouched nonlinear consumer. Canonical rebuild remains excluded. |
+| 3 | Registered LEDH value costs/capacity and analytical-score migration | Streaming CPU paired costs and RNG/HLO profiling are complete through04755; preserve their cost veto and test one bounded full-filter compiler interaction without changing RNG. Gaussian score-study direction consumers are CPU/GPU qualified through04782; nonlinear ordinary/diagnostic endpoints through04821. Finish the nonlinear CPU cost/OS-memory readback, then replicated matched owner costs and retained compiler residency. Renew GPU costs/capacity only on unshared hardware. | Complete actual-consumer evidence, invalidity, stable signatures, dynamic operands, enclosing HLO, independent derivatives and accepted costs. Component or Gaussian evidence does not qualify an untouched nonlinear consumer. Canonical rebuild remains excluded. |
 | 4 | Current-source applicability of saved timing/memory reports | Continue `filter_gradient_terminal_source_review_20260928.md`: inspect each endpoint's actual runtime dependencies and fixture/harness changes against the22-report evidence index. Renew only affected measurement scopes. | Source/input/hardware/timing-scope provenance and relevant numerical gates. Unchanged broad-snapshot files do not prove a closure; unrelated changes do not require every benchmark to run again. Preserve missing GenUT hash fields and the remaining-SVD receipt's absent direct run references. |
 | 5 | Remaining terminal F01--F20 dispositions and default/import coverage | F14's identified implicit-pfor sites are repaired/retired and qualified through04727. Bind each other finding to its current public consumer, guarded source, derivative role, independent numerical check and applicable endpoint measurement. Classify diagnostics/retirements explicitly and follow implicit package imports and callbacks. | Every finding has a reviewable terminal disposition. The300-source guard pass is scoped evidence; no allowance expansion or relabeling an active violation as diagnostic. |
 | 6 | Integration and merge | Once the above gates pass, inspect new remote changes, integrate them on this branch, resolve conflicts and run affected checks before final review. | All master gates passed; only then merge and push main. Checkpoint commits/pushes on the repair branch remain authorized. |

@@ -1,6 +1,6 @@
 {
   "schema": "filter_gradient_runtime_policy.v1",
-  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance. September29 remaining-pfor scope: all pfor/implicit-pfor calls in the scalar transport adapter are guarded; Python iteration coverage there is limited to its two touched coordinate/logdet methods. The named independent SIR reference retains its diagnostic NumPy/host-loop role while all pfor calls remain guarded. Contract E streaming is guarded in full. September29 runner coverage adds pfor/implicit-pfor inspection over17 runner/benchmark files only; other execution/NumPy/default and consumer-admission gates remain in the master. No new exception is granted. September29 score-study coverage adds the Gaussian consumer and six helper/factory scopes. Six exact configuration/output-schema exceptions are reviewed; no numerical Python-loop allowance is added. Other score-study providers and consumers remain outside this bounded closure.",
+  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance. September29 remaining-pfor scope: all pfor/implicit-pfor calls in the scalar transport adapter are guarded; Python iteration coverage there is limited to its two touched coordinate/logdet methods. The named independent SIR reference retains its diagnostic NumPy/host-loop role while all pfor calls remain guarded. Contract E streaming is guarded in full. September29 runner coverage adds pfor/implicit-pfor inspection over17 runner/benchmark files only; other execution/NumPy/default and consumer-admission gates remain in the master. No new exception is granted. September29 score-study coverage adds the Gaussian consumer and six helper/factory scopes. Six exact configuration/output-schema exceptions are reviewed; no numerical Python-loop allowance is added. Other score-study providers and consumers remain outside this bounded closure. September29 nonlinear continuation covers the real endpoint and its direction/moment/LEDH factories, with six exact configuration/reference-validation exceptions; no filter/gradient numerical loop is allowlisted.",
   "sources": {
     "bayesfilter/adapters/__init__.py": null,
     "bayesfilter/ops/accurate_svd_tf.py": null,
@@ -676,6 +676,14 @@
     ],
     "bayesfilter/score_study/control_diagnostics_tf.py": [
       "compact_control_diagnostics"
+    ],
+    "bayesfilter/score_study/nonlinear_adapter.py": [
+      "evaluate_nonlinear"
+    ],
+    "bayesfilter/score_study/nonlinear_tf.py": [
+      "direction_inputs",
+      "make_ledh_kernel",
+      "make_moment_filter"
     ]
   },
   "exceptions": [
@@ -13702,6 +13710,60 @@
       "ast_sha256": "ab1b95d05001430f7314d49281bdecc72fe74234362b7a02aaba04768f99262f",
       "role": "fixed_schema",
       "reason": "Select named higher-moment result fields by key; covariance eigenvalues are batched TensorFlow operations."
+    },
+    {
+      "path": "bayesfilter/score_study/nonlinear_adapter.py",
+      "function": "evaluate_nonlinear",
+      "line": 15,
+      "kind": "python_iteration",
+      "ast_sha256": "0fdcb16c847914a025fbb72f9e8929d7fe27994e7f005b0e5d4aa7bf4675906a",
+      "role": "host_validation",
+      "reason": "Read/validate the two immutable nonlinear configuration coefficients before tracing; no algorithmic iteration."
+    },
+    {
+      "path": "bayesfilter/score_study/nonlinear_adapter.py",
+      "function": "evaluate_nonlinear",
+      "line": 16,
+      "kind": "python_iteration",
+      "ast_sha256": "709f49db01882198e9c0663713e77c0286e0f3b359232a97623d1496fdc73a64",
+      "role": "host_validation",
+      "reason": "Read/validate the two immutable nonlinear configuration coefficients before tracing; no algorithmic iteration."
+    },
+    {
+      "path": "bayesfilter/score_study/nonlinear_adapter.py",
+      "function": "evaluate_nonlinear.error",
+      "line": 44,
+      "kind": "python_iteration",
+      "ast_sha256": "61edd313e90dea333d2b4756a9acc86f0789a08e6f04fc05bcd6434b5ec70c8e",
+      "role": "independent_reference",
+      "reason": "Compare or validate completed independent CPU grid-reference outputs at the endpoint boundary; cannot enter or select a numerical score path."
+    },
+    {
+      "path": "bayesfilter/score_study/nonlinear_adapter.py",
+      "function": "evaluate_nonlinear",
+      "line": 46,
+      "kind": "python_iteration",
+      "ast_sha256": "59e5fbe553c91be6d721294cc2b605ef809e334ece76fef67af8156ec3055728",
+      "role": "independent_reference",
+      "reason": "Compare or validate completed independent CPU grid-reference outputs at the endpoint boundary; cannot enter or select a numerical score path."
+    },
+    {
+      "path": "bayesfilter/score_study/nonlinear_adapter.py",
+      "function": "evaluate_nonlinear",
+      "line": 47,
+      "kind": "python_iteration",
+      "ast_sha256": "be562ddca84e4556f1451582415ab33696d29beff3ca0e622b30df69389164a0",
+      "role": "independent_reference",
+      "reason": "Compare or validate completed independent CPU grid-reference outputs at the endpoint boundary; cannot enter or select a numerical score path."
+    },
+    {
+      "path": "bayesfilter/score_study/nonlinear_adapter.py",
+      "function": "evaluate_nonlinear",
+      "line": 48,
+      "kind": "python_iteration",
+      "ast_sha256": "9380e52d8170a794e988112629849342f05a63861c644a527e4284550a3f3ac0",
+      "role": "independent_reference",
+      "reason": "Compare or validate completed independent CPU grid-reference outputs at the endpoint boundary; cannot enter or select a numerical score path."
     }
   ]
 }

@@ -1786,6 +1786,37 @@ TEST_GROUPS['score_directions_generic_gpu'] = (
     'tests/test_filter_repair_score_directions.py::test_direction_value_invariance_is_returned_not_an_ignored_assertion')
 TEST_GROUPS['score_directions_readback_cpu'] = (
     'tests/test_filter_repair_score_directions_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'nonlinear_directions_{case}_{device}': (
+    f'tests/test_filter_repair_nonlinear_directions.py::test_nonlinear_direction_consumer[{case}]',)
+    for case in ('ekf', 'ukf', 'ledh', 'ledh_diagnostics', 'sgqf', 'sgqf_diagnostics',
+                 'kdm_covariance', 'kdm_covariance_diagnostics')
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS['nonlinear_directions_readback_cpu'] = (
+    'tests/test_filter_repair_nonlinear_directions_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'nonlinear_scope_calibrate_{provider}_{count}_cpu': (
+    f'tests/test_filter_repair_nonlinear_scope.py::test_scope_calibration_candidate[{provider}-{count}]',)
+    for provider in ('ledh', 'sgqf', 'kdm_covariance') for count in (8, 16, 32, 64)})
+TEST_GROUPS.update({f'nonlinear_scope_untouched_{provider}_{device}': (
+    f'tests/test_filter_repair_nonlinear_scope.py::test_untouched_scope[{provider}]',)
+    for provider in ('ledh', 'sgqf', 'kdm_covariance') for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'nonlinear_scope_untouched_plain_{provider}_{device}': (
+    f'tests/test_filter_repair_nonlinear_scope.py::test_untouched_plain_scope[{provider}]',)
+    for provider in ('ledh', 'sgqf', 'kdm_covariance') for device in ('cpu', 'gpu')})
+TEST_GROUPS['nonlinear_scope_readback_cpu'] = (
+    'tests/test_filter_repair_nonlinear_scope_readback.py',
+    'tests/test_filter_repair_nonlinear_directions_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'nonlinear_direction_cost_{case}_{arm}_cpu': (
+    f'tests/test_filter_repair_nonlinear_direction_cost.py::test_nonlinear_owner_cost[{case}-{arm}]',)
+    for case in ('ukf', 'ledh_diagnostics') for arm in ('python_reference', 'enclosing')})
+TEST_GROUPS['nonlinear_direction_cost_readback_cpu'] = (
+    'tests/test_filter_repair_nonlinear_direction_cost_readback.py',
+    'tests/test_filter_repair_nonlinear_scope_readback.py',
+    'tests/test_filter_repair_nonlinear_directions_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['nonlinear_directions_invalid_fixture_cpu'] = (
+    'tests/test_filter_repair_nonlinear_directions.py::test_nonlinear_ledh_invalid_fixture_localization[ledh]',)
+TEST_GROUPS.update({f'nonlinear_directions_invalid_{provider}_cpu': (
+    f'tests/test_filter_repair_nonlinear_directions.py::test_nonlinear_ledh_invalid_fixture_localization[{provider}]',)
+    for provider in ('sgqf', 'kdm_covariance')})
 TEST_GROUPS['score_direction_cost_readback_cpu'] = (
     'tests/test_filter_repair_score_direction_cost_readback.py',
     'tests/test_filter_repair_score_directions_readback.py', *TEST_GROUPS['policy'])
@@ -1845,6 +1876,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f'nonlinear_scope_calibrate_{provider}_{count}_cpu':
+        'Conditional test-only calibration ladder. Run a later count only after prior calibration failure; validation failure stops selection. Selected untouched checks and terminal readback remain required.'
+        for provider in ('ledh', 'sgqf', 'kdm_covariance') for count in (8, 16, 32, 64)},
     **{f"dz5_locator_first_context_{arm}_cpu": "Truncated first-objective context localization; no optimizer, runtime repair or admission."
         for arm in ("original", "candidate")},
     "dz5_locator_first_context_readback_cpu": "Diagnostic output and byte readback; negative context localization does not qualify numerical equivalence.",
@@ -2536,6 +2570,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('nonlinear_scope_') and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('nonlinear_directions_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('score_directions_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_validity_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_seeded_') and group.endswith('_gpu')},
