@@ -123,3 +123,34 @@ failure: CV0.3303714383398674 equals the immediate upper-neighbor tau, whereas
 the original CV is0.3303714383398673 and stops. Use the seventh worker for the
 same arithmetic localization on GPU, including dynamic divisors plus barriers.
 Do not silently accept the changed branch or extrapolate CPU qualification.
+
+
+Continuation after04876: the checked decision primitive qualifies under the
+explicit numerical-resolution veto in filter_gradient_iapf_resolution_20260929.md.
+The full-controller design must preserve the two timing stages already exposed
+by execute_iapf. Use one enclosing offline XLA recurrence, with configuration-
+time factories for the finite doubling ladder and native branch selection.
+Each branch runs the original N-specific filter and fitter, including the
+iteration-zero constant twist, and returns fixed coefficient/diagnostic shapes;
+particle clouds remain local to that branch. No padded particle measure is
+needed. Carry histories/status/counts as fixed-size arrays and retain only the
+executed prefix for host artifact formatting.
+
+The independent final stage can use a stable compiled input-plus-score owner
+selected from the same finite shape ladder after the offline owner returns its
+realized count. This host operation selects a TensorSpec/factory for an already
+computed count; it must not recompute stopping, likelihood, fitting or particle
+arithmetic. It preserves the existing final cloud shape and separately measured
+offline/final wall times. Review this boundary explicitly before implementation,
+including refusal if the returned count is absent from the frozen ladder.
+If final dispatch instead stays inside one graph, any padded return is diagnostic
+storage only and must not alter the measure; substage timings cannot be invented.
+
+Before numerical launch, freeze current adapter/scope/fitter sources, extend the
+fixture for Gaussian/nonlinear and mixed precision, and state a separate bounded
+allocation. Validate branches with scripted histories first, then actual fitting
+and complete public records. Adapt the runtime selection validator to the shared
+checked controller; keep archived Python CV values as independent reference,
+not live selection arithmetic. Expose numerical-resolution errors with interval
+and tau in DiagnosticFailure. The unguarded GPU threshold regression remains an
+expected rejection case for the checked route and must not be silently removed.

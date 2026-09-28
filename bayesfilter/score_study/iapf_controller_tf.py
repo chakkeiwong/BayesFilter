@@ -76,3 +76,86 @@ def make_iapf_iteration_decision(max_history, k, max_particles, jit_compile=True
                 "next_particles": next_particles, "cv": cv, "complete_window": complete}
 
     return decide
+
+
+@lru_cache(maxsize=12)
+def make_checked_iapf_iteration_decision(max_history, k, max_particles, jit_compile=True):
+    """Retain raw decisions but reject numerically unresolved CV comparisons.
+
+    ``action == -2`` means the stopping threshold lies in the propagated
+    rounding interval. This diagnostic is not a statistical confidence bound.
+    Its exp assumption is at most one ULP plus one outward rounding unit.
+    Endpoint callers must treat -2 as an error, never as a fit/final action.
+    """
+    raw = make_iapf_iteration_decision(max_history, k, max_particles, jit_compile)
+
+    @tf.function(input_signature=raw.input_signature, jit_compile=jit_compile, autograph=False)
+    def checked(log_values, particle_counts, length, tau):
+        result = raw(log_values, particle_counts, length, tau)
+        zero = tf.constant(0., tf.float64)
+        negative = tf.constant(float("-inf"), tf.float64)
+        positive = tf.constant(float("inf"), tf.float64)
+
+        def down(value):
+            return tf.math.nextafter(value, negative)
+
+        def up(value):
+            return tf.math.nextafter(value, positive)
+
+        def divide(a, b):
+            if jit_compile:
+                a, b = xla_optimization_barrier(input=[a, b])
+            return a/b
+
+        def interval():
+            indices = tf.range(k + 1) + length - k - 1
+            window = tf.gather(log_values, indices)
+            counts = tf.gather(particle_counts, indices)
+            maximum = tf.reduce_max(window)
+            shifted = window - maximum
+            lower = tf.maximum(zero, down(down(tf.exp(down(shifted)))))
+            upper = up(up(tf.exp(up(shifted))))
+            lower = tf.where(window == maximum, tf.ones_like(lower), lower)
+            upper = tf.where(window == maximum, tf.ones_like(upper), upper)
+
+            def add(i, lo, hi):
+                return i + 1, down(lo + lower[i]), up(hi + upper[i])
+
+            total = tf.while_loop(lambda i, *_: i < k + 1, add,
+                (tf.constant(0), tf.constant(0., tf.float64), tf.constant(0., tf.float64)),
+                maximum_iterations=k + 1, parallel_iterations=1)
+            n = tf.reduce_sum(tf.cast(counts >= 2, tf.float64))
+            mean_lo, mean_hi = down(divide(total[1], n)), up(divide(total[2], n))
+            delta_lo, delta_hi = down(lower - mean_hi), up(upper - mean_lo)
+            square_lo = tf.where((delta_lo <= 0.) & (delta_hi >= 0.), zero,
+                tf.maximum(zero, down(tf.minimum(tf.square(delta_lo), tf.square(delta_hi)))))
+            square_hi = up(tf.maximum(tf.square(delta_lo), tf.square(delta_hi)))
+
+            def add_square(i, lo, hi):
+                return i + 1, tf.maximum(zero, down(lo + square_lo[i])), up(hi + square_hi[i])
+
+            squares = tf.while_loop(lambda i, *_: i < k + 1, add_square,
+                (tf.constant(0), tf.constant(0., tf.float64), tf.constant(0., tf.float64)),
+                maximum_iterations=k + 1, parallel_iterations=1)
+            variance_lo = tf.maximum(zero, down(divide(squares[1], n - 1.)))
+            variance_hi = up(divide(squares[2], n - 1.))
+            root_lo = tf.maximum(zero, down(tf.sqrt(variance_lo)))
+            root_hi = up(tf.sqrt(variance_hi))
+            cv_lo = tf.maximum(zero, down(divide(root_lo, mean_hi)))
+            cv_hi = up(divide(root_hi, mean_lo))
+            equal = tf.reduce_all(window == maximum)
+            return tf.where(equal, zero, cv_lo), tf.where(equal, zero, cv_hi)
+
+        lower, upper = tf.cond(result["complete_window"], interval,
+            lambda: (tf.constant(float("nan"), tf.float64), tf.constant(float("nan"), tf.float64)))
+        interval_valid = (tf.math.is_finite(lower) & tf.math.is_finite(upper) &
+                          (lower <= result["cv"]) & (result["cv"] <= upper))
+        eligible = result["valid"] & (length > k + 1)
+        unresolved = eligible & (~interval_valid | ((lower <= tau) & (tau <= upper)))
+        return {**result, "raw_action": result["action"],
+                "action": tf.where(unresolved, -2, result["action"]),
+                "decision_resolved": result["valid"] & ~unresolved,
+                "cv_lower": lower, "cv_upper": upper,
+                "cv_interval_valid": interval_valid}
+
+    return checked

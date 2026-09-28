@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04870; active worker runs: none.
-Charged/reserved CPU 111570.350022s / GPU 98017.683363s.
-Remaining CPU 25.008236h / GPU 24.772866h.
+Through 04876; active worker runs: none.
+Charged/reserved CPU 111602.043789s / GPU 98026.665727s.
+Remaining CPU 24.999432h / GPU 24.770371h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_iapf_controller_20260929.md (closed); at most
-8 workers/600 CPU/600 GPU seconds.
-Used/reserved 8 workers/32.810664 CPU/11.402536 GPU seconds.
+Active allocation: docs/plans/filter_gradient_iapf_resolution_20260929.md (closed); at most
+6 workers/900 CPU/900 GPU seconds.
+Used/reserved 6 workers/31.693768 CPU/8.982365 GPU seconds.
 One numerical worker at a time.
 
-Adaptive iAPF decision diagnosis04863–04870 is complete. CPU12 decisions/7 invalid cases pass after runtime window cardinality plus division barriers. GPU still fails the adjacent-threshold action because exp differs by one FP64 unit.04870 verifies the preserved failure with161 checks; no primitive admission or active adaptive runtime change. Fixed-fit repair/cost evidence through04862 remains valid.
+Checked iAPF resolution owner qualifies through04876 on CPU/GPU:33 resolved histories preserve actions,3 ambiguous thresholds explicitly reject,7 invalid cases reject. Every interval contains original/raw/80-digit CV;161 readback/policy checks pass. Active adaptive runtime and selection validator remain unchanged. Fixed fitted-APF repair/cost screen is committed at4629f3bd8/5eb694352, with approximately100MiB sampled RSS trigger still open.
 
-Next: Evaluate an explicit numerical-resolution veto for near-threshold adaptive decisions under the Class B fail-closed guard policy; preserve resolved decisions and reject ambiguous cases instead of choosing a different action. Then migrate the complete adaptive recurrence, ledger validation and actual consumers with truthful stage/work accounting.
+Next: Design and implement the complete native offline iAPF recurrence using finite particle-shape dispatch and the checked controller. Preserve fit/cast/convergence errors,23-column histories, independent seeds, frozen-fit final score and truthful separate offline/final timing. Replace the selection validator numerical recomputation with the shared checked authority. Qualify actual CPU/GPU endpoints and costs before closing F07/F19.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

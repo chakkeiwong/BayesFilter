@@ -1804,6 +1804,9 @@ TEST_GROUPS['fitted_apf_cost_readback_cpu'] = (
 TEST_GROUPS['iapf_controller_localization_cpu'] = ('tests/test_filter_repair_iapf_controller_localization.py',)
 TEST_GROUPS['iapf_controller_localization_gpu'] = TEST_GROUPS['iapf_controller_localization_cpu']
 TEST_GROUPS['iapf_controller_readback_cpu'] = ('tests/test_filter_repair_iapf_controller_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['iapf_resolution_readback_cpu'] = ('tests/test_filter_repair_iapf_resolution_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['iapf_resolution_cpu'] = ('tests/test_filter_repair_iapf_resolution.py',)
+TEST_GROUPS['iapf_resolution_gpu'] = TEST_GROUPS['iapf_resolution_cpu']
 TEST_GROUPS['iapf_controller_cpu'] = ('tests/test_filter_repair_iapf_controller.py',)
 TEST_GROUPS['iapf_controller_gpu'] = TEST_GROUPS['iapf_controller_cpu']
 TEST_GROUPS['fitted_apf_rng_cpu'] = ('tests/test_filter_repair_fitted_apf_rng.py',)
@@ -2614,6 +2617,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('fitted_apf_fixed_') and group.endswith('_gpu')},
     'iapf_controller_localization_gpu': 'GPU',
+    'iapf_resolution_gpu': 'GPU',
     'iapf_controller_gpu': 'GPU',
     'fitted_apf_rng_gpu': 'GPU',
     'fitted_apf_rng_explicit_gpu': 'GPU',
