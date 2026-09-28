@@ -60,6 +60,16 @@ peak claims remain ineligible; this does not erase measured compiler RSS.
 The locator's
 specific fusion lead stays open without more unrelated counter experiments.
 
+September29 additional consumer finding: both public score-study endpoints
+reach fixed fitted-twist and adaptive iAPF Python numerical recurrences.
+Quadratic feature construction also contains numerical comprehensions. These
+remain F07/F19 work under the explicit repair sequence in
+filter_gradient_fitted_apf_execution_20260929.md. Ordinary reporting/seed-label
+loops are distinct; no runtime relabeling or allowance is granted. The first
+phase is bounded source/fixture preparation after the active scalar Philox
+state-layout intervention closes. Preserve live RNG streams as well as
+frozen-array numerical parity.
+
 | Order | Remaining gap | Next repair or evidence action | Exit gate |
 |---|---|---|---|
 | 1 | DZ5 locator context:121 strict full-record differences; both original and candidate unconverged | Through04661, exact controls and optimized caller traces isolate four gradient fusions with eight unchanged copies of printed2.4 carried through the candidate loop. Original/replay-int32 embed these constants and match complete short records; candidate differs at47 leaves. Test this specific constant-propagation mechanism in a bounded intervention; no more unrelated dtype trials. See `filter_gradient_dz5_locator_optimized_hlo_result_20260928.md`. | Exact inputs and unchanged gates; qualify a smaller remedy before any full trajectory. Keep GPU-compatible resources. Compiler structure alone is not causal proof. Neither a tiny score residual nor an unconverged optimizer is success. |
@@ -116,6 +126,15 @@ Through04719,25.627693 CPU/25.026959 GPU hours remain; these current charges
 supersede earlier budget snapshots in this file. No numerical worker is active.
 The primary agent reviewed this refresh. No independent review, scientific
 promotion, canonical LEDH claim or whole-program completion is asserted.
+
+Through04833 the bounded scalar-Philox-state intervention is closed and
+rejected: exact complete records and all CPU regressions pass, but both
+descriptive warm ratios worsen (1.156/2.216) and observation-body copies rise
+360→363. Current runtime is restored exactly; no conditional GPU trial was
+launched. See filter_gradient_streaming_state_layout_result_20260929.md.
+Do not repeat this state-packing candidate or claim its rejection explains
+the original streaming regression. The next independent concrete repair is
+the fitted-APF execution plan above; all other terminal gates remain open.
 
 September29 current-source consumer inspection, while the paired CPU cost
 cohort runs: `bayesfilter/score_study/adapters.py::evaluate_gaussian` calls six directional kernels in

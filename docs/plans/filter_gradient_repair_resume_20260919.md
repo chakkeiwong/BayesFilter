@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04826; active worker runs: none.
-Charged/reserved CPU 111142.629769s / GPU 97801.619105s.
-Remaining CPU 25.127047h / GPU 24.832884h.
+Through 04833; active worker runs: none.
+Charged/reserved CPU 111344.961817s / GPU 97801.619105s.
+Remaining CPU 25.070844h / GPU 24.832884h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_os_memory_accounting_20260929.md (complete); at most
-2 workers/120 CPU/0 GPU seconds.
-Used/reserved 2 workers/1.186639 CPU/0.000000 GPU seconds.
+Active allocation: docs/plans/filter_gradient_streaming_state_layout_20260929.md (complete); at most
+8 workers/1800 CPU/600 GPU seconds.
+Used/reserved 7 workers/202.332048 CPU/0.000000 GPU seconds.
 One numerical worker at a time.
 
-Allocation-only diagnostic complete: two fresh standard-library processes touch equal544MiB, with no TensorFlow/NumPy/compiler import. Rusage deficits2.262MiB pinned and34.375MiB over32CPUs support per-CPU accounting, consistent with matching-kernel headers. Counter mismatch is not XLA-specific. Real enclosing-owner RSS increases and cost/capacity gates remain open. Actual charge1.186639 CPU seconds, zero GPU.
+Scalar-Philox-state intervention is rejected and runtime restored byte-for-byte toab31c1410. CPU qualification04827 and four exact complete-record comparisons04828–04831 pass; warm ratios1.156/2.216 fail the nomination screen. Body copies360→363; no causality claimed. Readback04832 and retirement04833 each pass161 checks. Seven workers202.332048 CPU seconds, zeroGPU. Trial source/HLO/harness preserved in64-member archive; live trial harness retired.
 
-Next: Archive and push the accounting diagnosis; next review a bounded full-filter intervention for the unresolved streaming CPU regression, preserving every RNG draw, final state and validity schedule. Remaining matched owner costs/current-source/F01–F20/DZ5/GPU gates stay open; no main merge.
+Next: Commit/push the closed negative intervention, then prepare the fixed fitted-twist APF execution repair and live RNG compatibility gates fromfilter_gradient_fitted_apf_execution_20260929.md. Keep adaptive iAPF as its distinct follow-up. Streaming cost, source applicability, owner residency/GPU capacity, DZ5 and terminal F01–F20 remain open.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

@@ -1779,6 +1779,8 @@ TEST_GROUPS['streaming_profile_hlo_cpu'] = (
     'tests/test_filter_repair_streaming_profile.py::test_saved_hlo_placement_profile',)
 TEST_GROUPS['streaming_profile_readback_cpu'] = (
     'tests/test_filter_repair_streaming_profile_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['streaming_state_retirement_cpu'] = (
+    'tests/test_filter_repair_streaming_state_retirement.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['score_directions_generic_cpu'] = (
     'tests/test_filter_repair_score_directions.py', '-k', 'not actual_direction_consumer')
 TEST_GROUPS['score_directions_generic_gpu'] = (
