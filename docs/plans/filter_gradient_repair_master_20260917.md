@@ -6,9 +6,9 @@ integrated. Check git HEAD for subsequent documentation/source checkpoints.
 
 Active question: renew source and actual-consumer lifetime evidence after the
 SVD, clipped-anchor and final-precision symmetry repairs.
-Through 04624; active: [{'run': 4625, 'group': 'dz5_initializer_lifetime_cpu'}].
-Global charged/reserved CPU 105232.229228s / GPU 93683.739409s.
-Remaining CPU 26.768825h / GPU 25.976739h.
+Through 04625; active: [{'run': 4626, 'group': 'dz5_initializer_lifetime_gpu'}].
+Global charged/reserved CPU 103548.073647s / GPU 95483.739409s.
+Remaining CPU 27.236646h / GPU 25.476739h.
 Caps are56CPU/52GPU process-hours; extra24CPU hours are already counted.
 Symmetry unit closed: 7/12 workers,
 481.384047/2400 combined seconds, no failures.
@@ -41,11 +41,11 @@ Checked findings and evidence:
   optimizers remain unconverged. No further full trajectory without a smaller
   graph-context diagnostic; no tolerance changes.
 
-Next: Fresh r2 target/oracle cohort04618--04624 and source-bound admission pass. CPU lifetime04625 is active, session43954, two complete workers under3600s parent/1700s child bounds; do not launch a numerical worker until it completes. Next GPU rejected case and GPU lifetime, then readback/policy. Strict records and terminal call-chain review remain open.
+Next: Fresh r2 target/oracle04618--04624 and admission pass. CPU lifetime04625 passes both accepted workers; parent RSS+0.410MiB then flat, both reaped. GPU lifetime04626 is active, session38448, 1800s parent/850s child; do not start another numerical worker. Next rejected GPU case and renewal readback/policy. The smaller locator-context diagnostic is prepared but not yet allocated/executed.
 Target cohort04618--04624 and fresh r2 admission pass;
 archive dz5-source-renewal-target-04624-evidence.tar.gz has816 verified members.
-Active renewal unit: 8/14 workers,
-4234.342932/15000 combined seconds.
+Active renewal unit: 9/14 workers,
+4345.412393/15000 combined seconds.
 Plan: filter_gradient_dz5_source_renewal_20260928.md.
 Old consumer snapshots qualify only their own bytes. Source-renewed target,
 accepted/rejected consumer, actual supervisor lifetime, strict precision and

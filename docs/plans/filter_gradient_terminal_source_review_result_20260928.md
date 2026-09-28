@@ -56,3 +56,22 @@ Treating its raw syntax total as migration debt would be wrong. Conversely,
 passing the276-source guard cannot cover the remaining public endpoints. The
 next useful step is endpoint-specific evidence reconciliation, not another
 unchanged whole-repository scan. No independent reviewer was used.
+
+The saved-cost readback completed in4.775 seconds and correctly returned a
+nonpassing report:0 current generic measurement pairs,1116 missing requested
+pairs,770 excluded older records. Of those,763 have stale harness hashes and7
+use an outdated schema. Every stale record differs in
+`measure_filter_xla_memory.py` and `filter_repair_benchmark_worker.py`; some also
+have changed fixture sources. This is not a measured numerical failure and
+does not prove1116 new jobs are necessary.
+
+The generic comparator only reads `action=measure` records, ending at01481 in
+this campaign. Later matched costs live in endpoint-specific pytest artifacts
+and their qualified readbacks. The terminal master therefore needs an evidence
+index that reconciles those result families and their actual source closure;
+the old generic comparator cannot represent whole-program completion. Preserve
+its stale exclusions. Before renewing any numerical cost, inspect whether the
+later endpoint result already answers it with current dependencies and valid
+hardware/input/timing provenance. Do not translate stale historical harness
+bytes into a blanket equivalence exception. The raw report and differing-file
+detail are in `terminal-cost-readback-20260928-r1`.

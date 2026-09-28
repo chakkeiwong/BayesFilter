@@ -43,3 +43,13 @@ including the first120-second failed attempt, from the same global cap. Record
 timeouts in a `finally` path so missing completion cannot erase the charge.
 After success, reopen gzip and verify the complete JSON/schema and counts.
 This changes only inventory serialization, not numerical code or audit rules.
+
+After inventory, run one120-second standard-library readback with the existing
+`scripts/compare_filter_repair_campaign.py` into unique
+`terminal-cost-readback-20260928-r1/result.json`. This compares saved numerical
+evidence only and launches no worker. Its missing, stale, failed and unresolved
+measurement groups are a repair queue, not permission to discard discrepancies
+or re-run the entire campaign. Add its elapsed time once to the same global CPU
+balance. Before interpreting cost, retain source, input, hardware, graph and
+timing-scope comparability checks. Any malformed result is a harness failure;
+an honest incomplete report is a valid diagnostic and does not close the master.

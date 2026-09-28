@@ -124,6 +124,9 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    **{f"dz5_locator_first_context_{arm}_cpu": (
+        f"tests/test_filter_repair_dz5_locator_context.py::test_first_objective_context[{arm}]",)
+        for arm in ("original", "candidate")},
     **{f"factor_precision_symmetry_fit_{device}": (
         "tests/test_filter_repair_dz5_exact_fit.py::test_exact_saved_fit_inputs[after]",)
         for device in ("cpu", "gpu")},
@@ -1588,7 +1591,10 @@ TEST_GROUPS['factor_precision_symmetry_readback_cpu'] = (
     'tests/test_filter_repair_factor_precision_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['dz5_initializer_renewal_readback_cpu'] = (
     'tests/test_filter_repair_dz5_initializer_renewal.py::test_renewed_target_admission',
+    'tests/test_filter_repair_dz5_initializer_renewal.py::test_complete_renewed_lifetime_evidence',
     *TEST_GROUPS['dz5_initializer_evidence_cpu'], *TEST_GROUPS['policy'])
+TEST_GROUPS['dz5_locator_first_context_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_context_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f"remaining_svd_{part}_{device}": TEST_GROUPS[original]
     for part, original in (("block", "block_score_geometry"),
         ("public_first", "geometry_public_first_cpu"),
@@ -1617,6 +1623,9 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f"dz5_locator_first_context_{arm}_cpu": "Truncated first-objective context localization; no optimizer, runtime repair or admission."
+        for arm in ("original", "candidate")},
+    "dz5_locator_first_context_readback_cpu": "Diagnostic output and byte readback; negative context localization does not qualify numerical equivalence.",
     **{f"factor_precision_symmetry_fit_{device}": "Exact-input repaired fit outcome; complete numerical readback required separately from artifact-check success."
         for device in ("cpu", "gpu")},
     **{f"factor_precision_symmetry_trial_{device}": "Diagnostic final inverse projection; runtime unchanged, raw precision/condition failures cannot be waived."
