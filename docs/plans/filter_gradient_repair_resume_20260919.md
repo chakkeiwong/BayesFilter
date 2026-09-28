@@ -7,9 +7,9 @@ integrated. Check git HEAD for subsequent documentation/source checkpoints.
 Active question: localize the remaining locator compiler-context difference
 and reconcile terminal endpoint evidence. Source renewal and adapter import
 isolation are complete for their tested scopes.
-Through 04641; active: none.
-Global charged/reserved CPU 104711.361340s / GPU 96071.347964s.
-Remaining CPU 26.913511h / GPU 25.313514h.
+Through 04655; active: none.
+Global charged/reserved CPU 106973.011202s / GPU 96071.347964s.
+Remaining CPU 26.285275h / GPU 25.313514h.
 Caps are56CPU/52GPU process-hours; extra24CPU hours are already counted.
 Symmetry unit closed: 7/12 workers,
 481.384047/2400 combined seconds, no failures.
@@ -51,28 +51,24 @@ Checked findings and evidence:
   optimizers remain unconverged; no tolerance changes.
 - Locator context: truncated dispatch04632--04634 removes the discrepancy;
   genuine one-iteration04635--04637 reproduces it exactly in three objectives.
-  CPU-only11-attribute accounting-width intervention04638 restores the original
-  first score; reduction-only04640 retaining int64 resources does not. Readbacks
-  pass through04641. See locator_one_iteration_result and
-  locator_counter_context_result dated20260928. No GPU-safe/runtime remedy;
-  keep full trajectories unqualified while bisecting the smaller control.
+  Accounting-family04642--04645 and progress split04646--04648 isolate the
+  positive intervention to reporting counters. Replay storage alone04651
+  restores the first score; attempts/optimizer counters04649/04650 do not.
+  Int64-storage/int32-increments04652 and derived-count04654 are negative;
+  the latter matches every candidate short callback/record exactly. Readbacks
+  pass through04655. See locator_reporting_storage_result and
+  locator_derived_replay_result dated20260928. Runtime remains unchanged;
+  next inspect optimized lowering, not another full trajectory.
 
-Next: Prepare bounded resource/index-family or optimized-HLO localization using the positive one-iteration control. Preserve int64 GPU resources and the negative single-reduction result. No full trajectory or runtime change without a qualified smaller remedy. Registered LEDH consumer migration, strict fitted/isotropic records, current-source cost review and terminal F01--F20 dispositions remain open.
-Target cohort04618--04624 and fresh r2 admission pass;
-archive dz5-source-renewal-target-04624-evidence.tar.gz has816 verified members.
-Renewal unit (closed_renewed_evidence_passed): 11/14 workers,
-4955.284692/15000 combined seconds.
-Plan: filter_gradient_dz5_source_renewal_20260928.md.
-Adapter repair: qualified_real_import_prior_and_policy_checks;
-2/4 workers, 33.546684/1200 CPU seconds.
-Locator first-objective diagnostic: diagnostic_readback_complete_no_runtime_repair_inferred;
-3/6 workers, 172.970612/1800 CPU seconds.
-Genuine one-iteration optimizer control: closed_diagnostic_readback_passed;
-3/6 workers, 459.467097/1800 CPU seconds.
-CPU accounting-width diagnostic: closed_diagnostic_readback_passed;
-4/4 workers, 469.132881/1200 CPU seconds.
-Endpoint evidence index: readback_and_integrity_tests_passed;
-5.906675/600 CPU seconds.
+Next: Prepare and skeptically review a bounded optimized-HLO/lowering comparison of original, candidate and positive replay-int32 one-iteration controls. Replay storage is a sufficient context intervention; int32 increments with int64 storage and removing the replay variable both preserve the candidate. Keep runtime unchanged, no full trajectory before a smaller qualified remedy. Follow the terminal gap queue for other repairs.
+New closed diagnostic allocations (detailed plans/results linked in ledger):
+- Accounting families: 4/6 workers, 675.876765/1800 CPU seconds.
+- Progress split: 3/5 workers, 451.586176/1500 CPU seconds.
+- Reporting storage/arithmetic: 5/6 workers, 900.498167/1800 CPU seconds.
+- Derived replay: 2/4 workers, 233.688754/1200 CPU seconds.
+Earlier renewal, import isolation and diagnostic allocations remain closed.
+No unchanged renewal cohort or full optimizer trajectory is requested.
+Remaining work order and exit gates: filter_gradient_terminal_gap_queue_20260928.md.
 Old consumer snapshots qualify only their own bytes. Strict precision and
 isotropic reporting, locator rounding, matched current-source cost attribution,
 registered LEDH consumer migration and F01--F20 terminal dispositions remain

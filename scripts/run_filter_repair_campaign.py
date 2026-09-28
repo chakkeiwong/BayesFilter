@@ -1619,6 +1619,33 @@ TEST_GROUPS['dz5_locator_counter_reduction_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_counter_reduction.py::test_saved_reduction_context',
     'tests/test_filter_repair_dz5_locator_counter_context.py::test_saved_counter_context',
     *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'dz5_locator_family_{family}_cpu': (
+    'tests/test_filter_repair_dz5_locator_accounting_families.py::test_family_partition',
+    f'tests/test_filter_repair_dz5_locator_accounting_families.py::test_family_context[{family}]',)
+    for family in ('index_calls', 'progress', 'invalid_rows')})
+TEST_GROUPS['dz5_locator_family_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_accounting_families.py::test_family_partition',
+    'tests/test_filter_repair_dz5_locator_accounting_families.py::test_saved_family_context',
+    *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'dz5_locator_progress_{family}_cpu': (
+    'tests/test_filter_repair_dz5_locator_progress_split.py::test_progress_partition',
+    f'tests/test_filter_repair_dz5_locator_progress_split.py::test_progress_context[{family}]',)
+    for family in ('round_budget', 'reporting')})
+TEST_GROUPS['dz5_locator_progress_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_progress_split.py::test_progress_partition',
+    'tests/test_filter_repair_dz5_locator_progress_split.py::test_saved_progress_context',
+    *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'dz5_locator_reporting_{arm}_cpu': (
+    f'tests/test_filter_repair_dz5_locator_reporting_storage.py::test_reporting_storage_context[{arm}]',)
+    for arm in ('attempts', 'optimizer_calls', 'replays', 'logical_int32')})
+TEST_GROUPS['dz5_locator_reporting_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_reporting_storage.py::test_saved_reporting_storage',
+    *TEST_GROUPS['policy'])
+TEST_GROUPS['dz5_locator_derived_replay_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_derived_replay.py::test_derived_replay_context',)
+TEST_GROUPS['dz5_locator_derived_replay_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_derived_replay.py::test_saved_derived_replay',
+    *TEST_GROUPS['policy'])
 TEST_GROUPS['dz5_locator_one_iteration_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_one_iteration.py::test_saved_real_optimizer_contexts',
     'tests/test_filter_repair_dz5_locator_context_readback.py', *TEST_GROUPS['policy'])

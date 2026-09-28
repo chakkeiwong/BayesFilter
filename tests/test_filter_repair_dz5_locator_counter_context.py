@@ -76,15 +76,18 @@ def check_saved_counter_context(request, group='dz5_locator_counter_int32_cpu',
     assert patch['original_sha256'] == hashlib.sha256((directory / 'frozen-candidate-locator.py').read_bytes()).hexdigest()
     assert patch['diagnostic_sha256'] == hashlib.sha256((directory / diagnostic_name).read_bytes()).hexdigest()
     assert report['context_hlo_sha256'] == hashlib.sha256((directory / 'first-objective-context.hlo.txt').read_bytes()).hexdigest()
+    assert report['callbacks_sha256'] == hashlib.sha256((directory / 'locator-callbacks.npz').read_bytes()).hexdigest()
     assert report['trace_count'] == 1 and not report['host_callbacks']
     assert 1 <= report['optimizer_callback_batches'] <= 128
     with np.load(directory / 'locator-callbacks.npz', allow_pickle=False) as payload:
         actual = {key: payload[key][:2].copy() for key in payload.files}
+    assert set(actual) == {'positions', 'values', 'scores', 'valid'}
     comparisons = {}
     for number in (4584, 4585, 4635, 4636):
         previous = root / f'run-{number:05d}'
         prior = json.loads((previous / 'dz5-snapshot-import.json').read_text())
         assert prior['snapshot_manifest_sha256'] == report['snapshot_manifest_sha256']
+        assert prior['callbacks_sha256'] == hashlib.sha256((previous / 'locator-callbacks.npz').read_bytes()).hexdigest()
         with np.load(previous / 'locator-callbacks.npz', allow_pickle=False) as payload:
             reference = {key: payload[key][:2].copy() for key in payload.files}
         comparisons[str(number)] = {key: array_comparison(actual[key], reference[key]) for key in actual}
@@ -95,6 +98,7 @@ def check_saved_counter_context(request, group='dz5_locator_counter_int32_cpu',
             and not comparisons['4636']['scores']['bitwise_equal'],
         'nonclaims': ['No GPU-compatible repair, exact compiler cause, full-record waiver or admission.']}
     save(request, output, result)
+    return result
 
 
 def test_saved_counter_context(request):
