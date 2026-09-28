@@ -4,11 +4,31 @@ This host-side observer is not a benchmark kernel or a runtime decision path.
 The parent owns the output so native child failures preserve the samples.
 """
 
+import csv
 import json
 import subprocess
 import time
 from collections import Counter
 from pathlib import Path
+
+
+def observe_process_exit(pid, gpu_uuid=None):
+    """Read-only process-boundary evidence; device reservation is not tensor use."""
+    result = {'pid': pid, 'proc_entry_present': Path(f'/proc/{pid}').exists(),
+              'gpu_uuid': gpu_uuid, 'gpu_processes': [], 'errors': [],
+              'limitation': 'A reaped process contains its context; no unbounded-leak or live-tensor-memory claim.'}
+    if gpu_uuid:
+        try:
+            output = subprocess.check_output([
+                'nvidia-smi', '--query-compute-apps=gpu_uuid,pid,used_memory',
+                '--format=csv,noheader,nounits'], text=True, timeout=5)
+            result['gpu_processes'] = [
+                {'uuid': uuid, 'pid': int(process_id), 'reserved_mib': reserved}
+                for uuid, process_id, reserved in csv.reader(output.splitlines(), skipinitialspace=True)
+                if uuid == gpu_uuid]
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            result['errors'].append(f'{type(error).__name__}: {error}')
+    return result
 
 
 def memory_snapshot(pid):

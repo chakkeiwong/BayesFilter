@@ -19,7 +19,6 @@ from bayesfilter.highdim.ledh_canonical_value_program_tf import (
 from bayesfilter.ops.ledh_random_compat_tf import (
     integer_seed_words,
     philox_replication_state,
-    seeded_value_inputs,
 )
 
 Tensor = tf.Tensor
@@ -98,6 +97,9 @@ def make_seeded_canonical_value_program(
     no global cache is used. Recreate after a configuration/closure change.
     The three input signatures are [T, observation_dim], [seed_word_count] and
     [resample_seed_word_count]. Use ``integer_seed_words`` for both seeds.
+    The shared recurrence generates one process draw per valid prediction;
+    no full-horizon random array is materialized. Numeric RNG-state and consumed
+    draw diagnostics preserve observability of early termination.
     Return fixed-capacity numeric diagnostics; ``model_id`` and trimmed marginal
     histories are reporting-boundary operations in the convenience wrapper.
     Explicit ``jit_compile=False`` is a diagnostic/reference exception only.
@@ -108,7 +110,7 @@ def make_seeded_canonical_value_program(
                         "process_noise_covariance")
     if seed_word_count < 1 or resample_seed_word_count < 1:
         raise ValueError("seed word counts must be positive")
-    value_program = make_canonical_value_program(
+    return make_canonical_value_program(
         callbacks, observation_spec, particle_count=particle_count,
         flow_substeps=flow_substeps, temper_stages=temper_stages,
         annealed_resampling=annealed_resampling, flow_prior_cap=flow_prior_cap,
@@ -118,22 +120,8 @@ def make_seeded_canonical_value_program(
         trust_region_lm_damping=trust_region_lm_damping,
         trust_region_lm_scale_floor=trust_region_lm_scale_floor,
         trust_region_radius=trust_region_radius, jit_compile=jit_compile,
+        seed_word_count=seed_word_count, resample_seed_word_count=resample_seed_word_count,
     )
-    horizon = observation_spec.shape[0]
-    signature = [observation_spec, tf.TensorSpec([seed_word_count], tf.uint32),
-                 tf.TensorSpec([resample_seed_word_count], tf.uint32)]
-
-    @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
-    def program(observations, seed_words, resample_seed_words):
-        initial, processes, uniforms = seeded_value_inputs(
-            seed_words, resample_seed_words, horizon=horizon,
-            particle_count=particle_count, dimension=callbacks.state_dim,
-            dtype=observation_spec.dtype, stage_count=max(1, int(temper_stages)),
-            annealed_resampling=annealed_resampling,
-        )
-        return value_program(observations, initial, processes, uniforms)
-
-    return program
 
 
 def canonical_value_and_diagnostics(

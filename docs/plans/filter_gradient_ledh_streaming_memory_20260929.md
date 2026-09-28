@@ -72,3 +72,75 @@ disposition, score public migration, the DZ5 locator/geometry gaps, current
 source applicability or F01--F20 terminal review. No canonical LEDH, posterior,
 HMC, training, precision/default change or main merge follows from this phase.
 Primary-agent review recorded; no independent review asserted.
+
+Activation, 2026-09-29: recovered clean pushed commit c7c0b88c2, with no
+campaign worker in trusted host process state. Freeze that commit's registered
+array-composed owner and native recurrence before any runtime edit. Its shared
+LM/reset dependencies are the repaired current source, not the erroneous prior
+eager LM comparator. Keep independent supplied draws and eager/current-reset
+comparators. Frozen Git modules are test authorities only.
+
+Predeclared capacity ladder: (T,N,d)=(3,8,2),(3,64,2),(32,64,2),(128,64,2),
+float64 with float32 reset, seed123/resample17, dual-trust controls from the
+qualified small endpoint. Buffered process arrays are respectively384,3072,
+32768,131072 bytes; streaming uses one N*d draw plus three uint64 Philox words.
+Per-step diagnostic histories legitimately remain O(T). Other cloud/reset
+workspaces remain O(N*d*d) and O(N*N); this is not a whole-filter O(N*d) claim.
+The ladder is a mechanism/capacity diagnostic, with three warm evaluations per
+point and both buffered and streaming owners; rejected trajectories are labeled
+and excluded from speed ratios. Fixture sizes are deliberately bounded and do
+not qualify large production capacity. Inspect graph shapes and optimized HLO
+separately from timed retained-owner samples, whose compiler export costs must
+not contaminate the measurements.
+
+Fresh-process cost arms: frozen buffered XLA, streaming graph reference and
+streaming XLA, each at the original small healthy fixture, 15 retained calls
+and two extra fresh owners, with memory/weak-reference samples. Reuse earlier
+unchanged eager CPU cost evidence; renew eager GPU and matched GPU costs if
+unshared. Observe child exit from the runner and device process accounting;
+process exit is containment, not proof of allocator leak absence. One numerical
+worker at a time, maximum16 total including baseline freeze and regressions.
+Add only explicit registered runner groups, preserve the approved runner prefix,
+and apply unshared-device preflight to every new GPU timing group.
+
+Activation skeptical review: numerical tolerances, seeds, callback semantics,
+reset controls, dtype and TF32 stay fixed. Cost statistics remain descriptive.
+Graph-buffer removal is the engineering criterion, numerical regression a veto,
+owner-memory growth a repair trigger, and missing diagnostics or exhausted
+allocation a stop. Nonlinear/scientific/score admission cannot follow from the
+linear fixture. No material baseline or contract flaw found; execute the freeze.
+
+Before timing launch, measurement review found that two arms in one process
+would confound native/compiler residency. Split every ladder point into two
+fresh-process workers. GPU runs the capacity ladder; CPU is the small matched
+reference cost arm. Keep all four predeclared sizes. This increases the local
+worker ceiling from16 to24, without changing3600 CPU/2400 GPU seconds, global
+caps, scientific target or any numerical gate. Planned22 workers:2 freeze,
+2 qualification,6 isolated costs,1 prior eager GPU cost,8 capacity,2 regression,
+1 final policy/readback; up to2 localized harness retries remain inside24.
+Each worker is sequential. This is measurement isolation under the existing
+campaign authorization, not additional compute authorization.
+
+Availability update before GPU costs: the runner declined launch, preserving
+cost-preflight-declined-20260928T172518388312Z.json. PID2260909 owns compute
+contexts on both non-display GPUs2/3; GPU3 is idle but shared. GPU0 belongs to
+gnome-remote-desktop despite display_active=false, and GPU1 has active display.
+Do not use either for timing or stop the other campaign. Execute the same
+predeclared four-point capacity ladder on CPU as an explicit reference/debug
+exception, with one fresh process per arm/point and no GPU/default-capacity
+claim. CPU process-time remains under the original3600-second allocation.
+Preserve GPU costs/capacity as pending; no unshared preflight or timing gate is
+weakened. GPU numerical qualification04691 remains valid for its recorded
+shared-device numerical scope. This reference ladder resolves buffer-scaling
+and host-memory questions while hardware timing is unavailable.
+
+Regression04703 is preserved with42 passes
+and one HLO-text failure in the supplied-array annealed test. Numerical checks
+passed. The shown difference is duplicate TensorFlow debug op_name suffixes
+(zeros/_0 versus zeros/_1) on repeated compiler export, with one graph trace.
+Localized harness repair1/2 archives both full exports and compares every
+instruction/constant/operand/shape byte after stripping only HLO metadata={...}
+source/debug annotations. Numerical tolerances, signatures, changed-input
+checks and no-host-callback gates remain unchanged. The renewed run must prove
+that metadata is the only difference; otherwise localize further and stop costs.
+No runtime source changes follow from this diagnostic repair.

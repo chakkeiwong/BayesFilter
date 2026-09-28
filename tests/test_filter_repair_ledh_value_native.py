@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import resource
 import subprocess
 import sys
@@ -236,9 +237,17 @@ def test_full_value_fixed_inputs(
         assert int(actual["marginal_steps_completed"]) == 1
     assert compiled.experimental_get_tracing_count() == 1
     hlo = compiled.experimental_get_compiler_ir(observations, *inputs)(stage="hlo")
-    assert hlo == compiled.experimental_get_compiler_ir(
+    changed_hlo = compiled.experimental_get_compiler_ir(
         changed_observations, *changed_inputs
     )(stage="hlo")
+    (directory / f"value-native-{case}.hlo.txt").write_text(hlo)
+    (directory / f"value-native-{case}-changed.hlo.txt").write_text(changed_hlo)
+    # TF may rename duplicate debug op_name metadata on repeated HLO export.
+    # Retain every instruction, constant, shape and operand in the comparison;
+    # remove only source/debug metadata, and archive both unmodified exports.
+    semantic_hlo = re.sub(r', metadata=\{[^}\n]*\}', '', hlo)
+    changed_semantic_hlo = re.sub(r', metadata=\{[^}\n]*\}', '', changed_hlo)
+    assert semantic_hlo == changed_semantic_hlo
     definition = compiled.get_concrete_function().graph.as_graph_def()
     operations = {node.op for node in definition.node}
     operations.update(
@@ -265,6 +274,10 @@ def test_full_value_fixed_inputs(
         "completed": int(actual["marginal_steps_completed"]),
         "device": actual["value"].device,
         "hlo_sha256": hashlib.sha256(hlo.encode()).hexdigest(),
+        "changed_hlo_sha256": hashlib.sha256(changed_hlo.encode()).hexdigest(),
+        "semantic_hlo_sha256": hashlib.sha256(semantic_hlo.encode()).hexdigest(),
+        "hlo_debug_metadata_differed": hlo != changed_hlo,
+        "hlo_instructions_constants_shapes_identical": True,
         "nonclaims": [
             "No seeded public wrapper, score, MC accuracy or canonical admission.",
             "Rejected raw programs retain reported differences; successful rejection checks are not raw numerical equivalence."

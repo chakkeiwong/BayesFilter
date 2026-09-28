@@ -1703,6 +1703,31 @@ TEST_GROUPS['ledh_seeded_regressions_gpu'] = TEST_GROUPS['ledh_seeded_regression
 TEST_GROUPS['ledh_seeded_numerical_regressions_gpu'] = TEST_GROUPS['ledh_seeded_regressions_cpu'][:5]
 TEST_GROUPS['ledh_seeded_final_readback_cpu'] = (
     'tests/test_filter_repair_ledh_seeded_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['ledh_streaming_freeze_cpu'] = (
+    'tests/test_filter_repair_ledh_streaming.py::test_freeze_buffered_owner',)
+TEST_GROUPS['ledh_streaming_freeze_gpu'] = TEST_GROUPS['ledh_streaming_freeze_cpu']
+TEST_GROUPS['ledh_streaming_qualification_cpu'] = (
+    'tests/test_filter_repair_ledh_streaming.py::test_streamed_seeded_owner',
+    'tests/test_filter_repair_ledh_seeded_public.py::test_mutable_callback_refresh')
+TEST_GROUPS['ledh_streaming_qualification_gpu'] = TEST_GROUPS['ledh_streaming_qualification_cpu']
+TEST_GROUPS.update({f'ledh_streaming_cost_{arm}_{device}': (
+    f'tests/test_filter_repair_ledh_streaming_memory.py::test_streaming_owner_cost[{arm}]',)
+    for arm in ('buffered_xla', 'streaming_graph', 'streaming_xla')
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'ledh_streaming_capacity_{horizon}_{count}_{arm}_gpu': (
+    f'tests/test_filter_repair_ledh_streaming_memory.py::test_streaming_capacity[{horizon}-{count}-{arm}]',)
+    for horizon, count in ((3, 8), (3, 64), (32, 64), (128, 64))
+    for arm in ('buffered', 'streaming')})
+TEST_GROUPS.update({f'ledh_streaming_capacity_{horizon}_{count}_{arm}_cpu': (
+    f'tests/test_filter_repair_ledh_streaming_memory.py::test_streaming_capacity[{horizon}-{count}-{arm}]',)
+    for horizon, count in ((3, 8), (3, 64), (32, 64), (128, 64))
+    for arm in ('buffered', 'streaming')})
+TEST_GROUPS['ledh_streaming_regressions_cpu'] = (
+    *TEST_GROUPS['ledh_seeded_regressions_cpu'][:5],
+    'tests/test_filter_repair_ledh_seeded_public.py::test_registered_seeded_endpoint')
+TEST_GROUPS['ledh_streaming_regressions_gpu'] = TEST_GROUPS['ledh_streaming_regressions_cpu']
+TEST_GROUPS['ledh_streaming_readback_cpu'] = (
+    'tests/test_filter_repair_ledh_streaming_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'ledh_seeded_cost_{arm}_{device}': (
     f'tests/test_filter_repair_ledh_seeded_cost.py::test_isolated_seeded_cost[{arm}]',)
     for arm in ('prior_eager', 'candidate_graph', 'candidate_xla')
@@ -2429,6 +2454,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_validity_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_seeded_') and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_streaming_') and group.endswith('_gpu')},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("factor_precision_symmetry_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_exact_fit_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith(("principal_angle_", "factor_clipped_anchor_")) and group.endswith("_gpu")},
@@ -2775,6 +2801,8 @@ def require_unshared_cost_preflight(args):
                                    if group.startswith("posterior_initializer_capacity_") and group.endswith("_gpu")),
                                  *(group for group in TEST_GROUPS
                                    if group.startswith("ledh_seeded_cost_") and group.endswith("_gpu")),
+                                 *(group for group in TEST_GROUPS
+                                   if group.startswith(("ledh_streaming_cost_", "ledh_streaming_capacity_")) and group.endswith("_gpu")),
                                  *TEST_BATCHES["svd_cost_gpu"])):
         return
     samples = args.gpu_preflight
@@ -2922,6 +2950,9 @@ def run_job(args):
     print(json.dumps({"run": str(directory), "command": command}), flush=True)
     with (directory / "process.log").open("x") as log:
         process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+        if args.action == 'test' and args.group.startswith(('ledh_streaming_', 'ledh_seeded_cost_')):
+            record['worker_pid'] = process.pid
+            save_json(directory / 'run.json', record)
         try:
             if args.action == "test" and args.group in (
                     "factor_guard_mapping_probe", "factor_guard_mapping_release",
@@ -2942,6 +2973,11 @@ def run_job(args):
                 os.killpg(process.pid, signal.SIGKILL)
                 process.wait()
             code = 130 if isinstance(exc, KeyboardInterrupt) else 124
+    if 'worker_pid' in record:
+        from filter_repair_process_memory import observe_process_exit
+
+        record['process_exit_observation'] = observe_process_exit(
+            record['worker_pid'], record.get('gpu_uuid'))
     if args.action == "test":
         record["test_evidence"] = test_evidence(record)
         if code == 0 and not record["test_evidence"]["passed"]:

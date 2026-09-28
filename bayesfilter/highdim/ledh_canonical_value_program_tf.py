@@ -2,8 +2,8 @@
 
 This is an execution repair, not canonical/scientific admission. The program
 uses the original UKF, flow, weight and reset authorities, with supplied random
-inputs. Callback configuration must remain fixed for the owner lifetime; all
-observations and random inputs are dynamic operands of one enclosing program.
+inputs or streaming seeded draws. Callback configuration must remain fixed for
+the owner lifetime; observations and random inputs are dynamic operands.
 """
 
 from __future__ import annotations
@@ -17,6 +17,12 @@ from bayesfilter.highdim.ledh_flow_perparticle_tf import ledh_flow_per_particle
 from bayesfilter.highdim.ledh_ukf_lifecycle_tf import (
     ukf_predict_per_particle,
     ukf_update_per_particle,
+)
+from bayesfilter.ops.ledh_random_compat_tf import (
+    pcg64_next,
+    pcg64_offset_initial_state,
+    philox_box_muller_normal,
+    philox_replication_state,
 )
 from bayesfilter.ops.legacy_fraction_tf import legacy_fraction
 
@@ -70,13 +76,18 @@ def make_canonical_value_program(
     trust_region_lm_scale_floor=1e-4,
     trust_region_radius=0.5,
     jit_compile=True,
+    seed_word_count=None,
+    resample_seed_word_count=1,
 ):
     """Build a caller-owned fixed-signature value kernel, defaulting to XLA.
 
     Inputs: observations, initial normals, per-time process normals and per-time
     PCG64 stage uniforms. Return numeric, fixed-capacity diagnostics plus count.
-    The registered seeded adapter composes this owner with the shared RNG and
-    trims completed diagnostic history and attaches model_id at the boundary.
+    With a positive ``seed_word_count``, inputs instead are observations and
+    two minimally encoded uint32 seed vectors. This fixed factory choice draws
+    process noise after each valid prediction, carrying only Philox state in
+    the shared recurrence. The supplied-array interface is unchanged by default.
+    The seeded adapter trims history and attaches model_id at the boundary.
     A failed reset makes the public value unusable even if its particles remain
     finite. ``raw_value`` and ``finite_program_valid`` retain the old diagnostic
     result; they must never substitute for ``value``/``program_valid``.
@@ -93,15 +104,19 @@ def make_canonical_value_program(
         raise ValueError("observations require static positive [T, observation_dim]")
     if particle_count < 1 or flow_substeps < 1:
         raise ValueError("particle_count and flow_substeps must be positive")
-    signature = [
+    supplied_signature = [
         observation_spec,
         tf.TensorSpec([particle_count, dimension], dtype),
         tf.TensorSpec([horizon, particle_count, dimension], dtype),
         tf.TensorSpec([horizon, stage_count], tf.float64),
     ]
 
-    @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
-    def program(observations, initial_noise, process_noises, resampling_uniforms):
+    seeded = seed_word_count is not None
+    if seeded and (seed_word_count < 1 or resample_seed_word_count < 1):
+        raise ValueError("seed word counts must be positive")
+
+    def recurrence(observations, initial_noise, process_noises,
+                   resampling_uniforms, random_state, resample_entropy):
         initial_covariance = tf.convert_to_tensor(callbacks.initial_covariance, dtype)
         chol = tf.linalg.cholesky(initial_covariance)
         states = callbacks.initial_mean[None, :] + tf.linalg.matvec(
@@ -142,12 +157,13 @@ def make_canonical_value_program(
                 substeps=flow_substeps,
             )
 
-        def finish_step(time_index, states, weights, predicted_means, predicted_covs):
+        def finish_step(time_index, states, weights, predicted_means, predicted_covs,
+                        process_noise):
             observation = observations[time_index]
             anchors = callbacks.transition_mean_fn(states, time_index)
             pre_flow = anchors + tf.linalg.matvec(
                 tf.broadcast_to(process_chol, [particle_count, dimension, dimension]),
-                process_noises[time_index],
+                process_noise,
             )
             if math.isfinite(flow_prior_cap):
                 eigenvalues, vectors = tf.linalg.eigh(predicted_covs)
@@ -160,6 +176,12 @@ def make_canonical_value_program(
             else:
                 prior = predicted_covs
             if annealed_resampling:
+                if seeded:
+                    resampling_state, resampling_increment = pcg64_offset_initial_state(
+                        resample_entropy, time_index
+                    )
+                else:
+                    resampling_state = tf.zeros([2], tf.uint64)
                 prior_obs = callbacks.observation_log_density_fn(
                     pre_flow, observation, time_index
                 )
@@ -179,6 +201,7 @@ def make_canonical_value_program(
                     ess,
                     prev_obs,
                     prev_trans,
+                    resampling_state,
                 ):
                     flow = flow_step(current, anchors, prior, observation, time_index)
                     moved = flow["post_flow_states"]
@@ -204,9 +227,13 @@ def make_canonical_value_program(
                     )
                     stage_weights = tf.exp(logits - tf.reduce_logsumexp(logits))
                     ess = tf.minimum(ess, 1.0 / tf.reduce_sum(tf.square(stage_weights)))
-                    indices = systematic_ancestor_indices(
-                        stage_weights, resampling_uniforms[time_index, stage - 1]
-                    )
+                    if seeded:
+                        resampling_state, _, uniform = pcg64_next(
+                            resampling_state, resampling_increment
+                        )
+                    else:
+                        uniform = resampling_uniforms[time_index, stage - 1]
+                    indices = systematic_ancestor_indices(stage_weights, uniform)
                     current = tf.gather(moved, indices)
                     anchors, ancestors, prior = (
                         tf.gather(anchors, indices),
@@ -232,6 +259,7 @@ def make_canonical_value_program(
                         ess,
                         prev_obs,
                         prev_trans,
+                        resampling_state,
                     )
 
                 stage_result = tf.while_loop(
@@ -249,6 +277,7 @@ def make_canonical_value_program(
                         tf.cast(particle_count, dtype),
                         prior_obs,
                         prior_trans,
+                        resampling_state,
                     ),
                     parallel_iterations=1,
                 )
@@ -356,6 +385,7 @@ def make_canonical_value_program(
             completed,
             reset_ok,
             reset_condition,
+            random_state,
         ):
             def abort():
                 return (
@@ -370,6 +400,7 @@ def make_canonical_value_program(
                     completed,
                     reset_ok,
                     reset_condition,
+                    random_state,
                 )
 
             def predict():
@@ -381,8 +412,15 @@ def make_canonical_value_program(
                 )
 
                 def advance():
+                    if seeded:
+                        process_noise, following_state = philox_box_muller_normal(
+                            random_state, (particle_count, dimension), dtype
+                        )
+                    else:
+                        process_noise = process_noises[index]
+                        following_state = random_state
                     next_states, next_covs, increment, step_valid, step_ess, tv, ok, reset_valid, condition = (
-                        finish_step(index, states, weights, means, covs)
+                        finish_step(index, states, weights, means, covs, process_noise)
                     )
                     return (
                         index + 1,
@@ -396,6 +434,7 @@ def make_canonical_value_program(
                         completed + 1,
                         tf.tensor_scatter_nd_update(reset_ok, [[index]], [reset_valid]),
                         tf.tensor_scatter_nd_update(reset_condition, [[index]], [condition]),
+                        following_state,
                     )
 
                 finite = tf.reduce_all(tf.math.is_finite(means)) & tf.reduce_all(
@@ -423,10 +462,11 @@ def make_canonical_value_program(
                 tf.constant(0),
                 tf.zeros([horizon], tf.bool),
                 tf.fill([horizon], nan),
+                random_state,
             ),
             parallel_iterations=1,
         )
-        _, _, _, total, valid, ess, marginal_tv, marginal_ok, completed, reset_ok, reset_condition = result
+        _, _, _, total, valid, ess, marginal_tv, marginal_ok, completed, reset_ok, reset_condition, final_random_state = result
         mask = tf.range(horizon) < completed
         all_resets_valid = (completed == horizon) & tf.reduce_all(reset_ok)
         numerical_valid = valid & all_resets_valid
@@ -437,7 +477,7 @@ def make_canonical_value_program(
             tf.argmax(tf.cast(rejected_resets, tf.int32), output_type=tf.int32),
             tf.constant(-1, tf.int32),
         )
-        return {
+        diagnostics = {
             "value": tf.where(numerical_valid, raw_value, nan),
             "program_valid": numerical_valid,
             "raw_value": raw_value,
@@ -462,5 +502,29 @@ def make_canonical_value_program(
             "numerical_valid": numerical_valid,
             "per_step_reset_scaled_system_condition": reset_condition,
         }
+        if seeded:
+            diagnostics.update(
+                process_draws_consumed=completed,
+                final_philox_state=final_random_state,
+                resampling_draws_consumed=completed * (stage_count if annealed_resampling else 0),
+            )
+        return diagnostics
 
-    return program
+    if seeded:
+        signature = [observation_spec, tf.TensorSpec([seed_word_count], tf.uint32),
+                     tf.TensorSpec([resample_seed_word_count], tf.uint32)]
+
+        def program(observations, seed_words, resample_seed_words):
+            state = philox_replication_state(seed_words)
+            initial_noise, state = philox_box_muller_normal(
+                state, (particle_count, dimension), dtype
+            )
+            return recurrence(observations, initial_noise, None, None, state, resample_seed_words)
+    else:
+        signature = supplied_signature
+
+        def program(observations, initial_noise, process_noises, resampling_uniforms):
+            return recurrence(observations, initial_noise, process_noises,
+                              resampling_uniforms, tf.zeros([3], tf.uint64), None)
+
+    return tf.function(program, input_signature=signature, jit_compile=jit_compile, autograph=False)
