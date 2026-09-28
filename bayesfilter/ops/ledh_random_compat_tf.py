@@ -128,6 +128,33 @@ def pcg64_initial_state(entropy: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
     return _pcg64_advance(_add128(increment, state), increment), increment
 
 
+def pcg64_offset_initial_state(entropy: tf.Tensor, offset: tf.Tensor):
+    """Seed PCG64 with the encoded nonnegative integer plus an int32 offset.
+
+    Entropy is the minimal little-endian encoding from ``integer_seed_words``.
+    A carry must extend the encoding: SeedSequence mixes extra words beyond
+    its four-word pool, so unconditional padding would change large seeds.
+    """
+    entropy = tf.convert_to_tensor(entropy, tf.uint32)
+
+    def body(index, words, carry):
+        total = tf.cast(words[index], tf.uint64) + carry
+        words = tf.tensor_scatter_nd_update(words, [[index]], [tf.cast(total, tf.uint32)])
+        return index + 1, words, tf.bitwise.right_shift(total, 32)
+
+    _, words, carry = tf.while_loop(
+        lambda index, *_: index < tf.shape(entropy)[0],
+        body,
+        (tf.constant(0), entropy, tf.cast(offset, tf.uint64)),
+        parallel_iterations=1,
+    )
+    return tf.cond(
+        carry > 0,
+        lambda: pcg64_initial_state(tf.concat([words, [tf.cast(carry, tf.uint32)]], 0)),
+        lambda: pcg64_initial_state(words),
+    )
+
+
 def pcg64_next(state: tf.Tensor, increment: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Return next state, raw word and exact NumPy-compatible float64 uniform."""
     state = _pcg64_advance(state, increment)
@@ -164,3 +191,51 @@ def philox_box_muller_normal(state: tf.Tensor, shape: tuple[int, ...], dtype: tf
     low = state[0] + tf.constant(256 * size, tf.uint64)
     following = tf.stack([low, state[1] + tf.cast(low < state[0], tf.uint64), state[2]])
     return tf.reshape(normal, shape), following
+
+
+def seeded_value_inputs(
+    entropy, resample_entropy, *, horizon, particle_count, dimension, dtype,
+    stage_count=1, annealed_resampling=False,
+):
+    """Generate the existing LEDH draw schedule inside an enclosing XLA owner.
+
+    The initial draw and each process draw advance Philox separately, including
+    its per-call skip. Each observation starts PCG64 at resample_seed + time;
+    each annealing stage consumes one uniform. No shared mutable RNG exists.
+    """
+    state = philox_replication_state(entropy)
+    shape = (particle_count, dimension)
+    initial, state = philox_box_muller_normal(state, shape, dtype)
+
+    def process_body(index, state, values):
+        draw, state = philox_box_muller_normal(state, shape, dtype)
+        return index + 1, state, tf.tensor_scatter_nd_update(values, [[index]], [draw])
+
+    processes = tf.while_loop(
+        lambda index, *_: index < horizon,
+        process_body,
+        (tf.constant(0), state, tf.zeros([horizon, particle_count, dimension], dtype)),
+        parallel_iterations=1,
+    )[2]
+    uniforms = tf.zeros([horizon, stage_count], tf.float64)
+    if annealed_resampling:
+        def time_body(index, values):
+            state, increment = pcg64_offset_initial_state(resample_entropy, index)
+
+            def stage_body(stage, state, row):
+                state, _, uniform = pcg64_next(state, increment)
+                return stage + 1, state, tf.tensor_scatter_nd_update(row, [[stage]], [uniform])
+
+            row = tf.while_loop(
+                lambda stage, *_: stage < stage_count,
+                stage_body,
+                (tf.constant(0), state, tf.zeros([stage_count], tf.float64)),
+                parallel_iterations=1,
+            )[2]
+            return index + 1, tf.tensor_scatter_nd_update(values, [[index]], [row])
+
+        uniforms = tf.while_loop(
+            lambda index, *_: index < horizon, time_body,
+            (tf.constant(0), uniforms), parallel_iterations=1,
+        )[1]
+    return initial, processes, uniforms

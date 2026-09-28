@@ -1672,6 +1672,41 @@ TEST_GROUPS['ledh_validity_final_readback_cpu'] = (
     *TEST_GROUPS['policy'])
 TEST_GROUPS['ledh_validity_boundary_gpu'] = TEST_GROUPS['ledh_validity_boundary_cpu']
 TEST_GROUPS['ledh_validity_regressions_gpu'] = TEST_GROUPS['ledh_validity_regressions_cpu']
+TEST_GROUPS['ledh_seeded_random_cpu'] = (
+    'tests/test_filter_repair_ledh_seeded_public.py::test_seed_offset_carry',
+    'tests/test_filter_repair_ledh_seeded_public.py::test_complete_draw_schedule')
+TEST_GROUPS['ledh_seeded_random_gpu'] = TEST_GROUPS['ledh_seeded_random_cpu']
+TEST_GROUPS['ledh_seeded_endpoint_cpu'] = (
+    'tests/test_filter_repair_ledh_seeded_public.py::test_registered_seeded_endpoint',
+    'tests/test_filter_repair_ledh_seeded_public.py::test_mutable_callback_refresh')
+TEST_GROUPS['ledh_seeded_endpoint_gpu'] = TEST_GROUPS['ledh_seeded_endpoint_cpu']
+TEST_GROUPS['ledh_seeded_localization_gpu'] = (
+    'tests/test_filter_repair_ledh_seeded_public.py::test_dual_seeded_localization',)
+TEST_GROUPS['ledh_seeded_reset_localization_gpu'] = (
+    'tests/test_filter_repair_ledh_seeded_public.py::test_seeded_reset_localization',)
+TEST_GROUPS['ledh_seeded_tf32_localization_gpu'] = (
+    'tests/test_filter_repair_ledh_seeded_public.py::test_seeded_reset_tf32_localization',)
+TEST_GROUPS['ledh_seeded_lm_localization_gpu'] = (
+    'tests/test_filter_repair_ledh_seeded_public.py::test_seeded_lm_tf32_localization',)
+TEST_GROUPS['ledh_seeded_lm_cpu'] = (
+    'tests/test_filter_repair_ledh_lm_precision.py', 'tests/highdim/test_genut_shape_lm_tf.py')
+TEST_GROUPS['ledh_seeded_lm_gpu'] = TEST_GROUPS['ledh_seeded_lm_cpu']
+TEST_GROUPS['ledh_seeded_regressions_cpu'] = (
+    'tests/test_filter_repair_ledh_random_native.py',
+    'tests/test_filter_repair_ledh_seed_compatibility.py',
+    'tests/test_filter_repair_ledh_value_native.py::test_full_value_fixed_inputs',
+    'tests/test_filter_repair_ledh_value_native.py::test_systematic_matches_sequential_numpy',
+    'tests/test_filter_repair_ledh_score_native.py',
+    'tests/highdim/test_ledh_canonical_governance.py',
+    'tests/highdim/test_ledh_canonical_meta_governance.py')
+TEST_GROUPS['ledh_seeded_regressions_gpu'] = TEST_GROUPS['ledh_seeded_regressions_cpu']
+TEST_GROUPS['ledh_seeded_numerical_regressions_gpu'] = TEST_GROUPS['ledh_seeded_regressions_cpu'][:5]
+TEST_GROUPS['ledh_seeded_final_readback_cpu'] = (
+    'tests/test_filter_repair_ledh_seeded_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'ledh_seeded_cost_{arm}_{device}': (
+    f'tests/test_filter_repair_ledh_seeded_cost.py::test_isolated_seeded_cost[{arm}]',)
+    for arm in ('prior_eager', 'candidate_graph', 'candidate_xla')
+    for device in ('cpu', 'gpu')})
 TEST_GROUPS['dz5_locator_one_iteration_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_one_iteration.py::test_saved_real_optimizer_contexts',
     'tests/test_filter_repair_dz5_locator_context_readback.py', *TEST_GROUPS['policy'])
@@ -2393,6 +2428,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_validity_') and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ledh_seeded_') and group.endswith('_gpu')},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("factor_precision_symmetry_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith("dz5_exact_fit_") and group.endswith("_gpu")},
     **{group: "GPU" for group in TEST_GROUPS if group.startswith(("principal_angle_", "factor_clipped_anchor_")) and group.endswith("_gpu")},
@@ -2737,6 +2773,8 @@ def require_unshared_cost_preflight(args):
                                  *TEST_BATCHES["posterior_initializer_cost_gpu"],
                                  *(group for group in TEST_GROUPS
                                    if group.startswith("posterior_initializer_capacity_") and group.endswith("_gpu")),
+                                 *(group for group in TEST_GROUPS
+                                   if group.startswith("ledh_seeded_cost_") and group.endswith("_gpu")),
                                  *TEST_BATCHES["svd_cost_gpu"])):
         return
     samples = args.gpu_preflight

@@ -75,8 +75,8 @@ def make_canonical_value_program(
 
     Inputs: observations, initial normals, per-time process normals and per-time
     PCG64 stage uniforms. Return numeric, fixed-capacity diagnostics plus count.
-    A host adapter must trim completed diagnostic history and attach model_id;
-    the existing public adapter is not integrated with this program yet.
+    The registered seeded adapter composes this owner with the shared RNG and
+    trims completed diagnostic history and attaches model_id at the boundary.
     A failed reset makes the public value unusable even if its particles remain
     finite. ``raw_value`` and ``finite_program_valid`` retain the old diagnostic
     result; they must never substitute for ``value``/``program_valid``.

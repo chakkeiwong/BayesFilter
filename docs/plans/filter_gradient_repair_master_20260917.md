@@ -1,100 +1,73 @@
 # Complete filter and gradient execution repair
 
 Branch: repair/filter-gradient-xla-validation-20260918 in
-/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Qualified numerical source checkpoint:4bf50d914 (pushed). Main remains unmerged; origin/main is
-integrated. Check git HEAD for subsequent documentation/source checkpoints.
+/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Recovered committed,
+pushed checkpoint aabd2b167. Main remains unmerged.
 
-Active question: repair the lost LEDH reset-validity boundary before migrating
-the registered value consumer. Locator optimized comparison is closed with a
-targeted constant/fusion lead; source renewal and import isolation are complete
-for their tested scopes.
-LEDH native boundary now qualified CPU/GPU through04668: failed resets return
-NaN public value, false validity and explicit code/index; raw diagnostics remain.
-Three CPU before/after fixtures preserve all reported raw fields exactly.
-Three guard checks and nine broader regressions pass on each backend; final
-readback/policy04668 passes162 checks. The registered wrapper still uses the
-legacy NumPy/host recurrence and is the next migration target.
-Through 04668; active: none.
-Global charged/reserved CPU 108237.060357s / GPU 96144.148720s.
-Remaining CPU 25.934150h / GPU 25.293292h.
-Caps are56CPU/52GPU process-hours; extra24CPU hours are already counted.
-Symmetry unit closed: 7/12 workers,
-481.384047/2400 combined seconds, no failures.
-One numerical worker at a time. CPU is an explicit reference; GPU requires
-trusted eligible device and verified memory growth. GPU0 serves remote desktop
-and GPU1 has active display. Recheck non-desktop occupancy before any GPU job.
+Active question: remove the registered seeded-owner process-noise buffer and
+qualify reusable versus fresh-owner memory behavior. Prior value/LM repair is
+boundedly qualified through04687. Next reviewed plan:
+`filter_gradient_ledh_streaming_memory_20260929.md`.
+Through 04687; active workers: none.
+Charged/reserved CPU 108537.882569s / GPU 96600.773351s.
+Remaining CPU 25.850588h / GPU 25.166452h.
+Global caps remain56 CPU/52 GPU process-hours; the extra24 CPU hours are included.
+Closed seeded unit:19/24 workers,300.822211 CPU/456.624632 GPU seconds.
+Next unit allocation:16 workers,3600 CPU/2400 GPU seconds; one numerical
+worker at a time. CPU is an explicit reference. GPU requires trusted eligible hardware and
+verified memory growth; recheck displays/occupancy before launch.
 
-Checked findings and evidence:
-- Fresh source renewal: CPU04625 and GPU04626 each pass two complete accepted
-  initializer workers; intended GPU rejection04627 and181 readback/policy
-  checks04628 pass. Parent RSS growth is0.410MiB CPU and0.559MiB GPU. Child
-  native/compiler RSS persists after Python release, with HLO inspection
-  contributing to the final host sample; process exit contains observed growth.
-- Adapter reference isolation: committed/pushed713df846c. All43 exports and
-  three aliases preserved;12 fresh-import/prior checks and160 policy checks
-  pass.277 sources guarded, no new exception. Evidence index verifies282
-  distinct saved run identities; current-source dependency review remains.
-- Symmetry result: filter_gradient_factor_precision_symmetry_result_20260928.md.
-  CPU04611/GPU04612 trials and derivatives pass. Exact GPU04613 fit is usable
-  (before04607 rejected with error2), CPU04614 remains unchanged. GPU04615 and
-  CPU04616 each pass52 regressions; readback/policy04617 passes161 checks.
-  Optimizer, covariance, anchors and validity fields are preserved; factor
-  precisions are exactly symmetric. Strict CPU/GPU record differences4539
-  remain recorded. GPU allocator peak2306304bytes is unchanged.
-- SVD result: filter_gradient_principal_angle_precision_repair_20260928.md.
-  CPU04579--04583 and GPU04599--04601 qualify accuracy; GPU error1.55e-15,
-  48 regressions pass, peak70400bytes unchanged. Shared-device warm time+21.87%
-  remains descriptive; uncontended cost attribution and strict angles are open.
-- Anchor result: filter_gradient_factor_clipped_anchor_repair_20260928.md.
-  Initialization/regressions pass both backends. Exact-input04606--04610
-  separated the final precision defect from anchor changes; the earlier
-  regenerated-cloud GPU failure04604 cannot attribute an anchor regression.
-- Locator: filter_gradient_dz5_locator_trajectory_result_20260928.md and
-  filter_gradient_dz5_callback_boundary_result_20260928.md. Original/current
-  callbacks474/504, first score difference1.53e-13 at identical row1;121 strict
-  record leaves differ. All14 saved-point graph/XLA target checks pass04590.
-  Identical-output controllers reproduce the original exactly04593. Explicit
-  input binding and external barriers do not resolve the difference. Both
-  optimizers remain unconverged; no tolerance changes.
-- Locator context: truncated dispatch04632--04634 removes the discrepancy;
-  genuine one-iteration04635--04637 reproduces it exactly in three objectives.
-  Accounting-family04642--04645 and progress split04646--04648 isolate the
-  positive intervention to reporting counters. Replay storage alone04651
-  restores the first score; attempts/optimizer counters04649/04650 do not.
-  Int64-storage/int32-increments04652 and derived-count04654 are negative;
-  the latter matches every candidate short callback/record exactly. Readbacks
-  pass through04655. See locator_reporting_storage_result and
-  locator_derived_replay_result dated20260928. Runtime remains unchanged;
-  optimized comparison04656--04661 now preserves every saved callback/short
-  record exactly.179 final checks pass. Original/candidate/replay-int32 have
-  26/22/26 constant-embedded gradient fusions; four candidate fusions instead
-  carry eight unchanged copies of printed2.4 through loop entries143--150.
-  This supplies a targeted mechanism lead, not causal proof or a runtime fix.
-  See filter_gradient_dz5_locator_optimized_hlo_result_20260928.md.
+Current unit evidence:04669CPU RNG7,04670CPU endpoint8 and04671GPU RNG7 pass.
+04672GPU endpoint has7 passes/1 healthy dual-trust ESS failure(1.31e-5).
+04673 excludes RNG and seeded-owner wiring; normal inputs and native owners
+match exactly.04674 diagnostic binding failure is preserved; one harness retry
+uses an explicit factory closure.04675--04677 isolate inaccurate TF32 products
+in the small shared LM solver. The explicit float32 product/JVP repair passes
+CPU/GPU primitive/independent derivative checks04678/04679 and renewed CPU
+endpoint04680; GPU endpoint04681 also passes8. CPU broad regression04682 has46 passes plus
+one pre-existing static pfor failure, recorded under F14. GPU numerical-only
+regressions04683 pass36 checks. CPU matched descriptive costs04684--04686 pass. Final current-source
+readback/policy04687 passes162 checks. XLA cold5.03s/warm1.04ms; host RSS
+increases521.86MiB after warm and993.70MiB after two extra one-shot calls.
+Uncontended GPU cost preflight declined before launch; streaming seeded-memory
+capacity and compiler/native owner lifetime remain open. Result:
+filter_gradient_ledh_seeded_public_result_20260929.md.
+Plan: filter_gradient_ledh_lm_precision_20260929.md. Costs remain held.
 
-Next: Migrate the registered LEDH value wrapper onto one seeded native numerical owner using the qualified RNG/value authorities. First review actual callback/configuration ownership, seeded draw scheduling, stable signatures and diagnostic history formatting; do not cache mutable callbacks or duplicate numerical kernels. Qualify actual public consumer CPU/GPU behavior, healthy references, explicit rejected outcomes and costs before removing legacy execution. Native rejection boundary04662--04668 is complete; locator fusion lead and other terminal gaps remain.
-New closed diagnostic allocations (detailed plans/results linked in ledger):
-- Accounting families: 4/6 workers, 675.876765/1800 CPU seconds.
-- Progress split: 3/5 workers, 451.586176/1500 CPU seconds.
-- Reporting storage/arithmetic: 5/6 workers, 900.498167/1800 CPU seconds.
-- Derived replay: 2/4 workers, 233.688754/1200 CPU seconds.
-Earlier renewal, import isolation and diagnostic allocations remain closed.
-Optimized compiler unit: 6/6 workers, 1180.751759/4200 CPU seconds.
-Plan: filter_gradient_dz5_locator_optimized_hlo_20260928.md.
-LEDH validity CPU unit: 5/8 workers, 83.297397/2400 CPU seconds; closed_CPU_owner_qualification_passed.
-GPU validity subunit: 2/4 workers, 72.800756/1200 GPU seconds; closed_GPU_owner_qualification_passed.
-Plan: filter_gradient_ledh_validity_boundary_20260928.md.
-No unchanged renewal cohort or full optimizer trajectory is requested.
-Remaining work order and exit gates: filter_gradient_terminal_gap_queue_20260928.md.
-Old consumer snapshots qualify only their own bytes. Strict precision and
-isotropic reporting, locator rounding, matched current-source cost attribution,
-registered LEDH consumer migration and F01--F20 terminal dispositions remain
-open. Do not reuse old admission or classify numerical mismatches as equivalence.
+Completed evidence to reuse:
+- Native LEDH rejection boundary04662--04668: three CPU/GPU guard cases and
+  nine regressions per backend;162 final readback/policy checks. Failed resets
+  yield NaN public value, false validity, code/index and retained raw diagnostics.
+  Three CPU before/after fixtures preserve all reported raw fields exactly.
+  Result: `filter_gradient_ledh_validity_boundary_result_20260928.md`.
+- Locator optimized comparison04656--04661: all three arms reproduce saved
+  short callbacks/records exactly;179 checks. Four candidate gradient fusions
+  carry eight constant copies through loop entries143--150. Mechanism lead,
+  not causal proof or runtime fix. Result: locator_optimized_hlo_result dated
+  20260928. Full trajectories still have121 strict differences and unconverged
+  optimizers; do not repeat unrelated dtype trials/full trajectories.
+- Actual DZ5 source renewal04618--04628 and import isolation04629--04630 pass
+  for their stated scopes. Evidence index04631 verifies282 saved runs.
+- Precision symmetry and principal-angle repairs have component CPU/GPU
+  evidence.4539 strict fitted-geometry record differences remain unresolved.
 
-Preserve live MacroFinance files and other campaigns. No subagents, training,
-HMC, package/environment mutation, global cache changes, system-limit changes
-or tolerance relaxation. Canonical NeuTra remains author-profile IAF; unsupported
-LEDH claims remain blocked. Do not merge main until all master gates pass.
+Next: Execute reviewed filter_gradient_ledh_streaming_memory_20260929.md: freeze the array-composed seeded authority, move seeded draws into the shared time loop, qualify memory/lifetime and renew GPU costs when unshared. Keep F14, score public migration and other master gaps open. No main merge.
+The seeded factory must have explicit fixed configuration and dynamic seed/
+observation operands. The one-shot wrapper must refresh mutable Python callback
+closures on each invocation; no identity-based global cache. The approved new
+TensorFlow stream for geometry initializers does not authorize changing LEDH
+SeedSequence/PCG64/Philox draws. No duplicated numerical kernels.
+
+Other open gates and work order:
+`filter_gradient_terminal_gap_queue_20260928.md`. Current-source timing/memory
+applicability, registered analytical-score migration/costs, strict geometry/
+isotropic reporting and all F01--F20 terminal dispositions remain open. Native
+component passes are not registered-consumer or scientific admission.
+
+Preserve live MacroFinance and other campaigns. No subagents, training, HMC,
+package/environment changes, system-limit/cache changes or tolerance relaxation.
+Preserve canonical author-profile NeuTra IAF. Canonical LEDH rebuild remains
+excluded and unsupported claims blocked. No main merge until all master gates.
 
 Older checkpoints below preserve historical scope and instructions only.
 

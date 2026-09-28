@@ -1,6 +1,34 @@
-# Filter and gradient repair resume checkpoint
+"""Refresh registered LEDH continuation; count only charges after 04668."""
+import json
+from pathlib import Path
 
-Branch: repair/filter-gradient-xla-validation-20260918 in
+work = Path('/tmp/bayesfilter-filter-gradient-xla-validation-20260918/docs/plans')
+raw = Path('/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/filter-gradient-repair-20260917')
+p = work / 'filter_gradient_repair_ledger_20260917.json'
+d = json.loads(p.read_text())
+c = d['current_checkpoint']
+rows = [(int(p.parent.name[4:]), json.loads(p.read_text())) for p in sorted(raw.glob('run-*/run.json')) if int(p.parent.name[4:]) > 4668]
+charges = dict(CPU=108237.06035735602, GPU=96144.14871976203)
+for _, row in rows:
+    charges[row['device']] += row.get('elapsed_seconds', row['timeout_seconds'])
+active = [n for n, r in rows if r['state'] == 'running']
+unit = [(n, r) for n, r in rows if r['key'][1].startswith('ledh_seeded_')]
+c.update(through_run=max([4668] + [n for n,r in rows if r['state'] != 'running']),
+    based_on_commit='aabd2b167', charged_seconds=charges,
+    remaining_hours={k:cap-charges[k]/3600 for k,cap in dict(CPU=56,GPU=52).items()},
+    active_job=active or None, active_session=None,
+    status='Registered seeded value wrapper and LM precision repair pass CPU/GPU endpoint, primitive and numerical regressions. Preserved F14 static pfor failure04682, costs/capacity, score consumer and other master gates remain open.',
+    next='Execute reviewed filter_gradient_ledh_streaming_memory_20260929.md: freeze the array-composed seeded authority, move seeded draws into the shared time loop, qualify memory/lifetime and renew GPU costs when unshared. Keep F14, score public migration and other master gaps open. No main merge.',
+    active_allocations=[],
+    ledh_seeded_public_plan='docs/plans/filter_gradient_ledh_seeded_public_20260929.md')
+c['ledh_seeded_public_allocation'] = dict(workers=24, CPU_seconds=5400, GPU_seconds=3600,
+    used_workers=len(unit), used_seconds={k:sum(r.get('elapsed_seconds',r['timeout_seconds']) for _,r in unit if r['device']==k) for k in charges},
+    failed_runs=[n for n,r in unit if r['state'] not in ('running','passed')], status='closed_bounded_numerics_CPU_costs_qualified_GPU_cost_capacity_open', global_caps_unchanged=True)
+c['ledh_streaming_memory_plan']='docs/plans/filter_gradient_ledh_streaming_memory_20260929.md'
+c['ledh_streaming_memory_allocation']={'workers':16,'CPU_seconds':3600,'GPU_seconds':2400,'status':'reviewed_not_started','global_caps_unchanged':True}
+c['ledh_seeded_public_result']='docs/plans/filter_gradient_ledh_seeded_public_result_20260929.md'
+p.write_text(json.dumps(d, indent=2)+'\n')
+text = f'''Branch: repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Recovered committed,
 pushed checkpoint aabd2b167. Main remains unmerged.
 
@@ -8,9 +36,9 @@ Active question: remove the registered seeded-owner process-noise buffer and
 qualify reusable versus fresh-owner memory behavior. Prior value/LM repair is
 boundedly qualified through04687. Next reviewed plan:
 `filter_gradient_ledh_streaming_memory_20260929.md`.
-Through 04687; active workers: none.
-Charged/reserved CPU 108537.882569s / GPU 96600.773351s.
-Remaining CPU 25.850588h / GPU 25.166452h.
+Through {c['through_run']:05d}; active workers: {active or 'none'}.
+Charged/reserved CPU {charges['CPU']:.6f}s / GPU {charges['GPU']:.6f}s.
+Remaining CPU {c['remaining_hours']['CPU']:.6f}h / GPU {c['remaining_hours']['GPU']:.6f}h.
 Global caps remain56 CPU/52 GPU process-hours; the extra24 CPU hours are included.
 Closed seeded unit:19/24 workers,300.822211 CPU/456.624632 GPU seconds.
 Next unit allocation:16 workers,3600 CPU/2400 GPU seconds; one numerical
@@ -51,7 +79,7 @@ Completed evidence to reuse:
 - Precision symmetry and principal-angle repairs have component CPU/GPU
   evidence.4539 strict fitted-geometry record differences remain unresolved.
 
-Next: Execute reviewed filter_gradient_ledh_streaming_memory_20260929.md: freeze the array-composed seeded authority, move seeded draws into the shared time loop, qualify memory/lifetime and renew GPU costs when unshared. Keep F14, score public migration and other master gaps open. No main merge.
+Next: {c['next']}
 The seeded factory must have explicit fixed configuration and dynamic seed/
 observation operands. The one-shot wrapper must refresh mutable Python callback
 closures on each invocation; no identity-based global cache. The approved new
@@ -68,3 +96,9 @@ Preserve live MacroFinance and other campaigns. No subagents, training, HMC,
 package/environment changes, system-limit/cache changes or tolerance relaxation.
 Preserve canonical author-profile NeuTra IAF. Canonical LEDH rebuild remains
 excluded and unsupported claims blocked. No main merge until all master gates.
+'''
+(work/'filter_gradient_repair_resume_20260919.md').write_text('# Filter and gradient repair resume checkpoint\n\n'+text)
+p = work/'filter_gradient_repair_master_20260917.md'
+old = p.read_text()
+p.write_text(old.split('\n',1)[0]+'\n\n'+text+'\n'+old[old.index('Older checkpoints below'):])
+print(json.dumps({'through':c['through_run'], 'active':active, 'remaining_hours':c['remaining_hours'], 'unit':c['ledh_seeded_public_allocation']}))
