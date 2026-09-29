@@ -4,8 +4,10 @@
 four methods; no overall winner or scientific/default promotion is established.**
 
 Configuration: these are FP64 TensorFlow GPU/XLA diagnostic comparisons with
-TF32 off, not the production FP32/TF32 program. Each particle route uses its
-own scope-specific calibration, validation and frozen final controls. Exact
+TF32 off, not the production FP32/TF32 program. Each particle route in the original comparisons used its
+own scope-specific calibration, validation and frozen final controls. The later
+discrepancy investigation froze those controls across changed scopes and labels
+all new cells UNTUNED diagnostics; it grants no tuning admission. Exact
 tuning paths and settings are recorded in the linked detailed reports and
 manifests. These comparisons do not establish HMC readiness, control transfer
 across scopes, or production performance.
@@ -46,12 +48,13 @@ T=20,50,120 includes zero. Inverse CDF is a promising candidate, not an
 established overall winner. Error norms and absolute errors are calculated per
 dataset before averaging; subtracting displayed mean scores can hide cancellation.
 Reported SDs describe variability across dataset/design pairs; SEs describe
-uncertainty in their means. Fixed-dataset Monte Carlo uncertainty was not measured.
+uncertainty in their means. Fixed-dataset Monte Carlo uncertainty was not measured in that original
+comparison. The completed follow-up below now reports it separately.
 
 | Decision | Primary criterion status | Veto diagnostic status | Main uncertainty | Next justified action | Not concluded |
 | --- | --- | --- | --- | --- | --- |
 | Close the requested campaign | All requested scopes, actual values, scores and errors preserved | Final validity checks pass; historical failed calibration remains recorded | Limited datasets, regimes and numerical-control search | Use the final reports; do not rerun completed research | Entire multi-model master program completed |
-| Retain all four methods | No supported overall ranking | Conditional losses to simpler comparators veto promotion in those cases | Finite particle count and tuning scope | Plan fresh long-horizon tuning, particle convergence and broader replication | Inverse CDF or any other method is universally best |
+| Retain all four methods | No supported overall ranking | Conditional losses to simpler comparators veto promotion in those cases | Finite particle count and tuning scope | Test reset distribution preservation, then fresh tuning and broader replication | Inverse CDF or any other method is universally best |
 
 | Inference status | Conclusion |
 | --- | --- |
@@ -59,7 +62,35 @@ uncertainty in their means. Fixed-dataset Monte Carlo uncertainty was not measur
 | Statistically supported ranking | Exploratory KSC T=10 SQMC-versus-IID comparisons only; no within-SQMC or overall ordering. |
 | Descriptive-only differences | Remaining means, error magnitudes, tails and timings. |
 | Default readiness | Not established; scientific defaults are unchanged. |
-| Next evidence needed | Fresh tuning, more independent pairs, fixed-dataset replications, particle convergence and broader regimes. |
+| Next evidence needed | Reset/design repair evidence, fresh tuning and untouched broader multi-dataset comparisons; the limited fixed-data and particle ladders are now complete. |
+
+## Completed discrepancy follow-up
+
+The [reviewed analysis and full results](sqmc-ksc-discrepancy-results-20260929.md)
+separate finite-program derivative correctness from full-mixture score accuracy.
+Two retrospective T=120 cases, eight random designs and N=1,008/2,016/4,032 gave
+192 valid particle replications. All 48 branch-matched derivative checks and
+144 numerical-control cells passed; the large conditional mean score error
+persisted on dataset 213006. At N=4,032 its mean gamma error remained 1.56–1.84,
+with coordinate SEs 0.14–0.16. This does not establish asymptotic bias or rank
+methods. All four also lost to the Gaussian Kalman heuristic on this case.
+
+Eight canonical traces identified a shared local distortion: reset plus
+higher-moment correction preserved mean and variance but reduced average
+kurtosis from 2.77–2.82 to 1.32–1.34. Exact seven-component integration on the
+same before/after clouds showed changes in the next predictive likelihood and
+score. This is a measured local reset effect, not a decomposition of the whole
+120-step error or proof that reset is the only cause. The next discriminating
+study should test residual-design richness and distribution preservation before
+simply increasing particles or solver iterations again.
+
+All 376 saved numerical evaluations were valid, all 21 GPU worker attempts
+completed without retries, eight focused CPU tests passed, and the terminal
+evidence audit passed 20 checks. Full values, scores, absolute errors, SD/SE,
+covariance matrices, exploratory intervals and plots are linked from the result.
+No filtering runtime, model, safeguard, package/environment or default changed.
+All four methods remain research candidates; none receives accuracy/default
+promotion from these diagnostics.
 
 ## Material changes, verification and accounting
 
@@ -79,13 +110,14 @@ paired-interval calculations. The correction had no invalid reference cases,
 infrastructure failures or retries. Research commits are 479a4616, b7ed96ec
 and c2ae4eb0; their complete logs and versioned evidence remain preserved.
 
-The [final budget ledger](../plans/artifacts/sqmc-ksc-full-mixture-20260929/budget.json)
-records 24,462.190031 charged GPU-owning seconds: 6.795053 of the aggregate
-12 GPU hours, leaving 5.204947 hours. This includes earlier pilots, checks,
-repairs and the unchanged conservative prior-hook reserve; linked prior ledgers
-must not be added again. The elapsed deadline is
-2026-09-30T16:15:40.010888+00:00. No research worker remains active. Documentation,
-Git integration and explicitly CPU-only commit checks require no further GPU run.
+The [current budget ledger](../plans/artifacts/sqmc-ksc-discrepancy-20260929/budget.json)
+records 31543.211557 charged GPU-owning seconds: 8.762003 of the
+aggregate 12 GPU hours, leaving 3.237997 hours. This includes the immutable
+prior total of 24,462.190031 seconds and 7081.021525 seconds for the
+follow-up, including worker initialization and compilation. The old reserve is
+already included; do not add predecessor ledgers again. The elapsed deadline
+remains 2026-09-30T16:15:40.010888+00:00. No research worker remains active.
+CPU-only tests and reporting intentionally hid GPUs and used no GPU budget.
 
 Terminal review is local review plus executable checks, not independent external
 review. The strongest alternative explanation for apparent method differences is
@@ -93,5 +125,6 @@ the limited dataset/regime and tuning coverage; further replication could revers
 the descriptive ordering. Numerical agreement between independent references
 supports the reported comparisons, not arbitrary-data exactness or HMC validity.
 The wider master program's other models and HMC objectives remain outside this
-completed campaign. The owner has separately authorized merging this completed
-work into main, synchronizing origin/main and updating sqmc-development from main.
+completed campaign. The original comparison was integrated with main and origin/main before this
+follow-up began at commit 023e1061. The follow-up is recorded on
+sqmc-development; it does not repeat that merge/push operation.

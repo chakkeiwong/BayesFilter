@@ -1,35 +1,36 @@
-# KSC checkpoint — campaign complete, 2026-09-29
+# KSC discrepancy checkpoint — complete, 2026-09-29
 
-Checkout: /home/chakwong/BayesFilter-SQMC, branch sqmc-development.
-Particle evidence commit b7ed96ec; full-mixture correction commit c2ae4eb0.
-Requested numerical work and terminal review are complete. No HMC, package
-changes or scientific/default promotion. Merge/push and branch synchronization
-were separately authorized by the owner on 2026-09-29; Git history records them.
+Checkout: /home/chakwong/BayesFilter-SQMC; branch: sqmc-development.
+Starting HEAD: 023e106102c89ee9d4787df3a55fbf5f68b88ecf.
+Owner's plan/review/execute request is complete. No numerical worker is active.
+
+Result: docs/benchmarks/sqmc-ksc-discrepancy-results-20260929.md.
+Plan: docs/plans/sqmc-ksc-discrepancy-analysis-20260929.md.
+Addendum: docs/plans/sqmc-ksc-reset-mechanism-addendum-20260929.md.
+Evidence: docs/plans/artifacts/sqmc-ksc-discrepancy-20260929/attempt-01/.
+Tables, CSV, uncertainty, traces, plots and terminal audit: analysis-01/ there.
 Master summary: docs/benchmarks/sqmc-master-program-final-summary-20260929.md.
-Current result: docs/benchmarks/sqmc-ksc-full-mixture-corrected-results-20260929.md.
-Tables: docs/plans/artifacts/sqmc-ksc-full-mixture-20260929/final-evidence-01/report.md.
-Plan/derivation: docs/plans/sqmc-ksc-full-mixture-correction-20260929.md.
-Active ledger: docs/plans/artifacts/sqmc-ksc-full-mixture-20260929/budget.json
-(links immutable original ledger; do not double-count charges).
 
-Complete: all seven observation components retained in Gaussian-sum Kalman
-updates with checked quadrature projection. 8 CPU tests, GPU FD/exact/graph-XLA
-checks, all 32 datasets x 4 resolutions pass. Original 128 particle evaluations
-reused unchanged. Max reference score-coordinate discrepancy 9.77e-15; max
-likelihood discrepancy 5.12e-13. Independent error/SD/SE/paired-interval audit
-passed. No invalid reference cases, infrastructure failures or retries.
-Old one-Gaussian main comparison superseded; historical evidence preserved.
-No overall winner; retain all four. Only exploratory T10 SQMC-versus-IID
-intervals exclude zero; no within-SQMC ordering. Single regime/8 pairs and
-restricted controls remain limitations, no fixed-dataset uncertainty estimate.
+All 376 saved evaluations valid; 48 branch-matched FD checks pass; eight CPU
+checks pass; 20 terminal evidence checks pass. No failed GPU attempt or retry.
+At N=4,032, eight designs on case 213006 leave mean gamma errors 1.56–1.84.
+All four lose to the Gaussian heuristic there; full seven-mixture integration
+remains the reference. No method ranking or accuracy/default promotion.
 
-Correction charge 51.327502s; aggregate
-6.795053/12 GPU-hours; remaining 5.204947h.
-Includes prior work and unchanged 300s old-hook reserve.
-Deadline 2026-09-30T16:15:40.010888+00:00; two infrastructure retries/unit limit.
-No workers remain. Numerical correction is complete. Repository commit checks
-run with GPU devices hidden. Do not rerun completed research.
-Next research action: await a selected follow-up; no numerical work remains in
-this campaign. Candidates are fresh T120 tuning, N2016, more pairs, fixed-dataset
-Monte Carlo uncertainty and broader regimes. Wider master-program completion
-and HMC readiness are not established by this closeout.
+Shared reset/correction preserves mean and variance but changes kurtosis from
+2.77–2.82 to 1.32–1.34 and changes exact next-observation predictions/scores.
+This is a direct local effect, not a global error decomposition or exclusive
+cause. FD validates finite-program derivatives, not target-score accuracy.
+Two retrospective cases and UNTUNED changed scopes limit generalization.
+
+Ledger: docs/plans/artifacts/sqmc-ksc-discrepancy-20260929/budget.json.
+Prior 24462.190031s + this investigation 7081.021525s =
+31543.211557/43,200s charged; 11656.788443s (3.237997h) remain.
+Deadline: 2026-09-30T16:15:40.010888+00:00; max two infrastructure retries/unit.
+Do not double-count the immutable prior ledger or its included reserve.
+
+Next research question: test richer residual designs and distribution
+preservation, separating reset from correction, with safeguards retained and
+fresh tuning/data before any promotion. Do not rerun completed diagnostics.
+No core/model/default/HMC/environment changes; no independent reviewer.
+This follow-up does not merge or push; original integration already completed.
