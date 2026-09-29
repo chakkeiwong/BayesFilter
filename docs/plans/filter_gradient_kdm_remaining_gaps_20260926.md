@@ -1,5 +1,13 @@
 # KDM remaining numerical and memory gates
 
+Owner scope update, 2026-09-29: KDM is work in progress and is deferred from this
+repair campaign, including integrated/resampling/covariance variants and the
+optional control pilot. Do not resume the KDM work below under the current
+master program. Preserve completed repairs and evidence; unresolved numerical,
+endpoint, memory and cost findings remain deferred, not accepted or closed.
+Shared helpers needed by non-KDM filters remain in scope. The current ledger
+and terminal gap queue supersede this document's older continuation instructions.
+
 The native auxiliary and shared reset have passed their bounded FP64 CPU/GPU
 execution checks, and matching-mode FP32 reset parity passes. The master program
 remains open. This follow-up resolves two findings preserved by the completed

@@ -1,17 +1,20 @@
-# Non-iAPF score-study input execution repair
+# Score-study input execution repair outside deferred iAPF/KDM
 
 Prepared next phase; no allocation or worker is activated by this document.
-Start only after the Gaussian model-binding unit closes. Freeze its final
-committed repair head as the source baseline and register a bounded allocation
-in the existing ledger before launching numerical work. Adaptive iAPF remains
-deferred; this phase must not change or claim its controller/runtime behavior.
+The Gaussian model-binding unit closed through 04896 at 0025cdf97; freeze that
+commit as the numerical source baseline and register a bounded allocation in
+the existing ledger before launching numerical work. The owner deferred both
+adaptive iAPF and KDM on 2026-09-29. KDM's integrated, resampling and covariance
+variants, optional control pilot, and their endpoint/cost qualification are
+excluded. Preserve completed evidence and implementation; this phase must not
+change or claim the deferred algorithms' controller/runtime behavior.
 
-Question: can the active Gaussian/nonlinear score-study callers prepare their
-existing random clouds and optional KDM control pilot entirely in stable XLA
-owners without changing seed streams, statuses or analytical-score targets?
+Question: can the remaining Gaussian/nonlinear score-study callers prepare
+their existing random clouds entirely in stable XLA owners without changing
+seed streams, statuses or analytical-score targets?
 The concrete sites are eager initial/process/reset normals and resampling
 uniforms in `adapters.py` and `nonlinear_adapter.py`, plus the Gaussian twist
-initial-ancestor draw and optional KDM pilot/model/covariance/reduction code.
+initial-ancestor draw, for consumers outside the two deferred families.
 Gaussian model binding itself is already qualified; do not rewrite that core.
 
 Use shared fixed-signature input factories taking seed tensors and ordinary
@@ -24,19 +27,21 @@ uniforms, strict predeclared normal/output bounds and all discrete decisions.
 Any changed ancestor, selected component, validity or fit/stopping decision
 triggers localization; no changed decision may be hidden by an aggregate norm.
 
-Enclose the optional KDM pilot using its existing numerical authority and
-independent seed namespace. Preserve its means, covariance, uniform weights,
-component uniforms, zero-control values, validity and final reduction. Keep
-seed-label/metadata construction on the host. Host formatting and reference
-diagnostics must be classified explicitly; they cannot feed eager numerical
-decisions back into the filter or become unreviewed runtime exceptions.
+Shared helpers needed by non-KDM filters remain in scope; deferring KDM does
+not exempt those active call paths. Trace their consumers before editing, keep
+the deferred callers on their existing paths, and do not launch KDM pilot or
+qualification work. Keep seed-label/metadata construction on the host. Host
+formatting and reference diagnostics must be classified explicitly; they cannot
+feed eager numerical decisions back into the filter or become unreviewed
+runtime exceptions.
 
 The nonlinear physical dataset remains the existing FP64 CPU compiled data
 generator. Freeze identical physical observations for direct comparisons and
 also test the actual live generator/seed path. Do not reinterpret backend RNG
-differences as new observations. Leave the existing adaptive iAPF input path
-unchanged behind its explicit deferral; shared helpers must not silently admit
-it. Preserve original public result fields and configured non-JIT diagnostics.
+differences as new observations. Leave the existing adaptive iAPF and KDM input
+paths unchanged behind their explicit deferrals; shared helpers must not
+silently admit either. Preserve original public result fields and configured
+non-JIT diagnostics. Fixed fitted-APF remains a separate in-scope algorithm.
 
 Evidence contract:
 
@@ -45,11 +50,12 @@ Evidence contract:
   normal bounds from fitted-APF qualification, one trace, exact replay and no
   host callbacks/pfor are required. Both libraries must consume identical
   realized arrays in a separate filter-only control.
-- Compare actual non-iAPF public consumers using live streams against the
+- Compare actual in-scope public consumers using live streams against the
   frozen original adapter. Cover Gaussian Kalman/UKF, particle/twist and
-  analytical-direction families, nonlinear moment/particle/direction families,
-  and optional KDM control collection. Reuse current valid independent scopes;
-  do not retune on preserved failed holdouts or use historical LEDH evidence.
+  analytical-direction families and nonlinear moment/particle/direction
+  families, excluding all KDM variants and adaptive iAPF. Reuse current valid
+  independent scopes; do not retune on preserved failed holdouts or use
+  historical LEDH evidence.
 - Compare complete value/score/diagnostic/status records, actual ancestors and
   other discrete selections where applicable, invalid-input rejection and
   seed provenance. Preserve analytical derivative authorities. Any new
@@ -79,5 +85,9 @@ this repair because finite particle programs depend on realized clouds and
 discrete labels. The existing Philox authority plus live-stream and identical-
 array controls distinguishes conversion, wrapper and numerical-filter effects.
 Small successful cases cannot establish universal branch stability. This phase
-does not close adaptive iAPF, canonical LEDH, historical locator discrepancies,
-geometry reporting, whole-repository coverage or terminal memory acceptance.
+does not close adaptive iAPF, KDM, canonical LEDH, historical locator
+discrepancies, geometry reporting, whole-repository coverage or terminal memory
+acceptance.
+The scope review preserves shared non-KDM obligations, numerical gates and
+completed evidence; deferral does not confer policy compliance or close mixed
+findings. No allocation is activated by this scope-only update.

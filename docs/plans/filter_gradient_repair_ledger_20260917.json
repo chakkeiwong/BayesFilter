@@ -88,7 +88,7 @@
       "fitted_apf_followup": "docs/plans/filter_gradient_fitted_apf_execution_20260929.md; real Gaussian/nonlinear endpoints reach fixed/adaptive Python fitting recurrences and numerical feature comprehensions.",
       "adaptive_iapf_scope_20260929": {
         "status": "deferred_by_owner",
-        "scope": "Adaptive iAPF only; fixed fitted-APF and other reachable consumers remain in scope",
+        "scope": "Adaptive iAPF only; KDM is separately deferred; fixed fitted-APF and remaining reachable consumers stay in scope",
         "evidence_through_run": 4876,
         "finding_closed": false
       },
@@ -96,8 +96,15 @@
         "status": "scoped_CPU_GPU_numerical_qualification_and_descriptive_costs_complete",
         "result": "docs/plans/filter_gradient_gaussian_model_binding_result_20260929.md",
         "finding_closed": false,
-        "remaining": "Shared eager input/RNG and optional KDM-pilot preparation, other consumers and terminal costs/source audit; adaptive iAPF deferred.",
+        "remaining": "Shared eager input/RNG for non-iAPF, non-KDM callers, other in-scope consumers and terminal costs/source audit; adaptive iAPF and KDM including the optional pilot are deferred.",
         "affected_caller_regressions": "04894 CPU /04895 GPU, seven each; final161 checks04896"
+      },
+      "kdm_scope_20260929": {
+        "status": "deferred_by_owner",
+        "scope": "KDM integrated/resampling/covariance variants and optional control pilot; shared non-KDM consumers remain in scope",
+        "evidence_through_run": 4896,
+        "remaining_plan": "docs/plans/filter_gradient_kdm_remaining_gaps_20260926.md",
+        "finding_closed": false
       }
     },
     {
@@ -129,6 +136,13 @@
         "result": "docs/plans/filter_gradient_score_study_directions_result_20260929.md",
         "cost_result": "docs/plans/filter_gradient_score_direction_cost_result_20260929.md",
         "terminal_readback_run": 4782
+      },
+      "kdm_scope_20260929": {
+        "status": "deferred_by_owner",
+        "scope": "KDM integrated/resampling/covariance variants and optional control pilot; shared non-KDM consumers remain in scope",
+        "evidence_through_run": 4896,
+        "remaining_plan": "docs/plans/filter_gradient_kdm_remaining_gaps_20260926.md",
+        "finding_closed": false
       }
     },
     {
@@ -343,7 +357,7 @@
       "fitted_apf_followup": "docs/plans/filter_gradient_fitted_apf_execution_20260929.md; real Gaussian/nonlinear endpoints reach fixed/adaptive Python fitting recurrences and numerical feature comprehensions.",
       "adaptive_iapf_scope_20260929": {
         "status": "deferred_by_owner",
-        "scope": "Adaptive iAPF only; fixed fitted-APF and other reachable consumers remain in scope",
+        "scope": "Adaptive iAPF only; KDM is separately deferred; fixed fitted-APF and remaining reachable consumers stay in scope",
         "evidence_through_run": 4876,
         "finding_closed": false
       },
@@ -351,8 +365,15 @@
         "status": "scoped_CPU_GPU_numerical_qualification_and_descriptive_costs_complete",
         "result": "docs/plans/filter_gradient_gaussian_model_binding_result_20260929.md",
         "finding_closed": false,
-        "remaining": "Shared eager input/RNG and optional KDM-pilot preparation, other consumers and terminal costs/source audit; adaptive iAPF deferred.",
+        "remaining": "Shared eager input/RNG for non-iAPF, non-KDM callers, other in-scope consumers and terminal costs/source audit; adaptive iAPF and KDM including the optional pilot are deferred.",
         "affected_caller_regressions": "04894 CPU /04895 GPU, seven each; final161 checks04896"
+      },
+      "kdm_scope_20260929": {
+        "status": "deferred_by_owner",
+        "scope": "KDM integrated/resampling/covariance variants and optional control pilot; shared non-KDM consumers remain in scope",
+        "evidence_through_run": 4896,
+        "remaining_plan": "docs/plans/filter_gradient_kdm_remaining_gaps_20260926.md",
+        "finding_closed": false
       }
     },
     {
@@ -390,7 +411,7 @@
   "current_checkpoint": {
     "through_run": 4896,
     "based_on_commit": "d073a2bad",
-    "status": "Gaussian model binding is qualified through04896: CPU/GPU complete FP64/public records exact; FP32 max7.16e-7 CPU and exact GPU; independent derivative error<=1.20e-11. Seven affected sibling callers pass on each backend;161 final evidence/policy checks pass. Default XLA, single trace, no pfor/callbacks, trusted GPU placement and verified memory growth are recorded. Preconfigured-runtime warm screens CPU19.431\u21923.405ms/GPU37.883\u21929.014ms; sampled RSS +6.031/-17.578MiB, descriptive only. DZ5 named-pass sensitivity is committed at169f403f4 without a portable remedy. Adaptive iAPF remains deferred.",
+    "status": "Gaussian model binding is qualified through04896: CPU/GPU complete FP64/public records exact; FP32 max7.16e-7 CPU and exact GPU; independent derivative error<=1.20e-11. Seven affected sibling callers pass on each backend;161 final evidence/policy checks pass. Default XLA, single trace, no pfor/callbacks, trusted GPU placement and verified memory growth are recorded. Preconfigured-runtime warm screens CPU19.431\u21923.405ms/GPU37.883\u21929.014ms; sampled RSS +6.031/-17.578MiB, descriptive only. DZ5 named-pass sensitivity is committed at169f403f4 without a portable remedy. Adaptive iAPF and KDM are deferred by the owner. KDM integrated/resampling/covariance variants and optional control-pilot work are excluded; completed repairs/evidence are preserved without compliance or closure claims.",
     "charged_seconds": {
       "CPU": 113374.12624048912,
       "GPU": 98274.52551884046
@@ -401,7 +422,7 @@
     },
     "active_job": null,
     "active_session": null,
-    "next": "Activate filter_gradient_score_input_execution_20260929.md using this final Gaussian repair commit as the frozen baseline. Migrate shared non-iAPF input/RNG and optional KDM-pilot preparation with existing Philox authorities, exact stream/discrete-decision checks and actual live-seed callers. Keep geometry4539-leaf/status/angle comparisons, local DZ5 arithmetic/emitted-lowering investigation, replicated costs/native residency, source applicability/F01\u2013F20 and eventual integration open. Main remains unmerged.",
+    "next": "Activate filter_gradient_score_input_execution_20260929.md with 0025cdf97 as the frozen numerical baseline. Repair shared Gaussian/nonlinear input/RNG and twist ancestor preparation for non-iAPF, non-KDM callers using existing Philox authorities, exact stream/discrete-decision checks and actual live-seed callers. Keep shared non-KDM functionality and fixed fitted-APF memory acceptance in scope. Geometry4539-leaf/status/angle comparisons, local DZ5 arithmetic/emitted-lowering investigation, in-scope replicated costs/native residency, source applicability/F01\u2013F20 and eventual integration remain open. Do not resume either deferred family or merge main before the remaining in-scope gates pass.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -1523,9 +1544,13 @@
       "authority": "Owner: iAPF is still work in progress; ignore that for now.",
       "deferred": "Adaptive iAPF controller/runtime migration, selection validation and associated endpoint/cost qualification",
       "preserved_evidence_through_run": 4876,
-      "completion_scope": "All remaining non-iAPF master-program repairs and evidence gates",
+      "completion_scope": "All remaining master-program repairs and evidence gates outside adaptive iAPF and KDM",
       "fixed_fitted_apf": "Separate qualified numerical repair; cost/memory acceptance remains in scope",
-      "nonclaims": "Deferral does not establish adaptive iAPF compliance or close F07/F19."
+      "nonclaims": "Deferral does not establish adaptive iAPF or KDM compliance, accept their unresolved findings or close mixed F07/F08/F19 findings.",
+      "kdm_authority": "Owner: KDM is work in progress. defer that as well.",
+      "kdm_deferred": "KDM including integrated/resampling/covariance variants, optional control-pilot work, runtime/selection migration and associated endpoint/numerical/cost/memory qualification",
+      "kdm_preserved_evidence_through_run": 4896,
+      "shared_helpers": "Shared functionality needed by other in-scope filters remains active; neither deferral exempts those call paths."
     },
     "dz5_locator_constant_sinking_allocation": {
       "state": "closed",
@@ -1564,8 +1589,8 @@
       },
       "group_prefix": "gaussian_binding_",
       "plan": "docs/plans/filter_gradient_gaussian_model_binding_20260929.md",
-      "progress_notes": "Gaussian model binding is qualified through04896: CPU/GPU complete FP64/public records exact; FP32 max7.16e-7 CPU and exact GPU; independent derivative error<=1.20e-11. Seven affected sibling callers pass on each backend;161 final evidence/policy checks pass. Default XLA, single trace, no pfor/callbacks, trusted GPU placement and verified memory growth are recorded. Preconfigured-runtime warm screens CPU19.431\u21923.405ms/GPU37.883\u21929.014ms; sampled RSS +6.031/-17.578MiB, descriptive only. DZ5 named-pass sensitivity is committed at169f403f4 without a portable remedy. Adaptive iAPF remains deferred.",
-      "next_action": "Activate filter_gradient_score_input_execution_20260929.md using this final Gaussian repair commit as the frozen baseline. Migrate shared non-iAPF input/RNG and optional KDM-pilot preparation with existing Philox authorities, exact stream/discrete-decision checks and actual live-seed callers. Keep geometry4539-leaf/status/angle comparisons, local DZ5 arithmetic/emitted-lowering investigation, replicated costs/native residency, source applicability/F01\u2013F20 and eventual integration open. Main remains unmerged.",
+      "progress_notes": "Gaussian model binding is qualified through04896: CPU/GPU complete FP64/public records exact; FP32 max7.16e-7 CPU and exact GPU; independent derivative error<=1.20e-11. Seven affected sibling callers pass on each backend;161 final evidence/policy checks pass. Default XLA, single trace, no pfor/callbacks, trusted GPU placement and verified memory growth are recorded. Preconfigured-runtime warm screens CPU19.431\u21923.405ms/GPU37.883\u21929.014ms; sampled RSS +6.031/-17.578MiB, descriptive only. DZ5 named-pass sensitivity is committed at169f403f4 without a portable remedy. Adaptive iAPF and KDM are deferred by the owner. KDM integrated/resampling/covariance variants and optional control-pilot work are excluded; completed repairs/evidence are preserved without compliance or closure claims.",
+      "next_action": "Activate filter_gradient_score_input_execution_20260929.md with 0025cdf97 as the frozen numerical baseline. Repair shared Gaussian/nonlinear input/RNG and twist ancestor preparation for non-iAPF, non-KDM callers using existing Philox authorities, exact stream/discrete-decision checks and actual live-seed callers. Keep shared non-KDM functionality and fixed fitted-APF memory acceptance in scope. Geometry4539-leaf/status/angle comparisons, local DZ5 arithmetic/emitted-lowering investigation, in-scope replicated costs/native residency, source applicability/F01\u2013F20 and eventual integration remain open. Do not resume either deferred family or merge main before the remaining in-scope gates pass.",
       "used_workers": 14,
       "used_seconds": {
         "CPU": 200.5485422972124,
