@@ -48,7 +48,11 @@ def _operands(case, *, fixture=FIXTURE):
 
 
 def _endpoint(case, owner, numerical, monkeypatch, *, expected_valid=True, fixture=FIXTURE):
-    from bayesfilter.score_study import nonlinear_adapter, nonlinear_tf
+    from bayesfilter.score_study import (
+        input_execution_tf,
+        nonlinear_adapter,
+        nonlinear_tf,
+    )
     from bayesfilter.score_study.contracts import DiagnosticFailure, seed_pair
     from bayesfilter.score_study.registry import default_registry
     proposal = _proposal(case)
@@ -94,6 +98,8 @@ def _endpoint(case, owner, numerical, monkeypatch, *, expected_valid=True, fixtu
             lambda *_: tf.constant(fixture['observations'], DTYPE))
         patch.setattr(tf.random, 'stateless_normal', random)
         patch.setattr(tf.random, 'stateless_uniform', random)
+        patch.setattr(input_execution_tf, 'make_score_inputs', lambda *_, **__:
+            lambda seeds: tuple(frozen[tuple(seed)] for seed in seeds.numpy().tolist()))
         if not expected_valid:
             for _ in range(2):
                 with pytest.raises(tf.errors.InvalidArgumentError, match='nonlinear score validity veto'):

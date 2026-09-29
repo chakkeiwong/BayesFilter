@@ -145,7 +145,7 @@ def _operands(case):
 
 def _endpoint(case, owner, result, monkeypatch):
     """Keep the real endpoint/factories; inject only frozen streams/runtime."""
-    from bayesfilter.score_study import adapters, gaussian_tf
+    from bayesfilter.score_study import adapters, gaussian_tf, input_execution_tf
     from bayesfilter.score_study.contracts import seed_pair
     from bayesfilter.score_study.registry import default_registry
     proposal = 'ledh' if case.startswith('ledh') else case
@@ -198,6 +198,8 @@ def _endpoint(case, owner, result, monkeypatch):
             lambda *_: tf.constant(FIXTURE['observations'], DTYPE))
         patch.setattr(tf.random, 'stateless_normal', random)
         patch.setattr(tf.random, 'stateless_uniform', random)
+        patch.setattr(input_execution_tf, 'make_score_inputs', lambda *_, **__:
+            lambda seeds: tuple(frozen[tuple(seed)] for seed in seeds.numpy().tolist()))
         first = adapters.evaluate_gaussian(row, context)
         second = adapters.evaluate_gaussian(row, context)
         reset_seed = seed_pair(master_seed=FIXTURE['seed'], model=row['model'], dataset=1,

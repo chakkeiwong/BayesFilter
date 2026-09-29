@@ -1,6 +1,7 @@
 # Score-study input execution repair outside deferred iAPF/KDM
 
-Prepared next phase; no allocation or worker is activated by this document.
+Activated after e078e6eb7 under the existing campaign authorization; the
+score_inputs_allocation ledger entry controls the bounded worker budget.
 The Gaussian model-binding unit closed through 04896 at 0025cdf97; freeze that
 commit as the numerical source baseline and register a bounded allocation in
 the existing ledger before launching numerical work. The owner deferred both
@@ -90,4 +91,36 @@ discrepancies, geometry reporting, whole-repository coverage or terminal memory
 acceptance.
 The scope review preserves shared non-KDM obligations, numerical gates and
 completed evidence; deferral does not confer policy compliance or close mixed
-findings. No allocation is activated by this scope-only update.
+findings. The original scope-only update activated no worker; the allocation above
+records the subsequent execution authorization and bounded activation.
+
+Activation review: the frozen baseline is 0025cdf97; e078e6eb7 changes only
+scope documentation. Use one cached input factory with an explicit int32 seed
+table signature and bounded configuration shapes. Preserve the eager input
+branch for deferred proposals and for Gaussian rows requesting KDM pilot
+collection, even when their primary proposal is otherwise in scope. No new
+policy exception is needed. Input normals use the already qualified absolute
+bounds 1e-12 FP64 / 2e-6 FP32; uniforms and raw words must match exactly. Public
+FP64 records retain 1e-9 absolute/relative bounds, and new FP32 endpoint checks
+use 5e-5 (the existing fixed fitted-APF bound); all statuses, seeds, shapes and
+resampling labels are exact. Fixed-input controls and replay are exact.
+
+Validate dimensions 1/3, odd/even shapes, two seed tables, ordinary/twist
+uniform extents, and both float dtypes/backends. Actual endpoint tests must
+include frozen healthy LEDH/SGQF cases and live seed paths, preserving any
+original live-path rejection instead of retuning it. If diagnostic label
+instrumentation changes the ordinary value/score bytes, it cannot establish
+that ordinary program's labels and must be localized. Cost screens include
+input construction, data, oracle and reporting under the same preconfigured
+runtime descriptor; exclude import/runtime initialization explicitly. They
+are descriptive only. One trace and unchanged HLO across seeds are compilation
+checks, not general compiler-memory bounds. Preserve the nonlinear FP64 CPU
+physical dataset and scope hashes. No KDM or iAPF numerical worker is launched.
+
+Coverage review after CPU qualification: fixed fitted-APF still traverses the
+shared preparation before its own independent fit streams. Add its existing
+Gaussian and nonlinear public endpoint regressions on each backend, inside the
+already budgeted GPU direction and CPU final-readback workers. This covers the
+affected sibling call paths without changing fit equations, kernels, streams,
+selection, thresholds or the 18-worker allocation. No adaptive iAPF or KDM
+execution is added.

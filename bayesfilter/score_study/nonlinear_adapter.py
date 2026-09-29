@@ -23,6 +23,7 @@ def evaluate_nonlinear(row,context):
     runtime=configure_runtime(device=settings["device"],tf32=settings["tf32"],jit_compile=settings["jit_compile"])
     import tensorflow as tf
     from .nonlinear_tf import make_data_kernel,make_grid_reference,make_ledh_kernel,make_moment_filter,make_particle_filter
+    from .input_execution_tf import make_score_inputs
     dtype=tf.as_dtype(settings["dtype"]);N,T=settings["particles"],settings["horizon"]
     theta=tf.constant(settings["theta"],dtype)
     def seed(stream,replicate=None,group=None):
@@ -59,10 +60,15 @@ def evaluate_nonlinear(row,context):
     with tf.device("/GPU:0" if settings["device"]=="GPU" else "/CPU:0"):
         obs=tf.cast(observations64,dtype)
         diagnostics["executed_observation_digest"]=digest(obs.numpy().tolist())
-        initial=tf.random.stateless_normal([N,1],seed("initial"),dtype=dtype)
-        process=tf.random.stateless_normal([T,N,1],seed("process"),dtype=dtype)
-        uniforms=tf.random.stateless_uniform([T,N],seed("resampling"),dtype=dtype)
-        design=tf.random.stateless_normal([N,1],seed("reset_design"),dtype=dtype)
+        if proposal in ("iapf","kdm_covariance"):
+            initial=tf.random.stateless_normal([N,1],seed("initial"),dtype=dtype)
+            process=tf.random.stateless_normal([T,N,1],seed("process"),dtype=dtype)
+            uniforms=tf.random.stateless_uniform([T,N],seed("resampling"),dtype=dtype)
+            design=tf.random.stateless_normal([N,1],seed("reset_design"),dtype=dtype)
+        else:
+            input_kernel=make_score_inputs(1,N,T,settings["dtype"],settings["jit_compile"])
+            initial,process,uniforms,design=input_kernel(tf.constant(
+                [seed("initial"),seed("process"),seed("resampling"),seed("reset_design")],tf.int32))
         started=time.monotonic();calls=1
         if proposal=="grid_reference":
             # A reference row stays on the CPU reference backend and declares it.

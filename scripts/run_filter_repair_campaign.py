@@ -1663,6 +1663,29 @@ TEST_GROUPS['dz5_locator_sinking_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_constant_sinking.py::test_saved_pass_intervention',
     'tests/test_filter_repair_locator_hlo_reader.py',
     'tests/test_filter_repair_locator_fusion_inspection.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'score_inputs_primitives_{dtype}_{device}': (
+    f'tests/test_filter_repair_score_inputs.py::test_input_streams[{dtype}]',)
+    for device in ('cpu', 'gpu') for dtype in ('float64', 'float32')})
+TEST_GROUPS.update({f'score_inputs_{family}_{device}': (
+    f'tests/test_filter_repair_score_inputs.py::test_public_inputs[{family}]',)
+    for device in ('cpu', 'gpu') for family in ('gaussian', 'nonlinear', 'gaussian_directions', 'nonlinear_directions')})
+for _input_device in ('cpu', 'gpu'):
+    TEST_GROUPS[f'score_inputs_gaussian_directions_{_input_device}'] += tuple(
+        f'tests/test_filter_repair_score_directions.py::test_actual_direction_consumer[{case}]'
+        for case in ('ledh', 'ledh_diagnostics', 'sgqf'))
+    TEST_GROUPS[f'score_inputs_nonlinear_directions_{_input_device}'] += tuple(
+        f'tests/test_filter_repair_nonlinear_directions.py::test_nonlinear_direction_consumer[{case}]'
+        for case in ('ekf', 'ukf', 'ledh', 'sgqf'))
+TEST_GROUPS.update({f'score_inputs_cost_{arm}_{device}': (
+    f'tests/test_filter_repair_score_inputs_cost.py::test_endpoint_cost[{arm}]',)
+    for device in ('cpu', 'gpu') for arm in ('before', 'after')})
+TEST_GROUPS['score_inputs_gaussian_directions_gpu'] += (
+    'tests/test_filter_repair_fitted_apf_fixed.py::test_fitted_apf_public_endpoint[gaussian]',
+    'tests/test_filter_repair_fitted_apf_fixed.py::test_fitted_apf_public_endpoint[nonlinear_scalar]')
+TEST_GROUPS['score_inputs_readback_cpu'] = (
+    'tests/test_filter_repair_fitted_apf_fixed.py::test_fitted_apf_public_endpoint[gaussian]',
+    'tests/test_filter_repair_fitted_apf_fixed.py::test_fitted_apf_public_endpoint[nonlinear_scalar]',
+    'tests/test_filter_repair_score_inputs_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'gaussian_binding_{dtype}_{device}': (
     f'tests/test_filter_repair_gaussian_binding.py::test_complete_model_binding[{dtype}]',)
     for device in ('cpu', 'gpu') for dtype in ('float64', 'float32')})
@@ -2643,6 +2666,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('gaussian_binding_') and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('score_inputs_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('fitted_apf_fixed_') and group.endswith('_gpu')},
     'iapf_controller_localization_gpu': 'GPU',
     'iapf_resolution_gpu': 'GPU',
@@ -2993,6 +3017,8 @@ def require_unshared_cost_preflight(args):
                                  "kdm_auxiliary_cost_xla_gpu",
                                  "gaussian_binding_cost_before_gpu",
                                  "gaussian_binding_cost_after_gpu",
+                                 "score_inputs_cost_before_gpu",
+                                 "score_inputs_cost_after_gpu",
                                  *TEST_BATCHES["ledh_flow_cost_gpu"],
                                  *TEST_BATCHES["remaining_svd_cost_gpu"],
                                  *TEST_BATCHES["posterior_public_memory_gpu"],

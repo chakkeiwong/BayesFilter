@@ -21,6 +21,7 @@ def evaluate_gaussian(row, context):
     import tensorflow as tf
     from .gaussian_execution_tf import make_gaussian_execution
     from .gaussian_tf import make_data_kernel, make_gaussian_kernel, make_particle_kernel, parameterized_model
+    from .input_execution_tf import make_score_inputs
 
     dtype = tf.as_dtype(settings["dtype"])
     d, o, T, N = (settings[k] for k in ("dimension", "observation_dimension", "horizon", "particles"))
@@ -34,10 +35,19 @@ def evaluate_gaussian(row, context):
     with tf.device("/GPU:0" if settings["device"] == "GPU" else "/CPU:0"):
         data_kernel = make_data_kernel(d, o, T, settings["dtype"], settings["jit_compile"])
         observations = data_kernel(data_theta, tf.constant(data_seed, tf.int32))
-        initial = tf.random.stateless_normal([N, d], seed("initial"), dtype=dtype)
-        process = tf.random.stateless_normal([T, N, d], seed("process"), dtype=dtype)
-        uniforms = tf.random.stateless_uniform([T, N], seed("resampling"), dtype=dtype)
-        reset_design = tf.random.stateless_normal([N, d], seed("reset_design"), dtype=dtype)
+        deferred_inputs = (row["proposal"] in ("iapf", "integrated_kdm", "resampling_kdm", "kdm_covariance")
+                           or row.get("collect_kdm_control", False))
+        if deferred_inputs:
+            initial = tf.random.stateless_normal([N, d], seed("initial"), dtype=dtype)
+            process = tf.random.stateless_normal([T, N, d], seed("process"), dtype=dtype)
+            uniforms = tf.random.stateless_uniform([T, N], seed("resampling"), dtype=dtype)
+            reset_design = tf.random.stateless_normal([N, d], seed("reset_design"), dtype=dtype)
+        else:
+            input_seeds = [seed("initial"), seed("process"), seed("resampling"), seed("reset_design")]
+            if row["proposal"] == "twist":
+                input_seeds.append(seed("twist_initial_ancestor"))
+            input_kernel = make_score_inputs(d, N, T, settings["dtype"], settings["jit_compile"], row["proposal"] == "twist")
+            initial, process, uniforms, reset_design = input_kernel(tf.constant(input_seeds, tf.int32))
         if row["proposal"] == "iapf":
             # Adaptive iAPF remains outside the current execution-repair scope.
             oracle_kernel = make_gaussian_kernel(d, o, 6, settings["dtype"], settings["jit_compile"])
@@ -104,7 +114,8 @@ def evaluate_gaussian(row, context):
         elif proposal == "twist":
             from .twist_tf import make_twist_kernel
             kernel = make_twist_kernel(d, o, N, T, row["twist_power"], settings["dtype"], settings["jit_compile"])
-            twist_uniforms = tf.concat([tf.random.stateless_uniform([1,N], seed("twist_initial_ancestor"), dtype=dtype),uniforms],axis=0)
+            twist_uniforms = (tf.concat([tf.random.stateless_uniform([1,N], seed("twist_initial_ancestor"), dtype=dtype),uniforms],axis=0)
+                              if deferred_inputs else uniforms)
             value, score, ess = kernel(theta, observations, initial, process, twist_uniforms)
             diagnostics.update(minimum_ess=float(ess.numpy()), twist_power=row["twist_power"],
                                initial_normalizer="mean_f_x0_psi1", terminal_future_factor=1.,
