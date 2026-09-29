@@ -19,6 +19,11 @@ and evidence. Do not launch KDM follow-ups or claim compliance from this
 deferral. Shared functionality needed by other filters remains in scope; mixed
 F07/F08/F19 findings remain open for their non-deferred portions.
 
+Next source-review checkpoint: filter_gradient_genut_current_consumer_review_20260929.md.
+The reduced primal's current bytes match the saved corrected gradient/cost cohort.
+Its optional branch and the full trust-region branch use different authorities;
+live wiring and analytical-score role checks must precede new attribution.
+
 | Order | Remaining gap | Next action | Exit gate |
 |---|---|---|---|
 | 1 | Remaining public numerical boundaries and analytical-score consumers outside iAPF/KDM | Shared Gaussian/nonlinear input preparation, including twist ancestors, is CPU/GPU qualified through04913. Use filter_gradient_score_input_execution_result_20260929.md and final readback for the changed callers; continue source review for any other active eager numerical boundaries. | Preserve exact stream/discrete decisions, live/frozen records and derivative authority. This bounded repair does not close untouched callers or mixed findings. |
