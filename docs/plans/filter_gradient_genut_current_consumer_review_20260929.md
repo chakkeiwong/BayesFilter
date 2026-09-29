@@ -1,5 +1,10 @@
 # Current GenUT consumer review checkpoint
 
+Live continuation completed through04939; see
+filter_gradient_genut_current_consumer_result_20260929.md. The original static
+observations below retain their limited scope; executable evidence now exists
+for the declared value and analytical-score fixtures.
+
 Read-only review after dc22722f1 / run04935. No numerical worker was launched
 and no finding is closed by this static review. Continue under
 filter_gradient_terminal_source_review_20260928.md before another precision
@@ -38,3 +43,32 @@ remaining cap-report, gradient, execution and cost finding to the actual caller
 and its admissible role. Existing noncanonical markers must remain explicit;
 neither lack of a default call nor a static nonclaim closes the optional-route
 numerical obligation. No new broad benchmark matrix is justified by this review.
+
+Bounded live continuation baseline9d83dc847: at most5 serialized workers,
+900 CPU/900 GPU seconds after04935. Use the existing seeded value LGSSM fixture
+and the existing seed71 nonlinear analytical-score fixture, with their frozen
+controls. The purpose is callable wiring, not tuning or numerical admission.
+Compare ordinary complete endpoint records with an instrumented call that adds
+resource counters to the reduced correction, full value JVP and analytical
+batched JVP. Require unchanged values/decisions under the existing bounds and
+actual nonzero runtime counts for each configured branch; tracing alone is not
+an execution witness. Use CPU reference and trusted GPU with verified growth.
+Block the reduced primal inside the analytical test; reaching it is a failure.
+Record any already-refused fixture without treating branch execution as numerical
+qualification. No target, RNG, method, controls or accuracy bound changes.
+
+Skeptical review: resource counters can change graph lowering, so failed output
+preservation invalidates attribution rather than proving a runtime defect.
+Successful wiring only identifies the executed authority; it cannot clear a
+precision failure or certify canonical conformance. Source drift, invalid
+fixture/reference or exhausted allocation stops the experiment. The failure
+and retry policy remains the existing campaign policy. Source-bound reports
+and logs use fresh genut_consumer run directories; results are recorded in
+filter_gradient_genut_current_consumer_result_20260929.md.
+
+04936 CPU passes the live value/analytical witnesses.04937 GPU fails because
+TensorFlow places int32 resource counters on CPU, making them inaccessible to
+the GPU/XLA program. This is diagnostic instrumentation failure; use int64
+counters placed with the actual observation/initial-state tensors and retry
+under the same budget. No algorithm, data, controls or runtime source changes.
+Preserve the failure and require unchanged complete ordinary outputs again.

@@ -1704,6 +1704,12 @@ for _subspace_device in ('cpu', 'gpu'):
         'tests/test_filter_repair_subspace_identifiability.py::test_complete_saved_fit_preserved',)
 TEST_GROUPS['subspace_identifiability_terminal_cpu'] = (
     'tests/test_filter_repair_subspace_readback.py', *TEST_GROUPS['policy'])
+for _genut_device in ('cpu', 'gpu'):
+    TEST_GROUPS[f'genut_consumer_live_{_genut_device}'] = (
+        'tests/test_filter_repair_genut_current_consumers.py::test_registered_value_branch_wiring',
+        'tests/test_filter_repair_genut_current_consumers.py::test_registered_analytical_score_authority')
+TEST_GROUPS['genut_consumer_terminal_cpu'] = (
+    'tests/test_filter_repair_genut_consumer_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['principal_angle_stable_readback_cpu'] = (
     'tests/test_filter_repair_principal_angle_stable.py::test_saved_stable_candidate', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'score_inputs_primitives_{dtype}_{device}': (
@@ -2708,6 +2714,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    'genut_consumer_live_gpu': 'GPU',
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('subspace_identifiability_') and group.endswith('_gpu')},
     'remaining_factor_observation_gpu': 'GPU',
     'remaining_factor_objective_gpu': 'GPU',

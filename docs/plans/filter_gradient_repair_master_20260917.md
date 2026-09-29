@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04935; active worker runs: none.
-Charged/reserved CPU 114234.895986s / GPU 99466.043064s.
-Remaining CPU 24.268084h / GPU 24.370544h.
+Through 04939; active worker runs: none.
+Charged/reserved CPU 114285.186688s / GPU 99550.200882s.
+Remaining CPU 24.254115h / GPU 24.347166h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_subspace_identifiability_20260929.md (closed); at most
-10 workers/1800 CPU/1800 GPU seconds.
-Used/reserved 5 workers/352.820853 CPU/541.698180 GPU seconds.
+Active allocation: docs/plans/filter_gradient_genut_current_consumer_review_20260929.md (closed); at most
+5 workers/900 CPU/900 GPU seconds.
+Used/reserved 4 workers/50.290702 CPU/84.157818 GPU seconds.
 One numerical worker at a time.
 
-Subspace-identifiability guard qualifies through04935:52 controls/regressions per CPU/GPU,84 spectrum/scale cases per backend, explicit public/native/enclosing refusal, and zero complete/raw saved-fit differences from04919/04920. Final161 current-source/evidence/policy checks pass;315 guarded sources/1457 unchanged exceptions. All five workers pass. Remaining-factor local derivatives qualify through04930, but unselected unfinished trajectories and first-divergence questions remain. Main unmerged; adaptive iAPF/KDM deferred.
+Through04939: GenUT registered value branch and analytical-score call chains have live CPU/GPU witnesses with exact ordinary-output preservation. Analytical score uses shared batched correction, not reduced primal.04937 diagnostic counter placement failure was repaired/retried; final04939 passes161 evidence/policy checks. Subspace refusal guard qualifies through04935 and factor initial/terminal derivatives through04930. Remaining reduced precision/cap findings are unchanged; no whole-program closure or main merge. iAPF/KDM deferred.
 
-Next: Execute the bounded live branch-wiring and analytical-score role review in filter_gradient_genut_current_consumer_review_20260929.md under the terminal source-review plan. Static review confirms current reduced-primal bytes match04248/04253/04259/04260; optional reduced and full trust-region branches use different authorities. Do not transfer diagnostic reverse-gradient failures to an uninspected analytical-score route or waive the optional reduced-route numerical gap. Continue GenUT/DZ5 mechanisms, unfinished fit questions and matched costs/native capacity including the angle/guard; iAPF/KDM deferred.
+Next: Continue current-source terminal per-consumer/F01-F20 dispositions and the unresolved reduced GenUT precision/cap-report mechanism using exact saved inputs; optional reduced route remains in scope. Complete new mechanisms for unfinished factor/DZ5/streaming discrepancies and matched memory/runtime acceptance, including angle/subspace guard, before remote integration/main merge. Reuse qualified04930/04935/04939 evidence and do not rerun unchanged whole optimizers or retired generic cost matrices.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

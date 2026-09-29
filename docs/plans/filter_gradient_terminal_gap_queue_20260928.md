@@ -1,7 +1,7 @@
 # Remaining master-program repair queue
 
-Current through04935 on repair/filter-gradient-xla-validation-20260918.
-No numerical worker is active. Remaining budget24.268084 CPU /24.370544 GPU
+Current through04939 on repair/filter-gradient-xla-validation-20260918.
+No numerical worker is active. Remaining budget24.254115 CPU /24.347166 GPU
 process-hours within the unchanged56/52-hour cap. Main remains unmerged.
 The concise checkpoint and structured ledger control current execution;
 Git history and linked result files preserve previous queue versions.
@@ -19,10 +19,11 @@ and evidence. Do not launch KDM follow-ups or claim compliance from this
 deferral. Shared functionality needed by other filters remains in scope; mixed
 F07/F08/F19 findings remain open for their non-deferred portions.
 
-Next source-review checkpoint: filter_gradient_genut_current_consumer_review_20260929.md.
+GenUT source-review checkpoint: filter_gradient_genut_current_consumer_result_20260929.md.
 The reduced primal's current bytes match the saved corrected gradient/cost cohort.
-Its optional branch and the full trust-region branch use different authorities;
-live wiring and analytical-score role checks must precede new attribution.
+Declared live CPU/GPU value and analytical-score wiring qualifies through04939:
+the optional reduced branch and shared analytical correction use different
+authorities. Preserve the reduced precision/cap failures and other caller gaps.
 
 | Order | Remaining gap | Next action | Exit gate |
 |---|---|---|---|
@@ -35,6 +36,11 @@ live wiring and analytical-score role checks must precede new attribution.
 | 6 | Integration and merge | After the above in-scope gates pass, fetch current remote changes, integrate on the repair branch, resolve conflicts and run affected checks before final review. | All remaining in-scope gates pass; no repo-wide iAPF/KDM compliance or canonical LEDH claim. Checkpoint commits/pushes remain authorized; main merge stays withheld. |
 
 Evidence to reuse in its qualified scope:
+
+- GenUT live consumer04936--04939: actual runtime counters and exact ordinary
+  records confirm disabled/reduced/trust value branches and the distinct shared
+  analytical correction. Final161 checks pass after a diagnostic counter-placement
+  repair. This identifies derivative roles; it does not clear numerical vetoes.
 
 - Subspace-identifiability04931--04935:52 checks per backend,84 spectrum/scale
   cases per backend, actual enclosing refusal, and unchanged raw/exported saved
