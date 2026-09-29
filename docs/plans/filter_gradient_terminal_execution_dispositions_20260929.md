@@ -119,3 +119,14 @@ these imports in their inspected roles; it does not admit their numerical
 outputs, certify sampler/training paths or establish arbitrary dynamic-import
 purity. The conservative closure includes guarded diagnostic runners and
 unexecuted local imports, so module reachability alone is not runtime use.
+
+Core qualification renewed through05169; see
+filter_gradient_core_execution_result_20260930.md. F02--F06, F09--F13,
+F15--F17 and F20 now have the specified current-core tests (or explicitly
+unchanged dependency witnesses), including actual default Contract E GPU/XLA,
+170 paired CPU/GPU checks, batched-shard API and import isolation. This closes
+the named missing qualification unit, not every broad finding. F03--F11 costs,
+F01 affected use, mixed F07/F08/F18/F19 coverage/resource obligations and incoming
+SQMC changes still require their terminal dispositions. Remote main023e10610
+adds SQMC numerical preparation outside the current guard; integrate and repair
+under filter_gradient_remote_integration_20260930.md before final compliance.

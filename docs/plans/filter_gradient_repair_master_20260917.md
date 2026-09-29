@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05138; active worker runs: none.
-Charged/reserved CPU 115088.620881s / GPU 100626.170457s.
-Remaining CPU 24.030939h / GPU 24.048286h.
+Through 05169; active worker runs: none.
+Charged/reserved CPU 116038.552535s / GPU 102156.154691s.
+Remaining CPU 23.767069h / GPU 23.623290h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_ssl_lstm_loop_tail_20260929.md (complete_scoped_execution_and_cost_disposition); at most
-90 workers/6000 CPU/6000 GPU seconds.
-Used/reserved 79 workers/278.564120 CPU/409.940881 GPU seconds.
+Active allocation: docs/plans/filter_gradient_core_execution_closure_20260929.md (completed); at most
+48 workers/6000 CPU/6000 GPU seconds.
+Used/reserved 31 workers/949.931654 CPU/1529.984234 GPU seconds.
 One numerical worker at a time.
 
-Loop-tail repair passes17 CPU/17 GPU qualification checks05060--05061,72 renewed costs05062--05133, independent readbacks05134--05135, final2000-call/20-specialization lifetime05136--05137 and164 readback/policy checks05138. Numerical/RNG/API semantics preserved. Final GPU XLA paired estimates1.081/0.974 have wide intervals; graph reference is slower. Explicit bounded cost/native-residency tradeoff is recorded under existing master criteria, with no universal10% or eviction claim. This owner unit closes; unrelated resource gates remain.
+Core qualification completed through05169:170 CPU and170 corresponding GPU checks, one actual default FP64 GPU/XLA factory,14 CPU pool/import checks and162 terminal checks pass. Failed05150/05151/05160 are preserved with exact baseline attribution and fixture repairs; no runtime numerical source or tolerance changed. See filter_gradient_core_execution_result_20260930.md.
 
-Next: Commit/push loop-tail repair and evidence, then activate core current-caller/evidence closure from filter_gradient_core_execution_closure_20260929.md. Reuse unchanged witnesses, renew only affected/missing checks, keep iAPF/KDM deferred and main unmerged.
+Next: Archive and commit core05139--05169, integrate remote main on the repair branch, repair and qualify incoming SQMC execution violations under the prepared integration plan, then activate bounded resource acceptance. Main merge remains withheld.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls

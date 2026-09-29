@@ -479,6 +479,21 @@ def test_owned_source_forbids_historical_and_floored_paths() -> None:
 
 
 def test_float32_shared_core_manual_jvp_matches_forward_autodiff() -> None:
+    """Check FP32 rounding with full FP32 matmuls, including on GPU.
+
+    The 3/2-ULP bounds were established on CPU. Frozen and current GPU
+    TF32 execution both differ by 1153/760 ULP on this fixture; they agree
+    exactly with each other. TF32 is qualified separately from this reference.
+    """
+    previous_tf32 = tf.config.experimental.tensor_float_32_execution_enabled()
+    tf.config.experimental.enable_tensor_float_32_execution(False)
+    try:
+        _assert_float32_shared_core_rounding()
+    finally:
+        tf.config.experimental.enable_tensor_float_32_execution(previous_tf32)
+
+
+def _assert_float32_shared_core_rounding() -> None:
     tensors = _prepared_dtype(tf.float32)
     theta = tf.constant(_convert(_fixture()["center_theta"]), tf.float32)
     primal = canonical._canonical_primal_core(

@@ -86,8 +86,13 @@ def test_complete_value_score_and_fit_veto_parity(baseline, jit, transitioned):
     tf.debugging.disable_traceback_filtering()
     model, theta = _model_and_theta()
     config = _adjacent_config(order=7, transition_before_first_observation=transitioned)
-    observations = _transformed_observations()
     expected = baseline[f"{transitioned}:3"]
+    # Both filters must consume the same frozen operands. Recomputing the
+    # diagnostic logarithm on GPU introduces a libm ULP before filtering.
+    with tf.device('/CPU:0'):
+        prepared_observations = _transformed_observations()
+    np.testing.assert_array_equal(prepared_observations, expected["observations"])
+    observations = tf.constant(expected["observations"], tf.float64)
     np.testing.assert_array_equal(theta, expected["theta"])
     np.testing.assert_array_equal(observations, expected["observations"])
     program = make_scalar_adjacent_state_fixed_tt(
@@ -126,10 +131,13 @@ def test_date_graph_is_bounded_and_longer_score_matches_baseline(baseline):
     config = _adjacent_config(order=7)
     counts = []
     for horizon in (3, 6):
-        observations = tf.tile(_transformed_observations(), [2, 1])[:horizon]
+        expected = baseline[f"False:{horizon}"]
+        with tf.device('/CPU:0'):
+            prepared_observations = tf.tile(_transformed_observations(), [2, 1])[:horizon]
+        np.testing.assert_array_equal(prepared_observations, expected["observations"])
+        observations = tf.constant(expected["observations"], tf.float64)
         program = make_scalar_adjacent_state_fixed_tt(model, config, observations.shape)
         (increments, _, _), score = program[1](theta, observations)
-        expected = baseline[f"False:{horizon}"]
         np.testing.assert_array_equal(theta, expected["theta"])
         np.testing.assert_array_equal(observations, expected["observations"])
         np.testing.assert_allclose(

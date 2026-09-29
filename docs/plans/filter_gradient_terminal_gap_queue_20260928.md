@@ -77,6 +77,15 @@ supported by the14-row conservative core-source evidence map.
 Guard coverage is now317 sources/1465 exact exceptions. Broad F01--F20 rows
 still require current caller/evidence dispositions; no main merge follows.
 
+Core qualification completed through05169 (170 CPU and170 corresponding GPU
+checks plus default-factory, pool/import and terminal checks); see
+filter_gradient_core_execution_result_20260930.md. Checkpoint this unit, then
+integrate current remote main023e10610 on the repair branch under
+filter_gradient_remote_integration_20260930.md. This ordering lets the subsequent
+bounded resource plan measure the actual merged dependencies and avoids stale
+cost reruns. Incoming SQMC preparation loops require execution repair. Main
+merge still waits for resource/consumer dispositions and final affected checks.
+
 | Order | Remaining gap | Next action | Exit gate |
 |---|---|---|---|
 | 1 | Remaining public numerical boundaries and analytical-score consumers outside iAPF/KDM | Shared Gaussian/nonlinear input preparation, including twist ancestors, is CPU/GPU qualified through04913. Use filter_gradient_score_input_execution_result_20260929.md and final readback for the changed callers; continue source review for any other active eager numerical boundaries. | Preserve exact stream/discrete decisions, live/frozen records and derivative authority. This bounded repair does not close untouched callers or mixed findings. |
@@ -85,7 +94,7 @@ still require current caller/evidence dispositions; no main merge follows.
 | 3 | Runtime/memory acceptance | Streaming CPU ratios1.08239 atT32 /1.09678 atT128 have95% upper bounds1.11687 /1.15608 above1.10. RNG profiling did not explain this. For in-scope filters, replicate matched complete-owner costs, attribute native/compiler residency and obtain applicable uncontended GPU capacity evidence. Include direction/fitted-APF and remaining-SVD memory triggers plus the input-owner screen: +24.719MiB CPU/+23.836MiB GPU sampled RSS and GPU cold ratio1.307; include matched attribution of the angle residual SVD and subspace-resolution guard; defer KDM-specific follow-ups. | Relevant numerical gates, source/input/timing comparability, statistical acceptance and explicit capacity/lifetime disposition. Gaussian binding04889--04892 is descriptive and does not close unrelated memory or streaming findings. |
 | 4 | Current DZ5 consumer applicability | Reuse actual-DZ5 r2 qualification04618--04628, import isolation04629--04630 and evidence-index04631 when dependencies match. Renew only a changed current dependency or a demonstrated affected contract. | Current consumer values, scores, error behavior and lifetime remain qualified. Preserve the121 historical trajectory differences as separate unresolved diagnostics; no further historical optimizer/compiler investigation is scheduled by this queue. |
 | 5 | Saved-evidence applicability and terminal F01--F20 dispositions | Continue filter_gradient_terminal_source_review_20260928.md against the22-report index, actual source dependencies, implicit package imports and dynamic callbacks. Bind each finding to current callers, derivative roles and applicable measurements. Renew only affected scopes, including the changed Gaussian adapter. | Reviewable disposition for every in-scope finding, with adaptive iAPF and KDM explicitly deferred and mixed findings split by caller. Preserve missing GenUT hash fields and remaining-SVD receipt's absent direct run references. Current315-source/1457-exception guard is scoped evidence, not whole-repo closure. |
-| 6 | Integration and merge | After the above in-scope gates pass, fetch current remote changes, integrate on the repair branch, resolve conflicts and run affected checks before final review. | All remaining in-scope gates pass; no repo-wide iAPF/KDM compliance or canonical LEDH claim. Checkpoint commits/pushes remain authorized; main merge stays withheld. |
+| 6 | Integration and merge | Integrate remote changes on the repair branch after core qualification, resolve conflicts and repair new execution violations before final resource measurements/review. | Main merge waits for all remaining in-scope gates; no repo-wide iAPF/KDM compliance or canonical LEDH claim. Checkpoint commits/pushes remain authorized. |
 
 Evidence to reuse in its qualified scope:
 

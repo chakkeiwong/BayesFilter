@@ -1624,6 +1624,48 @@ TEST_GROUPS['ssl_lstm_replay_benchmark_cpu'] = (
     'tests/test_filter_repair_ssl_lstm_replay.py::test_actual_benchmark_reports_executed_mode',)
 TEST_GROUPS['ssl_lstm_replay_manifest_cpu'] = (
     'tests/test_filter_repair_ssl_lstm_replay.py::test_original_manifest_coercions_and_metadata',)
+_CORE_EXECUTION_GROUPS = {
+    'contract_e': TEST_GROUPS['contract_e_strict'],
+    'tt_value': TEST_GROUPS['tt_value'],
+    'tt_maps': TEST_GROUPS['tt_maps'],
+    'tt_adjoint': TEST_GROUPS['tt_adjoint'],
+    'tt_actual': TEST_GROUPS['tt_actual'],
+    'tt_scalar': TEST_GROUPS['tt_scalar'],
+    'apf': TEST_GROUPS['apf'],
+    'preparation': TEST_GROUPS['preparation'],
+    'signatures': TEST_GROUPS['signatures'],
+    'sgqf': TEST_GROUPS['sgqf'],
+    'streaming_mask': (
+        'tests/test_experimental_batched_ledh_pfpf_ot_streaming_tf.py::test_streaming_value_core_matches_existing_baseline_with_history',
+        'tests/test_experimental_batched_ledh_pfpf_ot_streaming_tf.py::test_inactive_transport_dynamic_mask_skips_transport_core',
+        'tests/test_experimental_batched_ledh_pfpf_ot_streaming_tf.py::test_mixed_active_transport_dynamic_mask_calls_transport_core',
+        'tests/test_experimental_batched_ledh_pfpf_ot_streaming_tf.py::test_streaming_value_core_tf_function_jit_smoke',
+    ),
+}
+TEST_GROUPS.update({f'core_execution_{name}_{device}': tests
+    for name, tests in _CORE_EXECUTION_GROUPS.items() for device in ('cpu', 'gpu')})
+TEST_GROUPS['core_execution_pool_cpu'] = tuple(
+    'tests/test_ssl_lstm_process_parallel.py::' + name for name in (
+        'test_batch_native_mode_requires_exact_declared_shard_sizes',
+        'test_pool_defaults_reject_uncompiled_or_scalar_training',
+        'test_training_shard_signatures_cover_unequal_batches',
+        'test_batch_native_pool_matches_scalar_reference',
+        'test_tf_batch_pool_preserves_invalid_status_without_aborting_workers',
+    ))
+TEST_GROUPS['core_execution_imports_cpu'] = ('tests/test_filter_repair_adapter_imports.py',)
+TEST_GROUPS['core_execution_policy_cpu'] = TEST_GROUPS['policy']
+TEST_GROUPS.update({f'core_execution_contract_e_rounding_{mode}_gpu': (
+    f'tests/test_filter_repair_contract_e_rounding.py::test_original_and_current_fp32_rounding[{enabled}]',)
+    for mode, enabled in (('tf32', True), ('fp32', False))})
+TEST_GROUPS['core_execution_contract_e_fp32_reference_gpu'] = (
+    'tests/highdim/test_ledh_contract_e_canonical_lgssm_phase5.py::test_float32_shared_core_manual_jvp_matches_forward_autodiff',)
+TEST_GROUPS['core_execution_contract_e_factory_gpu'] = (
+    'tests/test_filter_repair_contract_e_rounding.py::test_default_factory_matches_frozen_program',)
+TEST_GROUPS['core_execution_tt_scalar_operands_gpu'] = (
+    'tests/test_filter_repair_scalar_tt.py::test_complete_value_score_and_fit_veto_parity',
+    'tests/test_filter_repair_scalar_tt.py::test_date_graph_is_bounded_and_longer_score_matches_baseline',)
+TEST_GROUPS['core_execution_terminal_cpu'] = (
+    'tests/test_filter_repair_core_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'ssl_lstm_replay_cost_{mode}_{arm}_t{horizon}_{device}': (
     f'tests/test_filter_repair_ssl_lstm_replay_cost.py::test_complete_owner_cost[{mode}-{arm}-{horizon}]',)
     for mode in ('default', 'graph', 'xla') for arm in ('before', 'after')
@@ -2732,6 +2774,23 @@ TEST_BATCHES.update({f'ssl_lstm_replay_cost_reverse_{device}': tuple(
     f'ssl_lstm_replay_cost_{mode}_{arm}_t{horizon}_{device}'
     for horizon in (2, 8) for mode in ('default', 'graph', 'xla')
     for arm in ('after', 'before')) for device in ('cpu', 'gpu')})
+TEST_BATCHES.update({f'core_execution_{device}': tuple(
+    f'core_execution_{name}_{device}' for name in _CORE_EXECUTION_GROUPS)
+    for device in ('cpu', 'gpu')})
+TEST_BATCHES['core_execution_gpu_remaining'] = (
+    'core_execution_contract_e_fp32_reference_gpu',
+    'core_execution_contract_e_factory_gpu',
+    *(f'core_execution_{name}_gpu' for name in _CORE_EXECUTION_GROUPS if name != 'contract_e'),
+)
+TEST_BATCHES['core_execution_gpu_tail'] = (
+    'core_execution_tt_scalar_operands_gpu',
+    *(f'core_execution_{name}_gpu' for name in (
+        'apf', 'preparation', 'signatures', 'sgqf', 'streaming_mask')),
+)
+TEST_BATCHES['core_execution_finish'] = (
+    'core_execution_sgqf_gpu', 'core_execution_streaming_mask_gpu',
+    'core_execution_pool_cpu', 'core_execution_imports_cpu', 'core_execution_terminal_cpu',
+)
 
 
 def mandatory_test_groups():
@@ -2745,6 +2804,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('core_execution_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ssl_lstm_replay_') and group.endswith('_gpu')},
     'genut_consumer_live_gpu': 'GPU',
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('subspace_identifiability_') and group.endswith('_gpu')},
