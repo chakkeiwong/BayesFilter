@@ -1663,6 +1663,21 @@ TEST_GROUPS['dz5_locator_sinking_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_constant_sinking.py::test_saved_pass_intervention',
     'tests/test_filter_repair_locator_hlo_reader.py',
     'tests/test_filter_repair_locator_fusion_inspection.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'gaussian_binding_{dtype}_{device}': (
+    f'tests/test_filter_repair_gaussian_binding.py::test_complete_model_binding[{dtype}]',)
+    for device in ('cpu', 'gpu') for dtype in ('float64', 'float32')})
+TEST_GROUPS.update({f'gaussian_binding_public_{device}': (
+    'tests/test_filter_repair_gaussian_binding.py::test_public_gaussian_binding',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'gaussian_binding_cost_{arm}_{device}': (
+    f'tests/test_filter_repair_gaussian_binding_cost.py::test_fresh_gaussian_binding_cost[{arm}]',)
+    for device in ('cpu', 'gpu') for arm in ('before', 'after')})
+TEST_GROUPS['gaussian_binding_readback_cpu'] = (
+    'tests/test_filter_repair_gaussian_binding_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'gaussian_binding_regressions_{device}': (
+    'tests/test_filter_repair_score_directions.py::test_actual_direction_consumer',
+    'tests/test_filter_repair_fitted_apf_fixed.py::test_fitted_apf_public_endpoint[gaussian]',)
+    for device in ('cpu', 'gpu')})
 TEST_GROUPS['ledh_validity_characterization_cpu'] = (
     'tests/test_filter_repair_ledh_validity_boundary.py::test_checked_validity_boundary',)
 TEST_GROUPS['ledh_validity_boundary_cpu'] = (
@@ -2627,6 +2642,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('gaussian_binding_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('fitted_apf_fixed_') and group.endswith('_gpu')},
     'iapf_controller_localization_gpu': 'GPU',
     'iapf_resolution_gpu': 'GPU',
@@ -2975,6 +2991,8 @@ def require_unshared_cost_preflight(args):
                                  "kdm_auxiliary_cost_original_gpu",
                                  "kdm_auxiliary_cost_graph_gpu",
                                  "kdm_auxiliary_cost_xla_gpu",
+                                 "gaussian_binding_cost_before_gpu",
+                                 "gaussian_binding_cost_after_gpu",
                                  *TEST_BATCHES["ledh_flow_cost_gpu"],
                                  *TEST_BATCHES["remaining_svd_cost_gpu"],
                                  *TEST_BATCHES["posterior_public_memory_gpu"],

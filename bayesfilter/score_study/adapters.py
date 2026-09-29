@@ -19,6 +19,7 @@ def evaluate_gaussian(row, context):
     runtime = configure_runtime(device=settings["device"], tf32=settings["tf32"],
                                 jit_compile=settings["jit_compile"])
     import tensorflow as tf
+    from .gaussian_execution_tf import make_gaussian_execution
     from .gaussian_tf import make_data_kernel, make_gaussian_kernel, make_particle_kernel, parameterized_model
 
     dtype = tf.as_dtype(settings["dtype"])
@@ -37,8 +38,13 @@ def evaluate_gaussian(row, context):
         process = tf.random.stateless_normal([T, N, d], seed("process"), dtype=dtype)
         uniforms = tf.random.stateless_uniform([T, N], seed("resampling"), dtype=dtype)
         reset_design = tf.random.stateless_normal([N, d], seed("reset_design"), dtype=dtype)
-        oracle_kernel = make_gaussian_kernel(d, o, 6, settings["dtype"], settings["jit_compile"])
-        oracle = oracle_kernel(observations, *parameterized_model(theta, d, o))
+        if row["proposal"] == "iapf":
+            # Adaptive iAPF remains outside the current execution-repair scope.
+            oracle_kernel = make_gaussian_kernel(d, o, 6, settings["dtype"], settings["jit_compile"])
+            oracle = oracle_kernel(observations, *parameterized_model(theta, d, o))
+        else:
+            oracle_kernel = make_gaussian_execution(d, o, settings["dtype"], settings["jit_compile"])
+            oracle = oracle_kernel(theta, observations)
         diagnostics = {"data_seed": data_seed, "data_version": digest(observations.numpy().tolist()),
                        "initial_seed": seed("initial"), "process_seed": seed("process"),
                        "resampling_seed": seed("resampling"), "reset_seed": seed("reset_design"),
@@ -75,8 +81,8 @@ def evaluate_gaussian(row, context):
         proposal = row["proposal"]
         started = time.monotonic()
         if proposal in ("kalman", "ukf"):
-            kernel = make_gaussian_kernel(d, o, 6, settings["dtype"], settings["jit_compile"], proposal == "ukf")
-            value, score, mean, covariance, minimum_eigenvalue = kernel(observations, *parameterized_model(theta, d, o))
+            kernel = make_gaussian_execution(d, o, settings["dtype"], settings["jit_compile"], proposal == "ukf")
+            value, score, mean, covariance, minimum_eigenvalue = kernel(theta, observations)
             diagnostics.update(final_mean=mean.numpy().tolist(), final_covariance=covariance.numpy().tolist(),
                                minimum_covariance_eigenvalue=float(minimum_eigenvalue.numpy()))
             if not bool((minimum_eigenvalue > 0).numpy()):

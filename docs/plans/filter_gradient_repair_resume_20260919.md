@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04882; active worker runs: none.
-Charged/reserved CPU 113173.577698s / GPU 98026.665727s.
-Remaining CPU 24.562895h / GPU 24.770371h.
+Through 04896; active worker runs: none.
+Charged/reserved CPU 113374.126240s / GPU 98274.525519s.
+Remaining CPU 24.507187h / GPU 24.701521h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_dz5_locator_constant_sinking_20260929.md (closed); at most
-6 workers/4200 CPU/0 GPU seconds.
-Used/reserved 6 workers/1571.533909 CPU/0.000000 GPU seconds.
+Active allocation: docs/plans/filter_gradient_gaussian_model_binding_20260929.md (closed); at most
+14 workers/3000 CPU/1800 GPU seconds.
+Used/reserved 14 workers/200.548542 CPU/247.859791 GPU seconds.
 One numerical worker at a time.
 
-DZ5 named constant-sinking intervention closes through04882 with179 final checks. Both fresh controls reproduce saved records exactly. Original pass-disabled reproduces ordinary candidate callbacks and short record exactly; disabling the pass in both arms still leaves46 score-field differences. The pass changes broader compiler structure; no portable remedy, full-trajectory equivalence or convergence is established. Adaptive iAPF remains deferred.
+Gaussian model binding is qualified through04896: CPU/GPU complete FP64/public records exact; FP32 max7.16e-7 CPU and exact GPU; independent derivative error<=1.20e-11. Seven affected sibling callers pass on each backend;161 final evidence/policy checks pass. Default XLA, single trace, no pfor/callbacks, trusted GPU placement and verified memory growth are recorded. Preconfigured-runtime warm screens CPU19.431→3.405ms/GPU37.883→9.014ms; sampled RSS +6.031/-17.578MiB, descriptive only. DZ5 named-pass sensitivity is committed at169f403f4 without a portable remedy. Adaptive iAPF remains deferred.
 
-Next: Archive and commit the completed DZ5 diagnostic, then activate and execute filter_gradient_gaussian_model_binding_20260929.md. Keep the historical locator gap open; a further intervention must isolate local gradient arithmetic or emitted lowering, not try arbitrary compiler flags or repeat unchanged full trajectories. Complete remaining geometry4539-leaf, consumer/source, memory/performance and integration work under the master.
+Next: Activate filter_gradient_score_input_execution_20260929.md using this final Gaussian repair commit as the frozen baseline. Migrate shared non-iAPF input/RNG and optional KDM-pilot preparation with existing Philox authorities, exact stream/discrete-decision checks and actual live-seed callers. Keep geometry4539-leaf/status/angle comparisons, local DZ5 arithmetic/emitted-lowering investigation, replicated costs/native residency, source applicability/F01–F20 and eventual integration open. Main remains unmerged.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

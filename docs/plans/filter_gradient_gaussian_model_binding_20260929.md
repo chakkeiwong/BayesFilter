@@ -64,3 +64,12 @@ public callers address that risk. Data generation is unchanged and cannot be
 claimed repaired by this unit. Small well-conditioned cases do not establish
 arbitrary conditioning or full repository compliance. No independent reviewer
 is used.
+
+Terminal source review after04893 identifies seven affected sibling callers
+through the shared Gaussian oracle: six direction consumers and the fixed
+fitted-APF Gaussian endpoint. Use the three remaining worker slots for the
+existing CPU/GPU consumer regressions (900-second limit each), then a300-second
+final readback. Their maximum reservation plus existing52.853 CPU/66.062 GPU
+seconds stays inside the original3000/1800-second allocation. This renewal
+answers changed-call-chain coverage; it introduces no numerical change, test
+waiver or larger campaign budget. Adaptive iAPF remains excluded.

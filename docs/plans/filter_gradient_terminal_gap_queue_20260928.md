@@ -1,206 +1,71 @@
 # Remaining master-program repair queue
 
-Current execution checkpoint through04882: the bounded constant-sinking
-intervention is complete;179 final checks pass. Original pass-disabled exactly
-matches candidate normal, but disabling the pass in both arms leaves46 score
-fields different. This establishes compiler-pass sensitivity, not a portable
-locator remedy. See `filter_gradient_dz5_locator_constant_sinking_result_20260929.md`.
-Do not repeat this pass switch or unrelated dtype/flag trials. The next active
-repair is `filter_gradient_gaussian_model_binding_20260929.md`; the remaining
-locator work requires a local arithmetic/emitted-lowering intervention. No
-worker is active;24.562895 CPU /24.770371 GPU process-hours remain.
+Current through04896 on repair/filter-gradient-xla-validation-20260918.
+No numerical worker is active. Remaining budget24.507187 CPU /24.701521 GPU
+process-hours within the unchanged56/52-hour cap. Main remains unmerged.
+The concise checkpoint and structured ledger control current execution;
+Git history and linked result files preserve previous queue versions.
 
-Owner scope update, 2026-09-29: adaptive iAPF is work in progress and is
-deferred from this campaign's current completion scope. Preserve its evidence
-through04876; do not resume controller/runtime or selection-validator migration.
-This supersedes earlier adaptive-iAPF follow-up instructions. Deferral does not
-establish compliance or close F07/F19. The separate fixed fitted-APF numerical
-repair is qualified; its cost/memory acceptance remains in scope.
+Adaptive iAPF is deferred by the owner on20260929. Preserve evidence through
+04876 without resuming its controller/runtime or selection-validator migration.
+This is a scope deferral, not repaired/admitted status or blanket F07/F19
+closure. The separate fixed fitted-APF numerical repair remains qualified;
+its approximately100MiB host-residency trigger is still in scope.
 
-The remaining in-scope work is the six rows below: DZ5 locator discrepancies,
-fitted geometry/status reporting, runtime/memory acceptance, saved-evidence
-applicability, final consumer/policy dispositions, and integration. Start with
-the specific DZ5 constant-propagation lead. Through04876, no numerical worker
-is active and 24.999432 CPU / 24.770371 GPU process-hours remain. The current
-guard covers313 sources with1457 exact configuration/schema/reporting/reference
-exceptions and no numerical-loop allowance. This documentation-only scope
-update changes no implementation, evidence gate, allowance or compute charge.
-
-September29 continuation source review: `score_study/adapters.py` still creates
-initial/process/reset normal clouds and resampling uniforms eagerly (lines36--39)
-and calls `parameterized_model` outside the Gaussian/oracle compiled kernels
-(lines41 and79). `score_study/nonlinear_adapter.py` has the analogous eager
-clouds at lines61--64 and host numerical reductions in its reference checks.
-The next non-iAPF endpoint-preparation repair must reuse the compatible Philox
-authorities, preserve actual seed streams and the nonlinear FP64 CPU physical
-dataset, and qualify actual callers with live seeds as well as frozen operands.
-Keep diagnostic/reference reductions explicitly classified. Adaptive iAPF is
-deferred; repairing shared callers must not silently admit or alter its runtime.
-
-This is the current work order, refreshed during the registered LEDH repair
-on20260929. The optimized-compiler phase remains an explanatory diagnostic. Historical
-master entries and ledger progress paragraphs retain their original scope;
-they are not instructions to rerun completed cohorts. F14's scoped implicit-pfor
-finding is closed through04727; other terminal gates and main merge remain open. Global caps remain56 CPU
-and52 GPU process-hours; the extra24 CPU hours are already included.
-
-The independent LEDH native validity-boundary repair is now qualified CPU/GPU
-through04668; see `filter_gradient_ledh_validity_boundary_result_20260928.md`.
-Registered value migration now passes eight CPU/GPU endpoint checks after a
-shared LM precision repair. The old TF32 eager tiny-product error is preserved;
-TF32 stays enabled. See filter_gradient_ledh_seeded_public_20260929.md and
-filter_gradient_ledh_lm_precision_20260929.md. Through04706 the streaming buffer
-repair passes CPU/GPU numerical qualification and the CPU horizon/particle
-ladder; see filter_gradient_ledh_streaming_memory_result_20260929.md. Optional
-batch pfor is removed through04710; five further library/reference sites pass
-CPU/GPU and162 readback/policy checks through04719. See
-filter_gradient_remaining_pfor_execution_result_20260929.md. Fresh-owner
-native/compiler residency, possible CPU slowdown, uncontended GPU costs/capacity,
-analytical-score public migration remain open. F14's28 runner/benchmark sites
-now have verified dispositions through04727, with300 guarded sources and1436
-existing exceptions. See filter_gradient_pfor_runner_closure_result_20260929.md.
-Matched CPU costs are now complete through04749: geometric streaming/buffered
-ratios1.08239 atT32 and1.09678 atT128 with conditional95% upper limits above1.10
-trigger profiling. Exact complete shared records pass; RSS is about11MiB lower.
-See filter_gradient_streaming_paired_cost_result_20260929.md. Profiling04750–04755 is complete; the RNG component alone is descriptively
-faster and does not explain full-filter performance. See
-filter_gradient_streaming_profile_result_20260929.md. Gaussian direction repair
-is now qualified through04782: all six cases pass CPU/GPU and162 final
-readback/policy checks. Complete records match exactly; maximum FD error9.49e-12.
-Its descriptive CPU cost screen has lower warm medians but higher cold time and
-91–96MiB higher observed RSS; cost acceptance stays open. Rusage peak counters
-below VmRSS require a bounded measurement diagnostic. See
-filter_gradient_score_study_directions_result_20260929.md and
-filter_gradient_score_direction_cost_result_20260929.md. A bounded
-full-filter compiler-interaction intervention remains separate outstanding work.
-Nonlinear EKF/UKF healthy CPU/GPU checks and all six LEDH-family refusal
-variants are complete through04805. Their consumers now use the shared
-enclosing analytical direction owner; see
-filter_gradient_nonlinear_directions_result_20260929.md. The original LEDH T2
-fixture fails reset balancing identically before/after the repair; severe
-ill-conditioning is not established. Fresh disjoint calibration04806–04808
-nominates eight/eight reset counts independently for all three providers.
-All twelve ordinary/diagnostic untouched CPU/GPU workers04809–04820 pass,
-followed by162 combined readback/policy checks04821. Complete parity max2.22e-16,
-five-point error max7.10e-12; no failed fixture was used to tune controls or
-relax gates. See filter_gradient_nonlinear_scope_result_20260929.md. The completed
-cost cohort is filter_gradient_nonlinear_direction_cost_20260929.md, binding
-the validated LEDH scope and comparing VmRSS/VmHWM, smaps_rollup and rusage.
-All four measured CPU arms04822–04825 and163 combined readback checks04826
-pass. See filter_gradient_nonlinear_direction_cost_result_20260929.md. The OS
-peak-counter discrepancy reproduces while status and page-map RSS agree.
-The completed allocation-only diagnostic reproduces it without TensorFlow:
-equal544MiB page touches yield rusage deficits2.262MiB pinned and34.375MiB
-spread over32CPUs, supporting kernel per-CPU accounting. See
-filter_gradient_os_memory_accounting_result_20260929.md. Rusage-only strict
-peak claims remain ineligible; this does not erase measured compiler RSS.
-The locator's
-specific fusion lead stays open without more unrelated counter experiments.
-
-September29 additional consumer finding: both public score-study endpoints
-reach fixed fitted-twist and adaptive iAPF Python numerical recurrences.
-Quadratic feature construction also contains numerical comprehensions. These
-remain F07/F19 work under the explicit repair sequence in
-filter_gradient_fitted_apf_execution_20260929.md. Ordinary reporting/seed-label
-loops are distinct; no runtime relabeling or allowance is granted. Fixed fitting is now enclosed in XLA and qualified through04857 on CPU/GPU
-for FP32/FP64, with actual public endpoint and intermediate failure coverage.
-See filter_gradient_fitted_apf_fixed_result_20260929.md. Its cost/memory screen
-is complete through04862: warm medians are lower but sampled RSS grows about
-100MiB, so cost acceptance stays open. See filter_gradient_fitted_apf_cost_result_20260929.md.
-Surrounding eager endpoint preparation still requires separate work. Adaptive
-iAPF is now deferred by the owner. Its decision diagnosis through04870 finds a GPU
-FP64 exponential-rounding difference that flips an adjacent-threshold stopping
-decision. The raw primitive remains unadmitted and the existing adaptive runtime is
-unchanged. The separate checked resolution owner now passes33 resolved,3
-explicitly refused and7 invalid cases per device through04876. Full
-controller/ledger migration is deferred; see filter_gradient_iapf_controller_result_20260929.md
-and filter_gradient_iapf_resolution_result_20260929.md. Preserve live RNG streams as well as frozen-array parity.
-
-| Order | Remaining gap | Next repair or evidence action | Exit gate |
+| Order | Remaining gap | Next action | Exit gate |
 |---|---|---|---|
-| 1 | DZ5 locator context:121 strict full-record differences; both original and candidate unconverged | Through04661, exact controls and optimized caller traces isolate four gradient fusions with eight unchanged copies of printed2.4 carried through the candidate loop. Original/replay-int32 embed these constants and match complete short records; candidate differs at47 leaves. Test this specific constant-propagation mechanism in a bounded intervention; no more unrelated dtype trials. See `filter_gradient_dz5_locator_optimized_hlo_result_20260928.md`. | Exact inputs and unchanged gates; qualify a smaller remedy before any full trajectory. Keep GPU-compatible resources. Compiler structure alone is not causal proof. Neither a tiny score residual nor an unconverged optimizer is success. |
-| 2 | Fitted geometry:4539 strict CPU/GPU differing leaves in run04617, plus strict/isotropic angle reporting | Start from the saved original/candidate records and classify selected versus unselected quantities, symmetry, eigenspace degeneracy and rejection fields. Use the exact-input and precision-symmetry plans as baselines; declare a bounded failing fixture before further numerical changes. | Existing numerical and status gates; explicit unusable/ill-conditioned errors where applicable. Do not demand a usable estimate from an invalid system, silently waive a recorded comparison, or treat eigenvector sign/rotation as a precision defect. |
-| 3 | Registered LEDH value costs/capacity and analytical-score migration | Streaming CPU paired costs and RNG/HLO profiling are complete through04755; preserve their cost veto and test one bounded full-filter compiler interaction without changing RNG. Gaussian score-study direction consumers are CPU/GPU qualified through04782; nonlinear ordinary/diagnostic endpoints through04821. Nonlinear CPU cost/OS-memory readback is complete through04826 plus the standalone OS diagnostic. Fixed fitted-APF qualification/cost screen is complete through04862, with about100MiB additional sampled RSS. Continue replicated owner costs and retained compiler residency; adaptive iAPF is deferred. Renew GPU costs/capacity only on unshared hardware. | Complete actual-consumer evidence, invalidity, stable signatures, dynamic operands, enclosing HLO, independent derivatives and accepted costs. Component or Gaussian evidence does not qualify an untouched nonlinear consumer. Canonical rebuild remains excluded. |
-| 4 | Current-source applicability of saved timing/memory reports | Continue `filter_gradient_terminal_source_review_20260928.md`: inspect each endpoint's actual runtime dependencies and fixture/harness changes against the22-report evidence index. Renew only affected measurement scopes. | Source/input/hardware/timing-scope provenance and relevant numerical gates. Unchanged broad-snapshot files do not prove a closure; unrelated changes do not require every benchmark to run again. Preserve missing GenUT hash fields and the remaining-SVD receipt's absent direct run references. |
-| 5 | Remaining terminal F01--F20 dispositions and default/import coverage | F14's identified implicit-pfor sites are repaired/retired and qualified through04727. Bind each other finding to its current public consumer, guarded source, derivative role, independent numerical check and applicable endpoint measurement. Classify diagnostics/retirements explicitly and follow implicit package imports and callbacks. Record adaptive iAPF as deferred without closing the broader F07/F19 findings. | Every in-scope finding has a reviewable terminal disposition. The313-source guard pass is scoped evidence; no allowance expansion or relabeling an active violation as diagnostic. |
-| 6 | Integration and merge | Once the above gates pass, inspect new remote changes, integrate them on this branch, resolve conflicts and run affected checks before final review. | All remaining in-scope master gates passed, with adaptive iAPF explicitly deferred and no repo-wide iAPF compliance claim; only then merge and push main. Checkpoint commits/pushes on the repair branch remain authorized. |
+| 1 | Non-iAPF public numerical preparation and remaining analytical-score consumers | Gaussian theta/model binding is now qualified through04896, including seven affected callers on each backend. Execute filter_gradient_score_input_execution_20260929.md for shared Gaussian/nonlinear random-cloud and optional KDM-pilot execution repair. Use the existing compatible Philox authorities, preserve all actual seeds and the nonlinear FP64 CPU physical dataset, and check actual callers with live seeds and frozen-input controls. Classify reference/reporting reductions explicitly. | Each affected caller has stable enclosing XLA execution, unchanged mathematical/derivative authority, complete numerical/status checks and truthful timing scope. Component success does not qualify an untouched caller. No numerical-loop allowance or active-runtime relabeling. |
+| 2 | Fitted geometry:4539 strict CPU/GPU differing leaves, plus strict/isotropic angle reporting | Use04617/factor-precision-symmetry-qualification.json, not run04539 (4539 is a count). Selected precision/covariance/center/audit pass scoped bounds;62 selection/stability leaves plus1663/1150/1664 leaves in unselected fits3/4/5 differ. Fits3/4 reject on holdout; fit5 passes its fit gate but is unconverged and unselected. Separate valid selected geometry, rejected/unconverged fits, symmetry and eigenspace degeneracy before a bounded remedy. | Preserve unchanged numerical/status gates and explicit unusable/ill-conditioned errors. Do not demand usable estimates from invalid systems, silently waive full-record failures, or treat eigenvector sign/rotation as a precision defect. |
+| 3 | Runtime/memory acceptance | Streaming CPU ratios1.08239 atT32 /1.09678 atT128 have95% upper bounds1.11687 /1.15608 above1.10. RNG profiling did not explain this. Replicate matched complete-owner costs, attribute native/compiler residency and obtain applicable uncontended GPU capacity evidence. Include direction/fitted-APF and remaining-SVD memory triggers. | Relevant numerical gates, source/input/timing comparability, statistical acceptance and explicit capacity/lifetime disposition. Gaussian binding04889--04892 is descriptive and does not close unrelated memory or streaming findings. |
+| 4 | Historical DZ5 locator differences and unconverged optimizers | Constant-sinking intervention04877--04882 is complete: original pass-disabled reproduces ordinary candidate exactly, but disabling both leaves46 short-record score fields different. Isolate local gradient arithmetic or emitted lowering before considering a portable remedy. | Exact frozen inputs, unchanged gates and complete records. No arbitrary compiler flag/default change, repeated dtype trial, unchanged full trajectory or convergence claim. The121 full-trajectory differences remain open. |
+| 5 | Saved-evidence applicability and terminal F01--F20 dispositions | Continue filter_gradient_terminal_source_review_20260928.md against the22-report index, actual source dependencies, implicit package imports and dynamic callbacks. Bind each finding to current callers, derivative roles and applicable measurements. Renew only affected scopes, including the changed Gaussian adapter. | Reviewable disposition for every in-scope finding, with adaptive iAPF explicitly deferred. Preserve missing GenUT hash fields and remaining-SVD receipt's absent direct run references. Current314-source/1457-exception guard is scoped evidence, not whole-repo closure. |
+| 6 | Integration and merge | After the above in-scope gates pass, fetch current remote changes, integrate on the repair branch, resolve conflicts and run affected checks before final review. | All remaining in-scope gates pass; no repo-wide iAPF compliance or canonical LEDH claim. Checkpoint commits/pushes remain authorized; main merge stays withheld. |
 
-Completed evidence to reuse in its stated scope:
+Evidence to reuse in its qualified scope:
 
-- Actual-consumer r2 source renewal04618--04628 includes CPU/GPU accepted
-  workers, intended GPU rejection, lifetime and readback checks. Do not rerun
-  the unchanged cohort. Old r1 locator probes diagnose the historical context
-  difference and cannot substitute for r2 admission.
-- Adapter import isolation04629--04630 preserves43 exports and three aliases.
-  The evidence-index integrity tests04631 pass. The original eager reference
-  import was repaired, not added to a policy allowlist.
-- The factor precision symmetrization and principal-angle SVD repairs have
-  their CPU/GPU component evidence. These do not close all strict full records
-  or uncontended matched-cost attribution.
+- Gaussian model binding04883--04896 (including seven sibling callers/backend): FP64 outputs and public records exact
+  CPU/GPU; FP32 maximum7.15256e-7 CPU, exact GPU; derivative error1.19567e-11.
+  Warm full-endpoint CPU19.431→3.405ms /GPU37.883→9.014ms, sampled host RSS
+  +6.031/-17.578MiB. See filter_gradient_gaussian_model_binding_result_20260929.md.
+- DZ5 constant-sinking04877--04882:179 final checks and full control replay.
+  See filter_gradient_dz5_locator_constant_sinking_result_20260929.md.
+  The broader pass effect does not isolate a specific multiply or machine code.
+- Fixed fitted-APF04834--04862: preserved RNG authority, CPU/GPU FP32/FP64
+  histories/value/score and intermediate-failure checks. Its CPU screen adds
+  about100MiB sampled RSS. See filter_gradient_fitted_apf_fixed_result_20260929.md
+  and filter_gradient_fitted_apf_cost_result_20260929.md.
+- Gaussian direction consumers through04782 and nonlinear ordinary/diagnostic
+  consumers through04821 are qualified. Fresh disjoint nonlinear calibration
+  preserves the original reset-balance failure; it is mechanics evidence, not
+  canonical tuning admission. Nonlinear cost/OS-memory checks through04826 and
+  the allocation-only diagnostic are complete. The rusage anomaly reproduced
+  without TensorFlow and does not erase measured RSS growth.
+- Streaming repair through04706, paired costs through04749 and profiling through
+  04755 remain applicable within their saved dependencies. The scalar-Philox-
+  state intervention04827--04833 was rejected and runtime restored exactly:
+  warm ratios1.156/2.216 worsened, body copies360→363. Do not repeat it or infer
+  that it explains the original slowdown.
+- F14 identified implicit-pfor sites are repaired/retired and qualified through
+  04727. Broader consumer/F01--F20 evidence remains open.
+- Actual-DZ5 r2 source/consumer/lifetime04618--04628, import isolation04629--04630
+  and evidence-index integrity04631 need no rerun when their actual dependency
+  bytes remain unchanged. Parent RSS growth0.410MiB CPU /0.559MiB GPU and reaped
+  children support scoped process-exit containment, not general native eviction.
+- Final precision symmetrization and principal-angle SVD component repairs pass
+  their CPU/GPU gates. Strict full records, nearly aligned angle reporting and
+  matched uncontended costs remain separately open. See the September28 factor
+  precision, principal-angle and DZ5 source-renewal results.
 
-Memory interpretation is unchanged: parent RSS rose0.410MiB on CPU and
-0.559MiB on GPU across the renewed accepted-worker tests; all children were
-reaped. GPU allocator peak was269443328 bytes. Native/compiler memory remains
-inside a child until exit, and HLO inspection contributes to its final host
-sample. These observations support the measured process-lifetime behavior;
-they do not prove exact uninstrumented production peaks or universal eviction.
+Execution constraints: one numerical worker at a time; no subagents, HMC or
+NeuTra training, package/system/cache changes, live MacroFinance edits or gate
+relaxation. Preserve canonical author-profile NeuTra IAF and shared analytical
+numerical authorities. Canonical LEDH rebuild remains excluded; execution repair
+cannot confer canonical/scientific admission. GPU0 hosts remote desktop and GPU1
+has a display; prefer available GPU2/3 and recheck at launch under the owner's
+fallback rule. Trusted placement and verified memory growth are mandatory.
+CPU runs remain explicit reference/debug exceptions.
 
-Specific LEDH caution from03826/03827: the first dual-trust reset already
-reported invalid, although the old wrapper's weaker `program_valid` stayed
-true. Compiling that FP32 reset explains the full-value difference. Its
-condition proxy was201, so severe ill-conditioning has not been established.
-The FP64 diagnostic was more consistent but is not permission to change the
-runtime dtype, reset algorithm or tolerances.04662--04668 strengthen only the
-native usability boundary: rejected raw values are retained as diagnostics,
-while public value/status now report rejection. Keep the old raw-value veto
-visible; it has not become numerical equivalence or public-consumer admission.
-
-Skeptical review: this order separates the small causal locator experiment
-from independent outstanding consumer work. Evidence indexing is not numerical
-qualification. Future units require their own bounded allocation within the
-existing total. The family, progress, reporting-storage and derived-replay
-units are closed through04655; none is permission to launch unbounded work.
-The optimized-compiler unit closes at6 workers/1180.751759 CPU seconds against
-its4200-second allocation;179 final checks pass. All three arms reproduce
-complete numerical controls exactly. Export overhead is excluded from
-production timing/memory conclusions. After the subsequent LEDH guard unit,
-25.934150 CPU/25.293292 GPU hours remain inside the same global cap. Do not turn a context intervention into
-an arbitrary production compiler flag or a threshold waiver. The registered
-LEDH consumer and endpoint-evidence reviews remain independent actionable work;
-historical locator investigation must not be mistaken for their completion.
-Through04719,25.627693 CPU/25.026959 GPU hours remain; these current charges
-supersede earlier budget snapshots in this file. No numerical worker is active.
-The primary agent reviewed this refresh. No independent review, scientific
-promotion, canonical LEDH claim or whole-program completion is asserted.
-
-Through04833 the bounded scalar-Philox-state intervention is closed and
-rejected: exact complete records and all CPU regressions pass, but both
-descriptive warm ratios worsen (1.156/2.216) and observation-body copies rise
-360→363. Current runtime is restored exactly; no conditional GPU trial was
-launched. See filter_gradient_streaming_state_layout_result_20260929.md.
-Do not repeat this state-packing candidate or claim its rejection explains
-the original streaming regression. The fixed fitted-APF execution repair above
-is now qualified; its cost/memory gate and all other listed terminal gaps remain
-open. Adaptive iAPF is deferred.
-
-September29 current-source consumer inspection, while the paired CPU cost
-cohort runs: `bayesfilter/score_study/adapters.py::evaluate_gaussian` calls six directional kernels in
-Python comprehensions for LEDH, SGQF, KDM covariance and the two KDM proposal
-arms (lines125–167 in checkpointd8c23fc41), then stacks values/scores on the
-host side. The individual kernels have XLA boundaries, but the complete
-six-direction analytical score does not. This is concrete remaining consumer
-work under order3/5, not a reason to reopen the now-resolved pfor finding. A
-reviewed continuation is filter_gradient_score_study_directions_20260929.md. It should use one shared native parameter-direction loop
-inside a stable enclosing XLA owner, preserve the existing mathematical
-authorities, initial-law derivatives, diagnostics and per-direction value
-agreement/validity checks, and compare fresh actual-consumer outputs/costs.
-The loop is over parameter directions, not training sample rows. That inspection now has an implementation: the factories provide one enclosing
-TensorFlow direction owner with status flags enforced at the host. Qualification
-is in progress; no consumer-admission claim follows before the recorded checks.
-
-20260929 review:04682 passes46 CPU regression checks and fails the existing
-static pfor test on the optional batch-fused route. No test/gate is removed.
-Its approval, diagnostic classification and caller eligibility require explicit
-F14 disposition. Endpoint source guard now covers278 sources without adding
-allowances. GPU2/3 can be occupied by other campaigns; availability is rechecked
-and shared numerical qualification is distinguished from uncontended costs.
+Primary-agent review: active defects and missing evidence remain distinguished;
+no component, syntax guard, historical compiler localization or single-process
+cost screen is treated as whole-program completion. Every serious next unit
+needs its own bounded allocation inside the existing remaining budget.
