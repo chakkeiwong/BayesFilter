@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05202; active worker runs: none.
-Charged/reserved CPU 116448.721167s / GPU 102588.776936s.
-Remaining CPU 23.653133h / GPU 23.503118h.
+Through 05227; active worker runs: none.
+Charged/reserved CPU 116504.229018s / GPU 102933.454126s.
+Remaining CPU 23.637714h / GPU 23.407374h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_remote_integration_20260930.md (complete); at most
-40 workers/6000 CPU/6000 GPU seconds.
-Used/reserved 33 workers/410.168632 CPU/432.622244 GPU seconds.
+Active allocation: docs/plans/filter_gradient_resource_acceptance_20260930.md (active); at most
+48 workers/7200 CPU/7200 GPU seconds.
+Used/reserved 25 workers/55.507851 CPU/344.677191 GPU seconds.
 One numerical worker at a time.
 
-Remote integration is qualified through05202: final161 readback/policy checks pass; 96 live-input,32 live-endpoint and56 Halton boundary context cases retained. Original eager GPU pow digit defect independently attributed05200; all nine failed workers preserved. Scoped execution repairs and incoming corrections are complete. Main remains withheld for resource/terminal obligations.
+Resource owner subunit05203--05227 passes:18 GPU costs,6 CPU/GPU1024-call reuse checks and161 terminal checks. Exact shared outputs, warm ratios0.4358/0.4381/0.7318 and stable late memory qualify the measured fixed fitted-APF/Gaussian-input tradeoffs. Cold/RSS increases are explicitly retained; no whole-program closure.
 
-Next: Archive and commit/push the completed repair-branch merge, then activate bounded resource acceptance for fixed fitted-APF/input owners, remaining-SVD/guard composition, streaming and new SQMC preparation. Finish affected-use/F01--F20 dispositions before main merge.
+Next: Checkpoint/archive the accepted owner subunit; register and execute matched streaming GPU costs and bounded reuse, then remaining-SVD lifetime, angle/subspace guards and new SQMC preparation costs. Reuse unchanged prior SVD numerical timing; preserve failed stricter streaming CPU study.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls

@@ -76,3 +76,38 @@ The fresh-process comparisons and separate reuse tests address those risks.
 The strongest limitation is the declared finite workload/configuration range;
 no universal capacity, eviction, canonical LEDH, posterior or HMC claim follows.
 No subagents, training, package/system/cache mutation or live MacroFinance edits.
+
+Activation follows integration checkpoint42ccfd29e/run05202. First registered
+subunit resource_acceptance_owners contains18 GPU cost workers: three
+counterbalanced before/after pairs for fixed fitted Gaussian/nonlinear APF and
+the complete Gaussian twist input endpoint. Each reuses its saved independent
+source fixture and30 synchronized warm calls. Six further CPU/GPU workers
+exercise those same complete callables1024 times with two changing seed/theta
+inputs, one owner/trace and unchanged cache size. Independent comparisons run
+after primary memory samples. The final readback/policy worker checks complete
+outputs, growth provenance, unshared preflight/in-run observations and reaped
+worker/GPU contexts. Numerical bounds remain2e-10 for fitted APF and1e-10 for
+the Gaussian endpoint. The lifetime investigation trigger remains16MiB late
+RSS growth; declared allocator peak allowance is2GiB for these small fixtures.
+No source, RNG, method, hardware class or global compute boundary changes.
+
+This25-worker subunit activates the provisional48-worker/7200 CPU and7200 GPU
+second allocation,300 seconds per worker. Current global charges are
+CPU116448.72116697794/GPU102588.77693555298 seconds; the remaining
+23.653133 CPU/23.503118 GPU hours exceed this reservation. Later resource
+subunits must register exact cases and reconcile this same balance first.
+SQMC live-input/trace preparation is an additional affected execution owner
+from integration and needs a scoped cost disposition alongside the previously
+listed SVD/guard and streaming obligations.
+
+Pre-run skeptical review: using only the cheap input primitive would miss
+endpoint preparation/reporting overhead; the measured public callables avoid
+that omission. Comparing only final likelihood would miss changed fit records,
+so readback checks complete shared outputs and diagnostics with existing
+tolerances. Exclude the two newly added execution-reporting fields and verify
+fit digests against their own numerical records. A single GPU marker alone
+is insufficient: worker visibility/growth, endpoint placement where available
+and observed GPU ownership remain required. Three timing pairs give a wide
+approximate log-t interval, not a universal performance bound. Fixed-shape
+reuse answers continuing-growth risk only; broader native-capacity acceptance
+remains scoped to separately measured owners.

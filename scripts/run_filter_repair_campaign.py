@@ -1712,6 +1712,15 @@ TEST_GROUPS['remote_integration_ordering_retry_gpu'] = (
     'tests/highdim/test_sqmc_primitives_tf.py::test_primitives_jit_compile_on_selected_device',
     'tests/highdim/test_sqmc_primitives_tf.py::test_arbitrary_dimension_hilbert_jit_compiles_on_selected_device',)
 TEST_GROUPS['remote_integration_readback_cpu'] = ('tests/test_filter_repair_sqmc_readback.py',)
+RESOURCE_OWNER_CASES = ('fitted_gaussian', 'fitted_nonlinear_scalar', 'gaussian_inputs')
+TEST_GROUPS.update({f'resource_acceptance_cost_{case}_{pair}_{arm}_gpu': (
+    f'tests/test_filter_repair_resource_owners.py::test_complete_owner_cost[{arm}-{pair}-{case}]',)
+    for case in RESOURCE_OWNER_CASES for pair in range(3) for arm in ('before', 'after')})
+TEST_GROUPS.update({f'resource_acceptance_reuse_{case}_{device}': (
+    f'tests/test_filter_repair_resource_owners.py::test_fixed_owner_reuse[{case}]',)
+    for case in RESOURCE_OWNER_CASES for device in ('cpu', 'gpu')})
+TEST_GROUPS['resource_acceptance_owners_terminal_cpu'] = (
+    'tests/test_filter_repair_resource_owners_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['remote_integration_terminal_cpu'] = (
     'tests/test_filter_repair_sqmc_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['remote_integration_halton_attribution_gpu'] = (
@@ -2871,6 +2880,14 @@ TEST_BATCHES['remote_integration_last'] = (
     'remote_integration_ordering_retry_gpu', 'remote_integration_control_cpu',
     'remote_integration_policy_cpu',
 )
+TEST_BATCHES['resource_acceptance_owners'] = (
+    *(f'resource_acceptance_cost_{case}_{pair}_{arm}_gpu'
+      for pair in range(3) for case in RESOURCE_OWNER_CASES
+      for arm in (('before', 'after') if pair % 2 == 0 else ('after', 'before'))),
+    *(f'resource_acceptance_reuse_{case}_{device}'
+      for case in RESOURCE_OWNER_CASES for device in ('cpu', 'gpu')),
+    'resource_acceptance_owners_terminal_cpu',
+)
 
 
 def mandatory_test_groups():
@@ -2884,6 +2901,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('resource_acceptance_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('core_execution_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('remote_integration_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ssl_lstm_replay_') and group.endswith('_gpu')},
@@ -3246,6 +3264,8 @@ def require_unshared_cost_preflight(args):
                                  "gaussian_binding_cost_after_gpu",
                                  "score_inputs_cost_before_gpu",
                                  "score_inputs_cost_after_gpu",
+                                 *(group for group in TEST_GROUPS
+                                   if group.startswith('resource_acceptance_') and group.endswith('_gpu')),
                                  *TEST_BATCHES["ledh_flow_cost_gpu"],
                                  *TEST_BATCHES["remaining_svd_cost_gpu"],
                                  *TEST_BATCHES["posterior_public_memory_gpu"],
@@ -3410,7 +3430,7 @@ def run_job(args):
     print(json.dumps({"run": str(directory), "command": command}), flush=True)
     with (directory / "process.log").open("x") as log:
         process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
-        if args.action == 'test' and args.group.startswith(('ledh_streaming_', 'ledh_seeded_cost_')):
+        if args.action == 'test' and args.group.startswith(('ledh_streaming_', 'ledh_seeded_cost_', 'resource_acceptance_')):
             record['worker_pid'] = process.pid
             save_json(directory / 'run.json', record)
         try:
