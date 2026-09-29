@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04876; active worker runs: none.
-Charged/reserved CPU 111602.043789s / GPU 98026.665727s.
-Remaining CPU 24.999432h / GPU 24.770371h.
+Through 04882; active worker runs: none.
+Charged/reserved CPU 113173.577698s / GPU 98026.665727s.
+Remaining CPU 24.562895h / GPU 24.770371h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_iapf_resolution_20260929.md (closed); at most
-6 workers/900 CPU/900 GPU seconds.
-Used/reserved 6 workers/31.693768 CPU/8.982365 GPU seconds.
+Active allocation: docs/plans/filter_gradient_dz5_locator_constant_sinking_20260929.md (closed); at most
+6 workers/4200 CPU/0 GPU seconds.
+Used/reserved 6 workers/1571.533909 CPU/0.000000 GPU seconds.
 One numerical worker at a time.
 
-Adaptive iAPF is deferred at the owner's request on 2026-09-29 and is excluded from the current repair completion scope; it is not repaired or admitted. Preserve the bounded controller evidence through04876 and leave the adaptive runtime/selection validator unchanged. The separate fixed fitted-APF execution repair is CPU/GPU qualified through04857, and its cost screen through04862 still has an approximately100MiB sampled RSS trigger. Other numerical, cost/memory, consumer/source-audit and integration gates remain open.
+DZ5 named constant-sinking intervention closes through04882 with179 final checks. Both fresh controls reproduce saved records exactly. Original pass-disabled reproduces ordinary candidate callbacks and short record exactly; disabling the pass in both arms still leaves46 score-field differences. The pass changes broader compiler structure; no portable remedy, full-trajectory equivalence or convergence is established. Adaptive iAPF remains deferred.
 
-Next: Continue the non-iAPF work order in filter_gradient_terminal_gap_queue_20260928.md, starting with a bounded test of the DZ5 locator constant-propagation mechanism identified through04661. Then resolve fitted-geometry/status comparisons, matched owner costs/compiler residency and uncontended GPU capacity, remaining public consumers and current-source evidence applicability. Record final F01--F20 dispositions with adaptive iAPF explicitly deferred; do not close F07/F19 wholesale or merge main before all remaining in-scope gates pass. Do not resume adaptive iAPF migration under this checkpoint.
+Next: Archive and commit the completed DZ5 diagnostic, then activate and execute filter_gradient_gaussian_model_binding_20260929.md. Keep the historical locator gap open; a further intervention must isolate local gradient arithmetic or emitted lowering, not try arbitrary compiler flags or repeat unchanged full trajectories. Complete remaining geometry4539-leaf, consumer/source, memory/performance and integration work under the master.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

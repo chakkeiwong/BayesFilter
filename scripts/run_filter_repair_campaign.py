@@ -1656,6 +1656,13 @@ TEST_GROUPS['dz5_locator_optimized_readback_cpu'] = (
     *TEST_GROUPS['policy'])
 TEST_GROUPS['dz5_locator_optimized_inspection_cpu'] = (
     'tests/test_filter_repair_locator_fusion_inspection.py',)
+TEST_GROUPS.update({f'dz5_locator_sinking_{arm}_{mode}_cpu': (
+    f'tests/test_filter_repair_dz5_locator_constant_sinking.py::test_named_pass_intervention[{arm}-{mode}]',)
+    for mode in ('control', 'disabled') for arm in ('original', 'candidate')})
+TEST_GROUPS['dz5_locator_sinking_readback_cpu'] = (
+    'tests/test_filter_repair_dz5_locator_constant_sinking.py::test_saved_pass_intervention',
+    'tests/test_filter_repair_locator_hlo_reader.py',
+    'tests/test_filter_repair_locator_fusion_inspection.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['ledh_validity_characterization_cpu'] = (
     'tests/test_filter_repair_ledh_validity_boundary.py::test_checked_validity_boundary',)
 TEST_GROUPS['ledh_validity_boundary_cpu'] = (
@@ -1915,6 +1922,11 @@ ORIGINAL_AUTHORITY_REPLACEMENTS = {
 # New/unlisted groups remain mandatory; names and historical pass/fail outcomes
 # do not classify a job. See the master program's terminal-role review.
 EXPLANATORY_TEST_GROUPS = {
+    **{f'dz5_locator_sinking_{arm}_{mode}_cpu':
+        'Historical named compiler-pass ablation; no runtime flag, convergence or admission.'
+        for mode in ('control', 'disabled') for arm in ('original', 'candidate')},
+    'dz5_locator_sinking_readback_cpu':
+        'Exact controls and diagnostic pass/fusion comparison; no runtime remedy or convergence.',
     'iapf_controller_localization_gpu': 'GPU CV arithmetic diagnosis after a strict decision mismatch; no controller admission.',
     'iapf_controller_localization_cpu': 'CV arithmetic diagnosis after a strict decision mismatch; no controller admission.',
     'fitted_apf_rng_cpu': 'Bounded eager/XLA seeded-input diagnostic; mismatch is recorded and cannot qualify a runtime migration.',
