@@ -32,5 +32,8 @@ Do not double-count the immutable prior ledger or its included reserve.
 Next research question: test richer residual designs and distribution
 preservation, separating reset from correction, with safeguards retained and
 fresh tuning/data before any promotion. Do not rerun completed diagnostics.
+Literature review/proposal: docs/plans/sqmc-ksc-reset-repair-literature-20260929.md.
+2025 GenUT paper and author code checked; no new numerical work. Next: specify
+stagewise audit and isolated residual-design/protection tests under the same budget.
 No core/model/default/HMC/environment changes; no independent reviewer.
 This follow-up does not merge or push; original integration already completed.
