@@ -13,9 +13,9 @@ Active allocation: docs/plans/filter_gradient_iapf_resolution_20260929.md (close
 Used/reserved 6 workers/31.693768 CPU/8.982365 GPU seconds.
 One numerical worker at a time.
 
-Checked iAPF resolution owner qualifies through04876 on CPU/GPU:33 resolved histories preserve actions,3 ambiguous thresholds explicitly reject,7 invalid cases reject. Every interval contains original/raw/80-digit CV;161 readback/policy checks pass. Active adaptive runtime and selection validator remain unchanged. Fixed fitted-APF repair/cost screen is committed at4629f3bd8/5eb694352, with approximately100MiB sampled RSS trigger still open.
+Adaptive iAPF is deferred at the owner's request on 2026-09-29 and is excluded from the current repair completion scope; it is not repaired or admitted. Preserve the bounded controller evidence through04876 and leave the adaptive runtime/selection validator unchanged. The separate fixed fitted-APF execution repair is CPU/GPU qualified through04857, and its cost screen through04862 still has an approximately100MiB sampled RSS trigger. Other numerical, cost/memory, consumer/source-audit and integration gates remain open.
 
-Next: Design and implement the complete native offline iAPF recurrence using finite particle-shape dispatch and the checked controller. Preserve fit/cast/convergence errors,23-column histories, independent seeds, frozen-fit final score and truthful separate offline/final timing. Replace the selection validator numerical recomputation with the shared checked authority. Qualify actual CPU/GPU endpoints and costs before closing F07/F19.
+Next: Continue the non-iAPF work order in filter_gradient_terminal_gap_queue_20260928.md, starting with a bounded test of the DZ5 locator constant-propagation mechanism identified through04661. Then resolve fitted-geometry/status comparisons, matched owner costs/compiler residency and uncontended GPU capacity, remaining public consumers and current-source evidence applicability. Record final F01--F20 dispositions with adaptive iAPF explicitly deferred; do not close F07/F19 wholesale or merge main before all remaining in-scope gates pass. Do not resume adaptive iAPF migration under this checkpoint.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance

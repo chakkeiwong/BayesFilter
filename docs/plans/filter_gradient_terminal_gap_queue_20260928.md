@@ -1,5 +1,21 @@
 # Remaining master-program repair queue
 
+Owner scope update, 2026-09-29: adaptive iAPF is work in progress and is
+deferred from this campaign's current completion scope. Preserve its evidence
+through04876; do not resume controller/runtime or selection-validator migration.
+This supersedes earlier adaptive-iAPF follow-up instructions. Deferral does not
+establish compliance or close F07/F19. The separate fixed fitted-APF numerical
+repair is qualified; its cost/memory acceptance remains in scope.
+
+The remaining in-scope work is the six rows below: DZ5 locator discrepancies,
+fitted geometry/status reporting, runtime/memory acceptance, saved-evidence
+applicability, final consumer/policy dispositions, and integration. Start with
+the specific DZ5 constant-propagation lead. Through04876, no numerical worker
+is active and 24.999432 CPU / 24.770371 GPU process-hours remain. The current
+guard covers313 sources with1457 exact configuration/schema/reporting/reference
+exceptions and no numerical-loop allowance. This documentation-only scope
+update changes no implementation, evidence gate, allowance or compute charge.
+
 This is the current work order, refreshed during the registered LEDH repair
 on20260929. The optimized-compiler phase remains an explanatory diagnostic. Historical
 master entries and ledger progress paragraphs retain their original scope;
@@ -70,23 +86,23 @@ for FP32/FP64, with actual public endpoint and intermediate failure coverage.
 See filter_gradient_fitted_apf_fixed_result_20260929.md. Its cost/memory screen
 is complete through04862: warm medians are lower but sampled RSS grows about
 100MiB, so cost acceptance stays open. See filter_gradient_fitted_apf_cost_result_20260929.md.
-Adaptive iAPF and surrounding eager endpoint preparation still require
-separate work. Adaptive decision diagnosis through04870 finds a GPU
+Surrounding eager endpoint preparation still requires separate work. Adaptive
+iAPF is now deferred by the owner. Its decision diagnosis through04870 finds a GPU
 FP64 exponential-rounding difference that flips an adjacent-threshold stopping
 decision. The raw primitive remains unadmitted and the existing adaptive runtime is
 unchanged. The separate checked resolution owner now passes33 resolved,3
-explicitly refused and7 invalid cases per device through04876. Continue full
-controller/ledger migration; see filter_gradient_iapf_controller_result_20260929.md
+explicitly refused and7 invalid cases per device through04876. Full
+controller/ledger migration is deferred; see filter_gradient_iapf_controller_result_20260929.md
 and filter_gradient_iapf_resolution_result_20260929.md. Preserve live RNG streams as well as frozen-array parity.
 
 | Order | Remaining gap | Next repair or evidence action | Exit gate |
 |---|---|---|---|
 | 1 | DZ5 locator context:121 strict full-record differences; both original and candidate unconverged | Through04661, exact controls and optimized caller traces isolate four gradient fusions with eight unchanged copies of printed2.4 carried through the candidate loop. Original/replay-int32 embed these constants and match complete short records; candidate differs at47 leaves. Test this specific constant-propagation mechanism in a bounded intervention; no more unrelated dtype trials. See `filter_gradient_dz5_locator_optimized_hlo_result_20260928.md`. | Exact inputs and unchanged gates; qualify a smaller remedy before any full trajectory. Keep GPU-compatible resources. Compiler structure alone is not causal proof. Neither a tiny score residual nor an unconverged optimizer is success. |
-| 2 | Fitted geometry:4539 strict CPU/GPU record differences, plus strict/isotropic angle reporting | Start from the saved original/candidate records and classify selected versus unselected quantities, symmetry, eigenspace degeneracy and rejection fields. Use the exact-input and precision-symmetry plans as baselines; declare a bounded failing fixture before further numerical changes. | Existing numerical and status gates; explicit unusable/ill-conditioned errors where applicable. Do not demand a usable estimate from an invalid system, silently waive a recorded comparison, or treat eigenvector sign/rotation as a precision defect. |
-| 3 | Registered LEDH value costs/capacity and analytical-score migration | Streaming CPU paired costs and RNG/HLO profiling are complete through04755; preserve their cost veto and test one bounded full-filter compiler interaction without changing RNG. Gaussian score-study direction consumers are CPU/GPU qualified through04782; nonlinear ordinary/diagnostic endpoints through04821. Nonlinear CPU cost/OS-memory readback is complete through04826 plus the standalone OS diagnostic. Fixed fitted-APF qualification/cost screen is complete through04862, with about100MiB additional sampled RSS. Continue replicated owner costs and retained compiler residency; adaptive checked decisions qualify through04876 but full controller migration remains open. Renew GPU costs/capacity only on unshared hardware. | Complete actual-consumer evidence, invalidity, stable signatures, dynamic operands, enclosing HLO, independent derivatives and accepted costs. Component or Gaussian evidence does not qualify an untouched nonlinear consumer. Canonical rebuild remains excluded. |
+| 2 | Fitted geometry: strict CPU/GPU record differences from run04539, plus strict/isotropic angle reporting | Start from the saved original/candidate records and classify selected versus unselected quantities, symmetry, eigenspace degeneracy and rejection fields. Use the exact-input and precision-symmetry plans as baselines; declare a bounded failing fixture before further numerical changes. | Existing numerical and status gates; explicit unusable/ill-conditioned errors where applicable. Do not demand a usable estimate from an invalid system, silently waive a recorded comparison, or treat eigenvector sign/rotation as a precision defect. |
+| 3 | Registered LEDH value costs/capacity and analytical-score migration | Streaming CPU paired costs and RNG/HLO profiling are complete through04755; preserve their cost veto and test one bounded full-filter compiler interaction without changing RNG. Gaussian score-study direction consumers are CPU/GPU qualified through04782; nonlinear ordinary/diagnostic endpoints through04821. Nonlinear CPU cost/OS-memory readback is complete through04826 plus the standalone OS diagnostic. Fixed fitted-APF qualification/cost screen is complete through04862, with about100MiB additional sampled RSS. Continue replicated owner costs and retained compiler residency; adaptive iAPF is deferred. Renew GPU costs/capacity only on unshared hardware. | Complete actual-consumer evidence, invalidity, stable signatures, dynamic operands, enclosing HLO, independent derivatives and accepted costs. Component or Gaussian evidence does not qualify an untouched nonlinear consumer. Canonical rebuild remains excluded. |
 | 4 | Current-source applicability of saved timing/memory reports | Continue `filter_gradient_terminal_source_review_20260928.md`: inspect each endpoint's actual runtime dependencies and fixture/harness changes against the22-report evidence index. Renew only affected measurement scopes. | Source/input/hardware/timing-scope provenance and relevant numerical gates. Unchanged broad-snapshot files do not prove a closure; unrelated changes do not require every benchmark to run again. Preserve missing GenUT hash fields and the remaining-SVD receipt's absent direct run references. |
-| 5 | Remaining terminal F01--F20 dispositions and default/import coverage | F14's identified implicit-pfor sites are repaired/retired and qualified through04727. Bind each other finding to its current public consumer, guarded source, derivative role, independent numerical check and applicable endpoint measurement. Classify diagnostics/retirements explicitly and follow implicit package imports and callbacks. | Every finding has a reviewable terminal disposition. The300-source guard pass is scoped evidence; no allowance expansion or relabeling an active violation as diagnostic. |
-| 6 | Integration and merge | Once the above gates pass, inspect new remote changes, integrate them on this branch, resolve conflicts and run affected checks before final review. | All master gates passed; only then merge and push main. Checkpoint commits/pushes on the repair branch remain authorized. |
+| 5 | Remaining terminal F01--F20 dispositions and default/import coverage | F14's identified implicit-pfor sites are repaired/retired and qualified through04727. Bind each other finding to its current public consumer, guarded source, derivative role, independent numerical check and applicable endpoint measurement. Classify diagnostics/retirements explicitly and follow implicit package imports and callbacks. Record adaptive iAPF as deferred without closing the broader F07/F19 findings. | Every in-scope finding has a reviewable terminal disposition. The313-source guard pass is scoped evidence; no allowance expansion or relabeling an active violation as diagnostic. |
+| 6 | Integration and merge | Once the above gates pass, inspect new remote changes, integrate them on this branch, resolve conflicts and run affected checks before final review. | All remaining in-scope master gates passed, with adaptive iAPF explicitly deferred and no repo-wide iAPF compliance claim; only then merge and push main. Checkpoint commits/pushes on the repair branch remain authorized. |
 
 Completed evidence to reuse in its stated scope:
 
@@ -142,8 +158,9 @@ descriptive warm ratios worsen (1.156/2.216) and observation-body copies rise
 360→363. Current runtime is restored exactly; no conditional GPU trial was
 launched. See filter_gradient_streaming_state_layout_result_20260929.md.
 Do not repeat this state-packing candidate or claim its rejection explains
-the original streaming regression. The next independent concrete repair is
-the fitted-APF execution plan above; all other terminal gates remain open.
+the original streaming regression. The fixed fitted-APF execution repair above
+is now qualified; its cost/memory gate and all other listed terminal gaps remain
+open. Adaptive iAPF is deferred.
 
 September29 current-source consumer inspection, while the paired CPU cost
 cohort runs: `bayesfilter/score_study/adapters.py::evaluate_gaussian` calls six directional kernels in
