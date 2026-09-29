@@ -357,8 +357,8 @@ def _fixed_replay_value_and_score(
         tf.float64, size=observed_horizon, element_shape=[state_dim],
     )
 
-    def step_body(step, state, state_score, particle_log_values,
-                  particle_scores, filtered_means):
+    def observe(step, state, state_score, particle_log_values,
+                particle_scores, filtered_means):
         log_value, log_score = _observation_logpdf_and_score(
             observations[step],
             params,
@@ -371,20 +371,29 @@ def _fixed_replay_value_and_score(
         filtered_means = filtered_means.write(
             step, tf.reduce_sum(step_weights[:, tf.newaxis] * state, axis=0),
         )
-        if observed_horizon > 1:
-            state, state_score = tf.cond(
-                step + 1 < observed_horizon,
-                lambda: _transition_replay_step(params, state, state_score, process_noise[step]),
-                lambda: (state, state_score),
-            )
+        return particle_log_values, particle_scores, filtered_means
+
+    def step_body(step, state, state_score, particle_log_values,
+                  particle_scores, filtered_means):
+        particle_log_values, particle_scores, filtered_means = observe(
+            step, state, state_score, particle_log_values, particle_scores, filtered_means,
+        )
+        state, state_score = _transition_replay_step(
+            params, state, state_score, process_noise[step],
+        )
         return (step + 1, state, state_score, particle_log_values,
                 particle_scores, filtered_means)
 
-    _, state, state_score, particle_log_values, particle_scores, filtered_means = tf.while_loop(
-        lambda step, *_: step < observed_horizon, step_body,
-        (tf.constant(0), state, state_score, particle_log_values,
-         particle_scores, filtered_means),
-        maximum_iterations=observed_horizon, parallel_iterations=1,
+    if observed_horizon > 1:
+        _, state, state_score, particle_log_values, particle_scores, filtered_means = tf.while_loop(
+            lambda step, *_: step < observed_horizon - 1, step_body,
+            (tf.constant(0), state, state_score, particle_log_values,
+             particle_scores, filtered_means),
+            maximum_iterations=observed_horizon - 1, parallel_iterations=1,
+        )
+    particle_log_values, particle_scores, filtered_means = observe(
+        observed_horizon - 1, state, state_score, particle_log_values,
+        particle_scores, filtered_means,
     )
 
     log_likelihood = (

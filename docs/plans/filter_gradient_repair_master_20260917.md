@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05059; active worker runs: none.
-Charged/reserved CPU 114810.056762s / GPU 100216.229576s.
-Remaining CPU 24.108318h / GPU 24.162158h.
+Through 05138; active worker runs: none.
+Charged/reserved CPU 115088.620881s / GPU 100626.170457s.
+Remaining CPU 24.030939h / GPU 24.048286h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_ssl_lstm_replay_execution_20260929.md (complete_qualified_with_resource_followup); at most
-120 workers/12000 CPU/12000 GPU seconds.
-Used/reserved 119 workers/384.029219 CPU/666.028694 GPU seconds.
+Active allocation: docs/plans/filter_gradient_ssl_lstm_loop_tail_20260929.md (complete_scoped_execution_and_cost_disposition); at most
+90 workers/6000 CPU/6000 GPU seconds.
+Used/reserved 79 workers/278.564120 CPU/409.940881 GPU seconds.
 One numerical worker at a time.
 
-Fixed replay qualification passes17 CPU/17 GPU tests04981--04982; all72 renewed costs04983--05054 and independent readbacks05055--05056 pass. Lifetime05057--05058 passes2000-call reuse and20-specialization bounds, but native RSS is retained after cache clear. Final164 readback/policy checks05059 pass. GPU T8 already-XLA warm ratio1.235 remains open and motivates one conditional-split intervention; no algorithm/seed change or gate relaxation. Source guard317 sources/1465 exact exceptions.
+Loop-tail repair passes17 CPU/17 GPU qualification checks05060--05061,72 renewed costs05062--05133, independent readbacks05134--05135, final2000-call/20-specialization lifetime05136--05137 and164 readback/policy checks05138. Numerical/RNG/API semantics preserved. Final GPU XLA paired estimates1.081/0.974 have wide intervals; graph reference is slower. Explicit bounded cost/native-residency tradeoff is recorded under existing master criteria, with no universal10% or eviction claim. This owner unit closes; unrelated resource gates remain.
 
-Next: Preserve and push the completed replay unit, then register a bounded conditional-split intervention to investigate the matched-XLA cost trigger. Keep terminal current-caller/resource/integration gates open.
+Next: Commit/push loop-tail repair and evidence, then activate core current-caller/evidence closure from filter_gradient_core_execution_closure_20260929.md. Reuse unchanged witnesses, renew only affected/missing checks, keep iAPF/KDM deferred and main unmerged.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls

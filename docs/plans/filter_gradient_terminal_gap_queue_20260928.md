@@ -1,7 +1,7 @@
 # Remaining master-program repair queue
 
-Current through05059 on repair/filter-gradient-xla-validation-20260918.
-No numerical worker is active. Remaining budget24.108318 CPU /24.162158 GPU
+Current through05138 on repair/filter-gradient-xla-validation-20260918.
+No numerical worker is active. Remaining budget24.030939 CPU /24.048286 GPU
 process-hours within the unchanged56/52-hour cap. Main remains unmerged.
 The concise checkpoint and structured ledger control current execution;
 Git history and linked result files preserve previous queue versions.
@@ -66,8 +66,14 @@ found the missed fixed SSL-LSTM replay boundary; its native/XLA repair and
 preserved RNG/manifest compatibility pass17 tests per backend.72 renewed cost
 workers and independent readback pass;2000-call reuse is stable in the measured
 scope. See filter_gradient_ssl_lstm_replay_result_20260929.md. Its GPU T8
-already-XLA warm ratio1.235 remains a focused resource follow-up; a conditional-
-split intervention is next. Public-default speedups do not waive this result.
+already-XLA warm ratio1.235 was investigated by a chronological loop-tail split.
+That repair qualifies through05138 with renewed72-worker costs, lifetime and
+164 final checks. Final GPU XLA paired estimates1.081/0.974 have wide intervals;
+slower graph-reference execution and retained native memory are recorded
+bounded tradeoffs, not a universal10% or eviction claim. See
+filter_gradient_ssl_lstm_loop_tail_result_20260930.md. This owner unit closes;
+the next prepared work is filter_gradient_core_execution_closure_20260929.md,
+supported by the14-row conservative core-source evidence map.
 Guard coverage is now317 sources/1465 exact exceptions. Broad F01--F20 rows
 still require current caller/evidence dispositions; no main merge follows.
 

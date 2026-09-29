@@ -480,6 +480,11 @@
           5059
         ],
         "finding_closed": false
+      },
+      "ssl_lstm_loop_tail_05138": {
+        "result": "docs/plans/filter_gradient_ssl_lstm_loop_tail_result_20260930.md",
+        "status": "complete_scoped_execution_and_cost_disposition",
+        "finding_closed": false
       }
     },
     {
@@ -522,20 +527,20 @@
     "parse_error_role": "Unchanged historical vendor leading-zero literal; counts are search leads, not violation verdicts."
   },
   "current_checkpoint": {
-    "through_run": 5059,
+    "through_run": 5138,
     "based_on_commit": "d073a2bad",
-    "status": "Fixed replay qualification passes17 CPU/17 GPU tests04981--04982; all72 renewed costs04983--05054 and independent readbacks05055--05056 pass. Lifetime05057--05058 passes2000-call reuse and20-specialization bounds, but native RSS is retained after cache clear. Final164 readback/policy checks05059 pass. GPU T8 already-XLA warm ratio1.235 remains open and motivates one conditional-split intervention; no algorithm/seed change or gate relaxation. Source guard317 sources/1465 exact exceptions.",
+    "status": "Loop-tail repair passes17 CPU/17 GPU qualification checks05060--05061,72 renewed costs05062--05133, independent readbacks05134--05135, final2000-call/20-specialization lifetime05136--05137 and164 readback/policy checks05138. Numerical/RNG/API semantics preserved. Final GPU XLA paired estimates1.081/0.974 have wide intervals; graph reference is slower. Explicit bounded cost/native-residency tradeoff is recorded under existing master criteria, with no universal10% or eviction claim. This owner unit closes; unrelated resource gates remain.",
     "charged_seconds": {
-      "CPU": 114810.05676157288,
-      "GPU": 100216.22957609715
+      "CPU": 115088.62088127392,
+      "GPU": 100626.17045680391
     },
     "remaining_hours": {
-      "CPU": 24.108317566229754,
-      "GPU": 24.162158451084125
+      "CPU": 24.03093864409058,
+      "GPU": 24.048285984221135
     },
     "active_job": null,
     "active_session": null,
-    "next": "Preserve and push the completed replay unit, then register a bounded conditional-split intervention to investigate the matched-XLA cost trigger. Keep terminal current-caller/resource/integration gates open.",
+    "next": "Commit/push loop-tail repair and evidence, then activate core current-caller/evidence closure from filter_gradient_core_execution_closure_20260929.md. Reuse unchanged witnesses, renew only affected/missing checks, keep iAPF/KDM deferred and main unmerged.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -1440,7 +1445,7 @@
       "state": "complete",
       "result": "docs/plans/filter_gradient_nonlinear_scope_result_20260929.md"
     },
-    "active_allocation_key": "ssl_lstm_replay_execution_allocation",
+    "active_allocation_key": "ssl_lstm_loop_tail_allocation",
     "nonlinear_direction_cost_allocation": {
       "state": "complete",
       "start_after_run": 4821,
@@ -2015,6 +2020,31 @@
       ],
       "compatibility_review": "Original manifests accept list seeds and integer-coercible sample counts; normalize numerical LRU keys while preserving public manifest metadata. Reproduce and requalify before renewing final costs. Second caps and total campaign budget unchanged.",
       "result": "docs/plans/filter_gradient_ssl_lstm_replay_result_20260929.md"
+    },
+    "ssl_lstm_loop_tail_allocation": {
+      "plan": "docs/plans/filter_gradient_ssl_lstm_loop_tail_20260929.md",
+      "state": "complete_scoped_execution_and_cost_disposition",
+      "baseline": "c05f2c2cc",
+      "start_after_run": 5059,
+      "base_charges": {
+        "CPU": 114810.05676157288,
+        "GPU": 100216.22957609715
+      },
+      "group_prefix": "ssl_lstm_replay_",
+      "max_workers": 90,
+      "max_seconds": {
+        "CPU": 6000,
+        "GPU": 6000
+      },
+      "progress_notes": "Loop-tail repair passes17 CPU/17 GPU qualification checks05060--05061,72 renewed costs05062--05133, independent readbacks05134--05135, final2000-call/20-specialization lifetime05136--05137 and164 readback/policy checks05138. Numerical/RNG/API semantics preserved. Final GPU XLA paired estimates1.081/0.974 have wide intervals; graph reference is slower. Explicit bounded cost/native-residency tradeoff is recorded under existing master criteria, with no universal10% or eviction claim. This owner unit closes; unrelated resource gates remain.",
+      "next_action": "Commit/push loop-tail repair and evidence, then activate core current-caller/evidence closure from filter_gradient_core_execution_closure_20260929.md. Reuse unchanged witnesses, renew only affected/missing checks, keep iAPF/KDM deferred and main unmerged.",
+      "used_workers": 79,
+      "used_seconds": {
+        "CPU": 278.5641197010409,
+        "GPU": 409.9408807067666
+      },
+      "failed_runs": [],
+      "result": "docs/plans/filter_gradient_ssl_lstm_loop_tail_result_20260930.md"
     }
   },
   "historical_quadratic_batch_checkpoint": {
