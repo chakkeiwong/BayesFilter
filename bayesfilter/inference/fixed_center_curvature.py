@@ -646,9 +646,20 @@ def _precision_geometry_kernel(first, second, tolerance, requested_rank, *, jit_
     singular = tf.where(
         tf.abs(1.0 - singular) <= 1.0e-12, tf.ones_like(singular), singular
     )
-    angles = tf.acos(tf.clip_by_value(singular, -1.0, 1.0)) * tf.constant(
-        180.0 / math.pi, tf.float64
-    )
+    # acos loses small-angle accuracy when rounded cosines approach one.
+    # The orthogonal residual's singular values give the same angles' sines.
+    # Pair ascending sines with descending cosines, retaining the existing
+    # unit-cosine snap and fixed-size padded output.
+    first_basis = first_vectors * selected
+    second_basis = second_vectors * selected
+    residual = second_basis - tf.matmul(first_basis, overlap)
+    sine = (xla_svd(residual, max_iter=100, epsilon=sys.float_info.epsilon,
+        precision_config="").s if jit_compile else tf.linalg.svd(residual, compute_uv=False))
+    paired_sine = tf.gather(sine, tf.maximum(rank - 1 - tf.range(dimension), 0))
+    radians = tf.math.atan2(paired_sine, tf.clip_by_value(singular, 0.0, 1.0))
+    angles = tf.where(singular == 1.0, tf.zeros_like(radians), radians) * tf.constant(
+        180.0 / math.pi, tf.float64)
+    angles = tf.where(tf.range(dimension) < rank, angles, tf.constant(90.0, tf.float64))
     spd = tf.reduce_all(first_values > 0.0) & tf.reduce_all(second_values > 0.0)
 
     def generalized():

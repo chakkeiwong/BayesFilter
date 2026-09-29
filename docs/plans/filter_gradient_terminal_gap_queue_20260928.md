@@ -1,7 +1,7 @@
 # Remaining master-program repair queue
 
-Current through04913 on repair/filter-gradient-xla-validation-20260918.
-No numerical worker is active. Remaining budget24.438162 CPU /24.600071 GPU
+Current through04922 on repair/filter-gradient-xla-validation-20260918.
+No numerical worker is active. Remaining budget24.391867 CPU /24.547916 GPU
 process-hours within the unchanged56/52-hour cap. Main remains unmerged.
 The concise checkpoint and structured ledger control current execution;
 Git history and linked result files preserve previous queue versions.
@@ -22,14 +22,18 @@ F07/F08/F19 findings remain open for their non-deferred portions.
 | Order | Remaining gap | Next action | Exit gate |
 |---|---|---|---|
 | 1 | Remaining public numerical boundaries and analytical-score consumers outside iAPF/KDM | Shared Gaussian/nonlinear input preparation, including twist ancestors, is CPU/GPU qualified through04913. Use filter_gradient_score_input_execution_result_20260929.md and final readback for the changed callers; continue source review for any other active eager numerical boundaries. | Preserve exact stream/discrete decisions, live/frozen records and derivative authority. This bounded repair does not close untouched callers or mixed findings. |
-| 2 | Fitted geometry:4539 strict CPU/GPU differing leaves, plus strict/isotropic angle reporting | Use04617/factor-precision-symmetry-qualification.json, not run04539 (4539 is a count). Selected precision/covariance/center/audit pass scoped bounds;62 selection/stability leaves plus1663/1150/1664 leaves in unselected fits3/4/5 differ. Fits3/4 reject on holdout; fit5 passes its fit gate but is unconverged and unselected. Separate valid selected geometry, rejected/unconverged fits, symmetry and eigenspace degeneracy before a bounded remedy. | Preserve unchanged numerical/status gates and explicit unusable/ill-conditioned errors. Do not demand usable estimates from invalid systems, silently waive full-record failures, or treat eigenvector sign/rotation as a precision defect. |
-| 3 | Runtime/memory acceptance | Streaming CPU ratios1.08239 atT32 /1.09678 atT128 have95% upper bounds1.11687 /1.15608 above1.10. RNG profiling did not explain this. For in-scope filters, replicate matched complete-owner costs, attribute native/compiler residency and obtain applicable uncontended GPU capacity evidence. Include direction/fitted-APF and remaining-SVD memory triggers plus the input-owner screen: +24.719MiB CPU/+23.836MiB GPU sampled RSS and GPU cold ratio1.307; defer KDM-specific follow-ups. | Relevant numerical gates, source/input/timing comparability, statistical acceptance and explicit capacity/lifetime disposition. Gaussian binding04889--04892 is descriptive and does not close unrelated memory or streaming findings. |
+| 2 | Fitted geometry:4534 remaining CPU/GPU leaves and isotropic rank-cut reporting | Stable angle arithmetic qualifies through04921; follow filter_gradient_remaining_factor_fit_20260929.md. Reuse04919/04920 payloads and04921 terminal classification.57 selection/stability and4477 unselected-fit leaves remain; eight factor2 angles accurately describe different matrices. Trace fits3/4/5 optimizer state and actual consumers before another intervention. | Preserve selected geometry, status and accepted bounds; explicit invalidity reporting. Do not classify unselected/nonconverged fits as ill-conditioned without evidence, or confuse different fitted subspaces with an angle-evaluation defect. |
+| 3 | Runtime/memory acceptance | Streaming CPU ratios1.08239 atT32 /1.09678 atT128 have95% upper bounds1.11687 /1.15608 above1.10. RNG profiling did not explain this. For in-scope filters, replicate matched complete-owner costs, attribute native/compiler residency and obtain applicable uncontended GPU capacity evidence. Include direction/fitted-APF and remaining-SVD memory triggers plus the input-owner screen: +24.719MiB CPU/+23.836MiB GPU sampled RSS and GPU cold ratio1.307; include matched attribution of the new angle residual SVD; defer KDM-specific follow-ups. | Relevant numerical gates, source/input/timing comparability, statistical acceptance and explicit capacity/lifetime disposition. Gaussian binding04889--04892 is descriptive and does not close unrelated memory or streaming findings. |
 | 4 | Historical DZ5 locator differences and unconverged optimizers | Constant-sinking intervention04877--04882 is complete: original pass-disabled reproduces ordinary candidate exactly, but disabling both leaves46 short-record score fields different. Isolate local gradient arithmetic or emitted lowering before considering a portable remedy. | Exact frozen inputs, unchanged gates and complete records. No arbitrary compiler flag/default change, repeated dtype trial, unchanged full trajectory or convergence claim. The121 full-trajectory differences remain open. |
 | 5 | Saved-evidence applicability and terminal F01--F20 dispositions | Continue filter_gradient_terminal_source_review_20260928.md against the22-report index, actual source dependencies, implicit package imports and dynamic callbacks. Bind each finding to current callers, derivative roles and applicable measurements. Renew only affected scopes, including the changed Gaussian adapter. | Reviewable disposition for every in-scope finding, with adaptive iAPF and KDM explicitly deferred and mixed findings split by caller. Preserve missing GenUT hash fields and remaining-SVD receipt's absent direct run references. Current315-source/1457-exception guard is scoped evidence, not whole-repo closure. |
 | 6 | Integration and merge | After the above in-scope gates pass, fetch current remote changes, integrate on the repair branch, resolve conflicts and run affected checks before final review. | All remaining in-scope gates pass; no repo-wide iAPF/KDM compliance or canonical LEDH claim. Checkpoint commits/pushes remain authorized; main merge stays withheld. |
 
 Evidence to reuse in its qualified scope:
 
+- Stable principal angles04914--04922:80-digit accuracy and49 installed checks
+  per backend pass; exact saved fits preserve all non-angle fields/decisions.
+  Final163 checks pass. The strict full CPU/GPU record still differs in4534
+  leaves; see filter_gradient_principal_angle_stable_result_20260929.md.
 - Shared input execution04897--04913:112 live endpoint cases,40 actual ancestor
   witnesses, fixed fitted-APF siblings and164 final checks pass. FP64 records
   exact; FP32 max3.34e-6. Descriptive warm CPU3.797→2.370ms/GPU9.436→7.000ms;
@@ -64,8 +68,8 @@ Evidence to reuse in its qualified scope:
   bytes remain unchanged. Parent RSS growth0.410MiB CPU /0.559MiB GPU and reaped
   children support scoped process-exit containment, not general native eviction.
 - Final precision symmetrization and principal-angle SVD component repairs pass
-  their CPU/GPU gates. Strict full records, nearly aligned angle reporting and
-  matched uncontended costs remain separately open. See the September28 factor
+  their CPU/GPU gates. Nearly aligned angle reporting is repaired through04921; full records,
+  isotropic rank-cut reporting and matched uncontended costs remain open. See the September28 factor
   precision, principal-angle and DZ5 source-renewal results.
 
 Execution constraints: one numerical worker at a time; no subagents, HMC or

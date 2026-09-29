@@ -1663,6 +1663,23 @@ TEST_GROUPS['dz5_locator_sinking_readback_cpu'] = (
     'tests/test_filter_repair_dz5_locator_constant_sinking.py::test_saved_pass_intervention',
     'tests/test_filter_repair_locator_hlo_reader.py',
     'tests/test_filter_repair_locator_fusion_inspection.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'principal_angle_stable_probe_{device}': (
+    'tests/test_filter_repair_principal_angle_stable.py::test_stable_angle_candidate',)
+    for device in ('cpu', 'gpu')})
+for _angle_device in ('cpu', 'gpu'):
+    TEST_GROUPS[f'principal_angle_stable_runtime_{_angle_device}'] = (
+        'tests/test_filter_repair_principal_angle_stable_runtime.py::test_installed_angle_accuracy',
+        *TEST_GROUPS[f'principal_angle_regression_{_angle_device}'])
+    TEST_GROUPS[f'principal_angle_stable_fit_{_angle_device}'] = (
+        'tests/test_filter_repair_principal_angle_stable_runtime.py::test_complete_saved_fit',)
+TEST_GROUPS['principal_angle_stable_harness_cpu'] = (
+    'tests/test_filter_repair_principal_angle_stable_runtime.py::test_frozen_diagnostic_builder',
+    'tests/test_filter_repair_principal_angle_stable.py::test_saved_stable_candidate',
+    'tests/test_filter_repair_principal_angle_stable_runtime.py::test_saved_installed_evidence', *TEST_GROUPS['policy'])
+TEST_GROUPS['principal_angle_stable_terminal_cpu'] = (
+    'tests/test_filter_repair_principal_angle_stable_runtime.py::test_saved_installed_evidence', *TEST_GROUPS['policy'])
+TEST_GROUPS['principal_angle_stable_readback_cpu'] = (
+    'tests/test_filter_repair_principal_angle_stable.py::test_saved_stable_candidate', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'score_inputs_primitives_{dtype}_{device}': (
     f'tests/test_filter_repair_score_inputs.py::test_input_streams[{dtype}]',)
     for device in ('cpu', 'gpu') for dtype in ('float64', 'float32')})
@@ -2667,6 +2684,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('gaussian_binding_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('score_inputs_') and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('principal_angle_stable_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('fitted_apf_fixed_') and group.endswith('_gpu')},
     'iapf_controller_localization_gpu': 'GPU',
     'iapf_resolution_gpu': 'GPU',

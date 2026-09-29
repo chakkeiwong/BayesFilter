@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04913; active worker runs: none.
-Charged/reserved CPU 113622.617176s / GPU 98639.744440s.
-Remaining CPU 24.438162h / GPU 24.600071h.
+Through 04922; active worker runs: none.
+Charged/reserved CPU 113789.279415s / GPU 98827.503146s.
+Remaining CPU 24.391867h / GPU 24.547916h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_score_input_execution_20260929.md (closed); at most
-18 workers/5400 CPU/3600 GPU seconds.
-Used/reserved 17 workers/248.490935 CPU/365.218921 GPU seconds.
+Active allocation: docs/plans/filter_gradient_principal_angle_stable_20260929.md (closed); at most
+12 workers/2400 CPU/1800 GPU seconds.
+Used/reserved 9 workers/166.662239 CPU/187.758706 GPU seconds.
 One numerical worker at a time.
 
-Shared input execution qualifies through04913: CPU/GPU raw Philox words and uniforms exact, FP64 normals and complete endpoint records exact; FP32 normals max2.39e-7 and public records max3.34e-6. All112 live endpoint cases,40 actual ancestor witnesses, healthy frozen direction fixtures, invalidity and fixed fitted-APF sibling checks pass. Final164 evidence/policy checks pass;315 guarded sources/1457 unchanged exceptions. Gaussian twist descriptive warm screens improve3.797→2.370ms CPU /9.436→7.000ms GPU; sampled host RSS adds24.719/23.836MiB and GPU cold ratio1.307 remain acceptance findings. Adaptive iAPF and KDM remain deferred.
+Stable principal-angle repair qualifies through04921:80-digit fixture errors fall from3.12e-9 CPU/1.39e-10 GPU degrees to4.20e-12/3.84e-12.49 installed/regression checks pass per backend; exact saved fits preserve all non-angle fields, statuses and selected geometry. Every reported stability pair passes independent80-digit checks; final161 checks pass. Remaining CPU/GPU4534 leaves are57 selection/stability fields and4477 unselected-fit fields; eight remaining angles reflect different factor_2 matrices, not angle arithmetic. Same-process warm/cold costs remain descriptive and need matched attribution. Input execution repairbf022dd90 remains committed/pushed; adaptive iAPF/KDM deferred. Frozen diagnostic reconstruction and combined evidence/policy readback04922 pass163 checks; all9 workers pass. Runtime unchanged after full-fit qualification.
 
-Next: Continue fitted-geometry4539-leaf/status/angle classification, starting with a bounded stable principal-angle formulation against independent high-precision/frozen-input authorities. Preserve selected geometry and decisions, record invalid/unconverged fits explicitly, and do not relax numerical gates. Shared source applicability/F01–F20, replicated costs including new input-owner RSS/cold costs, native residency, DZ5 local arithmetic and integration remain open. Main remains unmerged.
+Next: Activate filter_gradient_remaining_factor_fit_20260929.md for unselected fits3/4/5 and isotropic rank-cut reporting using04919/04920 records and04921 classification. Diagnose actual matrix/optimizer-state differences; do not repeat the repaired small-angle SVD/acos intervention or call different fitted subspaces an angle defect. Keep selected geometry/status gates strict. Then continue applicable replicated costs/native residency (including new input and angle costs), source/F01–F20 dispositions and local DZ5 gradient lowering. Main remains unmerged.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance
@@ -36,8 +36,9 @@ are closed through04727; the broader F01–F20 dispositions remain open.
 Remaining work: nonlinear/other matched owner cost acceptance; native/compiler residency and uncontended GPU capacity; a new bounded
 mechanism for the streaming regression (the scalar-state candidate was rejected); actual public analytical-score
 coverage and current-source measurement applicability; DZ5 locator121 strict
-trajectory differences and unconverged optimizers;4539 fitted-geometry CPU/GPU
-differences and isotropic angles; remaining terminal dispositions and eventual
+trajectory differences and unconverged optimizers;4534 fitted-record CPU/GPU
+differences after the stable-angle repair, unselected optimizer/matrix differences
+and isotropic rank-cut reporting; remaining terminal dispositions and eventual
 integration/merge. Work order: filter_gradient_terminal_gap_queue_20260928.md.
 Reuse unchanged actual-DZ504618–04628/import04629–04630/index04631 evidence.
 
