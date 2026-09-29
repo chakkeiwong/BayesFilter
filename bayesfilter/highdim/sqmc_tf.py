@@ -7,7 +7,8 @@ All candidate-runtime operations stay in TensorFlow and are XLA compatible.
 from __future__ import annotations
 
 import tensorflow as tf
-import tensorflow_probability as tfp
+
+from bayesfilter.ops.halton_tf import randomized_halton
 
 Tensor = tf.Tensor
 HILBERT_IMPLEMENTATION_ID = "skilling_transpose_tf_lexicographic_int30_v2"
@@ -19,6 +20,9 @@ ENDPOINT_POLICY_ID = "dtype_nextafter_open_unit_interval_v1"
 
 def _seed(seed: int, salt: int) -> Tensor:
     modulus = 2_147_483_647
+    if tf.is_tensor(seed) or tf.is_tensor(salt):
+        return tf.cast(tf.stack([tf.math.floormod(tf.cast(seed, tf.int64), modulus),
+                                 tf.math.floormod(tf.cast(salt, tf.int64), modulus)]), tf.int32)
     return tf.constant([int(seed) % modulus, int(salt) % modulus], tf.int32)
 
 
@@ -186,9 +190,8 @@ def inverse_cdf_ancestor_indices(sorted_uniforms: Tensor, weights: Tensor) -> Te
     tf.debugging.assert_non_negative(weights)
     tf.debugging.assert_near(tf.reduce_sum(weights), tf.ones([], weights.dtype))
     cumulative = tf.cumsum(weights)
-    indices = tf.reduce_sum(
-        tf.cast(uniforms[:, None] >= cumulative[None, :], tf.int32), axis=1
-    )
+    # Binary search preserves right-open boundaries without an N-by-N array.
+    indices = tf.searchsorted(cumulative, uniforms, side="right", out_type=tf.int32)
     return tf.minimum(indices, tf.shape(weights)[0] - 1)
 
 
@@ -199,15 +202,13 @@ def randomized_halton_joint(
     seed: int,
     salt: int,
     dtype: tf.dtypes.DType = tf.float32,
+    ordinary_stream: bool = False,
 ) -> tuple[Tensor, Tensor, Tensor]:
     """Return raw joint points and rows sorted by their ancestor coordinate."""
 
-    joint = tfp.mcmc.sample_halton_sequence(
-        state_dimension + 1,
-        num_results=num_particles,
-        dtype=dtype,
-        randomized=True,
-        seed=_seed(seed, salt),
+    joint = randomized_halton(
+        num_particles, state_dimension + 1, _seed(seed, salt), dtype,
+        ordinary_stream=ordinary_stream,
     )
     joint = open_unit_interval(joint)
     row_order = tf.argsort(joint[:, 0], stable=True)
@@ -222,15 +223,13 @@ def randomized_halton_gaussian(
     seed: int,
     salt: int,
     dtype: tf.dtypes.DType = tf.float32,
+    ordinary_stream: bool = False,
 ) -> Tensor:
     """Return a randomized Halton cloud transformed to standard Gaussian."""
 
-    uniforms = tfp.mcmc.sample_halton_sequence(
-        dimension,
-        num_results=num_particles,
-        dtype=dtype,
-        randomized=True,
-        seed=_seed(seed, salt),
+    uniforms = randomized_halton(
+        num_particles, dimension, _seed(seed, salt), dtype,
+        ordinary_stream=ordinary_stream,
     )
     return tf.math.ndtri(open_unit_interval(uniforms))
 

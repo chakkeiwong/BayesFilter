@@ -1,0 +1,116 @@
+{
+  "command": [
+    "/tmp/sqmc_gpu_repair_probe.py"
+  ],
+  "git_commit": "f3995a06a467f16574f96bbc8a68ccbbc4e30dad",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": false,
+  "cuda_visible_devices": "1",
+  "tf_version": "2.20.0-dev0+selfbuilt",
+  "tf32": true,
+  "memory_policy": "memory_growth",
+  "physical_gpus": [
+    {
+      "name": "/physical_device:GPU:0",
+      "growth": true
+    }
+  ],
+  "plan": "docs/plans/sqmc-repair-master-program-20260925.md",
+  "seeds": [
+    82001,
+    82002
+  ],
+  "data_version": "shared_p44_predict_first_v2",
+  "diagnostic_only": true,
+  "controls": {
+    "reset_epsilon": 0.4,
+    "reset_sinkhorn_steps": 20,
+    "reset_balance_steps": 8,
+    "correction_steps": 1,
+    "correction_strength": 0.1,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.1,
+    "flow_substeps": 2
+  },
+  "framework_probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "allocator": {
+    "current": 132352,
+    "peak": 134323712
+  },
+  "exit_code": 0,
+  "wall_seconds": 69.17492008200497,
+  "results": [
+    {
+      "dtype": "float64",
+      "route": "iid_dual_cap",
+      "value_difference": 0.0,
+      "score_difference": 5.23691153334427e-16,
+      "score_scale": 1.6530711309885928,
+      "relative_tolerance": 1e-07,
+      "passed": true,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "wall_seconds": 13.7071317419759,
+      "value": -2.9916582048756672,
+      "score": [
+        -0.283027978590617,
+        -1.4676870170064804,
+        -0.7020221854040694,
+        -0.0748264575797247
+      ]
+    },
+    {
+      "dtype": "float64",
+      "route": "repaired_permutation_ablation",
+      "value_difference": 0.0,
+      "score_difference": 4.577566798522237e-16,
+      "score_scale": 1.6009434838211725,
+      "relative_tolerance": 1e-07,
+      "passed": true,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "wall_seconds": 16.62774979401729,
+      "value": -2.8359148150883167,
+      "score": [
+        -0.028658306105918435,
+        -1.313166331802069,
+        -0.9120153414527375,
+        -0.07759472828071606
+      ]
+    },
+    {
+      "dtype": "float32",
+      "route": "iid_dual_cap",
+      "value_difference": 8.58306884765625e-05,
+      "score_difference": 0.0003024503239430487,
+      "score_scale": 1.3497802019119263,
+      "relative_tolerance": 0.005,
+      "passed": true,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "wall_seconds": 18.37371119801537,
+      "value": -4.8621392250061035,
+      "score": [
+        1.2546472549438477,
+        -0.06855685263872147,
+        -0.18667715787887573,
+        0.4560556411743164
+      ]
+    },
+    {
+      "dtype": "float32",
+      "route": "repaired_permutation_ablation",
+      "value_difference": 2.288818359375e-05,
+      "score_difference": 9.280182712245733e-05,
+      "score_scale": 1.0,
+      "relative_tolerance": 0.005,
+      "passed": true,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "wall_seconds": 16.733128799009137,
+      "value": -5.301141738891602,
+      "score": [
+        0.23226222395896912,
+        0.01588892936706543,
+        0.08845555782318115,
+        0.47844603657722473
+      ]
+    }
+  ]
+}

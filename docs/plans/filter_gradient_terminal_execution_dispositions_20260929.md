@@ -130,3 +130,13 @@ F01 affected use, mixed F07/F08/F18/F19 coverage/resource obligations and incomi
 SQMC changes still require their terminal dispositions. Remote main023e10610
 adds SQMC numerical preparation outside the current guard; integrate and repair
 under filter_gradient_remote_integration_20260930.md before final compliance.
+
+The ledger now closes the bounded execution/API dispositions F12, F13, F15,
+F16, F17 and F20 using that qualification and explicitly unchanged witnesses;
+F14 remains closed in its earlier scope. These are not waiting for unrelated
+optimizer or method research. Core execution evidence is recorded for F02--F06
+and F10--F11 while their applicable complete-owner resource/caller decisions
+remain distinct. F09 is affected by the incoming SQMC integration. Mixed
+F07/F08/F18/F19 continue to exclude owner-deferred iAPF/KDM while keeping their
+shared-helper and memory/performance obligations. Reopen a scoped disposition
+when an actual changed numerical dependency invalidates its witness.

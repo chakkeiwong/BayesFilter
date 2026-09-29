@@ -610,10 +610,14 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
     Flow input: moment-matched Gaussian of the KSC log-chi-square mixture
     (derived constants); the observed quantity is h + 2*log_beta +
     mixture_noise, so H = [1] and the mixture mean enters the offset.
-    Equivalence gate: KSC value/score must match actual-SV up to the
-    theta-independent observation-transform Jacobian (constant value
-    offset, ZERO score difference).
+    The likelihood below retains all seven mixture components. Gaussian
+    moment matching is used only for the proposal flow. A transformation
+    Jacobian preserves scores within this density family; it does not make
+    the mixture exact for native SV or make a Gaussian Kalman filter an
+    exact mixture-likelihood oracle.
     """
+
+    import math
 
     theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
     weights = tf.constant(
@@ -656,7 +660,7 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
     # Observation: y_transformed = h + 2*log_beta + mixture noise.
     # log_beta = theta[1] contributes a THETA-DEPENDENT offset; for the
     # linear-H flow input the offset enters through observation_fn and its
-    # theta-derivative through the weight densities (score assembly).
+    # theta-derivative through both the flow and the weight densities.
     two_log_beta = 2.0 * theta_fixed[1]
 
     def observation_log_density_fn(theta, points, observation):
@@ -702,7 +706,7 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
         observation_jacobian_fn=lambda points: tf.ones(
             [tf.shape(points)[0], 1, 1], DTYPE
         ),
-        observation_tangent_fn=lambda points, d_points: d_points,
+        observation_tangent_fn=lambda points, d_points: d_points + 2.0 * _direction[0][1],
         process_covariance=tf.ones([1, 1], DTYPE),
         observation_covariance=mixture_var[None, None],
         observation_log_density_fn=observation_log_density_fn,

@@ -189,9 +189,10 @@ def _value_and_analytical_score_impl(
     score cells must use the production program (contract_e reset, and
     annealed mode where the scope's calibration says so).
 
-    Only annealed_stages=1 is implemented. Other values are rejected;
-    the value lane's annealed telescope and flow-prior cap are not wired
-    into this analytical recursion.
+    The annealed telescope supports positive stage counts using native tensor
+    control flow. Diagnostic traces and observation/post-reset overrides
+    remain restricted to one stage. The separate prepared-score factory also
+    retains its one-stage contract.
 
     Multi-parameter models call this per direction; the per-direction
     tangent callbacks close over the direction (same convention as the
@@ -224,12 +225,8 @@ def _value_and_analytical_score_impl(
     if post_reset_transform is not None and annealed_stages != 1:
         raise ValueError("a post-reset transform currently requires annealed_stages=1")
 
-    # Phase 1 while-loop conversion constraints (2026-09-14)
-    if annealed_stages != 1:
-        raise ValueError(
-            "Phase 1 while-loop conversion requires annealed_stages=1; "
-            "nested loop support deferred to future phase"
-        )
+    if not isinstance(annealed_stages, int) or annealed_stages < 1:
+        raise ValueError("annealed_stages must be a positive integer")
     horizon = int(observations.shape[0])
     dim = int(initial_states.shape[1])
     particle_count = int(initial_states.shape[0])
@@ -428,62 +425,110 @@ def _value_and_analytical_score_impl(
                 observation_record.update(result[2])
             return result[:2]
 
-        # annealed_stages > 1 removed by constraint
-        # S3: flow with per-particle predicted covariance AND its
-        # tangent (shared helper), then S4: weight assembly (the
-        # transition density tangent needs the total tangent of the
-        # transition mean AT the ancestor: d_anchors).
-        children, d_children, log_det, d_log_det = _flow_substeps_with_tangent(
-            model,
-            pre_flow,
-            d_pre_flow,
-            anchors,
-            d_anchors,
-            predicted_covs,
-            d_predicted_covs,
-            observation,
-            model.observation_covariance,
-            d_r,
-            r_inv,
-            d_r_inv,
-            substeps=flow_substeps,
-            eye=eye,
-        )
-        transition_log, d_transition_log = _transition_density(
-            children, d_children, anchors, d_anchors
-        )
-        observation_log, d_observation_log = _observation_density(
-            children, d_children
-        )
-        proposal_log, d_proposal_log = _transition_density(
-            pre_flow, d_pre_flow, anchors, d_anchors
-        )
-        weights_log = step_incoming_log_weights
-        prior_observation_logits = (
-            weights_log + transition_log + log_det - proposal_log
-        )
-        d_prior_observation_logits = (
-            d_step_incoming_log_weights
-            + d_transition_log
-            + d_log_det
-            - d_proposal_log
-        )
-        prior_observation_normalizer = tf.reduce_logsumexp(prior_observation_logits)
-        prior_observation_weights = tf.exp(
-            prior_observation_logits - prior_observation_normalizer
-        )
-        d_prior_observation_normalizer = tf.reduce_sum(
-            prior_observation_weights * d_prior_observation_logits
-        )
-        d_prior_observation_weights = prior_observation_weights * (
-            d_prior_observation_logits - d_prior_observation_normalizer
-        )
-        logits = prior_observation_logits + observation_log
-        d_logits = d_prior_observation_logits + d_observation_log
-        increment = tf.reduce_logsumexp(logits)
-        softmax = tf.exp(logits - increment)
-        total = total + increment
-        d_total = d_total + tf.reduce_sum(softmax * d_logits)
+        if annealed_stages > 1:
+            # Tempered importance telescope, with realized resampling indices
+            # held fixed in the analytical derivative. At stage j the target
+            # factor is transition(x|anchor)*observation(x)**(j/K).
+            # The first stage retains incoming weights; resampling makes all
+            # subsequent stages uniform. Every particle-associated moment and
+            # tangent follows exactly the same indices.
+            k_f = tf.cast(annealed_stages, dtype)
+            def stage_body(j, current, d_current, stage_anchors, d_stage_anchors,
+                           stage_pm, d_stage_pm, stage_pc, d_stage_pc,
+                           log_weights, d_log_weights, stage_total, d_stage_total):
+                prev_trans, d_prev_trans = _transition_density(current, d_current, stage_anchors, d_stage_anchors)
+                prev_obs, d_prev_obs = _observation_density(current, d_current)
+                moved, d_moved, stage_log_det, d_stage_log_det = _flow_substeps_with_tangent(
+                    model, current, d_current, stage_anchors, d_stage_anchors,
+                    stage_pc / k_f, d_stage_pc / k_f, observation,
+                    model.observation_covariance * k_f,
+                    None if d_r is None else d_r * k_f,
+                    r_inv / k_f, None if d_r_inv is None else d_r_inv / k_f,
+                    substeps=flow_substeps, eye=eye)
+                new_trans, d_new_trans = _transition_density(moved, d_moved, stage_anchors, d_stage_anchors)
+                new_obs, d_new_obs = _observation_density(moved, d_moved)
+                fraction, previous = tf.cast(j + 1, dtype) / k_f, tf.cast(j, dtype) / k_f
+                stage_logits = log_weights + new_trans + fraction * new_obs + stage_log_det - prev_trans - previous * prev_obs
+                d_stage_logits = d_log_weights + d_new_trans + fraction * d_new_obs + d_stage_log_det - d_prev_trans - previous * d_prev_obs
+                stage_norm = tf.reduce_logsumexp(stage_logits)
+                stage_soft = tf.exp(stage_logits - stage_norm)
+                stage_total += stage_norm
+                d_stage_total += tf.reduce_sum(stage_soft * d_stage_logits)
+                offset = tf.random.stateless_uniform([], seed=tf.stack([
+                    tf.cast(annealed_seed, tf.int32), t * annealed_stages + j + 1]), dtype=dtype)
+                positions = (offset + tf.cast(tf.range(count), dtype)) / tf.cast(count, dtype)
+                idx = tf.minimum(tf.searchsorted(tf.cumsum(stage_soft), positions, side='right'), count - 1)
+                # Resampling preserves N. The dynamic range/searchsorted shape
+                # otherwise erases that fact inside the nested traced loop.
+                idx = tf.ensure_shape(idx, [particle_count])
+                return (j + 1, tf.gather(moved, idx), tf.gather(d_moved, idx),
+                        tf.gather(stage_anchors, idx), tf.gather(d_stage_anchors, idx),
+                        tf.gather(stage_pm, idx), tf.gather(d_stage_pm, idx),
+                        tf.gather(stage_pc, idx), tf.gather(d_stage_pc, idx),
+                        uniform_log_weights, tf.zeros_like(uniform_log_weights), stage_total, d_stage_total)
+            (_, children, d_children, _, _, predicted_means, d_predicted_means,
+             predicted_covs, d_predicted_covs, logits, d_logits, total, d_total) = tf.while_loop(
+                lambda j, *_: j < annealed_stages, stage_body,
+                (0, pre_flow, d_pre_flow, anchors, d_anchors, predicted_means, d_predicted_means,
+                 predicted_covs, d_predicted_covs, step_incoming_log_weights,
+                 d_step_incoming_log_weights, total, d_total))
+            softmax = tf.exp(uniform_log_weights)
+        else:
+            # S3: flow with per-particle predicted covariance AND its
+            # tangent (shared helper), then S4: weight assembly (the
+            # transition density tangent needs the total tangent of the
+            # transition mean AT the ancestor: d_anchors).
+            children, d_children, log_det, d_log_det = _flow_substeps_with_tangent(
+                model,
+                pre_flow,
+                d_pre_flow,
+                anchors,
+                d_anchors,
+                predicted_covs,
+                d_predicted_covs,
+                observation,
+                model.observation_covariance,
+                d_r,
+                r_inv,
+                d_r_inv,
+                substeps=flow_substeps,
+                eye=eye,
+            )
+            transition_log, d_transition_log = _transition_density(
+                children, d_children, anchors, d_anchors
+            )
+            observation_log, d_observation_log = _observation_density(
+                children, d_children
+            )
+            proposal_log, d_proposal_log = _transition_density(
+                pre_flow, d_pre_flow, anchors, d_anchors
+            )
+            weights_log = step_incoming_log_weights
+            prior_observation_logits = (
+                weights_log + transition_log + log_det - proposal_log
+            )
+            d_prior_observation_logits = (
+                d_step_incoming_log_weights
+                + d_transition_log
+                + d_log_det
+                - d_proposal_log
+            )
+            prior_observation_normalizer = tf.reduce_logsumexp(prior_observation_logits)
+            prior_observation_weights = tf.exp(
+                prior_observation_logits - prior_observation_normalizer
+            )
+            d_prior_observation_normalizer = tf.reduce_sum(
+                prior_observation_weights * d_prior_observation_logits
+            )
+            d_prior_observation_weights = prior_observation_weights * (
+                d_prior_observation_logits - d_prior_observation_normalizer
+            )
+            logits = prior_observation_logits + observation_log
+            d_logits = d_prior_observation_logits + d_observation_log
+            increment = tf.reduce_logsumexp(logits)
+            softmax = tf.exp(logits - increment)
+            total = total + increment
+            d_total = d_total + tf.reduce_sum(softmax * d_logits)
 
         # S5: UKF update with chained tangent -> next step's covariances
         (

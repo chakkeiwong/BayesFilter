@@ -1,4 +1,12 @@
-# SQMC campaign reset memo — updated 2026-09-24
+# SQMC reset entry point — 2026-09-28 Hong Kong
+
+The active checkpoint has moved to [the short SQMC checkpoint](sqmc-development-checkpoint-20260928.md).
+Read [the detailed reset memo](sqmc-development-handoff-20260928.md) for the current program, evidence, unresolved problems and continuation steps.
+The [fresh-agent prompt](sqmc-new-agent-prompt-20260928.md) describes the new-session workspace and budget renewal.
+
+The expanded ladder is not complete. The old active checkpoint is preserved [in the handoff evidence](../plans/artifacts/sqmc-handoff-20260928/previous-active-checkpoint.md). The historical integration record below is archival, not the active task.
+
+# Historical SQMC campaign reset memo — updated 2026-09-24
 
 ## Current task and scope
 

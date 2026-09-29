@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05169; active worker runs: none.
-Charged/reserved CPU 116038.552535s / GPU 102156.154691s.
-Remaining CPU 23.767069h / GPU 23.623290h.
+Through 05202; active worker runs: none.
+Charged/reserved CPU 116448.721167s / GPU 102588.776936s.
+Remaining CPU 23.653133h / GPU 23.503118h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_core_execution_closure_20260929.md (completed); at most
-48 workers/6000 CPU/6000 GPU seconds.
-Used/reserved 31 workers/949.931654 CPU/1529.984234 GPU seconds.
+Active allocation: docs/plans/filter_gradient_remote_integration_20260930.md (complete); at most
+40 workers/6000 CPU/6000 GPU seconds.
+Used/reserved 33 workers/410.168632 CPU/432.622244 GPU seconds.
 One numerical worker at a time.
 
-Core qualification completed through05169:170 CPU and170 corresponding GPU checks, one actual default FP64 GPU/XLA factory,14 CPU pool/import checks and162 terminal checks pass. Failed05150/05151/05160 are preserved with exact baseline attribution and fixture repairs; no runtime numerical source or tolerance changed. See filter_gradient_core_execution_result_20260930.md.
+Remote integration is qualified through05202: final161 readback/policy checks pass; 96 live-input,32 live-endpoint and56 Halton boundary context cases retained. Original eager GPU pow digit defect independently attributed05200; all nine failed workers preserved. Scoped execution repairs and incoming corrections are complete. Main remains withheld for resource/terminal obligations.
 
-Next: Archive and commit core05139--05169, integrate remote main on the repair branch, repair and qualify incoming SQMC execution violations under the prepared integration plan, then activate bounded resource acceptance. Main merge remains withheld.
+Next: Archive and commit/push the completed repair-branch merge, then activate bounded resource acceptance for fixed fitted-APF/input owners, remaining-SVD/guard composition, streaming and new SQMC preparation. Finish affected-use/F01--F20 dispositions before main merge.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
@@ -48,7 +48,7 @@ canonical LEDH rebuild are not blanket rewrite requirements.
 
 Remaining work: current-call-path and F01–F20 dispositions, affected numerical
 regression/error checks, applicable matched memory/runtime and bounded capacity
-acceptance, then remote integration and affected tests before main merge.
+acceptance, then final affected tests before main merge; remote integration closes through05202.
 Streaming CPU ratios1.08239/1.09678 have95% upper bounds1.11687/1.15608 above1.10;
 that finding remains unaccepted. Include fixed fitted-APF, input preparation,
 remaining-SVD and angle/subspace-guard cost triggers. Compiler residency needs
@@ -58,10 +58,11 @@ that TensorFlow releases all native allocations. No zero-overhead claim follows.
 Reuse unchanged qualified evidence: Gaussian through04782, nonlinear through
 04821, input preparation through04913, factor/angle/subspace through04935,
 GenUT wiring through04939 and actual-DZ504618–04628/import04629–04630/index04631.
-Keep each source/data/dtype/device scope explicit. F14's identified pfor sites
-are closed through04727;19 broad findings await terminal dispositions, which is
-not a count of19 known unfixed bugs. The317-source/1465-exception guard is scoped
-coverage, not a repository-wide compliance claim.
+Keep each source/data/dtype/device scope explicit. F12--F17 and F20 have closed
+scoped execution/API dispositions (including earlier F14 through04727). The13
+remaining broad findings include resource/applicability decisions, not13 known
+unfixed bugs. Incoming SQMC coverage is326 sources/1505 exact exceptions; the
+static guard is scoped coverage, not a repository-wide compliance claim.
 
 GPU0 is remote desktop, GPU1 display. Recheck GPU2/3 availability before use;
 shared numerical checks do not establish uncontended costs/capacity. GPU growth

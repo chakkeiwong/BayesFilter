@@ -109,14 +109,10 @@ def _transition_ancestors(
     ancestry_permutation_valid = tf.reduce_all(
         tf.equal(sorted_identities, expected_identities)
     )
-    ancestry_unique_count = tf.reduce_sum(
-        tf.cast(
-            tf.reduce_any(
-                tf.equal(expected_identities[:, None], selected_identities[None, :]),
-                axis=1,
-            ),
-            tf.int32,
-        )
+    # The sorted identities already exist for permutation validation. Counting
+    # their runs uses linear memory instead of an N-by-N equality matrix.
+    ancestry_unique_count = 1 + tf.reduce_sum(
+        tf.cast(sorted_identities[1:] != sorted_identities[:-1], tf.int32)
     )
     if ancestry_policy in (
         "hilbert_systematic_equal_weight",

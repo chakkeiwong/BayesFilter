@@ -1666,6 +1666,62 @@ TEST_GROUPS['core_execution_tt_scalar_operands_gpu'] = (
     'tests/test_filter_repair_scalar_tt.py::test_date_graph_is_bounded_and_longer_score_matches_baseline',)
 TEST_GROUPS['core_execution_terminal_cpu'] = (
     'tests/test_filter_repair_core_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'remote_integration_inputs_{device}': (
+    'tests/test_filter_repair_sqmc_inputs.py::test_original_live_clouds',
+    'tests/test_filter_repair_sqmc_inputs.py::test_input_invalid_contract',
+    'tests/test_filter_repair_sqmc_inputs.py::test_original_halton_seed_coercions',)
+    for device in ('cpu', 'gpu')})
+_REMOTE_INTEGRATION_GROUPS = {
+    'endpoints': ('tests/test_filter_repair_sqmc_endpoints.py',),
+    'callbacks': ('tests/highdim/test_sqmc_full_lgssm.py',),
+    'campaign': ('tests/highdim/test_sqmc_campaign_repairs.py',),
+    'expanded': ('tests/highdim/test_sqmc_expanded_execution.py',),
+    'annealed': (
+        'tests/highdim/test_ledh_canonical_score_full.py::test_annealed_telescope_score_matches_oracle',
+        'tests/highdim/test_ledh_canonical_score_full.py::test_annealed_telescope_with_reset_score_matches_oracle',
+        'tests/highdim/test_ledh_canonical_score_full.py::test_annealed_with_full_production_program_matches_oracle',
+        'tests/test_filter_repair_ledh_score_native.py',),
+    'ordering': ('tests/highdim/test_sqmc_primitives_tf.py', 'tests/highdim/test_sqmc_tuning_scope.py',),
+}
+TEST_GROUPS.update({f'remote_integration_{name}_{device}': tests
+    for name, tests in _REMOTE_INTEGRATION_GROUPS.items() for device in ('cpu', 'gpu')})
+TEST_GROUPS['remote_integration_reference_cpu'] = (
+    'tests/highdim/test_sqmc_ksc.py', 'tests/highdim/test_sqmc_ksc_gaussian_sum.py',)
+TEST_GROUPS['remote_integration_control_cpu'] = (
+    'tests/highdim/test_sqmc_expanded_control.py', 'tests/highdim/test_sqmc_expanded_repair.py',
+    'tests/highdim/test_sqmc_historical_reporting.py',)
+TEST_GROUPS['remote_integration_policy_cpu'] = TEST_GROUPS['policy']
+TEST_GROUPS['remote_integration_annealed_shape_cpu'] = (
+    'tests/test_filter_repair_sqmc_endpoints.py::test_annealed_actual_enclosing_xla_and_refusals',)
+TEST_GROUPS.update({f'remote_integration_trace_defaults_{device}': (
+    'tests/test_filter_repair_sqmc_inputs.py::test_diagonal_default_preparation',
+    'tests/test_filter_repair_sqmc_endpoints.py::test_trace_summary_preserves_nomination',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS['remote_integration_campaign_retry_cpu'] = (
+    'tests/highdim/test_sqmc_campaign_repairs.py::test_parameter_callbacks_match_independent_finite_difference[diagonal_ar-3]',
+    'tests/highdim/test_sqmc_campaign_repairs.py::test_parameter_callbacks_match_independent_finite_difference[diagonal_ar-10]',
+    'tests/highdim/test_sqmc_campaign_repairs.py::test_full_finite_program_score_all_directions[diagonal_ar-3]',
+    'tests/highdim/test_sqmc_campaign_repairs.py::test_full_finite_program_score_all_directions[diagonal_ar-10]',
+    'tests/highdim/test_sqmc_campaign_repairs.py::test_every_campaign_endpoint_calls_shared_evaluator[run_sqmc_dimension_transfer_t20.py]',
+    'tests/highdim/test_sqmc_campaign_repairs.py::test_every_campaign_endpoint_calls_shared_evaluator[run_sqmc_horizon_transfer.py]',
+    'tests/highdim/test_sqmc_campaign_repairs.py::test_every_campaign_endpoint_calls_shared_evaluator[run_sqmc_10d_t120_tuned.py]',
+    'tests/highdim/test_sqmc_campaign_repairs.py::test_nonfinite_oracle_stops_comparison',)
+TEST_GROUPS['remote_integration_trace_static_cpu'] = (
+    'tests/test_filter_repair_sqmc_endpoints.py::test_trace_summary_preserves_nomination[2-False]',)
+TEST_GROUPS['remote_integration_ordering_retry_gpu'] = (
+    'tests/highdim/test_sqmc_primitives_tf.py::test_primitives_jit_compile_on_selected_device',
+    'tests/highdim/test_sqmc_primitives_tf.py::test_arbitrary_dimension_hilbert_jit_compiles_on_selected_device',)
+TEST_GROUPS['remote_integration_readback_cpu'] = ('tests/test_filter_repair_sqmc_readback.py',)
+TEST_GROUPS['remote_integration_terminal_cpu'] = (
+    'tests/test_filter_repair_sqmc_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['remote_integration_halton_attribution_gpu'] = (
+    'tests/test_filter_repair_sqmc_inputs.py::test_halton_gpu_radix_digit_attribution',)
+TEST_GROUPS.update({f'remote_integration_halton_boundaries_{device}': (
+    'tests/test_filter_repair_sqmc_inputs.py::test_halton_digit_boundaries_and_campaign_sizes',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'remote_integration_preparation_{device}': (
+    'tests/test_filter_repair_sqmc_inputs.py::test_full_matrix_preparation_preserves_coordinates',)
+    for device in ('cpu', 'gpu')})
 TEST_GROUPS.update({f'ssl_lstm_replay_cost_{mode}_{arm}_t{horizon}_{device}': (
     f'tests/test_filter_repair_ssl_lstm_replay_cost.py::test_complete_owner_cost[{mode}-{arm}-{horizon}]',)
     for mode in ('default', 'graph', 'xla') for arm in ('before', 'after')
@@ -2791,6 +2847,30 @@ TEST_BATCHES['core_execution_finish'] = (
     'core_execution_sgqf_gpu', 'core_execution_streaming_mask_gpu',
     'core_execution_pool_cpu', 'core_execution_imports_cpu', 'core_execution_terminal_cpu',
 )
+TEST_BATCHES['remote_integration'] = (
+    'remote_integration_inputs_cpu', 'remote_integration_inputs_gpu',
+    'remote_integration_endpoints_cpu', 'remote_integration_endpoints_gpu',
+    'remote_integration_callbacks_cpu', 'remote_integration_campaign_cpu',
+    'remote_integration_expanded_cpu', 'remote_integration_annealed_cpu',
+    'remote_integration_reference_cpu', 'remote_integration_ordering_cpu',
+    'remote_integration_ordering_gpu', 'remote_integration_control_cpu',
+    'remote_integration_policy_cpu',
+)
+TEST_BATCHES['remote_integration_remaining'] = (
+    'remote_integration_annealed_shape_cpu', 'remote_integration_endpoints_gpu',
+    *TEST_BATCHES['remote_integration'][4:],
+)
+TEST_BATCHES['remote_integration_tail'] = (
+    'remote_integration_trace_defaults_cpu', 'remote_integration_trace_defaults_gpu',
+    'remote_integration_campaign_retry_cpu', *TEST_BATCHES['remote_integration'][6:],
+)
+TEST_BATCHES['remote_integration_finish'] = (
+    'remote_integration_trace_static_cpu', *TEST_BATCHES['remote_integration_tail'][1:],
+)
+TEST_BATCHES['remote_integration_last'] = (
+    'remote_integration_ordering_retry_gpu', 'remote_integration_control_cpu',
+    'remote_integration_policy_cpu',
+)
 
 
 def mandatory_test_groups():
@@ -2805,6 +2885,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('core_execution_') and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('remote_integration_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ssl_lstm_replay_') and group.endswith('_gpu')},
     'genut_consumer_live_gpu': 'GPU',
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('subspace_identifiability_') and group.endswith('_gpu')},
