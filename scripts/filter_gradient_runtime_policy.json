@@ -1,6 +1,6 @@
 {
   "schema": "filter_gradient_runtime_policy.v1",
-  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance. September29 remaining-pfor scope: all pfor/implicit-pfor calls in the scalar transport adapter are guarded; Python iteration coverage there is limited to its two touched coordinate/logdet methods. The named independent SIR reference retains its diagnostic NumPy/host-loop role while all pfor calls remain guarded. Contract E streaming is guarded in full. September29 runner coverage adds pfor/implicit-pfor inspection over17 runner/benchmark files only; other execution/NumPy/default and consumer-admission gates remain in the master. No new exception is granted. September29 score-study coverage adds the Gaussian consumer and six helper/factory scopes. Six exact configuration/output-schema exceptions are reviewed; no numerical Python-loop allowance is added. Other score-study providers and consumers remain outside this bounded closure. September29 nonlinear continuation covers the real endpoint and its direction/moment/LEDH factories, with six exact configuration/reference-validation exceptions; no filter/gradient numerical loop is allowlisted.",
+  "scope_note": "Reviewed subset of filtering/gradient F01-F20 scope; uncovered routes remain open in the campaign ledger. Inference helpers cover NumPy/identity and selected kernels, not whole optimizers. Listed mixed filtering modules have exact reference and host-boundary dispositions. Passing this guard alone is not repository-wide compliance. September29 remaining-pfor scope: all pfor/implicit-pfor calls in the scalar transport adapter are guarded; Python iteration coverage there is limited to its two touched coordinate/logdet methods. The named independent SIR reference retains its diagnostic NumPy/host-loop role while all pfor calls remain guarded. Contract E streaming is guarded in full. September29 runner coverage adds pfor/implicit-pfor inspection over17 runner/benchmark files only; other execution/NumPy/default and consumer-admission gates remain in the master. No new exception is granted. September29 score-study coverage adds the Gaussian consumer and six helper/factory scopes. Six exact configuration/output-schema exceptions are reviewed; no numerical Python-loop allowance is added. Other score-study providers and consumers remain outside this bounded closure. September29 nonlinear continuation covers the real endpoint and its direction/moment/LEDH factories, with six exact configuration/reference-validation exceptions; no filter/gradient numerical loop is allowlisted. September29 fixed SSL-LSTM replay is guarded in full and its Phase6 artifact consumer is guarded at _candidate_row. Eight exact schema/reporting allowances include the existing debug artifact flag; no numerical loop or NumPy exception is added.",
   "sources": {
     "bayesfilter/adapters/__init__.py": null,
     "bayesfilter/ops/accurate_svd_tf.py": null,
@@ -690,7 +690,11 @@
     "bayesfilter/score_study/fitted_twist_execution_tf.py": null,
     "bayesfilter/score_study/iapf_controller_tf.py": null,
     "bayesfilter/score_study/gaussian_execution_tf.py": null,
-    "bayesfilter/score_study/input_execution_tf.py": null
+    "bayesfilter/score_study/input_execution_tf.py": null,
+    "bayesfilter/nonlinear/ssl_lstm_zhaocui_fixed_adapter.py": null,
+    "docs/benchmarks/benchmark_ssl_lstm_filter_hmc_phase6.py": [
+      "_candidate_row"
+    ]
   },
   "exceptions": [
     {
@@ -13851,6 +13855,70 @@
       "ast_sha256": "404116565750a62da48c26a8d3e794c0d992d2a20724b2003637faf895b5b0e2",
       "role": "host_reporting",
       "reason": "Format already completed tensor histories as ordinary host records."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_zhaocui_fixed_adapter.py",
+      "function": "",
+      "kind": "python_iteration",
+      "ast_sha256": "9fff62d45ba2abb487d9d89a36247bee7f1c96f231aec69233fc7343134d61db",
+      "role": "fixed_schema",
+      "reason": "Enumerate dataclass tensor field names at import time; no tensor values or numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_zhaocui_fixed_adapter.py",
+      "function": "SSLLSTMZhaoCuiFixedManifest.as_dict",
+      "kind": "python_iteration",
+      "ast_sha256": "388f2601ebd055e1666953232f3999ead164744df409c1361f72a39fc8ac5668",
+      "role": "fixed_schema",
+      "reason": "Serialize the two fixed seed words as ordinary integer metadata; no draw generation or numerical iteration."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_zhaocui_fixed_adapter.py",
+      "function": "SSLLSTMZhaoCuiFixedManifest.as_dict",
+      "kind": "python_iteration",
+      "ast_sha256": "2ab210872df9777ddff378eebb793270c8121273112129d4df5a63dc07437610",
+      "role": "fixed_schema",
+      "reason": "Serialize the two fixed seed words as ordinary integer metadata; no draw generation or numerical iteration."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_zhaocui_fixed_adapter.py",
+      "function": "_fixed_replay_program.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "2cc9f43c24bc921d583726c7ee73e6d4b349aa5bf22340f0a0aacd5d7a1702b3",
+      "role": "fixed_schema",
+      "reason": "Pack the fixed result/diagnostic/parameter tensor fields without numerical operations; the observation recurrence is tf.while_loop."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_zhaocui_fixed_adapter.py",
+      "function": "_fixed_replay_program.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "af18d8b974b4ffc0474ae01f3de32b88791fb3ec71e5f986c881bdec16beeeb6",
+      "role": "fixed_schema",
+      "reason": "Pack the fixed result/diagnostic/parameter tensor fields without numerical operations; the observation recurrence is tf.while_loop."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_zhaocui_fixed_adapter.py",
+      "function": "_fixed_replay_program.evaluate",
+      "kind": "python_iteration",
+      "ast_sha256": "3cade9a8a474898fa0bb787d4269208bfb71707ab5c90521822967906d7d656b",
+      "role": "fixed_schema",
+      "reason": "Pack the fixed result/diagnostic/parameter tensor fields without numerical operations; the observation recurrence is tf.while_loop."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_zhaocui_fixed_adapter.py",
+      "function": "build_ssl_lstm_zhaocui_fixed_value_score_artifact",
+      "kind": "default_jit_disabled",
+      "ast_sha256": "b56af8bcf6acb49f8d474f8544a59693063256d5af68fad4040bbb3acbf01d43",
+      "role": "host_reporting",
+      "reason": "Existing debug-reference artifact metadata and completed score serialization; this option does not select the numerical runtime, whose public default is XLA."
+    },
+    {
+      "path": "bayesfilter/nonlinear/ssl_lstm_zhaocui_fixed_adapter.py",
+      "function": "build_ssl_lstm_zhaocui_fixed_value_score_artifact",
+      "kind": "python_iteration",
+      "ast_sha256": "66aac40ac272752fe0c304c4dc128e10c801de974be6d8e167b3c309b8fcead7",
+      "role": "host_reporting",
+      "reason": "Existing debug-reference artifact metadata and completed score serialization; this option does not select the numerical runtime, whose public default is XLA."
     }
   ]
 }

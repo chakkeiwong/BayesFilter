@@ -1,7 +1,7 @@
 # Remaining master-program repair queue
 
-Current through04939 on repair/filter-gradient-xla-validation-20260918.
-No numerical worker is active. Remaining budget24.254115 CPU /24.347166 GPU
+Current through05059 on repair/filter-gradient-xla-validation-20260918.
+No numerical worker is active. Remaining budget24.108318 CPU /24.162158 GPU
 process-hours within the unchanged56/52-hour cap. Main remains unmerged.
 The concise checkpoint and structured ledger control current execution;
 Git history and linked result files preserve previous queue versions.
@@ -59,6 +59,17 @@ The reduced primal's current bytes match the saved corrected gradient/cost cohor
 Declared live CPU/GPU value and analytical-score wiring qualifies through04939:
 the optional reduced branch and shared analytical correction use different
 authorities. Preserve the reduced precision/cap failures and other caller gaps.
+
+Current source dispositions are in
+filter_gradient_terminal_execution_dispositions_20260929.md. Inventory04940
+found the missed fixed SSL-LSTM replay boundary; its native/XLA repair and
+preserved RNG/manifest compatibility pass17 tests per backend.72 renewed cost
+workers and independent readback pass;2000-call reuse is stable in the measured
+scope. See filter_gradient_ssl_lstm_replay_result_20260929.md. Its GPU T8
+already-XLA warm ratio1.235 remains a focused resource follow-up; a conditional-
+split intervention is next. Public-default speedups do not waive this result.
+Guard coverage is now317 sources/1465 exact exceptions. Broad F01--F20 rows
+still require current caller/evidence dispositions; no main merge follows.
 
 | Order | Remaining gap | Next action | Exit gate |
 |---|---|---|---|

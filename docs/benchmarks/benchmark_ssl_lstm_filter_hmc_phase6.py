@@ -512,17 +512,23 @@ def _candidate_row(
             ),
         )
     else:
+        execution = score_result.diagnostics.get("execution", {})
+        actual_jit = execution.get("jit_compile")
+        if not isinstance(actual_jit, bool):
+            raise ValueError("fixed replay result is missing its execution status")
+        if not actual_jit:
+            status = "debug_reference"
         artifact = artifact_builder(
             protocol=protocol,
             manifest=manifest,
             log_likelihood=score_result.log_likelihood,
             score=score_result.score,
             finite_difference_max_abs_error=float(fd_error),
-            artifact_role="target",
-            compile_mode="xla",
-            jit_compile=True,
-            device="/CPU:0",
-            tf32_enabled=False,
+            artifact_role="target" if actual_jit else "debug_reference",
+            compile_mode="xla" if actual_jit else "graph",
+            jit_compile=actual_jit,
+            device=score_result.log_likelihood.device,
+            tf32_enabled=tf.config.experimental.tensor_float_32_execution_enabled(),
         )
     artifact["target_scope_provenance"] = target_scope_provenance
     validate_ssl_lstm_value_score_artifact(artifact, protocol=protocol)
@@ -730,6 +736,7 @@ def build_result(args: argparse.Namespace) -> dict[str, Any]:
         config,
         evidence_path=PLAN_PATH,
         manifest=zhaocui_manifest,
+        jit_compile=bool(args.jit_compile),
     )
     zhaocui_full_result, _ = tf_ssl_lstm_zhaocui_fixed_score(
         observations,
@@ -737,6 +744,7 @@ def build_result(args: argparse.Namespace) -> dict[str, Any]:
         config,
         evidence_path=PLAN_PATH,
         manifest=zhaocui_manifest,
+        jit_compile=bool(args.jit_compile),
     )
     zhaocui_decoded = tf.convert_to_tensor(
         zhaocui_result.filtered_means,

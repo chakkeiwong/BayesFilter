@@ -1610,6 +1610,27 @@ TEST_GROUPS = {
 }
 TEST_GROUPS['dz5_locator_final_readback_and_policy_cpu'] = (
     'tests/test_filter_repair_dz5_locator_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'ssl_lstm_replay_qualification_{device}': (
+    'tests/test_filter_repair_ssl_lstm_replay.py',
+    'tests/test_ssl_lstm_zhaocui_fixed_adapter.py',
+    'tests/test_ssl_lstm_matrix_free_derivatives_tf.py::test_fixed_replay_score_matches_dense_local_products',
+) for device in ('cpu', 'gpu')})
+TEST_GROUPS['ssl_lstm_replay_policy_cpu'] = (
+    'tests/test_filter_repair_ssl_lstm_replay_cost_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'ssl_lstm_replay_lifetime_{device}': (
+    'tests/test_filter_repair_ssl_lstm_replay_lifetime.py',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS['ssl_lstm_replay_benchmark_cpu'] = (
+    'tests/test_filter_repair_ssl_lstm_replay.py::test_actual_benchmark_reports_executed_mode',)
+TEST_GROUPS['ssl_lstm_replay_manifest_cpu'] = (
+    'tests/test_filter_repair_ssl_lstm_replay.py::test_original_manifest_coercions_and_metadata',)
+TEST_GROUPS.update({f'ssl_lstm_replay_cost_{mode}_{arm}_t{horizon}_{device}': (
+    f'tests/test_filter_repair_ssl_lstm_replay_cost.py::test_complete_owner_cost[{mode}-{arm}-{horizon}]',)
+    for mode in ('default', 'graph', 'xla') for arm in ('before', 'after')
+    for horizon in (2, 8) for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'ssl_lstm_replay_readback_{device}_cpu': (
+    f'tests/test_filter_repair_ssl_lstm_replay_cost_readback.py::test_saved_complete_owner_costs[{device.upper()}]',)
+    for device in ('cpu', 'gpu')})
 TEST_GROUPS['dz5_locator_boundary_readback_cpu'] = (
     'tests/test_filter_repair_dz5_callback_boundary.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['dz5_exact_fit_readback_cpu'] = (
@@ -2703,6 +2724,16 @@ TEST_BATCHES.update({f"ledh_flow_cost_{device}": tuple(
     for device in ("cpu", "gpu")})
 
 
+TEST_BATCHES.update({f'ssl_lstm_replay_cost_{device}': tuple(
+    f'ssl_lstm_replay_cost_{mode}_{arm}_t{horizon}_{device}'
+    for horizon in (2, 8) for mode in ('default', 'graph', 'xla')
+    for arm in ('before', 'after')) for device in ('cpu', 'gpu')})
+TEST_BATCHES.update({f'ssl_lstm_replay_cost_reverse_{device}': tuple(
+    f'ssl_lstm_replay_cost_{mode}_{arm}_t{horizon}_{device}'
+    for horizon in (2, 8) for mode in ('default', 'graph', 'xla')
+    for arm in ('after', 'before')) for device in ('cpu', 'gpu')})
+
+
 def mandatory_test_groups():
     for historical, original in ORIGINAL_AUTHORITY_REPLACEMENTS.items():
         if historical in TEST_GROUPS and (original not in TEST_GROUPS or original in EXPLANATORY_TEST_GROUPS):
@@ -2714,6 +2745,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ssl_lstm_replay_') and group.endswith('_gpu')},
     'genut_consumer_live_gpu': 'GPU',
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('subspace_identifiability_') and group.endswith('_gpu')},
     'remaining_factor_observation_gpu': 'GPU',
@@ -3086,6 +3118,8 @@ def require_unshared_cost_preflight(args):
                                    if group.startswith("posterior_initializer_capacity_") and group.endswith("_gpu")),
                                  *(group for group in TEST_GROUPS
                                    if group.startswith("ledh_seeded_cost_") and group.endswith("_gpu")),
+                                 *(group for group in TEST_GROUPS
+                                   if group.startswith("ssl_lstm_replay_cost_") and group.endswith("_gpu")),
                                  *(group for group in TEST_GROUPS
                                    if group.startswith(("ledh_streaming_cost_", "ledh_streaming_capacity_")) and group.endswith("_gpu")),
                                  *TEST_BATCHES["svd_cost_gpu"])):

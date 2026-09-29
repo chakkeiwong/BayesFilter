@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04939; active worker runs: none.
-Charged/reserved CPU 114285.186688s / GPU 99550.200882s.
-Remaining CPU 24.254115h / GPU 24.347166h.
+Through 05059; active worker runs: none.
+Charged/reserved CPU 114810.056762s / GPU 100216.229576s.
+Remaining CPU 24.108318h / GPU 24.162158h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_genut_current_consumer_review_20260929.md (closed); at most
-5 workers/900 CPU/900 GPU seconds.
-Used/reserved 4 workers/50.290702 CPU/84.157818 GPU seconds.
+Active allocation: docs/plans/filter_gradient_ssl_lstm_replay_execution_20260929.md (complete_qualified_with_resource_followup); at most
+120 workers/12000 CPU/12000 GPU seconds.
+Used/reserved 119 workers/384.029219 CPU/666.028694 GPU seconds.
 One numerical worker at a time.
 
-Through04939: GenUT live value/analytical wiring qualifies with exact ordinary outputs; subspace refusal qualifies through04935 and factor initial/terminal objective gradients through04930. September29 scope review separates historical/unselected optimizer research from XLA closure, while preserving numerical failures, unsupported-use blocks and resource gates. No new numerical run or runtime change. iAPF/KDM deferred; no whole-program closure or main merge.
+Fixed replay qualification passes17 CPU/17 GPU tests04981--04982; all72 renewed costs04983--05054 and independent readbacks05055--05056 pass. Lifetime05057--05058 passes2000-call reuse and20-specialization bounds, but native RSS is retained after cache clear. Final164 readback/policy checks05059 pass. GPU T8 already-XLA warm ratio1.235 remains open and motivates one conditional-split intervention; no algorithm/seed change or gate relaxation. Source guard317 sources/1465 exact exceptions.
 
-Next: Complete current-call-path/F01-F20 dispositions under the corrected terminal queue. Bind unresolved numerical findings to affected in-scope consumers and preserve unsupported-use blocks; do not resume historical DZ5 or unselected factor convergence research without a demonstrated rewrite-contract failure. Reuse qualified evidence, finish applicable memory/performance/capacity acceptance, then integrate remote changes and run affected tests before main merge.
+Next: Preserve and push the completed replay unit, then register a bounded conditional-split intervention to investigate the matched-XLA cost trigger. Keep terminal current-caller/resource/integration gates open.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
@@ -60,7 +60,7 @@ Reuse unchanged qualified evidence: Gaussian through04782, nonlinear through
 GenUT wiring through04939 and actual-DZ504618–04628/import04629–04630/index04631.
 Keep each source/data/dtype/device scope explicit. F14's identified pfor sites
 are closed through04727;19 broad findings await terminal dispositions, which is
-not a count of19 known unfixed bugs. The315-source/1457-exception guard is scoped
+not a count of19 known unfixed bugs. The317-source/1465-exception guard is scoped
 coverage, not a repository-wide compliance claim.
 
 GPU0 is remote desktop, GPU1 display. Recheck GPU2/3 availability before use;
