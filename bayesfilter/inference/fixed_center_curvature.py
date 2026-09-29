@@ -490,6 +490,8 @@ def compare_precision_geometry(
     first_values, second_values, rank, angles, generalized, frobenius, operator = values
     positive_rank = int(rank)
     principal_angles = angles.numpy().tolist()[:positive_rank]
+    if positive_rank and not math.isfinite(principal_angles[0]):
+        raise ValueError("principal subspace is not numerically resolved at the requested rank")
     spd = bool(tf.reduce_all(first_values > 0.0) & tf.reduce_all(second_values > 0.0))
     return _json_ready(
         {
@@ -620,6 +622,29 @@ def _trace_normalized_operator(difference, scale, *, jit_compile=True):
     return tf.reduce_max(singular) * (magnitude / scale)
 
 
+def _principal_subspace_resolved(matrix, values, vectors, rank):
+    """A partial spectral subspace needs a resolved gap at its rank boundary.
+
+    Residual, orthogonality error and dimension-scaled roundoff estimate the
+    uncertainty of the computed spectrum. Overlapping boundary estimates cannot
+    support an angle claim. This flags unresolved spectra; it does not assert
+    exact eigenvalue multiplicity or alter the requested rank.
+    """
+    dimension = matrix.shape[0]
+    if dimension == 1:
+        return tf.constant(True)
+    cut = tf.clip_by_value(dimension - rank, 1, dimension - 1)
+    gap = values[cut] - values[cut - 1]
+    scale = tf.linalg.norm(matrix)
+    residual = tf.linalg.norm(tf.matmul(matrix, vectors) - vectors * values[None, :])
+    orthogonality = tf.linalg.norm(tf.matmul(vectors, vectors, transpose_a=True)
+        - tf.eye(dimension, dtype=matrix.dtype))
+    gamma = dimension * sys.float_info.epsilon / (1.0 - dimension * sys.float_info.epsilon)
+    uncertainty = residual + scale * (orthogonality + tf.constant(gamma, matrix.dtype))
+    return (rank <= 0) | (rank >= dimension) | (
+        tf.math.is_finite(uncertainty) & (gap > 2.0 * uncertainty))
+
+
 def _precision_geometry_kernel(first, second, tolerance, requested_rank, *, jit_compile=True):
     # Principal angles depend on eigenvectors as well as eigenvalues. The
     # backend's loose default stopping check can leave O(1e-7) residuals.
@@ -660,6 +685,12 @@ def _precision_geometry_kernel(first, second, tolerance, requested_rank, *, jit_
     angles = tf.where(singular == 1.0, tf.zeros_like(radians), radians) * tf.constant(
         180.0 / math.pi, tf.float64)
     angles = tf.where(tf.range(dimension) < rank, angles, tf.constant(90.0, tf.float64))
+    resolved = (_principal_subspace_resolved(first, first_values, first_vectors, rank)
+        & _principal_subspace_resolved(second, second_values, second_vectors, rank))
+    # Nonfinite active slots are internal refusal status. Public wrappers raise
+    # before serialization; native consumers propagate the resolution error.
+    angles = tf.where((tf.range(dimension) < rank) & ~resolved,
+        tf.constant(float("nan"), tf.float64), angles)
     spd = tf.reduce_all(first_values > 0.0) & tf.reduce_all(second_values > 0.0)
 
     def generalized():
@@ -1000,7 +1031,8 @@ def _stability_report(fits, thresholds, report):
             "replicate_count": len(fits), "usable_count": report["usable_count"], "comparisons": []}
     if report["error"]:
         messages = {1: "left must be a finite symmetric square matrix",
-            2: "right must be a finite symmetric square matrix", 3: "subspace_rank must lie in [1, dimension]"}
+            2: "right must be a finite symmetric square matrix", 3: "subspace_rank must lie in [1, dimension]",
+            5: "principal subspace is not numerically resolved at the requested rank"}
         raise ValueError(messages[report["error"]])
     comparisons = []
     pair_index = 0

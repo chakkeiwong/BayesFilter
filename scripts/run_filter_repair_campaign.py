@@ -1693,6 +1693,17 @@ TEST_GROUPS['remaining_factor_terminal_cpu'] = (
     'tests/test_filter_repair_factor_objective_reference.py::test_factor_reference_terminal',
     'tests/test_filter_repair_remaining_factor.py::test_saved_factor_consumer_classification',
     *TEST_GROUPS['policy'])
+for _subspace_device in ('cpu', 'gpu'):
+    TEST_GROUPS[f'subspace_identifiability_controls_{_subspace_device}'] = (
+        'tests/test_filter_repair_subspace_identifiability.py::test_spectral_resolution_controls',
+        'tests/test_filter_repair_subspace_identifiability.py::test_public_and_native_error_precedence',
+        'tests/test_filter_repair_subspace_identifiability.py::test_enclosing_isotropic_refusal',
+        'tests/test_filter_repair_principal_angle_stable_runtime.py::test_installed_angle_accuracy',
+        *TEST_GROUPS[f'principal_angle_regression_{_subspace_device}'])
+    TEST_GROUPS[f'subspace_identifiability_fit_{_subspace_device}'] = (
+        'tests/test_filter_repair_subspace_identifiability.py::test_complete_saved_fit_preserved',)
+TEST_GROUPS['subspace_identifiability_terminal_cpu'] = (
+    'tests/test_filter_repair_subspace_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['principal_angle_stable_readback_cpu'] = (
     'tests/test_filter_repair_principal_angle_stable.py::test_saved_stable_candidate', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'score_inputs_primitives_{dtype}_{device}': (
@@ -2697,6 +2708,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    **{group: 'GPU' for group in TEST_GROUPS if group.startswith('subspace_identifiability_') and group.endswith('_gpu')},
     'remaining_factor_observation_gpu': 'GPU',
     'remaining_factor_objective_gpu': 'GPU',
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('gaussian_binding_') and group.endswith('_gpu')},

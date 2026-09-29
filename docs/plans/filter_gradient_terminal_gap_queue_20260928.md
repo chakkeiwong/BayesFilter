@@ -1,7 +1,7 @@
 # Remaining master-program repair queue
 
-Current through04930 on repair/filter-gradient-xla-validation-20260918.
-No numerical worker is active. Remaining budget24.366090 CPU /24.521015 GPU
+Current through04935 on repair/filter-gradient-xla-validation-20260918.
+No numerical worker is active. Remaining budget24.268084 CPU /24.370544 GPU
 process-hours within the unchanged56/52-hour cap. Main remains unmerged.
 The concise checkpoint and structured ledger control current execution;
 Git history and linked result files preserve previous queue versions.
@@ -22,14 +22,20 @@ F07/F08/F19 findings remain open for their non-deferred portions.
 | Order | Remaining gap | Next action | Exit gate |
 |---|---|---|---|
 | 1 | Remaining public numerical boundaries and analytical-score consumers outside iAPF/KDM | Shared Gaussian/nonlinear input preparation, including twist ancestors, is CPU/GPU qualified through04913. Use filter_gradient_score_input_execution_result_20260929.md and final readback for the changed callers; continue source review for any other active eager numerical boundaries. | Preserve exact stream/discrete decisions, live/frozen records and derivative authority. This bounded repair does not close untouched callers or mixed findings. |
-| 2 | Fitted geometry:4534 remaining CPU/GPU leaves and isotropic rank-cut reporting | Ordinary-output witnesses and80-digit initial/terminal gradients qualify through04930; see filter_gradient_remaining_factor_fit_result_20260929.md. The unfinished fits are unselected; the first divergent optimizer decision is not isolated. Prepare an explicit rank-cut ambiguity refusal/reporting guard with no-fire checks; reuse saved states for any later optimizer diagnostic. | Preserve selected geometry, status and accepted bounds; explicit invalidity reporting. Do not classify unselected/nonconverged fits as ill-conditioned without evidence, or confuse different fitted subspaces with an angle-evaluation defect. |
+| 2 | Fitted geometry:4534 saved CPU/GPU leaves and historical isotropic initialization differences | Ordinary-output witnesses and80-digit initial/terminal gradients qualify through04930. The rank-cut reporting guard qualifies through04935, including unchanged complete saved fits; see filter_gradient_subspace_identifiability_result_20260929.md. Unfinished fits remain unselected; trace the first divergent optimizer decision only with an output-preserving witness, without repeating the unchanged full optimizer. | Preserve selected geometry, status and accepted bounds. The reporting guard does not change the factor parameter chart or establish optimizer convergence. Do not classify nonconvergence as covariance ill-conditioning. |
 | 2a | GenUT FP32 gradient precision and cap-report disagreement | Reuse the exact failing operands and qualified FP64 references in filter_gradient_genut_weight_precision_result_20260926.md and filter_gradient_genut_bounded_gradient_cost_result_20260926.md. First bind their dependencies and derivative roles to current active consumers, then isolate upstream rounding with a probe preserving the ordinary value and failed derivative witness. | Independent gradient bounds and complete reports pass, or the affected route explicitly refuses the unsupported use. Prior regroupings failed; do not substitute a different score, infer ill-conditioning, waive numerical bounds, or use descriptive costs as admission. This is separate from the excluded canonical LEDH rebuild. |
-| 3 | Runtime/memory acceptance | Streaming CPU ratios1.08239 atT32 /1.09678 atT128 have95% upper bounds1.11687 /1.15608 above1.10. RNG profiling did not explain this. For in-scope filters, replicate matched complete-owner costs, attribute native/compiler residency and obtain applicable uncontended GPU capacity evidence. Include direction/fitted-APF and remaining-SVD memory triggers plus the input-owner screen: +24.719MiB CPU/+23.836MiB GPU sampled RSS and GPU cold ratio1.307; include matched attribution of the new angle residual SVD; defer KDM-specific follow-ups. | Relevant numerical gates, source/input/timing comparability, statistical acceptance and explicit capacity/lifetime disposition. Gaussian binding04889--04892 is descriptive and does not close unrelated memory or streaming findings. |
+| 3 | Runtime/memory acceptance | Streaming CPU ratios1.08239 atT32 /1.09678 atT128 have95% upper bounds1.11687 /1.15608 above1.10. RNG profiling did not explain this. For in-scope filters, replicate matched complete-owner costs, attribute native/compiler residency and obtain applicable uncontended GPU capacity evidence. Include direction/fitted-APF and remaining-SVD memory triggers plus the input-owner screen: +24.719MiB CPU/+23.836MiB GPU sampled RSS and GPU cold ratio1.307; include matched attribution of the angle residual SVD and subspace-resolution guard; defer KDM-specific follow-ups. | Relevant numerical gates, source/input/timing comparability, statistical acceptance and explicit capacity/lifetime disposition. Gaussian binding04889--04892 is descriptive and does not close unrelated memory or streaming findings. |
 | 4 | Historical DZ5 locator differences and unconverged optimizers | Constant-sinking intervention04877--04882 is complete: original pass-disabled reproduces ordinary candidate exactly, but disabling both leaves46 short-record score fields different. Isolate local gradient arithmetic or emitted lowering before considering a portable remedy. | Exact frozen inputs, unchanged gates and complete records. No arbitrary compiler flag/default change, repeated dtype trial, unchanged full trajectory or convergence claim. The121 full-trajectory differences remain open. |
 | 5 | Saved-evidence applicability and terminal F01--F20 dispositions | Continue filter_gradient_terminal_source_review_20260928.md against the22-report index, actual source dependencies, implicit package imports and dynamic callbacks. Bind each finding to current callers, derivative roles and applicable measurements. Renew only affected scopes, including the changed Gaussian adapter. | Reviewable disposition for every in-scope finding, with adaptive iAPF and KDM explicitly deferred and mixed findings split by caller. Preserve missing GenUT hash fields and remaining-SVD receipt's absent direct run references. Current315-source/1457-exception guard is scoped evidence, not whole-repo closure. |
 | 6 | Integration and merge | After the above in-scope gates pass, fetch current remote changes, integrate on the repair branch, resolve conflicts and run affected checks before final review. | All remaining in-scope gates pass; no repo-wide iAPF/KDM compliance or canonical LEDH claim. Checkpoint commits/pushes remain authorized; main merge stays withheld. |
 
 Evidence to reuse in its qualified scope:
+
+- Subspace-identifiability04931--04935:52 checks per backend,84 spectrum/scale
+  cases per backend, actual enclosing refusal, and unchanged raw/exported saved
+  fits. Final161 checks pass; no source-policy allowance was added. The guard
+  closes the tested rank-cut reporting defect, not historical factor-chart or
+  unfinished-optimizer differences. Matched costs remain open.
 
 - Remaining factor fits04923--04930: final162 checks pass after a corrected
   reader comparison orientation. Ordinary/instrumented and saved output witnesses
@@ -76,7 +82,7 @@ Evidence to reuse in its qualified scope:
   children support scoped process-exit containment, not general native eviction.
 - Final precision symmetrization and principal-angle SVD component repairs pass
   their CPU/GPU gates. Nearly aligned angle reporting is repaired through04921; full records,
-  isotropic rank-cut reporting and matched uncontended costs remain open. See the September28 factor
+  historical isotropic initialization differences and matched uncontended costs remain open. Rank-cut reporting is repaired through04935. See the September28 factor
   precision, principal-angle and DZ5 source-renewal results.
 
 Execution constraints: one numerical worker at a time; no subagents, HMC or

@@ -54,10 +54,12 @@ def stability_program(comparison_kernel, dimension, count, *, jit_compile=True):
                         tf.stack([tf.cast(rank, D), *tf.unstack(generalized), frobenius, operator, maximum_angle,
                             tf.cast(tf.math.count_nonzero(values_left <= 0.), D),
                             tf.cast(tf.math.count_nonzero(values_right <= 0.), D), tf.cast(spd, D)])], 0)
-                    return report, ~enabled | raw_checks
+                    angle_error = tf.where((rank > 0) & ~tf.math.is_finite(maximum_angle), 5, 0)
+                    return report, ~enabled | raw_checks, angle_error
 
-                report, pair_checks = tf.cond(error == 0, compare,
-                    lambda: (tf.zeros([width], D), tf.zeros([4], tf.bool)))
+                report, pair_checks, comparison_error = tf.cond(error == 0, compare,
+                    lambda: (tf.zeros([width], D), tf.zeros([4], tf.bool), tf.constant(0)))
+                error = tf.where(error == 0, comparison_error, error)
                 next_left = tf.where(right + 1 == count, left + 1, left)
                 next_right = tf.where(right + 1 == count, left + 2, right + 1)
                 return (index + 1, next_left, next_right, error,
