@@ -6,6 +6,41 @@ process-hours within the unchanged56/52-hour cap. Main remains unmerged.
 The concise checkpoint and structured ledger control current execution;
 Git history and linked result files preserve previous queue versions.
 
+Scope correction, 2026-09-29: the owner questioned why the XLA rewrite was
+investigating unrelated issues. The original task is execution-policy repair
+and before/after numerical, memory and performance validation. Initial
+numerical investigation was necessary to distinguish rewrite regressions from
+other failures. The queue overreached when it made further historical optimizer
+and general precision research unconditional requirements for rewrite closure.
+This correction supersedes contrary next actions in earlier plans/results;
+those documents and failed comparisons remain preserved evidence.
+
+A closure blocker must concern an active in-scope execution-policy violation,
+an affected caller's numerical/API/error contract, a measured resource regression
+or capacity limit, or missing evidence for one of those requirements. Unknown
+applicability warrants bounded call-chain/regression attribution before another
+numerical investigation. A newly usable XLA route must be numerically qualified
+or explicitly refuse unsupported use, even if its defect predates the rewrite.
+Changing scope does not turn failed comparisons into passes, establish
+ill-conditioning, relax numerical bounds or confer scientific admission.
+
+Separate numerical research, not unconditional rewrite/merge blockers:
+
+- Unselected factor-fit convergence and exact cross-backend trajectories.
+  Through04930, both backends select the same dense geometry at the existing
+  output/status/audit bounds; initial/terminal objective gradients pass the
+  independent80-digit checks. The4534 full-record differences remain recorded.
+  Intermediate gradients and convergence are not thereby proved. Reopen only
+  for evidence of an affected usable result, score, selection or failure status.
+- The frozen historical DZ5 locator's121 trajectory differences and optimizer
+  convergence. The constant-sinking experiment establishes context sensitivity,
+  not a portable repair. Reuse current actual-DZ5 qualification04618--04628 when
+  its dependencies are unchanged; a regression there remains in scope.
+- General factor initialization/parameterization redesign and reduced GenUT
+  precision research beyond the affected-use boundary below. The installed
+  angle/subspace guard remains tested runtime code with costs still to assess.
+  Canonical LEDH rebuilding remains expressly excluded by the owner.
+
 Adaptive iAPF is deferred by the owner on20260929. Preserve evidence through
 04876 without resuming its controller/runtime or selection-validator migration.
 This is a scope deferral, not repaired/admitted status or blanket F07/F19
@@ -28,10 +63,10 @@ authorities. Preserve the reduced precision/cap failures and other caller gaps.
 | Order | Remaining gap | Next action | Exit gate |
 |---|---|---|---|
 | 1 | Remaining public numerical boundaries and analytical-score consumers outside iAPF/KDM | Shared Gaussian/nonlinear input preparation, including twist ancestors, is CPU/GPU qualified through04913. Use filter_gradient_score_input_execution_result_20260929.md and final readback for the changed callers; continue source review for any other active eager numerical boundaries. | Preserve exact stream/discrete decisions, live/frozen records and derivative authority. This bounded repair does not close untouched callers or mixed findings. |
-| 2 | Fitted geometry:4534 saved CPU/GPU leaves and historical isotropic initialization differences | Ordinary-output witnesses and80-digit initial/terminal gradients qualify through04930. The rank-cut reporting guard qualifies through04935, including unchanged complete saved fits; see filter_gradient_subspace_identifiability_result_20260929.md. Unfinished fits remain unselected; trace the first divergent optimizer decision only with an output-preserving witness, without repeating the unchanged full optimizer. | Preserve selected geometry, status and accepted bounds. The reporting guard does not change the factor parameter chart or establish optimizer convergence. Do not classify nonconvergence as covariance ill-conditioning. |
-| 2a | GenUT FP32 gradient precision and cap-report disagreement | Reuse the exact failing operands and qualified FP64 references in filter_gradient_genut_weight_precision_result_20260926.md and filter_gradient_genut_bounded_gradient_cost_result_20260926.md. First bind their dependencies and derivative roles to current active consumers, then isolate upstream rounding with a probe preserving the ordinary value and failed derivative witness. | Independent gradient bounds and complete reports pass, or the affected route explicitly refuses the unsupported use. Prior regroupings failed; do not substitute a different score, infer ill-conditioning, waive numerical bounds, or use descriptive costs as admission. This is separate from the excluded canonical LEDH rebuild. |
+| 2 | Affected numerical contracts and error reporting | Reuse qualified selected geometry, factor-objective, angle and rank-cut checks through04935. Check changed current callers' values, analytical scores, selection/status and explicit invalid-input behavior. For a mismatch, identify its before/after effect and actual consumer before choosing a bounded diagnostic. | Preserve usable results and accepted bounds, or report an established unsupported input/use explicitly. Historical/unselected trajectory matching and optimizer convergence are not unconditional closure gates. Nonconvergence alone is not ill-conditioning. |
+| 2a | GenUT affected-use disposition | Reuse current wiring04939 and saved precision/cap failures04245--04261. Distinguish reduced-primal reverse gradients from the registered analytical authority; establish whether the failing derivative or cap result affects an active in-scope caller, including the optional reduced value branch. | Qualify or explicitly refuse affected unsupported uses; retain canonical/admission blocks and failed evidence. Optional/noncanonical labeling alone cannot excuse a reachable XLA regression. Do not transfer reduced-route failures to another score or require a general FP32 algorithm rebuild without a relevant contract failure. |
 | 3 | Runtime/memory acceptance | Streaming CPU ratios1.08239 atT32 /1.09678 atT128 have95% upper bounds1.11687 /1.15608 above1.10. RNG profiling did not explain this. For in-scope filters, replicate matched complete-owner costs, attribute native/compiler residency and obtain applicable uncontended GPU capacity evidence. Include direction/fitted-APF and remaining-SVD memory triggers plus the input-owner screen: +24.719MiB CPU/+23.836MiB GPU sampled RSS and GPU cold ratio1.307; include matched attribution of the angle residual SVD and subspace-resolution guard; defer KDM-specific follow-ups. | Relevant numerical gates, source/input/timing comparability, statistical acceptance and explicit capacity/lifetime disposition. Gaussian binding04889--04892 is descriptive and does not close unrelated memory or streaming findings. |
-| 4 | Historical DZ5 locator differences and unconverged optimizers | Constant-sinking intervention04877--04882 is complete: original pass-disabled reproduces ordinary candidate exactly, but disabling both leaves46 short-record score fields different. Isolate local gradient arithmetic or emitted lowering before considering a portable remedy. | Exact frozen inputs, unchanged gates and complete records. No arbitrary compiler flag/default change, repeated dtype trial, unchanged full trajectory or convergence claim. The121 full-trajectory differences remain open. |
+| 4 | Current DZ5 consumer applicability | Reuse actual-DZ5 r2 qualification04618--04628, import isolation04629--04630 and evidence-index04631 when dependencies match. Renew only a changed current dependency or a demonstrated affected contract. | Current consumer values, scores, error behavior and lifetime remain qualified. Preserve the121 historical trajectory differences as separate unresolved diagnostics; no further historical optimizer/compiler investigation is scheduled by this queue. |
 | 5 | Saved-evidence applicability and terminal F01--F20 dispositions | Continue filter_gradient_terminal_source_review_20260928.md against the22-report index, actual source dependencies, implicit package imports and dynamic callbacks. Bind each finding to current callers, derivative roles and applicable measurements. Renew only affected scopes, including the changed Gaussian adapter. | Reviewable disposition for every in-scope finding, with adaptive iAPF and KDM explicitly deferred and mixed findings split by caller. Preserve missing GenUT hash fields and remaining-SVD receipt's absent direct run references. Current315-source/1457-exception guard is scoped evidence, not whole-repo closure. |
 | 6 | Integration and merge | After the above in-scope gates pass, fetch current remote changes, integrate on the repair branch, resolve conflicts and run affected checks before final review. | All remaining in-scope gates pass; no repo-wide iAPF/KDM compliance or canonical LEDH claim. Checkpoint commits/pushes remain authorized; main merge stays withheld. |
 
@@ -92,8 +127,10 @@ Evidence to reuse in its qualified scope:
   bytes remain unchanged. Parent RSS growth0.410MiB CPU /0.559MiB GPU and reaped
   children support scoped process-exit containment, not general native eviction.
 - Final precision symmetrization and principal-angle SVD component repairs pass
-  their CPU/GPU gates. Nearly aligned angle reporting is repaired through04921; full records,
-  historical isotropic initialization differences and matched uncontended costs remain open. Rank-cut reporting is repaired through04935. See the September28 factor
+  their CPU/GPU gates. Nearly aligned angle reporting is repaired through04921;
+  full-record and historical initialization discrepancies remain preserved under
+  the scope disposition above. Matched costs remain in scope. Rank-cut reporting
+  is repaired through04935. See the September28 factor
   precision, principal-angle and DZ5 source-renewal results.
 
 Execution constraints: one numerical worker at a time; no subagents, HMC or
@@ -105,9 +142,16 @@ has a display; prefer available GPU2/3 and recheck at launch under the owner's
 fallback rule. Trusted placement and verified memory growth are mandatory.
 CPU runs remain explicit reference/debug exceptions.
 
-Primary-agent review: active defects and missing evidence remain distinguished;
-no component, syntax guard, historical compiler localization or single-process
-cost screen is treated as whole-program completion. Every serious next unit
-needs its own bounded allocation inside the existing remaining budget. The
-owner deferrals remove algorithm-specific work only; they do not waive shared
-non-KDM execution, fixed fitted-APF memory acceptance or any numerical gate.
+Primary-agent scope review: the prior queue conflated full historical optimizer
+record equality with usable-result preservation and treated diagnostic precision
+failures as if they necessarily belonged to the analytical-score authority.
+The revised queue requires a relevant caller/contract and keeps failed evidence,
+numerical bounds, unsupported-use blocks and cost gates intact. Compiler memory
+work needs measured overhead and a practical bounded lifetime/capacity
+disposition; universal native-executable eviction is not a task requirement.
+No source guard, component test or cost screen proves whole-program completion.
+The19 broadly open findings include unfinished dispositions, not19 established
+unfixed bugs. Before any further numerical run, name the remaining rewrite gate,
+reuse applicable evidence and register a bounded allocation. No new numerical
+run, runtime repair, policy allowance or budget charge accompanies this scope
+correction. Main remains unmerged.

@@ -13,42 +13,55 @@ Active allocation: docs/plans/filter_gradient_genut_current_consumer_review_2026
 Used/reserved 4 workers/50.290702 CPU/84.157818 GPU seconds.
 One numerical worker at a time.
 
-Through04939: GenUT registered value branch and analytical-score call chains have live CPU/GPU witnesses with exact ordinary-output preservation. Analytical score uses shared batched correction, not reduced primal.04937 diagnostic counter placement failure was repaired/retried; final04939 passes161 evidence/policy checks. Subspace refusal guard qualifies through04935 and factor initial/terminal derivatives through04930. Remaining reduced precision/cap findings are unchanged; no whole-program closure or main merge. iAPF/KDM deferred.
+Through04939: GenUT live value/analytical wiring qualifies with exact ordinary outputs; subspace refusal qualifies through04935 and factor initial/terminal objective gradients through04930. September29 scope review separates historical/unselected optimizer research from XLA closure, while preserving numerical failures, unsupported-use blocks and resource gates. No new numerical run or runtime change. iAPF/KDM deferred; no whole-program closure or main merge.
 
-Next: Continue current-source terminal per-consumer/F01-F20 dispositions and the unresolved reduced GenUT precision/cap-report mechanism using exact saved inputs; optional reduced route remains in scope. Complete new mechanisms for unfinished factor/DZ5/streaming discrepancies and matched memory/runtime acceptance, including angle/subspace guard, before remote integration/main merge. Reuse qualified04930/04935/04939 evidence and do not rerun unchanged whole optimizers or retired generic cost matrices.
+Next: Complete current-call-path/F01-F20 dispositions under the corrected terminal queue. Bind unresolved numerical findings to affected in-scope consumers and preserve unsupported-use blocks; do not resume historical DZ5 or unselected factor convergence research without a demonstrated rewrite-contract failure. Reuse qualified evidence, finish applicable memory/performance/capacity acceptance, then integrate remote changes and run affected tests before main merge.
 
-Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
-variants on CPU/GPU. The original four/four reset fails its second balance
-check; severe ill-conditioning is not established. Fresh independently
-calibrated scopes04806–04821 qualify all three providers, both ordinary and
-diagnostic endpoints, CPU/GPU, at eight/eight reset counts. Complete parity
-max2.22e-16; five-point error max7.10e-12. Original failure remains preserved.
-See filter_gradient_nonlinear_directions_result_20260929.md and
-filter_gradient_nonlinear_scope_result_20260929.md. This is mechanics evidence,
-not a canonical tuning artifact or scientific admission.
+The September29 scope correction in
+[the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
+current work and supersedes broader historical next-action lists. This campaign
+repairs numerical Python loops, runtime NumPy and incomplete/default-off XLA
+execution in active filtering/analytical-gradient call paths, verifies affected
+values, scores, decisions and error semantics, and compares before/after memory
+and performance. Fixed fitted-APF remains in scope; adaptive iAPF and KDM remain
+owner-deferred. No numerical gate, policy allowance or raw evidence was changed
+by the scope correction.
 
-Committed Gaussian qualification/cost evidence through04782 is in d9a534584.
-The full-filter streaming CPU regression remains unaccepted: paired warm
-ratios1.08239/1.09678 and upper bounds1.11687/1.15608 atT32/T128. RNG component
-profile04750–04755 does not explain that slowdown. F14's identified pfor sites
-are closed through04727; the broader F01–F20 dispositions remain open.
+Further convergence/trajectory research on the unselected factor fits and the
+historical DZ5 locator is separate from rewrite closure. Both backends select
+the same accepted geometry in the saved factor cohort; tested objective
+gradients pass independent references through04930. Rank-cut refusal qualifies
+through04935. The4534 factor-record and121 historical locator differences remain
+failed diagnostic comparisons, not accepted equality. Reopen a rewrite blocker
+when evidence connects one to a changed in-scope caller's usable result,
+selection, score or failure status. Broader isotropic initialization/parameter
+redesign is not required merely to explain historical diagnostics.
 
-GenUT FP32 weight-gradient precision and mode-dependent cap reports remain
-unresolved in the qualified04245–04261 cohort; GPU XLA also has source/reset
-gradient failures there. Review actual dependency/consumer applicability before
-renewal and retain independent FP64 bounds. Previous regroupings failed and
-descriptive costs cannot close this numerical veto. The canonical LEDH rebuild
-remains excluded; these execution diagnostics cannot establish a canonical score.
+Reduced GenUT FP32 reverse-gradient precision and cap-report failures remain
+unresolved and unsupported; GPU XLA has source/reset gradient failures in the
+saved cohort too. Live wiring04936–04939 separates that authority from the
+registered analytical score. Terminal review must establish affected active
+consumers and preserve explicit unsupported-use/admission blocks. A reachable
+XLA regression still requires repair or explicit refusal; optional/noncanonical
+status alone is not an exemption. General precision research and the excluded
+canonical LEDH rebuild are not blanket rewrite requirements.
 
-Remaining work: nonlinear/other matched owner cost acceptance; native/compiler residency and uncontended GPU capacity; a new bounded
-mechanism for the streaming regression (the scalar-state candidate was rejected); actual public analytical-score
-coverage and current-source measurement applicability; DZ5 locator121 strict
-trajectory differences and unconverged optimizers;4534 fitted-record CPU/GPU
-differences after the stable-angle repair, unselected optimizer/matrix differences
-and historical isotropic initialization differences (rank-cut reporting is
-repaired through04935); remaining terminal dispositions and eventual
-integration/merge. Work order: filter_gradient_terminal_gap_queue_20260928.md.
-Reuse unchanged actual-DZ504618–04628/import04629–04630/index04631 evidence.
+Remaining work: current-call-path and F01–F20 dispositions, affected numerical
+regression/error checks, applicable matched memory/runtime and bounded capacity
+acceptance, then remote integration and affected tests before main merge.
+Streaming CPU ratios1.08239/1.09678 have95% upper bounds1.11687/1.15608 above1.10;
+that finding remains unaccepted. Include fixed fitted-APF, input preparation,
+remaining-SVD and angle/subspace-guard cost triggers. Compiler residency needs
+measurement and a practical lifetime/capacity disposition, not a general proof
+that TensorFlow releases all native allocations. No zero-overhead claim follows.
+
+Reuse unchanged qualified evidence: Gaussian through04782, nonlinear through
+04821, input preparation through04913, factor/angle/subspace through04935,
+GenUT wiring through04939 and actual-DZ504618–04628/import04629–04630/index04631.
+Keep each source/data/dtype/device scope explicit. F14's identified pfor sites
+are closed through04727;19 broad findings await terminal dispositions, which is
+not a count of19 known unfixed bugs. The315-source/1457-exception guard is scoped
+coverage, not a repository-wide compliance claim.
 
 GPU0 is remote desktop, GPU1 display. Recheck GPU2/3 availability before use;
 shared numerical checks do not establish uncontended costs/capacity. GPU growth
