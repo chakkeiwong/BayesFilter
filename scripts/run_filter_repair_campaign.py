@@ -124,6 +124,17 @@ BLOCK_PUBLIC_LEGACY_NAMES = (
     "test_material_reversal_can_be_recorded_without_stopping_full_sweep",
 )
 TEST_GROUPS = {
+    'remaining_factor_saved_cpu': (
+        'tests/test_filter_repair_remaining_factor.py::test_saved_factor_consumer_classification',),
+    **{f'remaining_factor_observation_{device}': (
+        'tests/test_filter_repair_remaining_factor.py::test_factor_optimizer_observation',)
+        for device in ('cpu', 'gpu')},
+    **{f'remaining_factor_objective_{device}': (
+        'tests/test_filter_repair_factor_objective_reference.py::test_same_operand_objective',)
+        for device in ('cpu', 'gpu')},
+    'remaining_factor_reference_cpu': (
+        'tests/test_filter_repair_factor_objective_reference.py::test_independent_objective_derivation',
+        'tests/test_filter_repair_factor_objective_reference.py::test_saved_objective_references'),
     'dz5_locator_counter_reduction_cpu': (
         'tests/test_filter_repair_dz5_locator_counter_reduction.py::test_int32_reduction_context',),
     'dz5_locator_counter_int32_cpu': (
@@ -1678,6 +1689,10 @@ TEST_GROUPS['principal_angle_stable_harness_cpu'] = (
     'tests/test_filter_repair_principal_angle_stable_runtime.py::test_saved_installed_evidence', *TEST_GROUPS['policy'])
 TEST_GROUPS['principal_angle_stable_terminal_cpu'] = (
     'tests/test_filter_repair_principal_angle_stable_runtime.py::test_saved_installed_evidence', *TEST_GROUPS['policy'])
+TEST_GROUPS['remaining_factor_terminal_cpu'] = (
+    'tests/test_filter_repair_factor_objective_reference.py::test_factor_reference_terminal',
+    'tests/test_filter_repair_remaining_factor.py::test_saved_factor_consumer_classification',
+    *TEST_GROUPS['policy'])
 TEST_GROUPS['principal_angle_stable_readback_cpu'] = (
     'tests/test_filter_repair_principal_angle_stable.py::test_saved_stable_candidate', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'score_inputs_primitives_{dtype}_{device}': (
@@ -2682,6 +2697,8 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 
 TEST_DEVICES = {
+    'remaining_factor_observation_gpu': 'GPU',
+    'remaining_factor_objective_gpu': 'GPU',
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('gaussian_binding_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('score_inputs_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('principal_angle_stable_') and group.endswith('_gpu')},

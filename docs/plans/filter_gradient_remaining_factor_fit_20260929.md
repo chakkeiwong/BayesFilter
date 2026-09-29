@@ -1,8 +1,8 @@
 # Remaining unselected factor fits and isotropic reporting
 
-Prepared continuation after the stable-angle repair through04921. Activate a
-new bounded allocation before numerical work; no worker is launched by this
-document. Freeze the committed shared-angle repair as the source baseline.
+Completed diagnostic allocation04923--04930 after the stable-angle repair
+through04922; the committed baseline is bebb2591a. See the matching result note.
+Optimizer first-divergence and isotropic reporting obligations remain open.
 The canonical NeuTra architecture and owner-deferred iAPF/KDM are unchanged.
 
 Question: which actual optimizer/matrix differences explain the4534 remaining
@@ -44,7 +44,7 @@ and discrete decisions must be checked. Accurate descriptions of different
 unconverged fits are not automatically implementation defects, and their
 diagnostic status cannot be used to admit an unqualified runtime.
 
-Suggested initial allocation: at most8 serialized workers/1800 CPU and1200 GPU
+Initial allocation: at most8 serialized workers/1800 CPU and1200 GPU
 seconds under the remaining global budget; start with saved-evidence/source
 inspection and the smallest discriminating diagnostic. CPU reference and
 trusted GPU/XLA with verified growth remain distinct. Version every artifact
@@ -58,3 +58,28 @@ floating backends, or waiving a selected/status defect because some fits are
 unselected. Grouping by causal source and tracing actual consumers addresses
 these risks. Current evidence does not establish optimizer convergence,
 isotropic reporting correctness, whole-program closure or terminal costs.
+
+Execution review, 2026-09-29: the factor optimizer's objective gradient uses
+the existing TensorFlow Probability value-and-gradient authority. This is a
+geometry-fitting derivative, not a filter analytical-score implementation;
+its role must remain explicit. Start with a source-bound saved-record reader,
+then recover missing optimizer states using the existing factory. A standalone
+or instrumented call must reproduce the corresponding ordinary saved fit before
+its internal state can explain that fit. Initial-state and same-operand
+value/gradient checks precede any new optimizer intervention. Compare to an
+independent high-precision objective/derivative calculation; no optimizer or
+ridge change is proposed. Covariance condition, prediction-Jacobian condition,
+gradient norm and solver termination have different meanings and are reported
+separately. Their values are explanatory, not new acceptance thresholds.
+
+Existing iteration/tolerance settings are a frozen comparator, not demonstrated
+convergence. Saved selected geometry and all existing status/bound checks are
+the preservation criterion. Source/hash drift, unusable reference, or missing
+ordinary-output reproduction vetoes causal interpretation of a probe. A
+repeated eigenspace is checked with known diagonal/rotated matrices and reported
+as non-unique when the selected rank cuts the multiplicity; any reporting guard
+needs separated-spectrum no-fire checks. This review finds no need for another
+full trajectory replay before the bounded probes. Raw artifacts use fresh
+run directories under the existing campaign root; the result note is
+filter_gradient_remaining_factor_fit_result_20260929.md. No performance or
+posterior-quality ranking follows from these diagnostic runs.

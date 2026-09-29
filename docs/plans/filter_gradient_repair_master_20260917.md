@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 04922; active worker runs: none.
-Charged/reserved CPU 113789.279415s / GPU 98827.503146s.
-Remaining CPU 24.391867h / GPU 24.547916h.
+Through 04930; active worker runs: none.
+Charged/reserved CPU 113882.075133s / GPU 98924.344884s.
+Remaining CPU 24.366090h / GPU 24.521015h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_principal_angle_stable_20260929.md (closed); at most
-12 workers/2400 CPU/1800 GPU seconds.
-Used/reserved 9 workers/166.662239 CPU/187.758706 GPU seconds.
+Active allocation: docs/plans/filter_gradient_remaining_factor_fit_20260929.md (closed); at most
+8 workers/1800 CPU/1200 GPU seconds.
+Used/reserved 8 workers/92.795718 CPU/96.841738 GPU seconds.
 One numerical worker at a time.
 
-Stable principal-angle repair qualifies through04921:80-digit fixture errors fall from3.12e-9 CPU/1.39e-10 GPU degrees to4.20e-12/3.84e-12.49 installed/regression checks pass per backend; exact saved fits preserve all non-angle fields, statuses and selected geometry. Every reported stability pair passes independent80-digit checks; final161 checks pass. Remaining CPU/GPU4534 leaves are57 selection/stability fields and4477 unselected-fit fields; eight remaining angles reflect different factor_2 matrices, not angle arithmetic. Same-process warm/cold costs remain descriptive and need matched attribution. Input execution repairbf022dd90 remains committed/pushed; adaptive iAPF/KDM deferred. Frozen diagnostic reconstruction and combined evidence/policy readback04922 pass163 checks; all9 workers pass. Runtime unchanged after full-fit qualification.
+Remaining factor-fit diagnostics through04930 reproduce all six ordinary/instrumented and ordinary/saved endpoints at existing bounds. Independent80-digit objective/chart derivatives qualify12 identical states per backend; gradient errors max7.824e-12 CPU/1.899e-12 GPU. No runtime changes. All4534 full-record differences are preserved; initial/terminal derivatives show no defect, while first divergent optimizer decisions and isotropic reporting remain unresolved.04923 reader orientation failure is repaired; final04930 passes162 checks.
 
-Next: Activate filter_gradient_remaining_factor_fit_20260929.md for unselected fits3/4/5 and isotropic rank-cut reporting using04919/04920 records and04921 classification. Diagnose actual matrix/optimizer-state differences; do not repeat the repaired small-angle SVD/acos intervention or call different fitted subspaces an angle defect. Keep selected geometry/status gates strict. Then continue applicable replicated costs/native residency (including new input and angle costs), source/F01–F20 dispositions and local DZ5 gradient lowering. Main remains unmerged.
+Next: Prepare and validate explicit refusal/reporting of an unidentifiable principal subspace when rank cuts a repeated eigenspace. Preserve known-good and saved selected geometry, error precedence and all matrix metrics. Reuse remaining-factor witnesses; do not repeat unchanged full optimizers. Continue GenUT precision, matched costs/native residency, DZ5 lowering, public consumer coverage and terminal dispositions; iAPF/KDM deferred.
 
 Nonlinear base04783–04805 qualifies healthy EKF/UKF and six refused LEDH-family
 variants on CPU/GPU. The original four/four reset fails its second balance
@@ -32,6 +32,13 @@ The full-filter streaming CPU regression remains unaccepted: paired warm
 ratios1.08239/1.09678 and upper bounds1.11687/1.15608 atT32/T128. RNG component
 profile04750–04755 does not explain that slowdown. F14's identified pfor sites
 are closed through04727; the broader F01–F20 dispositions remain open.
+
+GenUT FP32 weight-gradient precision and mode-dependent cap reports remain
+unresolved in the qualified04245–04261 cohort; GPU XLA also has source/reset
+gradient failures there. Review actual dependency/consumer applicability before
+renewal and retain independent FP64 bounds. Previous regroupings failed and
+descriptive costs cannot close this numerical veto. The canonical LEDH rebuild
+remains excluded; these execution diagnostics cannot establish a canonical score.
 
 Remaining work: nonlinear/other matched owner cost acceptance; native/compiler residency and uncontended GPU capacity; a new bounded
 mechanism for the streaming regression (the scalar-state candidate was rejected); actual public analytical-score
