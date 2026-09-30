@@ -1786,6 +1786,25 @@ TEST_GROUPS['c2_preparation_branch_cost_terminal_cpu'] = (
 TEST_GROUPS['c2_preparation_branch_cost_lifetime_probe_gpu'] = (
     'tests/test_filter_repair_c2_branch_cost.py::test_branch_lifetime_snapshot_probe',)
 TEST_GROUPS['c2_preparation_branch_cost_harness_cpu'] = TEST_GROUPS['policy']
+TEST_GROUPS.update({f'c2_preparation_public_original_{device}': (
+    'tests/test_filter_repair_c2_public_helpers.py::test_original_standalone_contract',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'c2_preparation_public_helpers_{device}': (
+    'tests/test_filter_repair_c2_public_helpers.py::test_standalone_gaussian_preserves_original_stream',
+    'tests/test_filter_repair_c2_public_helpers.py::test_k1_convenience_retains_original_compiled_stream',
+    'tests/test_filter_repair_c2_public_helpers.py::test_standalone_configuration_caches_are_bounded',
+    'tests/test_filter_repair_c2_public_helpers.py::test_standalone_gaussian_original_edge_contract',
+    *TEST_GROUPS['apf'])
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'c2_preparation_public_callers_{device}': (
+    'tests/test_filter_repair_c2_callers.py',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'c2_preparation_public_cost_{arm}_gpu': (
+    f'tests/test_filter_repair_c2_public_helper_cost.py::test_public_helper_descriptive_cost[{arm}]',)
+    for arm in ('original', 'current')})
+TEST_GROUPS['c2_preparation_public_policy_cpu'] = TEST_GROUPS['policy']
+TEST_GROUPS['c2_preparation_public_terminal_cpu'] = (
+    'tests/test_filter_repair_c2_public_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'c2_preparation_branch_dmis_{device}': (
     'tests/test_filter_repair_c2_branch_preparation.py::test_native_dmis_complete_records',)
     for device in ('cpu', 'gpu')})
@@ -3449,7 +3468,7 @@ def require_unshared_cost_preflight(args):
                                  "score_inputs_cost_before_gpu",
                                  "score_inputs_cost_after_gpu",
                                  *(group for group in TEST_GROUPS
-                                   if (group.startswith('resource_acceptance_') or group.startswith(('c2_preparation_k1_cost_', 'c2_preparation_mixture_cost_', 'c2_preparation_branch_cost_'))) and group.endswith('_gpu')),
+                                   if (group.startswith('resource_acceptance_') or group.startswith(('c2_preparation_k1_cost_', 'c2_preparation_mixture_cost_', 'c2_preparation_branch_cost_', 'c2_preparation_public_cost_'))) and group.endswith('_gpu')),
                                  *TEST_BATCHES["ledh_flow_cost_gpu"],
                                  *TEST_BATCHES["remaining_svd_cost_gpu"],
                                  *TEST_BATCHES["posterior_public_memory_gpu"],

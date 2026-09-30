@@ -8,6 +8,7 @@ not provide a second APF evaluator.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 import hashlib
 import json
 import math
@@ -371,14 +372,18 @@ class FrozenGaussianStateProposal:
         return _gaussian_log_density(states, self.mean, self.chol)
 
     def sample_with_seed(
-        self, particle_count: int, seed: tuple[int, int], *, jit_compile: bool
+        self, particle_count: int, seed: tuple[int, int], *, jit_compile: bool = True
     ) -> Mapping[str, tf.Tensor]:
+        """Draw through one retained XLA owner, preserving the ordinary stream."""
         count = int(particle_count)
-        normal = tf.random.stateless_normal(
-            [count, self.dimension], [int(seed[0]), int(seed[1])], dtype=DTYPE
-        )
-
-        return self.compiled_transform(count, jit_compile=jit_compile)(normal)
+        # Preserve TensorFlow's original inferred seed width before widening;
+        # forcing int32 would silently truncate accepted large seed words.
+        seed_tensor = tf.cast(tf.convert_to_tensor([int(seed[0]), int(seed[1])]), tf.int64)
+        if count < 0:
+            raise tf.errors.InvalidArgumentError(
+                None, None, f"Dimension {count} must be >= 0")
+        sampler = _gaussian_seed_sampler(count, self.dimension, bool(jit_compile))
+        return sampler(self.mean, self.chol, seed_tensor)
 
     def compiled_transform(self, particle_count: int, *, jit_compile: bool):
         count = int(particle_count)
@@ -905,3 +910,22 @@ def _gaussian_transform_core(standard_normal, mean, chol):
         "physical_log_density": _gaussian_log_density(states, mean, chol),
         "finite": tf.reduce_all(tf.math.is_finite(states)),
     }
+
+
+@lru_cache(maxsize=4)
+def _gaussian_seed_sampler(count: int, dimension: int, jit_compile: bool):
+    """Retain static configurations; proposal parameters and seed remain live."""
+    from bayesfilter.ops.stateless_random_tf import philox_normal_float64
+
+    @tf.function(
+        input_signature=[tf.TensorSpec([dimension], DTYPE),
+                         tf.TensorSpec([dimension, dimension], DTYPE),
+                         tf.TensorSpec([2], tf.int64)],
+        jit_compile=bool(jit_compile), autograph=False,
+    )
+    def sample(mean, chol, seed):
+        normal = (philox_normal_float64([count, dimension], seed) if jit_compile
+                  else tf.random.stateless_normal([count, dimension], seed, dtype=DTYPE))
+        return _gaussian_transform_core(normal, mean, chol)
+
+    return sample

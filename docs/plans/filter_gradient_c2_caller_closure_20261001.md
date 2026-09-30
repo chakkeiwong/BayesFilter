@@ -77,3 +77,21 @@ Unchanged branch-core bytes allow reuse of qualified numerical and cost
 evidence; a changed shared numerical dependency requires its affected checks
 to be renewed. This unit cannot establish arbitrary-scale capacity,
 proposal quality, canonical LEDH admission, training or HMC readiness.
+
+Original edge contracts are frozen in CPU05526/GPU05527. The first installed
+helper draft fails05528 (15 passes/3 failures): explicitly constructing an
+int32 seed truncates accepted words above2**32, changing the draw stream.
+The original TensorFlow path infers int64 for those lists. Preserve that
+inference/error boundary and widen the resulting tensor to int64 before the
+fixed-signature owner; Philox consumes the full words. This is a concrete
+draft defect, not a tolerance issue. Keep05528 failed and renew CPU/GPU checks.
+One CLI attempt used unsupported --gpu-index and was rejected before a worker;
+the corrected command uses --test-gpu-index2.
+
+CPU05529/GPU05530 pass18 helper/APF checks each after the seed-width repair;
+the recorded Gaussian differences are exactly zero. Caller test05531 fails
+before candidate execution because its synthetic selected-control mapping
+copied the public API's optional None gate values. The actual benchmark
+selection always supplies PHASE4_GATE_CENTER/PHASE4_GATE_TEMPERATURE. Use those
+existing benchmark constants in the fixture and retry; no runtime gate or
+tuning policy changes. Preserve05531 as a harness failure.

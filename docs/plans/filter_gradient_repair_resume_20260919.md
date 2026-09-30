@@ -4,19 +4,19 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05525; active worker runs: none.
+Through 05536; active worker runs: none.
 Supervisor session: none; a matrix can be between workers.
-Charged/reserved CPU 117970.037906s / GPU 112833.657544s.
-Remaining CPU 23.230545h / GPU 20.657317h.
+Charged/reserved CPU 118103.770721s / GPU 113046.421413s.
+Remaining CPU 23.193397h / GPU 20.598216h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_c2_branch_cost_20261001.md (qualified_scoped_resources); at most
-60 workers/1800 CPU/10800 GPU seconds.
-Used/reserved 52 workers/28.203577 CPU/2683.866172 GPU seconds.
+Active allocation: docs/plans/filter_gradient_c2_caller_closure_20261001.md (qualified_public_helpers_and_callers); at most
+12 workers/1800 CPU/3600 GPU seconds.
+Used/reserved 11 workers/133.732815 CPU/212.763870 GPU seconds.
 One numerical worker at a time.
 
-All45 source-frozen v2 C2 complete preparation costs05480--05524 and161 terminal readback/policy checks05525 pass. Numerical records meet unchanged bounds; all15 XLA128-call lifetime checks pass. Warm XLA14--65ms versus original5.16--5.31s and graph44--619ms. Host RSS/current device allocation are lower than original;16--61MiB additional XLA versus graph RSS is accepted in this fixed-fixture scope. Superseded05474/05475 and failed05476 remain preserved.
+C2 public helpers/callers close through05536:18 checks perCPU/GPU,11 actual candidate factory families per backend, paired descriptive helper costs and128-call lifetime, plus161 terminal policy/readback checks. Gaussian original records are exact after the preserved seed-width draft failure05528; fixture failure05531 also remains. No new allowlist entries. Complete preparation callable AST bodies remain unchanged fromd91e269c8.
 
-Next: Archive/commit/push the completed cost result. Activate the12-worker C2 public-helper/caller plan, freeze original helper edge/error records before runtime changes, install reviewed drafts, qualify CPU/GPU and actual callers, then execute the final scoped closure plan.
+Next: Archive/commit/push the C2 public-helper/caller result, then activate final scoped closure: refresh syntax inventory once, reconcile current endpoint/source/resource evidence for every finding, run only missing affected checks and integrate remote before main merge.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
