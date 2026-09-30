@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import gc
 import hashlib
 import json
@@ -378,6 +379,74 @@ def fixture(tf, name, size, jit):
         return evaluate,(theta,observations,initial,noise,mask,residual,ridge),dict(horizon=horizon,
             batch=2,particles=4,state=3,parameters=5,reset="contract_e_chol_v1",canonical_admitted=False)
 
+    if name in ("tt", "tt_adapted", "tt_gaussian", "tt_adjoint"):
+        from bayesfilter.highdim.squared_tt_engine_v0_tf import DensityKernelAdapter, EngineConfig
+        import bayesfilter.highdim.squared_tt_engine_xla_tf as generic
+        d, horizon = tf.float64, 3*size
+        # Matched frozen September engineering fixture; no prior scientific
+        # result supplies data, tuning choices, or promotion evidence.
+        def normal(x,variance):
+            return -.5*tf.reduce_sum(x*x/variance+tf.math.log(tf.constant(2*3.141592653589793*variance,d)),axis=-1)
+        adapter = DensityKernelAdapter(1,lambda x,old: normal(x-.8*old,.05),
+            lambda x,y: normal(x-y,.2),lambda x:normal(x,.1))
+        observations = tf.zeros([horizon,1],d)
+        config = EngineConfig(basis_degree=2,rank=2,row_count=64,sweeps=2,ridge=1e-10,
+            tau=1e-6,coordinate_half_width=3.,seed=7781,row_design="sobol")
+        dimensions = dict(horizon=horizon,state=1,rank=2,degree=2,rows=64,sweeps=2)
+        if name == "tt":
+            if hasattr(generic,"make_value_filter_branch_axis_xla"):
+                call = generic.make_value_filter_branch_axis_xla(adapter,observations.shape,config,jit_compile=jit)
+                def evaluate(y):
+                    value,history = call(y)
+                    return value,history[:,0]
+            else:
+                def evaluate(y):
+                    value,report = generic.run_value_filter_branch_axis_xla(adapter,y,config)
+                    return value,tf.constant([row["log_increment"] for row in report],d)
+            return evaluate,(observations,),dimensions
+        if name == "tt_adjoint":
+            import bayesfilter.highdim.squared_tt_adjoint_engine_tf as adjoint
+            kwargs = dict(transition_vjp=lambda x,old,cot:tf.einsum("n,ni->i",cot,(x-.8*old)/.05),
+                observation_vjp=lambda x,y,cot:tf.zeros([1],d),initial_vjp=lambda x,cot:tf.zeros([1],d),parameter_dim=1)
+            try:
+                from bayesfilter.highdim.squared_tt_native_adjoint_engine_tf import make_adjoint_filter
+            except ImportError:
+                evaluate = lambda y: adjoint.run_adjoint_score_filter(adapter,y,config,**kwargs)
+            else:
+                call = make_adjoint_filter(adapter,observations.shape,config,jit_compile=jit,**kwargs)
+                evaluate = lambda y: call(y)[:2]
+            return evaluate,(observations,),dimensions
+        means = tf.zeros([horizon-1,2],d)
+        covariances = tf.repeat((tf.eye(2,dtype=d)*(.005 if name == "tt_adapted" else .1))[None],horizon-1,axis=0)
+        if name == "tt_adapted":
+            import bayesfilter.highdim.squared_tt_engine_adapted_xla_tf as adapted
+            if hasattr(adapted,"make_value_filter_branch_axis_adapted_xla"):
+                call = adapted.make_value_filter_branch_axis_adapted_xla(adapter,observations.shape,config,jit_compile=jit)
+                def evaluate(y,means,covariances):
+                    value,history = call(y,means,covariances)
+                    return value,history[:,0]
+            else:
+                def evaluate(y,means,covariances):
+                    value,report = adapted.run_value_filter_branch_axis_adapted_xla(adapter,y,config,
+                        predictive_moment_hint=lambda t,y:(means[t-1],covariances[t-1]))
+                    return value,tf.constant([row["log_increment"] for row in report],d)
+            return evaluate,(observations,means,covariances),dimensions
+        initial_mean,initial_cov = tf.zeros([1],d),tf.eye(1,dtype=d)*.1
+        try:
+            from bayesfilter.highdim.squared_tt_gaussian_native_tf import make_gaussian_value_filter
+        except ImportError:
+            from bayesfilter.highdim.squared_tt_engine_gaussian_xla_tf import run_value_filter_branch_axis_gaussian_xla
+            def evaluate(y,initial_mean,initial_cov,means,covariances):
+                value,report = run_value_filter_branch_axis_gaussian_xla(adapter,y,config,
+                    initial_moment_hint=lambda y:(initial_mean,initial_cov),
+                    predictive_moment_hint=lambda t,y:(means[t-1],covariances[t-1]))
+                return value,tf.constant([row["log_increment"] for row in report],d)
+        else:
+            call = make_gaussian_value_filter(adapter,observations.shape,config,jit_compile=jit)
+            def evaluate(y,initial_mean,initial_cov,means,covariances):
+                value,history = call(y,initial_mean,initial_cov,means,covariances)
+                return value,history[0][:,0]
+        return evaluate,(observations,initial_mean,initial_cov,means,covariances),dimensions
     if name == "joint_target":
         from bayesfilter.hardbound.joint_target_tf import GateModel, gate_joint_log_prob_batched
         parameters = tf.constant([[.005,-7.6],[.004,-7.4]],tf.float64)
@@ -478,6 +547,14 @@ def measure(args, result):
         configure_tensorflow_gpu_memory_growth,
     )
     result["memory_policy"] = configure_tensorflow_gpu_memory_growth(tf, require_gpu=args.device == "GPU")
+    if args.resource_profile:
+        result['device_provenance'] = {
+            'cuda_visible_devices': os.environ['CUDA_VISIBLE_DEVICES'],
+            'gpu_memory_policy': result['memory_policy'],
+            'bayesfilter_test_device_scope': os.environ['BAYESFILTER_TEST_DEVICE_SCOPE'],
+            'trust_basis': ('owner_designated_managed_session_visible_gpu_trusted'
+                            if args.device == 'GPU' else 'explicit_cpu_reference'),
+        }
     result["tensorflow"] = tf.__version__
     result["tf32"] = tf.config.experimental.tensor_float_32_execution_enabled()
     result["environment"] = {key: os.environ.get(key) for key in ("CUDA_VISIBLE_DEVICES", "TF_FORCE_GPU_ALLOW_GROWTH", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS", "OPENBLAS_NUM_THREADS", "TF_XLA_FLAGS", "XLA_FLAGS")}
@@ -493,6 +570,16 @@ def measure(args, result):
         out = host_memory()
         if args.device == "GPU":
             out["gpu"] = tf.config.experimental.get_memory_info("GPU:0")
+        if args.resource_profile:
+            out['smaps_rollup_Rss'] = next(int(line.split()[1])*1024 for line in
+                Path('/proc/self/smaps_rollup').read_text().splitlines() if line.startswith('Rss:'))
+            if args.device == 'GPU':
+                listing = subprocess.check_output(['nvidia-smi',
+                    '--query-compute-apps=gpu_uuid,pid,used_memory',
+                    '--format=csv,noheader,nounits'], text=True)
+                out['process_gpu_reservation_bytes'] = sum(int(memory)*1024**2
+                    for uuid, pid, memory in csv.reader(listing.splitlines(), skipinitialspace=True)
+                    if uuid == os.environ['CUDA_VISIBLE_DEVICES'] and int(pid) == os.getpid())
         return out
     def reset_peak():
         if args.device == "GPU":
@@ -559,6 +646,25 @@ def measure(args, result):
                 raise RuntimeError("Repeated fixed-input output changed")
             del values, host, serialized
             result["warm"].append({"iteration": iteration, **timing, **snapshot()})
+        if (args.resource_profile and args.jit == 'on'
+                and source == Path(__file__).resolve().parents[1]):
+            result['phase'] = 'reuse'
+            reset_peak()
+            samples = {0: snapshot()}
+            for iteration in range(1, 129):
+                values, host, _ = call()
+                if [value.tolist() for value in host] != result['values']:
+                    raise RuntimeError('Fixed-input reuse changed its result')
+                del values, host
+                if iteration in (64, 128):
+                    samples[iteration] = snapshot()
+            result['reuse'] = {'calls': 128, 'exact_replay': True, 'samples': samples,
+                'late_64_call_rss_growth_bytes': samples[128]['VmRSS']-samples[64]['VmRSS']}
+            if result['reuse']['late_64_call_rss_growth_bytes'] > 16*1024**2:
+                raise RuntimeError('Core fixed-configuration reuse exceeded RSS bound')
+            if args.device == 'GPU' and (samples[64]['gpu']['current'] != samples[128]['gpu']['current']
+                    or samples[128]['gpu']['peak'] > 2*1024**3):
+                raise RuntimeError('Core fixed-configuration allocator reuse exceeded bound')
         result["trace_count"] = None if args.jit == "eager" else target.experimental_get_tracing_count()
         if args.jit != "eager" and result["trace_count"] != 1:
             raise RuntimeError("Unbounded trace contract")
@@ -595,14 +701,29 @@ def main():
     parser.add_argument("--size", type=int, required=True)
     parser.add_argument("--device", choices=("GPU", "CPU"), required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument('--resource-profile', action='store_true')
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
     started = time.perf_counter()
     result = {"schema": "filter_repair_measurement.v2", "fixture": args.fixture, "size": args.size, "jit": args.jit, "device": args.device, "source_root": str(args.source_root), "worker_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "harness_sha256": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (Path(__file__),Path(__file__).with_name("measure_filter_xla_memory.py"),Path(__file__).with_name("filter_repair_endpoint_fixtures.py"))}, "stages": {"start": host_memory()}, "status": "failed", "phase": "initialization"}
     try:
-        measure(args, result)
+        if args.resource_profile:
+            from filter_repair_cost_provenance import GPUProcessMonitor
+
+            with GPUProcessMonitor(args.device == 'GPU') as monitor:
+                try:
+                    measure(args, result)
+                finally:
+                    result['device_observation'] = monitor.payload()
+            result['device_observation'] = monitor.payload()
+            if monitor.errors or any(p['pid'] != os.getpid()
+                    for sample in monitor.samples for p in sample['processes']):
+                raise RuntimeError('Missing or shared in-run GPU resource observations')
+        else:
+            measure(args, result)
     except Exception as exc:
+        result['status'] = 'failed'
         result["error_type"] = type(exc).__name__
         result["error"] = traceback.format_exc()
         raise

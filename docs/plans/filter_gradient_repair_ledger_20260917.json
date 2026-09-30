@@ -5,7 +5,7 @@
   "findings": [
     {
       "id": "F01",
-      "status": "open",
+      "status": "closed_scoped_execution",
       "scope": "GenUT value/score loops and score provenance",
       "remote_retirement": "Main43de3cb6c removed the old bootstrap GenUT lane. Active tests/fixtures retired; no canonical replacement admission inferred; final finding stays open.",
       "transitive_progress_04037": {
@@ -17,6 +17,12 @@
         "status": "declared_live_CPU_GPU_wiring_qualified",
         "finding_closed": false,
         "remaining": "Affected-use and current-consumer disposition under the September29 scope correction; preserve reduced precision/cap failures and unsupported-use blocks without transferring them to a different analytical authority."
+      },
+      "terminal_disposition": {
+        "result": "docs/plans/filter_gradient_genut_affected_use_disposition_20260930.md",
+        "run": 5305,
+        "scope": "Inspected active reduced-primal value and separate analytical-score authorities; explicit unsupported reverse-AD/cap uses and canonical block retained.",
+        "reopen_on": "Changed active consumer uses failing derivative/cap output, changed affected dependency, or unexplained reachable value/status regression."
       }
     },
     {
@@ -744,20 +750,20 @@
     "parse_error_role": "Unchanged historical vendor leading-zero literal; counts are search leads, not violation verdicts."
   },
   "current_checkpoint": {
-    "through_run": 5304,
+    "through_run": 5307,
     "based_on_commit": "cf76d2cca",
-    "status": "Final public-owner resources close through05304:42 GPU costs,12 CPU/GPU reuse workers and161 terminal checks pass. D23 warm ratio1.4897 is attributed mainly to the accuracy-required residual SVD and accepted as an explicit scoped tradeoff; fixed-configuration memory is stable. Failed diagnostic serialization05255 is preserved.",
+    "status": "Final owner resources close through05304; F01 affected-use terminal05305 passes120 checks. Core resource preflight05307 passes160 checks after preserving05306 optional-Namespace harness failure. Ten scopes are ready for90 matched GPU cost workers plus terminal checks; no numerical source changed.",
     "charged_seconds": {
-      "CPU": 116720.0308981494,
+      "CPU": 116757.58308884646,
       "GPU": 104659.2610687863
     },
     "remaining_hours": {
-      "CPU": 23.5777691949585,
+      "CPU": 23.567338030875987,
       "GPU": 22.92798303644825
     },
     "active_job": null,
     "active_session": null,
-    "next": "Restore the four TT benchmark fixtures accidentally removed by merge9d8202b77; review current core cost/caller applicability and register only genuinely missing measurements. Finish GenUT affected-use and F01--F20 terminal dispositions before main merge.",
+    "next": "Run core resource preflight, then the bounded core-resource matrix. Stop at the first failed numerical/status/provenance block; investigate resource triggers and preserve original failures. Complete current-caller/F01--F20 terminal dispositions before main merge.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -1659,7 +1665,7 @@
       "state": "complete",
       "result": "docs/plans/filter_gradient_nonlinear_scope_result_20260929.md"
     },
-    "active_allocation_key": "final_owner_resources_allocation",
+    "active_allocation_key": "core_resource_allocation",
     "nonlinear_direction_cost_allocation": {
       "state": "complete",
       "start_after_run": 4821,
@@ -2329,6 +2335,7 @@
       ]
     },
     "closed_scoped_finding_ids": [
+      "F01",
       "F12",
       "F13",
       "F14",
@@ -2403,7 +2410,57 @@
       "registered_workers_including_retry": 56,
       "result": "docs/plans/filter_gradient_resource_final_result_20260930.md"
     },
-    "final_owner_resources_result": "docs/plans/filter_gradient_resource_final_result_20260930.md"
+    "final_owner_resources_result": "docs/plans/filter_gradient_resource_final_result_20260930.md",
+    "genut_affected_use_allocation": {
+      "plan": "docs/plans/filter_gradient_genut_affected_use_disposition_20260930.md",
+      "state": "completed",
+      "start_after_run": 5304,
+      "group_prefix": "resource_acceptance_genut_",
+      "max_workers": 2,
+      "max_seconds": {
+        "CPU": 600,
+        "GPU": 0
+      },
+      "worker_timeout_seconds": 300,
+      "base_charges": {
+        "CPU": 116720.0308981494,
+        "GPU": 104659.2610687863
+      },
+      "progress_notes": "GenUT affected-use terminal05305 passes120 checks. F01 closes only its inspected execution/affected-use scope; saved reduced reverse-AD/cap failures remain unsupported and canonical admission stays blocked.",
+      "next_action": "Prepare and execute the ten-scope core resource renewal, preserving existing numerical gates and source-frozen evidence.",
+      "used_workers": 1,
+      "used_seconds": {
+        "CPU": 11.896521572954953,
+        "GPU": 0
+      },
+      "failed_runs": []
+    },
+    "core_resource_allocation": {
+      "plan": "docs/plans/filter_gradient_core_resource_renewal_20260930.md",
+      "state": "active",
+      "start_after_run": 5305,
+      "group_prefix": "resource_acceptance_core_",
+      "max_workers": 108,
+      "max_seconds": {
+        "CPU": 1200,
+        "GPU": 14400
+      },
+      "worker_timeout_seconds": 300,
+      "base_charges": {
+        "CPU": 116731.92741972236,
+        "GPU": 104659.2610687863
+      },
+      "progress_notes": "Final owner resources close through05304; F01 affected-use terminal05305 passes120 checks. Core resource preflight05307 passes160 checks after preserving05306 optional-Namespace harness failure. Ten scopes are ready for90 matched GPU cost workers plus terminal checks; no numerical source changed.",
+      "next_action": "Run core resource preflight, then the bounded core-resource matrix. Stop at the first failed numerical/status/provenance block; investigate resource triggers and preserve original failures. Complete current-caller/F01--F20 terminal dispositions before main merge.",
+      "used_workers": 2,
+      "used_seconds": {
+        "CPU": 25.655669124098495,
+        "GPU": 0
+      },
+      "failed_runs": [
+        5306
+      ]
+    }
   },
   "historical_quadratic_batch_checkpoint": {
     "through_run": 1879,

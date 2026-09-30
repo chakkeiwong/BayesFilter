@@ -1745,6 +1745,24 @@ TEST_GROUPS.update({f'resource_acceptance_final_cost_{case}_{arm}_{pair}_gpu': (
 TEST_GROUPS.update({f'resource_acceptance_final_reuse_{case}_{device}': (
     f'tests/test_filter_repair_resource_final.py::test_public_reuse[{case}]',)
     for case in FINAL_RESOURCE_CASES for device in ('cpu', 'gpu')})
+TEST_GROUPS['resource_acceptance_genut_terminal_cpu'] = (
+    'tests/test_filter_repair_genut_affected_use.py',
+    'tests/test_filter_repair_campaign.py',
+    'tests/test_filter_repair_policy.py',
+)
+TEST_GROUPS['resource_acceptance_core_terminal_cpu'] = (
+    'tests/test_filter_repair_core_resources.py',
+    'tests/test_filter_repair_campaign.py',
+    'tests/test_filter_repair_policy.py',
+    'tests/test_filter_repair_gpu_selection.py',
+    'tests/test_filter_repair_cost_provenance.py',
+)
+TEST_GROUPS['resource_acceptance_core_preflight_cpu'] = (
+    'tests/test_filter_repair_campaign.py',
+    'tests/test_filter_repair_gpu_selection.py',
+    'tests/test_filter_repair_cost_provenance.py',
+    'tests/test_filter_repair_policy.py',
+)
 TEST_GROUPS['resource_acceptance_final_terminal_cpu'] = (
     'tests/test_filter_repair_resource_final_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['remote_integration_terminal_cpu'] = (
@@ -3308,7 +3326,8 @@ def save_json(path, value):
 
 def require_unshared_cost_preflight(args):
     """Decline new public-cost workers before charging shared-device timing."""
-    if (args.action != "test" or args.device != "GPU"
+    core_cost = args.action == 'measure' and args.group == 'resource_acceptance_core_measure_gpu'
+    if not core_cost and (args.action != "test" or args.device != "GPU"
             or args.group not in ("svd_graph_attribution_gpu",
                                  "kdm_auxiliary_cost_original_gpu",
                                  "kdm_auxiliary_cost_graph_gpu",
@@ -3462,6 +3481,8 @@ def run_job(args):
         command = [sys.executable, "scripts/compare_filter_repair_campaign.py", "--output", str(result)]
     else:
         raise ValueError(args.action)
+    if args.action == 'measure' and args.group == 'resource_acceptance_core_measure_gpu':
+        command.append('--resource-profile')
     record = {"schema": "filter_repair_run.v1", "key": key, "started_utc": datetime.now(timezone.utc).isoformat(), "state": "running", "device": device, "timeout_seconds": timeout, "command": command, "cwd": str(ROOT), "environment": {k: env[k] for k in ("CUDA_VISIBLE_DEVICES", "TF_FORCE_GPU_ALLOW_GROWTH", "BAYESFILTER_TEST_DEVICE_SCOPE", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS", "OPENBLAS_NUM_THREADS", "PYTHONHASHSEED")}, "git_head": git("rev-parse", "HEAD"), "git_diff_stat": git("diff", "--stat"), "source_sha256": hashes, "plan": PLAN, "result": str(result), "log": str(directory / "process.log")}
     if args.action == "test" and args.group == "block_buffer_attribution_gpu":
         record["environment"]["XLA_FLAGS"] = env["XLA_FLAGS"]
@@ -3483,7 +3504,7 @@ def run_job(args):
     print(json.dumps({"run": str(directory), "command": command}), flush=True)
     with (directory / "process.log").open("x") as log:
         process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
-        if args.action == 'test' and args.group.startswith(('ledh_streaming_', 'ledh_seeded_cost_', 'resource_acceptance_')):
+        if args.group.startswith(('ledh_streaming_', 'ledh_seeded_cost_', 'resource_acceptance_')):
             record['worker_pid'] = process.pid
             save_json(directory / 'run.json', record)
         try:
@@ -3599,6 +3620,10 @@ def declared_test_device(group):
 
 def run_matrix(args):
     """Resume registered jobs sequentially; failures retain their original evidence."""
+    if getattr(args, 'selection', None) == 'core-resource':
+        from filter_repair_core_resources import run_core_resources
+
+        return run_core_resources(args, sys.modules[__name__])
     from compare_filter_repair_campaign import (
         ONE_SIZE,
         baseline_compilation_failure,
@@ -3713,7 +3738,7 @@ def main():
     parser.add_argument("action", choices=("status", "test", "measure", "matrix", "pause", "audit", "compare", "gate"))
     parser.add_argument("--stage", choices=("qualify", "repeat", "tests"), default="qualify")
     parser.add_argument("--test-batch", choices=("all", *TEST_BATCHES), default="all")
-    parser.add_argument("--selection", choices=("fixture", "new", "additional", "all"), default="all")
+    parser.add_argument("--selection", choices=("fixture", "new", "additional", "all", "core-resource"), default="all")
     parser.add_argument("--group", choices=tuple(TEST_GROUPS), default="policy")
     parser.add_argument("--fixture", choices=FIXTURES, default="covariance")
     parser.add_argument("--arm", choices=("before", "after"), default="after")
@@ -3728,6 +3753,8 @@ def main():
     parser.add_argument("--measurement-gpu-index", type=int, choices=(0, 1, 2, 3), default=None,
                         help="Optional physical GPU for matched costs; default auto-selects and pins one device")
     args = parser.parse_args()
+    if args.selection == 'core-resource' and not (args.action == 'matrix' and args.stage == 'repeat'):
+        parser.error('core-resource selection is restricted to the bounded repeat matrix')
     if args.test_batch != "all" and not (args.action == "matrix" and args.stage == "tests"):
         parser.error("--test-batch is only available for a test matrix")
     if args.test_timeout_seconds != 900 and not (args.action == "test" or
