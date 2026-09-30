@@ -370,18 +370,7 @@ class FrozenGaussianStateProposal:
         return int(self.mean.shape[0])
 
     def log_density(self, states: tf.Tensor) -> tf.Tensor:
-        states = tf.ensure_shape(
-            tf.convert_to_tensor(states, DTYPE), [None, self.dimension]
-        )
-        whitened = tf.transpose(
-            tf.linalg.triangular_solve(
-                self.chol, tf.transpose(states - self.mean[None, :]), lower=True
-            )
-        )
-        return -0.5 * (
-            tf.cast(self.dimension, DTYPE) * tf.constant(math.log(2.0 * math.pi), DTYPE)
-            + tf.reduce_sum(tf.square(whitened), axis=1)
-        ) - tf.reduce_sum(tf.math.log(tf.linalg.diag_part(self.chol)))
+        return _gaussian_log_density(states, self.mean, self.chol)
 
     def sample_with_seed(
         self, particle_count: int, seed: tuple[int, int], *, jit_compile: bool
@@ -406,14 +395,7 @@ class FrozenGaussianStateProposal:
             autograph=False,
         )
         def transform(standard_normal):
-            states = self.mean[None, :] + tf.einsum(
-                "ij,nj->ni", self.chol, standard_normal
-            )
-            return {
-                "physical_points": states,
-                "physical_log_density": self.log_density(states),
-                "finite": tf.reduce_all(tf.math.is_finite(states)),
-            }
+            return _gaussian_transform_core(standard_normal, self.mean, self.chol)
 
         _GAUSSIAN_TRANSFORM_CACHE[cache_key] = transform
         return transform
@@ -510,6 +492,8 @@ def compile_c2_independent_proposal_branch(
         seed=seed,
         family=family,
         sample_transition=sample_transition,
+        native_sampler="gaussian" if all(isinstance(p, FrozenGaussianStateProposal) for p in proposals) else None,
+        native_proposals=proposals, jit_compile_sampler=bool(jit_compile_sampler),
         transition_manifests=tuple(proposal.manifest_payload() for proposal in proposals),
     )
 
@@ -833,40 +817,6 @@ def compile_c2_bootstrap_proposal_branch(
     seed: int,
     jit_compile_sampler: bool = True,
 ) -> FrozenC2ProposalCompilation:
-    transition = model.transition_matrix(theta_reference)
-    sigma = tf.constant(float(model.sigma), DTYPE)
-    state_dimension = model.state_dim()
-    count = int(particle_count)
-
-    @tf.function(
-        input_signature=[
-            tf.TensorSpec([count, state_dimension], DTYPE),
-            tf.TensorSpec([count, state_dimension], DTYPE),
-        ],
-        jit_compile=bool(jit_compile_sampler),
-        autograph=False,
-    )
-    def transform(parent_states, standard_normal):
-        states = tf.linalg.matmul(parent_states, transition, transpose_b=True) + sigma * standard_normal
-        log_q = model.transition_log_density(
-            theta_reference, parent_states, states, 1
-        )
-        return states, log_q
-
-    def sample_transition(time_index, parents, transition_seed):
-        noise = tf.random.stateless_normal(
-            [count, state_dimension],
-            [int(transition_seed[0]), int(transition_seed[1])],
-            dtype=DTYPE,
-        )
-
-        states, log_q = transform(parents, noise)
-        return states, log_q, {
-            "time_index": time_index,
-            "family": "bootstrap_conditional",
-            "finite": tf.reduce_all(tf.math.is_finite(states)),
-        }
-
     horizon = int(tf.convert_to_tensor(observations).shape[0])
     return _compile_c2_branch(
         model=model,
@@ -875,7 +825,8 @@ def compile_c2_bootstrap_proposal_branch(
         particle_count=particle_count,
         seed=seed,
         family="bootstrap_conditional",
-        sample_transition=sample_transition,
+        sample_transition=None,
+        native_sampler="bootstrap", jit_compile_sampler=bool(jit_compile_sampler),
         transition_manifests=tuple(
             {
                 "family": "bootstrap_conditional",
@@ -892,9 +843,14 @@ def stationary_gaussian_proposals(
     theta_reference: tf.Tensor,
     horizon: int,
 ) -> tuple[FrozenGaussianStateProposal, ...]:
-    covariance, _ = model.stationary_covariance_and_derivative(theta_reference)
-    chol = tf.linalg.cholesky(covariance)
-    mean = tf.zeros([model.state_dim()], DTYPE)
+    owner = getattr(model, "_c2_stationary_proposal_owner", None)
+    if owner is None:
+        @tf.function(input_signature=[tf.TensorSpec([2], DTYPE)], jit_compile=True, autograph=False)
+        def owner(theta):
+            covariance, _ = model.stationary_covariance_and_derivative(theta)
+            return tf.zeros([model.state_dim()], DTYPE), tf.linalg.cholesky(covariance)
+        object.__setattr__(model, "_c2_stationary_proposal_owner", owner)
+    mean, chol = owner(tf.convert_to_tensor(theta_reference, DTYPE))
     return tuple(
         FrozenGaussianStateProposal(
             mean=mean,
@@ -916,6 +872,9 @@ def _compile_c2_branch(
     family: str,
     sample_transition,
     transition_manifests: Sequence[Mapping[str, object]],
+    native_sampler: str | None = None,
+    native_proposals: Sequence[FrozenGaussianStateProposal] = (),
+    jit_compile_sampler: bool = True,
 ) -> FrozenC2ProposalCompilation:
     if not tf.executing_eagerly():
         raise RuntimeError("compile C2 proposal branches before tracing")
@@ -939,87 +898,92 @@ def _compile_c2_branch(
     if float(stability["minimum_covariance_eigenvalue"].numpy()) <= 0.0:
         raise ValueError("theta_reference stationary covariance is not positive definite")
 
-    covariance, _ = model.stationary_covariance_and_derivative(theta_reference)
-    initial_chol = tf.linalg.cholesky(covariance)
-    initial_normal = tf.random.stateless_normal(
-        [count, model.state_dim()], [int(seed), 1001], dtype=DTYPE
-    )
-    initial_states = tf.einsum("ij,nj->ni", initial_chol, initial_normal)
-    initial_log_q = model.initial_log_density(theta_reference, initial_states)
-    states = [initial_states]
-    ancestors = []
-    auxiliary_log_probabilities = []
-    transition_log_q = []
-    proposal_diagnostics = []
-
-    partial_branch = prepare_frozen_proposal_branch(
-        observations=observations[:1],
-        states=tf.stack(states),
-        initial_log_proposal_density=initial_log_q,
-        ancestors=tf.zeros([0, count], tf.int32),
-        auxiliary_log_probabilities=tf.zeros([0, count], DTYPE),
-        transition_log_proposal_density=tf.zeros([0, count], DTYPE),
-    )
-    reference_log_weights = prepare_frozen_proposal_apf_program(
-        model, partial_branch
-    ).evaluate(theta_reference)["final_log_weights"]
-
-    for time_index in range(1, horizon):
-        auxiliary_log = tf.identity(reference_log_weights)
-        categorical_uniforms = tf.random.stateless_uniform(
-            [count], [int(seed), 2000 + 17 * time_index], dtype=DTYPE
+    if native_sampler in ("bootstrap", "gaussian"):
+        branch, proposal_diagnostics = _native_c2_branch(
+            model, observations, theta_reference, count, seed, jit_compile_sampler,
+            native_sampler, tuple(native_proposals), family)
+    else:
+        covariance, _ = model.stationary_covariance_and_derivative(theta_reference)
+        initial_chol = tf.linalg.cholesky(covariance)
+        initial_normal = tf.random.stateless_normal(
+            [count, model.state_dim()], [int(seed), 1001], dtype=DTYPE
         )
-        cdf = tf.math.cumsum(tf.exp(auxiliary_log))
-        cdf = tf.concat([cdf[:-1], tf.ones([1], DTYPE)], axis=0)
-        ancestor = tf.searchsorted(
-            cdf, categorical_uniforms, side="right", out_type=tf.int32
-        )
-        parents = tf.gather(states[-1], ancestor)
-        sampled_states, sampled_log_q, sampled_diagnostics = sample_transition(
-            time_index,
-            parents,
-            (int(seed), 3000 + 31 * time_index),
-        )
-        sampled_states = tf.ensure_shape(
-            tf.convert_to_tensor(sampled_states, DTYPE),
-            [count, model.state_dim()],
-        )
-        sampled_log_q = tf.ensure_shape(
-            tf.convert_to_tensor(sampled_log_q, DTYPE), [count]
-        )
-        if not bool(
-            tf.reduce_all(tf.math.is_finite(sampled_states)).numpy()
-            and tf.reduce_all(tf.math.is_finite(sampled_log_q)).numpy()
-        ):
-            raise ValueError(f"non-finite proposal output at time {time_index}")
-        if "cdf_bracket_valid" in sampled_diagnostics and not bool(
-            sampled_diagnostics["cdf_bracket_valid"].numpy()
-        ):
-            raise ValueError(f"invalid Hermite CDF bracket at time {time_index}")
-        if "finite" in sampled_diagnostics and not bool(
-            sampled_diagnostics["finite"].numpy()
-        ):
-            raise ValueError(f"invalid proposal diagnostic at time {time_index}")
-
-        states.append(sampled_states)
-        ancestors.append(ancestor)
-        auxiliary_log_probabilities.append(auxiliary_log)
-        transition_log_q.append(sampled_log_q)
-        proposal_diagnostics.append(dict(sampled_diagnostics))
+        initial_states = tf.einsum("ij,nj->ni", initial_chol, initial_normal)
+        initial_log_q = model.initial_log_density(theta_reference, initial_states)
+        states = [initial_states]
+        ancestors = []
+        auxiliary_log_probabilities = []
+        transition_log_q = []
+        proposal_diagnostics = []
 
         partial_branch = prepare_frozen_proposal_branch(
-            observations=observations[: time_index + 1],
+            observations=observations[:1],
             states=tf.stack(states),
             initial_log_proposal_density=initial_log_q,
-            ancestors=tf.stack(ancestors),
-            auxiliary_log_probabilities=tf.stack(auxiliary_log_probabilities),
-            transition_log_proposal_density=tf.stack(transition_log_q),
+            ancestors=tf.zeros([0, count], tf.int32),
+            auxiliary_log_probabilities=tf.zeros([0, count], DTYPE),
+            transition_log_proposal_density=tf.zeros([0, count], DTYPE),
         )
         reference_log_weights = prepare_frozen_proposal_apf_program(
             model, partial_branch
         ).evaluate(theta_reference)["final_log_weights"]
 
-    branch = partial_branch
+        for time_index in range(1, horizon):
+            auxiliary_log = tf.identity(reference_log_weights)
+            categorical_uniforms = tf.random.stateless_uniform(
+                [count], [int(seed), 2000 + 17 * time_index], dtype=DTYPE
+            )
+            cdf = tf.math.cumsum(tf.exp(auxiliary_log))
+            cdf = tf.concat([cdf[:-1], tf.ones([1], DTYPE)], axis=0)
+            ancestor = tf.searchsorted(
+                cdf, categorical_uniforms, side="right", out_type=tf.int32
+            )
+            parents = tf.gather(states[-1], ancestor)
+            sampled_states, sampled_log_q, sampled_diagnostics = sample_transition(
+                time_index,
+                parents,
+                (int(seed), 3000 + 31 * time_index),
+            )
+            sampled_states = tf.ensure_shape(
+                tf.convert_to_tensor(sampled_states, DTYPE),
+                [count, model.state_dim()],
+            )
+            sampled_log_q = tf.ensure_shape(
+                tf.convert_to_tensor(sampled_log_q, DTYPE), [count]
+            )
+            if not bool(
+                tf.reduce_all(tf.math.is_finite(sampled_states)).numpy()
+                and tf.reduce_all(tf.math.is_finite(sampled_log_q)).numpy()
+            ):
+                raise ValueError(f"non-finite proposal output at time {time_index}")
+            if "cdf_bracket_valid" in sampled_diagnostics and not bool(
+                sampled_diagnostics["cdf_bracket_valid"].numpy()
+            ):
+                raise ValueError(f"invalid Hermite CDF bracket at time {time_index}")
+            if "finite" in sampled_diagnostics and not bool(
+                sampled_diagnostics["finite"].numpy()
+            ):
+                raise ValueError(f"invalid proposal diagnostic at time {time_index}")
+
+            states.append(sampled_states)
+            ancestors.append(ancestor)
+            auxiliary_log_probabilities.append(auxiliary_log)
+            transition_log_q.append(sampled_log_q)
+            proposal_diagnostics.append(dict(sampled_diagnostics))
+
+            partial_branch = prepare_frozen_proposal_branch(
+                observations=observations[: time_index + 1],
+                states=tf.stack(states),
+                initial_log_proposal_density=initial_log_q,
+                ancestors=tf.stack(ancestors),
+                auxiliary_log_probabilities=tf.stack(auxiliary_log_probabilities),
+                transition_log_proposal_density=tf.stack(transition_log_q),
+            )
+            reference_log_weights = prepare_frozen_proposal_apf_program(
+                model, partial_branch
+            ).evaluate(theta_reference)["final_log_weights"]
+
+        branch = partial_branch
     manifest = {
         "compiler_route_id": COMPILER_ID,
         "compiler_classification": COMPILER_CLASSIFICATION,
@@ -1088,3 +1052,88 @@ __all__ = [
     "stationary_gaussian_proposals",
     "transformed_student_proposals",
 ]
+
+
+def _native_c2_branch(model, observations, theta, count, seed, jit_compile,
+                      sampler_kind, proposals, family):
+    """Completed host boundary for retained native branch preparation."""
+    from bayesfilter.highdim.c2_branch_preparation_tf import bootstrap_step, gaussian_step, make_branch_preparation
+
+    horizon = int(observations.shape[0])
+    key = (sampler_kind, horizon, count, bool(jit_compile))
+    dimension = model.state_dim()
+    diagnostic_specs = {"finite": tf.TensorSpec([], tf.bool)}
+    if sampler_kind == "bootstrap":
+        sampler = bootstrap_step(model, count)
+        operands, operand_specs = (), ()
+    else:
+        sampler = gaussian_step(count, dimension)
+        operands = (
+            tf.stack([p.mean for p in proposals]) if proposals else tf.zeros([0, dimension], DTYPE),
+            tf.stack([p.chol for p in proposals]) if proposals else tf.zeros([0, dimension, dimension], DTYPE),
+            tf.constant([int(p.time_index) for p in proposals], tf.int32),
+        )
+        operand_specs = (tf.TensorSpec([horizon-1, dimension], DTYPE),
+                         tf.TensorSpec([horizon-1, dimension, dimension], DTYPE),
+                         tf.TensorSpec([horizon-1], tf.int32))
+        diagnostic_specs["time_index_valid"] = tf.TensorSpec([], tf.bool)
+    cache = getattr(model, "_c2_branch_preparation_owners", None)
+    if cache is None:
+        cache = {}
+        object.__setattr__(model, "_c2_branch_preparation_owners", cache)
+    if key not in cache:
+        if len(cache) >= 4:
+            cache.pop(next(iter(cache)))
+        cache[key] = make_branch_preparation(model, horizon, count, sampler,
+            operand_specs, diagnostic_specs, bool(jit_compile))
+    result = cache[key](observations, theta, tf.convert_to_tensor(int(seed), tf.int64), operands)
+    status = int(result["status"].numpy())
+    time = int(result["failed_time"].numpy())
+    if status:
+        messages = {
+            1: "observations must contain only finite values",
+            2: "states must contain only finite values",
+            3: "initial_log_proposal_density must contain only finite values",
+            4: f"non-finite proposal output at time {time}",
+            5: f"invalid Hermite CDF bracket at time {time}",
+            6: f"invalid proposal diagnostic at time {time}",
+            7: "auxiliary_log_probabilities must contain only finite values",
+            8: "each auxiliary categorical law must be normalized",
+            9: "transition proposal time index mismatch",
+        }
+        raise ValueError(messages[status])
+    branch = prepare_frozen_proposal_branch(observations=observations,
+        states=result["states"], initial_log_proposal_density=result["initial_log_proposal_density"],
+        ancestors=result["ancestors"], auxiliary_log_probabilities=result["auxiliary_log_probabilities"],
+        transition_log_proposal_density=result["transition_log_proposal_density"])
+    finite = tf.unstack(result["diagnostics"]["finite"])
+    diagnostics = tuple({"time_index": index + 1, "family": family, "finite": value,
+                         **({"proposal_id": proposals[index].proposal_id} if sampler_kind == "gaussian" else {})}
+                        for index, value in enumerate(finite))
+    return branch, diagnostics
+
+
+def _gaussian_log_density(states, mean, chol):
+    states = tf.ensure_shape(
+        tf.convert_to_tensor(states, DTYPE), [None, int(mean.shape[0])]
+    )
+    whitened = tf.transpose(
+        tf.linalg.triangular_solve(
+            chol, tf.transpose(states - mean[None, :]), lower=True
+        )
+    )
+    return -0.5 * (
+        tf.cast(int(mean.shape[0]), DTYPE) * tf.constant(math.log(2.0 * math.pi), DTYPE)
+        + tf.reduce_sum(tf.square(whitened), axis=1)
+    ) - tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol)))
+
+
+def _gaussian_transform_core(standard_normal, mean, chol):
+    states = mean[None, :] + tf.einsum(
+        "ij,nj->ni", chol, standard_normal
+    )
+    return {
+        "physical_points": states,
+        "physical_log_density": _gaussian_log_density(states, mean, chol),
+        "finite": tf.reduce_all(tf.math.is_finite(states)),
+    }

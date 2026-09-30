@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05445; active worker runs: none.
-Charged/reserved CPU 117348.592048s / GPU 109396.792181s.
-Remaining CPU 23.403169h / GPU 21.612002h.
+Through 05453; active worker runs: none.
+Charged/reserved CPU 117515.853068s / GPU 109655.490420s.
+Remaining CPU 23.356707h / GPU 21.540142h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_c2_mixture_preparation_20261001.md (complete); at most
-32 workers/3600 CPU/7200 GPU seconds.
-Used/reserved 26 workers/393.983511 CPU/1742.140313 GPU seconds.
+Active allocation: docs/plans/filter_gradient_c2_branch_preparation_20261001.md (active_bootstrap_gaussian_checkpoint); at most
+48 workers/7200 CPU/14400 GPU seconds.
+Used/reserved 8 workers/167.261020 CPU/258.698238 GPU seconds.
 One numerical worker at a time.
 
-Fixed/defensive UKF preparation closes through05445:20 complete numerical/API/XLA checks per CPU/GPU,22 affected checks per CPU/GPU,163 preflight checks,18 fresh matched-cost workers and terminal readback pass. All six XLA128-call reuses pass. See filter_gradient_c2_mixture_preparation_result_20261001.md. No active worker.
+Original seven-family CPU05446/GPU05447 records frozen. Bootstrap CPU05449/GPU05450 pass after preserved05448 horizon-one failure and static repair. Gaussian/stationary CPU05451/GPU05452 full records, live operands, real proposal IDs and error ordering pass (max1.421e-14).05453 policy passes;332 sources/1520 exact allowances. No numerical worker active; Hermite/mixed, Student and DMIS remain Python-controlled.
 
-Next: Archive/commit/push the mixture unit, then register the remaining C2 branch-construction allocation; freeze complete CPU/GPU originals before numerical edits.
+Next: Preserve the bootstrap/Gaussian checkpoint, then extend typed packed operands to Hermite/mixed and Student/DMIS using shared proposal authorities. Qualify all original records and remaining error/graph cases before matched costs. Design details: /tmp/filter-repair-c2-nonukf-next-notes.md.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
@@ -64,7 +64,7 @@ GenUT wiring through04939 and actual-DZ504618–04628/import04629–04630/index0
 Keep each source/data/dtype/device scope explicit. F01, F12--F17 and F20 have closed
 scoped execution/API dispositions (including earlier F14 through04727). The12
 remaining broad findings include resource/applicability decisions, not12 known
-unfixed bugs. Current guard coverage is331 sources/1514 exact exceptions, including C2 UKF preparation/model dependencies; the
+unfixed bugs. Current guard coverage is332 sources/1520 exact exceptions, including C2 UKF preparation/model dependencies; the
 static guard is scoped coverage, not a repository-wide compliance claim.
 
 GPU0 is remote desktop, GPU1 display. Recheck GPU2/3 availability before use;

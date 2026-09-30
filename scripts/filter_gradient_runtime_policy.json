@@ -711,9 +711,15 @@
     "bayesfilter/highdim/c2_mixture_ukf_apf_tf.py": null,
     "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py": [
       "C2StochasticVolatilityFrozenAPFModel",
-      "_kron_same"
+      "_kron_same",
+      "compile_c2_bootstrap_proposal_branch",
+      "stationary_gaussian_proposals",
+      "_native_c2_branch",
+      "_gaussian_log_density",
+      "_gaussian_transform_core"
     ],
-    "bayesfilter/highdim/c2_ukf_mixture_steps_tf.py": null
+    "bayesfilter/highdim/c2_ukf_mixture_steps_tf.py": null,
+    "bayesfilter/highdim/c2_branch_preparation_tf.py": null
   },
   "exceptions": [
     {
@@ -14371,6 +14377,54 @@
       "ast_sha256": "d99d3b6a78eae6da69272cce6cb15ab54a6bbaf670300b9db150e5065481e819",
       "role": "host_reporting",
       "reason": "Format completed per-date diagnostic tensors and static component-count fields after the native preparation owner finishes; no host value feeds the numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "compile_c2_bootstrap_proposal_branch",
+      "kind": "python_iteration",
+      "ast_sha256": "d3b4a8f73bc295cba52f8bbe6d598e72425ab78787cac65c60a0dabd7d18112e",
+      "role": "fixed_schema",
+      "reason": "Build per-date manifest dictionaries containing static labels and the unchanged reference-parameter tensor; no numerical preparation or feedback."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "stationary_gaussian_proposals",
+      "kind": "python_iteration",
+      "ast_sha256": "5855ccef57bd3758de7b841feddb0cef5e7fe61a404036120f268c8dc9d4b4ae",
+      "role": "host_reporting",
+      "reason": "Construct time-indexed validated proposal records from the single completed XLA mean/cholesky result; no per-date covariance calculation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_native_c2_branch",
+      "kind": "python_iteration",
+      "ast_sha256": "8b45195a21fe4fb4e403feaebd42b36765fee35b09686954887c46f848cf551c",
+      "role": "fixed_schema",
+      "reason": "Collect existing Gaussian parameter tensors or static time-index metadata for one packed tensor input; no per-proposal numerical calculation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_native_c2_branch",
+      "kind": "python_iteration",
+      "ast_sha256": "fa354e9fbe040a3b4a5937d135d55288d11839f3f224a74ebea94835711f2ba4",
+      "role": "fixed_schema",
+      "reason": "Collect existing Gaussian parameter tensors or static time-index metadata for one packed tensor input; no per-proposal numerical calculation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_native_c2_branch",
+      "kind": "python_iteration",
+      "ast_sha256": "8eb850cf55aab96ecd3eaebecc9ba06e7e03e88eb6b7a4e93b1de90b480802d2",
+      "role": "fixed_schema",
+      "reason": "Collect existing Gaussian parameter tensors or static time-index metadata for one packed tensor input; no per-proposal numerical calculation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_native_c2_branch",
+      "kind": "python_iteration",
+      "ast_sha256": "bd03b26c317133a25bc45147872c2fc7b2a16201db21e3403c6401faa756d34a",
+      "role": "host_reporting",
+      "reason": "Format completed finite diagnostics and bound proposal identifiers after native branch preparation; no host output feeds the recurrence."
     }
   ]
 }
