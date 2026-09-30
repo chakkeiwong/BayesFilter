@@ -111,3 +111,57 @@ and observed GPU ownership remain required. Three timing pairs give a wide
 approximate log-t interval, not a universal performance bound. Fixed-shape
 reuse answers continuing-growth risk only; broader native-capacity acceptance
 remains scoped to separately measured owners.
+
+The owner subunit passes05203--05227 and its scoped cold/RSS tradeoff is in
+filter_gradient_resource_owners_result_20260930.md. Register the next16 workers
+as resource_acceptance_streaming:12 fresh GPU costs, three reuse/capacity
+workers and one readback/policy. Costs repeat the exact buffered versus current
+streaming LGSSM fixture (seed13,N64,D2,T32/128, process123/resample17), three
+counterbalanced pairs and30 synchronized warm calls. All shared outputs and
+stream words must be exact before cost is accepted. Measurement precedes HLO
+and comparison-owner compilation; use GPU3 with unshared observations.
+
+Reuse/capacity runs cover GPU T32/T128 and CPU-reference T128. Each executes
+128 alternating calls with(123,0)/(124,.1) process-seed/observation-shift inputs
+and checks the frozen buffered reference after measuring memory. Four additional
+particle-count configurations N8/16/32/64 use K=N and the same declared controls.
+Record their validity; invalid cases show only allocation behavior, not usable
+scientific capacity. Preserve one trace per owner, late64-call RSS trigger16MiB,
+allocator live-byte stability, incremental RSS and allocator peak2GiB limits,
+Python owner collection and parent-observed process exit. No native eviction
+claim follows. The existing CPU ratios/95% limits remain unchanged and failed
+against the stricter10% criterion, regardless of GPU outcome.
+
+Source audit shows seven direct numerical files used by the accepted remaining-SVD
+composition are byte-identical to checkpointea94aac96; reuse that cost cohort
+after confirming its actual callees. The distinct added angle/subspace checks
+are not part of the old fit-only composition and still need their own costs.
+Do not expand the next run into repeated historical optimizer trajectories.
+
+Skeptical review: GPU kernel launch costs can reverse CPU timing differences,
+so do not extrapolate the CPU slowdown. Separate complete output equality,
+paired timing and finite lifetime; a passing primitive RNG probe cannot accept
+the enclosing streaming owner. This16-worker registration brings the current
+unit to41/48 planned workers and retains room for focused repairs under the
+unchanged7200-second device limits.
+
+All12 streaming GPU costs05228--05239 pass exact shared records. T32 reuse/
+capacity05240 passes. T128 reuse05241 stops before memory sampling because the
+second seed/observation case is invalid; the timing fixture's first case passes.
+Run one exact frozen-buffered/current status comparison on that second case
+before assigning failure. Preserve05241 and the pre-diagnostic harness source.
+No new seed selection or numerical relaxation is allowed. If both authorities
+reject identically, measure128 valid calls using the declared accepted first
+case and retain the second as changed-input failure-status evidence. Source
+applicability must compare actual unchanged timed functions and numerical
+dependencies, rather than require unchanged unrelated test registration.
+
+05242 proves exact shared-record agreement for the rejected T128 second input;
+both buffered and streaming report program_valid=False. The harness assumption
+that both predeclared variants were usable was wrong. Keep128 valid calls on
+the accepted first variant; compare the changed-input refusal independently
+after memory sampling, including exact NaN locations and statuses. T32 retains
+two valid alternating inputs. No runtime or random seed changes. Retry only
+T128 GPU and the unrun CPU/readback via resource_acceptance_streaming_finish.
+Frozen pre-repair harness bytes and AST identity of timed functions preserve
+the12 cost workers and T32 lifetime evidence; numerical sources remain unchanged.

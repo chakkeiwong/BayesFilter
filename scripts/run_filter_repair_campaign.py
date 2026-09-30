@@ -1721,6 +1721,16 @@ TEST_GROUPS.update({f'resource_acceptance_reuse_{case}_{device}': (
     for case in RESOURCE_OWNER_CASES for device in ('cpu', 'gpu')})
 TEST_GROUPS['resource_acceptance_owners_terminal_cpu'] = (
     'tests/test_filter_repair_resource_owners_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'resource_acceptance_stream_cost_{pair}_{horizon}_{arm}_gpu': (
+    f'tests/test_filter_repair_resource_streaming.py::test_matched_streaming_cost[{pair}-{horizon}-{arm}]',)
+    for pair in range(3) for horizon in (32, 128) for arm in ('buffered', 'streaming')})
+TEST_GROUPS.update({f'resource_acceptance_stream_reuse_{horizon}_{device}': (
+    f'tests/test_filter_repair_resource_streaming.py::test_streaming_reuse[{horizon}]',)
+    for horizon, device in ((32, 'gpu'), (128, 'gpu'), (128, 'cpu'))})
+TEST_GROUPS['resource_acceptance_stream_terminal_cpu'] = (
+    'tests/test_filter_repair_resource_streaming_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['resource_acceptance_stream_status_gpu'] = (
+    'tests/test_filter_repair_resource_streaming.py::test_changed_long_horizon_status',)
 TEST_GROUPS['remote_integration_terminal_cpu'] = (
     'tests/test_filter_repair_sqmc_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['remote_integration_halton_attribution_gpu'] = (
@@ -2887,6 +2897,17 @@ TEST_BATCHES['resource_acceptance_owners'] = (
     *(f'resource_acceptance_reuse_{case}_{device}'
       for case in RESOURCE_OWNER_CASES for device in ('cpu', 'gpu')),
     'resource_acceptance_owners_terminal_cpu',
+)
+TEST_BATCHES['resource_acceptance_streaming'] = (
+    *(f'resource_acceptance_stream_cost_{pair}_{horizon}_{arm}_gpu'
+      for pair in range(3) for horizon in (32, 128)
+      for arm in (('buffered', 'streaming') if pair % 2 == 0 else ('streaming', 'buffered'))),
+    'resource_acceptance_stream_reuse_32_gpu', 'resource_acceptance_stream_reuse_128_gpu',
+    'resource_acceptance_stream_reuse_128_cpu', 'resource_acceptance_stream_terminal_cpu',
+)
+TEST_BATCHES['resource_acceptance_streaming_finish'] = (
+    'resource_acceptance_stream_reuse_128_gpu', 'resource_acceptance_stream_reuse_128_cpu',
+    'resource_acceptance_stream_terminal_cpu',
 )
 
 
