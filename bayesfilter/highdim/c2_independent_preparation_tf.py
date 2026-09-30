@@ -60,6 +60,19 @@ def diagnostic_specs():
         'cdf_bracket_valid': tf.TensorSpec([], tf.bool)}
 
 
+def _hermite_tensor_view(configuration, payload):
+    """Private traced view of validated tensors, without a public identity."""
+    view = object.__new__(GaussianHermiteRetainedProposal)
+    object.__setattr__(view, 'prefix_core_values', payload[0])
+    object.__setattr__(view, 'suffix_gram', payload[1])
+    object.__setattr__(view, 'z_h', payload[2])
+    object.__setattr__(view, 'tau_abs', payload[3])
+    object.__setattr__(view, 'coordinate_offset', payload[4])
+    object.__setattr__(view, 'coordinate_matrix', payload[5])
+    object.__setattr__(view, 'defensive_nu', configuration[3])
+    return view
+
+
 def _sample_configuration(configuration, payload, count, seed):
     if configuration[0] == 'gaussian':
         from bayesfilter.highdim.c2_sv_frozen_proposal_apf_tf import _gaussian_transform_core
@@ -73,14 +86,7 @@ def _sample_configuration(configuration, payload, count, seed):
         # A private tensor view reuses the sole retained-proposal mathematical
         # authority. Its inputs come from validated public proposals. It has
         # no proposal_id and cannot issue a public manifest or admission claim.
-        view = object.__new__(GaussianHermiteRetainedProposal)
-        object.__setattr__(view, 'prefix_core_values', payload[0])
-        object.__setattr__(view, 'suffix_gram', payload[1])
-        object.__setattr__(view, 'z_h', payload[2])
-        object.__setattr__(view, 'tau_abs', payload[3])
-        object.__setattr__(view, 'coordinate_offset', payload[4])
-        object.__setattr__(view, 'coordinate_matrix', payload[5])
-        object.__setattr__(view, 'defensive_nu', configuration[3])
+        view = _hermite_tensor_view(configuration, payload)
         random_inputs = _random_inputs_program(count, configuration[1], configuration[3])(seed)
         result = view.sample_physical(*random_inputs)
         row = {'finite': result['finite'],

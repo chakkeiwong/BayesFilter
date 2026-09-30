@@ -153,3 +153,35 @@ geometry, live inputs and one trace pass.05463 policy passes with334 sources/
 The new record loop only binds completed tensors and hashes actual payloads.
 This does not yet close DMIS, all C2 public errors, graph/lifetime qualification
 or complete-public costs.
+
+DMIS implementation review: extend the existing native branch owner with a
+static equal-bank step and live transition base masses. The bank step must use
+the original two categorical seeds (2000+37*t,2100+37*t), retained sampler seed
+3000+41*t and Student sampler seed4000+43*t, with TT states first. Evaluate both
+crossed densities through their existing proposal authorities, retaining alpha
+in the full mixture density and weight-over-bank-count base mass. Reuse shared
+exact-prefix analytical evaluation with the growing mass history. DMIS reports
+sampler finite flags but historically rejects invalid branch tensors at the
+branch-construction boundary; do not replace that with the independent branch's
+stricter CDF/finite-diagnostic errors. Test non-half alpha and externally supplied
+heterogeneous Student/Hermite configurations as well as frozen default records.
+Renew affected bootstrap/Gaussian/Hermite/Student checks because the time owner
+is shared. No tuning, stochastic method or score definition changes.
+
+DMIS qualification05464--05473: default CPU/GPU complete-record maxima are
+3.553e-15/1.599e-14. Heterogeneous retained/Student configurations with alpha.23
+match within7.105e-15 on both backends, with live seed/theta/proposal/alpha
+operands, unchanged explicit-defensive nu reporting semantics and one trace.
+Fixed two-configuration T3/T7/T11/T3 graph inventories pass. Initial-only and
+original ordered invalid inputs pass. The legacy numerical fallback has been
+removed; one native supported-prefix evaluation preserves unsupported-input
+error order (CPU05469/GPU05472). Shared CPU05470/GPU05471 regressions pass,
+including density/base-mass/prefix/analytical-score and Student moment checks.
+05473 policy passes;335 complete/scoped sources and1552 exact allowances, now
+including the complete C2 public compiler module. New allowances are only
+metadata validation, configuration binding, manifests and completed reporting.
+An unregistered direct CPU smoke reported8 passes in26.77s, but serial overlap
+was not verified before launch; it closes no gate and is conservatively charged
+60CPU seconds. The registered regression above supplies the qualified evidence.
+Matched resource qualification follows the separately frozen five-family
+filter_gradient_c2_branch_cost_20261001.md plan. No whole-program closure yet.

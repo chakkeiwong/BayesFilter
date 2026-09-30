@@ -1777,6 +1777,32 @@ TEST_GROUPS.update({f'c2_preparation_branch_gaussian_{device}': (
     'tests/test_filter_repair_c2_branch_preparation.py::test_gaussian_preparation_live_parameters_geometry_and_error_order',)
     for device in ('cpu', 'gpu')})
 TEST_GROUPS['c2_preparation_branch_policy_cpu'] = TEST_GROUPS['policy']
+C2_BRANCH_COST_FAMILIES = ('bootstrap', 'stationary', 'mixed', 'student', 'dmis')
+TEST_GROUPS.update({f'c2_preparation_branch_cost_{family}_{arm}_gpu': (
+    f'tests/test_filter_repair_c2_branch_cost.py::test_branch_complete_public_cost[{arm}-{family}]',)
+    for family in C2_BRANCH_COST_FAMILIES for arm in ('original', 'graph', 'xla')})
+TEST_GROUPS['c2_preparation_branch_cost_terminal_cpu'] = (
+    'tests/test_filter_repair_c2_branch_cost.py::test_branch_cost_readback', *TEST_GROUPS['policy'])
+TEST_GROUPS.update({f'c2_preparation_branch_dmis_{device}': (
+    'tests/test_filter_repair_c2_branch_preparation.py::test_native_dmis_complete_records',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'c2_preparation_branch_dmis_protocol_{device}': (
+    'tests/test_filter_repair_c2_dmis_protocol.py::test_dmis_heterogeneous_live_inputs',
+    'tests/test_filter_repair_c2_dmis_protocol.py::test_dmis_errors_and_initial_only',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS['c2_preparation_branch_dmis_graph_cpu'] = (
+    'tests/test_filter_repair_c2_dmis_protocol.py::test_dmis_fixed_configuration_graph_growth',)
+TEST_GROUPS.update({f'c2_preparation_branch_unsupported_{device}': (
+    'tests/test_filter_repair_c2_branch_preparation.py::test_independent_unsupported_ordered_errors',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'c2_preparation_branch_regression_{device}': (
+    'tests/test_filter_repair_c2_branch_preparation.py::test_native_bootstrap_complete_records',
+    'tests/test_filter_repair_c2_branch_preparation.py::test_native_gaussian_complete_records',
+    'tests/test_filter_repair_c2_branch_preparation.py::test_native_hermite_complete_records',
+    'tests/test_filter_repair_c2_branch_preparation.py::test_native_student_complete_records',
+    'tests/highdim/test_c2_sv_frozen_proposal_apf_tf.py',
+    'tests/highdim/test_c2_transformed_observation_student_proposal_tf.py',)
+    for device in ('cpu', 'gpu')})
 TEST_GROUPS.update({f'c2_preparation_branch_student_{device}': (
     'tests/test_filter_repair_c2_branch_preparation.py::test_native_student_complete_records',
     'tests/test_filter_repair_c2_branch_preparation.py::test_student_errors_live_inputs_and_geometry',)
@@ -3046,9 +3072,16 @@ def mandatory_test_groups():
 FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_moments", "sgqf_derivatives", "joint_target", "contract_e", "tt", "tt_adapted", "tt_gaussian", "tt_actual", "tt_adjoint", "tt_scalar", "apf", "particle", "particle_alg1", "cpu_pool", "squared_density", "ttsirt_preparation", "simulation_sv", "simulation_sir", "simulation_predator_prey", "tt_scalar_retained", "tt_panel_retained", "tt_panel_ksc", *ENDPOINT_FIXTURES, *FORECAST_POOL_FIXTURES)
 
 
+TEST_BATCHES.update({f'c2_preparation_branch_cost_block_{pair}': tuple(
+    f'c2_preparation_branch_cost_{family}_{arm}_gpu'
+    for family in C2_BRANCH_COST_FAMILIES for arm in order)
+    for pair, order in enumerate((('original', 'graph', 'xla'),
+                                  ('graph', 'xla', 'original'),
+                                  ('xla', 'original', 'graph')))})
+
 TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('c2_preparation_') and group.endswith('_gpu')},
-    **{group: 'GPU' for group in TEST_GROUPS if (group.startswith('resource_acceptance_') or group.startswith(('c2_preparation_k1_cost_', 'c2_preparation_mixture_cost_'))) and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if (group.startswith('resource_acceptance_') or group.startswith(('c2_preparation_k1_cost_', 'c2_preparation_mixture_cost_', 'c2_preparation_branch_cost_'))) and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('core_execution_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('remote_integration_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ssl_lstm_replay_') and group.endswith('_gpu')},
@@ -3413,7 +3446,7 @@ def require_unshared_cost_preflight(args):
                                  "score_inputs_cost_before_gpu",
                                  "score_inputs_cost_after_gpu",
                                  *(group for group in TEST_GROUPS
-                                   if (group.startswith('resource_acceptance_') or group.startswith(('c2_preparation_k1_cost_', 'c2_preparation_mixture_cost_'))) and group.endswith('_gpu')),
+                                   if (group.startswith('resource_acceptance_') or group.startswith(('c2_preparation_k1_cost_', 'c2_preparation_mixture_cost_', 'c2_preparation_branch_cost_'))) and group.endswith('_gpu')),
                                  *TEST_BATCHES["ledh_flow_cost_gpu"],
                                  *TEST_BATCHES["remaining_svd_cost_gpu"],
                                  *TEST_BATCHES["posterior_public_memory_gpu"],

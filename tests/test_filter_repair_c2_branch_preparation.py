@@ -484,3 +484,60 @@ def test_student_errors_live_inputs_and_geometry(request):
     output=Path(request.config.getoption('xmlpath')).parent
     (output/'c2-student-protocol.json').write_text(json.dumps({'errors':errors,'live_inputs':True,
         'shared_geometry':True,'actual_payload_ids':True,'one_trace':True},indent=2)+'\n')
+
+
+def test_native_dmis_complete_records(request):
+    from bayesfilter.highdim import c2_sv_frozen_proposal_apf_tf as models
+    from bayesfilter.highdim import c2_gaussian_hermite_proposal_tf as hermite
+    from bayesfilter.highdim import zhao_cui_frozen_proposal_apf_tf as apf
+    from tests.test_filter_repair_c2_preparation import compare
+    reports=[]
+    for frozen in _frozen_branch_original()['cases']:
+        if frozen['case'][0]!='dmis':
+            continue
+        model,theta,compilation=invoke(models,hermite,*frozen['case'])
+        actual=record(compilation,model,theta,models,apf)
+        report={'max_abs':0.}
+        for field in ('branch','diagnostics','value_score','manifest'):
+            compare(_without_payload_id(frozen['record'][field]),_without_payload_id(actual[field]),(field,),report)
+        reports.append({'case':frozen['case'],'maximum_absolute_error':report['max_abs'],'current':actual})
+    output=Path(request.config.getoption('xmlpath')).parent
+    (output/'c2-dmis-comparison.json').write_text(json.dumps(reports,indent=2)+'\n')
+
+
+def test_independent_unsupported_ordered_errors(request):
+    from dataclasses import dataclass
+    from bayesfilter.highdim import c2_sv_frozen_proposal_apf_tf as models
+    old=MaterializedCheckpoint(BASELINE,'c2_unsupported_original')
+    original=old.load('bayesfilter.highdim.c2_sv_frozen_proposal_apf_tf')
+
+    @dataclass
+    class Unsupported:
+        time_index: int
+
+        def manifest_payload(self):
+            return {'type':'unsupported','time_index':self.time_index}
+
+    errors=[]
+    for invalid_position,bad_time,nonfinite_time in ((1,False,None),(2,False,None),
+            (1,True,None),(2,True,None),(1,False,0),(2,False,1),(2,False,2)):
+        outcomes=[]
+        for module in (original,models):
+            model,theta,observed=inputs(module,3)
+            if nonfinite_time is not None:
+                observed=tf.tensor_scatter_nd_update(observed,[[nonfinite_time,0]],tf.constant([float('nan')],D))
+            proposals=[gaussian_proposal(module,t) for t in (1,2)]
+            proposals[invalid_position-1]=Unsupported(invalid_position+int(bad_time))
+            try:
+                module.compile_c2_independent_proposal_branch(model=model,observations=observed,
+                    theta_reference=theta,particle_count=16,seed=813,family='unsupported',
+                    transition_proposals=proposals)
+            except (ValueError,TypeError,tf.errors.OpError) as error:
+                outcomes.append((type(error).__name__,str(error)))
+            else:
+                raise AssertionError('unsupported input accepted')
+        assert outcomes[0]==outcomes[1]
+        errors.append({'invalid_position':invalid_position,'bad_time':bad_time,
+                       'nonfinite_time':nonfinite_time,'outcome':outcomes[0]})
+    output=Path(request.config.getoption('xmlpath')).parent
+    (output/'c2-unsupported-errors.json').write_text(json.dumps(errors,indent=2)+'\n')

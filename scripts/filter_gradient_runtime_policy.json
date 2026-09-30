@@ -709,21 +709,12 @@
     "bayesfilter/highdim/c2_ukf_preparation_tf.py": null,
     "bayesfilter/highdim/c2_mixture_ukf_apf_c2_adapter.py": null,
     "bayesfilter/highdim/c2_mixture_ukf_apf_tf.py": null,
-    "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py": [
-      "C2StochasticVolatilityFrozenAPFModel",
-      "_kron_same",
-      "compile_c2_bootstrap_proposal_branch",
-      "stationary_gaussian_proposals",
-      "_native_c2_branch",
-      "_gaussian_log_density",
-      "_gaussian_transform_core",
-      "transformed_student_proposals",
-      "compile_c2_transformed_student_proposal_branch"
-    ],
+    "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py": null,
     "bayesfilter/highdim/c2_ukf_mixture_steps_tf.py": null,
     "bayesfilter/highdim/c2_branch_preparation_tf.py": null,
     "bayesfilter/highdim/c2_independent_preparation_tf.py": null,
-    "bayesfilter/highdim/c2_student_preparation_tf.py": null
+    "bayesfilter/highdim/c2_student_preparation_tf.py": null,
+    "bayesfilter/highdim/c2_dmis_preparation_tf.py": null
   },
   "exceptions": [
     {
@@ -14584,6 +14575,141 @@
       "ast_sha256": "88664812555a6f038ed2f8214fb69ab838f5f3716b92e1eb927ce5fae9d78172",
       "role": "host_reporting",
       "reason": "Collect already completed proposal manifests for the public compilation record."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_native_c2_branch",
+      "line": 997,
+      "kind": "python_iteration",
+      "ast_sha256": "53acd8f9cb84a260256cf0f225914db0169d5fa9c25e01311617d140d13104c2",
+      "role": "host_reporting",
+      "reason": "Format completed DMIS diagnostic tensors after the native bank recurrence; no host value feeds sampling, density or prefix feedback."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_native_c2_branch",
+      "line": 998,
+      "kind": "python_iteration",
+      "ast_sha256": "5f8851a19d76b699b2863a1c69923a13ca19c86290b237dbf5201ff1674ffbed",
+      "role": "host_reporting",
+      "reason": "Format completed DMIS diagnostic tensors after the native bank recurrence; no host value feeds sampling, density or prefix feedback."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_dmis_preparation_tf.py",
+      "function": "_dispatch",
+      "line": 19,
+      "kind": "python_iteration",
+      "ast_sha256": "8c72f365a6b9c1181aaae6bd4d3f3a7c9b0ff356b83c3fca3e9bf58aa455aca9",
+      "role": "fixed_schema",
+      "reason": "Bind one callable per static proposal configuration for TensorFlow switch_case; repeated dates execute the shared native bank step."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "FrozenC2ProposalCompilation.__post_init__",
+      "line": 425,
+      "kind": "python_iteration",
+      "ast_sha256": "b98a3c4f0c606720bbfa54d02fd2abc2d3634c032f8f9e3f3aa2f8312fdf9944",
+      "role": "host_reporting",
+      "reason": "Copy completed diagnostic mappings at the immutable compilation-record boundary."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "compile_c2_independent_proposal_branch",
+      "line": 451,
+      "kind": "python_iteration",
+      "ast_sha256": "fcce6a2e755d8cfaa7a0e60e2d403eb9ac184334dbc6bf1c10172a2616222fa5",
+      "role": "host_validation",
+      "reason": "Inspect proposal types to select the existing Gaussian native owner."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "compile_c2_independent_proposal_branch",
+      "line": 452,
+      "kind": "python_iteration",
+      "ast_sha256": "e1c19c2e53fb3ef015fe297cec7ba87f26bd57abd30ab3f79e594ef3759f2dfe",
+      "role": "host_validation",
+      "reason": "Inspect supported proposal types to select static configuration dispatch."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "compile_c2_independent_proposal_branch",
+      "line": 455,
+      "kind": "python_iteration",
+      "ast_sha256": "88664812555a6f038ed2f8214fb69ab838f5f3716b92e1eb927ce5fae9d78172",
+      "role": "host_reporting",
+      "reason": "Collect completed proposal manifests; no numerical evaluation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "compile_c2_dmis_proposal_branch",
+      "line": 543,
+      "kind": "python_iteration",
+      "ast_sha256": "71a466f6a89154a6f7f3ef1f37c02a93b66b02146d1b80db46e6c1ebc16d2f75",
+      "role": "host_validation",
+      "reason": "Preserve ordered DMIS retained-proposal type and time-index validation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "compile_c2_dmis_proposal_branch",
+      "line": 560,
+      "kind": "python_iteration",
+      "ast_sha256": "a56e536c1b8da8aad52cab157f369f52fef6b6c774a2fa0fa6dcf4969c15c60e",
+      "role": "host_validation",
+      "reason": "Preserve ordered defensive-proposal time-index validation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "compile_c2_dmis_proposal_branch",
+      "line": 590,
+      "kind": "python_iteration",
+      "ast_sha256": "88664812555a6f038ed2f8214fb69ab838f5f3716b92e1eb927ce5fae9d78172",
+      "role": "host_reporting",
+      "reason": "Collect completed retained-proposal manifests."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "compile_c2_dmis_proposal_branch",
+      "line": 591,
+      "kind": "python_iteration",
+      "ast_sha256": "3c76601f3eaa22e2bd772aef70e9c672ff942dcd2258dd3a91164dc42de10040",
+      "role": "host_reporting",
+      "reason": "Collect completed defensive-proposal manifests."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_compile_c2_branch",
+      "line": 704,
+      "kind": "python_iteration",
+      "ast_sha256": "c4a912ca80eb06688c15c85e1de1843233a1ab649a70664da967d30bc56b5f7f",
+      "role": "host_validation",
+      "reason": "Locate the first unsupported type; its supported prefix is evaluated once by the native owner to preserve error order."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_compile_c2_branch",
+      "line": 707,
+      "kind": "python_iteration",
+      "ast_sha256": "a2a762843537a87bda0c02a99f8ac258e33ca79779f2c70f889a9bf6be4acb69",
+      "role": "host_validation",
+      "reason": "Choose a supported-prefix owner by input type metadata only."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_compilation_fingerprint.update",
+      "line": 748,
+      "kind": "python_iteration",
+      "ast_sha256": "eb4fc46cc2ae3beddecd8e63cadf12033bba77ff56d63861a8557454a0181060",
+      "role": "host_reporting",
+      "reason": "Traverse manifest fields for the existing deterministic compiler fingerprint."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_compilation_fingerprint.update",
+      "line": 752,
+      "kind": "python_iteration",
+      "ast_sha256": "3f74d7786599b16ea8143fd574f96dbf42b1cbcea988563f7da9dcf66cae9bab",
+      "role": "host_reporting",
+      "reason": "Traverse manifest sequences for the existing deterministic compiler fingerprint."
     }
   ]
 }

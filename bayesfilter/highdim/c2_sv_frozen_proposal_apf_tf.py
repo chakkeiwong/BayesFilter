@@ -17,7 +17,6 @@ import tensorflow as tf
 
 from bayesfilter.highdim.c2_gaussian_hermite_proposal_tf import (
     GaussianHermiteRetainedProposal,
-    stateless_proposal_random_inputs,
 )
 from bayesfilter.highdim.c2_transformed_observation_student_proposal_tf import (
     C2TransformedObservationStudentProposal,
@@ -27,7 +26,6 @@ from bayesfilter.highdim.zhao_cui_frozen_proposal_apf_tf import (
     MEASURE_ID,
     SCORE_BACKEND_ID,
     PreparedFrozenProposalBranch,
-    prepare_frozen_proposal_apf_program,
     prepare_frozen_proposal_branch,
 )
 
@@ -443,47 +441,6 @@ def compile_c2_independent_proposal_branch(
 ) -> FrozenC2ProposalCompilation:
     proposals = tuple(transition_proposals)
 
-    def sample_transition(time_index, _parents, transition_seed):
-        proposal = proposals[time_index - 1]
-        if int(proposal.time_index) != time_index:
-            raise ValueError("transition proposal time index mismatch")
-        if isinstance(proposal, GaussianHermiteRetainedProposal):
-            random_inputs = stateless_proposal_random_inputs(
-                proposal, particle_count, transition_seed
-            )
-            sampled = proposal.compiled_sampler(
-                particle_count, jit_compile=bool(jit_compile_sampler)
-            )(*random_inputs)
-            diagnostics = {
-                "time_index": time_index,
-                "proposal_id": proposal.proposal_id,
-                "family": family,
-                "selected_polynomial_count": tf.reduce_sum(
-                    tf.cast(sampled["selected_polynomial"], tf.int32)
-                ),
-                "polynomial_probability": sampled["polynomial_probability"],
-                "maximum_inverse_cdf_residual": sampled[
-                    "maximum_inverse_cdf_residual"
-                ],
-                "minimum_conditional_mass": sampled["minimum_conditional_mass"],
-                "minimum_endpoint_margin": sampled["minimum_endpoint_margin"],
-                "cdf_bracket_valid": sampled["cdf_bracket_valid"],
-                "finite": sampled["finite"],
-            }
-        elif isinstance(proposal, FrozenGaussianStateProposal):
-            sampled = proposal.sample_with_seed(
-                particle_count, transition_seed, jit_compile=bool(jit_compile_sampler)
-            )
-            diagnostics = {
-                "time_index": time_index,
-                "proposal_id": proposal.proposal_id,
-                "family": family,
-                "finite": sampled["finite"],
-            }
-        else:
-            raise TypeError("unsupported independent transition proposal")
-        return sampled["physical_points"], sampled["physical_log_density"], diagnostics
-
     return _compile_c2_branch(
         model=model,
         observations=observations,
@@ -491,7 +448,6 @@ def compile_c2_independent_proposal_branch(
         particle_count=particle_count,
         seed=seed,
         family=family,
-        sample_transition=sample_transition,
         native_sampler=("gaussian" if all(isinstance(p, FrozenGaussianStateProposal) for p in proposals)
                         else "independent" if all(isinstance(p, (FrozenGaussianStateProposal, GaussianHermiteRetainedProposal)) for p in proposals)
                         else None),
@@ -539,21 +495,6 @@ def compile_c2_transformed_student_proposal_branch(
     )
     count = int(particle_count)
 
-    def sample_transition(time_index, parents, transition_seed):
-        proposal = proposals[time_index - 1]
-        sampled = proposal.sample_with_seed(
-            parents,
-            count,
-            (int(transition_seed[0]), int(transition_seed[1])),
-            jit_compile=bool(jit_compile_sampler),
-        )
-        return sampled["physical_points"], sampled["physical_log_density"], {
-            "time_index": time_index,
-            "family": "transformed_observation_student",
-            "proposal_id": proposal.proposal_id,
-            "finite": sampled["finite"],
-        }
-
     return _compile_c2_branch(
         model=model,
         observations=observations,
@@ -561,7 +502,6 @@ def compile_c2_transformed_student_proposal_branch(
         particle_count=count,
         seed=seed,
         family="transformed_observation_student",
-        sample_transition=sample_transition,
         native_sampler="student", native_proposals=proposals,
         jit_compile_sampler=bool(jit_compile_sampler),
         transition_manifests=tuple(proposal.manifest_payload() for proposal in proposals),
@@ -629,150 +569,11 @@ def compile_c2_dmis_proposal_branch(
     stability = model.stability_diagnostics(theta_reference)
     if float(stability["spectral_radius"].numpy()) >= 1.0:
         raise ValueError("theta_reference is outside the stationary stability domain")
-    covariance, _ = model.stationary_covariance_and_derivative(theta_reference)
-    initial_chol = tf.linalg.cholesky(covariance)
     bank_count = count // 2
-    initial_normal = tf.random.stateless_normal(
-        [count, model.state_dim()], [int(seed), 1001], dtype=DTYPE
-    )
-    initial_states = tf.einsum("ij,nj->ni", initial_chol, initial_normal)
-    initial_log_q = model.initial_log_density(theta_reference, initial_states)
-    states = [initial_states]
-    ancestors = []
-    auxiliary_log_probabilities = []
-    transition_log_q = []
-    transition_base_mass = []
-    proposal_diagnostics = []
-
-    partial_branch = prepare_frozen_proposal_branch(
-        observations=observed[:1],
-        states=tf.stack(states),
-        initial_log_proposal_density=initial_log_q,
-        ancestors=tf.zeros([0, count], tf.int32),
-        auxiliary_log_probabilities=tf.zeros([0, count], DTYPE),
-        transition_log_proposal_density=tf.zeros([0, count], DTYPE),
-    )
-    reference_log_weights = prepare_frozen_proposal_apf_program(
-        model, partial_branch
-    ).evaluate(theta_reference)["final_log_weights"]
-    log_alpha = tf.math.log(tf.constant(float(alpha), DTYPE))
-    log_one_minus_alpha = tf.math.log(tf.constant(1.0 - float(alpha), DTYPE))
-    log_bank_count = tf.math.log(tf.cast(bank_count, DTYPE))
-
-    for time_index in range(1, horizon):
-        auxiliary_log = tf.identity(reference_log_weights)
-        cdf = tf.math.cumsum(tf.exp(auxiliary_log))
-        cdf = tf.concat([cdf[:-1], tf.ones([1], DTYPE)], axis=0)
-        ancestor_tt = tf.searchsorted(
-            cdf,
-            tf.random.stateless_uniform(
-                [bank_count], [int(seed), 2000 + 37 * time_index], dtype=DTYPE
-            ),
-            side="right",
-            out_type=tf.int32,
-        )
-        ancestor_defensive = tf.searchsorted(
-            cdf,
-            tf.random.stateless_uniform(
-                [bank_count], [int(seed), 2100 + 37 * time_index], dtype=DTYPE
-            ),
-            side="right",
-            out_type=tf.int32,
-        )
-        parents_tt = tf.gather(states[-1], ancestor_tt)
-        parents_defensive = tf.gather(states[-1], ancestor_defensive)
-
-        tt_random_inputs = stateless_proposal_random_inputs(
-            proposals[time_index - 1], bank_count, (int(seed), 3000 + 41 * time_index)
-        )
-        tt_sampled = proposals[time_index - 1].compiled_sampler(
-            bank_count, jit_compile=bool(jit_compile_sampler)
-        )(*tt_random_inputs)
-        defensive_sampled = defensive[time_index - 1].sample_with_seed(
-            parents_defensive,
-            bank_count,
-            (int(seed), 4000 + 43 * time_index),
-            jit_compile=bool(jit_compile_sampler),
-        )
-        tt_states = tf.ensure_shape(
-            tt_sampled["physical_points"], [bank_count, model.state_dim()]
-        )
-        defensive_states = tf.ensure_shape(
-            defensive_sampled["physical_points"], [bank_count, model.state_dim()]
-        )
-        tt_log_q = tf.ensure_shape(
-            tt_sampled["physical_log_density"], [bank_count]
-        )
-        defensive_log_q = tf.ensure_shape(
-            defensive_sampled["physical_log_density"], [bank_count]
-        )
-        tt_log_defensive = defensive[time_index - 1].log_density(
-            tt_states, parents_tt
-        )
-        defensive_log_tt = proposals[time_index - 1].physical_log_density(
-            defensive_states
-        )
-        tt_mixture_log_q = tf.reduce_logsumexp(
-            tf.stack(
-                [log_one_minus_alpha + tt_log_q, log_alpha + tt_log_defensive], axis=1
-            ),
-            axis=1,
-        )
-        defensive_mixture_log_q = tf.reduce_logsumexp(
-            tf.stack(
-                [log_one_minus_alpha + defensive_log_tt, log_alpha + defensive_log_q],
-                axis=1,
-            ),
-            axis=1,
-        )
-        states.append(tf.concat([tt_states, defensive_states], axis=0))
-        ancestors.append(tf.concat([ancestor_tt, ancestor_defensive], axis=0))
-        auxiliary_log_probabilities.append(auxiliary_log)
-        transition_log_q.append(tf.concat([tt_mixture_log_q, defensive_mixture_log_q], axis=0))
-        transition_base_mass.append(
-            tf.concat(
-                [
-                    tf.fill([bank_count], log_one_minus_alpha - log_bank_count),
-                    tf.fill([bank_count], log_alpha - log_bank_count),
-                ],
-                axis=0,
-            )
-        )
-        proposal_diagnostics.append(
-            {
-                "time_index": time_index,
-                "family": "tt_transformed_student_dmis",
-                "alpha": tf.constant(float(alpha), DTYPE),
-                "nu": tf.constant(float(nu), DTYPE),
-                "tt_bank_count": tf.constant(bank_count, tf.int32),
-                "defensive_bank_count": tf.constant(bank_count, tf.int32),
-                "tt_finite": tt_sampled["finite"],
-                "defensive_finite": defensive_sampled["finite"],
-                "mixture_finite": tf.reduce_all(
-                    tf.math.is_finite(tf.concat([tt_mixture_log_q, defensive_mixture_log_q], 0))
-                ),
-                "finite": tt_sampled["finite"]
-                & defensive_sampled["finite"]
-                & tf.reduce_all(
-                    tf.math.is_finite(
-                        tf.concat([tt_mixture_log_q, defensive_mixture_log_q], 0)
-                    )
-                ),
-            }
-        )
-
-        partial_branch = prepare_frozen_proposal_branch(
-            observations=observed[: time_index + 1],
-            states=tf.stack(states),
-            initial_log_proposal_density=initial_log_q,
-            ancestors=tf.stack(ancestors),
-            auxiliary_log_probabilities=tf.stack(auxiliary_log_probabilities),
-            transition_log_proposal_density=tf.stack(transition_log_q),
-            transition_log_base_mass=tf.stack(transition_base_mass),
-        )
-        reference_log_weights = prepare_frozen_proposal_apf_program(
-            model, partial_branch
-        ).evaluate(theta_reference)["final_log_weights"]
+    partial_branch, proposal_diagnostics = _native_c2_branch(
+        model, observed, theta_reference, count, seed, bool(jit_compile_sampler),
+        "dmis", proposals, "tt_transformed_student_dmis", defensive=defensive,
+        alpha=float(alpha), nu=float(nu))
 
     manifest = {
         "compiler_route_id": "c2_deterministic_equal_bank_tt_student_dmis_v1",
@@ -821,7 +622,6 @@ def compile_c2_bootstrap_proposal_branch(
         particle_count=particle_count,
         seed=seed,
         family="bootstrap_conditional",
-        sample_transition=None,
         native_sampler="bootstrap", jit_compile_sampler=bool(jit_compile_sampler),
         transition_manifests=tuple(
             {
@@ -866,7 +666,6 @@ def _compile_c2_branch(
     particle_count: int,
     seed: int,
     family: str,
-    sample_transition,
     transition_manifests: Sequence[Mapping[str, object]],
     native_sampler: str | None = None,
     native_proposals: Sequence[FrozenGaussianStateProposal] = (),
@@ -899,87 +698,18 @@ def _compile_c2_branch(
             model, observations, theta_reference, count, seed, jit_compile_sampler,
             native_sampler, tuple(native_proposals), family)
     else:
-        covariance, _ = model.stationary_covariance_and_derivative(theta_reference)
-        initial_chol = tf.linalg.cholesky(covariance)
-        initial_normal = tf.random.stateless_normal(
-            [count, model.state_dim()], [int(seed), 1001], dtype=DTYPE
-        )
-        initial_states = tf.einsum("ij,nj->ni", initial_chol, initial_normal)
-        initial_log_q = model.initial_log_density(theta_reference, initial_states)
-        states = [initial_states]
-        ancestors = []
-        auxiliary_log_probabilities = []
-        transition_log_q = []
-        proposal_diagnostics = []
-
-        partial_branch = prepare_frozen_proposal_branch(
-            observations=observations[:1],
-            states=tf.stack(states),
-            initial_log_proposal_density=initial_log_q,
-            ancestors=tf.zeros([0, count], tf.int32),
-            auxiliary_log_probabilities=tf.zeros([0, count], DTYPE),
-            transition_log_proposal_density=tf.zeros([0, count], DTYPE),
-        )
-        reference_log_weights = prepare_frozen_proposal_apf_program(
-            model, partial_branch
-        ).evaluate(theta_reference)["final_log_weights"]
-
-        for time_index in range(1, horizon):
-            auxiliary_log = tf.identity(reference_log_weights)
-            categorical_uniforms = tf.random.stateless_uniform(
-                [count], [int(seed), 2000 + 17 * time_index], dtype=DTYPE
-            )
-            cdf = tf.math.cumsum(tf.exp(auxiliary_log))
-            cdf = tf.concat([cdf[:-1], tf.ones([1], DTYPE)], axis=0)
-            ancestor = tf.searchsorted(
-                cdf, categorical_uniforms, side="right", out_type=tf.int32
-            )
-            parents = tf.gather(states[-1], ancestor)
-            sampled_states, sampled_log_q, sampled_diagnostics = sample_transition(
-                time_index,
-                parents,
-                (int(seed), 3000 + 31 * time_index),
-            )
-            sampled_states = tf.ensure_shape(
-                tf.convert_to_tensor(sampled_states, DTYPE),
-                [count, model.state_dim()],
-            )
-            sampled_log_q = tf.ensure_shape(
-                tf.convert_to_tensor(sampled_log_q, DTYPE), [count]
-            )
-            if not bool(
-                tf.reduce_all(tf.math.is_finite(sampled_states)).numpy()
-                and tf.reduce_all(tf.math.is_finite(sampled_log_q)).numpy()
-            ):
-                raise ValueError(f"non-finite proposal output at time {time_index}")
-            if "cdf_bracket_valid" in sampled_diagnostics and not bool(
-                sampled_diagnostics["cdf_bracket_valid"].numpy()
-            ):
-                raise ValueError(f"invalid Hermite CDF bracket at time {time_index}")
-            if "finite" in sampled_diagnostics and not bool(
-                sampled_diagnostics["finite"].numpy()
-            ):
-                raise ValueError(f"invalid proposal diagnostic at time {time_index}")
-
-            states.append(sampled_states)
-            ancestors.append(ancestor)
-            auxiliary_log_probabilities.append(auxiliary_log)
-            transition_log_q.append(sampled_log_q)
-            proposal_diagnostics.append(dict(sampled_diagnostics))
-
-            partial_branch = prepare_frozen_proposal_branch(
-                observations=observations[: time_index + 1],
-                states=tf.stack(states),
-                initial_log_proposal_density=initial_log_q,
-                ancestors=tf.stack(ancestors),
-                auxiliary_log_probabilities=tf.stack(auxiliary_log_probabilities),
-                transition_log_proposal_density=tf.stack(transition_log_q),
-            )
-            reference_log_weights = prepare_frozen_proposal_apf_program(
-                model, partial_branch
-            ).evaluate(theta_reference)["final_log_weights"]
-
-        branch = partial_branch
+        # An unsupported input is still rejected at its original position:
+        # evaluate its supported prefix once through the same native owner,
+        # then apply the original metadata/type error. No fallback recurrence.
+        invalid = next(index for index, proposal in enumerate(native_proposals)
+                       if not isinstance(proposal, (FrozenGaussianStateProposal, GaussianHermiteRetainedProposal)))
+        prefix = tuple(native_proposals[:invalid])
+        kind = "gaussian" if all(isinstance(p, FrozenGaussianStateProposal) for p in prefix) else "independent"
+        _native_c2_branch(model, observations[:invalid+1], theta_reference,
+            count, seed, jit_compile_sampler, kind, prefix, family)
+        if int(native_proposals[invalid].time_index) != invalid+1:
+            raise ValueError("transition proposal time index mismatch")
+        raise TypeError("unsupported independent transition proposal")
     manifest = {
         "compiler_route_id": COMPILER_ID,
         "compiler_classification": COMPILER_CLASSIFICATION,
@@ -1051,7 +781,7 @@ __all__ = [
 
 
 def _native_c2_branch(model, observations, theta, count, seed, jit_compile,
-                      sampler_kind, proposals, family):
+                      sampler_kind, proposals, family, *, defensive=(), alpha=.5, nu=8.):
     """Completed host boundary for retained native branch preparation."""
     from bayesfilter.highdim.c2_branch_preparation_tf import bootstrap_step, gaussian_step, make_branch_preparation
 
@@ -1062,6 +792,17 @@ def _native_c2_branch(model, observations, theta, count, seed, jit_compile,
     if sampler_kind == "bootstrap":
         sampler = bootstrap_step(model, count)
         operands, operand_specs = (), ()
+    elif sampler_kind == "dmis":
+        from bayesfilter.highdim.c2_independent_preparation_tf import pack_proposals
+        from bayesfilter.highdim.c2_student_preparation_tf import pack_student_proposals
+        from bayesfilter.highdim.c2_dmis_preparation_tf import dmis_step, diagnostic_specs as dmis_diagnostic_specs
+        retained_configurations, retained_operands, retained_specs = pack_proposals(proposals)
+        student_configurations, student_operands, student_specs = pack_student_proposals(defensive)
+        key = (*key, retained_configurations, student_configurations)
+        operands = (retained_operands, student_operands, tf.constant(alpha, DTYPE), tf.constant(nu, DTYPE))
+        operand_specs = (retained_specs, student_specs, tf.TensorSpec([], DTYPE), tf.TensorSpec([], DTYPE))
+        sampler = dmis_step(retained_configurations, student_configurations, count)
+        diagnostic_specs = dmis_diagnostic_specs()
     elif sampler_kind == "independent":
         from bayesfilter.highdim.c2_independent_preparation_tf import (
             pack_proposals, independent_step, diagnostic_specs as independent_diagnostic_specs)
@@ -1093,7 +834,7 @@ def _native_c2_branch(model, observations, theta, count, seed, jit_compile,
         if len(cache) >= 4:
             cache.pop(next(iter(cache)))
         cache[key] = make_branch_preparation(model, horizon, count, sampler,
-            operand_specs, diagnostic_specs, bool(jit_compile))
+            operand_specs, diagnostic_specs, bool(jit_compile), bank_step=sampler_kind == "dmis")
     result = cache[key](observations, theta, tf.convert_to_tensor(int(seed), tf.int64), operands)
     status = int(result["status"].numpy())
     time = int(result["failed_time"].numpy())
@@ -1108,14 +849,24 @@ def _native_c2_branch(model, observations, theta, count, seed, jit_compile,
             7: "auxiliary_log_probabilities must contain only finite values",
             8: "each auxiliary categorical law must be normalized",
             9: "transition proposal time index mismatch",
+            10: "transition_log_proposal_density must contain only finite values",
+            11: "transition_log_base_mass must contain only finite values",
+            12: "ancestor index is outside the previous particle set",
+            13: "each transition base-mass row must form a normalized categorical law",
         }
         raise ValueError(messages[status])
     branch = prepare_frozen_proposal_branch(observations=observations,
         states=result["states"], initial_log_proposal_density=result["initial_log_proposal_density"],
         ancestors=result["ancestors"], auxiliary_log_probabilities=result["auxiliary_log_probabilities"],
-        transition_log_proposal_density=result["transition_log_proposal_density"])
+        transition_log_proposal_density=result["transition_log_proposal_density"],
+        transition_log_base_mass=result["transition_log_base_mass"] if sampler_kind == "dmis" else None)
     finite = tf.unstack(result["diagnostics"]["finite"])
-    if sampler_kind == "independent":
+    if sampler_kind == "dmis":
+        completed = tf.nest.map_structure(tf.unstack, result["diagnostics"])
+        diagnostics = tuple({"time_index": index + 1, "family": family,
+                             **{name: values[index] for name, values in completed.items()}}
+                            for index in range(horizon-1))
+    elif sampler_kind == "independent":
         completed = tf.nest.map_structure(tf.unstack, result["diagnostics"])
         diagnostics = tuple({"time_index": index + 1, "family": family, "finite": value,
             "proposal_id": proposals[index].proposal_id,
