@@ -97,3 +97,36 @@ errors5.329e-15/1.421e-14.05453 policy checks pass. Guard coverage332 sources/
 1520 exact allowances is still scoped; six new entries only pack existing
 parameter tensors or format completed proposal/diagnostic records. Other C2
 compilers and this unit's cost/terminal qualification remain unfinished.
+
+Hermite/mixed implementation review: preserve each validated proposal's exact
+core shapes and static Student nu by grouping distinct configurations. Pack
+existing tensors into time-indexed operands and use TensorFlow switch_case
+between shared numerical authorities inside the single time recurrence. The
+number of sampler bodies follows distinct configurations, not repeated dates;
+the graph-growth check must hold those configurations fixed and report their
+count. This preserves original reduction shapes and Python-derived Student
+normalizer constants without zero-padding or replacing math.lgamma. Host
+iteration only describes input structure and collects existing tensor fields;
+no per-date sampling, density, covariance or prefix evaluation may occur there.
+An internal tensor view can reuse validated proposal methods under tracing,
+but may neither invoke host constructors nor issue public identities. Changing
+proposal values must reuse a retained owner when configuration is unchanged.
+A larger set of distinct topologies has a larger compilation scope; this is
+explicit bounded configuration specialization, not a constant-cost claim.
+
+Hermite CPU05454 complete records pass. Heterogeneous05455 preserved a
+comparison-helper failure: equal None values for defensive_nu were sent to
+NumPy isfinite. Explicit None equality repairs only the diagnostic comparator;
+05456 then passes full records (maximum7.105e-15), live operands and one trace.
+No runtime method or numerical tolerance changed.
+
+Hermite/mixed checkpoint05454--05460: CPU/GPU complete original-record
+maximum differences1.243e-14/5.329e-15; heterogeneous rank/degree/nu comparisons
+7.105e-15 on both backends. Live numerical operands retain one trace. The
+T3/T7/T11/T3 graph test keeps two static configurations and passes unchanged
+computational-op inventories and function counts. Exact policy checks pass
+with333 sources/1529 allowances, limited to static configuration, existing
+tensor packing and completed reporting. The preserved05455 failure is only
+the None-metadata comparator bug. Original scientific status remains unchanged.
+Student/DMIS repairs, remaining API/error tests and branch cost evidence remain
+open; this is an execution qualification checkpoint, not campaign completion.

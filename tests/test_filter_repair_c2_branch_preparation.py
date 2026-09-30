@@ -275,3 +275,103 @@ def test_gaussian_preparation_live_parameters_geometry_and_error_order(request):
     output=Path(request.config.getoption('xmlpath')).parent
     (output/'c2-gaussian-owner.json').write_text(json.dumps({'live_proposal_operands':True,
         'one_trace':True,'ordered_metadata_error_preserved':True,'true_proposal_ids_verified':True},indent=2)+'\n')
+
+
+def test_native_hermite_complete_records(request):
+    from bayesfilter.highdim import c2_sv_frozen_proposal_apf_tf as models
+    from bayesfilter.highdim import c2_gaussian_hermite_proposal_tf as hermite
+    from bayesfilter.highdim import zhao_cui_frozen_proposal_apf_tf as apf
+    from tests.test_filter_repair_c2_preparation import compare
+    reports=[]
+    for frozen in _frozen_branch_original()['cases']:
+        if frozen['case'][0] not in ('hermite','mixed'):
+            continue
+        model,theta,compilation=invoke(models,hermite,*frozen['case'])
+        actual=record(compilation,model,theta,models,apf)
+        report={'max_abs':0.}
+        for field in ('branch','diagnostics','value_score','manifest'):
+            compare(_without_payload_id(frozen['record'][field]),_without_payload_id(actual[field]),(field,),report)
+        reports.append({'case':frozen['case'],'maximum_absolute_error':report['max_abs'],'current':actual})
+    output=Path(request.config.getoption('xmlpath')).parent
+    (output/'c2-hermite-comparison.json').write_text(json.dumps(reports,indent=2)+'\n')
+
+
+
+def varied_retained_proposal(hermite,time,variant):
+    if variant == 0:
+        return retained_proposal(hermite,time)
+    first=tf.constant([[[1.,.05],[.12,.01],[.02,-.03]]],D)
+    second=tf.constant([[[1.],[-.08],[.01]],[[.1],[.03],[-.02]]],D)
+    coefficients=tf.einsum('akb,bjc->kj',first,second)
+    return hermite.GaussianHermiteRetainedProposal(prefix_core_values=(first,second),
+        suffix_gram=tf.ones([1,1],D),z_h=tf.reduce_sum(coefficients**2),tau_abs=tf.constant(.02,D),
+        coordinate_offset=tf.constant([.1*time,-.05*time],D),coordinate_matrix=tf.constant([[1.,0.],[.1,.9]],D),
+        defensive_nu=None if variant==1 else 7.,time_index=time,source_snapshot_fingerprint=f'{time:064x}')
+
+
+def test_hermite_heterogeneous_protocol_and_live_inputs(request):
+    import numpy as np
+    from bayesfilter.highdim import c2_sv_frozen_proposal_apf_tf as models
+    from bayesfilter.highdim import c2_gaussian_hermite_proposal_tf as hermite
+    from bayesfilter.highdim import zhao_cui_frozen_proposal_apf_tf as apf
+    from tests.test_filter_repair_c2_preparation import compare
+    old=MaterializedCheckpoint(BASELINE,'c2_hermite_heterogeneous_original')
+    original=old.load('bayesfilter.highdim.c2_sv_frozen_proposal_apf_tf')
+    old_hermite=old.load('bayesfilter.highdim.c2_gaussian_hermite_proposal_tf')
+    old_apf=old.load('bayesfilter.highdim.zhao_cui_frozen_proposal_apf_tf')
+    records=[]
+    for module,proposal_module,score in ((original,old_hermite,old_apf),(models,hermite,apf)):
+        model,theta,observed=inputs(module,4)
+        proposals=tuple(varied_retained_proposal(proposal_module,t,t-1) for t in (1,2,3))
+        args=dict(model=model,observations=observed,theta_reference=theta,particle_count=16,
+                  seed=813,family='heterogeneous_retained',transition_proposals=proposals)
+        compilation=module.compile_c2_independent_proposal_branch(**args)
+        records.append(record(compilation,model,theta,module,score))
+    report={'max_abs':0.}
+    for field in ('branch','diagnostics','value_score','manifest'):
+        compare(_without_payload_id(records[0][field]),_without_payload_id(records[1][field]),(field,),report)
+    owner=next(iter(model._c2_branch_preparation_owners.values()))
+    from dataclasses import replace
+    changed=(replace(proposals[0],coordinate_offset=proposals[0].coordinate_offset+.05),*proposals[1:])
+    for override in ({'seed':814},{'theta_reference':theta+tf.constant([.01,.02],D)},
+                     {'transition_proposals':changed}):
+        value=models.compile_c2_independent_proposal_branch(**{**args,**override})
+        assert not np.array_equal(compilation.branch.states.numpy(),value.branch.states.numpy())
+        assert next(iter(model._c2_branch_preparation_owners.values())) is owner
+    assert owner.experimental_get_tracing_count()==len(model._c2_branch_preparation_owners)==1
+    assert owner.get_concrete_function().function_def.attr['_XlaMustCompile'].b
+    graph=owner.get_concrete_function().graph.as_graph_def()
+    nodes=[*graph.node,*(n for f in graph.library.function for n in f.node_def)]
+    assert any(n.op in ('While','StatelessWhile') for n in nodes)
+    assert not any(n.op in ('PyFunc','EagerPyFunc','PyFuncStateless') for n in nodes)
+    output=Path(request.config.getoption('xmlpath')).parent
+    (output/'c2-hermite-protocol.json').write_text(json.dumps({'max_abs':report['max_abs'],
+        'configurations':3,'rank_degree_and_nu_vary':True,'one_trace':True,
+        'original':records[0],'current':records[1]},indent=2)+'\n')
+
+
+def test_hermite_fixed_configuration_graph_growth(request):
+    from collections import Counter
+    from bayesfilter.highdim import c2_sv_frozen_proposal_apf_tf as models
+    from bayesfilter.highdim import c2_gaussian_hermite_proposal_tf as hermite
+    from bayesfilter.highdim.c2_branch_preparation_tf import make_branch_preparation
+    from bayesfilter.highdim.c2_independent_preparation_tf import pack_proposals,independent_step,diagnostic_specs
+    model,_,_=inputs(models,3)
+    graphs=[]
+    for horizon in (3,7,11,3):
+        proposals=tuple(varied_retained_proposal(hermite,t,t%2) for t in range(1,horizon))
+        configurations,operands,specs=pack_proposals(proposals)
+        assert len(configurations)==2
+        owner=make_branch_preparation(model,horizon,16,independent_step(configurations,16),specs,diagnostic_specs())
+        graph=owner.get_concrete_function().graph.as_graph_def()
+        nodes=[*graph.node,*(n for f in graph.library.function for n in f.node_def)]
+        graphs.append({'horizon':horizon,'configurations':len(configurations),
+                       'op_counts':dict(Counter(n.op for n in nodes)),'functions':len(graph.library.function)})
+    output=Path(request.config.getoption('xmlpath')).parent
+    (output/'c2-hermite-graph-growth.json').write_text(json.dumps(graphs,indent=2)+'\n')
+    numerical=[{name:count for name,count in row['op_counts'].items() if name not in ('Const','Fill')}
+               for row in graphs]
+    assert all(counts==numerical[0] for counts in numerical)
+    assert graphs[0]['op_counts']==graphs[3]['op_counts']
+    assert graphs[1]['op_counts']==graphs[2]['op_counts']
+    assert all(row['functions']==graphs[0]['functions'] for row in graphs)

@@ -1777,6 +1777,14 @@ TEST_GROUPS.update({f'c2_preparation_branch_gaussian_{device}': (
     'tests/test_filter_repair_c2_branch_preparation.py::test_gaussian_preparation_live_parameters_geometry_and_error_order',)
     for device in ('cpu', 'gpu')})
 TEST_GROUPS['c2_preparation_branch_policy_cpu'] = TEST_GROUPS['policy']
+TEST_GROUPS.update({f'c2_preparation_branch_hermite_{device}': (
+    'tests/test_filter_repair_c2_branch_preparation.py::test_native_hermite_complete_records',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'c2_preparation_branch_hermite_protocol_{device}': (
+    'tests/test_filter_repair_c2_branch_preparation.py::test_hermite_heterogeneous_protocol_and_live_inputs',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS['c2_preparation_branch_hermite_graph_cpu'] = (
+    'tests/test_filter_repair_c2_branch_preparation.py::test_hermite_fixed_configuration_graph_growth',)
 TEST_GROUPS.update({f'c2_preparation_branch_original_{device}': (
     'tests/test_filter_repair_c2_branch_preparation.py::test_original_branch_records',)
     for device in ('cpu', 'gpu')})

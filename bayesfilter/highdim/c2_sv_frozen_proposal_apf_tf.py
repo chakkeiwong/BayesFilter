@@ -492,7 +492,9 @@ def compile_c2_independent_proposal_branch(
         seed=seed,
         family=family,
         sample_transition=sample_transition,
-        native_sampler="gaussian" if all(isinstance(p, FrozenGaussianStateProposal) for p in proposals) else None,
+        native_sampler=("gaussian" if all(isinstance(p, FrozenGaussianStateProposal) for p in proposals)
+                        else "independent" if all(isinstance(p, (FrozenGaussianStateProposal, GaussianHermiteRetainedProposal)) for p in proposals)
+                        else None),
         native_proposals=proposals, jit_compile_sampler=bool(jit_compile_sampler),
         transition_manifests=tuple(proposal.manifest_payload() for proposal in proposals),
     )
@@ -898,7 +900,7 @@ def _compile_c2_branch(
     if float(stability["minimum_covariance_eigenvalue"].numpy()) <= 0.0:
         raise ValueError("theta_reference stationary covariance is not positive definite")
 
-    if native_sampler in ("bootstrap", "gaussian"):
+    if native_sampler in ("bootstrap", "gaussian", "independent"):
         branch, proposal_diagnostics = _native_c2_branch(
             model, observations, theta_reference, count, seed, jit_compile_sampler,
             native_sampler, tuple(native_proposals), family)
@@ -1066,6 +1068,13 @@ def _native_c2_branch(model, observations, theta, count, seed, jit_compile,
     if sampler_kind == "bootstrap":
         sampler = bootstrap_step(model, count)
         operands, operand_specs = (), ()
+    elif sampler_kind == "independent":
+        from bayesfilter.highdim.c2_independent_preparation_tf import (
+            pack_proposals, independent_step, diagnostic_specs as independent_diagnostic_specs)
+        configurations, operands, operand_specs = pack_proposals(proposals)
+        key = (*key, configurations)
+        sampler = independent_step(configurations, count)
+        diagnostic_specs = independent_diagnostic_specs()
     else:
         sampler = gaussian_step(count, dimension)
         operands = (
@@ -1107,9 +1116,18 @@ def _native_c2_branch(model, observations, theta, count, seed, jit_compile,
         ancestors=result["ancestors"], auxiliary_log_probabilities=result["auxiliary_log_probabilities"],
         transition_log_proposal_density=result["transition_log_proposal_density"])
     finite = tf.unstack(result["diagnostics"]["finite"])
-    diagnostics = tuple({"time_index": index + 1, "family": family, "finite": value,
-                         **({"proposal_id": proposals[index].proposal_id} if sampler_kind == "gaussian" else {})}
-                        for index, value in enumerate(finite))
+    if sampler_kind == "independent":
+        completed = tf.nest.map_structure(tf.unstack, result["diagnostics"])
+        diagnostics = tuple({"time_index": index + 1, "family": family, "finite": value,
+            "proposal_id": proposals[index].proposal_id,
+            **({name: values[index] for name, values in completed.items()
+                if name not in ("time_index_valid", "finite")}
+               if isinstance(proposals[index], GaussianHermiteRetainedProposal) else {})}
+            for index, value in enumerate(finite))
+    else:
+        diagnostics = tuple({"time_index": index + 1, "family": family, "finite": value,
+                             **({"proposal_id": proposals[index].proposal_id} if sampler_kind == "gaussian" else {})}
+                            for index, value in enumerate(finite))
     return branch, diagnostics
 
 

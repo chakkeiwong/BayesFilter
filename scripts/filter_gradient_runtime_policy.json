@@ -719,7 +719,8 @@
       "_gaussian_transform_core"
     ],
     "bayesfilter/highdim/c2_ukf_mixture_steps_tf.py": null,
-    "bayesfilter/highdim/c2_branch_preparation_tf.py": null
+    "bayesfilter/highdim/c2_branch_preparation_tf.py": null,
+    "bayesfilter/highdim/c2_independent_preparation_tf.py": null
   },
   "exceptions": [
     {
@@ -14425,6 +14426,87 @@
       "ast_sha256": "bd03b26c317133a25bc45147872c2fc7b2a16201db21e3403c6401faa756d34a",
       "role": "host_reporting",
       "reason": "Format completed finite diagnostics and bound proposal identifiers after native branch preparation; no host output feeds the recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_independent_preparation_tf.py",
+      "function": "proposal_configuration",
+      "line": 22,
+      "kind": "python_iteration",
+      "ast_sha256": "1a47ed7bf8c19a7fc7c1bc7d861fe8d990839f749cb39e7d49e53f8475d4e03b",
+      "role": "fixed_schema",
+      "reason": "Read validated static tensor core shapes for configuration specialization; no numerical evaluation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_independent_preparation_tf.py",
+      "function": "pack_proposals",
+      "line": 37,
+      "kind": "python_iteration",
+      "ast_sha256": "8abeeef448d0f5b71ad8167de4d7ce0102acdae2e9218a61e40e236b7fd54278",
+      "role": "fixed_schema",
+      "reason": "Collect static proposal configurations; sampler and time recurrence execute in the retained XLA owner."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_independent_preparation_tf.py",
+      "function": "pack_proposals",
+      "line": 39,
+      "kind": "python_iteration",
+      "ast_sha256": "7136b6c0c41c218ff3007465fdc5b4cccde6c6113026e9f67091da3a1e70cc14",
+      "role": "fixed_schema",
+      "reason": "Encode static configuration dispatch indices."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_independent_preparation_tf.py",
+      "function": "pack_proposals",
+      "line": 40,
+      "kind": "python_iteration",
+      "ast_sha256": "f78da68e32befa26427becb1207fb8f2875df12148752b76c1c8d4e4b39fe572",
+      "role": "host_validation",
+      "reason": "Collect original time-index metadata for ordered validation by the numerical owner."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_independent_preparation_tf.py",
+      "function": "pack_proposals",
+      "line": 42,
+      "kind": "python_iteration",
+      "ast_sha256": "a4e5a279568bacdf26bf0d7fda9ba663ead77f4686e4b17ab5d9c9ba65f556f9",
+      "role": "fixed_schema",
+      "reason": "Pack existing tensor leaves per distinct configuration; no sampling, density, geometry or weight evaluation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_independent_preparation_tf.py",
+      "function": "pack_proposals",
+      "line": 44,
+      "kind": "python_iteration",
+      "ast_sha256": "4361e71f0db1a54e98533b36a0d95a1bc082ad870cf34fd6e75d54558711f5be",
+      "role": "fixed_schema",
+      "reason": "Collect existing tensor leaves with shape-compatible templates; no numerical per-date computation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_independent_preparation_tf.py",
+      "function": "independent_step.sample",
+      "line": 103,
+      "kind": "python_iteration",
+      "ast_sha256": "8c72f365a6b9c1181aaae6bd4d3f3a7c9b0ff356b83c3fca3e9bf58aa455aca9",
+      "role": "fixed_schema",
+      "reason": "Bind one shared sampler callable per distinct static configuration for switch_case tracing; repeated dates do not add sampler bodies."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_native_c2_branch",
+      "line": 1121,
+      "kind": "python_iteration",
+      "ast_sha256": "bf26de7bb11e6c4982ace0e3f56bf5f45e6a7229b0cea6d6b85d7d0c5cdca5ab",
+      "role": "host_reporting",
+      "reason": "Format completed proposal-specific diagnostic tensors and existing IDs after the enclosing native recurrence finishes."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_native_c2_branch",
+      "line": 1123,
+      "kind": "python_iteration",
+      "ast_sha256": "1801bbe21570d266d179bfe4abeffa5b6320680109c775f310808a3bed188221",
+      "role": "host_reporting",
+      "reason": "Format completed proposal-specific diagnostic tensors and existing IDs after the enclosing native recurrence finishes."
     }
   ]
 }

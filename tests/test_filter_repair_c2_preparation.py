@@ -62,6 +62,8 @@ def compare(a, b, path=(), report=None):
         assert len(a) == len(b), path
         for index,(left,right) in enumerate(zip(a,b,strict=True)):
             compare(left,right,(*path,index),report)
+    elif a is None or b is None:
+        assert a is None and b is None, path
     elif isinstance(a,str):
         assert a == b, path
     else:
