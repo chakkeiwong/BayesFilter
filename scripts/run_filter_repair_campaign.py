@@ -1805,6 +1805,10 @@ TEST_GROUPS.update({f'c2_preparation_public_cost_{arm}_gpu': (
 TEST_GROUPS['c2_preparation_public_policy_cpu'] = TEST_GROUPS['policy']
 TEST_GROUPS['c2_preparation_public_terminal_cpu'] = (
     'tests/test_filter_repair_c2_public_readback.py', *TEST_GROUPS['policy'])
+TEST_GROUPS['terminal_closure_policy_cpu'] = TEST_GROUPS['policy']
+TEST_GROUPS['terminal_closure_terminal_cpu'] = (
+    'tests/test_filter_repair_terminal_readback.py',
+    'tests/test_filter_repair_adapter_imports.py', *TEST_GROUPS['policy'])
 TEST_GROUPS.update({f'c2_preparation_branch_dmis_{device}': (
     'tests/test_filter_repair_c2_branch_preparation.py::test_native_dmis_complete_records',)
     for device in ('cpu', 'gpu')})

@@ -1,79 +1,49 @@
 # Filter and gradient XLA execution repair
 
 Branch repair/filter-gradient-xla-validation-20260918 in
-/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
-latest committed checkpoint. Main remains unmerged.
+/tmp/bayesfilter-filter-gradient-xla-validation-20260918. Runtime qualification
+checkpoint64e293e14; use git HEAD for the latest documentation checkpoint.
 
-Through 05536; active worker runs: none.
-Supervisor session: none; a matrix can be between workers.
-Charged/reserved CPU 118103.770721s / GPU 113046.421413s.
-Remaining CPU 23.193397h / GPU 20.598216h.
-Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_c2_caller_closure_20261001.md (qualified_public_helpers_and_callers); at most
-12 workers/1800 CPU/3600 GPU seconds.
-Used/reserved 11 workers/133.732815 CPU/212.763870 GPU seconds.
-One numerical worker at a time.
+Final source audit05537 and terminal05538 pass. The222 checks include160 policy,
+7 adapter-import and55 terminal source/evidence/wrapper checks. All20 findings
+have scoped execution dispositions;338 current source paths and55 saved terminal
+evidence files are bound. Guard:335 sources/1552 exact allowances, unchanged.
+No numerical worker is running. Main merge/push is the remaining action.
 
-C2 public helpers/callers close through05536:18 checks perCPU/GPU,11 actual candidate factory families per backend, paired descriptive helper costs and128-call lifetime, plus161 terminal policy/readback checks. Gaussian original records are exact after the preserved seed-width draft failure05528; fixture failure05531 also remains. No new allowlist entries. Complete preparation callable AST bodies remain unchanged fromd91e269c8.
+Remote origin/main was fetched and is already an ancestor of this branch; no
+incoming source changes or conflicts. Commit/archive the reviewable closure,
+then fast-forward main and push under the existing authorization. Preserve the
+main worktree's raw untracked campaign artifacts.
 
-Next: Archive/commit/push the C2 public-helper/caller result, then activate final scoped closure: refresh syntax inventory once, reconcile current endpoint/source/resource evidence for every finding, run only missing affected checks and integrate remote before main merge.
+Result: [terminal closure](filter_gradient_terminal_closure_result_20261001.md).
+Machine evidence: filter_gradient_terminal_evidence_20261001.json.
+Plan: filter_gradient_terminal_closure_20261001.md.
 
-The September29 scope correction in
-[the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
-current work and supersedes broader historical next-action lists. This campaign
-repairs numerical Python loops, runtime NumPy and incomplete/default-off XLA
-execution in active filtering/analytical-gradient call paths, verifies affected
-values, scores, decisions and error semantics, and compares before/after memory
-and performance. Fixed fitted-APF remains in scope; adaptive iAPF and KDM remain
-owner-deferred. No numerical gate, policy allowance or raw evidence was changed
-by the scope correction.
+The September29 scope correction governs. Adaptive iAPF and KDM remain
+owner-deferred; fixed fitted-APF is included. Canonical LEDH rebuilding, training,
+HMC, package/system changes and live MacroFinance edits are excluded. Unsupported
+reduced GenUT reverse-AD/cap claims stay blocked. No tolerance/RNG/method
+substitution or new policy exception was introduced.
 
-Further convergence/trajectory research on the unselected factor fits and the
-historical DZ5 locator is separate from rewrite closure. Both backends select
-the same accepted geometry in the saved factor cohort; tested objective
-gradients pass independent references through04930. Rank-cut refusal qualifies
-through04935. The4534 factor-record and121 historical locator differences remain
-failed diagnostic comparisons, not accepted equality. Reopen a rewrite blocker
-when evidence connects one to a changed in-scope caller's usable result,
-selection, score or failure status. Broader isotropic initialization/parameter
-redesign is not required merely to explain historical diagnostics.
+Measured memory/performance tradeoffs remain explicit: TT host/cold cost,
+actual-SV TT warm slowdown, streaming's failed stricter CPU10% study, D5 accurate
+SVD and D23 angle slowdowns, and Gaussian helper cold cost. Fixed reuse reaches
+an observed allocation plateau; native compiler residency can persist until
+process exit. Finite fixtures do not prove unlimited capacity or cache eviction.
+The4534 unselected factor-record and121 historical locator differences retain
+failed diagnostic status; further unrelated optimizer research is outside this
+rewrite unless connected to a current affected contract.
 
-Reduced GenUT FP32 reverse-gradient precision and cap-report failures remain
-unresolved and unsupported; GPU XLA has source/reset gradient failures in the
-saved cohort too. Live wiring04936–04939 separates that authority from the
-registered analytical score. F01 affected-use terminal05305 preserves explicit unsupported-use/admission
-blocks and qualifies the inspected current consumers. A reachable
-XLA regression still requires repair or explicit refusal; optional/noncanonical
-status alone is not an exemption. General precision research and the excluded
-canonical LEDH rebuild are not blanket rewrite requirements.
+Through05538: CPU charged118266.896356s, GPU charged
+113046.421413s. Remaining23.148084 CPU
+hours/20.598216 GPU hours under56/52-hour global caps.
+Terminal allocation used2 of12 workers,163.125636 CPU/0 GPU seconds, within
+1800 CPU/3600 GPU seconds. One numerical worker at a time; GPU0 remote desktop,
+GPU1 display; recheck GPU2/3 before any future authorized diagnostic.
 
-Remaining work: current-call-path and F01–F20 dispositions, affected numerical
-regression/error checks, applicable matched memory/runtime and bounded capacity
-acceptance, then final affected tests before main merge; remote integration closes through05202.
-Streaming CPU ratios1.08239/1.09678 have95% upper bounds1.11687/1.15608 above1.10;
-the stricter study remains failed. The scoped streaming tradeoff is accepted
-through05245 with GPU/lifetime evidence; owner costs close through05227.
-Remaining-SVD resource tradeoff closes through05248.
-Angle/subspace/SQMC resources close through05304 with the explicit D23 accuracy-cost
-tradeoff. Core-filter matched costs close through05400 with explicit TT host/cold and actual-SV warm tradeoffs. Compiler residency needs
-measurement and a practical lifetime/capacity disposition, not a general proof
-that TensorFlow releases all native allocations. No zero-overhead claim follows.
-
-Reuse unchanged qualified evidence: Gaussian through04782, nonlinear through
-04821, input preparation through04913, factor/angle/subspace through04935,
-GenUT wiring through04939 and actual-DZ504618–04628/import04629–04630/index04631.
-Keep each source/data/dtype/device scope explicit. F01, F12--F17 and F20 have closed
-scoped execution/API dispositions (including earlier F14 through04727). The12
-remaining broad findings include resource/applicability decisions, not12 known
-unfixed bugs. Current guard coverage is335 sources/1552 exact exceptions, including C2 UKF preparation/model dependencies; the
-static guard is scoped coverage, not a repository-wide compliance claim.
-
-GPU0 is remote desktop, GPU1 display. Recheck GPU2/3 availability before use;
-shared numerical checks do not establish uncontended costs/capacity. GPU growth
-and trusted placement are required; CPU is explicit reference. Preserve shared
-analytical authorities, invalidity errors, LEDH streams and canonical NeuTra
-IAF. No subagents, training/HMC, live MacroFinance edits, package/system/cache
-changes, relaxed gates, canonical LEDH rebuild or main merge at this stage.
+Earlier broad open labels and next-action lists below are historical. Reopen a
+finding only for a changed in-scope dependency/caller/default or a concrete
+unexplained numerical, refusal, stream, memory or performance regression.
 
 Older checkpoints below preserve historical scope and instructions only.
 
