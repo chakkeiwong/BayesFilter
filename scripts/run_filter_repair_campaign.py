@@ -1736,6 +1736,17 @@ TEST_GROUPS.update({f'resource_acceptance_svd_reuse_{device}': (
     for device in ('cpu', 'gpu')})
 TEST_GROUPS['resource_acceptance_svd_terminal_cpu'] = (
     'tests/test_filter_repair_resource_svd_readback.py', *TEST_GROUPS['policy'])
+FINAL_RESOURCE_CASES = ('angle3', 'angle23', 'sqmc_iid', 'sqmc_halton', 'trace_static', 'trace_dynamic')
+FINAL_RESOURCE_ARMS = {case: ('pre_angle', 'pre_guard', 'current') if case.startswith('angle')
+                      else ('before', 'current') for case in FINAL_RESOURCE_CASES}
+TEST_GROUPS.update({f'resource_acceptance_final_cost_{case}_{arm}_{pair}_gpu': (
+    f'tests/test_filter_repair_resource_final.py::test_public_cost[{case}-{arm}-{pair}]',)
+    for case in FINAL_RESOURCE_CASES for arm in FINAL_RESOURCE_ARMS[case] for pair in range(3)})
+TEST_GROUPS.update({f'resource_acceptance_final_reuse_{case}_{device}': (
+    f'tests/test_filter_repair_resource_final.py::test_public_reuse[{case}]',)
+    for case in FINAL_RESOURCE_CASES for device in ('cpu', 'gpu')})
+TEST_GROUPS['resource_acceptance_final_terminal_cpu'] = (
+    'tests/test_filter_repair_resource_final_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['remote_integration_terminal_cpu'] = (
     'tests/test_filter_repair_sqmc_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['remote_integration_halton_attribution_gpu'] = (
@@ -2919,6 +2930,17 @@ TEST_BATCHES['resource_acceptance_svd'] = (
     'resource_acceptance_svd_reuse_cpu', 'resource_acceptance_svd_reuse_gpu',
     'resource_acceptance_svd_terminal_cpu',
 )
+
+TEST_BATCHES['resource_acceptance_final'] = (
+    *(f'resource_acceptance_final_cost_{case}_{arm}_{pair}_gpu'
+      for pair in range(3) for case in FINAL_RESOURCE_CASES
+      for arm in (FINAL_RESOURCE_ARMS[case] if pair % 2 == 0 else tuple(reversed(FINAL_RESOURCE_ARMS[case])))),
+    *(f'resource_acceptance_final_reuse_{case}_{device}'
+      for case in FINAL_RESOURCE_CASES for device in ('cpu', 'gpu')),
+    'resource_acceptance_final_terminal_cpu',
+)
+
+TEST_BATCHES['resource_acceptance_final_finish'] = TEST_BATCHES['resource_acceptance_final'][6:]
 
 
 def mandatory_test_groups():

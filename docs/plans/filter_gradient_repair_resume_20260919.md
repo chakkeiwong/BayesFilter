@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05248; active worker runs: none.
-Charged/reserved CPU 116621.452337s / GPU 103821.660296s.
-Remaining CPU 23.605152h / GPU 23.160650h.
+Through 05304; active worker runs: none.
+Charged/reserved CPU 116720.030898s / GPU 104659.261069s.
+Remaining CPU 23.577769h / GPU 22.927983h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_resource_acceptance_20260930.md (completed); at most
-48 workers/7200 CPU/7200 GPU seconds.
-Used/reserved 46 workers/172.731170 CPU/1232.883360 GPU seconds.
+Active allocation: docs/plans/filter_gradient_final_owner_resources_20260930.md (completed); at most
+64 workers/7200 CPU/7200 GPU seconds.
+Used/reserved 56 workers/98.578562 CPU/837.600773 GPU seconds.
 One numerical worker at a time.
 
-Resource allocation completes through05248: owner checkpoint7c063714f and streaming checkpoint5ab247327 pushed; SVD CPU/GPU reuse/replacement and161 terminal checks pass. Scoped tradeoffs are documented; strict CPU streaming timing and inaccurate old SVD XLA remain failed. No runtime numerical changes.
+Final public-owner resources close through05304:42 GPU costs,12 CPU/GPU reuse workers and161 terminal checks pass. D23 warm ratio1.4897 is attributed mainly to the accuracy-required residual SVD and accepted as an explicit scoped tradeoff; fixed-configuration memory is stable. Failed diagnostic serialization05255 is preserved.
 
-Next: Checkpoint the SVD result, then register a fresh bounded angle/subspace and SQMC resource allocation. Finish GenUT affected-use and F01--F20 current-caller dispositions before terminal merge review.
+Next: Restore the four TT benchmark fixtures accidentally removed by merge9d8202b77; review current core cost/caller applicability and register only genuinely missing measurements. Finish GenUT affected-use and F01--F20 terminal dispositions before main merge.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
@@ -53,7 +53,8 @@ Streaming CPU ratios1.08239/1.09678 have95% upper bounds1.11687/1.15608 above1.1
 the stricter study remains failed. The scoped streaming tradeoff is accepted
 through05245 with GPU/lifetime evidence; owner costs close through05227.
 Remaining-SVD resource tradeoff closes through05248.
-Angle/subspace/SQMC resource triggers remain open. Compiler residency needs
+Angle/subspace/SQMC resources close through05304 with the explicit D23 accuracy-cost
+tradeoff. Core-filter costs still need applicability reconciliation. Compiler residency needs
 measurement and a practical lifetime/capacity disposition, not a general proof
 that TensorFlow releases all native allocations. No zero-overhead claim follows.
 
