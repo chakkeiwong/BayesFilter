@@ -104,3 +104,10 @@ honestly. Known old eager endpoints cannot be presented as old fully-XLA
 baselines. The measured scalar AD path cannot establish analytical-score
 claims. The ten scopes address concrete missing comparisons; scientific
 retuning and historical optimizer research remain outside this renewal.
+
+Recovery through05347: all three Gaussian TT blocks pass. TT-adjoint original
+and current-graph arms05345–05346 pass.05347 completes numerical and128-call
+reuse work (12288-byte late RSS growth), but one nvidia-smi query exceeds five
+seconds; no foreign process is observed. Preserve the failed49.689-second
+worker and retry under unchanged source/input/device/gates. This is the second
+localized monitor timeout in this cohort, not evidence of a numerical failure.

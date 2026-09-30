@@ -100,3 +100,62 @@ settings, seed words, discrete ancestor/component selections and failure
 statuses remain exact comparison requirements. Existing strict recomposition
 and finite-difference checks retain their own bounds. A fuller unexecuted
 implementation review is saved in/tmp/filter-repair-c2-preparation-design-notes.md.
+
+Recovery review: the referenced ignored C2 fixture JSON is absent from both
+current checkouts and Git385a348b9. Its exact seeded diagnostic generator and
+fixture construction source remain available. Before the C2 numerical pilot,
+regenerate the same n4/model52/observations42/T20 reference from that frozen
+source, record its hashes and environment, and use identical frozen bytes for
+all original/current arms. This is independent reference fixture recovery,
+not permission to replace runtime random streams. A read-only Git archive of
+the complete385a348b9 package is prepared at
+/tmp/bayesfilter-c2-preparation-original-385a348b9 with713 file hashes.
+The uninstalled test draft's source-loader API and unset program field are
+incorrect; use real frozen source files for fingerprinting and bind the actual
+public prepared evaluator. No draft is acceptance evidence.
+
+The first execution allocation is a K=1 pilot after the frozen core cohort.
+It is limited to24 serial workers,1800 CPU and3600 GPU process-seconds,
+900 seconds per numerical worker and300 seconds for fixture/readback checks.
+Register it as c2_preparation_k1_allocation with the completed core checkpoint
+as its starting charge. Remaining compiler families require a subsequent
+bounded allocation; this pilot cannot close the whole C2 gap.
+
+Baseline385a348b9 is a complete materialized Git archive, verified against Git
+by the isolated diagnostic loader; source fingerprints read the real frozen
+files. Freeze full CPU and GPU originals before editing numerical sources:
+T3/N16/seed9104, T4/N24/seed9102, T5/N16/seed9101, T3/N20/seed9103 with the
+existing0.7 observation perturbation, plus T3/N16 negative and large seed
+contexts(-9104 and4294976400). Record branch tensors, every proposal diagnostic,
+manifest fields, actual branch/compiler/program IDs, value and analytical score.
+Check invalid stationarity, initial/later nonfinite observations and small N,
+preserving error class/message and first-failure ordering. Seed changes are
+reference probes of the existing seed contract, not an RNG migration.
+
+After source/fixture recovery, register these commands in the existing runner:
+
+```sh
+/home/ubuntu/miniforge3/envs/tf-gpu/bin/python scripts/run_filter_repair_campaign.py test --group c2_preparation_fixture_cpu --device CPU --test-timeout-seconds 300
+/home/ubuntu/miniforge3/envs/tf-gpu/bin/python scripts/run_filter_repair_campaign.py test --group c2_preparation_k1_original_cpu --device CPU --test-timeout-seconds 900
+/home/ubuntu/miniforge3/envs/tf-gpu/bin/python scripts/run_filter_repair_campaign.py test --group c2_preparation_k1_original_gpu --device GPU --test-gpu-index 3 --test-timeout-seconds 900
+```
+
+Qualification will compare the complete current public call against frozen
+original records at the existing1e-10 FP64 bounds with exact discrete decisions;
+existing phase1 strict recomposition/finite-difference limits remain unchanged.
+Verify one retained trace, live observation/theta/seed operands, an enclosing
+XLA While and no Python callbacks. Test shared full/prefix analytical evaluation
+against original sliced-prefix programs. Keep public entry validation and
+artifact construction as explicit host boundaries. General complex-eigenvalue
+stability diagnostics are entry validation, not numerical time feedback.
+
+Any changed fingerprint must bind actual current bytes; unchanged route,
+classification and settings remain exact requirements. The cost pilot must
+measure complete public preparation as well as the retained numerical owner,
+three fresh paired blocks and128-call current reuse, with the same provenance,
+contention, allocator/RSS, source freeze and exit rules as core resources.
+Keep all originals/failures and stop at the first unexplained output/error/RNG
+mismatch. Do not accept a syntax-only repair or extrapolate tiny-fixture capacity.
+The draft under/tmp is uninstalled and unexecuted until the original snapshots
+are preserved. Primary-agent review specifically caught the absent fixture,
+invalid draft loader API and unset evaluator field before any C2 numerical run.

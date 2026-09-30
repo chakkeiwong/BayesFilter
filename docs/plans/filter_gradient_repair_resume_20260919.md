@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05338; active worker runs: none.
-Charged/reserved CPU 116757.583089s / GPU 105490.905310s.
-Remaining CPU 23.567338h / GPU 22.696971h.
+Through 05400; active worker runs: none.
+Charged/reserved CPU 116773.289329s / GPU 106900.306305s.
+Remaining CPU 23.562975h / GPU 22.305470h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_core_resource_renewal_20260930.md (active); at most
+Active allocation: docs/plans/filter_gradient_core_resource_renewal_20260930.md (completed_scoped_resource_tradeoffs_accepted); at most
 108 workers/1200 CPU/14400 GPU seconds.
-Used/reserved 33 workers/25.655669 CPU/831.644241 GPU seconds.
+Used/reserved 95 workers/41.361909 CPU/2241.045237 GPU seconds.
 One numerical worker at a time.
 
-Three core cost families (Contract E, TT value and adapted TT) complete all three numerical comparison blocks; Gaussian TT is running. Monitor failure05310 was preserved and the identical retry passed. Source-frozen runtime/harness files remain unchanged. Current-caller review confirmed C2 frozen-proposal/UKF-APF enclosing preparation loops; its bounded repair sequence is now in the master.
+Core resource renewal closes through05400:90 qualified GPU cost workers,30 current-XLA128-call reuse checks and161 terminal tests pass. Preserve05306 harness failures and05310/05347 monitor timeouts. Explicit TT-adjoint/scalar host/cold and actual-SV warm-time tradeoffs accepted in their measured fixtures. C2 enclosing preparation remains confirmed open.
 
-Next: Finish the bounded core-resource matrix and dispose measured triggers. Then execute the confirmed C2 frozen-proposal preparation repair plan (F06/F19), followed by current-caller terminal review; prepared evaluator qualification does not close the newly found Python time loops.
+Next: Preserve and push core resource evidence, then execute the bounded C2 K=1 fixture/original-record pilot before numerical source installation; continue other C2 compilers afterward.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
@@ -54,7 +54,7 @@ the stricter study remains failed. The scoped streaming tradeoff is accepted
 through05245 with GPU/lifetime evidence; owner costs close through05227.
 Remaining-SVD resource tradeoff closes through05248.
 Angle/subspace/SQMC resources close through05304 with the explicit D23 accuracy-cost
-tradeoff. Core-filter costs still need applicability reconciliation. Compiler residency needs
+tradeoff. Core-filter matched costs close through05400 with explicit TT host/cold and actual-SV warm tradeoffs. Compiler residency needs
 measurement and a practical lifetime/capacity disposition, not a general proof
 that TensorFlow releases all native allocations. No zero-overhead claim follows.
 
