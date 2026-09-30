@@ -4,18 +4,19 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05473; active worker runs: none.
-Charged/reserved CPU 117941.834329s / GPU 110149.791372s.
-Remaining CPU 23.238379h / GPU 21.402836h.
+Through 05479; active worker runs: none.
+Supervisor session: none; a matrix can be between workers.
+Charged/reserved CPU 117953.029520s / GPU 110329.066192s.
+Remaining CPU 23.235270h / GPU 21.353037h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_c2_branch_cost_20261001.md (active_source_frozen_cost_cohort); at most
+Active allocation: docs/plans/filter_gradient_c2_branch_cost_20261001.md (harness_repaired_ready_for_frozen_cohort); at most
 60 workers/1800 CPU/10800 GPU seconds.
-Used/reserved 0 workers/0.000000 CPU/0.000000 GPU seconds.
+Used/reserved 6 workers/11.195191 CPU/179.274820 GPU seconds.
 One numerical worker at a time.
 
-DMIS/native C2 qualification passes through05473; source guard335 sources/1552 exact allowances. No cost worker has started. Five-family T4/N20/D2 complete-public original/graph/XLA cohort is prepared and reviewed. Main remains unmerged.
+05476 output-held allocation equality failed (16384 to15360 bytes).05477 excluded synchronization/GC alone;05478 shows fixed roots after releasing the replaceable result use9984 bytes at every checkpoint. Harness v2 records both output-held and fixed-root allocation, preserves exact equality/RSS thresholds and writes evidence before assertions.05479 policy/harness passes. Numerical runtime remains43ec55f86; no active worker.
 
-Next: Run three counterbalanced registered cost blocks serially on one available non-display GPU, then strict full-record/provenance/lifetime readback and policy checks. Preserve all failures; no numerical method, tolerance or scope changes.
+Next: Commit the harness attribution/checkpoint and execute all three counterbalanced five-family cost blocks on GPU2, then same-source terminal readback.05474/05475 remain superseded protocol evidence;05476 remains failed.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls

@@ -73,3 +73,44 @@ claim, HMC result, or canonical LEDH admission. No adaptive iAPF/KDM, live
 MacroFinance edits, training/HMC, package/system changes or main merge occurs
 in this unit. A failure triggers a localized retry within the same budget,
 with original failures retained and no tolerance or method substitution.
+
+Launch note: GPU3 became occupied before the first numerical worker. The
+runner declined before launch and preserved
+cost-preflight-declined-20260930T202855264470Z.json. No cost observation was
+collected. GPU2 was rechecked free and selected for the complete matched
+cohort; commands use --test-gpu-index 2. This is the same approved hardware
+class and global budget. Source checkpoint43ec55f86 is frozen.
+
+05474 original/bootstrap and05475 graph/bootstrap pass.05476 XLA/bootstrap
+failed the unchanged exact live-allocation gate:16384 bytes at64 calls versus
+15360 at128. The matrix stopped. This decrease is not accepted as a pass or a
+leak diagnosis. Register one bounded GPU lifetime probe using the same148
+post-initial calls and input, recording allocation before/after full device
+synchronization and after garbage collection without changing reachable first/
+last results or the retained owner. This distinguishes pending executor work
+from Python object lifetime. Preserve all results; only an explained harness
+repair permits retry. No numerical method or tolerance may change.
+
+05477 repeats the allocation pattern (15872/16384/15360 bytes after20/84/148
+calls); neither full synchronization nor garbage collection changes it. This
+excludes those two proposed explanations. The retained first result, inputs
+and single compiled owner stay fixed; the final returned record is replaced
+each call. The next bounded probe additionally releases only that replaceable
+result before each snapshot, retaining the same first record/input/owner roots.
+It tests output-allocation layout versus growing owner residency; no equality
+threshold is changed. Preserve the first probe and distinguish output-held
+allocation from residency after disposable outputs are released.
+
+05478 identifies the changing roots: while the last returned record is held,
+current allocation is15872/15616/15616 bytes. Releasing only that record gives
+exactly9984 bytes at all three snapshots, with the same first record, inputs
+and single traced owner retained. No runtime numerical change is needed. The
+harness now records both output-held allocation and residency with those fixed
+roots, synchronizes all visible device work, and enforces the same exact
+64/128 allocation equality and16MiB RSS threshold on the fixed-root snapshots.
+It also writes the complete result before lifetime assertions. This repairs
+measurement comparability;05476 remains a failed output-held equality check.
+The cost schema isv2; retain05474/05475 as superseded protocol evidence and
+renew all three arms under one unchanged final source snapshot. No older or
+failed worker is silently promoted. Full-source matching is still mandatory
+inside each accepted block; readback reports excluded source versions.

@@ -1,6 +1,7 @@
 """Diagnostic complete-public preparation costs for the remaining C2 families."""
 
 import hashlib
+import gc
 import json
 import os
 import time
@@ -18,6 +19,40 @@ from tests.test_filter_repair_resource_owners import memory
 
 FAMILIES = ('bootstrap', 'stationary', 'mixed', 'student', 'dmis')
 ARMS = ('original', 'graph', 'xla')
+
+
+def test_branch_lifetime_snapshot_probe(request):
+    """Separate pending work/garbage from reachable compiled-owner allocation."""
+    import gc
+    from bayesfilter.highdim import c2_sv_frozen_proposal_apf_tf as models
+    model, theta, observed = inputs(models, 4)
+    args = dict(model=model, theta_reference=theta, observations=observed,
+                particle_count=20, seed=-814)
+    first = models.compile_c2_bootstrap_proposal_branch(**args)
+    samples = []
+    for index in range(1, 149):
+        result = models.compile_c2_bootstrap_proposal_branch(**args)
+        result.branch.states.numpy()
+        assert result.branch.branch_id == first.branch.branch_id
+        if index in (20, 84, 148):
+            before = memory()
+            tf.test.experimental.sync_devices()
+            after_sync = memory()
+            collected = gc.collect()
+            tf.test.experimental.sync_devices()
+            samples.append({'calls': index, 'states_only_sync': before,
+                'all_devices_sync': after_sync, 'gc_collected': collected, 'after_gc_and_sync': memory()})
+            del result
+            released = gc.collect()
+            tf.test.experimental.sync_devices()
+            samples[-1]['released_result_gc_collected'] = released
+            samples[-1]['after_releasing_last_result'] = memory()
+    owner = next(iter(model._c2_branch_preparation_owners.values()))
+    output = Path(request.config.getoption('xmlpath')).parent
+    (output/'c2-branch-lifetime-probe.json').write_text(json.dumps({
+        'samples': samples, 'trace_count': owner.experimental_get_tracing_count(),
+        'cache_count': len(model._c2_branch_preparation_owners)}, indent=2)+'\n')
+    assert owner.experimental_get_tracing_count() == len(model._c2_branch_preparation_owners) == 1
 
 
 @pytest.mark.parametrize('family', FAMILIES)
@@ -54,6 +89,7 @@ def test_branch_complete_public_cost(family, arm, request):
 
     def synchronize(compilation):
         compilation.branch.states.numpy()
+        tf.test.experimental.sync_devices()
 
     output = Path(request.config.getoption('xmlpath')).parent
     fixture = jsonable({'coupling': model.coupling_matrix, 'sigma': model.sigma,
@@ -74,26 +110,35 @@ def test_branch_complete_public_cost(family, arm, request):
         warm_memory = memory()
         reuse = None
         if arm == 'xla':
+            # Hold the same first result/input/owner roots at every residency
+            # snapshot. Output buffer allocation can differ for equal arrays.
+            del result
+            gc.collect()
+            tf.test.experimental.sync_devices()
             samples = {'0': memory()}
+            output_held = {}
             for index in range(1, 129):
                 result = invoke(); synchronize(result)
                 assert result.branch.branch_id == first.branch.branch_id
                 if index in (64, 128):
+                    output_held[str(index)] = memory()
+                    del result
+                    gc.collect()
+                    tf.test.experimental.sync_devices()
                     samples[str(index)] = memory()
             owner = next(iter(model._c2_branch_preparation_owners.values()))
             reuse = {'calls': 128, 'samples': samples,
+                'output_held_samples': output_held,
+                'snapshot_roots': 'same_first_result_inputs_and_owner_after_releasing_replaceable_result',
                 'cache_count': len(model._c2_branch_preparation_owners),
                 'trace_count': owner.experimental_get_tracing_count(),
                 'late_rss_growth_bytes': samples['128']['VmRSS']-samples['64']['VmRSS']}
-            assert reuse['cache_count'] == reuse['trace_count'] == 1
-            assert owner.get_concrete_function().function_def.attr['_XlaMustCompile'].b
-            assert reuse['late_rss_growth_bytes'] <= 16*2**20
-            assert samples['128']['allocator']['current'] == samples['64']['allocator']['current']
+            reuse['enclosing_xla'] = owner.get_concrete_function().function_def.attr['_XlaMustCompile'].b
         complete = record(first, model, theta, models, apf)
         assert complete['value_score']['finite']
     provenance = next(json.loads(line) for line in (output/'process.log').read_text().splitlines()
                       if line.startswith('{"tensorflow_version"'))
-    result = {'schema': 'filter_repair.c2_branch_cost.v1', 'family': family, 'arm': arm,
+    result = {'schema': 'filter_repair.c2_branch_cost.v2', 'family': family, 'arm': arm,
         'fixture': fixture, 'fixture_sha256': fixture_digest, 'original_source_sha256': old.hashes(),
         'placement': observed.device, 'cold_seconds': cold_seconds, 'warm_seconds': warm,
         'memory': {'prepared_inputs': start_memory, 'cold': cold_memory, 'warm': warm_memory},
@@ -104,6 +149,11 @@ def test_branch_complete_public_cost(family, arm, request):
             'Original public Python control is a reference; graph control disables the enclosing owner but retains shared compiled primitives.',
             'Three tiny process blocks cannot establish universal throughput or capacity.']}
     (output/'c2-branch-cost.json').write_text(json.dumps(result, indent=2, allow_nan=False)+'\n')
+    if reuse is not None:
+        assert reuse['cache_count'] == reuse['trace_count'] == 1
+        assert reuse['enclosing_xla']
+        assert reuse['late_rss_growth_bytes'] <= 16*2**20
+        assert reuse['samples']['128']['allocator']['current'] == reuse['samples']['64']['allocator']['current']
     assert not monitor.errors
     assert all(p['pid'] == os.getpid() for sample in monitor.samples for p in sample['processes'])
 
@@ -116,15 +166,19 @@ def test_branch_cost_readback(request):
     from scripts.filter_repair_cost_provenance import validate_cost_device
     from tests.test_filter_repair_c2_preparation import compare
 
-    rows = [r for r in runner.records() if r['key'][1].startswith('c2_preparation_branch_cost_')
-            and r['key'][1].endswith('_gpu')]
+    groups = {f'c2_preparation_branch_cost_{family}_{arm}_gpu' for family in FAMILIES for arm in ARMS}
+    rows = [r for r in runner.records() if r['key'][1] in groups]
     saved = {}
+    superseded = []
     frozen = runner.source_hashes()
     for row in rows:
         if row['state'] != 'passed':
             continue
-        assert row['source_sha256'] == frozen
+        if row['source_sha256'] != frozen:
+            superseded.append(str(Path(row['result']).parent))
+            continue
         value = json.loads((Path(row['result']).parent/'c2-branch-cost.json').read_text())
+        assert value['schema'] == 'filter_repair.c2_branch_cost.v2'
         validate_cost_device(row, value['device_provenance'], value['device_observation'])
         exited = row['process_exit_observation']
         assert not exited['errors'] and not exited['proc_entry_present']
@@ -146,7 +200,9 @@ def test_branch_cost_readback(request):
                 assert before['gpu_uuid'] == after['gpu_uuid']
                 reuse = b['reuse']
                 assert reuse['cache_count'] == reuse['trace_count'] == 1
+                assert reuse['enclosing_xla']
                 assert reuse['calls'] == 128 and reuse['late_rss_growth_bytes'] <= 16*2**20
+                assert reuse['samples']['128']['allocator']['current'] == reuse['samples']['64']['allocator']['current']
                 def metrics(value):
                     return {'warm_seconds': statistics.median(value['warm_seconds']),
                         'cold_seconds': value['cold_seconds'], 'warm_rss_bytes': value['memory']['warm']['VmRSS'],
@@ -162,4 +218,5 @@ def test_branch_cost_readback(request):
                 'paired_log_t_95_interval': [math.exp(center-half), math.exp(center+half)]})
     output = Path(request.config.getoption('xmlpath')).parent
     (output/'c2-branch-cost-readback.json').write_text(json.dumps({'comparisons': comparisons,
+        'superseded_measurement_protocol_workers': superseded,
         'failed_workers_preserved': [str(Path(r['result']).parent) for r in rows if r['state'] != 'passed']}, indent=2)+'\n')

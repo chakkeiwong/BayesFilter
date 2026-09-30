@@ -1783,6 +1783,9 @@ TEST_GROUPS.update({f'c2_preparation_branch_cost_{family}_{arm}_gpu': (
     for family in C2_BRANCH_COST_FAMILIES for arm in ('original', 'graph', 'xla')})
 TEST_GROUPS['c2_preparation_branch_cost_terminal_cpu'] = (
     'tests/test_filter_repair_c2_branch_cost.py::test_branch_cost_readback', *TEST_GROUPS['policy'])
+TEST_GROUPS['c2_preparation_branch_cost_lifetime_probe_gpu'] = (
+    'tests/test_filter_repair_c2_branch_cost.py::test_branch_lifetime_snapshot_probe',)
+TEST_GROUPS['c2_preparation_branch_cost_harness_cpu'] = TEST_GROUPS['policy']
 TEST_GROUPS.update({f'c2_preparation_branch_dmis_{device}': (
     'tests/test_filter_repair_c2_branch_preparation.py::test_native_dmis_complete_records',)
     for device in ('cpu', 'gpu')})
