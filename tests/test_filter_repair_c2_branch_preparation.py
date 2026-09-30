@@ -375,3 +375,112 @@ def test_hermite_fixed_configuration_graph_growth(request):
     assert graphs[0]['op_counts']==graphs[3]['op_counts']
     assert graphs[1]['op_counts']==graphs[2]['op_counts']
     assert all(row['functions']==graphs[0]['functions'] for row in graphs)
+
+
+def test_native_student_complete_records(request):
+    from bayesfilter.highdim import c2_sv_frozen_proposal_apf_tf as models
+    from bayesfilter.highdim import c2_gaussian_hermite_proposal_tf as hermite
+    from bayesfilter.highdim import zhao_cui_frozen_proposal_apf_tf as apf
+    from tests.test_filter_repair_c2_preparation import compare
+    reports=[]
+    for frozen in _frozen_branch_original()['cases']:
+        if frozen['case'][0]!='student':
+            continue
+        model,theta,compilation=invoke(models,hermite,*frozen['case'])
+        actual=record(compilation,model,theta,models,apf)
+        report={'max_abs':0.}
+        for field in ('branch','diagnostics','value_score','manifest'):
+            compare(_without_payload_id(frozen['record'][field]),_without_payload_id(actual[field]),(field,),report)
+        reports.append({'case':frozen['case'],'maximum_absolute_error':report['max_abs'],'current':actual})
+    output=Path(request.config.getoption('xmlpath')).parent
+    (output/'c2-student-comparison.json').write_text(json.dumps(reports,indent=2)+'\n')
+
+
+def test_student_errors_live_inputs_and_geometry(request):
+    import hashlib
+    import numpy as np
+    from bayesfilter.highdim import c2_sv_frozen_proposal_apf_tf as models
+    from bayesfilter.highdim import c2_gaussian_hermite_proposal_tf as hermite
+    from bayesfilter.highdim import c2_transformed_observation_student_proposal_tf as student
+    from bayesfilter.highdim import zhao_cui_frozen_proposal_apf_tf as apf
+    from tests.test_filter_repair_c2_preparation import compare
+    old=MaterializedCheckpoint(BASELINE,'c2_student_protocol_original')
+    original=old.load('bayesfilter.highdim.c2_sv_frozen_proposal_apf_tf')
+    old_hermite=old.load('bayesfilter.highdim.c2_gaussian_hermite_proposal_tf')
+    old_apf=old.load('bayesfilter.highdim.zhao_cui_frozen_proposal_apf_tf')
+    records=[]
+    for module,proposal_module,score in ((original,old_hermite,old_apf),(models,hermite,apf)):
+        model,theta,compilation=invoke(module,proposal_module,'student',1,16,813)
+        records.append(record(compilation,model,theta,module,score))
+    for field in ('branch','diagnostics','value_score','manifest'):
+        compare(_without_payload_id(records[0][field]),_without_payload_id(records[1][field]),(field,))
+    model,theta,observed=inputs(models,4)
+    args=dict(model=model,observations=observed,theta_reference=theta,particle_count=16,seed=813,nu=8.)
+    compilation=models.compile_c2_transformed_student_proposal_branch(**args)
+    owner=next(iter(model._c2_branch_preparation_owners.values()))
+    batch_owner=student._batch_observation_program(3,2)
+    geometry_owner=student._geometry_program(2,8.)
+    proposals=models.transformed_student_proposals(model=model,observations=observed,theta_reference=theta,nu=8.)
+    for proposal in proposals:
+        # Completed records share the exact geometry; genuine identities bind
+        # each row's actual TensorFlow bytes and original field ordering.
+        assert proposal.gain is proposals[0].gain and proposal.chol is proposals[0].chol
+        digest=hashlib.sha256()
+        for value in (student.ROUTE_ID,student.GUIDE_CONVENTION_ID,proposal.time_index,proposal.nu,
+                      proposal.transition_matrix,proposal.process_covariance,
+                      proposal.transformed_observation,proposal.theta_reference):
+            if tf.is_tensor(value):
+                digest.update(value.dtype.name.encode('ascii'))
+                digest.update(repr(value.shape.as_list()).encode('ascii'))
+                digest.update(tf.io.serialize_tensor(value).numpy())
+            else:
+                digest.update(repr(value).encode('utf-8'))
+        assert proposal.proposal_id==digest.hexdigest()
+    for overrides in ({'seed':814},{'theta_reference':theta+tf.constant([.01,.02],D)},
+                      {'observations':tf.tensor_scatter_nd_add(observed,[[1,0]],tf.constant([.1],D))}):
+        actual=models.compile_c2_transformed_student_proposal_branch(**{**args,**overrides})
+        assert not np.array_equal(compilation.branch.states.numpy(),actual.branch.states.numpy())
+        assert next(iter(model._c2_branch_preparation_owners.values())) is owner
+    for function in (owner,batch_owner,geometry_owner):
+        assert function.experimental_get_tracing_count()==1
+        assert function.get_concrete_function().function_def.attr['_XlaMustCompile'].b
+        graph=function.get_concrete_function().graph.as_graph_def()
+        nodes=[*graph.node,*(n for f in graph.library.function for n in f.node_def)]
+        assert not any(n.op in ('PyFunc','EagerPyFunc','PyFuncStateless') for n in nodes)
+    errors=[]
+    for frozen in _frozen_branch_original()['errors']:
+        if frozen['family']!='student':
+            continue
+        _,_,base=inputs(models,3)
+        overrides={
+            'stationarity':{'theta_reference':tf.constant([2.,0.],D)},
+            'small_count':{'particle_count':1},
+            'initial_nonfinite':{'observations':tf.tensor_scatter_nd_update(base,[[0,0]],tf.constant([float('nan')],D))},
+            'later_nonfinite':{'observations':tf.tensor_scatter_nd_update(base,[[1,0]],tf.constant([float('inf')],D))},
+            'later_zero':{'observations':tf.tensor_scatter_nd_update(base,[[1,0]],tf.constant([0.],D))},
+        }[frozen['case']]
+        try:
+            invoke(models,hermite,'student',3,16,813,**overrides)
+        except (ValueError,TypeError,tf.errors.OpError) as error:
+            assert type(error).__name__==frozen['type'] and str(error)==frozen['message']
+            errors.append(frozen)
+        else:
+            assert frozen.get('accepted')
+    # Conflicting errors must retain original first-date/common-geometry order.
+    for nu,changed in ((2.,observed),(2.,tf.tensor_scatter_nd_update(observed,[[1,0]],tf.constant([0.],D))),
+                       (2.,tf.tensor_scatter_nd_update(observed,[[2,0]],tf.constant([0.],D))),
+                       (8.,tf.tensor_scatter_nd_update(observed,[[2,0],[3,0]],tf.constant([float('inf'),0.],D)))):
+        outcomes=[]
+        for module in (original,models):
+            m,t,_=inputs(module,4)
+            try:
+                module.transformed_student_proposals(model=m,observations=changed,theta_reference=t,nu=nu)
+            except (ValueError,TypeError,tf.errors.OpError) as error:
+                outcomes.append((type(error).__name__,str(error)))
+            else:
+                outcomes.append(('accepted',''))
+        assert outcomes[0]==outcomes[1]
+        errors.append({'nu':nu,'error':outcomes[0]})
+    output=Path(request.config.getoption('xmlpath')).parent
+    (output/'c2-student-protocol.json').write_text(json.dumps({'errors':errors,'live_inputs':True,
+        'shared_geometry':True,'actual_payload_ids':True,'one_trace':True},indent=2)+'\n')

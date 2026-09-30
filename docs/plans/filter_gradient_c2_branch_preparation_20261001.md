@@ -130,3 +130,26 @@ tensor packing and completed reporting. The preserved05455 failure is only
 the None-metadata comparator bug. Original scientific status remains unchanged.
 Student/DMIS repairs, remaining API/error tests and branch cost evidence remain
 open; this is an execution qualification checkpoint, not campaign completion.
+
+Student implementation review: transform the transition observations in one
+retained batch-XLA call, preserving elementwise log-square arithmetic. Construct
+and validate the first proposal with the unchanged public constructor, then
+bind its completed shared geometry to later transformed rows at the host
+record/identity boundary. Preserve first-row zero/nonfinite errors before nu/
+geometry checks, and common geometry errors before later-row observation errors.
+No per-date covariance solve, decomposition, sampler or density may occur in
+that record loop. Move the existing sampler body to a shared method so both
+public scalar-reference owners and the native time owner call the same math.
+Static Student nu configurations are dispatch metadata; transition, observation,
+gain and Cholesky tensors remain live packed operands. Test original full
+records, exact proposal identities, ordered competing errors, horizon-one,
+live seed/theta/observations and actual XLA before any cost claim.
+
+Student checkpoint05461 CPU/05462 GPU passes complete original records with
+maximum2.132e-14 on both backends. Original ordered errors, conflicting first-
+row/nu/later-row errors, horizon-one, actual proposal fingerprints, shared
+geometry, live inputs and one trace pass.05463 policy passes with334 sources/
+1537 exact allowances. The numerical sampler body is now one shared method.
+The new record loop only binds completed tensors and hashes actual payloads.
+This does not yet close DMIS, all C2 public errors, graph/lifetime qualification
+or complete-public costs.

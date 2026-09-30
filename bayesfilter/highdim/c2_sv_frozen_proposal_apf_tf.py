@@ -21,7 +21,7 @@ from bayesfilter.highdim.c2_gaussian_hermite_proposal_tf import (
 )
 from bayesfilter.highdim.c2_transformed_observation_student_proposal_tf import (
     C2TransformedObservationStudentProposal,
-    build_c2_transformed_observation_student_proposal,
+    build_c2_transformed_observation_student_proposals,
 )
 from bayesfilter.highdim.zhao_cui_frozen_proposal_apf_tf import (
     MEASURE_ID,
@@ -514,17 +514,9 @@ def transformed_student_proposals(
         raise ValueError("observations require static shape [time, observation]")
     transition = model.transition_matrix(theta_reference)
     process = tf.eye(model.state_dim(), dtype=DTYPE) * float(model.sigma) ** 2
-    return tuple(
-        build_c2_transformed_observation_student_proposal(
-            transition_matrix=transition,
-            process_covariance=process,
-            observation=observed[time_index],
-            theta_reference=theta_reference,
-            nu=float(nu),
-            time_index=time_index,
-        )
-        for time_index in range(1, int(observed.shape[0]))
-    )
+    return build_c2_transformed_observation_student_proposals(
+        transition_matrix=transition, process_covariance=process,
+        observations=observed[1:], theta_reference=theta_reference, nu=float(nu))
 
 
 def compile_c2_transformed_student_proposal_branch(
@@ -570,6 +562,8 @@ def compile_c2_transformed_student_proposal_branch(
         seed=seed,
         family="transformed_observation_student",
         sample_transition=sample_transition,
+        native_sampler="student", native_proposals=proposals,
+        jit_compile_sampler=bool(jit_compile_sampler),
         transition_manifests=tuple(proposal.manifest_payload() for proposal in proposals),
     )
 
@@ -900,7 +894,7 @@ def _compile_c2_branch(
     if float(stability["minimum_covariance_eigenvalue"].numpy()) <= 0.0:
         raise ValueError("theta_reference stationary covariance is not positive definite")
 
-    if native_sampler in ("bootstrap", "gaussian", "independent"):
+    if native_sampler in ("bootstrap", "gaussian", "independent", "student"):
         branch, proposal_diagnostics = _native_c2_branch(
             model, observations, theta_reference, count, seed, jit_compile_sampler,
             native_sampler, tuple(native_proposals), family)
@@ -1075,6 +1069,11 @@ def _native_c2_branch(model, observations, theta, count, seed, jit_compile,
         key = (*key, configurations)
         sampler = independent_step(configurations, count)
         diagnostic_specs = independent_diagnostic_specs()
+    elif sampler_kind == "student":
+        from bayesfilter.highdim.c2_student_preparation_tf import pack_student_proposals, student_step
+        configurations, operands, operand_specs = pack_student_proposals(proposals)
+        key = (*key, configurations)
+        sampler = student_step(configurations, count)
     else:
         sampler = gaussian_step(count, dimension)
         operands = (
@@ -1126,7 +1125,7 @@ def _native_c2_branch(model, observations, theta, count, seed, jit_compile,
             for index, value in enumerate(finite))
     else:
         diagnostics = tuple({"time_index": index + 1, "family": family, "finite": value,
-                             **({"proposal_id": proposals[index].proposal_id} if sampler_kind == "gaussian" else {})}
+                             **({"proposal_id": proposals[index].proposal_id} if sampler_kind in ("gaussian", "student") else {})}
                             for index, value in enumerate(finite))
     return branch, diagnostics
 

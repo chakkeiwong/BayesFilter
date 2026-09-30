@@ -716,11 +716,14 @@
       "stationary_gaussian_proposals",
       "_native_c2_branch",
       "_gaussian_log_density",
-      "_gaussian_transform_core"
+      "_gaussian_transform_core",
+      "transformed_student_proposals",
+      "compile_c2_transformed_student_proposal_branch"
     ],
     "bayesfilter/highdim/c2_ukf_mixture_steps_tf.py": null,
     "bayesfilter/highdim/c2_branch_preparation_tf.py": null,
-    "bayesfilter/highdim/c2_independent_preparation_tf.py": null
+    "bayesfilter/highdim/c2_independent_preparation_tf.py": null,
+    "bayesfilter/highdim/c2_student_preparation_tf.py": null
   },
   "exceptions": [
     {
@@ -1266,14 +1269,6 @@
       "ast_sha256": "91e73de08c268659738f444738fcef09567a4e3299f7bde0998eb9e28f710052",
       "role": "host_validation",
       "reason": "Reject a missing gradient in the fixed optimizer variable schema during tracing."
-    },
-    {
-      "path": "bayesfilter/highdim/c2_transformed_observation_student_proposal_tf.py",
-      "function": "C2TransformedObservationStudentProposal.__post_init__",
-      "kind": "python_iteration",
-      "ast_sha256": "726f763af168591695ba44a1653fb91af580e2b1971f54b41c7b234bce54845e",
-      "role": "host_validation",
-      "reason": "Hash the immutable named proposal settings and tensors after compiled geometry preparation; this does not compute proposal values."
     },
     {
       "path": "bayesfilter/highdim/source_route.py",
@@ -14420,14 +14415,6 @@
       "reason": "Collect existing Gaussian parameter tensors or static time-index metadata for one packed tensor input; no per-proposal numerical calculation."
     },
     {
-      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
-      "function": "_native_c2_branch",
-      "kind": "python_iteration",
-      "ast_sha256": "bd03b26c317133a25bc45147872c2fc7b2a16201db21e3403c6401faa756d34a",
-      "role": "host_reporting",
-      "reason": "Format completed finite diagnostics and bound proposal identifiers after native branch preparation; no host output feeds the recurrence."
-    },
-    {
       "path": "bayesfilter/highdim/c2_independent_preparation_tf.py",
       "function": "proposal_configuration",
       "line": 22,
@@ -14507,6 +14494,96 @@
       "ast_sha256": "1801bbe21570d266d179bfe4abeffa5b6320680109c775f310808a3bed188221",
       "role": "host_reporting",
       "reason": "Format completed proposal-specific diagnostic tensors and existing IDs after the enclosing native recurrence finishes."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_transformed_observation_student_proposal_tf.py",
+      "function": "C2TransformedObservationStudentProposal._bind_completed",
+      "line": 179,
+      "kind": "python_iteration",
+      "ast_sha256": "726f763af168591695ba44a1653fb91af580e2b1971f54b41c7b234bce54845e",
+      "role": "host_reporting",
+      "reason": "Hash actual completed proposal tensors and original scalar fields; no numerical evaluation."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_transformed_observation_student_proposal_tf.py",
+      "function": "build_c2_transformed_observation_student_proposals",
+      "line": 397,
+      "kind": "python_iteration",
+      "ast_sha256": "8dbe2f3b3db0dc268616e3c659462b1a289cb76722f98e84eb1fc8ba4c4dd444",
+      "role": "host_reporting",
+      "reason": "Bind completed batched observation rows and shared validated geometry into host records and genuine identities; no per-date numerical kernel."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "_native_c2_branch",
+      "line": 1127,
+      "kind": "python_iteration",
+      "ast_sha256": "13d13563902898e0bd1f76d6c93f20eeb4e39055b8fa9e697e79dc7ee32a3998",
+      "role": "host_reporting",
+      "reason": "Format completed diagnostics and actual Gaussian/Student proposal IDs after native recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_student_preparation_tf.py",
+      "function": "pack_student_proposals",
+      "line": 16,
+      "kind": "python_iteration",
+      "ast_sha256": "76de82d09cbc26be22007465da9de449f250a876c5633d25e7a7cdf78989f4ed",
+      "role": "fixed_schema",
+      "reason": "Pack existing validated tensor fields by static dimension/nu configuration; no sampling, density, solve or time feedback."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_student_preparation_tf.py",
+      "function": "pack_student_proposals",
+      "line": 18,
+      "kind": "python_iteration",
+      "ast_sha256": "7136b6c0c41c218ff3007465fdc5b4cccde6c6113026e9f67091da3a1e70cc14",
+      "role": "fixed_schema",
+      "reason": "Pack existing validated tensor fields by static dimension/nu configuration; no sampling, density, solve or time feedback."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_student_preparation_tf.py",
+      "function": "pack_student_proposals",
+      "line": 20,
+      "kind": "python_iteration",
+      "ast_sha256": "36d008a64dbbcecc5c382f067a25b9518d862b1c8b7794d27a71242a205989a7",
+      "role": "fixed_schema",
+      "reason": "Pack existing validated tensor fields by static dimension/nu configuration; no sampling, density, solve or time feedback."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_student_preparation_tf.py",
+      "function": "pack_student_proposals",
+      "line": 22,
+      "kind": "python_iteration",
+      "ast_sha256": "8c9d1a3b414278ea70a3ac7c3861e27405e3d6189174b6ce98dcea1f680fde08",
+      "role": "fixed_schema",
+      "reason": "Pack existing validated tensor fields by static dimension/nu configuration; no sampling, density, solve or time feedback."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_student_preparation_tf.py",
+      "function": "pack_student_proposals",
+      "line": 24,
+      "kind": "python_iteration",
+      "ast_sha256": "9c9d40ee0293f92ba2f55f682b1754101317d3a1badc14ab52ce89c66b0341e2",
+      "role": "fixed_schema",
+      "reason": "Pack existing validated tensor fields by static dimension/nu configuration; no sampling, density, solve or time feedback."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_student_preparation_tf.py",
+      "function": "student_step.sample",
+      "line": 50,
+      "kind": "python_iteration",
+      "ast_sha256": "8c72f365a6b9c1181aaae6bd4d3f3a7c9b0ff356b83c3fca3e9bf58aa455aca9",
+      "role": "fixed_schema",
+      "reason": "Bind one shared Student sampler callable per static configuration for switch_case tracing, independent of repeated dates."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py",
+      "function": "compile_c2_transformed_student_proposal_branch",
+      "line": 567,
+      "kind": "python_iteration",
+      "ast_sha256": "88664812555a6f038ed2f8214fb69ab838f5f3716b92e1eb927ce5fae9d78172",
+      "role": "host_reporting",
+      "reason": "Collect already completed proposal manifests for the public compilation record."
     }
   ]
 }

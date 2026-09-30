@@ -159,6 +159,12 @@ class C2TransformedObservationStudentProposal:
         if residual_max > 2e-11:
             raise ValueError("transformed-guide gain solve residual is too large")
 
+        self._bind_completed(transition, process, observed, theta, gain,
+                             posterior_covariance, scale, chol, residual_max)
+
+    def _bind_completed(self, transition, process, observed, theta, gain,
+                        posterior_covariance, scale, chol, residual_max):
+        """Bind validated, completed tensors and issue their actual identity."""
         object.__setattr__(self, "transition_matrix", transition)
         object.__setattr__(self, "process_covariance", process)
         object.__setattr__(self, "transformed_observation", observed)
@@ -255,19 +261,22 @@ class C2TransformedObservationStudentProposal:
             autograph=False,
         )
         def transform(parent_states, standard_normal, chi_square):
-            means = self.conditional_mean(parent_states)
-            whitened = standard_normal / tf.sqrt(
-                chi_square[:, None] / tf.constant(float(self.nu), DTYPE)
-            )
-            states = means + tf.einsum("ij,nj->ni", self.chol, whitened)
-            return {
-                "physical_points": states,
-                "physical_log_density": self.log_density(states, parent_states),
-                "finite": tf.reduce_all(tf.math.is_finite(states))
-                & tf.reduce_all(tf.math.is_finite(chi_square)),
-            }
+            return self._transform_core(parent_states, standard_normal, chi_square)
 
         return _cache_program(key, transform)
+
+    def _transform_core(self, parent_states, standard_normal, chi_square):
+        means = self.conditional_mean(parent_states)
+        whitened = standard_normal / tf.sqrt(
+            chi_square[:, None] / tf.constant(float(self.nu), DTYPE)
+        )
+        states = means + tf.einsum("ij,nj->ni", self.chol, whitened)
+        return {
+            "physical_points": states,
+            "physical_log_density": self.log_density(states, parent_states),
+            "finite": tf.reduce_all(tf.math.is_finite(states))
+            & tf.reduce_all(tf.math.is_finite(chi_square)),
+        }
 
     def compiled_seeded_sampler(self, particle_count: int, *, jit_compile: bool = True):
         count = int(particle_count)
@@ -345,6 +354,67 @@ def build_c2_transformed_observation_student_proposal(
         nu=float(nu),
         time_index=int(time_index),
     )
+
+
+@lru_cache(maxsize=16)
+def _batch_observation_program(count, dimension):
+    @tf.function(input_signature=[tf.TensorSpec([count, dimension], DTYPE),
+                                 tf.TensorSpec([2], DTYPE)],
+                 jit_compile=True, autograph=False)
+    def evaluate(observations, theta):
+        transformed = _transformed_observation_core(observations, theta)
+        status = tf.where(tf.reduce_all(tf.math.is_finite(transformed), axis=1), 0, 2)
+        status = tf.where(tf.reduce_any(observations == 0., axis=1), 1, status)
+        first_error = tf.argmax(tf.cast(status != 0, tf.int32), output_type=tf.int32)
+        return transformed, status[0], status[first_error]
+    return evaluate
+
+
+def build_c2_transformed_observation_student_proposals(
+    *, transition_matrix, process_covariance, observations, theta_reference, nu,
+):
+    """Batch transition guides; geometry is shared, completed records are host-side."""
+    observed = tf.convert_to_tensor(observations, DTYPE)
+    count, dimension = observed.shape
+    if count == 0:
+        return ()
+    theta = tf.ensure_shape(tf.convert_to_tensor(theta_reference, DTYPE), [2])
+    transformed, first_status, later_status = _batch_observation_program(count, dimension)(observed, theta)
+
+    def validate_observation(status):
+        if int(status.numpy()) == 1:
+            raise ValueError("the transformed C2 guide requires nonzero observations")
+        if int(status.numpy()) == 2:
+            raise ValueError("transformed observations must be finite")
+
+    validate_observation(first_status)
+    rows = tf.unstack(transformed)
+    first = C2TransformedObservationStudentProposal(
+        transition_matrix=transition_matrix, process_covariance=process_covariance,
+        transformed_observation=rows[0], theta_reference=theta, nu=float(nu), time_index=1)
+    validate_observation(later_status)
+    proposals = [first]
+    for time_index, row in enumerate(rows[1:], start=2):
+        proposal = object.__new__(C2TransformedObservationStudentProposal)
+        object.__setattr__(proposal, 'nu', float(nu))
+        object.__setattr__(proposal, 'time_index', time_index)
+        proposal._bind_completed(first.transition_matrix, first.process_covariance,
+            row, first.theta_reference, first.gain, first.posterior_covariance,
+            first.scale, first.chol, first.solve_residual_max)
+        proposals.append(proposal)
+    return tuple(proposals)
+
+
+def _student_tensor_view(nu, payload):
+    """Private view of validated tensors for tracing; cannot issue an identity."""
+    transition, gain, observed, chol = payload
+    view = object.__new__(C2TransformedObservationStudentProposal)
+    object.__setattr__(view, 'nu', nu)
+    object.__setattr__(view, 'transition_matrix', transition)
+    object.__setattr__(view, 'gain', gain)
+    object.__setattr__(view, 'transformed_observation', observed)
+    object.__setattr__(view, 'chol', chol)
+    return view
 
 
 def _check_spd(matrix: tf.Tensor, name: str) -> None:
