@@ -1731,6 +1731,11 @@ TEST_GROUPS['resource_acceptance_stream_terminal_cpu'] = (
     'tests/test_filter_repair_resource_streaming_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['resource_acceptance_stream_status_gpu'] = (
     'tests/test_filter_repair_resource_streaming.py::test_changed_long_horizon_status',)
+TEST_GROUPS.update({f'resource_acceptance_svd_reuse_{device}': (
+    'tests/test_filter_repair_resource_svd.py::test_composition_reuse_and_replacement',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS['resource_acceptance_svd_terminal_cpu'] = (
+    'tests/test_filter_repair_resource_svd_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['remote_integration_terminal_cpu'] = (
     'tests/test_filter_repair_sqmc_readback.py', *TEST_GROUPS['policy'])
 TEST_GROUPS['remote_integration_halton_attribution_gpu'] = (
@@ -2908,6 +2913,11 @@ TEST_BATCHES['resource_acceptance_streaming'] = (
 TEST_BATCHES['resource_acceptance_streaming_finish'] = (
     'resource_acceptance_stream_reuse_128_gpu', 'resource_acceptance_stream_reuse_128_cpu',
     'resource_acceptance_stream_terminal_cpu',
+)
+
+TEST_BATCHES['resource_acceptance_svd'] = (
+    'resource_acceptance_svd_reuse_cpu', 'resource_acceptance_svd_reuse_gpu',
+    'resource_acceptance_svd_terminal_cpu',
 )
 
 

@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05245; active worker runs: none.
-Charged/reserved CPU 116563.272360s / GPU 103679.384091s.
-Remaining CPU 23.621313h / GPU 23.200171h.
+Through 05248; active worker runs: none.
+Charged/reserved CPU 116621.452337s / GPU 103821.660296s.
+Remaining CPU 23.605152h / GPU 23.160650h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_resource_acceptance_20260930.md (active); at most
+Active allocation: docs/plans/filter_gradient_resource_acceptance_20260930.md (completed); at most
 48 workers/7200 CPU/7200 GPU seconds.
-Used/reserved 43 workers/114.551193 CPU/1090.607156 GPU seconds.
+Used/reserved 46 workers/172.731170 CPU/1232.883360 GPU seconds.
 One numerical worker at a time.
 
-Owner resource checkpoint7c063714f is pushed. Streaming resources complete05228--05245: exact shared outputs, GPU warm ratios0.9890/0.9908, bounded reuse/configuration growth,161 terminal checks. The changed T128 input rejects identically in both authorities; failed05241 remains preserved. Accept the scoped streaming tradeoff as documented in filter_gradient_resource_streaming_result_20260930.md; the stricter CPU timing study remains failed.
+Resource allocation completes through05248: owner checkpoint7c063714f and streaming checkpoint5ab247327 pushed; SVD CPU/GPU reuse/replacement and161 terminal checks pass. Scoped tradeoffs are documented; strict CPU streaming timing and inaccurate old SVD XLA remain failed. No runtime numerical changes.
 
-Next: Archive and push the streaming checkpoint, then execute the prepared remaining-SVD lifetime unit within this allocation. Register angle/subspace and SQMC resource work after reconciling the balance; finish GenUT affected-use and current-caller dispositions before terminal merge review.
+Next: Checkpoint the SVD result, then register a fresh bounded angle/subspace and SQMC resource allocation. Finish GenUT affected-use and F01--F20 current-caller dispositions before terminal merge review.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
@@ -52,7 +52,8 @@ acceptance, then final affected tests before main merge; remote integration clos
 Streaming CPU ratios1.08239/1.09678 have95% upper bounds1.11687/1.15608 above1.10;
 the stricter study remains failed. The scoped streaming tradeoff is accepted
 through05245 with GPU/lifetime evidence; owner costs close through05227.
-Remaining-SVD lifetime and angle/subspace/SQMC resource triggers remain open. Compiler residency needs
+Remaining-SVD resource tradeoff closes through05248.
+Angle/subspace/SQMC resource triggers remain open. Compiler residency needs
 measurement and a practical lifetime/capacity disposition, not a general proof
 that TensorFlow releases all native allocations. No zero-overhead claim follows.
 

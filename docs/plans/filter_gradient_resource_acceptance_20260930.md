@@ -165,3 +165,29 @@ two valid alternating inputs. No runtime or random seed changes. Retry only
 T128 GPU and the unrun CPU/readback via resource_acceptance_streaming_finish.
 Frozen pre-repair harness bytes and AST identity of timed functions preserve
 the12 cost workers and T32 lifetime evidence; numerical sources remain unchanged.
+
+Streaming closes through05245 with the scoped tradeoff recorded in
+filter_gradient_resource_streaming_result_20260930.md; the stricter CPU timing
+study stays failed. Total used43/48 workers,114.551193 CPU and1090.607156 GPU
+seconds. Register resource_acceptance_svd with two CPU/GPU lifetime workers and
+one readback/policy worker,300 seconds each. The unchanged device balances are
+sufficient and46/48 workers are planned including this unit.
+
+Each SVD worker uses the existing exact-quadratic D3/D5 fixtures and complete
+dense/block/sequential/quadratic/COD composition. Run256 synchronized calls per
+dimension with alternating offsets and precision resource, one trace, exact
+replay and independent quadratic/condition checks at the existing1e-10 bound.
+Measure12 replacement caller/resource owners sharing two shape-only primitives,
+Python ownership release, RSS, allocator current/peak and process reservation.
+Apply16MiB late128-call and2GiB incremental RSS/allocator investigation bounds;
+parent verifies process/context exit. No comparison-owner or HLO compilation
+precedes primary samples. If the bound or300-second timeout is reached, retain
+the failure and diagnose within the remaining allocation rather than relaxing it.
+
+Reuse the48-worker accepted cost cohort03713--03760 after checking its receipt,
+archived report hashes and seven direct numerical files againstea94aac96. The
+inaccurate old XLA arm remains excluded. The public pair-diagnostic angle guard
+is a different caller and is not covered by this fit-only composition. Review:
+resource owner release cannot establish native eviction; two finite dimensions
+and12 replacements support only a bounded worker-lifetime decision. Repeated
+calls are memory observations, not independent timing replicates.

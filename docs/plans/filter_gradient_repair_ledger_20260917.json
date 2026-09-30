@@ -744,20 +744,20 @@
     "parse_error_role": "Unchanged historical vendor leading-zero literal; counts are search leads, not violation verdicts."
   },
   "current_checkpoint": {
-    "through_run": 5245,
+    "through_run": 5248,
     "based_on_commit": "cf76d2cca",
-    "status": "Owner resource checkpoint7c063714f is pushed. Streaming resources complete05228--05245: exact shared outputs, GPU warm ratios0.9890/0.9908, bounded reuse/configuration growth,161 terminal checks. The changed T128 input rejects identically in both authorities; failed05241 remains preserved. Accept the scoped streaming tradeoff as documented in filter_gradient_resource_streaming_result_20260930.md; the stricter CPU timing study remains failed.",
+    "status": "Resource allocation completes through05248: owner checkpoint7c063714f and streaming checkpoint5ab247327 pushed; SVD CPU/GPU reuse/replacement and161 terminal checks pass. Scoped tradeoffs are documented; strict CPU streaming timing and inaccurate old SVD XLA remain failed. No runtime numerical changes.",
     "charged_seconds": {
-      "CPU": 116563.27236007694,
-      "GPU": 103679.3840910539
+      "CPU": 116621.45233658403,
+      "GPU": 103821.66029553679
     },
     "remaining_hours": {
-      "CPU": 23.62131323331196,
-      "GPU": 23.20017108581836
+      "CPU": 23.605152128726658,
+      "GPU": 23.160649917906447
     },
     "active_job": null,
     "active_session": null,
-    "next": "Archive and push the streaming checkpoint, then execute the prepared remaining-SVD lifetime unit within this allocation. Register angle/subspace and SQMC resource work after reconciling the balance; finish GenUT affected-use and current-caller dispositions before terminal merge review.",
+    "next": "Checkpoint the SVD result, then register a fresh bounded angle/subspace and SQMC resource allocation. Finish GenUT affected-use and F01--F20 current-caller dispositions before terminal merge review.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -2340,7 +2340,7 @@
     "remote_integration_result": "docs/plans/filter_gradient_remote_integration_result_20260930.md",
     "resource_acceptance_allocation": {
       "plan": "docs/plans/filter_gradient_resource_acceptance_20260930.md",
-      "state": "active",
+      "state": "completed",
       "start_after_run": 5202,
       "group_prefix": "resource_acceptance_",
       "max_workers": 48,
@@ -2355,19 +2355,22 @@
       },
       "registered_first_batch": "resource_acceptance_owners",
       "registered_first_batch_workers": 25,
-      "progress_notes": "Owner resource checkpoint7c063714f is pushed. Streaming resources complete05228--05245: exact shared outputs, GPU warm ratios0.9890/0.9908, bounded reuse/configuration growth,161 terminal checks. The changed T128 input rejects identically in both authorities; failed05241 remains preserved. Accept the scoped streaming tradeoff as documented in filter_gradient_resource_streaming_result_20260930.md; the stricter CPU timing study remains failed.",
-      "next_action": "Archive and push the streaming checkpoint, then execute the prepared remaining-SVD lifetime unit within this allocation. Register angle/subspace and SQMC resource work after reconciling the balance; finish GenUT affected-use and current-caller dispositions before terminal merge review.",
-      "used_workers": 43,
+      "progress_notes": "Resource allocation completes through05248: owner checkpoint7c063714f and streaming checkpoint5ab247327 pushed; SVD CPU/GPU reuse/replacement and161 terminal checks pass. Scoped tradeoffs are documented; strict CPU streaming timing and inaccurate old SVD XLA remain failed. No runtime numerical changes.",
+      "next_action": "Checkpoint the SVD result, then register a fresh bounded angle/subspace and SQMC resource allocation. Finish GenUT affected-use and F01--F20 current-caller dispositions before terminal merge review.",
+      "used_workers": 46,
       "used_seconds": {
-        "CPU": 114.55119309900329,
-        "GPU": 1090.6071555009112
+        "CPU": 172.73116960609332,
+        "GPU": 1232.8833599837963
       },
       "failed_runs": [
         5241
       ],
       "registered_next_batch": "resource_acceptance_streaming",
       "registered_next_batch_workers": 16,
-      "streaming_result": "docs/plans/filter_gradient_resource_streaming_result_20260930.md"
+      "streaming_result": "docs/plans/filter_gradient_resource_streaming_result_20260930.md",
+      "registered_svd_batch": "resource_acceptance_svd",
+      "registered_svd_workers": 3,
+      "svd_result": "docs/plans/filter_gradient_resource_svd_result_20260930.md"
     },
     "resource_owner_result": "docs/plans/filter_gradient_resource_owners_result_20260930.md"
   },
