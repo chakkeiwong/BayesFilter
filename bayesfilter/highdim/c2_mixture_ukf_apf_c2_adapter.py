@@ -100,10 +100,10 @@ def compile_c2_per_ancestor_ukf_apf_k1(
 ) -> C2UKFAPFCompilation:
     """Construct a transformed-observation, per-ancestor K=1 APF branch.
 
-    The branch construction is intentionally eager and time-recursive: each
-    step uses the exact finite-program prefix weights to form the APF ancestor
-    law.  All row-wise sigma-point arithmetic and random sampling are executed
-    by fixed-shape TensorFlow functions supplied by the generic module.
+    A retained fixed-signature TensorFlow owner compiles the complete numerical
+    preparation by default, including the exact-prefix weight and covariance
+    feedback. Configuration, entry validation and completed artifact records
+    remain at the host boundary; no host numerical value feeds the time loop.
     """
 
     if not tf.executing_eagerly():
@@ -126,143 +126,48 @@ def compile_c2_per_ancestor_ukf_apf_k1(
     if float(stability["spectral_radius"].numpy()) >= 1.0:
         raise ValueError("theta_reference is outside the stationary stability domain")
 
+    from bayesfilter.highdim.c2_ukf_preparation_tf import make_k1_preparation
+
     dimension = model.state_dim()
-    transition = model.transition_matrix(theta)
-    process_covariance = tf.eye(dimension, dtype=DTYPE) * float(model.sigma) ** 2
-    stationary_covariance, _ = model.stationary_covariance_and_derivative(theta)
-    initial_cholesky = tf.linalg.cholesky(stationary_covariance)
-    initial_normal = tf.random.stateless_normal(
-        [count, dimension], [int(seed), 1001], dtype=DTYPE
-    )
-    initial_states = tf.einsum("ij,nj->ni", initial_cholesky, initial_normal)
-    initial_log_q = model.initial_log_density(theta, initial_states)
-    initial_covariances = tf.broadcast_to(
-        stationary_covariance[tf.newaxis, :, :], [count, dimension, dimension]
-    )
-    process_covariances = tf.broadcast_to(
-        process_covariance[tf.newaxis, :, :], [count, dimension, dimension]
-    )
-    observation_covariance = tf.eye(dimension, dtype=DTYPE) * tf.constant(
-        LOG_CHI_SQUARE_VARIANCE, DTYPE
-    )
-    observation_covariances = tf.broadcast_to(
-        observation_covariance[tf.newaxis, :, :], [count, dimension, dimension]
-    )
-
-    def transition_fn(points: tf.Tensor) -> tf.Tensor:
-        return tf.einsum("ij,bpj->bpi", transition, points)
-
-    # In the transformed guide, z is modelled as x plus log-chi-square noise.
-    def observation_fn(points: tf.Tensor) -> tf.Tensor:
-        return tf.identity(points)
-
-    kernel = make_batched_ukf_kernel(
-        batch_size=count,
-        state_dim=dimension,
-        observation_dim=dimension,
-        transition_fn=transition_fn,
-        observation_fn=observation_fn,
-        config=ukf_config,
-        jit_compile=bool(jit_compile),
-    )
-    sampler = make_k1_apf_sampler_from_random_inputs(
-        batch_size=count,
-        state_dim=dimension,
-        jit_compile=bool(jit_compile),
-    )
-
-    states = [initial_states]
-    covariances = initial_covariances
-    ancestors = []
-    auxiliary_log_probabilities = []
-    transition_log_q = []
-    diagnostics = []
-
-    branch = prepare_frozen_proposal_branch(
-        observations=observed[:1],
-        states=tf.stack(states),
-        initial_log_proposal_density=initial_log_q,
-        ancestors=tf.zeros([0, count], tf.int32),
-        auxiliary_log_probabilities=tf.zeros([0, count], DTYPE),
-        transition_log_proposal_density=tf.zeros([0, count], DTYPE),
-    )
-    exact_prefix = prepare_frozen_proposal_apf_program(model, branch).evaluate(theta)
-    if not bool(exact_prefix["finite"].numpy()):
-        raise ValueError("initial exact C2 prefix is non-finite")
-    log_parent_weights = exact_prefix["final_log_weights"]
-
-    for time_index in range(1, int(observed.shape[0])):
-        transformed = transformed_log_square_observation(observed[time_index], theta)
-        ukf = kernel(
-            states[-1],
-            covariances,
-            process_covariances,
-            transformed,
-            observation_covariances,
-        )
-        require_valid_ukf_result(ukf)
-        categorical_uniforms = tf.random.stateless_uniform(
-            [count], [int(seed), 5100 + 41 * time_index], dtype=DTYPE
-        )
-        standard_normal = tf.random.stateless_normal(
-            [count, dimension], [int(seed), 5200 + 43 * time_index], dtype=DTYPE
-        )
-        step = sampler(
-            ukf["posterior_mean"],
-            ukf["posterior_covariance"],
-            ukf["posterior_cholesky"],
-            ukf["innovation_log_likelihood"],
-            log_parent_weights,
-            categorical_uniforms,
-            standard_normal,
-        )
-        if not bool(step["finite"].numpy()):
-            raise ValueError(f"non-finite K=1 APF output at time {time_index}")
-
-        states.append(step["samples"])
-        covariances = step["next_covariances"]
-        ancestors.append(step["ancestor_indices"])
-        auxiliary_log_probabilities.append(step["log_ancestor_probabilities"])
-        transition_log_q.append(step["complete_log_q"])
-
-        branch = prepare_frozen_proposal_branch(
-            observations=observed[: time_index + 1],
-            states=tf.stack(states),
-            initial_log_proposal_density=initial_log_q,
-            ancestors=tf.stack(ancestors),
-            auxiliary_log_probabilities=tf.stack(auxiliary_log_probabilities),
-            transition_log_proposal_density=tf.stack(transition_log_q),
-        )
-        exact_prefix = prepare_frozen_proposal_apf_program(model, branch).evaluate(theta)
-        if not bool(exact_prefix["finite"].numpy()):
-            raise ValueError(f"exact C2 prefix is non-finite at time {time_index}")
-        log_parent_weights = exact_prefix["final_log_weights"]
-
-        diagnostics.append(
-            {
-                "time_index": time_index,
-                "transformed_observation": transformed,
-                "lookahead_log_likelihood": ukf["innovation_log_likelihood"],
-                "ancestor_log_probabilities": step["log_ancestor_probabilities"],
-                "selected_mean": step["selected_mean"],
-                "selected_cholesky": step["selected_cholesky"],
-                "selected_log_q": step["selected_log_q"],
-                "proposal_density_recomposition_max_abs": tf.reduce_max(
-                    tf.abs(
-                        step["complete_log_q"]
-                        - gaussian_log_density(
-                            step["samples"],
-                            step["selected_mean"],
-                            step["selected_cholesky"],
-                        )
-                    )
-                ),
-                "posterior_mean": ukf["posterior_mean"],
-                "posterior_min_eigenvalue": ukf["posterior_min_eigenvalue"],
-                "proposal_finite": step["finite"],
-                "exact_prefix_finite": exact_prefix["finite"],
-            }
-        )
+    configuration = ukf_config or BatchedUKFConfig()
+    key = ("k1", int(observed.shape[0]), count, configuration, bool(jit_compile))
+    cache = getattr(model, "_c2_preparation_owners", None)
+    if cache is None:
+        cache = {}
+        object.__setattr__(model, "_c2_preparation_owners", cache)
+    if key not in cache:
+        if len(cache) >= 4:
+            cache.pop(next(iter(cache)))
+        cache[key] = make_k1_preparation(model, int(observed.shape[0]), count,
+                                         configuration, bool(jit_compile))
+    result = cache[key](observed, theta, tf.convert_to_tensor(int(seed), tf.int64))
+    status = int(result["status"].numpy())
+    failed_time = int(result["failed_time"].numpy())
+    if status:
+        errors = {
+            1: "observations must contain only finite values",
+            2: "states must contain only finite values",
+            3: "initial_log_proposal_density must contain only finite values",
+            4: "initial exact C2 prefix is non-finite",
+            5: f"batched UKF result has {int(result['invalid_rows'].numpy())} invalid row(s)",
+            6: f"non-finite K=1 APF output at time {failed_time}",
+            7: "auxiliary_log_probabilities must contain only finite values",
+            8: "each auxiliary categorical law must be normalized",
+            9: f"exact C2 prefix is non-finite at time {failed_time}",
+            10: "the transformed C2 guide requires nonzero observations",
+            11: "transformed observations must be finite",
+        }
+        raise ValueError(errors[status])
+    branch = prepare_frozen_proposal_branch(observations=observed,
+        states=result["states"], initial_log_proposal_density=result["initial_log_proposal_density"],
+        ancestors=result["ancestors"], auxiliary_log_probabilities=result["auxiliary_log_probabilities"],
+        transition_log_proposal_density=result["transition_log_proposal_density"])
+    # Completed output records only: no per-date host value feeds the owner.
+    rows = tf.nest.map_structure(tf.unstack, result["diagnostics"])
+    diagnostics = tuple({**{name: values[index] for name, values in rows.items()},
+                         "time_index": index + 1} for index in range(int(observed.shape[0])-1))
+    process_covariance = result["process_covariance"]
+    observation_covariance = result["observation_covariance"]
 
     manifest = {
         "route_id": ROUTE_ID,

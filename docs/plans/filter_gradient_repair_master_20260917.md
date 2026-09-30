@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05400; active worker runs: none.
-Charged/reserved CPU 116773.289329s / GPU 106900.306305s.
-Remaining CPU 23.562975h / GPU 22.305470h.
+Through 05419; active worker runs: none.
+Charged/reserved CPU 116954.608538s / GPU 107654.651869s.
+Remaining CPU 23.512609h / GPU 22.095930h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_core_resource_renewal_20260930.md (completed_scoped_resource_tradeoffs_accepted); at most
-108 workers/1200 CPU/14400 GPU seconds.
-Used/reserved 95 workers/41.361909 CPU/2241.045237 GPU seconds.
+Active allocation: docs/plans/filter_gradient_c2_preparation_execution_20260930.md (complete); at most
+24 workers/1800 CPU/3600 GPU seconds.
+Used/reserved 19 workers/181.319209 CPU/754.345563 GPU seconds.
 One numerical worker at a time.
 
-Core resource renewal closes through05400:90 qualified GPU cost workers,30 current-XLA128-call reuse checks and161 terminal tests pass. Preserve05306 harness failures and05310/05347 monitor timeouts. Explicit TT-adjoint/scalar host/cold and actual-SV warm-time tradeoffs accepted in their measured fixtures. C2 enclosing preparation remains confirmed open.
+K=1 preparation is qualified through05419:13 CPU/13 GPU complete numerical/API checks,161 preflight checks, three fresh original/graph/XLA cost blocks and128-call reuse per XLA worker. Preserved05407/05408 harness failures; no active worker. See filter_gradient_c2_k1_preparation_result_20261001.md.
 
-Next: Preserve and push core resource evidence, then execute the bounded C2 K=1 fixture/original-record pilot before numerical source installation; continue other C2 compilers afterward.
+Next: Archive and commit/push K=1 evidence, then register and execute the fixed/defensive mixture preparation allocation; freeze complete originals before numerical edits.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
@@ -64,7 +64,7 @@ GenUT wiring through04939 and actual-DZ504618–04628/import04629–04630/index0
 Keep each source/data/dtype/device scope explicit. F01, F12--F17 and F20 have closed
 scoped execution/API dispositions (including earlier F14 through04727). The12
 remaining broad findings include resource/applicability decisions, not12 known
-unfixed bugs. Incoming SQMC coverage is326 sources/1505 exact exceptions; the
+unfixed bugs. Current guard coverage is330 sources/1512 exact exceptions, including scoped C2 K=1/model dependencies; the
 static guard is scoped coverage, not a repository-wide compliance claim.
 
 GPU0 is remote desktop, GPU1 display. Recheck GPU2/3 availability before use;

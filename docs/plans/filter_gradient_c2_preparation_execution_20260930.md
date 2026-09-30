@@ -159,3 +159,34 @@ mismatch. Do not accept a syntax-only repair or extrapolate tiny-fixture capacit
 The draft under/tmp is uninstalled and unexecuted until the original snapshots
 are preserved. Primary-agent review specifically caught the absent fixture,
 invalid draft loader API and unset evaluator field before any C2 numerical run.
+
+Pilot progress:05401 recovers the original seeded diagnostic fixture with
+SHA2562957a6faeaaea0de893b010a5fd8d66b5e1fae82fb75e0be1645a2524dde603c.
+05402/05403 freeze six complete original cases per CPU/GPU plus four error
+contracts before numerical edits.05404 is the first passing K=1 CPU full-call
+witness.05405/05406 each pass13 checks: complete records, live inputs, enclosing
+XLA, original error ordering, shared prefix/default score and existing phase1
+checks. Maximum CPU/GPU absolute errors1.208e-13/5.684e-14.
+
+05407 preserves159 passes/two preflight failures. GPU groups had explicit GPU
+launch arguments but lacked the runner's matrix-device registry; register all
+C2 GPU groups. The graph-size test assumed exact total-node equality.05408
+preserves the diagnostic failure: T3/T7/T11/T3 have2630/2632/2632/2630 nodes,
+all nine functions; only one Fill and one Const are added. TensorFlow changes
+large static-zero tensor construction from Const to Fill. The corrected check
+requires identical computational-op inventories, stable T7/T11 graphs and
+repeat T3 graphs. This is a harness representation correction; no numerical or
+execution allowance changes. Runtime sources remain the ones qualified05405/6.
+
+05409 passes161 graph-size/policy/runner checks. The matched K=1 cost driver is
+/home/ubuntu/miniforge3/envs/tf-gpu/bin/python /tmp/run_c2_k1_resource_matrix.py,
+using the registered c2_preparation_k1_cost_{original,graph,xla}_gpu groups
+and three counterbalanced --repeat blocks. Each public boundary gets20 warm
+calls; current XLA also gets128 fixed-input public reuses. The driver enforces
+source freeze, the24-worker/1800-CPU/3600-GPU allocation and first bad-block
+stop. Terminal c2_preparation_k1_terminal_cpu verifies full records, provenance,
+process exit, same physical GPU and the unchanged comparison bounds.
+
+K=1 unit completed through05419; numerical, API, execution and matched resource
+checks pass. See filter_gradient_c2_k1_preparation_result_20261001.md.
+Fixed/defensive mixture and other C2 preparation families remain open.

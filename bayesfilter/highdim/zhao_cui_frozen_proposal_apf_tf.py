@@ -755,7 +755,15 @@ def _evaluate_core(
     model: FrozenProposalAPFModel,
     branch: PreparedFrozenProposalBranch,
     theta: tf.Tensor,
+    *, evaluation_steps: tf.Tensor | None = None,
 ) -> Mapping[str, tf.Tensor]:
+    """Shared full/prefix authority; a prefix keeps static-capacity histories.
+
+    Internal preparation callers may bound the evaluated prefix while keeping
+    full-capacity input tensors. Unused history entries are zero; the default
+    public evaluator retains its complete original horizon and output shapes.
+    """
+    limit = branch.time_steps if evaluation_steps is None else evaluation_steps
     dtype = branch.dtype
     particle_count = branch.particle_count
     parameter_dimension = int(model.parameter_dim())
@@ -813,11 +821,17 @@ def _evaluate_core(
             derivative_log_weights,
         )
     )
-    increments = tf.TensorArray(dtype, size=branch.time_steps).write(0, increment)
-    increment_scores = tf.TensorArray(dtype, size=branch.time_steps).write(0, increment_score)
-    ess_by_time = tf.TensorArray(dtype, size=branch.time_steps).write(0, minimum_ess)
-    log_weight_spread_by_time = tf.TensorArray(dtype, size=branch.time_steps).write(0, maximum_log_weight_spread)
-    maximum_normalized_weight_by_time = tf.TensorArray(dtype, size=branch.time_steps).write(0, tf.reduce_max(normalized_weights))
+    def history(shape):
+        array = tf.TensorArray(dtype, size=branch.time_steps)
+        if evaluation_steps is not None:
+            array = array.unstack(tf.zeros([branch.time_steps, *shape], dtype))
+        return array
+
+    increments = history([]).write(0, increment)
+    increment_scores = history([parameter_dimension]).write(0, increment_score)
+    ess_by_time = history([]).write(0, minimum_ess)
+    log_weight_spread_by_time = history([]).write(0, maximum_log_weight_spread)
+    maximum_normalized_weight_by_time = history([]).write(0, tf.reduce_max(normalized_weights))
 
     def step(time_index, log_weights, derivative_log_weights, total_log_likelihood, total_score, minimum_ess, maximum_log_weight_spread, finite, increments, increment_scores, ess_by_time, log_weight_spread_by_time, maximum_normalized_weight_by_time):
         ancestors = tf.gather(branch.ancestors, time_index - 1)
@@ -912,7 +926,7 @@ def _evaluate_core(
         return time_index + 1, log_weights, derivative_log_weights, total_log_likelihood, total_score, minimum_ess, maximum_log_weight_spread, finite, increments, increment_scores, ess_by_time, log_weight_spread_by_time, maximum_normalized_weight_by_time
 
     _, log_weights, derivative_log_weights, total_log_likelihood, total_score, minimum_ess, maximum_log_weight_spread, finite, increments, increment_scores, ess_by_time, log_weight_spread_by_time, maximum_normalized_weight_by_time = tf.while_loop(
-        lambda time_index, *_: time_index < branch.time_steps, step,
+        lambda time_index, *_: time_index < limit, step,
         (tf.constant(1), log_weights, derivative_log_weights, total_log_likelihood, total_score, minimum_ess, maximum_log_weight_spread, finite, increments, increment_scores, ess_by_time, log_weight_spread_by_time, maximum_normalized_weight_by_time),
         maximum_iterations=branch.time_steps - 1, parallel_iterations=1,
     )
@@ -930,7 +944,7 @@ def _evaluate_core(
         "maximum_log_weight_spread": maximum_log_weight_spread,
         "finite": finite,
         "particle_count": tf.constant(particle_count, tf.int32),
-        "time_steps": tf.constant(branch.time_steps, tf.int32),
+        "time_steps": tf.convert_to_tensor(limit, tf.int32),
     }
 
 
