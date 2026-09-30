@@ -129,6 +129,15 @@
         "branch_plan": "docs/plans/filter_gradient_c2_branch_preparation_20261001.md",
         "cost_plan": "docs/plans/filter_gradient_c2_branch_cost_20261001.md",
         "remaining": "Complete branch public costs/lifetime and actual-caller dispositions; generic compile_k1_apf_proposal is reached only by inspected phase0 reference checks/tests and still needs explicit role disposition. No finding-wide closure yet."
+      },
+      "c2_complete_preparation_resources_05525": {
+        "result": "docs/plans/filter_gradient_c2_branch_cost_result_20261001.md",
+        "runs": [
+          5480,
+          5525
+        ],
+        "status": "qualified_five_family_scoped_cost_and_lifetime",
+        "remaining": "Standalone helper/caller qualification and final per-finding reconciliation; no whole-finding closure yet."
       }
     },
     {
@@ -730,6 +739,15 @@
         "branch_plan": "docs/plans/filter_gradient_c2_branch_preparation_20261001.md",
         "cost_plan": "docs/plans/filter_gradient_c2_branch_cost_20261001.md",
         "remaining": "Complete branch public costs/lifetime and actual-caller dispositions; generic compile_k1_apf_proposal is reached only by inspected phase0 reference checks/tests and still needs explicit role disposition. No finding-wide closure yet."
+      },
+      "c2_complete_preparation_resources_05525": {
+        "result": "docs/plans/filter_gradient_c2_branch_cost_result_20261001.md",
+        "runs": [
+          5480,
+          5525
+        ],
+        "status": "qualified_five_family_scoped_cost_and_lifetime",
+        "remaining": "Standalone helper/caller qualification and final per-finding reconciliation; no whole-finding closure yet."
       }
     },
     {
@@ -790,22 +808,20 @@
     "parse_error_role": "Unchanged historical vendor leading-zero literal; counts are search leads, not violation verdicts."
   },
   "current_checkpoint": {
-    "through_run": 5509,
+    "through_run": 5525,
     "based_on_commit": "cf76d2cca",
-    "status": "Source-frozen v2 blocks0/1 pass all30 workers05480--05509 on GPU2, including fixed-root allocation equality and128-call reuse in all10 XLA workers. Final block2 is running on the same GPU. A preliminary full-record block0 inspection has maximum absolute error2.132e-14. The registered terminal readback is still required. Numerical runtime remains43ec55f86; caller/helper drafts remain outside the frozen source tree.",
+    "status": "All45 source-frozen v2 C2 complete preparation costs05480--05524 and161 terminal readback/policy checks05525 pass. Numerical records meet unchanged bounds; all15 XLA128-call lifetime checks pass. Warm XLA14--65ms versus original5.16--5.31s and graph44--619ms. Host RSS/current device allocation are lower than original;16--61MiB additional XLA versus graph RSS is accepted in this fixed-fixture scope. Superseded05474/05475 and failed05476 remain preserved.",
     "charged_seconds": {
-      "CPU": 117953.02951996429,
-      "GPU": 112900.313796419
+      "CPU": 117970.0379061392,
+      "GPU": 112833.6575438511
     },
     "remaining_hours": {
-      "CPU": 23.235269577787697,
-      "GPU": 20.638801723216947
+      "CPU": 23.23054502607244,
+      "GPU": 20.65731734893025
     },
-    "active_job": [
-      5510
-    ],
-    "active_session": 34016,
-    "next": "Poll session34016; after block2 passes run c2_preparation_branch_cost_terminal_cpu, review all45 costs and archive/commit/push the result. Then execute the prepared C2 caller/helper unit and final scoped closure plan.",
+    "active_job": null,
+    "active_session": null,
+    "next": "Archive/commit/push the completed cost result. Activate the12-worker C2 public-helper/caller plan, freeze original helper edge/error records before runtime changes, install reviewed drafts, qualify CPU/GPU and actual callers, then execute the final scoped closure plan.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -2593,7 +2609,7 @@
     },
     "c2_preparation_branch_cost_allocation": {
       "plan": "docs/plans/filter_gradient_c2_branch_cost_20261001.md",
-      "state": "frozen_v2_cohort_running",
+      "state": "qualified_scoped_resources",
       "start_after_run": 5473,
       "group_prefix": "c2_preparation_branch_cost_",
       "max_workers": 60,
@@ -2605,23 +2621,24 @@
         "CPU": 117941.83432899839,
         "GPU": 110149.79137199633
       },
-      "progress_notes": "Source-frozen v2 blocks0/1 pass all30 workers05480--05509 on GPU2, including fixed-root allocation equality and128-call reuse in all10 XLA workers. Final block2 is running on the same GPU. A preliminary full-record block0 inspection has maximum absolute error2.132e-14. The registered terminal readback is still required. Numerical runtime remains43ec55f86; caller/helper drafts remain outside the frozen source tree.",
-      "next_action": "Poll session34016; after block2 passes run c2_preparation_branch_cost_terminal_cpu, review all45 costs and archive/commit/push the result. Then execute the prepared C2 caller/helper unit and final scoped closure plan.",
-      "used_workers": 37,
+      "progress_notes": "All45 source-frozen v2 C2 complete preparation costs05480--05524 and161 terminal readback/policy checks05525 pass. Numerical records meet unchanged bounds; all15 XLA128-call lifetime checks pass. Warm XLA14--65ms versus original5.16--5.31s and graph44--619ms. Host RSS/current device allocation are lower than original;16--61MiB additional XLA versus graph RSS is accepted in this fixed-fixture scope. Superseded05474/05475 and failed05476 remain preserved.",
+      "next_action": "Archive/commit/push the completed cost result. Activate the12-worker C2 public-helper/caller plan, freeze original helper edge/error records before runtime changes, install reviewed drafts, qualify CPU/GPU and actual callers, then execute the final scoped closure plan.",
+      "used_workers": 52,
       "used_seconds": {
-        "CPU": 11.195190965896472,
-        "GPU": 2750.52242442267
+        "CPU": 28.20357714081183,
+        "GPU": 2683.866171854781
       },
       "failed_runs": [
         5476
       ],
-      "supervisor_session": 34016
+      "supervisor_session": null
     },
     "c2_public_caller_followup_plan": "docs/plans/filter_gradient_c2_caller_closure_20261001.md",
     "c2_public_caller_uninstalled_drafts": [
       "/tmp/c2-public-helper-draft-20261001.patch",
       "/tmp/test_filter_repair_c2_public_helpers_draft_20261001.py",
-      "/tmp/test_filter_repair_c2_callers_draft_20261001.py"
+      "/tmp/test_filter_repair_c2_callers_draft_20261001.py",
+      "/tmp/test_filter_repair_c2_public_helper_cost_draft_20261001.py"
     ],
     "terminal_closure_plan": "docs/plans/filter_gradient_terminal_closure_20261001.md",
     "core_dependency_review_20261001": {
@@ -2650,7 +2667,8 @@
         ]
       },
       "status": "read_only_source_applicability_inspection; terminal per-finding reconciliation remains required"
-    }
+    },
+    "c2_preparation_branch_cost_result": "docs/plans/filter_gradient_c2_branch_cost_result_20261001.md"
   },
   "historical_quadratic_batch_checkpoint": {
     "through_run": 1879,

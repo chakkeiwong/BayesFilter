@@ -4,19 +4,19 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05509; active worker runs: [5510].
-Supervisor session: 34016; a matrix can be between workers.
-Charged/reserved CPU 117953.029520s / GPU 112900.313796s.
-Remaining CPU 23.235270h / GPU 20.638802h.
+Through 05525; active worker runs: none.
+Supervisor session: none; a matrix can be between workers.
+Charged/reserved CPU 117970.037906s / GPU 112833.657544s.
+Remaining CPU 23.230545h / GPU 20.657317h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_c2_branch_cost_20261001.md (frozen_v2_cohort_running); at most
+Active allocation: docs/plans/filter_gradient_c2_branch_cost_20261001.md (qualified_scoped_resources); at most
 60 workers/1800 CPU/10800 GPU seconds.
-Used/reserved 37 workers/11.195191 CPU/2750.522424 GPU seconds.
+Used/reserved 52 workers/28.203577 CPU/2683.866172 GPU seconds.
 One numerical worker at a time.
 
-Source-frozen v2 blocks0/1 pass all30 workers05480--05509 on GPU2, including fixed-root allocation equality and128-call reuse in all10 XLA workers. Final block2 is running on the same GPU. A preliminary full-record block0 inspection has maximum absolute error2.132e-14. The registered terminal readback is still required. Numerical runtime remains43ec55f86; caller/helper drafts remain outside the frozen source tree.
+All45 source-frozen v2 C2 complete preparation costs05480--05524 and161 terminal readback/policy checks05525 pass. Numerical records meet unchanged bounds; all15 XLA128-call lifetime checks pass. Warm XLA14--65ms versus original5.16--5.31s and graph44--619ms. Host RSS/current device allocation are lower than original;16--61MiB additional XLA versus graph RSS is accepted in this fixed-fixture scope. Superseded05474/05475 and failed05476 remain preserved.
 
-Next: Poll session34016; after block2 passes run c2_preparation_branch_cost_terminal_cpu, review all45 costs and archive/commit/push the result. Then execute the prepared C2 caller/helper unit and final scoped closure plan.
+Next: Archive/commit/push the completed cost result. Activate the12-worker C2 public-helper/caller plan, freeze original helper edge/error records before runtime changes, install reviewed drafts, qualify CPU/GPU and actual callers, then execute the final scoped closure plan.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
