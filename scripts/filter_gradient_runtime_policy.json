@@ -707,16 +707,13 @@
       "trace_summary_kernel"
     ],
     "bayesfilter/highdim/c2_ukf_preparation_tf.py": null,
-    "bayesfilter/highdim/c2_mixture_ukf_apf_c2_adapter.py": [
-      "compile_c2_per_ancestor_ukf_apf_k1",
-      "C2UKFAPFCompilation",
-      "_jsonable_manifest"
-    ],
+    "bayesfilter/highdim/c2_mixture_ukf_apf_c2_adapter.py": null,
     "bayesfilter/highdim/c2_mixture_ukf_apf_tf.py": null,
     "bayesfilter/highdim/c2_sv_frozen_proposal_apf_tf.py": [
       "C2StochasticVolatilityFrozenAPFModel",
       "_kron_same"
-    ]
+    ],
+    "bayesfilter/highdim/c2_ukf_mixture_steps_tf.py": null
   },
   "exceptions": [
     {
@@ -14358,6 +14355,22 @@
       "ast_sha256": "e5c6041a490acf0e37da96aa208d880913283685d89ade597a29c595e4bc4ebd",
       "role": "fixed_schema",
       "reason": "Coerce the two fixed stateless seed words at the host configuration boundary; no sample/date numerical iteration."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_mixture_ukf_apf_c2_adapter.py",
+      "function": "_prepare_mixture_branch",
+      "kind": "python_iteration",
+      "ast_sha256": "6b26faba3e3ff69c30099ddf22006e18e628789eb2d4efd9a5442abbae6ea945",
+      "role": "host_reporting",
+      "reason": "Format completed per-date diagnostic tensors and static component-count fields after the native preparation owner finishes; no host value feeds the numerical recurrence."
+    },
+    {
+      "path": "bayesfilter/highdim/c2_mixture_ukf_apf_c2_adapter.py",
+      "function": "_prepare_mixture_branch",
+      "kind": "python_iteration",
+      "ast_sha256": "d99d3b6a78eae6da69272cce6cb15ab54a6bbaf670300b9db150e5065481e819",
+      "role": "host_reporting",
+      "reason": "Format completed per-date diagnostic tensors and static component-count fields after the native preparation owner finishes; no host value feeds the numerical recurrence."
     }
   ]
 }

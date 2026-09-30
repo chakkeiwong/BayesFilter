@@ -1750,6 +1750,32 @@ TEST_GROUPS['resource_acceptance_genut_terminal_cpu'] = (
     'tests/test_filter_repair_campaign.py',
     'tests/test_filter_repair_policy.py',
 )
+TEST_GROUPS.update({f'c2_preparation_mixture_cost_{family}_{arm}_gpu': (
+    f'tests/test_filter_repair_c2_mixture_cost.py::test_mixture_complete_public_cost[{arm}-{family}]',)
+    for family in ('mixture', 'defensive') for arm in ('original', 'graph', 'xla')})
+TEST_GROUPS['c2_preparation_mixture_preflight_cpu'] = (
+    'tests/test_filter_repair_c2_mixture_preparation.py::test_mixture_graph_size_is_bounded',
+    'tests/test_filter_repair_c2_preparation.py::test_k1_graph_size_is_bounded',
+    *TEST_GROUPS['policy'],)
+TEST_GROUPS['c2_preparation_mixture_terminal_cpu'] = (
+    'tests/test_filter_repair_c2_mixture_cost.py::test_mixture_cost_readback',
+    *TEST_GROUPS['policy'],)
+TEST_GROUPS.update({f'c2_preparation_mixture_regression_{device}': (
+    'tests/test_filter_repair_c2_mixture_preparation.py::test_fixed_mixture_moments_and_analytical_score',
+    'tests/test_filter_repair_c2_preparation.py::test_complete_k1_public_reference',
+    'tests/test_filter_repair_c2_preparation.py::test_k1_original_error_order',
+    'tests/test_filter_repair_c2_preparation.py::test_shared_default_and_bounded_prefix_match_original',
+    'tests/highdim/test_c2_mixture_ukf_apf_phase1.py',
+    'tests/highdim/test_c2_mixture_ukf_apf_phase4.py',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'c2_preparation_mixture_original_{device}': (
+    'tests/test_filter_repair_c2_mixture_preparation.py::test_original_mixture_records',)
+    for device in ('cpu', 'gpu')})
+TEST_GROUPS.update({f'c2_preparation_mixture_current_{device}': (
+    'tests/test_filter_repair_c2_mixture_preparation.py::test_full_mixture_matches_original',
+    'tests/test_filter_repair_c2_mixture_preparation.py::test_mixture_original_error_order',
+    'tests/test_filter_repair_c2_mixture_preparation.py::test_mixture_live_inputs_and_enclosing_xla',)
+    for device in ('cpu', 'gpu')})
 TEST_GROUPS.update({f'c2_preparation_k1_cost_{arm}_gpu': (
     f'tests/test_filter_repair_c2_preparation_cost.py::test_k1_complete_public_cost[{arm}]',)
     for arm in ('original', 'graph', 'xla')})
@@ -2998,7 +3024,7 @@ FIXTURES = ("rectangular", "factor", "covariance", "sqmc", "dns", "retained_mome
 
 TEST_DEVICES = {
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('c2_preparation_') and group.endswith('_gpu')},
-    **{group: 'GPU' for group in TEST_GROUPS if (group.startswith('resource_acceptance_') or group.startswith('c2_preparation_k1_cost_')) and group.endswith('_gpu')},
+    **{group: 'GPU' for group in TEST_GROUPS if (group.startswith('resource_acceptance_') or group.startswith(('c2_preparation_k1_cost_', 'c2_preparation_mixture_cost_'))) and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('core_execution_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('remote_integration_') and group.endswith('_gpu')},
     **{group: 'GPU' for group in TEST_GROUPS if group.startswith('ssl_lstm_replay_') and group.endswith('_gpu')},
@@ -3363,7 +3389,7 @@ def require_unshared_cost_preflight(args):
                                  "score_inputs_cost_before_gpu",
                                  "score_inputs_cost_after_gpu",
                                  *(group for group in TEST_GROUPS
-                                   if (group.startswith('resource_acceptance_') or group.startswith('c2_preparation_k1_cost_')) and group.endswith('_gpu')),
+                                   if (group.startswith('resource_acceptance_') or group.startswith(('c2_preparation_k1_cost_', 'c2_preparation_mixture_cost_'))) and group.endswith('_gpu')),
                                  *TEST_BATCHES["ledh_flow_cost_gpu"],
                                  *TEST_BATCHES["remaining_svd_cost_gpu"],
                                  *TEST_BATCHES["posterior_public_memory_gpu"],
