@@ -87,6 +87,13 @@ had the CLI selection attribute. Use an absent-safe lookup; CLI selection and
 all numerical behavior are unchanged. Rerun the bounded preflight before the
 cost matrix. This harness-only failure consumes15.012 CPU seconds.
 
+05308/05309 pass original-XLA/current-graph Contract E costs.05310 completes
+current-XLA numerics and128-call reuse (late RSS growth12288 bytes), but one
+in-run nvidia-smi observation exceeds its existing five-second deadline. No
+foreign process is observed. Preserve the failed32.407-second worker and retry
+the same input/source/device job. No observation, numerical or resource gate
+is relaxed; the two qualified arms remain reusable under the source freeze.
+
 Primary-agent skeptical review: imported modules overapproximate executed
 dependencies, so current API evidence is not invalidated merely by unrelated
 imports changing. Conversely a lone unchanged public file does not prove its

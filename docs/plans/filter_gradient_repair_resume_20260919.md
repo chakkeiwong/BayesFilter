@@ -4,18 +4,18 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05307; active worker runs: none.
-Charged/reserved CPU 116757.583089s / GPU 104659.261069s.
-Remaining CPU 23.567338h / GPU 22.927983h.
+Through 05338; active worker runs: none.
+Charged/reserved CPU 116757.583089s / GPU 105490.905310s.
+Remaining CPU 23.567338h / GPU 22.696971h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
 Active allocation: docs/plans/filter_gradient_core_resource_renewal_20260930.md (active); at most
 108 workers/1200 CPU/14400 GPU seconds.
-Used/reserved 2 workers/25.655669 CPU/0.000000 GPU seconds.
+Used/reserved 33 workers/25.655669 CPU/831.644241 GPU seconds.
 One numerical worker at a time.
 
-Final owner resources close through05304; F01 affected-use terminal05305 passes120 checks. Core resource preflight05307 passes160 checks after preserving05306 optional-Namespace harness failure. Ten scopes are ready for90 matched GPU cost workers plus terminal checks; no numerical source changed.
+Three core cost families (Contract E, TT value and adapted TT) complete all three numerical comparison blocks; Gaussian TT is running. Monitor failure05310 was preserved and the identical retry passed. Source-frozen runtime/harness files remain unchanged. Current-caller review confirmed C2 frozen-proposal/UKF-APF enclosing preparation loops; its bounded repair sequence is now in the master.
 
-Next: Run core resource preflight, then the bounded core-resource matrix. Stop at the first failed numerical/status/provenance block; investigate resource triggers and preserve original failures. Complete current-caller/F01--F20 terminal dispositions before main merge.
+Next: Finish the bounded core-resource matrix and dispose measured triggers. Then execute the confirmed C2 frozen-proposal preparation repair plan (F06/F19), followed by current-caller terminal review; prepared evaluator qualification does not close the newly found Python time loops.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls
