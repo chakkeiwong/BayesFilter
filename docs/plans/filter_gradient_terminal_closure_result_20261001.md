@@ -5,7 +5,8 @@ qualification/resource dispositions in
 `filter_gradient_terminal_evidence_20261001.json`. Terminal05538 passes222 checks:160 policy,7 import-isolation and55 source,
 evidence and wrapper checks. Remote origin/main was fetched and is already an
 ancestor of the repair branch; no incoming changes or conflicts remain. This
-closes the September29 execution-rewrite scope; the authorized merge/push is next. Adaptive
+closes the September29 execution-rewrite scope. Main was fast-forwarded to
+validated closurebb0c3024b; all338 source bindings were reverified in main. Adaptive
 iAPF and KDM are owner-deferred; canonical LEDH rebuilding is outside this
 campaign. Fixed fitted-APF remains included.
 
@@ -103,9 +104,9 @@ canonical LEDH route or HMC result.
 The completed final readback is registered as `terminal_closure_terminal_cpu` under the
 existing12-worker,1800 CPU/3600 GPU-second allocation. It checks current source
 bindings, exact saved evidence, wrapper dispositions, import isolation and the
-execution/default guard. Remote main has no unintegrated changes; the validated branch is ready for
-the authorized fast-forward merge. Future affected source changes reopen their
-focused qualification before merge.
+execution/default guard. Remote main had no unintegrated changes; the authorized fast-forward merge
+completed without code conflicts. Future affected source changes reopen their
+focused qualification.
 No new numerical campaign, environment change or subagent is introduced.
 
 Final primary-agent review: current numerical sources match the bound scopes;
@@ -113,3 +114,8 @@ no new numerical implementation was added after05537. The only later Python
 changes register the terminal group and add its standard-library readback test.
 No independent reviewer was launched. Terminal163.125636 CPU process-seconds
 were charged across05537/05538; no GPU budget was used in this closing unit.
+
+Merge receipt: `filter_gradient_main_merge_20261001.json`. Seventeen untracked
+artifact collisions were preserved in a versioned backup and restored byte-for-byte
+by the merge. No evidence was lost. The final archive reopens and verifies all20
+members; SHA2566209ef6809535acd68584547b725048726fed2c3df6cdbee7445547ebf5096bf.
