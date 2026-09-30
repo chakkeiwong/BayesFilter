@@ -4,19 +4,19 @@ Branch repair/filter-gradient-xla-validation-20260918 in
 /tmp/bayesfilter-filter-gradient-xla-validation-20260918. Use git HEAD for the
 latest committed checkpoint. Main remains unmerged.
 
-Through 05479; active worker runs: none.
-Supervisor session: none; a matrix can be between workers.
-Charged/reserved CPU 117953.029520s / GPU 110329.066192s.
-Remaining CPU 23.235270h / GPU 21.353037h.
+Through 05509; active worker runs: [5510].
+Supervisor session: 34016; a matrix can be between workers.
+Charged/reserved CPU 117953.029520s / GPU 112900.313796s.
+Remaining CPU 23.235270h / GPU 20.638802h.
 Global caps56 CPU/52 GPU process-hours include the extra24 CPU hours.
-Active allocation: docs/plans/filter_gradient_c2_branch_cost_20261001.md (harness_repaired_ready_for_frozen_cohort); at most
+Active allocation: docs/plans/filter_gradient_c2_branch_cost_20261001.md (frozen_v2_cohort_running); at most
 60 workers/1800 CPU/10800 GPU seconds.
-Used/reserved 6 workers/11.195191 CPU/179.274820 GPU seconds.
+Used/reserved 37 workers/11.195191 CPU/2750.522424 GPU seconds.
 One numerical worker at a time.
 
-05476 output-held allocation equality failed (16384 to15360 bytes).05477 excluded synchronization/GC alone;05478 shows fixed roots after releasing the replaceable result use9984 bytes at every checkpoint. Harness v2 records both output-held and fixed-root allocation, preserves exact equality/RSS thresholds and writes evidence before assertions.05479 policy/harness passes. Numerical runtime remains43ec55f86; no active worker.
+Source-frozen v2 blocks0/1 pass all30 workers05480--05509 on GPU2, including fixed-root allocation equality and128-call reuse in all10 XLA workers. Final block2 is running on the same GPU. A preliminary full-record block0 inspection has maximum absolute error2.132e-14. The registered terminal readback is still required. Numerical runtime remains43ec55f86; caller/helper drafts remain outside the frozen source tree.
 
-Next: Commit the harness attribution/checkpoint and execute all three counterbalanced five-family cost blocks on GPU2, then same-source terminal readback.05474/05475 remain superseded protocol evidence;05476 remains failed.
+Next: Poll session34016; after block2 passes run c2_preparation_branch_cost_terminal_cpu, review all45 costs and archive/commit/push the result. Then execute the prepared C2 caller/helper unit and final scoped closure plan.
 
 The September29 scope correction in
 [the terminal queue](filter_gradient_terminal_gap_queue_20260928.md) controls

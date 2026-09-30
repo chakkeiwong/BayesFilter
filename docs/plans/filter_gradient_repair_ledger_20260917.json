@@ -790,20 +790,22 @@
     "parse_error_role": "Unchanged historical vendor leading-zero literal; counts are search leads, not violation verdicts."
   },
   "current_checkpoint": {
-    "through_run": 5479,
+    "through_run": 5509,
     "based_on_commit": "cf76d2cca",
-    "status": "05476 output-held allocation equality failed (16384 to15360 bytes).05477 excluded synchronization/GC alone;05478 shows fixed roots after releasing the replaceable result use9984 bytes at every checkpoint. Harness v2 records both output-held and fixed-root allocation, preserves exact equality/RSS thresholds and writes evidence before assertions.05479 policy/harness passes. Numerical runtime remains43ec55f86; no active worker.",
+    "status": "Source-frozen v2 blocks0/1 pass all30 workers05480--05509 on GPU2, including fixed-root allocation equality and128-call reuse in all10 XLA workers. Final block2 is running on the same GPU. A preliminary full-record block0 inspection has maximum absolute error2.132e-14. The registered terminal readback is still required. Numerical runtime remains43ec55f86; caller/helper drafts remain outside the frozen source tree.",
     "charged_seconds": {
       "CPU": 117953.02951996429,
-      "GPU": 110329.06619185726
+      "GPU": 112900.313796419
     },
     "remaining_hours": {
       "CPU": 23.235269577787697,
-      "GPU": 21.35303716892854
+      "GPU": 20.638801723216947
     },
-    "active_job": null,
-    "active_session": null,
-    "next": "Commit the harness attribution/checkpoint and execute all three counterbalanced five-family cost blocks on GPU2, then same-source terminal readback.05474/05475 remain superseded protocol evidence;05476 remains failed.",
+    "active_job": [
+      5510
+    ],
+    "active_session": 34016,
+    "next": "Poll session34016; after block2 passes run c2_preparation_branch_cost_terminal_cpu, review all45 costs and archive/commit/push the result. Then execute the prepared C2 caller/helper unit and final scoped closure plan.",
     "posterior_initializer_next_plan": "filter_gradient_posterior_initializer_enclosing_20260927.md",
     "posterior_public_runs": [
       4411,
@@ -2591,7 +2593,7 @@
     },
     "c2_preparation_branch_cost_allocation": {
       "plan": "docs/plans/filter_gradient_c2_branch_cost_20261001.md",
-      "state": "harness_repaired_ready_for_frozen_cohort",
+      "state": "frozen_v2_cohort_running",
       "start_after_run": 5473,
       "group_prefix": "c2_preparation_branch_cost_",
       "max_workers": 60,
@@ -2603,17 +2605,51 @@
         "CPU": 117941.83432899839,
         "GPU": 110149.79137199633
       },
-      "progress_notes": "05476 output-held allocation equality failed (16384 to15360 bytes).05477 excluded synchronization/GC alone;05478 shows fixed roots after releasing the replaceable result use9984 bytes at every checkpoint. Harness v2 records both output-held and fixed-root allocation, preserves exact equality/RSS thresholds and writes evidence before assertions.05479 policy/harness passes. Numerical runtime remains43ec55f86; no active worker.",
-      "next_action": "Commit the harness attribution/checkpoint and execute all three counterbalanced five-family cost blocks on GPU2, then same-source terminal readback.05474/05475 remain superseded protocol evidence;05476 remains failed.",
-      "used_workers": 6,
+      "progress_notes": "Source-frozen v2 blocks0/1 pass all30 workers05480--05509 on GPU2, including fixed-root allocation equality and128-call reuse in all10 XLA workers. Final block2 is running on the same GPU. A preliminary full-record block0 inspection has maximum absolute error2.132e-14. The registered terminal readback is still required. Numerical runtime remains43ec55f86; caller/helper drafts remain outside the frozen source tree.",
+      "next_action": "Poll session34016; after block2 passes run c2_preparation_branch_cost_terminal_cpu, review all45 costs and archive/commit/push the result. Then execute the prepared C2 caller/helper unit and final scoped closure plan.",
+      "used_workers": 37,
       "used_seconds": {
         "CPU": 11.195190965896472,
-        "GPU": 179.27481986093335
+        "GPU": 2750.52242442267
       },
       "failed_runs": [
         5476
       ],
-      "supervisor_session": null
+      "supervisor_session": 34016
+    },
+    "c2_public_caller_followup_plan": "docs/plans/filter_gradient_c2_caller_closure_20261001.md",
+    "c2_public_caller_uninstalled_drafts": [
+      "/tmp/c2-public-helper-draft-20261001.patch",
+      "/tmp/test_filter_repair_c2_public_helpers_draft_20261001.py",
+      "/tmp/test_filter_repair_c2_callers_draft_20261001.py"
+    ],
+    "terminal_closure_plan": "docs/plans/filter_gradient_terminal_closure_20261001.md",
+    "core_dependency_review_20261001": {
+      "against_run": 5155,
+      "index": "docs/plans/filter_gradient_core_source_evidence_20260929.json",
+      "byte_identical_closures": [
+        "F02",
+        "F03",
+        "F04",
+        "F05",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F15",
+        "F16",
+        "F17",
+        "F20"
+      ],
+      "changed_closures": {
+        "F06": [
+          "bayesfilter/highdim/zhao_cui_frozen_proposal_apf_tf.py"
+        ],
+        "F09": [
+          "bayesfilter/highdim/sqmc_tf.py"
+        ]
+      },
+      "status": "read_only_source_applicability_inspection; terminal per-finding reconciliation remains required"
     }
   },
   "historical_quadratic_batch_checkpoint": {
