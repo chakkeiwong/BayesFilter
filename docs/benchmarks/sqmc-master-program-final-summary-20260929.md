@@ -17,7 +17,7 @@ across scopes, or production performance.
 | Campaign | Completed evaluation | Reference and authoritative result |
 | --- | --- | --- |
 | Expanded Gaussian models | P44 d=3 at T=10,120, N=1008; full A/full SPD Q at d=3,10 and T=2,10,120, N=1020. All eight scopes and four routes completed: 128 final cells and 8,480 actual score coordinates with absolute errors. | Matched exact Kalman likelihoods and scores; [expanded result and terminal review links](sqmc-expanded-results-20260926.md). |
-| KSC stochastic volatility | T=10,20,50,120, N=1008; eight shared dataset/design pairs per horizon and four routes. All 128 particle evaluations retained, with both gamma_raw and log_beta scores. | Full seven-component observation-mixture Gaussian-sum Kalman reference; [corrected result](sqmc-ksc-full-mixture-corrected-results-20260929.md) and [complete values, scores, errors and uncertainty](../plans/artifacts/sqmc-ksc-full-mixture-20260929/final-evidence-01/report.md). |
+| KSC stochastic volatility | T=10,20,50,120, N=1008; eight shared dataset/design pairs per horizon and four routes. All 128 particle evaluations retained, with both gamma_raw and log_beta scores. | Full seven-component observation-mixture Gaussian-sum Kalman reference; [corrected result](sqmc-ksc-full-mixture-corrected-results-20260929.md); the older per-dataset report cited there is absent from this checkout. |
 
 The four routes are IID, Hilbert inverse CDF, Hilbert permutation with coordinate
 cap .98, and its cap .97 ablation. Comparisons concern the separately tuned
@@ -80,9 +80,7 @@ higher-moment correction preserved mean and variance but reduced average
 kurtosis from 2.77–2.82 to 1.32–1.34. Exact seven-component integration on the
 same before/after clouds showed changes in the next predictive likelihood and
 score. This is a measured local reset effect, not a decomposition of the whole
-120-step error or proof that reset is the only cause. The next discriminating
-study should test residual-design richness and distribution preservation before
-simply increasing particles or solver iterations again.
+120-step error or proof that reset is the only cause. The completed reset-repair study below tests that residual-design and distribution-preservation hypothesis.
 
 All 376 saved numerical evaluations were valid, all 21 GPU worker attempts
 completed without retries, eight focused CPU tests passed, and the terminal
@@ -128,3 +126,29 @@ The wider master program's other models and HMC objectives remain outside this
 completed campaign. The original comparison was integrated with main and origin/main before this
 follow-up began at commit 023e1061. The follow-up is recorded on
 sqmc-development; it does not repeat that merge/push operation.
+
+
+## Reset-repair campaign completed and recovered — 2026-09-30
+
+The [reset-repair results](sqmc-ksc-reset-repair-results-20260929.md) complete the
+planned factorial, safety calibration, analytical derivative checks, scope-specific
+selection, validation, and balanced eight-design untouched comparison: 38 GPU
+units and 525 valid evaluations. A richer fixed residual cloud and independently
+calibrated protection largely remove the observed local kurtosis distortion.
+The three SQMC T=10 selections satisfy the exploratory repair criteria on both
+untouched datasets. IID fails validation at both horizons; all four T=120
+selections fail validation and increase likelihood error beyond the guard on one
+untouched dataset. This is a partial repair, with no general promotion.
+
+All four original baselines lose to Gaussian Kalman on untouched dataset 243002
+at T=120. The repaired candidates pass the three-heuristic screen in every
+untouched cell, but that does not override failed validation or value criteria.
+Retain all four ancestry methods; no overall method ranking or default/HMC
+readiness is established.
+
+The saved agent hit repeated provider HTTP 502 errors and then failed remote
+compaction after the GPU work was complete. Recovery verified 383 evidence checks,
+67 independent saved-result checks and 55 CPU regressions, completed the result
+tables, and preserved the failed session. No additional GPU run was needed.
+Aggregate charged use is 36,253.132322 of 43,200 seconds; 6,946.867678 seconds
+remain under the original deadline. All authorized phases are finished.

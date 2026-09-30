@@ -54,3 +54,7 @@ correction are also complete. The final master-program campaign summary is
 The final KSC checkpoint is
 `docs/reset-memos/sqmc-ksc-sv-checkpoint-20260928.md`. This completed Kalman
 checkpoint and its linked evidence remain preserved.
+
+Completion update, 2026-09-30: the KSC reset-repair campaign and stalled-session
+recovery are complete. The active KSC checkpoint above links the final 38-unit,
+525-evaluation result, with only three SQMC T10 repair nominations.

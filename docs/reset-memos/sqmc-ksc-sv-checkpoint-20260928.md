@@ -1,39 +1,34 @@
-# KSC discrepancy checkpoint — complete, 2026-09-29
+# KSC reset repair checkpoint — completed, 2026-09-30
 
-Checkout: /home/chakwong/BayesFilter-SQMC; branch: sqmc-development.
-Starting HEAD: 023e106102c89ee9d4787df3a55fbf5f68b88ecf.
-Owner's plan/review/execute request is complete. No numerical worker is active.
-
-Result: docs/benchmarks/sqmc-ksc-discrepancy-results-20260929.md.
-Plan: docs/plans/sqmc-ksc-discrepancy-analysis-20260929.md.
-Addendum: docs/plans/sqmc-ksc-reset-mechanism-addendum-20260929.md.
-Evidence: docs/plans/artifacts/sqmc-ksc-discrepancy-20260929/attempt-01/.
-Tables, CSV, uncertainty, traces, plots and terminal audit: analysis-01/ there.
+Checkout /home/chakwong/BayesFilter-SQMC; branch sqmc-development; base f72cbfe3.
+Owner authorized plan/review/execute, then recovery and continuation.
+Plan: docs/plans/sqmc-ksc-reset-repair-plan-20260929.md.
+Final result: docs/benchmarks/sqmc-ksc-reset-repair-results-20260929.md.
 Master summary: docs/benchmarks/sqmc-master-program-final-summary-20260929.md.
+Evidence: docs/plans/artifacts/sqmc-ksc-reset-repair-20260929/attempt-01/.
 
-All 376 saved evaluations valid; 48 branch-matched FD checks pass; eight CPU
-checks pass; 20 terminal evidence checks pass. No failed GPU attempt or retry.
-At N=4,032, eight designs on case 213006 leave mean gamma errors 1.56–1.84.
-All four lose to the Gaussian heuristic there; full seven-mixture integration
-remains the reference. No method ranking or accuracy/default promotion.
+All 38 GPU units completed successfully, including the balanced eight-design
+extension. All 525 evaluations passed numerical validity. Recovery checks:
+383 evidence checks, 67 independent saved-result checks, and 55 CPU regressions
+passed. Numerical source closure matches the final GPU manifest. CPU GPUs hidden.
 
-Shared reset/correction preserves mean and variance but changes kurtosis from
-2.77–2.82 to 1.32–1.34 and changes exact next-observation predictions/scores.
-This is a direct local effect, not a global error decomposition or exclusive
-cause. FD validates finite-program derivatives, not target-score accuracy.
-Two retrospective cases and UNTUNED changed scopes limit generalization.
+Outcome: limited repair nomination for the three SQMC T10 scopes only.
+IID fails validation at both horizons; all T120 candidates fail validation and
+the untouched likelihood-error guard on data 243002. All four original baselines
+lose to Gaussian Kalman on that long-horizon dataset; repaired candidates pass
+all heuristic screens. No overall method ranking, admission/default or HMC claim.
+Every planned repair phase has run; candidate failure did not stop the campaign.
 
-Ledger: docs/plans/artifacts/sqmc-ksc-discrepancy-20260929/budget.json.
-Prior 24462.190031s + this investigation 7081.021525s =
-31543.211557/43,200s charged; 11656.788443s (3.237997h) remain.
-Deadline: 2026-09-30T16:15:40.010888+00:00; max two infrastructure retries/unit.
-Do not double-count the immutable prior ledger or its included reserve.
+Saved session 01a0e3d0-2332-7ea3-9fc4-d5e4dcee78d0 hit provider HTTP 502 errors,
+then failed pre-sampling remote compaction. Session preserved; underlying gateway
+cause unverified. recovery-01/session-diagnosis.json records selected events.
+Fresh-session bubblewrap startup failures were separate; trusted commands worked.
 
-Next research question: test richer residual designs and distribution
-preservation, separating reset from correction, with safeguards retained and
-fresh tuning/data before any promotion. Do not rerun completed diagnostics.
-Literature review/proposal: docs/plans/sqmc-ksc-reset-repair-literature-20260929.md.
-2025 GenUT paper and author code checked; no new numerical work. Next: specify
-stagewise audit and isolated residual-design/protection tests under the same budget.
-No core/model/default/HMC/environment changes; no independent reviewer.
-This follow-up does not merge or push; original integration already completed.
+Charged 36253.132322/43200 GPU-seconds; 6946.867678 seconds remain.
+Original deadline 2026-09-30T16:15:40.010888+00:00. Recovery used no GPU.
+No active worker. No retuning, environment/provider setting changes, merge or push.
+Terminal review: attempt-01/recovery-01/terminal-review.md.
+
+Next: use the completed reports for user-directed follow-up. No execution remains
+under this plan; unused allowance alone does not authorize another experiment.
+Local commit packages implementation, tests, plan, evidence and completion notes.

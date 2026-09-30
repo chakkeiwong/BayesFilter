@@ -272,6 +272,6 @@ def test_nonfinite_oracle_stops_comparison(monkeypatch):
     monkeypatch.setattr(LGSSMSpec,'reference_value_and_score',lambda *a,**k:(
         tf.constant(float('nan'),DTYPE),tf.zeros([4],DTYPE)))
     spec=LGSSMSpec('p44',3)
-    with pytest.raises(RuntimeError,match='Kalman oracle'):
+    with pytest.raises(RuntimeError,match='Reference is nonfinite'):
         campaign.evaluate_diagnostic(spec,'iid_dual_cap',CONTROLS,tf.zeros([1,3],DTYPE),
             spec.default_theta(),1,12,jit_compile=False)
