@@ -344,6 +344,49 @@ candidate into a verified member.
 
 \section{Acceptance, numerical health, and posterior diagnostics}
 
+% BEGIN ACCEPTANCE UNCERTAINTY EXPLANATION
+Acceptance probabilities fluctuate even under a fixed kernel. A temporal block
+below the practical band and another above it therefore do not by themselves
+show a change in the chain's acceptance distribution. The default raw crossing
+screen is a heuristic, and its separate four-chain compatibility interval does
+not calibrate the crossing decision. Independent random seeds also do not make
+four differently initialized chain means identically distributed.
+
+For a stationary acceptance sequence $a_{it}$ with an applicable central limit
+theorem, uncertainty in its mean depends on the long-run variance
+$\sigma_i^2=\gamma_i(0)+2\sum_{k\geq1}\gamma_i(k)$, where $\gamma_i(k)$ is
+its lag-$k$ autocovariance. Independence between $m$ chains of length $n$
+then gives the approximation
+\[
+ \widehat{\operatorname{Var}}(\bar a)
+ = \frac{1}{m^2 n}\sum_{i=1}^{m}\widehat\sigma_i^2.
+\]
+This follows by adding the variances of the independent chain means and
+dividing by $m^2$. Batch means and lugsail estimate these long-run variances;
+the formulas and assumptions are discussed in the diagnostics chapter. A
+positive estimate cannot establish adequate batch length, stationarity or
+sufficient burn-in.
+
+An experimental acceptance diagnostic now preserves the original tuning
+decision while computing these uncertainty estimates separately. It compares
+all temporal windows within each chain, so opposing drifts cannot cancel by
+averaging across chains. It subtracts simultaneous marginal interval endpoints:
+if both means are covered, their difference is covered regardless of their
+covariance. A difference interval wholly outside a declared tolerance supports
+a material discrepancy; an interval wholly inside supports compatibility for
+that contrast; overlap with the tolerance boundary remains unresolved. The
+approximate marginal intervals still require calibration, including across
+the declared evidence looks and candidate search.
+
+The October 1 validation did not support a new default. Under strongly
+persistent stationary simulations, the tested batch rules underestimated
+uncertainty and reported false conflicts. Increasing the batch length reduced
+some conflicts without establishing adequate coverage. The new diagnostic
+therefore has no tuning-artifact authority. Its finite-start model checks and
+BGS replays are separate from posterior convergence, and R-hat remains
+reporting-only during tuning.
+% END ACCEPTANCE UNCERTAINTY EXPLANATION
+
 The default \path{HMCAcceptancePolicy} uses four independent chain means,
 temporal blocks, and a 90\% compatibility interval. Its first allocation
 requires at least four blocks of sixteen decisions per chain. After health,
