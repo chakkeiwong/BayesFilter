@@ -120,6 +120,14 @@ execution feature; the reference guide states that boundary explicitly.
 
 Implementation and validation are complete. Terminal review and measured limits
 are recorded in [the result note](hmc-chain-execution-benchmark-results-20261001.md).
-Integration uses the tested feature branch and normal Git merge/push operations;
-remote main was unchanged at `88297ad29` at the integration check. The previous
-filter-rewrite campaign remains closed.
+Feature commit `5189c6771` was pushed on its feature branch. A concurrent remote
+main update to `e7d5b480e` caused the first main push to be rejected. It merged
+without conflicts, including the shared HMC reference guide. Upstream changes
+include the Kalman fixture's persistence-cap parameter and shape preservation,
+so merge commit `67b51a3bf` was revalidated: all 55 focused CPU checks passed and
+the bounded GPU Kalman benchmark passed both layouts with maximum target error
+4.44e-16. `artifacts/hmc-chain-execution-20261001/merged-validation.json` records
+commands, hashes and evidence. Cumulative conservative worker-wall bounds are
+1050 CPU and 350 GPU seconds, within the original budgets. Implementation,
+integration and validation are complete. The previous filter-rewrite campaign
+remains closed.

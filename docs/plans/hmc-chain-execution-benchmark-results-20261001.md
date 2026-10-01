@@ -43,7 +43,7 @@ inherited strict GPU placement. TensorFlow implements this artifact operation on
 CPU. Explicit CPU serialization repaired the failure; GPU revisions 2 and 3
 passed. No numerical tolerance or HMC health gate was relaxed.
 
-For the final small Kalman CLI run (2 chains, 6 transitions, L=2, epsilon=.03,
+For the feature's pre-integration Kalman CLI run (2 chains, 6 transitions, L=2, epsilon=.03,
 one process repetition and two warm replays), the measurements were:
 
 | Layout | Startup s | First HMC s | Warm end-to-end s | Sum of host peak RSS MiB | Sum of TF GPU allocator peaks bytes |
@@ -85,6 +85,15 @@ POSIX execution infrastructure; Windows support, migration of existing
 applications, and process-topology wiring into the high-level tuner and NeuTra
 sequential controller are separate work.
 
+Remote integration brought in acceptance-validation commit `e7d5b480e` after
+the feature branch had already been pushed. The normal merge had no conflicts.
+Because upstream extended the Kalman fixture, merge `67b51a3bf` was tested again:
+all 55 focused CPU tests passed in 109.01 seconds, and the GPU CLI passed both
+layouts in 40.00 seconds with the same 4.44e-16 maximum target error. See the
+[merged validation record](artifacts/hmc-chain-execution-20261001/merged-validation.json)
+for commands, source hashes, archived worker evidence and cumulative compute
+bounds (1050 CPU / 350 GPU worker-wall seconds, within 1800 / 900 budgets).
+
 Evidence: [validation manifest](artifacts/hmc-chain-execution-20261001/validation-manifest.json),
-[final GPU report](artifacts/hmc-chain-execution-20261001/gpu-kalman-cli-r3/report.md),
+[merged GPU report](artifacts/hmc-chain-execution-20261001/gpu-kalman-cli-merged-r4/report.md),
 [API guide](../reference/hmc-chain-execution.md).
