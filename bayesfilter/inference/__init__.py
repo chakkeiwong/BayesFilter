@@ -9,6 +9,8 @@ from __future__ import annotations
 from importlib import import_module
 
 __all__ = [
+    'HMCChainTarget', 'HMCChainKernel', 'HMCChainLayout', 'HMCChainExecutor',
+    'HMCChainResult', 'HMCChainExecutionError', 'benchmark_hmc_chain_execution',
     'NeuTraTransportConfig',
     'NeuTraTransport',
     'NeuTraOptimizerConfig',
@@ -785,6 +787,15 @@ _DIRECT_EXPORTS['NeuTraTransportConfig'] = "bayesfilter.inference.neutra_transpo
 _DIRECT_EXPORTS['NeuTraTransport'] = "bayesfilter.inference.neutra_transport"
 _DIRECT_EXPORTS['NeuTraOptimizerConfig'] = "bayesfilter.inference.neutra_transport"
 _DIRECT_EXPORTS['NeuTraTransportTrainer'] = "bayesfilter.inference.neutra_transport"
+_DIRECT_EXPORTS.update({
+    'HMCChainTarget': 'bayesfilter.inference.chain_execution',
+    'HMCChainKernel': 'bayesfilter.inference.chain_execution',
+    'HMCChainLayout': 'bayesfilter.inference.chain_execution',
+    'HMCChainExecutor': 'bayesfilter.inference.chain_execution',
+    'HMCChainResult': 'bayesfilter.inference.chain_execution',
+    'HMCChainExecutionError': 'bayesfilter.inference.chain_execution',
+    'benchmark_hmc_chain_execution': 'bayesfilter.inference.chain_benchmark',
+})
 
 
 def __getattr__(name: str):

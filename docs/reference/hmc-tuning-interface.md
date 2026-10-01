@@ -369,6 +369,12 @@ requires its own fresh verification with valid evidence and no veto.
 
 ## Public imports and execution
 
+For native chain batches, persistent process workers, per-worker CPU budgets and
+machine-local timing/memory comparisons, see
+[HMC chain execution](hmc-chain-execution.md). That fixed-kernel executor does
+not issue tuning authority or change the execution topology bound into existing
+tuning artifacts.
+
 Initial geometry is implemented in `hmc_geometry.py`; bootstrap configuration,
 screening and bounded epsilon repair are implemented in `hmc_bootstrap.py`.
 Windowed preparation, its timeout policy and the frozen-mass/start-bank handoff
