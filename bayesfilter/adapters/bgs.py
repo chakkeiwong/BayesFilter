@@ -252,6 +252,7 @@ def _constrained_log_prior_terms(
 @tf.function(
     input_signature=(tf.TensorSpec((PARAMETER_DIMENSION,), DTYPE),),
     autograph=False,
+    jit_compile=True,
 )
 def constrained_log_prior_contributions(theta: Any) -> tf.Tensor:
     contributions, _scores = _constrained_log_prior_terms(theta)
@@ -261,6 +262,7 @@ def constrained_log_prior_contributions(theta: Any) -> tf.Tensor:
 @tf.function(
     input_signature=(tf.TensorSpec((PARAMETER_DIMENSION,), DTYPE),),
     autograph=False,
+    jit_compile=True,
 )
 def constrained_log_prior_and_score(theta: Any) -> tuple[tf.Tensor, tf.Tensor]:
     values = tf.ensure_shape(

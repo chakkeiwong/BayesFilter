@@ -1,0 +1,2084 @@
+{
+  "schema": "bayesfilter.q20.neutra_precision_training_terminal_summary.v1",
+  "status": "declared_training_and_bounded_hmc_evaluation_complete",
+  "recorded_at": "2026-09-24T15:14:45.397901+00:00",
+  "plan": "docs/plans/bayesfilter-neutra-precision-training-plan-2026-09-24.md",
+  "report": "docs/plans/bayesfilter-neutra-training-evaluation-results-2026-09-24.md",
+  "target": "q20/T30 four-parameter UKF approximate posterior",
+  "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278",
+  "bridge_signature": "1a28ae70165f07837dc5c137ed24bc0cb8ed6365f75f1e275685cbb331080af8",
+  "data_version": "target signature binds prepared q20 data; unchanged across study",
+  "campaign_starting_seconds": 143330.11637298454,
+  "charged_worker_seconds": 120292.95761870011,
+  "remaining_worker_seconds": 23037.15875428444,
+  "accounting_basis": "sum of actual supervised worker wall time including failures and supplemental engineering; waiting excluded",
+  "deadline_utc": "2026-09-25T10:00:00+00:00",
+  "phase_worker_seconds": {
+    "training-queue-01": 49310.065076124156,
+    "continuation-queue-01": 57022.31724226684,
+    "final-evaluation-queue-01": 1465.1022229744121,
+    "paired_final_analysis": 3.0417343941517174,
+    "downstream-queue-01": 2765.557120725978
+  },
+  "supplemental_worker_seconds": 871.9168649531174,
+  "families": {
+    "iaf16": {
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "independent_seed_count": 3,
+      "replicated_local_improvement": true,
+      "interpretation": "conditional evidence for these seeded fits versus the saved baseline; no general superiority claim"
+    },
+    "legacy_control": {
+      "seeds": [
+        0
+      ],
+      "independent_seed_count": 1,
+      "replicated_local_improvement": false,
+      "interpretation": "conditional evidence for these seeded fits versus the saved baseline; no general superiority claim"
+    },
+    "naf16": {
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "independent_seed_count": 3,
+      "replicated_local_improvement": false,
+      "interpretation": "conditional evidence for these seeded fits versus the saved baseline; no general superiority claim"
+    }
+  },
+  "baseline_geometry": {
+    "rows": 2048,
+    "role": "untouched-final-bank",
+    "target_dtype": "float64",
+    "evaluation_dtype": "float64",
+    "transport_config": {
+      "dimension": 4,
+      "kind": "iaf",
+      "hidden_layers": [
+        16,
+        16
+      ],
+      "stages": 4,
+      "activation": "tanh",
+      "seed": [
+        1763750513,
+        1532869555
+      ],
+      "conditional_scale_cap": 2.0,
+      "scale_transform": "bounded_tanh",
+      "mixture_components": 4,
+      "slope_floor": 1e-06,
+      "final_weight_scale": 0.001,
+      "permutation_policy": "full_reverse",
+      "inverse_atol": 1e-11,
+      "inverse_rtol": 1e-11,
+      "inverse_max_iterations": 100,
+      "mask_policy": "legacy_degree_masks_v1",
+      "naf_conditioner": "author_cmade",
+      "iaf_initializer": "hoffman_variance_scaling",
+      "iaf_variance_scale": 0.02,
+      "dtype": "float64",
+      "affine_center": [
+        0.35,
+        -0.08,
+        0.65,
+        0.05
+      ],
+      "affine_scale": [
+        4.0,
+        4.0,
+        4.0,
+        4.0
+      ]
+    },
+    "mean_loss": 43.50115832326296,
+    "vector_residual_rms": 4.5134835482443885,
+    "mean_residual_norm": 4.051888688926375,
+    "median_residual_norm": 3.959029578099653,
+    "p95_residual_norm": 7.336446524539638,
+    "p99_residual_norm": 9.40776351701984,
+    "max_residual_norm": 14.160874222548893,
+    "coordinate_residual_rms": [
+      1.0350215621892325,
+      4.250532513370839,
+      1.1032047622416237,
+      0.12718770153160516
+    ],
+    "log_ratio_range": 21.14178402950819,
+    "log_ratio_sd": 2.036311598829492,
+    "map_parameters_sha256": "5380fb213515b30fbae12f7ea52a240a979d790a0875c47a7bb3a611da46f355",
+    "observation_weight_sign": {
+      "parameter": "observation_weight.0.0",
+      "physical_index": 2,
+      "rows": 2048,
+      "positive_rows": 1434,
+      "negative_rows": 614,
+      "zero_rows": 0,
+      "positive_fraction": 0.7001953125,
+      "role": "explanatory transport-draw coverage diagnostic",
+      "posterior_probability_estimate": false
+    }
+  },
+  "paired_rows": 2048,
+  "bootstrap_resamples": 4096,
+  "bootstrap_seed": [
+    20260924,
+    491
+  ],
+  "multiplicity_allowance": 10,
+  "comparisons": [
+    {
+      "family": "iaf16",
+      "seed": 0,
+      "accepted_updates": 4096,
+      "clipped_updates": 38,
+      "paired_statistics": {
+        "mean": [
+          -2.907780923479544,
+          -20.074780973937273
+        ],
+        "bootstrap_interval": [
+          [
+            -3.0348115013219394,
+            -21.210396085179713
+          ],
+          [
+            -2.7784070171634596,
+            -18.933926335246078
+          ]
+        ],
+        "standard_error": [
+          0.045635132712860606,
+          0.4221609716224344
+        ]
+      },
+      "both_criteria_pass": true,
+      "final_geometry": {
+        "rows": 2048,
+        "role": "untouched-final-bank",
+        "target_dtype": "float64",
+        "evaluation_dtype": "float64",
+        "transport_config": {
+          "dimension": 4,
+          "kind": "iaf",
+          "hidden_layers": [
+            16,
+            16
+          ],
+          "stages": 3,
+          "activation": "elu",
+          "seed": [
+            1362473138,
+            2065620221
+          ],
+          "conditional_scale_cap": 2.0,
+          "scale_transform": "neutra_conditional_tanh",
+          "mixture_components": 16,
+          "slope_floor": 1e-06,
+          "final_weight_scale": 0.001,
+          "permutation_policy": "full_reverse",
+          "inverse_atol": 1.9073486328125e-06,
+          "inverse_rtol": 1.9073486328125e-06,
+          "inverse_max_iterations": 100,
+          "mask_policy": "hoffman_block_masks_v1",
+          "naf_conditioner": "author_cmade",
+          "iaf_initializer": "hoffman_variance_scaling",
+          "iaf_variance_scale": 0.02,
+          "dtype": "float32",
+          "affine_center": [
+            0.5515042642924981,
+            -0.048397125837824524,
+            0.26739640678584153,
+            0.2517115313395434
+          ],
+          "affine_scale": [
+            4.236409866884429,
+            0.33595354349392476,
+            0.48846505997109624,
+            0.14566726893831006
+          ]
+        },
+        "mean_loss": 40.59337739978342,
+        "vector_residual_rms": 0.5447501870908182,
+        "mean_residual_norm": 0.4261780445099573,
+        "median_residual_norm": 0.3312035401805965,
+        "p95_residual_norm": 0.9786260119145203,
+        "p99_residual_norm": 1.8743619749434313,
+        "max_residual_norm": 4.3428870445139784,
+        "coordinate_residual_rms": [
+          0.1554830630347152,
+          0.15216970764155432,
+          0.2780875429077743,
+          0.41483669317048727
+        ],
+        "log_ratio_range": 3.246673965141987,
+        "log_ratio_sd": 0.24219858529956215,
+        "map_parameters_sha256": "c518567c31633bf9496c3ba9ad6b2c912aeef3c71db1f9123168c39f16f1b770",
+        "observation_weight_sign": {
+          "parameter": "observation_weight.0.0",
+          "physical_index": 2,
+          "rows": 2048,
+          "positive_rows": 2048,
+          "negative_rows": 0,
+          "zero_rows": 0,
+          "positive_fraction": 1.0,
+          "role": "explanatory transport-draw coverage diagnostic",
+          "posterior_probability_estimate": false
+        }
+      },
+      "standard_1000_point_probe": {
+        "schema": "bayesfilter.neutra.post_training_probe.v2",
+        "complete": true,
+        "finite": true,
+        "valid_rows": 1000,
+        "rows": 1000,
+        "batch_size": 20,
+        "batches": 50,
+        "seed": [
+          1918263178,
+          1671292003
+        ],
+        "dimension": 4,
+        "jit_compile": true,
+        "traces": 1,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "standard_1000_point",
+        "quantile_definition": "nearest_lower_index_floor(p*(number_of_summarized_rows-1))",
+        "quantile_probabilities": [
+          0.0,
+          0.01,
+          0.05,
+          0.25,
+          0.5,
+          0.75,
+          0.95,
+          0.99,
+          1.0
+        ],
+        "score_residual_definition": "grad_z(log_pi_beta(T(z)) + log_abs_det_J_T(z)) + z",
+        "geometry_role": "explanatory_only_no_calibrated_finite_cutoff",
+        "score_residual_rms_definition": "per_coordinate_rms_not_mean_vector_norm",
+        "scale_slope_alert": 0.1,
+        "scale_diagnostics": [
+          {
+            "stage": 0,
+            "mean_log_scale": [
+              0.07840095026807604,
+              0.28582611900046145,
+              -0.15558552513336482,
+              1.4003227588762215
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "stage": 1,
+            "mean_log_scale": [
+              0.028047076588098924,
+              0.08297579245380404,
+              -1.220270623852051,
+              -0.012159085770848602
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "stage": 2,
+            "mean_log_scale": [
+              -0.09244215020582251,
+              0.7236125343730513,
+              -1.0217356040313574,
+              1.1864616442371223
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "score_residual_norm": {
+          "min": 0.039798010546961915,
+          "median": 0.3351973026630331,
+          "mean": 0.42082923046111503,
+          "p95": 0.9756572968843854,
+          "p99": 1.7139510081609106,
+          "max": 2.5125545863307024,
+          "quantiles": [
+            0.039798010546961915,
+            0.10576143102303734,
+            0.1553113553289741,
+            0.24826764026955322,
+            0.3351973026630331,
+            0.4850153746147839,
+            0.9756572968843854,
+            1.7139510081609106,
+            2.5125545863307024
+          ],
+          "rms": 0.5169489000740743,
+          "std": 0.3002314508463446,
+          "mean_standard_error": 0.009498902738239378,
+          "exceedance_fraction": {
+            "0.1": 0.994,
+            "0.5": 0.23500000000000001,
+            "1.0": 0.048,
+            "2.0": 0.007,
+            "5.0": 0.0,
+            "10.0": 0.0
+          },
+          "fraction_larger_than_gaussian_score": 0.006,
+          "rows": 1000
+        },
+        "latent_norm": {
+          "min": 0.31889306481652857,
+          "median": 1.8138341861803167,
+          "mean": 1.8828723579919302,
+          "p95": 3.065093225024136,
+          "p99": 3.5863605180430946,
+          "max": 4.12330520399102,
+          "quantiles": [
+            0.31889306481652857,
+            0.4947815180790273,
+            0.8973111233696315,
+            1.4218225349404863,
+            1.8138341861803167,
+            2.277778981764434,
+            3.065093225024136,
+            3.5863605180430946,
+            4.12330520399102
+          ],
+          "rms": 1.9945870599402005,
+          "std": 0.6581559261989529,
+          "mean_standard_error": 0.020823131993454258,
+          "rows": 1000
+        },
+        "r_log_target_over_gaussian_up_to_constant": {
+          "min": -39.59952116337929,
+          "median": -38.57838396392001,
+          "mean": -38.607427743194506,
+          "p95": -38.280279342221654,
+          "p99": -37.98838114280655,
+          "max": -37.09077358422515,
+          "quantiles": [
+            -39.59952116337929,
+            -39.30854143768179,
+            -39.020398129105494,
+            -38.72794484291169,
+            -38.57838396392001,
+            -38.482963622632276,
+            -38.280279342221654,
+            -37.98838114280655,
+            -37.09077358422515
+          ],
+          "rms": 38.60817550453951,
+          "std": 0.2402890828554844,
+          "mean_standard_error": 0.007602410142810591,
+          "range": 2.5087475791541465,
+          "rows": 1000
+        },
+        "score_residual_rms": 0.2584744500370372,
+        "score_residual_rms_per_coordinate": [
+          0.16557624752516995,
+          0.1584923360860042,
+          0.240730825754776,
+          0.39591605230996085
+        ],
+        "score_residual_maximum_row_norm": 2.5125545863307024,
+        "centered_log_density_rms": 0.2402890828554844,
+        "summary_status": "all_declared_rows_summarized",
+        "training_dtype": "float32",
+        "evaluation_dtype": "float64"
+      },
+      "checkpoint": "training-queue-01/iaf16-seed0-u4096/checkpoint-004096.json",
+      "checkpoint_sha256": "5f9b4ba5d61aa052b5375455702b05bb6a779af93fb8b30689599bcb2838ed31"
+    },
+    {
+      "family": "iaf16",
+      "seed": 1,
+      "accepted_updates": 4096,
+      "clipped_updates": 59,
+      "paired_statistics": {
+        "mean": [
+          -2.8628377627707255,
+          -19.745471051662513
+        ],
+        "bootstrap_interval": [
+          [
+            -2.9878954271758724,
+            -20.866015323210306
+          ],
+          [
+            -2.736655698757877,
+            -18.57188882023956
+          ]
+        ],
+        "standard_error": [
+          0.04495601255099624,
+          0.42279511781227014
+        ]
+      },
+      "both_criteria_pass": true,
+      "final_geometry": {
+        "rows": 2048,
+        "role": "untouched-final-bank",
+        "target_dtype": "float64",
+        "evaluation_dtype": "float64",
+        "transport_config": {
+          "dimension": 4,
+          "kind": "iaf",
+          "hidden_layers": [
+            16,
+            16
+          ],
+          "stages": 3,
+          "activation": "elu",
+          "seed": [
+            1000574416,
+            895249947
+          ],
+          "conditional_scale_cap": 2.0,
+          "scale_transform": "neutra_conditional_tanh",
+          "mixture_components": 16,
+          "slope_floor": 1e-06,
+          "final_weight_scale": 0.001,
+          "permutation_policy": "full_reverse",
+          "inverse_atol": 1.9073486328125e-06,
+          "inverse_rtol": 1.9073486328125e-06,
+          "inverse_max_iterations": 100,
+          "mask_policy": "hoffman_block_masks_v1",
+          "naf_conditioner": "author_cmade",
+          "iaf_initializer": "hoffman_variance_scaling",
+          "iaf_variance_scale": 0.02,
+          "dtype": "float32",
+          "affine_center": [
+            0.5515042642924981,
+            -0.048397125837824524,
+            0.26739640678584153,
+            0.2517115313395434
+          ],
+          "affine_scale": [
+            4.236409866884429,
+            0.33595354349392476,
+            0.48846505997109624,
+            0.14566726893831006
+          ]
+        },
+        "mean_loss": 40.63832056049223,
+        "vector_residual_rms": 0.7912412328804936,
+        "mean_residual_norm": 0.5870062164093706,
+        "median_residual_norm": 0.44095118915097403,
+        "p95_residual_norm": 1.577107423988531,
+        "p99_residual_norm": 2.6079923529538527,
+        "max_residual_norm": 6.651920929594243,
+        "coordinate_residual_rms": [
+          0.13713957178191805,
+          0.5883073155384217,
+          0.40555920614643437,
+          0.3109206639250047
+        ],
+        "log_ratio_range": 7.15127872521343,
+        "log_ratio_sd": 0.34751234500601935,
+        "map_parameters_sha256": "7fd16b6c89dcd94975f9feebe0807328606462ff864f6181a5737a799c99ea5b",
+        "observation_weight_sign": {
+          "parameter": "observation_weight.0.0",
+          "physical_index": 2,
+          "rows": 2048,
+          "positive_rows": 2048,
+          "negative_rows": 0,
+          "zero_rows": 0,
+          "positive_fraction": 1.0,
+          "role": "explanatory transport-draw coverage diagnostic",
+          "posterior_probability_estimate": false
+        }
+      },
+      "standard_1000_point_probe": {
+        "schema": "bayesfilter.neutra.post_training_probe.v2",
+        "complete": true,
+        "finite": true,
+        "valid_rows": 1000,
+        "rows": 1000,
+        "batch_size": 20,
+        "batches": 50,
+        "seed": [
+          971406076,
+          1690525830
+        ],
+        "dimension": 4,
+        "jit_compile": true,
+        "traces": 1,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "standard_1000_point",
+        "quantile_definition": "nearest_lower_index_floor(p*(number_of_summarized_rows-1))",
+        "quantile_probabilities": [
+          0.0,
+          0.01,
+          0.05,
+          0.25,
+          0.5,
+          0.75,
+          0.95,
+          0.99,
+          1.0
+        ],
+        "score_residual_definition": "grad_z(log_pi_beta(T(z)) + log_abs_det_J_T(z)) + z",
+        "geometry_role": "explanatory_only_no_calibrated_finite_cutoff",
+        "score_residual_rms_definition": "per_coordinate_rms_not_mean_vector_norm",
+        "scale_slope_alert": 0.1,
+        "scale_diagnostics": [
+          {
+            "stage": 0,
+            "mean_log_scale": [
+              -0.19174225957853427,
+              0.49576673164311824,
+              -0.20105623402370534,
+              -0.05011008676189774
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "stage": 1,
+            "mean_log_scale": [
+              0.012407636534863365,
+              -0.4933635590779278,
+              1.161241370175014,
+              -0.31270081849808995
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "stage": 2,
+            "mean_log_scale": [
+              0.5062574077009385,
+              0.6042813787898854,
+              -0.5899426336041468,
+              0.19056397663651795
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "score_residual_norm": {
+          "min": 0.019260359891009896,
+          "median": 0.4363665877786923,
+          "mean": 0.5762654915781478,
+          "p95": 1.5398788239690269,
+          "p99": 2.4630116623274665,
+          "max": 4.550721929484773,
+          "quantiles": [
+            0.019260359891009896,
+            0.08631519160253949,
+            0.1435905042164285,
+            0.275607329674741,
+            0.4363665877786923,
+            0.6890514572715725,
+            1.5398788239690269,
+            2.4630116623274665,
+            4.550721929484773
+          ],
+          "rms": 0.7483345062171202,
+          "std": 0.4774124175295578,
+          "mean_standard_error": 0.015104660445657012,
+          "exceedance_fraction": {
+            "0.1": 0.985,
+            "0.5": 0.421,
+            "1.0": 0.136,
+            "2.0": 0.018000000000000002,
+            "5.0": 0.0,
+            "10.0": 0.0
+          },
+          "fraction_larger_than_gaussian_score": 0.009000000000000001,
+          "rows": 1000
+        },
+        "latent_norm": {
+          "min": 0.1090111323467062,
+          "median": 1.8049596328139301,
+          "mean": 1.8701361099804463,
+          "p95": 3.0203339412499313,
+          "p99": 3.715442451078151,
+          "max": 4.495651468059801,
+          "quantiles": [
+            0.1090111323467062,
+            0.5537173223522958,
+            0.820225498925402,
+            1.3830428254616787,
+            1.8049596328139301,
+            2.286992259198857,
+            3.0203339412499313,
+            3.715442451078151,
+            4.495651468059801
+          ],
+          "rms": 1.9889070404433742,
+          "std": 0.6770097086987933,
+          "mean_standard_error": 0.021419639273784326,
+          "rows": 1000
+        },
+        "r_log_target_over_gaussian_up_to_constant": {
+          "min": -40.65098389803219,
+          "median": -38.6480046046028,
+          "mean": -38.619518677946054,
+          "p95": -38.156187942117896,
+          "p99": -37.61053413877864,
+          "max": -35.784494456025094,
+          "quantiles": [
+            -40.65098389803219,
+            -39.42259168108775,
+            -38.97022884141717,
+            -38.74382763611245,
+            -38.6480046046028,
+            -38.52432106308304,
+            -38.156187942117896,
+            -37.61053413877864,
+            -35.784494456025094
+          ],
+          "rms": 38.62073349190138,
+          "std": 0.3063209693258885,
+          "mean_standard_error": 0.0096915665767441,
+          "range": 4.866489442007094,
+          "rows": 1000
+        },
+        "score_residual_rms": 0.3741672531085601,
+        "score_residual_rms_per_coordinate": [
+          0.12523222820381139,
+          0.5692967174422754,
+          0.3582458904704584,
+          0.3031213481178913
+        ],
+        "score_residual_maximum_row_norm": 4.550721929484773,
+        "centered_log_density_rms": 0.3063209693258885,
+        "summary_status": "all_declared_rows_summarized",
+        "training_dtype": "float32",
+        "evaluation_dtype": "float64"
+      },
+      "checkpoint": "training-queue-01/iaf16-seed1-u4096/checkpoint-004096.json",
+      "checkpoint_sha256": "08ac7e6a2cc95b16267cd996ff40084d89a85cd4ef2dc65350f22656962bde56"
+    },
+    {
+      "family": "iaf16",
+      "seed": 2,
+      "accepted_updates": 4096,
+      "clipped_updates": 41,
+      "paired_statistics": {
+        "mean": [
+          -2.782647222271142,
+          -19.37478508588699
+        ],
+        "bootstrap_interval": [
+          [
+            -2.911753910510088,
+            -20.641085165684586
+          ],
+          [
+            -2.6501127598404146,
+            -18.095045589861392
+          ]
+        ],
+        "standard_error": [
+          0.046179744040323135,
+          0.4522842585776872
+        ]
+      },
+      "both_criteria_pass": true,
+      "final_geometry": {
+        "rows": 2048,
+        "role": "untouched-final-bank",
+        "target_dtype": "float64",
+        "evaluation_dtype": "float64",
+        "transport_config": {
+          "dimension": 4,
+          "kind": "iaf",
+          "hidden_layers": [
+            16,
+            16
+          ],
+          "stages": 3,
+          "activation": "elu",
+          "seed": [
+            506080467,
+            172850292
+          ],
+          "conditional_scale_cap": 2.0,
+          "scale_transform": "neutra_conditional_tanh",
+          "mixture_components": 16,
+          "slope_floor": 1e-06,
+          "final_weight_scale": 0.001,
+          "permutation_policy": "full_reverse",
+          "inverse_atol": 1.9073486328125e-06,
+          "inverse_rtol": 1.9073486328125e-06,
+          "inverse_max_iterations": 100,
+          "mask_policy": "hoffman_block_masks_v1",
+          "naf_conditioner": "author_cmade",
+          "iaf_initializer": "hoffman_variance_scaling",
+          "iaf_variance_scale": 0.02,
+          "dtype": "float32",
+          "affine_center": [
+            0.5515042642924981,
+            -0.048397125837824524,
+            0.26739640678584153,
+            0.2517115313395434
+          ],
+          "affine_scale": [
+            4.236409866884429,
+            0.33595354349392476,
+            0.48846505997109624,
+            0.14566726893831006
+          ]
+        },
+        "mean_loss": 40.718511100991826,
+        "vector_residual_rms": 0.9983730036342926,
+        "mean_residual_norm": 0.7723795563219139,
+        "median_residual_norm": 0.6399805722102209,
+        "p95_residual_norm": 1.6231327858574467,
+        "p99_residual_norm": 2.426294093939223,
+        "max_residual_norm": 18.80080774741859,
+        "coordinate_residual_rms": [
+          0.1709897212988815,
+          0.44850656752963547,
+          0.533317296851244,
+          0.6942086785383462
+        ],
+        "log_ratio_range": 6.133865781642186,
+        "log_ratio_sd": 0.4767587117213133,
+        "map_parameters_sha256": "2763c9fc0a09f4794cfb6c88f20fded088dad3c053ea2385e57575258d5817c6",
+        "observation_weight_sign": {
+          "parameter": "observation_weight.0.0",
+          "physical_index": 2,
+          "rows": 2048,
+          "positive_rows": 2047,
+          "negative_rows": 1,
+          "zero_rows": 0,
+          "positive_fraction": 0.99951171875,
+          "role": "explanatory transport-draw coverage diagnostic",
+          "posterior_probability_estimate": false
+        }
+      },
+      "standard_1000_point_probe": {
+        "schema": "bayesfilter.neutra.post_training_probe.v2",
+        "complete": true,
+        "finite": true,
+        "valid_rows": 1000,
+        "rows": 1000,
+        "batch_size": 20,
+        "batches": 50,
+        "seed": [
+          1428906948,
+          101977281
+        ],
+        "dimension": 4,
+        "jit_compile": true,
+        "traces": 1,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "standard_1000_point",
+        "quantile_definition": "nearest_lower_index_floor(p*(number_of_summarized_rows-1))",
+        "quantile_probabilities": [
+          0.0,
+          0.01,
+          0.05,
+          0.25,
+          0.5,
+          0.75,
+          0.95,
+          0.99,
+          1.0
+        ],
+        "score_residual_definition": "grad_z(log_pi_beta(T(z)) + log_abs_det_J_T(z)) + z",
+        "geometry_role": "explanatory_only_no_calibrated_finite_cutoff",
+        "score_residual_rms_definition": "per_coordinate_rms_not_mean_vector_norm",
+        "scale_slope_alert": 0.1,
+        "scale_diagnostics": [
+          {
+            "stage": 0,
+            "mean_log_scale": [
+              0.10753918397644312,
+              -0.16980340632461763,
+              -0.0027905390681234855,
+              1.2675496444373537
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "stage": 1,
+            "mean_log_scale": [
+              0.06395933611185621,
+              -0.03624589924302093,
+              -0.7565742133923044,
+              -0.02093950519308871
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "stage": 2,
+            "mean_log_scale": [
+              -0.10497460978137062,
+              0.6986901390170621,
+              -1.023298550007046,
+              1.177329565210878
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "score_residual_norm": {
+          "min": 0.05502216158721388,
+          "median": 0.6731890867512214,
+          "mean": 0.8091752774579062,
+          "p95": 1.6881146033109096,
+          "p99": 2.734907838487904,
+          "max": 11.272873528657566,
+          "quantiles": [
+            0.05502216158721388,
+            0.20945459710813016,
+            0.30297921275974127,
+            0.49353093228989664,
+            0.6731890867512214,
+            0.9553905376943396,
+            1.6881146033109096,
+            2.734907838487904,
+            11.272873528657566
+          ],
+          "rms": 0.9980926593104481,
+          "std": 0.5843152632956996,
+          "mean_standard_error": 0.018486916806577998,
+          "exceedance_fraction": {
+            "0.1": 0.998,
+            "0.5": 0.742,
+            "1.0": 0.229,
+            "2.0": 0.03,
+            "5.0": 0.001,
+            "10.0": 0.001
+          },
+          "fraction_larger_than_gaussian_score": 0.032,
+          "rows": 1000
+        },
+        "latent_norm": {
+          "min": 0.2933212509448403,
+          "median": 1.8751684583568402,
+          "mean": 1.9274057238370457,
+          "p95": 3.0933239012222407,
+          "p99": 3.7460697117739454,
+          "max": 4.261525883297219,
+          "quantiles": [
+            0.2933212509448403,
+            0.5531764794247054,
+            0.8836031530942572,
+            1.432098695884679,
+            1.8751684583568402,
+            2.3999023596637454,
+            3.0933239012222407,
+            3.7460697117739454,
+            4.261525883297219
+          ],
+          "rms": 2.0479029758820575,
+          "std": 0.6921082099981056,
+          "mean_standard_error": 0.021897334714855055,
+          "rows": 1000
+        },
+        "r_log_target_over_gaussian_up_to_constant": {
+          "min": -42.91630266613101,
+          "median": -38.721580384491645,
+          "mean": -38.72727271482659,
+          "p95": -37.85577564325271,
+          "p99": -37.313450227418805,
+          "max": -36.52987201576673,
+          "quantiles": [
+            -42.91630266613101,
+            -40.21173298974575,
+            -39.527271346426765,
+            -38.993820703188206,
+            -38.721580384491645,
+            -38.482655436173644,
+            -37.85577564325271,
+            -37.313450227418805,
+            -36.52987201576673
+          ],
+          "rms": 38.730929061447014,
+          "std": 0.5321785736840337,
+          "mean_standard_error": 0.016837384946012033,
+          "range": 6.386430650364282,
+          "rows": 1000
+        },
+        "score_residual_rms": 0.499046329655224,
+        "score_residual_rms_per_coordinate": [
+          0.1671473770349178,
+          0.45236547014490297,
+          0.46427052992157786,
+          0.7403168695813079
+        ],
+        "score_residual_maximum_row_norm": 11.272873528657566,
+        "centered_log_density_rms": 0.5321785736840337,
+        "summary_status": "all_declared_rows_summarized",
+        "training_dtype": "float32",
+        "evaluation_dtype": "float64"
+      },
+      "checkpoint": "training-queue-01/iaf16-seed2-u4096/checkpoint-004096.json",
+      "checkpoint_sha256": "6569a19af71afc6e04177571c5ed5b79b45753c90ba73397695a4d9713ecd18a"
+    },
+    {
+      "family": "legacy_control",
+      "seed": 0,
+      "accepted_updates": 4096,
+      "clipped_updates": 1,
+      "paired_statistics": {
+        "mean": [
+          -2.8447326712847865,
+          -19.225996813339265
+        ],
+        "bootstrap_interval": [
+          [
+            -2.972950886129623,
+            -20.643680316043337
+          ],
+          [
+            -2.7105520660499662,
+            -17.717093088593288
+          ]
+        ],
+        "standard_error": [
+          0.04695852916880633,
+          0.5332960952529288
+        ]
+      },
+      "both_criteria_pass": true,
+      "final_geometry": {
+        "rows": 2048,
+        "role": "untouched-final-bank",
+        "target_dtype": "float64",
+        "evaluation_dtype": "float64",
+        "transport_config": {
+          "dimension": 4,
+          "kind": "iaf",
+          "hidden_layers": [
+            16,
+            16
+          ],
+          "stages": 4,
+          "activation": "tanh",
+          "seed": [
+            1763750513,
+            1532869555
+          ],
+          "conditional_scale_cap": 2.0,
+          "scale_transform": "bounded_tanh",
+          "mixture_components": 4,
+          "slope_floor": 1e-06,
+          "final_weight_scale": 0.001,
+          "permutation_policy": "full_reverse",
+          "inverse_atol": 1.9073486328125e-06,
+          "inverse_rtol": 1.9073486328125e-06,
+          "inverse_max_iterations": 100,
+          "mask_policy": "legacy_degree_masks_v1",
+          "naf_conditioner": "author_cmade",
+          "iaf_initializer": "hoffman_variance_scaling",
+          "iaf_variance_scale": 0.02,
+          "dtype": "float32",
+          "affine_center": [
+            0.35,
+            -0.08,
+            0.65,
+            0.05
+          ],
+          "affine_scale": [
+            4.0,
+            4.0,
+            4.0,
+            4.0
+          ]
+        },
+        "mean_loss": 40.65642565197818,
+        "vector_residual_rms": 1.0702975880256291,
+        "mean_residual_norm": 0.4887651140585567,
+        "median_residual_norm": 0.32682560916583675,
+        "p95_residual_norm": 1.1766258270573433,
+        "p99_residual_norm": 2.6618230306238604,
+        "max_residual_norm": 19.484259876391942,
+        "coordinate_residual_rms": [
+          0.6642108003068269,
+          0.7615043478782308,
+          0.3242248937358576,
+          0.13910530591521683
+        ],
+        "log_ratio_range": 11.62594599186815,
+        "log_ratio_sd": 0.44516756712057415,
+        "map_parameters_sha256": "572455a61d86230dff583eaf58eb026de221a7106696b3db5bdb9b2f72e87877",
+        "observation_weight_sign": {
+          "parameter": "observation_weight.0.0",
+          "physical_index": 2,
+          "rows": 2048,
+          "positive_rows": 0,
+          "negative_rows": 2048,
+          "zero_rows": 0,
+          "positive_fraction": 0.0,
+          "role": "explanatory transport-draw coverage diagnostic",
+          "posterior_probability_estimate": false
+        }
+      },
+      "standard_1000_point_probe": {
+        "schema": "bayesfilter.neutra.post_training_probe.v2",
+        "complete": true,
+        "finite": true,
+        "valid_rows": 1000,
+        "rows": 1000,
+        "batch_size": 20,
+        "batches": 50,
+        "seed": [
+          1918263178,
+          1671292003
+        ],
+        "dimension": 4,
+        "jit_compile": true,
+        "traces": 1,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "standard_1000_point",
+        "quantile_definition": "nearest_lower_index_floor(p*(number_of_summarized_rows-1))",
+        "quantile_probabilities": [
+          0.0,
+          0.01,
+          0.05,
+          0.25,
+          0.5,
+          0.75,
+          0.95,
+          0.99,
+          1.0
+        ],
+        "score_residual_definition": "grad_z(log_pi_beta(T(z)) + log_abs_det_J_T(z)) + z",
+        "geometry_role": "explanatory_only_no_calibrated_finite_cutoff",
+        "score_residual_rms_definition": "per_coordinate_rms_not_mean_vector_norm",
+        "scale_slope_alert": 0.1,
+        "scale_diagnostics": [
+          {
+            "stage": 0,
+            "mean_log_scale": [
+              0.05855222884212944,
+              -0.31649313759773007,
+              -1.662490831139424,
+              -0.30840602399253164
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.001,
+              0.0
+            ]
+          },
+          {
+            "stage": 1,
+            "mean_log_scale": [
+              -0.40444298036592125,
+              -0.6713732245573426,
+              -1.6948673143347204,
+              -1.2929932109533318
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "stage": 2,
+            "mean_log_scale": [
+              -0.1259848686486198,
+              -0.44110303870339956,
+              -0.6197464860917075,
+              -0.5881221905693214
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "stage": 3,
+            "mean_log_scale": [
+              1.330686819130122,
+              0.22907187414666194,
+              -0.6495671967384874,
+              0.5617833396126029
+            ],
+            "kind": "iaf_conditional_scale",
+            "fraction_slope_below_point1": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "score_residual_norm": {
+          "min": 0.06276195285938772,
+          "median": 0.3221476666120967,
+          "mean": 0.45498500344998755,
+          "p95": 1.2686089257307576,
+          "p99": 2.8142162244894524,
+          "max": 5.896183772569367,
+          "quantiles": [
+            0.06276195285938772,
+            0.10319466187637194,
+            0.14074512185535787,
+            0.22333918125071964,
+            0.3221476666120967,
+            0.46981673420938436,
+            1.2686089257307576,
+            2.8142162244894524,
+            5.896183772569367
+          ],
+          "rms": 0.6700702408391329,
+          "std": 0.49191744662476483,
+          "mean_standard_error": 0.015563579257134955,
+          "exceedance_fraction": {
+            "0.1": 0.992,
+            "0.5": 0.23,
+            "1.0": 0.07100000000000001,
+            "2.0": 0.024,
+            "5.0": 0.001,
+            "10.0": 0.0
+          },
+          "fraction_larger_than_gaussian_score": 0.006,
+          "rows": 1000
+        },
+        "latent_norm": {
+          "min": 0.31889306481652857,
+          "median": 1.8138341861803167,
+          "mean": 1.8828723579919302,
+          "p95": 3.065093225024136,
+          "p99": 3.5863605180430946,
+          "max": 4.12330520399102,
+          "quantiles": [
+            0.31889306481652857,
+            0.4947815180790273,
+            0.8973111233696315,
+            1.4218225349404863,
+            1.8138341861803167,
+            2.277778981764434,
+            3.065093225024136,
+            3.5863605180430946,
+            4.12330520399102
+          ],
+          "rms": 1.9945870599402005,
+          "std": 0.6581559261989529,
+          "mean_standard_error": 0.020823131993454258,
+          "rows": 1000
+        },
+        "r_log_target_over_gaussian_up_to_constant": {
+          "min": -42.014317454265786,
+          "median": -38.659791881676156,
+          "mean": -38.66711601092041,
+          "p95": -38.27480180769454,
+          "p99": -37.99347819496222,
+          "max": -36.477870995106166,
+          "quantiles": [
+            -42.014317454265786,
+            -39.80415542362525,
+            -39.08671672251631,
+            -38.78430596707347,
+            -38.659791881676156,
+            -38.52614374361598,
+            -38.27480180769454,
+            -37.99347819496222,
+            -36.477870995106166
+          ],
+          "rms": 38.66851912758789,
+          "std": 0.3294099553034334,
+          "mean_standard_error": 0.010422069765224239,
+          "range": 5.53644645915962,
+          "rows": 1000
+        },
+        "score_residual_rms": 0.33503512041956646,
+        "score_residual_rms_per_coordinate": [
+          0.4220461599923098,
+          0.3923725319634312,
+          0.30139514035837367,
+          0.16148043851476754
+        ],
+        "score_residual_maximum_row_norm": 5.896183772569367,
+        "centered_log_density_rms": 0.3294099553034334,
+        "summary_status": "all_declared_rows_summarized",
+        "training_dtype": "float32",
+        "evaluation_dtype": "float64"
+      },
+      "checkpoint": "continuation-queue-01/legacy-control-seed0-u4096/checkpoint-004096.json",
+      "checkpoint_sha256": "27ab9784b41cb6f095e16173f10e2a45cc814b5c69fbb0d1223d7f1812054e63"
+    },
+    {
+      "family": "naf16",
+      "seed": 0,
+      "accepted_updates": 8192,
+      "clipped_updates": 178,
+      "paired_statistics": {
+        "mean": [
+          -3.468907667477918,
+          456.9635227002745
+        ],
+        "bootstrap_interval": [
+          [
+            -3.6152364341605963,
+            40.33621757335071
+          ],
+          [
+            -3.3022694301902753,
+            1363.1232470388268
+          ]
+        ],
+        "standard_error": [
+          0.055296926347270424,
+          245.69097646747193
+        ]
+      },
+      "both_criteria_pass": false,
+      "final_geometry": {
+        "rows": 2048,
+        "role": "untouched-final-bank",
+        "target_dtype": "float64",
+        "evaluation_dtype": "float64",
+        "transport_config": {
+          "dimension": 4,
+          "kind": "naf_dsf",
+          "hidden_layers": [
+            16,
+            16
+          ],
+          "stages": 3,
+          "activation": "elu",
+          "seed": [
+            1362473138,
+            2065620221
+          ],
+          "conditional_scale_cap": 2.0,
+          "scale_transform": "neutra_conditional_tanh",
+          "mixture_components": 16,
+          "slope_floor": 1e-06,
+          "final_weight_scale": 0.001,
+          "permutation_policy": "full_reverse",
+          "inverse_atol": 1.9073486328125e-06,
+          "inverse_rtol": 1.9073486328125e-06,
+          "inverse_max_iterations": 100,
+          "mask_policy": "legacy_degree_masks_v1",
+          "naf_conditioner": "author_cmade",
+          "iaf_initializer": "hoffman_variance_scaling",
+          "iaf_variance_scale": 0.02,
+          "dtype": "float32",
+          "affine_center": [
+            0.5515042642924981,
+            -0.048397125837824524,
+            0.26739640678584153,
+            0.2517115313395434
+          ],
+          "affine_scale": [
+            4.236409866884429,
+            0.33595354349392476,
+            0.48846505997109624,
+            0.14566726893831006
+          ]
+        },
+        "mean_loss": 40.032250655785035,
+        "vector_residual_rms": 21.84799891158335,
+        "mean_residual_norm": 3.064097621098177,
+        "median_residual_norm": 0.6969110167445972,
+        "p95_residual_norm": 5.9359999980167,
+        "p99_residual_norm": 46.200755383187186,
+        "max_residual_norm": 673.2104741263163,
+        "coordinate_residual_rms": [
+          0.2582193150925099,
+          1.283090402587953,
+          21.805993701949376,
+          0.34741461568459125
+        ],
+        "log_ratio_range": 66.92859399509916,
+        "log_ratio_sd": 1.4890850385959358,
+        "map_parameters_sha256": "5021b052ad6f829ef29951ef8a869ac13292ff9e196a6a9583e376ff0a2314b4",
+        "observation_weight_sign": {
+          "parameter": "observation_weight.0.0",
+          "physical_index": 2,
+          "rows": 2048,
+          "positive_rows": 841,
+          "negative_rows": 1207,
+          "zero_rows": 0,
+          "positive_fraction": 0.41064453125,
+          "role": "explanatory transport-draw coverage diagnostic",
+          "posterior_probability_estimate": false
+        }
+      },
+      "standard_1000_point_probe": {
+        "schema": "bayesfilter.neutra.post_training_probe.v2",
+        "complete": true,
+        "finite": true,
+        "valid_rows": 1000,
+        "rows": 1000,
+        "batch_size": 20,
+        "batches": 50,
+        "seed": [
+          1918263178,
+          1671292003
+        ],
+        "dimension": 4,
+        "jit_compile": true,
+        "traces": 1,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "standard_1000_point",
+        "quantile_definition": "nearest_lower_index_floor(p*(number_of_summarized_rows-1))",
+        "quantile_probabilities": [
+          0.0,
+          0.01,
+          0.05,
+          0.25,
+          0.5,
+          0.75,
+          0.95,
+          0.99,
+          1.0
+        ],
+        "score_residual_definition": "grad_z(log_pi_beta(T(z)) + log_abs_det_J_T(z)) + z",
+        "geometry_role": "explanatory_only_no_calibrated_finite_cutoff",
+        "score_residual_rms_definition": "per_coordinate_rms_not_mean_vector_norm",
+        "scale_slope_alert": 0.1,
+        "scale_diagnostics": [
+          {
+            "stage": 0,
+            "mean_log_scale": [
+              -0.402425662838753,
+              0.8302988613540734,
+              1.5993899625098287,
+              -0.35745109906898515
+            ],
+            "kind": "dsf_diagonal_log_derivative_no_conditional_cap",
+            "fraction_slope_below_point1": null
+          },
+          {
+            "stage": 1,
+            "mean_log_scale": [
+              -0.38643011995623716,
+              -1.0045731829107292,
+              -0.2416101820470818,
+              -0.4290688840873487
+            ],
+            "kind": "dsf_diagonal_log_derivative_no_conditional_cap",
+            "fraction_slope_below_point1": null
+          },
+          {
+            "stage": 2,
+            "mean_log_scale": [
+              0.797102139534645,
+              1.5327243518498657,
+              -0.9683505372235974,
+              0.8968552191204958
+            ],
+            "kind": "dsf_diagonal_log_derivative_no_conditional_cap",
+            "fraction_slope_below_point1": null
+          }
+        ],
+        "score_residual_norm": {
+          "min": 0.1188120807107,
+          "median": 0.7067332713216783,
+          "mean": 4.102540678528672,
+          "p95": 7.216847122428931,
+          "p99": 70.31439347818423,
+          "max": 1049.9731899577705,
+          "quantiles": [
+            0.1188120807107,
+            0.16216043777406763,
+            0.23357783306144259,
+            0.43210714059619865,
+            0.7067332713216783,
+            1.389636032343321,
+            7.216847122428931,
+            70.31439347818423,
+            1049.9731899577705
+          ],
+          "rms": 36.45439825564944,
+          "std": 36.22281480175877,
+          "mean_standard_error": 1.146039143258377,
+          "exceedance_fraction": {
+            "0.1": 1.0,
+            "0.5": 0.668,
+            "1.0": 0.353,
+            "2.0": 0.157,
+            "5.0": 0.065,
+            "10.0": 0.037
+          },
+          "fraction_larger_than_gaussian_score": 0.176,
+          "rows": 1000
+        },
+        "latent_norm": {
+          "min": 0.31889306481652857,
+          "median": 1.8138341861803167,
+          "mean": 1.8828723579919302,
+          "p95": 3.065093225024136,
+          "p99": 3.5863605180430946,
+          "max": 4.12330520399102,
+          "quantiles": [
+            0.31889306481652857,
+            0.4947815180790273,
+            0.8973111233696315,
+            1.4218225349404863,
+            1.8138341861803167,
+            2.277778981764434,
+            3.065093225024136,
+            3.5863605180430946,
+            4.12330520399102
+          ],
+          "rms": 1.9945870599402005,
+          "std": 0.6581559261989529,
+          "mean_standard_error": 0.020823131993454258,
+          "rows": 1000
+        },
+        "r_log_target_over_gaussian_up_to_constant": {
+          "min": -45.4373422187125,
+          "median": -38.003026686854746,
+          "mean": -38.01093214896343,
+          "p95": -37.47530488638614,
+          "p99": -36.962269930621154,
+          "max": -36.162491482455394,
+          "quantiles": [
+            -45.4373422187125,
+            -39.806060668438455,
+            -38.55677187598654,
+            -38.242637897864135,
+            -38.003026686854746,
+            -37.719346913373826,
+            -37.47530488638614,
+            -36.962269930621154,
+            -36.162491482455394
+          ],
+          "rms": 38.014362585010666,
+          "std": 0.5106857268004484,
+          "mean_standard_error": 0.01615738136364406,
+          "range": 9.274850736257108,
+          "rows": 1000
+        },
+        "score_residual_rms": 18.22719912782472,
+        "score_residual_rms_per_coordinate": [
+          0.2001432362888805,
+          2.6217503228881927,
+          36.35763432813423,
+          0.36324395738398824
+        ],
+        "score_residual_maximum_row_norm": 1049.9731899577705,
+        "centered_log_density_rms": 0.5106857268004484,
+        "summary_status": "all_declared_rows_summarized",
+        "training_dtype": "float32",
+        "evaluation_dtype": "float64"
+      },
+      "checkpoint": "continuation-queue-01/naf16-seed0-u8192/checkpoint-008192.json",
+      "checkpoint_sha256": "a682be0b6d149f00a2e07745e343fe6d36ceedee458df79fee8ed40fe5cffb2d"
+    },
+    {
+      "family": "naf16",
+      "seed": 1,
+      "accepted_updates": 8192,
+      "clipped_updates": 186,
+      "paired_statistics": {
+        "mean": [
+          -2.899478857969738,
+          -19.63842094274993
+        ],
+        "bootstrap_interval": [
+          [
+            -3.026349337354551,
+            -20.77415808324603
+          ],
+          [
+            -2.770531823213487,
+            -18.487172463755492
+          ]
+        ],
+        "standard_error": [
+          0.046428678520414525,
+          0.4231241935541182
+        ]
+      },
+      "both_criteria_pass": true,
+      "final_geometry": {
+        "rows": 2048,
+        "role": "untouched-final-bank",
+        "target_dtype": "float64",
+        "evaluation_dtype": "float64",
+        "transport_config": {
+          "dimension": 4,
+          "kind": "naf_dsf",
+          "hidden_layers": [
+            16,
+            16
+          ],
+          "stages": 3,
+          "activation": "elu",
+          "seed": [
+            1000574416,
+            895249947
+          ],
+          "conditional_scale_cap": 2.0,
+          "scale_transform": "neutra_conditional_tanh",
+          "mixture_components": 16,
+          "slope_floor": 1e-06,
+          "final_weight_scale": 0.001,
+          "permutation_policy": "full_reverse",
+          "inverse_atol": 1.9073486328125e-06,
+          "inverse_rtol": 1.9073486328125e-06,
+          "inverse_max_iterations": 100,
+          "mask_policy": "legacy_degree_masks_v1",
+          "naf_conditioner": "author_cmade",
+          "iaf_initializer": "hoffman_variance_scaling",
+          "iaf_variance_scale": 0.02,
+          "dtype": "float32",
+          "affine_center": [
+            0.5515042642924981,
+            -0.048397125837824524,
+            0.26739640678584153,
+            0.2517115313395434
+          ],
+          "affine_scale": [
+            4.236409866884429,
+            0.33595354349392476,
+            0.48846505997109624,
+            0.14566726893831006
+          ]
+        },
+        "mean_loss": 40.60167946529322,
+        "vector_residual_rms": 0.8562200637235828,
+        "mean_residual_norm": 0.6539580338908302,
+        "median_residual_norm": 0.4905584657120969,
+        "p95_residual_norm": 1.6962956278076207,
+        "p99_residual_norm": 2.8689188709588844,
+        "max_residual_norm": 6.151668401974798,
+        "coordinate_residual_rms": [
+          0.09124994406101407,
+          0.6959208657551257,
+          0.3554162948917173,
+          0.3378752005752397
+        ],
+        "log_ratio_range": 4.885830250398492,
+        "log_ratio_sd": 0.32007322512742975,
+        "map_parameters_sha256": "17b56ea0fcba96f95f502af4ccf13220833b6622deb1cab210c2c35febd111a3",
+        "observation_weight_sign": {
+          "parameter": "observation_weight.0.0",
+          "physical_index": 2,
+          "rows": 2048,
+          "positive_rows": 2048,
+          "negative_rows": 0,
+          "zero_rows": 0,
+          "positive_fraction": 1.0,
+          "role": "explanatory transport-draw coverage diagnostic",
+          "posterior_probability_estimate": false
+        }
+      },
+      "standard_1000_point_probe": {
+        "schema": "bayesfilter.neutra.post_training_probe.v2",
+        "complete": true,
+        "finite": true,
+        "valid_rows": 1000,
+        "rows": 1000,
+        "batch_size": 20,
+        "batches": 50,
+        "seed": [
+          971406076,
+          1690525830
+        ],
+        "dimension": 4,
+        "jit_compile": true,
+        "traces": 1,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "standard_1000_point",
+        "quantile_definition": "nearest_lower_index_floor(p*(number_of_summarized_rows-1))",
+        "quantile_probabilities": [
+          0.0,
+          0.01,
+          0.05,
+          0.25,
+          0.5,
+          0.75,
+          0.95,
+          0.99,
+          1.0
+        ],
+        "score_residual_definition": "grad_z(log_pi_beta(T(z)) + log_abs_det_J_T(z)) + z",
+        "geometry_role": "explanatory_only_no_calibrated_finite_cutoff",
+        "score_residual_rms_definition": "per_coordinate_rms_not_mean_vector_norm",
+        "scale_slope_alert": 0.1,
+        "scale_diagnostics": [
+          {
+            "stage": 0,
+            "mean_log_scale": [
+              -0.32064071454343845,
+              0.25251678759996304,
+              -0.15854229714404197,
+              -0.4109924239788203
+            ],
+            "kind": "dsf_diagonal_log_derivative_no_conditional_cap",
+            "fraction_slope_below_point1": null
+          },
+          {
+            "stage": 1,
+            "mean_log_scale": [
+              -0.3842532009715205,
+              -0.3594510030487569,
+              1.1305946710696615,
+              -0.47905217187821886
+            ],
+            "kind": "dsf_diagonal_log_derivative_no_conditional_cap",
+            "fraction_slope_below_point1": null
+          },
+          {
+            "stage": 2,
+            "mean_log_scale": [
+              0.7484967569649879,
+              0.8438657137424626,
+              -0.5501564486303789,
+              0.9459550981206915
+            ],
+            "kind": "dsf_diagonal_log_derivative_no_conditional_cap",
+            "fraction_slope_below_point1": null
+          }
+        ],
+        "score_residual_norm": {
+          "min": 0.052756075323332485,
+          "median": 0.49894502150819153,
+          "mean": 0.7152069605379182,
+          "p95": 2.08162889233734,
+          "p99": 3.905831261273166,
+          "max": 8.336359485515187,
+          "quantiles": [
+            0.052756075323332485,
+            0.08993578049687788,
+            0.1603562116257751,
+            0.3084939244030306,
+            0.49894502150819153,
+            0.8458786976933081,
+            2.08162889233734,
+            3.905831261273166,
+            8.336359485515187
+          ],
+          "rms": 1.0136898739021207,
+          "std": 0.7183635319598359,
+          "mean_standard_error": 0.022728016340556136,
+          "exceedance_fraction": {
+            "0.1": 0.987,
+            "0.5": 0.497,
+            "1.0": 0.189,
+            "2.0": 0.055,
+            "5.0": 0.003,
+            "10.0": 0.0
+          },
+          "fraction_larger_than_gaussian_score": 0.045,
+          "rows": 1000
+        },
+        "latent_norm": {
+          "min": 0.1090111323467062,
+          "median": 1.8049596328139301,
+          "mean": 1.8701361099804463,
+          "p95": 3.0203339412499313,
+          "p99": 3.715442451078151,
+          "max": 4.495651468059801,
+          "quantiles": [
+            0.1090111323467062,
+            0.5537173223522958,
+            0.820225498925402,
+            1.3830428254616787,
+            1.8049596328139301,
+            2.286992259198857,
+            3.0203339412499313,
+            3.715442451078151,
+            4.495651468059801
+          ],
+          "rms": 1.9889070404433742,
+          "std": 0.6770097086987933,
+          "mean_standard_error": 0.021419639273784326,
+          "rows": 1000
+        },
+        "r_log_target_over_gaussian_up_to_constant": {
+          "min": -40.24474430482316,
+          "median": -38.58166652063947,
+          "mean": -38.60601853391678,
+          "p95": -38.172908194656706,
+          "p99": -37.743498962532215,
+          "max": -36.79876930658383,
+          "quantiles": [
+            -40.24474430482316,
+            -39.69326460079557,
+            -39.142568123687035,
+            -38.72255421989781,
+            -38.58166652063947,
+            -38.45443573959637,
+            -38.172908194656706,
+            -37.743498962532215,
+            -36.79876930658383
+          ],
+          "rms": 38.60731872806788,
+          "std": 0.31684748617363007,
+          "mean_standard_error": 0.010024610831192677,
+          "range": 3.445974998239329,
+          "rows": 1000
+        },
+        "score_residual_rms": 0.5068449369510604,
+        "score_residual_rms_per_coordinate": [
+          0.08674661587781728,
+          0.8875563338272586,
+          0.3561963976502349,
+          0.3246691634103175
+        ],
+        "score_residual_maximum_row_norm": 8.336359485515187,
+        "centered_log_density_rms": 0.31684748617363007,
+        "summary_status": "all_declared_rows_summarized",
+        "training_dtype": "float32",
+        "evaluation_dtype": "float64"
+      },
+      "checkpoint": "continuation-queue-01/naf16-seed1-u8192/checkpoint-008192.json",
+      "checkpoint_sha256": "d547b0bddd42c6e0b7757659f57982ad11277efedd092d53aa2e7bc3c5e02308"
+    },
+    {
+      "family": "naf16",
+      "seed": 2,
+      "accepted_updates": 8192,
+      "clipped_updates": 819,
+      "paired_statistics": {
+        "mean": [
+          -3.5321826177489033,
+          1037.003998717653
+        ],
+        "bootstrap_interval": [
+          [
+            -3.6647925234454823,
+            161.89188588504646
+          ],
+          [
+            -3.395589059876876,
+            2907.743545871769
+          ]
+        ],
+        "standard_error": [
+          0.04737117809281449,
+          527.8424991932615
+        ]
+      },
+      "both_criteria_pass": false,
+      "final_geometry": {
+        "rows": 2048,
+        "role": "untouched-final-bank",
+        "target_dtype": "float64",
+        "evaluation_dtype": "float64",
+        "transport_config": {
+          "dimension": 4,
+          "kind": "naf_dsf",
+          "hidden_layers": [
+            16,
+            16
+          ],
+          "stages": 3,
+          "activation": "elu",
+          "seed": [
+            506080467,
+            172850292
+          ],
+          "conditional_scale_cap": 2.0,
+          "scale_transform": "neutra_conditional_tanh",
+          "mixture_components": 16,
+          "slope_floor": 1e-06,
+          "final_weight_scale": 0.001,
+          "permutation_policy": "full_reverse",
+          "inverse_atol": 1.9073486328125e-06,
+          "inverse_rtol": 1.9073486328125e-06,
+          "inverse_max_iterations": 100,
+          "mask_policy": "legacy_degree_masks_v1",
+          "naf_conditioner": "author_cmade",
+          "iaf_initializer": "hoffman_variance_scaling",
+          "iaf_variance_scale": 0.02,
+          "dtype": "float32",
+          "affine_center": [
+            0.5515042642924981,
+            -0.048397125837824524,
+            0.26739640678584153,
+            0.2517115313395434
+          ],
+          "affine_scale": [
+            4.236409866884429,
+            0.33595354349392476,
+            0.48846505997109624,
+            0.14566726893831006
+          ]
+        },
+        "mean_loss": 39.968975705514055,
+        "vector_residual_rms": 32.51731127350362,
+        "mean_residual_norm": 3.8932962579919863,
+        "median_residual_norm": 0.5576462720142075,
+        "p95_residual_norm": 5.665309061434954,
+        "p99_residual_norm": 69.35702082299699,
+        "max_residual_norm": 999.8199194913219,
+        "coordinate_residual_rms": [
+          0.24141705550665496,
+          0.33035726008560745,
+          32.4988247362299,
+          1.0171062421187431
+        ],
+        "log_ratio_range": 23.555851962589195,
+        "log_ratio_sd": 0.5817569494174333,
+        "map_parameters_sha256": "6a7b41224118d9181239020015c0ee225cdfb3f5f8615eae523290e125c11836",
+        "observation_weight_sign": {
+          "parameter": "observation_weight.0.0",
+          "physical_index": 2,
+          "rows": 2048,
+          "positive_rows": 1052,
+          "negative_rows": 996,
+          "zero_rows": 0,
+          "positive_fraction": 0.513671875,
+          "role": "explanatory transport-draw coverage diagnostic",
+          "posterior_probability_estimate": false
+        }
+      },
+      "standard_1000_point_probe": {
+        "schema": "bayesfilter.neutra.post_training_probe.v2",
+        "complete": true,
+        "finite": true,
+        "valid_rows": 1000,
+        "rows": 1000,
+        "batch_size": 20,
+        "batches": 50,
+        "seed": [
+          1428906948,
+          101977281
+        ],
+        "dimension": 4,
+        "jit_compile": true,
+        "traces": 1,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "standard_1000_point",
+        "quantile_definition": "nearest_lower_index_floor(p*(number_of_summarized_rows-1))",
+        "quantile_probabilities": [
+          0.0,
+          0.01,
+          0.05,
+          0.25,
+          0.5,
+          0.75,
+          0.95,
+          0.99,
+          1.0
+        ],
+        "score_residual_definition": "grad_z(log_pi_beta(T(z)) + log_abs_det_J_T(z)) + z",
+        "geometry_role": "explanatory_only_no_calibrated_finite_cutoff",
+        "score_residual_rms_definition": "per_coordinate_rms_not_mean_vector_norm",
+        "scale_slope_alert": 0.1,
+        "scale_diagnostics": [
+          {
+            "stage": 0,
+            "mean_log_scale": [
+              -0.6755188167652877,
+              -0.7889299606208813,
+              1.3659506934156724,
+              0.7190087404645185
+            ],
+            "kind": "dsf_diagonal_log_derivative_no_conditional_cap",
+            "fraction_slope_below_point1": null
+          },
+          {
+            "stage": 1,
+            "mean_log_scale": [
+              0.6847716962253882,
+              0.3180363220407132,
+              -0.2105806601365431,
+              0.32444730398445276
+            ],
+            "kind": "dsf_diagonal_log_derivative_no_conditional_cap",
+            "fraction_slope_below_point1": null
+          },
+          {
+            "stage": 2,
+            "mean_log_scale": [
+              0.3499548839180813,
+              0.8410528413602956,
+              -2.0649699905861887,
+              1.1730765526464249
+            ],
+            "kind": "dsf_diagonal_log_derivative_no_conditional_cap",
+            "fraction_slope_below_point1": null
+          }
+        ],
+        "score_residual_norm": {
+          "min": 0.05034116696299427,
+          "median": 0.5686012755558975,
+          "mean": 2.874750347470389,
+          "p95": 5.436934328424171,
+          "p99": 51.15331002069311,
+          "max": 434.54475907911035,
+          "quantiles": [
+            0.05034116696299427,
+            0.10990520421695242,
+            0.17276041367330613,
+            0.340155719251426,
+            0.5686012755558975,
+            0.9994940810635168,
+            5.436934328424171,
+            51.15331002069311,
+            434.54475907911035
+          ],
+          "rms": 19.240000333265627,
+          "std": 19.024022268273875,
+          "mean_standard_error": 0.6018934282435247,
+          "exceedance_fraction": {
+            "0.1": 0.992,
+            "0.5": 0.562,
+            "1.0": 0.25,
+            "2.0": 0.128,
+            "5.0": 0.06,
+            "10.0": 0.031
+          },
+          "fraction_larger_than_gaussian_score": 0.14,
+          "rows": 1000
+        },
+        "latent_norm": {
+          "min": 0.2933212509448403,
+          "median": 1.8751684583568402,
+          "mean": 1.9274057238370457,
+          "p95": 3.0933239012222407,
+          "p99": 3.7460697117739454,
+          "max": 4.261525883297219,
+          "quantiles": [
+            0.2933212509448403,
+            0.5531764794247054,
+            0.8836031530942572,
+            1.432098695884679,
+            1.8751684583568402,
+            2.3999023596637454,
+            3.0933239012222407,
+            3.7460697117739454,
+            4.261525883297219
+          ],
+          "rms": 2.0479029758820575,
+          "std": 0.6921082099981056,
+          "mean_standard_error": 0.021897334714855055,
+          "rows": 1000
+        },
+        "r_log_target_over_gaussian_up_to_constant": {
+          "min": -39.84914504316127,
+          "median": -37.90309934854129,
+          "mean": -37.93630167589856,
+          "p95": -37.548658437511975,
+          "p99": -37.114476618739424,
+          "max": -36.50167422427611,
+          "quantiles": [
+            -39.84914504316127,
+            -38.973615018502386,
+            -38.44535344045087,
+            -38.04266263233808,
+            -37.90309934854129,
+            -37.79382646894458,
+            -37.548658437511975,
+            -37.114476618739424,
+            -36.50167422427611
+          ],
+          "rms": 37.93747746676025,
+          "std": 0.2986832706364225,
+          "mean_standard_error": 0.009449920484068935,
+          "range": 3.3474708188851636,
+          "rows": 1000
+        },
+        "score_residual_rms": 9.620000166632813,
+        "score_residual_rms_per_coordinate": [
+          0.1297611943911646,
+          0.2922646342186241,
+          19.2182228279339,
+          0.8574774492410056
+        ],
+        "score_residual_maximum_row_norm": 434.54475907911035,
+        "centered_log_density_rms": 0.2986832706364225,
+        "summary_status": "all_declared_rows_summarized",
+        "training_dtype": "float32",
+        "evaluation_dtype": "float64"
+      },
+      "checkpoint": "continuation-queue-01/naf16-seed2-u8192/checkpoint-008192.json",
+      "checkpoint_sha256": "c4b2a31ae16d147c05fe523a594b17df76494cbb06f02a233f3e729dc6964490"
+    }
+  ],
+  "downstream": {
+    "status": "no_posterior_pass_within_declared_scope",
+    "attempts": [
+      {
+        "family": "iaf16",
+        "root_seed": 0,
+        "checkpoint": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-precision-training-2026-09-24/training-queue-01/iaf16-seed0-u4096/checkpoint-004096.json",
+        "finalized": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-precision-training-2026-09-24/training-queue-01/iaf16-seed0-u4096/finalized.json",
+        "tuning_seconds": 2616.958909104811,
+        "tuning": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-precision-training-2026-09-24/downstream-queue-01/hmc-assessment/candidate-00/tuning/result.json",
+        "verified_members": {},
+        "status": "no_verified_kernel_in_bounded_search"
+      }
+    ],
+    "posterior_qualified": false,
+    "independent_reference_checked": false,
+    "training_report": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-precision-training-2026-09-24/paired-final-analysis/result.json",
+    "wall_seconds": 2762.195137333125
+  },
+  "posterior_sampling_started": false,
+  "posterior_ready": false,
+  "method_ranking": "not_tested",
+  "evidence": {
+    "paired-final-analysis/result.json": "f98437c43cc63a0fb70f28b645121c7185a457620cc621907d3b5582007b6da0",
+    "downstream-queue-01/hmc-assessment/result.json": "260d47900b56c96b37cdce17e24b386e662d207d166d493983c1d80d4ca0929a",
+    "naf-tail-score-check-01/result.json": "d82313baa7f8ff4f1dca779349a6f813b2fa3d978d58e306f73643519e960458",
+    "naf-invalid-update-repair-verification-01/result.json": "5da85f0ed58ed4103bb800c12bc7abe24b61a75ea665004d374568ea273d6ff4",
+    "supplemental-charges.json": "6ad50f2d2028308ed4d4a09c0b754b8e7fb3d83246f3bdd196fda950e01b58e0",
+    "master-progress.json": "6b031690b6f009d00174ee4f42add0eb41e8b2c44b415119b93b6ccb0865d374"
+  },
+  "manifest_index": "manifest-index.json",
+  "limitations": [
+    "conditional map-versus-baseline inference",
+    "sign-region coverage unresolved",
+    "two NAF fits retain severe score tails",
+    "HMC search is budget-incomplete",
+    "independent posterior reference absent"
+  ]
+}

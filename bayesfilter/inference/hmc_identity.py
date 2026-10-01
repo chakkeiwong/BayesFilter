@@ -10,7 +10,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+import math
+import numbers
+
+import tensorflow as tf
+
+from bayesfilter.ops.host_tensor_io import (
+    all_finite, canonical_numeric_bytes, is_boolean_scalar, numeric_dtype, numeric_tensor,
+)
 
 
 CANONICAL_ARRAY_IDENTITY_SCHEMA_V1 = "bayesfilter.canonical_array_identity.v1"
@@ -115,7 +122,7 @@ def _require_sha256(value: Any, *, label: str, tagged: bool = True) -> str:
 
 
 def _require_int(value: Any, *, label: str, minimum: int | None = None) -> int:
-    if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)):
+    if is_boolean_scalar(value) or not isinstance(value, numbers.Integral):
         raise ValueError(f"{label} must be an integer")
     number = int(value)
     if minimum is not None and number < minimum:
@@ -124,7 +131,7 @@ def _require_int(value: Any, *, label: str, minimum: int | None = None) -> int:
 
 
 def _require_bool(value: Any, *, label: str) -> bool:
-    if not isinstance(value, (bool, np.bool_)):
+    if not is_boolean_scalar(value):
         raise ValueError(f"{label} must be boolean")
     return bool(value)
 
@@ -155,11 +162,11 @@ def _strict_json_value(value: Any, *, label: str = "payload") -> Any:
         return ["null"]
     if isinstance(value, str):
         return ["string", value]
-    if isinstance(value, (bool, np.bool_)):
+    if is_boolean_scalar(value):
         return ["boolean", bool(value)]
-    if isinstance(value, (int, np.integer)) and not isinstance(value, (bool, np.bool_)):
+    if isinstance(value, numbers.Integral) and not is_boolean_scalar(value):
         return ["integer", str(int(value))]
-    if isinstance(value, (float, np.floating)):
+    if isinstance(value, numbers.Real):
         number = float(value)
         return ["float64_ieee754", struct.pack(">d", number).hex()]
     if isinstance(value, Mapping):
@@ -214,9 +221,7 @@ class CanonicalArrayIdentityV1:
         if self.schema != CANONICAL_ARRAY_IDENTITY_SCHEMA_V1:
             raise ValueError("unsupported canonical array identity schema")
         dtype_text = _require_nonempty(self.semantic_dtype, label="semantic_dtype")
-        dtype = np.dtype(dtype_text)
-        if dtype.kind not in "biufc":
-            raise ValueError("canonical array dtype must be numeric or boolean")
+        dtype = numeric_dtype(dtype_text)
         shape = tuple(
             _require_int(item, label="shape entry", minimum=0) for item in self.shape
         )
@@ -235,17 +240,13 @@ class CanonicalArrayIdentityV1:
 
     @classmethod
     def from_array(cls, value: Any) -> "CanonicalArrayIdentityV1":
-        array = np.asarray(value)
-        if array.dtype.kind not in "biufc":
-            raise ValueError("canonical array input must be numeric or boolean")
-        if array.dtype.kind in "fc" and not np.all(np.isfinite(array)):
+        array, data = canonical_numeric_bytes(value, byteorder="big")
+        if not bool(all_finite(array)):
             raise ValueError("canonical array input must be finite")
-        canonical_dtype = array.dtype.newbyteorder(">")
-        canonical = np.ascontiguousarray(array.astype(canonical_dtype, copy=False))
         return cls(
             semantic_dtype=array.dtype.name,
             shape=tuple(int(item) for item in array.shape),
-            byte_sha256=hashlib.sha256(canonical.tobytes(order="C")).hexdigest(),
+            byte_sha256=hashlib.sha256(data).hexdigest(),
         )
 
     @classmethod
@@ -300,16 +301,16 @@ class CanonicalFloat64V1:
         if len(bits) != 16 or any(char not in _HEX_DIGITS for char in bits):
             raise ValueError("float64 IEEE-754 identity must contain 16 lowercase hex digits")
         value = struct.unpack(">d", bytes.fromhex(bits))[0]
-        if not np.isfinite(value):
+        if not math.isfinite(value):
             raise ValueError("canonical float64 value must be finite")
         object.__setattr__(self, "ieee754_hex", bits)
 
     @classmethod
     def from_value(cls, value: Any) -> "CanonicalFloat64V1":
-        if isinstance(value, (bool, np.bool_)):
+        if is_boolean_scalar(value):
             raise ValueError("canonical float64 value must be numeric")
-        number = float(np.float64(value))
-        if not np.isfinite(number):
+        number = float(value)
+        if not math.isfinite(number):
             raise ValueError("canonical float64 value must be finite")
         return cls(ieee754_hex=struct.pack(">d", number).hex())
 
@@ -425,13 +426,13 @@ class DeterministicLGSSMTargetIdentityV1:
         if not isinstance(lower, Mapping):
             raise ValueError("LGSSM truth_template.lower_A must be a mapping")
         effective_prior_scales = (
-            np.asarray([0.50] * 4 + [0.60] * 6 + [0.35] * 8, dtype=np.float64)
+            numeric_tensor([0.50] * 4 + [0.60] * 6 + [0.35] * 8, dtype=tf.float64)
             if prior_scales is None
-            else np.asarray(prior_scales, dtype=np.float64)
+            else numeric_tensor(prior_scales, dtype=tf.float64)
         )
         return cls(
             observations=CanonicalArrayIdentityV1.from_array(
-                np.asarray(observations, dtype=np.float64)
+                numeric_tensor(observations, dtype=tf.float64)
             ),
             parameter_names=tuple(parameter_names),
             state_dim=_require_int(shape.get("state_dim"), label="state_dim", minimum=1),
@@ -448,19 +449,19 @@ class DeterministicLGSSMTargetIdentityV1:
             rho_max=CanonicalFloat64V1.from_value(transform.get("rho_max")),
             lower_scale=CanonicalFloat64V1.from_value(transform.get("lower_scale")),
             truth_diag_a=CanonicalArrayIdentityV1.from_array(
-                np.asarray(truth.get("diag_A"), dtype=np.float64)
+                numeric_tensor(truth.get("diag_A"), dtype=tf.float64)
             ),
             truth_lower_a=CanonicalArrayIdentityV1.from_array(
-                np.asarray(
+                numeric_tensor(
                     [lower.get(key) for key in ("a21", "a31", "a32", "a41", "a42", "a43")],
-                    dtype=np.float64,
+                    dtype=tf.float64,
                 )
             ),
             truth_process_std=CanonicalArrayIdentityV1.from_array(
-                np.asarray(truth.get("process_std"), dtype=np.float64)
+                numeric_tensor(truth.get("process_std"), dtype=tf.float64)
             ),
             truth_observation_std=CanonicalArrayIdentityV1.from_array(
-                np.asarray(truth.get("observation_std"), dtype=np.float64)
+                numeric_tensor(truth.get("observation_std"), dtype=tf.float64)
             ),
             prior_scales=CanonicalArrayIdentityV1.from_array(effective_prior_scales),
             kalman_jitter=CanonicalFloat64V1.from_value(kalman_jitter),
@@ -1045,8 +1046,8 @@ class FrozenHMCExecutionContractV1:
             minimum=1,
         )
         chain_count = worker_count * chains_per_worker
-        offsets = np.linspace(-0.15, 0.15, chain_count, dtype=np.float64)
-        pattern = 1.0 - 2.0 * (np.arange(transition.target.parameter_dim) % 2)
+        offsets = tf.linspace(tf.constant(-0.15, tf.float64), tf.constant(0.15, tf.float64), chain_count)
+        pattern = 1.0 - 2.0 * (tf.range(transition.target.parameter_dim, dtype=tf.float64) % 2)
         initial_state = offsets[:, None] * pattern[None, :]
         if smoke:
             counts = (4, 4, 4, 4, 8, 8, 8, 8)

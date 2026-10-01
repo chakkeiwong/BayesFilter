@@ -5,6 +5,11 @@ their saved conventions to these kernels. Static Python loops traverse network
 layers only. Batch rows stay in native tensor operations; coordinate derivative
 and inverse loops have a single TensorFlow body, with no pfor.
 Source/derivation: docs/reference/neutra-implementation.md.
+
+Canonical architecture: bayesfilter_neutra_iaf_author_v1 (owner, 2026-09-25).
+This core also preserves historical author-code-unfaithful configurations and
+explicit alternatives. Shared-core use alone does not confer canonical status;
+the configured map must meet the architecture in the implementation reference.
 """
 from __future__ import annotations
 
@@ -274,9 +279,12 @@ def sigmoid_mixture(x, log_slopes, offsets, weight_logits):
     log_n = tf.reduce_logsumexp(terms, axis=-1)
     score = (tf.reduce_sum(tf.nn.softmax(terms, axis=-1)*slopes*(1.-2.*tf.math.sigmoid(u)), axis=-1)
              -tf.exp(log_n-log_s)+tf.exp(log_n-log_complement))
+    # Finite log weights represent strictly positive mathematical weights.
+    # The value/log-Jacobian formulas consume log_w directly; exponentiating
+    # here adds an unrelated underflow check (e.g. exp(-119) in float32)
+    # that used to inject NaNs into an otherwise valid log-domain mixture.
     valid = tf.reduce_all(tf.math.is_finite(slopes) & (slopes > 0.)
-                         & tf.math.is_finite(offsets) & tf.math.is_finite(log_w)
-                         & (tf.exp(log_w) > 0.), axis=-1)
+                         & tf.math.is_finite(offsets) & tf.math.is_finite(log_w), axis=-1)
     nan = tf.constant(float("nan"), x.dtype)
     return tuple(tf.where(valid, v, nan) for v in
                  (log_s-log_complement, log_n-log_s-log_complement, score))

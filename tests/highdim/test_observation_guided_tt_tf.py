@@ -1,6 +1,6 @@
 """Independent density identities and consumer wiring for observation-guided TT."""
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 import tensorflow as tf
 import pytest
 

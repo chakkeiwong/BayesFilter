@@ -159,8 +159,15 @@ Artifacts distinguish latent $z$, unconstrained source $\theta$, and physical
 $\vartheta=C(\theta)$.  HMC integrates $z$; the filter target consumes $\theta$;
 scientific summaries use $\vartheta$.
 
-\section{The BayesFilter dense IAF}
+\section{The historical BayesFilter dense IAF}
 \label{sec:bf-neutra-iaf}
+
+The implementation and numerical settings in this section are historical and
+unfaithful to the original author's code. The current author-based IAF uses a
+free scale bias outside the conditional cap and nonzero author initialization;
+see Section~\ref{sec:bf-fab-iaf} and the implementation reference. The historical
+formulas remain here to explain the preserved experiments, not as the active
+architecture or training recipe.
 
 The tested map is a stack of three MADE-style dense inverse autoregressive flow
 (IAF) stages, reverse-order permutations between stages, and a fixed full

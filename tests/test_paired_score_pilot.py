@@ -201,12 +201,11 @@ def test_reservation_padding_and_failed_rows():
     assert result.diagnostics["physical_rows"] == 24
     assert result.diagnostics["callback_batches"] == 6
     assert result.diagnostics["padded_rows"] == 15
-    calls = 0
+    calls = tf.Variable(0, dtype=tf.int64)
 
     def invalid(points):
-        nonlocal calls
-        calls += 1
-        return -tf.reduce_sum(points**2, axis=1), -2 * points, tf.fill([4], calls < 3)
+        call = calls.assign_add(1)
+        return -tf.reduce_sum(points**2, axis=1), -2 * points, tf.fill([4], call < 3)
 
     failed = refine_batched_quadratic_center(invalid, [0.], [1.], config=config)
     assert failed.status == "curvature_target_invalid" and failed.pilot_factor is None

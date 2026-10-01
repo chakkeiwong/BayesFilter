@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from concurrent.futures.process import BrokenProcessPool
 
 import numpy as np
 import pytest
@@ -8,14 +9,44 @@ import pytest
 from bayesfilter.inference.cpu_xla_cloud import (
     CPUXLACloudConfig,
     CPUXLACloudEvaluator,
+    CPUXLACloudResult,
     default_cpu_worker_count,
 )
-
 
 FACTORY = (
     "bayesfilter.testing.fixed_center_cpu_xla_fixture:"
     "quadratic_value_score_factory"
 )
+
+
+def test_result_preserves_noncontiguous_non_native_buffers_as_immutable_tensors():
+    import tensorflow as tf
+
+    values = np.arange(12, dtype=">f8")[::2]
+    scores = np.arange(36, dtype=">f8").reshape(6, 6)[:, ::3]
+    expected_values, expected_scores = values.copy(), scores.copy()
+    result = CPUXLACloudResult(values, scores, (1,), 1, 2, "fixture", ())
+    assert tf.is_tensor(result.values) and tf.is_tensor(result.scores)
+    assert "CPU:0" in result.values.device and "CPU:0" in result.scores.device
+    assert result.values.dtype == result.scores.dtype == tf.float64
+    values[:] = 100.
+    scores[:] = 200.
+    np.testing.assert_array_equal(result.values, expected_values)
+    np.testing.assert_array_equal(result.scores, expected_scores)
+    variable = tf.Variable(expected_values.astype(float))
+    snapshot = CPUXLACloudResult(variable, result.scores, (1,), 1, 2, "fixture", ())
+    variable.assign(tf.zeros_like(variable))
+    np.testing.assert_array_equal(snapshot.values, expected_values)
+
+
+@pytest.mark.parametrize("points", [[], [1., 2.], [[1.]], [[float("nan"), 0.]],
+                                   [[0., float("inf")]]])
+def test_invalid_cloud_is_rejected_before_any_process_launch(points):
+    config = CPUXLACloudConfig(worker_factory_path=FACTORY, dimension=2, worker_count=1)
+    with CPUXLACloudEvaluator(config) as pool:
+        with pytest.raises(ValueError, match="nonempty finite"):
+            pool.evaluate(points)
+        assert pool._executor is None
 
 
 def test_default_worker_count_uses_one_third_and_allows_override() -> None:
@@ -33,7 +64,10 @@ def test_default_worker_count_uses_one_third_and_allows_override() -> None:
         )
 
 
-def test_spawned_cpu_xla_pool_is_persistent_ordered_and_explicit() -> None:
+def test_spawned_cpu_xla_pool_is_persistent_ordered_and_explicit(monkeypatch) -> None:
+    # The quadratic fixture needs no custom op. Opt out of conftest's optional
+    # package preloader so this check actually tests framework-free bootstrap.
+    monkeypatch.setenv("BAYESFILTER_PRELOAD_CUSTOM_OP", "0")
     precision = np.array([[2.0, 0.5], [0.5, 3.0]])
     center = np.array([0.2, -0.1])
     points = np.array(
@@ -105,9 +139,8 @@ def test_pool_lifecycle_and_child_initialization_fail_closed() -> None:
             set_affinity=False,
         )
     )
-    with evaluator:
-        with pytest.raises(Exception):
-            evaluator.evaluate(np.zeros((1, 2)))
+    with evaluator, pytest.raises(BrokenProcessPool):
+        evaluator.evaluate(np.zeros((1, 2)))
     with pytest.raises(RuntimeError, match="context manager"):
         evaluator.evaluate(np.zeros((1, 2)))
 

@@ -1,0 +1,35 @@
+{
+  "schema": "filter_repair.genut_affected_use_sources.v1",
+  "head": "6c5071166f18e939152c673e6c791ccda546ba3e",
+  "sources": {
+    "bayesfilter/highdim/dual_cap_genut_primal_tf.py": "29c992a7eaf118c2a95f0510bac8b10cd4a5c148282ac6ab655f3c99603393d7",
+    "bayesfilter/highdim/genut_guided_proposal_tf.py": "9eec11e92a12145144a4f579fda85ffa87ed4a97b4a374a0df2bdf66286dc0cc",
+    "bayesfilter/highdim/ledh_pfpf_genut_initialization_tf.py": "dbf545e12decb21c68ffb2f854d96f1628532cd1b4cfb5da184a6e1fed3fa0c5",
+    "bayesfilter/highdim/ledh_pfpf_genut_initial_rqmc_tf.py": "a00fc5db76ee292dbfd7215b2a307f0d2a5ee38e9fe531b268e9e550e67cd50d",
+    "bayesfilter/highdim/ledh_canonical_value_program_tf.py": "150c30a6970dc6e69b053c7ee24308feab4185112c2ed07e95a773810f51df68",
+    "bayesfilter/highdim/ledh_canonical_filter_tf.py": "26ccd2b7dbc21b1f90959f16ead109b5c776be92a5fa3dd52484ad07293967ac",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "dcd4965568d5d2aba599ac055b7dd0590744c627d7041f49e3e138eb3164e7fa",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "a9a7b86cd026892d93b53c31c0dac0c937e5e3d3309af1ad06052b2798a84873",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "33a6d86ee49a48052af36f4efd5027ded6a522a5006cd84b69075868498e8260",
+    "bayesfilter/highdim/ledh_alg1_contract.py": "3000828117785ffad7a2f8d5cfe31323edcfbe39a2fce50bcbe6009cdb929c18",
+    "docs/benchmarks/drive_rqmc_ledh_phase2.py": "d05bd8f8ede59cad4f2e5625fb72bb900ffd71bceb9331cf994a6a8db1c7595a",
+    "docs/benchmarks/rebuild_rqmc_campaign_summary.py": "b1d633db8afd505d7f2b084688a33f7c38b4de9576d89d434d2ecf9cbbcc75ab"
+  },
+  "direct_runtime_reduced_calls": [
+    {
+      "path": "bayesfilter/highdim/genut_guided_proposal_tf.py",
+      "line": 1032,
+      "call": "dual_cap_genut_primal(particles, weights, output_particles, diagonal_steps=dual_cap_diagonal_steps, diagonal_strength=dual_cap_diagonal_strength, pairwise_steps=dual_cap_pairwise_steps, pairwise_strength=dual_cap_pairwise_strength, pairwise_particle_rms_cap=dual_cap_pairwise_particle_rms_cap, coordinate_cap=dual_cap_coordinate_cap, coordinate_cap_power=dual_cap_coordinate_cap_power)"
+    }
+  ],
+  "raw_wiring_runs": [
+    4936,
+    4938
+  ],
+  "current_merged_analytical_qualification": "docs/plans/filter_gradient_remote_integration_result_20260930.md",
+  "unsupported_uses": [
+    "Reduced primal reverse AD precision/admission",
+    "Cap fraction as a numerical acceptance or canonical admission authority"
+  ],
+  "canonical_rebuild": "excluded_by_owner"
+}

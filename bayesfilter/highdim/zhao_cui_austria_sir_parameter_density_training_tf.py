@@ -2,13 +2,24 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
 import math
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, replace
+from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.highdim import centered_initializer_native_tf as initializer_native
+from bayesfilter.highdim import centered_training_native_tf as training_native
+from bayesfilter.highdim import centered_tt_native_tf as centered_native
+from bayesfilter.highdim import core_tangent_native_tf as tangent_native
+from bayesfilter.highdim.bases import ProductBasis
+from bayesfilter.highdim.centered_training_native_tf import quadratic_cg_program
 from bayesfilter.highdim.models import parameterized_zhao_cui_sir_austria_model
+from bayesfilter.highdim.stochastic_training_native_tf import (
+    checked_optimizer_update,
+    flat_cores,
+)
 from bayesfilter.highdim.zhao_cui_austria_sir_centered_density_tf import (
     CenteredThetaFeatures,
     LaneBCenteredResidualChild,
@@ -23,9 +34,13 @@ from bayesfilter.highdim.zhao_cui_austria_sir_lane_b_target_tf import (
 from bayesfilter.highdim.zhao_cui_austria_sir_lane_b_tf import (
     LaneBT1Artifact,
     balanced_initial_cores,
-    lane_b_measure_convention,
 )
-
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
+from bayesfilter.ops.slogdet_tf import slogdet_tf
+from bayesfilter.ops.stateless_random_tf import (
+    philox_normal_float64,
+    philox_shuffle_indices,
+)
 
 DTYPE = tf.float64
 PARAMETER_DIM = 3
@@ -48,9 +63,20 @@ TARGET_INFORMED_WITHIN_REGION_PAIR_INITIALIZATION_ID = (
 WITHIN_REGION_PAIR_AXES = tuple((axis, axis + 1) for axis in range(0, JOINT_DIM, 2))
 _PARAMETERIZED_MODEL = parameterized_zhao_cui_sir_austria_model()
 _BASE_MODEL = _PARAMETERIZED_MODEL.base_model
-_ADJACENCY = tf.convert_to_tensor(_BASE_MODEL._adjacency_matrix, DTYPE)  # noqa: SLF001
-_DEGREE = tf.convert_to_tensor(_BASE_MODEL._neighbor_degree, DTYPE)  # noqa: SLF001
+_ADJACENCY = tf.convert_to_tensor(_BASE_MODEL._adjacency_matrix, DTYPE)
+_DEGREE = tf.convert_to_tensor(_BASE_MODEL._neighbor_degree, DTYPE)
 _INITIAL_MEAN = tf.convert_to_tensor(_BASE_MODEL.initial_mean, DTYPE)
+
+
+@tf.custom_gradient
+def _sir_rounded(value):
+    """Retain FP64 operation boundaries needed by the strict scalar score API.
+
+    nextafter(x, x) is the floating-point identity, including signed zero.
+    Its identity derivative preserves gradients through the rounded program.
+    The bit-level operation prevents XLA from fusing across this boundary.
+    """
+    return tf.math.nextafter(value, value), lambda cotangent: cotangent
 
 
 def _batch_native_transition_mean_and_jacobian(
@@ -58,8 +84,8 @@ def _batch_native_transition_mean_and_jacobian(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     parameters = tf.convert_to_tensor(theta, DTYPE)
     state = tf.convert_to_tensor(z0, DTYPE)
-    kappa = tf.constant(0.1, DTYPE) * tf.exp(parameters[:, 0])
-    nu = tf.constant(18.0, DTYPE) * tf.exp(parameters[:, 1])
+    kappa = _sir_rounded(tf.constant(0.1, DTYPE) * tf.exp(parameters[:, 0]))
+    nu = _sir_rounded(tf.constant(18.0, DTYPE) * tf.exp(parameters[:, 1]))
     tangent = tf.zeros(tf.concat([tf.shape(state), [PARAMETER_DIM]], axis=0), DTYPE)
     parameter_eye = tf.eye(PARAMETER_DIM, dtype=DTYPE)
 
@@ -68,13 +94,13 @@ def _batch_native_transition_mean_and_jacobian(
         infectious = values[:, :, 1::2]
         d_susceptible = derivatives[:, :, 0::2, :]
         d_infectious = derivatives[:, :, 1::2, :]
-        susceptible_neighbor = (
+        susceptible_neighbor = _sir_rounded(
             tf.einsum("tnj,kj->tnk", susceptible, _ADJACENCY)
-            - susceptible * _DEGREE[tf.newaxis, tf.newaxis, :]
+            - _sir_rounded(susceptible * _DEGREE[tf.newaxis, tf.newaxis, :])
         )
-        infectious_neighbor = (
+        infectious_neighbor = _sir_rounded(
             tf.einsum("tnj,kj->tnk", infectious, _ADJACENCY)
-            - infectious * _DEGREE[tf.newaxis, tf.newaxis, :]
+            - _sir_rounded(infectious * _DEGREE[tf.newaxis, tf.newaxis, :])
         )
         d_susceptible_neighbor = (
             tf.einsum("tnjp,kj->tnkp", d_susceptible, _ADJACENCY)
@@ -84,8 +110,8 @@ def _batch_native_transition_mean_and_jacobian(
             tf.einsum("tnjp,kj->tnkp", d_infectious, _ADJACENCY)
             - d_infectious * _DEGREE[tf.newaxis, tf.newaxis, :, tf.newaxis]
         )
-        infection = (
-            kappa[:, tf.newaxis, tf.newaxis] * susceptible * infectious
+        infection = _sir_rounded(
+            _sir_rounded(kappa[:, tf.newaxis, tf.newaxis] * susceptible) * infectious
         )
         d_infection = kappa[:, tf.newaxis, tf.newaxis, tf.newaxis] * (
             infectious[:, :, :, tf.newaxis] * d_susceptible
@@ -93,10 +119,11 @@ def _batch_native_transition_mean_and_jacobian(
         ) + infection[:, :, :, tf.newaxis] * parameter_eye[
             0, tf.newaxis, tf.newaxis, tf.newaxis, :
         ]
-        rhs_susceptible = -infection + 0.5 * susceptible_neighbor
-        rhs_infectious = (
-            infection
-            - nu[:, tf.newaxis, tf.newaxis] * infectious
+        rhs_susceptible = _sir_rounded(-infection + 0.5 * susceptible_neighbor)
+        rhs_infectious = _sir_rounded(
+            _sir_rounded(
+                infection - _sir_rounded(nu[:, tf.newaxis, tf.newaxis] * infectious)
+            )
             + 0.5 * infectious_neighbor
         )
         d_rhs_susceptible = -d_infection + 0.5 * d_susceptible_neighbor
@@ -119,17 +146,38 @@ def _batch_native_transition_mean_and_jacobian(
         )
 
     step = tf.constant(0.005, DTYPE)
-    for _ in range(4):
+    # Mechanical fixed-HMC execution adaptation of sir_step.mlx:7--18.
+    # Preserve the author's half-step fourth stage, including its difference
+    # from the standard fourth-order RK formula named in paper section 6.3.
+    def substep(index, state, tangent):
         k1, d1 = rhs(state, tangent)
-        k2, d2 = rhs(state + 0.5 * step * k1, tangent + 0.5 * step * d1)
-        k3, d3 = rhs(state + 0.5 * step * k2, tangent + 0.5 * step * d2)
+        k2, d2 = rhs(
+            _sir_rounded(state + _sir_rounded(0.5 * step * k1)),
+            tangent + 0.5 * step * d1,
+        )
+        k3, d3 = rhs(
+            _sir_rounded(state + _sir_rounded(0.5 * step * k2)),
+            tangent + 0.5 * step * d2,
+        )
         # Preserve the Zhao-Cui half-step fourth-stage variant.
-        k4, d4 = rhs(state + 0.5 * step * k3, tangent + 0.5 * step * d3)
-        state = state + (step / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        k4, d4 = rhs(
+            _sir_rounded(state + _sir_rounded(0.5 * step * k3)),
+            tangent + 0.5 * step * d3,
+        )
+        weighted = _sir_rounded(_sir_rounded(k1 + 2.0 * k2) + 2.0 * k3)
+        increment = (step / 6.0) * _sir_rounded(weighted + k4)
+        state = _sir_rounded(state + _sir_rounded(increment))
         tangent = tangent + (step / 6.0) * (d1 + 2.0 * d2 + 2.0 * d3 + d4)
+        return index + 1, state, tangent
+
+    _, state, tangent = tf.while_loop(
+        lambda index, *_: index < 4, substep, (tf.constant(0), state, tangent),
+        maximum_iterations=4, parallel_iterations=1,
+    )
     return state, tangent
 
 
+@fixed_signature_function(floating_dtype=DTYPE)
 def batch_native_t1_from_common_noise(
     theta: tf.Tensor,
     initial_noise: tf.Tensor,
@@ -212,15 +260,15 @@ def batch_native_t1_from_common_noise(
 
 
 def _physical_to_local_and_reference_batch(
-    joint_points: tf.Tensor, parent: LaneBT1Artifact
+    joint_points: tf.Tensor, frame_mu: tf.Tensor, frame_matrix: tf.Tensor
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     values = tf.convert_to_tensor(joint_points, DTYPE)
     theta_count = tf.shape(values)[0]
     sample_count = tf.shape(values)[1]
     flat = tf.reshape(values, [-1, JOINT_DIM])
     local_columns = tf.linalg.triangular_solve(
-        parent.frame.matrix,
-        tf.transpose(flat) - parent.frame.mu[:, tf.newaxis],
+        frame_matrix,
+        tf.transpose(flat) - frame_mu[:, tf.newaxis],
         lower=True,
     )
     local = tf.transpose(local_columns)
@@ -230,7 +278,7 @@ def _physical_to_local_and_reference_batch(
         1.0 - tf.square(tf.clip_by_value(reference, -1.0 + 1e-12, 1.0 - 1e-12))
     )
     log_coordinate_jacobian = (
-        parent.frame.log_abs_det()
+        slogdet_tf(frame_matrix)[1]
         + tf.reduce_sum(reference_to_local_log_jacobian, axis=1)
     )
     return (
@@ -304,6 +352,37 @@ class T1ParameterDensityBatch:
         object.__setattr__(self, "complete_data_score", score)
 
 
+@fixed_signature_function(floating_dtype=DTYPE)
+def _parameter_density_batch_arrays(
+    theta: tf.Tensor,
+    initial_noise: tf.Tensor,
+    transition_noise: tf.Tensor,
+    observation: tf.Tensor,
+    frame_mu: tf.Tensor,
+    frame_matrix: tf.Tensor,
+    shift_constant: tf.Tensor,
+) -> dict[str, tf.Tensor]:
+    evaluated = batch_native_t1_from_common_noise.python_function(
+        theta, initial_noise, transition_noise, observation
+    )
+    local, reference, coordinate_log_jacobian = _physical_to_local_and_reference_batch(
+        evaluated["joint_points"], frame_mu, frame_matrix
+    )
+    log_target = (
+        evaluated["complete_log_density"]
+        + coordinate_log_jacobian
+        - REFERENCE_LOG_DENSITY
+        + shift_constant
+    )
+    return {"theta": theta, "physical_points": evaluated["joint_points"],
+        "local_points": local, "reference_points": reference,
+        "target_log_density_reference": log_target,
+        "proposal_log_density": evaluated["proposal_log_density"],
+        "coordinate_log_jacobian": coordinate_log_jacobian,
+        "observation_log_density": evaluated["observation_log_density"],
+        "complete_data_score": evaluated["complete_data_score"]}
+
+
 def build_t1_parameter_density_batch(
     *,
     parent: LaneBT1Artifact,
@@ -312,31 +391,14 @@ def build_t1_parameter_density_batch(
     transition_noise: tf.Tensor,
     role: str,
 ) -> T1ParameterDensityBatch:
-    _states, observations, _all = generate_sealed_lane_b_dataset()
-    evaluated = batch_native_t1_from_common_noise(
-        theta, initial_noise, transition_noise, observations[0]
-    )
-    local, reference, coordinate_log_jacobian = _physical_to_local_and_reference_batch(
-        evaluated["joint_points"], parent
-    )
-    log_target = (
-        evaluated["complete_log_density"]
-        + coordinate_log_jacobian
-        - REFERENCE_LOG_DENSITY
-        + parent.shift_constant
-    )
-    return T1ParameterDensityBatch(
-        theta=theta,
-        physical_points=evaluated["joint_points"],
-        local_points=local,
-        reference_points=reference,
-        target_log_density_reference=log_target,
-        proposal_log_density=evaluated["proposal_log_density"],
-        coordinate_log_jacobian=coordinate_log_jacobian,
-        observation_log_density=evaluated["observation_log_density"],
-        complete_data_score=evaluated["complete_data_score"],
-        role=str(role),
-    )
+    with tf.init_scope():
+        _states, observations, _all = generate_sealed_lane_b_dataset()
+    evaluate = _parameter_density_batch_arrays
+    if tf.inside_function():
+        evaluate = evaluate.python_function
+    arrays = evaluate(theta, initial_noise, transition_noise, observations[0],
+        parent.frame.mu, parent.frame.matrix, parent.shift_constant)
+    return T1ParameterDensityBatch(**arrays, role=str(role))
 
 
 @dataclass(frozen=True)
@@ -446,31 +508,7 @@ def _parent_additive_cross_features(
 ) -> tf.Tensor:
     """Return exact <h0, phi_axis,index> features under the reference measure."""
 
-    active_measure = lane_b_measure_convention().mass_measure
-    transfer = []
-    for axis, core in enumerate(parent.cores):
-        integral = basis.bases[axis].integral_vector(active_measure)
-        transfer.append(tf.einsum("lir,i->lr", core, integral))
-    left = [tf.ones([1], DTYPE)]
-    for matrix in transfer:
-        left.append(tf.einsum("l,lr->r", left[-1], matrix))
-    right: list[tf.Tensor] = [tf.zeros([1], DTYPE)] * (len(parent.cores) + 1)
-    right[-1] = tf.ones([1], DTYPE)
-    for axis in range(len(parent.cores) - 1, -1, -1):
-        right[axis] = tf.einsum("lr,r->l", transfer[axis], right[axis + 1])
-    features = []
-    for axis, core in enumerate(parent.cores):
-        mass = basis.bases[axis].mass_matrix(active_measure)
-        features.append(
-            tf.einsum(
-                "l,lir,ij,r->j",
-                left[axis],
-                core,
-                mass,
-                right[axis + 1],
-            )
-        )
-    return tf.concat(features, axis=0)
+    return initializer_native.feature_integrals(parent.cores, basis)
 
 
 def additive_prefix_score_operator(
@@ -490,51 +528,7 @@ def additive_prefix_score_operator(
         order=parent.settings.basis_order,
         num_elems=parent.settings.basis_num_elems,
     )
-    point_count = tf.shape(points)[0]
-    active_measure = lane_b_measure_convention().mass_measure
-    transfers = []
-    evaluated_basis = []
-    for axis, core in enumerate(parent.cores):
-        if axis < prefix_dim:
-            evaluated = basis.evaluate_axis(axis, points[:, axis])
-            evaluated_basis.append(evaluated)
-            transfers.append(tf.einsum("ni,lir->nlr", evaluated, core))
-        else:
-            integral = basis.bases[axis].integral_vector(active_measure)
-            static = tf.einsum("lir,i->lr", core, integral)
-            transfers.append(
-                tf.broadcast_to(
-                    static[tf.newaxis, :, :],
-                    [point_count, int(static.shape[0]), int(static.shape[1])],
-                )
-            )
-    left = [tf.ones([point_count, 1], DTYPE)]
-    for matrix in transfers:
-        left.append(tf.einsum("nl,nlr->nr", left[-1], matrix))
-    right: list[tf.Tensor] = [tf.zeros([point_count, 1], DTYPE)] * (
-        JOINT_DIM + 1
-    )
-    right[-1] = tf.ones([point_count, 1], DTYPE)
-    for axis in range(JOINT_DIM - 1, -1, -1):
-        right[axis] = tf.einsum(
-            "nlr,nr->nl", transfers[axis], right[axis + 1]
-        )
-    parent_prefix_integral = tf.reshape(left[-1], [point_count])
-    cross_features = []
-    for axis, core in enumerate(parent.cores):
-        if axis < prefix_dim:
-            cross_features.append(
-                parent_prefix_integral[:, tf.newaxis] * evaluated_basis[axis]
-            )
-        else:
-            mass = basis.bases[axis].mass_matrix(active_measure)
-            replaced = tf.einsum("lir,ij->ljr", core, mass)
-            cross_features.append(
-                tf.einsum(
-                    "nl,ljr,nr->nj", left[axis], replaced, right[axis + 1]
-                )
-            )
-    prefix_cross = tf.concat(cross_features, axis=1)
+    prefix_cross = initializer_native.feature_integrals(parent.cores, basis, points)
     prefix_normalizer = _cross_prefix_values(
         parent.cores, parent.cores, basis, points
     ) + tf.constant(parent.settings.tau, DTYPE)
@@ -552,39 +546,7 @@ def additive_prefix_score_operator(
 
 
 def _within_region_feature_values(basis: object, points: tf.Tensor) -> tf.Tensor:
-    values = tf.convert_to_tensor(points, DTYPE)
-    axis_values = [
-        basis.evaluate_axis(axis, values[:, axis]) for axis in range(JOINT_DIM)
-    ]
-    additive = tf.concat(axis_values, axis=1)
-    pairs = [
-        tf.reshape(
-            axis_values[left][:, :, tf.newaxis]
-            * axis_values[right][:, tf.newaxis, :],
-            [tf.shape(values)[0], -1],
-        )
-        for left, right in WITHIN_REGION_PAIR_AXES
-    ]
-    return tf.concat([additive, *pairs], axis=1)
-
-
-def _basis_feature_component(
-    *,
-    axis_indices: Sequence[int],
-    basis_indices: Sequence[int],
-    basis_dims: Sequence[int],
-) -> tuple[tf.Tensor, ...]:
-    selected = dict(zip((int(axis) for axis in axis_indices), (int(index) for index in basis_indices)))
-    cores = []
-    for axis, width in enumerate(basis_dims):
-        values = tf.ones([1, int(width), 1], DTYPE)
-        if axis in selected:
-            values = tf.reshape(
-                tf.one_hot(selected[axis], int(width), dtype=DTYPE),
-                [1, int(width), 1],
-            )
-        cores.append(values)
-    return tuple(cores)
+    return initializer_native.feature_values(basis, points)
 
 
 def _within_region_cross_features(
@@ -595,40 +557,7 @@ def _within_region_cross_features(
 ) -> tf.Tensor:
     """Cross <h0,feature> globally or conditionally at prefix points."""
 
-    basis_dims = basis.basis_dim_tuple()
-    components = []
-    for axis, width in enumerate(basis_dims):
-        for basis_index in range(int(width)):
-            components.append(
-                _basis_feature_component(
-                    axis_indices=(axis,),
-                    basis_indices=(basis_index,),
-                    basis_dims=basis_dims,
-                )
-            )
-    width = int(basis_dims[0])
-    for left, right in WITHIN_REGION_PAIR_AXES:
-        for left_index in range(width):
-            for right_index in range(width):
-                components.append(
-                    _basis_feature_component(
-                        axis_indices=(left, right),
-                        basis_indices=(left_index, right_index),
-                        basis_dims=basis_dims,
-                    )
-                )
-    if local_prefix_points is None:
-        return tf.stack(
-            [_cross_mass(parent.cores, component, basis) for component in components]
-        )
-    points = tf.convert_to_tensor(local_prefix_points, DTYPE)
-    return tf.stack(
-        [
-            _cross_prefix_values(parent.cores, component, basis, points)
-            for component in components
-        ],
-        axis=1,
-    )
+    return initializer_native.feature_integrals(parent.cores, basis, local_prefix_points, include_pairs=True)
 
 
 def within_region_pair_prefix_score_operator(
@@ -669,85 +598,11 @@ def _additive_pair_rank_seven_component(
         values[additive_count:],
         [len(WITHIN_REGION_PAIR_AXES), int(basis_dim), int(basis_dim)],
     )
-    rank = int(basis_dim) + 2
-    cores = []
-    pair_lookup = {left: index for index, (left, _right) in enumerate(WITHIN_REGION_PAIR_AXES)}
-    for axis in range(JOINT_DIM):
-        width = int(basis_dim)
-        if axis == 0:
-            core = tf.zeros([1, width, rank], DTYPE)
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 0] for j in range(width)], tf.int32),
-                tf.ones([width], DTYPE),
-            )
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 1] for j in range(width)], tf.int32),
-                additive[axis],
-            )
-            for j in range(width):
-                core = tf.tensor_scatter_nd_update(
-                    core, tf.constant([[0, j, 2 + j]], tf.int32), tf.ones([1], DTYPE)
-                )
-        elif axis == JOINT_DIM - 1:
-            core = tf.zeros([rank, width, 1], DTYPE)
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 0] for j in range(width)], tf.int32),
-                additive[axis],
-            )
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[1, j, 0] for j in range(width)], tf.int32),
-                tf.ones([width], DTYPE),
-            )
-            pair_values = pair[pair_lookup[axis - 1]]
-            for left_index in range(width):
-                core = tf.tensor_scatter_nd_update(
-                    core,
-                    tf.constant([[2 + left_index, j, 0] for j in range(width)], tf.int32),
-                    pair_values[left_index],
-                )
-        elif axis % 2 == 0:
-            core = tf.zeros([rank, width, rank], DTYPE)
-            for state in (0, 1):
-                core = tf.tensor_scatter_nd_update(
-                    core,
-                    tf.constant([[state, j, state] for j in range(width)], tf.int32),
-                    tf.ones([width], DTYPE),
-                )
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 1] for j in range(width)], tf.int32),
-                additive[axis],
-            )
-            for j in range(width):
-                core = tf.tensor_scatter_nd_update(
-                    core, tf.constant([[0, j, 2 + j]], tf.int32), tf.ones([1], DTYPE)
-                )
-        else:
-            core = tf.zeros([rank, width, rank], DTYPE)
-            for state in (0, 1):
-                core = tf.tensor_scatter_nd_update(
-                    core,
-                    tf.constant([[state, j, state] for j in range(width)], tf.int32),
-                    tf.ones([width], DTYPE),
-                )
-            core = tf.tensor_scatter_nd_update(
-                core,
-                tf.constant([[0, j, 1] for j in range(width)], tf.int32),
-                additive[axis],
-            )
-            pair_values = pair[pair_lookup[axis - 1]]
-            for left_index in range(width):
-                core = tf.tensor_scatter_nd_update(
-                    core,
-                    tf.constant([[2 + left_index, j, 1] for j in range(width)], tf.int32),
-                    pair_values[left_index],
-                )
-        cores.append(core)
-    return tuple(cores)
+    encode = training_native.additive_pair_core_banks
+    if tf.inside_function():
+        encode = encode.python_function
+    packed = encode(additive[None], pair[None])[0]
+    return training_native.unpack_additive_bank(packed)
 
 
 def _additive_rank_two_component(
@@ -758,25 +613,11 @@ def _additive_rank_two_component(
         raise ValueError("additive coefficients must have shape [dimension,basis_dim]")
     if any(int(width) != int(values.shape[1]) for width in basis_dims):
         raise ValueError("additive coefficients require equal axis basis dimensions")
-    cores = []
-    for axis, width in enumerate(basis_dims):
-        one = tf.ones([int(width)], DTYPE)
-        zero = tf.zeros([int(width)], DTYPE)
-        coefficient = values[axis]
-        if axis == 0:
-            core = tf.stack([one, coefficient], axis=1)[tf.newaxis, :, :]
-        elif axis == len(basis_dims) - 1:
-            core = tf.stack([coefficient, one], axis=0)[:, :, tf.newaxis]
-        else:
-            core = tf.stack(
-                [
-                    tf.stack([one, coefficient], axis=1),
-                    tf.stack([zero, one], axis=1),
-                ],
-                axis=0,
-            )
-        cores.append(core)
-    return tuple(cores)
+    encode = training_native.additive_core_banks
+    if tf.inside_function():
+        encode = encode.python_function
+    packed = encode(values[None])[0]
+    return training_native.unpack_additive_bank(packed)
 
 
 def embed_residual_component_at_rank(
@@ -830,47 +671,13 @@ def embed_residual_component_with_connected_channels(
     old_rank = max(int(core.shape[0]) for core in component)
     if int(target_rank) <= old_rank:
         return tuple(embedded)
-    epsilon = tf.constant(float(seeded_channel_epsilon), DTYPE)
-    for channel in range(old_rank, int(target_rank)):
-        first_noise = tf.random.stateless_normal(
-            [int(embedded[0].shape[1])],
-            seed=tf.constant([int(seed) + channel, 1], tf.int32),
-            dtype=DTYPE,
-        )
-        last_noise = tf.random.stateless_normal(
-            [int(embedded[-1].shape[1])],
-            seed=tf.constant([int(seed) + channel, 2], tf.int32),
-            dtype=DTYPE,
-        )
-        embedded[0] = tf.tensor_scatter_nd_update(
-            embedded[0],
-            tf.constant(
-                [[0, basis_index, channel] for basis_index in range(int(embedded[0].shape[1]))],
-                tf.int32,
-            ),
-            epsilon * first_noise,
-        )
-        for axis in range(1, len(embedded) - 1):
-            embedded[axis] = tf.tensor_scatter_nd_update(
-                embedded[axis],
-                tf.constant(
-                    [
-                        [channel, basis_index, channel]
-                        for basis_index in range(int(embedded[axis].shape[1]))
-                    ],
-                    tf.int32,
-                ),
-                tf.ones([int(embedded[axis].shape[1])], DTYPE),
-            )
-        embedded[-1] = tf.tensor_scatter_nd_update(
-            embedded[-1],
-            tf.constant(
-                [[channel, basis_index, 0] for basis_index in range(int(embedded[-1].shape[1]))],
-                tf.int32,
-            ),
-            epsilon * last_noise,
-        )
-    return tuple(embedded)
+    shapes = tuple(tuple(core.shape) for core in embedded)
+    packed = centered_native.pack_components((tuple(embedded),))[0]
+    program = training_native.connected_channels_program(tuple(shape[1] for shape in shapes), int(target_rank), old_rank)
+    evaluate = program.python_function if tf.inside_function() else program
+    result = evaluate(
+        packed, tf.constant(int(seed), tf.int32), tf.constant(float(seeded_channel_epsilon), DTYPE))
+    return tuple(result[axis, :shape[0], :shape[1], :shape[2]] for axis, shape in enumerate(shapes))
 
 
 def core_tangent_to_residual_component(
@@ -880,28 +687,7 @@ def core_tangent_to_residual_component(
 ) -> tuple[tf.Tensor, ...]:
     """Encode a corewise product-rule tangent as one exact block TT."""
 
-    parents = tuple(tf.convert_to_tensor(core, DTYPE) for core in parent_cores)
-    tangents = tuple(tf.convert_to_tensor(core, DTYPE) for core in tangent_cores)
-    if len(parents) < 2 or len(tangents) != len(parents):
-        raise ValueError("parent and tangent core sequences must have equal length at least two")
-    for axis, (parent, tangent) in enumerate(zip(parents, tangents)):
-        if parent.shape.rank != 3 or tangent.shape != parent.shape:
-            raise ValueError(f"core tangent shape mismatch at axis {axis}")
-    output = []
-    for axis, (parent, tangent) in enumerate(zip(parents, tangents)):
-        left_rank = int(parent.shape[0])
-        width = int(parent.shape[1])
-        right_rank = int(parent.shape[2])
-        if axis == 0:
-            output.append(tf.concat([parent, tangent], axis=2))
-        elif axis == len(parents) - 1:
-            output.append(tf.concat([tangent, parent], axis=0))
-        else:
-            zero = tf.zeros([left_rank, width, right_rank], DTYPE)
-            upper = tf.concat([parent, tangent], axis=2)
-            lower = tf.concat([zero, parent], axis=2)
-            output.append(tf.concat([upper, lower], axis=0))
-    return tuple(output)
+    return tangent_native.encode_components(parent_cores, (tangent_cores,))[0]
 
 
 def core_tangent_banks_from_residual_components(
@@ -911,68 +697,14 @@ def core_tangent_banks_from_residual_components(
 ) -> tuple[tuple[tf.Tensor, ...], ...]:
     """Invert the exact product-rule block encoding into axis-major banks."""
 
-    parents = tuple(tf.convert_to_tensor(core, DTYPE) for core in parent_cores)
-    components = tuple(
-        tuple(tf.convert_to_tensor(core, DTYPE) for core in component)
-        for component in residual_components
-    )
-    if len(parents) < 2 or len(components) != PARAMETER_DIM:
+    components = tuple(tuple(component) for component in residual_components)
+    if len(components) != PARAMETER_DIM:
         raise ValueError("three residual components and at least two parent cores are required")
-    parameter_tangents = []
-    for parameter, component in enumerate(components):
-        if len(component) != len(parents):
-            raise ValueError(
-                f"residual component {parameter} does not match the parent dimension"
-            )
-        tangents = []
-        for axis, (parent, block) in enumerate(zip(parents, component)):
-            left_rank = int(parent.shape[0])
-            width = int(parent.shape[1])
-            right_rank = int(parent.shape[2])
-            if axis == 0:
-                if block.shape != (left_rank, width, 2 * right_rank):
-                    raise ValueError("first product-rule block has the wrong shape")
-                tf.debugging.assert_equal(
-                    block[:, :, :right_rank],
-                    parent,
-                    message="first product-rule parent block mismatch",
-                )
-                tangents.append(block[:, :, right_rank:])
-            elif axis == len(parents) - 1:
-                if block.shape != (2 * left_rank, width, right_rank):
-                    raise ValueError("last product-rule block has the wrong shape")
-                tf.debugging.assert_equal(
-                    block[left_rank:, :, :],
-                    parent,
-                    message="last product-rule parent block mismatch",
-                )
-                tangents.append(block[:left_rank, :, :])
-            else:
-                if block.shape != (2 * left_rank, width, 2 * right_rank):
-                    raise ValueError("middle product-rule block has the wrong shape")
-                tf.debugging.assert_equal(
-                    block[:left_rank, :, :right_rank],
-                    parent,
-                    message="upper-left product-rule parent block mismatch",
-                )
-                tf.debugging.assert_equal(
-                    block[left_rank:, :, :right_rank],
-                    tf.zeros_like(parent),
-                    message="lower-left product-rule zero block mismatch",
-                )
-                tf.debugging.assert_equal(
-                    block[left_rank:, :, right_rank:],
-                    parent,
-                    message="lower-right product-rule parent block mismatch",
-                )
-                tangents.append(block[:left_rank, :, right_rank:])
-        parameter_tangents.append(tuple(tangents))
-    return tuple(
-        tuple(parameter_tangents[parameter][axis] for parameter in range(PARAMETER_DIM))
-        for axis in range(len(parents))
-    )
+    tangents = tangent_native.decode_components(parent_cores, components)
+    return tuple(zip(*tangents, strict=True))
 
 
+@initializer_native.compiled_initializer(TargetInformedAdditiveInitialization)
 def target_informed_additive_score_initialization(
     *,
     parent: LaneBT1Artifact,
@@ -1010,12 +742,9 @@ def target_informed_additive_score_initialization(
         num_elems=parent.settings.basis_num_elems,
     )
     basis_dims = basis.basis_dim_tuple()
-    if len(set(int(width) for width in basis_dims)) != 1:
+    if len({int(width) for width in basis_dims}) != 1:
         raise ValueError("additive initialization requires equal axis basis dimensions")
-    feature_values = tf.concat(
-        [basis.evaluate_axis(axis, points[:, axis]) for axis in range(JOINT_DIM)],
-        axis=1,
-    )
+    feature_values = initializer_native.feature_values(basis, points)[:, :sum(basis_dims)]
     parent_amplitude = _evaluate_component(parent.cores, basis, points)
     rho = tf.square(parent_amplitude) + tf.constant(parent.settings.tau, DTYPE)
     point_factor = 2.0 * parent_amplitude / rho
@@ -1136,9 +865,9 @@ def target_informed_additive_score_initialization(
     )
     width = int(basis_dims[0])
     coefficient_tensor = tf.reshape(coefficients, [JOINT_DIM, width, PARAMETER_DIM])
+    packed = training_native.additive_core_banks.python_function(tf.transpose(coefficient_tensor, [2, 0, 1]))
     components = tuple(
-        _additive_rank_two_component(coefficient_tensor[:, :, index], basis_dims)
-        for index in range(PARAMETER_DIM)
+        training_native.unpack_additive_bank(bank) for bank in tf.unstack(packed, axis=0)
     )
     fitted_prefix_score = tf.linalg.matmul(prefix_operator, coefficients)
     prefix_standardized_residual = tf.math.divide_no_nan(
@@ -1161,6 +890,7 @@ def target_informed_additive_score_initialization(
     )
 
 
+@initializer_native.compiled_initializer(TargetInformedPairInitialization)
 def target_informed_within_region_pair_score_initialization(
     *,
     parent: LaneBT1Artifact,
@@ -1287,12 +1017,11 @@ def target_informed_within_region_pair_score_initialization(
             axis=2,
         )
     )
-    components = tuple(
-        _additive_pair_rank_seven_component(
-            coefficients[:, parameter_index], basis_dim=basis_dim
-        )
-        for parameter_index in range(PARAMETER_DIM)
-    )
+    coefficient_rows = tf.transpose(coefficients)
+    packed = training_native.additive_pair_core_banks.python_function(
+        tf.reshape(coefficient_rows[:, :JOINT_DIM * basis_dim], [PARAMETER_DIM, JOINT_DIM, basis_dim]),
+        tf.reshape(coefficient_rows[:, JOINT_DIM * basis_dim:], [PARAMETER_DIM, JOINT_DIM // 2, basis_dim, basis_dim]))
+    components = tuple(training_native.unpack_additive_bank(bank) for bank in tf.unstack(packed, axis=0))
     fitted_prefix = tf.linalg.matmul(prefix_operator, coefficients)
     return TargetInformedPairInitialization(
         residual_components=components,
@@ -1333,28 +1062,21 @@ def fixed_rank_initial_residual_components(
         arm_id=f"centered_residual_rank_{int(rank)}_initialization",
         rank=int(rank),
     )
-    basis = centered_lane_b_product_basis(
-        order=settings.basis_order,
-        num_elems=settings.basis_num_elems,
-    )
+    # Basis schema and verified mass matrices are immutable preparation data.
+    with tf.init_scope():
+        basis = centered_lane_b_product_basis(
+            order=settings.basis_order,
+            num_elems=settings.basis_num_elems,
+        )
     balanced = balanced_initial_cores(settings, basis)
-    components = []
-    for component_index in range(features.feature_count):
-        cores = []
-        for axis, core in enumerate(balanced):
-            noise = tf.random.stateless_normal(
-                tf.shape(core),
-                seed=tf.constant(
-                    [int(seed) + 104729 * component_index, axis + 1], tf.int32
-                ),
-                dtype=DTYPE,
-            )
-            value = core + tf.constant(perturbation_scale, DTYPE) * noise
-            if axis == 0:
-                value = tf.constant(amplitude_scale, DTYPE) * value
-            cores.append(value)
-        components.append(tuple(cores))
-    return tuple(components)
+    shapes = tuple(tuple(core.shape) for core in balanced)
+    packed = centered_native.pack_components((balanced,))[0]
+    program = training_native.residual_noise_program(shapes, features.feature_count)
+    evaluate = program.python_function if tf.inside_function() else program
+    result = evaluate(
+        packed, tf.constant(int(seed), tf.int32), tf.constant(amplitude_scale, DTYPE), tf.constant(perturbation_scale, DTYPE))
+    return tuple(tuple(row[axis, :shape[0], :shape[1], :shape[2]] for axis, shape in enumerate(shapes))
+                 for row in tf.unstack(result, axis=0))
 
 
 class CenteredResidualTrainer:
@@ -1374,17 +1096,12 @@ class CenteredResidualTrainer:
             num_elems=parent.settings.basis_num_elems,
         )
         if initial_residual_components is None:
-            initial_residual_components = tuple(
-                tuple(
-                    (
-                        tf.constant(1e-3 * (component_index + 1), DTYPE) * core
-                        if axis == 0
-                        else tf.identity(core)
-                    )
-                    for axis, core in enumerate(parent.cores)
-                )
-                for component_index in range(self.features.feature_count)
-            )
+            packed = centered_native.pack_components((parent.cores,))[0]
+            values = training_native.default_residual_program(
+                tuple(packed.shape), self.features.feature_count)(packed)
+            initial_residual_components = tuple(tuple(
+                row[axis, :core.shape[0], :core.shape[1], :core.shape[2]]
+                for axis, core in enumerate(parent.cores)) for row in tf.unstack(values))
         if len(initial_residual_components) != self.features.feature_count:
             raise ValueError("one initial residual component is required per feature")
         variables = []
@@ -1421,22 +1138,15 @@ class CenteredResidualTrainer:
                 variable.assign(value)
 
     def _component_values(self, flat_points: tf.Tensor) -> tf.Tensor:
-        parent_values = _evaluate_component(self.parent.cores, self.basis, flat_points)
-        residual_values = [
-            _evaluate_component(component, self.basis, flat_points)
-            for component in self.residual_variables
-        ]
-        return tf.stack([parent_values, *residual_values], axis=1)
+        return centered_native.evaluate_components(
+            (self.parent.cores,) + self.residual_variables, self.basis, flat_points)
 
     def _gram(self) -> tf.Tensor:
         components = (self.parent.cores,) + self.residual_variables
-        rows = [
-            tf.stack([_cross_mass(left, right, self.basis) for right in components])
-            for left in components
-        ]
-        gram = tf.stack(rows)
+        gram = centered_native.cross_components(components, components, self.basis)
         return 0.5 * (gram + tf.transpose(gram))
 
+    @training_native.compiled_trainer_method(result_type=AbsoluteDensityLossTerms)
     def absolute_density_loss(
         self,
         batch: T1ParameterDensityBatch,
@@ -1463,6 +1173,7 @@ class CenteredResidualTrainer:
             derivative_weight=derivative_weight,
         )
 
+    @training_native.compiled_trainer_method(result_type=AbsoluteDensityLossTerms)
     def absolute_density_loss_arrays(
         self,
         theta: tf.Tensor,
@@ -1502,7 +1213,7 @@ class CenteredResidualTrainer:
         )
         mass_estimate = tf.reduce_mean(absolute_weights, axis=1)
         centered_mass = absolute_weights - mass_estimate[:, tf.newaxis]
-        mass_se = tf.sqrt(
+        mass_se = training_native.metric_sqrt(
             tf.reduce_sum(tf.square(centered_mass), axis=1)
             / tf.cast(sample_count * (sample_count - 1), DTYPE)
         )
@@ -1531,8 +1242,9 @@ class CenteredResidualTrainer:
                 derivative_target_score,
                 derivative_importance_log_weight,
             )
-        l1 = tf.add_n([tf.reduce_sum(tf.abs(value)) for value in self.trainable_variables])
-        l2 = tf.add_n([tf.reduce_sum(tf.square(value)) for value in self.trainable_variables])
+        position = self.position()
+        l1 = tf.reduce_sum(tf.abs(position))
+        l2 = tf.reduce_sum(tf.square(position))
         total = (
             data_loss
             + derivative_weight_tensor * derivative_loss
@@ -1550,6 +1262,7 @@ class CenteredResidualTrainer:
             minimum_rho=tf.reduce_min(rho),
         )
 
+    @training_native.compiled_trainer_method()
     def origin_point_score_loss_arrays(
         self,
         local_points: tf.Tensor,
@@ -1563,6 +1276,7 @@ class CenteredResidualTrainer:
         )
         return tf.reduce_sum(tf.square(metrics["normalized_score_residual_rms"]))
 
+    @training_native.compiled_trainer_method()
     def origin_global_score_metrics_arrays(
         self,
         target_score: tf.Tensor,
@@ -1574,10 +1288,8 @@ class CenteredResidualTrainer:
         )
         tf.debugging.assert_non_negative(standard_error, "global score MCSE")
         components = (self.parent.cores,) + self.residual_variables
-        cross = tf.stack(
-            [_cross_mass(components[0], component, self.basis) for component in components[1:]]
-        )
-        parent_mass = _cross_mass(components[0], components[0], self.basis)
+        parent_cross = centered_native.cross_components(components[:1], components, self.basis)[0]
+        cross, parent_mass = parent_cross[1:], parent_cross[0]
         child_score = 2.0 * cross / (
             parent_mass + tf.constant(self.parent.settings.tau, DTYPE)
         )
@@ -1591,6 +1303,7 @@ class CenteredResidualTrainer:
             "standardized_residual": tf.abs(standardized),
         }
 
+    @training_native.compiled_trainer_method()
     def origin_prefix_score_metrics_arrays(
         self,
         local_prefix_points: tf.Tensor,
@@ -1607,20 +1320,11 @@ class CenteredResidualTrainer:
             raise ValueError("prefix target and MCSE arrays have the wrong shape")
         tf.debugging.assert_non_negative(standard_error, "prefix score MCSE")
         components = (self.parent.cores,) + self.residual_variables
-        parent_prefix = _cross_prefix_values(
-            components[0], components[0], self.basis, points
-        ) + tf.constant(self.parent.settings.tau, DTYPE)
-        prefix_cross = tf.stack(
-            [
-                _cross_prefix_values(components[0], component, self.basis, points)
-                for component in components[1:]
-            ],
-            axis=1,
-        )
-        parent_mass = _cross_mass(components[0], components[0], self.basis)
-        global_cross = tf.stack(
-            [_cross_mass(components[0], component, self.basis) for component in components[1:]]
-        )
+        prefix_pairs = centered_native.cross_components(components[:1], components, self.basis, points)[:, 0]
+        parent_prefix = prefix_pairs[:, 0] + tf.constant(self.parent.settings.tau, DTYPE)
+        prefix_cross = prefix_pairs[:, 1:]
+        parent_cross = centered_native.cross_components(components[:1], components, self.basis)[0]
+        global_cross, parent_mass = parent_cross[1:], parent_cross[0]
         child_score = (
             2.0 * prefix_cross / parent_prefix[:, tf.newaxis]
             - 2.0
@@ -1637,6 +1341,7 @@ class CenteredResidualTrainer:
             "standardized_residual": tf.abs(standardized),
         }
 
+    @training_native.compiled_trainer_method()
     def origin_point_score_metrics_arrays(
         self,
         local_points: tf.Tensor,
@@ -1667,10 +1372,8 @@ class CenteredResidualTrainer:
         target_point_score = target_score - target_normalizer_score[tf.newaxis, :]
         # The exact child normalizer score follows from cross-component masses.
         components = (self.parent.cores,) + self.residual_variables
-        cross = tf.stack(
-            [_cross_mass(components[0], component, self.basis) for component in components[1:]]
-        )
-        parent_mass = _cross_mass(components[0], components[0], self.basis)
+        parent_cross = centered_native.cross_components(components[:1], components, self.basis)[0]
+        cross, parent_mass = parent_cross[1:], parent_cross[0]
         child_normalizer_score = 2.0 * cross / (
             parent_mass + tf.constant(self.parent.settings.tau, DTYPE)
         )
@@ -1680,7 +1383,7 @@ class CenteredResidualTrainer:
         child_point_score_mean = tf.reduce_sum(
             normalized[:, tf.newaxis] * child_point_score, axis=0
         )
-        child_point_score_standard_deviation = tf.sqrt(
+        child_point_score_standard_deviation = training_native.metric_sqrt(
             tf.reduce_sum(
                 normalized[:, tf.newaxis]
                 * tf.square(
@@ -1696,7 +1399,7 @@ class CenteredResidualTrainer:
             )
         )
         scale = tf.maximum(scale, tf.constant(1e-6, DTYPE))
-        residual_rms = tf.sqrt(
+        residual_rms = training_native.metric_sqrt(
             tf.reduce_sum(
                 normalized[:, tf.newaxis] * tf.square(residual), axis=0
             )
@@ -1721,6 +1424,7 @@ class CenteredResidualTrainer:
             ),
         }
 
+    @training_native.compiled_trainer_method()
     def heldout_metrics(self, batch: T1ParameterDensityBatch) -> dict[str, tf.Tensor]:
         parameters = batch.theta
         theta_count = tf.shape(parameters)[0]
@@ -1747,7 +1451,7 @@ class CenteredResidualTrainer:
             mean_scaled
         )
         centered_scaled = scaled - mean_scaled[:, tf.newaxis]
-        scaled_standard_error = tf.sqrt(
+        scaled_standard_error = training_native.metric_sqrt(
             tf.reduce_sum(tf.square(centered_scaled), axis=1)
             / tf.cast(sample_count * (sample_count - 1), DTYPE)
         )
@@ -1757,7 +1461,7 @@ class CenteredResidualTrainer:
             - batch.target_log_density_reference
             + target_log_mass[:, tf.newaxis]
         )
-        centered_log_rms = tf.sqrt(
+        centered_log_rms = training_native.metric_sqrt(
             tf.reduce_sum(normalized * tf.square(log_density_residual), axis=1)
         )
         return {
@@ -1855,15 +1559,8 @@ class CoreAffineTangentTrainer:
 
     @property
     def residual_variables(self) -> tuple[tuple[tf.Tensor, ...], ...]:
-        return tuple(
-            core_tangent_to_residual_component(
-                parent_cores=self.parent.cores,
-                tangent_cores=tuple(
-                    bank[parameter] for bank in self.tangent_variables
-                ),
-            )
-            for parameter in range(PARAMETER_DIM)
-        )
+        return tangent_native.encode_components(
+            self.parent.cores, tuple(zip(*self.tangent_variables, strict=True)))
 
     def _delegate(self) -> CenteredResidualTrainer:
         # Operator methods only inspect these fields; gradients flow through
@@ -1875,6 +1572,7 @@ class CoreAffineTangentTrainer:
         delegate.residual_variables = self.residual_variables
         return delegate
 
+    @training_native.compiled_trainer_method(state_attribute="tangent_variables")
     def origin_point_score_metrics_arrays(
         self,
         local_points: tf.Tensor,
@@ -1885,6 +1583,7 @@ class CoreAffineTangentTrainer:
             local_points, target_complete_data_score, importance_log_weight
         )
 
+    @training_native.compiled_trainer_method(state_attribute="tangent_variables")
     def origin_global_score_metrics_arrays(
         self, target_score: tf.Tensor, score_standard_error: tf.Tensor
     ) -> dict[str, tf.Tensor]:
@@ -1892,6 +1591,7 @@ class CoreAffineTangentTrainer:
             target_score, score_standard_error
         )
 
+    @training_native.compiled_trainer_method(state_attribute="tangent_variables")
     def origin_prefix_score_metrics_arrays(
         self,
         local_prefix_points: tf.Tensor,
@@ -1902,6 +1602,7 @@ class CoreAffineTangentTrainer:
             local_prefix_points, target_score, score_standard_error
         )
 
+    @training_native.compiled_trainer_method(state_attribute="tangent_variables")
     def heldout_metrics(self, batch: T1ParameterDensityBatch) -> dict[str, tf.Tensor]:
         return self._delegate().heldout_metrics(batch)
 
@@ -1947,71 +1648,25 @@ def solve_quadratic_value_gradient_with_conjugate_gradient(
         raise ValueError("conjugate-gradient max_iterations must be positive")
     if int(trace_interval) <= 0:
         raise ValueError("conjugate-gradient trace_interval must be positive")
-    zero = tf.zeros_like(tf.convert_to_tensor(initial_position, DTYPE))
-    _zero_value, affine_gradient = value_and_gradient(zero)
-    rhs = -affine_gradient
-
-    def hessian_action(vector: tf.Tensor) -> tf.Tensor:
-        _value, gradient = value_and_gradient(tf.convert_to_tensor(vector, DTYPE))
-        action = gradient - affine_gradient
-        tf.debugging.assert_all_finite(action, "quadratic Hessian action")
-        return action
-
-    position = tf.identity(tf.convert_to_tensor(initial_position, DTYPE))
-    residual = rhs - hessian_action(position)
-    direction = tf.identity(residual)
-    residual_squared = tf.reduce_sum(tf.square(residual))
-    initial_residual_norm = tf.sqrt(residual_squared)
-    rhs_norm = tf.linalg.norm(rhs)
-    residual_scale = tf.maximum(rhs_norm, tf.constant(1.0, DTYPE))
-    threshold = tf.constant(float(tolerance), DTYPE) * residual_scale
-    minimum_curvature = tf.constant(float("inf"), DTYPE)
-    trace: list[tuple[int, tf.Tensor, tf.Tensor]] = [
-        (0, initial_residual_norm, initial_residual_norm / residual_scale)
-    ]
-    converged = bool((initial_residual_norm <= threshold).numpy())
-    failed = False
-    completed = 0
-    for iteration in range(1, int(max_iterations) + 1):
-        if converged or failed:
-            break
-        action = hessian_action(direction)
-        curvature = tf.tensordot(direction, action, axes=1)
-        minimum_curvature = tf.minimum(minimum_curvature, curvature)
-        if not bool(tf.math.is_finite(curvature).numpy()) or float(curvature) <= 0.0:
-            failed = True
-            break
-        step = residual_squared / curvature
-        position = position + step * direction
-        residual = residual - step * action
-        next_residual_squared = tf.reduce_sum(tf.square(residual))
-        residual_norm = tf.sqrt(next_residual_squared)
-        relative = residual_norm / residual_scale
-        completed = iteration
-        if iteration % int(trace_interval) == 0 or iteration == int(max_iterations):
-            trace.append((iteration, residual_norm, relative))
-        converged = bool((residual_norm <= threshold).numpy())
-        if converged:
-            if trace[-1][0] != iteration:
-                trace.append((iteration, residual_norm, relative))
-            residual_squared = next_residual_squared
-            break
-        beta = next_residual_squared / residual_squared
-        direction = residual + beta * direction
-        residual_squared = next_residual_squared
-    final_residual_norm = tf.sqrt(residual_squared)
-    tf.debugging.assert_all_finite(position, "conjugate-gradient position")
-    tf.debugging.assert_all_finite(final_residual_norm, "conjugate-gradient residual")
+    initial = tf.convert_to_tensor(initial_position, DTYPE)
+    program = quadratic_cg_program(value_and_gradient, tf.TensorSpec(initial.shape, DTYPE),
+                                   int(max_iterations), int(trace_interval))
+    result = program(initial, tf.constant(float(tolerance), DTYPE))
+    # Host assertions and trace serialization follow the complete XLA solve.
+    # No materialized residual or flag controls a numerical iteration.
+    tf.debugging.assert_equal(result["finite_actions"], True, "quadratic Hessian action")
+    tf.debugging.assert_all_finite(result["position"], "conjugate-gradient position")
+    tf.debugging.assert_all_finite(result["residual_norm"], "conjugate-gradient residual")
+    trace = tuple((index, result["trace_norms"][index], result["trace_relative"][index])
+                  for index, keep in enumerate(result["trace_keep"].numpy().tolist()) if keep)
     return QuadraticConjugateGradientResult(
-        position=position,
-        converged=converged,
-        failed=failed,
-        num_iterations=completed,
-        initial_residual_norm=initial_residual_norm,
-        residual_norm=final_residual_norm,
-        relative_residual_norm=final_residual_norm / residual_scale,
-        minimum_curvature=minimum_curvature,
-        trace=tuple(trace),
+        position=result["position"],
+        converged=bool(result["converged"]), failed=bool(result["failed"]),
+        num_iterations=int(result["num_iterations"]),
+        initial_residual_norm=result["initial_residual_norm"],
+        residual_norm=result["residual_norm"],
+        relative_residual_norm=result["relative_residual_norm"],
+        minimum_curvature=result["minimum_curvature"], trace=trace,
     )
 
 
@@ -2104,42 +1759,7 @@ def core_affine_released_coordinate_mask(
 ) -> tf.Tensor:
     """Mark full-TT coordinates fixed by the product-rule block manifold."""
 
-    parents = tuple(tf.convert_to_tensor(core, DTYPE) for core in parent_cores)
-    if len(parents) < 2:
-        raise ValueError("at least two parent cores are required")
-    component_mask = []
-    for axis, parent in enumerate(parents):
-        left_rank = int(parent.shape[0])
-        width = int(parent.shape[1])
-        right_rank = int(parent.shape[2])
-        fixed = tf.ones_like(parent, dtype=tf.bool)
-        free = tf.zeros_like(parent, dtype=tf.bool)
-        if axis == 0:
-            mask = tf.concat([fixed, free], axis=2)
-        elif axis == len(parents) - 1:
-            mask = tf.concat([free, fixed], axis=0)
-        else:
-            upper = tf.concat([fixed, free], axis=2)
-            lower = tf.concat([fixed, fixed], axis=2)
-            mask = tf.concat([upper, lower], axis=0)
-        expected = (
-            (left_rank, width, 2 * right_rank)
-            if axis == 0
-            else (2 * left_rank, width, right_rank)
-            if axis == len(parents) - 1
-            else (2 * left_rank, width, 2 * right_rank)
-        )
-        if mask.shape != expected:
-            raise ValueError("released-coordinate mask shape mismatch")
-        component_mask.append(mask)
-    return tf.concat(
-        [
-            tf.reshape(mask, [-1])
-            for _parameter in range(PARAMETER_DIM)
-            for mask in component_mask
-        ],
-        axis=0,
-    )
+    return tangent_native.released_coordinate_mask(parent_cores, PARAMETER_DIM)
 
 
 def core_affine_origin_total_score_loss_arrays(
@@ -2165,13 +1785,8 @@ def core_affine_origin_total_score_loss_arrays(
     banks = core_affine_tangent_banks_from_position(
         parent_cores=parent.cores, position=position
     )
-    components = tuple(
-        core_tangent_to_residual_component(
-            parent_cores=parent.cores,
-            tangent_cores=tuple(bank[parameter] for bank in banks),
-        )
-        for parameter in range(PARAMETER_DIM)
-    )
+    components = tangent_native.encode_components(
+        parent.cores, tuple(zip(*banks, strict=True)))
     delegate = object.__new__(CenteredResidualTrainer)
     delegate.parent = parent
     delegate.features = CenteredThetaFeatures()
@@ -2230,7 +1845,7 @@ def make_compiled_core_affine_total_score_value_and_gradient(
         num_elems=parent.settings.basis_num_elems,
     )
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def value_and_gradient(position: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         values = tf.convert_to_tensor(position, DTYPE)
         with tf.GradientTape() as tape:
@@ -2291,7 +1906,7 @@ def make_compiled_core_affine_gate_minimax_value_and_gradient(
     inverse_temperature = tf.constant(1.0 / float(temperature), DTYPE)
     temperature_tensor = tf.constant(float(temperature), DTYPE)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def value_and_gradient(position: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         values = tf.convert_to_tensor(position, DTYPE)
         with tf.GradientTape() as tape:
@@ -2385,7 +2000,7 @@ def make_compiled_full_tt_gate_minimax_value_and_gradient(
     inverse_temperature = tf.constant(1.0 / float(temperature), DTYPE)
     temperature_tensor = tf.constant(float(temperature), DTYPE)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def value_and_gradient(position: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         values = tf.reshape(tf.convert_to_tensor(position, DTYPE), [-1])
         with tf.GradientTape() as tape:
@@ -2452,7 +2067,7 @@ def make_compiled_absolute_train_step(
     if hasattr(optimizer, "build"):
         optimizer.build(trainer.trainable_variables)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def train_step(
         theta: tf.Tensor,
         local_points: tf.Tensor,
@@ -2474,41 +2089,14 @@ def make_compiled_absolute_train_step(
                 derivative_weight=tf.constant(derivative_weight, DTYPE),
             )
         gradients = tape.gradient(terms.total_loss, trainer.trainable_variables)
-        if any(gradient is None for gradient in gradients):
-            raise ValueError("absolute density training has a missing gradient")
-        for name, value in (
-            ("total_loss", terms.total_loss),
-            ("absolute_density_loss", terms.absolute_density_loss),
-            ("derivative_matching_loss", terms.derivative_matching_loss),
-            ("exact_child_mass", terms.exact_child_mass),
-            ("target_log_density_term", terms.target_log_density_term),
-            ("target_mass_estimate", terms.target_mass_estimate),
-            ("target_mass_standard_error", terms.target_mass_standard_error),
-            ("minimum_rho", terms.minimum_rho),
-        ):
-            tf.debugging.assert_all_finite(value, f"nonfinite training term: {name}")
-        for index, gradient in enumerate(gradients):
-            tf.debugging.assert_all_finite(
-                gradient, f"nonfinite residual gradient: {index}"
-            )
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            gradients, tf.constant(gradient_clip_norm, DTYPE)
-        )
-        tf.debugging.assert_all_finite(gradient_norm, "nonfinite gradient norm")
-        for index, gradient in enumerate(clipped):
-            tf.debugging.assert_all_finite(
-                gradient, f"nonfinite clipped residual gradient: {index}"
-            )
-        optimizer.apply_gradients(zip(clipped, trainer.trainable_variables))
-        for index, variable in enumerate(trainer.trainable_variables):
-            tf.debugging.assert_all_finite(
-                variable, f"nonfinite updated residual core: {index}"
-            )
-        maximum_core_magnitude = tf.reduce_max(
-            tf.stack(
-                [tf.reduce_max(tf.abs(value)) for value in trainer.trainable_variables]
-            )
-        )
+        valid = tf.reduce_all(tf.math.is_finite(flat_cores((
+            terms.total_loss, terms.absolute_density_loss, terms.derivative_matching_loss,
+            terms.exact_child_mass, terms.target_log_density_term, terms.target_mass_estimate,
+            terms.target_mass_standard_error, terms.minimum_rho))))
+        gradient_norm, valid = checked_optimizer_update(optimizer,
+            trainer.trainable_variables, gradients, gradient_clip_norm, valid)
+        tf.debugging.assert_equal(valid, True, message="invalid absolute density training step")
+        maximum_core_magnitude = tf.reduce_max(tf.abs(trainer.position()))
         return (
             terms.total_loss,
             terms.absolute_density_loss,
@@ -2538,7 +2126,7 @@ def make_compiled_origin_score_prefit_step(
     if hasattr(optimizer, "build"):
         optimizer.build(trainer.trainable_variables)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def prefit_step(
         origin_local_points: tf.Tensor,
         origin_complete_data_score: tf.Tensor,
@@ -2552,29 +2140,10 @@ def make_compiled_origin_score_prefit_step(
             )
             loss = metrics["loss"]
         gradients = tape.gradient(loss, trainer.trainable_variables)
-        if any(gradient is None for gradient in gradients):
-            raise ValueError("origin score prefit has a missing gradient")
-        tf.debugging.assert_all_finite(loss, "nonfinite origin score prefit loss")
-        for index, gradient in enumerate(gradients):
-            tf.debugging.assert_all_finite(
-                gradient, f"nonfinite origin score prefit gradient: {index}"
-            )
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            gradients, tf.constant(gradient_clip_norm, DTYPE)
-        )
-        tf.debugging.assert_all_finite(
-            gradient_norm, "nonfinite origin score prefit gradient norm"
-        )
-        optimizer.apply_gradients(zip(clipped, trainer.trainable_variables))
-        for index, variable in enumerate(trainer.trainable_variables):
-            tf.debugging.assert_all_finite(
-                variable, f"nonfinite origin score prefit core: {index}"
-            )
-        maximum_core_magnitude = tf.reduce_max(
-            tf.stack(
-                [tf.reduce_max(tf.abs(value)) for value in trainer.trainable_variables]
-            )
-        )
+        gradient_norm, valid = checked_optimizer_update(optimizer,
+            trainer.trainable_variables, gradients, gradient_clip_norm, tf.math.is_finite(loss))
+        tf.debugging.assert_equal(valid, True, message="invalid origin score prefit step")
+        maximum_core_magnitude = tf.reduce_max(tf.abs(trainer.position()))
         return (
             loss,
             metrics["target_likelihood_score"],
@@ -2616,7 +2185,7 @@ def make_compiled_origin_total_score_train_step(
     if hasattr(optimizer, "build"):
         optimizer.build(trainer.trainable_variables)
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def train_step(
         point_local_points: tf.Tensor,
         point_target_score: tf.Tensor,
@@ -2637,9 +2206,7 @@ def make_compiled_origin_total_score_train_step(
             prefix = trainer.origin_prefix_score_metrics_arrays(
                 prefix_local_points, prefix_target_score, prefix_score_standard_error
             )
-            l2 = tf.add_n(
-                [tf.reduce_sum(tf.square(value)) for value in trainer.trainable_variables]
-            )
+            l2 = tf.reduce_sum(tf.square(trainer.position()))
             total = (
                 tf.constant(float(point_weight), DTYPE) * point["loss"]
                 + tf.constant(float(global_weight), DTYPE) * global_metrics["loss"]
@@ -2647,30 +2214,15 @@ def make_compiled_origin_total_score_train_step(
                 + tf.constant(float(l2_weight), DTYPE) * l2
             )
         gradients = tape.gradient(total, trainer.trainable_variables)
-        if any(gradient is None for gradient in gradients):
-            raise ValueError("origin total-score training has a missing gradient")
-        for value in (
-            total,
-            point["loss"],
-            global_metrics["loss"],
-            prefix["loss"],
-            global_metrics["standardized_residual"],
-            prefix["standardized_residual"],
-        ):
-            tf.debugging.assert_all_finite(value, "nonfinite total-score training term")
-        for index, gradient in enumerate(gradients):
-            tf.debugging.assert_all_finite(
-                gradient, f"nonfinite total-score gradient: {index}"
-            )
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            gradients, tf.constant(float(gradient_clip_norm), DTYPE)
-        )
-        optimizer.apply_gradients(zip(clipped, trainer.trainable_variables))
-        maximum_core_magnitude = tf.reduce_max(
-            tf.stack(
-                [tf.reduce_max(tf.abs(value)) for value in trainer.trainable_variables]
-            )
-        )
+        valid = tf.reduce_all(tf.math.is_finite(flat_cores((total, point["loss"],
+            global_metrics["loss"], prefix["loss"], global_metrics["standardized_residual"],
+            prefix["standardized_residual"]))))
+        valid &= tf.reduce_all(global_score_standard_error >= 0.)
+        valid &= tf.reduce_all(prefix_score_standard_error >= 0.)
+        gradient_norm, valid = checked_optimizer_update(optimizer,
+            trainer.trainable_variables, gradients, float(gradient_clip_norm), valid)
+        tf.debugging.assert_equal(valid, True, message="invalid origin total-score training step")
+        maximum_core_magnitude = tf.reduce_max(tf.abs(trainer.position()))
         return (
             total,
             point["loss"],
@@ -2684,6 +2236,17 @@ def make_compiled_origin_total_score_train_step(
         )
 
     return train_step
+
+
+@lru_cache(maxsize=16)
+def _prefix_minibatch_program(pool_count, batch_count):
+    @tf.function(input_signature=[tf.TensorSpec([2], tf.int32), tf.TensorSpec([], tf.int32)],
+                 jit_compile=True, autograph=False)
+    def evaluate(seed, batch_in_epoch):
+        permutation = philox_shuffle_indices(pool_count, seed)
+        return tf.slice(permutation, [batch_in_epoch * batch_count], [batch_count])
+
+    return evaluate
 
 
 def rotating_prefix_minibatch_indices(
@@ -2703,12 +2266,9 @@ def rotating_prefix_minibatch_indices(
     batches_per_epoch = pool_count // batch_count
     epoch = update_index // batches_per_epoch
     batch_in_epoch = update_index % batches_per_epoch
-    permutation = tf.random.experimental.stateless_shuffle(
-        tf.range(pool_count, dtype=tf.int32),
-        seed=tf.constant([int(seed), epoch], tf.int32),
-    )
-    first = batch_in_epoch * batch_count
-    return permutation[first : first + batch_count]
+    program = _prefix_minibatch_program(pool_count, batch_count)
+    evaluate = program.python_function if tf.inside_function() else program
+    return evaluate(tf.constant([int(seed), epoch], tf.int32), tf.constant(batch_in_epoch, tf.int32))
 
 
 def estimate_t1_ratio_score(
@@ -2717,11 +2277,18 @@ def estimate_t1_ratio_score(
     index = int(theta_index)
     if index < 0 or index >= int(batch.theta.shape[0]):
         raise IndexError("theta_index out of range")
-    log_weight = batch.observation_log_density[index]
+    evaluate = _ratio_score_arrays.python_function if tf.inside_function() else _ratio_score_arrays
+    value, score, standard_error, ess = evaluate(
+        batch.observation_log_density[index], batch.complete_data_score[index])
+    return RatioScoreEstimate(value=value, score=score, score_standard_error=standard_error,
+                              effective_sample_size=ess)
+
+
+@fixed_signature_function(floating_dtype=DTYPE)
+def _ratio_score_arrays(log_weight: tf.Tensor, local_score: tf.Tensor) -> tuple[tf.Tensor, ...]:
     maximum = tf.reduce_max(log_weight)
     scaled = tf.exp(log_weight - maximum)
     weights = scaled / tf.reduce_sum(scaled)
-    local_score = batch.complete_data_score[index]
     score = tf.reduce_sum(weights[:, tf.newaxis] * local_score, axis=0)
     mean_scaled = tf.reduce_mean(scaled)
     influence = scaled[:, tf.newaxis] * (
@@ -2733,12 +2300,70 @@ def estimate_t1_ratio_score(
     )
     standard_error = tf.sqrt(variance / tf.cast(sample_count, DTYPE))
     value = tf.exp(maximum) * mean_scaled
-    return RatioScoreEstimate(
-        value=value,
-        score=score,
-        score_standard_error=standard_error,
-        effective_sample_size=tf.math.reciprocal(tf.reduce_sum(tf.square(weights))),
-    )
+    return value, score, standard_error, tf.math.reciprocal(tf.reduce_sum(tf.square(weights)))
+
+
+@lru_cache(maxsize=16)
+def _prefix_score_program(point_count, sample_count):
+    """Compile the full existing conditional-ratio training-target calculation."""
+    @tf.function(input_signature=[tf.TensorSpec([point_count, STATE_DIM], DTYPE),
+        tf.TensorSpec([PARAMETER_DIM], DTYPE), tf.TensorSpec([PARAMETER_DIM], DTYPE),
+        tf.TensorSpec([sample_count, STATE_DIM], DTYPE), tf.TensorSpec([OBSERVATION_DIM], DTYPE)],
+        jit_compile=True, autograph=False)
+    def evaluate(points, global_score, global_standard_error, noise, observation):
+        # This model-local Jacobian builds proposal geometry. It is not the
+        # analytical complete-data parameter score calculated below.
+        initial = _INITIAL_MEAN[None, :]
+        with tf.GradientTape(persistent=True) as tape:
+            tape.watch(initial)
+            transition_at_mean = _BASE_MODEL.transition_mean(initial)
+        jacobian = tf.reshape(tape.jacobian(transition_at_mean, initial,
+            experimental_use_pfor=False), [STATE_DIM, STATE_DIM])
+        precision = tf.eye(STATE_DIM, dtype=DTYPE) + tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
+        factor = tf.linalg.cholesky(precision)
+        covariance = tf.linalg.cholesky_solve(factor, tf.eye(STATE_DIM, dtype=DTYPE))
+        innovation = points - transition_at_mean[0]
+        conditional_mean = _INITIAL_MEAN[None] + tf.linalg.matmul(
+            tf.linalg.matmul(innovation, jacobian), covariance, transpose_b=True)
+        centered = tf.transpose(tf.linalg.triangular_solve(factor, tf.transpose(noise), lower=True, adjoint=True))
+        z0 = conditional_mean[:, None] + centered[None]
+        delta = z0 - conditional_mean[:, None]
+        q_log = (-.5 * tf.cast(STATE_DIM, DTYPE) * LOG_TWO_PI
+                 + tf.reduce_sum(tf.math.log(tf.linalg.diag_part(factor)))
+                 - .5 * tf.einsum("pni,ij,pnj->pn", delta, precision, delta))
+        flat_z0 = tf.reshape(z0, [point_count * sample_count, STATE_DIM])
+        flat_z1 = tf.reshape(tf.broadcast_to(points[:, None], [point_count, sample_count, STATE_DIM]),
+                            [point_count * sample_count, STATE_DIM])
+        mean, tangent = _batch_native_transition_mean_and_jacobian(
+            tf.zeros([1, PARAMETER_DIM], DTYPE), flat_z0[None])
+        residual = flat_z1 - mean[0]
+        local_score = tf.reshape(tf.reduce_sum(residual[..., None] * tangent[0], axis=1),
+                                 [point_count, sample_count, PARAMETER_DIM])
+        zeros = tf.zeros([0], DTYPE)
+        log_numerator = (_BASE_MODEL.initial_log_density(zeros, flat_z0)
+                         + _BASE_MODEL.transition_log_density(zeros, flat_z0, flat_z1, t=1))
+        log_weight = tf.reshape(log_numerator, [point_count, sample_count]) - q_log
+        maximum = tf.reduce_max(log_weight, axis=1)
+        scaled = tf.exp(log_weight - maximum[:, None])
+        weights = scaled / tf.reduce_sum(scaled, axis=1, keepdims=True)
+        conditional_score = tf.reduce_sum(weights[..., None] * local_score, axis=1)
+        mean_scaled = tf.reduce_mean(scaled, axis=1)
+        influence = scaled[..., None] * (local_score - conditional_score[:, None]) / mean_scaled[:, None, None]
+        variance = tf.reduce_sum(tf.square(influence), axis=1) / tf.cast(sample_count - 1, DTYPE)
+        conditional_se = tf.sqrt(variance / tf.cast(sample_count, DTYPE))
+        observation_score = (tf.reduce_sum(tf.square(observation[None] - points[:, 1::2]) / 100., axis=1)
+                             - tf.cast(OBSERVATION_DIM, DTYPE))[:, None] * tf.one_hot(2, PARAMETER_DIM, dtype=DTYPE)[None]
+        return (tf.exp(maximum) * mean_scaled, conditional_score + observation_score - global_score[None],
+                tf.sqrt(tf.square(conditional_se) + tf.square(global_standard_error)[None]),
+                tf.math.reciprocal(tf.reduce_sum(tf.square(weights), axis=1)))
+
+    return evaluate
+
+
+@lru_cache(maxsize=16)
+def _prefix_noise_program(sample_count):
+    return tf.function(lambda seed: philox_normal_float64([sample_count, STATE_DIM], seed),
+        input_signature=[tf.TensorSpec([2], tf.int32)], jit_compile=True, autograph=False)
 
 
 def estimate_t1_prefix_scores(
@@ -2755,95 +2380,23 @@ def estimate_t1_prefix_scores(
         raise ValueError("prefix_points must have shape [point_count,18]")
     if int(sample_count) < 2:
         raise ValueError("prefix score estimation requires at least two samples")
-    model = parameterized_zhao_cui_sir_austria_model()
-    latent_model = __import__(
-        "bayesfilter.highdim.sir_latent_preclip_tf",
-        fromlist=["latent_preclip_zhao_cui_sir_austria_model"],
-    ).latent_preclip_zhao_cui_sir_austria_model()
-    _states, observations, _all = generate_sealed_lane_b_dataset()
-    theta = tf.zeros([PARAMETER_DIM], DTYPE)
-    prior_mean = model.base_model.initial_mean
-    with tf.GradientTape() as tape:
-        mean_variable = tf.Variable(prior_mean[tf.newaxis, :])
-        transition_at_mean = latent_model.transition_mean(
-            theta, mean_variable, time_index=1
-        )
-    jacobian = tf.reshape(
-        tape.jacobian(transition_at_mean, mean_variable), [STATE_DIM, STATE_DIM]
-    )
-    precision = tf.eye(STATE_DIM, dtype=DTYPE) + tf.linalg.matmul(
-        jacobian, jacobian, transpose_a=True
-    )
-    precision_chol = tf.linalg.cholesky(precision)
-    covariance = tf.linalg.cholesky_solve(
-        precision_chol, tf.eye(STATE_DIM, dtype=DTYPE)
-    )
-    noise = tf.random.stateless_normal(
-        [int(sample_count), STATE_DIM],
-        seed=tf.constant([int(seed), 991], tf.int32),
-        dtype=DTYPE,
-    )
-    output = []
-    for point_index, z1 in enumerate(tf.unstack(points, axis=0)):
-        innovation = z1 - transition_at_mean[0]
-        conditional_mean = prior_mean + tf.linalg.matvec(
-            covariance, tf.linalg.matvec(jacobian, innovation, transpose_a=True)
-        )
-        centered = tf.linalg.triangular_solve(
-            precision_chol,
-            tf.transpose(noise),
-            lower=True,
-            adjoint=True,
-        )
-        z0 = conditional_mean[tf.newaxis, :] + tf.transpose(centered)
-        delta = z0 - conditional_mean[tf.newaxis, :]
-        q_log = (
-            -0.5 * tf.cast(STATE_DIM, DTYPE) * LOG_TWO_PI
-            + tf.reduce_sum(tf.math.log(tf.linalg.diag_part(precision_chol)))
-            - 0.5 * tf.einsum("ni,ij,nj->n", delta, precision, delta)
-        )
-        tiled_z1 = tf.broadcast_to(z1[tf.newaxis, :], [int(sample_count), STATE_DIM])
-        log_numerator = model.initial_log_density(theta, z0) + model.transition_log_density(
-            theta, z0, tiled_z1, t=1
-        )
-        conditional_local_score = (
-            model.initial_log_density_parameter_score(theta, z0)
-            + model.transition_log_density_parameter_score(theta, z0, tiled_z1, t=1)
-        )
-        log_weight = log_numerator - q_log
-        maximum = tf.reduce_max(log_weight)
-        scaled = tf.exp(log_weight - maximum)
-        weights = scaled / tf.reduce_sum(scaled)
-        conditional_score = tf.reduce_sum(
-            weights[:, tf.newaxis] * conditional_local_score, axis=0
-        )
-        mean_scaled = tf.reduce_mean(scaled)
-        influence = scaled[:, tf.newaxis] * (
-            conditional_local_score - conditional_score[tf.newaxis, :]
-        ) / mean_scaled
-        variance = tf.reduce_sum(tf.square(influence), axis=0) / tf.cast(
-            sample_count - 1, DTYPE
-        )
-        conditional_se = tf.sqrt(variance / tf.cast(sample_count, DTYPE))
-        observation_score = model.observation_log_density_parameter_score(
-            theta, z1[tf.newaxis, :], observations[0], t=1
-        )[0]
-        prefix_score = conditional_score + observation_score - global_score.score
-        prefix_se = tf.sqrt(
-            tf.square(conditional_se) + tf.square(global_score.score_standard_error)
-        )
-        conditional_mass = tf.exp(maximum) * mean_scaled
-        output.append(
-            RatioScoreEstimate(
-                value=conditional_mass,
-                score=prefix_score,
-                score_standard_error=prefix_se,
-                effective_sample_size=tf.math.reciprocal(
-                    tf.reduce_sum(tf.square(weights))
-                ),
-            )
-        )
-    return tuple(output)
+    # Keep sealed-data decoding and hash validation outside the numerical graph.
+    with tf.init_scope():
+        _states, observations, _all = generate_sealed_lane_b_dataset()
+    noise_program = _prefix_noise_program(int(sample_count))
+    score_program = _prefix_score_program(int(points.shape[0]), int(sample_count))
+    draw = noise_program.python_function if tf.inside_function() else noise_program
+    evaluate = score_program.python_function if tf.inside_function() else score_program
+    noise = draw(tf.constant([int(seed), 991], tf.int32))
+    result = evaluate(
+        points, global_score.score, global_score.score_standard_error, noise, observations[0])
+    # The independent estimate also supplies training targets; its numerical
+    # point/sample calculation is therefore runtime code. Only result-object
+    # construction remains on the host after the complete compiled endpoint.
+    return tuple(RatioScoreEstimate(value=value, score=score, score_standard_error=standard_error,
+                                   effective_sample_size=ess)
+        for value, score, standard_error, ess in zip(*tf.nest.map_structure(tf.unstack, result), strict=True))
+
 
 
 __all__ = [
@@ -2852,24 +2405,24 @@ __all__ = [
     "CenteredResidualTrainer",
     "CoreAffineTangentTrainer",
     "QuadraticConjugateGradientResult",
-    "core_affine_origin_total_score_loss_arrays",
-    "core_tangent_banks_from_residual_components",
-    "core_affine_tangent_banks_from_position",
-    "fixed_rank_initial_residual_components",
     "RatioScoreEstimate",
     "T1ParameterDensityBatch",
     "batch_native_t1_from_common_noise",
     "build_t1_parameter_density_batch",
+    "core_affine_origin_total_score_loss_arrays",
+    "core_affine_tangent_banks_from_position",
+    "core_tangent_banks_from_residual_components",
     "core_tangent_to_residual_component",
     "estimate_t1_prefix_scores",
     "estimate_t1_ratio_score",
+    "fixed_rank_initial_residual_components",
     "make_compiled_absolute_train_step",
-    "make_compiled_core_affine_total_score_value_and_gradient",
     "make_compiled_core_affine_gate_minimax_value_and_gradient",
+    "make_compiled_core_affine_total_score_value_and_gradient",
     "make_compiled_full_tt_gate_minimax_value_and_gradient",
     "make_compiled_origin_total_score_train_step",
-    "rotating_prefix_minibatch_indices",
     "residual_components_from_position",
     "residual_components_position",
+    "rotating_prefix_minibatch_indices",
     "solve_quadratic_value_gradient_with_conjugate_gradient",
 ]

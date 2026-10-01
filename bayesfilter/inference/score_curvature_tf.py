@@ -9,9 +9,43 @@ be used by accepted TensorFlow inference paths.
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any
 
 import tensorflow as tf
+
+from bayesfilter.inference.mass_matrix_tf import eigenpair_program
+from bayesfilter.inference.program_cache_scope import independent_trace_scope
+from bayesfilter.ops.accurate_svd_tf import accurate_svd
+from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
+from bayesfilter.ops.qr_lstsq_tf import complete_orthogonal_lstsq
+
+
+@tf.custom_gradient
+def _singular_values_xla(matrix):
+    """Binary64 singular values with TensorFlow's values-only SVD pullback.
+
+    The backend's default tolerance can leave a 5e-10 condition error even
+    for a well-conditioned D5 design. Match the binary64 tolerance used by
+    the repository condition-number kernel. For A=U diag(s) V', the pullback
+    is U diag(ds) V', as in TF 2.19 linalg_grad.py::_SvdGrad(compute_uv=False).
+    """
+    values, left, right = accurate_svd(matrix)
+
+    def pullback(upstream):
+        return tf.matmul(left * upstream[None, :], right, transpose_b=True)
+
+    return values, pullback
+
+
+@lru_cache(maxsize=64)
+def _singular_value_program(dimension):
+    # Keep the custom-gradient closure independent of resource-owning callers.
+    with independent_trace_scope():
+        program = tf.function(_singular_values_xla, autograph=False, jit_compile=True,
+            input_signature=[tf.TensorSpec([dimension, dimension], tf.float64)])
+        program.get_concrete_function()
+    return program
 
 
 def _as_float64(value: Any, name: str) -> tf.Tensor:
@@ -45,14 +79,21 @@ def _relative_response_rmse(
 ) -> tf.Tensor:
     response = center_score[tf.newaxis, :] - scores
     prediction = tf.matmul(offsets, precision, transpose_b=True)
-    scale = tf.maximum(tf.reduce_max(tf.abs(response)), tf.reduce_max(tf.abs(prediction)))
+    scale = tf.maximum(
+        tf.reduce_max(tf.abs(response)), tf.reduce_max(tf.abs(prediction))
+    )
     scaled_response = tf.math.divide_no_nan(response, scale)
     scaled_prediction = tf.math.divide_no_nan(prediction, scale)
     error = tf.linalg.norm(scaled_prediction - scaled_response)
     response_norm = tf.linalg.norm(scaled_response)
     return tf.where(
-        response_norm > 0.0, error / response_norm,
-        tf.where(error == 0.0, tf.constant(0.0, tf.float64), tf.constant(float("inf"), tf.float64)),
+        response_norm > 0.0,
+        error / response_norm,
+        tf.where(
+            error == 0.0,
+            tf.constant(0.0, tf.float64),
+            tf.constant(float("inf"), tf.float64),
+        ),
     )
 
 
@@ -73,6 +114,11 @@ def fit_dense_score_precision_tf(
     is not the exact symmetry-constrained optimum for nonquadratic scores.
     Callers that require a position factor
     must reject a non-SPD raw result rather than silently manufacture one.
+
+    ``design_condition`` is infinite when the existing numerical rank policy
+    (singular values greater than 1e-12 times the largest) finds deficient rank.
+    Otherwise it is the largest/smallest singular-value ratio. Infinity under
+    that policy does not assert exact algebraic singularity.
     """
 
     center = _as_float64(center_score, "center_score")
@@ -89,23 +135,34 @@ def fit_dense_score_precision_tf(
     tf.debugging.assert_equal(tf.shape(scores), tf.shape(offsets))
     tf.debugging.assert_greater_equal(tf.shape(offsets)[0], dimension)
     response = center[tf.newaxis, :] - scores
-    coefficient = tf.linalg.lstsq(offsets, response, fast=False)
+    coefficient = complete_orthogonal_lstsq(offsets, response)
     raw_precision = _symmetric(coefficient)
-    singular_values = tf.linalg.svd(offsets, compute_uv=False)
+    # Q has orthonormal columns, so A and the reduced R have the same singular
+    # values. Avoid XLA's much costlier tall Jacobi SVD without forming A'A.
+    design_for_svd = offsets
+    if in_xla_context() and offsets.shape[0] is not None and offsets.shape[0] > dimension:
+        design_for_svd = tf.linalg.qr(offsets, full_matrices=False)[1]
+    singular_values = (_singular_value_program(dimension)(design_for_svd)
+        if in_xla_context() and design_for_svd.shape == (dimension, dimension)
+        else tf.linalg.svd(design_for_svd, compute_uv=False))
     largest_singular = tf.reduce_max(singular_values)
     smallest_singular = tf.reduce_min(singular_values)
-    design_condition = tf.where(
-        smallest_singular > 0.0,
-        largest_singular / smallest_singular,
-        tf.constant(float("inf"), tf.float64),
-    )
     design_rank = tf.reduce_sum(
         tf.cast(
             singular_values > largest_singular * tf.constant(1.0e-12, tf.float64),
             tf.int32,
         )
     )
-    eigenvalues = tf.linalg.eigvalsh(raw_precision)
+    design_condition = tf.where(
+        design_rank == dimension,
+        largest_singular / smallest_singular,
+        tf.constant(float("inf"), tf.float64),
+    )
+    # The XLA backend can stop before resolving nearly repeated eigenvalues.
+    # Reuse the same residual-refined eigensystem as the paired score fitter;
+    # graph execution retains TensorFlow's original reference operation.
+    eigenvalues = (eigenpair_program(dimension)(raw_precision)[0]
+                   if in_xla_context() else tf.linalg.eigvalsh(raw_precision))
     minimum_eigenvalue = tf.reduce_min(eigenvalues)
     maximum_eigenvalue = tf.reduce_max(eigenvalues)
     precision_condition = tf.where(

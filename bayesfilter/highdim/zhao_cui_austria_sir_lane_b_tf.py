@@ -2,21 +2,23 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import inspect
 import json
 import math
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Mapping, Sequence
 
 import tensorflow as tf
 
+from bayesfilter.highdim import stochastic_training_native_tf as training_native
 from bayesfilter.highdim.bases import (
     AlgebraicMap,
     ProductBasis,
     p85_author_sir_lagrangep_algebraic_product_basis_spec,
 )
+from bayesfilter.highdim.centered_training_native_tf import balanced_core_program
 from bayesfilter.highdim.diagnostics import (
     DensityMeasure,
     MassMeasure,
@@ -42,11 +44,11 @@ from bayesfilter.highdim.zhao_cui_austria_sir_lane_b_target_tf import (
     LANE_B_TARGET_ID,
     SIR_JOINT_DIM,
     LaneBT1ProposalCloud,
+    t1_joint_log_density,
     target_manifest,
     tensor_sha256,
-    t1_joint_log_density,
 )
-
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
 
 DTYPE = tf.float64
 BASELINE_ID = "zhao_cui_austria_sir_fixed_variant_training_base_v1"
@@ -559,47 +561,12 @@ def balanced_initial_cores(
         if extra_count
         else 0.0
     )
-    cores = []
-    for axis, basis_dim in enumerate(product_basis.basis_dim_tuple()):
-        left_rank = int(ranks[axis])
-        right_rank = int(ranks[axis + 1])
-        values = tf.zeros([left_rank, int(basis_dim), right_rank], DTYPE)
-        # Lagrange cardinal coefficients of one are the constant function.
-        constant_indices = tf.constant(
-            [[0, basis_index, 0] for basis_index in range(int(basis_dim))],
-            tf.int64,
-        )
-        values = tf.tensor_scatter_nd_update(
-            values,
-            constant_indices,
-            tf.ones([int(basis_dim)], DTYPE),
-        )
-        indices: list[list[int]] = []
-        updates: list[float] = []
-        for channel in range(1, min(left_rank, right_rank)):
-            # Carry the seeded channel as a constant so its amplitude does not
-            # become a product of 36 nonconstant cardinal values.
-            for basis_index in range(int(basis_dim)):
-                indices.append([channel, basis_index, channel])
-                updates.append(1.0)
-        if axis == 0:
-            for channel in range(1, right_rank):
-                basis_index = 1 + ((axis + channel - 1) % max(int(basis_dim) - 1, 1))
-                indices.append([0, basis_index, channel])
-                updates.append(seeded_scale)
-        if axis == SIR_JOINT_DIM - 1:
-            for channel in range(1, left_rank):
-                for basis_index in range(int(basis_dim)):
-                    indices.append([channel, basis_index, 0])
-                    updates.append(1.0)
-        if indices:
-            values = tf.tensor_scatter_nd_update(
-                values,
-                tf.constant(indices, tf.int64),
-                tf.constant(updates, DTYPE),
-            )
-        cores.append(values)
-    return tuple(cores)
+    widths = product_basis.basis_dim_tuple()
+    program = balanced_core_program(tuple(ranks), tuple(widths))
+    evaluate = program.python_function if tf.inside_function() else program
+    packed = evaluate(tf.constant(seeded_scale, DTYPE))
+    return tuple(packed[axis, :ranks[axis], :width, :ranks[axis + 1]]
+                 for axis, width in enumerate(widths))
 
 
 def make_compiled_train_step(
@@ -612,7 +579,7 @@ def make_compiled_train_step(
         optimizer.build(trainer.variables)
     config = trainer.config
 
-    @tf.function(jit_compile=True, reduce_retracing=True)
+    @fixed_signature_function(floating_dtype=DTYPE)
     def compiled_step(
         points: tf.Tensor,
         target_values: tf.Tensor,
@@ -627,16 +594,15 @@ def make_compiled_train_step(
             alpha = raw_alpha / tf.reduce_sum(raw_alpha)
             cross_entropy = -tf.reduce_sum(alpha * tf.math.log(rho))
             log_normalizer = tf.math.log(normalizer)
-            l1 = tf.add_n([tf.reduce_sum(tf.abs(core)) for core in trainer.variables])
-            l2 = tf.add_n([tf.reduce_sum(tf.square(core)) for core in trainer.variables])
+            l1, l2 = training_native.core_penalties(trainer.variables)
             regularization = config.l1_weight * l1 + config.l2_weight * l2
             total_loss = cross_entropy + log_normalizer + regularization
         gradients = tape.gradient(total_loss, trainer.variables)
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            gradients,
-            tf.constant(config.gradient_clip_norm, DTYPE),
-        )
-        optimizer.apply_gradients(zip(clipped, trainer.variables))
+        valid = tf.reduce_all(tf.math.is_finite(tf.stack((total_loss, cross_entropy,
+            log_normalizer, regularization))))
+        valid &= (normalizer > config.normalizer_floor) & tf.reduce_all(rho > 0.)
+        gradient_norm, _valid = training_native.checked_optimizer_update(
+            optimizer, trainer.variables, gradients, config.gradient_clip_norm, valid)
         return (
             total_loss,
             cross_entropy,
@@ -656,22 +622,7 @@ def calibrate_trainer_normalizer(
 ) -> tf.Tensor:
     """Scale h through one core so integral(h^2)+tau equals the target mass."""
 
-    target = tf.exp(tf.reshape(tf.convert_to_tensor(target_log_normalizer, DTYPE), []))
-    square_mass = trainer.sqrt_square_normalizer()
-    defensive_mass = trainer.defensive_density.normalizer(
-        trainer.config.product_basis.convention.mass_measure
-    )
-    defensive = trainer.config.tau * defensive_mass
-    tf.debugging.assert_greater(target, defensive, "normalizer target must exceed tau")
-    tf.debugging.assert_positive(square_mass, "square-root TT mass must be positive")
-    scale = tf.sqrt((target - defensive) / square_mass)
-    trainer.variables[0].assign(trainer.variables[0] * scale)
-    tf.debugging.assert_near(
-        trainer.normalizer(),
-        target,
-        atol=tf.constant(1e-12, DTYPE) * (1.0 + tf.abs(target)),
-    )
-    return scale
+    return training_native.calibrate_normalizer(trainer, target_log_normalizer)
 
 
 def _file_sha256(path: Path) -> str:
@@ -679,23 +630,62 @@ def _file_sha256(path: Path) -> str:
 
 
 def source_closure() -> Mapping[str, str]:
-    from bayesfilter.highdim import bases, diagnostics, fixed_branch, models
-    from bayesfilter.highdim import sir_latent_preclip_tf, source_route, squared_tt
-    from bayesfilter.highdim import stochastic_density_training, transport, tt
-    from bayesfilter.highdim import zhao_cui_austria_sir_lane_b_target_tf
-
-    modules = (
+    from bayesfilter.highdim import (
         bases,
+        centered_training_native_tf,
+        centered_tt_native_tf,
         diagnostics,
         fixed_branch,
         models,
         sir_latent_preclip_tf,
         source_route,
+        source_route_numerics_tf,
+        source_route_preparation_runtime_tf,
+        source_route_runtime_tf,
+        source_route_sequential_tf,
         squared_tt,
+        squared_tt_density_native_tf,
         stochastic_density_training,
+        stochastic_training_native_tf,
         transport,
         tt,
+        tt_native_control_tf,
+        ttsirt_native_tf,
         zhao_cui_austria_sir_lane_b_target_tf,
+    )
+    from bayesfilter.ops import (
+        compiled_tensor_program_tf,
+        fixed_signature_tf,
+        slogdet_tf,
+        stateless_random_tf,
+    )
+
+    modules = (
+        bases,
+        centered_training_native_tf,
+        centered_tt_native_tf,
+        diagnostics,
+        fixed_branch,
+        models,
+        sir_latent_preclip_tf,
+        source_route,
+        source_route_numerics_tf,
+        source_route_preparation_runtime_tf,
+        source_route_runtime_tf,
+        source_route_sequential_tf,
+        squared_tt,
+        squared_tt_density_native_tf,
+        stochastic_density_training,
+        stochastic_training_native_tf,
+        transport,
+        tt,
+        tt_native_control_tf,
+        ttsirt_native_tf,
+        zhao_cui_austria_sir_lane_b_target_tf,
+        compiled_tensor_program_tf,
+        fixed_signature_tf,
+        slogdet_tf,
+        stateless_random_tf,
     )
     paths = [Path(inspect.getfile(module)).resolve() for module in modules]
     paths.append(Path(__file__).resolve())

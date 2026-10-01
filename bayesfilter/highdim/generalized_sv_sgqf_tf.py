@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
-import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
@@ -266,6 +265,8 @@ def generalized_sv_dense_value_reference_status(
     order: int = 41,
 ) -> tuple[tf.Tensor, Mapping[str, tf.Tensor]]:
     """Dense Gauss-Hermite reference for the same Gaussian-projection scalar."""
+
+    import numpy as np  # Independent reference only; never imported by runtime.
 
     if int(order) < 3:
         raise ValueError("dense generalized-SV reference order must be at least 3")

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from bayesfilter.inference.fixed_center_curvature import (
@@ -116,18 +118,21 @@ def test_posterior_local_initializer_is_lazily_exported_from_inference() -> None
     assert "PosteriorLocalInitializerResult" in inference.__all__
 
 
-def test_gaussian_recovers_location_and_physical_covariance_under_scaling() -> None:
+@pytest.mark.parametrize("jit", [False, True])
+def test_gaussian_recovers_location_and_physical_covariance_under_scaling(jit) -> None:
     mean = np.array([0.7, -0.4])
     covariance = np.array([[0.5, 0.12], [0.12, 1.2]])
     scale = np.array([0.5, 2.0])
     scalar, batched = _gaussian_callbacks(mean, covariance)
 
+    config = _initializer_config()
+    config = replace(config, locator_config=replace(config.locator_config, jit_compile=jit))
     result = initialize_posterior_local_location_scale(
         scalar,
         np.array([-1.0, 1.0]),
         scale=scale,
         batched_value_and_score_fn=batched,
-        config=_initializer_config(),
+        config=config,
         movement_config=_movement_config(),
         curvature_thresholds=_thresholds(2),
     )

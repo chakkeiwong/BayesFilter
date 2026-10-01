@@ -415,7 +415,7 @@ def dense_negative_hessian(
     center: tf.Tensor,
 ) -> np.ndarray:
     center = tf.reshape(tf.convert_to_tensor(center, dtype=tf.float64), [-1])
-    with tf.GradientTape() as outer:
+    with tf.GradientTape(persistent=True) as outer:
         outer.watch(center)
         with tf.GradientTape() as inner:
             inner.watch(center)
@@ -423,7 +423,8 @@ def dense_negative_hessian(
         gradient = inner.gradient(value, center)
     if gradient is None:
         raise RuntimeError("dense Hessian baseline failed: gradient is disconnected")
-    hessian = outer.jacobian(gradient, center)
+    hessian = outer.jacobian(gradient, center, experimental_use_pfor=False)
+    del outer
     if hessian is None:
         raise RuntimeError("dense Hessian baseline failed: Hessian is disconnected")
     negative = -np.asarray(tf.convert_to_tensor(hessian, dtype=tf.float64).numpy(), dtype=float)

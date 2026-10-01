@@ -202,7 +202,7 @@ def _dense_reference(
                 radius=radius,
             )
         score = tape.gradient(result.log_likelihood, theta64)
-        score_increments = tape.jacobian(result.log_normalizers, theta64)
+        score_increments = tape.jacobian(result.log_normalizers, theta64, experimental_use_pfor=False)
         del tape
     if score is None or score_increments is None:
         raise RuntimeError("dense exact-SV diagnostic differentiation failed")

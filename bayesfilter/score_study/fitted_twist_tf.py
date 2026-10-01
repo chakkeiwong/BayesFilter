@@ -185,10 +185,10 @@ def make_fitted_twist_kernel(d,o,N,T,dtype_name="float64",jit_compile=True,const
 
 def quadratic_features(points):
     d=points.shape[-1]
-    columns=[tf.ones_like(points[:,0])]+list(tf.unstack(points,axis=1))
-    columns += [-.5*points[:,i]**2 for i in range(d)]
-    columns += [-points[:,i]*points[:,j] for i in range(d) for j in range(i+1,d)]
-    return tf.stack(columns,-1)
+    pairs=[(i,j) for i in range(d) for j in range(i+1,d)]
+    indices=tf.reshape(tf.constant(pairs,tf.int32),[-1,2])
+    cross=-tf.gather(points,indices[:,0],axis=1)*tf.gather(points,indices[:,1],axis=1)
+    return tf.concat([tf.ones_like(points[:,:1]),points,-.5*tf.square(points),cross],axis=1)
 
 
 def fit_log_quadratic(points,targets,floor_ratio):
@@ -216,7 +216,9 @@ def fit_log_quadratic(points,targets,floor_ratio):
     log_peak=tf.reduce_sum(tf.math.log(tf.linalg.diag_part(factor)))-.5*tf.cast(d,dtype)*tf.math.log(2*tf.acos(tf.cast(-1.,dtype)))
     log_floor=tf.math.log(tf.cast(floor_ratio,dtype))+log_peak
     rmse=tf.sqrt(tf.reduce_mean((features@coefficient[:,None]-targets[:,None])**2))
-    return tuple(tf.where(valid,x,tf.cast(float("nan"),dtype)) for x in (center,covariance,log_floor)),(valid,rmse,singular)
+    missing=tf.cast(float("nan"),dtype)
+    return (tf.where(valid,center,missing),tf.where(valid,covariance,missing),
+            tf.where(valid,log_floor,missing)),(valid,rmse,singular)
 
 
 @lru_cache(maxsize=12)

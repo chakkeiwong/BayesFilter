@@ -14,7 +14,6 @@ from bayesfilter.highdim.sir_latent_preclip_tf import (
     latent_preclip_zhao_cui_sir_austria_model,
 )
 
-
 DTYPE = tf.float64
 
 
@@ -125,8 +124,14 @@ def test_paired_noise_reproduces_source_physical_law_for_j1_j2_j9() -> None:
             model, theta, initial_noise, transition_noise, observation_noise
         )
 
-        tf.debugging.assert_equal(latent["physical_path"], source_states)
-        tf.debugging.assert_equal(latent["observations"], source_observations)
+        # The eager source path and compiled owner use the same operations and
+        # differ only by bounded FP64 XLA fusion rounding.  Exact replay of an
+        # owner is checked separately; this source-law check uses the unit's
+        # fixed numerical contract rather than demanding bitwise XLA parity.
+        tf.debugging.assert_near(latent["physical_path"], source_states,
+                                 atol=5e-12, rtol=5e-12)
+        tf.debugging.assert_near(latent["observations"], source_observations,
+                                 atol=5e-12, rtol=5e-12)
         assert bool(tf.reduce_any(latent["physical_path"][1:, 0::2] == 0.0).numpy())
 
 

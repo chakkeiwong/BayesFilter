@@ -728,9 +728,11 @@ class FixedTransportValueScoreAdapter:
         if self.require_batch_native:
             raise TypeError("fixed transport must expose forward_batch")
         forward = _require_transport_method(self.transport, "forward")
-        return tf.vectorized_map(
+        return tf.map_fn(
             lambda row: tf.convert_to_tensor(forward(row), dtype=z_tensor.dtype),
             z_tensor,
+            fn_output_signature=tf.TensorSpec(z_tensor.shape[1:], z_tensor.dtype),
+            parallel_iterations=1,
         )
 
     def log_abs_det_jacobian(self, z: Any) -> tf.Tensor:
@@ -746,12 +748,14 @@ class FixedTransportValueScoreAdapter:
             if self.require_batch_native:
                 raise TypeError("fixed transport must expose log_abs_det_jacobian_batch")
             logdet = _require_transport_method(self.transport, "log_abs_det_jacobian")
-            return tf.vectorized_map(
+            return tf.map_fn(
                 lambda row: tf.convert_to_tensor(
                     logdet(row),
                     dtype=z_tensor.dtype,
                 ),
                 z_tensor,
+                fn_output_signature=tf.TensorSpec([], z_tensor.dtype),
+                parallel_iterations=1,
             )
         return tf.convert_to_tensor(
             logdet_batch(z_tensor),

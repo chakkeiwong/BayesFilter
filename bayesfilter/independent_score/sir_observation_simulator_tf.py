@@ -60,13 +60,17 @@ def _rhs(state: tf.Tensor, kappa: tf.Tensor, nu: tf.Tensor) -> tf.Tensor:
 
 
 def _transition_mean(state: tf.Tensor, kappa: tf.Tensor, nu: tf.Tensor) -> tf.Tensor:
-    current = state
-    for _ in range(SUBSTEPS):
+    def step(index, current):
         k1 = _rhs(current, kappa, nu)
         k2 = _rhs(current + 0.5 * STEP * k1, kappa, nu)
         k3 = _rhs(current + 0.5 * STEP * k2, kappa, nu)
         k4 = _rhs(current + 0.5 * STEP * k3, kappa, nu)
         current = current + (STEP / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+        return index + 1, current
+    _, current = tf.while_loop(
+        lambda index, _: index < SUBSTEPS, step,
+        (tf.constant(0), state), maximum_iterations=SUBSTEPS,
+    )
     return current
 
 
@@ -99,16 +103,21 @@ def simulate_observation_paths_from_noise(
     nu = BASE_NU * tf.exp(parameters[1])
     observation_scale = BASE_OBSERVATION_SCALE * tf.exp(parameters[2])
     state = INITIAL_MEAN[None, :] + initial_noise
-    outputs = []
-    for time_index in range(int(horizon)):
+    outputs = tf.TensorArray(DTYPE, size=horizon, element_shape=[initial_noise.shape[0], OBSERVATION_DIMENSION])
+    def step(time_index, state, outputs):
         latent = _transition_mean(state, kappa, nu) + transition_noise[:, time_index, :]
         susceptible = tf.maximum(latent[:, 0::2], 0.0)
         infectious = latent[:, 1::2]
         state = tf.reshape(tf.stack([susceptible, infectious], axis=2), tf.shape(latent))
-        outputs.append(
+        outputs = outputs.write(time_index,
             infectious + observation_scale * observation_noise[:, time_index, :]
         )
-    return tf.stack(outputs, axis=1)
+        return time_index + 1, state, outputs
+    _, _, outputs = tf.while_loop(
+        lambda index, *_: index < horizon, step,
+        (tf.constant(0), state, outputs), maximum_iterations=horizon,
+    )
+    return tf.transpose(outputs.stack(), [1, 0, 2])
 
 
 def make_compiled_observation_simulator(horizon: int):
@@ -117,7 +126,12 @@ def make_compiled_observation_simulator(horizon: int):
     if int(horizon) <= 0:
         raise ValueError("horizon must be positive")
 
-    @tf.function(jit_compile=True)
+    @tf.function(jit_compile=True, input_signature=[
+        tf.TensorSpec([PARAMETER_DIMENSION], DTYPE),
+        tf.TensorSpec([None, STATE_DIMENSION], DTYPE),
+        tf.TensorSpec([None, horizon, STATE_DIMENSION], DTYPE),
+        tf.TensorSpec([None, horizon, OBSERVATION_DIMENSION], DTYPE),
+    ])
     def run(
         theta: tf.Tensor,
         initial_noise: tf.Tensor,
@@ -139,20 +153,25 @@ def fixed_observed_path(seed: int = 81120, horizon: int = 50) -> tf.Tensor:
     generator = tf.random.Generator.from_seed(int(seed))
     state = INITIAL_MEAN + generator.normal([STATE_DIMENSION], dtype=DTYPE)
     generator.normal([OBSERVATION_DIMENSION], dtype=DTYPE)  # source y_0 draw
-    observations = []
-    for _ in range(int(horizon)):
+    observations = tf.TensorArray(DTYPE, size=horizon, element_shape=[OBSERVATION_DIMENSION])
+    def step(index, state, observations):
         latent = _transition_mean(state[None, :], BASE_KAPPA, BASE_NU)[0]
         latent += generator.normal([STATE_DIMENSION], dtype=DTYPE)
         state = tf.reshape(
             tf.stack([tf.maximum(latent[0::2], 0.0), latent[1::2]], axis=1),
             [STATE_DIMENSION],
         )
-        observations.append(
+        observations = observations.write(index,
             state[1::2]
             + BASE_OBSERVATION_SCALE
             * generator.normal([OBSERVATION_DIMENSION], dtype=DTYPE)
         )
-    return tf.stack(observations)
+        return index + 1, state, observations
+    _, _, observations = tf.while_loop(
+        lambda index, *_: index < horizon, step,
+        (tf.constant(0), state, observations), maximum_iterations=horizon,
+    )
+    return observations.stack()
 
 
 __all__ = [

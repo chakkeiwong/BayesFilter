@@ -3,53 +3,55 @@
 The particle lane owns the finite likelihood.  The independently fitted
 adjacent squared-TT lane supplies only post-reset standardized shape targets.
 Both lanes use the source-order event sequence ``x0 -> transition -> y1``.
+The finite-program directional scores are diagnostic, not canonical admission.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import json
+from dataclasses import dataclass
+from functools import lru_cache
 from typing import Mapping
 
 import tensorflow as tf
 
-from bayesfilter.highdim.bases import BoundedInterval, LegendreBasis1D
 from bayesfilter.highdim.cubature_genut_adapters import (
     exact_transformed_sv_candidate_adapter,
     parameterized_austria_sir_candidate_adapter,
     predator_prey_candidate_adapter,
 )
 from bayesfilter.highdim.cubature_genut_filter import CandidateModelAdapter
-from bayesfilter.highdim.diagnostics import MassMeasure
 from bayesfilter.highdim.higher_moment_contract_e import higher_moment_shape_jvp
 from bayesfilter.highdim.ledh_contract_e_streaming_tf import (
     _contract_e_streaming_forward_jvp_core,
 )
 from bayesfilter.highdim.ledh_tuning_scope import LEDHTuningScope, require_scope_match
+from bayesfilter.highdim.moment_teacher_native_tf import (
+    freeze_scale_shift_core,
+    operator_power_program,
+    teacher_directions,
+    teacher_normal,
+    teacher_uniform_float32,
+)
 from bayesfilter.highdim.transport_chunk_policy import (
     TRANSPORT_CHUNK_POLICY_ID,
     select_transport_chunks,
     validate_transport_chunks,
-)
-from bayesfilter.highdim.zhao_cui_moment_teacher import (
-    legendre_monomial_operator_matrix,
 )
 from bayesfilter.highdim.zhao_cui_moment_teacher_lgssm_tf import (
     MomentTeacherControls,
     _active_mask,
     _legendre_basis_values,
 )
-from bayesfilter.highdim.zhao_cui_moment_teacher_xla import (
-    padded_fixed_teacher_recursion_shape_xla,
-)
-
 
 PREDATOR_PREY_ROUTE_ID = "zhao_cui_moment_teacher_contract_e_chol_predator_prey_v1"
 AUSTRIA_SIR_ROUTE_ID = "zhao_cui_moment_teacher_contract_e_chol_austria_sir_v1"
 ACTUAL_SV_ROUTE_ID = "zhao_cui_moment_teacher_contract_e_chol_actual_sv_v1"
 CONTROL_FAMILY_ID = "zhao_cui_moment_teacher_nonlinear_controls_v1"
 RESET_CONTRACT_ID = "contract_e_chol_v1"
+CANONICAL_LEDH_ADMITTED = False
+SCORE_PROVENANCE = "finite_program_manual_jvp_diagnostic_only"
 TUNING_SCHEMA = "bayesfilter.zhao_cui_moment_teacher_nonlinear_tuning.v1"
 EVENT_ORDER = "x0_then_transition_then_observe"
 _TWO_PI = 6.283185307179586476925286766559
@@ -211,6 +213,7 @@ def prepare_nonlinear_teacher_inputs(
     defensive_weight: float,
     pair_indices: tf.Tensor,
     root_seed: int,
+    jit_compile: bool = True,
 ) -> dict[str, tf.Tensor]:
     """Prepare a fixed affine adjacent-state TT design in FP32."""
 
@@ -224,11 +227,54 @@ def prepare_nonlinear_teacher_inputs(
         raise ValueError("nonlinear teacher state scales must be positive and dimension-matched")
     if pair_indices.shape.rank != 2 or pair_indices.shape[1] != 2:
         raise ValueError("nonlinear teacher pair indices must have shape [P,2]")
-    dimension = 2 * state_dimension
     if adapter.state_dimension != state_dimension:
         raise ValueError("nonlinear teacher adapter and chart dimensions differ")
     if initial_standard_deviation <= 0.0 or process_standard_deviation <= 0.0:
         raise ValueError("nonlinear teacher density scales must be positive")
+    if min(fit_rows, basis_size, rank, sweeps) <= 0:
+        raise ValueError("teacher dimensions and sweep count must be positive")
+    program = _nonlinear_preparation_program(
+        adapter, tuple(observations.shape), int(pair_indices.shape[0]),
+        fit_rows, basis_size, rank, sweeps, bool(jit_compile))
+    prepared, valid = program(
+        observations, state_offset, state_scale, center_theta, pair_indices,
+        tf.cast(initial_standard_deviation, tf.float32),
+        tf.cast(process_standard_deviation, tf.float32),
+        tf.cast(defensive_weight, tf.float32), tf.convert_to_tensor(root_seed, tf.int32))
+    if not bool(valid):
+        raise ValueError("nonlinear chart does not contain enough transition-coupled fit rows")
+    return prepared
+
+
+@lru_cache(maxsize=16)
+def _nonlinear_preparation_program(adapter, observation_shape, pair_count,
+    fit_rows, basis_size, rank, sweeps, jit_compile):
+    operators = tf.cast(operator_power_program(basis_size, jit_compile=jit_compile)(), tf.float32)
+    dimension = adapter.state_dimension
+
+    @tf.function(input_signature=[tf.TensorSpec(observation_shape, tf.float32),
+        tf.TensorSpec([dimension], tf.float32), tf.TensorSpec([dimension], tf.float32),
+        tf.TensorSpec([adapter.parameter_count], tf.float32), tf.TensorSpec([pair_count, 2], tf.int32),
+        tf.TensorSpec([], tf.float32), tf.TensorSpec([], tf.float32),
+        tf.TensorSpec([], tf.float32), tf.TensorSpec([], tf.int32)],
+        jit_compile=jit_compile, autograph=False)
+    def prepare(observations, state_offset, state_scale, center_theta, pair_indices,
+        initial_standard_deviation, process_standard_deviation, defensive_weight, root_seed):
+        return _prepare_nonlinear_teacher_inputs_core(
+            observations, state_offset, state_scale, center_theta, pair_indices,
+            initial_standard_deviation, process_standard_deviation, defensive_weight, root_seed,
+            adapter=adapter, fit_rows=fit_rows, basis_size=basis_size,
+            rank=rank, sweeps=sweeps, operators=operators,
+        )
+
+    return prepare
+
+
+def _prepare_nonlinear_teacher_inputs_core(observations, state_offset, state_scale,
+    center_theta, pair_indices, initial_standard_deviation, process_standard_deviation,
+    defensive_weight, root_seed, *, adapter, fit_rows, basis_size, rank, sweeps, operators):
+    state_dimension = adapter.state_dimension
+    dimension = 2 * state_dimension
 
     # A broad independent product design misses narrow transition manifolds.
     # Freeze a deterministic mixture of initial-local and transition-coupled
@@ -240,27 +286,16 @@ def prepare_nonlinear_teacher_inputs(
     initial_reference_mean = (initial_mean - state_offset) / state_scale
     local_previous = initial_reference_mean[None, :] + tf.cast(
         initial_standard_deviation, tf.float32
-    ) * tf.random.stateless_normal(
-        [candidate_count, state_dimension],
-        [int(root_seed), 3101],
-        dtype=tf.float32,
-    ) / state_scale[None, :]
-    broad_previous = tf.random.stateless_uniform(
-        [candidate_count, state_dimension],
-        [int(root_seed), 3103],
-        minval=-0.90,
-        maxval=0.90,
-        dtype=tf.float32,
-    )
+    ) * teacher_normal([candidate_count, state_dimension], tf.stack([root_seed, 3101]),
+                       tf.float32) / state_scale[None, :]
+    broad_previous = -0.90 + 1.80 * teacher_uniform_float32(
+        [candidate_count, state_dimension], tf.stack([root_seed, 3103]))
 
-    def coupled(previous_reference: tf.Tensor, seed_offset: int) -> tf.Tensor:
+    def coupled(previous_reference, seed_offset, required):
         previous = state_offset[None, :] + previous_reference * state_scale[None, :]
         process_noise = tf.cast(process_standard_deviation, tf.float32) * (
-            tf.random.stateless_normal(
-                [candidate_count, state_dimension],
-                [int(root_seed), seed_offset],
-                dtype=tf.float32,
-            )
+            teacher_normal([candidate_count, state_dimension],
+                           tf.stack([root_seed, seed_offset]), tf.float32)
         )
         current = adapter.transition_value(
             center_theta, previous, process_noise, tf.constant(0, tf.int32)
@@ -270,62 +305,27 @@ def prepare_nonlinear_teacher_inputs(
         valid = tf.reduce_all(tf.math.is_finite(rows), axis=1) & tf.reduce_all(
             tf.abs(rows) <= 0.95, axis=1
         )
-        return tf.boolean_mask(rows, valid)
+        # Fixed-capacity compaction preserves the original first-valid-row order.
+        selected = tf.sort(tf.where(valid, tf.range(candidate_count), candidate_count))[:required]
+        return (tf.gather(rows, tf.minimum(selected, candidate_count - 1)),
+                tf.reduce_sum(tf.cast(valid, tf.int32)) >= required)
 
-    local_rows = coupled(local_previous, 3109)
-    broad_rows = coupled(broad_previous, 3113)
     local_count = max(1, fit_rows // 4)
     broad_count = fit_rows - local_count
-    local_available = int(tf.shape(local_rows)[0].numpy())
-    broad_available = int(tf.shape(broad_rows)[0].numpy())
-    if local_available < local_count or broad_available < broad_count:
-        raise ValueError("nonlinear chart does not contain enough transition-coupled fit rows")
-    reference = tf.concat(
-        [local_rows[:local_count], broad_rows[:broad_count]], axis=0
-    )
-    basis_values = tf.stack(
-        [_legendre_basis_values(reference[:, axis], basis_size) for axis in range(dimension)]
-    )
-    query_basis_values = tf.stack(
-        [
-            _legendre_basis_values(
-                reference[:, axis + state_dimension]
-                if axis < state_dimension
-                else reference[:, axis],
-                basis_size,
-            )
-            for axis in range(dimension)
-        ]
-    )
+    local_rows, local_valid = coupled(local_previous, 3109, local_count)
+    broad_rows, broad_valid = coupled(broad_previous, 3113, broad_count)
+    reference = tf.concat([local_rows, broad_rows], axis=0)
+    basis_values = _legendre_basis_values(tf.transpose(reference), basis_size)
+    query_basis_values = tf.concat([basis_values[state_dimension:], basis_values[state_dimension:]], axis=0)
     active_mask = _active_mask(dimension, rank, basis_size, tf.float32)
-    initial_cores = tf.random.stateless_normal(
-        [dimension, rank, basis_size, rank],
-        seed=[int(root_seed), 3119],
-        stddev=0.03,
-        dtype=tf.float32,
-    ) * active_mask
+    initial_cores = (0.03 * teacher_normal([dimension, rank, basis_size, rank],
+        tf.stack([root_seed, 3119]), tf.float32)) * active_mask
     initial_cores = tf.tensor_scatter_nd_update(
         initial_cores,
-        tf.constant([[axis, 0, 0, 0] for axis in range(dimension)], tf.int32),
+        tf.concat([tf.range(dimension)[:, None], tf.zeros([dimension, 3], tf.int32)], axis=1),
         tf.ones([dimension], tf.float32),
     )
-    basis = LegendreBasis1D(BoundedInterval(-1.0, 1.0), basis_size - 1)
-    operator_powers = tf.cast(
-        tf.stack(
-            [
-                tf.stack(
-                    [
-                        legendre_monomial_operator_matrix(
-                            basis, power, MassMeasure.REFERENCE_MEASURE
-                        )
-                        for power in range(5)
-                    ]
-                )
-                for _ in range(dimension)
-            ]
-        ),
-        tf.float32,
-    )
+    operator_powers = tf.broadcast_to(operators, [dimension, 5, basis_size, basis_size])
     defensive_moments = tf.constant([1.0, 0.0, 1.0 / 3.0, 0.0, 1.0 / 5.0], tf.float32)
     state_matrix = tf.concat(
         [tf.linalg.diag(state_scale), tf.zeros([state_dimension, state_dimension], tf.float32)],
@@ -359,7 +359,7 @@ def prepare_nonlinear_teacher_inputs(
         "pair_indices": pair_indices,
         "state_scale": state_scale,
         "center_theta": center_theta,
-    }
+    }, local_valid & broad_valid
 
 
 def _normal_log_density_and_tangent(
@@ -396,10 +396,17 @@ def _teacher_base_log_targets(
     zero_tangent = tf.zeros(
         [tf.shape(previous)[0], dimension, adapter.parameter_count], tf.float32
     )
-    rows = []
-    tangents = []
-    for time_index in range(int(prepared["observations"].shape[0])):
-        time_tensor = tf.constant(time_index, tf.int32)
+    horizon = prepared["observations"].shape[0]
+    if adapter.initial_log_density is None:
+        initial, initial_tangent = _normal_log_density_and_tangent(
+            previous - adapter.initial_value(theta, tf.zeros_like(previous)),
+            -adapter.initial_tangent(theta, tf.zeros_like(previous)), initial_variance,
+        )
+    else:
+        initial = adapter.initial_log_density(theta, previous)
+        initial_tangent = adapter.initial_log_density_tangent(theta, previous)
+
+    def at_time(time_tensor):
         mean = adapter.transition_value(theta, previous, zeros, time_tensor)
         mean_tangent = adapter.transition_tangent(
             theta, previous, zeros, zero_tangent, time_tensor
@@ -408,7 +415,7 @@ def _teacher_base_log_targets(
             current - mean, -mean_tangent, process_variance
         )
         observation = adapter.observation_value(
-            theta, current, prepared["observations"][time_index], time_tensor
+            theta, current, prepared["observations"][time_tensor], time_tensor
         )
         observation_tangent = adapter.observation_tangent(
             theta,
@@ -416,28 +423,22 @@ def _teacher_base_log_targets(
             tf.zeros(
                 [tf.shape(current)[0], dimension, adapter.parameter_count], tf.float32
             ),
-            prepared["observations"][time_index],
+            prepared["observations"][time_tensor],
             time_tensor,
         )
         value = transition + observation
         tangent = transition_tangent + observation_tangent
-        if time_index == 0:
-            if adapter.initial_log_density is None:
-                initial, initial_tangent = _normal_log_density_and_tangent(
-                    previous - adapter.initial_value(theta, tf.zeros_like(previous)),
-                    -adapter.initial_tangent(theta, tf.zeros_like(previous)),
-                    initial_variance,
-                )
-            else:
-                initial = adapter.initial_log_density(theta, previous)
-                initial_tangent = adapter.initial_log_density_tangent(theta, previous)
-            value += initial
-            tangent += initial_tangent
-        rows.append(value)
-        tangents.append(tangent)
+        return (tf.cond(time_tensor == 0, lambda: value + initial, lambda: value),
+                tf.cond(time_tensor == 0, lambda: tangent + initial_tangent, lambda: tangent))
+
+    rows, tangents = tf.map_fn(
+        at_time, tf.range(horizon), parallel_iterations=1,
+        fn_output_signature=(tf.TensorSpec([reference.shape[0]], tf.float32),
+                             tf.TensorSpec([reference.shape[0], adapter.parameter_count], tf.float32)),
+    )
     chart_log_jacobian = 2.0 * tf.reduce_sum(tf.math.log(2.0 * scale))
-    values = tf.stack(rows) + chart_log_jacobian
-    tangent_values = tf.stack(tangents)
+    values = rows + chart_log_jacobian
+    tangent_values = tangents
     valid = tf.reduce_all(tf.math.is_finite(theta)) & tf.reduce_all(
         tf.math.is_finite(values)
     ) & tf.reduce_all(tf.math.is_finite(tangent_values))
@@ -461,61 +462,8 @@ def _teacher_targets(
         initial_variance=initial_variance,
         process_variance=process_variance,
     )
-    recursion = (
-        padded_fixed_teacher_recursion_shape_xla.python_function
-        if setup_static
-        else padded_fixed_teacher_recursion_shape_xla
-    )
-    results = []
-    for parameter_index in range(adapter.parameter_count):
-        results.append(
-            recursion(
-                prepared["basis_values"],
-                prepared["active_mask"],
-                prepared["schedule"],
-                base,
-                base_tangents[:, :, parameter_index],
-                prepared["weights"],
-                tf.zeros_like(prepared["weights"]),
-                prepared["initial_cores"],
-                tf.zeros_like(prepared["initial_cores"]),
-                prepared["scale_shift_indices"],
-                prepared["defensive_weights"],
-                tf.zeros_like(prepared["defensive_weights"]),
-                prepared["query_basis_values"],
-                prepared["keep_mask"],
-                prepared["mass_operators"],
-                prepared["defensive_marginal_values"],
-                tf.zeros_like(prepared["defensive_marginal_values"]),
-                prepared["defensive_mass"],
-                tf.zeros([], tf.float32),
-                prepared["operator_powers"],
-                prepared["defensive_power_moments"],
-                prepared["state_offset"],
-                tf.zeros_like(prepared["state_offset"]),
-                prepared["state_matrix"],
-                tf.zeros_like(prepared["state_matrix"]),
-                prepared["pair_indices"],
-                tf.cast(controls.tt_ridge, tf.float32),
-                tf.cast(controls.column_scale_floor, tf.float32),
-                tf.cast(controls.condition_number_veto, tf.float32),
-                tf.cast(controls.fit_residual_veto, tf.float32),
-            )
-        )
-    first = results[0]
-    return {
-        "marginal_values": first[2],
-        "normalizers": first[4],
-        "skew": first[5],
-        "kurtosis": first[6],
-        "co_skew": first[7],
-        "co_kurtosis": first[8],
-        "skew_tangent": tf.stack([item[9] for item in results], axis=-1),
-        "kurtosis_tangent": tf.stack([item[10] for item in results], axis=-1),
-        "co_skew_tangent": tf.stack([item[11] for item in results], axis=-1),
-        "co_kurtosis_tangent": tf.stack([item[12] for item in results], axis=-1),
-        "valid": physical_valid & tf.reduce_all(tf.stack([item[-1] for item in results])),
-    }
+    return teacher_directions(base, base_tangents, physical_valid, prepared, controls,
+                              setup_static=setup_static)
 
 
 def freeze_nonlinear_teacher_scale_shift_indices(
@@ -526,48 +474,43 @@ def freeze_nonlinear_teacher_scale_shift_indices(
     initial_variance: float,
     process_variance: float,
     maximum_iterations: int = 8,
+    jit_compile: bool = True,
 ) -> dict[str, tf.Tensor]:
+    if maximum_iterations <= 0:
+        raise ValueError("scale-shift fixed-point iterations must be positive")
     prepared = dict(teacher_prepared)
-    theta = prepared["center_theta"]
-    base, _, _ = _teacher_base_log_targets(
-        theta,
-        prepared,
-        adapter,
-        initial_variance=initial_variance,
-        process_variance=process_variance,
-    )
-    # Start from a finite base-target shift before adding the carried marginal.
-    # An arbitrary row can overflow exp(0.5 * (log_target - shift)) on nonlinear
-    # charts before the fixed-point iteration has a chance to update it.
-    indices = tf.argmax(base, axis=1, output_type=tf.int32)
-    for _ in range(maximum_iterations):
-        prepared["scale_shift_indices"] = indices
-        targets = _teacher_targets(
-            theta,
-            prepared,
-            controls,
-            adapter,
-            initial_variance=initial_variance,
-            process_variance=process_variance,
-            setup_static=True,
-        )
-        if not bool(targets["valid"].numpy()):
-            raise ValueError("nonlinear teacher scale-shift freeze found an invalid fit")
-        previous = tf.concat(
-            [tf.ones_like(targets["marginal_values"][:1]), targets["marginal_values"][:-1]],
-            axis=0,
-        )
-        augmented = base + tf.where(
-            tf.range(tf.shape(base)[0])[:, None] > 0,
-            tf.math.log(tf.maximum(previous, tf.constant(1.0e-30, tf.float32))),
-            tf.zeros_like(base),
-        )
-        next_indices = tf.argmax(augmented, axis=1, output_type=tf.int32)
-        if bool(tf.reduce_all(next_indices == indices).numpy()):
-            prepared["scale_shift_indices"] = next_indices
-            return prepared
-        indices = next_indices
-    raise ValueError("nonlinear teacher scale-shift branch did not stabilize")
+    specification = tuple((name, tf.TensorSpec(value.shape, value.dtype))
+                          for name, value in prepared.items())
+    indices, valid, stable = _nonlinear_freeze_program(
+        specification, controls, adapter, maximum_iterations, bool(jit_compile))(
+            prepared, tf.cast(initial_variance, tf.float32), tf.cast(process_variance, tf.float32))
+    if not bool(valid):
+        raise ValueError("nonlinear teacher scale-shift freeze found an invalid fit")
+    if not bool(stable):
+        raise ValueError("nonlinear teacher scale-shift branch did not stabilize")
+    prepared["scale_shift_indices"] = indices
+    return prepared
+
+
+@lru_cache(maxsize=16)
+def _nonlinear_freeze_program(specification, controls, adapter, maximum_iterations, jit_compile):
+    @tf.function(input_signature=[dict(specification), tf.TensorSpec([], tf.float32),
+        tf.TensorSpec([], tf.float32)], jit_compile=jit_compile, autograph=False)
+    def freeze(prepared, initial_variance, process_variance):
+        theta = prepared["center_theta"]
+        base, _, _ = _teacher_base_log_targets(theta, prepared, adapter,
+            initial_variance=initial_variance, process_variance=process_variance)
+
+        def targets(indices):
+            current = dict(prepared, scale_shift_indices=indices)
+            return _teacher_targets(theta, current, controls, adapter,
+                initial_variance=initial_variance, process_variance=process_variance, setup_static=True)
+
+        # Retain the finite base-target starting shift used by nonlinear charts.
+        return freeze_scale_shift_core(base, tf.argmax(base, axis=1, output_type=tf.int32),
+                                       targets, maximum_iterations)
+
+    return freeze
 
 
 def _normalize(logits: tf.Tensor, tangent: tf.Tensor) -> dict[str, tf.Tensor]:

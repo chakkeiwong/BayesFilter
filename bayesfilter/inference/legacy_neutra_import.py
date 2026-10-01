@@ -3,6 +3,10 @@
 These helpers convert reviewed legacy transport-state dictionaries into
 BayesFilter dense-IAF payloads. They do not train NeuTra, run HMC, import
 external model modules, or establish sampler/posterior validity.
+
+Owner directive 2026-09-25: imported maps remain HISTORICAL — UNFAITHFUL TO
+THE AUTHOR'S CODE. Conversion preserves their original architecture and does
+not promote them to the canonical IAF. See docs/reference/neutra-implementation.md.
 """
 
 from __future__ import annotations

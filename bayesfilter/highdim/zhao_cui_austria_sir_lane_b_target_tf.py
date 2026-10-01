@@ -8,6 +8,7 @@ from typing import Mapping
 
 import tensorflow as tf
 
+from bayesfilter.highdim.sealed_sir_dataset_tf import sealed_sir_tensors
 from bayesfilter.highdim.sir_latent_preclip_tf import (
     LatentPreclipSIRSSM,
     latent_preclip_zhao_cui_sir_austria_model,
@@ -41,14 +42,10 @@ def tensor_sha256(value: tf.Tensor) -> str:
 
 
 def generate_sealed_lane_b_dataset() -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-    """Reproduce the comparison-row data without importing UKF/SGQF code."""
+    """Load the exact sealed input independently of simulator rounding."""
 
-    model = latent_preclip_zhao_cui_sir_austria_model().physical_model.base_model
     with tf.device("/CPU:0"):
-        states, all_observations = model.simulate(
-            final_time=SIR_HORIZON,
-            seed=SIR_DATASET_SEED,
-        )
+        states, all_observations = sealed_sir_tensors()
         states = tf.ensure_shape(tf.convert_to_tensor(states, DTYPE), [21, 18])
         all_observations = tf.ensure_shape(
             tf.convert_to_tensor(all_observations, DTYPE), [21, 9]

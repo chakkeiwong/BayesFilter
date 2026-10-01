@@ -70,6 +70,20 @@ def _std_normal_logpdf_sum(x):
     return tf.reduce_sum(-0.5 * x * x - 0.5 * _LOG2PI)
 
 
+def _affine_state_path(center, phi, initial, innovations):
+    """Time-major affine recurrence, with dense tensor state and native loop."""
+    horizon = tf.shape(innovations)[0]
+    history = tf.TensorArray(initial.dtype, size=horizon, element_shape=initial.shape)
+    def step(index, state, history):
+        state = center + phi * (state - center) + innovations[index]
+        return index + 1, state, history.write(index, state)
+    _, _, history = tf.while_loop(
+        lambda index, *_: index < horizon, step,
+        (tf.constant(0), initial, history), maximum_iterations=horizon,
+    )
+    return history.stack()
+
+
 def states_from_raws(theta_bar, x0_raw, eta_raw,
                      fix: model_tf.HardBoundFixture = model_tf.FIXTURE):
     """Deterministic state reconstruction in the non-centered chart."""
@@ -80,16 +94,7 @@ def states_from_raws(theta_bar, x0_raw, eta_raw,
     x0 = theta_ext + p0_sd * x0_raw
     etas = q_sd * eta_raw  # [T, 8]
 
-    # Unrolled recursion (T is small and static). tf.scan is avoided
-    # deliberately: its gradient under NUTS's graph tracing produced
-    # IndexedSlices that TFP's kernel bootstrap cannot handle.
-    horizon = eta_raw.shape[0]
-    states = []
-    x = x0
-    for t in range(horizon):
-        x = theta_ext + phi * (x - theta_ext) + etas[t]
-        states.append(x)
-    return tf.stack(states, axis=0)  # [T, 8]
+    return _affine_state_path(theta_ext, phi, x0, etas)
 
 
 def joint_log_prob(y, theta, x0_raw, eta_raw, target_id,
@@ -138,12 +143,7 @@ GATE = GateModel()
 
 def gate_states_from_raws(mu, raws, gm: GateModel = GATE):
     x0 = mu + gm.p0_sd * raws[0]
-    xs = []
-    x = x0
-    for t in range(gm.horizon):
-        x = mu + gm.phi * (x - mu) + gm.q_sd * raws[1 + t]
-        xs.append(x)
-    return tf.stack(xs)
+    return _affine_state_path(mu, gm.phi, x0, gm.q_sd * raws[1:1 + gm.horizon])
 
 
 def gate_observation_mean(states, gm: GateModel = GATE):
@@ -205,12 +205,9 @@ def joint_log_prob_batched(y, theta, x0_raw, eta_raw, target_id,
         [theta_bar, tf.zeros_like(theta_bar[:, :2])], axis=-1)  # [C, 8]
     x = theta_ext + p0_sd * x0_raw
     etas = q_sd * eta_raw  # [C, T, 8]
-    horizon = eta_raw.shape[1]
-    states = []
-    for t in range(horizon):
-        x = theta_ext + phi * (x - theta_ext) + etas[:, t]
-        states.append(x)
-    states = tf.stack(states, axis=1)  # [C, T, 8]
+    states = tf.transpose(_affine_state_path(
+        theta_ext, phi, x, tf.transpose(etas, [1, 0, 2]),
+    ), [1, 0, 2])
 
     mean = model_tf.observation_mean(states, target_id, fix)  # [C, T, 13]
     scales = model_tf.noise_scales_vector(noise_scales)  # [C, 13]
@@ -249,9 +246,14 @@ def gate_joint_log_prob_batched(y, params, raws, gm: GateModel = GATE):
            - 0.5 * _LOG2PI)
     x = mu + gm.p0_sd * raws[:, 0]
     y = tf.convert_to_tensor(y, DTYPE)
-    for t in range(gm.horizon):
+    def step(t, x, lp):
         x = mu + gm.phi * (x - mu) + gm.q_sd * raws[:, 1 + t]
         mean = tf.maximum(tf.constant(gm.lower_bound, DTYPE), x)
         z = (y[t] - mean) / sd
         lp += -0.5 * z * z - log_sd - 0.5 * _LOG2PI
+        return t + 1, x, lp
+    _, _, lp = tf.while_loop(
+        lambda t, *_: t < gm.horizon, step,
+        (tf.constant(0), x, lp), maximum_iterations=gm.horizon,
+    )
     return lp

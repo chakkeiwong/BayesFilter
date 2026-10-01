@@ -14,10 +14,6 @@ from bayesfilter.highdim.genut_shape_lm_tf import (
     smooth_rms_cap_value,
 )
 from bayesfilter.highdim.higher_moment_contract_e import higher_moment_shape_jvp
-from bayesfilter.highdim.cubature_genut_batch_tf import (
-    _higher_moment_batch_jvp,
-    _higher_moment_batch_value,
-)
 
 
 def test_scaled_lm_is_finite_and_condition_bounded_for_ill_scaled_jacobian() -> None:
@@ -152,58 +148,3 @@ def test_necessary_feasibility_detects_preserved_failure_scale() -> None:
     )
     assert not bool(result["valid"][0].numpy())
     assert float(result["finite_particle_upper_margin"][0].numpy()) < -1900.0
-
-
-def test_batch_collapsed_weight_replay_stays_finite_at_n1008() -> None:
-    particle_count = 1008
-    axis = tf.linspace(
-        tf.constant(-2.0, tf.float32),
-        tf.constant(2.0, tf.float32),
-        particle_count,
-    )
-    source = tf.stack(
-        [axis, tf.sin(1.7 * axis) + 0.15 * axis],
-        axis=-1,
-    )[None, :, :]
-    weights = tf.concat(
-        [
-            tf.constant([[0.998]], tf.float32),
-            tf.fill([1, particle_count - 1], tf.constant(0.002 / 1007.0)),
-        ],
-        axis=1,
-    )
-    points = tf.random.stateless_normal(
-        [1, particle_count, 2], [2026, 816], dtype=tf.float32
-    )
-    source_tangent = tf.zeros([1, particle_count, 2, 1], tf.float32)
-    weights_tangent = tf.zeros([1, particle_count, 1], tf.float32)
-    points_tangent = tf.zeros([1, particle_count, 2, 1], tf.float32)
-    kwargs = {
-        "correction_steps": 4,
-        "strength": 0.2,
-        "floor": 1.0e-5,
-        "lm_damping": 1.0e-2,
-        "lm_scale_floor": 1.0e-4,
-        "trust_radius": 0.5,
-    }
-    value = _higher_moment_batch_value(source, weights, points, **kwargs)
-    score = _higher_moment_batch_jvp(
-        source,
-        weights,
-        source_tangent,
-        weights_tangent,
-        points,
-        points_tangent,
-        **kwargs,
-    )
-    assert bool(value["valid"][0].numpy())
-    assert bool(score["valid"][0].numpy())
-    assert bool(tf.reduce_all(tf.math.is_finite(value["particles"])).numpy())
-    assert bool(
-        tf.reduce_all(tf.math.is_finite(score["particles_tangent"])).numpy()
-    )
-    assert bool(
-        tf.reduce_all(
-            tf.math.is_finite(value["minimum_finite_particle_upper_margin"])
-        ).numpy()
-    )

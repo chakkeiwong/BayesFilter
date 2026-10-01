@@ -143,14 +143,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     target, trainer = _trainer(args.q)
     pool_config = CPUValueScorePoolConfig(
         worker_factory_path=(
-            "bayesfilter.nonlinear.ssl_lstm_complexity_target_tf:"
-            "complexity_target_worker_factory"
+            "bayesfilter.nonlinear.ssl_lstm_complexity_batched_target_tf:"
+            "batch_native_complexity_target_worker_factory"
         ),
         worker_config={"q": int(args.q)},
         dimension=4,
         worker_count=int(args.workers),
         cores_per_worker=int(args.cores_per_worker),
         timeout_seconds=float(args.timeout_seconds),
+        batch_sizes=tuple(sorted({args.batch_size // args.workers, (args.batch_size + args.workers - 1) // args.workers})),
     )
     calls = []
     started = time.perf_counter()
@@ -250,7 +251,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "selected_physical_gpu": SELECTED_GPU,
             "logical_gpus": [gpu.name for gpu in tf.config.list_logical_devices("GPU")],
             "jit_compile_parent_update": True,
-            "jit_compile_worker_target": False,
+            "jit_compile_worker_target": True,
             "tf32": bool(tf.config.experimental.tensor_float_32_execution_enabled()),
             "wall_seconds": time.perf_counter() - started,
             "plan": PLAN.as_posix(),

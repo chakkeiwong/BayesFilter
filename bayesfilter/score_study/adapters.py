@@ -19,7 +19,9 @@ def evaluate_gaussian(row, context):
     runtime = configure_runtime(device=settings["device"], tf32=settings["tf32"],
                                 jit_compile=settings["jit_compile"])
     import tensorflow as tf
+    from .gaussian_execution_tf import make_gaussian_execution
     from .gaussian_tf import make_data_kernel, make_gaussian_kernel, make_particle_kernel, parameterized_model
+    from .input_execution_tf import make_score_inputs
 
     dtype = tf.as_dtype(settings["dtype"])
     d, o, T, N = (settings[k] for k in ("dimension", "observation_dimension", "horizon", "particles"))
@@ -33,12 +35,26 @@ def evaluate_gaussian(row, context):
     with tf.device("/GPU:0" if settings["device"] == "GPU" else "/CPU:0"):
         data_kernel = make_data_kernel(d, o, T, settings["dtype"], settings["jit_compile"])
         observations = data_kernel(data_theta, tf.constant(data_seed, tf.int32))
-        initial = tf.random.stateless_normal([N, d], seed("initial"), dtype=dtype)
-        process = tf.random.stateless_normal([T, N, d], seed("process"), dtype=dtype)
-        uniforms = tf.random.stateless_uniform([T, N], seed("resampling"), dtype=dtype)
-        reset_design = tf.random.stateless_normal([N, d], seed("reset_design"), dtype=dtype)
-        oracle_kernel = make_gaussian_kernel(d, o, 6, settings["dtype"], settings["jit_compile"])
-        oracle = oracle_kernel(observations, *parameterized_model(theta, d, o))
+        deferred_inputs = (row["proposal"] in ("iapf", "integrated_kdm", "resampling_kdm", "kdm_covariance")
+                           or row.get("collect_kdm_control", False))
+        if deferred_inputs:
+            initial = tf.random.stateless_normal([N, d], seed("initial"), dtype=dtype)
+            process = tf.random.stateless_normal([T, N, d], seed("process"), dtype=dtype)
+            uniforms = tf.random.stateless_uniform([T, N], seed("resampling"), dtype=dtype)
+            reset_design = tf.random.stateless_normal([N, d], seed("reset_design"), dtype=dtype)
+        else:
+            input_seeds = [seed("initial"), seed("process"), seed("resampling"), seed("reset_design")]
+            if row["proposal"] == "twist":
+                input_seeds.append(seed("twist_initial_ancestor"))
+            input_kernel = make_score_inputs(d, N, T, settings["dtype"], settings["jit_compile"], row["proposal"] == "twist")
+            initial, process, uniforms, reset_design = input_kernel(tf.constant(input_seeds, tf.int32))
+        if row["proposal"] == "iapf":
+            # Adaptive iAPF remains outside the current execution-repair scope.
+            oracle_kernel = make_gaussian_kernel(d, o, 6, settings["dtype"], settings["jit_compile"])
+            oracle = oracle_kernel(observations, *parameterized_model(theta, d, o))
+        else:
+            oracle_kernel = make_gaussian_execution(d, o, settings["dtype"], settings["jit_compile"])
+            oracle = oracle_kernel(theta, observations)
         diagnostics = {"data_seed": data_seed, "data_version": digest(observations.numpy().tolist()),
                        "initial_seed": seed("initial"), "process_seed": seed("process"),
                        "resampling_seed": seed("resampling"), "reset_seed": seed("reset_design"),
@@ -75,8 +91,8 @@ def evaluate_gaussian(row, context):
         proposal = row["proposal"]
         started = time.monotonic()
         if proposal in ("kalman", "ukf"):
-            kernel = make_gaussian_kernel(d, o, 6, settings["dtype"], settings["jit_compile"], proposal == "ukf")
-            value, score, mean, covariance, minimum_eigenvalue = kernel(observations, *parameterized_model(theta, d, o))
+            kernel = make_gaussian_execution(d, o, settings["dtype"], settings["jit_compile"], proposal == "ukf")
+            value, score, mean, covariance, minimum_eigenvalue = kernel(theta, observations)
             diagnostics.update(final_mean=mean.numpy().tolist(), final_covariance=covariance.numpy().tolist(),
                                minimum_covariance_eigenvalue=float(minimum_eigenvalue.numpy()))
             if not bool((minimum_eigenvalue > 0).numpy()):
@@ -98,7 +114,8 @@ def evaluate_gaussian(row, context):
         elif proposal == "twist":
             from .twist_tf import make_twist_kernel
             kernel = make_twist_kernel(d, o, N, T, row["twist_power"], settings["dtype"], settings["jit_compile"])
-            twist_uniforms = tf.concat([tf.random.stateless_uniform([1,N], seed("twist_initial_ancestor"), dtype=dtype),uniforms],axis=0)
+            twist_uniforms = (tf.concat([tf.random.stateless_uniform([1,N], seed("twist_initial_ancestor"), dtype=dtype),uniforms],axis=0)
+                              if deferred_inputs else uniforms)
             value, score, ess = kernel(theta, observations, initial, process, twist_uniforms)
             diagnostics.update(minimum_ess=float(ess.numpy()), twist_power=row["twist_power"],
                                initial_normalizer="mean_f_x0_psi1", terminal_future_factor=1.,
@@ -120,65 +137,62 @@ def evaluate_gaussian(row, context):
         elif proposal in ("ledh", "integrated_kdm", "resampling_kdm", "sgqf", "kdm_covariance"):
             from .canonical_adapter_tf import make_canonical_kernel
             controls = row["controls"]
+            arguments = (theta, tf.eye(6, dtype=dtype), observations, initial, process, reset_design)
             if proposal == "ledh":
                 collect_diagnostics = row.get("collect_control_diagnostics", False)
                 kernel = make_canonical_kernel(d, o, N, T, tuple(sorted(controls.items())), settings["dtype"], settings["jit_compile"],
-                                               return_diagnostics=collect_diagnostics)
-                outputs = [kernel(theta, direction, observations, initial, process, reset_design)
-                           for direction in tf.unstack(tf.eye(6, dtype=dtype))]
-                if collect_diagnostics:
-                    from .control_diagnostics_tf import materialize_control_diagnostics
-                    diagnostics["control_diagnostics"] = materialize_control_diagnostics(outputs[0][2])
+                                               return_diagnostics=collect_diagnostics, all_directions=True)
             elif proposal == "sgqf":
                 from .covariance_adapter_tf import make_covariance_kernel
                 kernel, metadata = make_covariance_kernel(d, o, N, T, tuple(sorted(controls.items())),
-                    row["sgqf_level"], settings["dtype"], settings["jit_compile"])
-                outputs = [kernel(theta, direction, observations, initial, process, reset_design)
-                           for direction in tf.unstack(tf.eye(6, dtype=dtype))]
+                    row["sgqf_level"], settings["dtype"], settings["jit_compile"], all_directions=True)
                 diagnostics.update(covariance_provider=metadata, canonical_status="alternative_covariance_candidate")
             elif proposal == "kdm_covariance":
                 from .mixture_covariance_tf import make_mixture_covariance_kernel
                 kernel = make_mixture_covariance_kernel(d, o, N, T, tuple(sorted(controls.items())),
-                    row["within_fraction"], settings["dtype"], settings["jit_compile"])
-                outputs = [kernel(theta, direction, observations, initial, process, reset_design)
-                           for direction in tf.unstack(tf.eye(6, dtype=dtype))]
-                schedule = outputs[0][2]
-                diagnostics.update(covariance_provider="local_gaussian_mixture_assumed_density_filter",
-                    within_fraction=row["within_fraction"], component_count=2*d,
-                    component_lifecycle="independent_prediction_observation_conditioning_and_evidence_reweighting",
-                    canonical_status="alternative_covariance_candidate_not_younis_filter_reproduction",
-                    final_component_log_weights=schedule["component_log_weights"][-1].numpy().tolist(),
-                    final_provider_covariance=schedule["post_covariances"][-1].numpy().tolist())
+                    row["within_fraction"], settings["dtype"], settings["jit_compile"], all_directions=True)
             else:
                 from .kdm_adapter_tf import make_kdm_kernel
                 bandwidth = row["bandwidth_scale"]
                 if not isinstance(bandwidth, (int, float)) or not 0 < bandwidth < float("inf"):
                     raise ValueError("positive finite KDM bandwidth scale required")
                 kernel = make_kdm_kernel(d, o, N, T, tuple(sorted(controls.items())), proposal,
-                                         settings["dtype"], settings["jit_compile"])
+                                         settings["dtype"], settings["jit_compile"], all_directions=True)
                 mixture_noise = tf.random.stateless_normal([T, N, d], seed("kdm_noise"), dtype=dtype)
                 mixture_uniforms = tf.random.stateless_uniform([T, N], seed("kdm_components"), dtype=dtype)
-                outputs = [kernel(theta, direction, observations, initial, process, reset_design,
-                                  mixture_uniforms, mixture_noise, tf.constant(bandwidth, dtype))
-                           for direction in tf.unstack(tf.eye(6, dtype=dtype))]
-                if not all(bool(x[2].numpy()) for x in outputs):
-                    raise ValueError("KDM consumer validity veto")
+                arguments += (mixture_uniforms, mixture_noise, tf.constant(bandwidth, dtype))
                 diagnostics.update(bandwidth_scale=bandwidth, bandwidth_law="scale_squared_times_Q_theta",
                                    bandwidth_derivative="total_model_parameter_dependence",
                                    kdm_target="KDM-FINITE" if proposal == "integrated_kdm" else "RESKDM-IWSG-FINITE",
                                    expectation_gradient_unbiasedness="not_claimed_for_log_program",
                                    kdm_random_seed=seed("kdm_noise"), kdm_components_seed=seed("kdm_components"))
-            values = tf.stack([x[0] for x in outputs])
-            value, score = values[0], tf.stack([x[1] for x in outputs])
-            tf.debugging.assert_near(values, tf.fill([6], value))
+            assembled = kernel(*arguments)
+            if proposal == "ledh" and collect_diagnostics:
+                from .control_diagnostics_tf import materialize_control_diagnostics
+                diagnostics["control_diagnostics"] = materialize_control_diagnostics(assembled["first_auxiliary"][0])
+            # XLA may ignore assert ops. Enforce the returned status on the host.
+            if proposal in ("integrated_kdm", "resampling_kdm") and not bool(assembled["valid"].numpy()):
+                raise ValueError("KDM consumer validity veto")
+            tf.debugging.assert_equal(assembled["valid"], True, message="analytical score validity veto")
+            tf.debugging.assert_equal(assembled["value_invariant"], True, message="directional value invariance veto")
+            value, score = assembled["value"], assembled["score"]
+            if proposal == "kdm_covariance":
+                schedule = assembled["first_auxiliary"][0]
+                diagnostics.update(covariance_provider="local_gaussian_mixture_assumed_density_filter",
+                    within_fraction=row["within_fraction"], component_count=2*d,
+                    component_lifecycle="independent_prediction_observation_conditioning_and_evidence_reweighting",
+                    canonical_status="alternative_covariance_candidate_not_younis_filter_reproduction",
+                    final_component_log_weights=schedule["component_log_weights"][-1].numpy().tolist(),
+                    final_provider_covariance=schedule["post_covariances"][-1].numpy().tolist())
             diagnostics.update(reset_contract_id="contract_e_chol_v1", controls=controls,
                                chunk_policy="dpf_transport_exact_divisor_cap3000_v1", chunk_size=N,
                                score_consumer=({"ledh": "make_canonical_kernel -> canonical_value_and_analytical_score",
                                                 "sgqf": "make_covariance_kernel -> shared executor -> SGQFCovarianceProvider",
                                                 "kdm_covariance": "mixture_schedule -> shared executor -> scheduled prediction/conditioning moments"}.get(proposal, "make_kdm_kernel -> KDM consumer -> shared canonical executor")),
                                derivative_semantics="analytical_total_initial_moments_flow_genut_contract_e",
-                               tuning_status="verified_selection" if row.get("role") == "claim" else "mechanics_or_tuning_candidate")
-            calls = 6
+                               tuning_status="verified_selection" if row.get("role") == "claim" else "mechanics_or_tuning_candidate",
+                               direction_execution="enclosing_tensorflow_loop", parameter_directions=6)
+            calls = 1
         else:
             raise ValueError(f"unimplemented Gaussian proposal: {proposal}")
         if value.shape != () or score.shape != (6,) or value.dtype != dtype or score.dtype != dtype:

@@ -15,6 +15,7 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 
 CANONICAL_MODULES = [
     "bayesfilter/highdim/ledh_canonical_filter_tf.py",
+    "bayesfilter/highdim/ledh_canonical_value_program_tf.py",
     "bayesfilter/highdim/ledh_canonical_score_tf.py",
     "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
     "bayesfilter/highdim/ledh_canonical_batch_tf.py",

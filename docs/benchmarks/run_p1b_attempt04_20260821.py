@@ -16,18 +16,20 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "1")
 
 import datetime as _dt
 import json
+import math
 import platform
 import subprocess
 import time
 from pathlib import Path
 
+import tensorflow as tf
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "docs" / "benchmarks"))
 
-import numpy as np, tensorflow as tf
 from run_n4_step_localization_20260819 import case_with_steps
-from run_adapted_engine_validation_20260820 import kalman_hint_factory
+from bayesfilter.highdim.gaussian_moment_hints_tf import prepare_lgssm_moment_hints
 from bayesfilter.highdim.squared_tt_engine_v0_tf import EngineConfig
 from bayesfilter.highdim.squared_tt_engine_adapted_xla_tf import (
     run_value_filter_branch_axis_adapted_xla,
@@ -38,9 +40,8 @@ ROWS_FILE = "/tmp/attempt04_rows.jsonl"
 
 
 def run_one_cell(n: int, r: int, seed: int) -> dict:
-    adapter, ys, kalman_steps = case_with_steps(n, seed + n)
-    hint, observe_t0 = kalman_hint_factory(n, seed + n)
-    observe_t0(ys[0].numpy())
+    adapter, ys, kalman_steps, model = case_with_steps(n, seed + n, include_model=True)
+    _, hint = prepare_lgssm_moment_hints(ys, *model).callbacks()
     config = EngineConfig(
         basis_degree=12, rank=r, row_count=ROWS, sweeps=3,
         ridge=1e-10, tau=1e-6, coordinate_half_width=3.0,
@@ -62,9 +63,9 @@ def run_one_cell(n: int, r: int, seed: int) -> dict:
     wall = time.time() - cell_start
     return {
         "n": n, "rank": r, "seed": seed, "gap": gap,
-        "per_step_gap": gap / HORIZON if np.isfinite(gap) else None,
+        "per_step_gap": gap / HORIZON if math.isfinite(gap) else None,
         "passes_declared": bool(
-            np.isfinite(gap) and gap / HORIZON <= PER_STEP_TOLERANCE and status == "ok"
+            math.isfinite(gap) and gap / HORIZON <= PER_STEP_TOLERANCE and status == "ok"
         ),
         "wall_seconds": wall, "status": status,
         "max_truncation_ratio": max_ratio,

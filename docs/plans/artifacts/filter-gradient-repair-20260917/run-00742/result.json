@@ -1,0 +1,725 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "centered_child",
+  "size": 2,
+  "jit": "on",
+  "device": "GPU",
+  "source_root": "/tmp/bayesfilter-filter-repair-baseline-3582b4ac",
+  "worker_sha256": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "03cb7ed69e0ccfa71a31a5dddc7a994f6642c0e3e7e7ccb564cc46125e5f02d2",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f",
+    "filter_repair_centered_worker.py": "8d0f84d203cf14b729806d0e8fbe0d38a956d739e391c175ffa8765cf4ec0a16",
+    "filter_repair_centered_fixtures.py": "f88dc96dbc9ccd73424ba81ef1242bc86770d087dcec5bc2c3b6f922bf902b99"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 20135936,
+      "VmRSS": 20135936
+    },
+    "prepared": {
+      "VmHWM": 1089896448,
+      "VmRSS": 1089896448,
+      "gpu": {
+        "current": 90880,
+        "peak": 105728
+      }
+    },
+    "traced": {
+      "VmHWM": 1599709184,
+      "VmRSS": 1599709184,
+      "gpu": {
+        "current": 90880,
+        "peak": 90880
+      }
+    },
+    "cold_outputs_live": {
+      "VmHWM": 2651619328,
+      "VmRSS": 2651619328,
+      "gpu": {
+        "current": 92416,
+        "peak": 300544
+      }
+    },
+    "cold_outputs_released": {
+      "VmHWM": 2651623424,
+      "VmRSS": 2651623424,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    }
+  },
+  "status": "passed",
+  "phase": "complete",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4090"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "2",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": "index, name, uuid, driver_version\n0, NVIDIA GeForce RTX 4090, GPU-08d989e5-2702-1b9d-c1ef-7795ff299e02, 595.91.07\n1, NVIDIA GeForce RTX 4090, GPU-225f4834-d8ad-f91a-2378-03ad0524381b, 595.91.07\n2, NVIDIA GeForce RTX 4090, GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba, 595.91.07\n3, NVIDIA GeForce RTX 4090, GPU-b8045e28-4433-ec7a-77a5-db0636748322, 595.91.07",
+  "trust_basis": "trusted_escalated_gpu_diagnostic",
+  "numerical_backend": "tensorflow",
+  "preparation_seconds": 5.11482454900397,
+  "dimensions": {
+    "dimension": 36,
+    "residual_rank": 3,
+    "query_rows": 8,
+    "feature_count": 3,
+    "prefix_dimension": 18,
+    "tau": 0.05,
+    "frozen_core_sha256": [
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "a1c66ad7aebf29aaa92eb88738096b1eeb4b596fe4d6e9d10a6f34970f34c2fa",
+      "537d1b9880e2df88baf71540f01f3cd85cac713cc78ecd9bb3127b728a94ad7f",
+      "2de3d31012aa46791b7301db09f20983bd1bcbc063637a8b2d5c40842b88cf11",
+      "7c7e8184cddd7b75ee14e4f7cb905328538b2a4913e7677d1c32dd224542b537",
+      "ee1f645e9bd05d56f3829eee4701af54dea6bef39260be060d8066d7502cf692",
+      "0361fcf6662375936fbeaaedfc960f6f62f35f89aca42bd7abd0de07730fb774",
+      "6197974b5e8c5fe166766afc2f3e08fa0fd5f006425a56c1d960d7a6eae39e16",
+      "9310732adfdf62439510a7325a530a9d1311f094ad85d56ec96483a79863b02e",
+      "c6c1dca583fd3bef399e5fda00791f7cd2b3aa9d021a46064d7c901e2aef1b6d",
+      "0398b6debe6df0147e604628e08bdc9ed8cf0e2c82b9474864391ab17c3671dc",
+      "c9eb4c13602cf58ca3a312d9599a704c8ce3d745a156975d49551aa777e90da2",
+      "7ea9c8a17405597e1c6c6a7246e2cb8efc82371b80ffdece4eebb9ad5d5042ef",
+      "07e02366b379c3449c499d20407aebb37b8dfdb10f2e79499998f094cb83ecd6",
+      "ef00d09aa35ceac0aebb00506e2958057f0c91b7fbf30c5ffbedbce6765a14fa",
+      "e39326fcee702daf7466698c22ad547ffb625f0f082b15440a51cf68ecbf4fb7",
+      "dda825ce6f60e0664eb499d4b5c0006c43f74e2dd9a4a69bcfd0abc374d38a58",
+      "d304912d4f1de5b75d9e1e50adf74cbeaa9a10bf21ac471eccad64667c2f6d6b",
+      "86d9da30669eb27157d72857438515cb3579e05052d8797fcc6a0628494d915d",
+      "97914fda61ae34f1a61e5b819ce5cd6b47fe914afc76c4b1158ecc3417a807a8",
+      "888d32fc75c5ee410ef2cf2657f4140dc602ec0c6df533e603ae086bcae6ae20",
+      "5814c6b1421e6a4a25ec6fc5c0d1473a3fc0ddad094e9bd9c1e6927ed65de6ea",
+      "ad3ccbd3de00a6df80f3f09f32e657abf2b8c0ca6db70789f31a2f7940733c60",
+      "60257d46a881c0a856e50a7ee92fb0d90714b7c6a9cb36a9b17c2e2b25e1759f",
+      "dbb7af48e63d0a0a4a2577d71f8bc70a1af963419b4b422b6ffa3f7c66a314c0",
+      "0e7a00d751c6547475cf26956035c1306280f6c4d1576291f4e2fb6f7eb6a180",
+      "a0364dcc326714633bc83329746f915999eac5d89d1b85136567f71c11dfd33b",
+      "61a7205f27a1c006f91e14ae1fed645347f7afd7e9be91fea9778996a70cf7d4",
+      "bd632cb19a71914577c3e664971f3d6de2db37a097529feeaa6e94820387112e",
+      "239731c0f9df53e7a48a655dee7d760a272c2b3e0f92e1f693c4401cc217abb8",
+      "ac02107f121706366502816ce0dd6a36cb18dae91b9bc147e7c8880e8d03ade1",
+      "7d58899d8cd716f75f003ed9b1358f355a0a475f11be4fcb24271cec901d3660",
+      "588c8ea91cbd79b28ca7d59b611e33b753f0b0baa1bd07e32a637f86d4553854",
+      "c5603b22f4ef717009b04b00db02c90021cd811fac167b8b727b4f8467193b69",
+      "16a045838dfead3c757905ba0a61e0a668a1a0fcc116d4e04646e9f2a8a53fdd",
+      "f626616f118d69babc9ea43d141a64c85675debe3b3b73dbe5a255fa5fc02a10",
+      "9390376cd2a6dd8622547d211fa001d3966047f3cfe143394405aabd56104e8e",
+      "a38de471845b4d6fde2f45fe52999e5587fa20fade648d1e394596379fc37511",
+      "61c23142ac9168ee54dad817bc5032dbefd1da6b6ed1c62dbeb4fe7fb830b0f7",
+      "7c7e8184cddd7b75ee14e4f7cb905328538b2a4913e7677d1c32dd224542b537",
+      "ee1f645e9bd05d56f3829eee4701af54dea6bef39260be060d8066d7502cf692",
+      "0361fcf6662375936fbeaaedfc960f6f62f35f89aca42bd7abd0de07730fb774",
+      "6197974b5e8c5fe166766afc2f3e08fa0fd5f006425a56c1d960d7a6eae39e16",
+      "9310732adfdf62439510a7325a530a9d1311f094ad85d56ec96483a79863b02e",
+      "c6c1dca583fd3bef399e5fda00791f7cd2b3aa9d021a46064d7c901e2aef1b6d",
+      "0398b6debe6df0147e604628e08bdc9ed8cf0e2c82b9474864391ab17c3671dc",
+      "c9eb4c13602cf58ca3a312d9599a704c8ce3d745a156975d49551aa777e90da2",
+      "7ea9c8a17405597e1c6c6a7246e2cb8efc82371b80ffdece4eebb9ad5d5042ef",
+      "07e02366b379c3449c499d20407aebb37b8dfdb10f2e79499998f094cb83ecd6",
+      "ef00d09aa35ceac0aebb00506e2958057f0c91b7fbf30c5ffbedbce6765a14fa",
+      "e39326fcee702daf7466698c22ad547ffb625f0f082b15440a51cf68ecbf4fb7",
+      "dda825ce6f60e0664eb499d4b5c0006c43f74e2dd9a4a69bcfd0abc374d38a58",
+      "d304912d4f1de5b75d9e1e50adf74cbeaa9a10bf21ac471eccad64667c2f6d6b",
+      "86d9da30669eb27157d72857438515cb3579e05052d8797fcc6a0628494d915d",
+      "97914fda61ae34f1a61e5b819ce5cd6b47fe914afc76c4b1158ecc3417a807a8",
+      "888d32fc75c5ee410ef2cf2657f4140dc602ec0c6df533e603ae086bcae6ae20",
+      "5814c6b1421e6a4a25ec6fc5c0d1473a3fc0ddad094e9bd9c1e6927ed65de6ea",
+      "ad3ccbd3de00a6df80f3f09f32e657abf2b8c0ca6db70789f31a2f7940733c60",
+      "60257d46a881c0a856e50a7ee92fb0d90714b7c6a9cb36a9b17c2e2b25e1759f",
+      "dbb7af48e63d0a0a4a2577d71f8bc70a1af963419b4b422b6ffa3f7c66a314c0",
+      "0e7a00d751c6547475cf26956035c1306280f6c4d1576291f4e2fb6f7eb6a180",
+      "a0364dcc326714633bc83329746f915999eac5d89d1b85136567f71c11dfd33b",
+      "61a7205f27a1c006f91e14ae1fed645347f7afd7e9be91fea9778996a70cf7d4",
+      "bd632cb19a71914577c3e664971f3d6de2db37a097529feeaa6e94820387112e",
+      "239731c0f9df53e7a48a655dee7d760a272c2b3e0f92e1f693c4401cc217abb8",
+      "ac02107f121706366502816ce0dd6a36cb18dae91b9bc147e7c8880e8d03ade1",
+      "7d58899d8cd716f75f003ed9b1358f355a0a475f11be4fcb24271cec901d3660",
+      "588c8ea91cbd79b28ca7d59b611e33b753f0b0baa1bd07e32a637f86d4553854",
+      "c5603b22f4ef717009b04b00db02c90021cd811fac167b8b727b4f8467193b69",
+      "16a045838dfead3c757905ba0a61e0a668a1a0fcc116d4e04646e9f2a8a53fdd",
+      "f626616f118d69babc9ea43d141a64c85675debe3b3b73dbe5a255fa5fc02a10",
+      "9390376cd2a6dd8622547d211fa001d3966047f3cfe143394405aabd56104e8e",
+      "626af5154386db7f8221f7ac5188307b6b0e3d160f069553abe25fb990646b14",
+      "f3e435fec04ace5b3e0d82153cf64bdc031150ef6e44c2e50ab96697ac33420f",
+      "8b475d90e3050e79b0b51548b2a1b7e0a29158c15a8cf26dbf9418b10aee8549",
+      "ee1f645e9bd05d56f3829eee4701af54dea6bef39260be060d8066d7502cf692",
+      "0361fcf6662375936fbeaaedfc960f6f62f35f89aca42bd7abd0de07730fb774",
+      "6197974b5e8c5fe166766afc2f3e08fa0fd5f006425a56c1d960d7a6eae39e16",
+      "9310732adfdf62439510a7325a530a9d1311f094ad85d56ec96483a79863b02e",
+      "c6c1dca583fd3bef399e5fda00791f7cd2b3aa9d021a46064d7c901e2aef1b6d",
+      "0398b6debe6df0147e604628e08bdc9ed8cf0e2c82b9474864391ab17c3671dc",
+      "c9eb4c13602cf58ca3a312d9599a704c8ce3d745a156975d49551aa777e90da2",
+      "7ea9c8a17405597e1c6c6a7246e2cb8efc82371b80ffdece4eebb9ad5d5042ef",
+      "07e02366b379c3449c499d20407aebb37b8dfdb10f2e79499998f094cb83ecd6",
+      "ef00d09aa35ceac0aebb00506e2958057f0c91b7fbf30c5ffbedbce6765a14fa",
+      "e39326fcee702daf7466698c22ad547ffb625f0f082b15440a51cf68ecbf4fb7",
+      "dda825ce6f60e0664eb499d4b5c0006c43f74e2dd9a4a69bcfd0abc374d38a58",
+      "d304912d4f1de5b75d9e1e50adf74cbeaa9a10bf21ac471eccad64667c2f6d6b",
+      "86d9da30669eb27157d72857438515cb3579e05052d8797fcc6a0628494d915d",
+      "97914fda61ae34f1a61e5b819ce5cd6b47fe914afc76c4b1158ecc3417a807a8",
+      "888d32fc75c5ee410ef2cf2657f4140dc602ec0c6df533e603ae086bcae6ae20",
+      "5814c6b1421e6a4a25ec6fc5c0d1473a3fc0ddad094e9bd9c1e6927ed65de6ea",
+      "ad3ccbd3de00a6df80f3f09f32e657abf2b8c0ca6db70789f31a2f7940733c60",
+      "60257d46a881c0a856e50a7ee92fb0d90714b7c6a9cb36a9b17c2e2b25e1759f",
+      "dbb7af48e63d0a0a4a2577d71f8bc70a1af963419b4b422b6ffa3f7c66a314c0",
+      "0e7a00d751c6547475cf26956035c1306280f6c4d1576291f4e2fb6f7eb6a180",
+      "a0364dcc326714633bc83329746f915999eac5d89d1b85136567f71c11dfd33b",
+      "61a7205f27a1c006f91e14ae1fed645347f7afd7e9be91fea9778996a70cf7d4",
+      "bd632cb19a71914577c3e664971f3d6de2db37a097529feeaa6e94820387112e",
+      "239731c0f9df53e7a48a655dee7d760a272c2b3e0f92e1f693c4401cc217abb8",
+      "ac02107f121706366502816ce0dd6a36cb18dae91b9bc147e7c8880e8d03ade1",
+      "7d58899d8cd716f75f003ed9b1358f355a0a475f11be4fcb24271cec901d3660",
+      "588c8ea91cbd79b28ca7d59b611e33b753f0b0baa1bd07e32a637f86d4553854",
+      "c5603b22f4ef717009b04b00db02c90021cd811fac167b8b727b4f8467193b69",
+      "16a045838dfead3c757905ba0a61e0a668a1a0fcc116d4e04646e9f2a8a53fdd",
+      "f626616f118d69babc9ea43d141a64c85675debe3b3b73dbe5a255fa5fc02a10",
+      "9390376cd2a6dd8622547d211fa001d3966047f3cfe143394405aabd56104e8e",
+      "626af5154386db7f8221f7ac5188307b6b0e3d160f069553abe25fb990646b14",
+      "db7393302cd11e7f8f022785d17a36a0db7ec40546b3a72976f18f4c5c4c5e2c",
+      "b91cc6eccc5a5b10aba522f458f496d0427acad7707af76897cd3a444249755e"
+    ],
+    "boundary": "complete_centered_increment_point_prefix_values_and_analytical_scores",
+    "classification": "existing_extension_or_invention",
+    "canonical_admitted": false
+  },
+  "input_sha256": "296402e7398226f3553c481e0acec2cfe3f4c84f5ef085596fd4827bbe0c5fec",
+  "input_shapes": [
+    [
+      3
+    ],
+    [
+      8,
+      36
+    ]
+  ],
+  "input_dtypes": [
+    "float64",
+    "float64"
+  ],
+  "trace_seconds": 19.03842351800995,
+  "graph": {
+    "nodes": 70311,
+    "functions": 10,
+    "callbacks": [],
+    "must_compile": true,
+    "nested_xla": [],
+    "xla_ops": []
+  },
+  "cold": {
+    "synchronized_seconds": 27.42340517998673,
+    "output_copy_seconds": 0.0004136640054639429,
+    "end_to_end_seconds": 27.423818843992194
+  },
+  "output_shapes": [
+    [],
+    [
+      3
+    ],
+    [
+      8
+    ],
+    [
+      8,
+      3
+    ],
+    [
+      8
+    ],
+    [
+      8,
+      3
+    ]
+  ],
+  "output_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "values": [
+    0.12363402173294198,
+    [
+      1.8333868892076937,
+      1.835928010422987,
+      1.8405739014928142
+    ],
+    [
+      2.0670862025118364e-05,
+      2.5031195132724227e-05,
+      2.7583408072198723e-05,
+      2.8036945284387604e-05,
+      2.6486102950820656e-05,
+      2.340036307424409e-05,
+      1.9493904388753758e-05,
+      1.5532766346373905e-05
+    ],
+    [
+      [
+        -0.007002320422717201,
+        -0.0030083205436379767,
+        0.004328600183251652
+      ],
+      [
+        -0.007845810014802668,
+        -0.0033452634216091237,
+        0.0049188589251047965
+      ],
+      [
+        -0.008367712790409376,
+        -0.003568356061174116,
+        0.0052745196552927975
+      ],
+      [
+        -0.008529542505372856,
+        -0.003656113128441385,
+        0.0053677414045323335
+      ],
+      [
+        -0.00831845018873656,
+        -0.003592561750963341,
+        0.005198315483503579
+      ],
+      [
+        -0.007749516655106925,
+        -0.003370577108925632,
+        0.004793771076871733
+      ],
+      [
+        -0.006863172781261584,
+        -0.0029942768531039388,
+        0.004202660364452493
+      ],
+      [
+        -0.005718494968676602,
+        -0.0024793361923478585,
+        0.0034837815353931934
+      ]
+    ],
+    [
+      4.3125190412426906e-05,
+      4.974547962684206e-05,
+      5.3916714063323434e-05,
+      5.522309020222771e-05,
+      5.3589656625524507e-05,
+      4.9309471556097106e-05,
+      4.296927499589098e-05,
+      3.5305340299329746e-05
+    ],
+    [
+      [
+        -0.0032324159238048544,
+        3.4104138016299856e-05,
+        0.003552548676442724
+      ],
+      [
+        -0.0036838215631371796,
+        3.4637146352656245e-05,
+        0.004066597934525129
+      ],
+      [
+        -0.003993051059197672,
+        1.5847659570855654e-05,
+        0.004400650720856714
+      ],
+      [
+        -0.0041353377718647,
+        -1.8977130628483607e-05,
+        0.004525918330054779
+      ],
+      [
+        -0.004096757387713312,
+        -6.193995699121935e-05,
+        0.004433339751544363
+      ],
+      [
+        -0.0038769363824491254,
+        -0.00010209859789789277,
+        0.004135739030497243
+      ],
+      [
+        -0.003489396558475688,
+        -0.00012819263330388075,
+        0.0036647555294810896
+      ],
+      [
+        -0.0029593317082885484,
+        -0.00013140394794719512,
+        0.003063805433191513
+      ]
+    ]
+  ],
+  "warm": [
+    {
+      "iteration": 0,
+      "synchronized_seconds": 0.00264674102072604,
+      "output_copy_seconds": 0.00031957097235135734,
+      "end_to_end_seconds": 0.0029663119930773973,
+      "VmHWM": 2651627520,
+      "VmRSS": 2651627520,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 1,
+      "synchronized_seconds": 0.0019979309872724116,
+      "output_copy_seconds": 0.00023682598839513958,
+      "end_to_end_seconds": 0.002234756975667551,
+      "VmHWM": 2651631616,
+      "VmRSS": 2651631616,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 2,
+      "synchronized_seconds": 0.001963317015906796,
+      "output_copy_seconds": 0.00022181900567375124,
+      "end_to_end_seconds": 0.002185136021580547,
+      "VmHWM": 2651631616,
+      "VmRSS": 2651631616,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 3,
+      "synchronized_seconds": 0.0019328429771121591,
+      "output_copy_seconds": 0.00022528800764121115,
+      "end_to_end_seconds": 0.0021581309847533703,
+      "VmHWM": 2651631616,
+      "VmRSS": 2651631616,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 4,
+      "synchronized_seconds": 0.001934062980581075,
+      "output_copy_seconds": 0.00021856999956071377,
+      "end_to_end_seconds": 0.0021526329801417887,
+      "VmHWM": 2651631616,
+      "VmRSS": 2651631616,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 5,
+      "synchronized_seconds": 0.0019195460190530866,
+      "output_copy_seconds": 0.00021693899179808795,
+      "end_to_end_seconds": 0.0021364850108511746,
+      "VmHWM": 2651631616,
+      "VmRSS": 2651631616,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 6,
+      "synchronized_seconds": 0.001924285024870187,
+      "output_copy_seconds": 0.00023219699505716562,
+      "end_to_end_seconds": 0.0021564820199273527,
+      "VmHWM": 2651635712,
+      "VmRSS": 2651635712,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 7,
+      "synchronized_seconds": 0.0019491600105538964,
+      "output_copy_seconds": 0.00023187699844129384,
+      "end_to_end_seconds": 0.0021810370089951903,
+      "VmHWM": 2651635712,
+      "VmRSS": 2651635712,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 8,
+      "synchronized_seconds": 0.0019697860116139054,
+      "output_copy_seconds": 0.00023639597930014133,
+      "end_to_end_seconds": 0.0022061819909140468,
+      "VmHWM": 2651635712,
+      "VmRSS": 2651635712,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 9,
+      "synchronized_seconds": 0.0019539190107025206,
+      "output_copy_seconds": 0.0003459559811744839,
+      "end_to_end_seconds": 0.0022998749918770045,
+      "VmHWM": 2651635712,
+      "VmRSS": 2651635712,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 10,
+      "synchronized_seconds": 0.0019581280066631734,
+      "output_copy_seconds": 0.00023010699078440666,
+      "end_to_end_seconds": 0.00218823499744758,
+      "VmHWM": 2651635712,
+      "VmRSS": 2651635712,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 11,
+      "synchronized_seconds": 0.0018924300093203783,
+      "output_copy_seconds": 0.00021905000903643668,
+      "end_to_end_seconds": 0.002111480018356815,
+      "VmHWM": 2651635712,
+      "VmRSS": 2651635712,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 12,
+      "synchronized_seconds": 0.0018980189925059676,
+      "output_copy_seconds": 0.00021227099932730198,
+      "end_to_end_seconds": 0.0021102899918332696,
+      "VmHWM": 2651635712,
+      "VmRSS": 2651635712,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 13,
+      "synchronized_seconds": 0.0018876919930335134,
+      "output_copy_seconds": 0.0002289969997946173,
+      "end_to_end_seconds": 0.0021166889928281307,
+      "VmHWM": 2651635712,
+      "VmRSS": 2651635712,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 14,
+      "synchronized_seconds": 0.0018865609890781343,
+      "output_copy_seconds": 0.00022030901163816452,
+      "end_to_end_seconds": 0.002106870000716299,
+      "VmHWM": 2651639808,
+      "VmRSS": 2651639808,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 15,
+      "synchronized_seconds": 0.001894720015116036,
+      "output_copy_seconds": 0.00022348898346535861,
+      "end_to_end_seconds": 0.0021182089985813946,
+      "VmHWM": 2651639808,
+      "VmRSS": 2651639808,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 16,
+      "synchronized_seconds": 0.0019318129925522953,
+      "output_copy_seconds": 0.00021821900736540556,
+      "end_to_end_seconds": 0.002150031999917701,
+      "VmHWM": 2651643904,
+      "VmRSS": 2651643904,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 17,
+      "synchronized_seconds": 0.0018691340228542686,
+      "output_copy_seconds": 0.00023225697805173695,
+      "end_to_end_seconds": 0.0021013910009060055,
+      "VmHWM": 2651643904,
+      "VmRSS": 2651643904,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 18,
+      "synchronized_seconds": 0.0018442790023982525,
+      "output_copy_seconds": 0.0002212490071542561,
+      "end_to_end_seconds": 0.0020655280095525086,
+      "VmHWM": 2651643904,
+      "VmRSS": 2651643904,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    },
+    {
+      "iteration": 19,
+      "synchronized_seconds": 0.0018441590073052794,
+      "output_copy_seconds": 0.0002262190100736916,
+      "end_to_end_seconds": 0.002070378017378971,
+      "VmHWM": 2651648000,
+      "VmRSS": 2651648000,
+      "gpu": {
+        "current": 90880,
+        "peak": 300544
+      }
+    }
+  ],
+  "trace_count": 1,
+  "hlo_sha256": "dc65ae8fcbcc93b901a82b3282228556c9ec3b8922d76e4b40a625100d3a0036",
+  "imported_source_sha256": {
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+    "bayesfilter/highdim/bases.py": "b780dfe9b1d6c746d1447c8403143bae4c7c1ccd50ade24c9a05dc4524227ec9",
+    "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+    "bayesfilter/highdim/validation.py": "cc5820ca360c549ad9fa36eabaf6e25bb94d07eb851fce068aa51615c4314b20",
+    "bayesfilter/highdim/tt.py": "cbe482ab3f595d3360bdca7e8fa7f0e24c56f99f74b531fd15694542eed6a8a8",
+    "bayesfilter/highdim/squared_tt.py": "703846596b66eb2834ae5a00052fbb03756cc6e9c876c9669422e52419793056",
+    "bayesfilter/highdim/derivatives.py": "f965cc531e288f169ba21db3c73341000998353983488205eb3b9d75c5123404",
+    "bayesfilter/highdim/fitting.py": "c3748e29e6e78f1c5cc4d7c967b15340b76409adf7530f1ca4e5e016eaebc321",
+    "bayesfilter/highdim/models.py": "b5e91cc0730579da9252f581cff3839c28a4b95211a71bfccf81fb136b2b1258",
+    "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+    "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+    "bayesfilter/highdim/filtering.py": "3d80efee049c3203f3124c927c6b8a8ecb595eedd3a92b5f358691913ea4b40d",
+    "bayesfilter/highdim/ledh_forward_contract.py": "abc0c476b85a280996c82b789ed929a919e9eb9ed96ad4a1f30fe6cd6676b0dc",
+    "bayesfilter/highdim/native_generalized_sv.py": "08cdba43165e745dd317a22fd77ed30e46f0dcd705376b7609f2192e4a3a069e",
+    "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": "22ae70bf7f3105ac0c2398f7a9560cd464f0c2bc1e8146bc12029227a9133334",
+    "bayesfilter/highdim/rank_budget.py": "6a62b2b942b7eb766f2abf6b1a532e6bdda87f9a4206aef351edf9efed6a2751",
+    "bayesfilter/highdim/transport.py": "ff03fac036aa8486732962373e053ff63c4a2b0b26085517be86ac9034a0949c",
+    "bayesfilter/highdim/source_route.py": "864061837818e597a6ff03cc7ee37d9c18dd718a2a5486871c47eb8e81fe6281",
+    "bayesfilter/highdim/score_api.py": "f80353f9412260ddc771894b5ebbd9037ed099bab96483490277f2c4aff680b7",
+    "bayesfilter/nonlinear/__init__.py": "f0edaabc1fdc132742f578b6351795c78d4aa5826fd88d04ed61a433c47b93ad",
+    "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+    "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+    "bayesfilter/nonlinear/srukf_factor_tf.py": "d6002d396d08d21e3f62ebd484640b8a6545390993fe5fb797b5fd0cd2142f37",
+    "bayesfilter/highdim/actual_sv_srukf_tf.py": "854b2292430b77a6baa2e76bc480c5e26ecd03f4f382ab3762c2137c097655bd",
+    "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+    "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+    "bayesfilter/nonlinear/fixed_sgqf_tf.py": "305fade8e9d9a5ce02bd294b54814f5c99f9b236944d8c01ffe19a172e1b403d",
+    "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+    "bayesfilter/linear/svd_factor_tf.py": "b1f70b77fc840882427e8d7e930414ae011828b328e4decf31cb63e47b35683d",
+    "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+    "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+    "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+    "bayesfilter/nonlinear/sigma_points_tf.py": "1aa062a50d702e05d69d33cef26dabd8e941c43485f9f249b82b65711c361156",
+    "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+    "bayesfilter/nonlinear/svd_cut_tf.py": "951cc8e853b23f46950093d88463c300ecfec9f41e2919fae233820953850fb2",
+    "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "91f59ecad8d62224e3fffe2d1eede2c79ee59e190eae04c493cd50e7ea4865ce",
+    "bayesfilter/highdim/sv_mixture_cut4.py": "94921270407283d8639fb904af7fec956243c7a7899fb7567ce2e3988f0ca9d2",
+    "bayesfilter/highdim/transition_route.py": "f5764e42e27b099bd4a2511153368cf866176718ea3cc9bf93a91dead7f4229a",
+    "bayesfilter/highdim/ukf_scout.py": "16214c1c028887b22c94b96b5ee2321e6e72c71fef20e4c846e2a20dc5d0c80a",
+    "bayesfilter/highdim/__init__.py": "9b731a16585ae3e0e3420212670802efea6f5088000bd5f32d0f9f130f5ac9fb",
+    "bayesfilter/highdim/sir_latent_preclip_tf.py": "88c8adb5c245d141bb3f9e00544732dc1b0430f313642790f29fc5ad20f5277f",
+    "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_target_tf.py": "6df70d499c04e4646235c710a558215b30236292b8eaa032f7b14b60164aa8e7",
+    "bayesfilter/highdim/stochastic_density_training.py": "3bace5ef92cc180a867300105a2106099b7b3e71d46b96df334ed5b7c6b1bbc8",
+    "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_tf.py": "b879dbd0c2d9cc24aa91c5e12886304e44b221f54ae375538cbe474afe6d2e48",
+    "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_boundary_tf.py": "68821cdc4a6a61a9dffe299459c5fca15e206f505124d56c8ddbcf35b6fe8078",
+    "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_sampler_tf.py": "ce6f16a2628d234fd2ad4a9f8de2ce98437b35aa5266d0b5c965aa8704e47c4d",
+    "bayesfilter/highdim/zhao_cui_austria_sir_lane_b_t2_tf.py": "5e724594d02b127be11c6e0d787fb70fddfd8d6f23548ba34082589eaecc04f1",
+    "bayesfilter/highdim/zhao_cui_austria_sir_centered_density_tf.py": "d8e0958d67bf847170d879b90d16932223bed7a5e0b59fb0a1320c849bb79da1"
+  },
+  "wall_seconds": 84.22031362401322
+}

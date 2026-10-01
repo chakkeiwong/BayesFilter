@@ -44,11 +44,13 @@ def test_final_report_preserves_paired_difference_and_checks_bank_identity(tmp_p
     runner=Path(__file__).resolve().parents[1]/"docs/benchmarks/summarize_q20_configured_training_2026_09_24.py"
     latent=[[0.,0.,0.,0.]]*2048
     baseline={"role":"untouched-final-bank","rows":2048,"blocks":{
-        "latent":latent,"loss":[2.]*2048,"residual":[[2.,0.,0.,0.]]*2048,"valid":[True]*2048}}
+        "latent":latent,"physical":[[0.,0.,-1.,0.]]*1024+[[0.,0.,1.,0.]]*1024,
+        "loss":[2.]*2048,"residual":[[2.,0.,0.,0.]]*2048,"valid":[True]*2048}}
     parameters=[{"weights":[],"biases":[]}]
     candidate={"role":"untouched-final-bank","rows":2048,"transport_config":{},
         "map_parameters_sha256":hashlib.sha256(json.dumps(parameters,sort_keys=True).encode()).hexdigest(),
-        "blocks":{"latent":latent,"loss":[1.]*2048,"residual":[[1.,0.,0.,0.]]*2048,"valid":[True]*2048}}
+        "blocks":{"latent":latent,"physical":[[0.,0.,1.,0.]]*2048,
+        "loss":[1.]*2048,"residual":[[1.,0.,0.,0.]]*2048,"valid":[True]*2048}}
     checkpoint={"transport_config":{},"parameters":parameters,"checkpoint_hash":"fixture-only"}
     finalized={"checkpoint":checkpoint,"post_training":{"rows":1000,"valid_rows":1000,
         "complete":True,"finite":True},"inverse_tail_check":{"passed":True}}
@@ -65,6 +67,9 @@ def test_final_report_preserves_paired_difference_and_checks_bank_identity(tmp_p
     assert stats["mean"]==[-1.,-3.]
     assert stats["bootstrap_interval"]==[[-1.,-3.],[-1.,-3.]]
     assert not report["families"]["fixture"]["replicated_local_improvement"]
+    assert report["baseline_geometry"]["observation_weight_sign"]["positive_rows"]==1024
+    coverage=report["comparisons"][0]["geometry"]["observation_weight_sign"]
+    assert coverage["positive_rows"]==2048 and not coverage["posterior_probability_estimate"]
     candidate["blocks"]["latent"]=[[1.,0.,0.,0.]]*2048
     (tmp_path/"candidate.json").write_text(json.dumps(candidate))
     rejected=subprocess.run([sys.executable,str(runner),"--request",str(request_path),"--output",str(tmp_path/"mismatch")],capture_output=True,text=True)

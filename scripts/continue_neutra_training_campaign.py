@@ -7,7 +7,9 @@ controller cannot grant posterior authority or extend the campaign budget.
 from __future__ import annotations
 import argparse
 from datetime import datetime,timezone
+import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -44,25 +46,52 @@ def continuation_requests(root, initial, selected):
     by_name = {row["name"]: row for row in initial["jobs"]}
     if len(by_name) != len(initial["jobs"]) or set(by_name) != expected:
         raise ValueError("initial cohort does not account for all six seeded fits")
-    if any(row["status"] not in ("completed", "candidate_rejected") for row in by_name.values()):
+    repair_path = root/"naf-log-weight-repair.json"
+    repaired = read(repair_path) if repair_path.exists() else None
+    if repaired:
+        replay = read(repaired["verification_result"])
+        if {row["seed"] for row in replay["rows"]} != {0, 1} or not all(
+                row["exact_replay"]["valid"] for row in replay["rows"]):
+            raise ValueError("log-weight repair lacks the exact failed-update verification")
+        for row in by_name.values():
+            if row["status"] == "failed":
+                failure = read(Path(row["output"])/"failure.json")
+                if (row["name"] != "naf16-seed2-u4096" or failure["type"] != "TypeError"
+                        or "tf__inverse() takes 2 positional arguments but 3 were given" not in failure["message"]):
+                    raise ValueError("initial cohort has an unexamined infrastructure failure")
+    elif any(row["status"] not in ("completed", "candidate_rejected") for row in by_name.values()):
         raise ValueError("initial cohort has an unresolved infrastructure failure")
     naf_ok = all(by_name[f"naf16-seed{s}-u4096"]["status"] == "completed" for s in range(3))
-    family = "naf16" if naf_ok else "naf32"
+    family = "naf16" if naf_ok or repaired else "naf32"
     decision = {"family": family, "reason":
         "complete the funded 8192-update NAF rung; 4096 is intermediate" if naf_ok else
         "NAF16 candidate rejection triggers the predeclared NAF32 capacity repair",
         "candidate_failure_rejects_research_direction": False}
+    if repaired:
+        decision.update(reason="resume the same three NAF16 seeds after the measured log-domain guard repair",
+            repair_evidence=str(repair_path), initial_failed_attempts_preserved=True)
     requests = []
     for seed_index in range(3):
         template = read(root/f"training-request-naf16-seed{seed_index}-u4096-01.json")
-        request = {**template, "family": family, "updates": 8192 if naf_ok else 4096,
-            "validation_rungs": [6144, 8192] if naf_ok else [1024, 2048, 4096],
+        request = {**template, "family": family, "updates": 8192 if naf_ok or repaired else 4096,
+            "validation_rungs": [6144, 8192] if naf_ok else [1024, 2048, 4096, 6144, 8192] if repaired else [1024, 2048, 4096],
             "learning_rate": selected[family]["learning_rate"],
             "gradient_clip_norm": selected[family]["gradient_clip_norm"],
             "calibration_receipt": str(root/"calibration-queue-01"/f"calibration-{family}-01"/"result.json"),
             "worker_seconds": 11500.}
         request.pop("resume_checkpoint", None)
-        if naf_ok:
+        if repaired:
+            output = Path(by_name[f"naf16-seed{seed_index}-u4096"]["output"])
+            checkpoints = list(output.glob("checkpoint-*.json"))
+            if (output/"last-valid-checkpoint.json").exists():
+                checkpoints.append(output/"last-valid-checkpoint.json")
+            if not checkpoints:
+                raise ValueError("missing optimizer state for repaired NAF seed")
+            path = max(checkpoints, key=lambda p: read(p)["optimizer"][0]["value"])
+            accepted = read(path)["optimizer"][0]["value"]
+            request.update(resume_checkpoint=str(path), worker_seconds=float(math.ceil((8192-accepted)*3.+400.)),
+                repair_evidence=str(repair_path))
+        elif naf_ok:
             request["resume_checkpoint"] = str(Path(by_name[f"naf16-seed{seed_index}-u4096"]["output"])/"checkpoint-004096.json")
         requests.append((f"{family}-seed{seed_index}-u{request['updates']}", request))
     template = read(root/"training-request-iaf16-seed0-u4096-01.json")
@@ -74,7 +103,7 @@ def continuation_requests(root, initial, selected):
     control.pop("resume_checkpoint", None)
     requests.insert(0, ("legacy-control-seed0-u4096", control))
     retained = [row for row in initial["jobs"] if row["status"] == "completed"
-        and (row["name"].startswith("iaf16") or not naf_ok)]
+        and (row["name"].startswith("iaf16") or (not naf_ok and not repaired))]
     return decision, requests, retained
 
 
@@ -165,7 +194,8 @@ def main():
             if initial["status"]!="running":
                 break
             time.sleep(10.)
-        if initial["status"] not in ("complete","complete_with_rejected_candidates"):
+        if initial["status"] not in ("complete","complete_with_rejected_candidates") and not (
+                initial["status"]=="repair_required" and (root/"naf-log-weight-repair.json").exists()):
             raise RuntimeError("initial training queue needs an infrastructure repair")
         state["phases"].append({"name":"training-queue-01","status":initial["status"],
             "spent_worker_seconds":initial["spent_worker_seconds"]})
@@ -174,7 +204,7 @@ def main():
         state["continuation_decision"]=decision
         jobs=[job(name,request) for name,request in requests]
         state["status"]="running_continuation_and_control";save(state_path,state)
-        continuation=queue("continuation-queue-01",jobs,46000.,16000.)
+        continuation=queue("continuation-queue-01",jobs,sum(j["worker_seconds"] for j in jobs),16000.)
         candidates += [r for r in continuation["jobs"] if r["status"]=="completed"]
         if not candidates:
             raise RuntimeError("all planned candidate maps were rejected; no final training claim")
@@ -208,8 +238,20 @@ def main():
         elif read(report_path)["request"] != request:
             raise ValueError("completed report has a different input request")
         state["analysis_worker_seconds"]=time.monotonic()-began
-        state["status"]="training_evidence_complete_downstream_review_pending"
+        state["phases"].append({"name":"paired_final_analysis","status":"complete",
+            "spent_worker_seconds":read(report_path)["wall_seconds"]})
+        state["status"]="running_downstream_assessment"
         state["result"]=str(root/"paired-final-analysis/result.json")
+        save(state_path,state)
+        manifest=read(Path(initial["jobs"][0]["output"])/"manifest.json")
+        downstream_request={"stage":"hmc_assessment","worker_seconds":8000.,
+            "deadline_utc":base["deadline_utc"],"plan_file":base["plan_file"],
+            "training_report":str(report_path),
+            "training_report_sha256":hashlib.sha256(report_path.read_bytes()).hexdigest(),
+            "target_signature":manifest["target_signature"],"bridge_signature":manifest["bridge_signature"]}
+        downstream=queue("downstream-queue-01",[job("hmc-assessment",downstream_request)],8000.,5000.)
+        state["downstream_result"]=str(root/"downstream-queue-01/hmc-assessment/result.json")
+        state["status"]="training_and_bounded_downstream_evaluation_complete"
         state["finished_at"]=datetime.now(timezone.utc).isoformat()
         save(state_path,state)
     except BaseException as error:

@@ -140,7 +140,7 @@ def _lgssm_callbacks(components: dict[str, Tensor]):
 def _sir_callbacks(time_index: int):
     def observation_fn(points):
         physical = sir_score._physical_state(  # noqa: SLF001
-            points, tf.constant(time_index, tf.int32)
+            points, tf.cast(time_index, tf.int32)
         )
         return physical[..., 1::2]
 
@@ -511,7 +511,7 @@ def finite_value_standard_score_ledh_pfpf_genut(
         )
         start_index = 1
 
-    for time_index in range(start_index, horizon):
+    def time_body(time_index, particles, weights, score_marks, total, score, valid, ess_history, maximum_weight_history, reset_residual_history, ancestry_unique_history, ancestry_identity_history, hilbert_tie_history, state_map_saturation_history):
         noise_index = (
             time_index
             if spec.transition_before_first_observation
@@ -689,6 +689,14 @@ def finite_value_standard_score_ledh_pfpf_genut(
         state_map_saturation_history = state_map_saturation_history.write(
             time_index, records["state_map_saturation"]
         )
+
+        return (time_index + 1, particles, weights, score_marks, total, score, valid, ess_history, maximum_weight_history, reset_residual_history, ancestry_unique_history, ancestry_identity_history, hilbert_tie_history, state_map_saturation_history)
+
+    if start_index < horizon:
+        _, particles, weights, score_marks, total, score, valid, ess_history, maximum_weight_history, reset_residual_history, ancestry_unique_history, ancestry_identity_history, hilbert_tie_history, state_map_saturation_history = tf.while_loop(
+            lambda time_index, *_: time_index < horizon, time_body,
+            (tf.constant(start_index), particles, weights, score_marks, total, score, valid, ess_history, maximum_weight_history, reset_residual_history, ancestry_unique_history, ancestry_identity_history, hilbert_tie_history, state_map_saturation_history),
+            parallel_iterations=1, maximum_iterations=horizon - start_index)
 
     nan = tf.constant(float("nan"), theta.dtype)
     return (

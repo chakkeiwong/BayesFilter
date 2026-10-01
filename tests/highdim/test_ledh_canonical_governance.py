@@ -13,6 +13,7 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 
 CANONICAL_MODULES = (
     "bayesfilter/highdim/ledh_canonical_filter_tf.py",
+    "bayesfilter/highdim/ledh_canonical_value_program_tf.py",
     "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py",
     "bayesfilter/highdim/ledh_flow_perparticle_tf.py",
     "bayesfilter/highdim/ledh_canonical_score_tf.py",
@@ -56,6 +57,7 @@ def test_g1_ledh_lane_discovery():
     registered_modules = {e.module.split(".")[-1] + ".py" for e in ENTRY_POINTS}
     known_support = {
         "ledh_alg1_contract.py",
+        "ledh_canonical_value_program_tf.py",
         "ledh_canonical_score_stages_tf.py",
         "ledh_canonical_neutra_targets_tf.py",
         "ledh_canonical_reset_score_tf.py",

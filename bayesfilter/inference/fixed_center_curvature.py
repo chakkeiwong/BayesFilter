@@ -14,19 +14,33 @@ clouds; the audit cloud is evaluated only after candidate selection.
 
 from __future__ import annotations
 
+import math
+import sys
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from functools import lru_cache
+from typing import Any
 
-import numpy as np
 import tensorflow as tf
+from tensorflow.compiler.tf2xla.ops.gen_xla_ops import xla_svd
 
+from bayesfilter.inference import dense_partition_validation_tf as partition_validation
+from bayesfilter.inference import fixed_center_fitting_tf as fitting_native
+from bayesfilter.inference import fixed_center_selection_tf as selection_native
+from bayesfilter.inference import fixed_center_stability_tf as stability_native
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
     fit_factor_correlation_score_geometry,
 )
 from bayesfilter.inference.hmc import PrecomputedMassArtifact
+from bayesfilter.inference.mass_matrix_tf import _eigenpairs
 from bayesfilter.inference.score_curvature_tf import fit_dense_score_precision_tf
-
+from bayesfilter.ops.host_tensor_io import (
+    buffer_byte_regions,
+    buffer_regions_overlap,
+    canonical_numeric_bytes,
+    numeric_tensor,
+)
 
 FIXED_CENTER_CURVATURE_NONCLAIMS = (
     "fixed-center local score-curvature diagnostic only",
@@ -115,10 +129,10 @@ class FixedCenterCurvatureFit:
     factor_count: int | None
     accepted: bool
     status: str
-    raw_precision_z: np.ndarray | None
-    precision_z: np.ndarray | None
-    covariance_z: np.ndarray | None
-    raw_eigenvalues: np.ndarray | None
+    raw_precision_z: tf.Tensor | None
+    precision_z: tf.Tensor | None
+    covariance_z: tf.Tensor | None
+    raw_eigenvalues: tf.Tensor | None
     raw_nonpositive_count: int | None
     projection_relative_frobenius: float | None
     selection_holdout_relative_rmse: float | None
@@ -139,8 +153,7 @@ class FixedCenterCurvatureFit:
         ):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
 
@@ -170,11 +183,11 @@ class FixedCenterCurvatureResult:
 
     accepted: bool
     status: str
-    center: np.ndarray
-    center_score_z: np.ndarray
+    center: tf.Tensor
+    center_score_z: tf.Tensor
     selected_family: str | None
-    selected_precision_z: np.ndarray | None
-    selected_covariance_z: np.ndarray | None
+    selected_precision_z: tf.Tensor | None
+    selected_covariance_z: tf.Tensor | None
     audit_relative_rmse: float | None
     fits: tuple[FixedCenterCurvatureFit, ...]
     diagnostics: Mapping[str, Any]
@@ -182,14 +195,12 @@ class FixedCenterCurvatureResult:
 
     def __post_init__(self) -> None:
         for name in ("center", "center_score_z"):
-            array = np.asarray(getattr(self, name), dtype=float).copy()
-            array.setflags(write=False)
+            array = numeric_tensor(getattr(self, name), tf.float64)
             object.__setattr__(self, name, array)
         for name in ("selected_precision_z", "selected_covariance_z"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "accepted", bool(self.accepted))
         object.__setattr__(self, "status", str(self.status))
@@ -225,16 +236,14 @@ class FixedCenterCurvatureResult:
 
         if not self.accepted or self.status != "eligible_for_exact_hmc_canary":
             raise ValueError("fixed-center curvature is not eligible for HMC handoff")
-        scale_array = np.asarray(scale, dtype=float)
-        if scale_array.shape != self.center.shape or not np.all(
-            np.isfinite(scale_array) & (scale_array > 0.0)
+        scale_array = numeric_tensor(scale, tf.float64)
+        if scale_array.shape != self.center.shape or not bool(
+            tf.reduce_all(tf.math.is_finite(scale_array) & (scale_array > 0.0))
         ):
             raise ValueError("scale must be positive finite with center shape")
         covariance_z = tf.convert_to_tensor(self.selected_covariance_z, tf.float64)
         scale_tf = tf.convert_to_tensor(scale_array, tf.float64)
-        covariance_theta = (
-            covariance_z * scale_tf[:, None] * scale_tf[None, :]
-        ).numpy()
+        covariance_theta = _run_kernel(_scale_covariance, covariance_z, scale_tf)
         lineage = self.diagnostics.get("lineage", {})
         return PrecomputedMassArtifact.from_covariance(
             position=self.center,
@@ -304,13 +313,33 @@ def fit_fixed_center_curvature(
         train_partitions, select_partitions, strict=True
     ):
         if int(train_z.shape[0]) + int(select_z.shape[0]) < 4 * dimension:
-            raise ValueError("each training plus selection replicate must total at least 4N")
+            raise ValueError(
+                "each training plus selection replicate must total at least 4N"
+            )
     named_partition_offsets = [
-        *((f"training[{index}]", offsets) for index, (offsets, _scores) in enumerate(train_partitions)),
-        *((f"selection[{index}]", offsets) for index, (offsets, _scores) in enumerate(select_partitions)),
+        *(
+            (f"training[{index}]", offsets)
+            for index, (offsets, _scores) in enumerate(train_partitions)
+        ),
+        *(
+            (f"selection[{index}]", offsets)
+            for index, (offsets, _scores) in enumerate(select_partitions)
+        ),
         ("audit", audit_z),
     ]
-    _require_independent_partitions(named_partition_offsets)
+    raw_regions = []
+    for name, value in (
+        ("training", training_offsets_z),
+        ("selection", selection_offsets_z),
+        ("audit", audit_offsets_z),
+    ):
+        shape = getattr(value, "shape", ())
+        split = len(shape) == 3
+        for index, regions in enumerate(
+            buffer_byte_regions(value, split_first_axis=split)
+        ):
+            raw_regions.append((f"{name}[{index}]" if split else name, regions))
+    _require_independent_partitions(named_partition_offsets, raw_regions=raw_regions)
     if int(audit_z.shape[0]) < 2 * dimension:
         raise ValueError("audit rows must total at least 2N")
     if factor_max not in (1, 2):
@@ -321,154 +350,117 @@ def fit_fixed_center_curvature(
         raise ValueError("factor_2 structured target requires factor_max=2")
     weights = _shrinkage_weights(shrinkage_weights)
 
-    fits = []
-    one_factor_fits = []
-    for replicate_index, (train, selection_partition) in enumerate(
-        zip(train_partitions, select_partitions, strict=True)
-    ):
-        train_z, train_scores = train
-        select_z, select_scores = selection_partition
-        fits.append(
-            _fit_dense_precision(
-                center_score,
-                train_z,
-                train_scores,
-                select_z,
-                select_scores,
-                replicate_index=replicate_index,
-                eigenvalue_floor=dense_eigenvalue_floor,
-                max_condition_number=max_condition_number,
-                holdout_cap=thresholds.selection_holdout_relative_rmse_cap,
-                projection_cap=thresholds.projection_relative_frobenius_cap,
-                require_raw_spd=thresholds.require_raw_spd,
-            )
-        )
-        one_factor = _fit_structured_precision(
-            center_score,
-            train_z,
-            train_scores,
-            select_z,
-            select_scores,
-            replicate_index=replicate_index,
-            factor_count=1,
-            max_condition_number=max_condition_number,
-            holdout_cap=thresholds.selection_holdout_relative_rmse_cap,
-        )
-        fits.append(one_factor)
-        one_factor_fits.append(one_factor)
+    caps = tuple(getattr(thresholds, name) for name in stability_native.CAP_NAMES)
+    replicates = len(train_partitions)
+    training_rows, selection_rows = int(train_partitions[0][0].shape[0]), int(select_partitions[0][0].shape[0])
+    program = fitting_native.fit_program(_dense_fit_kernel, fitting_native._structured_fit, _precision_geometry_kernel, _score_error_kernel,
+        dimension, replicates, training_rows, selection_rows, int(audit_z.shape[0]), factor_max,
+        max_condition_number, thresholds.selection_holdout_relative_rmse_cap,
+        structured_target_family, len(weights))
+    result = program(center_score, tf.stack(tuple(rows for rows, _ in train_partitions)),
+        tf.stack(tuple(scores for _, scores in train_partitions)), tf.stack(tuple(rows for rows, _ in select_partitions)),
+        tf.stack(tuple(scores for _, scores in select_partitions)), audit_z, audit_scores,
+        tf.constant([0. if cap is None else cap for cap in caps], tf.float64),
+        tf.constant([cap is not None for cap in caps], tf.bool),
+        tf.constant(dimension if thresholds.principal_subspace_rank is None else thresholds.principal_subspace_rank, tf.int32),
+        tf.constant(weights, tf.float64), tf.constant(dense_eigenvalue_floor, tf.float64),
+        tf.constant(thresholds.projection_relative_frobenius_cap, tf.float64), tf.constant(thresholds.require_raw_spd),
+        tf.constant(thresholds.audit_relative_rmse_cap, tf.float64))
+    return _fixed_center_result_from_native(result, fixed_center, center_score,
+        dimension=dimension, replicates=replicates, training_rows=training_rows,
+        selection_rows=selection_rows, audit_rows=int(audit_z.shape[0]), thresholds=thresholds,
+        factor_max=factor_max, weights=weights, structured_target_family=structured_target_family,
+        lineage=lineage)
 
-    one_factor_passed_all_replicates = all(fit.accepted for fit in one_factor_fits)
-    one_factor_stability = _family_stability(one_factor_fits, thresholds)
-    one_factor_adequate = (
-        one_factor_passed_all_replicates and bool(one_factor_stability["passed"])
-    )
-    two_factor_attempted = factor_max == 2 and (
-        not one_factor_adequate or structured_target_family == "factor_2"
-    )
-    if two_factor_attempted:
-        for replicate_index, (train, selection_partition) in enumerate(
-            zip(train_partitions, select_partitions, strict=True)
-        ):
-            train_z, train_scores = train
-            select_z, select_scores = selection_partition
-            fits.append(
-                _fit_structured_precision(
-                    center_score,
-                    train_z,
-                    train_scores,
-                    select_z,
-                    select_scores,
-                    replicate_index=replicate_index,
-                    factor_count=2,
-                    max_condition_number=max_condition_number,
-                    holdout_cap=thresholds.selection_holdout_relative_rmse_cap,
-                )
-            )
 
-    selected, selection = _select_candidate(
-        fits,
-        center_score,
-        select_partitions,
-        thresholds=thresholds,
-        shrinkage_weights=weights,
-        structured_target_family=structured_target_family,
-    )
+def _fixed_center_result_from_native(result, fixed_center, center_score, *, dimension,
+        replicates, training_rows, selection_rows, audit_rows, thresholds, factor_max,
+        weights, structured_target_family, lineage=None, jit_compile=True):
+    """Format completed fit tensors without evaluating or selecting geometry."""
+    report = tf.nest.map_structure(lambda value: value.numpy().tolist(), result)
+    families = ("dense", "factor_1", "factor_2") if report["two_attempted"] else ("dense", "factor_1")
+    groups = tuple(tuple(_native_fit_record(family, index,
+        {name: values[family_index][index] for name, values in report["fits"].items()},
+        dimension, training_rows, selection_rows, thresholds.selection_holdout_relative_rmse_cap,
+        jit_compile=jit_compile)
+        for index in range(replicates)) for family_index, family in enumerate(families))
+    fits = [fit for pair in zip(groups[0], groups[1], strict=True) for fit in pair]
+    if report["two_attempted"]:
+        fits.extend(groups[2])
+    # Raise the original one-factor stability error before selector errors.
+    one_report = _stability_report(groups[1], thresholds, report["one_stability"])
+    selected, selection = _selection_report(families, groups, thresholds, weights, structured_target_family,
+        result["selection"], report["selection"])
     selection["factor_escalation"] = {
-        "one_factor_passed_all_replicates": one_factor_passed_all_replicates,
-        "one_factor_stability_passed": bool(one_factor_stability["passed"]),
-        "two_factor_attempted": two_factor_attempted,
-        "reason": (
-            "explicit_factor_2_target"
-            if structured_target_family == "factor_2"
-            else "one_factor_fit_holdout_or_stability_rejected"
-            if two_factor_attempted
-            else "one_factor_fit_holdout_and_stability_passed"
-            if factor_max == 2
-            else "factor_max_one"
-        ),
+        "one_factor_passed_all_replicates": report["one_passed"],
+        "one_factor_stability_passed": one_report["passed"],
+        "two_factor_attempted": report["two_attempted"],
+        "reason": "explicit_factor_2_target" if structured_target_family == "factor_2"
+            else "one_factor_fit_holdout_or_stability_rejected" if report["two_attempted"]
+            else "one_factor_fit_holdout_and_stability_passed" if factor_max == 2 else "factor_max_one",
     }
     if selected is None:
-        return _blocked_result(
-            fixed_center,
-            center_score,
-            fits,
-            "geometry_readiness_blocked",
-            lineage=lineage,
-            extra={"selection": selection},
-        )
+        return _blocked_result(fixed_center, center_score, fits, "geometry_readiness_blocked",
+            lineage=lineage, extra={"selection": selection})
+    audit_error = report["audit_error"]
+    selection.update(audit_relative_rmse=audit_error, audit_row_count=audit_rows,
+        audit_used_after_selection=True, audit_changed_selection=False)
+    return FixedCenterCurvatureResult(accepted=report["status"] == 1,
+        status=fitting_native.RESULT_STATUSES[report["status"]], center=fixed_center, center_score_z=center_score,
+        selected_family=selected["family"], selected_precision_z=result["selection"]["precision"],
+        selected_covariance_z=result["covariance"], audit_relative_rmse=audit_error, fits=tuple(fits),
+        diagnostics={"center_score_role": "explanatory_only", "center_stationarity_required": False,
+            "partition_contract": {"replicate_count": replicates,
+                "training_rows_per_replicate": [training_rows] * replicates,
+                "selection_rows_per_replicate": [selection_rows] * replicates,
+                "audit_rows": audit_rows, "audit_used_after_selection": True,
+                "offset_overlap_check": "shared_memory_and_exact_float64_rows"},
+            "thresholds_complete": thresholds.stability_caps_complete,
+            "diagonal_only_cannot_be_automatically_eligible": report["selection"]["diagonal_only"],
+            "selection": selection, "lineage": {} if lineage is None else dict(lineage)})
 
-    selected_precision = np.asarray(selected["precision_z"], dtype=float)
-    audit_error = _score_relative_rmse(
-        selected_precision, center_score, audit_z, audit_scores
-    )
-    selection["audit_relative_rmse"] = audit_error
-    selection["audit_row_count"] = int(audit_z.shape[0])
-    selection["audit_used_after_selection"] = True
-    selection["audit_changed_selection"] = False
-    complete = thresholds.stability_caps_complete
-    audit_passed = audit_error <= thresholds.audit_relative_rmse_cap
-    diagonal_only = bool(selection.get("diagonal_only", False))
-    status = (
-        "eligible_for_exact_hmc_canary"
-        if complete and audit_passed and not diagonal_only
-        else "diagnostic_only"
-        if audit_passed
-        else "audit_holdout_rejected"
-    )
-    accepted = status == "eligible_for_exact_hmc_canary"
-    return FixedCenterCurvatureResult(
-        accepted=accepted,
-        status=status,
-        center=fixed_center,
-        center_score_z=center_score,
-        selected_family=str(selected["family"]),
-        selected_precision_z=selected_precision,
-        selected_covariance_z=tf.linalg.inv(
-            tf.convert_to_tensor(selected_precision, tf.float64)
-        ).numpy(),
-        audit_relative_rmse=audit_error,
-        fits=tuple(fits),
-        diagnostics={
-            "center_score_role": "explanatory_only",
-            "center_stationarity_required": False,
-            "partition_contract": {
-                "replicate_count": len(train_partitions),
-                "training_rows_per_replicate": [
-                    int(offsets.shape[0]) for offsets, _scores in train_partitions
-                ],
-                "selection_rows_per_replicate": [
-                    int(offsets.shape[0]) for offsets, _scores in select_partitions
-                ],
-                "audit_rows": int(audit_z.shape[0]),
-                "audit_used_after_selection": True,
-                "offset_overlap_check": "shared_memory_and_exact_float64_rows",
-            },
-            "thresholds_complete": complete,
-            "diagonal_only_cannot_be_automatically_eligible": diagonal_only,
-            "selection": selection,
-            "lineage": {} if lineage is None else dict(lineage),
-        },
-    )
+
+def _native_fit_record(family, index, row, dimension, training_rows, selection_rows, holdout_cap, *, jit_compile=True):
+    """Materialize the unchanged public schema from a completed native fit."""
+    present, admissible, accepted = row["flags"]
+    factor_count = None if family == "dense" else int(family[-1])
+    if factor_count is None:
+        diagnostics = {"precision_parameterization": "direct_symmetric_least_squares",
+            "geometry_admissible": admissible, "selection_holdout_passed": row["holdout_passed"]}
+    else:
+        count = 2 * dimension if factor_count == 1 else 3 * dimension - 1
+        domain_violations = row["invalid_covariance_evaluations"]
+        anchors = row["anchors"][:factor_count] if present or domain_violations else ()
+        if present:
+            metrics = dict(zip(fitting_native.FACTOR_METRICS, row["factor_metrics"], strict=True))
+            for name in ("prediction_jacobian_rank", "optimizer_iterations", "optimizer_objective_evaluations"):
+                metrics[name] = int(metrics[name])
+            for name in ("second_factor_identified", "optimizer_converged", "optimizer_failed"):
+                metrics[name] = bool(metrics[name])
+            if not metrics["prediction_jacobian_rank"]:
+                metrics["prediction_jacobian_condition_number"] = None
+            diagnostics = {**metrics, "jit_compile": jit_compile, "training_row_count": training_rows,
+                "holdout_row_count": selection_rows, "training_score_equation_count": training_rows * dimension,
+                "holdout_score_equation_count": selection_rows * dimension, "parameter_count": count,
+                "holdout_score_relative_rmse_cap": holdout_cap, "covariance_eigenvalues": row["factor_eigenvalues"],
+                "loading_row_squared_norms": row["loading_norms"],
+                "covariance_parameterization": "D[diag(1-row_norm(L)^2)+LL^T]D",
+                "score_model": "center_score_minus_local_score_equals_precision_times_offset"}
+        elif domain_violations:
+            diagnostics = {"exception_type": "InvalidArgumentError", "jit_compile": jit_compile,
+                "invalid_covariance_evaluations": domain_violations,
+                "failure_reason": "factor_covariance_domain_violation"}
+        else:
+            diagnostics = {"parameter_count": count, "symmetric_covariance_entry_count": dimension * (dimension + 1) // 2}
+        diagnostics.update(covariance_parameterized_precision_prediction=True, parameter_count=count,
+            anchor_indices=anchors, geometry_admissible=admissible, selection_holdout_passed=row["holdout_passed"])
+    return FixedCenterCurvatureFit(family=family, replicate_index=index, factor_count=factor_count,
+        accepted=accepted, status=fitting_native.FIT_STATUSES[row["status"]],
+        raw_precision_z=row["raw"] if present else None, precision_z=row["precision"] if present else None,
+        covariance_z=row["covariance"] if present else None, raw_eigenvalues=row["raw_values"] if present else None,
+        raw_nonpositive_count=row["nonpositive"] if present else None,
+        projection_relative_frobenius=row["projection"] if present else None,
+        selection_holdout_relative_rmse=row["holdout"] if present else None, diagnostics=diagnostics)
 
 
 def compare_precision_geometry(
@@ -484,79 +476,43 @@ def compare_precision_geometry(
     second = _symmetric_matrix(right, "right")
     if first.shape != second.shape:
         raise ValueError("precision matrices must have matching shapes")
-    first_tf = tf.convert_to_tensor(first, tf.float64)
-    second_tf = tf.convert_to_tensor(second, tf.float64)
-    first_values_tf, first_vectors_tf = tf.linalg.eigh(first_tf)
-    second_values_tf, second_vectors_tf = tf.linalg.eigh(second_tf)
-    first_values = first_values_tf.numpy()
-    second_values = second_values_tf.numpy()
-    first_vectors = first_vectors_tf.numpy()
-    second_vectors = second_vectors_tf.numpy()
-    first_positive = first_values > float(positive_subspace_tolerance)
-    second_positive = second_values > float(positive_subspace_tolerance)
-    positive_rank = min(int(first_positive.sum()), int(second_positive.sum()))
-    if subspace_rank is not None:
-        requested_rank = int(subspace_rank)
-        if requested_rank <= 0 or requested_rank > first.shape[0]:
-            raise ValueError("subspace_rank must lie in [1, dimension]")
-        positive_rank = min(positive_rank, requested_rank)
-    principal_angles: list[float] = []
-    if positive_rank:
-        first_space = first_vectors[:, -positive_rank:]
-        second_space = second_vectors[:, -positive_rank:]
-        singular = tf.linalg.svd(
-            tf.convert_to_tensor(first_space.T @ second_space, tf.float64),
-            compute_uv=False,
-        )
-        singular = tf.where(
-            tf.abs(1.0 - singular) <= tf.constant(1.0e-12, tf.float64),
-            tf.ones_like(singular),
-            singular,
-        )
-        principal_angles = (
-            tf.acos(tf.clip_by_value(singular, -1.0, 1.0))
-            * tf.constant(180.0 / np.pi, tf.float64)
-        ).numpy().tolist()
-    generalized = None
-    if np.all(first_values > 0.0) and np.all(second_values > 0.0):
-        chol = tf.linalg.cholesky(first_tf)
-        left_solved = tf.linalg.triangular_solve(chol, second_tf)
-        transformed = tf.linalg.triangular_solve(
-            chol, tf.transpose(left_solved), adjoint=False
-        )
-        transformed = tf.transpose(transformed)
-        generalized_values = tf.linalg.eigvalsh(
-            0.5 * (transformed + tf.transpose(transformed))
-        ).numpy()
-        generalized = {
-            "minimum": float(generalized_values.min()),
-            "maximum": float(generalized_values.max()),
-            "spread": float(generalized_values.max() / generalized_values.min()),
-        }
-    scale = max(
-        abs(float(tf.linalg.trace(first_tf).numpy())),
-        abs(float(tf.linalg.trace(second_tf).numpy())),
-        1.0e-15,
+    dimension = int(first.shape[0])
+    requested_rank = dimension if subspace_rank is None else int(subspace_rank)
+    if requested_rank <= 0 or requested_rank > dimension:
+        raise ValueError("subspace_rank must lie in [1, dimension]")
+    values = _run_kernel(
+        _precision_geometry_kernel,
+        first,
+        second,
+        tf.constant(float(positive_subspace_tolerance), tf.float64),
+        tf.constant(requested_rank, tf.int32),
     )
-    difference = first_tf - second_tf
+    first_values, second_values, rank, angles, generalized, frobenius, operator = values
+    positive_rank = int(rank)
+    principal_angles = angles.numpy().tolist()[:positive_rank]
+    if positive_rank and not math.isfinite(principal_angles[0]):
+        raise ValueError("principal subspace is not numerically resolved at the requested rank")
+    spd = bool(tf.reduce_all(first_values > 0.0) & tf.reduce_all(second_values > 0.0))
     return _json_ready(
         {
             "left_raw_eigenvalues": first_values,
             "right_raw_eigenvalues": second_values,
-            "left_nonpositive_count": int(np.sum(first_values <= 0.0)),
-            "right_nonpositive_count": int(np.sum(second_values <= 0.0)),
-            "trace_normalized_frobenius": float(
-                (tf.linalg.norm(difference) / scale).numpy()
-            ),
-            "trace_normalized_operator": float(
-                (tf.reduce_max(tf.linalg.svd(difference, compute_uv=False)) / scale).numpy()
-            ),
+            "left_nonpositive_count": int(tf.math.count_nonzero(first_values <= 0.0)),
+            "right_nonpositive_count": int(tf.math.count_nonzero(second_values <= 0.0)),
+            "trace_normalized_frobenius": float(frobenius),
+            "trace_normalized_operator": float(operator),
             "positive_subspace_rank": positive_rank,
             "principal_angles_degrees": principal_angles,
-            "maximum_principal_angle_degrees": (
-                None if not principal_angles else float(max(principal_angles))
-            ),
-            "generalized_eigenvalues": generalized,
+            "maximum_principal_angle_degrees": None
+            if not principal_angles
+            else max(principal_angles),
+            "generalized_eigenvalues": None
+            if not spd
+            else {
+                "minimum": float(generalized[0]),
+                "maximum": float(generalized[1]),
+                "spread": float(generalized[2]),
+            },
         }
     )
 
@@ -566,28 +522,55 @@ def consensus_shrunk_precision(
     *,
     target: Any,
     weight: float,
-) -> np.ndarray:
+) -> tf.Tensor:
     """Return ``(1-weight) * mean(precisions) + weight * target``."""
 
-    if not precisions:
+    if len(precisions) == 0:
         raise ValueError("at least one precision is required")
-    matrices = [_symmetric_matrix(value, "precision") for value in precisions]
-    if any(matrix.shape != matrices[0].shape for matrix in matrices[1:]):
-        raise ValueError("precision matrices must have matching shapes")
-    target_matrix = _symmetric_matrix(target, "target")
-    if target_matrix.shape != matrices[0].shape:
+    try:
+        matrices = numeric_tensor(precisions, tf.float64)
+    except (ValueError, tf.errors.InvalidArgumentError) as exc:
+        raise ValueError("precision matrices must have matching shapes") from exc
+    if matrices.shape.rank != 3 or matrices.shape[1] != matrices.shape[2]:
+        raise ValueError("precision must be a finite symmetric square matrix")
+    target_matrix = numeric_tensor(target, tf.float64)
+    if target_matrix.shape.rank != 2 or target_matrix.shape[0] != target_matrix.shape[1]:
+        raise ValueError("target must be a finite symmetric square matrix")
+    if target_matrix.shape != matrices.shape[1:]:
         raise ValueError("target shape must match precisions")
     shrinkage = float(weight)
-    if not np.isfinite(shrinkage) or not 0.0 <= shrinkage <= 1.0:
+    if not math.isfinite(shrinkage) or not 0.0 <= shrinkage <= 1.0:
         raise ValueError("weight must be finite and in [0, 1]")
-    stack = tf.convert_to_tensor(np.stack(matrices, axis=0), tf.float64)
-    target_tf = tf.convert_to_tensor(target_matrix, tf.float64)
-    candidate = consensus_shrunk_precision_tf(
-        stack, target_tf, tf.convert_to_tensor(shrinkage, tf.float64)
+    candidate, precision_valid, target_valid, positive = _run_kernel(
+        _checked_consensus_kernel,
+        matrices,
+        target_matrix,
+        tf.convert_to_tensor(shrinkage, tf.float64),
     )
-    if float(tf.reduce_min(tf.linalg.eigvalsh(candidate)).numpy()) <= 0.0:
+    if not bool(precision_valid):
+        raise ValueError("precision must be a finite symmetric square matrix")
+    if not bool(target_valid):
+        raise ValueError("target must be a finite symmetric square matrix")
+    if not bool(positive):
         raise ValueError("consensus shrinkage requires SPD inputs and target")
-    return candidate.numpy()
+    return candidate
+
+
+def _checked_consensus_kernel(precisions, target, weight):
+    """Enclose the public endpoint's numerical validation and computation."""
+    transposed = tf.linalg.matrix_transpose(precisions)
+    target_transposed = tf.transpose(target)
+    precision_valid = tf.reduce_all(tf.math.is_finite(precisions)) & tf.reduce_all(
+        tf.abs(precisions - transposed) <= 1.0e-12 + 1.0e-10 * tf.abs(transposed))
+    target_valid = tf.reduce_all(tf.math.is_finite(target)) & tf.reduce_all(
+        tf.abs(target - target_transposed) <= 1.0e-12 + 1.0e-10 * tf.abs(target_transposed))
+    candidate = consensus_shrunk_precision_tf(
+        0.5 * (precisions + transposed), 0.5 * (target + target_transposed), weight)
+    # Invalid inputs used to stop before the eigensystem. Preserve that order.
+    positive = tf.cond(precision_valid & target_valid & tf.reduce_all(tf.math.is_finite(candidate)),
+        lambda: tf.reduce_min(tf.linalg.eigvalsh(candidate)) > 0.0,
+        lambda: tf.constant(False))
+    return candidate, precision_valid, target_valid, positive
 
 
 def consensus_shrunk_precision_tf(
@@ -605,12 +588,177 @@ def consensus_shrunk_precision_tf(
     return 0.5 * (candidate + tf.transpose(candidate))
 
 
+@lru_cache(maxsize=128)
+def _compiled_kernel(kernel, signature):
+    return tf.function(
+        kernel, input_signature=signature, jit_compile=True, autograph=False
+    )
+
+
+def _run_kernel(kernel, *tensors):
+    signature = tuple(tf.TensorSpec(value.shape, value.dtype) for value in tensors)
+    return _compiled_kernel(kernel, signature)(*tensors)
+
+
+def _scale_covariance(covariance, scale):
+    return covariance * scale[:, None] * scale[None, :]
+
+
+def _precision_eigenvalues(precision):
+    return _eigenpairs(precision, True)[0]
+
+
+def _trace_normalized_operator(difference, scale, *, jit_compile=True):
+    # XLA's SVD can stop before resolving off-diagonal entries of a small
+    # matrix. Homogeneity keeps its input at unit magnitude without changing
+    # the operator norm or the caller's acceptance threshold.
+    magnitude = tf.reduce_max(tf.abs(difference))
+    safe_magnitude = tf.where(magnitude > 0., magnitude, tf.ones_like(magnitude))
+    normalized = difference / safe_magnitude
+    # Match the repository's binary64 eigensystem/condition diagnostics;
+    # scaling alone cannot resolve nearly equal singular values at 1e-6.
+    singular = (xla_svd(normalized, max_iter=100, epsilon=sys.float_info.epsilon,
+        precision_config="").s if jit_compile else tf.linalg.svd(normalized, compute_uv=False))
+    return tf.reduce_max(singular) * (magnitude / scale)
+
+
+def _principal_subspace_resolved(matrix, values, vectors, rank):
+    """A partial spectral subspace needs a resolved gap at its rank boundary.
+
+    Residual, orthogonality error and dimension-scaled roundoff estimate the
+    uncertainty of the computed spectrum. Overlapping boundary estimates cannot
+    support an angle claim. This flags unresolved spectra; it does not assert
+    exact eigenvalue multiplicity or alter the requested rank.
+    """
+    dimension = matrix.shape[0]
+    if dimension == 1:
+        return tf.constant(True)
+    cut = tf.clip_by_value(dimension - rank, 1, dimension - 1)
+    gap = values[cut] - values[cut - 1]
+    scale = tf.linalg.norm(matrix)
+    residual = tf.linalg.norm(tf.matmul(matrix, vectors) - vectors * values[None, :])
+    orthogonality = tf.linalg.norm(tf.matmul(vectors, vectors, transpose_a=True)
+        - tf.eye(dimension, dtype=matrix.dtype))
+    gamma = dimension * sys.float_info.epsilon / (1.0 - dimension * sys.float_info.epsilon)
+    uncertainty = residual + scale * (orthogonality + tf.constant(gamma, matrix.dtype))
+    return (rank <= 0) | (rank >= dimension) | (
+        tf.math.is_finite(uncertainty) & (gap > 2.0 * uncertainty))
+
+
+def _precision_geometry_kernel(first, second, tolerance, requested_rank, *, jit_compile=True):
+    # Principal angles depend on eigenvectors as well as eigenvalues. The
+    # backend's loose default stopping check can leave O(1e-7) residuals.
+    first_values, first_vectors = _eigenpairs(first, jit_compile)
+    second_values, second_vectors = _eigenpairs(second, jit_compile)
+    rank = tf.minimum(
+        requested_rank,
+        tf.minimum(
+            tf.math.count_nonzero(first_values > tolerance, dtype=tf.int32),
+            tf.math.count_nonzero(second_values > tolerance, dtype=tf.int32),
+        ),
+    )
+    dimension = first.shape[0]
+    # Keep the subspace matrix fixed-size for XLA. Its first `rank` singular
+    # values are exactly those of the two selected positive eigenspaces.
+    selected = tf.cast(tf.range(dimension) >= dimension - rank, first.dtype)
+    overlap = tf.matmul(
+        first_vectors * selected, second_vectors * selected, transpose_a=True
+    )
+    # XLA's default SVD convergence leaves O(1e-7) errors on padded overlap
+    # matrices, which acos amplifies for nearly aligned subspaces.
+    singular = (xla_svd(overlap, max_iter=100, epsilon=sys.float_info.epsilon,
+        precision_config="").s if jit_compile else tf.linalg.svd(overlap, compute_uv=False))
+    singular = tf.where(
+        tf.abs(1.0 - singular) <= 1.0e-12, tf.ones_like(singular), singular
+    )
+    # acos loses small-angle accuracy when rounded cosines approach one.
+    # The orthogonal residual's singular values give the same angles' sines.
+    # Pair ascending sines with descending cosines, retaining the existing
+    # unit-cosine snap and fixed-size padded output.
+    first_basis = first_vectors * selected
+    second_basis = second_vectors * selected
+    residual = second_basis - tf.matmul(first_basis, overlap)
+    sine = (xla_svd(residual, max_iter=100, epsilon=sys.float_info.epsilon,
+        precision_config="").s if jit_compile else tf.linalg.svd(residual, compute_uv=False))
+    paired_sine = tf.gather(sine, tf.maximum(rank - 1 - tf.range(dimension), 0))
+    radians = tf.math.atan2(paired_sine, tf.clip_by_value(singular, 0.0, 1.0))
+    angles = tf.where(singular == 1.0, tf.zeros_like(radians), radians) * tf.constant(
+        180.0 / math.pi, tf.float64)
+    angles = tf.where(tf.range(dimension) < rank, angles, tf.constant(90.0, tf.float64))
+    resolved = (_principal_subspace_resolved(first, first_values, first_vectors, rank)
+        & _principal_subspace_resolved(second, second_values, second_vectors, rank))
+    # Nonfinite active slots are internal refusal status. Public wrappers raise
+    # before serialization; native consumers propagate the resolution error.
+    angles = tf.where((tf.range(dimension) < rank) & ~resolved,
+        tf.constant(float("nan"), tf.float64), angles)
+    spd = tf.reduce_all(first_values > 0.0) & tf.reduce_all(second_values > 0.0)
+
+    def generalized():
+        chol = tf.linalg.cholesky(first)
+        solved = tf.linalg.triangular_solve(chol, second)
+        transformed = tf.transpose(
+            tf.linalg.triangular_solve(chol, tf.transpose(solved))
+        )
+        values, _ = _eigenpairs(0.5 * (transformed + tf.transpose(transformed)), jit_compile)
+        minimum, maximum = tf.reduce_min(values), tf.reduce_max(values)
+        return tf.stack((minimum, maximum, maximum / minimum))
+
+    generalized_values = tf.cond(spd, generalized, lambda: tf.zeros([3], first.dtype))
+    scale = tf.maximum(
+        tf.maximum(tf.abs(tf.linalg.trace(first)), tf.abs(tf.linalg.trace(second))),
+        tf.constant(1.0e-15, tf.float64),
+    )
+    difference = first - second
+    return (
+        first_values,
+        second_values,
+        rank,
+        angles,
+        generalized_values,
+        tf.linalg.norm(difference) / scale,
+        _trace_normalized_operator(difference, scale, jit_compile=jit_compile),
+    )
+
+
+def _score_error_kernel(precision, center_score, offsets, scores):
+    response = center_score[None, :] - scores
+    prediction = tf.matmul(offsets, precision, transpose_b=True)
+    error = tf.sqrt(tf.reduce_mean(tf.square(prediction - response)))
+    scale = tf.maximum(
+        tf.sqrt(tf.reduce_mean(tf.square(response))), tf.constant(1.0e-15, tf.float64)
+    )
+    return error / scale
+
+
+def _dense_fit_kernel(
+    center, train, scores, selection, selection_scores, eigenvalue_floor, condition_cap, *, jit_compile=True
+):
+    raw = fit_dense_score_precision_tf(center, train, scores)["raw_precision"]
+    values, vectors = _eigenpairs(raw, jit_compile)
+    floor = tf.maximum(eigenvalue_floor, tf.reduce_max(tf.abs(values)) / condition_cap)
+    projected = tf.matmul(
+        vectors * tf.maximum(values, floor)[None, :], vectors, transpose_b=True
+    )
+    projection = tf.linalg.norm(projected - raw) / tf.maximum(
+        tf.linalg.norm(raw), tf.constant(1.0e-15, tf.float64)
+    )
+    return (
+        raw,
+        projected,
+        tf.linalg.inv(projected),
+        values,
+        projection,
+        _score_error_kernel(projected, center, selection, selection_scores),
+        tf.math.count_nonzero(values <= 0.0),
+    )
+
+
 def _fit_dense_precision(
-    center_score: np.ndarray,
-    train_z: np.ndarray,
-    train_scores: np.ndarray,
-    select_z: np.ndarray,
-    select_scores: np.ndarray,
+    center_score: tf.Tensor,
+    train_z: tf.Tensor,
+    train_scores: tf.Tensor,
+    select_z: tf.Tensor,
+    select_scores: tf.Tensor,
     *,
     replicate_index: int,
     eigenvalue_floor: float,
@@ -619,33 +767,23 @@ def _fit_dense_precision(
     projection_cap: float,
     require_raw_spd: bool,
 ) -> FixedCenterCurvatureFit:
-    shared_fit = fit_dense_score_precision_tf(
-        tf.convert_to_tensor(center_score, tf.float64),
-        tf.convert_to_tensor(train_z, tf.float64),
-        tf.convert_to_tensor(train_scores, tf.float64),
+    raw, projected, covariance, raw_values, projection_tf, holdout_tf, nonpositive = (
+        _run_kernel(
+            _dense_fit_kernel,
+            numeric_tensor(center_score, tf.float64),
+            numeric_tensor(train_z, tf.float64),
+            numeric_tensor(train_scores, tf.float64),
+            numeric_tensor(select_z, tf.float64),
+            numeric_tensor(select_scores, tf.float64),
+            tf.constant(float(eigenvalue_floor), tf.float64),
+            tf.constant(float(max_condition_number), tf.float64),
+        )
     )
-    raw_tf = shared_fit["raw_precision"]
-    raw_values_tf, vectors_tf = tf.linalg.eigh(raw_tf)
-    raw = raw_tf.numpy()
-    raw_values = raw_values_tf.numpy()
-    floor = max(float(eigenvalue_floor), float(np.max(np.abs(raw_values))) / max_condition_number)
-    projected_values = np.maximum(raw_values, floor)
-    projected_tf = tf.matmul(
-        vectors_tf * tf.convert_to_tensor(projected_values[None, :], tf.float64),
-        vectors_tf,
-        transpose_b=True,
+    projection, holdout, raw_nonpositive = (
+        float(projection_tf),
+        float(holdout_tf),
+        int(nonpositive),
     )
-    projected = projected_tf.numpy()
-    projection = float(
-        (
-            tf.linalg.norm(projected_tf - raw_tf)
-            / tf.maximum(tf.linalg.norm(raw_tf), tf.constant(1.0e-15, tf.float64))
-        ).numpy()
-    )
-    holdout = _score_relative_rmse(
-        projected, center_score, select_z, select_scores
-    )
-    raw_nonpositive = int(np.sum(raw_values <= 0.0))
     accepted = (
         (not require_raw_spd or raw_nonpositive == 0)
         and projection <= projection_cap
@@ -668,7 +806,7 @@ def _fit_dense_precision(
         status=status,
         raw_precision_z=raw,
         precision_z=projected,
-        covariance_z=tf.linalg.inv(projected_tf).numpy(),
+        covariance_z=covariance,
         raw_eigenvalues=raw_values,
         raw_nonpositive_count=raw_nonpositive,
         projection_relative_frobenius=projection,
@@ -685,11 +823,11 @@ def _fit_dense_precision(
 
 
 def _fit_structured_precision(
-    center_score: np.ndarray,
-    train_z: np.ndarray,
-    train_scores: np.ndarray,
-    select_z: np.ndarray,
-    select_scores: np.ndarray,
+    center_score: tf.Tensor,
+    train_z: tf.Tensor,
+    train_scores: tf.Tensor,
+    select_z: tf.Tensor,
+    select_scores: tf.Tensor,
     *,
     replicate_index: int,
     factor_count: int,
@@ -708,8 +846,12 @@ def _fit_structured_precision(
             holdout_score_relative_rmse=holdout_cap,
         ),
     )
-    precision = None if result.precision_z is None else np.asarray(result.precision_z)
-    values = None if precision is None else np.linalg.eigvalsh(precision)
+    precision = (
+        None
+        if result.precision_z is None
+        else numeric_tensor(result.precision_z, tf.float64)
+    )
+    values = None if precision is None else _run_kernel(_precision_eigenvalues, precision)
     return FixedCenterCurvatureFit(
         family=f"factor_{factor_count}",
         replicate_index=replicate_index,
@@ -720,7 +862,9 @@ def _fit_structured_precision(
         precision_z=precision,
         covariance_z=result.covariance_z,
         raw_eigenvalues=values,
-        raw_nonpositive_count=(None if values is None else int(np.sum(values <= 0.0))),
+        raw_nonpositive_count=(
+            None if values is None else int(tf.math.count_nonzero(values <= 0.0))
+        ),
         projection_relative_frobenius=0.0 if precision is not None else None,
         selection_holdout_relative_rmse=result.diagnostics.get(
             "holdout_score_relative_rmse"
@@ -732,9 +876,11 @@ def _fit_structured_precision(
             "anchor_indices": result.anchor_indices,
             "geometry_admissible": bool(
                 precision is not None
-                and result.status
-                in {"usable", "holdout_score_fit_rejected"}
-                and (factor_count == 1 or result.diagnostics.get("second_factor_identified"))
+                and result.status in {"usable", "holdout_score_fit_rejected"}
+                and (
+                    factor_count == 1
+                    or result.diagnostics.get("second_factor_identified")
+                )
             ),
             "selection_holdout_passed": bool(
                 result.diagnostics.get("holdout_score_relative_rmse", float("inf"))
@@ -746,232 +892,177 @@ def _fit_structured_precision(
 
 def _select_candidate(
     fits: Sequence[FixedCenterCurvatureFit],
-    center_score: np.ndarray,
-    selection_partitions: Sequence[tuple[np.ndarray, np.ndarray]],
+    center_score: tf.Tensor,
+    selection_partitions: Sequence[tuple[tf.Tensor, tf.Tensor]],
     *,
     thresholds: FixedCenterCurvatureThresholds,
     shrinkage_weights: tuple[float, ...],
     structured_target_family: str | None,
 ) -> tuple[Mapping[str, Any] | None, dict[str, Any]]:
-    selection: dict[str, Any] = {
-        "order": ["factor_1", "factor_2", "consensus_structured", "consensus_diagonal"],
-        "audit_used_for_selection": False,
-        "requested_structured_target_family": structured_target_family,
-        "candidates": [],
-    }
-    families = sorted({fit.family for fit in fits})
-    stability: dict[str, Any] = {}
-    stable_families: set[str] = set()
-    for family in families:
-        family_fits = [fit for fit in fits if fit.family == family]
-        family_stability = _family_stability(family_fits, thresholds)
-        stability[family] = family_stability
-        if family_stability["passed"]:
-            stable_families.add(family)
-    selection["stability"] = stability
+    families = tuple(sorted({fit.family for fit in fits}))
+    family_fits = tuple(tuple(fit for fit in fits if fit.family == family) for family in families)
+    counts = tuple(len(group) for group in family_fits)
+    capacity = max(counts, default=0)
+    center = numeric_tensor(center_score, tf.float64)
+    dimension = int(center.shape[0])
+    matrices = tuple(tf.stack(tuple(tf.zeros([dimension, dimension], tf.float64)
+        if fit.precision_z is None else numeric_tensor(fit.precision_z, tf.float64) for fit in group))
+        for group in family_fits)
+    packed = tf.stack(tuple(tf.pad(values, [[0, capacity - count], [0, 0], [0, 0]])
+        for values, count in zip(matrices, counts, strict=True))) if families else tf.zeros([0, 0, dimension, dimension], tf.float64)
+    flags = tuple(tf.constant([(fit.precision_z is not None,
+        bool(fit.diagnostics.get("geometry_admissible")), fit.accepted) for fit in group], tf.bool)
+        for group in family_fits)
+    flags = tf.stack(tuple(tf.pad(values, [[0, capacity - count], [0, 0]])
+        for values, count in zip(flags, counts, strict=True))) if families else tf.zeros([0, 0, 3], tf.bool)
+    offsets, scores, partition_rows = _pack_selection_partitions(selection_partitions, dimension)
+    caps = tuple(getattr(thresholds, name) for name in stability_native.CAP_NAMES)
+    program = selection_native.selection_program(_precision_geometry_kernel, _score_error_kernel,
+        dimension, families, counts, partition_rows, len(shrinkage_weights), structured_target_family)
+    result = program(packed, flags, center, offsets, scores,
+        tf.constant([0. if cap is None else cap for cap in caps], tf.float64),
+        tf.constant([cap is not None for cap in caps], tf.bool),
+        tf.constant(dimension if thresholds.principal_subspace_rank is None
+            else thresholds.principal_subspace_rank, tf.int32),
+        tf.constant(shrinkage_weights, tf.float64), tf.constant(thresholds.selection_holdout_relative_rmse_cap, tf.float64))
+    report = tf.nest.map_structure(lambda value: value.numpy().tolist(), result)
+    return _selection_report(families, family_fits, thresholds, shrinkage_weights, structured_target_family, result, report)
 
-    for family in (() if structured_target_family is not None else ("factor_1", "factor_2")):
-        family_fits = [
-            fit
-            for fit in fits
-            if fit.family == family and fit.accepted and fit.precision_z is not None
-        ]
-        if family in stable_families and len(family_fits) >= 2:
-            consensus = tf.reduce_mean(
-                tf.convert_to_tensor(
-                    np.stack([fit.precision_z for fit in family_fits], axis=0),
-                    tf.float64,
-                ),
-                axis=0,
-            ).numpy()
-            selection["candidates"].append({"family": family, "selected": True})
-            return {"family": family, "precision_z": consensus}, selection
 
-    admissible = [
-        fit
-        for fit in fits
-        if fit.precision_z is not None
-        and fit.family in stable_families
-        and bool(fit.diagnostics.get("geometry_admissible"))
-    ]
-    if not admissible:
+def _selection_report(families, family_fits, thresholds, shrinkage_weights, structured_target_family, result, report):
+    """Reconstruct native selector output; no numerical decisions are repeated."""
+    stability = {family: _stability_report(group, thresholds,
+        {name: value[index] for name, value in report["stability"].items()})
+        for index, (family, group) in enumerate(zip(families, family_fits, strict=True))}
+    if report["error"]:
+        raise ValueError("consensus shrinkage requires SPD inputs and target")
+    selection = {"order": ["factor_1", "factor_2", "consensus_structured", "consensus_diagonal"],
+        "audit_used_for_selection": False, "requested_structured_target_family": structured_target_family,
+        "candidates": [], "stability": stability}
+    code = report["family_code"]
+    if code in (1, 2):
+        family = f"factor_{code}"
+        selection["candidates"].append({"family": family, "selected": True})
+        return {"family": family, "precision_z": result["precision"]}, selection
+    target_family = "diagonal_consensus" if structured_target_family is None else structured_target_family
+    family = f"consensus_{target_family}"
+    selection["candidates"] = [{"family": family, "weight": weight,
+        "selection_holdout_relative_rmse": error, "selected": index == report["selected_index"]}
+        for index, (weight, error) in enumerate(zip(shrinkage_weights[:report["visited"]],
+            report["errors"][:report["visited"]], strict=True))]
+    if not code:
         return None, selection
-    dense_precisions = [
-        fit.precision_z for fit in admissible if fit.family == "dense"
-    ]
-    if not dense_precisions:
-        return None, selection
-    consensus = tf.reduce_mean(
-        tf.convert_to_tensor(np.stack(dense_precisions), tf.float64), axis=0
-    ).numpy()
-    structured = None
-    if structured_target_family is not None:
-        candidates_for_target = [
-            fit
-            for fit in admissible
-            if fit.family == structured_target_family and fit.accepted
-        ]
-        if structured_target_family not in stable_families or not candidates_for_target:
-            return None, selection
-        target = tf.reduce_mean(
-            tf.convert_to_tensor(
-                np.stack([fit.precision_z for fit in candidates_for_target]),
-                tf.float64,
-            ),
-            axis=0,
-        ).numpy()
-        target_family = structured_target_family
-    else:
-        target = np.diag(np.diag(consensus))
-        target_family = "diagonal_consensus"
-    candidates = []
-    for weight in shrinkage_weights:
-        candidate = consensus_shrunk_precision(
-            dense_precisions, target=target, weight=weight
-        )
-        error = _mean_selection_error(
-            candidate, center_score, selection_partitions
-        )
-        candidates.append((error, weight, candidate))
-        selection["candidates"].append(
-            {
-                "family": f"consensus_{target_family}",
-                "weight": weight,
-                "selection_holdout_relative_rmse": error,
-                "selected": False,
-            }
-        )
-    error, weight, candidate = min(candidates, key=lambda row: (row[0], row[1]))
-    if error > thresholds.selection_holdout_relative_rmse_cap:
-        return None, selection
-    selected_index = min(
-        range(len(candidates)), key=lambda index: (candidates[index][0], candidates[index][1])
-    )
-    selection["candidates"][-len(candidates) + selected_index]["selected"] = True
-    selection["selected_weight"] = weight
-    selection["selected_target"] = target_family
-    selection["diagonal_only"] = bool(
-        target_family == "diagonal_consensus" and weight == 1.0
-    )
-    return {
-        "family": f"consensus_{target_family}",
-        "precision_z": candidate,
-    }, selection
+    selection.update(selected_weight=report["weight"], selected_target=target_family,
+        diagonal_only=report["diagonal_only"])
+    return {"family": family, "precision_z": result["precision"]}, selection
 
 
 def _score_relative_rmse(
-    precision: np.ndarray,
-    center_score: np.ndarray,
-    offsets: np.ndarray,
-    scores: np.ndarray,
+    precision: tf.Tensor,
+    center_score: tf.Tensor,
+    offsets: tf.Tensor,
+    scores: tf.Tensor,
 ) -> float:
-    response = tf.convert_to_tensor(center_score[None, :] - scores, tf.float64)
-    prediction = tf.matmul(
-        tf.convert_to_tensor(offsets, tf.float64),
-        tf.convert_to_tensor(precision, tf.float64),
-        transpose_b=True,
+    return float(
+        _run_kernel(
+            _score_error_kernel,
+            *(
+                numeric_tensor(value, tf.float64)
+                for value in (precision, center_score, offsets, scores)
+            ),
+        )
     )
-    error = tf.sqrt(tf.reduce_mean(tf.square(prediction - response)))
-    scale = tf.maximum(
-        tf.sqrt(tf.reduce_mean(tf.square(response))),
-        tf.constant(1.0e-15, tf.float64),
-    )
-    return float((error / scale).numpy())
 
 
 def _mean_selection_error(
-    precision: np.ndarray,
-    center_score: np.ndarray,
-    partitions: Sequence[tuple[np.ndarray, np.ndarray]],
+    precision: tf.Tensor,
+    center_score: tf.Tensor,
+    partitions: Sequence[tuple[tf.Tensor, tf.Tensor]],
 ) -> float:
-    errors = [
-        _score_relative_rmse(precision, center_score, offsets, scores)
-        for offsets, scores in partitions
-    ]
-    return float(tf.reduce_mean(tf.convert_to_tensor(errors, tf.float64)).numpy())
+    center = numeric_tensor(center_score, tf.float64)
+    dimension = int(center.shape[0])
+    offsets, scores, partition_rows = _pack_selection_partitions(partitions, dimension)
+    program = selection_native.mean_error_program(_score_error_kernel, dimension, partition_rows)
+    return float(program(numeric_tensor(precision, tf.float64), center, offsets, scores))
+
+
+def _pack_selection_partitions(partitions, dimension):
+    """Pack static report/input schemas without evaluating their numerical scores."""
+    rows = tuple(int(offsets.shape[0]) for offsets, _scores in partitions)
+    extent = max(rows, default=0)
+    offsets = tuple(tf.pad(numeric_tensor(offsets, tf.float64), [[0, extent - count], [0, 0]])
+        for (offsets, _scores), count in zip(partitions, rows, strict=True))
+    scores = tuple(tf.pad(numeric_tensor(scores, tf.float64), [[0, extent - count], [0, 0]])
+        for (_offsets, scores), count in zip(partitions, rows, strict=True))
+    return (tf.stack(offsets) if rows else tf.zeros([0, 0, dimension], tf.float64),
+        tf.stack(scores) if rows else tf.zeros([0, 0, dimension], tf.float64), rows)
 
 
 def _family_stability(
     fits: Sequence[FixedCenterCurvatureFit],
     thresholds: FixedCenterCurvatureThresholds,
 ) -> Mapping[str, Any]:
-    usable = [
-        fit
-        for fit in fits
-        if fit.precision_z is not None
-        and bool(fit.diagnostics.get("geometry_admissible"))
-    ]
-    if len(usable) != len(fits) or len(usable) < 2:
-        return {
-            "passed": False,
-            "reason": "fewer_than_two_usable_replicates",
-            "replicate_count": len(fits),
-            "usable_count": len(usable),
-            "comparisons": [],
-        }
+    # Pack every completed fit, including absent/unusable records. Eligibility
+    # counting and all pairwise numerical decisions occur in the native program.
+    dimension = next((int(fit.precision_z.shape[0]) for fit in fits
+        if fit.precision_z is not None), 1)
+    matrices = tuple(tf.zeros([dimension, dimension], tf.float64) if fit.precision_z is None
+        else numeric_tensor(fit.precision_z, tf.float64) for fit in fits)
+    usable = tf.reshape(tf.constant([(fit.precision_z is not None, bool(fit.diagnostics.get("geometry_admissible")))
+        for fit in fits], tf.bool), [len(fits), 2])
+    caps = tuple(getattr(thresholds, name) for name in stability_native.CAP_NAMES)
+    program = stability_native.stability_program(_precision_geometry_kernel, dimension, len(fits))
+    result = program(tf.stack(matrices) if matrices else tf.zeros([0, dimension, dimension], tf.float64),
+        usable, tf.constant([0. if cap is None else cap for cap in caps], tf.float64),
+        tf.constant([cap is not None for cap in caps], tf.bool),
+        tf.constant(dimension if thresholds.principal_subspace_rank is None
+            else thresholds.principal_subspace_rank, tf.int32))
+    report = {name: value.numpy().tolist() for name, value in result.items()}
+    return _stability_report(fits, thresholds, report)
+
+
+def _stability_report(fits, thresholds, report):
+    """Reconstruct the completed native comparison records without reevaluation."""
+    dimension = next((int(fit.precision_z.shape[0]) for fit in fits
+        if fit.precision_z is not None), 1)
+    caps = tuple(getattr(thresholds, name) for name in stability_native.CAP_NAMES)
+    if not report["complete"]:
+        return {"passed": False, "reason": "fewer_than_two_usable_replicates",
+            "replicate_count": len(fits), "usable_count": report["usable_count"], "comparisons": []}
+    if report["error"]:
+        messages = {1: "left must be a finite symmetric square matrix",
+            2: "right must be a finite symmetric square matrix", 3: "subspace_rank must lie in [1, dimension]",
+            5: "principal subspace is not numerically resolved at the requested rank"}
+        raise ValueError(messages[report["error"]])
     comparisons = []
-    all_passed = True
-    for left_index, left in enumerate(usable):
-        for right in usable[left_index + 1 :]:
-            metrics = dict(
-                compare_precision_geometry(
-                    left.precision_z,
-                    right.precision_z,
-                    subspace_rank=thresholds.principal_subspace_rank,
-                )
-            )
-            generalized = metrics["generalized_eigenvalues"]
-            checks = {
-                "generalized_eigenvalue_spread": (
-                    None
-                    if thresholds.generalized_eigenvalue_spread_cap is None
-                    else generalized is not None
-                    and generalized["spread"]
-                    <= thresholds.generalized_eigenvalue_spread_cap
-                ),
-                "trace_normalized_frobenius": (
-                    None
-                    if thresholds.trace_normalized_frobenius_cap is None
-                    else metrics["trace_normalized_frobenius"]
-                    <= thresholds.trace_normalized_frobenius_cap
-                ),
-                "trace_normalized_operator": (
-                    None
-                    if thresholds.trace_normalized_operator_cap is None
-                    else metrics["trace_normalized_operator"]
-                    <= thresholds.trace_normalized_operator_cap
-                ),
-                "principal_angle_degrees": (
-                    None
-                    if thresholds.principal_angle_degrees_cap is None
-                    else metrics["maximum_principal_angle_degrees"] is not None
-                    and metrics["maximum_principal_angle_degrees"]
-                    <= thresholds.principal_angle_degrees_cap
-                ),
-            }
-            passed = all(value is not False for value in checks.values())
-            all_passed = all_passed and passed
-            comparisons.append(
-                {
-                    "left_replicate": left.replicate_index,
-                    "right_replicate": right.replicate_index,
-                    "metrics": metrics,
-                    "checks": checks,
-                    "passed": passed,
-                }
-            )
-    return {
-        "passed": all_passed,
-        "thresholds_complete": thresholds.stability_caps_complete,
-        "replicate_count": len(fits),
-        "usable_count": len(usable),
-        "comparisons": comparisons,
-    }
+    pair_index = 0
+    for left in range(len(fits)):
+        for right in range(left + 1, len(fits)):
+            values = report["reports"][pair_index]
+            summary = values[3 * dimension:]
+            rank = int(summary[0])
+            metrics = {"left_raw_eigenvalues": values[:dimension],
+                "right_raw_eigenvalues": values[dimension:2 * dimension],
+                "left_nonpositive_count": int(summary[7]), "right_nonpositive_count": int(summary[8]),
+                "trace_normalized_frobenius": summary[4], "trace_normalized_operator": summary[5],
+                "positive_subspace_rank": rank,
+                "principal_angles_degrees": values[2 * dimension:2 * dimension + rank],
+                "maximum_principal_angle_degrees": summary[6] if rank else None,
+                "generalized_eigenvalues": {"minimum": summary[1], "maximum": summary[2],
+                    "spread": summary[3]} if bool(summary[9]) else None}
+            checks = {name: None if cap is None else passed for name, cap, passed in zip(
+                stability_native.CHECK_NAMES, caps, report["checks"][pair_index], strict=True)}
+            comparisons.append({"left_replicate": fits[left].replicate_index,
+                "right_replicate": fits[right].replicate_index, "metrics": metrics,
+                "checks": checks, "passed": report["pair_passed"][pair_index]})
+            pair_index += 1
+    return {"passed": report["passed"], "thresholds_complete": thresholds.stability_caps_complete,
+        "replicate_count": len(fits), "usable_count": report["usable_count"], "comparisons": comparisons}
 
 
 def _blocked_result(
-    center: np.ndarray,
-    center_score: np.ndarray,
+    center: tf.Tensor,
+    center_score: tf.Tensor,
     fits: Sequence[FixedCenterCurvatureFit],
     status: str,
     *,
@@ -999,17 +1090,19 @@ def _blocked_result(
 
 def _cloud_pair(
     offsets: Any, scores: Any, dimension: int, name: str
-) -> tuple[np.ndarray, np.ndarray]:
-    offset_array = np.asarray(offsets, dtype=float)
-    score_array = np.asarray(scores, dtype=float)
+) -> tuple[tf.Tensor, tf.Tensor]:
+    offset_array = numeric_tensor(offsets, tf.float64)
+    score_array = numeric_tensor(scores, tf.float64)
     if (
-        offset_array.ndim != 2
+        offset_array.shape.rank != 2
         or offset_array.shape[1] != dimension
         or score_array.shape != offset_array.shape
         or offset_array.shape[0] == 0
     ):
         raise ValueError(f"{name} offsets/scores must have matching [rows, N] shape")
-    if not np.all(np.isfinite(offset_array)) or not np.all(np.isfinite(score_array)):
+    if not bool(tf.reduce_all(tf.math.is_finite(offset_array))) or not bool(
+        tf.reduce_all(tf.math.is_finite(score_array))
+    ):
         raise ValueError(f"{name} offsets/scores must be finite")
     return offset_array, score_array
 
@@ -1019,13 +1112,13 @@ def _cloud_partitions(
     scores: Any,
     dimension: int,
     name: str,
-) -> tuple[tuple[np.ndarray, np.ndarray], ...]:
-    offset_array = np.asarray(offsets, dtype=float)
-    score_array = np.asarray(scores, dtype=float)
-    if offset_array.ndim == 2:
+) -> tuple[tuple[tf.Tensor, tf.Tensor], ...]:
+    offset_array = numeric_tensor(offsets, tf.float64)
+    score_array = numeric_tensor(scores, tf.float64)
+    if offset_array.shape.rank == 2:
         return (_cloud_pair(offset_array, score_array, dimension, name),)
     if (
-        offset_array.ndim != 3
+        offset_array.shape.rank != 3
         or offset_array.shape[2] != dimension
         or score_array.shape != offset_array.shape
         or offset_array.shape[0] == 0
@@ -1033,7 +1126,9 @@ def _cloud_partitions(
         raise ValueError(
             f"{name} offsets/scores must have matching [replicates, rows, N] shape"
         )
-    if not np.all(np.isfinite(offset_array)) or not np.all(np.isfinite(score_array)):
+    if not bool(tf.reduce_all(tf.math.is_finite(offset_array))) or not bool(
+        tf.reduce_all(tf.math.is_finite(score_array))
+    ):
         raise ValueError(f"{name} offsets/scores must be finite")
     return tuple(
         (offset_array[index], score_array[index])
@@ -1042,19 +1137,37 @@ def _cloud_partitions(
 
 
 def _require_independent_partitions(
-    named_arrays: Sequence[tuple[str, np.ndarray]],
+    named_arrays: Sequence[tuple[str, tf.Tensor]],
+    *,
+    raw_regions=None,
 ) -> None:
-    row_keys = []
-    for name, array in named_arrays:
-        normalized = np.ascontiguousarray(array, dtype=np.float64).copy()
-        normalized[normalized == 0.0] = 0.0
-        row_keys.append((name, {row.tobytes() for row in normalized}))
-    for left_index, (left_name, left) in enumerate(named_arrays):
-        for right_name, right in named_arrays[left_index + 1 :]:
-            if np.shares_memory(left, right):
+    if raw_regions is None:
+        raw_regions = [
+            (name, regions)
+            for name, array in named_arrays
+            for regions in buffer_byte_regions(array)
+        ]
+    for left_index, (left_name, left) in enumerate(raw_regions):
+        for right_name, right in raw_regions[left_index + 1 :]:
+            if buffer_regions_overlap(left, right):
                 raise ValueError(
                     f"partition offsets must be disjoint arrays: {left_name} and {right_name} share memory"
                 )
+    row_keys = []
+    for name, array in named_arrays:
+        normalized = numeric_tensor(array, tf.float64)
+        normalized = _run_kernel(partition_validation.normalized_offset_bits, normalized)
+        _, data = canonical_numeric_bytes(normalized)
+        row_bytes = int(normalized.shape[1]) * 8
+        row_keys.append(
+            (
+                name,
+                {
+                    data[start : start + row_bytes]
+                    for start in range(0, len(data), row_bytes)
+                },
+            )
+        )
     for left_index, (left_name, left_keys) in enumerate(row_keys):
         for right_name, right_keys in row_keys[left_index + 1 :]:
             if left_keys.intersection(right_keys):
@@ -1063,48 +1176,57 @@ def _require_independent_partitions(
                 )
 
 
-def _vector(value: Any, name: str) -> np.ndarray:
-    array = np.asarray(value, dtype=float)
-    if array.ndim != 1 or array.size == 0 or not np.all(np.isfinite(array)):
+def _vector(value: Any, name: str) -> tf.Tensor:
+    array = numeric_tensor(value, tf.float64)
+    if (
+        array.shape.rank != 1
+        or array.shape[0] == 0
+        or not bool(tf.reduce_all(tf.math.is_finite(array)))
+    ):
         raise ValueError(f"{name} must be a nonempty finite vector")
     return array
 
 
-def _symmetric_matrix(value: Any, name: str) -> np.ndarray:
-    matrix = np.asarray(value, dtype=float)
+def _symmetric_matrix(value: Any, name: str) -> tf.Tensor:
+    matrix = numeric_tensor(value, tf.float64)
     if (
-        matrix.ndim != 2
+        matrix.shape.rank != 2
         or matrix.shape[0] != matrix.shape[1]
-        or not np.all(np.isfinite(matrix))
-        or not np.allclose(matrix, matrix.T, rtol=1.0e-10, atol=1.0e-12)
+        or not bool(tf.reduce_all(tf.math.is_finite(matrix)))
+        or not bool(
+            tf.reduce_all(
+                tf.abs(matrix - tf.transpose(matrix))
+                <= 1.0e-12 + 1.0e-10 * tf.abs(tf.transpose(matrix))
+            )
+        )
     ):
         raise ValueError(f"{name} must be a finite symmetric square matrix")
-    return 0.5 * (matrix + matrix.T)
+    return 0.5 * (matrix + tf.transpose(matrix))
 
 
 def _shrinkage_weights(values: Sequence[float]) -> tuple[float, ...]:
     weights = tuple(float(value) for value in values)
     if (
         not weights
-        or any(not np.isfinite(value) or not 0.0 <= value <= 1.0 for value in weights)
+        or any(not math.isfinite(value) or not 0.0 <= value <= 1.0 for value in weights)
         or 0.0 not in weights
         or 1.0 not in weights
     ):
-        raise ValueError("shrinkage_weights must be finite in [0,1] and include 0 and 1")
+        raise ValueError(
+            "shrinkage_weights must be finite in [0,1] and include 0 and 1"
+        )
     return tuple(sorted(set(weights)))
 
 
 def _positive_finite(value: Any, name: str) -> None:
     number = float(value)
-    if not np.isfinite(number) or number <= 0.0:
+    if not math.isfinite(number) or number <= 0.0:
         raise ValueError(f"{name} must be positive finite")
 
 
 def _json_ready(value: Any) -> Any:
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+    if tf.is_tensor(value) or hasattr(value, "__array_interface__"):
+        return numeric_tensor(value).numpy().tolist()
     if isinstance(value, Mapping):
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):

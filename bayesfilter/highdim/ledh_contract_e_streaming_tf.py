@@ -1185,6 +1185,21 @@ def _contract_e_streaming_forward_core(
     return {"particles": reset["particles"], "quotient": quotient, "reset": reset}
 
 
+def _map_cloud_tangent_directions(source_tangent, one_direction):
+    """Apply the shared analytical JVP over P, preserving native B,N,d axes."""
+    output = tf.zeros_like(tf.transpose(source_tangent, [3, 0, 1, 2]))
+
+    def body(index, output):
+        value = one_direction(index)
+        return index + 1, tf.tensor_scatter_nd_update(output, [[index]], [value])
+
+    _, output = tf.while_loop(
+        lambda index, *_: index < tf.shape(source_tangent)[3],
+        body, (tf.constant(0), output), parallel_iterations=1,
+    )
+    return tf.transpose(output, [1, 2, 3, 0])
+
+
 def _contract_e_streaming_jvp_core(
     scaled_geometry: tf.Tensor,
     source_particles: tf.Tensor,
@@ -1232,10 +1247,8 @@ def _contract_e_streaming_jvp_core(
         row_chunk_size=row_chunk_size,
         col_chunk_size=col_chunk_size,
     )
-    parameter_count = tf.shape(source_particles_tangent)[3]
-
     def one_direction(index: tf.Tensor) -> tf.Tensor:
-        # Closure capture for tf.vectorized_map traced function
+        # Fixed graph captures for the shared direction loop.
         _source_particles = source_particles
         _normalized_weights = normalized_weights
         _quotient_particles = quotient["particles"]
@@ -1260,10 +1273,7 @@ def _contract_e_streaming_jvp_core(
             _ridge_tangent[:, index],
         )["particles"]
 
-    reset_particles = tf.transpose(
-        tf.vectorized_map(one_direction, tf.range(parameter_count)),
-        [1, 2, 3, 0],
-    )
+    reset_particles = _map_cloud_tangent_directions(source_particles_tangent, one_direction)
     return {
         "particles": reset_particles,
         "quotient": quotient,
@@ -1321,10 +1331,8 @@ def _contract_e_streaming_forward_jvp_core(
         residual_design,
         ridge,
     )
-    parameter_count = tf.shape(source_particles_tangent)[3]
-
     def one_direction(index: tf.Tensor) -> tf.Tensor:
-        # Closure capture for tf.vectorized_map traced function
+        # Fixed graph captures for the shared direction loop.
         _reset = reset
         _source_particles = source_particles
         _normalized_weights = normalized_weights
@@ -1351,10 +1359,7 @@ def _contract_e_streaming_forward_jvp_core(
             _ridge_tangent[:, index],
         )["particles"]
 
-    reset_tangent = tf.transpose(
-        tf.vectorized_map(one_direction, tf.range(parameter_count)),
-        [1, 2, 3, 0],
-    )
+    reset_tangent = _map_cloud_tangent_directions(source_particles_tangent, one_direction)
     return {
         "particles": reset["particles"],
         "particles_tangent": reset_tangent,
@@ -1568,19 +1573,16 @@ def contract_e_streaming_vjp_tf(
         col_chunk_size=col_chunk_size,
     )
     return {
-        name: result[name]
-        for name in (
-            "source_particles",
-            "source_particles_direct",
-            "source_particles_transport",
-            "normalized_weights_probability",
-            "normalized_log_weights",
-            "normalized_log_weights_moment",
-            "normalized_log_weights_transport",
-            "scaled_geometry",
-            "residual_design",
-            "ridge",
-            "epsilon0",
-            "constant_payload",
-        )
+        "source_particles": result["source_particles"],
+        "source_particles_direct": result["source_particles_direct"],
+        "source_particles_transport": result["source_particles_transport"],
+        "normalized_weights_probability": result["normalized_weights_probability"],
+        "normalized_log_weights": result["normalized_log_weights"],
+        "normalized_log_weights_moment": result["normalized_log_weights_moment"],
+        "normalized_log_weights_transport": result["normalized_log_weights_transport"],
+        "scaled_geometry": result["scaled_geometry"],
+        "residual_design": result["residual_design"],
+        "ridge": result["ridge"],
+        "epsilon0": result["epsilon0"],
+        "constant_payload": result["constant_payload"],
     }

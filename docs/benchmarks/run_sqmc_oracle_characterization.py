@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
-"""SQMC Oracle Comparison - Minimal Characterization Test.
-
-Tests 4 SQMC routes against LGSSM Kalman oracle with minimal scope:
-- LGSSM T=20 only
-- N=1008 only
-- 2 seeds only
-- All 4 routes
-
-Purpose: Verify oracle integration works and check if route differences exist
-before committing to full 896-cell campaign.
-"""
+"""Canonical SQMC ancestry characterization against the exact LGSSM oracle."""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import math
 import os
 import platform
 import subprocess
@@ -30,283 +21,560 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import tensorflow as tf
-import numpy as np
 
 from bayesfilter.runtime.gpu_memory_policy import (
     configure_tensorflow_gpu_memory_growth,
 )
 
-MEMORY_POLICY = configure_tensorflow_gpu_memory_growth(tf, require_gpu=True)
-
-from bayesfilter.highdim.ledh_kalman_oracle_tf import kalman_oracle_value_and_score
-from bayesfilter.highdim.genut_shape_lm_tf import GENUT_SHAPE_SOLVER_ID
-from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
-from bayesfilter.highdim.ledh_pfpf_genut_initial_rqmc_tf import (
-    finite_value_standard_score_initial_rqmc,
+PLAN = Path("docs/plans/sqmc-oracle-comparison-master-program-v2-2026-09-09.md")
+ARTIFACT_ROOT = Path(
+    "docs/benchmarks/artifacts/sqmc-oracle-characterization-canonical-20260909"
 )
-
-# Characterization scope
-PARTICLE_COUNT = 1008
-SEEDS = (97701, 97702)
+SCHEMA = "bayesfilter.sqmc_oracle_characterization.canonical.v1"
+PROGRAM = "canonical_score_sqmc_fp64_untuned_diagnostic"
+TUNING = "UNTUNED: no exact-scope repository-issued tuning artifact"
+DTYPE = tf.float64
+THETA = (0.9, 0.8, 0.7, 0.6, 0.8)
+PARAMETER_NAMES = ("phi1", "phi2", "phi3", "q_scale", "r_scale")
 ROUTES = (
-    "repaired_permutation",
     "iid_dual_cap",
     "previous_inverse_cdf",
     "repaired_fixed_previous_controls",
+    "repaired_permutation",
 )
-
-# LGSSM T=20 model parameters (10D state, 10D observation)
-LGSSM_HORIZON = 20
-LGSSM_STATE_DIM = 10
-LGSSM_OBS_DIM = 10
-
-# Trust region controls (from Austria SIR runner)
-TRUST_CONTROLS = {
-    "lm_damping": 1.0e-2,
-    "lm_scale_floor": 1.0e-4,
-    "radius": 0.5,
+ANCESTRY = {
+    "iid_dual_cap": "existing_one_to_one",
+    "previous_inverse_cdf": "hilbert_inverse_cdf",
+    "repaired_fixed_previous_controls": "hilbert_permutation_one_to_one",
+    "repaired_permutation": "hilbert_permutation_one_to_one",
 }
-
-# Route-specific controls (from Austria SIR runner)
-ROUTE_CONTROLS = {
-    "iid_dual_cap": {
-        "candidate_id": "previous_exact",
-        "epsilon": 8.0,
-        "sinkhorn_steps": 8,
-        "balance_steps": 8,
-        "ridge": 1.0e-5,
-        "map_multiplier": 3.0,
-        "hilbert_bits": 12,
-        "diagonal_steps": 4,
-        "diagonal_strength": 0.2,
-        "pairwise_steps": 4,
-        "pairwise_strength": 0.02,
-        "radial_cap": 2.0,
-        "coordinate_cap": 0.98,
-        "coordinate_cap_power": 8,
-    },
-    "previous_inverse_cdf": {
-        "candidate_id": "previous_exact",
-        "epsilon": 8.0,
-        "sinkhorn_steps": 8,
-        "balance_steps": 8,
-        "ridge": 1.0e-5,
-        "map_multiplier": 3.0,
-        "hilbert_bits": 12,
-        "diagonal_steps": 4,
-        "diagonal_strength": 0.2,
-        "pairwise_steps": 4,
-        "pairwise_strength": 0.02,
-        "radial_cap": 2.0,
-        "coordinate_cap": 0.98,
-        "coordinate_cap_power": 8,
-    },
-    "repaired_fixed_previous_controls": {
-        "candidate_id": "previous_exact",
-        "epsilon": 8.0,
-        "sinkhorn_steps": 8,
-        "balance_steps": 8,
-        "ridge": 1.0e-5,
-        "map_multiplier": 3.0,
-        "hilbert_bits": 12,
-        "diagonal_steps": 4,
-        "diagonal_strength": 0.2,
-        "pairwise_steps": 4,
-        "pairwise_strength": 0.02,
-        "radial_cap": 2.0,
-        "coordinate_cap": 0.98,
-        "coordinate_cap_power": 8,
-    },
-    "repaired_permutation": {
-        "candidate_id": "previous_exact",
-        "epsilon": 8.0,
-        "sinkhorn_steps": 8,
-        "balance_steps": 8,
-        "ridge": 1.0e-5,
-        "map_multiplier": 3.0,
-        "hilbert_bits": 12,
-        "diagonal_steps": 4,
-        "diagonal_strength": 0.2,
-        "pairwise_steps": 4,
-        "pairwise_strength": 0.02,
-        "radial_cap": 2.0,
-        "coordinate_cap": 0.98,
-        "coordinate_cap_power": 8,
-    },
+BASE_CONTROLS = {
+    "correction_steps": 4,
+    "correction_strength": 0.2,
+    "pairwise_steps": 4,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.98,
+    "coordinate_cap_power": 8,
+}
+CONSERVATIVE_CONTROLS = {
+    "correction_steps": 3,
+    "correction_strength": 0.15,
+    "pairwise_steps": 3,
+    "pairwise_strength": 0.01,
+    "pairwise_rms_cap": 1.5,
+    "coordinate_cap": 0.97,
+    "coordinate_cap_power": 6,
 }
 
 
-def generate_lgssm_data(seed: int) -> tuple[tf.Tensor, dict[str, tf.Tensor]]:
-    """Generate synthetic LGSSM observations and true parameters.
-
-    Returns:
-        observations: [T, obs_dim] tensor
-        params: dict with LGSSM matrices
-    """
-    np.random.seed(seed)
-
-    # Simple diagonal LGSSM for testing
-    F = np.eye(LGSSM_STATE_DIM) * 0.9  # [state_dim, state_dim]
-    Q = np.eye(LGSSM_STATE_DIM) * 0.1  # process noise
-    C = np.eye(LGSSM_OBS_DIM, LGSSM_STATE_DIM)  # [obs_dim, state_dim]
-    R = np.eye(LGSSM_OBS_DIM) * 0.2  # observation noise
-    mu0 = np.zeros(LGSSM_STATE_DIM)
-    P0 = np.eye(LGSSM_STATE_DIM)
-
-    # Generate observations
-    states = [mu0]
-    obs = []
-    for t in range(LGSSM_HORIZON):
-        if t > 0:
-            states.append(F @ states[-1] + np.random.multivariate_normal(np.zeros(LGSSM_STATE_DIM), Q))
-        obs.append(C @ states[-1] + np.random.multivariate_normal(np.zeros(LGSSM_OBS_DIM), R))
-
-    observations = tf.constant(np.array(obs), dtype=tf.float32)
-
-    params = {
-        'transition_matrix': tf.constant(F, dtype=tf.float32),
-        'process_covariance': tf.constant(Q, dtype=tf.float32),
-        'observation_matrix': tf.constant(C, dtype=tf.float32),
-        'observation_covariance': tf.constant(R, dtype=tf.float32),
-        'initial_mean': tf.constant(mu0, dtype=tf.float32),
-        'initial_covariance': tf.constant(P0, dtype=tf.float32),
-    }
-
-    return observations, params
+def _safe(value: Any) -> Any:
+    if hasattr(value, "numpy"):
+        value = value.numpy()
+    if hasattr(value, "tolist"):
+        value = value.tolist()
+    if isinstance(value, dict):
+        return {str(key): _safe(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_safe(item) for item in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
-def compute_oracle(observations: tf.Tensor, params: dict[str, tf.Tensor]) -> dict[str, Any]:
-    """Compute oracle value and score for LGSSM."""
-    # For oracle, we need theta to depend on parameters
-    # Use a simple parameterization: theta = [log(scale)] where scale multiplies F
-    # This is just for gradient tracking - we'll evaluate at theta=[0] (scale=1)
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
-    def theta_to_lgssm_params(theta):
-        scale = tf.exp(theta[0])
+
+def _tensor_sha256(value: tf.Tensor) -> str:
+    encoded = tf.io.serialize_tensor(tf.convert_to_tensor(value)).numpy()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _attempt_directory(stage: str) -> Path:
+    root = ROOT / ARTIFACT_ROOT
+    root.mkdir(parents=True, exist_ok=True)
+    for index in range(1, 100):
+        candidate = root / f"{stage}_attempt{index:02d}"
+        try:
+            candidate.mkdir()
+        except FileExistsError:
+            continue
+        return candidate
+    raise RuntimeError("no unused attempt directory remains")
+
+
+def _write_json(path: Path, payload: Any) -> None:
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(
+        json.dumps(_safe(payload), indent=2, sort_keys=True, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+def _design(particle_count: int, dimension: int) -> tf.Tensor:
+    if particle_count % (2 * dimension):
+        raise ValueError("particle count must be divisible by 2 * state dimension")
+    base = tf.concat([tf.eye(dimension, dtype=DTYPE), -tf.eye(dimension, dtype=DTYPE)], axis=0)
+    return tf.tile(base, [particle_count // (2 * dimension), 1])
+
+
+def _oracle(observations: tf.Tensor, theta: tf.Tensor) -> dict[str, tf.Tensor]:
+    from bayesfilter.highdim.ledh_kalman_oracle_tf import (
+        kalman_oracle_value_and_score,
+    )
+
+    observation_matrix = tf.constant(
+        [[1.0, 0.25, -0.15], [0.2, 1.1, 0.3], [-0.1, 0.35, 0.9]],
+        DTYPE,
+    )
+
+    def parameters(value: tf.Tensor) -> dict[str, tf.Tensor]:
         return {
-            'transition_matrix': params['transition_matrix'] * scale,
-            'process_covariance': params['process_covariance'],
-            'observation_matrix': params['observation_matrix'],
-            'observation_covariance': params['observation_covariance'],
-            'initial_mean': params['initial_mean'],
-            'initial_covariance': params['initial_covariance'],
+            "transition_matrix": tf.linalg.diag(value[:3]),
+            "process_covariance": tf.square(value[3]) * tf.eye(3, dtype=DTYPE),
+            "observation_matrix": observation_matrix,
+            "observation_covariance": tf.square(value[4]) * tf.eye(3, dtype=DTYPE),
+            "initial_mean": tf.zeros([3], DTYPE),
+            "initial_covariance": tf.eye(3, dtype=DTYPE),
         }
 
-    theta = tf.constant([0.0], dtype=tf.float32)  # log(1) = 0 → scale = 1
-    result = kalman_oracle_value_and_score(observations, theta, theta_to_lgssm_params, dtype=tf.float32)
+    return kalman_oracle_value_and_score(
+        observations, theta, parameters, dtype=DTYPE
+    )
 
+
+def _inputs(seed: int, horizon: int, particle_count: int) -> dict[str, dict[str, tf.Tensor]]:
+    from bayesfilter.highdim.sqmc_tf import (
+        randomized_halton_gaussian,
+        randomized_halton_joint,
+    )
+
+    iid_initial = tf.random.stateless_normal(
+        [particle_count, 3], [seed, 101], dtype=DTYPE
+    )
+    iid_process = tf.stack(
+        [
+            tf.random.stateless_normal(
+                [particle_count, 3], [seed, 1001 + time_index], dtype=DTYPE
+            )
+            for time_index in range(horizon)
+        ]
+    )
+    rqmc_initial = randomized_halton_gaussian(
+        num_particles=particle_count,
+        dimension=3,
+        seed=seed,
+        salt=301,
+        dtype=DTYPE,
+    )
+    process_rows = []
+    ancestor_rows = []
+    joint_hashes = []
+    for time_index in range(horizon):
+        raw, ancestors, innovations = randomized_halton_joint(
+            num_particles=particle_count,
+            state_dimension=3,
+            seed=seed,
+            salt=3001 + time_index,
+            dtype=DTYPE,
+        )
+        process_rows.append(tf.math.ndtri(innovations))
+        ancestor_rows.append(ancestors)
+        joint_hashes.append(_tensor_sha256(raw))
+    rqmc_process = tf.stack(process_rows)
+    rqmc_ancestors = tf.stack(ancestor_rows)
+    ignored = tf.zeros([horizon, particle_count], DTYPE)
     return {
-        'value': float(result['value'].numpy()),
-        'score': result['score'].numpy().tolist(),
+        "iid": {
+            "initial": iid_initial,
+            "process": iid_process,
+            "ancestors": ignored,
+            "joint_hashes": [],
+        },
+        "sqmc": {
+            "initial": rqmc_initial,
+            "process": rqmc_process,
+            "ancestors": rqmc_ancestors,
+            "joint_hashes": joint_hashes,
+        },
     }
 
 
-def run_sqmc_cell(
-    observations: tf.Tensor,
-    particle_count: int,
+def _route_controls(route: str) -> dict[str, Any]:
+    from bayesfilter.highdim.ledh_alg1_contract import LEDH_PRODUCTION_PROGRAM_V1
+
+    controls = dict(LEDH_PRODUCTION_PROGRAM_V1["score"])
+    controls.update(
+        CONSERVATIVE_CONTROLS if route == "repaired_permutation" else BASE_CONTROLS
+    )
+    controls.update(
+        {
+            "reset_epsilon": 2.0,
+            "reset_ridge": 1.0e-5,
+            "correction_lm_scale_floor": 1.0e-4,
+            "coordinate_cap_power": (
+                6 if route == "repaired_permutation" else 8
+            ),
+        }
+    )
+    return controls
+
+
+def _make_evaluator(route: str, horizon: int, particle_count: int, xla: bool):
+    from bayesfilter.highdim.ledh_canonical_models_tf import (
+        diagonal_lgssm_canonical_model,
+    )
+    from bayesfilter.highdim.ledh_canonical_score_tf import (
+        canonical_value_and_analytical_score,
+    )
+
+    theta = tf.constant(THETA, DTYPE)
+    model, set_score_direction = diagonal_lgssm_canonical_model(theta)
+    controls = _route_controls(route)
+    design = _design(particle_count, 3)
+    ancestry_policy = ANCESTRY[route]
+
+    if xla:
+        @tf.function(
+            input_signature=(
+                tf.TensorSpec([horizon, 3], DTYPE),
+                tf.TensorSpec([particle_count, 3], DTYPE),
+                tf.TensorSpec([horizon, particle_count, 3], DTYPE),
+                tf.TensorSpec([horizon, particle_count], DTYPE),
+            ),
+            jit_compile=True,
+            autograph=False,
+        )
+        def evaluate(observations, initial_states, process_noise, ancestor_uniforms):
+            values = []
+            scores = []
+            with tf.device("/GPU:0"):
+                initial_covariances = tf.eye(
+                    3, batch_shape=[particle_count], dtype=DTYPE
+                )
+                for direction_index in range(len(THETA)):
+                    set_score_direction(
+                        tf.one_hot(direction_index, len(THETA), dtype=DTYPE)
+                    )
+                    value, score = canonical_value_and_analytical_score(
+                        model,
+                        theta,
+                        initial_states,
+                        initial_covariances,
+                        process_noise,
+                        observations,
+                        flow_substeps=8,
+                        with_score=True,
+                        reset_policy="contract_e",
+                        reset_design=design,
+                        reset_epsilon=controls["reset_epsilon"],
+                        reset_sinkhorn_steps=controls["reset_sinkhorn_steps"],
+                        reset_balance_steps=controls["reset_balance_steps"],
+                        reset_ridge=controls["reset_ridge"],
+                        correction_steps=controls["correction_steps"],
+                        correction_strength=controls["correction_strength"],
+                        correction_lm_damping=controls["correction_lm_damping"],
+                        correction_lm_scale_floor=controls[
+                            "correction_lm_scale_floor"
+                        ],
+                        correction_trust_radius=controls[
+                            "correction_trust_radius"
+                        ],
+                        pairwise_steps=controls["pairwise_steps"],
+                        pairwise_strength=controls["pairwise_strength"],
+                        pairwise_rms_cap=controls["pairwise_rms_cap"],
+                        coordinate_cap=controls["coordinate_cap"],
+                        coordinate_cap_power=controls["coordinate_cap_power"],
+                        ancestry_policy=ancestry_policy,
+                        process_ancestor_uniforms=ancestor_uniforms,
+                        state_map_policy="adaptive_empirical",
+                        hilbert_bits=12,
+                    )
+                    values.append(value)
+                    scores.append(score[0])
+            return tf.stack(values), tf.stack(scores)
+    else:
+        def evaluate(observations, initial_states, process_noise, ancestor_uniforms):
+            values = []
+            scores = []
+            with tf.device("/GPU:0"):
+                initial_covariances = tf.eye(
+                    3, batch_shape=[particle_count], dtype=DTYPE
+                )
+                for direction_index in range(len(THETA)):
+                    set_score_direction(
+                        tf.one_hot(direction_index, len(THETA), dtype=DTYPE)
+                    )
+                    value, score = canonical_value_and_analytical_score(
+                        model,
+                        theta,
+                        initial_states,
+                        initial_covariances,
+                        process_noise,
+                        observations,
+                        flow_substeps=8,
+                        with_score=True,
+                        reset_policy="contract_e",
+                        reset_design=design,
+                        reset_epsilon=controls["reset_epsilon"],
+                        reset_sinkhorn_steps=controls["reset_sinkhorn_steps"],
+                        reset_balance_steps=controls["reset_balance_steps"],
+                        reset_ridge=controls["reset_ridge"],
+                        correction_steps=controls["correction_steps"],
+                        correction_strength=controls["correction_strength"],
+                        correction_lm_damping=controls["correction_lm_damping"],
+                        correction_lm_scale_floor=controls[
+                            "correction_lm_scale_floor"
+                        ],
+                        correction_trust_radius=controls[
+                            "correction_trust_radius"
+                        ],
+                        pairwise_steps=controls["pairwise_steps"],
+                        pairwise_strength=controls["pairwise_strength"],
+                        pairwise_rms_cap=controls["pairwise_rms_cap"],
+                        coordinate_cap=controls["coordinate_cap"],
+                        coordinate_cap_power=controls["coordinate_cap_power"],
+                        ancestry_policy=ancestry_policy,
+                        process_ancestor_uniforms=ancestor_uniforms,
+                        state_map_policy="adaptive_empirical",
+                        hilbert_bits=12,
+                    )
+                    values.append(value)
+                    scores.append(score[0])
+            return tf.stack(values), tf.stack(scores)
+
+    return evaluate, controls
+
+
+def _cell(
     route: str,
     seed: int,
+    observations: tf.Tensor,
+    oracle: dict[str, tf.Tensor],
+    evaluator: Any,
+    controls: dict[str, Any],
+    inputs: dict[str, dict[str, tf.Tensor]],
 ) -> dict[str, Any]:
-    """Run one SQMC cell and return value/score."""
-    # This is a placeholder - need to call actual SQMC
-    # For now, return dummy values to test structure
+    selected = inputs["iid" if route == "iid_dual_cap" else "sqmc"]
+    started = time.perf_counter()
+    values, score = evaluator(
+        observations,
+        selected["initial"],
+        selected["process"],
+        selected["ancestors"],
+    )
+    elapsed = time.perf_counter() - started
+    value_spread = tf.reduce_max(values) - tf.reduce_min(values)
+    finite = bool(tf.reduce_all(tf.math.is_finite(values)).numpy()) and bool(
+        tf.reduce_all(tf.math.is_finite(score)).numpy()
+    )
+    oracle_score = tf.cast(oracle["score"], DTYPE)
+    return {
+        "route": route,
+        "seed": seed,
+        "program": PROGRAM,
+        "tuning": TUNING,
+        "ancestry_policy": ANCESTRY[route],
+        "point_set": "iid_gaussian" if route == "iid_dual_cap" else "randomized_halton_joint",
+        "configuration_role": (
+            "control_family_ablation"
+            if route == "repaired_permutation"
+            else "ancestry_mechanism"
+        ),
+        "controls": controls,
+        "value": values[0],
+        "directional_values": values,
+        "maximum_directional_value_disagreement": value_spread,
+        "score": score,
+        "oracle_value": oracle["value"],
+        "oracle_score": oracle_score,
+        "absolute_value_error": tf.abs(values[0] - oracle["value"]),
+        "score_l2_error": tf.linalg.norm(score - oracle_score),
+        "absolute_score_errors": tf.abs(score - oracle_score),
+        "finite": finite,
+        "value_direction_invariant": bool((value_spread <= tf.cast(1.0e-10, DTYPE)).numpy()),
+        "initial_sha256": _tensor_sha256(selected["initial"]),
+        "process_sha256": _tensor_sha256(selected["process"]),
+        "ancestor_sha256": (
+            None if route == "iid_dual_cap" else _tensor_sha256(selected["ancestors"])
+        ),
+        "joint_sha256": selected["joint_hashes"],
+        "elapsed_seconds": elapsed,
+        "value_device": values.device,
+    }
 
-    # TODO: Replace with actual SQMC call using finite_value_standard_score_initial_rqmc
-    # Will need to construct proper model, reset config, transport config
 
-    raise NotImplementedError("SQMC integration not yet implemented - need model construction")
+def _git_output(*args: str) -> str:
+    return subprocess.check_output(
+        ["git", *args], cwd=ROOT, text=True
+    ).strip()
 
 
-def run_characterization():
-    """Run minimal characterization: 4 routes × 2 seeds = 8 cells."""
-    print("=" * 80)
-    print("SQMC Oracle Characterization - LGSSM T=20, N=1008")
-    print("=" * 80)
-    print()
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--stage", choices=("smoke", "diagnostic"), required=True)
+    parser.add_argument(
+        "--routes", default=",".join(ROUTES),
+        help="comma-separated subset of the four historical configurations",
+    )
+    args = parser.parse_args()
+    routes = tuple(item.strip() for item in args.routes.split(",") if item.strip())
+    if not routes or any(route not in ROUTES for route in routes):
+        raise ValueError(f"routes must be a nonempty subset of {ROUTES}")
 
-    output_dir = Path("docs/benchmarks/artifacts/sqmc-oracle-characterization-20260909")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    horizon = 2 if args.stage == "smoke" else 20
+    particle_count = 24 if args.stage == "smoke" else 1008
+    seeds = (97701,) if args.stage == "smoke" else (97701, 97702)
+    output_directory = _attempt_directory(args.stage)
+    started = time.perf_counter()
 
-    results = []
+    memory_policy = configure_tensorflow_gpu_memory_growth(tf, require_gpu=True)
+    tf.config.experimental.enable_tensor_float_32_execution(True)
+    logical_gpus = tf.config.list_logical_devices("GPU")
+    if len(logical_gpus) != 1:
+        raise RuntimeError("the characterization requires exactly one logical GPU")
 
-    for route in ROUTES:
-        for seed in SEEDS:
-            print(f"Running: route={route}, seed={seed}")
-            start = time.perf_counter()
+    from bayesfilter.highdim.ledh_canonical_neutra_targets_tf import (
+        _lgssm_frozen_observations,
+    )
 
-            # Generate LGSSM data
-            observations, params = generate_lgssm_data(seed)
+    observations = tf.cast(_lgssm_frozen_observations()[:horizon], DTYPE)
+    theta = tf.constant(THETA, DTYPE)
+    oracle = _oracle(observations, theta)
+    cells = []
+    use_xla = args.stage == "smoke"
+    evaluators = {
+        route: _make_evaluator(route, horizon, particle_count, use_xla)
+        for route in routes
+    }
 
-            # Compute oracle
-            oracle = compute_oracle(observations, params)
-
-            # Run SQMC (placeholder for now)
+    for seed in seeds:
+        with tf.device("/CPU:0"):
+            inputs = _inputs(seed, horizon, particle_count)
+        for route in routes:
+            evaluator, controls = evaluators[route]
+            print(f"running stage={args.stage} route={route} seed={seed}", flush=True)
             try:
-                sqmc = run_sqmc_cell(observations, PARTICLE_COUNT, route, seed)
-            except NotImplementedError:
-                # Dummy values for structure testing
-                sqmc = {
-                    'value': oracle['value'] + np.random.normal(0, 0.1),
-                    'score': [s + np.random.normal(0, 0.5) for s in oracle['score']],
-                }
+                cell = _cell(
+                    route, seed, observations, oracle, evaluator, controls, inputs
+                )
+            except Exception as error:
+                cells.append({
+                    "route": route, "seed": seed, "program": PROGRAM,
+                    "tuning": TUNING, "finite": False,
+                    "failure_type": type(error).__name__, "failure": str(error),
+                })
+                _write_json(output_directory / "partial_result.json", {"cells": cells})
+                raise
+            cells.append(cell)
+            _write_json(output_directory / "partial_result.json", {"cells": cells})
 
-            elapsed = time.perf_counter() - start
+    all_valid = all(
+        cell.get("finite") and cell.get("value_direction_invariant")
+        for cell in cells
+    )
+    elapsed = time.perf_counter() - started
+    configuration_status = {
+        "program": PROGRAM,
+        "program_class": "canonical analytical-score diagnostic variant",
+        "production_differences": (
+            "float64 rather than float32/TF32; no exact-scope tuning artifact; "
+            "directions evaluated separately; repaired_permutation changes "
+            "correction controls"
+        ),
+        "tuning": TUNING,
+        "claim_status": "UNTUNED_DIAGNOSTIC_ONLY",
+        "must_not_conclude": (
+            "no statistical route ranking, superiority, production readiness, "
+            "HMC benefit, or KSC generalization"
+        ),
+    }
+    result = {
+        "configuration_status": configuration_status,
+        "schema": SCHEMA,
+        "status": "PASS" if all_valid else "FAIL_VALIDITY",
+        "stage": args.stage,
+        "research_question": (
+            "Do historical SQMC configurations show descriptive value/score "
+            "error differences on the frozen canonical LGSSM target?"
+        ),
+        "inference_status": {
+            "hard_veto_screen": "PASS" if all_valid else "FAIL",
+            "statistically_supported_ranking": "NONE_TWO_SEEDS_OR_FEWER",
+            "descriptive_only_differences": True,
+            "default_readiness": False,
+            "next_evidence": (
+                "exact-scope tuning followed by untouched multi-seed paired "
+                "uncertainty analysis"
+            ),
+        },
+        "scope": {
+            "model_id": "canonical_lgssm_m3",
+            "data_id": "benchmark_lgssm_m3_T50_seed81100_prefix",
+            "horizon": horizon,
+            "particle_count": particle_count,
+            "state_dimension": 3,
+            "parameter_names": PARAMETER_NAMES,
+            "theta": THETA,
+            "routes": routes,
+            "seeds": seeds,
+            "dtype": DTYPE.name,
+            "tf32_enabled": True,
+            "flow_substeps": 8,
+            "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+            "chunk_extent": particle_count,
+        },
+        "oracle": {
+            "kind": "exact_same-target Kalman innovation likelihood and score",
+            "value": oracle["value"],
+            "score": oracle["score"],
+            "observation_sha256": _tensor_sha256(observations),
+        },
+        "cells": cells,
+        "all_valid": all_valid,
+        "wall_seconds": elapsed,
+    }
+    result_path = output_directory / "result.json"
+    _write_json(result_path, result)
 
-            # Compute errors
-            value_error = abs(sqmc['value'] - oracle['value'])
-            score_diff = np.array(sqmc['score']) - np.array(oracle['score'])
-            score_L2_error = float(np.linalg.norm(score_diff))
-
-            result = {
-                'model': 'lgssm_T20',
-                'route': route,
-                'seed': seed,
-                'particle_count': PARTICLE_COUNT,
-                'sqmc_value': sqmc['value'],
-                'oracle_value': oracle['value'],
-                'value_absolute_error': value_error,
-                'sqmc_score': sqmc['score'],
-                'oracle_score': oracle['score'],
-                'score_L2_error': score_L2_error,
-                'elapsed_seconds': elapsed,
-                'finite': np.isfinite(value_error) and np.isfinite(score_L2_error),
-            }
-
-            results.append(result)
-            print(f"  Value error: {value_error:.6f}, Score L2 error: {score_L2_error:.6f}, Time: {elapsed:.2f}s")
-            print()
-
-    # Save results
-    result_file = output_dir / "result.json"
-    with open(result_file, 'w') as f:
-        json.dump({
-            'schema': 'sqmc_oracle_characterization_20260909',
-            'status': 'complete' if all(r['finite'] for r in results) else 'complete_with_invalid',
-            'config': {
-                'model': 'lgssm_T20',
-                'particle_count': PARTICLE_COUNT,
-                'routes': list(ROUTES),
-                'seeds': list(SEEDS),
-            },
-            'results': results,
-        }, f, indent=2)
-
-    print(f"Results saved to: {result_file}")
-    print()
-
-    # Summary statistics
-    print("=" * 80)
-    print("Summary by Route")
-    print("=" * 80)
-    for route in ROUTES:
-        route_results = [r for r in results if r['route'] == route]
-        value_errors = [r['value_absolute_error'] for r in route_results]
-        score_errors = [r['score_L2_error'] for r in route_results]
-        print(f"{route:40s}")
-        print(f"  Mean value error: {np.mean(value_errors):.6f} ± {np.std(value_errors):.6f}")
-        print(f"  Mean score L2 error: {np.mean(score_errors):.6f} ± {np.std(score_errors):.6f}")
-    print()
+    source_paths = (
+        Path("docs/benchmarks/run_sqmc_oracle_characterization.py"),
+        Path("bayesfilter/highdim/ledh_canonical_score_tf.py"),
+        PLAN,
+    )
+    manifest = {
+        "configuration_status": configuration_status,
+        "schema": f"{SCHEMA}.manifest",
+        "git_commit": _git_output("rev-parse", "HEAD"),
+        "git_branch": _git_output("branch", "--show-current"),
+        "git_status": _git_output("status", "--short"),
+        "command": [sys.executable, *sys.argv],
+        "conda_environment": os.environ.get("CONDA_DEFAULT_ENV", "unknown"),
+        "python": sys.version,
+        "tensorflow": tf.__version__,
+        "host": platform.node(),
+        "device": logical_gpus[0].name,
+        "gpu_memory_policy": memory_policy,
+        "source_sha256": {
+            str(path): _sha256(ROOT / path) for path in source_paths
+        },
+        "plan": str(PLAN),
+        "result": str(result_path.relative_to(ROOT)),
+        "output_directory": str(output_directory.relative_to(ROOT)),
+        "wall_seconds": elapsed,
+    }
+    _write_json(output_directory / "manifest.json", manifest)
+    partial = output_directory / "partial_result.json"
+    if partial.exists():
+        partial.unlink()
+    print(
+        f"{result['status']}: {len(cells)} cells; artifact={result_path}",
+        flush=True,
+    )
+    return 0 if all_valid else 1
 
 
 if __name__ == "__main__":
-    run_characterization()
+    raise SystemExit(main())

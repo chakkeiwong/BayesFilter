@@ -5,10 +5,12 @@ import tensorflow as tf
 from bayesfilter.highdim.ledh_canonical_score_tf import _value_and_analytical_score_impl
 from bayesfilter.nonlinear.sgqf_covariance_provider_tf import SGQFCovarianceProvider
 from .canonical_adapter_tf import gaussian_direction_inputs, make_canonical_kernel
+from .direction_assembly_tf import make_direction_kernel
 
 
 @lru_cache(maxsize=16)
-def make_covariance_kernel(d, o, N, T, controls_tuple, level, dtype_name="float64", jit_compile=True):
+def make_covariance_kernel(d, o, N, T, controls_tuple, level, dtype_name="float64", jit_compile=True,
+                           *, all_directions=False):
     make_canonical_kernel(d, o, N, T, controls_tuple, dtype_name, jit_compile)
     provider = SGQFCovarianceProvider(d, level, dtype_name)
     dtype = tf.as_dtype(dtype_name)
@@ -28,4 +30,5 @@ def make_covariance_kernel(d, o, N, T, controls_tuple, level, dtype_name="float6
         return value, score[0], tuple({k: step[k] for k in (
             "predicted_covariances", "post_covariances", "d_post_covariances",
             "covariances_after_reset", "d_covariances_after_reset")} for step in trace)
-    return kernel, provider.metadata
+    owner = make_direction_kernel(kernel, jit_compile=jit_compile) if all_directions else kernel
+    return owner, provider.metadata
