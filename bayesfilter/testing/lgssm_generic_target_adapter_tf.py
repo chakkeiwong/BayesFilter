@@ -8,7 +8,7 @@ validation is performed here.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 import tensorflow as tf
@@ -62,11 +62,36 @@ class LGSSMGenericTargetFixture:
         return self.source_target.initial_parameters[tf.newaxis, :]
 
 
-def make_lgssm_generic_target_fixture() -> LGSSMGenericTargetFixture:
+def make_lgssm_generic_target_fixture(
+    *,
+    observations: tf.Tensor | None = None,
+    persistence_cap: float = 0.75,
+    data_hash: str = "sha256:lgssm-static-qr-observations-v1",
+    model_hash: str = "sha256:lgssm-static-qr-model-v1",
+    transform_hash: str = "sha256:identity-rho-log-measurement-noise-v1",
+    prior_hash: str = "sha256:standard-gaussian-prior-scale-v1",
+    filter_hash: str = "sha256:tf-qr-exact-lgssm-v1",
+) -> LGSSMGenericTargetFixture:
     """Return a BayesFilter-owned LGSSM target via the generic SSM adapter."""
 
+    if not 0.0 < float(persistence_cap) < 1.0:
+        raise ValueError("persistence_cap must be strictly between zero and one")
     source_target = QRStaticLGSSMTarget.default()
-    contract = make_lgssm_generic_target_contract(source_target)
+    source_target = replace(source_target, persistence_cap=float(persistence_cap))
+    if observations is not None:
+        observations = tf.convert_to_tensor(observations, dtype=tf.float64)
+        if observations.shape.rank != 2 or observations.shape[-1] != 1:
+            raise ValueError("LGSSM observations must have shape [time, 1]")
+        source_target = replace(source_target, observations=observations)
+    contract = make_lgssm_generic_target_contract(
+        source_target,
+        data_hash=data_hash,
+        model_hash=model_hash,
+        transform_hash=transform_hash,
+        prior_hash=prior_hash,
+        filter_hash=filter_hash,
+        persistence_cap=float(persistence_cap),
+    )
     adapter = build_ssm_posterior_adapter(
         contract=contract,
         prior_log_prob_and_grad=lambda theta: lgssm_gaussian_prior_log_prob_and_grad(
@@ -105,10 +130,14 @@ def make_lgssm_generic_target_contract(
     transform_hash: str = "sha256:identity-rho-log-measurement-noise-v1",
     prior_hash: str = "sha256:standard-gaussian-prior-scale-v1",
     filter_hash: str = "sha256:tf-qr-exact-lgssm-v1",
+    persistence_cap: float | None = None,
 ) -> SSMTargetContract:
     """Build a stable generic target contract for the QR static LGSSM fixture."""
 
     target = QRStaticLGSSMTarget.default() if source_target is None else source_target
+    cap = target.persistence_cap if persistence_cap is None else float(persistence_cap)
+    if not 0.0 < cap < 1.0:
+        raise ValueError("persistence_cap must be strictly between zero and one")
     observations = tf.convert_to_tensor(target.observations, dtype=tf.float64)
     if observations.shape.rank != 2:
         raise ValueError("LGSSM observations must have shape [time, observation]")
@@ -139,6 +168,7 @@ def make_lgssm_generic_target_contract(
         model_manifest={
             "model_id": "lgssm-static-qr-fixture",
             "model_hash": model_hash,
+            "persistence_cap": cap,
             "capabilities": (
                 "linear_gaussian_transition",
                 "linear_gaussian_observation",
@@ -154,6 +184,7 @@ def make_lgssm_generic_target_contract(
         transform_manifest={
             "transform_id": "identity-unconstrained-chart",
             "transform_hash": transform_hash,
+            "persistence_cap": cap,
             "coordinate_order": ("rho_unconstrained", "log_measurement_noise"),
             "source_convention": "QRStaticLGSSMTarget.model_and_derivatives",
         },
@@ -222,21 +253,26 @@ def lgssm_qr_log_likelihood_and_grad(
 
     theta_tensor = _rank2_theta(theta)
     target = QRStaticLGSSMTarget.default() if source_target is None else source_target
-    return _lgssm_batched_qr_value_score(theta_tensor, target.observations, target.jitter)
+    return _lgssm_batched_qr_value_score(
+        theta_tensor,
+        target.observations,
+        target.jitter,
+        tf.constant(target.persistence_cap, dtype=tf.float64),
+    )
 
 
 @tf.function(jit_compile=True, reduce_retracing=True)
-def _lgssm_batched_qr_value_score(theta, observations, jitter):
+def _lgssm_batched_qr_value_score(theta, observations, jitter, persistence_cap):
     """Tensor-batched construction of the QRStaticLGSSMTarget fixture law."""
     batch = tf.shape(theta)[0]
     tanh_rho = tf.math.tanh(theta[:, 0])
-    rho = 0.75 * tanh_rho
-    drho = 0.75 * (1.0 - tf.square(tanh_rho))
+    rho = persistence_cap * tanh_rho
+    drho = persistence_cap * (1.0 - tf.square(tanh_rho))
     variance = tf.exp(2.0 * theta[:, 1])
     zeros = tf.zeros_like(variance)
     d_vector = tf.zeros([batch, 2, 1], tf.float64)
     d_matrix = tf.zeros([batch, 2, 1, 1], tf.float64)
-    return tf_qr_sqrt_kalman_score_batched_static(
+    value, score = tf_qr_sqrt_kalman_score_batched_static(
         observations=observations,
         transition_offset=tf.fill([batch, 1], tf.constant(0.02, tf.float64)),
         transition_matrix=rho[:, None, None],
@@ -256,6 +292,12 @@ def _lgssm_batched_qr_value_score(theta, observations, jitter):
         d_observation_covariance=tf.stack([zeros, 2.0 * variance], axis=1)[:, :, None, None],
         jitter=jitter,
     )
+    # Preserve the public event dimension after the shared static QR graph has
+    # seen another batch shape. This is required by the generic adapter and by
+    # TFP HMC's bootstrap gradient wrapper.
+    batch_dim = theta.shape[0]
+    return (tf.ensure_shape(value, [batch_dim]),
+            tf.ensure_shape(score, [batch_dim, 2]))
 
 
 def _rank2_theta(theta: Any) -> tf.Tensor:

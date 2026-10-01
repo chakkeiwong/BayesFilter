@@ -340,6 +340,44 @@ interval, with a default minimum of four blocks of sixteen decisions per chain.
 It reports mean Metropolis probability separately from realized acceptance.
 Finite acceptance alone does not qualify a kernel.
 
+The raw temporal crossing screen is a heuristic: a block below the practical
+band and another above it do not by themselves distinguish Monte Carlo noise
+from a changing acceptance distribution. The four-chain working interval does
+not calibrate that separate screen. The optional v6 paired-chain contrast
+screen can also miss opposing drifts because they cancel when averaged across
+chains. Neither rule establishes stationarity.
+
+`bayesfilter.inference.hmc_acceptance_uncertainty` supplies a separate
+experimental diagnostic, `evaluate_acceptance_uncertainty`. It calls the
+existing health/evidence evaluator and preserves that evaluator's decision.
+It then analyzes transition-level Metropolis probabilities using the reusable
+TensorFlow `mcmc_uncertainty.chain_batch_covariance` primitive. This function is
+not a public artifact-authority tuner; its report cannot issue a receipt,
+change membership, replace fresh verification, or resume a checkpoint under
+different admission semantics. `fixed_kernel` must be declared explicitly.
+
+The experimental policy requires explicit batch size, minimum batch count,
+family error allocation, temporal and cross-chain tolerances, and planned
+look/candidate counts. It examines both the supplied and doubled batch size.
+Four temporal windows retain chain boundaries; simultaneous marginal intervals
+are subtracted for all within-chain window contrasts. This conservative
+construction permits dependence between windows without pretending to estimate
+their covariance. The t reference for estimated batch variance is approximate;
+Bonferroni allocation does not repair inaccurate marginal intervals. It also
+cannot prove that an initialized chain has reached stationarity. The supported
+outcomes distinguish material differences, contrasts contained within declared
+tolerances, and unresolved evidence. `variance_estimate_available` means finite
+positive arithmetic, not adequate dependence resolution.
+
+The [October 1 validation](../plans/bayesfilter-acceptance-uncertainty-validation-result-2026-10-01.md)
+rules out promoting the tested policy. Very persistent stationary synthetic
+traces still produced false conflicts and poor interval coverage; larger
+batches reduced some conflicts but did not establish coverage. At 512 draws
+the declared two-scale design had too few batches, including for all eleven
+BGS replays. These are limits of that experimental allocation, not proof that
+every 512-draw acceptance diagnostic is impossible. Historical v5/v6 decisions
+retain their meanings. R-hat remains reporting-only during tuning.
+
 | Evidence | Tuning role |
 | --- | --- |
 | Valid acceptance evidence with no promotion veto | Qualifies the exact measured kernel; fresh verification remains required. |

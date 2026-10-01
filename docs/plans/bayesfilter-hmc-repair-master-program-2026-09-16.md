@@ -1,5 +1,46 @@
 # HMC repair master program
 
+## October 1: acceptance uncertainty development complete; admission repair open
+
+The [acceptance uncertainty plan](bayesfilter-acceptance-uncertainty-validation-plan-2026-10-01.md)
+has been reviewed and executed. The experimental TensorFlow/XLA covariance and
+MCSE diagnostics, adversarial calibration, seven-model integration checks,
+eleven-case BGS replay, and guide update are complete. There are 171 passing
+checks. Three bounded CPU calibration attempts consumed about 120 wall seconds
+and no GPU allocation; no run remains active for this development phase.
+
+The subsequent clean-checkout integration passes 201 checks after including
+the required v6 policy reader and state-space fixture dependencies. The linked
+result records this packaging repair separately from the calibration outcome.
+
+The [result](bayesfilter-acceptance-uncertainty-validation-result-2026-10-01.md)
+rejects statistical default promotion: strongly persistent stationary traces
+produce false conflicts and poor interval coverage; merely increasing batch
+sizes does not repair coverage. The existing optional v6 contrast also misses
+opposing within-chain drifts. The new diagnostic remains experimental and cannot
+issue receipts or change candidate membership. R-hat remains reporting-only
+in ordinary tuning. These findings do not change or restart the separately
+frozen DSGE, NeuTra, or state-space campaigns.
+
+The remaining acceptance-uncertainty repair has three dependent steps:
+
+1. Specify whether the uncertainty target is stationary mean acceptance or an
+   explicitly finite-start, finite-horizon mean. For a stationary target,
+   investigate an auditable dependence-resolution rule; for replicated trials,
+   declare the start distribution and independent trial unit. Do not equate the
+   two estimands or treat a finite MCSE as sufficient evidence.
+2. Validate the selected strategy with fresh held-out seeds, persistent and
+   drifting cases, search multiplicity, and disjoint fresh verification. Count
+   unavailable results and viable-candidate delivery as well as false decisions.
+   Keep the present failed cases as regression evidence, not a favorable
+   parameter-selection set. Record numerical criteria and a bounded allocation
+   before a new research run.
+3. Only after calibration supports the declared scope, version an admission
+   policy and integrate it with both public tuners. Test candidate identity,
+   repaired epsilon, checkpoint compatibility, retained membership, look/work
+   budgets, health vetoes, and reporting-only R-hat through the public entry
+   points. A development diagnostic alone does not close this step.
+
 Updated 2026-09-24. The active follow-on is the
 [remaining-gap repair and validation program](bayesfilter-hmc-remaining-gap-program-2026-09-24.md).
 Execution is underway. A reconciled all 272 historical fits, repaired a
