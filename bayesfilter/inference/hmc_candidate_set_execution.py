@@ -167,9 +167,8 @@ class HMCCandidateExecutionConfig:
     def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
         values = dict(payload)
         policy = values.pop("acceptance_policy")
-        values["acceptance_policy"] = HMCAcceptancePolicy(**{
-            f.name: policy[f.name] for f in fields(HMCAcceptancePolicy)
-        })
+        from .hmc_verification import _acceptance_policy_from_payload
+        values["acceptance_policy"] = _acceptance_policy_from_payload(policy)
         result = cls(**values)
         if _json_copy(result.payload()) != _json_copy(payload):
             raise ValueError("execution policy metadata mismatch")

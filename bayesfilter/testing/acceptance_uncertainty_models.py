@@ -6,6 +6,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 from .inference_validation.targets import ValidationTarget
+from .inference_validation.ssm_targets import make_ssm_validation_target
 from .inference_validation.procedures import FrozenTransition, initial_starts
 from .inference_validation.designs import digest
 
@@ -39,7 +40,12 @@ MODEL_CASES = (
 
 
 def fixed_model_trace(name, epsilon, *, draws=512, seed=(20261001, 91)):
-    target = ResidualFunnelTarget() if name == "residual_funnel" else ValidationTarget(name)
+    if name == "residual_funnel":
+        target = ResidualFunnelTarget()
+    elif name.startswith("ssm_"):
+        target = make_ssm_validation_target(name)
+    else:
+        target = ValidationTarget(name)
     start = initial_starts(target, "dispersed")
     transition = FrozenTransition(target, chains=4, step_size=epsilon, leapfrog_steps=3)
 

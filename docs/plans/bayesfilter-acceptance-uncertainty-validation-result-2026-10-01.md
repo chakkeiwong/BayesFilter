@@ -248,3 +248,31 @@ in the stationary persistent case. New held-out coverage and false-conflict
 results could overturn the rejection of a revised policy. The weakest part of
 the current evidence is transfer from bounded synthetic traces and tiny model
 integrations to long state-space HMC runs; no such transfer is promoted here.
+
+## Git integration checkpoint
+
+The publication check used a clean temporary checkout containing the acceptance
+commit `70a6d7e96` and remote main `88297ad29`, merged as `56bab6c28` without
+conflicts. This exposed dependencies that the original shared-worktree test
+could not detect: the optional v6 comparator, its version-aware execution
+configuration reader, and the state-space fixture adapters were still
+uncommitted. The integration includes those prerequisites. The model checks
+now call the same state-space factory directly, without depending on the
+uncommitted campaign registry. Neither the model laws nor numerical defaults
+change in this packaging repair.
+
+The first collected merged run passed 190 checks but failed eight execution
+setups because the old reader expected the optional v6 field in v5 payloads.
+After including the version-aware reader and adding v5/v6 configuration
+round-trip and common-drift tests, **201 checks pass in the merged checkout**.
+These include both state-space adapter suites and the public candidate
+execution regressions. The ignored local Sylvester binary was copied from
+the shared checkout for these CPU checks; it is not part of the commit.
+
+The [final merged-test log](artifacts/acceptance-uncertainty-validation-20261001/checks/bf-acceptance-merged-r2.log),
+[JUnit report](artifacts/acceptance-uncertainty-validation-20261001/checks/bf-acceptance-merged-r2.xml),
+and [validation record](artifacts/acceptance-uncertainty-validation-20261001/checks/merged-checkout-validation.json)
+preserve the command, environment, source hashes, and result. The failed first
+run remains alongside them. The calibration was not repeated; its failed
+statistical promotion and the original 171-check development record above
+remain unchanged. Unrelated shared-worktree campaign edits were excluded.

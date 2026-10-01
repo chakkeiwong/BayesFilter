@@ -526,8 +526,13 @@ class HMCAcceptancePolicy:
     min_normalized_return_displacement: float = 1.0e-4
     max_abs_log_accept_energy_proxy: float = 1000.0
     allowed_cost_stop_reasons: tuple[str, ...] = ()
+    temporal_conflict_method: str = "raw_block_crossing_v1"
 
     def __post_init__(self) -> None:
+        if self.temporal_conflict_method not in (
+            "raw_block_crossing_v1", "paired_chain_block_contrasts_v1"
+        ):
+            raise ValueError("unsupported temporal conflict method")
         target = float(self.target)
         practical = tuple(float(item) for item in self.practical_region)
         repair = tuple(float(item) for item in self.repair_region)
@@ -597,7 +602,7 @@ class HMCAcceptancePolicy:
         return _STUDENT_T_CRITICAL_VALUE_90_DF3
 
     def payload(self) -> Mapping[str, Any]:
-        return {
+        result = {
             "schema": "bayesfilter.hmc_acceptance_policy.v5",
             "target": self.target,
             "practical_region": self.practical_region,
@@ -641,6 +646,14 @@ class HMCAcceptancePolicy:
                 "signed_log_accept_ratio_tails": "explanatory_alert_only",
             },
         }
+        if self.temporal_conflict_method != "raw_block_crossing_v1":
+            result.update(
+                schema="bayesfilter.hmc_acceptance_policy.v6",
+                temporal_conflict_method=self.temporal_conflict_method,
+                temporal_contrast_familywise_level=0.01,
+                temporal_contrast_role="working_heterogeneity_screen_not_stationarity_proof",
+            )
+        return result
 
 
 @dataclass(frozen=True)
@@ -2204,6 +2217,40 @@ def _tuning_telemetry_tensors(sample_tensor: Any, log_accept: Any, accepted: Any
     }
 
 
+@lru_cache(maxsize=1)
+def _temporal_contrast_function() -> Any:
+    """CPU checkpoint diagnostic; pairing keeps each chain's dependence intact.
+
+    Four independent chain contrasts supply df=3. This is an explicitly
+    approximate working screen, not a calibrated stationarity test.
+    Host-side summaries follow the existing non-XLA verification exception.
+    """
+    import tensorflow as tf
+    import tensorflow_probability as tfp
+
+    critical = tfp.distributions.StudentT(
+        tf.constant(3., tf.float64), tf.constant(0., tf.float64),
+        tf.constant(1., tf.float64)
+    ).quantile(tf.constant(1. - .01 / 12., tf.float64))
+
+    @tf.function(input_signature=[tf.TensorSpec([None, 4, 4], tf.float64)],
+                 autograph=False, jit_compile=False)
+    def summarize(blocks):
+        differences = tf.gather(blocks, [1, 2, 3, 2, 3, 3], axis=2) - tf.gather(
+            blocks, [0, 0, 0, 1, 1, 2], axis=2)
+        mean = tf.reduce_mean(differences, axis=1)
+        se = tf.sqrt(tf.reduce_sum((differences - mean[:, None, :]) ** 2, axis=1) / 12.)
+        return mean, critical * se
+    return summarize
+
+
+def temporal_block_conflicts(blocks: Any, *, practical_width: float) -> Any:
+    """Batched optional temporal screen for [replication, chain, block]."""
+    import tensorflow as tf
+    means, margins = _temporal_contrast_function()(_float64_tensor(blocks))
+    return tf.reduce_any((tf.abs(means) > margins) & (tf.abs(means) > practical_width), axis=1)
+
+
 def _acceptance_decision_from_summary(
     *,
     policy: HMCAcceptancePolicy,
@@ -2232,6 +2279,9 @@ def _acceptance_decision_from_summary(
             & (tf.reduce_max(block_means, axis=1) > high)
         )
     )
+    if policy.temporal_conflict_method == "paired_chain_block_contrasts_v1":
+        temporal_block_conflict = bool(temporal_block_conflicts(
+            block_means[None], practical_width=high-low)[0])
     movement_failed, path_return_failed = _trajectory_pathology_flags(
         policy=policy,
         movement=movement,
@@ -2302,9 +2352,12 @@ def _trajectory_pathology_flags(
 def _acceptance_policy_from_payload(payload: Any) -> HMCAcceptancePolicy:
     if not isinstance(payload, Mapping):
         raise TypeError("acceptance policy payload must be a mapping")
-    if payload.get("schema") != "bayesfilter.hmc_acceptance_policy.v5":
+    if payload.get("schema") not in (
+        "bayesfilter.hmc_acceptance_policy.v5", "bayesfilter.hmc_acceptance_policy.v6"
+    ):
         raise ValueError("acceptance policy schema mismatch")
-    expected_keys = set(HMCAcceptancePolicy().payload())
+    method = payload.get("temporal_conflict_method", "raw_block_crossing_v1")
+    expected_keys = set(HMCAcceptancePolicy(temporal_conflict_method=method).payload())
     if set(payload) != expected_keys:
         raise ValueError("acceptance policy field set is inconsistent")
     policy = HMCAcceptancePolicy(
@@ -2326,6 +2379,7 @@ def _acceptance_policy_from_payload(payload: Any) -> HMCAcceptancePolicy:
         allowed_cost_stop_reasons=tuple(
             payload.get("allowed_cost_stop_reasons", ())
         ),
+        temporal_conflict_method=method,
     )
     expected = policy.payload()
     for name in expected:

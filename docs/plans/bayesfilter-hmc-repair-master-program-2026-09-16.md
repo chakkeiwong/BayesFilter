@@ -9,6 +9,10 @@ eleven-case BGS replay, and guide update are complete. There are 171 passing
 checks. Three bounded CPU calibration attempts consumed about 120 wall seconds
 and no GPU allocation; no run remains active for this development phase.
 
+The subsequent clean-checkout integration passes 201 checks after including
+the required v6 policy reader and state-space fixture dependencies. The linked
+result records this packaging repair separately from the calibration outcome.
+
 The [result](bayesfilter-acceptance-uncertainty-validation-result-2026-10-01.md)
 rejects statistical default promotion: strongly persistent stationary traces
 produce false conflicts and poor interval coverage; merely increasing batch
