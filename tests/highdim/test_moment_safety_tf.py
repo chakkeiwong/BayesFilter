@@ -100,11 +100,11 @@ def test_canonical_endpoint_retains_guard_and_pairwise_diagnostics():
     design=reset_design(24,2,D,'normal_quantiles')
     noise=tf.random.stateless_normal([2,24,2],[712,3],dtype=D)
     observations=tf.constant([[.2,-.1],[.4,.1]],D)
-    def run(parameter):
+    def run(parameter, keep_trace=True):
         model,_=spec.model(parameter,direction)
         states,covariances,ds,dc=spec.initial_cloud(parameter,design,direction)
         return canonical_value_and_analytical_score(model,parameter,states,covariances,noise,observations,
-            flow_substeps=2,with_score=True,return_trace=True,initial_state_tangent=ds,
+            flow_substeps=2,with_score=True,return_trace=keep_trace,initial_state_tangent=ds,
             initial_covariance_tangent=dc,reset_policy='contract_e',reset_design=design,
             reset_sinkhorn_steps=3,reset_balance_steps=3,correction_steps=1,correction_strength=.03,
             pairwise_steps=1,pairwise_strength=.01,moment_safety=True,coordinate_cap=.98,
@@ -112,7 +112,15 @@ def test_canonical_endpoint_retains_guard_and_pairwise_diagnostics():
     value,score,trace=run(theta)
     tf.debugging.assert_all_finite(value,'canonical value')
     tf.debugging.assert_all_finite(score,'canonical score')
+    plain_value, plain_score = run(theta, False)
+    tf.debugging.assert_near(value, plain_value, atol=1.e-10, rtol=1.e-10)
+    tf.debugging.assert_near(score, plain_score, atol=1.e-10, rtol=1.e-10)
     for step in trace:
+        for key in ('ancestry_valid', 'ukf_predict_valid', 'ukf_update_valid',
+                    'callback_valid', 'reset_numerical_valid', 'predicted_covariances_finite',
+                    'post_covariances_finite', 'flow_states_finite', 'flow_tangents_finite',
+                    'posterior_logits_finite', 'reset_states_finite', 'reset_tangents_finite'):
+            assert bool(step[key]), key
         assert float(step['higher_moment_moment_safety_enabled'])==1.
         assert bool(step['higher_moment_pairwise_configured'])
     h=tf.constant(1e-5,D)

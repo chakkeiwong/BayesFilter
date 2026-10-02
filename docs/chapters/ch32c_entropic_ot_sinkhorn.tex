@@ -3027,7 +3027,7 @@ independent filtering reference or a better source cloud.  Comparing likelihoods
 and scores with their oracle directly tests the downstream approximation, but
 does not by itself identify which fourth-moment term caused an error.
 
-\subsection{The next nonlinear comparison}
+\subsection{The first nonlinear comparisons}
 
 Predator--prey and spatial SIR test different weaknesses of the repair.
 Predator--prey has two state coordinates and nonlinear coupled dynamics, so
@@ -3050,15 +3050,140 @@ are retained separately for each model, dataset, parameter point, particle
 count and ancestry rule.\footnote{\path{docs/benchmarks/ledh-nonlinear-master.md}}
 
 Fresh synthetic observations follow the declared initial Gaussian law and a
-transition before each observation.  An independent reference must use that
-same timing, data and parameter coordinates.  No exact observed-data
-likelihood/score oracle is currently supplied for these nonlinear scopes.
-The tester therefore reports actual estimates and marks missing reference
-errors as unavailable; approximate or conditional scores cannot silently become
-exact observed-data oracles.  Controls inherited from KSC are starting
-hypotheses.  Scope-specific calibration, untouched comparisons, reference
-uncertainty and conditional comparisons with the simple arms are required
-before any nonlinear accuracy conclusion.
+transition before each observation.  This timing matters: a bootstrap filter
+that observes the initial state before its first transition estimates a
+different likelihood for the same numerical observations.  The independent
+reference used here starts from the same initial law and saved observations
+as LEDH, then transitions before every observation.  It also retains the same
+parameter values, including their original floating-point representation.
+
+The reference is a Gaussian bootstrap particle filter with an analytical
+Fisher-identity score.  Write \(x_{0:T}\) for a complete latent trajectory,
+\(f_\theta\) for its transition density and \(g_\theta\) for the observation
+density.  Because the initial law in these examples is parameter independent,
+regular differentiation under the integral gives
+\[
+ \nabla_\theta\log p_\theta(y_{1:T})
+ =\mathbb E_\theta\!\left[
+   \sum_{t=1}^T\{\nabla_\theta\log f_\theta(x_t\mid x_{t-1})
+              +\nabla_\theta\log g_\theta(y_t\mid x_t)\}
+       \,\middle|\,y_{1:T}\right].
+\]
+Each particle carries this accumulated complete-data score through resampling;
+the final weighted average estimates the conditional expectation.  State
+values are held fixed when differentiating the complete-data densities, and
+their Gaussian covariance derivatives are included.  This is an approximation
+to the observed-data score, whereas LEDH differentiates its own finite
+numerical likelihood.  Their finite-particle scores need not coincide.
+
+The reference passed fixed-state finite-difference checks for both nonlinear
+models and a separate linear-Gaussian comparison with an exact Kalman
+likelihood and score.  Four independent replications were then evaluated at
+8,192, 32,768, 131,072 and 524,288 particles.  The reported reference likelihood
+is the logarithm of the mean likelihood estimate; its score averages the
+Fisher estimates with likelihood weights.  Delete-one-replication jackknife
+standard errors describe Monte Carlo variation.  They do not certify that
+finite-particle bias has vanished, so this reference is not called an exact
+nonlinear oracle.
+
+The first comparison used \(T=20\) and \(N=1008\) for LEDH, with inherited,
+untuned numerical controls.  The two predator--prey datasets used seeds
+260401 and 260402; the SIR dataset used 260401.  LEDH ran on the GPU with
+XLA, FP32 and TF32.  Predator--prey returned finite likelihoods and all six
+score coordinates in 70 evaluations across the five correction choices and
+the tested ancestry rules.  Sixty-nine also passed the separate trace-score
+check.  Table~\ref{tab:bf-nonlinear-first-likelihoods} gives the IID means,
+which make the difference between the two models visible.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Model / dataset & Covariance only & Guarded pairwise & Reference (MCSE)\\
+\midrule
+Predator--prey, 260401 & $-97.43870$ & $-97.35035$ & $-97.34297\;(0.00657)$\\
+Predator--prey, 260402 & $-99.29759$ & $-99.28713$ & $-99.31152\;(0.00366)$\\
+SIR, 260401, FP64 & $-975.57354$ & $-1041.35394$ & $-678.07747\;(0.01486)$\\
+\bottomrule
+\end{tabular}
+\caption{Actual log likelihoods at \(T=20\).  LEDH means use two IID designs
+on dataset 260401 and four on predator--prey dataset 260402.  The SIR row is a
+same-data FP64 precision diagnostic; all ten initial FP32 SIR evaluations
+failed.  The SIR guarded mean includes one finite evaluation whose separate
+trace-score check failed.  References use four replications at 524,288
+particles.  These small-sample means do not establish a ranking.}
+\label{tab:bf-nonlinear-first-likelihoods}
+\end{table}
+
+For predator--prey dataset 260401, the guarded score mean in the order
+\((r,K,a,s,u,v)\) was
+\[
+ (-33.52772,\;-0.54696,\;0.01964,\;4.56826,\;-8.54557,\;10.63757),
+\]
+while the reference was
+\[
+ (-32.90524,\;-0.54394,\;0.02053,\;4.48734,\;-8.73240,\;10.86545).
+\]
+The reference coordinate MCSEs were
+\[
+ (0.07550,0.00339,0.0000942,0.00827,0.02200,0.02770).
+\]
+For dataset 260402, the corresponding guarded and reference score means were
+\begin{align*}
+ &(-21.21510,\;0.03513,\;0.01890,\;1.52016,\;-6.60116,\;8.16064),\\
+ &(-21.14020,\;0.03931,\;0.01868,\;1.50221,\;-6.53110,\;8.07440).
+\end{align*}
+The reference coordinate MCSEs there were
+\[
+ (0.09711,0.00155,0.00000666,0.00506,0.00271,0.00270).
+\]
+The full per-design scores, LEDH replication standard errors and conditional
+comparisons with covariance-only, original and marginal-only correction are
+retained in the result record.\footnote{\path{docs/benchmarks/ledh-nonlinear-execution-results-20261002.md}}
+The values support further predator--prey validation, but two or four design
+replications at a single parameter point do not establish that the repair
+improves the observed-data score.
+
+SIR exposes two separate problems.  In the localized FP32 run, the first
+failure occurred at observation 4 in the Contract~E reset.  Ancestry, UKF
+prediction, UKF update and model-callback validity checks still passed; flow
+states and derivatives and likelihood weights were finite.  Covariance-only
+reset states remained finite but their derivatives did not.  The guarded
+configuration lost finite reset states and derivatives, so the higher-moment
+guard no longer had a valid input to protect.  These observations locate the
+failure in the reset but do not yet identify its exact factorization or
+prove a remedy.
+
+Replaying the exact FP32 observations and random inputs in FP64 gave finite
+SIR likelihoods and scores.  Accuracy still failed conspicuously relative to
+the independent reference.  The two guarded likelihoods were \(-1041.82982\)
+and \(-1040.87806\), with score vectors
+\begin{align*}
+ &(-165.24294,\;-186.13243,\;963.39536),\\
+ &(3230.85495,\;-1581.97484,\;936.41325).
+\end{align*}
+In the log-scale parameter order given above, the reference score was
+\[
+ (106.31321,-65.96031,5.58635),
+\]
+with coordinate MCSEs \((5.53617,2.42038,0.03538)\).
+Thus restoring finite arithmetic did not restore filtering accuracy.  The
+hundreds of log-likelihood units separating SIR's LEDH and reference estimates
+are far larger than the measured reference replication noise.
+
+Two finite evaluations also retained trace-score consistency vetoes: original
+FP32 predator--prey differed by \(6.47\times10^{-4}\) in its first score
+coordinate, and one guarded FP64 SIR evaluation differed by
+\(1.71\times10^{-7}\).  The recorded tolerances were not relaxed.  Together
+with the absence of scope-specific calibration and untouched validation,
+these findings prevent admission or a default-readiness conclusion.
+The next SIR step is to diagnose the failing reset factorization and its
+analytical derivative, then evaluate any protection for non-harm before
+calibrating the approximation.  It is not evidence that fitting fourth
+moments should be abandoned: the failure occurs in a common reset stage,
+and the independent likelihood and score comparison remains necessary even
+when that stage is numerically healthy.
 
 \section{A Zhao--Cui squared-TT moment teacher for Contract E}
 \label{sec:bf-eot-zhao-cui-moment-teacher}

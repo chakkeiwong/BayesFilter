@@ -150,3 +150,25 @@ def test_heuristic_comparison_is_paired_and_conditional():
     assert comparison['n']==1 and comparison['score_error_difference']['mean']==1.
     assert comparison['absolute_likelihood_error_difference']['mean']==pytest.approx(-.1)
     assert master.heuristic_comparisons([dict(base,reference=None)],keys)['comparisons']==[]
+
+
+def test_fixed_dataset_replay_preserves_values_and_rejects_mismatches(tmp_path):
+    spec = NonlinearSQMCSpec('sir_d18')
+    observations = tf.reshape(tf.range(18, dtype=tf.float32) / 7., [2, 9])
+    digest = master.hashlib.sha256(bytes(tf.io.serialize_tensor(observations).numpy())).hexdigest()
+    record = dict(observations=observations.numpy().tolist(), observation_sha256=digest,
+                  target_id=spec.target_id, data_seed=7, dtype='float32')
+    path = tmp_path/'dataset.json'
+    master.dump(path,record)
+    job = dict(dataset_file=str(path), data_seed=7, horizon=2)
+    values, saved = master.prepare_dataset(tf,spec,job,tf.float64)
+    tf.debugging.assert_equal(values,tf.cast(observations,tf.float64))
+    assert saved['observation_sha256']==digest and saved['dtype']=='float32'
+    assert saved['evaluation_dtype']=='float64'
+    with pytest.raises(ValueError,match='target or seed'):
+        master.prepare_dataset(tf,spec,dict(job,data_seed=8),tf.float64)
+    with pytest.raises(ValueError,match='shape'):
+        master.prepare_dataset(tf,spec,dict(job,horizon=3),tf.float64)
+    master.dump(path,dict(record,observation_sha256='bad'))
+    with pytest.raises(ValueError,match='checksum'):
+        master.prepare_dataset(tf,spec,job,tf.float64)

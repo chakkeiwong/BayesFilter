@@ -782,6 +782,22 @@ def _value_and_analytical_score_impl(
                 "time_index": t,
                 "ancestor_indices": ancestor_indices,
                 "program_valid": program_valid,
+                # Expose already-computed stage checks without altering the value
+                # or score. A cumulative flag alone cannot localize a failure.
+                "ancestry_valid": tf.reduce_all(ancestry_valid),
+                "ukf_predict_valid": tf.reduce_all(valid_predict),
+                "ukf_update_valid": tf.reduce_all(valid_update),
+                "callback_valid": tf.reduce_all(callback_valid),
+                "reset_numerical_valid": (tf.reduce_all(valid_reset)
+                                          if reset_policy == "contract_e"
+                                          else tf.constant(True)),
+                "predicted_covariances_finite": tf.reduce_all(tf.math.is_finite(predicted_covs)),
+                "post_covariances_finite": tf.reduce_all(tf.math.is_finite(post_covs)),
+                "flow_states_finite": tf.reduce_all(tf.math.is_finite(children)),
+                "flow_tangents_finite": tf.reduce_all(tf.math.is_finite(d_children)),
+                "posterior_logits_finite": tf.reduce_all(tf.math.is_finite(logits)),
+                "reset_states_finite": tf.reduce_all(tf.math.is_finite(new_states)),
+                "reset_tangents_finite": tf.reduce_all(tf.math.is_finite(new_d_states)),
                 "hilbert_tie_count": hilbert_ties,
                 "state_map_saturation_rate": state_map_saturation,
                 "incoming_log_weights": step_incoming_log_weights,

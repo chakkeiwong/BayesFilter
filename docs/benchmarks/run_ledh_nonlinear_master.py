@@ -121,6 +121,35 @@ def validate_job(job):
         raise ValueError("seeds must fit the stateless generator's positive int32 range")
 
 
+def prepare_dataset(tf, spec, job, dtype):
+    """Preserve source values/hash across precision diagnostics; reject mismatches."""
+    if job.get("dataset_file"):
+        record = read(job["dataset_file"])
+        if record["target_id"] != spec.target_id or record["data_seed"] != job["data_seed"]:
+            raise ValueError("fixed dataset target or seed mismatch")
+        source = tf.constant(record["observations"], tf.as_dtype(record["dtype"]))
+        if source.shape != (job["horizon"], spec.observation_dimension):
+            raise ValueError("fixed dataset observation shape mismatch")
+        digest = hashlib.sha256(bytes(tf.io.serialize_tensor(source).numpy())).hexdigest()
+        if digest != record["observation_sha256"]:
+            raise ValueError("fixed dataset checksum mismatch")
+        record = dict(record, source_file=job["dataset_file"], evaluation_dtype=dtype.name)
+    else:
+        source = spec.observations(job["horizon"], job["data_seed"], dtype=dtype,
+                                   jit_compile=job["jit_compile"])
+        digest = hashlib.sha256(bytes(tf.io.serialize_tensor(source).numpy())).hexdigest()
+        record = dict(observations=source.numpy().tolist(), observation_sha256=digest,
+                      data_seed=job["data_seed"], target_id=spec.target_id,
+                      generator="canonical_adapter_same_target_transition_first_v1", dtype=dtype.name)
+    observations = tf.cast(source, dtype)
+    # A reference cannot silently round a higher-precision source dataset.
+    if not bool(tf.reduce_all(tf.cast(observations, source.dtype) == source)):
+        raise ValueError("evaluation dtype cannot exactly represent the fixed observations")
+    if not bool(tf.reduce_all(tf.math.is_finite(observations))):
+        raise ValueError("observations are nonfinite")
+    return observations, record
+
+
 def worker(job_path):
     started = time.monotonic()
     job = read(job_path)
@@ -152,14 +181,9 @@ def worker(job_path):
                     observations_timing="x0_then_transition_then_observe_y1_to_yT")
     dump(out / "manifest.json", manifest)
     with tf.device(device):
-        observations = spec.observations(job["horizon"], job["data_seed"], dtype=dtype,
-                                         jit_compile=job["jit_compile"])
-        if not bool(tf.reduce_all(tf.math.is_finite(observations))):
-            raise ValueError("generated observations are nonfinite")
-        obs_hash = hashlib.sha256(bytes(tf.io.serialize_tensor(observations).numpy())).hexdigest()
-        dump(out / "dataset.json", dict(observations=observations.numpy().tolist(),
-              observation_sha256=obs_hash, data_seed=job["data_seed"], target_id=spec.target_id,
-              generator="canonical_adapter_same_target_transition_first_v1", dtype=dtype.name))
+        observations, dataset = prepare_dataset(tf, spec, job, dtype)
+        obs_hash = dataset["observation_sha256"]
+        dump(out / "dataset.json", dataset)
         entries = job["references"]
         points = job["theta_points"] or [spec.default_theta(dtype).numpy().tolist()]
         rows = []
@@ -172,9 +196,11 @@ def worker(job_path):
             if entries and reference is None:
                 raise ValueError("provided reference file has no exact match for this scope")
             for seed in job["design_seeds"]:
+                input_dtype = tf.as_dtype(job.get("random_input_dtype") or job["dtype"])
                 inputs = common.random_inputs(job["route"], seed, job["particles"],
-                                              spec.dimension, job["horizon"], dtype,
+                                              spec.dimension, job["horizon"], input_dtype,
                                               jit_compile=job["jit_compile"])
+                inputs = tuple(tf.cast(value, dtype) for value in inputs)
                 for arm in job["arms"]:
                     controls, design = arm_settings(arm, job["controls"])
                     diagnostics = {}
@@ -351,7 +377,9 @@ def controller(args):
                    controls=dict(BASE, **controls.get(model, {})), theta_points=theta.get(model),
                    design_seeds=args.design_seeds, arms=args.arms, device=args.device,
                    dtype=args.dtype, jit_compile=not args.no_jit, trace=args.trace,
-                   references=references)
+                   references=references,
+                   dataset_file=str(args.dataset_file.resolve()) if args.dataset_file else None,
+                   random_input_dtype=args.random_input_dtype)
         validate_job(job)
         jobs.append(job)
     description = dict(schema=SCHEMA, plan=PLAN, jobs=jobs, worker_count=len(jobs),
@@ -432,6 +460,9 @@ def parser():
     p.add_argument("--controls-json",type=Path)
     p.add_argument("--theta-json",type=Path)
     p.add_argument("--reference-file",type=Path)
+    p.add_argument("--dataset-file",type=Path,help="replay exact saved observations; target/seed/shape/hash checked")
+    p.add_argument("--random-input-dtype",choices=("float32","float64"),
+                   help="diagnostic random inputs generated at this precision, then cast")
     p.add_argument("--budget-seconds",type=float)
     p.add_argument("--worker-seconds",type=float,default=1800.)
     return p

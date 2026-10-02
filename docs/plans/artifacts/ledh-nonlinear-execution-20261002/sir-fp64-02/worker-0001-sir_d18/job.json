@@ -1,0 +1,41 @@
+{
+  "model": "sir_d18",
+  "horizon": 20,
+  "particles": 1008,
+  "data_seed": 260401,
+  "route": "iid_dual_cap",
+  "controls": {
+    "flow_substeps": 8,
+    "reset_epsilon": 102.4,
+    "reset_sinkhorn_steps": 24,
+    "reset_balance_steps": 12,
+    "correction_steps": 4,
+    "correction_strength": 0.12,
+    "pairwise_steps": 4,
+    "pairwise_strength": 0.03,
+    "reset_ridge": 1e-05,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap_power": 8,
+    "state_map_policy": "adaptive_empirical",
+    "hilbert_bits": 12
+  },
+  "theta_points": null,
+  "design_seeds": [
+    260501,
+    260502
+  ],
+  "arms": [
+    "covariance_only",
+    "guarded_pairwise"
+  ],
+  "device": "gpu",
+  "dtype": "float64",
+  "jit_compile": true,
+  "trace": true,
+  "references": [],
+  "dataset_file": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-nonlinear-execution-20261002/screen-01/worker-0002-sir_d18/dataset.json",
+  "random_input_dtype": "float32"
+}

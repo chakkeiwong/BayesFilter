@@ -1,0 +1,155 @@
+{
+  "schema": "bayesfilter.nonlinear_moment_comparison.v1",
+  "plan": "docs/plans/ledh-nonlinear-master-20261002.md",
+  "jobs": [
+    {
+      "model": "predator_prey",
+      "horizon": 20,
+      "particles": 1008,
+      "data_seed": 260402,
+      "route": "iid_dual_cap",
+      "controls": {
+        "flow_substeps": 8,
+        "reset_epsilon": 102.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 4,
+        "correction_strength": 0.12,
+        "pairwise_steps": 4,
+        "pairwise_strength": 0.03,
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12
+      },
+      "theta_points": null,
+      "design_seeds": [
+        260501,
+        260502,
+        260503,
+        260504
+      ],
+      "arms": [
+        "covariance_only",
+        "original",
+        "richer_marginal",
+        "richer_pairwise",
+        "guarded_pairwise"
+      ],
+      "device": "gpu",
+      "dtype": "float32",
+      "jit_compile": true,
+      "trace": true,
+      "references": [],
+      "dataset_file": null,
+      "random_input_dtype": null
+    },
+    {
+      "model": "predator_prey",
+      "horizon": 20,
+      "particles": 1008,
+      "data_seed": 260402,
+      "route": "previous_inverse_cdf",
+      "controls": {
+        "flow_substeps": 8,
+        "reset_epsilon": 102.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 4,
+        "correction_strength": 0.12,
+        "pairwise_steps": 4,
+        "pairwise_strength": 0.03,
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12
+      },
+      "theta_points": null,
+      "design_seeds": [
+        260501,
+        260502,
+        260503,
+        260504
+      ],
+      "arms": [
+        "covariance_only",
+        "original",
+        "richer_marginal",
+        "richer_pairwise",
+        "guarded_pairwise"
+      ],
+      "device": "gpu",
+      "dtype": "float32",
+      "jit_compile": true,
+      "trace": true,
+      "references": [],
+      "dataset_file": null,
+      "random_input_dtype": null
+    },
+    {
+      "model": "predator_prey",
+      "horizon": 20,
+      "particles": 1008,
+      "data_seed": 260402,
+      "route": "repaired_permutation",
+      "controls": {
+        "flow_substeps": 8,
+        "reset_epsilon": 102.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 4,
+        "correction_strength": 0.12,
+        "pairwise_steps": 4,
+        "pairwise_strength": 0.03,
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12
+      },
+      "theta_points": null,
+      "design_seeds": [
+        260501,
+        260502,
+        260503,
+        260504
+      ],
+      "arms": [
+        "covariance_only",
+        "original",
+        "richer_marginal",
+        "richer_pairwise",
+        "guarded_pairwise"
+      ],
+      "device": "gpu",
+      "dtype": "float32",
+      "jit_compile": true,
+      "trace": true,
+      "references": [],
+      "dataset_file": null,
+      "random_input_dtype": null
+    }
+  ],
+  "worker_count": 3,
+  "evidence_role": "diagnostic_only",
+  "controls_status": "untuned_scope_warm_start",
+  "budget_seconds": 1100.0,
+  "per_worker_seconds": 355.0,
+  "reference_mode": "unavailable",
+  "heuristic_adversaries": [
+    "covariance_only",
+    "richer_marginal",
+    "original"
+  ]
+}
