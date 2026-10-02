@@ -1,0 +1,408 @@
+diff --git a/bayesfilter/highdim/higher_moment_contract_e.py b/bayesfilter/highdim/higher_moment_contract_e.py
+index bc509888e..b1efe8c81 100644
+--- a/bayesfilter/highdim/higher_moment_contract_e.py
++++ b/bayesfilter/highdim/higher_moment_contract_e.py
+@@ -20,6 +20,11 @@ from bayesfilter.highdim.ledh_contract_e_reset_tf import (
+     _cholesky_jvp as _contract_e_cholesky_jvp,
+ )
+ 
++from bayesfilter.highdim.moment_safety_tf import (
++    combine_safety_stats, empty_safety_stats, guarded_moment_step,
++    moment_loss, roundoff_tolerance, safety_diagnostics,
++)
++
+ 
+ def _sym(value: tf.Tensor) -> tf.Tensor:
+     return 0.5 * (value + tf.linalg.matrix_transpose(value))
+@@ -381,13 +386,15 @@ def _uniform_pair_moments_jvp(
+ def _standardize_uniform_jvp(
+     points: tf.Tensor,
+     points_tangent: tf.Tensor,
++    *, relative_ridge: bool = True,
+ ) -> tuple[tf.Tensor, tf.Tensor]:
+     mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
+         points, points_tangent
+     )
+-    covariance, covariance_tangent = _relative_psd_covariance(
+-        covariance, covariance_tangent
+-    )
++    if relative_ridge:
++        covariance, covariance_tangent = _relative_psd_covariance(
++            covariance, covariance_tangent
++        )
+     chol = tf.linalg.cholesky(covariance)
+     chol_tangent = _cholesky_jvp(chol, covariance_tangent)
+     centered = points - mean[None, :]
+@@ -628,7 +635,8 @@ def _pairwise_shape_iteration_jvp(
+     strength: float,
+     floor: float,
+     particle_rms_cap: float,
+-) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
++    safety_loss=None,
++) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+     """Take one bounded residual-gradient step over all coordinate pairs."""
+ 
+     co_skew, co_kurtosis, co_skew_tangent, co_kurtosis_tangent = (
+@@ -766,13 +774,22 @@ def _pairwise_shape_iteration_jvp(
+         standardized_tangent
+         + tf.cast(strength, standardized.dtype) * normalized_direction_tangent
+     )
+-    output, output_tangent = _standardize_uniform_jvp(corrected, corrected_tangent)
++    safety_stats = empty_safety_stats(standardized.dtype)
++    if safety_loss is None:
++        output, output_tangent = _standardize_uniform_jvp(corrected, corrected_tangent)
++    else:
++        output, output_tangent, safety_stats = guarded_moment_step(
++            standardized, standardized_tangent,
++            tf.cast(strength, standardized.dtype) * normalized_direction,
++            tf.cast(strength, standardized.dtype) * normalized_direction_tangent,
++            normalize=_standardize_uniform_jvp, loss=safety_loss)
+     return (
+         output,
+         output_tangent,
+         tf.reduce_max(pre_cap_particle_rms),
+         tf.reduce_max(post_cap_particle_rms),
+         tf.reduce_min(row_scale),
++        safety_stats,
+     )
+ 
+ 
+@@ -789,6 +806,7 @@ def _shape_iteration_jvp(
+     lm_damping: float,
+     lm_scale_floor: float,
+     trust_radius: float,
++    safety_loss=None,
+ ) -> tuple[
+     tf.Tensor,
+     tf.Tensor,
+@@ -797,6 +815,7 @@ def _shape_iteration_jvp(
+     tf.Tensor,
+     tf.Tensor,
+     tf.Tensor,
++    tf.Tensor,
+ ]:
+     mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
+         points, points_tangent
+@@ -957,18 +976,15 @@ def _shape_iteration_jvp(
+         u_tangent
+         + displacement_tangent
+     )
+-    corrected_mean, corrected_cov, corrected_mean_tangent, corrected_cov_tangent = _uniform_moments_jvp(
+-        corrected, corrected_tangent
+-    )
+-    corrected_chol = tf.linalg.cholesky(corrected_cov)
+-    corrected_chol_tangent = _cholesky_jvp(corrected_chol, corrected_cov_tangent)
+-    output = _right_solve(corrected_chol, corrected - corrected_mean[None, :])
+-    output_tangent = _right_solve_jvp(
+-        corrected_chol,
+-        corrected_chol_tangent,
+-        corrected - corrected_mean[None, :],
+-        corrected_tangent - corrected_mean_tangent[None, :, :],
+-    )
++    safety_stats = empty_safety_stats(u.dtype)
++    def normalize(value, tangent):
++        return _standardize_uniform_jvp(value, tangent, relative_ridge=False)
++    if safety_loss is None:
++        output, output_tangent = normalize(corrected, corrected_tangent)
++    else:
++        output, output_tangent, safety_stats = guarded_moment_step(
++            u, u_tangent, displacement, displacement_tangent,
++            normalize=normalize, loss=safety_loss)
+     return (
+         output,
+         output_tangent,
+@@ -977,6 +993,7 @@ def _shape_iteration_jvp(
+         maximum_scaled_system_condition,
+         tf.reduce_max(pre_cap_rms),
+         tf.reduce_max(post_cap_rms),
++        safety_stats,
+     )
+ 
+ 
+@@ -1023,6 +1040,7 @@ def higher_moment_shape_jvp(
+     coordinatewise_standardized_cap_power: int = 8,
+     coordinatewise_standardized_identity_radius: float = 0.0,
+     return_stages: bool = False,
++    moment_safety: bool = False,
+     projected_cumulant_basis: tf.Tensor | None = None,
+     projected_cumulant_correction_steps: int = 0,
+     projected_cumulant_strength: float = 0.0,
+@@ -1045,6 +1063,8 @@ def higher_moment_shape_jvp(
+     standardized shape targets; weighted particle mean and covariance remain
+     the affine restoration targets.
+     """
++    if moment_safety and projected_cumulant_basis is not None:
++        raise ValueError("moment safety supports marginal/pairwise targets, not projected tensors")
+     if (not math.isfinite(coordinatewise_standardized_identity_radius)
+             or coordinatewise_standardized_identity_radius < 0
+             or (coordinatewise_standardized_identity_radius > 0 and coordinatewise_standardized_cap <= 0)):
+@@ -1245,10 +1265,17 @@ def higher_moment_shape_jvp(
+             tf.cast(1.0, source.dtype),
+         ) * off_diagonal
+ 
++    def safety_loss(value):
++        return moment_loss(
++            value, target_skew, target_kurt, target_co_skew, target_co_kurtosis,
++            target_co_skew_mask if pairwise_correction_steps > 0 else tf.zeros_like(target_co_skew_mask),
++            target_co_kurtosis_mask if pairwise_correction_steps > 0 else tf.zeros_like(target_co_kurtosis_mask))
++    safety_stats = empty_safety_stats(source.dtype)
+     if (
+         correction_steps == 0
+         and pairwise_correction_steps == 0
+         and projected_cumulant_correction_steps == 0
++        and not moment_safety
+     ):
+         output_standardized, output_standardized_tangent = _standardize_uniform_jvp(
+             points, points_tangent
+@@ -1308,6 +1335,7 @@ def higher_moment_shape_jvp(
+             "maximum_diagonal_pre_cap_particle_rms": tf.zeros([], source.dtype),
+             "maximum_diagonal_post_cap_particle_rms": tf.zeros([], source.dtype),
+         }
++        result.update(safety_diagnostics(safety_stats, False))
+         if return_stages:
+             for stage in ("raw_reset", "pre_cap", "post_cap"):
+                 result["stage_" + stage] = points
+@@ -1321,7 +1349,7 @@ def higher_moment_shape_jvp(
+     maximum_diagonal_pre_cap_rms = tf.zeros([], source.dtype)
+     maximum_diagonal_post_cap_rms = tf.zeros([], source.dtype)
+ 
+-    def body(index, current, current_tangent, _r3, _r4, max_condition, max_pre, max_post):
++    def body(index, current, current_tangent, _r3, _r4, max_condition, max_pre, max_post, stats):
+         (
+             next_points,
+             next_tangent,
+@@ -1330,6 +1358,7 @@ def higher_moment_shape_jvp(
+             next_condition,
+             next_pre,
+             next_post,
++            next_stats,
+         ) = _shape_iteration_jvp(
+             current, current_tangent, target_skew, target_kurt,
+             target_skew_tangent, target_kurt_tangent,
+@@ -1338,6 +1367,7 @@ def higher_moment_shape_jvp(
+             lm_damping=diagonal_lm_damping,
+             lm_scale_floor=diagonal_lm_scale_floor,
+             trust_radius=diagonal_trust_radius,
++            safety_loss=safety_loss if moment_safety else None,
+         )
+         return (
+             index + 1,
+@@ -1348,6 +1378,7 @@ def higher_moment_shape_jvp(
+             tf.maximum(max_condition, next_condition),
+             tf.maximum(max_pre, next_pre),
+             tf.maximum(max_post, next_post),
++            combine_safety_stats(stats, next_stats),
+         )
+ 
+     # Initialize the loop state with a standardization of the input cloud.
+@@ -1374,6 +1405,7 @@ def higher_moment_shape_jvp(
+         maximum_diagonal_condition,
+         maximum_diagonal_pre_cap_rms,
+         maximum_diagonal_post_cap_rms,
++        safety_stats,
+     ) = tf.while_loop(
+         lambda index, *_: index < steps,
+         body,
+@@ -1386,6 +1418,7 @@ def higher_moment_shape_jvp(
+             maximum_diagonal_condition,
+             maximum_diagonal_pre_cap_rms,
+             maximum_diagonal_post_cap_rms,
++            safety_stats,
+         ),
+         parallel_iterations=1,
+     )
+@@ -1404,6 +1437,7 @@ def higher_moment_shape_jvp(
+         maximum_pre_cap_rms,
+         maximum_post_cap_rms,
+         minimum_cap_scale,
++        stats,
+     ):
+         (
+             next_points,
+@@ -1411,6 +1445,7 @@ def higher_moment_shape_jvp(
+             next_pre_cap_rms,
+             next_post_cap_rms,
+             next_minimum_cap_scale,
++            next_stats,
+         ) = _pairwise_shape_iteration_jvp(
+             current,
+             current_tangent,
+@@ -1423,6 +1458,7 @@ def higher_moment_shape_jvp(
+             strength=pairwise_strength,
+             floor=pairwise_floor,
+             particle_rms_cap=pairwise_particle_rms_cap,
++            safety_loss=safety_loss if moment_safety else None,
+         )
+         return (
+             index + 1,
+@@ -1431,6 +1467,7 @@ def higher_moment_shape_jvp(
+             tf.maximum(maximum_pre_cap_rms, next_pre_cap_rms),
+             tf.maximum(maximum_post_cap_rms, next_post_cap_rms),
+             tf.minimum(minimum_cap_scale, next_minimum_cap_scale),
++            combine_safety_stats(stats, next_stats),
+         )
+ 
+     (
+@@ -1440,6 +1477,7 @@ def higher_moment_shape_jvp(
+         maximum_pairwise_pre_cap_particle_rms,
+         maximum_pairwise_post_cap_particle_rms,
+         minimum_pairwise_particle_cap_scale,
++        safety_stats,
+     ) = tf.while_loop(
+         lambda index, *_: index < pairwise_steps,
+         pairwise_body,
+@@ -1450,6 +1488,7 @@ def higher_moment_shape_jvp(
+             tf.zeros([], source.dtype),
+             tf.zeros([], source.dtype),
+             tf.ones([], source.dtype),
++            safety_stats,
+         ),
+         parallel_iterations=1,
+     )
+@@ -1691,6 +1730,50 @@ def higher_moment_shape_jvp(
+             stage_post_cap=stage_post_cap,
+             stage_post_cap_tangent=stage_post_cap_tangent,
+         )
++    result.update(safety_diagnostics(safety_stats, moment_safety))
++    if moment_safety:
++        result["valid"] &= safety_stats[3] > .5
++        result["moment_safety_final_loss"] = safety_loss(output_standardized)
++        result["valid"] &= tf.math.is_finite(result["moment_safety_final_loss"])
++        if correction_steps > 0 or pairwise_correction_steps > 0:
++            # The comparator retains the SAME coordinate cap and affine restore.
++            # Zero-fit safety mode deliberately executes those protections.
++            baseline = higher_moment_shape_jvp(
++                source, weights, source_tangent, weights_tangent, points, points_tangent,
++                correction_steps=0, strength=strength, floor=floor,
++                coordinatewise_bounded_cap=coordinatewise_bounded_cap,
++                coordinatewise_bounded_cap_power=coordinatewise_bounded_cap_power,
++                coordinatewise_standardized_cap=coordinatewise_standardized_cap,
++                coordinatewise_standardized_cap_power=coordinatewise_standardized_cap_power,
++                coordinatewise_standardized_identity_radius=coordinatewise_standardized_identity_radius,
++                return_stages=return_stages, moment_safety=True,
++                explicit_target_skew=explicit_target_skew,
++                explicit_target_kurtosis=explicit_target_kurtosis,
++                explicit_target_skew_tangent=explicit_target_skew_tangent,
++                explicit_target_kurtosis_tangent=explicit_target_kurtosis_tangent,
++                explicit_target_pairwise_co_skew=explicit_target_pairwise_co_skew,
++                explicit_target_pairwise_co_kurtosis=explicit_target_pairwise_co_kurtosis,
++                explicit_target_pairwise_co_skew_tangent=explicit_target_pairwise_co_skew_tangent,
++                explicit_target_pairwise_co_kurtosis_tangent=explicit_target_pairwise_co_kurtosis_tangent,
++                pairwise_target_mask=pairwise_target_mask,
++                pairwise_co_skew_target_mask=pairwise_co_skew_target_mask,
++                pairwise_co_kurtosis_target_mask=pairwise_co_kurtosis_target_mask)
++            baseline_u, _ = _standardize_uniform_jvp(
++                baseline["particles"], baseline["particles_tangent"])
++            baseline_loss = safety_loss(baseline_u)
++            final_loss = result["moment_safety_final_loss"]
++            accept = (result["valid"] & tf.math.is_finite(final_loss)
++                      & (final_loss <= baseline_loss + roundoff_tolerance(baseline_loss)))
++            diagnostics = safety_diagnostics(safety_stats, True)
++            result = {key: tf.where(accept, value, baseline[key])
++                      for key, value in result.items()}
++            result.update(diagnostics)
++            result["moment_safety_baseline_loss"] = baseline_loss
++            result["moment_safety_final_loss"] = tf.where(accept, final_loss, baseline_loss)
++            result["moment_safety_final_rejected"] = tf.cast(~accept, source.dtype)
++            result["valid"] &= baseline["valid"] & tf.math.is_finite(baseline_loss)
++        else:
++            result["moment_safety_baseline_loss"] = result["moment_safety_final_loss"]
+     return result
+ 
+ 
+diff --git a/bayesfilter/highdim/ledh_canonical_score_tf.py b/bayesfilter/highdim/ledh_canonical_score_tf.py
+index 643a3a5e0..c6c530d82 100644
+--- a/bayesfilter/highdim/ledh_canonical_score_tf.py
++++ b/bayesfilter/highdim/ledh_canonical_score_tf.py
+@@ -156,6 +156,7 @@ def _value_and_analytical_score_impl(
+     pairwise_steps: int = 0,
+     pairwise_strength: float = 0.02,
+     pairwise_rms_cap: float = 2.0,
++    moment_safety: bool = False,
+     coordinate_cap: float = 0.0,
+     coordinate_cap_power: int = 8,
+     coordinate_cap_identity_radius: float = 0.0,
+@@ -624,7 +625,7 @@ def _value_and_analytical_score_impl(
+                 & (reset_column_tv_error <= tf.cast(1.0e-4, dtype))
+             )
+             program_valid = program_valid & reset_valid
+-            if correction_steps > 0 or pairwise_steps > 0:
++            if correction_steps > 0 or pairwise_steps > 0 or moment_safety:
+                 from bayesfilter.highdim.ledh_unified_correction_tf import (
+                     batched_higher_moment_shape_jvp,
+                 )
+@@ -646,6 +647,7 @@ def _value_and_analytical_score_impl(
+                     pairwise_strength=pairwise_strength,
+                     pairwise_floor=1.0e-5,
+                     pairwise_particle_rms_cap=pairwise_rms_cap,
++                    moment_safety=moment_safety,
+                     coordinatewise_standardized_cap=coordinate_cap,
+                     coordinatewise_standardized_cap_power=coordinate_cap_power,
+                     coordinatewise_standardized_identity_radius=coordinate_cap_identity_radius,
+@@ -893,6 +895,7 @@ def canonical_value_and_analytical_score(
+     pairwise_steps: int = 0,
+     pairwise_strength: float = 0.02,
+     pairwise_rms_cap: float = 2.0,
++    moment_safety: bool = False,
+     coordinate_cap: float = 0.0,
+     coordinate_cap_power: int = 8,
+     coordinate_cap_identity_radius: float = 0.0,
+@@ -950,6 +953,7 @@ def canonical_value_and_analytical_score(
+         pairwise_steps=pairwise_steps,
+         pairwise_strength=pairwise_strength,
+         pairwise_rms_cap=pairwise_rms_cap,
++        moment_safety=moment_safety,
+         coordinate_cap=coordinate_cap,
+         coordinate_cap_power=coordinate_cap_power,
+         coordinate_cap_identity_radius=coordinate_cap_identity_radius,
+diff --git a/bayesfilter/highdim/ledh_unified_correction_tf.py b/bayesfilter/highdim/ledh_unified_correction_tf.py
+index a296cf8eb..8c4926e16 100644
+--- a/bayesfilter/highdim/ledh_unified_correction_tf.py
++++ b/bayesfilter/highdim/ledh_unified_correction_tf.py
+@@ -11,6 +11,7 @@ from __future__ import annotations
+ import tensorflow as tf
+ 
+ from bayesfilter.highdim.higher_moment_contract_e import higher_moment_shape_jvp
++from bayesfilter.highdim.moment_safety_tf import SAFETY_KEYS
+ 
+ Tensor = tf.Tensor
+ 
+@@ -48,6 +49,8 @@ _SCALAR_FLOAT_KEYS = (
+     "maximum_diagonal_post_cap_particle_rms",
+ )
+ 
++_SCALAR_FLOAT_KEYS += SAFETY_KEYS
++
+ 
+ def _output_signature(
+     particle_count: int, state_dim: int, direction_count: int, dtype: tf.DType, return_stages: bool = False
+@@ -98,6 +101,7 @@ def batched_higher_moment_shape_jvp(
+     coordinatewise_standardized_cap_power: int = 8,
+     coordinatewise_standardized_identity_radius: float = 0.0,
+     return_stages: bool = False,
++    moment_safety: bool = False,
+ ) -> dict[str, Tensor]:
+     """Correct B clouds with K analytical tangent directions.
+ 
+@@ -149,6 +153,7 @@ def batched_higher_moment_shape_jvp(
+             coordinatewise_standardized_cap_power=coordinatewise_standardized_cap_power,
+             coordinatewise_standardized_identity_radius=coordinatewise_standardized_identity_radius,
+             return_stages=return_stages,
++            moment_safety=moment_safety,
+         )
+ 
+     result = tf.map_fn(
+diff --git a/bayesfilter/highdim/sqmc_campaign_tf.py b/bayesfilter/highdim/sqmc_campaign_tf.py
+index c02f8b172..2ee5e6701 100644
+--- a/bayesfilter/highdim/sqmc_campaign_tf.py
++++ b/bayesfilter/highdim/sqmc_campaign_tf.py
+@@ -75,7 +75,8 @@ def numerical_settings(controls):
+     result = dict(flow_substeps=8, reset_policy='contract_e', reset_ridge=1e-5,
+                   correction_lm_damping=.01, correction_lm_scale_floor=.0001,
+                   correction_trust_radius=.5, pairwise_rms_cap=2., coordinate_cap_power=8,
+-                  state_map_policy='adaptive_empirical', hilbert_bits=12, coordinate_cap_identity_radius=0.)
++                  state_map_policy='adaptive_empirical', hilbert_bits=12, coordinate_cap_identity_radius=0.,
++                  moment_safety=False)
+     allowed = set(result) | set(required)
+     if set(controls) - allowed:
+         raise ValueError(f'unknown SQMC controls: {sorted(set(controls) - allowed)}')

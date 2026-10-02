@@ -75,7 +75,8 @@ def numerical_settings(controls):
     result = dict(flow_substeps=8, reset_policy='contract_e', reset_ridge=1e-5,
                   correction_lm_damping=.01, correction_lm_scale_floor=.0001,
                   correction_trust_radius=.5, pairwise_rms_cap=2., coordinate_cap_power=8,
-                  state_map_policy='adaptive_empirical', hilbert_bits=12, coordinate_cap_identity_radius=0.)
+                  state_map_policy='adaptive_empirical', hilbert_bits=12, coordinate_cap_identity_radius=0.,
+                  moment_safety=False)
     allowed = set(result) | set(required)
     if set(controls) - allowed:
         raise ValueError(f'unknown SQMC controls: {sorted(set(controls) - allowed)}')
@@ -104,7 +105,7 @@ def _kernel(spec, route, n, horizon, dtype_name, settings_tuple, jit_compile, re
     design = reset_design(n, spec.dimension, dtype, reset_design_kind)
     signature = [tf.TensorSpec([spec.parameter_count], dtype), tf.TensorSpec([n, spec.dimension], dtype),
                  tf.TensorSpec([horizon, n, spec.dimension], dtype), tf.TensorSpec([horizon, n], dtype),
-                 tf.TensorSpec([horizon, spec.dimension], dtype)]
+                 tf.TensorSpec([horizon, getattr(spec, 'observation_dimension', spec.dimension)], dtype)]
 
     @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
     def compute(theta, initial, noise, uniforms, observations):

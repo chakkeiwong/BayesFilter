@@ -16,7 +16,7 @@ variants) follow the same template; each addition must extend
 
 from __future__ import annotations
 
-import numpy as np
+import math
 import tensorflow as tf
 
 from bayesfilter.highdim.ledh_canonical_score_tf import NonlinearScoreModel
@@ -45,7 +45,10 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
 
     from bayesfilter.highdim.models import zhao_cui_sir_austria_model
 
-    base = zhao_cui_sir_austria_model()
+    # Fixed topology is validated eagerly, even when this adapter is built
+    # inside the shared parameter-direction graph. It has no theta dependence.
+    with tf.init_scope():
+        base = zhao_cui_sir_austria_model()
     adjacency = tf.cast(base._adjacency_matrix, dtype)  # noqa: SLF001
     degree = tf.reduce_sum(adjacency, axis=1)
     step = tf.constant(0.005, dtype)
@@ -195,7 +198,7 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
     # the score assembly carries no dR term, so a model with R(theta)
     # must supply the density callback pair and the covariance tangent
     # (same convention as the dlgssm q/r wiring).
-    log_two_pi = tf.constant(np.log(2.0 * np.pi), dtype)
+    log_two_pi = tf.constant(math.log(2.0 * math.pi), dtype)
 
     def observation_log_density_fn(theta, points, observation):
         observed = tf.einsum("oi,ni->no", infectious_matrix, points)
@@ -315,7 +318,7 @@ def generalized_sv_canonical_model(theta_fixed: Tensor):
         return -0.5 * (
             tf.square(residual) * tf.exp(-h)
             + h
-            + tf.constant(np.log(2.0 * np.pi), DTYPE)
+            + tf.constant(math.log(2.0 * math.pi), DTYPE)
         )
 
     def observation_log_density_tangent_fn(theta, points, observation, d_points):
@@ -361,15 +364,15 @@ def generalized_sv_canonical_model(theta_fixed: Tensor):
 __all__ = ["austria_sir_canonical_model"]
 
 
-def predator_prey_canonical_model(theta_fixed: Tensor):
+def predator_prey_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE):
     """Six-parameter predator-prey; RK4 dynamics (20 x dt=0.1), process
     noise scale 2 (model_exact), direct-state observation with R = 4*I_2
     (model_exact). Ported from the verified batch adapter; tangent is the
     total derivative through the RK4 stages for the direction set via the
     returned setter (same convention as Austria)."""
 
-    theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
-    step = tf.constant(0.1, DTYPE)
+    theta_fixed = tf.convert_to_tensor(theta_fixed, dtype)
+    step = tf.constant(0.1, dtype)
 
     def rhs(theta, state):
         r, capacity, half_sat, s_rate, u_rate, v_rate = tf.unstack(theta)
@@ -426,10 +429,10 @@ def predator_prey_canonical_model(theta_fixed: Tensor):
             current = current + step / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
         return current
 
-    _direction = [tf.zeros([6], DTYPE)]
+    _direction = [tf.zeros([6], dtype)]
 
     def set_score_direction(direction: Tensor) -> None:
-        _direction[0] = tf.convert_to_tensor(direction, DTYPE)
+        _direction[0] = tf.convert_to_tensor(direction, dtype)
 
     def transition_mean_tangent_fn(theta, points, d_points):
         d_theta = _direction[0]
@@ -461,12 +464,12 @@ def predator_prey_canonical_model(theta_fixed: Tensor):
         transition_mean_tangent_fn=transition_mean_tangent_fn,
         observation_fn=lambda points: points,
         observation_jacobian_fn=lambda points: tf.broadcast_to(
-            tf.eye(2, dtype=DTYPE), [tf.shape(points)[0], 2, 2]
+            tf.eye(2, dtype=dtype), [tf.shape(points)[0], 2, 2]
         ),
         observation_tangent_fn=lambda points, d_points: d_points,
         # process noise scale 2 => covariance 4*I (adapter adds 2*noise)
-        process_covariance=4.0 * tf.eye(2, dtype=DTYPE),
-        observation_covariance=4.0 * tf.eye(2, dtype=DTYPE),
+        process_covariance=4.0 * tf.eye(2, dtype=dtype),
+        observation_covariance=4.0 * tf.eye(2, dtype=dtype),
     )
     return model, set_score_direction
 
@@ -498,7 +501,7 @@ def diagonal_lgssm_canonical_model(theta_fixed: Tensor):
         d_theta = _direction[0]
         return d_points * theta[:3][None, :] + points * d_theta[:3][None, :]
 
-    log_two_pi = tf.constant(np.log(2.0 * np.pi), DTYPE)
+    log_two_pi = tf.constant(math.log(2.0 * math.pi), DTYPE)
 
     def _scaled_gaussian(points, means, scale):
         residual = points - means
