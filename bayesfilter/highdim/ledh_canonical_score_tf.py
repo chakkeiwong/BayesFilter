@@ -157,8 +157,10 @@ def _value_and_analytical_score_impl(
     pairwise_steps: int = 0,
     pairwise_strength: float = 0.02,
     pairwise_rms_cap: float = 2.0,
+    moment_safety: bool = False,
     coordinate_cap: float = 0.0,
     coordinate_cap_power: int = 8,
+    coordinate_cap_identity_radius: float = 0.0,
     annealed_stages: int = 1,
     annealed_seed: int = 0,
     moment_provider: tuple[Callable, Callable] | None = None,
@@ -623,7 +625,7 @@ def _value_and_analytical_score_impl(
                 & (reset_column_tv_error <= tf.cast(1.0e-4, dtype))
             )
             program_valid = program_valid & reset_valid
-            if correction_steps > 0 or pairwise_steps > 0:
+            if correction_steps > 0 or pairwise_steps > 0 or moment_safety:
                 from bayesfilter.highdim.ledh_unified_correction_tf import (
                     batched_higher_moment_shape_jvp,
                 )
@@ -645,8 +647,11 @@ def _value_and_analytical_score_impl(
                     pairwise_strength=pairwise_strength,
                     pairwise_floor=1.0e-5,
                     pairwise_particle_rms_cap=pairwise_rms_cap,
+                    moment_safety=moment_safety,
                     coordinatewise_standardized_cap=coordinate_cap,
                     coordinatewise_standardized_cap_power=coordinate_cap_power,
+                    coordinatewise_standardized_identity_radius=coordinate_cap_identity_radius,
+                    return_stages=return_trace,
                 )
                 corrected = {
                     key: (
@@ -892,8 +897,10 @@ def canonical_value_and_analytical_score(
     pairwise_steps: int = 0,
     pairwise_strength: float = 0.02,
     pairwise_rms_cap: float = 2.0,
+    moment_safety: bool = False,
     coordinate_cap: float = 0.0,
     coordinate_cap_power: int = 8,
+    coordinate_cap_identity_radius: float = 0.0,
     annealed_stages: int = 1,
     annealed_seed: int = 0,
     ancestry_policy: str = "existing_one_to_one",
@@ -948,8 +955,10 @@ def canonical_value_and_analytical_score(
         pairwise_steps=pairwise_steps,
         pairwise_strength=pairwise_strength,
         pairwise_rms_cap=pairwise_rms_cap,
+        moment_safety=moment_safety,
         coordinate_cap=coordinate_cap,
         coordinate_cap_power=coordinate_cap_power,
+        coordinate_cap_identity_radius=coordinate_cap_identity_radius,
         annealed_stages=annealed_stages,
         annealed_seed=annealed_seed,
         ancestry_policy=ancestry_policy,

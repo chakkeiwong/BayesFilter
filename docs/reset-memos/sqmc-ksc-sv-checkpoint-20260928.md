@@ -1,35 +1,34 @@
-# KSC checkpoint — campaign complete, 2026-09-29
+# KSC reset repair checkpoint — completed, 2026-09-30
 
-Checkout: /home/chakwong/BayesFilter-SQMC, branch sqmc-development.
-Particle evidence commit b7ed96ec; full-mixture correction commit c2ae4eb0.
-Requested numerical work and terminal review are complete. No HMC, package
-changes or scientific/default promotion. Merge/push and branch synchronization
-were separately authorized by the owner on 2026-09-29; Git history records them.
+Checkout /home/chakwong/BayesFilter-SQMC; branch sqmc-development; base f72cbfe3.
+Owner authorized plan/review/execute, then recovery and continuation.
+Plan: docs/plans/sqmc-ksc-reset-repair-plan-20260929.md.
+Final result: docs/benchmarks/sqmc-ksc-reset-repair-results-20260929.md.
 Master summary: docs/benchmarks/sqmc-master-program-final-summary-20260929.md.
-Current result: docs/benchmarks/sqmc-ksc-full-mixture-corrected-results-20260929.md.
-Tables: docs/plans/artifacts/sqmc-ksc-full-mixture-20260929/final-evidence-01/report.md.
-Plan/derivation: docs/plans/sqmc-ksc-full-mixture-correction-20260929.md.
-Active ledger: docs/plans/artifacts/sqmc-ksc-full-mixture-20260929/budget.json
-(links immutable original ledger; do not double-count charges).
+Evidence: docs/plans/artifacts/sqmc-ksc-reset-repair-20260929/attempt-01/.
 
-Complete: all seven observation components retained in Gaussian-sum Kalman
-updates with checked quadrature projection. 8 CPU tests, GPU FD/exact/graph-XLA
-checks, all 32 datasets x 4 resolutions pass. Original 128 particle evaluations
-reused unchanged. Max reference score-coordinate discrepancy 9.77e-15; max
-likelihood discrepancy 5.12e-13. Independent error/SD/SE/paired-interval audit
-passed. No invalid reference cases, infrastructure failures or retries.
-Old one-Gaussian main comparison superseded; historical evidence preserved.
-No overall winner; retain all four. Only exploratory T10 SQMC-versus-IID
-intervals exclude zero; no within-SQMC ordering. Single regime/8 pairs and
-restricted controls remain limitations, no fixed-dataset uncertainty estimate.
+All 38 GPU units completed successfully, including the balanced eight-design
+extension. All 525 evaluations passed numerical validity. Recovery checks:
+383 evidence checks, 67 independent saved-result checks, and 55 CPU regressions
+passed. Numerical source closure matches the final GPU manifest. CPU GPUs hidden.
 
-Correction charge 51.327502s; aggregate
-6.795053/12 GPU-hours; remaining 5.204947h.
-Includes prior work and unchanged 300s old-hook reserve.
-Deadline 2026-09-30T16:15:40.010888+00:00; two infrastructure retries/unit limit.
-No workers remain. Numerical correction is complete. Repository commit checks
-run with GPU devices hidden. Do not rerun completed research.
-Next research action: await a selected follow-up; no numerical work remains in
-this campaign. Candidates are fresh T120 tuning, N2016, more pairs, fixed-dataset
-Monte Carlo uncertainty and broader regimes. Wider master-program completion
-and HMC readiness are not established by this closeout.
+Outcome: limited repair nomination for the three SQMC T10 scopes only.
+IID fails validation at both horizons; all T120 candidates fail validation and
+the untouched likelihood-error guard on data 243002. All four original baselines
+lose to Gaussian Kalman on that long-horizon dataset; repaired candidates pass
+all heuristic screens. No overall method ranking, admission/default or HMC claim.
+Every planned repair phase has run; candidate failure did not stop the campaign.
+
+Saved session 01a0e3d0-2332-7ea3-9fc4-d5e4dcee78d0 hit provider HTTP 502 errors,
+then failed pre-sampling remote compaction. Session preserved; underlying gateway
+cause unverified. recovery-01/session-diagnosis.json records selected events.
+Fresh-session bubblewrap startup failures were separate; trusted commands worked.
+
+Charged 36253.132322/43200 GPU-seconds; 6946.867678 seconds remain.
+Original deadline 2026-09-30T16:15:40.010888+00:00. Recovery used no GPU.
+No active worker. No retuning, environment/provider setting changes, merge or push.
+Terminal review: attempt-01/recovery-01/terminal-review.md.
+
+Next: use the completed reports for user-directed follow-up. No execution remains
+under this plan; unused allowance alone does not authorize another experiment.
+Local commit packages implementation, tests, plan, evidence and completion notes.

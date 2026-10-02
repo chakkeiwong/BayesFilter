@@ -369,15 +369,15 @@ def generalized_sv_canonical_model(theta_fixed: Tensor):
 __all__ = ["austria_sir_canonical_model"]
 
 
-def predator_prey_canonical_model(theta_fixed: Tensor):
+def predator_prey_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE):
     """Six-parameter predator-prey; RK4 dynamics (20 x dt=0.1), process
     noise scale 2 (model_exact), direct-state observation with R = 4*I_2
     (model_exact). Ported from the verified batch adapter; tangent is the
     total derivative through the RK4 stages for the direction set via the
     returned setter (same convention as Austria)."""
 
-    theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
-    step = tf.constant(0.1, DTYPE)
+    theta_fixed = tf.convert_to_tensor(theta_fixed, dtype)
+    step = tf.constant(0.1, dtype)
 
     def rhs(theta, state):
         r, capacity, half_sat, s_rate, u_rate, v_rate = tf.unstack(theta)
@@ -441,10 +441,10 @@ def predator_prey_canonical_model(theta_fixed: Tensor):
         )
         return current
 
-    _direction = [tf.zeros([6], DTYPE)]
+    _direction = [tf.zeros([6], dtype)]
 
     def set_score_direction(direction: Tensor) -> None:
-        _direction[0] = tf.convert_to_tensor(direction, DTYPE)
+        _direction[0] = tf.convert_to_tensor(direction, dtype)
 
     def transition_mean_tangent_fn(theta, points, d_points):
         d_theta = _direction[0]
@@ -483,12 +483,12 @@ def predator_prey_canonical_model(theta_fixed: Tensor):
         transition_mean_tangent_fn=transition_mean_tangent_fn,
         observation_fn=lambda points: points,
         observation_jacobian_fn=lambda points: tf.broadcast_to(
-            tf.eye(2, dtype=DTYPE), [tf.shape(points)[0], 2, 2]
+            tf.eye(2, dtype=dtype), [tf.shape(points)[0], 2, 2]
         ),
         observation_tangent_fn=lambda points, d_points: d_points,
         # process noise scale 2 => covariance 4*I (adapter adds 2*noise)
-        process_covariance=4.0 * tf.eye(2, dtype=DTYPE),
-        observation_covariance=4.0 * tf.eye(2, dtype=DTYPE),
+        process_covariance=4.0 * tf.eye(2, dtype=dtype),
+        observation_covariance=4.0 * tf.eye(2, dtype=dtype),
     )
     return model, set_score_direction
 

@@ -1,0 +1,72 @@
+......................................................F                  [100%]
+=================================== FAILURES ===================================
+____________________ test_nonfinite_oracle_stops_comparison ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x73c4a6386e90>
+
+    def test_nonfinite_oracle_stops_comparison(monkeypatch):
+        monkeypatch.setattr(campaign,'value_and_score',lambda *a,**k:(
+            tf.constant(0.,DTYPE),tf.zeros([4],DTYPE),tf.constant(True)))
+        monkeypatch.setattr(LGSSMSpec,'reference_value_and_score',lambda *a,**k:(
+            tf.constant(float('nan'),DTYPE),tf.zeros([4],DTYPE)))
+        spec=LGSSMSpec('p44',3)
+        with pytest.raises(RuntimeError,match='Kalman oracle'):
+>           campaign.evaluate_diagnostic(spec,'iid_dual_cap',CONTROLS,tf.zeros([1,3],DTYPE),
+                spec.default_theta(),1,12,jit_compile=False)
+
+tests/highdim/test_sqmc_campaign_repairs.py:276: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spec = LGSSMSpec(family='p44', dimension=3), route = 'iid_dual_cap'
+controls = {'correction_steps': 0, 'correction_strength': 0.15, 'flow_substeps': 2, 'pairwise_steps': 0, ...}
+observations = <tf.Tensor: shape=(1, 3), dtype=float64, numpy=array([[0., 0., 0.]])>
+theta = <tf.Tensor: shape=(4,), dtype=float64, numpy=array([ 0.25      , -1.71479843, -2.12026354,  0.04      ])>
+seed = 1, particle_count = 12
+
+    def evaluate_diagnostic(spec, route, controls, observations, theta, seed, particle_count, *, jit_compile=True, inputs=None):
+        """Run a complete value/score/oracle diagnostic, never a tuned claim."""
+        started = time.perf_counter()
+        metadata = dict(target_id=spec.target_id, route=route, seed=seed, jit_compile=jit_compile,
+                        evidence_role='diagnostic_only', tuning_status='unvalidated_controls',
+                        claim_eligible=False, score_method='analytical_recursive', **route_settings(route))
+        diagnostics = {}
+        try:
+            value, score, valid = value_and_score(spec, route, controls, theta, observations, seed, particle_count,
+                                                 jit_compile=jit_compile, inputs=inputs, diagnostics=diagnostics)
+            oracle_value, oracle_score = spec.reference_value_and_score(theta, observations)
+            finite_oracle = math.isfinite(float(oracle_value.numpy())) and bool(tf.reduce_all(tf.math.is_finite(oracle_score)).numpy())
+            if not finite_oracle:
+>               raise RuntimeError('Reference is nonfinite; comparison harness cannot continue')
+E               RuntimeError: Reference is nonfinite; comparison harness cannot continue
+
+bayesfilter/highdim/sqmc_campaign_tf.py:177: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x73c4a6386e90>
+
+    def test_nonfinite_oracle_stops_comparison(monkeypatch):
+        monkeypatch.setattr(campaign,'value_and_score',lambda *a,**k:(
+            tf.constant(0.,DTYPE),tf.zeros([4],DTYPE),tf.constant(True)))
+        monkeypatch.setattr(LGSSMSpec,'reference_value_and_score',lambda *a,**k:(
+            tf.constant(float('nan'),DTYPE),tf.zeros([4],DTYPE)))
+        spec=LGSSMSpec('p44',3)
+>       with pytest.raises(RuntimeError,match='Kalman oracle'):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'Kalman oracle'
+E         Actual message: 'Reference is nonfinite; comparison harness cannot continue'
+
+tests/highdim/test_sqmc_campaign_repairs.py:275: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_sqmc_campaign_repairs.py::test_nonfinite_oracle_stops_comparison
+1 failed, 54 passed, 2 warnings in 45.37s

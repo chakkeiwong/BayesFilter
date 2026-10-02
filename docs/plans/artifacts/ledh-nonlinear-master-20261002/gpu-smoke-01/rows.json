@@ -1,0 +1,141 @@
+[
+  {
+    "target_id": "canonical_predator_prey_x0_then_transition_observe_v1",
+    "observation_sha256": "33396734aa707dfdd3b38863e9e8c324f24292d88876f8d36f6c1b73e1dcaf8b",
+    "horizon": 1,
+    "theta": [
+      0.6000000238418579,
+      114.0,
+      25.0,
+      0.30000001192092896,
+      0.5,
+      0.5
+    ],
+    "parameter_names": [
+      "r",
+      "carrying_capacity",
+      "half_saturation",
+      "s",
+      "u",
+      "v"
+    ],
+    "model": "predator_prey",
+    "route": "iid_dual_cap",
+    "arm": "guarded_pairwise",
+    "point_index": 0,
+    "particles": 36,
+    "data_seed": 260201,
+    "design_seed": 260301,
+    "log_likelihood": -4.405271530151367,
+    "score": [
+      6.472909927368164,
+      0.04776696488261223,
+      -0.0052019101567566395,
+      -0.8076076507568359,
+      1.4423801898956299,
+      -1.9913585186004639
+    ],
+    "valid": true,
+    "controls": {
+      "flow_substeps": 1,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12,
+      "coordinate_cap_identity_radius": 8.0,
+      "moment_safety": true,
+      "reset_epsilon": 102.4,
+      "reset_sinkhorn_steps": 4,
+      "reset_balance_steps": 2,
+      "correction_steps": 1,
+      "correction_strength": 0.12,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.03
+    },
+    "reset_design": "normal_quantiles",
+    "diagnostics": {
+      "invalid_value_coordinates": [],
+      "invalid_score_coordinates": [],
+      "directional_value_max_abs_deviation": 0.0,
+      "directional_value_tolerance": 5.4052715301513676e-05
+    },
+    "reference": null,
+    "oracle_available": false,
+    "log_likelihood_error": null,
+    "score_error": null,
+    "score_l2_error": null,
+    "wall_seconds": 33.31660576106515
+  },
+  {
+    "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+    "observation_sha256": "05468ff9fe8a9fe03946aea782c15f1ae8251c4d9cf9ab28d6404c5467d7e59f",
+    "horizon": 1,
+    "theta": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "parameter_names": [
+      "log_kappa_scale",
+      "log_nu_scale",
+      "log_observation_noise_scale"
+    ],
+    "model": "sir_d18",
+    "route": "iid_dual_cap",
+    "arm": "guarded_pairwise",
+    "point_index": 0,
+    "particles": 36,
+    "data_seed": 260201,
+    "design_seed": 260301,
+    "log_likelihood": null,
+    "score": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "valid": false,
+    "controls": {
+      "flow_substeps": 1,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12,
+      "coordinate_cap_identity_radius": 8.0,
+      "moment_safety": true,
+      "reset_epsilon": 102.4,
+      "reset_sinkhorn_steps": 4,
+      "reset_balance_steps": 2,
+      "correction_steps": 1,
+      "correction_strength": 0.12,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.03
+    },
+    "reset_design": "normal_quantiles",
+    "diagnostics": {
+      "invalid_value_coordinates": [
+        0,
+        1,
+        2
+      ],
+      "invalid_score_coordinates": [],
+      "directional_value_max_abs_deviation": null,
+      "directional_value_tolerance": null
+    },
+    "reference": null,
+    "oracle_available": false,
+    "log_likelihood_error": null,
+    "score_error": null,
+    "score_l2_error": null,
+    "wall_seconds": 30.76350844197441
+  }
+]

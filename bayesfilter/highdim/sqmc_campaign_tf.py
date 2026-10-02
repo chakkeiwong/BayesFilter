@@ -41,10 +41,26 @@ def route_settings(route):
     return dict(ancestry_policy=ancestry, coordinate_cap=cap)
 
 
-def reset_design(n, d, dtype):
+def reset_design(n, d, dtype, kind="repeated_axes"):
+    """Fixed theta-independent residual coverage; richer designs are opt-in."""
     if n < 2 * d or n % (2 * d):
         raise ValueError('Contract-E residual design requires N divisible by 2D')
-    return tf.tile(tf.concat([tf.eye(d, dtype=dtype), -tf.eye(d, dtype=dtype)], axis=0), [n // (2 * d), 1])
+    if kind == "repeated_axes":
+        return tf.tile(tf.concat([tf.eye(d, dtype=dtype), -tf.eye(d, dtype=dtype)], axis=0), [n // (2 * d), 1])
+    if kind not in ("normal_quantiles", "normal_quantiles_reversed"):
+        raise ValueError("unknown fixed residual design")
+    positive = tf.math.ndtri((tf.cast(tf.range(n // 2), dtype) + tf.cast(n / 2 + .5, dtype)) / tf.cast(n, dtype))
+    first = tf.reshape(tf.stack([-positive, positive], axis=1), [n])
+    columns = [first]
+    for j in range(1, d):
+        columns.append(tf.random.experimental.stateless_shuffle(first, [619, j]))
+    raw = tf.stack(columns, axis=1)
+    centered = raw - tf.reduce_mean(raw, axis=0, keepdims=True)
+    cov = tf.linalg.matmul(centered, centered, transpose_a=True) / tf.cast(n, dtype)
+    chol = tf.linalg.cholesky(cov)
+    design = tf.transpose(tf.linalg.triangular_solve(chol, tf.transpose(centered)))
+    tf.debugging.assert_all_finite(design, "fixed residual design must have full rank")
+    return tf.reverse(design, [0]) if kind.endswith("reversed") else design
 
 
 def random_inputs(route, seed, n, d, horizon, dtype=tf.float64, *, jit_compile=True):
@@ -112,7 +128,8 @@ def numerical_settings(controls):
     result = dict(flow_substeps=8, reset_policy='contract_e', reset_ridge=1e-5,
                   correction_lm_damping=.01, correction_lm_scale_floor=.0001,
                   correction_trust_radius=.5, pairwise_rms_cap=2., coordinate_cap_power=8,
-                  state_map_policy='adaptive_empirical', hilbert_bits=12)
+                  state_map_policy='adaptive_empirical', hilbert_bits=12, coordinate_cap_identity_radius=0.,
+                  moment_safety=False)
     allowed = set(result) | set(required)
     if set(controls) - allowed:
         raise ValueError(f'unknown SQMC controls: {sorted(set(controls) - allowed)}')
@@ -132,19 +149,26 @@ def numerical_settings(controls):
 
 
 @functools.lru_cache(maxsize=32)
-def _kernel(spec, route, n, horizon, dtype_name, settings_tuple, jit_compile):
+def _kernel(spec, route, n, horizon, dtype_name, settings_tuple, jit_compile, reset_design_kind="repeated_axes"):
     dtype = tf.as_dtype(dtype_name)
     settings = dict(settings_tuple)
     settings.update(route_settings(route))
     # Validate repository chunk policy before tracing; core owns its selection.
     select_transport_chunk_size(n)
+    fixed_design = None
+    if reset_design_kind != "repeated_axes":
+        # Fixed, theta-independent configuration: preserve the same shuffled
+        # quantiles for eager diagnostics and the compiled value/score/trace.
+        with tf.init_scope():
+            fixed_design = reset_design(n, spec.dimension, dtype, reset_design_kind)
     signature = [tf.TensorSpec([spec.parameter_count], dtype), tf.TensorSpec([n, spec.dimension], dtype),
                  tf.TensorSpec([horizon, n, spec.dimension], dtype), tf.TensorSpec([horizon, n], dtype),
-                 tf.TensorSpec([horizon, spec.dimension], dtype)]
+                 tf.TensorSpec([horizon, getattr(spec, 'observation_dimension', spec.dimension)], dtype)]
 
     @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
     def compute(theta, initial, noise, uniforms, observations):
-        design = reset_design(n, spec.dimension, dtype)
+        design = (reset_design(n, spec.dimension, dtype)
+                  if fixed_design is None else fixed_design)
         values = tf.TensorArray(dtype, size=spec.parameter_count)
         scores = tf.TensorArray(dtype, size=spec.parameter_count)
         def body(i, values, scores):
@@ -166,12 +190,15 @@ def _kernel(spec, route, n, horizon, dtype_name, settings_tuple, jit_compile):
     return compute
 
 
-def value_and_score(spec, route, controls, theta, observations, seed, particle_count, *, jit_compile=True, inputs=None, diagnostics=None):
+def value_and_score(spec, route, controls, theta, observations, seed, particle_count, *, jit_compile=True, inputs=None, diagnostics=None, reset_design_kind="repeated_axes"):
     theta = tf.convert_to_tensor(theta)
     observations = tf.convert_to_tensor(observations, dtype=theta.dtype)
     horizon = int(observations.shape[0])
     settings = numerical_settings(controls)
-    kernel = _kernel(spec, route, particle_count, horizon, theta.dtype.name, tuple(sorted(settings.items())), bool(jit_compile))
+    kernel_args = (spec, route, particle_count, horizon, theta.dtype.name,
+                   tuple(sorted(settings.items())), bool(jit_compile))
+    kernel = (_kernel(*kernel_args) if reset_design_kind == "repeated_axes"
+              else _kernel(*kernel_args, reset_design_kind))
     if inputs is None:
         inputs = random_inputs(route, seed, particle_count, spec.dimension, horizon, theta.dtype,
                                jit_compile=jit_compile)
