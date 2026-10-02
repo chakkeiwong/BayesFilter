@@ -137,3 +137,9 @@ was adjusted for a wrapped log line without rerunning the successful build.
 The updated table page was visually inspected. Both chapter copies remain
 identical. The final build and hash are in `merged-monograph-build-02/`;
 the failed build and dependency-materialization record are preserved.
+
+The main merge commit `20e70c9e8` passed the repository's three required
+oracle-contract checks (84.14 seconds), was pushed to origin/main, and was
+fast-forwarded into sqmc-development. Both local refs and the remote ref were
+verified identical, with clean worktrees. The final completion note is a
+subsequent documentation-only commit synchronized by the same procedure.
