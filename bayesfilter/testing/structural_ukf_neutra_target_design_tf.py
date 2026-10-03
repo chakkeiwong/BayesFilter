@@ -29,7 +29,6 @@ from bayesfilter.ssm import (
     stable_ssm_target_signature,
 )
 
-
 STRUCTURAL_PARAMETER_NAMES = (
     "rho_source_probit",
     "sigma_source_probit",
@@ -580,6 +579,7 @@ def build_structural_ukf_model_and_derivatives(
     return model, derivatives, initial_value, initial_score
 
 
+@tf.function(jit_compile=True)
 def structural_ukf_likelihood_value_score_status(
     theta: Any,
     *,
@@ -639,6 +639,7 @@ def structural_ukf_likelihood_value_score_status(
     }
 
 
+@tf.function(jit_compile=True)
 def structural_ukf_likelihood_value_only_status(
     theta: Any, *, observations: tf.Tensor
 ) -> tuple[tf.Tensor, Mapping[str, tf.Tensor]]:

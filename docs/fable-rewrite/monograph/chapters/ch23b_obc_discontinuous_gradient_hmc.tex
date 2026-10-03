@@ -1,0 +1,907 @@
+\chapter{HMC for Occasionally-Binding Constraints with Discontinuous Gradients}
+\label{ch:obc-discontinuous-gradient-hmc}
+
+\section{Motivation and Scope}
+
+Occasionally-binding constraint (OBC) models create a fundamental challenge for
+Hamiltonian Monte Carlo when the constraint enforcement mechanism induces
+discontinuities in the marginal likelihood gradient. This chapter addresses the
+specific case where:
+\begin{itemize}
+  \item An OBC solver selects regime paths based on equilibrium consistency
+    conditions;
+  \item The selection can be discrete (integer solver) or smoothed (softplus,
+    logistic);
+  \item A nonlinear filter (UKF, particle filter) computes the marginal
+    likelihood $p(y_{1:T} \mid \theta)$;
+  \item The composed map $\theta \mapsto \log p(y \mid \theta)$ has regions of
+    steep or discontinuous gradient variation;
+  \item Standard leapfrog HMC suffers from poor acceptance or stuck chains.
+\end{itemize}
+
+The zero lower bound (ZLB) on nominal interest rates is the canonical
+application. When the shadow rate falls below zero, the observed rate is
+censored, and different policy regimes (quantitative easing on/off) can create
+discrete switches in the model's equilibrium dynamics. The filtering
+distribution can collapse near the bound, amplifying parameter-space gradient
+discontinuities.
+
+This chapter does not present a complete solution. It maps the problem
+geometry, surveys relevant HMC extensions, and proposes a research program for
+making gradient-based MCMC tractable in this setting. The focus is on
+\emph{practical inference for finite-horizon DSGE models}, not on existence
+theorems or asymptotic optimality.
+
+\section{The Composed Likelihood Map}
+
+\subsection{Three Layers of Computation}
+
+The parameter-to-likelihood map for an OBC state-space model has three
+distinct layers:
+\begin{equation}
+  (\theta, x_{t-1}, \varepsilon_t)
+  \xrightarrow{\mathcal{S}} (r_t, F_{r_t}, Q_{r_t}, H_{r_t})
+  \xrightarrow{\mathcal{F}} \log p(y_{1:T} \mid \theta)
+  \xrightarrow{\mathcal{K}_{\text{HMC}}} \theta'.
+  \label{eq:obc-three-layers}
+\end{equation}
+
+\paragraph{Layer 1: OBC solver $\mathcal{S}$.}
+Maps parameters and a candidate state/shock trajectory to:
+\begin{itemize}
+  \item A regime path $r_1, \ldots, r_T$ over a finite horizon;
+  \item Regime-dependent state-space matrices $(F_{r_t}, Q_{r_t}, H_{r_t})$ at
+    each time $t$.
+\end{itemize}
+The solver can be:
+\begin{description}
+  \item[Integer/hard] Selects the first regime path satisfying all equilibrium
+    consistency inequalities (OccBin, Boehl spell-duration, PyDSGE affine
+    step). Creates discrete regime switches.
+  \item[Smoothed] Uses softplus, logistic, or weighted averaging to
+    interpolate between regimes. Creates continuous but steep gradients.
+\end{description}
+
+\paragraph{Layer 2: Filter $\mathcal{F}$.}
+Computes the marginal log-likelihood:
+\begin{equation}
+  \log p(y_{1:T} \mid \theta)
+  = \sum_{t=1}^T \log p(y_t \mid y_{1:t-1}, \theta),
+\end{equation}
+using the regime-dependent matrices from the solver. Common choices:
+\begin{itemize}
+  \item Kalman filter (piecewise linear model);
+  \item Extended Kalman filter (first-order Taylor);
+  \item Unscented/sigma-point filter (deterministic sampling);
+  \item Particle filter (stochastic Monte Carlo).
+\end{itemize}
+
+\paragraph{Layer 3: HMC kernel $\mathcal{K}_{\text{HMC}}$.}
+Proposes $\theta' \sim \mathcal{K}(\theta' \mid \theta)$ using Hamiltonian
+dynamics driven by $\nabla_\theta \log p(y \mid \theta)$ and accepts via
+Metropolis correction. Requires:
+\begin{itemize}
+  \item Evaluable gradient almost everywhere;
+  \item Reversible, volume-preserving proposal map;
+  \item Bounded integration error or exact event handling.
+\end{itemize}
+
+\subsection{Where Nonsmoothness Enters}
+
+The gradient $\nabla_\theta \log p(y \mid \theta)$ is a composition:
+\begin{equation}
+  \nabla_\theta \log p(y \mid \theta)
+  = \nabla_\theta \left[ \mathcal{F} \circ \mathcal{S}(\theta) \right].
+  \label{eq:gradient-composition}
+\end{equation}
+
+Discontinuities can arise from:
+\begin{enumerate}
+  \item \textbf{Solver branch switches.} An integer solver changes the regime
+    path when a margin inequality flips. The state-space matrices jump
+    discretely, even if $\theta$ changes smoothly.
+  \item \textbf{Filter collapse.} When observations pin a state variable to a
+    constraint boundary (e.g., observed rate at ZLB for many periods), the
+    filtering variance collapses. Small $\theta$ perturbations can shift the
+    entire sigma-point cloud across the boundary, causing sharp likelihood
+    changes.
+  \item \textbf{Implicit boundaries.} The switching surface
+    $\{\theta : g(\theta) = 0\}$ is not given analytically. It is defined
+    implicitly by the solver's equilibrium conditions, which depend on future
+    state paths that themselves depend on earlier regime choices.
+\end{enumerate}
+
+The result is a likelihood surface with:
+\begin{itemize}
+  \item Piecewise-smooth regions (branch interiors);
+  \item Boundaries where the gradient is undefined or jumps;
+  \item Possible value discontinuities if branch likelihoods do not match.
+\end{itemize}
+
+\section{Geometry Classification}
+
+\subsection{Kink versus Value Jump}
+
+Let $\mathcal{R}_j$ denote a parameter region with a fixed regime path, and
+let $\ell_j(\theta) = \log p(y \mid \theta, \text{regime } j)$ be the
+branch-interior log-likelihood. At a switching boundary $\theta_b$, there are
+three cases:
+
+\paragraph{Case 1: Smooth boundary (no issue).}
+Values and gradients match:
+\begin{equation}
+  \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_j} \ell_j(\theta)
+  = \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_k} \ell_k(\theta),
+  \quad
+  \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_j} \nabla \ell_j(\theta)
+  = \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_k} \nabla \ell_k(\theta).
+\end{equation}
+Standard HMC applies without modification.
+
+\paragraph{Case 2: Continuous kink.}
+Values match but gradients do not:
+\begin{equation}
+  \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_j} \ell_j(\theta)
+  = \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_k} \ell_k(\theta),
+  \quad
+  \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_j} \nabla \ell_j(\theta)
+  \ne \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_k} \nabla \ell_k(\theta).
+\end{equation}
+The target density is continuous, but the gradient has a jump discontinuity.
+Standard leapfrog remains \emph{valid} (no reflection needed), but
+\emph{performs poorly} due to integration error at crossings.
+
+\paragraph{Case 3: Value jump.}
+Values do not match:
+\begin{equation}
+  \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_j} \ell_j(\theta)
+  \ne \lim_{\theta \to \theta_b, \theta \in \mathcal{R}_k} \ell_k(\theta).
+\end{equation}
+The potential $U(\theta) = -\log p(\theta \mid y)$ has a finite jump
+$\Delta U$. Standard leapfrog is \emph{invalid}: the trajectory cannot
+conserve energy across the jump without an explicit event map (reflection or
+refraction).
+
+\subsection{Why Standard Leapfrog Fails}
+
+For a smooth target with potential $U(\theta)$ and quadratic kinetic energy
+$K(p) = \frac{1}{2} p^\top M^{-1} p$, the leapfrog integrator is:
+\begin{equation}
+  p_{1/2} = p_0 - \frac{\epsilon}{2} \nabla U(\theta_0),
+  \quad
+  \theta_1 = \theta_0 + \epsilon M^{-1} p_{1/2},
+  \quad
+  p_1 = p_{1/2} - \frac{\epsilon}{2} \nabla U(\theta_1).
+  \label{eq:standard-leapfrog}
+\end{equation}
+The Hamiltonian error is $O(\epsilon^2)$ under smoothness. Energy conservation
+and volume preservation ensure the Metropolis correction targets the correct
+posterior.
+
+\paragraph{Failure at a continuous kink.}
+When $\nabla U$ has a jump, a trajectory that crosses the boundary evaluates
+the gradient on one side at $\theta_0$ and on the other side at $\theta_1$.
+The integrator does not ``see'' the jump itself—it only samples the gradient
+at discrete points. The energy error is $O(1)$ in the jump size, not $O(\epsilon^2)$.
+As $\epsilon \to 0$, the crossing is localized more accurately, but the
+missing gradient contribution remains finite.
+
+Result: large Hamiltonian error $\to$ low acceptance $\to$ chain stuck near
+boundaries or in one regime.
+
+\paragraph{Failure at a value jump.}
+A leapfrog step that crosses a potential discontinuity pays no energy cost for
+the jump. If $\Delta U > 0$ and the trajectory moves from the low-potential to
+high-potential region, the proposal systematically underestimates the true
+Hamiltonian. Acceptance rates collapse, and the chain cannot cross the
+boundary reversibly.
+
+\subsection{OBC-Specific Complications}
+
+\paragraph{Implicit boundaries.}
+In a finite-horizon DSGE model, the regime at time $t$ depends on:
+\begin{itemize}
+  \item Parameters $\theta$;
+  \item Lagged states (which depend on regimes $r_{1:t-1}$);
+  \item Future equilibrium conditions (which depend on regimes $r_{t+1:T}$).
+\end{itemize}
+The switching surface $g(\theta) = 0$ is not a simple hyperplane. It is an
+implicit, high-dimensional manifold defined by the solver's consistency check.
+
+\paragraph{Filter amplification.}
+A solver coefficient jump can be small, but the filtered likelihood change can
+be large. The innovation covariance $S_t$, Kalman gain $K_t$, and log
+determinant $\log |S_t|$ all depend on the regime-dependent matrices. A
+boundary crossing that changes $F_t$ or $H_t$ can produce a large
+$\Delta \ell$ even when the raw margin change is small.
+
+\paragraph{Shadow-rate identification collapse.}
+When the observed rate is at the ZLB for multiple periods, the filtering
+distribution over the shadow rate collapses. All deeply-negative shadow values
+produce the same bounded observed rate (up to small observation noise). The
+likelihood provides no information about how far below zero the shadow rate is.
+
+This creates a \emph{plateau} in parameter space: $\theta$ values that differ
+only in their implied shadow-rate depth have nearly identical likelihoods. HMC
+trajectories can wander on this plateau with little force directing them, even
+though the gradient is well-defined (zero) almost everywhere.
+
+\section{Existing HMC Methods for Discontinuous Targets}
+
+\subsection{Reflection and Refraction HMC}
+
+\subsubsection{Continuous Hamiltonian flow with event detection}
+
+For a potential with a jump $\Delta U$ across a codimension-one surface
+$g(\theta) = 0$, Afshar \& Domke (2015) and Nishimura, Dunson, \& Lu (2020)
+derive an event map that preserves the Hamiltonian exactly. Let $\nu = \nabla
+g / \|\nabla g\|$ be the outward normal. At the event time $t_e$:
+\begin{enumerate}
+  \item Decompose momentum: $p = p_n \nu + p_{\text{tan}}$, where
+    $p_n = \nu^\top p$.
+  \item Compute normal kinetic energy:
+    $K_n = p_n^2 / (2 m_n)$, where $m_n^{-1} = \nu^\top M^{-1} \nu$.
+  \item If $K_n < \Delta U$: reflect, $p^+ = p - 2 p_n \nu$.
+  \item If $K_n \geq \Delta U$: refract,
+    \begin{equation}
+      p_n^+ = \operatorname{sign}(p_n^-) \sqrt{(p_n^-)^2 - 2 m_n \Delta U},
+      \quad
+      p^+ = p^- + (p_n^+ - p_n^-) \nu.
+      \label{eq:refraction-rule}
+    \end{equation}
+\end{enumerate}
+
+\paragraph{Why this preserves the target.}
+The event map is a deterministic limit of smooth mollified flows. It conserves
+energy: $U(\theta^+) + K(p^+) = U(\theta^-) + K(p^-)$. It preserves
+phase-space volume. The reverse map (flip momentum, apply reverse potential
+jump) recovers the incoming state. Under stated regularity conditions, the
+composed flow (smooth segments + event maps) is a valid HMC proposal.
+
+\paragraph{Required information.}
+\begin{enumerate}
+  \item Boundary function $g(\theta)$ and its gradient $\nabla g(\theta)$.
+  \item Event detection: locate the first crossing time along the trajectory.
+  \item One-sided potential values: $U_j(\theta_e)$ and $U_k(\theta_e)$ to
+    compute $\Delta U$.
+  \item Momentum metric: mass matrix $M$ to compute $m_n$.
+\end{enumerate}
+
+\paragraph{OBC implementation burden.}
+For an implicit OBC boundary:
+\begin{itemize}
+  \item $g(\theta)$ is not given analytically. It is defined by the solver's
+    equilibrium check, which requires full solution and filtering.
+  \item Detecting a crossing requires bisection or root-finding, re-solving
+    the model at intermediate $\theta$ values.
+  \item The event normal $\nu$ is a total derivative through the solver $\to$
+    filter composition, not a simple hyperplane normal.
+  \item Multiple margins may be active simultaneously; a robust tie rule is
+    needed.
+\end{itemize}
+
+This is computationally expensive but mathematically correct for discrete
+regime switches with value jumps.
+
+\subsubsection{Discontinuous HMC with Laplace momentum}
+
+Nishimura et al. (2020) introduce a coordinate-wise integrator for targets
+with discontinuous coordinates. For a coordinate $\theta_i$ whose potential
+has jumps:
+\begin{enumerate}
+  \item Use Laplace momentum: $K(p_i) = |p_i| / m_i$ (constant-speed motion).
+  \item Move the coordinate at constant velocity until hitting a boundary or
+    exhausting the time budget.
+  \item At each boundary, check if available kinetic energy can pay the
+    potential change. If yes, cross; if no, reflect.
+  \item Use a random coordinate order (symmetric under reversal) to ensure
+    reversibility in distribution.
+  \item Use a randomized step size to avoid lattice artifacts.
+\end{enumerate}
+
+\paragraph{Advantages.}
+\begin{itemize}
+  \item No need to locate exact event times in continuous trajectories.
+  \item Can handle multiple discontinuities in one coordinate move.
+  \item Computationally simpler than continuous-trajectory event detection.
+\end{itemize}
+
+\paragraph{Disadvantages.}
+\begin{itemize}
+  \item Random coordinate order and step size are \emph{required}, not
+    optional. A fixed step can produce a chain that moves on a grid, failing
+    irreducibility even when visually active.
+  \item Less efficient for strongly correlated posteriors (coordinate-wise
+    moves vs coherent trajectories).
+  \item Still requires evaluating the potential on both sides of each
+    discontinuity.
+\end{itemize}
+
+\paragraph{Mixed construction for OBC.}
+Use DHMC-style Laplace coordinates for parameters identified as
+regime-sensitive (those that move margins), and ordinary Gaussian HMC for
+smooth coordinates. This requires:
+\begin{itemize}
+  \item A parameter-sensitivity analysis to identify which $\theta_i$ affect
+    regime switches;
+  \item Stable hard-potential evaluation after each coordinate move;
+  \item Adaptation rules compatible with the mixed kernel.
+\end{itemize}
+
+\subsection{Generalized Randomized HMC for Piecewise-Smooth Targets}
+
+Tran \& Kleppe (2025) address the \emph{continuous kink} case most directly.
+Their Generalized Randomized HMC (GRHMC):
+\begin{enumerate}
+  \item Integrates the Hamiltonian flow inside each smooth region using
+    Runge--Kutta or leapfrog.
+  \item When a numerical step would cross a boundary, truncate at the first
+    event.
+  \item Update the gradient to the new region's value.
+  \item Continue the remaining part of the step under the new gradient.
+  \item The position is \emph{not} jumped—only the force changes.
+\end{enumerate}
+
+For a genuinely piecewise-density target (value jump), they combine this with
+boundary reflection/refraction.
+
+\paragraph{Applicability to OBC.}
+If the OBC filtered likelihood is continuous with discontinuous gradient (Case
+2), GRHMC is a direct candidate. The implementation must:
+\begin{itemize}
+  \item Detect when a leapfrog step crosses an implicit solver margin
+    (bisection + re-solve);
+  \item Recompute the filtered likelihood and gradient at the event;
+  \item Handle multiple or grazing events.
+\end{itemize}
+
+If the likelihood has value jumps (Case 3), the piecewise-density
+reflection/refraction extension is needed.
+
+\paragraph{What this does not solve.}
+GRHMC assumes the boundary geometry can be queried. For an implicit
+finite-horizon OBC solver, locating $g(\theta) = 0$ and computing $\nabla
+g(\theta)$ requires full model solution at intermediate points. The method is
+mathematically valid but computationally intensive.
+
+\subsection{Kernel and Neural-Proposal HMC}
+
+Strathmann et al. (2015) propose Kernel Hamiltonian Monte Carlo (KMC): fit a
+surrogate potential $\widetilde{U}(\theta)$ using score matching, use its
+gradient to drive proposals, but evaluate the \emph{true} target $U(\theta)$
+in the Metropolis correction:
+\begin{equation}
+  \alpha = \min\left\{1, \exp\left[ -U(\theta^*) - K(p^*) + U(\theta) + K(p) \right] \right\}.
+  \label{eq:kmc-correction}
+\end{equation}
+
+The surrogate changes proposal geometry but not the stationary target.
+
+\paragraph{Neural proposal for OBC.}
+Train a neural network $s_\phi(\theta)$ to approximate $\nabla_\theta \log
+p(y \mid \theta)$ using:
+\begin{itemize}
+  \item Branch-interior gradients (automatic differentiation through the hard
+    solver + filter);
+  \item Points near each active margin;
+  \item Explicit cross-boundary pairs to capture the gradient jump;
+  \item Lipschitz or Sobolev regularization for smooth interpolation.
+\end{itemize}
+
+Use $s_\phi$ to drive the leapfrog proposal, but evaluate the hard likelihood
+for acceptance. A poor surrogate leads to low acceptance, not wrong posterior.
+
+\paragraph{Adaptation and exactness.}
+If the surrogate is refit from chain history, the kernel is adaptive.
+Adaptation must either:
+\begin{itemize}
+  \item Diminish over time (Roberts \& Rosenthal conditions);
+  \item Freeze after a finite warm-up phase before collecting posterior
+    samples.
+\end{itemize}
+
+A held-out gradient loss is a training diagnostic. It does not prove posterior
+correctness—only the hard-target acceptance ratio does that.
+
+\section{Smoothing Strategies and Their Targets}
+
+\subsection{Four Distinct Smoothing Operations}
+
+``Smoothing'' can refer to four mathematically different operations:
+
+\paragraph{1. Economic policy rule.}
+Replace a hard constraint $r = \max\{r^{\text{shadow}}, \bar{r}\}$ with a
+smooth approximation:
+\begin{equation}
+  r = \bar{r} + \operatorname{softplus}(r^{\text{shadow}} - \bar{r}, \alpha)
+  = \bar{r} + \frac{1}{\alpha} \log(1 + \exp(\alpha (r^{\text{shadow}} - \bar{r}))).
+  \label{eq:softplus-rule}
+\end{equation}
+
+This changes the equilibrium model itself. As $\alpha \to \infty$, the
+softplus approaches the hard max, but at finite $\alpha$ it defines a
+different economic model. This is a legitimate modeling choice if the
+smooth constraint better represents actual policy, but it is not a
+computational trick to preserve the hard-max posterior.
+
+\paragraph{2. Regime selector smoothing.}
+Keep the economic model but replace a discrete regime choice with a weighted
+average:
+\begin{equation}
+  F_{\text{smooth}} = (1 - w) F_{\text{regime 0}} + w F_{\text{regime 1}},
+  \quad w = \operatorname{logistic}(g(\theta) / \tau).
+  \label{eq:soft-selector}
+\end{equation}
+
+This creates a smooth map $\theta \mapsto F_{\text{smooth}}(\theta)$, but it
+does not correspond to any single equilibrium. It mixes transition matrices
+from two different models. Unless this mixture has a probabilistic
+interpretation (latent regime model), it is neither the hard-selector
+posterior nor a valid alternative model.
+
+\paragraph{3. Filter smoothing.}
+Smooth the filtering recursion or the final likelihood. For example, average
+likelihoods from different sigma points that select different regimes, or
+mollify the likelihood surface in parameter space:
+\begin{equation}
+  \ell_\delta(\theta) = \int \ell_{\text{hard}}(\eta) \, \varphi_\delta(\theta - \eta) \, \mathrm{d}\eta.
+  \label{eq:mollified-likelihood}
+\end{equation}
+
+This targets a different posterior:
+$\pi_\delta(\theta \mid y) \propto \exp\{\ell_\delta(\theta)\} \pi_0(\theta)$.
+It can be studied as $\delta \to 0$, but at finite $\delta$ it is not the
+hard posterior.
+
+\paragraph{4. HMC proposal smoothing (preserves target).}
+Keep the hard likelihood for acceptance but use a smooth surrogate for the
+proposal gradient:
+\begin{equation}
+  \text{Proposal: } \theta^* = \Phi_{\widetilde{\nabla}}(\theta, p),
+  \quad
+  \text{Accept: } \alpha = \min\left\{1, \frac{p(\theta^* \mid y)}{p(\theta \mid y)} \frac{\varphi(p^*)}{(\varphi(p))} \right\},
+  \label{eq:surrogate-proposal}
+\end{equation}
+where the acceptance uses the hard $p(\theta \mid y)$.
+
+Only this fourth operation automatically preserves the hard posterior. The
+first three define modified models or posteriors and must be labeled as such.
+
+\subsection{Softplus as a Continuous-Kink Model}
+
+Using softplus for the economic constraint (operation 1) creates:
+\begin{itemize}
+  \item A continuous observation function $h(\theta)$ with no value jumps;
+  \item Steep but continuous gradients near the effective bound;
+  \item No discrete regime switches (assuming no separate integer QE selector).
+\end{itemize}
+
+This is a \emph{continuous-kink geometry} (Case 2), not a value-jump geometry
+(Case 3). Standard leapfrog remains valid but performs poorly when:
+\begin{enumerate}
+  \item The softplus temperature $\alpha$ is large (approaching hard max);
+  \item The UKF filtering variance collapses near the bound;
+  \item Small $\theta$ perturbations create large gradient changes.
+\end{enumerate}
+
+The gradient Lipschitz constant grows with $\alpha$ and with the degree of
+filter collapse. As $\alpha \to \infty$, the softplus converges to the hard
+max, and the gradient approaches a true discontinuity.
+
+\subsection{Measurement Protocol for OBC Geometry}
+
+Before choosing an HMC method, measure the actual boundary geometry:
+
+\paragraph{Step 1: Value continuity check.}
+For $\theta$ pairs straddling a detected regime switch:
+\begin{equation}
+  \Delta \ell = |\ell_j(\theta^-) - \ell_k(\theta^+)|, \quad \theta^+ - \theta^- = \epsilon \nu,
+  \label{eq:value-jump-check}
+\end{equation}
+where $\nu$ is the boundary normal direction and $\epsilon \to 0$.
+
+If $\Delta \ell / |\ell_j| < \text{tol}$: continuous kink (Case 2).
+
+If $\Delta \ell / |\ell_j| = O(1)$: value jump (Case 3).
+
+\paragraph{Step 2: Gradient jump magnitude.}
+For continuous-kink boundaries:
+\begin{equation}
+  \Delta g = \|\nabla \ell_j(\theta^-) - \nabla \ell_k(\theta^+)\|_2.
+  \label{eq:gradient-jump-check}
+\end{equation}
+
+Large $\Delta g$ relative to typical $\|\nabla \ell\|$ indicates poor
+leapfrog geometry.
+
+\paragraph{Step 3: Boundary crossing rate.}
+Run short HMC trajectories and record:
+\begin{itemize}
+  \item Fraction of trajectories that cross a boundary;
+  \item Number of crossings per trajectory;
+  \item Acceptance rate conditional on crossing vs not crossing.
+\end{itemize}
+
+High crossing rate + low crossing acceptance $\to$ boundary is a bottleneck.
+
+\paragraph{Step 4: Gradient Lipschitz estimation.}
+Sample $\theta$ pairs with $\|\theta_1 - \theta_2\| = \delta$:
+\begin{equation}
+  L_{\text{est}} = \max_{\text{pairs}} \frac{\|\nabla \ell(\theta_1) - \nabla \ell(\theta_2)\|}{\|\theta_1 - \theta_2\|}.
+  \label{eq:lipschitz-estimate}
+\end{equation}
+
+For softplus with temperature $\alpha$, $L$ grows with $\alpha$.
+
+\paragraph{Step 5: Filter variance at bound.}
+For periods where observed rate is at or near the ZLB, record the UKF
+filtering variance of the shadow-rate state. Variance collapse (orders of
+magnitude smaller than prior) indicates identification failure and gradient
+plateau.
+
+\section{Proposed Research Program}
+
+\subsection{Phase 0: Documentation and Literature Review}
+
+\begin{itemize}
+  \item \textbf{Write this chapter} documenting the problem, geometry
+    classification, and existing methods.
+  \item Survey HMC extensions: reflection/refraction (Afshar \& Domke,
+    Nishimura et al.), GRHMC (Tran \& Kleppe), KMC (Strathmann et al.).
+  \item Document the BGS/ZLB-specific complications: implicit boundaries,
+    finite-horizon solver, filter collapse, shadow-rate plateaus.
+  \item Establish the decision tree: value jump $\to$ event-aware HMC or
+    DHMC; continuous kink $\to$ GRHMC or surrogate proposal.
+\end{itemize}
+
+\subsection{Phase 1: Geometry Characterization}
+
+\textbf{Target:} Two-country ZLB DNS model, softplus-smoothed bound, UKF
+filtering.
+
+\textbf{Experiments:}
+\begin{enumerate}
+  \item Vary softplus temperature $\alpha \in \{5, 10, 20, 50, 100\}$ and
+    measure gradient Lipschitz constant.
+  \item Run standard HMC at each $\alpha$ with fixed step size and record
+    acceptance rate, ESS, boundary-crossing rate.
+  \item Document filter variance collapse: plot UKF variance of shadow level
+    vs time for periods at ZLB.
+  \item Measure gradient jump magnitude $\Delta g$ near effective boundaries
+    (where softplus is steep).
+  \item Check value continuity: is $\ell(\theta)$ continuous or does softplus
+    still produce small jumps through filter composition?
+\end{enumerate}
+
+\textbf{Deliverable:} A geometry report classifying the softplus-UKF target as
+continuous-kink with quantified gradient variation and crossing-rate
+diagnostics.
+
+\subsection{Phase 2: Event-Aware Integration}
+
+\textbf{Method:} Implement Tran--Kleppe-style truncated leapfrog.
+
+\textbf{Algorithm:}
+\begin{enumerate}
+  \item Define a steep-gradient detector: flag when $\|\nabla \ell(\theta)\|$
+    exceeds a threshold or when a monitored margin is near zero.
+  \item Within a leapfrog step, if the detector flags a boundary:
+    \begin{itemize}
+      \item Bisect to locate the boundary crossing;
+      \item Re-solve the OBC model and re-filter at the boundary $\theta_b$;
+      \item Recompute $\nabla \ell(\theta_b)$ on the new side;
+      \item Continue the step with the updated gradient.
+    \end{itemize}
+  \item If no boundary is flagged, use standard leapfrog.
+\end{enumerate}
+
+\textbf{Experiments:}
+\begin{enumerate}
+  \item Compare standard leapfrog vs event-aware leapfrog at $\alpha = 20$
+    (moderate smoothing).
+  \item Measure: acceptance rate, ESS per gradient evaluation, cost per step
+    (including bisection overhead).
+  \item Validate reversibility: record a trajectory, reverse momentum, replay,
+    check $\|\theta_{\text{final}} - \theta_{\text{initial}}\| < \epsilon$.
+\end{enumerate}
+
+\textbf{Deliverable:} Cost-benefit analysis: does event detection improve
+mixing enough to justify the re-solve overhead?
+
+\subsection{Phase 3: Surrogate Gradient Proposal}
+
+\textbf{Method:} Train a neural network $s_\phi(\theta)$ to approximate
+$\nabla_\theta \log p(y \mid \theta)$.
+
+\textbf{Training data:}
+\begin{enumerate}
+  \item Sample $\theta$ from the prior and from a short HMC warm-up.
+  \item Compute hard $\nabla \ell(\theta)$ via automatic differentiation
+    through the softplus solver + UKF.
+  \item For points near boundaries (detected by margin proximity), oversample
+    to ensure the network learns the steep region.
+  \item Include explicit cross-boundary pairs $(\theta^-, \theta^+)$ to
+    capture gradient variation.
+\end{enumerate}
+
+\textbf{Network architecture:}
+\begin{itemize}
+  \item Input: $\theta \in \mathbb{R}^d$ (optionally augment with margin
+    telemetry).
+  \item Output: $s_\phi(\theta) \in \mathbb{R}^d$ (approximate score).
+  \item Loss: $\mathcal{L} = \mathbb{E}\left[ \|s_\phi(\theta) - \nabla \ell(\theta)\|^2 \right]$
+    plus Lipschitz or Sobolev regularization.
+\end{itemize}
+
+\textbf{HMC with surrogate:}
+\begin{enumerate}
+  \item Use $s_\phi(\theta)$ to drive leapfrog proposals.
+  \item Evaluate the \emph{hard} $\ell(\theta)$ and $\ell(\theta^*)$ for
+    Metropolis acceptance.
+  \item Freeze the network after warm-up before collecting posterior samples.
+\end{enumerate}
+
+\textbf{Experiments:}
+\begin{enumerate}
+  \item Compare: standard HMC (hard gradient), surrogate HMC (neural gradient
+    + hard acceptance), fully-smoothed HMC (neural gradient + neural
+    acceptance).
+  \item Measure: acceptance rate, ESS per hard likelihood evaluation,
+    posterior agreement (KL divergence, marginal CI coverage).
+  \item Validate: a poor surrogate should produce low acceptance but correct
+    posterior; a good surrogate should produce high acceptance and correct
+    posterior.
+\end{enumerate}
+
+\textbf{Deliverable:} Evidence that neural-proposal HMC can preserve the hard
+posterior while improving acceptance, or identification of failure modes
+(boundary overfitting, tail errors).
+
+\subsection{Phase 4: UKF Variance Inflation}
+
+\textbf{Hypothesis:} Filter variance collapse amplifies gradient
+discontinuities. Artificially inflating UKF variance near bounds may smooth
+the marginal likelihood gradient.
+
+\textbf{Method:}
+\begin{enumerate}
+  \item Detect when a state (e.g., shadow level) is near a bound and the
+    filtering variance is below a threshold.
+  \item Inflate the predicted covariance: $P_{t|t-1}^+ = P_{t|t-1} + \delta I$,
+    where $\delta$ is calibrated to prevent collapse.
+  \item Continue UKF update with the inflated covariance.
+  \item The modified filter changes the likelihood, so this is \emph{not} a
+    proposal-only trick—it defines a modified posterior.
+\end{enumerate}
+
+\textbf{Experiments:}
+\begin{enumerate}
+  \item Measure gradient Lipschitz with and without variance inflation.
+  \item Run HMC on the inflated-filter likelihood and check: does it mix
+    better? Does the posterior remain scientifically meaningful?
+  \item Compare to: particle filter with maintained diversity (if/when
+    gradients are available).
+\end{enumerate}
+
+\textbf{Deliverable:} Assessment of whether variance inflation is a practical
+compromise (easier than particle filter, better than collapsed UKF) or
+scientifically invalid (distorts posterior too much).
+
+\subsection{Phase 5: Hard OBC with Integer Regime Selector}
+
+\textbf{Target:} Full ZLB model with QE on/off regimes, integer solver.
+
+\textbf{Geometry:} Likely value jumps (Case 3), not just continuous kinks.
+
+\textbf{Method:} Reflection/refraction HMC (Nishimura et al. or Tran--Kleppe
+piecewise-density extension).
+
+\textbf{Required infrastructure:}
+\begin{enumerate}
+  \item Boundary detection: which margin inequality is active, when does it
+    flip?
+  \item One-sided likelihood evaluation: $\ell_j(\theta_b)$ and
+    $\ell_k(\theta_b)$ to compute $\Delta U$.
+  \item Event normal: total derivative $\nabla_\theta g(\theta)$ through the
+    solver + filter.
+  \item Reflection/refraction kernel with energy test.
+\end{enumerate}
+
+\textbf{Experiments:}
+\begin{enumerate}
+  \item Implement event-aware HMC with explicit reflection at value jumps.
+  \item Validate: record Hamiltonian before/after crossing, check conservation
+    $H^+ = H^-$ for successful refraction.
+  \item Measure: crossing rate, reflection rate, acceptance rate, ESS.
+  \item Compare: frozen-regime HMC (sample $\theta$ conditional on one regime
+    path, then resample regime path) vs event-aware joint HMC.
+\end{enumerate}
+
+\textbf{Deliverable:} Feasibility assessment for event-aware HMC on implicit
+finite-horizon OBC models. If bisection + re-solve overhead is prohibitive,
+document why and pivot to alternatives (DHMC coordinate-wise, surrogate
+proposal, or regime-conditional sampling).
+
+\section{Open Questions and Future Directions}
+
+\subsection{Is the OBC Likelihood Lipschitz Continuous?}
+
+Even with softplus smoothing, the composed map $\theta \mapsto \log p(y \mid
+\theta)$ may fail global Lipschitz continuity. The filter can amplify small
+solver changes through covariance updates and log determinants. Without a
+Lipschitz bound, standard HMC theory does not guarantee finite integration
+error.
+
+\textbf{Research question:} Can we derive a local Lipschitz constant as a
+function of $\alpha$ (softplus temperature), filter type, and horizon? Or must
+we accept that OBC models are inherently non-Lipschitz and design
+integrators accordingly?
+
+\subsection{Particle Filter Gradients Revisited}
+
+Differentiable particle filters (LEDH-PFPF-OT) maintain diversity and should
+smooth the marginal likelihood gradient. But:
+\begin{itemize}
+  \item Current implementation has biased score estimates;
+  \item Computational cost is high (requires proposal UKF + transport);
+  \item Gradient variance can still be large.
+\end{itemize}
+
+\textbf{Research question:} Is unbiased particle-filter score estimation
+tractable for finite-horizon DSGE models? Can we prove that particle diversity
+bounds the gradient Lipschitz constant?
+
+\subsection{Alternative Parameterizations}
+
+Instead of sampling $\theta$ directly, consider:
+\begin{enumerate}
+  \item \textbf{Regime-path augmentation.} Introduce $r_{1:T}$ as explicit
+    discrete variables and sample $(\theta, r)$ jointly using mixed HMC (Zhou
+    2020). The regime indicators remove the implicit boundary, but discrete
+    updates and consistency checks remain.
+  \item \textbf{Transformed parameters.} Reparameterize $\theta$ to align with
+    the boundary geometry (e.g., polar coordinates around a regime-switching
+    surface). This requires knowing the boundary shape, which is implicit.
+  \item \textbf{Auxiliary-variable HMC.} Introduce latent variables that
+    smooth the posterior (e.g., shadow observations, regime probabilities) and
+    integrate them out after sampling.
+\end{enumerate}
+
+\textbf{Research question:} Which reparameterization, if any, makes the OBC
+posterior more HMC-friendly without changing the target?
+
+\subsection{Sequential Monte Carlo as a Likelihood Engine}
+
+Particle MCMC (PMCMC) uses a particle filter to estimate $p(y \mid \theta)$
+and treats it as a noisy but unbiased likelihood for Metropolis-within-Gibbs.
+This avoids parameter-space gradients entirely.
+
+\textbf{Tradeoffs:}
+\begin{itemize}
+  \item \textbf{Pro:} No gradient discontinuities, naturally handles discrete
+    regime switches, can use bootstrap particle filter (simple, no transport).
+  \item \textbf{Con:} Random-walk Metropolis is slow in high dimensions; no
+    gradient information; particle filter must be run at every proposal.
+\end{itemize}
+
+\textbf{Research question:} For high-dimensional DSGE models, is PMCMC
+competitive with event-aware HMC, or does the lack of gradient information
+dominate the computational cost?
+
+\subsection{Hybrid: Regime-Conditional HMC}
+
+\begin{enumerate}
+  \item Given a regime path $r_{1:T}$, the model is piecewise linear and the
+    Kalman filter is exact.
+  \item Run HMC on $p(\theta \mid y, r)$—smooth, fast, standard leapfrog.
+  \item Resample $r \sim p(r \mid \theta, y)$ using a discrete sampler
+    (Gibbs, Metropolis, or a regime-path proposal from the OBC solver).
+  \item Alternate: HMC on $\theta$ (fixed $r$) $\to$ update $r$ (fixed
+    $\theta$) $\to$ repeat.
+\end{enumerate}
+
+\textbf{Tradeoffs:}
+\begin{itemize}
+  \item \textbf{Pro:} Each HMC step is smooth; no event detection needed.
+  \item \textbf{Con:} Regime resampling can have low acceptance if $p(r \mid
+    \theta, y)$ is peaked; convergence depends on regime-parameter coupling.
+\end{itemize}
+
+\textbf{Research question:} Does regime-conditional HMC mix efficiently for
+long-horizon OBC models, or does the regime sampler become a bottleneck?
+
+\section{Interim Recommendations}
+
+Until the research program produces validated methods, the following
+recommendations apply for production DSGE inference with OBC:
+
+\subsection{For Continuous-Kink Models (Softplus ZLB, No Integer Regimes)}
+
+\begin{enumerate}
+  \item \textbf{Characterize the geometry first.} Run Phase 1 diagnostics:
+    gradient Lipschitz, crossing rate, filter variance collapse, acceptance
+    degradation.
+  \item \textbf{Tune aggressively.} Use small step sizes, adaptive step-size
+    selection, and dense mass-matrix adaptation. Accept that mixing will be
+    slower than for smooth targets.
+  \item \textbf{Consider surrogate proposal.} If gradient evaluation is
+    expensive, a neural surrogate (Phase 3) with hard-target correction may
+    improve cost-effectiveness.
+  \item \textbf{Monitor crossing diagnostics.} Report: fraction of trajectories
+    crossing steep regions, acceptance conditional on crossing, ESS per
+    boundary type.
+\end{enumerate}
+
+\subsection{For Value-Jump Models (Integer Regime Selector)}
+
+\begin{enumerate}
+  \item \textbf{Measure the jumps.} Phase 1 value-continuity check: are
+    $\Delta \ell$ values $O(1)$ or $O(\epsilon)$?
+  \item \textbf{If jumps are small:} Treat as continuous-kink and proceed as
+    above.
+  \item \textbf{If jumps are large:} Standard leapfrog is invalid. Options:
+    \begin{itemize}
+      \item Event-aware HMC with reflection/refraction (Phase 5)—expensive but
+        exact.
+      \item DHMC with Laplace momentum (Nishimura et al.)—simpler event
+        handling, requires random order and step size.
+      \item Regime-conditional HMC (hybrid sampler)—avoid joint regime-parameter
+        integration.
+      \item PMCMC with particle filter likelihood—no gradients, robust to
+        jumps.
+    \end{itemize}
+  \item \textbf{Validate reversibility.} For any event-aware method, record
+    reverse-replay error: trajectory $\to$ flip momentum $\to$ replay $\to$
+    check distance from start.
+\end{enumerate}
+
+\subsection{For All OBC Models}
+
+\begin{enumerate}
+  \item \textbf{Separate proposal from target.} Neural approximations,
+    smoothed selectors, and mollified likelihoods are allowed for proposals if
+    the hard target appears in acceptance. Using them for acceptance without
+    correction changes the posterior.
+  \item \textbf{Freeze adaptation before inference.} If surrogate or kernel is
+    adapted from chain history, freeze it before collecting posterior samples.
+    Diagnostic: plot ESS over iterations; a drop at freeze indicates the
+    adaptation was still improving.
+  \item \textbf{Report boundary telemetry.} Every OBC inference report should
+    include: geometry classification (smooth/kink/jump), boundary crossing
+    rate, acceptance rate conditional on crossing, and regime occupancy
+    distribution.
+  \item \textbf{Compare to regime-marginalized baselines.} If feasible, run a
+    particle filter or ensemble Kalman filter without HMC to check: does the
+    difficulty come from the OBC or from the sampler?
+\end{enumerate}
+
+\section{Conclusion}
+
+Occasionally-binding constraints create parameter-to-likelihood maps with
+discontinuous gradients or value jumps. Standard leapfrog HMC remains
+mathematically valid for continuous-kink targets but performs poorly due to
+integration error at boundaries. For value-jump targets, standard leapfrog is
+invalid and requires event-aware extensions (reflection, refraction, or
+discontinuous coordinates).
+
+The two-country ZLB DNS model with softplus smoothing is a continuous-kink
+target. The full BGS model with integer QE regime selection may have value
+jumps. Neither has been fully characterized. The proposed five-phase research
+program will:
+\begin{enumerate}
+  \item Measure the boundary geometry and quantify gradient variation;
+  \item Test event-aware integration (Tran--Kleppe truncated leapfrog);
+  \item Develop surrogate-proposal HMC with hard-target correction;
+  \item Explore UKF variance inflation as a gradient-smoothing heuristic;
+  \item Implement reflection/refraction HMC for the hard integer-regime case.
+\end{enumerate}
+
+The interim recommendation is conservative: characterize the geometry, tune
+carefully, monitor crossing diagnostics, and validate any event-aware or
+surrogate method with reversibility checks and posterior agreement tests.
+
+Particle filters remain the robust fallback for models where HMC extensions
+prove intractable. But their current limitations (biased gradients, high cost)
+motivate continued work on making gradient-based MCMC viable for OBC models.
+This chapter documents the problem and the research path. The solution is not
+yet complete.

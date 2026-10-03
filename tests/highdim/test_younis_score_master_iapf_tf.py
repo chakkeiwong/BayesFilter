@@ -97,6 +97,26 @@ def test_algorithm4_windows_growth_strict_stop_and_capacity_veto():
     with pytest.raises(ValueError):iteration_decision([float('nan')],[8],**kwargs)
 
 
+def test_recursive_fit_preserves_physical_cloud_spread_in_diagnostics():
+    from bayesfilter.score_study.iapf_adapter import FIT_DIAGNOSTIC_COLUMNS
+    dtype=tf.float64
+    # Both coordinate patterns have population variance 2. Their scales are
+    # 3 and 1/2; translating the second cloud must not change its spread.
+    first=tf.constant([[-6.,-.5],[-3.,1.],[0.,0.],[3.,-1.],[6.,.5]],dtype)
+    clouds=tf.stack([first,2*first+tf.constant([7.,-4.],dtype)])
+    kernel=make_density_recursive_fit_kernel(2,1,5,2,4.,.2,4.,2000,30,1e-8,.01)
+    *_,diagnostics=kernel(tf.constant([.62,-.8,-.6,.9,.25,-.3],dtype),
+                         tf.constant([[.5],[-.3]],dtype),clouds)
+    assert diagnostics.shape==(2,len(FIT_DIAGNOSTIC_COLUMNS))
+    lo=FIT_DIAGNOSTIC_COLUMNS.index('minimum_cloud_sd')
+    hi=FIT_DIAGNOSTIC_COLUMNS.index('maximum_cloud_sd')
+    tf.debugging.assert_near(diagnostics[:,lo],
+        tf.constant([math.sqrt(.5),math.sqrt(2.)],dtype),atol=1e-12)
+    tf.debugging.assert_near(diagnostics[:,hi],
+        tf.constant([math.sqrt(18.),math.sqrt(72.)],dtype),atol=1e-12)
+    assert kernel.experimental_get_tracing_count()==1
+
+
 def test_consumer_blocks_unadmitted_claim_before_numerical_execution():
     from bayesfilter.score_study.iapf_adapter import execute_iapf
     with pytest.raises(ValueError,match='verified study context'):
@@ -193,10 +213,13 @@ def _mixed_precision_consumer_check():
     assert diag['fit_precision']==dict(fit_dtype='float64',filter_dtype='float32',
         cast_policy='explicit_offline_fit_then_cast_coefficients_once',automatic_precision_fallback=False)
     assert result['numerical_validity']=='pass' and len(result['score'])==6
+    lo=diag['fit_diagnostic_columns'].index('minimum_cloud_sd')
+    hi=diag['fit_diagnostic_columns'].index('maximum_cloud_sd')
     for fit in diag['fit_iterations']:
         if 'coefficient_cast_valid' not in fit:continue
         assert fit['coefficient_cast_valid']
         assert max(fit['coefficient_cast_max_abs_error'].values())<1e-5
+        assert all(0<step[lo]<=step[hi] for step in fit['density_fit_diagnostics'])
     row['iapf']['fit_dtype']='float16'
     with pytest.raises(ValueError,match='fit_dtype'):
         evaluate_gaussian(row,context)

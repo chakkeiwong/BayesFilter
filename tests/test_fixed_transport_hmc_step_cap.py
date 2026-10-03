@@ -1,3 +1,8 @@
+"""Step-cap mechanics and explicitly historical callback scheduler regressions.
+
+The public candidate-set API rejects custom callback runners; its execution
+binding tests cover current numerical authority.
+"""
 from __future__ import annotations
 
 import os
@@ -13,7 +18,9 @@ import tensorflow_probability as tfp
 from bayesfilter.inference import (
     FixedTransportHMCKernelTuningConfig,
     ValueScoreCapability,
-    tune_fixed_transport_hmc_kernel,
+)
+from bayesfilter.inference.fixed_transport_hmc_tuning_tf import (
+    _run_historical_fixed_transport_hmc_tuning,
 )
 from bayesfilter.inference.fixed_transport_hmc_mechanics_tf import (
     FixedTransportFullChainConfig,
@@ -122,6 +129,8 @@ def _adapter() -> tuple[GaussianAdapter, object]:
 def test_step_cap_config_is_positive_and_lineage_visible() -> None:
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
+        step_size_candidates=(0.05, 0.1),
+        leapfrog_grid=(5, 10),
         maximum_candidate_step_size=0.45,
     )
     assert config.payload()["maximum_candidate_step_size"] == pytest.approx(0.45)
@@ -284,11 +293,12 @@ class CappedFakeHMC(MissingCapTelemetryRunner):
         )
 
 
-def test_tuner_fails_closed_when_cap_telemetry_is_missing() -> None:
+def test_historical_tuner_fails_closed_when_cap_telemetry_is_missing() -> None:
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.03,
+        step_size_candidates=(0.03, 0.04),
         maximum_candidate_step_size=0.05,
-        leapfrog_grid=(3,),
+        leapfrog_grid=(3, 5),
         chain_count=4,
         budget_schedule=(2,),
         tune_num_results=2,
@@ -303,7 +313,7 @@ def test_tuner_fails_closed_when_cap_telemetry_is_missing() -> None:
         target_scope="step_cap_fixture:fixed_transport",
     )
     base = GaussianAdapter()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=base,
         fixed_transport=IdentityTransport(),
         initial_position=np.zeros(2),
@@ -314,7 +324,7 @@ def test_tuner_fails_closed_when_cap_telemetry_is_missing() -> None:
     assert any("step_size_cap_telemetry" in veto for veto in result.hard_vetoes)
 
 
-def test_tuner_stops_before_building_runner_for_repaired_step_above_cap() -> None:
+def test_historical_tuner_stops_before_building_runner_for_repaired_step_above_cap() -> None:
     from dataclasses import replace
 
     class HighAcceptanceRunner(MissingCapTelemetryRunner):
@@ -335,8 +345,11 @@ def test_tuner_stops_before_building_runner_for_repaired_step_above_cap() -> Non
 
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
+        step_size_candidates=(0.1, 0.12),
         maximum_candidate_step_size=0.15,
-        leapfrog_grid=(3,),
+        leapfrog_grid=(3, 5),
+        tuning_policy="legacy_directional_diagnostic_v1",
+        selection_policy="acceptance_target_distance",
         chain_count=4,
         budget_schedule=(2, 2),
         tune_num_results=2,
@@ -350,7 +363,7 @@ def test_tuner_stops_before_building_runner_for_repaired_step_above_cap() -> Non
         use_xla=False,
         target_scope="step_cap_fixture:fixed_transport",
     )
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=GaussianAdapter(),
         fixed_transport=IdentityTransport(),
         initial_position=np.zeros(2),
@@ -361,13 +374,14 @@ def test_tuner_stops_before_building_runner_for_repaired_step_above_cap() -> Non
     assert "tune_initial_step_size_exceeds_configured_cap" in result.hard_vetoes
 
 
-def test_successful_handoff_binds_the_configured_cap() -> None:
+def test_historical_handoff_binds_the_configured_cap() -> None:
     from bayesfilter.inference import build_verified_fixed_transport_hmc_handoff_from_tuning_result
 
     config = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.1,
+        step_size_candidates=(0.05, 0.1),
         maximum_candidate_step_size=0.2,
-        leapfrog_grid=(3,),
+        leapfrog_grid=(3, 5),
         chain_count=4,
         budget_schedule=(2,),
         tune_num_results=2,
@@ -383,7 +397,7 @@ def test_successful_handoff_binds_the_configured_cap() -> None:
     )
     base = GaussianAdapter()
     transport = IdentityTransport()
-    result = tune_fixed_transport_hmc_kernel(
+    result = _run_historical_fixed_transport_hmc_tuning(
         base_adapter=base,
         fixed_transport=transport,
         initial_position=np.zeros(2),

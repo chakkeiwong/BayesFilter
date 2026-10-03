@@ -1,0 +1,310 @@
+{
+  "schema": "bayesfilter.inference_validation_plan.v1",
+  "suite_id": "remaining-c2-confirmation-20260924",
+  "suite_identity": "c91ef81271487b50174618fdec17eddddcbe227499da13a2b084e071f6a19004",
+  "profile": "confirmation",
+  "jobs": [
+    {
+      "design": {
+        "design_id": "c2-confirm-baseline",
+        "engine": "reference_mean",
+        "scenario": {
+          "target": "normal_conjugate",
+          "route": "ordinary",
+          "control": "baseline",
+          "start": "dispersed",
+          "parameters": {
+            "tau": 2.0,
+            "sigma": 1.0,
+            "n": 6
+          }
+        },
+        "replications": 128,
+        "draws": 500,
+        "seed": 2026092431,
+        "budget_seconds": 32000,
+        "purpose": "Predeclared complete-fit reference-mean null or location-defect rate screen",
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+        "device": "gpu",
+        "alpha": 0.01,
+        "null_draws": 1999,
+        "rank_draws": 7,
+        "step_size": 0.4,
+        "leapfrog_steps": 5,
+        "member_l": 3,
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "measurement_draws": 128,
+        "posterior_cap": 10000,
+        "mcse_tolerance": 0.02,
+        "accuracy_tolerance": 0.25,
+        "multiplicity": 1,
+        "phase": "confirmation",
+        "options": {
+          "native_search": true,
+          "posterior_members": "selected",
+          "member_rule": "first_verified",
+          "bootstrap_initialization_rounds": 20,
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard",
+          "reference_mean_alarm": {
+            "mcse_sd_max": 0.05
+          },
+          "posterior_precision_method": "lugsail",
+          "plan_file": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+          "posterior_settings": {
+            "warmup_min_results": 2000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "retained_min_results": 1000,
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000
+          },
+          "isolate_fits": true,
+          "fit_process_timeout_seconds": 890
+        }
+      },
+      "identity": "9e93d276232ae8ab2e610d569ba4ad7f476113a2f3e8d916fbb77c3cf066e4df",
+      "coverage": {
+        "engine": "reference_mean",
+        "target": "normal_conjugate",
+        "family": "conjugate",
+        "route": "ordinary",
+        "control": "baseline",
+        "start": "dispersed",
+        "device": "gpu",
+        "phase": "confirmation",
+        "transport": "none"
+      },
+      "availability": "ready",
+      "reason": null
+    },
+    {
+      "design": {
+        "design_id": "c2-confirm-quarter",
+        "engine": "reference_mean",
+        "scenario": {
+          "target": "normal_conjugate",
+          "route": "ordinary",
+          "control": "location_shift",
+          "start": "dispersed",
+          "parameters": {
+            "tau": 2.0,
+            "sigma": 1.0,
+            "n": 6,
+            "location_shift_posterior_sd": 0.25
+          }
+        },
+        "replications": 64,
+        "draws": 500,
+        "seed": 2026092432,
+        "budget_seconds": 16500,
+        "purpose": "Predeclared complete-fit reference-mean null or location-defect rate screen",
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+        "device": "gpu",
+        "alpha": 0.01,
+        "null_draws": 1999,
+        "rank_draws": 7,
+        "step_size": 0.4,
+        "leapfrog_steps": 5,
+        "member_l": 3,
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "measurement_draws": 128,
+        "posterior_cap": 10000,
+        "mcse_tolerance": 0.02,
+        "accuracy_tolerance": 0.25,
+        "multiplicity": 1,
+        "phase": "confirmation",
+        "options": {
+          "native_search": true,
+          "posterior_members": "selected",
+          "member_rule": "first_verified",
+          "bootstrap_initialization_rounds": 20,
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard",
+          "reference_mean_alarm": {
+            "mcse_sd_max": 0.05
+          },
+          "posterior_precision_method": "lugsail",
+          "plan_file": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+          "posterior_settings": {
+            "warmup_min_results": 2000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "retained_min_results": 1000,
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000
+          },
+          "isolate_fits": true,
+          "fit_process_timeout_seconds": 890
+        }
+      },
+      "identity": "e653c770b7ca7a1ed0d973a64675f04268f4264a113b53f79a66bbc296f992d5",
+      "coverage": {
+        "engine": "reference_mean",
+        "target": "normal_conjugate",
+        "family": "conjugate",
+        "route": "ordinary",
+        "control": "location_shift",
+        "start": "dispersed",
+        "device": "gpu",
+        "phase": "confirmation",
+        "transport": "none"
+      },
+      "availability": "ready",
+      "reason": null
+    },
+    {
+      "design": {
+        "design_id": "c2-confirm-half",
+        "engine": "reference_mean",
+        "scenario": {
+          "target": "normal_conjugate",
+          "route": "ordinary",
+          "control": "location_shift",
+          "start": "dispersed",
+          "parameters": {
+            "tau": 2.0,
+            "sigma": 1.0,
+            "n": 6,
+            "location_shift_posterior_sd": 0.5
+          }
+        },
+        "replications": 64,
+        "draws": 500,
+        "seed": 2026092433,
+        "budget_seconds": 16500,
+        "purpose": "Predeclared complete-fit reference-mean null or location-defect rate screen",
+        "numerical_provenance": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+        "device": "gpu",
+        "alpha": 0.01,
+        "null_draws": 1999,
+        "rank_draws": 7,
+        "step_size": 0.4,
+        "leapfrog_steps": 5,
+        "member_l": 3,
+        "l_grid": [
+          3,
+          5,
+          9,
+          13,
+          18,
+          25
+        ],
+        "measurement_draws": 128,
+        "posterior_cap": 10000,
+        "mcse_tolerance": 0.02,
+        "accuracy_tolerance": 0.25,
+        "multiplicity": 1,
+        "phase": "confirmation",
+        "options": {
+          "native_search": true,
+          "posterior_members": "selected",
+          "member_rule": "first_verified",
+          "bootstrap_initialization_rounds": 20,
+          "metric_evidence_policy": "finite_window",
+          "metric_probe_num_results": 16,
+          "preparation_bound_expansion_steps": 1,
+          "preparation_max_restarts": 3,
+          "preparation_preset": "standard",
+          "reference_mean_alarm": {
+            "mcse_sd_max": 0.05
+          },
+          "posterior_precision_method": "lugsail",
+          "plan_file": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+          "posterior_settings": {
+            "warmup_min_results": 2000,
+            "warmup_check_window_results": 1000,
+            "warmup_chunk_results": 500,
+            "warmup_max_results": 10000,
+            "retained_min_results": 1000,
+            "retained_chunk_results": 500,
+            "retained_max_results": 10000
+          },
+          "isolate_fits": true,
+          "fit_process_timeout_seconds": 890
+        }
+      },
+      "identity": "19eec9dc6a504d076e9cf00ca6ee629535f033696cf07f1f39a7e64b2fb89087",
+      "coverage": {
+        "engine": "reference_mean",
+        "target": "normal_conjugate",
+        "family": "conjugate",
+        "route": "ordinary",
+        "control": "location_shift",
+        "start": "dispersed",
+        "device": "gpu",
+        "phase": "confirmation",
+        "transport": "none"
+      },
+      "availability": "ready",
+      "reason": null
+    }
+  ],
+  "required_coverage": [
+    {
+      "engine": "reference_mean",
+      "target": "normal_conjugate",
+      "family": "conjugate",
+      "route": "ordinary",
+      "control": "baseline",
+      "start": "dispersed",
+      "device": "gpu",
+      "phase": "confirmation",
+      "transport": "none",
+      "design_id": "c2-confirm-baseline"
+    },
+    {
+      "engine": "reference_mean",
+      "target": "normal_conjugate",
+      "family": "conjugate",
+      "route": "ordinary",
+      "control": "location_shift",
+      "start": "dispersed",
+      "device": "gpu",
+      "phase": "confirmation",
+      "transport": "none",
+      "design_id": "c2-confirm-quarter"
+    },
+    {
+      "engine": "reference_mean",
+      "target": "normal_conjugate",
+      "family": "conjugate",
+      "route": "ordinary",
+      "control": "location_shift",
+      "start": "dispersed",
+      "device": "gpu",
+      "phase": "confirmation",
+      "transport": "none",
+      "design_id": "c2-confirm-half"
+    }
+  ],
+  "aggregate_groups": [],
+  "maximum_worker_seconds": 65000,
+  "budget_by_device": {
+    "gpu": 65000,
+    "cpu_reference": 0
+  },
+  "no_numerical_execution": true
+}

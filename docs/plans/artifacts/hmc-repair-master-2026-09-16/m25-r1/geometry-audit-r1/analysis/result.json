@@ -1,0 +1,917 @@
+{
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "docs/benchmarks/audit_hmc_supplied_funnel_geometry_2026_09_22.py",
+    "--input",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2",
+    "--output",
+    "docs/plans/artifacts/hmc-repair-master-2026-09-16/m25-r1/geometry-audit-r1/analysis"
+  ],
+  "derivation": "U=.5*z0^2+.5*exp(2s-v)*sum(z_child^2)-(2s-v), v=3*z0, k=2",
+  "elapsed_seconds": 2.2597637249855325,
+  "exact_tail_result": "s(v)=v/2 gives U=.5*sum(z^2) and identity Hessian",
+  "gpu_intentionally_hidden": true,
+  "jit_compile": false,
+  "partial_tail_result": "s(v) is bounded, so exp(2s-v) diverges as v tends to negative infinity",
+  "plan_file": "docs/plans/bayesfilter-hmc-gap-closure-continuation-2026-09-22.md",
+  "posterior_promoted": false,
+  "ranking_supported": false,
+  "records": [
+    {
+      "L": 3,
+      "candidate_count": 100,
+      "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000007",
+      "epsilon": 1.25,
+      "input": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092251-r1/worker/result.json",
+      "input_hashes": {
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092251-r1/worker/fit/members/inference_validation:8e6755790e308fab4d1f:candidate:000007/draws.tensor": "49943e5cb7c21dc6bec2772240be97a96355912e4de7d2c123074fe84c5316a9",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092251-r1/worker/fit/members/inference_validation:8e6755790e308fab4d1f:candidate:000007/result.json": "f5e6182a323d77538e55a2723fcdac04d9bfa47687a6ca3e58736aaf71dc21c6",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092251-r1/worker/fit/members/inference_validation:8e6755790e308fab4d1f:candidate:000007/warmup.tensor": "f5462a3fe995be1f248c334e21b8e5a03309d7ab7c49ce886d3bb5447fc5b1c6",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092251-r1/worker/fit/tuning/candidate_set_result.json": "97ea38e04bb41082c86be8c46178a79beedeab9c295ea4688109463458eb394d",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092251-r1/worker/result.json": "ae05ef4e2b8256138e7dd5ba027ad0eeb739f9d002f3bcb416c595a3344049db"
+      },
+      "map": "partial",
+      "outcome": {
+        "L": 3,
+        "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000007",
+        "epsilon": 1.25,
+        "hard_vetoes": [
+          "warmup_chunk_health_failed"
+        ],
+        "passed": false,
+        "retained_cap_hit": false,
+        "retained_results_per_chain": 0,
+        "warmup_cap_hit": false,
+        "warmup_exclusion_matches": true,
+        "warmup_results_per_chain": 1500
+      },
+      "proposal_failure_location": "not identifiable from accepted model states; rejected leapfrog paths not archived",
+      "search_completion": "complete",
+      "seed": 2026092251,
+      "stages": [
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 1500,
+          "failed_chunks": [
+            {
+              "chunk_index": 2,
+              "completed_results_per_chain": 1500,
+              "health": {
+                "acceptance_rate": 0.6655,
+                "acceptance_rate_by_chain": [
+                  0.678,
+                  0.71,
+                  0.572,
+                  0.702
+                ],
+                "all_states_moved": true,
+                "elapsed_seconds": 1.0121632299851626,
+                "energy_error_divergence_count": 40,
+                "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+                "execution_topology": "serial",
+                "extreme_log_accept_count": 40,
+                "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+                "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+                "health_passed": false,
+                "jit_compile": false,
+                "log_accept_ratio_all_finite": false,
+                "member_health_failures": [
+                  "nonfinite_log_accept_ratio",
+                  "nonfinite_proposed_target_log_prob",
+                  "nonfinite_final_momentum",
+                  "nonfinite_log_acceptance_correction",
+                  "nonfinite_target_score"
+                ],
+                "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+                "runtime": {
+                  "call_class": "repeated_execute",
+                  "checkpoint_reused": false,
+                  "native": {
+                    "chain_count": 4,
+                    "chain_seeds": [
+                      [
+                        1675170400,
+                        0
+                      ],
+                      [
+                        1675170400,
+                        1
+                      ],
+                      [
+                        1675170400,
+                        2
+                      ],
+                      [
+                        1675170400,
+                        3
+                      ]
+                    ],
+                    "ensemble_call_count": 3,
+                    "ensemble_call_s": 0.8720020670443773,
+                    "execution_mode": "serial",
+                    "nonclaims": [
+                      "HMC execution-topology mechanics only",
+                      "no sampler convergence claim",
+                      "no posterior validity claim",
+                      "native divergence unavailability is not zero divergences"
+                    ],
+                    "per_chain_call_s": [
+                      0.25360492803156376,
+                      0.20532980398274958,
+                      0.20621735299937427,
+                      0.20684004190843552
+                    ],
+                    "reusable_runner": true,
+                    "root_seed": [
+                      223782038,
+                      546069581
+                    ],
+                    "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+                    "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+                    "state_shape": [
+                      4,
+                      3
+                    ],
+                    "target_scope": "inference_validation",
+                    "trace_policy": "standard",
+                    "use_xla": false
+                  }
+                },
+                "sample_shape": [
+                  500,
+                  4,
+                  3
+                ],
+                "samples_all_finite": true,
+                "single_batched_sample_chain_invocation": false,
+                "target_log_prob_all_finite": true,
+                "target_status_telemetry": {
+                  "available": false
+                },
+                "target_status_trace_policy": "none"
+              },
+              "seed": [
+                223782038,
+                546069581
+              ]
+            }
+          ],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 326,
+          "max_child_curvature": 7.094880122294175,
+          "max_local_harmonic_epsilon_frequency": 3.891719349055334,
+          "max_positive_hessian_eigenvalue": 9.693106874759472,
+          "model_v_max": 10.414235969912788,
+          "model_v_min": -10.308575279290498,
+          "stage": "warmup"
+        }
+      ],
+      "unassessed_members": 2,
+      "verified_siblings": [
+        {
+          "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000007",
+          "epsilon": 1.25,
+          "leapfrog_steps": 3
+        },
+        {
+          "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000069",
+          "epsilon": 1.1858541225631423,
+          "leapfrog_steps": 3
+        },
+        {
+          "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000071",
+          "epsilon": 1.1550263580903837,
+          "leapfrog_steps": 3
+        }
+      ]
+    },
+    {
+      "L": 3,
+      "candidate_count": 100,
+      "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000074",
+      "epsilon": 1.1858541225631423,
+      "input": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092252-r1/worker/result.json",
+      "input_hashes": {
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092252-r1/worker/fit/members/inference_validation:8e6755790e308fab4d1f:candidate:000074/draws.tensor": "15e99be129d519958bef87de9eaa01b107c9106dbbf48af8a7c8301753c664f7",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092252-r1/worker/fit/members/inference_validation:8e6755790e308fab4d1f:candidate:000074/result.json": "23e1d22965389d95769e367f691bc117c247ccb8ce595fe1f2043e77bd41c9bd",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092252-r1/worker/fit/members/inference_validation:8e6755790e308fab4d1f:candidate:000074/warmup.tensor": "acf65f467225dd3af2f99f576d8fdafeb7a4d314297ef5b5b7d964d30a375ecd",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092252-r1/worker/fit/tuning/candidate_set_result.json": "06081e411bc34b6209f47a02cedd1306affd70f95b5a782cc8ee85901089b943",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial-2026092252-r1/worker/result.json": "88dc026308ccdce84e09fe871f7b1885cced518aff20969c5a5568d721a2de8f"
+      },
+      "map": "partial",
+      "outcome": {
+        "L": 3,
+        "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000074",
+        "epsilon": 1.1858541225631423,
+        "hard_vetoes": [
+          "retained_chunk_health_failed"
+        ],
+        "passed": false,
+        "retained_cap_hit": true,
+        "retained_results_per_chain": 10000,
+        "warmup_cap_hit": false,
+        "warmup_exclusion_matches": true,
+        "warmup_results_per_chain": 2000
+      },
+      "proposal_failure_location": "not identifiable from accepted model states; rejected leapfrog paths not archived",
+      "search_completion": "complete",
+      "seed": 2026092252,
+      "stages": [
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 2000,
+          "failed_chunks": [],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 202,
+          "max_child_curvature": 31.73585799896529,
+          "max_local_harmonic_epsilon_frequency": 7.096232306286369,
+          "max_positive_hessian_eigenvalue": 35.80907587184524,
+          "model_v_max": 11.39802603030186,
+          "model_v_min": -12.985145854136839,
+          "stage": "warmup"
+        },
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 10000,
+          "failed_chunks": [
+            {
+              "chunk_index": 19,
+              "completed_results_per_chain": 10000,
+              "health": {
+                "acceptance_rate": 0.721,
+                "acceptance_rate_by_chain": [
+                  0.726,
+                  0.748,
+                  0.692,
+                  0.718
+                ],
+                "all_states_moved": true,
+                "elapsed_seconds": 0.969631489017047,
+                "energy_error_divergence_count": 14,
+                "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+                "execution_topology": "serial",
+                "extreme_log_accept_count": 14,
+                "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+                "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+                "health_passed": false,
+                "jit_compile": false,
+                "log_accept_ratio_all_finite": false,
+                "member_health_failures": [
+                  "nonfinite_log_accept_ratio",
+                  "nonfinite_proposed_target_log_prob",
+                  "nonfinite_final_momentum",
+                  "nonfinite_log_acceptance_correction",
+                  "nonfinite_target_score"
+                ],
+                "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+                "runtime": {
+                  "call_class": "repeated_execute",
+                  "checkpoint_reused": false,
+                  "native": {
+                    "chain_count": 4,
+                    "chain_seeds": [
+                      [
+                        633474463,
+                        0
+                      ],
+                      [
+                        633474463,
+                        1
+                      ],
+                      [
+                        633474463,
+                        2
+                      ],
+                      [
+                        633474463,
+                        3
+                      ]
+                    ],
+                    "ensemble_call_count": 24,
+                    "ensemble_call_s": 0.8688004720024765,
+                    "execution_mode": "serial",
+                    "nonclaims": [
+                      "HMC execution-topology mechanics only",
+                      "no sampler convergence claim",
+                      "no posterior validity claim",
+                      "native divergence unavailability is not zero divergences"
+                    ],
+                    "per_chain_call_s": [
+                      0.24624264996964484,
+                      0.20682703994680196,
+                      0.2082029259763658,
+                      0.20751797500997782
+                    ],
+                    "reusable_runner": true,
+                    "root_seed": [
+                      419005950,
+                      100286314
+                    ],
+                    "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+                    "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+                    "state_shape": [
+                      4,
+                      3
+                    ],
+                    "target_scope": "inference_validation",
+                    "trace_policy": "standard",
+                    "use_xla": false
+                  }
+                },
+                "sample_shape": [
+                  500,
+                  4,
+                  3
+                ],
+                "samples_all_finite": true,
+                "single_batched_sample_chain_invocation": false,
+                "target_log_prob_all_finite": true,
+                "target_status_telemetry": {
+                  "available": false
+                },
+                "target_status_trace_policy": "none"
+              },
+              "seed": [
+                419005950,
+                100286314
+              ]
+            }
+          ],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 1080,
+          "max_child_curvature": 10.284346089044245,
+          "max_local_harmonic_epsilon_frequency": 4.721911179449721,
+          "max_positive_hessian_eigenvalue": 15.855249910479827,
+          "model_v_max": 10.386471034053042,
+          "model_v_min": -11.04264120155721,
+          "stage": "retained"
+        }
+      ],
+      "unassessed_members": 2,
+      "verified_siblings": [
+        {
+          "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000074",
+          "epsilon": 1.1858541225631423,
+          "leapfrog_steps": 3
+        },
+        {
+          "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000087",
+          "epsilon": 1.308293924240132,
+          "leapfrog_steps": 3
+        },
+        {
+          "candidate_id": "inference_validation:8e6755790e308fab4d1f:candidate:000093",
+          "epsilon": 1.1550263580903837,
+          "leapfrog_steps": 3
+        }
+      ]
+    },
+    {
+      "L": 5,
+      "candidate_count": 100,
+      "candidate_id": "inference_validation:5f64dff04387e88a729c:candidate:000008",
+      "epsilon": 0.5,
+      "input": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092251-r1/worker/result.json",
+      "input_hashes": {
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092251-r1/worker/fit/members/inference_validation:5f64dff04387e88a729c:candidate:000008/draws.tensor": "49943e5cb7c21dc6bec2772240be97a96355912e4de7d2c123074fe84c5316a9",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092251-r1/worker/fit/members/inference_validation:5f64dff04387e88a729c:candidate:000008/result.json": "8068ad3c70b07af493b6afec75365051be16d47ce592d21b060868c33c67859d",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092251-r1/worker/fit/members/inference_validation:5f64dff04387e88a729c:candidate:000008/warmup.tensor": "1a442dc582582d0f5fd779fad69cbf8b9c740db551ad6bb6774ba1e5f1bc84ac",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092251-r1/worker/fit/tuning/candidate_set_result.json": "564b1c0a65dbeac34323280e908732cb8361fe6299b83f4f61f5d20afd1aeab8",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092251-r1/worker/result.json": "43a091020bac993bd5f846cc03643d5492a85a3f420326182951c38b6cd979f6"
+      },
+      "map": "partial_half",
+      "outcome": {
+        "L": 5,
+        "candidate_id": "inference_validation:5f64dff04387e88a729c:candidate:000008",
+        "epsilon": 0.5,
+        "hard_vetoes": [
+          "warmup_chunk_health_failed"
+        ],
+        "passed": false,
+        "retained_cap_hit": false,
+        "retained_results_per_chain": 0,
+        "warmup_cap_hit": false,
+        "warmup_exclusion_matches": true,
+        "warmup_results_per_chain": 500
+      },
+      "proposal_failure_location": "not identifiable from accepted model states; rejected leapfrog paths not archived",
+      "search_completion": "complete",
+      "seed": 2026092251,
+      "stages": [
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 500,
+          "failed_chunks": [
+            {
+              "chunk_index": 0,
+              "completed_results_per_chain": 500,
+              "health": {
+                "acceptance_rate": 0.567,
+                "acceptance_rate_by_chain": [
+                  0.298,
+                  0.692,
+                  0.682,
+                  0.596
+                ],
+                "all_states_moved": true,
+                "elapsed_seconds": 3.7341448250226676,
+                "energy_error_divergence_count": 79,
+                "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+                "execution_topology": "serial",
+                "extreme_log_accept_count": 79,
+                "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+                "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+                "health_passed": false,
+                "jit_compile": false,
+                "log_accept_ratio_all_finite": false,
+                "member_health_failures": [
+                  "nonfinite_proposal",
+                  "nonfinite_proposal_displacement",
+                  "nonfinite_log_accept_ratio",
+                  "nonfinite_proposed_target_log_prob",
+                  "nonfinite_final_momentum",
+                  "nonfinite_log_acceptance_correction",
+                  "nonfinite_target_score"
+                ],
+                "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+                "runtime": {
+                  "call_class": "first_compile_plus_execute",
+                  "checkpoint_reused": false,
+                  "native": {
+                    "chain_count": 4,
+                    "chain_seeds": [
+                      [
+                        2081149910,
+                        0
+                      ],
+                      [
+                        2081149910,
+                        1
+                      ],
+                      [
+                        2081149910,
+                        2
+                      ],
+                      [
+                        2081149910,
+                        3
+                      ]
+                    ],
+                    "ensemble_call_count": 1,
+                    "ensemble_call_s": 3.617058300995268,
+                    "execution_mode": "serial",
+                    "nonclaims": [
+                      "HMC execution-topology mechanics only",
+                      "no sampler convergence claim",
+                      "no posterior validity claim",
+                      "native divergence unavailability is not zero divergences"
+                    ],
+                    "per_chain_call_s": [
+                      0.9390784819843248,
+                      0.8929985900176689,
+                      0.889233589055948,
+                      0.8957303400384262
+                    ],
+                    "reusable_runner": true,
+                    "root_seed": [
+                      259621250,
+                      28314821
+                    ],
+                    "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+                    "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+                    "state_shape": [
+                      4,
+                      3
+                    ],
+                    "target_scope": "inference_validation",
+                    "trace_policy": "standard",
+                    "use_xla": false
+                  }
+                },
+                "sample_shape": [
+                  500,
+                  4,
+                  3
+                ],
+                "samples_all_finite": true,
+                "single_batched_sample_chain_invocation": false,
+                "target_log_prob_all_finite": true,
+                "target_status_telemetry": {
+                  "available": false
+                },
+                "target_status_trace_policy": "none"
+              },
+              "seed": [
+                259621250,
+                28314821
+              ]
+            }
+          ],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 378,
+          "max_child_curvature": 71.98742267059039,
+          "max_local_harmonic_epsilon_frequency": 4.274234491524937,
+          "max_positive_hessian_eigenvalue": 73.07632195416576,
+          "model_v_max": 8.331485216410357,
+          "model_v_min": -8.243410316333463,
+          "stage": "warmup"
+        }
+      ],
+      "unassessed_members": 1,
+      "verified_siblings": [
+        {
+          "candidate_id": "inference_validation:5f64dff04387e88a729c:candidate:000008",
+          "epsilon": 0.5,
+          "leapfrog_steps": 5
+        },
+        {
+          "candidate_id": "inference_validation:5f64dff04387e88a729c:candidate:000092",
+          "epsilon": 0.5512747932253459,
+          "leapfrog_steps": 3
+        }
+      ]
+    },
+    {
+      "L": 5,
+      "candidate_count": 100,
+      "candidate_id": "inference_validation:5f64dff04387e88a729c:candidate:000052",
+      "epsilon": 0.48233931498015475,
+      "input": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092252-r1/worker/result.json",
+      "input_hashes": {
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092252-r1/worker/fit/members/inference_validation:5f64dff04387e88a729c:candidate:000052/draws.tensor": "3f93518791e050bb5551734f148a900678c53c1b5fafe951f835b3f667a63d5f",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092252-r1/worker/fit/members/inference_validation:5f64dff04387e88a729c:candidate:000052/result.json": "04671b5f90f681036fa307713755cb82ee2b0040cbf1be6fe9337ee9f22d40ff",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092252-r1/worker/fit/members/inference_validation:5f64dff04387e88a729c:candidate:000052/warmup.tensor": "3003b26815c7454e430ba9e79026acfe3bfebc2e2fa7d950e1b9ecc3b5cb736e",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092252-r1/worker/fit/tuning/candidate_set_result.json": "63868996b3a593663724962bfbe42a96952114f3a1411ff30b46b378c829ef90",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-grid-r1/partial_half-2026092252-r1/worker/result.json": "d867b3b5478deffde11adaf9686a21592608808f448ca921b596e417945d3ac3"
+      },
+      "map": "partial_half",
+      "outcome": {
+        "L": 5,
+        "candidate_id": "inference_validation:5f64dff04387e88a729c:candidate:000052",
+        "epsilon": 0.48233931498015475,
+        "hard_vetoes": [
+          "retained_chunk_health_failed"
+        ],
+        "passed": false,
+        "retained_cap_hit": false,
+        "retained_results_per_chain": 8500,
+        "warmup_cap_hit": false,
+        "warmup_exclusion_matches": true,
+        "warmup_results_per_chain": 2000
+      },
+      "proposal_failure_location": "not identifiable from accepted model states; rejected leapfrog paths not archived",
+      "search_completion": "complete",
+      "seed": 2026092252,
+      "stages": [
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 2000,
+          "failed_chunks": [],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 354,
+          "max_child_curvature": 41.42978080115986,
+          "max_local_harmonic_epsilon_frequency": 3.3466576660962577,
+          "max_positive_hessian_eigenvalue": 48.141238139879725,
+          "model_v_max": 8.185836878339702,
+          "model_v_min": -7.236398966664135,
+          "stage": "warmup"
+        },
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 8500,
+          "failed_chunks": [
+            {
+              "chunk_index": 16,
+              "completed_results_per_chain": 8500,
+              "health": {
+                "acceptance_rate": 0.7055,
+                "acceptance_rate_by_chain": [
+                  0.69,
+                  0.722,
+                  0.71,
+                  0.7
+                ],
+                "all_states_moved": true,
+                "elapsed_seconds": 1.299366266001016,
+                "energy_error_divergence_count": 17,
+                "energy_error_divergence_definition": "historical field name; counts finite log_accept_ratio < -1000; explanatory only",
+                "execution_topology": "serial",
+                "extreme_log_accept_count": 17,
+                "extreme_log_accept_definition": "finite log_accept_ratio < -1000",
+                "extreme_log_accept_role": "explanatory_only_not_a_veto_or_divergence",
+                "health_passed": false,
+                "jit_compile": false,
+                "log_accept_ratio_all_finite": false,
+                "member_health_failures": [
+                  "nonfinite_proposal",
+                  "nonfinite_proposal_displacement",
+                  "nonfinite_log_accept_ratio",
+                  "nonfinite_proposed_target_log_prob",
+                  "nonfinite_final_momentum",
+                  "nonfinite_log_acceptance_correction",
+                  "nonfinite_target_score"
+                ],
+                "native_divergence_status": "not_exposed_by_tfp_hamiltonian_monte_carlo",
+                "runtime": {
+                  "call_class": "repeated_execute",
+                  "checkpoint_reused": false,
+                  "native": {
+                    "chain_count": 4,
+                    "chain_seeds": [
+                      [
+                        389979568,
+                        0
+                      ],
+                      [
+                        389979568,
+                        1
+                      ],
+                      [
+                        389979568,
+                        2
+                      ],
+                      [
+                        389979568,
+                        3
+                      ]
+                    ],
+                    "ensemble_call_count": 21,
+                    "ensemble_call_s": 1.1916944950353354,
+                    "execution_mode": "serial",
+                    "nonclaims": [
+                      "HMC execution-topology mechanics only",
+                      "no sampler convergence claim",
+                      "no posterior validity claim",
+                      "native divergence unavailability is not zero divergences"
+                    ],
+                    "per_chain_call_s": [
+                      0.3261382539058104,
+                      0.2881853840081021,
+                      0.2889013309031725,
+                      0.28845225600525737
+                    ],
+                    "reusable_runner": true,
+                    "root_seed": [
+                      472524601,
+                      53600322
+                    ],
+                    "runtime": "tfp.mcmc.sample_chain_independent_chain_ensemble",
+                    "source_topology": "dsge_hmc_independent_scalar_chain_tf_function_thread_pool",
+                    "state_shape": [
+                      4,
+                      3
+                    ],
+                    "target_scope": "inference_validation",
+                    "trace_policy": "standard",
+                    "use_xla": false
+                  }
+                },
+                "sample_shape": [
+                  500,
+                  4,
+                  3
+                ],
+                "samples_all_finite": true,
+                "single_batched_sample_chain_invocation": false,
+                "target_log_prob_all_finite": true,
+                "target_status_telemetry": {
+                  "available": false
+                },
+                "target_status_trace_policy": "none"
+              },
+              "seed": [
+                472524601,
+                53600322
+              ]
+            }
+          ],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 1595,
+          "max_child_curvature": 48.59522195961035,
+          "max_local_harmonic_epsilon_frequency": 3.4175482659436285,
+          "max_positive_hessian_eigenvalue": 50.2023432859505,
+          "model_v_max": 12.285870993206444,
+          "model_v_min": -7.529381690750151,
+          "stage": "retained"
+        }
+      ],
+      "unassessed_members": 1,
+      "verified_siblings": [
+        {
+          "candidate_id": "inference_validation:5f64dff04387e88a729c:candidate:000052",
+          "epsilon": 0.48233931498015475,
+          "leapfrog_steps": 5
+        },
+        {
+          "candidate_id": "inference_validation:5f64dff04387e88a729c:candidate:000067",
+          "epsilon": 0.5259947527543221,
+          "leapfrog_steps": 3
+        }
+      ]
+    },
+    {
+      "L": 5,
+      "candidate_count": 44,
+      "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000022",
+      "epsilon": 1.2968395546510096,
+      "input": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092251-r2/worker/result.json",
+      "input_hashes": {
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092251-r2/worker/fit/members/inference_validation:e63d23d2b0bae15c98ab:candidate:000022/draws.tensor": "f24953b751dbb9f0a088ebb0397c9874f67467ffbd65e0fcdfd052b924fc6dfe",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092251-r2/worker/fit/members/inference_validation:e63d23d2b0bae15c98ab:candidate:000022/result.json": "397624dda7f6977d803420b27b428aa8814eca908b0ec16d9ca897b76c7f94ff",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092251-r2/worker/fit/members/inference_validation:e63d23d2b0bae15c98ab:candidate:000022/warmup.tensor": "c66b044553f4a8315681ceb9912c080fb15fbf0265bd60f6705e03751a312b67",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092251-r2/worker/fit/tuning/candidate_set_result.json": "0486d3762d8cfcfb228c53d2c0187c059b52b3f6146a3cd9c58c348a7d0bfcf1",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092251-r2/worker/result.json": "67858918b970f747d4f9379543414a84474278b2e6c8685693edcfef715841a9"
+      },
+      "map": "exact",
+      "outcome": {
+        "L": 5,
+        "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000022",
+        "epsilon": 1.2968395546510096,
+        "hard_vetoes": [],
+        "passed": false,
+        "retained_cap_hit": true,
+        "retained_results_per_chain": 10000,
+        "warmup_cap_hit": false,
+        "warmup_exclusion_matches": true,
+        "warmup_results_per_chain": 2000
+      },
+      "proposal_failure_location": "not identifiable from accepted model states; rejected leapfrog paths not archived",
+      "search_completion": "complete",
+      "seed": 2026092251,
+      "stages": [
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 2000,
+          "failed_chunks": [],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 0,
+          "max_child_curvature": 1.0,
+          "max_local_harmonic_epsilon_frequency": 1.2968395546510096,
+          "max_positive_hessian_eigenvalue": 1.0,
+          "model_v_max": 11.306648238940635,
+          "model_v_min": -12.36795873624493,
+          "stage": "warmup"
+        },
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 10000,
+          "failed_chunks": [],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 0,
+          "max_child_curvature": 1.0,
+          "max_local_harmonic_epsilon_frequency": 1.2968395546510096,
+          "max_positive_hessian_eigenvalue": 1.0,
+          "model_v_max": 12.875895053082154,
+          "model_v_min": -11.426442904508267,
+          "stage": "retained"
+        }
+      ],
+      "unassessed_members": 5,
+      "verified_siblings": [
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000022",
+          "epsilon": 1.2968395546510096,
+          "leapfrog_steps": 5
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000033",
+          "epsilon": 1.3839098819638318,
+          "leapfrog_steps": 13
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000039",
+          "epsilon": 1.6641806889132555,
+          "leapfrog_steps": 5
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000041",
+          "epsilon": 1.3252366431597413,
+          "leapfrog_steps": 5
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000042",
+          "epsilon": 1.391424375771926,
+          "leapfrog_steps": 25
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000044",
+          "epsilon": 1.3109612115247644,
+          "leapfrog_steps": 5
+        }
+      ]
+    },
+    {
+      "L": 5,
+      "candidate_count": 51,
+      "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000022",
+      "epsilon": 1.2968395546510096,
+      "input": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092252-r1/worker/result.json",
+      "input_hashes": {
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092252-r1/worker/fit/members/inference_validation:e63d23d2b0bae15c98ab:candidate:000022/draws.tensor": "632474f80c093faf5d2308d2244f0785de7284c7aa3e86662fb8ae5aa334c105",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092252-r1/worker/fit/members/inference_validation:e63d23d2b0bae15c98ab:candidate:000022/result.json": "1eb74fa7e75bb6266e384caee05d76973b4ecc3a24a1d8761b768f6810a71e12",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092252-r1/worker/fit/members/inference_validation:e63d23d2b0bae15c98ab:candidate:000022/warmup.tensor": "99288794541e71ef9e129bd325820b0baa3ff6aeb457d53624c0d0c783183060",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092252-r1/worker/fit/tuning/candidate_set_result.json": "6115258a35102c9c813c35e9a0774eec85d9ef36e4b3adadb64671cb2679de23",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m20-r2/fits-cpu-r1/exact-2026092252-r1/worker/result.json": "7d0c0c7638a0efbd568cd664327b21f695d49bb10490b13070c94a572d581066"
+      },
+      "map": "exact",
+      "outcome": {
+        "L": 5,
+        "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000022",
+        "epsilon": 1.2968395546510096,
+        "hard_vetoes": [],
+        "passed": false,
+        "retained_cap_hit": true,
+        "retained_results_per_chain": 10000,
+        "warmup_cap_hit": false,
+        "warmup_exclusion_matches": true,
+        "warmup_results_per_chain": 2000
+      },
+      "proposal_failure_location": "not identifiable from accepted model states; rejected leapfrog paths not archived",
+      "search_completion": "complete",
+      "seed": 2026092252,
+      "stages": [
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 2000,
+          "failed_chunks": [],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 0,
+          "max_child_curvature": 1.0,
+          "max_local_harmonic_epsilon_frequency": 1.2968395546510096,
+          "max_positive_hessian_eigenvalue": 1.0,
+          "model_v_max": 11.638178010773462,
+          "model_v_min": -13.71683667696802,
+          "stage": "warmup"
+        },
+        {
+          "accepted_states_finite": true,
+          "analytic_potential_score_hessian_finite": true,
+          "draws_per_chain": 10000,
+          "failed_chunks": [],
+          "indicator_interpretation": "explanatory local harmonic comparison; not a nonlinear stability veto",
+          "local_harmonic_indicator_above_two_count": 0,
+          "max_child_curvature": 1.0,
+          "max_local_harmonic_epsilon_frequency": 1.2968395546510096,
+          "max_positive_hessian_eigenvalue": 1.0,
+          "model_v_max": 12.72578977938626,
+          "model_v_min": -11.953721962081026,
+          "stage": "retained"
+        }
+      ],
+      "unassessed_members": 7,
+      "verified_siblings": [
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000022",
+          "epsilon": 1.2968395546510096,
+          "leapfrog_steps": 5
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000024",
+          "epsilon": 1.2968395546510096,
+          "leapfrog_steps": 25
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000031",
+          "epsilon": 1.241857812073484,
+          "leapfrog_steps": 25
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000036",
+          "epsilon": 1.3542555469368927,
+          "leapfrog_steps": 5
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000037",
+          "epsilon": 1.3839098819638318,
+          "leapfrog_steps": 13
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000043",
+          "epsilon": 1.6641806889132555,
+          "leapfrog_steps": 5
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000049",
+          "epsilon": 1.3252366431597413,
+          "leapfrog_steps": 5
+        },
+        {
+          "candidate_id": "inference_validation:e63d23d2b0bae15c98ab:candidate:000051",
+          "epsilon": 1.391424375771926,
+          "leapfrog_steps": 25
+        }
+      ]
+    }
+  ],
+  "schema": "bayesfilter.supplied_funnel_geometry_audit.v1",
+  "tuning_records_changed": false
+}

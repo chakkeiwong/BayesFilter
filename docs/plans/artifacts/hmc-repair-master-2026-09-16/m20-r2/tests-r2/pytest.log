@@ -1,0 +1,15 @@
+.................................................F.............          [100%]
+=================================== FAILURES ===================================
+_________ test_public_windowed_preparation_feeds_automatic_broad_pilot _________
+tests/test_hmc_whole_procedure_repair.py:227: in test_public_windowed_preparation_feeds_automatic_broad_pilot
+    run = tune_hmc_kernel(adapter=GaussianTarget(), initial_position=[.2, -.3],
+bayesfilter/inference/hmc_tuning_dispatch.py:158: in tune_hmc_kernel
+    return run_shared_ordinary_tuning(
+bayesfilter/inference/hmc_candidate_set_public.py:177: in run_shared_ordinary_tuning
+    preparation = prepare_operational_windowed_mass_handoff(adapter=adapter,
+bayesfilter/inference/hmc_preparation.py:341: in prepare_operational_windowed_mass_handoff
+    raise HMCPreparationFailure(
+E   bayesfilter.inference.hmc_preparation.HMCPreparationFailure: operational windowed mass stage did not pass: hard_veto
+=========================== short test summary info ============================
+FAILED tests/test_hmc_whole_procedure_repair.py::test_public_windowed_preparation_feeds_automatic_broad_pilot
+1 failed, 62 passed, 2619 warnings in 127.27s (0:02:07)

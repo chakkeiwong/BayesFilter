@@ -33,7 +33,6 @@ from bayesfilter.linear.types_tf import (
 from bayesfilter.results_tf import TFFilterDerivativeResult
 from bayesfilter.structural import FilterRunMetadata
 
-
 TFSVDLinearDerivativeBackend = Literal["tf_svd_solve_logdet"]
 
 SVD_LINEAR_SCORE_STATUS_VALID_PRE_REGULARIZED = 0
@@ -119,6 +118,7 @@ def _call_svd_score_kernel(
     jitter: tf.Tensor | float,
     singular_floor: tf.Tensor | float,
     graph_status_safe_eigh: bool,
+    jit_compile: bool = True,
 ) -> tuple[
     tf.Tensor,
     tf.Tensor,
@@ -132,7 +132,9 @@ def _call_svd_score_kernel(
 ]:
     """Call the first-order SVD score kernel from either derivative payload."""
 
-    return _tf_svd_solve_logdet_kalman_score(
+    kernel = (_tf_svd_solve_logdet_kalman_score if jit_compile
+              else _tf_svd_solve_logdet_kalman_score.python_function)
+    return kernel(
         observations=observations,
         transition_offset=model.transition_offset,
         transition_matrix=model.transition_matrix,
@@ -267,7 +269,7 @@ def _diagnostics(
     )
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def _tf_svd_solve_logdet_kalman_score(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -947,13 +949,15 @@ def tf_svd_linear_gaussian_score_first_order_graph_status(
     observation_mask: tf.Tensor | None = None,
     jitter: tf.Tensor | float = 0.0,
     singular_floor: tf.Tensor | float = 1e-12,
+    jit_compile: bool = True,
 ) -> TFFilterDerivativeResult:
     """Return graph-safe SVD/eigh score tensors from first derivatives only.
 
     This is the score-only counterpart of
     :func:`tf_svd_linear_gaussian_score_hessian_graph_status`. It preserves the
     same tensor status contract while refusing to require or imply Hessian
-    derivative authority.
+    derivative authority. ``jit_compile=False`` is an explicit engineering
+    reference exception for comparisons in the same execution mode.
     """
 
     if backend != "tf_svd_solve_logdet":
@@ -982,6 +986,7 @@ def tf_svd_linear_gaussian_score_first_order_graph_status(
         jitter=jitter,
         singular_floor=singular_floor,
         graph_status_safe_eigh=True,
+        jit_compile=jit_compile,
     )
     active_floor_blocked = floor_count_value > 0
     invalid_eigensolver_input = tf.convert_to_tensor(invalid_eigensolver_input, dtype=tf.bool)

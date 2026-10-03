@@ -1,0 +1,173 @@
+"""Public dispatch for ordinary and typed TensorFlow HMC tuning."""
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from bayesfilter.inference.hmc_tensorflow_tuning import (
+    BOUND_RETAINED_HMC_ARCHIVE_SCHEMA,
+    FOUR_CHAIN_ACCEPTANCE_SCHEMA,
+    TENSORFLOW_HMC_TUNING_SCHEMA,
+    BoundRetainedHMCArchiveConfig,
+    BoundRetainedHMCArchiveResult,
+    BoundRetainedHMCArchiveRunner,
+    FourChainAcceptanceDecision,
+    FourChainMeanBandAcceptancePolicy,
+    TensorFlowHMCKernelTuningConfig,
+    TensorFlowHMCKernelTuningResult,
+    _run_tensorflow_hmc_tuning,
+    build_retained_bound_hmc_archive_runner_from_tuning_result,
+    load_tensorflow_hmc_tuning_result,
+)
+from bayesfilter.inference.tuning_contract import (
+    HMCTuningRunnerBinding,
+    require_active_hmc_tuning_route,
+)
+from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig
+
+
+def tune_hmc_kernel(
+    *,
+    adapter: Any,
+    initial_position: Any,
+    config: Any = None,
+    output_dir: str | Path | None = None,
+    negative_hessian: Any | None = None,
+    initial_covariance: Any | None = None,
+    parameter_scales: Any | None = None,
+    diagnostic_callback: Any | None = None,
+    verification_checkpoint_writer_config: Any | None = None,
+    runner_binding: HMCTuningRunnerBinding | None = None,
+    candidate_set_adapter: Any | None = None,
+    _candidate_set_route_kind: str = "ordinary",
+    search_config: HMCControllerConfig | None = None,
+    execution_config: Any | None = None,
+    target_lineage: Any | None = None,
+    source_paths: Any = (),
+    max_work_items: int | None = None,
+) -> Any:
+    """Run the public tuner or the shared typed candidate-set controller.
+
+    HMCControllerConfig selects the shared lifecycle with checked target/starts.
+    """
+
+    require_active_hmc_tuning_route("tune_hmc_kernel")
+    if isinstance(config, HMCControllerConfig):
+        extras = {"search_config": search_config, "execution_config": execution_config,
+                  "target_lineage": target_lineage, "source_paths": source_paths or None}
+        supplied = [name for name, value in extras.items() if value is not None]
+        if supplied:
+            raise ValueError("an issued candidate binding rejects redundant options: " + ", ".join(supplied))
+        if candidate_set_adapter is None:
+            raise ValueError(
+                "HMCControllerConfig requires a repository-issued candidate-set adapter"
+            )
+        if getattr(candidate_set_adapter, "adapter_kind", None) != _candidate_set_route_kind:
+            raise ValueError(
+                f"{_candidate_set_route_kind} candidate-set tuning requires a matching adapter"
+            )
+        if any(
+            value is not None
+            for value in (
+                negative_hessian,
+                initial_covariance,
+                parameter_scales,
+                diagnostic_callback,
+                verification_checkpoint_writer_config,
+                runner_binding,
+            )
+        ):
+            raise ValueError(
+                "candidate-set tuning does not accept legacy or TensorFlow stage options"
+            )
+        from bayesfilter.inference.hmc_candidate_set_adapters import (
+            run_typed_hmc_candidate_set,
+        )
+
+        execution = getattr(candidate_set_adapter, "_execution_binding", None)
+        if execution is not None:
+            execution.validate_dispatch_inputs(adapter, initial_position)
+        return run_typed_hmc_candidate_set(
+            candidate_set_adapter,
+            config,
+            output_dir=output_dir,
+            max_work_items=max_work_items,
+        )
+    if isinstance(config, TensorFlowHMCKernelTuningConfig):
+        unsupported = {
+            "candidate_set_adapter": candidate_set_adapter,
+            "target_lineage": target_lineage,
+            "source_paths": source_paths or None,
+            "negative_hessian": negative_hessian,
+            "initial_covariance": initial_covariance,
+            "diagnostic_callback": diagnostic_callback,
+            "verification_checkpoint_writer_config": (
+                verification_checkpoint_writer_config
+            ),
+        }
+        supplied = tuple(name for name, value in unsupported.items() if value is not None)
+        if supplied:
+            raise ValueError(
+                "TensorFlow tuning does not accept legacy host options: "
+                + ", ".join(supplied)
+            )
+        if runner_binding is None:
+            raise ValueError("TensorFlow tuning requires a repository-issued binding")
+        from bayesfilter.inference.hmc_candidate_set_position_field import run_shared_position_field_tuning
+        return run_shared_position_field_tuning(
+            adapter=adapter,
+            initial_position=initial_position,
+            config=config,
+            output_dir=output_dir,
+            parameter_scales=parameter_scales,
+            runner_binding=runner_binding,
+            search_config=search_config,
+            execution_config=execution_config,
+            max_work_items=max_work_items,
+        )
+
+    if runner_binding is not None:
+        raise ValueError(
+            "runner_binding is supported only with "
+            "TensorFlowHMCKernelTuningConfig; ordinary HMCKernelTuningConfig "
+            "uses the exact adapter score and BayesFilter's default TFP runner"
+        )
+
+    if diagnostic_callback is not None or verification_checkpoint_writer_config is not None:
+        raise ValueError("legacy diagnostic/checkpoint callbacks are retired; shared tuning writes numerical checkpoints to output_dir")
+    if candidate_set_adapter is not None:
+        raise ValueError("candidate_set_adapter requires HMCControllerConfig")
+    from bayesfilter.inference.hmc_candidate_set_public import run_shared_ordinary_tuning
+
+    return run_shared_ordinary_tuning(
+        adapter=adapter,
+        initial_position=initial_position,
+        config=config,
+        output_dir=output_dir,
+        negative_hessian=negative_hessian,
+        initial_covariance=initial_covariance,
+        parameter_scales=parameter_scales,
+        search_config=search_config,
+        execution_config=execution_config,
+        target_lineage=target_lineage,
+        source_paths=source_paths,
+        max_work_items=max_work_items,
+    )
+
+
+__all__ = [
+    "BOUND_RETAINED_HMC_ARCHIVE_SCHEMA",
+    "BoundRetainedHMCArchiveConfig",
+    "BoundRetainedHMCArchiveResult",
+    "BoundRetainedHMCArchiveRunner",
+    "FOUR_CHAIN_ACCEPTANCE_SCHEMA",
+    "FourChainAcceptanceDecision",
+    "FourChainMeanBandAcceptancePolicy",
+    "TENSORFLOW_HMC_TUNING_SCHEMA",
+    "TensorFlowHMCKernelTuningConfig",
+    "TensorFlowHMCKernelTuningResult",
+    "build_retained_bound_hmc_archive_runner_from_tuning_result",
+    "load_tensorflow_hmc_tuning_result",
+    "HMCControllerConfig",
+    "tune_hmc_kernel",
+]

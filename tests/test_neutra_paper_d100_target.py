@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from pathlib import Path
 
 import pytest
@@ -22,11 +23,14 @@ from bayesfilter.inference.neutra_paper_d100_target import (
     sample_paper_d100_exact,
 )
 
-
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / (
-    "docs/plans/artifacts/weighted-forward-kl-positive-controls-2026-08-12/"
-    "paper-d100/source-r1/paper_ill_cond_gaussian_d100_constants.json"
+SOURCE = Path(
+    os.environ.get(
+        "CCMA_G_V7_PHASE6_GAUSSIAN_CONSTANTS_PATH",
+        "/tmp/macrofinance-ccma-g-v7-neutra/docs/fixtures/"
+        "ccma_g_v7_phase6_paper_gaussian_r2/"
+        "paper_ill_cond_gaussian_d100_constants.json",
+    )
 )
 
 
@@ -79,6 +83,80 @@ def test_funnel_closed_form_value_score_and_standardization() -> None:
     )
 
 
+def test_funnel_finite_tail_matches_log_domain_oracle_autodiff_and_xla() -> None:
+    spec = make_paper_funnel_spec()
+    tail = tf.concat(
+        (
+            tf.constant([[-400.0, 1.0e-200]], tf.float64),
+            tf.zeros((1, 98), tf.float64),
+        ),
+        axis=1,
+    )
+    zero_x = tf.concat(
+        (tf.constant([[-400.0]], tf.float64), tf.zeros((1, 99), tf.float64)),
+        axis=1,
+    )
+    rows = tf.concat((tail, zero_x), axis=0)
+
+    log_half_quadratic = 800.0 + 2.0 * math.log(1.0e-200) - math.log(2.0)
+    half_quadratic = math.exp(log_half_quadratic)
+    expected_value = tf.constant(
+        [-40400.0 - half_quadratic, -40400.0], tf.float64
+    )
+    expected_score = tf.concat(
+        (
+            tf.constant(
+                [
+                    [
+                        301.0 + 2.0 * half_quadratic,
+                        -math.exp(800.0 + math.log(1.0e-200)),
+                    ],
+                    [301.0, 0.0],
+                ],
+                tf.float64,
+            ),
+            tf.zeros((2, 98), tf.float64),
+        ),
+        axis=1,
+    )
+
+    with tf.GradientTape() as tape:
+        tape.watch(rows)
+        eager_value = paper_d100_log_prob_batch(spec, rows)
+        total = tf.reduce_sum(eager_value)
+    autodiff_score = tape.gradient(total, rows)
+    value, score = paper_d100_log_prob_and_score_batch(spec, rows)
+    tf.debugging.assert_near(value, expected_value, atol=1.0e-12, rtol=1.0e-14)
+    tf.debugging.assert_near(score, expected_score, atol=1.0e-12, rtol=2.0e-13)
+    tf.debugging.assert_near(score, autodiff_score, atol=1.0e-12, rtol=2.0e-13)
+
+    @tf.function(
+        input_signature=[tf.TensorSpec((2, PAPER_D100_DIMENSION), tf.float64)],
+        jit_compile=True,
+    )
+    def compiled(values: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+        return paper_d100_log_prob_and_score_batch(spec, values)
+
+    xla_value, xla_score = compiled(rows)
+    tf.debugging.assert_near(xla_value, value, atol=1.0e-12, rtol=1.0e-14)
+    tf.debugging.assert_near(xla_score, score, atol=1.0e-12, rtol=2.0e-13)
+
+
+def test_funnel_genuinely_unrepresentable_score_remains_rejected() -> None:
+    spec = make_paper_funnel_spec()
+    row = tf.concat(
+        (
+            tf.constant([[-400.0, 1.0e-20]], tf.float64),
+            tf.zeros((1, 98), tf.float64),
+        ),
+        axis=1,
+    )
+    value = paper_d100_log_prob_batch(spec, row)
+    assert bool(tf.math.is_finite(value[0]).numpy())
+    with pytest.raises(tf.errors.InvalidArgumentError, match="paper d100 target score"):
+        paper_d100_log_prob_and_score_batch(spec, row)
+
+
 def test_funnel_exact_sampler_is_deterministic_and_conditionally_standard_normal() -> None:
     spec = make_paper_funnel_spec()
     first = sample_paper_d100_exact(spec, 32768, seed=(20260813, 51002))
@@ -99,7 +177,7 @@ def test_committed_gaussian_source_contract_and_exact_whitening() -> None:
     assert spec.name == "paper_ill_cond_gaussian"
     assert spec.dimension == 100
     assert spec.constants_hash == (
-        "e7421d0837176190bbd82479fb099adc321ce6ca262efccf6911ec1f59c33875"
+        "b50eaae0c2b31531fc6422e1cded4b5a3148bacfd3316ab34669256abdc04ee9"
     )
     rows = sample_paper_d100_exact(spec, 32768, seed=(20260813, 51003))
     centered = rows - tf.constant(spec.mean, tf.float64)[tf.newaxis, :]

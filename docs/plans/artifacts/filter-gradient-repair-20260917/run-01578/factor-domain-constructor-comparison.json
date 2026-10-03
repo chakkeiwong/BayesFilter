@@ -1,0 +1,185 @@
+{
+  "role": "explanatory_domain_guards",
+  "observations": [
+    {
+      "case": "healthy",
+      "mode": "original_eager",
+      "state": "returned",
+      "finite": true,
+      "matrix": [
+        [
+          1.0,
+          -0.020000000000000004,
+          0.06
+        ],
+        [
+          -0.020000000000000004,
+          1.0,
+          -0.03
+        ],
+        [
+          0.06,
+          -0.03,
+          1.0
+        ]
+      ]
+    },
+    {
+      "case": "healthy",
+      "mode": "current_graph",
+      "state": "returned",
+      "finite": true,
+      "matrix": [
+        [
+          1.0,
+          -0.020000000000000004,
+          0.06
+        ],
+        [
+          -0.020000000000000004,
+          1.0,
+          -0.03
+        ],
+        [
+          0.06,
+          -0.03,
+          1.0
+        ]
+      ]
+    },
+    {
+      "case": "healthy",
+      "mode": "current_xla",
+      "state": "returned",
+      "finite": true,
+      "matrix": [
+        [
+          1.0,
+          -0.020000000000000004,
+          0.06
+        ],
+        [
+          -0.020000000000000004,
+          1.0,
+          -0.03
+        ],
+        [
+          0.06,
+          -0.03,
+          1.0
+        ]
+      ]
+    },
+    {
+      "case": "at_margin",
+      "mode": "original_eager",
+      "state": "rejected",
+      "exception": "InvalidArgumentError",
+      "message": "Condition x < y did not hold.\nFirst 3 elements of x:\n[0.999999   0.         0.03999996]\nFirst 1 elements of y:\n[0.999999]"
+    },
+    {
+      "case": "at_margin",
+      "mode": "current_graph",
+      "state": "rejected",
+      "exception": "InvalidArgumentError",
+      "message": "Graph execution error:\n\nDetected at node assert_less/Assert/AssertGuard/Assert defined at (most recent call last):\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/scripts/filter_repair_test_worker.py\", line 54, in <module>\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/config/__init__.py\", line 199, in main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 365, in pytest_cmdline_main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 318, in wrap_session\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 372, in _main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 396, in pytest_runtestloop\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 118, in pytest_runtest_protocol\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 137, in runtestprotocol\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 244, in call_and_report\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 353, in from_call\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 245, in <lambda>\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 179, in pytest_runtest_call\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/python.py\", line 1720, in runtest\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/python.py\", line 166, in pytest_pyfunc_call\n\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/tests/test_filter_repair_factor_domain.py\", line 55, in test_factor_domain_constructor_comparison\n\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/bayesfilter/inference/factor_correlation_geometry.py\", line 440, in factor_correlation_covariance\n\nassertion failed: [Condition x < y did not hold element-wise:] [x (Sum:0) = ] [0.99999900000000008 0 0.039999960000000008] [y (sub:0) = ] [0.999999]\n\t [[{{node assert_less/Assert/AssertGuard/Assert}}]] [Op:__inference_factor_correlation_covariance_233381]"
+    },
+    {
+      "case": "at_margin",
+      "mode": "current_xla",
+      "state": "returned",
+      "finite": true,
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.19999980000000003
+        ],
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.19999980000000003,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "case": "outside_margin",
+      "mode": "original_eager",
+      "state": "rejected",
+      "exception": "InvalidArgumentError",
+      "message": "Condition x < y did not hold.\nFirst 3 elements of x:\n[1.21 0.   0.09]\nFirst 1 elements of y:\n[0.999999]"
+    },
+    {
+      "case": "outside_margin",
+      "mode": "current_graph",
+      "state": "rejected",
+      "exception": "InvalidArgumentError",
+      "message": "Graph execution error:\n\nDetected at node assert_less/Assert/AssertGuard/Assert defined at (most recent call last):\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/scripts/filter_repair_test_worker.py\", line 54, in <module>\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/config/__init__.py\", line 199, in main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 365, in pytest_cmdline_main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 318, in wrap_session\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 372, in _main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 396, in pytest_runtestloop\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 118, in pytest_runtest_protocol\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 137, in runtestprotocol\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 244, in call_and_report\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 353, in from_call\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 245, in <lambda>\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 179, in pytest_runtest_call\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/python.py\", line 1720, in runtest\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/python.py\", line 166, in pytest_pyfunc_call\n\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/tests/test_filter_repair_factor_domain.py\", line 55, in test_factor_domain_constructor_comparison\n\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/bayesfilter/inference/factor_correlation_geometry.py\", line 440, in factor_correlation_covariance\n\nassertion failed: [Condition x < y did not hold element-wise:] [x (Sum:0) = ] [1.2100000000000002 0 0.09] [y (sub:0) = ] [0.999999]\n\t [[{{node assert_less/Assert/AssertGuard/Assert}}]] [Op:__inference_factor_correlation_covariance_233381]"
+    },
+    {
+      "case": "outside_margin",
+      "mode": "current_xla",
+      "state": "returned",
+      "finite": true,
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.33
+        ],
+        [
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.33,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "case": "negative_scale",
+      "mode": "original_eager",
+      "state": "rejected",
+      "exception": "InvalidArgumentError",
+      "message": "\nCondition x > 0 did not hold element-wise:\nx (shape=(3,) dtype=float64) = \n['-1.0', '-1.0', '-1.0']"
+    },
+    {
+      "case": "negative_scale",
+      "mode": "current_graph",
+      "state": "rejected",
+      "exception": "InvalidArgumentError",
+      "message": "Graph execution error:\n\nDetected at node assert_positive/assert_less/Assert/AssertGuard/Assert defined at (most recent call last):\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/scripts/filter_repair_test_worker.py\", line 54, in <module>\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/config/__init__.py\", line 199, in main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 365, in pytest_cmdline_main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 318, in wrap_session\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 372, in _main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 396, in pytest_runtestloop\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 118, in pytest_runtest_protocol\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 137, in runtestprotocol\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 244, in call_and_report\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 353, in from_call\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 245, in <lambda>\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 179, in pytest_runtest_call\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/python.py\", line 1720, in runtest\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/python.py\", line 166, in pytest_pyfunc_call\n\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/tests/test_filter_repair_factor_domain.py\", line 55, in test_factor_domain_constructor_comparison\n\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/bayesfilter/inference/factor_correlation_geometry.py\", line 439, in factor_correlation_covariance\n\nDetected at node assert_positive/assert_less/Assert/AssertGuard/Assert defined at (most recent call last):\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/scripts/filter_repair_test_worker.py\", line 54, in <module>\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/config/__init__.py\", line 199, in main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 365, in pytest_cmdline_main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 318, in wrap_session\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 372, in _main\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/main.py\", line 396, in pytest_runtestloop\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 118, in pytest_runtest_protocol\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 137, in runtestprotocol\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 244, in call_and_report\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 353, in from_call\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 245, in <lambda>\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/runner.py\", line 179, in pytest_runtest_call\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/python.py\", line 1720, in runtest\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_hooks.py\", line 512, in __call__\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_manager.py\", line 120, in _hookexec\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/pluggy/_callers.py\", line 121, in _multicall\n\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/_pytest/python.py\", line 166, in pytest_pyfunc_call\n\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/tests/test_filter_repair_factor_domain.py\", line 55, in test_factor_domain_constructor_comparison\n\n  File \"/tmp/bayesfilter-filter-gradient-xla-validation-20260918/bayesfilter/inference/factor_correlation_geometry.py\", line 439, in factor_correlation_covariance\n\n2 root error(s) found.\n  (0) INVALID_ARGUMENT:  assertion failed: [] [Condition x > 0 did not hold element-wise:] [x (Reshape:0) = ] [-1 -1 -1]\n\t [[{{node assert_positive/assert_less/Assert/AssertGuard/Assert}}]]\n\t [[assert_less/Assert/AssertGuard/pivot_f/_12/_23]]\n  (1) INVALID_ARGUMENT:  assertion failed: [] [Condition x > 0 did not hold element-wise:] [x (Reshape:0) = ] [-1 -1 -1]\n\t [[{{node assert_positive/assert_less/Assert/AssertGuard/Assert}}]]\n0 successful operations.\n0 derived errors ignored. [Op:__inference_factor_correlation_covariance_233381]"
+    },
+    {
+      "case": "negative_scale",
+      "mode": "current_xla",
+      "state": "returned",
+      "finite": true,
+      "matrix": [
+        [
+          1.0,
+          -0.020000000000000004,
+          0.06
+        ],
+        [
+          -0.020000000000000004,
+          1.0,
+          -0.03
+        ],
+        [
+          0.06,
+          -0.03,
+          1.0
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,425 @@
+{
+  "schema": "bayesfilter.neutra.single_authority_implementation_manifest.v1",
+  "git_commit": "622d9a9ed028659328b6386f9e9de7f368e7bba3",
+  "branch": "main",
+  "worktree": "pre-existing dirty worktree preserved; implementation uncommitted",
+  "plan": "docs/plans/bayesfilter-neutra-single-authority-plan-2026-09-24.md",
+  "result": "docs/plans/bayesfilter-neutra-single-authority-results-2026-09-24.md",
+  "question": "shared source-based transport engineering; no learned-quality inference",
+  "data_version": "N/A: deterministic analytic fixtures and existing synthetic checkpoints",
+  "seeds": "Recorded in each test fixture and each GPU configuration; no stochastic method ranking",
+  "source_sha256": {
+    "bayesfilter/inference/__init__.py": "596807d4be546384d3c592ea5ef311fcec8b24c768483144fe3f1eb17e5f5ecb",
+    "bayesfilter/inference/neutra_transport_core.py": "cc8086a382537c3faac3a634188c9ae2be788861ffb58f70b9268e49bd954636",
+    "bayesfilter/inference/neutra_transport.py": "6e3d5d411b26d794c7be6c038741cf99c671a58bc1b256a353eb44edc16a2f66",
+    "bayesfilter/inference/neutra_training.py": "80c8258cc4a8c35c747a99aefe8bcb899c039aab2b21b5005dcf3b552efec101",
+    "bayesfilter/inference/neutra_training_legacy.py": "1884e85764cd49012afb20296ec3c9f57ac9946b17bc697ca2c3c161d975b4a3",
+    "bayesfilter/inference/neutra_weighted_training.py": "770e361f97e1825e8410f0998ee52d697b70e82797f4de8974cf5a15ef3eeee5",
+    "bayesfilter/inference/neutra_artifacts.py": "3b9dd28bf32515b221e6171da84e28e49116da7867db3e293cc0cd2ba06f3710",
+    "bayesfilter/inference/neutra_training_mechanisms.py": "c3f4187e4f42dde331e73f3fd1d5a95cf6e464d27a81e10a388596bdc096dd51",
+    "bayesfilter/inference/neutra_scale_aware_training.py": "a0fefe1183f22a72d181152a4ca6db899909770a0d81c03233e375f80ed5467d",
+    "bayesfilter/inference/neutra_scale_aware_kernels.py": "fc15ca75bc1c94602d4b3f2adb87faae2946fc5e7664ac8e04865bc0d18de9c7",
+    "bayesfilter/inference/neutra_varying_hessian_target.py": "b95cbb885252fc48a9d5b6c4add8cba70714f1f91585e7a238132f0774f73cc4",
+    "bayesfilter/inference/tempered_transport_ensemble_tf.py": "257a4cf0e274810a29ab90db5ad4a3965edee5625d0a85a131af388d8383af05",
+    "bayesfilter/inference/neutra_post_training.py": "c605448c6c7d3617eb4c5e3c5f2402531d879cfd30fc4093e0452d955d08acea",
+    "bayesfilter/inference/hmc_candidate_set_execution.py": "7ad1d0758f79bb0e9581545e180cb3c275636f29595313b2fb64a34535b9bd85",
+    "bayesfilter/inference/tuning_contract.py": "1a6e1aebe8503aee6863307eb065a68c239fb382b4cbf3357013fcfee6533e1d",
+    "tests/test_neutra_single_authority.py": "a1999e59f15e4fb80c7d4089d1be77ab9782685d2f065ae2fe22ff0e70d65e54",
+    "tests/test_hmc_candidate_set_execution.py": "66c47353d0e14d53eecb33ce3d5dd9513b621f2bff70a97ba8adf99e0b45fd1c",
+    "docs/benchmarks/check_neutra_single_authority_2026_09_24.py": "2a86709b52ab3d8b8b6a728ec90cef6738b8122d90cf7e5bd1213d2265a9c208",
+    ".localresources/q20-flow-training-literature-20260923/code/neutra.py": "0e8b964bf1935ffd60650dec60a6d22d4e40b75b9b43cd2557e384fbacadda36",
+    ".localresources/q20-flow-training-literature-20260923/code/neutra-utils.py": "e18650c7438639d1b28290a0d6086d15f6d4fb49c8a2776371bae88d960c4223",
+    ".localresources/q20-flow-training-literature-20260923/code/naf-flows.py": "e1ab1555719e41f42732df722f423e788d449c4315f4c2e1d60ef1c0df025845",
+    ".localresources/q20-flow-training-literature-20260923/code/naf-nn.py": "f5abb12be8cdd35e69632dbfb406c1e8734112fcbf3424051e344ee363eefdd0",
+    ".localresources/q20-flow-training-literature-20260923/code/naf-iaf_modules.py": "618facbc76c1ef691e26a5da3b0314c481f6b0820bf4268b078b875439159cca"
+  },
+  "test_runs": [
+    {
+      "artifact": "docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-final.xml",
+      "argv": [
+        "timeout",
+        "600",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_neutra_single_authority.py",
+        "tests/test_neutra_training.py",
+        "tests/test_neutra_artifact_loader.py",
+        "tests/test_dense_iaf_neutra_artifact_loader.py",
+        "tests/test_neutra_training_mechanisms.py",
+        "tests/test_neutra_mechanism_adam_canary.py",
+        "tests/test_neutra_scale_aware_training.py",
+        "tests/test_neutra_scale_aware_xla.py",
+        "tests/test_neutra_training_graph_contract.py",
+        "tests/test_neutra_post_training.py",
+        "tests/test_neutra_weighted_training.py",
+        "tests/test_neutra_weighted_training_dtype.py",
+        "tests/test_tempered_transport_ensemble.py",
+        "--disable-warnings",
+        "--maxfail=2",
+        "--junitxml=docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-final.xml"
+      ],
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu",
+        "TF_NUM_INTRAOP_THREADS": "2",
+        "TF_NUM_INTEROP_THREADS": "2",
+        "OMP_NUM_THREADS": "2"
+      },
+      "reported_test_seconds": 277.625,
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "198",
+          "time": "277.625",
+          "timestamp": "2026-09-24T01:02:26.538949+08:00",
+          "hostname": "ubuntu-MZ72-HB2-00"
+        }
+      ],
+      "failure_details": []
+    },
+    {
+      "artifact": "docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-compatibility.xml",
+      "argv": [
+        "timeout",
+        "600",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_neutra_dsge_procedure_parity.py",
+        "-k",
+        "not capacity_operator_matches_dsge_generic_32x32_math and not required_sibling_commit_and_exact_cross_repository_math_parity and not one_keras_adam_update_matches_dsge_runner_semantics",
+        "tests/test_neutra_varying_hessian_target.py",
+        "--disable-warnings",
+        "--maxfail=2",
+        "--junitxml=docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-compatibility.xml"
+      ],
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu",
+        "TF_NUM_INTRAOP_THREADS": "2",
+        "TF_NUM_INTEROP_THREADS": "2",
+        "OMP_NUM_THREADS": "2"
+      },
+      "reported_test_seconds": 15.464,
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "35",
+          "time": "15.464",
+          "timestamp": "2026-09-24T01:07:07.147171+08:00",
+          "hostname": "ubuntu-MZ72-HB2-00"
+        }
+      ],
+      "failure_details": []
+    },
+    {
+      "artifact": "docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-final-wiring.xml",
+      "argv": [
+        "timeout",
+        "600",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_tuning_documentation_contract.py",
+        "tests/test_neutra_scale_aware_xla.py",
+        "-k",
+        "documentation or compiled_transactions_match_reference_and_reuse_graphs",
+        "--disable-warnings",
+        "--maxfail=2",
+        "--junitxml=docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-final-wiring.xml"
+      ],
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu",
+        "TF_NUM_INTRAOP_THREADS": "2",
+        "TF_NUM_INTEROP_THREADS": "2",
+        "OMP_NUM_THREADS": "2"
+      },
+      "reported_test_seconds": 15.038,
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "16",
+          "time": "15.038",
+          "timestamp": "2026-09-24T02:56:38.400228+08:00",
+          "hostname": "ubuntu-MZ72-HB2-00"
+        }
+      ],
+      "failure_details": []
+    },
+    {
+      "artifact": "docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-hmc-consumer.xml",
+      "argv": [
+        "timeout",
+        "600",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_candidate_set_execution.py",
+        "-k",
+        "supported_frozen_transports_use_numerical_controller_and_durable_geometry",
+        "--disable-warnings",
+        "--maxfail=2",
+        "--junitxml=docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-hmc-consumer.xml"
+      ],
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu",
+        "TF_NUM_INTRAOP_THREADS": "2",
+        "TF_NUM_INTEROP_THREADS": "2",
+        "OMP_NUM_THREADS": "2"
+      },
+      "reported_test_seconds": 170.525,
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "8",
+          "time": "170.525",
+          "timestamp": "2026-09-24T02:55:56.720359+08:00",
+          "hostname": "ubuntu-MZ72-HB2-00"
+        }
+      ],
+      "failure_details": [
+        "kind = 'affine', reuse = False\ntmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-697/test_supported_frozen_transpor0')\n\n    @pytest.mark.parametrize(\"kind\", [\"affine\", \"dense_iaf\", \"configured_iaf\", \"configured_naf_dsf\"])\n    @pytest.mark.parametrize(\"reuse\", [False, True])\n    def test_supported_frozen_transports_use_numerical_controller_and_durable_geometry(kind, reuse, tmp_path):\n        target = GaussianTarget()\n        if kind == \"affine\":\n            payload = {\"schema\": \"bayesfilter.neutra.frozen_affine_diag.v1\", \"transport_id\": \"test-affine\",\n                \"dimension\": 2, \"target_signature\": target.adapter_signature(), \"log_jacobian_available\": True,\n                \"shift\": [.2,-.1], \"raw_scale\": [.1,.05]}\n        elif kind == \"dense_iaf\":\n            from tests.test_dense_iaf_neutra_artifact_loader import _payload\n            payload = _payload(target_signature=target.adapter_signature())\n        else:\n            from bayesfilter.inference.neutra_transport import NeuTraTransport, NeuTraTransportConfig\n            config = (NeuTraTransportConfig.hoffman_author_iaf(2, conditional_scale_cap=2., seed=(47, 11))\n                      if kind == \"configured_iaf\" else NeuTraTransportConfig.huang_dsf(\n                          2, hidden_layers=(4,), stages=1, mixture_components=3, seed=(47, 11)))\n            payload = NeuTraTransport(config).frozen_payload(target_signature=target.adapter_signature())\n        binding = make_binding(mass_artifact=None, frozen_transport_payload=payload, start_coordinates=\"active\",\n                               config=execution_config(reuse_leapfrog_graphs=reuse))\n        probes = tf.constant([[.2,-.5],[-.3,.4]], tf.float64)\n        value, score = binding._active_adapter.log_prob_and_grad(probes)\n        raw = binding.position_samples(probes)\n        expected = target.log_prob_and_grad(raw)[0] + binding._active_adapter.log_abs_det_jacobian(probes)\n        np.testing.assert_allclose(value, expected, rtol=1e-12, atol=1e-12)\n        for index in range(2):\n            offset = np.zeros((2,2)); offset[:,index] = 1e-5\n            plus = binding._active_adapter.log_prob_and_grad(probes+offset)[0]\n            minus = binding._active_adapter.log_prob_and_grad(probes-offset)[0]\n            np.testing.assert_allclose(score[:,index], (plus-minus)/(2e-5), atol=1e-8)\n        from bayesfilter.inference import tune_fixed_transport_hmc_kernel\n        result = tune_fixed_transport_hmc_kernel(base_adapter=target, fixed_transport=binding.fixed_transport,\n            initial_position=binding.initial_active_state, candidate_set_adapter=binding.typed_adapter,\n            config=HMCControllerConfig(primary_l_grid=(2,3), epsilon_by_l=((2,(1.1,1.3,1.5)),(3,(1.1,1.3,1.5))),\n                total_budget_units=40, repair_reserve_units=3)).result\n>       assert result.verified_candidate_ids, [(r.epsilon,r.exact_l,r.decision,r.acceptance,r.hard_vetoes) for r in result.verification_receipts]\nE       AssertionError: [(1.1, 2, 'repair_step_higher', 0.8785966899459093, ()), (1.3, 2, 'repair_step_higher', 0.9702204800720726, ()), (1.5, 2, 'passed', 0.6581034048996839, ())]\nE       assert ()\nE        +  where () = HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='bridge-test', search_id='search-1', target_signature=...={'refinement_round': 0, 'gradient_work': 4896, 'elapsed_seconds': 3.6354528560768813, 'controller_policy_version': 3}).verified_candidate_ids\n\ntests/test_hmc_candidate_set_execution.py:439: AssertionError"
+      ]
+    },
+    {
+      "artifact": "docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-hmc-consumer-02.xml",
+      "argv": [
+        "timeout",
+        "600",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_candidate_set_execution.py",
+        "-k",
+        "supported_frozen_transports_use_numerical_controller_and_durable_geometry",
+        "--disable-warnings",
+        "--maxfail=2",
+        "--junitxml=docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-hmc-consumer-02.xml"
+      ],
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu",
+        "TF_NUM_INTRAOP_THREADS": "2",
+        "TF_NUM_INTEROP_THREADS": "2",
+        "OMP_NUM_THREADS": "2"
+      },
+      "reported_test_seconds": 215.685,
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "8",
+          "time": "215.685",
+          "timestamp": "2026-09-24T03:00:23.205843+08:00",
+          "hostname": "ubuntu-MZ72-HB2-00"
+        }
+      ],
+      "failure_details": []
+    },
+    {
+      "artifact": "docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-source-identity.xml",
+      "argv": [
+        "timeout",
+        "600",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_neutra_scale_aware_training.py",
+        "-k",
+        "checkpoint or resume or identity",
+        "--disable-warnings",
+        "--maxfail=2",
+        "--junitxml=docs/plans/artifacts/neutra-single-authority-2026-09-24/pytest-source-identity.xml"
+      ],
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu",
+        "TF_NUM_INTRAOP_THREADS": "2",
+        "TF_NUM_INTEROP_THREADS": "2",
+        "OMP_NUM_THREADS": "2"
+      },
+      "reported_test_seconds": 23.76,
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "6",
+          "time": "23.760",
+          "timestamp": "2026-09-24T03:09:20.464433+08:00",
+          "hostname": "ubuntu-MZ72-HB2-00"
+        }
+      ],
+      "failure_details": []
+    }
+  ],
+  "gpu_runs": [
+    {
+      "artifact": "docs/plans/artifacts/neutra-single-authority-2026-09-24/gpu-01.json",
+      "argv": [
+        "timeout",
+        "300",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/check_neutra_single_authority_2026_09_24.py",
+        "--output",
+        "docs/plans/artifacts/neutra-single-authority-2026-09-24/gpu-01.json"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "0",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "2",
+        "TF_NUM_INTEROP_THREADS": "2",
+        "OMP_NUM_THREADS": "2"
+      },
+      "wall_seconds": 22.690576541004702,
+      "status": "passed",
+      "revision": "preliminary engineering",
+      "memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "gpu_source_hashes_match_final": {
+        "bayesfilter/inference/neutra_transport.py": false,
+        "bayesfilter/inference/neutra_transport_core.py": false,
+        "bayesfilter/inference/neutra_artifacts.py": true,
+        "docs/benchmarks/check_neutra_single_authority_2026_09_24.py": true
+      }
+    },
+    {
+      "artifact": "docs/plans/artifacts/neutra-single-authority-2026-09-24/gpu-02.json",
+      "argv": [
+        "timeout",
+        "270",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/check_neutra_single_authority_2026_09_24.py",
+        "--output",
+        "docs/plans/artifacts/neutra-single-authority-2026-09-24/gpu-02.json"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "0",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "2",
+        "TF_NUM_INTEROP_THREADS": "2",
+        "OMP_NUM_THREADS": "2"
+      },
+      "wall_seconds": 28.19407721492462,
+      "status": "passed",
+      "revision": "final author profile",
+      "memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "gpu_source_hashes_match_final": {
+        "bayesfilter/inference/neutra_transport.py": true,
+        "bayesfilter/inference/neutra_transport_core.py": true,
+        "bayesfilter/inference/neutra_artifacts.py": true,
+        "docs/benchmarks/check_neutra_single_authority_2026_09_24.py": true
+      }
+    }
+  ],
+  "gpu_worker_seconds": 50.88465375592932,
+  "gpu_allowance_seconds": 300,
+  "historical_external_parity": {
+    "status": "unavailable",
+    "expected_commit": "d94566c9f70b3143e599a56eba7cb461ff2bda88",
+    "actual_sibling_commit": "aa6fa3d13b5b68bc108b49f94660e040539bf927",
+    "local_error": "unable to read tree 1c8ef35aff67966cabcdc26a3bb103fe2a8efbfd",
+    "isolated_remote_fetch_error": "not our ref d94566c9f70b3143e599a56eba7cb461ff2bda88",
+    "sibling_modified": false
+  },
+  "document_build": {
+    "argv": [
+      "latexmk",
+      "-pdf",
+      "-interaction=nonstopmode",
+      "-halt-on-error",
+      "-outdir=plans/artifacts/neutra-single-authority-2026-09-24/build",
+      "plans/artifacts/neutra-single-authority-2026-09-24/chapter-review.tex"
+    ],
+    "cwd": "/home/ubuntu/python/BayesFilter/docs",
+    "status": "passed",
+    "pdf": "docs/plans/artifacts/neutra-single-authority-2026-09-24/build/chapter-review.pdf",
+    "pages": 7,
+    "rendered_review_page": 6
+  },
+  "nonclaims": [
+    "No new q20 training or sampler result",
+    "No calibrated q20 default",
+    "No stochastic ranking",
+    "No posterior qualification"
+  ]
+}

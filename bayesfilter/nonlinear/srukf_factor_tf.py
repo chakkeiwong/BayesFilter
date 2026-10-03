@@ -15,13 +15,11 @@ from typing import Callable, Mapping
 import tensorflow as tf
 
 from bayesfilter.linear.qr_factor_tf import (
-    cholesky_factor,
     cholesky_factor_first_derivatives,
     factor_solve,
     lower_factor_from_horizontal_stack,
     symmetrize,
 )
-
 
 TFSRUKFMapFn = Callable[[tf.Tensor], tf.Tensor]
 TFSRUKFPointJacobianFn = Callable[[tf.Tensor], tf.Tensor]
@@ -221,19 +219,14 @@ def _factor_reconstruction_residual(factor: tf.Tensor, covariance: tf.Tensor) ->
 
 
 def _factor_derivative_residual(factor: tf.Tensor, d_factor: tf.Tensor, d_covariance: tf.Tensor) -> tf.Tensor:
-    residuals = []
-    for parameter_index in range(int(d_factor.shape[0])):
-        reconstructed = (
-            d_factor[parameter_index] @ tf.transpose(factor)
-            + factor @ tf.transpose(d_factor[parameter_index])
-        )
-        residuals.append(tf.linalg.norm(reconstructed - d_covariance[parameter_index]))
-    return tf.reduce_max(tf.stack(residuals)) if residuals else tf.constant(0.0, dtype=tf.float64)
+    reconstructed = d_factor @ tf.transpose(factor) + factor @ tf.linalg.matrix_transpose(d_factor)
+    residuals = tf.linalg.norm(reconstructed - d_covariance, axis=[-2, -1])
+    return tf.reduce_max(tf.concat((residuals, tf.zeros([1], tf.float64)), 0))
 
 
 def _right_solve_spd(covariance_factor: tf.Tensor, matrix: tf.Tensor) -> tf.Tensor:
-    solved_t = factor_solve(covariance_factor, tf.transpose(matrix))
-    return tf.transpose(solved_t)
+    solved_t = factor_solve(covariance_factor, tf.linalg.matrix_transpose(matrix))
+    return tf.linalg.matrix_transpose(solved_t)
 
 
 def _logdet_from_lower_factor(factor: tf.Tensor) -> tf.Tensor:
@@ -342,28 +335,13 @@ def tf_srukf_factor_score_step(
         + tf.tensordot(innovation, solve_weight, axes=1)
     )
 
-    score_terms = []
-    for parameter_index in range(derivatives.parameter_dim):
-        d_innovation = -d_predicted_observation[parameter_index]
-        d_s = d_innovation_covariance[parameter_index]
-        trace_term = tf.linalg.trace(factor_solve(innovation_factor, d_s))
-        quadratic_term = tf.tensordot(solve_weight, tf.linalg.matvec(d_s, solve_weight), axes=1)
-        score_terms.append(
-            -0.5
-            * (
-                trace_term
-                + 2.0 * tf.tensordot(d_innovation, solve_weight, axes=1)
-                - quadratic_term
-            )
-        )
-    score = tf.stack(score_terms)
-
+    score = -0.5 * (
+        tf.linalg.trace(factor_solve(innovation_factor, d_innovation_covariance))
+        - 2.0 * tf.einsum("pm,m->p", d_predicted_observation, solve_weight)
+        - tf.einsum("m,pmn,n->p", solve_weight, d_innovation_covariance, solve_weight)
+    )
     gain = _right_solve_spd(innovation_factor, cross_covariance)
-    d_gain_rows = []
-    for parameter_index in range(derivatives.parameter_dim):
-        rhs = d_cross_covariance[parameter_index] - gain @ d_innovation_covariance[parameter_index]
-        d_gain_rows.append(_right_solve_spd(innovation_factor, rhs))
-    d_gain = tf.stack(d_gain_rows)
+    d_gain = _right_solve_spd(innovation_factor, d_cross_covariance - gain @ d_innovation_covariance)
 
     filtered_mean = predicted_mean + tf.linalg.matvec(gain, innovation)
     d_filtered_mean = (
@@ -372,17 +350,11 @@ def tf_srukf_factor_score_step(
         - tf.einsum("dm,pm->pd", gain, d_predicted_observation)
     )
     filtered_covariance = symmetrize(state_covariance - gain @ innovation_covariance @ tf.transpose(gain))
-    d_filtered_covariance_rows = []
-    for parameter_index in range(derivatives.parameter_dim):
-        d_filtered_covariance_rows.append(
-            symmetrize(
-                d_state_covariance[parameter_index]
-                - d_gain[parameter_index] @ innovation_covariance @ tf.transpose(gain)
-                - gain @ d_innovation_covariance[parameter_index] @ tf.transpose(gain)
-                - gain @ innovation_covariance @ tf.transpose(d_gain[parameter_index])
-            )
-        )
-    d_filtered_covariance = tf.stack(d_filtered_covariance_rows)
+    d_filtered_covariance = symmetrize(
+        d_state_covariance - d_gain @ innovation_covariance @ tf.transpose(gain)
+        - gain @ d_innovation_covariance @ tf.transpose(gain)
+        - gain @ innovation_covariance @ tf.linalg.matrix_transpose(d_gain)
+    )
     filtered_factor, d_filtered_factor = cholesky_factor_first_derivatives(
         filtered_covariance,
         d_filtered_covariance,

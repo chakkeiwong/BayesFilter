@@ -1,0 +1,867 @@
+{
+  "assessment": {
+    "candidate_count": 3,
+    "evidence_class": "controller_double",
+    "failures": [
+      "cross_pair_verification:validation:controller:candidate:000001",
+      "cross_pair_verification:validation:controller:candidate:000002",
+      "cross_pair_verification:validation:controller:candidate:000003",
+      "cross_pair_verification:validation:controller:candidate:000003",
+      "cross_pair_verification:validation:controller:candidate:000003",
+      "cross_pair_verification:validation:controller:candidate:000002",
+      "cross_pair_verification:validation:controller:candidate:000003"
+    ],
+    "finding": "inventory_discrepancy",
+    "invariants": {
+      "all_members_retained": true,
+      "released_budget_completes": true,
+      "resume_matches": true,
+      "rhat_no_effect": true
+    },
+    "native_payload": {
+      "accounting_events": [
+        {
+          "candidate_id": "validation:controller:candidate:000001",
+          "event": "reserve_allocated",
+          "source": "initial_reserve",
+          "units": 3
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000001",
+          "event": "work_reserved",
+          "units": 1,
+          "work_item_id": "validation:controller:work:000001"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000002",
+          "event": "reserve_allocated",
+          "source": "initial_reserve",
+          "units": 3
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000002",
+          "event": "work_reserved",
+          "units": 1,
+          "work_item_id": "validation:controller:work:000002"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000001",
+          "event": "work_charged",
+          "remaining_candidate_reserve": 2,
+          "units": 1,
+          "work_item_id": "validation:controller:work:000001"
+        },
+        {
+          "event": "numerical_work_reserved",
+          "work_item_id": "validation:controller:work:000001"
+        },
+        {
+          "child_candidate_id": "validation:controller:candidate:000003",
+          "event": "repair_proposed",
+          "parent_candidate_id": "validation:controller:candidate:000001",
+          "repair_action_id": "validation:controller:repair:0001"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000001",
+          "event": "reserve_released",
+          "reason": "promotion_failed",
+          "units": 2
+        },
+        {
+          "event": "work_elapsed",
+          "seconds": 0.0001559309894219041,
+          "work_item_id": "validation:controller:work:000001"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000002",
+          "event": "work_charged",
+          "remaining_candidate_reserve": 2,
+          "units": 1,
+          "work_item_id": "validation:controller:work:000002"
+        },
+        {
+          "event": "numerical_work_reserved",
+          "work_item_id": "validation:controller:work:000002"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000002",
+          "event": "work_reserved",
+          "units": 1,
+          "work_item_id": "validation:controller:work:000003"
+        },
+        {
+          "event": "work_elapsed",
+          "seconds": 3.714003833010793e-05,
+          "work_item_id": "validation:controller:work:000002"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "reserve_allocated",
+          "source": "repair_reserve",
+          "units": 3
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_reserved",
+          "units": 1,
+          "work_item_id": "validation:controller:work:000004"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_charged",
+          "remaining_candidate_reserve": 2,
+          "units": 1,
+          "work_item_id": "validation:controller:work:000004"
+        },
+        {
+          "event": "numerical_work_reserved",
+          "work_item_id": "validation:controller:work:000004"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_reserved",
+          "units": 1,
+          "work_item_id": "validation:controller:work:000005"
+        },
+        {
+          "event": "work_elapsed",
+          "seconds": 3.549002576619387e-05,
+          "work_item_id": "validation:controller:work:000004"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_charged",
+          "remaining_candidate_reserve": 1,
+          "units": 1,
+          "work_item_id": "validation:controller:work:000005"
+        },
+        {
+          "event": "numerical_work_reserved",
+          "work_item_id": "validation:controller:work:000005"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_reserved",
+          "units": 1,
+          "work_item_id": "validation:controller:work:000006"
+        },
+        {
+          "event": "work_elapsed",
+          "seconds": 3.2310024835169315e-05,
+          "work_item_id": "validation:controller:work:000005"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_charged",
+          "remaining_candidate_reserve": 0,
+          "units": 1,
+          "work_item_id": "validation:controller:work:000006"
+        },
+        {
+          "event": "numerical_work_reserved",
+          "work_item_id": "validation:controller:work:000006"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_reserved",
+          "units": 1,
+          "work_item_id": "validation:controller:work:000007"
+        },
+        {
+          "event": "work_elapsed",
+          "seconds": 3.3739954233169556e-05,
+          "work_item_id": "validation:controller:work:000006"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_charge_failed",
+          "reason": "candidate_reserve_exhausted",
+          "reserved_units": 0,
+          "units": 1,
+          "work_item_id": "validation:controller:work:000007"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_budget_deferred",
+          "reason": "remaining_call_units",
+          "work_item_id": "validation:controller:work:000007"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000002",
+          "event": "work_charged",
+          "remaining_candidate_reserve": 1,
+          "units": 1,
+          "work_item_id": "validation:controller:work:000003"
+        },
+        {
+          "event": "numerical_work_reserved",
+          "work_item_id": "validation:controller:work:000003"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000002",
+          "event": "reserve_released",
+          "reason": "verified",
+          "units": 1
+        },
+        {
+          "event": "work_elapsed",
+          "seconds": 2.1099986042827368e-05,
+          "work_item_id": "validation:controller:work:000003"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "reserve_allocated",
+          "source": "extension_or_retry",
+          "units": 1
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "event": "work_charged",
+          "remaining_candidate_reserve": 0,
+          "units": 1,
+          "work_item_id": "validation:controller:work:000007"
+        },
+        {
+          "event": "numerical_work_reserved",
+          "work_item_id": "validation:controller:work:000007"
+        },
+        {
+          "event": "work_elapsed",
+          "seconds": 3.455101978033781e-05,
+          "work_item_id": "validation:controller:work:000007"
+        }
+      ],
+      "artifact_authority": false,
+      "artifact_schema": "bayesfilter.hmc_candidate_set_artifact.v1",
+      "budget_used_units": 7,
+      "candidate_states": {
+        "validation:controller:candidate:000001": "promotion_failed",
+        "validation:controller:candidate:000002": "verified",
+        "validation:controller:candidate:000003": "verified"
+      },
+      "candidates": [
+        {
+          "adapter_signature": "unbound-adapter",
+          "backend": "tensorflow_probability",
+          "candidate_family_id": "validation:controller:family:000001",
+          "candidate_id": "validation:controller:candidate:000001",
+          "candidate_record_hash": "e57733e15490f123cac09c3d25387bb88b3bff34a333b2c549f788cc86635116",
+          "coordinate_system": "ordinary",
+          "creation_ordinal": 1,
+          "dtype": "float64",
+          "epsilon": 0.5,
+          "execution_mode": "tf_function",
+          "leapfrog_steps": 3,
+          "mass_signature": "identity",
+          "parent_candidate_id": null,
+          "schema": "bayesfilter.hmc_candidate_record.v1",
+          "scope_id": "validation",
+          "search_id": "controller",
+          "source_dependency_hash": "unbound-source-closure",
+          "start_bank_signature": "scripted_starts",
+          "target_preparation_identity": "unbound-target-preparation",
+          "target_signature": "scripted",
+          "transition_identity": "unbound-transition",
+          "warmup_protocol": "none"
+        },
+        {
+          "adapter_signature": "unbound-adapter",
+          "backend": "tensorflow_probability",
+          "candidate_family_id": "validation:controller:family:000002",
+          "candidate_id": "validation:controller:candidate:000002",
+          "candidate_record_hash": "a381f6699df683c892029c74703c72ca6c4dcc6560740383e3fae190dc9dbd83",
+          "coordinate_system": "ordinary",
+          "creation_ordinal": 2,
+          "dtype": "float64",
+          "epsilon": 0.5,
+          "execution_mode": "tf_function",
+          "leapfrog_steps": 5,
+          "mass_signature": "identity",
+          "parent_candidate_id": null,
+          "schema": "bayesfilter.hmc_candidate_record.v1",
+          "scope_id": "validation",
+          "search_id": "controller",
+          "source_dependency_hash": "unbound-source-closure",
+          "start_bank_signature": "scripted_starts",
+          "target_preparation_identity": "unbound-target-preparation",
+          "target_signature": "scripted",
+          "transition_identity": "unbound-transition",
+          "warmup_protocol": "none"
+        },
+        {
+          "adapter_signature": "unbound-adapter",
+          "backend": "tensorflow_probability",
+          "candidate_family_id": "validation:controller:family:000001",
+          "candidate_id": "validation:controller:candidate:000003",
+          "candidate_record_hash": "35dbfeee3ae203aafbae918b1fad2eac246b3c215c89fcb71f3aab1eaf21f8bd",
+          "coordinate_system": "ordinary",
+          "creation_ordinal": 3,
+          "dtype": "float64",
+          "epsilon": 0.25,
+          "execution_mode": "tf_function",
+          "leapfrog_steps": 3,
+          "mass_signature": "identity",
+          "parent_candidate_id": "validation:controller:candidate:000001",
+          "schema": "bayesfilter.hmc_candidate_record.v1",
+          "scope_id": "validation",
+          "search_id": "controller",
+          "source_dependency_hash": "unbound-source-closure",
+          "start_bank_signature": "scripted_starts",
+          "target_preparation_identity": "unbound-target-preparation",
+          "target_signature": "scripted",
+          "transition_identity": "unbound-transition",
+          "warmup_protocol": "none"
+        }
+      ],
+      "completion_status": "complete",
+      "config": {
+        "allow_repair_from_free_pool": true,
+        "candidate_reserve_units": 3,
+        "epsilon_by_l": [
+          [
+            3,
+            [
+              0.5
+            ]
+          ],
+          [
+            5,
+            [
+              0.5
+            ]
+          ]
+        ],
+        "epsilon_refinement_factors": [
+          0.8,
+          1.25
+        ],
+        "evidence_rungs": [
+          1,
+          2,
+          4
+        ],
+        "expansion_l_grid": [],
+        "initial_epsilon": null,
+        "max_candidates": 100,
+        "max_gradient_work": null,
+        "max_wall_time_seconds": null,
+        "pilot_enabled": false,
+        "primary_l_grid": [
+          3,
+          5
+        ],
+        "refinement_l_grid": [],
+        "refinement_rounds": 0,
+        "repair_reserve_units": 3,
+        "schema": "bayesfilter.hmc_controller_config.v1",
+        "total_budget_units": 7
+      },
+      "final_status": "complete",
+      "nominee_id": null,
+      "nonclaims": [
+        "no statistical superiority claim",
+        "no posterior convergence claim from tuning evidence",
+        "no implicit candidate selection"
+      ],
+      "numerical_handoff_authority": false,
+      "observations": [
+        {
+          "candidate_id": "validation:controller:candidate:000001",
+          "observation": {
+            "acceptance": 0.2,
+            "decision": "repair_step_lower",
+            "rhat": 1.0
+          },
+          "stage": "measurement",
+          "work_item_id": "validation:controller:work:000001"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000002",
+          "observation": {
+            "acceptance": 0.7,
+            "decision": "passed",
+            "rhat": 1.0
+          },
+          "stage": "measurement",
+          "work_item_id": "validation:controller:work:000002"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "observation": {
+            "acceptance": 0.7,
+            "decision": "inconclusive_evidence",
+            "rhat": 1.0
+          },
+          "stage": "measurement",
+          "work_item_id": "validation:controller:work:000004"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "observation": {
+            "acceptance": 0.7,
+            "decision": "inconclusive_evidence",
+            "rhat": 1.0
+          },
+          "stage": "measurement",
+          "work_item_id": "validation:controller:work:000005"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "observation": {
+            "acceptance": 0.7,
+            "decision": "passed",
+            "rhat": 1.0
+          },
+          "stage": "measurement",
+          "work_item_id": "validation:controller:work:000006"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000002",
+          "observation": {
+            "acceptance": 0.7,
+            "decision": "passed",
+            "rhat": 1.0
+          },
+          "stage": "verification",
+          "work_item_id": "validation:controller:work:000003"
+        },
+        {
+          "candidate_id": "validation:controller:candidate:000003",
+          "observation": {
+            "acceptance": 0.7,
+            "decision": "passed",
+            "rhat": 1.0
+          },
+          "stage": "verification",
+          "work_item_id": "validation:controller:work:000007"
+        }
+      ],
+      "remaining_budget_units": 0,
+      "repair_actions": [
+        {
+          "allocation_source": "repair_reserve",
+          "candidate_family_id": "validation:controller:family:000001",
+          "child_candidate_id": "validation:controller:candidate:000003",
+          "direction": "repair_step_lower",
+          "exact_l": 3,
+          "execution_status": "executed",
+          "mass_signature": "identity",
+          "new_epsilon": 0.25,
+          "not_executed_reason": null,
+          "old_epsilon": 0.5,
+          "parent_candidate_id": "validation:controller:candidate:000001",
+          "qualified_repair_status": "executed_and_verified",
+          "repair_action_id": "validation:controller:repair:0001",
+          "schema": "bayesfilter.hmc_repair_action.v1",
+          "source_verification_hash": "dffba387fcd1e2e1737a1946284e5e91b028068edfc2751fc700903c6ff29380",
+          "verification_status": "passed"
+        }
+      ],
+      "replay_authority": true,
+      "reserved_budget_units": 0,
+      "result_hash": "04dde19d8886ccd2d8b1c11fc98f9db7135676f16375a2f6918cc1b9acc06316",
+      "resume_pending_work_item_ids": [],
+      "schema": "bayesfilter.hmc_candidate_set_result.v1",
+      "scope": {
+        "adapter_signature": "unbound-adapter",
+        "backend": "tensorflow_probability",
+        "coordinate_system": "ordinary",
+        "dtype": "float64",
+        "epsilon_domain": [
+          0.05,
+          2.0
+        ],
+        "execution_mode": "tf_function",
+        "mass_signature": "identity",
+        "max_repairs_per_family": 2,
+        "repair_factor": 2.0,
+        "schema": "bayesfilter.hmc_tuning_scope.v1",
+        "scope_id": "validation",
+        "search_id": "controller",
+        "source_dependency_hash": "unbound-source-closure",
+        "start_bank_signature": "scripted_starts",
+        "target_preparation_identity": "unbound-target-preparation",
+        "target_signature": "scripted",
+        "transition_identity": "unbound-transition",
+        "warmup_protocol": "none"
+      },
+      "search_state": {
+        "controller_policy_version": 3,
+        "elapsed_seconds": 0.000698395015206188,
+        "gradient_work": 0,
+        "refinement_round": 0
+      },
+      "verification_receipts": [
+        {
+          "acceptance": 0.2,
+          "acceptance_decision": "repair_step_lower",
+          "candidate_id": "validation:controller:candidate:000001",
+          "candidate_record_hash": "e57733e15490f123cac09c3d25387bb88b3bff34a333b2c549f788cc86635116",
+          "decision": "repair_step_lower",
+          "diagnostic_alerts": [],
+          "draw_range": [
+            0,
+            0
+          ],
+          "epsilon": 0.5,
+          "evidence_validity": "valid",
+          "exact_l": 99,
+          "hard_vetoes": [],
+          "mass_signature": "identity",
+          "promotion_eligible": false,
+          "promotion_vetoes": [],
+          "repair_eligible": true,
+          "schema": "bayesfilter.hmc_verification_receipt.v1",
+          "seed_lineage": [
+            1,
+            1
+          ],
+          "stage": "measurement",
+          "stream_id": "validation:controller:work:000001:stream",
+          "verification_attempt_id": "validation:controller:work:000001:attempt"
+        },
+        {
+          "acceptance": 0.7,
+          "acceptance_decision": "passed",
+          "candidate_id": "validation:controller:candidate:000002",
+          "candidate_record_hash": "a381f6699df683c892029c74703c72ca6c4dcc6560740383e3fae190dc9dbd83",
+          "decision": "passed",
+          "diagnostic_alerts": [],
+          "draw_range": [
+            0,
+            0
+          ],
+          "epsilon": 0.5,
+          "evidence_validity": "valid",
+          "exact_l": 99,
+          "hard_vetoes": [],
+          "mass_signature": "identity",
+          "promotion_eligible": true,
+          "promotion_vetoes": [],
+          "repair_eligible": false,
+          "schema": "bayesfilter.hmc_verification_receipt.v1",
+          "seed_lineage": [
+            2,
+            2
+          ],
+          "stage": "measurement",
+          "stream_id": "validation:controller:work:000002:stream",
+          "verification_attempt_id": "validation:controller:work:000002:attempt"
+        },
+        {
+          "acceptance": 0.7,
+          "acceptance_decision": "inconclusive_evidence",
+          "candidate_id": "validation:controller:candidate:000003",
+          "candidate_record_hash": "35dbfeee3ae203aafbae918b1fad2eac246b3c215c89fcb71f3aab1eaf21f8bd",
+          "decision": "inconclusive_evidence",
+          "diagnostic_alerts": [],
+          "draw_range": [
+            0,
+            0
+          ],
+          "epsilon": 0.25,
+          "evidence_validity": "valid",
+          "exact_l": 99,
+          "hard_vetoes": [],
+          "mass_signature": "identity",
+          "promotion_eligible": false,
+          "promotion_vetoes": [],
+          "repair_eligible": false,
+          "schema": "bayesfilter.hmc_verification_receipt.v1",
+          "seed_lineage": [
+            3,
+            4
+          ],
+          "stage": "measurement",
+          "stream_id": "validation:controller:work:000004:stream",
+          "verification_attempt_id": "validation:controller:work:000004:attempt"
+        },
+        {
+          "acceptance": 0.7,
+          "acceptance_decision": "inconclusive_evidence",
+          "candidate_id": "validation:controller:candidate:000003",
+          "candidate_record_hash": "35dbfeee3ae203aafbae918b1fad2eac246b3c215c89fcb71f3aab1eaf21f8bd",
+          "decision": "inconclusive_evidence",
+          "diagnostic_alerts": [],
+          "draw_range": [
+            0,
+            0
+          ],
+          "epsilon": 0.25,
+          "evidence_validity": "valid",
+          "exact_l": 99,
+          "hard_vetoes": [],
+          "mass_signature": "identity",
+          "promotion_eligible": false,
+          "promotion_vetoes": [],
+          "repair_eligible": false,
+          "schema": "bayesfilter.hmc_verification_receipt.v1",
+          "seed_lineage": [
+            3,
+            5
+          ],
+          "stage": "measurement",
+          "stream_id": "validation:controller:work:000005:stream",
+          "verification_attempt_id": "validation:controller:work:000005:attempt"
+        },
+        {
+          "acceptance": 0.7,
+          "acceptance_decision": "passed",
+          "candidate_id": "validation:controller:candidate:000003",
+          "candidate_record_hash": "35dbfeee3ae203aafbae918b1fad2eac246b3c215c89fcb71f3aab1eaf21f8bd",
+          "decision": "passed",
+          "diagnostic_alerts": [],
+          "draw_range": [
+            0,
+            0
+          ],
+          "epsilon": 0.25,
+          "evidence_validity": "valid",
+          "exact_l": 99,
+          "hard_vetoes": [],
+          "mass_signature": "identity",
+          "promotion_eligible": true,
+          "promotion_vetoes": [],
+          "repair_eligible": false,
+          "schema": "bayesfilter.hmc_verification_receipt.v1",
+          "seed_lineage": [
+            3,
+            6
+          ],
+          "stage": "measurement",
+          "stream_id": "validation:controller:work:000006:stream",
+          "verification_attempt_id": "validation:controller:work:000006:attempt"
+        },
+        {
+          "acceptance": 0.7,
+          "acceptance_decision": "passed",
+          "candidate_id": "validation:controller:candidate:000002",
+          "candidate_record_hash": "a381f6699df683c892029c74703c72ca6c4dcc6560740383e3fae190dc9dbd83",
+          "decision": "passed",
+          "diagnostic_alerts": [],
+          "draw_range": [
+            0,
+            0
+          ],
+          "epsilon": 0.5,
+          "evidence_validity": "valid",
+          "exact_l": 99,
+          "hard_vetoes": [],
+          "mass_signature": "identity",
+          "promotion_eligible": true,
+          "promotion_vetoes": [],
+          "repair_eligible": false,
+          "schema": "bayesfilter.hmc_verification_receipt.v1",
+          "seed_lineage": [
+            2,
+            3
+          ],
+          "stage": "verification",
+          "stream_id": "validation:controller:work:000003:stream",
+          "verification_attempt_id": "validation:controller:candidate:000002:verification:001"
+        },
+        {
+          "acceptance": 0.7,
+          "acceptance_decision": "passed",
+          "candidate_id": "validation:controller:candidate:000003",
+          "candidate_record_hash": "35dbfeee3ae203aafbae918b1fad2eac246b3c215c89fcb71f3aab1eaf21f8bd",
+          "decision": "passed",
+          "diagnostic_alerts": [],
+          "draw_range": [
+            0,
+            0
+          ],
+          "epsilon": 0.25,
+          "evidence_validity": "valid",
+          "exact_l": 99,
+          "hard_vetoes": [],
+          "mass_signature": "identity",
+          "promotion_eligible": true,
+          "promotion_vetoes": [],
+          "repair_eligible": false,
+          "schema": "bayesfilter.hmc_verification_receipt.v1",
+          "seed_lineage": [
+            3,
+            7
+          ],
+          "stage": "verification",
+          "stream_id": "validation:controller:work:000007:stream",
+          "verification_attempt_id": "validation:controller:candidate:000003:verification:001"
+        }
+      ],
+      "verified_candidate_ids": [
+        "validation:controller:candidate:000002",
+        "validation:controller:candidate:000003"
+      ],
+      "viable_candidate_ids": [
+        "validation:controller:candidate:000002",
+        "validation:controller:candidate:000003"
+      ],
+      "work_items": [
+        {
+          "candidate_family_id": "validation:controller:family:000001",
+          "candidate_id": "validation:controller:candidate:000001",
+          "candidate_record_hash": "e57733e15490f123cac09c3d25387bb88b3bff34a333b2c549f788cc86635116",
+          "cohort_id": "validation:cohort:0001",
+          "evidence_multiplier": 1,
+          "evidence_rung": 0,
+          "ordinal": 1,
+          "priority": 1,
+          "repair_action_id": null,
+          "reservation_units": 1,
+          "schema": "bayesfilter.hmc_work_item.v1",
+          "stage": "measurement",
+          "status": "completed",
+          "verification_attempt_id": null,
+          "work_item_id": "validation:controller:work:000001"
+        },
+        {
+          "candidate_family_id": "validation:controller:family:000002",
+          "candidate_id": "validation:controller:candidate:000002",
+          "candidate_record_hash": "a381f6699df683c892029c74703c72ca6c4dcc6560740383e3fae190dc9dbd83",
+          "cohort_id": "validation:cohort:0001",
+          "evidence_multiplier": 1,
+          "evidence_rung": 0,
+          "ordinal": 2,
+          "priority": 1,
+          "repair_action_id": null,
+          "reservation_units": 1,
+          "schema": "bayesfilter.hmc_work_item.v1",
+          "stage": "measurement",
+          "status": "completed",
+          "verification_attempt_id": null,
+          "work_item_id": "validation:controller:work:000002"
+        },
+        {
+          "candidate_family_id": "validation:controller:family:000002",
+          "candidate_id": "validation:controller:candidate:000002",
+          "candidate_record_hash": "a381f6699df683c892029c74703c72ca6c4dcc6560740383e3fae190dc9dbd83",
+          "cohort_id": "validation:cohort:0006",
+          "evidence_multiplier": 1,
+          "evidence_rung": 0,
+          "ordinal": 3,
+          "priority": 1,
+          "repair_action_id": null,
+          "reservation_units": 1,
+          "schema": "bayesfilter.hmc_work_item.v1",
+          "stage": "verification",
+          "status": "completed",
+          "verification_attempt_id": "validation:controller:candidate:000002:verification:001",
+          "work_item_id": "validation:controller:work:000003"
+        },
+        {
+          "candidate_family_id": "validation:controller:family:000001",
+          "candidate_id": "validation:controller:candidate:000003",
+          "candidate_record_hash": "35dbfeee3ae203aafbae918b1fad2eac246b3c215c89fcb71f3aab1eaf21f8bd",
+          "cohort_id": "validation:cohort:0002",
+          "evidence_multiplier": 1,
+          "evidence_rung": 0,
+          "ordinal": 4,
+          "priority": 0,
+          "repair_action_id": "validation:controller:repair:0001",
+          "reservation_units": 1,
+          "schema": "bayesfilter.hmc_work_item.v1",
+          "stage": "measurement",
+          "status": "completed",
+          "verification_attempt_id": null,
+          "work_item_id": "validation:controller:work:000004"
+        },
+        {
+          "candidate_family_id": "validation:controller:family:000001",
+          "candidate_id": "validation:controller:candidate:000003",
+          "candidate_record_hash": "35dbfeee3ae203aafbae918b1fad2eac246b3c215c89fcb71f3aab1eaf21f8bd",
+          "cohort_id": "validation:cohort:0003",
+          "evidence_multiplier": 2,
+          "evidence_rung": 1,
+          "ordinal": 5,
+          "priority": 0,
+          "repair_action_id": "validation:controller:repair:0001",
+          "reservation_units": 1,
+          "schema": "bayesfilter.hmc_work_item.v1",
+          "stage": "measurement",
+          "status": "completed",
+          "verification_attempt_id": null,
+          "work_item_id": "validation:controller:work:000005"
+        },
+        {
+          "candidate_family_id": "validation:controller:family:000001",
+          "candidate_id": "validation:controller:candidate:000003",
+          "candidate_record_hash": "35dbfeee3ae203aafbae918b1fad2eac246b3c215c89fcb71f3aab1eaf21f8bd",
+          "cohort_id": "validation:cohort:0004",
+          "evidence_multiplier": 4,
+          "evidence_rung": 2,
+          "ordinal": 6,
+          "priority": 0,
+          "repair_action_id": "validation:controller:repair:0001",
+          "reservation_units": 1,
+          "schema": "bayesfilter.hmc_work_item.v1",
+          "stage": "measurement",
+          "status": "completed",
+          "verification_attempt_id": null,
+          "work_item_id": "validation:controller:work:000006"
+        },
+        {
+          "candidate_family_id": "validation:controller:family:000001",
+          "candidate_id": "validation:controller:candidate:000003",
+          "candidate_record_hash": "35dbfeee3ae203aafbae918b1fad2eac246b3c215c89fcb71f3aab1eaf21f8bd",
+          "cohort_id": "validation:cohort:0007",
+          "evidence_multiplier": 1,
+          "evidence_rung": 0,
+          "ordinal": 7,
+          "priority": 0,
+          "repair_action_id": "validation:controller:repair:0001",
+          "reservation_units": 1,
+          "schema": "bayesfilter.hmc_work_item.v1",
+          "stage": "verification",
+          "status": "completed",
+          "verification_attempt_id": "validation:controller:candidate:000003:verification:001",
+          "work_item_id": "validation:controller:work:000007"
+        }
+      ]
+    },
+    "numerical_correctness_established": false,
+    "verified_count": 2
+  },
+  "coverage": {
+    "control": "cross_l_epsilon",
+    "device": "cpu_reference",
+    "engine": "search",
+    "family": "quadratic",
+    "phase": "development",
+    "route": "controller",
+    "start": "dispersed",
+    "target": "gaussian"
+  },
+  "design_identity": "6732584338cde01b1c6f8b002b69f0572fa02a001ab8514528083888b9e71e6a",
+  "elapsed_seconds": 2.8760551460436545,
+  "execution_status": "complete",
+  "runtime": {
+    "device_scope": "cpu_reference",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": false,
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tf32": true,
+    "tfp": "0.25.0",
+    "visible_devices": "-1"
+  },
+  "schema": "bayesfilter.inference_validation_result.v1",
+  "test_response": {
+    "activation": "explicit isolated diagnostic control",
+    "control": "cross_l_epsilon",
+    "interpretation": "one outcome is not a detection probability; execution failure never counts as detection",
+    "power_established": false,
+    "status": "intended_discrepancy_detected"
+  }
+}

@@ -1,4 +1,9 @@
-"""Adapters for MacroFinance-shaped linear Gaussian state-space objects.
+"""Independent diagnostic adapters for MacroFinance-shaped LGSSM objects.
+
+The NumPy likelihood is a reference oracle, and the readiness helpers inspect
+host-side diagnostic evidence. Neither is an admitted TensorFlow runtime or
+training/admission authority. Runtime consumers use ``bayesfilter.linear``
+TensorFlow kernels and ``bayesfilter.nonlinear`` compiled UKF targets.
 
 The functions here use structural typing: BayesFilter does not import
 MacroFinance at package import time.  Client projects keep ownership of their

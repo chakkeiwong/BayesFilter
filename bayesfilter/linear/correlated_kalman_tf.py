@@ -26,6 +26,7 @@ import math
 
 import tensorflow as tf
 
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
 
 _LOG_2PI = tf.constant(math.log(2.0 * math.pi), dtype=tf.float64)
 
@@ -64,7 +65,10 @@ def _require_symmetric(matrix: tf.Tensor, name: str) -> tf.Tensor:
         rtol=1.0e-10,
         message=f"{name} must be symmetric",
     )
-    return _symmetrize(matrix)
+    tolerance = tf.constant(1e-10, tf.float64)
+    transposed = tf.linalg.matrix_transpose(matrix)
+    valid = tf.reduce_all(tf.abs(matrix - transposed) <= tolerance + tolerance * tf.abs(transposed), axis=(-2, -1))
+    return tf.where(valid[..., None, None], _symmetrize(matrix), tf.constant(float("nan"), tf.float64))
 
 
 def _canonicalize_observations(
@@ -719,7 +723,7 @@ def _run_batched(
     )
 
 
-@tf.function(reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64)
 def tf_correlated_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -752,7 +756,7 @@ def tf_correlated_kalman_filter(
     )
 
 
-@tf.function(reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64, tensor_dtypes={"observation_mask": tf.bool})
 def tf_masked_correlated_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -786,7 +790,7 @@ def tf_masked_correlated_kalman_filter(
     )
 
 
-@tf.function(reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64)
 def tf_correlated_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -820,7 +824,7 @@ def tf_correlated_kalman_log_likelihood(
     return value
 
 
-@tf.function(reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64, tensor_dtypes={"observation_mask": tf.bool})
 def tf_masked_correlated_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -855,7 +859,7 @@ def tf_masked_correlated_kalman_log_likelihood(
     return value
 
 
-@tf.function(reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64)
 def tf_correlated_kalman_filter_batched_time_varying(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -888,7 +892,7 @@ def tf_correlated_kalman_filter_batched_time_varying(
     )
 
 
-@tf.function(reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64, tensor_dtypes={"observation_mask": tf.bool})
 def tf_masked_correlated_kalman_filter_batched_time_varying(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -922,7 +926,7 @@ def tf_masked_correlated_kalman_filter_batched_time_varying(
     )
 
 
-@tf.function(reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64)
 def tf_correlated_kalman_log_likelihood_batched_time_varying(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -956,7 +960,7 @@ def tf_correlated_kalman_log_likelihood_batched_time_varying(
     return value
 
 
-@tf.function(reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64, tensor_dtypes={"observation_mask": tf.bool})
 def tf_masked_correlated_kalman_log_likelihood_batched_time_varying(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,

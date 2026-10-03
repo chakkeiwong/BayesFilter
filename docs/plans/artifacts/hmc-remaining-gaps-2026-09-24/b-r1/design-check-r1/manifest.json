@@ -1,0 +1,22 @@
+{
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-c",
+    "import json; from pathlib import Path; from bayesfilter.testing.inference_validation.execution import plan_suite; p=Path(\"/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/b-r1/development-inventory.json\"); inv=json.loads(p.read_text()); plans=[plan_suite(json.loads(Path(r[\"design\"]).read_text())) for r in inv[\"fits\"]]; assert all(j[\"availability\"]==\"ready\" for d in plans for j in d[\"jobs\"]); print(json.dumps({\"validated_designs\":len(plans),\"seconds\":sum(p[\"maximum_worker_seconds\"] for p in plans)}))"
+  ],
+  "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/b-r1/source-r1",
+  "started_utc": "2026-09-23T19:25:28.534706+00:00",
+  "timeout_seconds": 60.0,
+  "execution_role": "bounded development or engineering check",
+  "device": "cpu_reference",
+  "gpu": "intentionally hidden before framework import",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "1",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "PYTHONPATH": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/b-r1/source-r1"
+  },
+  "plan_file": "docs/plans/bayesfilter-hmc-remaining-gap-program-2026-09-24.md",
+  "result_file": "docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/b-r1/design-check-r1/execution.json"
+}

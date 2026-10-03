@@ -1,0 +1,53 @@
+{
+  "max_workers": 2,
+  "tasks": [
+    {
+      "name": "m22-merged-null-confirmation",
+      "phase": "M22",
+      "suite": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m22-r2/null-confirmation.json",
+      "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-r1",
+      "output": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m22-r2/null-confirmation-cpu-r1",
+      "worker_seconds": 10800
+    },
+    {
+      "name": "m21-merged-confirmation-gaussian",
+      "phase": "M21",
+      "suite": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/m21-merged-confirmation-gaussian.json",
+      "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-r1",
+      "output": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/gaussian",
+      "worker_seconds": 28000
+    },
+    {
+      "name": "m21-merged-confirmation-beta_binomial",
+      "phase": "M21",
+      "suite": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/m21-merged-confirmation-beta_binomial.json",
+      "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-r1",
+      "output": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/beta_binomial",
+      "worker_seconds": 35000
+    },
+    {
+      "name": "m21-merged-confirmation-rotated_gaussian",
+      "phase": "M21",
+      "suite": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/m21-merged-confirmation-rotated_gaussian.json",
+      "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-r1",
+      "output": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/rotated_gaussian",
+      "worker_seconds": 3000
+    },
+    {
+      "name": "m21-merged-confirmation-lgssm_location",
+      "phase": "M21",
+      "suite": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/m21-merged-confirmation-lgssm_location.json",
+      "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-r1",
+      "output": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/public-confirmation-cpu-r1/lgssm_location",
+      "worker_seconds": 3000
+    }
+  ],
+  "numerical_worker_ceiling": 79800,
+  "M21_seconds": 69000,
+  "M22_seconds": 10800,
+  "pilot_outcomes_excluded": true,
+  "source_commit": "f9c86f41ac44efc5e6a5a5220633073fce803431",
+  "plan_file": "docs/plans/bayesfilter-hmc-merged-source-continuation-2026-09-22.md",
+  "pilot_checks": "source, complete inventories, independent comparators and affordability passed; caps are not tuning vetoes",
+  "estimator_followup": "TFP passed fixed-count eligibility in both regimes; no default change; random-stop validation remains open"
+}

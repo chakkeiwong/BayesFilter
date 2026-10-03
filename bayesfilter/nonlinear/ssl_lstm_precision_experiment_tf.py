@@ -13,9 +13,9 @@ from typing import Literal, NamedTuple
 
 import tensorflow as tf
 
+from bayesfilter.linear.compiled_recurrence_tf import compiled_tensor_recurrence
 from bayesfilter.nonlinear.ssl_lstm_protocol import SSLLSTMStaticConfig
 from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import ssl_lstm_parameter_slices
-
 
 PrecisionPolicy = Literal["all_float64", "mixed_lstm32_filter64", "all_float32_tf32"]
 
@@ -333,7 +333,7 @@ def ssl_lstm_precision_value_and_score(
     free = tf.ensure_shape(tf.cast(free, dtype), [4])
     full = tf.tensor_scatter_nd_update(
         tf.cast(fixture, dtype),
-        tf.constant([[index] for index in free_indices], tf.int32),
+        tf.reshape(tf.constant(free_indices, tf.int32), [-1, 1]),
         free,
     )
     params = _unpack(full, config, model_dtype=model_dtype, filter_dtype=dtype)
@@ -342,7 +342,6 @@ def ssl_lstm_precision_value_and_score(
     k = int(config.latent_dim)
     n = int(config.augmented_state_dim)
     aug_dim = n + k
-    point_count = 2 * aug_dim + 1
     eye = tf.eye(aug_dim, dtype=dtype)
     scale = tf.sqrt(tf.cast(aug_dim, dtype))
     offsets = tf.concat([tf.zeros([1, aug_dim], dtype), scale * eye, -scale * eye], axis=0)
@@ -374,7 +373,8 @@ def ssl_lstm_precision_value_and_score(
     max_innovation_floor_count = tf.constant(0, tf.int32)
     max_factor_residual = tf.cast(0.0, dtype)
 
-    for t in range(int(config.horizon)):
+    def advance(t, mean, covariance, d_mean, d_covariance, log_likelihood, score,
+                max_placement_floor_count, max_innovation_floor_count, max_factor_residual):
         aug_mean = tf.concat([mean, tf.zeros([k], dtype)], axis=0)
         d_aug_mean = tf.concat([d_mean, tf.zeros([p, k], dtype)], axis=1)
         aug_covariance = tf.concat(
@@ -486,18 +486,13 @@ def ssl_lstm_precision_value_and_score(
         )
         kalman_gain = cross_covariance @ innovation_precision
         gain_transpose = tf.transpose(kalman_gain)
-        d_kalman_gain = tf.stack(
-            [
-                tf.transpose(
-                    _factor_solve(
-                        innovation_factor,
-                        tf.transpose(d_cross_covariance[i])
-                        - d_raw_innovation_covariance[i] @ gain_transpose,
-                    )
-                )
-                for i in range(p)
-            ],
-            axis=0,
+        gain_rhs = tf.linalg.matrix_transpose(d_cross_covariance) - d_raw_innovation_covariance @ gain_transpose
+        d_kalman_gain = tf.linalg.matrix_transpose(
+            tf.linalg.triangular_solve(
+                tf.linalg.matrix_transpose(innovation_factor),
+                tf.linalg.triangular_solve(innovation_factor, gain_rhs, lower=True),
+                lower=False,
+            )
         )
         mean = predicted_mean + tf.linalg.matvec(kalman_gain, innovation)
         d_mean = (
@@ -530,6 +525,20 @@ def ssl_lstm_precision_value_and_score(
         max_innovation_floor_count = tf.maximum(
             max_innovation_floor_count, innovation_count
         )
+
+        return (t + 1, mean, covariance, d_mean, d_covariance, log_likelihood, score,
+                max_placement_floor_count, max_innovation_floor_count, max_factor_residual)
+
+    (_, mean, covariance, d_mean, d_covariance, log_likelihood, score,
+     max_placement_floor_count, max_innovation_floor_count, max_factor_residual) = compiled_tensor_recurrence(
+        advance, (mean, covariance, d_mean, d_covariance, log_likelihood, score,
+                  max_placement_floor_count, max_innovation_floor_count, max_factor_residual),
+        int(config.horizon),
+    )
+    if not regularized_float32:
+        valid = tf.logical_and(max_placement_floor_count == 0, max_innovation_floor_count == 0)
+        log_likelihood = tf.where(valid, log_likelihood, tf.cast(float("nan"), dtype))
+        score = tf.where(valid, score, tf.cast(float("nan"), dtype))
 
     delta = free - tf.cast(prior_center, dtype)
     variance = tf.cast(prior_standard_deviation**2, dtype)

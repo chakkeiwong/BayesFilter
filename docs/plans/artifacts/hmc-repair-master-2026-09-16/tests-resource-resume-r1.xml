@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="10.333" timestamp="2026-09-17T01:17:06.531168+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_resource_resume" name="test_resource_retry_preserves_design_prior_cost_and_attempt" time="10.000"><failure message="AssertionError: assert {'aggregate_g...ds': 120, ...} == {'aggregate_g...ds': 120, ...}&#10;  &#10;  Omitting 9 identical items, use -vv to show&#10;  Differing items:&#10;  {'jobs': [{'availability': 'ready', 'coverage': {'control': 'baseline', 'device': 'cpu_reference', 'engine': 'sbc', 'f...ign_id': 'unit-reference', ...}, 'identity': '5bb7cd696c4674d66ab837625c3d7fb2f95382a8940c004c076d3d12d376c0c8', ...}]} != {'jobs': [{'availability': 'ready', 'coverage': {'control': 'baseline', 'device': 'cpu_reference', 'engine': 'sbc', 'f...ign_id': 'unit-reference', ...}, 'identity': '5bb7cd696c4674d66ab837625c3d7fb2f95382a8940c004c076d3d12d376c0c8', ...}]}&#10;  Use -v to get more diff">design = &lt;function design.&lt;locals&gt;.make at 0x733004b639c0&gt;
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-381/test_resource_retry_preserves_0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x733004a65e00&gt;
+
+    def test_resource_retry_preserves_design_prior_cost_and_attempt(design,tmp_path,monkeypatch):
+        d=design("sbc","normal_conjugate","reference",replications=2)
+        suite={"schema":"bayesfilter.inference_validation_suite.v1","suite_id":"retry",
+               "profile":"test","profiles":{"test":["sbc"]},"designs":[d.payload()]}
+        root=tmp_path/"suite"
+        index=execution.run_suite(suite,root)
+        original=index["jobs"][d.design_id]
+        original_result=read_json(original["result"])
+        index["jobs"][d.design_id]["status"]="timed_out"
+        write_json(root/"run_index.json",index)
+        def complete(design,command,log,seconds,attempt):
+            assert design.identity==d.identity and attempt==2 and seconds==7.
+            target=Path(original["result"]).with_name("attempt-002-result.json")
+            write_json(target,original_result)
+            manifest=read_json(target.with_name("attempt-001-manifest.json"))
+            write_json(target.with_name("attempt-002-manifest.json"),manifest)
+            return {"attempt":attempt,"elapsed_seconds":2.,"exit_code":0,"status":"complete","command":command}
+        monkeypatch.setattr(execution,"_execute_job",complete)
+        resume_job(root,d.design_id,seconds=7.,reason="finish interrupted output")
+        after=read_json(root/"run_index.json")
+        assert len(after["jobs"][d.design_id]["attempts"])==2
+        assert after["jobs"][d.design_id]["attempts"][0]==original["attempts"][0]
+&gt;       assert after["plan"]==index["plan"]
+E       AssertionError: assert {'aggregate_g...ds': 120, ...} == {'aggregate_g...ds': 120, ...}
+E         
+E         Omitting 9 identical items, use -vv to show
+E         Differing items:
+E         {'jobs': [{'availability': 'ready', 'coverage': {'control': 'baseline', 'device': 'cpu_reference', 'engine': 'sbc', 'f...ign_id': 'unit-reference', ...}, 'identity': '5bb7cd696c4674d66ab837625c3d7fb2f95382a8940c004c076d3d12d376c0c8', ...}]} != {'jobs': [{'availability': 'ready', 'coverage': {'control': 'baseline', 'device': 'cpu_reference', 'engine': 'sbc', 'f...ign_id': 'unit-reference', ...}, 'identity': '5bb7cd696c4674d66ab837625c3d7fb2f95382a8940c004c076d3d12d376c0c8', ...}]}
+E         Use -v to get more diff
+
+tests/inference_validation/test_resource_resume.py:32: AssertionError</failure></testcase></testsuite></testsuites>

@@ -8,6 +8,12 @@ Campaign budget: `64800 s` (18 hours, user-authorized cap)
 Primary scope: q=20 SSL-LSTM particle generation, filtering, replay metadata,
 and the downstream NeuTra training screen. HMC is a separate future campaign.
 
+> **Partially Superseded 2026-09-02** by
+> `docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-master-program-2026-09-02.md`
+> for future tempered reverse-KL transport, Phase 9A replay, and HMC planning.
+> The phases 0--26 evidence, direct full-state LEDH blocker, and terminal budget
+> ledger in this file remain historical authority for their original scope.
+
 ## 1. Outcome and governing decision
 
 The program answers one question:

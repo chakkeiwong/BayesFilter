@@ -1,0 +1,95 @@
+{
+  "review_date": "2026-09-15",
+  "git_commit": "19ca69737cda7d43c5e7cae5f244312694c5c959",
+  "plan_and_result": "docs/plans/bayesfilter-hmc-tuning-post-unification-review-2026-09-15.md",
+  "artifact_root": "docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15",
+  "python_executable": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "conda_environment": "tfgpu",
+  "versions": {
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tfp": "0.25.0"
+  },
+  "hardware": {
+    "execution_device": "CPU",
+    "GPU": "intentionally hidden with CUDA_VISIBLE_DEVICES=-1 before framework imports",
+    "jit_compile": false,
+    "role": "explicit small mechanics/debugging exception; no GPU or default-readiness evidence"
+  },
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu"
+  },
+  "data_version": "N/A: synthetic two-dimensional standard Gaussian and deterministic controller fixtures",
+  "seeds": {
+    "synthetic_classification_trace": [
+      20260915,
+      410
+    ],
+    "focused_Gaussian_binding": [
+      20260914,
+      11
+    ],
+    "automatic_Gaussian_base": [
+      20260621,
+      8
+    ],
+    "interior_search_base": [
+      20260621,
+      8
+    ],
+    "interior_search_identity": "review-bracket-interiors-v1",
+    "per_work_and_chunk_seed_location": "Preserved in numerical_evidence, numerical_chunks, checkpoint and retained_archive files",
+    "explicit_reused_retained_seed": [
+      444194925,
+      1333419708
+    ]
+  },
+  "numerical_diagnostic_budget_seconds": 900,
+  "summed_reported_command_seconds": 135.13791297998978,
+  "timing_limitation": "First diagnostic excludes initial framework imports; the other two include imports. No target campaign or GPU run was launched. Read-only source inspection is outside this numerical execution budget.",
+  "commands": [
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true BAYESFILTER_TEST_DEVICE_SCOPE=cpu /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/reproduce_review_cases.py docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/reproduction-r1 > docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/reproduction-r1.log 2>&1",
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "exit_code": 0,
+      "script_sha256": "5e087e6052dd6c4069b5523aa04b1130d73c2bd8af3bcf6ef90577b2b24ba78b",
+      "reported_wall_seconds": 12.720442093966994,
+      "timer_scope": "after framework imports",
+      "external_timeout_seconds": null,
+      "result": "docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/reproduction-r1/result.json",
+      "log": "docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/reproduction-r1.log"
+    },
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true BAYESFILTER_TEST_DEVICE_SCOPE=cpu timeout --kill-after=5s 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/automatic_ordinary_diagnostic.py docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/automatic-ordinary-r1 > docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/automatic-ordinary-r1.log 2>&1",
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "exit_code": 0,
+      "script_sha256": "fbf6adcb27783864914956dfb63183fc4f847939de5195dfb8c47968dd246ae0",
+      "reported_wall_seconds": 31.82351593201747,
+      "timer_scope": "including framework imports",
+      "external_timeout_seconds": 180,
+      "result": "docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/automatic-ordinary-r1/result.json",
+      "log": "docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/automatic-ordinary-r1.log"
+    },
+    {
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true BAYESFILTER_TEST_DEVICE_SCOPE=cpu timeout --kill-after=5s 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/followup_diagnostics.py docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/followup-r1 > docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/followup-r1.log 2>&1",
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "exit_code": 0,
+      "script_sha256": "da54f412f039e86428061de7f67841df320b5f2015bb6e2beb931aafb8e4faea",
+      "reported_wall_seconds": 90.59395495400531,
+      "timer_scope": "including framework imports",
+      "external_timeout_seconds": 180,
+      "result": "docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/followup-r1/result.json",
+      "log": "docs/plans/artifacts/hmc-tuning-post-unification-review-2026-09-15/followup-r1.log"
+    }
+  ],
+  "failure_classifications": {
+    "unexpected_harness_failures": [],
+    "expected_injected_failure": "ResourceExhaustedError before the second numerical chunk in the restart diagnostic; resumed unchanged scope",
+    "numerical_search_outcome": "Automatic Gaussian queue exhausted without verification; follow-up preserved its own rejected/inconclusive candidates and verified 13 members",
+    "scientific_research_direction_rejected": false
+  },
+  "runtime_sources_modified_during_review": false,
+  "artifact_index": "artifact-index.json"
+}

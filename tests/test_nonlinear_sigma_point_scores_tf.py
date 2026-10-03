@@ -3,6 +3,7 @@ import pytest
 import tensorflow as tf
 
 from bayesfilter import StatePartition
+from bayesfilter.nonlinear.sigma_points_tf import tf_svd_sigma_point_log_likelihood
 from bayesfilter.nonlinear.svd_cut_tf import tf_svd_cut4_log_likelihood
 from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import (
     TFStructuralFirstDerivatives,
@@ -11,7 +12,6 @@ from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import (
     tf_svd_cut4_score,
     tf_svd_ukf_score,
 )
-from bayesfilter.nonlinear.sigma_points_tf import tf_svd_sigma_point_log_likelihood
 from bayesfilter.structural_tf import make_affine_structural_tf
 from bayesfilter.testing import (
     make_nonlinear_accumulation_first_derivatives_tf,
@@ -24,7 +24,6 @@ from bayesfilter.testing import (
 from bayesfilter.testing.tf_svd_cut_autodiff_oracle import (
     tf_svd_cut4_score_hessian_autodiff_oracle,
 )
-
 
 OBSERVATIONS = tf.constant([[0.2], [-0.05], [0.15]], dtype=tf.float64)
 
@@ -176,6 +175,7 @@ def _model_b_value(params: tf.Tensor, backend: str) -> tf.Tensor:
         model_b_observations_tf(),
         model,
         rule=rule,
+        backend=backend,  # Match score factor orientation; implicit UKF selects principal sqrt.
         innovation_floor=tf.constant(1e-12, dtype=tf.float64),
     )
     return value

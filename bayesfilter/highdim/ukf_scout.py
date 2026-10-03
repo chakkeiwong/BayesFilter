@@ -8,7 +8,7 @@ from typing import Mapping, Sequence
 import tensorflow as tf
 
 from bayesfilter.highdim.models import SpatialSIRSSM, p30_spatial_sir_fixture_model
-
+from bayesfilter.linear.compiled_recurrence_tf import compiled_tensor_recurrence
 
 P52_UKF_SCOUT_CLAIM = "scout_not_truth"
 
@@ -229,11 +229,11 @@ def spatial_sir_ukf_scout(
 
     mean = tf.convert_to_tensor(model.initial_mean, dtype=tf.float64)
     covariance = _symmetrize(tf.convert_to_tensor(model.initial_covariance, dtype=tf.float64))
-    means = []
-    covariances = []
+    means = tf.zeros([cfg.horizon + 1, state_dim], tf.float64)
+    covariances = tf.zeros([cfg.horizon + 1, state_dim, state_dim], tf.float64)
 
-    for time_index in range(cfg.horizon + 1):
-        if time_index > 0:
+    def step(time_index, mean, covariance, means, covariances):
+        def predict(mean, covariance):
             points, mean_weights, covariance_weights = _unscented_sigma_points(
                 mean,
                 covariance,
@@ -246,6 +246,11 @@ def spatial_sir_ukf_scout(
                 + model.process_covariance
             )
             covariance = _stabilize_covariance(covariance, cfg.jitter)
+
+            return mean, covariance
+
+        mean, covariance = tf.cond(time_index > 0, lambda: predict(mean, covariance),
+                                   lambda: (mean, covariance))
 
         points, mean_weights, covariance_weights = _unscented_sigma_points(
             mean,
@@ -280,11 +285,13 @@ def spatial_sir_ukf_scout(
         mean = mean + tf.linalg.matvec(gain, residual)
         covariance = covariance - gain @ innovation_covariance @ tf.transpose(gain)
         covariance = _stabilize_covariance(covariance, cfg.jitter)
-        means.append(mean)
-        covariances.append(covariance)
+        means = tf.tensor_scatter_nd_update(means, [[time_index]], mean[None, :])
+        covariances = tf.tensor_scatter_nd_update(covariances, [[time_index]], covariance[None, :, :])
+        return time_index + 1, mean, covariance, means, covariances
 
-    mean_path = tf.stack(means)
-    covariance_path = tf.stack(covariances)
+    _, _, _, mean_path, covariance_path = compiled_tensor_recurrence(
+        step, (mean, covariance, means, covariances), cfg.horizon + 1,
+    )
     scale_path = tf.sqrt(
         tf.maximum(
             tf.linalg.diag_part(covariance_path),
@@ -373,11 +380,16 @@ def p52_spatial_sir_ukf_scout_manifest(
 
 def _nominal_observations(model: SpatialSIRSSM, horizon: int) -> tf.Tensor:
     state = tf.convert_to_tensor(model.initial_mean, dtype=tf.float64)
-    observations = [model.infectious_components(state)[0]]
-    for _ in range(int(horizon)):
-        state = model.transition_mean(state)[0]
-        observations.append(model.infectious_components(state)[0])
-    return tf.stack(observations)
+
+    @tf.function(input_signature=(), jit_compile=True)
+    def generate():
+        if horizon == 0:
+            return model.infectious_components(state)
+        states = tf.scan(lambda previous, _: model.transition_mean(previous)[0],
+                         tf.range(horizon), initializer=state, parallel_iterations=1)
+        return model.infectious_components(tf.concat((state[None, :], states), 0))
+
+    return generate()
 
 
 def _unscented_sigma_points(

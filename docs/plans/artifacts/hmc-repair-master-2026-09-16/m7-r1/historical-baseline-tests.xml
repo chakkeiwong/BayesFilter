@@ -1,0 +1,600 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="7" time="10.547" timestamp="2026-09-17T03:39:57.792006+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_kernel_tuning_windowed_mass" name="test_windowed_mass_stage_private_progress_callback_is_allowlisted" time="0.259"><failure message="AssertionError: assert 'bayesfilter....ithm_route.v2' == 'bayesfilter....ithm_route.v1'&#10;  &#10;  - bayesfilter.hmc_algorithm_route.v1&#10;  ?                                  ^&#10;  + bayesfilter.hmc_algorithm_route.v2&#10;  ?                                  ^">def test_windowed_mass_stage_private_progress_callback_is_allowlisted() -&gt; None:
+        events: list[tuple[str, Mapping[str, Any]]] = []
+        forbidden_keys = {
+            "step_size",
+            "initial_step_size",
+            "num_leapfrog_steps",
+            "min_leapfrog",
+            "max_leapfrog",
+            "bracket",
+            "bracket_low",
+            "bracket_high",
+            "acceptance_rate",
+            "runtime_metadata",
+            "raw_diagnostics",
+            "trace",
+            "samples",
+            "mass",
+            "mass_artifact",
+            "mass_artifact_payload",
+            "budget_policy",
+            "phase4_warmup_steps",
+            "phase5_tune_budgets",
+            "config",
+            "diagnostic_config",
+        }
+    
+        def run(_adapter: Any, _initial_state: Any, config: Any) -&gt; _FakeRunResult:
+            return _runtime_shaped_result(warmup_steps=int(config.num_results))
+    
+        result = run_hmc_windowed_mass_stage(
+            adapter=_ToyGaussianAdapter(),
+            geometry=_geometry(),
+            bootstrap=_bootstrap(),
+            config=_stage_config(),
+            run_full_chain=run,
+            _progress_callback=lambda stage, payload: events.append((stage, payload)),
+            _attempt_index=3,
+        )
+    
+        assert result.passed is True
+        assert [stage for stage, _payload in events] == [
+            "windowed_mass_runner_build_start",
+            "windowed_mass_runner_build_complete",
+            "windowed_mass_runner_execute_start",
+            "windowed_mass_runner_execute_complete",
+            "windowed_mass_capture_start",
+            "windowed_mass_capture_complete",
+            "windowed_mass_semantic_diagnostic_start",
+            "windowed_mass_semantic_diagnostic_complete",
+        ]
+        for stage, payload in events:
+            assert payload["stage"] == stage
+            assert payload["attempt_index"] == 3
+            assert payload["progress_only"] is True
+            assert payload["hmc_mechanics_exposed"] is False
+            assert payload["route_category"] == "injected_runner"
+            assert payload["algorithm_id"] == LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
+&gt;           assert payload["route_contract_version"] == (
+                "bayesfilter.hmc_algorithm_route.v1"
+            )
+E           AssertionError: assert 'bayesfilter....ithm_route.v2' == 'bayesfilter....ithm_route.v1'
+E             
+E             - bayesfilter.hmc_algorithm_route.v1
+E             ?                                  ^
+E             + bayesfilter.hmc_algorithm_route.v2
+E             ?                                  ^
+
+tests/test_hmc_kernel_tuning_windowed_mass.py:585: AssertionError</failure></testcase><testcase classname="tests.test_hmc_kernel_tuning_windowed_mass" name="test_real_operational_route_with_generous_timeout_never_uses_legacy" time="6.208"><failure message="assert False&#10; +  where False = all(&lt;generator object test_real_operational_route_with_generous_timeout_never_uses_legacy.&lt;locals&gt;.&lt;genexpr&gt; at 0x7c7569f66c20&gt;)">def test_real_operational_route_with_generous_timeout_never_uses_legacy() -&gt; None:
+        adapter, geometry, bootstrap = _operational_inputs()
+        events: list[tuple[str, Mapping[str, Any]]] = []
+    
+        result = run_hmc_windowed_mass_stage(
+            adapter=adapter,
+            geometry=geometry,
+            bootstrap=bootstrap,
+            config=_stage_config(
+                algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+                chain_execution_mode="tf_function",
+                public_timeout_budget_s=3600.0,
+            ),
+            _attempt_budget_policy=_operational_budget(),
+            _progress_callback=lambda stage, payload: events.append((stage, payload)),
+        )
+    
+        assert result.passed is True
+        assert result.operational_warmup_result is not None
+        assert result.operational_warmup_closeout is None
+        assert result.config.algorithm_id == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+        assert result.diagnostics["algorithm_id"] == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+        assert result.diagnostics["algorithm_route"]["execution_control_capabilities"][
+            "timeout"
+        ] == "window_boundary_closeout"
+        assert result.operational_warmup_result.algorithm_id == (
+            OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+        )
+        stages = [stage for stage, _payload in events]
+        assert stages[0] == "windowed_mass_operational_warmup_start"
+        assert stages[-1] == "windowed_mass_operational_warmup_complete"
+        completed = [
+            payload["operational_progress"]["completed_transition_count"]
+            for stage, payload in events
+            if stage == "windowed_mass_operational_segment_complete"
+        ]
+        assert completed
+        assert completed == sorted(set(completed))
+        assert completed[-1] == result.operational_warmup_result.config.warmup_steps
+&gt;       assert all(
+            payload["algorithm_id"] == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+            and payload["route_contract_version"]
+            == "bayesfilter.hmc_algorithm_route.v1"
+            and payload["route_category"] == OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
+            for _stage, payload in events
+        )
+E       assert False
+E        +  where False = all(&lt;generator object test_real_operational_route_with_generous_timeout_never_uses_legacy.&lt;locals&gt;.&lt;genexpr&gt; at 0x7c7569f66c20&gt;)
+
+tests/test_hmc_kernel_tuning_windowed_mass.py:1673: AssertionError</failure></testcase><testcase classname="tests.test_hmc_kernel_tuning_windowed_mass" name="test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site" time="0.003"><failure message="AssertionError: assert ({'path': '/h...ir_writable'}) == ({'path': '/h...ir_writable'})&#10;  &#10;  At index 0 diff: {'path': '/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc.py', 'sha256': 'e07cce9e2325d3691083bf2f39f618e38a4bc8a44e3b21c8ff5a0ea3f8363c34', 'write_scope': 'read_only_seed_domain_repair'} != {'path': '/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc.py', 'sha256': '1a6e1b53ed301261652ced13a230ec11af8d0d230074c1dcd29eae1dd1550bb2', 'write_scope': 'read_only_seed_domain_repair'}&#10;  Use -v to get more diff">def test_g1a_source_coverage_manifest_binds_every_preboundary_seed_site() -&gt; None:
+        retained = _G1A_SOURCE_COVERAGE_MANIFEST.read_bytes()
+        assert retained == retained.rstrip(b"\n")
+        payload = json.loads(retained.decode("ascii"))
+        assert set(payload) == {
+            "schema",
+            "scope",
+            "source_files",
+            "sites",
+            "excluded_post_boundary",
+            "generator_contract",
+            "manifest_content_sha256",
+        }
+        assert payload["schema"] == (
+            "bayesfilter.hmc_g2_preboundary_seed_source_coverage.v2"
+        )
+        assert payload["scope"] == (
+            "g2_source_visible_named_closure_through_p4_boundary_only"
+        )
+        assert payload["excluded_post_boundary"] == {
+            "scope": "after_p4_boundary",
+            "reason": "not_executed_or_claimed_by_g2",
+            "future_review_required": True,
+        }
+        assert payload["generator_contract"] == {
+            "python_ast_only": True,
+            "no_project_import": True,
+            "source_files_final_before_generation": True,
+            "canonical_json": True,
+            "source_visible_named_closure_only": True,
+            "dynamic_routes_nonclaim": True,
+        }
+    
+        source_paths = {
+            str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_warmup.py"):
+                "seed_domain_repair_writable",
+            str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_kernel_tuning.py"):
+                "read_only_seed_domain_repair",
+            str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc.py"):
+                "read_only_seed_domain_repair",
+            str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_coordinates.py"):
+                "read_only_seed_domain_repair",
+        }
+        expected_source_files = tuple(
+            sorted(
+                (
+                    {
+                        "path": path,
+                        "sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest(),
+                        "write_scope": write_scope,
+                    }
+                    for path, write_scope in source_paths.items()
+                ),
+                key=lambda row: row["path"],
+            )
+        )
+&gt;       assert tuple(payload["source_files"]) == expected_source_files
+E       AssertionError: assert ({'path': '/h...ir_writable'}) == ({'path': '/h...ir_writable'})
+E         
+E         At index 0 diff: {'path': '/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc.py', 'sha256': 'e07cce9e2325d3691083bf2f39f618e38a4bc8a44e3b21c8ff5a0ea3f8363c34', 'write_scope': 'read_only_seed_domain_repair'} != {'path': '/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc.py', 'sha256': '1a6e1b53ed301261652ced13a230ec11af8d0d230074c1dcd29eae1dd1550bb2', 'write_scope': 'read_only_seed_domain_repair'}
+E         Use -v to get more diff
+
+tests/test_hmc_kernel_tuning_windowed_mass.py:3226: AssertionError</failure></testcase><testcase classname="tests.test_hmc_kernel_tuning_windowed_mass" name="test_p4_multiplier_is_explicit_private_and_propagates_without_hmc" time="0.002"><failure message="ValueError: engineering_probe_covariance_multiplier is a lower-level P4-E diagnostic compatibility control, not a public ordinary tuning mode">def test_p4_multiplier_is_explicit_private_and_propagates_without_hmc() -&gt; None:
+        stage = HMCWindowedMassStageConfig(
+            seed=(987654321, 123456789),
+            engineering_probe_covariance_multiplier=2.125
+        )
+        stage_payload = stage.payload()
+        public = stage_payload["engineering_probe_bank"]
+        serialized = json.dumps(stage_payload, sort_keys=True)
+        assert public["configured"] is True
+        assert public["policy_id"] == hmc_warmup.PHASE7_ENGINEERING_PROBE_BANK_POLICY_ID
+        assert public["private_config_signature"]
+        assert public["covariance_multiplier_exposed"] is False
+        assert stage_payload["seed"] is None
+        assert stage_payload["seed_signature"]
+        assert stage_payload["seed_values_exposed"] is False
+        assert "987654321" not in serialized
+        assert "123456789" not in serialized
+        assert "2.125" not in serialized
+        diagnostic_public = hmc_kernel_tuning._engineering_probe_diagnostic_config_public_payload(
+            {
+                "seed": (987654321, 123456789),
+                "step_size": 0.1,
+            },
+            configured=True,
+        )
+        assert diagnostic_public is not None
+        assert diagnostic_public["seed"] is None
+        assert diagnostic_public["seed_signature"]
+        assert "987654321" not in json.dumps(diagnostic_public, sort_keys=True)
+        assert "123456789" not in json.dumps(diagnostic_public, sort_keys=True)
+        assert HMCWindowedMassStageConfig().engineering_probe_covariance_multiplier is None
+    
+        for config_type in (
+            HMCWindowedMassStageConfig,
+            hmc_kernel_tuning.HMCTuneVerifyRepairLoopConfig,
+            HMCKernelTuningConfig,
+        ):
+            for invalid in (0.0, -1.0, np.nan, np.inf, True):
+                with pytest.raises(ValueError, match="positive and finite"):
+                    config_type(engineering_probe_covariance_multiplier=invalid)
+    
+&gt;       top = HMCKernelTuningConfig.diagnostic(
+            engineering_probe_covariance_multiplier=2.125
+        )
+
+tests/test_hmc_kernel_tuning_windowed_mass.py:4082: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+docs/plans/artifacts/hmc-repair-master-2026-09-16/m7-r1/baseline-package/bayesfilter/inference/hmc_kernel_tuning.py:7397: in diagnostic
+    return cls(**payload)
+           ^^^^^^^^^^^^^^
+&lt;string&gt;:53: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = HMCKernelTuningConfig(algorithm_id='ordinary_broad_fixed_metric_selection_v1', operational_budget_policy_id='bayesfilt...t_enlargement_rounds=None, incall_progress_heartbeat_s=None, source='bayesfilter.inference.tune_hmc_kernel.diagnostic')
+
+    def __post_init__(self) -&gt; None:
+        for name in ("max_leapfrog_steps", "bootstrap_max_repairs", "max_attempts",
+                     "terminal_phase6_repair_extra_attempts"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Integral):
+                raise ValueError(f"{name} must be an integer")
+        expansion_steps = self.candidate_search_bound_expansion_steps
+        if type(expansion_steps) is not int or not 0 &lt;= expansion_steps &lt;= self.max_attempts:
+            raise ValueError("candidate_search_bound_expansion_steps must be an integer in [0, max_attempts]")
+        if expansion_steps and self.mass_policy != "windowed_adaptive":
+            raise ValueError("preparation bound expansion requires windowed_adaptive mass")
+        algorithm_id = str(self.algorithm_id)
+        if algorithm_id != ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID:
+            raise ValueError(
+                "tune_hmc_kernel exposes one ordinary tuning policy: "
+                f"{ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID!r}; compatibility "
+                "algorithms are available only through lower-level diagnostic APIs"
+            )
+        object.__setattr__(self, "algorithm_id", algorithm_id)
+        budget_policy_id = str(self.operational_budget_policy_id)
+        if budget_policy_id != OPERATIONAL_HMC_BUDGET_POLICY_ID:
+            raise ValueError("operational_budget_policy_id is fixed by BayesFilter")
+        object.__setattr__(
+            self,
+            "operational_budget_policy_id",
+            budget_policy_id,
+        )
+        evidence_policy = str(self.operational_evidence_policy)
+        if evidence_policy not in _OPERATIONAL_EVIDENCE_POLICIES:
+            allowed = ", ".join(sorted(_OPERATIONAL_EVIDENCE_POLICIES))
+            raise ValueError(
+                f"operational_evidence_policy must be one of: {allowed}"
+            )
+        object.__setattr__(
+            self,
+            "operational_evidence_policy",
+            evidence_policy,
+        )
+        candidate_handoff_policy = (
+            _validated_operational_candidate_handoff_policy(
+                self.operational_candidate_handoff_policy
+            )
+        )
+        policy_schema = str(
+            self.operational_candidate_handoff_policy_schema_version
+        )
+        if policy_schema != _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_SCHEMA:
+            raise ValueError(
+                "operational_candidate_handoff_policy_schema_version is fixed"
+            )
+        object.__setattr__(
+            self,
+            "operational_candidate_handoff_policy",
+            candidate_handoff_policy,
+        )
+        object.__setattr__(
+            self,
+            "operational_candidate_handoff_policy_schema_version",
+            policy_schema,
+        )
+        verification_bracket_policy = (
+            _validated_operational_verification_bracket_policy(
+                self.operational_verification_bracket_policy
+            )
+        )
+        if verification_bracket_policy != (
+            _OPERATIONAL_VERIFICATION_BRACKET_POLICY_SINGLE_REPAIR
+        ):
+            raise ValueError(
+                "tune_hmc_kernel fixes operational_verification_bracket_policy "
+                "at 'single_repair'; the verified-log-midpoint policy belongs "
+                "only to the lower-level historical shared-epsilon route"
+            )
+        object.__setattr__(
+            self,
+            "operational_verification_bracket_policy",
+            verification_bracket_policy,
+        )
+        preset = str(self.preset)
+        if preset not in {"smoke", "diagnostic", "diagnostic_plus", "standard", "serious"}:
+            raise ValueError(
+                "preset must be 'smoke', 'diagnostic', 'diagnostic_plus', "
+                "'standard', or 'serious'"
+            )
+        if (
+            evidence_policy != _OPERATIONAL_EVIDENCE_POLICY_INITIAL_ONLY
+            and preset != "serious"
+        ):
+            raise ValueError(
+                "non-default operational_evidence_policy requires preset='serious'"
+            )
+        if candidate_handoff_policy != _OPERATIONAL_CANDIDATE_HANDOFF_POLICY_STRICT:
+            if preset != "serious":
+                raise ValueError(
+                    "non-default operational_candidate_handoff_policy requires "
+                    "preset='serious'"
+                )
+            if evidence_policy != _OPERATIONAL_EVIDENCE_POLICY_ONE_DOUBLING:
+                raise ValueError(
+                    "mixed operational_candidate_handoff_policy requires "
+                    "operational_evidence_policy='one_doubling'"
+                )
+        object.__setattr__(self, "preset", preset)
+        target = float(self.target_accept_prob)
+        if not math.isfinite(target) or not 0.0 &lt; target &lt; 1.0:
+            raise ValueError("target_accept_prob must be finite and in (0, 1)")
+        object.__setattr__(self, "target_accept_prob", target)
+        acceptance_band = _validate_band(self.acceptance_band, name="acceptance_band")
+        repair_band = _validate_band(self.repair_band, name="repair_band")
+        if repair_band[0] &gt; acceptance_band[0] or repair_band[1] &lt; acceptance_band[1]:
+            raise ValueError("repair_band must contain acceptance_band")
+        object.__setattr__(self, "acceptance_band", acceptance_band)
+        object.__setattr__(self, "repair_band", repair_band)
+        max_leapfrog_steps = _validate_max_leapfrog_steps(
+            self.max_leapfrog_steps
+        )
+        if max_leapfrog_steps != ORDINARY_BROAD_MAX_LEAPFROG_STEPS:
+            raise ValueError(
+                "tune_hmc_kernel fixes max_leapfrog_steps at "
+                f"{ORDINARY_BROAD_MAX_LEAPFROG_STEPS} so the ordinary broad L "
+                "grid is not silently truncated"
+            )
+        object.__setattr__(
+            self,
+            "max_leapfrog_steps",
+            max_leapfrog_steps,
+        )
+        lower, upper = _validate_trajectory_window_multipliers(
+            self.trajectory_window_lower_multiplier,
+            self.trajectory_window_upper_multiplier,
+        )
+        object.__setattr__(
+            self,
+            "step_repair_factor",
+            _validate_step_repair_multiplier(
+                self.step_repair_factor,
+                name="step_repair_factor",
+            ),
+        )
+        min_directional_factor = _validate_step_repair_multiplier(
+            self.step_repair_min_directional_factor,
+            name="step_repair_min_directional_factor",
+        )
+        if min_directional_factor &gt; 2.0:
+            raise ValueError("step_repair_min_directional_factor must be at most 2")
+        object.__setattr__(
+            self,
+            "step_repair_min_directional_factor",
+            min_directional_factor,
+        )
+        high_factor = (
+            self.step_repair_factor
+            if self.step_repair_high_acceptance_directional_factor is None
+            else self.step_repair_high_acceptance_directional_factor
+        )
+        object.__setattr__(
+            self,
+            "step_repair_high_acceptance_directional_factor",
+            _validate_step_repair_multiplier(
+                high_factor,
+                name="step_repair_high_acceptance_directional_factor",
+            ),
+        )
+        high_ladder_max = (
+            high_factor
+            if self.step_repair_high_acceptance_ladder_max_factor is None
+            else self.step_repair_high_acceptance_ladder_max_factor
+        )
+        high_ladder_max = _validate_step_repair_multiplier(
+            high_ladder_max,
+            name="step_repair_high_acceptance_ladder_max_factor",
+        )
+        if high_ladder_max &lt; high_factor:
+            raise ValueError(
+                "step_repair_high_acceptance_ladder_max_factor must be at least "
+                "step_repair_high_acceptance_directional_factor"
+            )
+        object.__setattr__(
+            self,
+            "step_repair_high_acceptance_ladder_max_factor",
+            high_ladder_max,
+        )
+        object.__setattr__(
+            self,
+            "repair_nonfinite_proposal_screen",
+            bool(self.repair_nonfinite_proposal_screen),
+        )
+        object.__setattr__(self, "trajectory_window_lower_multiplier", lower)
+        object.__setattr__(self, "trajectory_window_upper_multiplier", upper)
+        object.__setattr__(
+            self,
+            "handoff_screen_policy",
+            _validate_handoff_screen_policy(self.handoff_screen_policy),
+        )
+        repairs = int(self.bootstrap_max_repairs)
+        if repairs &lt; 0:
+            raise ValueError("bootstrap_max_repairs must be non-negative")
+        object.__setattr__(self, "bootstrap_max_repairs", repairs)
+        attempts = int(self.max_attempts)
+        if attempts &lt;= 0:
+            raise ValueError("max_attempts must be positive")
+        if attempts &gt; _PHASE7_MAX_ATTEMPTS_CAP:
+            raise ValueError(
+                f"max_attempts is hard-capped at {_PHASE7_MAX_ATTEMPTS_CAP}"
+            )
+        if (
+            verification_bracket_policy
+            == _OPERATIONAL_VERIFICATION_BRACKET_POLICY_ONE_LOG_MIDPOINT
+            and attempts &lt; 3
+        ):
+            raise ValueError(
+                "one_verified_log_midpoint requires at least three attempt slots"
+            )
+        object.__setattr__(self, "max_attempts", attempts)
+        terminal_extra = int(self.terminal_phase6_repair_extra_attempts)
+        if terminal_extra &lt; 0 or terminal_extra &gt; 1:
+            raise ValueError("terminal_phase6_repair_extra_attempts must be 0 or 1")
+        object.__setattr__(
+            self,
+            "terminal_phase6_repair_extra_attempts",
+            terminal_extra,
+        )
+        object.__setattr__(self, "seed", _validate_seed(self.seed))
+        mode = str(self.chain_execution_mode)
+        if mode not in {"tf_function", "eager"}:
+            raise ValueError("chain_execution_mode must be 'tf_function' or 'eager'")
+        if self.use_xla and mode != "tf_function":
+            raise ValueError("XLA HMC requires chain_execution_mode='tf_function'")
+        object.__setattr__(self, "chain_execution_mode", mode)
+        object.__setattr__(self, "use_xla", bool(self.use_xla))
+        if self.target_scope is not None:
+            scope = str(self.target_scope)
+            if not scope:
+                raise ValueError("target_scope must be non-empty when provided")
+            object.__setattr__(self, "target_scope", scope)
+        target_status_policy = str(self.target_status_trace_policy)
+        if target_status_policy not in {"none", "per_chain_step"}:
+            raise ValueError(
+                "target_status_trace_policy must be 'none' or 'per_chain_step'"
+            )
+        object.__setattr__(self, "target_status_trace_policy", target_status_policy)
+        mass_policy = str(self.mass_policy)
+        if mass_policy not in {"windowed_adaptive", "fixed_identity"}:
+            raise ValueError(
+                "mass_policy must be 'windowed_adaptive' or 'fixed_identity'"
+            )
+        object.__setattr__(self, "mass_policy", mass_policy)
+        object.__setattr__(
+            self,
+            "metric_update_requirement",
+            _validate_metric_update_requirement(self.metric_update_requirement),
+        )
+        engineering_probe_multiplier = (
+            _validate_engineering_probe_covariance_multiplier(
+                self.engineering_probe_covariance_multiplier
+            )
+        )
+        if engineering_probe_multiplier is not None:
+&gt;           raise ValueError(
+                "engineering_probe_covariance_multiplier is a lower-level P4-E "
+                "diagnostic compatibility control, not a public ordinary tuning mode"
+            )
+E           ValueError: engineering_probe_covariance_multiplier is a lower-level P4-E diagnostic compatibility control, not a public ordinary tuning mode
+
+docs/plans/artifacts/hmc-repair-master-2026-09-16/m7-r1/baseline-package/bayesfilter/inference/hmc_kernel_tuning.py:7229: ValueError</failure></testcase><testcase classname="tests.test_hmc_kernel_tuning_windowed_mass" name="test_g1a_p4_compatibility_failure_is_static_and_exception_redacted" time="0.004"><failure message="assert 'type(exc).__name__' not in 'def _operat...ative_mass\n'&#10;  &#10;  'type(exc).__name__' is contained here:&#10;    or_type&quot;: type(exc).__name__,&#10;                &quot;error_message&quot;: None,&#10;                &quot;exception_details_exposed&quot;: False,&#10;            }&#10;        binary_trace = tf.cast(binary_acceptance, tf.float64)...&#10;  &#10;  ...Full output truncated (79 lines hidden), use '-vv' to show">def test_g1a_p4_compatibility_failure_is_static_and_exception_redacted() -&gt; None:
+        source = inspect.getsource(hmc_kernel_tuning._operational_windowed_mass_capture)
+        assert "legacy_v1_compatibility_projection_unavailable" in source
+&gt;       assert "type(exc).__name__" not in source
+E       assert 'type(exc).__name__' not in 'def _operat...ative_mass\n'
+E         
+E         'type(exc).__name__' is contained here:
+E           or_type": type(exc).__name__,
+E                       "error_message": None,
+E                       "exception_details_exposed": False,
+E                   }
+E               binary_trace = tf.cast(binary_acceptance, tf.float64)...
+E         
+E         ...Full output truncated (79 lines hidden), use '-vv' to show
+
+tests/test_hmc_kernel_tuning_windowed_mass.py:4419: AssertionError</failure></testcase><testcase classname="tests.test_hmc_kernel_tuning_windowed_mass" name="test_phase7_initial_state_preserves_ordinary_legacy_bank_without_hmc" time="0.018"><failure message="AssertionError: assert {'active_sign...handoff', ...} == {'active_sign...d': True, ...}&#10;  &#10;  Omitting 8 identical items, use -vv to show&#10;  Differing items:&#10;  {'source': 'operational_post_warmup_start_bank_v2'} != {'source': 'operational_warmup_private_start_bank'}&#10;  Left contains 8 more items:&#10;  {'evidence_role': 'tuning_handoff',&#10;   'final_transform_signature': '5d0bdff6f68bea8314868a2f3ac264619d31d5190db93a4e84054c8292f10916',...&#10;  &#10;  ...Full output truncated (7 lines hidden), use '-vv' to show">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7c7569ef8950&gt;
+
+    def test_phase7_initial_state_preserves_ordinary_legacy_bank_without_hmc(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -&gt; None:
+        def forbidden_hmc(*_args: Any, **_kwargs: Any) -&gt; Any:
+            raise AssertionError("ordinary start-bank route test must not run HMC")
+    
+        monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+        operational = _p4_operational_fixture(
+            policy_id="bayesfilter.greedy_four_start_bank.v1"
+        )
+        operational.engineering_probe_bank_qualification = None
+        operational.start_bank_qualification = object()
+        operational.private_start_bank_signature = "legacy-start-bank-signature"
+        stage = SimpleNamespace(
+            config=HMCWindowedMassStageConfig(
+                seed=(20260821, 31),
+                target_scope="p4_phase7_fixture",
+                engineering_probe_covariance_multiplier=None,
+            ),
+            operational_warmup_result=operational,
+            target_dimension=2,
+        )
+    
+        initial_state, lineage = hmc_kernel_tuning._phase7_verification_initial_state(
+            windowed_stage=stage,
+            phase4_adapter=_P4NestedAdapter("p4-phase4-adapter"),
+            verification_adapter=_P4NestedAdapter("p4-verification-adapter"),
+            verification_hmc_signature="p4-verification-adapter",
+        )
+    
+        np.testing.assert_allclose(
+            initial_state,
+            operational.final_kernel_state.transform.theta_to_latent(
+                operational.private_start_bank_theta
+            ),
+            rtol=1.0e-10,
+            atol=1.0e-10,
+        )
+&gt;       assert lineage == {
+            "source": "operational_warmup_private_start_bank",
+            "source_signature": "legacy-start-bank-signature",
+            "active_signature": lineage["active_signature"],
+            "count": 4,
+            "frozen_post_warmup_bank_consumed": True,
+            "canonical_round_trip_passed": True,
+            "final_coordinate_match_passed": True,
+            "raw_values_exposed": False,
+            "reports_operational_start_lineage": True,
+        }
+E       AssertionError: assert {'active_sign...handoff', ...} == {'active_sign...d': True, ...}
+E         
+E         Omitting 8 identical items, use -vv to show
+E         Differing items:
+E         {'source': 'operational_post_warmup_start_bank_v2'} != {'source': 'operational_warmup_private_start_bank'}
+E         Left contains 8 more items:
+E         {'evidence_role': 'tuning_handoff',
+E          'final_transform_signature': '5d0bdff6f68bea8314868a2f3ac264619d31d5190db93a4e84054c8292f10916',...
+E         
+E         ...Full output truncated (7 lines hidden), use '-vv' to show
+
+tests/test_hmc_kernel_tuning_windowed_mass.py:5223: AssertionError</failure></testcase><testcase classname="tests.test_hmc_kernel_tuning_windowed_mass" name="test_phase7_initial_state_rejects_legacy_bank_when_p4_is_configured" time="0.015"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7c7569ef8550&gt;
+
+    def test_phase7_initial_state_rejects_legacy_bank_when_p4_is_configured(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -&gt; None:
+        def forbidden_hmc(*_args: Any, **_kwargs: Any) -&gt; Any:
+            raise AssertionError("configured P4-E route test must not run HMC")
+    
+        monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_hmc)
+        operational = _p4_operational_fixture(policy_id="bayesfilter.greedy_four_start_bank.v1")
+        stage = SimpleNamespace(
+            config=HMCWindowedMassStageConfig(
+                seed=(20260821, 31),
+                target_scope="p4_phase7_fixture",
+                engineering_probe_covariance_multiplier=2.0,
+            ),
+            operational_warmup_result=operational,
+            target_dimension=2,
+        )
+    
+&gt;       with pytest.raises(ValueError, match="configured.*P4-E.*explicit"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests/test_hmc_kernel_tuning_windowed_mass.py:5254: Failed</failure></testcase></testsuite></testsuites>

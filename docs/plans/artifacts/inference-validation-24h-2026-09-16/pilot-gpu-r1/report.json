@@ -1,0 +1,134 @@
+{
+  "all_required_assessed": false,
+  "all_required_executed": false,
+  "coverage": [
+    {
+      "assessment_complete": false,
+      "designs": [
+        "gpu-sbc-pilot"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "family": "conjugate",
+        "phase": "development",
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "normal_conjugate",
+        "transport": "none"
+      },
+      "status": "executed"
+    },
+    {
+      "assessment_complete": false,
+      "designs": [
+        "gpu-simplex-pilot"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "accuracy",
+        "family": "simplex",
+        "phase": "development",
+        "route": "prepared",
+        "start": "dispersed",
+        "target": "dirichlet",
+        "transport": "none"
+      },
+      "status": "uncovered"
+    },
+    {
+      "assessment_complete": true,
+      "designs": [
+        "gpu-stopping-pilot"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "stopping",
+        "family": "quadratic",
+        "phase": "development",
+        "route": "prepared",
+        "start": "dispersed",
+        "target": "gaussian",
+        "transport": "none"
+      },
+      "status": "executed"
+    }
+  ],
+  "interpretation": "Execution, statistical finding and expected defect detection are separate; no universal validation claim.",
+  "rows": [
+    {
+      "assessment_complete": false,
+      "control": "baseline",
+      "design_id": "gpu-sbc-pilot",
+      "device": "gpu",
+      "engine": "sbc",
+      "execution_status": "complete",
+      "family": "conjugate",
+      "finding": "calibration_incomplete",
+      "phase": "development",
+      "reason": null,
+      "result": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/pilot-gpu-r1/gpu-sbc-pilot/attempt-001-result.json",
+      "route": "ordinary",
+      "seconds": 824.208247351984,
+      "source_status": "matches_current_source",
+      "start": "dispersed",
+      "target": "normal_conjugate",
+      "test_response": {
+        "control": "baseline",
+        "interpretation": "missing or invalid evidence is not defect detection",
+        "power_established": false,
+        "reason": "calibration_incomplete",
+        "status": "unassessed"
+      },
+      "transport": "none"
+    },
+    {
+      "assessment_complete": false,
+      "control": "baseline",
+      "design_id": "gpu-simplex-pilot",
+      "device": "gpu",
+      "engine": "accuracy",
+      "execution_status": "timed_out",
+      "family": "simplex",
+      "finding": null,
+      "phase": "development",
+      "reason": null,
+      "result": null,
+      "route": "prepared",
+      "seconds": 600.6246005020221,
+      "source_status": "matches_current_source",
+      "start": "dispersed",
+      "target": "dirichlet",
+      "test_response": null,
+      "transport": "none"
+    },
+    {
+      "assessment_complete": true,
+      "control": "baseline",
+      "design_id": "gpu-stopping-pilot",
+      "device": "gpu",
+      "engine": "stopping",
+      "execution_status": "complete",
+      "family": "quadratic",
+      "finding": "pipeline_assessed",
+      "phase": "development",
+      "reason": null,
+      "result": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/pilot-gpu-r1/gpu-stopping-pilot/attempt-001-result.json",
+      "route": "prepared",
+      "seconds": 676.0222110070172,
+      "source_status": "matches_current_source",
+      "start": "dispersed",
+      "target": "gaussian",
+      "test_response": {
+        "control": "baseline",
+        "power_established": false,
+        "status": "baseline_observed"
+      },
+      "transport": "none"
+    }
+  ],
+  "schema": "bayesfilter.inference_validation_report.v1"
+}

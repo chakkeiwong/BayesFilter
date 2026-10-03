@@ -10,6 +10,7 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.ops.accurate_svd_tf import accurate_svd
 
 _DEFAULT_PIVOT_TOLERANCE = 1.0e-12
 _DEFAULT_CHART_TOLERANCE = 1.0e-10
@@ -48,34 +49,20 @@ def _batched_qr_with_derivative(
     derivative = _finite(derivative, "qr_derivative")
     if derivative.shape.rank != 4 or derivative.shape[0] != b or derivative.shape[2:] != (n, r):
         raise ValueError("qr_derivative must have shape [B,P,N,R]")
-    p = derivative.shape[1]
-    d_q_rows = []
-    d_r_rows = []
-    for parameter_index in range(int(p)):
-        d_matrix = derivative[:, parameter_index]
-        projected = tf.einsum("bni,bnj->bij", q, d_matrix)
-        scaled = tf.linalg.triangular_solve(
-            tf.linalg.matrix_transpose(upper),
-            tf.linalg.matrix_transpose(projected),
-            lower=True,
-        )
-        scaled = tf.linalg.matrix_transpose(scaled)
-        lower = tf.linalg.band_part(scaled, -1, 0) - tf.linalg.diag(
-            tf.linalg.diag_part(scaled)
-        )
-        omega = lower - tf.linalg.matrix_transpose(lower)
-        d_upper = tf.einsum("bij,bjk->bik", scaled - omega, upper)
-        normal = d_matrix - tf.einsum("bni,bij->bnj", q, projected)
-        d_q = tf.linalg.matrix_transpose(
-            tf.linalg.triangular_solve(
-                tf.linalg.matrix_transpose(upper),
-                tf.linalg.matrix_transpose(normal),
-                lower=True,
-            )
-        ) + tf.einsum("bni,bij->bnj", q, omega)
-        d_q_rows.append(d_q)
-        d_r_rows.append(d_upper)
-    return q, upper, tf.stack(d_q_rows, axis=1), tf.stack(d_r_rows, axis=1)
+    projected = tf.einsum("bni,bpnj->bpij", q, derivative)
+    scaled = tf.linalg.matrix_transpose(tf.linalg.triangular_solve(
+        tf.linalg.matrix_transpose(upper)[:, None, :, :],
+        tf.linalg.matrix_transpose(projected), lower=True,
+    ))
+    lower = tf.linalg.band_part(scaled, -1, 0) - tf.linalg.diag(tf.linalg.diag_part(scaled))
+    omega = lower - tf.linalg.matrix_transpose(lower)
+    d_upper = tf.einsum("bpij,bjk->bpik", scaled - omega, upper)
+    normal = derivative - tf.einsum("bni,bpij->bpnj", q, projected)
+    d_q = tf.linalg.matrix_transpose(tf.linalg.triangular_solve(
+        tf.linalg.matrix_transpose(upper)[:, None, :, :],
+        tf.linalg.matrix_transpose(normal), lower=True,
+    )) + tf.einsum("bni,bpij->bpnj", q, omega)
+    return q, upper, d_q, d_upper
 
 
 def _fixed_chart_decomposition(
@@ -206,7 +193,7 @@ def batched_direct_stack_svd_factor(
         raise ValueError("stack must have shape [B, dimension, columns]")
     if relative_cutoff < 0.0:
         raise ValueError("relative_cutoff must be nonnegative")
-    singular, u, _ = tf.linalg.svd(stack, full_matrices=False, compute_uv=True)
+    singular, u, _ = accurate_svd(stack)
     scale = tf.maximum(singular[:, :1], tf.constant(1.0e-300, tf.float64))
     active = singular > tf.cast(relative_cutoff, tf.float64) * scale
     rank = tf.reduce_sum(tf.cast(active, tf.int32), axis=-1)
@@ -294,7 +281,7 @@ def batched_direct_support_conditional(
     bs, nx, ks = state_stack.shape.as_list()
     if None in (b, ny, nx, k) or (b, ny, k) != (bs, ny, ks) or innovation.shape.as_list() != [b, ny]:
         raise ValueError("observation/state/innovation dimensions are incompatible")
-    singular, u, v = tf.linalg.svd(observation_stack, full_matrices=False, compute_uv=True)
+    singular, u, v = accurate_svd(observation_stack)
     scale = tf.maximum(singular[:, :1], tf.constant(1.0e-300, tf.float64))
     active = singular > tf.cast(relative_cutoff, tf.float64) * scale
     mask = tf.cast(active, tf.float64)

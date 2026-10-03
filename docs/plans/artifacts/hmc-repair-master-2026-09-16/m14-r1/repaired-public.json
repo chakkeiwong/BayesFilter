@@ -1,0 +1,54 @@
+{
+  "schema": "bayesfilter.inference_validation_suite.v1",
+  "suite_id": "m14-repaired-public",
+  "profile": "master",
+  "profiles": {
+    "master": [
+      "accuracy"
+    ]
+  },
+  "designs": [
+    {
+      "design_id": "m14-repaired-public-rotated",
+      "engine": "accuracy",
+      "scenario": {
+        "target": "rotated_gaussian",
+        "route": "ordinary",
+        "start": "dispersed",
+        "control": "baseline",
+        "parameters": {
+          "condition": 100.0,
+          "angle": 0.6
+        }
+      },
+      "replications": 1,
+      "draws": 128,
+      "seed": 2026092191,
+      "budget_seconds": 900,
+      "purpose": "fresh complete public integration after optional schedule repair, no default promotion",
+      "numerical_provenance": "M13 integration allocation, not calibrated posterior stopping",
+      "device": "gpu",
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "posterior_cap": 1024,
+      "options": {
+        "plan_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+        "native_search": true,
+        "preparation_max_restarts": 3,
+        "bootstrap_initialization_rounds": 20,
+        "metric_evidence_policy": "finite_window",
+        "preparation_bound_expansion_steps": 1,
+        "posterior_members": "selected",
+        "member_rule": "first_verified",
+        "metric_probe_num_results": 16
+      }
+    }
+  ],
+  "aggregate_groups": []
+}

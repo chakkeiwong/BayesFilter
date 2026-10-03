@@ -103,6 +103,16 @@ def test_lgssm_generic_target_batch_of_one_matches_source_rank1_target() -> None
     np.testing.assert_allclose(score.numpy(), source_score[tf.newaxis, :].numpy(), atol=1.0e-10)
 
 
+def test_lgssm_generic_batch_matches_independent_scalar_analytical_reference() -> None:
+    fixture = make_lgssm_generic_target_fixture()
+    theta = tf.constant([[0.20, -1.05], [-0.3, -0.7], [0.1, -1.2]], tf.float64)
+    values, scores = lgssm_qr_log_likelihood_and_grad(theta, source_target=fixture.source_target)
+    for index in range(3):
+        scalar = fixture.source_target.analytic_score_hessian(theta[index])
+        np.testing.assert_allclose(values[index], scalar.log_likelihood, rtol=1e-10, atol=1e-12)
+        np.testing.assert_allclose(scores[index], scalar.score, rtol=1e-10, atol=1e-12)
+
+
 def test_lgssm_generic_target_rejects_rank1_position() -> None:
     fixture = make_lgssm_generic_target_fixture()
 

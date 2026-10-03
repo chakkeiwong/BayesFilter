@@ -21,6 +21,20 @@ from bayesfilter.inference.tuning_contract import (
     hmc_tuning_interface_capability,
     validate_hmc_tuning_interface_capabilities,
 )
+from bayesfilter.hmc_route_contract import (
+    HMC_TOP_LEVEL_SELECTION_STAGE,
+    ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
+    resolve_hmc_algorithm_route,
+)
+from bayesfilter.hmc_ordinary_selection_policy import (
+    ORDINARY_BROAD_PRIMARY_L_GRID,
+)
+from bayesfilter.inference.hmc_kernel_tuning import (
+    HMCKernelTuningConfig,
+    _public_resolved_policy_payload,
+)
+import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning_module
+import bayesfilter.inference.hmc_tuning_dispatch as hmc_tuning_dispatch
 from scripts.render_hmc_tuning_interface_docs import (
     OUTPUT_PATHS,
     render_markdown,
@@ -50,25 +64,29 @@ def test_capability_registry_covers_routes_and_has_resolvable_evidence() -> None
         for record in HMC_TUNING_INTERFACE_CAPABILITIES
         if record.interface_kind == "public_tuner"
     )
-    assert len(public_tuners) == 10
+    assert len(public_tuners) == 2
     assert len(active_hmc_tuning_routes()) == 2
+    assert all(record.capability_status == "tested_supported" for record in public_tuners)
     assert sum(
-        record.interface_kind == "public_tuner"
-        and record.capability_status in {"diagnostic_only", "historical_only"}
+        record.interface_kind == "diagnostic_helper"
         for record in HMC_TUNING_INTERFACE_CAPABILITIES
-    ) == 8
+    ) == 15
+    assert sum(
+        record.interface_kind == "historical_helper"
+        for record in HMC_TUNING_INTERFACE_CAPABILITIES
+    ) == 3
     assert sum(
         record.role == "active" and record.artifact_authority
         for record in HMC_TUNING_ROUTE_REGISTRY
     ) == 2
     assert {record.qualified_name for record in public_tuners} == {
         record.qualified_name for record in active_hmc_tuning_routes()
-    } | {
-        record.qualified_name
-        for record in HMC_TUNING_INTERFACE_CAPABILITIES
-        if record.interface_kind == "public_tuner"
-        and record.capability_status in {"diagnostic_only", "historical_only"}
     }
+    assert all(
+        record.replacement is not None
+        for record in HMC_TUNING_INTERFACE_CAPABILITIES
+        if record.interface_kind in {"diagnostic_helper", "historical_helper"}
+    )
     for record in HMC_TUNING_INTERFACE_CAPABILITIES:
         assert record.evidence_anchors
         for anchor in record.evidence_anchors:
@@ -102,6 +120,22 @@ def test_ordinary_capability_matches_public_signature() -> None:
     assert ordinary.acceptance_alone_can_handoff is False
     assert fixed_transport.requires_frozen_transport is True
     assert fixed_transport.mass_capability == "fixed"
+
+
+def test_implementation_module_does_not_define_a_second_public_tuner() -> None:
+    public_package = importlib.import_module("bayesfilter.inference")
+    fixed_implementation = importlib.import_module(
+        "bayesfilter.inference.fixed_transport_hmc_tuning_tf"
+    )
+    assert not hasattr(hmc_kernel_tuning_module, "tune_hmc_kernel")
+    assert public_package.tune_hmc_kernel is hmc_tuning_dispatch.tune_hmc_kernel
+    assert (
+        public_package.tune_fixed_transport_hmc_kernel
+        is fixed_implementation.tune_fixed_transport_hmc_kernel
+    )
+    assert hmc_tuning_dispatch.tune_hmc_kernel.__module__ == (
+        "bayesfilter.inference.hmc_tuning_dispatch"
+    )
 
 
 def test_every_documented_interface_resolves() -> None:
@@ -230,31 +264,21 @@ def test_normative_chapter_and_agent_guide_are_wired_to_registry() -> None:
     assert "docs/reference/hmc-tuning-interface.md" in agents
 
     for term in (
-        "tune_hmc_kernel",
-        "tune_fixed_transport_hmc_kernel",
-        "bind_neural_force_hmc_tuning_runner",
-        "run_full_chain_neural_force_hmc",
-        "fixed `M=I`, fixed `L=1`",
-        "Bulk and tail ESS are disabled",
-        "R-hat values at or below",
-        "negative_hessian",
-        "initial_covariance",
-        "parameter_scales",
-        "Durable ordinary replay",
-        "admission_supported=False",
-        "short `interface_name`",
-        "do not transfer to this route",
+        "HMCTuningCandidateSetController", "HMCTypedCandidateSetRun",
+        "verified_candidate_ids", "inconclusive_at_cap", "reporting-only",
+        "shared execution",
+        "resume_hmc_candidate_set_tuning", "resume_position_field_candidate_tuning",
+        "build_retained_bound_hmc_archive_runner_from_candidate_set_result",
+        "frozen_transport_payload", "epsilon_by_l", "evidence_rungs",
+        "negative_hessian", "initial_covariance", "parameter_scales",
+        "preparation", "chunk_max_results", "run_sequential",
     ):
-        assert term in normalized_guide
-    assert (
-        "does not relabel a non-gradient field as the exact adapter score"
-        in normalized_guide
-    )
+        assert term.lower() in normalized_guide.lower()
     assert "\\label{eq:bf-neural-force-endpoint-correction}" in chapter
-    assert "artifact\\_authority" in chapter
-    assert "admission\\_supported" in chapter
-    assert "sets both" in chapter and "to false" in chapter
-    assert "cannot issue a retained-kernel handoff" in chapter
+    assert "\\label{eq:bf-fixed-transport-hmc-score}" in chapter
+    assert "reporting-only during tuning" in chapter
+    assert "inconclusive_at_cap" in chapter
+    assert "HMCTuningCandidateSetController" in chapter
 
 
 def test_examples_are_exact_listings_and_public_imports_resolve() -> None:
@@ -287,17 +311,75 @@ def test_construction_examples_execute_without_tuning_or_hmc() -> None:
     assert covariance_namespace["main"]()["status"] == (
         "arguments_bound_without_hmc"
     )
-    binding_payload = neural_namespace["main"]()
+    typed_payload = neural_namespace["main"]()
+    binding_payload = typed_payload["binding"]
+    config_payload = typed_payload["config"]
     assert binding_payload["artifact_authority"] is False
     assert binding_payload["tensor_kernel_factory_available"] is True
+    assert config_payload["artifact_authority"] is False
+    assert config_payload["trajectory_candidate_policy"] == (
+        "powers_of_two_then_explicit_cap"
+    )
 
 
 def test_guide_rejects_the_observed_low_level_runner_misclassification() -> None:
     guide = GUIDE_PATH.read_text(encoding="utf-8")
     normalized = " ".join(guide.split())
 
-    assert "A chain runner or stage helper is not a complete tuner" in normalized
-    assert "It does not tune mass or choose `L`" in normalized
-    assert "Acceptance by itself" not in guide
-    assert "Do not treat acceptance alone as convergence or handoff evidence" in normalized
-    assert "A failed verifier must have no final kernel" in normalized
+    assert "A chain runner is not a tuner" in normalized
+    assert "Finite acceptance alone does not qualify a kernel" in normalized
+    assert "no exact-score retained-member authority" in normalized
+    assert "diagnostic helpers" in normalized
+    assert "Then use `select_fixed_transport_candidate_set`" not in normalized
+
+
+def test_guide_binds_the_executable_ordinary_default_policy() -> None:
+    config = HMCKernelTuningConfig.standard()
+    route = resolve_hmc_algorithm_route(
+        algorithm_id=config.algorithm_id,
+        stage=HMC_TOP_LEVEL_SELECTION_STAGE,
+        chain_execution_mode=config.chain_execution_mode,
+        use_xla=config.use_xla,
+    )
+    resolved = _public_resolved_policy_payload(config)
+
+    assert route.algorithm_id == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
+    assert route.operational_authority is True
+    assert route.artifact_authority is True
+    assert route.scientific_promotion_authority is False
+    assert resolved["config_variant"] == "ordinary_hmc"
+    assert resolved["algorithm_id"] == ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
+    policy = resolved["ordinary_selection_policy"]
+    assert tuple(policy["primary_l_grid"]) == ORDINARY_BROAD_PRIMARY_L_GRID
+    assert policy["epsilon_l_treatment"] == (
+        "independent_epsilon_ladder_for_every_l"
+    )
+    assert policy["refinement_rounds"] == 1
+    assert resolved["claim_bearing_artifact_authority"] is True
+    assert resolved["claim_bearing_blocker"] is None
+    assert resolved["runtime_backend_policy"] == "ordinary_tf_tfp_runtime_v1"
+    assert config.payload()["runtime_backend_policy"] == resolved["runtime_backend_policy"]
+
+    from bayesfilter.inference.hmc_candidate_set_public import _search
+    shared = _search(None, epsilon=.1, grid=ORDINARY_BROAD_PRIMARY_L_GRID)
+    assert shared.primary_l_grid == ORDINARY_BROAD_PRIMARY_L_GRID
+    assert shared.pilot_enabled and shared.refinement_rounds == 1
+    assert config.use_xla is True
+    guide = " ".join(GUIDE_PATH.read_text(encoding="utf-8").split())
+    assert "all verified members" in guide
+    assert "one pilot per L and one bounded refinement round" in guide
+    assert "nominee_id` is always `None`" in guide
+
+
+def test_ordinary_module_prose_names_one_broad_public_policy() -> None:
+    source = " ".join(
+        (
+            REPO_ROOT / "bayesfilter/inference/hmc_kernel_tuning.py"
+        ).read_text(encoding="utf-8").split()
+    )
+
+    assert "complete broad primary L grid" in source
+    assert "tunes epsilon independently" in source
+    assert "survivor-midpoint refinement grid" in source
+    assert "lower-level compatibility identities" in source
+    assert "promoted fixed-mass joint" not in source

@@ -14,7 +14,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "docs", "benchmarks"))
 
 import numpy as np, tensorflow as tf
-from bayesfilter.highdim.squared_tt_engine_v0_tf import run_value_filter_branch_axis
+from bayesfilter.highdim.squared_tt_engine_v0_tf import run_value_filter_branch_axis_reference as run_value_filter_branch_axis
 from bayesfilter.highdim.squared_tt_engine_xla_tf import run_value_filter_branch_axis_xla
 
 sys.path.insert(0, os.path.join(ROOT, "tests"))

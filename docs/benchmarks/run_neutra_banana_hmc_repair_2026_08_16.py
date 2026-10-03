@@ -154,7 +154,11 @@ def _central_bank(tf_module: Any) -> Any:
 
 
 def _tune(replication: Any, base_adapter: Any, transport: Any, initial: Any, out: Path, scope: str, seed_offset: int) -> Mapping[str, Any]:
-    from bayesfilter.inference.fixed_transport_hmc_tuning_tf import FixedTransportHMCKernelTuningConfig, tune_fixed_transport_hmc_kernel
+    from bayesfilter.inference.fixed_transport_hmc_tuning_tf import (
+        FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
+        FixedTransportHMCKernelTuningConfig,
+        tune_fixed_transport_hmc_kernel,
+    )
 
     cfg = FixedTransportHMCKernelTuningConfig(
         initial_step_size=0.05,
@@ -164,6 +168,8 @@ def _tune(replication: Any, base_adapter: Any, transport: Any, initial: Any, out
         target_accept_prob=0.70,
         acceptance_band=(0.55, 0.90),
         repair_band=(0.40, 0.95),
+        selection_policy="acceptance_target_distance",
+        selection_replications=1,
         fixed_grid_fallback_acceptance_max=0.95,
         budget_schedule=(32, 64, 128),
         tune_num_results=16,
@@ -180,6 +186,7 @@ def _tune(replication: Any, base_adapter: Any, transport: Any, initial: Any, out
         chain_execution_mode="tf_function",
         use_xla=True,
         target_scope=scope,
+        tuning_policy=FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
         output_filename="tuning_result.json",
     )
     return tune_fixed_transport_hmc_kernel(base_adapter=base_adapter, fixed_transport=transport, initial_position=initial[0], config=cfg, output_dir=out).payload()

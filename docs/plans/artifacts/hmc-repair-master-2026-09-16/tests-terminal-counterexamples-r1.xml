@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="17" time="10.327" timestamp="2026-09-17T01:30:21.942986+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[smoke]" time="0.002" /><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[standard]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[diagnostic]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[diagnostic_plus]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[serious]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_config_rejects_invalid_steps[-1]" time="0.000" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_config_rejects_invalid_steps[True]" time="0.000" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_config_rejects_invalid_steps[1.5]" time="0.000" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_config_rejects_invalid_steps[6]" time="0.000" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_is_finite_explicit_and_serialized" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_preparation_veto_causes_persist_before_exception" time="0.124" /><testcase classname="tests.test_hmc_master_repair" name="test_windowed_preparation_failure_preserves_stage_diagnostics" time="0.003" /><testcase classname="tests.test_hmc_master_repair" name="test_repair_reports_the_actual_search_limit[0.5-1-max_candidates]" time="0.003"><failure message="AssertionError: assert 'epsilon_domain' == 'max_candidates'&#10;  &#10;  - max_candidates&#10;  + epsilon_domain">epsilon = 0.5, cap = 1, reason = 'max_candidates'
+
+    @pytest.mark.parametrize("epsilon,cap,reason", [(.5, 1, "max_candidates"), (2., 4, "epsilon_domain")])
+    def test_repair_reports_the_actual_search_limit(epsilon, cap, reason):
+        from tests.test_hmc_candidate_set_tuning import _scope
+        from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig, HMCTuningCandidateSetController
+        result = HMCTuningCandidateSetController(_scope(), HMCControllerConfig(
+            primary_l_grid=(3,), initial_epsilon=epsilon, max_candidates=cap)).run(
+                lambda *args: {"decision": "repair_step_higher", "acceptance": .95})
+        limits = [row for row in result.accounting_events if row["event"] == "repair_limit_exhausted"]
+&gt;       assert limits[0]["reason"] == reason
+E       AssertionError: assert 'epsilon_domain' == 'max_candidates'
+E         
+E         - max_candidates
+E         + epsilon_domain
+
+tests/test_hmc_master_repair.py:98: AssertionError</failure></testcase><testcase classname="tests.test_hmc_master_repair" name="test_repair_reports_the_actual_search_limit[2.0-4-epsilon_domain]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_refinement_cap_counts_only_eligible_unadmitted_pairs" time="0.000"><failure message="ValueError: refinement factors must be distinct and change epsilon">def test_refinement_cap_counts_only_eligible_unadmitted_pairs():
+        from tests.test_hmc_candidate_set_tuning import _scope, _pass
+        from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig, HMCTuningCandidateSetController
+&gt;       result = HMCTuningCandidateSetController(_scope(), HMCControllerConfig(
+            primary_l_grid=(3,), initial_epsilon=.5, max_candidates=2, refinement_rounds=1,
+            epsilon_refinement_factors=(.8, 1., 1.25, 100.), refinement_l_grid=(3, 5))).run(_pass)
+
+tests/test_hmc_master_repair.py:104: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+&lt;string&gt;:19: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = HMCControllerConfig(primary_l_grid=(3,), epsilon_by_l=((3, (0.5,)),), total_budget_units=100, repair_reserve_units=20,...), refinement_l_grid=(3, 5), expansion_l_grid=(), max_candidates=2, max_gradient_work=None, max_wall_time_seconds=None)
+
+    def __post_init__(self) -&gt; None:
+        object.__setattr__(self, "primary_l_grid", _tuple_ints(self.primary_l_grid, "primary_l_grid"))
+        if not self.epsilon_by_l:
+            if self.initial_epsilon is None:
+                raise ValueError("supply epsilon_by_l or an explicit initial_epsilon warm start")
+            seed = _finite_positive(self.initial_epsilon, "initial_epsilon")
+            object.__setattr__(self, "epsilon_by_l", tuple((l, (seed,)) for l in self.primary_l_grid))
+        normalized: list[tuple[int, tuple[float, ...]]] = []
+        seen: set[int] = set()
+        for raw_l, raw_epsilons in self.epsilon_by_l:
+            leapfrog = _integer(raw_l, "L")
+            if leapfrog not in self.primary_l_grid or leapfrog in seen:
+                raise ValueError("epsilon_by_l must cover each L exactly once")
+            values = tuple(_finite_positive(value, "epsilon") for value in raw_epsilons)
+            if not values or len(set(values)) != len(values):
+                raise ValueError("each L requires distinct positive epsilon proposals")
+            normalized.append((leapfrog, values))
+            seen.add(leapfrog)
+        if seen != set(self.primary_l_grid):
+            raise ValueError("epsilon_by_l must cover each L exactly once")
+        object.__setattr__(self, "epsilon_by_l", tuple(normalized))
+        for name in ("total_budget_units", "repair_reserve_units", "candidate_reserve_units"):
+            value = _integer(getattr(self, name), name)
+            if value &lt;= 0:
+                raise ValueError(f"{name} must be positive")
+            object.__setattr__(self, name, value)
+        if self.repair_reserve_units &gt; self.total_budget_units:
+            raise ValueError("repair_reserve_units cannot exceed total_budget_units")
+        if type(self.allow_repair_from_free_pool) is not bool:
+            raise ValueError("allow_repair_from_free_pool must be boolean")
+        if type(self.pilot_enabled) is not bool:
+            raise ValueError("pilot_enabled must be boolean")
+        if self.candidate_reserve_units &lt; 2 + int(self.pilot_enabled):
+            raise ValueError("candidate_reserve_units must cover pilot, measurement and verification")
+        rungs = _tuple_ints(self.evidence_rungs, "evidence_rungs")
+        if rungs[0] != 1 or tuple(sorted(rungs)) != rungs:
+            raise ValueError("evidence_rungs must increase from one")
+        object.__setattr__(self, "evidence_rungs", rungs)
+        _integer(self.refinement_rounds, "refinement_rounds", 0)
+        _integer(self.max_candidates, "max_candidates")
+        if self.max_candidates &lt; sum(len(e) for _, e in self.epsilon_by_l):
+            raise ValueError("primary cohort exceeds max_candidates")
+        for name in ("refinement_l_grid", "expansion_l_grid"):
+            if getattr(self, name):
+                object.__setattr__(self, name, _tuple_ints(getattr(self, name), name))
+        factors = tuple(_finite_positive(v, "epsilon_refinement_factor") for v in self.epsilon_refinement_factors)
+        if len(set(factors)) != len(factors) or 1.0 in factors:
+&gt;           raise ValueError("refinement factors must be distinct and change epsilon")
+E           ValueError: refinement factors must be distinct and change epsilon
+
+bayesfilter/inference/hmc_candidate_set_tuning.py:627: ValueError</failure></testcase><testcase classname="tests.test_hmc_master_repair" name="test_malformed_observation_does_not_poison_numerical_checkpoint" time="2.798"><failure message="AssertionError: assert not ({'candidate_id': 'bridge-test:search-1:candidate:000001', 'observation': {'acceptance': 0.7414743262642727, 'acceptan...s': (), ...}, 'decision': 'passed', ...}, 'stage': 'measurement', 'work_item_id': 'bridge-test:search-1:work:000001'},)&#10; +  where ({'candidate_id': 'bridge-test:search-1:candidate:000001', 'observation': {'acceptance': 0.7414743262642727, 'acceptan...s': (), ...}, 'decision': 'passed', ...}, 'stage': 'measurement', 'work_item_id': 'bridge-test:search-1:work:000001'},) = HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='bridge-test', search_id='search-1', target_signature=...ate={'refinement_round': 0, 'gradient_work': 0, 'elapsed_seconds': 2.7347960679908283, 'controller_policy_version': 3}).observations&#10; +    where HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='bridge-test', search_id='search-1', target_signature=...ate={'refinement_round': 0, 'gradient_work': 0, 'elapsed_seconds': 2.7347960679908283, 'controller_policy_version': 3}) = result()&#10; +      where result = &lt;bayesfilter.inference.hmc_candidate_set_tuning.HMCTuningCandidateSetController object at 0x7a37137be490&gt;.result">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-385/test_malformed_observation_doe0')
+
+    def test_malformed_observation_does_not_poison_numerical_checkpoint(tmp_path):
+        from tests.test_hmc_candidate_set_execution import make_binding
+        from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig, HMCTuningCandidateSetController
+        from bayesfilter.inference.hmc_candidate_set_checkpoint import (
+            write_numerical_tuning_checkpoint, load_numerical_tuning_checkpoint,
+        )
+        binding = make_binding()
+        controller = HMCTuningCandidateSetController(binding.scope, HMCControllerConfig(
+            primary_l_grid=(3,), initial_epsilon=1.3, evidence_rungs=(1,)))
+        def malformed(work, candidate):
+            observation = dict(binding.observe(work, candidate))
+            observation["draw_range"] = ("invalid", 1)
+            return observation
+        with pytest.raises(ValueError):
+            controller.run(malformed, checkpoint=lambda result:
+                write_numerical_tuning_checkpoint(binding, result, tmp_path))
+&gt;       assert not controller.result().observations
+E       AssertionError: assert not ({'candidate_id': 'bridge-test:search-1:candidate:000001', 'observation': {'acceptance': 0.7414743262642727, 'acceptan...s': (), ...}, 'decision': 'passed', ...}, 'stage': 'measurement', 'work_item_id': 'bridge-test:search-1:work:000001'},)
+E        +  where ({'candidate_id': 'bridge-test:search-1:candidate:000001', 'observation': {'acceptance': 0.7414743262642727, 'acceptan...s': (), ...}, 'decision': 'passed', ...}, 'stage': 'measurement', 'work_item_id': 'bridge-test:search-1:work:000001'},) = HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='bridge-test', search_id='search-1', target_signature=...ate={'refinement_round': 0, 'gradient_work': 0, 'elapsed_seconds': 2.7347960679908283, 'controller_policy_version': 3}).observations
+E        +    where HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='bridge-test', search_id='search-1', target_signature=...ate={'refinement_round': 0, 'gradient_work': 0, 'elapsed_seconds': 2.7347960679908283, 'controller_policy_version': 3}) = result()
+E        +      where result = &lt;bayesfilter.inference.hmc_candidate_set_tuning.HMCTuningCandidateSetController object at 0x7a37137be490&gt;.result
+
+tests/test_hmc_master_repair.py:129: AssertionError</failure></testcase><testcase classname="tests.test_hmc_master_repair" name="test_later_shared_invalidity_disables_an_earlier_live_member" time="4.136"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7a3713791d60&gt;
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-385/test_later_shared_invalidity_d0')
+
+    def test_later_shared_invalidity_disables_an_earlier_live_member(monkeypatch, tmp_path):
+        import tensorflow as tf
+        from tests.test_hmc_candidate_set_execution import make_binding
+        from bayesfilter.inference import build_retained_bound_hmc_archive_runner_from_candidate_set_result
+        from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig, HMCTuningCandidateSetController
+        binding = make_binding()
+        controller = HMCTuningCandidateSetController(binding.scope, HMCControllerConfig(
+            primary_l_grid=(3,), initial_epsilon=1.3, evidence_rungs=(1,)))
+        earlier = controller.run(binding.observe)
+        member = build_retained_bound_hmc_archive_runner_from_candidate_set_result(
+            candidate_set_result=earlier, candidate_id=earlier.verified_candidate_ids[0], retained_binding=binding)
+        controller.add_exploration_candidate(5, 1.3)
+        original = binding._run
+        def invalid_transition(*args):
+            value = original(*args)
+            return SimpleNamespace(samples=value.samples + tf.constant(.01, value.samples.dtype),
+                trace=value.trace, metadata=value.metadata)
+        monkeypatch.setattr(binding, "_run", invalid_transition)
+        later = controller.run(binding.observe)
+        assert later.completion_status == "shared_invalidity"
+        assert later.observations[-1]["observation"]["evidence_validity"] == "shared_execution_invalid"
+&gt;       with pytest.raises(ValueError, match="shared-invalid"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+tests/test_hmc_master_repair.py:160: Failed</failure></testcase></testsuite></testsuites>

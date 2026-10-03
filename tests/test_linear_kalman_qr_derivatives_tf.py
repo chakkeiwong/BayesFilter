@@ -1,5 +1,5 @@
-from pathlib import Path
 import inspect
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -8,8 +8,8 @@ import tensorflow as tf
 from bayesfilter.linear.kalman_qr_derivatives_tf import (
     _tf_qr_sqrt_kalman_score,
     tf_qr_linear_gaussian_score,
-    tf_qr_sqrt_kalman_score,
     tf_qr_linear_gaussian_score_hessian,
+    tf_qr_sqrt_kalman_score,
     tf_qr_sqrt_kalman_score_hessian,
     tf_qr_sqrt_masked_kalman_score_hessian,
 )
@@ -24,7 +24,6 @@ from bayesfilter.linear.types_tf import (
 from bayesfilter.testing.tf_solve_differentiated_kalman_reference import (
     tf_solve_differentiated_kalman_loglik,
 )
-
 
 ROOT = Path(__file__).resolve().parents[1]
 JITTER = 1e-9
@@ -141,34 +140,76 @@ def _masked_qr_log_likelihood(
     )
 
 
+def _independent_covariance_value(observations, model, observation_mask=None):
+    """Small independent autodiff oracle; its date loop is diagnostic only.
+
+    Keep this separate from the compiled QR recurrence: TensorFlow 2.19 cannot
+    compile the second reverse derivative of its QR while function library.
+    The covariance solve/Joseph law provides an independent factorization.
+    """
+    mean, covariance = model.initial_mean, model.initial_covariance
+    z, transition = model.observation_matrix, model.transition_matrix
+    n, m = mean.shape[0], z.shape[0]
+    dtype = mean.dtype
+    noise = model.observation_covariance + tf.constant(1e-9, dtype) * tf.eye(m, dtype=dtype)
+    value = tf.zeros([], dtype)
+    for t in range(observations.shape[0]):
+        predicted_mean = model.transition_offset + tf.linalg.matvec(transition, mean)
+        predicted_covariance = transition @ covariance @ tf.transpose(transition) + model.transition_covariance
+        weight = tf.ones([m], dtype) if observation_mask is None else tf.cast(observation_mask[t], dtype)
+        zm = weight[:, None] * z
+        hm = noise * weight[:, None] * weight[None, :] + tf.linalg.diag(1.0 - weight)
+        innovation = weight * (observations[t] - model.observation_offset - tf.linalg.matvec(z, predicted_mean))
+        innovation_covariance = zm @ predicted_covariance @ tf.transpose(zm) + hm
+        precision = tf.linalg.inv(innovation_covariance)
+        gain = predicted_covariance @ tf.transpose(zm) @ precision
+        mean = predicted_mean + tf.linalg.matvec(gain, innovation)
+        joseph = tf.eye(n, dtype=dtype) - gain @ zm
+        covariance = joseph @ predicted_covariance @ tf.transpose(joseph) + gain @ hm @ tf.transpose(gain)
+        value -= 0.5 * (tf.reduce_sum(weight) * tf.math.log(tf.constant(2.0*np.pi, dtype))
+                        + tf.linalg.logdet(innovation_covariance)
+                        + tf.einsum("i,ij,j->", innovation, precision, innovation))
+    return value
+
+
+# Compile differentiation with the recurrence: no TensorList crosses XLA.
+@tf.function(jit_compile=True)
 def _autodiff_reference(params: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-    with tf.GradientTape() as hessian_tape:
+    with tf.GradientTape(persistent=True) as hessian_tape:
         hessian_tape.watch(params)
         with tf.GradientTape() as gradient_tape:
             gradient_tape.watch(params)
             model, _ = _model_and_derivatives(params, dtype=params.dtype)
-            value = _qr_log_likelihood(_observations(params.dtype), model)
+            value = _independent_covariance_value(_observations(params.dtype), model)
         gradient = gradient_tape.gradient(value, params)
-    hessian = hessian_tape.jacobian(gradient, params)
+        gradient_rows = tf.unstack(gradient)
+    # Independent tiny reference: explicit rows avoid pfor and TF's nested
+    # jacobian-while function-library bug; production derivatives stay batched.
+    hessian = tf.stack([hessian_tape.gradient(row, params) for row in gradient_rows])
     return value, gradient, hessian
 
 
+# Compile differentiation with the recurrence: no TensorList crosses XLA.
+@tf.function(jit_compile=True)
 def _autodiff_masked_reference(
     params: tf.Tensor,
     observation_mask: tf.Tensor,
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-    with tf.GradientTape() as hessian_tape:
+    with tf.GradientTape(persistent=True) as hessian_tape:
         hessian_tape.watch(params)
         with tf.GradientTape() as gradient_tape:
             gradient_tape.watch(params)
             model, _ = _model_and_derivatives(params, dtype=params.dtype)
-            value = _masked_qr_log_likelihood(
+            value = _independent_covariance_value(
                 _observations(params.dtype),
                 model,
                 observation_mask,
             )
         gradient = gradient_tape.gradient(value, params)
-    hessian = hessian_tape.jacobian(gradient, params)
+        gradient_rows = tf.unstack(gradient)
+    # Independent tiny reference: explicit rows avoid pfor and TF's nested
+    # jacobian-while function-library bug; production derivatives stay batched.
+    hessian = tf.stack([hessian_tape.gradient(row, params) for row in gradient_rows])
     return value, gradient, hessian
 
 

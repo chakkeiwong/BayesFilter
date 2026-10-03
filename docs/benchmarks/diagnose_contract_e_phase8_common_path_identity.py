@@ -279,14 +279,14 @@ def compute_diagnostic() -> dict[str, Any]:
     with tf.GradientTape(persistent=True) as tape:
         tape.watch(theta)
         correction, analytic, computed_increment, analytic_increment = _forward_expressions(theta)
-    correction_autodiff = tape.jacobian(correction, theta)
-    analytic_autodiff = tape.jacobian(analytic, theta)
-    computed_increment_autodiff = tape.jacobian(computed_increment, theta)
-    analytic_increment_autodiff = tape.jacobian(analytic_increment, theta)
+    correction_autodiff = tape.jacobian(correction, theta, experimental_use_pfor=False)
+    analytic_autodiff = tape.jacobian(analytic, theta, experimental_use_pfor=False)
+    computed_increment_autodiff = tape.jacobian(computed_increment, theta, experimental_use_pfor=False)
+    analytic_increment_autodiff = tape.jacobian(analytic_increment, theta, experimental_use_pfor=False)
     del tape
     manual = _manual_correction_jvp(theta)
     prepared = _two_step_prepared()
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         tape.watch(theta)
         canonical_primal = canonical._canonical_primal_core(
             theta,
@@ -296,7 +296,8 @@ def compute_diagnostic() -> dict[str, Any]:
             row_chunk_size=2,
             col_chunk_size=2,
         )["per_batch_log_likelihood"]
-    canonical_primal_autodiff = tape.jacobian(canonical_primal, theta)
+    canonical_primal_autodiff = tape.jacobian(canonical_primal, theta, experimental_use_pfor=False)
+    del tape
     canonical_manual = canonical._canonical_manual_jvp_core(
         theta,
         prepared,
@@ -305,10 +306,11 @@ def compute_diagnostic() -> dict[str, Any]:
         row_chunk_size=2,
         col_chunk_size=2,
     )["per_batch_score"]
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         tape.watch(theta)
         independent_primal = _independent_two_step_sis(theta)
-    independent_autodiff = tape.jacobian(independent_primal, theta)
+    independent_autodiff = tape.jacobian(independent_primal, theta, experimental_use_pfor=False)
+    del tape
     finite_values = [
         correction,
         analytic,

@@ -7,11 +7,10 @@ from bayesfilter.nonlinear.fixed_sgqf_tf import (
     tf_fixed_sgqf_active_multi_indices,
     tf_fixed_sgqf_branch_identity,
     tf_fixed_sgqf_cloud,
-    tf_fixed_sgqf_level2_axis_cloud,
     tf_fixed_sgqf_combination_coefficient,
+    tf_fixed_sgqf_level2_axis_cloud,
     tf_standard_normal_ghq_level_rule,
 )
-
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -193,11 +192,16 @@ def test_fixed_sgqf_branch_identity_is_stable_and_sensitive_to_branch_fields() -
     assert base.hash != changed.hash
 
 
-def test_fixed_sgqf_module_does_not_import_numpy_or_call_dot_numpy() -> None:
+def test_fixed_sgqf_numerical_core_has_no_numpy_boundary() -> None:
     text = (ROOT / "bayesfilter" / "nonlinear" / "fixed_sgqf_tf.py").read_text(
         encoding="utf-8"
     )
 
     assert "import numpy" not in text
     assert "from numpy" not in text
-    assert ".numpy(" not in text
+    # The public API assembles Python failure/step records after execution.
+    # Device/host conversion must remain absent from the numerical recurrence.
+    core = (ROOT / "bayesfilter" / "nonlinear" / "fixed_sgqf_compiled_tf.py").read_text()
+    assert "import numpy" not in core
+    assert "from numpy" not in core
+    assert ".numpy(" not in core

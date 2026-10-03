@@ -1,0 +1,756 @@
+\chapter[Modern Importance Sampling]{Modern Importance Sampling and Coverage-Aware Flow Training}
+\label{ch:bf-modern-is}
+
+A posterior can have several economically distinct explanations of the same
+observations. A proposal fitted around one explanation may generate smooth,
+well-behaved trajectories while missing the others. Importance sampling makes
+this failure precise: a proposal must assign sufficient probability wherever
+the posterior contributes to the expectation being estimated. A tractable
+unnormalized posterior is enough to compute weights, but it does not make
+unvisited regions visible. Modern methods address this difficulty by adapting
+mixtures, moving through intermediate distributions, learning transport maps,
+or learning stochastic dynamics. Their common purpose is to make the change
+of probability measure less variable.
+
+This chapter develops these ideas for a posterior on unconstrained parameters
+$x\in\R^d$. Write its unnormalized density as $\gamma(x)$, its normalizing
+constant as $Z=\int\gamma(x)\,dx\in(0,\infty)$, and its normalized density as
+$p(x)=\gamma(x)/Z$. In a state-space application, $\gamma$ includes the prior,
+likelihood and any parameter-chart Jacobian. If a filter supplies an approximate
+likelihood, all subsequent identities concern that declared approximate
+posterior. Learning a better proposal cannot remove the filter approximation.
+
+\section{What importance weights measure}
+\label{sec:bf-is-foundations}
+
+Let $q$ be a normalized proposal with $q(x)>0$ wherever $\gamma(x)>0$, up to
+sets of measure zero. Draw independent $X_i\sim q$ and define
+$W_i=\gamma(X_i)/q(X_i)$. For an integrable quantity $f$, direct substitution
+of the proposal density gives
+\begin{align}
+ \E_q[W]&=\int q(x)\frac{\gamma(x)}{q(x)}\,dx=Z,\\
+ \E_q[Wf(X)]&=Z\E_p[f(X)].
+ \label{eq:bf-is-change-measure}
+\end{align}
+Thus $\widehat Z=N^{-1}\sum_iW_i$ is unbiased. When $Z$ is unknown, the
+self-normalized estimate is
+\begin{equation}
+ \widehat\mu=\frac{\sum_iW_if(X_i)}{\sum_iW_i},\qquad
+ \mu=\E_p[f(X)].
+ \label{eq:bf-is-snis}
+\end{equation}
+The ratio is generally biased at finite $N$. Under a law of large numbers it
+is consistent. Under the appropriate second-moment condition, applying the
+delta method to the numerator and denominator yields
+\begin{equation}
+ \sqrt N(\widehat\mu-\mu)\ \Rightarrow\
+ \calN(0,\sigma_f^2),\qquad
+ \sigma_f^2=\int\frac{p(x)^2}{q(x)}[f(x)-\mu]^2\,dx.
+ \label{eq:bf-is-snis-variance}
+\end{equation}
+Indeed, the first-order ratio error is
+$N^{-1}\sum_i W_i[f(X_i)-\mu]/Z$, whose mean is zero and whose variance is
+$\sigma_f^2/N$. This derivation explains why a proposal useful for the posterior
+mean need not be equally useful for a tail event or a rare default probability.
+For a single known $f$, Cauchy--Schwarz shows that the variance-minimizing
+self-normalized proposal is proportional to $p|f-\mu|$, when this expression
+is meaningful. It depends on the unknown answer. Approximating $p$ itself is a
+more general-purpose choice \citep[Chapter 9]{owen2013mc}.
+
+For normalizer estimation, the variance has a direct divergence interpretation:
+\begin{align}
+ \frac{\Var_q(W)}{Z^2}
+ &=\int\frac{p(x)^2}{q(x)}\,dx-1
+ =\chi^2(p\Vert q),\\
+ \frac{\Var(\widehat Z)}{Z^2}&=\frac{\chi^2(p\Vert q)}{N}.
+ \label{eq:bf-is-chi-square}
+\end{align}
+The familiar sample diagnostic
+$\widehat{\mathrm{ESS}}=(\sum_iW_i)^2/\sum_iW_i^2$ estimates a weight-concentration
+quantity. With suitable moment laws,
+$\widehat{\mathrm{ESS}}/N\to[1+\chi^2(p\Vert q)]^{-1}$. It is neither a count
+of independent posterior draws nor a certificate that all modes were visited.
+If every draw lies in one of two separated modes, nearly equal observed weights
+can give an apparently excellent ESS while the omitted mode remains unknown.
+
+\section{Why dimension and missing modes matter}
+
+Suppose both densities factorize over their coordinates:
+$p(x)=\prod_jp_j(x_j)$ and $q(x)=\prod_jq_j(x_j)$.
+Tonelli's theorem then gives
+\begin{equation}
+ 1+\chi^2(p\Vert q)
+ =\prod_{j=1}^d\int\frac{p_j(x_j)^2}{q_j(x_j)}\,dx_j
+ =\prod_{j=1}^d[1+\chi^2(p_j\Vert q_j)].
+ \label{eq:bf-is-product}
+\end{equation}
+A small mismatch repeated across many coordinates can therefore produce
+exponential weight variance. For $p=\calN(m,I_d)$ and $q=\calN(0,I_d)$,
+$W/Z=\exp(m^\top X-\|m\|^2/2)$ and Gaussian integration gives
+$\E_q[(W/Z)^2]=\exp(\|m\|^2)$. A fixed mean error per coordinate has
+$\|m\|^2$ proportional to $d$.
+
+A related sample-size analysis is due to
+\citet[Theorems 1.1--1.2]{chatterjee2018sample}. They connect the threshold to $\exp\{D_{\mathrm{KL}}(p\Vert q)\}$. Their bounds involve the
+concentration of $\log(p/q)$ under $p$ and the integrand, with a separate
+self-normalized result. The statement is not an unconditional rule that exactly
+$\exp(D_{\mathrm{KL}})$ samples suffice. It explains why the posterior's typical
+set can be extremely rare under a superficially plausible proposal. The
+second-moment identity above and the KL threshold answer related but distinct
+questions: variance control and the onset of typical-set coverage.
+
+Modes alone do not determine probabilities. At an isolated interior mode $m_k$
+with positive-definite $H_k=-\nabla^2\log\gamma(m_k)$, the local quadratic
+approximation is
+\begin{equation}
+ \gamma(x)\simeq\gamma(m_k)
+ \exp\{-\tfrac12(x-m_k)^\top H_k(x-m_k)\},\qquad
+ Z_k^{\rm Lap}=\gamma(m_k)(2\pi)^{d/2}|H_k|^{-1/2}.
+ \label{eq:bf-is-laplace-mode}
+\end{equation}
+The determinant measures local volume. Ranking modes by height discards it.
+Even the Laplace mass can fail for curved ridges, boundaries, heavy tails or
+nonquadratic basins. Multistart optimization and mode merging, as developed
+within the adaptive multimodal MCMC framework of
+\citet[Section 2.2]{pompe2020adaptive}, provide useful candidate locations.
+Finding all modes of an unrestricted nonlinear density remains a separate
+problem. A finite optimizer search cannot establish exhaustiveness.
+
+A proposal does not need one component per mode. In a product of $d/2$
+double-well densities, the number of modes is $2^{d/2}$, while the formula for
+the density remains short. Exploiting structure can be far more economical than
+enumerating modes. This distinction is central to interpreting high-dimensional
+multimodal demonstrations.
+
+\section[Weighted kernels and adaptive mixtures]{From weighted kernels to adaptive parametric mixtures}
+
+\citet[Sections 2.1--2.2]{west1993mixtures} uses importance-weighted kernel
+mixtures to refine posterior approximations. Given weighted locations, a
+normalized kernel estimate has the form
+\begin{equation}
+ q_{\rm next}(x)=\sum_{i=1}^N\overline W_i K_H(x-X_i),\qquad
+ \overline W_i=W_i/\sum_jW_j,
+ \label{eq:bf-is-kernel-mixture}
+\end{equation}
+where $K_H$ integrates to one. Gaussian or Student kernels produce an evaluable
+proposal and can follow skewness or several basins. Every next sample must be
+weighted using the density of the proposal that actually generated it.
+Recycling an adaptive cloud requires corresponding multiple-importance or
+sequential weighting; retroactively dividing all old draws by the latest
+proposal is not automatically correct.
+
+The classical kernel density calculation exposes a limitation. Under the
+usual second-order smoothness assumptions and an isotropic bandwidth $h$,
+squared integrated bias is of order $h^4$, while integrated variance is of
+order $(Nh^d)^{-1}$. Balancing the two terms gives
+\begin{equation}
+ \mathrm{MISE}(h)\simeq C_1h^4+\frac{C_2}{Nh^d},\qquad
+ h_{\rm opt}=\left(\frac{dC_2}{4C_1N}\right)^{1/(d+4)},\qquad
+ \mathrm{MISE}(h_{\rm opt})=O(N^{-4/(d+4)}).
+ \label{eq:bf-is-kde-rate}
+\end{equation}
+This is the standard fixed-dimensional density-estimation calculation, not a
+theorem covering arbitrary dependent adaptive weights. Its slow exponent
+explains why adding local kernels alone becomes expensive. Estimating one
+integral can be easier than reconstructing a whole density; the two tasks
+must not be conflated.
+
+Consider a finite mixture $q_\eta(x)=\sum_{k=1}^K a_kq_k(x;\eta_k)$.
+Forward-KL fitting minimizes $D_{\mathrm{KL}}(p\Vert q_\eta)$.
+Equivalently, it maximizes $\E_p\log q_\eta$. Importance weights approximate this expectation without
+requiring normalized $p$. The current responsibilities are
+\begin{equation}
+ r_{ik}=\frac{a_kq_k(X_i;\eta_k)}{q_\eta(X_i)}.
+ \label{eq:bf-is-responsibilities}
+\end{equation}
+The Gaussian EM updates are
+\begin{align}
+ a_k^{+}&=\sum_i\overline W_i r_{ik},&
+ m_k^{+}&=\frac{\sum_i\overline W_i r_{ik}X_i}{a_k^{+}},\\
+ \Sigma_k^{+}&=\frac{\sum_i\overline W_i r_{ik}
+ (X_i-m_k^{+})(X_i-m_k^{+})^\top}{a_k^{+}}.
+ \label{eq:bf-is-weighted-em}
+\end{align}
+Jensen's inequality applied to the latent component label gives the EM lower
+bound; maximizing it yields these weighted moments. The weights remain fixed
+during each empirical EM fit. \citet[Section 2]{cappe2008mixtures} derive
+adaptive updates for general mixture classes. Covariance regularization,
+component removal and stopping remain numerical choices; none creates evidence
+about an unvisited region.
+
+\citet[Section 3]{raftery2010imis} develops incremental mixture importance
+sampling (IMIS). It adds local Gaussian components near points with large
+importance weights, estimates local covariance from neighboring points,
+simulates new draws and recomputes weights against the resulting proposal
+mixture. It was designed for difficult epidemiological posteriors, including
+nonlinear ridges. Its residual-weight trigger identifies where the current
+sampled proposal is inadequate; it cannot add a component at a region that no
+search or sample has reached.
+
+MitISEM replaces unrestricted kernel proliferation with adaptive Student-$t$
+mixtures and importance-weighted EM
+\citep[Sections 2 and 5; Appendix A]{hoogerheide2012mitisem}. For one
+$t_\nu(m,\Sigma)$ component, the Gaussian scale-mixture representation adds a
+latent precision with conditional mean
+$(\nu+d)/(\nu+(x-m)^\top\Sigma^{-1}(x-m))$. This supplies robust weighted
+location and scatter updates. More explicitly, with
+$\tau_{ik}=(\nu_k+d)/(\nu_k+\delta_{ik})$ and
+$\delta_{ik}=(X_i-m_k)^\top\Sigma_k^{-1}(X_i-m_k)$, one EM step at fixed
+$\nu_k$ gives
+\begin{align}
+ m_k^+&=\frac{\sum_i\overline W_i r_{ik}\tau_{ik}X_i}
+                 {\sum_i\overline W_i r_{ik}\tau_{ik}},\\
+ \Sigma_k^+&=\frac{\sum_i\overline W_i r_{ik}\tau_{ik}
+          (X_i-m_k^+)(X_i-m_k^+)^\top}{\sum_i\overline W_i r_{ik}}.
+ \label{eq:bf-is-student-em}
+\end{align}
+Here $\Sigma_k$ is a scatter parameter, not the covariance; for $\nu_k>2$ the
+covariance is $\nu_k\Sigma_k/(\nu_k-2)$. Optimizing the degrees of freedom adds
+a scalar nonlinear update involving the latent precision's expected logarithm.
+Large-weight points motivate extra components.
+The partial MitISEM extension factors marginal and conditional distributions,
+reducing the dimension of each approximation problem when that factorization
+is useful. The locally inspected source is the 2011 working paper preceding
+the 2012 publication; its extra sequential, permutation and partial-mixture
+constructions should be distinguished from a claim to reproduce every published
+experiment.
+
+\section{Defensive and adaptive proposals}
+
+A defensive mixture protects against a fitted proposal becoming too narrow:
+\begin{equation}
+ q_\lambda(x)=(1-\lambda)q_{\rm fit}(x)+\lambda q_0(x),
+ \qquad 0<\lambda\le1.
+ \label{eq:bf-is-defensive}
+\end{equation}
+If $p(x)\le Cq_0(x)$ everywhere, then $p/q_\lambda\le C/\lambda$ and
+\begin{equation}
+ \int\frac{p^2}{q_\lambda}\le\frac{C}{\lambda}\int p
+ =\frac{C}{\lambda}.
+ \label{eq:bf-is-defensive-bound}
+\end{equation}
+The domination assumption is the substantive protection; the word
+``heavy-tailed'' by itself is insufficient. A very small $\lambda$ can still
+make finite-sample exploration ineffective.
+
+\citet[Theorems 7--9]{delyon2021safe} study a kernel estimate mixed with a safe
+density and give convergence and integral-estimation results under conditions
+on domination, bandwidth and the declining safe share. Their root-$N$ integral
+asymptotics concern increasing sample size at fixed dimension under the stated
+regularity assumptions. They do not remove the bandwidth's dimension dependence
+or guarantee small finite-sample cost in high dimension.
+For example, the related regularized safe scheme of \citet{korba2022mirror}
+requires, among its conditions, $\lambda_n\to0$, $h_n\to0$ and
+$\log n/(n h_n^d\lambda_n)\to0$. It also requires $q_0\ge c p$, boundedness
+and regularity of the density and kernel, and controls such as
+$(1-\eta_n)\log h_n\to0$ when powered weights are used. The factor $h_n^d$
+shows explicitly where dimension remains in the convergence requirements.
+
+\citet[Sections 2--3]{korba2022mirror} regularize importance weights using an
+exponent $\eta\in(0,1]$. The population calculation is
+\begin{equation}
+ q(x)\left(\frac{p(x)}{q(x)}\right)^\eta
+ =p(x)^\eta q(x)^{1-\eta}.
+ \label{eq:bf-is-power-weights}
+\end{equation}
+Lower $\eta$ reduces concentration but changes the distribution fitted by those
+weights. Their mirror-descent interpretation and safe kernel mixture balance
+this bias against variance, with asymptotic conditions driving $\eta$ toward
+one. Regularized adaptation and final estimation are different operations: an
+estimate of $\E_pf$ still requires weights for $p$, unless a different estimand
+is explicitly intended.
+
+Gradient-based adaptive importance samplers (GRAMIS) use target gradients,
+local curvature and interactions among proposal components to direct an
+adaptive mixture \citep[Section 3 and Table 2]{elvira2023gramis}. Local
+preconditioning can move a component toward a high-density region; repulsion
+reduces redundant concentration. Their samples retain evaluable proposal
+densities and importance correction. For equally allocated samples from $M$ proposals, their deterministic-mixture
+weight denominator is $M^{-1}\sum_{j=1}^M q_j(x)$, so every sampled point is
+judged against the entire current proposal mixture. The mean update combines
+a backtracked preconditioned score step with repulsion:
+\begin{equation}
+ m_i^+=m_i+\theta_i\Sigma_i\nabla\log\gamma(m_i)
+                   +\sum_{j\ne i}r_{ij}.
+ \label{eq:bf-is-gramis-step}
+\end{equation}
+The paper specifies the scaling of $r_{ij}$ from a Poisson-field construction
+and a distance-dependent interaction. Backtracking tests the score step
+without the repulsion term, and the covariance uses local negative inverse
+Hessian information only when positive definiteness permits it, retaining
+valid prior information otherwise. Thus the method is not an unconditional
+Newton step through an indefinite Hessian. The reported high-dimensional banana
+examples exploit strong structure. Such examples support investigation of the
+mechanism, not unrestricted mode discovery in every 50-dimensional posterior.
+
+Gaussian-mixture variational inference (GMMVI) addresses another objective.
+\citet[Sections 2--4 and Appendix A]{arenz2023gmmvi} unify natural-gradient
+updates, trust regions, sample reuse and component adaptation for
+$D_{\mathrm{KL}}(q\Vert p)$. A natural gradient has the form
+$-F(\eta)^{-1}\nabla_\eta D_{\mathrm{KL}}$, where $F$ is the Fisher information
+in the chosen variational coordinates. It accounts for how parameter changes
+alter distributions. Reverse KL still weights errors under $q$, so efficient
+optimization does not itself prevent missing modes. The paper's warning that
+ELBO-based tuning can impair other distributional metrics is directly relevant
+to evaluating a learned transport.
+
+\section{Annealing and sequential importance sampling}
+\label{sec:bf-is-ais}
+
+Let $\gamma_0=q_0$ be normalized and let $\gamma_K=\gamma$. Intermediate
+unnormalized densities may be geometric bridges
+$\gamma_k=q_0^{1-\beta_k}\gamma^{\beta_k}$ for
+$0=\beta_0<\cdots<\beta_K=1$. An AIS realization begins at $X_0\sim q_0$.
+At stage $k$, multiply its weight by
+$\gamma_k(X_{k-1})/\gamma_{k-1}(X_{k-1})$ and then apply a Markov kernel
+$K_k$ invariant for $\pi_k=\gamma_k/Z_k$. With fixed kernels,
+\begin{equation}
+ W_{\rm AIS}=\prod_{k=1}^K
+ \frac{\gamma_k(X_{k-1})}{\gamma_{k-1}(X_{k-1})},\qquad
+ \E[W_{\rm AIS}f(X_K)]=\int\gamma(x)f(x)\,dx.
+ \label{eq:bf-is-ais-identity}
+\end{equation}
+The last mutation can be omitted, in which case $f$ is evaluated at $X_{K-1}$.
+To see the identity, suppose the weighted marginal before stage $k$ is
+$\gamma_{k-1}(x)\,dx$. Multiplication changes it to $\gamma_k(x)\,dx$.
+Integrating the next state against $K_k$ preserves this measure by invariance.
+Induction from $q_0$ proves the result. An equivalent path-density derivation
+uses reverse kernels; it does not require each finite chain to reach equilibrium
+\citep{neal2001ais}. It does require correct invariance and support. Adapting a
+kernel from the same interacting batch needs separate justification and must
+not silently inherit the fixed-kernel unbiasedness statement.
+
+Log weights accumulate as a sum, avoiding products that overflow. For the
+geometric bridge the increment is
+$(\beta_k-\beta_{k-1})[\log\gamma(X_{k-1})-\log q_0(X_{k-1})]$.
+A small temperature change limits the immediate variation of this increment.
+Good mutation is still necessary: many intermediate densities with negligible
+movement can preserve a bad particle configuration at high cost.
+
+Sequential Monte Carlo adds resampling. Given normalized weights, draw parent
+indices with those probabilities, reset weights appropriately and apply
+mutation. Conditional unbiasedness of the resampling operation preserves the
+weighted measure in expectation. Products of the incremental normalizer
+estimates give the usual SMC normalizer estimator under standard fixed-design
+conditions \citep{chopin2020introduction}. Resampling trades weight degeneracy
+for dependence and possible loss of ancestry. It cannot manufacture a mode that
+neither the initial particles nor mutation reach.
+
+\section{Annealed flow transport and continual training}
+
+A learned bijection $T_k$ can move particles before they are weighted. If
+$X\sim\pi_{k-1}$, change of variables gives the incremental factor
+\begin{equation}
+ G_k(X)=\frac{\gamma_k(T_k(X))|\det DT_k(X)|}
+                    {\gamma_{k-1}(X)}.
+ \label{eq:bf-is-aft-weight}
+\end{equation}
+Multiplying the pushed-forward law by this factor produces
+$(Z_k/Z_{k-1})\pi_k$. Approximation error in the map affects weight variance;
+a missing Jacobian changes the measure.
+
+AFT learns each map by minimizing a local reverse KL. Substituting the density
+of $T_k(X)$ into that KL yields, up to $\log Z_k-\log Z_{k-1}$,
+\begin{equation}
+ \mathcal L_k(T_k)=\E_{\pi_{k-1}}
+ [\log\gamma_{k-1}(X)-\log\gamma_k(T_k(X))
+                          -\log|\det DT_k(X)|].
+ \label{eq:bf-is-aft-loss}
+\end{equation}
+\citet[Equations 7--9 and Algorithm 1]{arbel2021aft} combine transport,
+importance correction, resampling and MCMC mutation. Their law of large numbers
+and central limit theorem require explicit smoothness, moment and bounded-weight
+conditions, with further assumptions for the CLT. Data-dependent fitted maps
+cannot simply be treated as deterministic maps when asserting finite-sample
+unbiasedness; the paper supplies an asymptotic analysis for its adaptive scheme.
+
+CRAFT repeatedly runs the annealed SMC procedure and uses renewed particle
+approximations to update the stage maps
+\citep[Equation 5, Algorithms 1--3 and supplement]{matthews2022craft}.
+Replenishing particles avoids optimizing each stage indefinitely against one
+small fixed cloud. The maps learn progressively while corrected particles still
+represent the annealed sequence. This is a different training organization from
+fitting one whole-target flow by forward KL or FAB. Its practical advantage
+depends on target cost, number of stages and mutation; neither repeated fitting
+nor the transport correction eliminates finite-particle mode loss.
+One complete pass therefore starts with a fresh base cloud, computes each
+stage's current weighted training loss, moves points with the current map,
+updates their weights using \eqref{eq:bf-is-aft-weight}, resamples when the
+declared criterion calls for it, and mutates with the intermediate target.
+The next pass uses the updated maps. Optimizer updates and particle transport
+must follow the chosen algorithm's ordering; a map fitted using a particle
+cloud cannot be silently replaced in the weight denominator by a later map.
+
+\section{FAB: minimizing the importance-weight second moment}
+\label{sec:bf-is-fab}
+
+Let $q_\phi$ be the density of a trainable flow. FAB minimizes the alpha-two
+objective
+\begin{equation}
+ J(\phi)=\int\frac{\gamma(x)^2}{q_\phi(x)}\,dx
+ =Z^2[1+\chi^2(p\Vert q_\phi)],\qquad
+ g_\phi(x)=\frac{\gamma(x)^2}{q_\phi(x)J(\phi)}.
+ \label{eq:bf-fab-objective}
+\end{equation}
+Assume $J<\infty$, $q_\phi>0$ on the target support, and continuous
+differentiability of $q_\phi$ with respect to $\phi$. Assume also an integrable
+envelope for the differentiated integrand in a neighborhood of $\phi$, so that
+differentiation under the integral is valid.
+Since $\gamma$ does not depend on the flow parameters,
+\begin{align}
+ \nabla_\phi J
+ &=-\int\frac{\gamma^2}{q_\phi^2}\nabla_\phi q_\phi\,dx
+ =-\int\frac{\gamma^2}{q_\phi}\nabla_\phi\log q_\phi\,dx,\\
+ \nabla_\phi\log J
+ &=-\E_{g_\phi}[\nabla_\phi\log q_\phi(X)].
+ \label{eq:bf-fab-gradient}
+\end{align}
+The negative density score is emphasized where $p$ is large and $q$ is too
+small. This is the gradient of a chi-square objective, not ordinary forward KL,
+whose gradient instead averages the same score under $p$. Minimizing $J$ or
+$\log J$ has the same minimizers and descent directions, but different gradient
+scales. The unknown $Z$ is irrelevant to those minimizers.
+
+\citet[Section 3.1, Equations 4--7 and Appendix A]{midgley2023fab} approximate
+expectations under $g_\phi$ by AIS. At outer iteration $t$, hold $q_t=q_{\phi_t}$
+fixed during the forward sampling pass and use
+\begin{align}
+ \gamma_{t,\beta}(x)
+ &=q_t(x)^{1-\beta}\{\gamma(x)^2/q_t(x)\}^{\beta}
+ =q_t(x)^{1-2\beta}\gamma(x)^{2\beta},\\
+ \log\gamma_{t,\beta}(x)
+ &=(1-2\beta)\log q_t(x)+2\beta\log\gamma(x),\\
+ \nabla_x\log\gamma_{t,\beta}(x)
+ &=(1-2\beta)\nabla_x\log q_t(x)+2\beta\nabla_x\log\gamma(x).
+ \label{eq:bf-fab-bridge}
+\end{align}
+At $\beta=0$ the density is $q_t$; at $\beta=1/2$ it is the unnormalized
+posterior; at $\beta=1$ it is $\gamma^2/q_t$. A posterior-tempering parameter
+inside a likelihood is a different quantity from this FAB bridge parameter.
+They must not be identified merely because both are denoted beta in software.
+The AIS log-weight increment is
+\begin{equation}
+ \Delta\log W_i=2\Delta\beta
+ [\log\gamma(X_i)-\log q_t(X_i)].
+ \label{eq:bf-fab-weight}
+\end{equation}
+The flow density is therefore needed at arbitrary locations reached by
+mutation, not just at samples generated by the flow. HMC mutations also
+require its spatial score. The author implementation offers a symmetric
+Gaussian random-walk Metropolis alternative, which uses density values alone.
+
+With AIS terminal points $X_i$ and weights $W_i$, the practical loss is
+\begin{equation}
+ \widehat S_t(\phi)=-\sum_i
+ \operatorname{stopgrad}\!\left(\frac{W_i}{\sum_jW_j}\right)
+ \log q_\phi(\operatorname{stopgrad}(X_i)).
+ \label{eq:bf-fab-detached-loss}
+\end{equation}
+Differentiation acts only on the final log density. Differentiating through the
+AIS trajectory, proposal distribution or weights computes additional terms
+and is wrong relative to this estimator. With fixed valid AIS kernels,
+unnormalized weights can estimate $\nabla J$ unbiasedly; the ratio in
+\eqref{eq:bf-fab-detached-loss} generally introduces finite-sample bias. Reverse-KL
+path-gradient estimators such as Roeder's and Vaitl's solve a different
+reparameterized-gradient problem \citep{roeder2017sticking,vaitl2024fastpath};
+they cannot replace this detached-density gradient unchanged.
+
+The target $g_t$ changes when $q_t$ changes. Fitting a single frozen $g_t$ to
+completion is therefore not the adaptive FAB procedure. New AIS passes and
+corrected replay retain the connection to the current objective. At the ideal
+solution $q=p$, $g=p$ and the auxiliary emphasis disappears.
+
+\subsection{Replay corrections and their limits}
+
+Suppose a stored AIS point was weighted for
+$\gamma^2/q_{\rm old}$. The corresponding unnormalized target ratio is
+\begin{equation}
+ c_\phi(x)=\frac{\gamma(x)^2/q_\phi(x)}
+                 {\gamma(x)^2/q_{\rm old}(x)}
+ =\frac{q_{\rm old}(x)}{q_\phi(x)},\qquad
+ \log c_\phi=\log q_{\rm old}-\log q_\phi.
+ \label{eq:bf-fab-replay}
+\end{equation}
+Store the point, its AIS log weight and the log density used for that weight.
+Sample replay indices proportional to their stored weights, then use the
+minibatch loss $-B^{-1}\sum_i\operatorname{stopgrad}(c_i)\log q_\phi(X_i)$.
+Before the optimizer changes $\phi$, add $\log c_i$ to each selected priority
+and replace its stored log density by the currently evaluated one. Successive
+corrections telescope: $(q_a/q_b)(q_b/q_c)=q_a/q_c$.
+
+This is Algorithm 1 and Section 3.2 of \citet{midgley2023fab}. It saves expensive
+posterior evaluations because old points need only a new flow density. It does
+not permit uniform sampling from the buffer followed by the same correction:
+that would omit the original AIS priorities. Likewise, inserting detached
+corrections into a trainer that automatically renormalizes every minibatch
+changes the stated replay loss.
+
+The paper's practical sampling without replacement introduces bias. The
+inspected author JAX implementation additionally caps $c_i$ in the loss, with a
+configurable default of ten, while refreshing stored log priorities with the
+uncapped correction. Capping bounds a stochastic update but changes its
+expectation. Its activation frequency and effect require measurement. Pooled
+replay, finite AIS, stale priorities and dependence are further reasons not to
+call practical replay gradients exactly unbiased. A useful implementation must
+preserve the distinction between the underlying objective and its finite
+training procedure.
+
+\subsection{Tail integrability is stronger than full support}
+
+A Gaussian example demonstrates the issue. If $p=\calN(0,\sigma_p^2)$ and
+$q=\calN(0,\sigma_q^2)$, then
+\begin{equation}
+ \frac{p(x)^2}{q(x)}=C\exp\left[-x^2
+ \left(\frac{1}{\sigma_p^2}-\frac{1}{2\sigma_q^2}\right)\right].
+ \label{eq:bf-fab-gaussian-tail}
+\end{equation}
+Its integral is finite precisely when $\sigma_q^2>\sigma_p^2/2$. Both densities
+have full support even when this condition fails. A highly contracted
+reverse-KL warm start may therefore create an invalid FAB auxiliary density.
+Radial evaluations and weight diagnostics can expose trouble but cannot prove
+a global tail bound. A defensive mixture with a proved dominating component
+can guarantee a finite second moment by \eqref{eq:bf-is-defensive-bound}; it
+also changes the proposal family and must be accounted for explicitly.
+
+FAB's Appendix C studies favorable dimensional scaling under factorized
+$p,q$, independent coordinate parameters and perfect intermediate transitions.
+Its gradient-variance calculation motivates increasing intermediate steps with
+dimension. It is not a guarantee for arbitrary dependent posteriors with local
+HMC. The 32-dimensional Many-Well benchmark has $65{,}536$ modes through a
+product construction; it demonstrates exploitation of structure, not an
+exhaustive optimizer search over arbitrary modes.
+
+\section{Combining FAB with IAF and NeuTra}
+\label{sec:bf-fab-iaf}
+
+FAB supplies the training procedure; an inverse autoregressive flow supplies
+the density family. For stage input $z$, use
+\begin{equation}
+ u_j=z_j\exp\{s_j(z_{<j})\}+\mu_j(z_{<j}),\qquad
+ s_j=b_j+c\tanh\{h_j(z_{<j})/c\}.
+ \label{eq:bf-fab-iaf-stage}
+\end{equation}
+Masked neural networks ensure that $s_j$ and $\mu_j$ depend only on preceding
+coordinates. The free bias $b_j$ lies outside the conditional cap. This is the
+option in Hoffman's author code used by the current BayesFilter IAF; the
+conditional contribution is bounded, while the complete log scale need not be.
+The cap $c=2$, width sixteen and four-parameter application are local choices.
+The source architecture uses ELU conditioners, author block masks, nonzero
+variance-scaled kernels and coordinate reversal between three stages
+\citep[Section 4.1.1 and accompanying code]{hoffman2019neutra}.
+
+The Jacobian of each stage is triangular with diagonal $\exp(s_j)$, hence
+$\log|\det Df|=\sum_js_j$. For a composition $T_\phi$ with a fixed invertible
+outer affine map $a+Az$, stage log determinants add and the affine contributes
+$\log|\det A|$. With standard-normal base density $\varphi_d$,
+\begin{equation}
+ q_\phi(x)=\varphi_d(T_\phi^{-1}(x))
+ |\det DT_\phi(T_\phi^{-1}(x))|^{-1}.
+ \label{eq:bf-fab-iaf-density}
+\end{equation}
+Sampling evaluates each autoregressive stage in parallel across its coordinates.
+Evaluating the density at an arbitrary $x$ requires inversion: first recover
+$z_1$, then use it to recover $z_2$, and continue. The diagonal solve is
+$z_j=[u_j-\mu_j(z_{<j})]\exp[-s_j(z_{<j})]$. There is no dense determinant,
+but FAB makes the inverse cost more prominent than reverse-KL training does.
+Batches remain parallel; the coordinate dependency is intrinsic to this IAF
+orientation. A nonlinear NAF \citep{huang2018naf} is a different scalar
+transformation and is not required to combine FAB with IAF.
+
+At fixed $x$, implicit differentiation of $T_\phi(z)=x$ gives
+\begin{equation}
+ \partial_\phi z=-[D_zT_\phi(z)]^{-1}\partial_\phi T_\phi(z).
+ \label{eq:bf-fab-inverse-derivative}
+\end{equation}
+Therefore the parameter gradient of
+$\log q_\phi(x)=\log\varphi_d(z)-\log|\det D_zT_\phi(z)|$ includes both
+explicit parameter dependence and dependence through $z$. Holding this inverse
+latent value fixed would omit terms. Autodifferentiating the native inverse
+recursion computes this total derivative without materializing a dense
+Jacobian. Finite differences of selected parameter directions provide an
+independent check. FAB's detached $x$ is fully compatible with differentiating
+$z=T_\phi^{-1}(x)$ with respect to $\phi$.
+
+Once training is complete, freeze $\phi$ and define the NeuTra target
+\begin{align}
+ \widetilde p_Z(z)&=\gamma(T_\phi(z))|\det DT_\phi(z)|,\\
+ \nabla_z\log\widetilde p_Z(z)
+ &=DT_\phi(z)^\top\nabla_x\log\gamma(T_\phi(z))
+                   +\nabla_z\log|\det DT_\phi(z)|.
+ \label{eq:bf-fab-neutra-target}
+\end{align}
+Changing variables shows that an invariant chain for this density pushes
+forward to $p$, regardless of how accurately $q_\phi$ approximates $p$.
+Identity latent mass is a valid choice; mass adaptation is not a prerequisite.
+The auxiliary FAB target $\gamma^2/q$ never replaces the posterior in this
+formula. Better importance-weight coverage may still coexist with sharp
+latent curvature, so training success does not establish efficient HMC.
+
+For a perfectly Gaussianized posterior,
+$\nabla_z\log\widetilde p_Z(z)=-z$ and
+$r(z)=\log\widetilde p_Z(z)+\|z\|^2/2$ is constant. The standard post-training
+check evaluates the score residual and $r$ on one thousand fresh normal-base
+points, preserving finite/status failures and the residual distribution.
+This checks geometry where the map generates points. Independent region
+occupancy and target-weighted evidence are needed for coverage; full retained
+chains and their uncertainty diagnostics are needed for posterior estimation.
+
+\section{Stein methods and stochastic transport}
+
+Stein variational gradient descent uses kernels in a different role from a
+kernel mixture proposal. For a smooth vector field $v$, transform
+$X\mapsto X+\epsilon v(X)$. Integration by parts gives
+\begin{equation}
+ \left.\frac{d}{d\epsilon}D_{\mathrm{KL}}(q_\epsilon\Vert p)
+ \right|_{\epsilon=0}
+ =-\E_q[\nabla\log p(X)^\top v(X)+\nabla\!\cdot v(X)].
+ \label{eq:bf-is-stein-direction}
+\end{equation}
+Maximizing the negative derivative over a unit ball in a vector-valued
+reproducing-kernel Hilbert space yields the particle direction
+\begin{equation}
+ v^*(x)\propto\frac1N\sum_i
+ [k(X_i,x)\nabla\log p(X_i)+\nabla_{X_i}k(X_i,x)].
+ \label{eq:bf-is-svgd}
+\end{equation}
+The first term attracts toward posterior mass and the second repels particles
+\citep{liu2016svgd}. The evolved empirical measure does not automatically supply
+an evaluable normalized density for importance weighting. Kernel bandwidth and
+high-dimensional distance concentration remain material issues.
+
+Projected SVGD exploits a likelihood-informed subspace
+\citep{chen2020psvgd}. A sensitivity matrix built from likelihood scores
+identifies directions where the posterior differs most strongly from the prior.
+For a Gaussian prior with covariance $C$, one common form is
+\begin{equation}
+ H=\E_p[(\nabla\log L(X))(\nabla\log L(X))^\top],\qquad
+ H\psi_j=\lambda_j C^{-1}\psi_j,
+ \label{eq:bf-is-informed-subspace}
+\end{equation}
+where $L$ is the likelihood and the eigenvectors are orthonormal in the prior
+precision metric. The associated optimal conditional-expectation approximation
+averages $L$ over discarded prior coordinates. Under the functional-inequality
+and prior assumptions used in that literature, its KL approximation error is
+controlled by a constant times $\sum_{j>r}\lambda_j$. This statement concerns
+the projected target approximation; finite particles and variational training
+add errors of their own. It is not a bound on an arbitrary implementation merely
+using the top $r$ eigenvectors.
+The method transports coordinates in that subspace and represents the
+complement using the prior conditional structure. Its error bounds depend on
+assumptions and the neglected eigenvalue tail. If many directions are strongly
+informed, projection has little advantage; nominal dimension alone does not
+determine its suitability.
+
+Continuous flows and controlled diffusions instead learn trajectories. For a
+continuous normalizing flow $\dot X_t=v_\phi(X_t,t)$, conservation of probability
+implies
+\begin{equation}
+ \frac{d}{dt}\log q_t(X_t)=-\nabla\!\cdot v_\phi(X_t,t).
+ \label{eq:bf-is-cnf}
+\end{equation}
+\citet[Proposition 3.1, Equation 10 and Appendix A]{wu2025annealing} train
+annealed flow segments with a reverse-KL endpoint term and an integrated
+squared-velocity penalty. Substituting \eqref{eq:bf-is-cnf} gives the segment
+objective, up to input-density constants,
+\begin{equation}
+ \E[-\log\gamma_k(X_{t_k})
+      -\int_{t_{k-1}}^{t_k}\nabla\!\cdot v_\phi(X_t,t)\,dt
+      +\lambda\int_{t_{k-1}}^{t_k}\|v_\phi(X_t,t)\|^2\,dt].
+ \label{eq:bf-is-annealing-flow}
+\end{equation}
+The paper also examines discretized penalties, trace estimators, a first-order
+training modification and optional Langevin refinement. These approximations
+and its infinitesimal theory must be distinguished from an exact finite-step
+transport. The present application retains IAF's explicit triangular
+Jacobian instead of substituting this continuous-flow architecture.
+
+Sequential controlled Langevin diffusions (SCLD) combine a learned stochastic
+control with sequential importance correction and resampling
+\citep[Section 2, Algorithms 1--4 and Appendix A]{chen2025scld}.
+A finite path-space construction makes the correction understandable. Let
+$F_k(x_k\mid x_{k-1})$ be the simulated forward transition and
+$B_{k-1}(x_{k-1}\mid x_k)$ a normalized backward transition. The proposal
+path density is $q_0(x_0)\prod_kF_k$ and the unnormalized target path density
+is $\gamma_K(x_K)\prod_kB_{k-1}$. Their ratio factors as
+\begin{equation}
+ W_{0:K}=\prod_{k=1}^K
+ \frac{\gamma_k(x_k)B_{k-1}(x_{k-1}\mid x_k)}
+      {\gamma_{k-1}(x_{k-1})F_k(x_k\mid x_{k-1})},
+ \qquad\gamma_0=q_0.
+ \label{eq:bf-is-path-weight}
+\end{equation}
+The intermediate densities telescope; integration of the backward transitions
+leaves terminal density $\gamma_K$. For nondegenerate Euler diffusion steps,
+the $F_k$ are Gaussian and can be evaluated. Continuous-time versions use
+Radon--Nikodym derivatives between path measures under the requisite
+absolute-continuity and integrability conditions. The SCLD paper derives these
+weights and trains controls using subtrajectory log-variance losses, including
+off-policy sampling. An additive unknown log normalizer disappears from a
+variance. For a detached reference path law $R_n$ with sufficient support, the
+subtrajectory objective has the form
+\begin{equation}
+ \mathcal L_n(\phi)=\Var_{R_n}[\log W_{n,\phi}]
+ =\E_{R_n}[(\log W_{n,\phi}-\E_{R_n}\log W_{n,\phi})^2].
+ \label{eq:bf-is-scld-loss}
+\end{equation}
+With the reference law held fixed while differentiating, its gradient is
+$2\E_{R_n}[(\log W_{n,\phi}-\E_{R_n}\log W_{n,\phi})
+\nabla_\phi\log W_{n,\phi}]$. The centering term's derivative cancels because
+the centered log weight has mean zero. Off-policy training separates the
+sampling law from the control being updated. Section 2.3 and Theorem A.2
+explain this loss and its off-policy use. Proposition 2.3 instead establishes
+an exponential relative-error lower bound for a particular KL estimator on
+product path measures, motivating the alternative. Zero empirical variance on
+a finite buffer is not equality of complete path measures. Resampling between
+segments limits concentration over a whole long path, while optional MCMC
+refinement improves terminal locations.
+
+A weighted path sampler is not automatically a tractable terminal density
+$q(x)$. It can provide training samples, but distilling them into an IAF is an
+additional approximation. SCLD's reported multimodal examples include a
+50-dimensional, forty-component mixture. Its 1,600-dimensional log-Gaussian
+Cox example is primarily evaluated through an ELBO; it is not evidence of
+exhaustive unknown-mode coverage in 1,600 dimensions.
+
+\section{Evaluation and implementation}
+
+The broad evaluation of \citet[Sections 7--8 and Appendices D--F]{blessing2024beyond}
+compares eleven variational and sampling methods across synthetic and Bayesian
+targets. Its mixture examples vary dimension, including 2, 50 and 200, and show
+that strong performance on an ELBO or one weight diagnostic can coexist with
+poor coverage. The evidence depends on the authors' architectures, tuning and
+budgets; it establishes no universal winner. It supports using several
+measurements that answer different questions.
+
+For a learned posterior proposal, correctness of density and derivatives comes
+first. Next, inspect region coverage using independent information where
+available, importance-weight reliability on untouched draws, and consistency
+across seeds. For a NeuTra map, inspect transformed scores, numerical validity
+and downstream mixing. An apparently superior extreme quantile from a short
+run is descriptive until its uncertainty is assessed. A short successful test
+can retain a candidate; it cannot establish a production training protocol.
+
+The author-maintained \texttt{fab-jax} repository separates sampling, replay
+and training from its bundled coupling-layer flow. Its MIT license permits
+adaptation with the notice retained. BayesFilter ports those FAB components to
+TensorFlow while keeping the existing IAF and batch-native posterior evaluator.
+This preserves a single transport implementation and avoids a second target
+implementation solely for a different autodiff backend. The port follows the
+paper's normalized-weight sum in \eqref{eq:bf-fab-detached-loss}; the inspected
+JAX no-replay function takes a mean of those weighted terms, adding a factor
+$1/N$. The replay loss, correction cap and without-replacement choice are
+recorded separately. These are explicit source differences, not interchangeable
+normalizations under arbitrary optimizer settings.
+
+\enlargethispage{\baselineskip}
+Three remaining costs determine the application. First, AIS requires repeated
+posterior evaluations, with scores at every intermediate HMC step or values
+alone for a Metropolis mutation. Second, IAF density
+evaluation at arbitrary points requires autoregressive inversion. Third, replay
+initialization must provide enough distinct points to avoid fitting a tiny
+static cloud. The author's recommendation is to use as few annealing and
+mutation steps as can make the resulting samples usefully better than the
+flow's initial samples, then calibrate on the actual problem. An example
+configuration is a starting hypothesis. Source faithfulness reduces accidental
+algorithm changes; target-specific measurement determines whether the resulting
+training procedure is affordable and scientifically useful.

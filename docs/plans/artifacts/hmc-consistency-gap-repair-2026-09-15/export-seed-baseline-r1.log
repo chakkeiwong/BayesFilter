@@ -1,0 +1,25 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_retained_export_keeps_partial_and_failed_chunk_seed_history _______
+tests/test_hmc_consistency_gap_repair.py:151: in test_retained_export_keeps_partial_and_failed_chunk_seed_history
+    checked.run(num_results=4, seed=seed, output_dir=tmp_path / "retained")
+bayesfilter/inference/hmc_candidate_set_retained.py:307: in run
+    result = self._binding._run(self.candidate, state, num_results, seed)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/unittest/mock.py:1169: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/unittest/mock.py:1173: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/unittest/mock.py:1234: in _execute_mock_call
+    raise effect
+E   AssertionError: seed reuse reached execution
+----------------------------- Captured stderr call -----------------------------
+2026-09-15 04:02:22.704067: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 9 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x7aec34663100> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING  tensorflow:polymorphic_function.py:157 6 out of the last 10 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x7aec34663560> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+=========================== short test summary info ============================
+FAILED tests/test_hmc_consistency_gap_repair.py::test_retained_export_keeps_partial_and_failed_chunk_seed_history
+1 failed, 351 warnings in 8.14s

@@ -30,7 +30,6 @@ from bayesfilter.testing.exact_sv_sgqf_neutra_target_tf import (
     source_uniform_prior_value_score,
 )
 
-
 KSC_UKF_DATASET_ID = "zhao_cui_sv_ksc_gaussian_mixture_surrogate_T1000"
 KSC_UKF_DATASET_SEED = 81101
 KSC_UKF_HORIZON = 1000
@@ -65,6 +64,7 @@ def transformed_ksc_observations(raw_observations: Any) -> tf.Tensor:
     )
 
 
+@tf.function(jit_compile=True)
 def ksc_ukf_likelihood_value_score(
     theta: Any,
     *,

@@ -38,6 +38,17 @@ else:
 
 import tensorflow as tf
 
+# Configure the allocator immediately after TensorFlow import.  Several
+# BayesFilter modules construct module-level tensors, so importing them first
+# can initialize a logical GPU and make the memory-growth policy fail closed.
+from bayesfilter.runtime.gpu_memory_policy import configure_tensorflow_gpu_memory_growth
+
+
+GPU_MEMORY_POLICY = configure_tensorflow_gpu_memory_growth(tf, require_gpu=MODE == "gpu")
+if MODE == "gpu":
+    tf.config.experimental.enable_tensor_float_32_execution(True)
+    tf.config.set_soft_device_placement(False)
+
 from bayesfilter.inference.neutra_batching import (
     bound_batch_native_neutra_training_target,
     require_batch_native_neutra_target,
@@ -50,13 +61,6 @@ from bayesfilter.nonlinear.ssl_lstm_complexity_batched_target_tf import (
     batch_native_complexity_posterior_target,
 )
 from bayesfilter.nonlinear.ssl_lstm_complexity_target_tf import FREE_NAMES, PRIOR_CENTER
-from bayesfilter.runtime.gpu_memory_policy import configure_tensorflow_gpu_memory_growth
-
-
-GPU_MEMORY_POLICY = configure_tensorflow_gpu_memory_growth(tf, require_gpu=MODE == "gpu")
-if MODE == "gpu":
-    tf.config.experimental.enable_tensor_float_32_execution(True)
-    tf.config.set_soft_device_placement(False)
 
 
 SCHEMA = "bayesfilter.ssl_lstm.q20_gpu_native_eigh_localization.v1"
@@ -506,4 +510,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

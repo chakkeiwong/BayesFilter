@@ -1,0 +1,105 @@
+{
+  "command": [
+    "latexmk",
+    "-pdf",
+    "-interaction=nonstopmode",
+    "-halt-on-error",
+    "-outdir=/tmp/hmc-m28-guide-20260923-r1",
+    "main.tex"
+  ],
+  "environment_overrides": {
+    "TEXINPUTS": "/home/ubuntu/python/BayesFilter/docs:",
+    "BIBINPUTS": "/home/ubuntu/python/BayesFilter/docs:"
+  },
+  "returncode": 1,
+  "wall_seconds": 10.1226256119553,
+  "log": "/tmp/hmc-m28-guide-20260923-r2/build.log",
+  "output": "/tmp/hmc-m28-guide-20260923-r2/main.pdf",
+  "previous_installed_pdf_sha256": "454a96b27440558ff8fc7fbff8c9d43d3ca035f0cc759cfa300a2be713ee8a95",
+  "input_sha256": {
+    "docs/chapters/ch21b_hmc_tuning_interfaces.tex": "4a297a9a49e66810ccb152f8813e0138adb9be9f384d037293990ec17226c76d",
+    "docs/reference/hmc-tuning-interface.md": "b5bdeda9efafefd3fa3878c1a9a8bddabbba75c2cd38b15459b295b387b3e8fb"
+  },
+  "failed_first_attempt": {
+    "command": [
+      "latexmk",
+      "-pdf",
+      "-interaction=nonstopmode",
+      "-halt-on-error",
+      "-outdir=/tmp/hmc-m28-guide-20260923-r1",
+      "main.tex"
+    ],
+    "environment_overrides": {
+      "TEXINPUTS": "/home/ubuntu/python/BayesFilter/docs//:",
+      "BIBINPUTS": "/home/ubuntu/python/BayesFilter/docs:"
+    },
+    "returncode": 12,
+    "wall_seconds": 160.57029057107866,
+    "log": "/tmp/hmc-m28-guide-20260923-r1/build.log",
+    "classification": "recursive TeX input search entered campaign artifacts; stopped owned pdflatex and removed recursion"
+  },
+  "commands": [
+    [
+      "latexmk",
+      "-pdf",
+      "-interaction=nonstopmode",
+      "-halt-on-error",
+      "-outdir=/tmp/hmc-m28-guide-20260923-r2",
+      "main.tex"
+    ],
+    [
+      "bibtex",
+      "/tmp/hmc-m28-guide-20260923-r2/main"
+    ],
+    [
+      "latexmk",
+      "-g",
+      "-pdf",
+      "-interaction=nonstopmode",
+      "-halt-on-error",
+      "-outdir=/tmp/hmc-m28-guide-20260923-r2",
+      "main.tex"
+    ]
+  ],
+  "returncodes": [
+    0,
+    1
+  ],
+  "bibliography_repair": {
+    "commands": [
+      {
+        "command": [
+          "bibtex",
+          "main"
+        ],
+        "cwd": "/tmp/hmc-m28-guide-20260923-r2"
+      },
+      {
+        "command": [
+          "latexmk",
+          "-g",
+          "-pdf",
+          "-interaction=nonstopmode",
+          "-halt-on-error",
+          "-outdir=/tmp/hmc-m28-guide-20260923-r2",
+          "main.tex"
+        ],
+        "cwd": "/home/ubuntu/python/BayesFilter/docs"
+      }
+    ],
+    "returncodes": [
+      0,
+      0
+    ],
+    "wall_seconds": 6.946414695004933,
+    "reason": "bibtex must run inside its output directory under openout_any=p"
+  },
+  "final_returncode": 0,
+  "pdf_sha256": "ee1193e9dd0176fff1c4c17a07bd3b51c7fa83cf363ecbbc3f49caa048e8916b",
+  "changed_pages_visually_inspected": [
+    418,
+    419
+  ],
+  "undefined_citations_or_references": false,
+  "installed_pdf": "docs/main.pdf"
+}

@@ -1,0 +1,245 @@
+{
+  "assessment": {
+    "accuracy_established": false,
+    "availability_interval": [
+      0.01257911709342505,
+      0.9874208829065749
+    ],
+    "completed": 1,
+    "conditional_tests_only": true,
+    "datasets": [
+      {
+        "data": [
+          -0.5139126502343533,
+          -0.0479857314482707,
+          0.6887640776507653,
+          0.7024948827832488,
+          0.9291767424501453,
+          -0.16626137569345248
+        ],
+        "dataset_id": 0,
+        "fit_independence": "fresh full fit randomness conditional on dataset",
+        "fit_outputs_active": [
+          [
+            -0.04384110056135315
+          ],
+          [
+            0.6508028265287431
+          ]
+        ],
+        "fits": [
+          {
+            "fit_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/repair-cpu-r1/cpu-native-search-3/dataset-0000/fit-0000/pipeline.json",
+            "member_id": "inference_validation:e6d8f4dd7a30d712718a:candidate:000015",
+            "runtime_passed": true
+          },
+          {
+            "fit_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/repair-cpu-r1/cpu-native-search-3/dataset-0000/fit-0001/pipeline.json",
+            "member_id": "inference_validation:57cf76f58c8d7cce1ed4:candidate:000003",
+            "runtime_passed": true
+          }
+        ],
+        "output_rule": "last_retained_transition_first_chain",
+        "ranks": {
+          "bounded_radius": 1,
+          "log_likelihood": 2,
+          "parameter_0": 1
+        },
+        "status": "complete",
+        "truth_assessor_only": [
+          0.24302714638533005
+        ]
+      },
+      {
+        "data": [
+          1.2925138044513398,
+          1.2940964637318895,
+          0.2577393201647603,
+          1.6508808661680723,
+          -2.286168054976943,
+          1.4266785131004205
+        ],
+        "dataset_id": 1,
+        "fit_independence": "fresh full fit randomness conditional on dataset",
+        "fit_outputs_active": [],
+        "fits": [
+          {
+            "pipeline": {
+              "candidate_count": 6,
+              "completion": "complete",
+              "data": [
+                1.2925138044513398,
+                1.2940964637318895,
+                0.2577393201647603,
+                1.6508808661680723,
+                -2.286168054976943,
+                1.4266785131004205
+              ],
+              "dataset_id": 1,
+              "fit_id": 0,
+              "members": [],
+              "numerical_route": "ordinary",
+              "selection": {
+                "candidate_ids": [],
+                "rule": "first_verified",
+                "scope": "selected"
+              },
+              "source_binding": "483baed9db9b51f59c29bca4aa06ff355c6584b68d5adfad44c3e5ff63b77e2d",
+              "timing": {
+                "compilation_separated": false,
+                "invocation_seconds": 16.20747919997666,
+                "preparation_seconds": 4.460640356002841,
+                "tuning_or_reload_seconds": 16.205770863976795
+              },
+              "tuning_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/repair-cpu-r1/cpu-native-search-3/dataset-0001/fit-0000/tuning_observation.json",
+              "verified_candidate_ids": []
+            },
+            "reason": "no_verified_member"
+          },
+          {
+            "pipeline": {
+              "candidate_count": 6,
+              "completion": "complete",
+              "data": [
+                1.2925138044513398,
+                1.2940964637318895,
+                0.2577393201647603,
+                1.6508808661680723,
+                -2.286168054976943,
+                1.4266785131004205
+              ],
+              "dataset_id": 1,
+              "fit_id": 1,
+              "members": [],
+              "numerical_route": "ordinary",
+              "selection": {
+                "candidate_ids": [],
+                "rule": "first_verified",
+                "scope": "selected"
+              },
+              "source_binding": "3a59639f1cc875b31d2025ca12f169601d8876cd4ea3cfe26011c89bc87c68ca",
+              "timing": {
+                "compilation_separated": false,
+                "invocation_seconds": 16.190819723007735,
+                "preparation_seconds": 4.516073389968369,
+                "tuning_or_reload_seconds": 16.129368679015897
+              },
+              "tuning_path": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-24h-2026-09-16/repair-cpu-r1/cpu-native-search-3/dataset-0001/fit-0001/tuning_observation.json",
+              "verified_candidate_ids": []
+            },
+            "reason": "no_verified_member"
+          }
+        ],
+        "output_rule": "last_retained_transition_first_chain",
+        "ranks": {},
+        "status": "missing_fit",
+        "truth_assessor_only": [
+          0.10643181554378445
+        ]
+      }
+    ],
+    "finding": "calibration_incomplete",
+    "independent_unit": "simulated dataset; independent complete fits within each dataset",
+    "missing_fit_policy": "conditional ranks are descriptive only; incomplete SBC cannot establish unconditional calibration",
+    "null_assumptions": "independent fits return correct conditional posterior outputs; randomized ties; fixed reporting rule",
+    "planned": 2,
+    "planned_fits": 4,
+    "small_run_limit": "few datasets only demonstrate execution; inspect power before a calibration claim",
+    "tested_procedure": "ordinary",
+    "tests": {
+      "bounded_radius": {
+        "accuracy_established": false,
+        "counts": [
+          0,
+          1,
+          0
+        ],
+        "finding": "no_discrepancy_detected",
+        "kind": "rank_uniformity",
+        "null": "iid discrete uniform ranks; exact multinomial Monte Carlo comparison",
+        "p_value": 1.0,
+        "replications": 1,
+        "statistic": 2.0000000000000004,
+        "threshold": 0.016666666666666666
+      },
+      "log_likelihood": {
+        "accuracy_established": false,
+        "counts": [
+          0,
+          0,
+          1
+        ],
+        "finding": "no_discrepancy_detected",
+        "kind": "rank_uniformity",
+        "null": "iid discrete uniform ranks; exact multinomial Monte Carlo comparison",
+        "p_value": 1.0,
+        "replications": 1,
+        "statistic": 2.0000000000000004,
+        "threshold": 0.016666666666666666
+      },
+      "parameter_0": {
+        "accuracy_established": false,
+        "counts": [
+          0,
+          1,
+          0
+        ],
+        "finding": "no_discrepancy_detected",
+        "kind": "rank_uniformity",
+        "null": "iid discrete uniform ranks; exact multinomial Monte Carlo comparison",
+        "p_value": 1.0,
+        "replications": 1,
+        "statistic": 2.0000000000000004,
+        "threshold": 0.016666666666666666
+      }
+    },
+    "unstarted_datasets": 0
+  },
+  "coverage": {
+    "control": "baseline",
+    "device": "cpu_reference",
+    "engine": "sbc",
+    "family": "conjugate",
+    "phase": "development",
+    "route": "ordinary",
+    "start": "dispersed",
+    "target": "normal_conjugate",
+    "transport": "none"
+  },
+  "design_identity": "fe88e77cc2f19d269044db6b8a43c038a529f5918106aa9a00faaa9df5f20c2e",
+  "elapsed_seconds": 473.61788954999065,
+  "execution_status": "complete",
+  "runtime": {
+    "cpu_threads": {
+      "inter_op": "1",
+      "intra_op": "2"
+    },
+    "device_scope": "cpu_reference",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": false,
+    "memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tf32": true,
+    "tfp": "0.25.0",
+    "visible_devices": "-1"
+  },
+  "schema": "bayesfilter.inference_validation_result.v1",
+  "test_response": {
+    "control": "baseline",
+    "interpretation": "missing or invalid evidence is not defect detection",
+    "power_established": false,
+    "reason": "calibration_incomplete",
+    "status": "unassessed"
+  }
+}

@@ -11,14 +11,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
+from bayesfilter.hmc_ordinary_selection_policy import (
+    ORDINARY_BROAD_FIXED_METRIC_POLICY_ID,
+)
 
-HMC_ROUTE_CONTRACT_VERSION = "bayesfilter.hmc_algorithm_route.v1"
+HMC_ROUTE_CONTRACT_VERSION = "bayesfilter.hmc_algorithm_route.v2"
 
 OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID = (
     "operational_interleaved_windowed_warmup_v2"
 )
-OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID = (
+ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID = (
+    ORDINARY_BROAD_FIXED_METRIC_POLICY_ID
+)
+LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID = (
     "operational_paired_fixed_trajectory_selection_v3"
+)
+# Compatibility symbol for callers that imported the active algorithm constant
+# rather than persisting the old v3 string.
+OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID = (
+    ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID
 )
 LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID = "segmented_windowed_mass_runner"
 LEGACY_JOINT_L_EPSILON_ALGORITHM_ID = "joint_l_epsilon_grid_fixed_mass_hmc"
@@ -33,11 +44,13 @@ _KNOWN_BY_STAGE = {
         LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
     },
     HMC_FIXED_TRAJECTORY_STAGE: {
-        OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
+        LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
     },
     HMC_TOP_LEVEL_SELECTION_STAGE: {
-        OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
+        LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
     },
 }
@@ -63,6 +76,11 @@ class HMCAlgorithmRouteDecision:
     promotion_role: str
     stopping_rule_role: str
     operational_authority: bool
+    # Stage-route authority is distinct from public artifact and scientific
+    # promotion authority. Those roles must be granted by the caller-facing
+    # contract, never inferred from this resolver alone.
+    artifact_authority: bool = False
+    scientific_promotion_authority: bool = False
     reports_posterior_convergence: bool = False
     reports_sampler_superiority: bool = False
 
@@ -86,6 +104,8 @@ class HMCAlgorithmRouteDecision:
             "promotion_role": self.promotion_role,
             "stopping_rule_role": self.stopping_rule_role,
             "operational_authority": self.operational_authority,
+            "artifact_authority": self.artifact_authority,
+            "scientific_promotion_authority": self.scientific_promotion_authority,
             "reports_posterior_convergence": self.reports_posterior_convergence,
             "reports_sampler_superiority": self.reports_sampler_superiority,
         }
@@ -104,11 +124,30 @@ class UnsupportedHMCAlgorithmRoute(RuntimeError):
         )
 
 
+class NonAuthoritativeHMCAlgorithmRoute(RuntimeError):
+    """Raised when a supported non-promoting route is used as an artifact route."""
+
+    def __init__(self, decision: HMCAlgorithmRouteDecision) -> None:
+        if not decision.supported or decision.artifact_authority:
+            raise ValueError(
+                "non-authoritative route exception requires a supported, "
+                "non-artifact-authoritative decision"
+            )
+        self.decision = decision
+        super().__init__(
+            "HMC algorithm route is not artifact-authoritative: "
+            f"{decision.stage}: {decision.algorithm_id}"
+        )
+
+
 def windowed_algorithm_for_selection_algorithm(algorithm_id: str) -> str:
     """Map a top-level selection family to its compatible warmup algorithm."""
 
     selected = str(algorithm_id)
-    if selected == OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID:
+    if selected in {
+        ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
+        LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+    }:
         return OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID
     if selected == LEGACY_JOINT_L_EPSILON_ALGORITHM_ID:
         return LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID
@@ -156,9 +195,10 @@ def resolve_hmc_algorithm_route(
 
     operational = selected in {
         OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
-        OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        ORDINARY_BROAD_FIXED_METRIC_ALGORITHM_ID,
     }
     legacy = selected in {
+        LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
         LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
     }
@@ -173,6 +213,13 @@ def resolve_hmc_algorithm_route(
     # are enabled. Referencing the booleans documents that they were considered
     # while making it impossible for them to alter algorithm identity.
     _ = (timeout_enabled, heartbeat_enabled, output_path_enabled, checkpointing_enabled)
+    operational_authority = bool(operational and blocker is None)
+    # Only a supported top-level operational route may issue a replayable
+    # route artifact. This still does not grant scientific or posterior
+    # promotion authority.
+    artifact_authority = bool(
+        operational_authority and stage_name == HMC_TOP_LEVEL_SELECTION_STAGE
+    )
     return HMCAlgorithmRouteDecision(
         algorithm_id=selected,
         stage=stage_name,
@@ -197,7 +244,9 @@ def resolve_hmc_algorithm_route(
         evidence_role="engineering_only",
         promotion_role="non_promoting" if legacy else "stage_handoff_only",
         stopping_rule_role="not_a_stopping_rule",
-        operational_authority=bool(operational and blocker is None),
+        operational_authority=operational_authority,
+        artifact_authority=artifact_authority,
+        scientific_promotion_authority=False,
     )
 
 
@@ -207,4 +256,18 @@ def require_hmc_algorithm_route(**kwargs: Any) -> HMCAlgorithmRouteDecision:
     decision = resolve_hmc_algorithm_route(**kwargs)
     if not decision.supported:
         raise UnsupportedHMCAlgorithmRoute(decision)
+    return decision
+
+
+def require_hmc_artifact_authority_route(**kwargs: Any) -> HMCAlgorithmRouteDecision:
+    """Return a supported top-level operational artifact route.
+
+    This guard is intentionally weaker than scientific authority: a returned
+    decision only permits an internal/replayable artifact route, while
+    posterior, default-readiness, and scientific promotion roles remain false.
+    """
+
+    decision = require_hmc_algorithm_route(**kwargs)
+    if not decision.artifact_authority:
+        raise NonAuthoritativeHMCAlgorithmRoute(decision)
     return decision

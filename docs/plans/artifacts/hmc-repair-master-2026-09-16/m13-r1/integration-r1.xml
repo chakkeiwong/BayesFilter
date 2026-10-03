@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="2.363" timestamp="2026-09-21T00:28:25.254869+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_multimodel_pipeline" name="test_public_multimodel_candidates_reload_and_exclude_warmup[gaussian-1.3]" time="0.303"><failure message="ValueError: practical_region and repair_region must be centered on target">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-542/test_public_multimodel_candida0')
+target = 'gaussian', epsilon = 1.3
+
+    @pytest.mark.parametrize("target,epsilon", [("gaussian",1.3),("beta_binomial",.8),
+        ("lgssm_location",.7),("banana",.5),("funnel_noncentered",1.2)])
+    def test_public_multimodel_candidates_reload_and_exclude_warmup(tmp_path,target,epsilon):
+        design=ValidationDesign(design_id="integration-"+target,engine="accuracy",
+            scenario=ScenarioSpec(target,"prepared"),replications=1,draws=64,seed=2026092081,
+            budget_seconds=180,purpose="complete public integration mechanics, no posterior accuracy claim",
+            numerical_provenance="M13 engineering fixture; wide acceptance screen and tiny posterior cap",
+            device="cpu_reference",l_grid=(2,3),step_size=epsilon,posterior_cap=128,
+            options={"acceptance_policy":{"practical_region":(.3,.99),"repair_region":(.2,.995)},
+                     "search":{"pilot_enabled":False,"refinement_rounds":0,"total_budget_units":24,
+                               "repair_reserve_units":4,"evidence_rungs":(1,)}})
+&gt;       result=execute_pipeline(design,tmp_path)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/inference_validation/test_multimodel_pipeline.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/inference_validation/procedures.py:224: in execute_pipeline
+    acceptance_policy = HMCAcceptancePolicy(**design.options.get("acceptance_policy", {}))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = HMCAcceptancePolicy(target=0.7, practical_region=(0.3, 0.99), repair_region=(0.2, 0.995), chain_count=4, block_count=4...=0.95, min_normalized_return_displacement=0.0001, max_abs_log_accept_energy_proxy=1000.0, allowed_cost_stop_reasons=())
+
+    def __post_init__(self) -&gt; None:
+        target = float(self.target)
+        practical = tuple(float(item) for item in self.practical_region)
+        repair = tuple(float(item) for item in self.repair_region)
+        if not math.isfinite(target):
+            raise ValueError("target must be finite")
+        if len(practical) != 2 or not 0.0 &lt; practical[0] &lt; practical[1] &lt; 1.0:
+            raise ValueError("practical_region must be ordered inside (0, 1)")
+        if len(repair) != 2 or not 0.0 &lt; repair[0] &lt; repair[1] &lt; 1.0:
+            raise ValueError("repair_region must be ordered inside (0, 1)")
+        if not repair[0] &lt;= practical[0] &lt;= target &lt;= practical[1] &lt;= repair[1]:
+            raise ValueError(
+                "target must lie in practical_region and practical_region in repair_region"
+            )
+        if not (
+            abs(target - 0.5 * sum(practical)) &lt;= 1.0e-12
+            and abs(target - 0.5 * sum(repair)) &lt;= 1.0e-12
+        ):
+&gt;           raise ValueError(
+                "practical_region and repair_region must be centered on target"
+            )
+E           ValueError: practical_region and repair_region must be centered on target
+
+bayesfilter/inference/hmc_verification.py:548: ValueError</failure></testcase><testcase classname="tests.inference_validation.test_multimodel_pipeline" name="test_public_multimodel_candidates_reload_and_exclude_warmup[beta_binomial-0.8]" time="0.002"><failure message="ValueError: practical_region and repair_region must be centered on target">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-542/test_public_multimodel_candida1')
+target = 'beta_binomial', epsilon = 0.8
+
+    @pytest.mark.parametrize("target,epsilon", [("gaussian",1.3),("beta_binomial",.8),
+        ("lgssm_location",.7),("banana",.5),("funnel_noncentered",1.2)])
+    def test_public_multimodel_candidates_reload_and_exclude_warmup(tmp_path,target,epsilon):
+        design=ValidationDesign(design_id="integration-"+target,engine="accuracy",
+            scenario=ScenarioSpec(target,"prepared"),replications=1,draws=64,seed=2026092081,
+            budget_seconds=180,purpose="complete public integration mechanics, no posterior accuracy claim",
+            numerical_provenance="M13 engineering fixture; wide acceptance screen and tiny posterior cap",
+            device="cpu_reference",l_grid=(2,3),step_size=epsilon,posterior_cap=128,
+            options={"acceptance_policy":{"practical_region":(.3,.99),"repair_region":(.2,.995)},
+                     "search":{"pilot_enabled":False,"refinement_rounds":0,"total_budget_units":24,
+                               "repair_reserve_units":4,"evidence_rungs":(1,)}})
+&gt;       result=execute_pipeline(design,tmp_path)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/inference_validation/test_multimodel_pipeline.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/inference_validation/procedures.py:224: in execute_pipeline
+    acceptance_policy = HMCAcceptancePolicy(**design.options.get("acceptance_policy", {}))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = HMCAcceptancePolicy(target=0.7, practical_region=(0.3, 0.99), repair_region=(0.2, 0.995), chain_count=4, block_count=4...=0.95, min_normalized_return_displacement=0.0001, max_abs_log_accept_energy_proxy=1000.0, allowed_cost_stop_reasons=())
+
+    def __post_init__(self) -&gt; None:
+        target = float(self.target)
+        practical = tuple(float(item) for item in self.practical_region)
+        repair = tuple(float(item) for item in self.repair_region)
+        if not math.isfinite(target):
+            raise ValueError("target must be finite")
+        if len(practical) != 2 or not 0.0 &lt; practical[0] &lt; practical[1] &lt; 1.0:
+            raise ValueError("practical_region must be ordered inside (0, 1)")
+        if len(repair) != 2 or not 0.0 &lt; repair[0] &lt; repair[1] &lt; 1.0:
+            raise ValueError("repair_region must be ordered inside (0, 1)")
+        if not repair[0] &lt;= practical[0] &lt;= target &lt;= practical[1] &lt;= repair[1]:
+            raise ValueError(
+                "target must lie in practical_region and practical_region in repair_region"
+            )
+        if not (
+            abs(target - 0.5 * sum(practical)) &lt;= 1.0e-12
+            and abs(target - 0.5 * sum(repair)) &lt;= 1.0e-12
+        ):
+&gt;           raise ValueError(
+                "practical_region and repair_region must be centered on target"
+            )
+E           ValueError: practical_region and repair_region must be centered on target
+
+bayesfilter/inference/hmc_verification.py:548: ValueError</failure></testcase></testsuite></testsuites>

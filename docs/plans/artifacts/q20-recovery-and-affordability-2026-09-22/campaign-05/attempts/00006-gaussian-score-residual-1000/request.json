@@ -1,0 +1,217 @@
+{
+  "cap_seconds": 900.0,
+  "config": {
+    "assessment": {
+      "event_margin": 0.05,
+      "interval_probability": 0.95,
+      "mean_margin_sd": 0.1,
+      "quantile_margin_sd": 0.2,
+      "reference_error_fraction": 0.3333333333333333
+    },
+    "budget": {
+      "arm_cap_seconds": 28800.0,
+      "campaign_remaining_seconds": 79716.92701190927,
+      "diagnostic_remaining_seconds": 3957.359230629365,
+      "forecast_safety_factor": 2.0,
+      "pricing_updates": 2,
+      "repair_allocation_seconds": 7200.0
+    },
+    "cpu_reference": false,
+    "ensemble": {
+      "alternative_betas": [
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0
+      ],
+      "charts": 2,
+      "conditional_charts": 4
+    },
+    "estimation": {
+      "methods": [
+        "neutra",
+        "ensemble"
+      ],
+      "success_policy": "first_valid_estimate"
+    },
+    "execution": {
+      "diagnostic_attempt_seconds": 1200.0,
+      "diagnostic_attempts": 6,
+      "poll_seconds": 1.0,
+      "pricing_transitions": 4,
+      "stage_attempts": 1,
+      "termination_grace_seconds": 5.0
+    },
+    "jit_compile": true,
+    "posterior": {
+      "bulk_ess": 400.0,
+      "chains": 4,
+      "energy_log_accept_alert": -1000.0,
+      "event_coordinate": 2,
+      "event_mcse": 0.01,
+      "mean_mcse_sd": 0.02,
+      "quantile_mcse_sd": 0.05,
+      "quantiles": [
+        0.025,
+        0.5,
+        0.975
+      ],
+      "retained_chunk": 1000,
+      "retained_max": 10000,
+      "retained_min": 1000,
+      "retained_rhat": 1.01,
+      "tail_ess": 400.0,
+      "warmup_chunk": 1000,
+      "warmup_max": 10000,
+      "warmup_min": 2000,
+      "warmup_rhat": 1.05,
+      "warmup_window": 1000
+    },
+    "provenance": "docs/plans/bayesfilter-ssl-lstm-q20-resume-execution-2026-09-20.md",
+    "reference": {
+      "banks": 8,
+      "batch_size": 32,
+      "ess_min": 400.0,
+      "minimum_tail_rows": 20,
+      "rungs": [
+        1024,
+        4096,
+        16384
+      ]
+    },
+    "role": "development",
+    "schema": "bayesfilter.q20.production_protocol.v3",
+    "seed": [
+      20260915,
+      150001
+    ],
+    "starts": {
+      "max_proposals": 128,
+      "per_sign": 2
+    },
+    "target": {
+      "dimension": 4,
+      "dtype": "float64",
+      "horizon": 30,
+      "principal_sqrt_backend": "tensorflow_eigh_strict_factor_cached",
+      "prior_center": [
+        0.35,
+        -0.08,
+        0.65,
+        0.05
+      ],
+      "prior_sd": 4.0,
+      "q": 20,
+      "ukf_alpha": 1.0,
+      "ukf_beta": 2.0,
+      "ukf_kappa": 0.0
+    },
+    "training": {
+      "activation": "tanh",
+      "batch_size": 32,
+      "beta1": 0.9,
+      "beta2": 0.999,
+      "beta_zero_updates": 0,
+      "betas": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "carry_optimizer_across_beta": true,
+      "checkpoint_every": 128,
+      "cohort_min_updates": 512,
+      "epsilon": 1e-07,
+      "gradient_clip_norm": 10.0,
+      "initialization_scale": 0.02,
+      "learning_rates": [
+        0.0005,
+        0.001
+      ],
+      "pricing_batches": [
+        8,
+        32,
+        128
+      ],
+      "roots": [
+        0,
+        1,
+        2
+      ],
+      "rungs": [
+        128,
+        512,
+        2048,
+        8192
+      ],
+      "s_max": 2.0,
+      "stages": 2,
+      "widths": [
+        16,
+        32
+      ]
+    },
+    "tuning": {
+      "chunk_max_results": 64,
+      "epsilon_domain": [
+        1e-06,
+        2.0
+      ],
+      "evidence_rungs": [
+        1,
+        2,
+        4
+      ],
+      "initial_epsilon": 0.01,
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "max_candidates": 100,
+      "max_repairs_per_family": 12,
+      "max_wall_seconds": 28800.0,
+      "measurement": 64,
+      "pilot": 64,
+      "practical_region": [
+        0.65,
+        0.75
+      ],
+      "repair_factor": 1.5,
+      "repair_region": [
+        0.55,
+        0.85
+      ],
+      "repair_reserve_units": 50,
+      "startup": 32,
+      "target_acceptance": 0.7,
+      "total_budget_units": 200,
+      "verification": 64
+    },
+    "validation": {
+      "bank_sizes": [
+        768,
+        3072,
+        12288
+      ],
+      "maximum_half_width": 0.02,
+      "minimum_improvement": 0.04,
+      "normal_interval_multiplier": 1.959963984540054,
+      "plateau_comparisons": 2,
+      "reliability_atol": 1e-10,
+      "reliability_rows": 32,
+      "reliability_rtol": 1e-09
+    }
+  },
+  "map": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/q20-recovery-and-affordability-2026-09-22/campaign-03/attempts/00003-train-neutra/worker/data/direct-w16-lr0.0005-r0-beta1-u512.json",
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-q20-1000-point-score-residual-plan-2026-09-22.md",
+  "point_count": 1000,
+  "point_distribution": "iid_standard_normal_latent",
+  "role": "diagnostic_score_residual_no_tuning_authority",
+  "script_sha256": "2791555e751ee73f6006a68ba584d30ada1faca314b528cb774802efa50e6099",
+  "source_root": "/tmp/BayesFilter-q20-recovery-20260922-r2",
+  "stage": "gaussian-score-residual-1000"
+}

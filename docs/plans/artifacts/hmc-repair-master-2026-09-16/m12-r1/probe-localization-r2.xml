@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="9" time="3.499" timestamp="2026-09-20T20:00:31.083411+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_sequential_metric_probe" name="test_longer_probe_config_reaches_operational_warmup" time="0.002" /><testcase classname="tests.test_hmc_sequential_metric_probe" name="test_invalid_probe_count_rejected[0]" time="0.001" /><testcase classname="tests.test_hmc_sequential_metric_probe" name="test_invalid_probe_count_rejected[-1]" time="0.000" /><testcase classname="tests.test_hmc_sequential_metric_probe" name="test_invalid_probe_count_rejected[True]" time="0.000" /><testcase classname="tests.test_hmc_sequential_metric_probe" name="test_invalid_probe_count_rejected[1.5]" time="0.000" /><testcase classname="tests.test_hmc_sequential_metric_probe" name="test_invalid_probe_count_rejected[16]" time="0.000" /><testcase classname="tests.test_hmc_sequential_metric_probe" name="test_longer_probe_rejects_irrelevant_fixed_identity_configuration" time="0.000" /><testcase classname="tests.test_hmc_sequential_metric_probe" name="test_one_step_branch_has_unchanged_results_and_never_calls_sequential_runner" time="1.071" /><testcase classname="tests.test_hmc_sequential_metric_probe" name="test_intermediate_nonfinite_cannot_be_hidden_by_finite_last_transition[proposed_state]" time="0.311"><failure message="Failed: DID NOT RAISE &lt;class 'bayesfilter.inference.hmc_warmup._ReasonableEpsilonSharedInvalidity'&gt;">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x77518c711a70&gt;
+field = 'proposed_state'
+
+    @pytest.mark.parametrize("field", ["proposed_state", "proposed_target", "proposed_score", "momentum", "energy",
+                                      "retained_state", "retained_target", "retained_score"])
+    def test_intermediate_nonfinite_cannot_be_hidden_by_finite_last_transition(monkeypatch, field):
+        original = warmup._run_reasonable_epsilon_probe_chain
+    
+        def corrupt(**kwargs):
+            states, trace = original(**kwargs)
+            def middle(x):
+                return tf.concat([x[:1], tf.fill(tf.shape(x[1:2]), tf.constant(float("nan"), x.dtype)), x[2:]], axis=0)
+            if field == "proposed_state":
+                trace = trace._replace(proposed_state=middle(trace.proposed_state))
+            elif field == "retained_state":
+                states = middle(states)
+            else:
+                retained = field.startswith("retained")
+                name = "accepted_results" if retained else "proposed_results"
+                result = getattr(trace, name)
+                if field.endswith("target"):
+                    result = result._replace(target_log_prob=middle(result.target_log_prob))
+                elif field.endswith("score"):
+                    result = result._replace(grads_target_log_prob=[middle(result.grads_target_log_prob[0])])
+                elif field == "momentum":
+                    result = result._replace(final_momentum=[middle(result.final_momentum[0])])
+                else:
+                    result = result._replace(log_acceptance_correction=middle(result.log_acceptance_correction))
+                trace = trace._replace(**{name: result})
+            return states, trace
+    
+        monkeypatch.setattr(warmup, "_run_reasonable_epsilon_probe_chain", corrupt)
+        if field.startswith("retained"):
+            with pytest.raises(warmup._ReasonableEpsilonSharedInvalidity, match="accepted or retained state"):
+                _find(probe_num_results=3, max_attempts=1)
+        elif field == "proposed_state":
+&gt;           with pytest.raises(warmup._ReasonableEpsilonSharedInvalidity, match="accepted-state consistency"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE &lt;class 'bayesfilter.inference.hmc_warmup._ReasonableEpsilonSharedInvalidity'&gt;
+
+tests/test_hmc_sequential_metric_probe.py:85: Failed</failure></testcase></testsuite></testsuites>

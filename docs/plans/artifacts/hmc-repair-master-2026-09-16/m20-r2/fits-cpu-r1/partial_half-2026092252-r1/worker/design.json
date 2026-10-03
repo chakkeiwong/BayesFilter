@@ -1,0 +1,161 @@
+{
+  "design_id": "supplied-funnel-partial_half-2026092252",
+  "engine": "accuracy",
+  "scenario": {
+    "target": "funnel",
+    "route": "fixed_transport",
+    "control": "baseline",
+    "start": "dispersed",
+    "parameters": {
+      "scale": 3.0
+    }
+  },
+  "replications": 1,
+  "draws": 500,
+  "seed": 2026092252,
+  "budget_seconds": 350.0,
+  "purpose": "tuning given a supplied frozen map of the same funnel law",
+  "numerical_provenance": "docs/plans/bayesfilter-hmc-supplied-whitening-plan-2026-09-22.md",
+  "device": "cpu_reference",
+  "alpha": 0.05,
+  "null_draws": 1999,
+  "rank_draws": 7,
+  "step_size": 0.5,
+  "leapfrog_steps": 5,
+  "member_l": 3,
+  "l_grid": [
+    3,
+    5,
+    9,
+    13,
+    18,
+    25
+  ],
+  "measurement_draws": 128,
+  "posterior_cap": 10000,
+  "mcse_tolerance": 0.05,
+  "accuracy_tolerance": 0.25,
+  "multiplicity": 1,
+  "phase": "development",
+  "options": {
+    "transport_payload": {
+      "component_order": [
+        "scale_v",
+        "partial_funnel"
+      ],
+      "components": [
+        {
+          "component_id": "scale_v",
+          "dim": 3,
+          "kind": "affine",
+          "offset": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            3.0,
+            1.0,
+            1.0
+          ],
+          "component_topology_hash": "40ee89a4d0921f246d93eae942bb40332e60c4e52ac8da7b437964f9e601408f",
+          "component_tensor_hash": "6ddc5eedb2a7a94366d8593fb039a21faf47b82c725fd8f5dd42ccef47e77d09"
+        },
+        {
+          "activation": "tanh",
+          "biases": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "component_id": "partial_funnel",
+          "dim": 3,
+          "dtype": "float64",
+          "hidden_layers": [
+            2
+          ],
+          "kind": "dense_autoregressive_iaf",
+          "masks_policy": "legacy_degree_masks_v1",
+          "s_max": 1.0,
+          "scale_transform": "identity",
+          "weights": [
+            [
+              [
+                0.041666666666666664,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                6.0,
+                6.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "component_topology_hash": "36d955381bc19e7f44494d147a778dfdb40a16c45c7580762e9c3a820ea0988c",
+          "component_tensor_hash": "6588e8f4d803c3c57c0e6a578fecd10fb771291efd214446b715e4ae8fb34e3b"
+        }
+      ],
+      "construction": {
+        "kind": "partial_half",
+        "saturation": 6.0,
+        "scale": 3.0,
+        "strength": 0.5,
+        "training_performed": false
+      },
+      "dimension": 3,
+      "log_jacobian_available": true,
+      "nonclaims": [
+        "analytic validation fixture; no transport training",
+        "no learned-map quality or universal tuning guarantee"
+      ],
+      "schema": "bayesfilter.neutra.dense_iaf_frozen_transport.v1",
+      "target_signature": "29a8ebd7a5b12c82dae6323469dbc75aba5297a2d4ea18ece7b5ab102b3185d0",
+      "training_state_hash": "sha256:8299a05d98a4ca1197201159cbe20a6a4895ff7bfb2f2f981279cc32fc20fc33",
+      "transport_id": "validation-supplied-funnel-partial_half",
+      "topology_hash": "076d650f1a19e68d2769339f5dd95f20b9f3317b82004d0971df10eda2b02950",
+      "tensor_hash": "7c0ed70434cb47500ebc5573592b2dbbf60a26c823c6d821c49f40ab7f8e2d8b",
+      "transport_hash": "638771953085851417266f9fc08e7f3965c74faeb520817195286bae92769f06"
+    },
+    "posterior_members": "selected",
+    "member_rule": "first_verified",
+    "posterior_settings": {
+      "warmup_chunk_results": 500,
+      "warmup_min_results": 2000,
+      "warmup_check_window_results": 1000,
+      "warmup_max_results": 10000,
+      "retained_chunk_results": 500,
+      "retained_min_results": 1000,
+      "retained_max_results": 10000
+    }
+  }
+}

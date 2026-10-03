@@ -1,0 +1,9 @@
+{
+  "paired_numerical_source": "628a0a3a2d1a6305c1df1b38b196bb45b12d2930f7712df0d9f7520f772e39c7",
+  "final_source": "77786c75e2ae414e3b0883ff1b300b095d9e967a41d31c0e52e07ab0ea99746f",
+  "changed_paths": [
+    "bayesfilter/testing/inference_validation/engines/pipeline.py"
+  ],
+  "unified_diff": "--- full-fit-snapshot/bayesfilter/testing/inference_validation/engines/pipeline.py\n+++ final-snapshot/bayesfilter/testing/inference_validation/engines/pipeline.py\n@@ -149,6 +149,9 @@\n \n     path = Path(root) / f\"replication-{replication:04d}\"\n     if (path / \"independent_assessment.json\").exists():\n+        execution = read_json(path / \"tuning/execution_spec.json\")[\"execution\"]\n+        if execution[\"config\"].get(\"reuse_leapfrog_graphs\", False) != reuse_leapfrog_graphs:\n+            raise ValueError(\"completed fit requires the original runner reuse policy\")\n         return read_json(path / \"independent_assessment.json\")\n     data=design.options.get(\"data\")\n     output=execute_pipeline(design,path,data=data,fit_id=replication,deadline=deadline,\n",
+  "interpretation": "Only completed-result reuse validation changed after paired snapshot. Fresh-fit numerical path unchanged. Tested by integration-cpu-r1; no numerical parity extrapolation to unrelated dirty work."
+}

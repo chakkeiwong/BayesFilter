@@ -13,10 +13,15 @@ import tensorflow as tf
 
 @lru_cache(maxsize=8)
 def make_combination_kernels(parameter_dimension, control_dimension, dtype_name="float64",
-                             jit_compile=True):
+                             jit_compile=True, control_input_dtype_name=None):
     dtype = tf.as_dtype(dtype_name)
     p, k = parameter_dimension, control_dimension
-    epsilon = tf.constant(2**-23 if dtype == tf.float32 else 2**-52, dtype)
+    if control_input_dtype_name not in (None, "float32", "float64"):
+        raise ValueError("control input precision must be float32 or float64")
+    # An FP64 regression cannot resolve roundoff introduced while computing
+    # FP32 controls. This optional declaration changes only numerical rank.
+    epsilon = tf.constant(2**-23 if dtype == tf.float32 or control_input_dtype_name == "float32"
+                          else 2**-52, dtype)
 
     @tf.function(input_signature=[tf.TensorSpec([None, p], dtype),
                                  tf.TensorSpec([None, k], dtype)], jit_compile=jit_compile)

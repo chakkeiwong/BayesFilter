@@ -1,0 +1,60 @@
+{
+  "phase": "M30",
+  "paired_snapshot": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/source-r7",
+  "final_snapshot": "docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/source-r10",
+  "source_delta": "post-fit-source-delta.json",
+  "supplemental_files": {
+    "bayesfilter/inference/hmc.py": "2dab62442845cf8b365189f340412cba5b7ae3e494796518c853f702f30dbc9d",
+    "bayesfilter/inference/hmc_candidate_set_execution.py": "0fba9aaf3b7c8afd52d27d774aa8ba9f9d9be7c1b3ff22454819b3927c4bcbcc",
+    "bayesfilter/inference/hmc_candidate_set_position_field.py": "ca2071e7e09929c8a819885833b42cd77de18360c971ab067c3f66d83563040f",
+    "bayesfilter/testing/inference_validation/engines/pipeline.py": "cb7f5f57c2112ec9896ca6f82b68380d3f3c67ce753eaf4ab86d3c4a422c0135",
+    "bayesfilter/testing/inference_validation/procedures.py": "11af230cc8dd28d26edcdcbe0f76c65ae011282682c190631229016dc4f859e4",
+    "docs/benchmarks/audit_hmc_m29_2026_09_23.py": "b1e7945c43f30e2259171c0b447960d53639dc6b7b4f146489db0186354f318e",
+    "docs/benchmarks/audit_hmc_m30_2026_09_23.py": "8e56ee97793aac234ddb26edea8713ed1aecac4c457c0d1e64a0e927b1f0daef",
+    "docs/benchmarks/fit_hmc_m30_2026_09_23.py": "b5041874534d8ee248ba21f5403ddd6fd36fe43d917bf47e644e94b6f077d7c7",
+    "docs/benchmarks/reconcile_hmc_m30_2026_09_23.py": "a81687691dc1e7f62d5268c46f645ef464a0173862e32459958d7dcf19c9c24c",
+    "docs/benchmarks/replay_hmc_m30_2026_09_23.py": "d3e2dfde177a16c1f32c9ec48a21f1f50eab8ce1108bad4f20e0269df4f5a300",
+    "docs/chapters/ch21b_hmc_tuning_interfaces.tex": "748e3de2670133b082f85026766dbfb9a0bf27448f527f7396d503ea7d05927d",
+    "docs/plans/bayesfilter-hmc-m30-execution-note-2026-09-23.md": "9d53f0fa2dedbf8d2e5bfe2613e00dbb733abf530424d39b685e92c98dcbb928",
+    "docs/plans/bayesfilter-hmc-post-m29-next-phase-2026-09-23.md": "7d0d8b6165b9e8cb94dcbf755ea5cc3e2628b5b47f6ae8c4d9364ef30d0381d7",
+    "docs/plans/bayesfilter-hmc-post-m30-next-phase-2026-09-23.md": "647f87ac874231f0f0abb29a12fcfa8997f400076e2f72e570bd109e54338e3d",
+    "docs/reference/hmc-tuning-interface.md": "f128bb14f6e32c4d059faa135b8171fa2a9f726accd63b202e164078a9b8a4cf",
+    "tests/test_hmc_candidate_runner_reuse.py": "d40fcdf29bbdd6eef81b7d4bd6eb172bb9649b57cc8ed5fce13fee8cd13b455f",
+    "tests/test_hmc_candidate_set_execution.py": "f95ea0e16a3a20216e80e0f7b74a12afc8091e84b91733e875bd98646afde1dd",
+    "tests/test_hmc_independent_dynamic_l.py": "a4164c6cb6bea4848a113aaf55797a4cd7145cff5047cccca0aa77bb4304ab26",
+    "tests/test_hmc_m30_replay.py": "d83b78c531a4983562144f3a3cfc897caac25743f6f06619cd2be6bcdfb1669e"
+  },
+  "tests": [
+    {
+      "attempt": "reuse-regression-cpu-r1",
+      "result": "118 passed; two invalid test allocations failed",
+      "role": "all existing/member replays plus new isolation cases"
+    },
+    {
+      "attempt": "reuse-regression-cpu-r2",
+      "result": "3 passed",
+      "role": "fixed allocation and exact public resume"
+    },
+    {
+      "attempt": "integration-cpu-r1",
+      "result": "73 passed",
+      "role": "public pipeline, profiling, fit isolation, position-field and whole procedure"
+    },
+    {
+      "attempt": "route-reuse-cpu-r1",
+      "result": "5 passed",
+      "role": "frozen affine/dense IAF and unsupported position-field reuse"
+    },
+    {
+      "attempt": "runner-compatibility-cpu-r1",
+      "result": "24 passed; 19 deselected",
+      "role": "existing scalar/independent dynamic input and status compatibility"
+    },
+    {
+      "attempt": "documentation-tests-final-r1",
+      "result": "15 passed",
+      "role": "official chapter and registry/reference consistency"
+    }
+  ],
+  "counting": "Suites overlap; no summed independent-test or statistical replication claim."
+}

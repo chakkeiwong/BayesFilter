@@ -313,8 +313,12 @@ def test_observed_nan_fails_closed_but_masked_nan_is_accepted() -> None:
         observation_mask=accepting_mask,
     )
     assert np.isfinite(accepted.numpy())
+    rejected = tf_masked_correlated_kalman_log_likelihood(
+        **tensor_fixture, observation_mask=rejecting_mask,
+    )
+    assert not np.isfinite(rejected.numpy())  # XLA ignores Assert; value still fails closed.
     with pytest.raises(tf.errors.InvalidArgumentError, match="Observed entries"):
-        tf_masked_correlated_kalman_log_likelihood(
+        tf_masked_correlated_kalman_log_likelihood.python_function(
             **tensor_fixture,
             observation_mask=rejecting_mask,
         )
@@ -459,7 +463,7 @@ def test_log_likelihood_only_routes_match_filter_values() -> None:
     np.testing.assert_allclose(batch_value.numpy(), batch_filter.numpy(), atol=1.0e-12)
 
 
-def _parameterized_correlated_value(alpha: tf.Tensor) -> tf.Tensor:
+def _parameterized_correlated_value(alpha: tf.Tensor, *, reference=False) -> tf.Tensor:
     alpha = tf.convert_to_tensor(alpha, dtype=tf.float64)
     time_dim = 3
     sigma_u = tf.constant(0.24, dtype=tf.float64)
@@ -467,7 +471,10 @@ def _parameterized_correlated_value(alpha: tf.Tensor) -> tf.Tensor:
     process_variance = sigma_u**2
     cross_covariance = sigma_u * alpha
     measurement_variance = alpha**2 + sigma_eta**2
-    return tf_correlated_kalman_log_likelihood(
+    # The uncompiled function body is an explicit autodiff reference exception.
+    route = (tf_correlated_kalman_log_likelihood.python_function if reference
+             else tf_correlated_kalman_log_likelihood)
+    return route(
         observations=tf.constant([[0.12], [-0.04], [0.09]], dtype=tf.float64),
         transition_offset=tf.zeros([time_dim, 1], dtype=tf.float64),
         transition_matrix=tf.fill([time_dim, 1, 1], tf.constant(0.78, tf.float64)),
@@ -488,7 +495,7 @@ def test_autodiff_gradient_matches_central_difference_for_correlated_parameter()
     alpha = tf.constant(0.07, dtype=tf.float64)
     with tf.GradientTape() as tape:
         tape.watch(alpha)
-        value = _parameterized_correlated_value(alpha)
+        value = _parameterized_correlated_value(alpha, reference=True)
     gradient = tape.gradient(value, alpha)
     step = tf.constant(1.0e-6, dtype=tf.float64)
     central = (
@@ -515,7 +522,7 @@ def test_target_only_cpu_xla_value_and_gradient_match_non_xla() -> None:
 
     with tf.GradientTape() as tape:
         tape.watch(alpha)
-        expected_value = _parameterized_correlated_value(alpha)
+        expected_value = _parameterized_correlated_value(alpha, reference=True)
     expected_gradient = tape.gradient(expected_value, alpha)
     xla_value, xla_gradient = compiled(alpha)
 

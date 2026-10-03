@@ -22,10 +22,10 @@ def factor_solve(factor: tf.Tensor, rhs: tf.Tensor) -> tf.Tensor:
     if rhs.shape.rank == 1:
         rhs_matrix = rhs[:, tf.newaxis]
         first = tf.linalg.triangular_solve(factor, rhs_matrix, lower=True)
-        second = tf.linalg.triangular_solve(tf.transpose(factor), first, lower=False)
+        second = tf.linalg.triangular_solve(tf.linalg.matrix_transpose(factor), first, lower=False)
         return second[:, 0]
     first = tf.linalg.triangular_solve(factor, rhs, lower=True)
-    return tf.linalg.triangular_solve(tf.transpose(factor), first, lower=False)
+    return tf.linalg.triangular_solve(tf.linalg.matrix_transpose(factor), first, lower=False)
 
 
 def trace_factor_solve(factor: tf.Tensor, matrix: tf.Tensor) -> tf.Tensor:
@@ -38,11 +38,11 @@ def right_solve_upper(matrix: tf.Tensor, upper: tf.Tensor) -> tf.Tensor:
     """Return ``matrix @ inv(upper)`` without explicitly forming the inverse."""
 
     solved_t = tf.linalg.triangular_solve(
-        tf.transpose(upper),
-        tf.transpose(matrix),
+        tf.linalg.matrix_transpose(upper),
+        tf.linalg.matrix_transpose(matrix),
         lower=True,
     )
-    return tf.transpose(solved_t)
+    return tf.linalg.matrix_transpose(solved_t)
 
 
 def qr_positive(matrix: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
@@ -60,7 +60,7 @@ def omega_from_a(a: tf.Tensor) -> tf.Tensor:
     """Return the skew component used by the first-order QR derivative split."""
 
     lower = tf.linalg.band_part(a, -1, 0) - tf.linalg.diag(tf.linalg.diag_part(a))
-    return lower - tf.transpose(lower)
+    return lower - tf.linalg.matrix_transpose(lower)
 
 
 def gamma_from_b_and_c(b: tf.Tensor, c: tf.Tensor) -> tf.Tensor:
@@ -68,7 +68,7 @@ def gamma_from_b_and_c(b: tf.Tensor, c: tf.Tensor) -> tf.Tensor:
 
     lower_b = tf.linalg.band_part(b, -1, 0) - tf.linalg.diag(tf.linalg.diag_part(b))
     upper_c = tf.linalg.band_part(c, 0, -1) - tf.linalg.diag(tf.linalg.diag_part(c))
-    return lower_b + upper_c - tf.transpose(lower_b) + 0.5 * tf.linalg.diag(
+    return lower_b + upper_c - tf.linalg.matrix_transpose(lower_b) + 0.5 * tf.linalg.diag(
         tf.linalg.diag_part(c)
     )
 
@@ -81,11 +81,11 @@ def qr_factor_derivatives(
 
     q, r = qr_positive(matrix)
     dmatrix_r_inv = right_solve_upper(dmatrix, r)
-    a = tf.transpose(q) @ dmatrix_r_inv
+    a = tf.linalg.matrix_transpose(q) @ dmatrix_r_inv
     omega = omega_from_a(a)
     dr = (a - omega) @ r
     identity_rows = tf.eye(tf.shape(q)[0], dtype=q.dtype)
-    dq = q @ omega + (identity_rows - q @ tf.transpose(q)) @ dmatrix_r_inv
+    dq = q @ omega + (identity_rows - q @ tf.linalg.matrix_transpose(q)) @ dmatrix_r_inv
     return q, r, dq, dr
 
 
@@ -101,12 +101,12 @@ def qr_factor_second_derivatives(
     _, _, dq_j, dr_j = qr_factor_derivatives(matrix, dmatrix_j)
     effective = d2matrix_ij - dq_i @ dr_j - dq_j @ dr_i
     effective_r_inv = right_solve_upper(effective, r)
-    b = tf.transpose(q) @ effective_r_inv
-    c = -tf.transpose(dq_i) @ dq_j - tf.transpose(dq_j) @ dq_i
+    b = tf.linalg.matrix_transpose(q) @ effective_r_inv
+    c = -tf.linalg.matrix_transpose(dq_i) @ dq_j - tf.linalg.matrix_transpose(dq_j) @ dq_i
     gamma = gamma_from_b_and_c(b, c)
     d2r = (b - gamma) @ r
     identity_rows = tf.eye(tf.shape(q)[0], dtype=q.dtype)
-    d2q = q @ gamma + (identity_rows - q @ tf.transpose(q)) @ effective_r_inv
+    d2q = q @ gamma + (identity_rows - q @ tf.linalg.matrix_transpose(q)) @ effective_r_inv
     return q, r, d2q, d2r
 
 
@@ -117,38 +117,16 @@ def qr_factor_full_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
     """Return QR factors and all first/second derivatives for a parameter grid."""
 
-    parameter_dim = int(dmatrix.shape[0])
-    q, r = qr_positive(matrix)
-    dq_values = []
-    dr_values = []
-    for i in range(parameter_dim):
-        _, _, dq_i, dr_i = qr_factor_derivatives(matrix, dmatrix[i])
-        dq_values.append(dq_i)
-        dr_values.append(dr_i)
-    d2q_rows = []
-    d2r_rows = []
-    for i in range(parameter_dim):
-        d2q_values = []
-        d2r_values = []
-        for j in range(parameter_dim):
-            _, _, d2q_ij, d2r_ij = qr_factor_second_derivatives(
-                matrix,
-                dmatrix[i],
-                dmatrix[j],
-                d2matrix[i, j],
-            )
-            d2q_values.append(d2q_ij)
-            d2r_values.append(d2r_ij)
-        d2q_rows.append(tf.stack(d2q_values, axis=0))
-        d2r_rows.append(tf.stack(d2r_values, axis=0))
-    return (
-        q,
-        r,
-        tf.stack(dq_values, axis=0),
-        tf.stack(dr_values, axis=0),
-        tf.stack(d2q_rows, axis=0),
-        tf.stack(d2r_rows, axis=0),
-    )
+    q, r, dq, dr = qr_factor_derivatives(matrix, dmatrix)
+    effective = d2matrix - dq[:, None] @ dr[None, :] - dq[None, :] @ dr[:, None]
+    scaled = right_solve_upper(effective, r)
+    b = tf.linalg.matrix_transpose(q) @ scaled
+    c = -(tf.linalg.matrix_transpose(dq[:, None]) @ dq[None, :]
+          + tf.linalg.matrix_transpose(dq[None, :]) @ dq[:, None])
+    gamma = gamma_from_b_and_c(b, c)
+    d2r = (b - gamma) @ r
+    d2q = q @ gamma + scaled - q @ b
+    return q, r, dq, dr, d2q, d2r
 
 
 def transpose_factor_derivatives(
@@ -158,7 +136,7 @@ def transpose_factor_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Transpose a QR upper factor and its derivative arrays."""
 
-    return tf.transpose(r), tf.linalg.matrix_transpose(dr), tf.linalg.matrix_transpose(d2r)
+    return tf.linalg.matrix_transpose(r), tf.linalg.matrix_transpose(dr), tf.linalg.matrix_transpose(d2r)
 
 
 def stack_qr_lower_factor_derivatives(
@@ -168,7 +146,7 @@ def stack_qr_lower_factor_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
     """Factor ``stack @ stack.T`` by QR of ``stack.T`` and differentiate it."""
 
-    matrix = tf.transpose(stack)
+    matrix = tf.linalg.matrix_transpose(stack)
     dmatrix = tf.linalg.matrix_transpose(dstack)
     d2matrix = tf.linalg.matrix_transpose(d2stack)
     _, r, _, dr, _, d2r = qr_factor_full_derivatives(matrix, dmatrix, d2matrix)
@@ -182,17 +160,11 @@ def stack_qr_lower_factor_first_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Factor ``stack @ stack.T`` and return only first derivatives."""
 
-    matrix = tf.transpose(stack)
-    dmatrix = tf.linalg.matrix_transpose(dstack)
-    _, r = qr_positive(matrix)
-    dr_values = []
-    parameter_dim = int(dmatrix.shape[0])
-    for i in range(parameter_dim):
-        _, _, _, dr_i = qr_factor_derivatives(matrix, dmatrix[i])
-        dr_values.append(dr_i)
-    factor = tf.transpose(r)
-    dfactor = tf.linalg.matrix_transpose(tf.stack(dr_values, axis=0))
-    return factor, dfactor, tf.reduce_min(tf.linalg.diag_part(factor))
+    _, r, _, dr = qr_factor_derivatives(
+        tf.linalg.matrix_transpose(stack), tf.linalg.matrix_transpose(dstack)
+    )
+    factor = tf.linalg.matrix_transpose(r)
+    return factor, tf.linalg.matrix_transpose(dr), tf.reduce_min(tf.linalg.diag_part(factor))
 
 
 def cholesky_factor(covariance: tf.Tensor, jitter: tf.Tensor | float = 0.0) -> tf.Tensor:
@@ -209,8 +181,8 @@ def cholesky_factor(covariance: tf.Tensor, jitter: tf.Tensor | float = 0.0) -> t
 def lower_factor_from_horizontal_stack(stack: tf.Tensor) -> tf.Tensor:
     """Return lower factor ``L`` such that ``L L.T = stack stack.T``."""
 
-    _, r = qr_positive(tf.transpose(stack))
-    return tf.transpose(r)
+    _, r = qr_positive(tf.linalg.matrix_transpose(stack))
+    return tf.linalg.matrix_transpose(r)
 
 
 def cholesky_factor_derivatives(
@@ -232,38 +204,19 @@ def cholesky_factor_derivatives(
     dcovariance = as_float_tensor(dcovariance, dtype, name="dcovariance")
     d2covariance = as_float_tensor(d2covariance, dtype, name="d2covariance")
     factor = cholesky_factor(covariance, jitter=jitter)
-    parameter_dim = int(dcovariance.shape[0])
-    dfactor_values = []
-    for i in range(parameter_dim):
-        left = tf.linalg.triangular_solve(
-            factor,
-            symmetrize(dcovariance[i]),
-            lower=True,
-        )
-        b_i = right_solve_upper(left, tf.transpose(factor))
-        g_i = tf.linalg.band_part(b_i, -1, 0) - 0.5 * tf.linalg.diag(
-            tf.linalg.diag_part(b_i)
-        )
-        dfactor_values.append(factor @ g_i)
-    dfactor = tf.stack(dfactor_values, axis=0)
+    dfactor = _cholesky_direction(factor, symmetrize(dcovariance))
+    effective = (symmetrize(d2covariance)
+                 - dfactor[:, None] @ tf.linalg.matrix_transpose(dfactor[None, :])
+                 - dfactor[None, :] @ tf.linalg.matrix_transpose(dfactor[:, None]))
+    return factor, dfactor, _cholesky_direction(factor, effective)
 
-    d2factor_rows = []
-    for i in range(parameter_dim):
-        d2factor_values = []
-        for j in range(parameter_dim):
-            effective = (
-                symmetrize(d2covariance[i, j])
-                - dfactor[i] @ tf.transpose(dfactor[j])
-                - dfactor[j] @ tf.transpose(dfactor[i])
-            )
-            left = tf.linalg.triangular_solve(factor, effective, lower=True)
-            c_ij = right_solve_upper(left, tf.transpose(factor))
-            h_ij = tf.linalg.band_part(c_ij, -1, 0) - 0.5 * tf.linalg.diag(
-                tf.linalg.diag_part(c_ij)
-            )
-            d2factor_values.append(factor @ h_ij)
-        d2factor_rows.append(tf.stack(d2factor_values, axis=0))
-    return factor, dfactor, tf.stack(d2factor_rows, axis=0)
+
+def _cholesky_direction(factor: tf.Tensor, direction: tf.Tensor) -> tf.Tensor:
+    """Analytical Cholesky tangent over arbitrary leading derivative axes."""
+    left = tf.linalg.triangular_solve(factor, direction, lower=True)
+    scaled = right_solve_upper(left, tf.linalg.matrix_transpose(factor))
+    phi = tf.linalg.band_part(scaled, -1, 0) - 0.5 * tf.linalg.diag(tf.linalg.diag_part(scaled))
+    return factor @ phi
 
 
 def cholesky_factor_first_derivatives(
@@ -282,20 +235,7 @@ def cholesky_factor_first_derivatives(
     covariance = symmetrize(as_float_tensor(covariance, dtype, name="covariance"))
     dcovariance = as_float_tensor(dcovariance, dtype, name="dcovariance")
     factor = cholesky_factor(covariance, jitter=jitter)
-    parameter_dim = int(dcovariance.shape[0])
-    dfactor_values = []
-    for i in range(parameter_dim):
-        left = tf.linalg.triangular_solve(
-            factor,
-            symmetrize(dcovariance[i]),
-            lower=True,
-        )
-        b_i = right_solve_upper(left, tf.transpose(factor))
-        g_i = tf.linalg.band_part(b_i, -1, 0) - 0.5 * tf.linalg.diag(
-            tf.linalg.diag_part(b_i)
-        )
-        dfactor_values.append(factor @ g_i)
-    return factor, tf.stack(dfactor_values, axis=0)
+    return factor, _cholesky_direction(factor, symmetrize(dcovariance))
 
 
 def factor_covariance_derivatives(
@@ -314,26 +254,16 @@ def factor_covariance_derivatives(
     factor = as_float_tensor(factor, dtype, name="factor")
     dfactor = as_float_tensor(dfactor, dtype, name="dfactor")
     d2factor = as_float_tensor(d2factor, dtype, name="d2factor")
-    covariance = factor @ tf.transpose(factor)
-    parameter_dim = int(dfactor.shape[0])
-    dcovariance_values = []
-    d2covariance_rows = []
-    for i in range(parameter_dim):
-        dcovariance_values.append(
-            symmetrize(dfactor[i] @ tf.transpose(factor) + factor @ tf.transpose(dfactor[i]))
-        )
-        d2covariance_values = []
-        for j in range(parameter_dim):
-            d2covariance_values.append(
-                symmetrize(
-                    d2factor[i, j] @ tf.transpose(factor)
-                    + dfactor[i] @ tf.transpose(dfactor[j])
-                    + dfactor[j] @ tf.transpose(dfactor[i])
-                    + factor @ tf.transpose(d2factor[i, j])
-                )
-            )
-        d2covariance_rows.append(tf.stack(d2covariance_values, axis=0))
-    return covariance, tf.stack(dcovariance_values, axis=0), tf.stack(d2covariance_rows, axis=0)
+    covariance = factor @ tf.linalg.matrix_transpose(factor)
+    dcovariance = symmetrize(dfactor @ tf.linalg.matrix_transpose(factor)
+                             + factor @ tf.linalg.matrix_transpose(dfactor))
+    d2covariance = symmetrize(
+        d2factor @ tf.linalg.matrix_transpose(factor)
+        + dfactor[:, None] @ tf.linalg.matrix_transpose(dfactor[None, :])
+        + dfactor[None, :] @ tf.linalg.matrix_transpose(dfactor[:, None])
+        + factor @ tf.linalg.matrix_transpose(d2factor)
+    )
+    return covariance, dcovariance, d2covariance
 
 
 def factor_covariance_first_derivatives(
@@ -349,14 +279,9 @@ def factor_covariance_first_derivatives(
     )
     factor = as_float_tensor(factor, dtype, name="factor")
     dfactor = as_float_tensor(dfactor, dtype, name="dfactor")
-    covariance = factor @ tf.transpose(factor)
-    parameter_dim = int(dfactor.shape[0])
-    dcovariance_values = []
-    for i in range(parameter_dim):
-        dcovariance_values.append(
-            symmetrize(dfactor[i] @ tf.transpose(factor) + factor @ tf.transpose(dfactor[i]))
-        )
-    return covariance, tf.stack(dcovariance_values, axis=0)
+    covariance = factor @ tf.linalg.matrix_transpose(factor)
+    return covariance, symmetrize(dfactor @ tf.linalg.matrix_transpose(factor)
+                                 + factor @ tf.linalg.matrix_transpose(dfactor))
 
 
 def stack_covariance_derivatives(
@@ -366,35 +291,7 @@ def stack_covariance_derivatives(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Return derivatives of ``stack @ stack.T`` for reconstruction checks."""
 
-    dtype = common_floating_dtype(
-        stack,
-        dstack,
-        d2stack,
-        context="stack_covariance_derivatives inputs",
-    )
-    stack = as_float_tensor(stack, dtype, name="stack")
-    dstack = as_float_tensor(dstack, dtype, name="dstack")
-    d2stack = as_float_tensor(d2stack, dtype, name="d2stack")
-    covariance = stack @ tf.transpose(stack)
-    parameter_dim = int(dstack.shape[0])
-    dcovariance_values = []
-    d2covariance_rows = []
-    for i in range(parameter_dim):
-        dcovariance_values.append(
-            symmetrize(dstack[i] @ tf.transpose(stack) + stack @ tf.transpose(dstack[i]))
-        )
-        d2covariance_values = []
-        for j in range(parameter_dim):
-            d2covariance_values.append(
-                symmetrize(
-                    d2stack[i, j] @ tf.transpose(stack)
-                    + dstack[i] @ tf.transpose(dstack[j])
-                    + dstack[j] @ tf.transpose(dstack[i])
-                    + stack @ tf.transpose(d2stack[i, j])
-                )
-            )
-        d2covariance_rows.append(tf.stack(d2covariance_values, axis=0))
-    return covariance, tf.stack(dcovariance_values, axis=0), tf.stack(d2covariance_rows, axis=0)
+    return factor_covariance_derivatives(stack, dstack, d2stack)
 
 
 def factor_derivative_reconstruction_errors(

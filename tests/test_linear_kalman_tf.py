@@ -7,11 +7,12 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 from bayesfilter.linear.kalman_tf import (
+    _cholesky_validity,
     tf_kalman_log_likelihood,
     tf_linear_gaussian_log_likelihood,
     tf_masked_kalman_filter,
-    tf_masked_kalman_filter_checked_batched_static_with_diagnostics,
     tf_masked_kalman_filter_checked_batched_static_value,
+    tf_masked_kalman_filter_checked_batched_static_with_diagnostics,
     tf_masked_kalman_filter_checked_value,
     tf_masked_kalman_filter_checked_with_diagnostics,
     tf_masked_kalman_filter_with_diagnostics,
@@ -19,8 +20,23 @@ from bayesfilter.linear.kalman_tf import (
 )
 from bayesfilter.linear.types_tf import TFLinearGaussianStateSpace
 
-
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_cholesky_validity_distinguishes_strict_spd_and_tolerated_psd() -> None:
+    singular = tf.constant([[0.0, 0.0], [0.0, 1.0]], tf.float64)
+    strict_valid, strict_factor = _cholesky_validity(singular)
+    tolerant_valid, tolerant_factor = _cholesky_validity(
+        singular, psd_tolerance=1.0e-10
+    )
+    indefinite = tf.constant([[1.0, 0.0], [0.0, -1.0]], tf.float64)
+    indefinite_valid, indefinite_factor = _cholesky_validity(indefinite)
+
+    assert not bool(strict_valid)
+    assert bool(tolerant_valid)
+    assert not bool(indefinite_valid)
+    for factor in (strict_factor, tolerant_factor, indefinite_factor):
+        assert bool(tf.reduce_all(tf.math.is_finite(factor)))
 
 
 def _batched_checked_fixture(
@@ -530,13 +546,15 @@ def test_checked_batched_static_matches_scalar_rows_and_scores() -> None:
     mask = tf.constant(
         [[True, True], [True, False], [False, True]], tf.bool
     )
-    with tf.GradientTape() as tape:
-        tape.watch(parameters)
-        batch_value, batch_minimum, batch_condition, batch_valid = (
-            _call_batched_checked(parameters)
-        )
-        batch_total = tf.reduce_sum(batch_value)
-    batch_score = tape.gradient(batch_total, parameters)
+    @tf.function(jit_compile=True)
+    def compiled_value_and_score(parameters):
+        with tf.GradientTape() as tape:
+            tape.watch(parameters)
+            value, minimum, condition, valid = _call_batched_checked(parameters)
+            total = tf.reduce_sum(value)
+        return value, minimum, condition, valid, tape.gradient(total, parameters)
+
+    batch_value, batch_minimum, batch_condition, batch_valid, batch_score = compiled_value_and_score(parameters)
     assert batch_score is not None
 
     scalar_values = []

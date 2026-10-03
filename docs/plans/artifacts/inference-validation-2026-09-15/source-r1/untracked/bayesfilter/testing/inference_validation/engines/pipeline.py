@@ -1,0 +1,204 @@
+"""Independent assessment of native candidate records and posterior outputs."""
+from __future__ import annotations
+from pathlib import Path
+import time
+import copy
+import numpy as np
+
+from ..catalog import get_target
+from ..designs import seed_for
+from ..procedures import execute_pipeline
+from ..references import analytic
+from ..storage import read_json,read_tensor,write_json
+from .statistics import accuracy_assessment,binomial_interval
+
+
+def stopped_intervals(member, spec, params, data):
+    """Evaluate the actual final controller check, including unfavorable stops."""
+    from scipy import stats
+    references=analytic.exact_functionals(spec.target_id,params,data)
+    checks=member["posterior"]["retained_checks"]
+    final=checks[-1] if checks else {}
+    diagnostic=final.get(final.get("diagnostic_role","modern_rhat")) or {}
+    estimates=diagnostic.get("precision",{}).get("targets",())
+    rows=[]
+    for estimate in estimates:
+        index=spec.parameters.index(estimate["name"])
+        truth=references.get((estimate["kind"],index))
+        se=estimate["mcse"]
+        available=truth is not None and estimate["valid"] and se is not None
+        error=estimate["estimate"]-truth if truth is not None else None
+        rows.append({"name":estimate["name"],"kind":estimate["kind"],"reference":truth,
+            "estimate":estimate["estimate"],"error_at_stop":error,"reported_mcse":se,
+            "available":available,"covered":available and abs(error)<=stats.norm.ppf(.975)*se})
+    return {"quantities":rows,"runtime_passed":member["posterior"]["passed"],
+        "warmup_cap_hit":member["posterior"]["warmup_cap_hit"],
+        "retained_cap_hit":member["posterior"]["retained_cap_hit"],
+        "nominal_interval":"estimate +/- normal 97.5% quantile * reported MCSE",
+        "sequential_coverage_established":False,
+        "interpretation":"coverage at actual stopping is measured, never inferred from fixed-size MCSE calibration"}
+
+
+def check_inventory(payload):
+    """Oracle uses recorded stages, exact settings and receipts, not the scheduler."""
+    candidates={c["candidate_id"]:c for c in payload["candidates"]}
+    verified=set(payload["verified_candidate_ids"])
+    receipts=payload.get("verification_receipts",[])
+    failures=[]
+    if payload.get("nominee_id") is not None: failures.append("unexpected_nominee")
+    observations=payload.get("observations",[])
+    if len(candidates) != len(payload["candidates"]): failures.append("duplicate_candidate")
+    successful_receipts=set()
+    streams = set()
+    seeds = set()
+    for rec in receipts:
+        if rec.get("decision") in {"passed","acceptance_in_band"} and rec.get("evidence_validity", "valid") == "valid" and not rec.get("hard_vetoes") and not rec.get("promotion_vetoes") and rec.get("stage", "verification") == "verification":
+            successful_receipts.add(rec["candidate_id"])
+        stream = rec.get("stream_id")
+        seed = tuple(rec.get("seed_lineage", ()))
+        if not stream or stream in streams or not seed or seed in seeds:
+            failures.append("missing_or_reused_stream:" + rec["candidate_id"])
+        streams.add(stream)
+        seeds.add(seed)
+        c = candidates.get(rec["candidate_id"])
+        if c is None or any(rec.get(key) != c.get(expected) for key, expected in
+            (("epsilon", "epsilon"), ("exact_l", "leapfrog_steps"),
+             ("mass_signature", "mass_signature"), ("candidate_record_hash", "candidate_record_hash"))):
+            failures.append("cross_pair_verification:" + rec["candidate_id"])
+    for cid in verified:
+        if cid not in candidates:
+            failures.append("missing_candidate:" + cid)
+            continue
+        c=candidates[cid]
+        own=[o for o in observations if o["candidate_id"]==cid]
+        stages={o["stage"] for o in own}
+        if not {"measurement","verification"}<=stages: failures.append("missing_own_fresh_stages:"+cid)
+        if cid not in successful_receipts: failures.append("missing_passing_receipt:"+cid)
+        parent=c.get("parent_candidate_id")
+        if parent and (parent not in candidates or candidates[parent]["leapfrog_steps"]!=c["leapfrog_steps"]):
+            failures.append("repair_changed_L:"+cid)
+    # A shared-invalidity event legitimately retires historical passing receipts.
+    if payload.get("completion_status")!="shared_invalidity":
+        states=payload.get("candidate_states",{})
+        expected={cid for cid,state in states.items() if state=="verified"}
+        if verified!=expected: failures.append("verified_set_incomplete")
+        if verified != successful_receipts: failures.append("passing_receipts_not_retained")
+    completed = {w["work_item_id"] for w in payload.get("work_items", ()) if w["status"] == "completed"}
+    observed = [o["work_item_id"] for o in observations]
+    if completed != set(observed) or len(observed) != len(set(observed)):
+        failures.append("missing_or_duplicated_observation")
+    return {"finding":"inventory_passed" if not failures else "inventory_discrepancy",
+            "failures":failures,"candidate_count":len(candidates),"verified_count":len(verified),
+            "numerical_correctness_established":False}
+
+
+def controller_experiment(design,root):
+    from bayesfilter.inference.hmc_candidate_set_tuning import HMCCandidateSetScope,HMCControllerConfig,HMCTuningCandidateSetController
+    from bayesfilter.inference.hmc_candidate_set_artifacts import candidate_set_result_payload
+    scope=HMCCandidateSetScope(scope_id="validation",search_id="controller",target_signature="scripted",
+        mass_signature="identity",coordinate_system="ordinary",start_bank_signature="scripted_starts",
+        warmup_protocol="none",epsilon_domain=(.05,2.),repair_factor=2.,max_repairs_per_family=2)
+    cfg=HMCControllerConfig(primary_l_grid=(3,5),epsilon_by_l=((3,(.5,)),(5,(.5,))),
+        total_budget_units=7,repair_reserve_units=3,evidence_rungs=(1,2,4))
+    def make_provider(rhat):
+        def observe(work,candidate):
+            if candidate.leapfrog_steps==3:
+                if candidate.parent_candidate_id is None: return {"decision":"repair_step_lower","acceptance":.2,"rhat":rhat}
+                if work.stage=="measurement" and work.evidence_rung<2: return {"decision":"inconclusive_evidence","acceptance":.7,"rhat":rhat}
+            return {"decision":"passed","acceptance":.7,"rhat":rhat}
+        return observe
+    base=HMCTuningCandidateSetController(scope,cfg).run(make_provider(1.))
+    paused=HMCTuningCandidateSetController(scope,cfg).run(make_provider(None),max_work_items=2)
+    restored=HMCTuningCandidateSetController.from_result_payload(candidate_set_result_payload(paused)).run(make_provider(None))
+    high=HMCTuningCandidateSetController(scope,cfg).run(make_provider(8.))
+    payload=candidate_set_result_payload(base)
+    if design.scenario.control=="drop_candidate": payload["verified_candidate_ids"]=list(payload["verified_candidate_ids"])[1:]
+    if design.scenario.control=="cross_l_epsilon":
+        payload["verification_receipts"]=[dict(r,exact_l=99) for r in payload["verification_receipts"]]
+    if design.scenario.control=="lost_chunk": payload["observations"]=payload["observations"][1:]
+    result=check_inventory(payload)
+    invariants={"all_members_retained":len(payload["verified_candidate_ids"])==2,
+                "released_budget_completes":base.completion_status=="complete" and base.budget_used_units==7,
+                "resume_matches":restored.verified_candidate_ids==base.verified_candidate_ids,
+                "rhat_no_effect":high.verified_candidate_ids==base.verified_candidate_ids}
+    result.update(invariants=invariants,evidence_class="controller_double",native_payload=payload)
+    result["finding"]="inventory_passed" if all(invariants.values()) and not result["failures"] else "inventory_discrepancy"
+    write_json(root/"controller.json",result)
+    return result
+
+
+def run(design,root,deadline=None):
+    if design.scenario.route=="controller": return controller_experiment(design,root)
+    records=[]
+    for replication in range(design.replications):
+        if deadline and time.monotonic()>=deadline: break
+        path=root/f"replication-{replication:04d}"
+        data=design.options.get("data")
+        output=execute_pipeline(design,path,data=data,fit_id=replication,deadline=deadline)
+        payload=read_json(output["tuning_path"])
+        # Mutations act on a copy of observations. Native tuning authority remains intact.
+        payload=copy.deepcopy(payload)
+        if design.scenario.control=="drop_candidate": payload["verified_candidate_ids"]=payload["verified_candidate_ids"][1:]
+        if design.scenario.control=="cross_l_epsilon":
+            payload["verification_receipts"]=[dict(r,exact_l=99) for r in payload["verification_receipts"]]
+        if design.scenario.control=="lost_chunk" and design.engine=="search": payload["observations"]=payload["observations"][1:]
+        inventory=check_inventory(payload)
+        members=[]
+        spec=get_target(design.scenario.target)
+        for member in output["members"]:
+            if member["status"]!="assessed":
+                members.append(member); continue
+            draws=read_tensor(member["draws_path"]).numpy()
+            reference=analytic.model_coordinates(spec.target_id,analytic.draw(spec.target_id,
+                max(4096,design.draws),seed_for(design.seed,design.design_id,replication,member["candidate_id"],"reference"),
+                design.scenario.parameters,data))
+            assessment=accuracy_assessment(draws,reference,tolerance=design.accuracy_tolerance,
+                finite_variance=spec.finite_variance)
+            reported=member["posterior"]["passed"]
+            members.append({"candidate_id":member["candidate_id"],"L":member["L"],"epsilon":member["epsilon"],
+                "assessment":assessment,"runtime_checks_passed":reported,
+                "false_favorable_screen_observed":reported and assessment["finding"]=="reference_discrepancy",
+                "warmup_exclusion_matches":member["warmup_exclusion_matches"],
+                "duplicate_chains":member["duplicate_chains"],
+                "stopped_intervals":stopped_intervals(member,spec,design.scenario.parameters,data),
+                "warmup_count":member["posterior"]["warmup_results_per_chain"],
+                "retained_count":member["recorded_retained_count"],"member_record":member})
+        records.append({"replication":replication,"inventory":inventory,"members":members,
+                        "tuning_completion":output["completion"],
+                        "pipeline":str(path/"pipeline.json")})
+    # Independent replication-level summaries; never count siblings as iid trials.
+    completed=len(records)
+    favorable=sum(any(m.get("false_favorable_screen_observed") for m in r["members"]) for r in records)
+    members=[m for r in records for m in r["members"]]
+    assessed=[m for m in members if "assessment" in m]
+    discrepancies = any(r["inventory"]["failures"] for r in records) or any(
+        not m["warmup_exclusion_matches"] or m["duplicate_chains"] or
+        m["assessment"]["finding"] in {"reference_discrepancy", "invalid"} for m in assessed)
+    finding = "pipeline_discrepancy" if discrepancies else (
+        "no_verified_members" if not members else "pipeline_assessed")
+    if completed != design.replications or len(assessed) != len(members): finding="incomplete"
+    # One predeclared candidate group per replication, with missing members
+    # counted as unavailable. Siblings never inflate binomial denominators.
+    interval_groups={}
+    for rep in records:
+        group=sorted((m for m in rep["members"] if m.get("L")==design.member_l),key=lambda m:m["candidate_id"])
+        if group and "stopped_intervals" in group[0]:
+            for row in group[0]["stopped_intervals"]["quantities"]:
+                key=row["name"]+":"+row["kind"]
+                counts=interval_groups.setdefault(key,{"covered":0,"available":0})
+                counts["covered"]+=int(row["covered"])
+                counts["available"]+=int(row["available"])
+    for counts in interval_groups.values():
+        counts["planned"]=design.replications
+        counts["coverage_interval"]=binomial_interval(counts["covered"],design.replications)
+    result={"replications":records,"completed":completed,"planned":design.replications,
+            "interval_coverage_at_stop":interval_groups,"coverage_member_L":design.member_l,
+            "verified_members":len(members),"assessed_members":len(assessed),
+            "actual_controller_stopping_test":design.engine=="stopping",
+            "independent_unit":"complete pipeline replication; candidate siblings clustered",
+            "false_favorable_replications":favorable,
+            "false_favorable_interval":binomial_interval(favorable,completed) if completed else None,
+            "finding":finding,
+            "accuracy_established":False}
+    write_json(root/"assessment.json",result)
+    return result

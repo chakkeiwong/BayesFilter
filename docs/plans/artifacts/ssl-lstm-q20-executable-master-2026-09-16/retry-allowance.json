@@ -1,0 +1,32 @@
+{
+  "schema": "bayesfilter.q20.recovered_allowance.v1",
+  "campaign_remaining_seconds": 125945.0713631909,
+  "diagnostic_remaining_seconds": 44968.61838826103,
+  "unsettled_holds": [],
+  "source_ledger": "/tmp/BayesFilter-q20-master-repair-20260916/docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/real-q20-r1/campaign.json",
+  "source_sha256": "e36b10a06df83dd755ec570d5ba21bef33affe52324df8d1c179c84189ce0718",
+  "additional_charges": [
+    {
+      "seconds": 344.71,
+      "basis": "pytest reported, includes actual complete supervised smoke",
+      "path": "docs/plans/artifacts/ssl-lstm-q20-executable-master-2026-09-16/telemetry-repair-r1.log"
+    },
+    {
+      "seconds": 43.0,
+      "basis": "upper charge for interrupted CPU inspection; session calls timestamp 21:55:25.655 to 21:56:07.480 UTC plus termination"
+    }
+  ],
+  "inherited_holds_already_subtracted": [
+    {
+      "reason": "Entire prior repair allocation held; incomplete prior smoke timing is not treated as zero.",
+      "seconds": 7200.0
+    },
+    {
+      "reason": "Unmeasured Python startup/exit and prior readiness probe. Per-launch hold is ceil(2 * largest observed supervised process overhead); engineering allowance, not a measured charge.",
+      "seconds": 115
+    }
+  ],
+  "previous_diagnostic_attempts_used": 1,
+  "remaining_initial_diagnostic_attempts": 3,
+  "scope": "Same target/data/method/criteria/hardware and cumulative budget. New source and fresh versioned output; old numerical evidence not reused."
+}

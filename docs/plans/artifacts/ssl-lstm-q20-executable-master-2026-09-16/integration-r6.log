@@ -1,0 +1,58 @@
+F
+=================================== FAILURES ===================================
+______________ test_actual_tuning_member_and_posterior[identity] _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-323/test_actual_tuning_member_and_0')
+method = 'identity'
+
+    @pytest.mark.parametrize("method", ["identity", "classical", "neutra"])
+    def test_actual_tuning_member_and_posterior(tmp_path, method):
+        config, bridge = protocol(), four_dimensional_bridge()
+        if method in {"identity", "classical"}:
+            config["tuning"]["initial_epsilon"] = 1.1
+        export = None
+        if method == "neutra":
+            trained = run_training_cohort(config, bridge, tmp_path / "training",
+                memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
+            cohort = json.loads(Path(trained["checkpoint"]).read_text())["cohort"]
+            export = next(iter(cohort.values()))["exports"]["1.0"]
+        tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
+        assert tuned["verified_members"], tuned
+        member = tuned["verified_members"][sorted(tuned["verified_members"])[0]]
+        result = sample_member(config, bridge, tmp_path / "posterior", member_path=member, label=method)
+        assert result["private_retained_raw"] is not None
+        saved = json.loads((tmp_path / "posterior/result.json").read_text())
+        assert saved["summary"]["reference_agreement"] == "incomplete"
+        assert saved["production_qualified"] is False
+        fresh, _ = draw_start_bank(config, bridge, 1., "fresh-confirmation")
+>       confirmation = reverify_member(config, bridge, tmp_path / "reverify",
+            parent_member_path=member, beta=1., label="confirm-"+method, initial_position=fresh)
+
+tests/test_q20_master_integration.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:228: in reverify_member
+    search = HMCControllerConfig(primary_l_grid=(member.num_leapfrog_steps,),
+<string>:19: in __init__
+    ???
+bayesfilter/inference/hmc_candidate_set_tuning.py:602: in __post_init__
+    value = _integer(getattr(self, name), name)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = 0, name = 'repair_reserve_units', minimum = 1
+
+    def _integer(value: Any, name: str, minimum: int = 1) -> int:
+        if type(value) is not int or value < minimum:
+>           raise ValueError(f"{name} must be an integer >= {minimum}")
+E           ValueError: repair_reserve_units must be an integer >= 1
+
+bayesfilter/inference/hmc_candidate_set_tuning.py:46: ValueError
+----------------------------- Captured stderr call -----------------------------
+2026-09-16 04:28:24.526930: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 5 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76b7641100e0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING  tensorflow:polymorphic_function.py:157 6 out of the last 6 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76b7641104a0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_integration.py::test_actual_tuning_member_and_posterior[identity]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 585 warnings in 13.56s

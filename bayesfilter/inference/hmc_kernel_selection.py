@@ -8,14 +8,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass
+from numbers import Integral
 from typing import Any, Callable, Mapping, Sequence
 
-import numpy as np
+import tensorflow as tf
 
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptanceEvidence,
     _evaluate_retained_target_health,
+    _float64_tensor,
     evaluate_hmc_acceptance_evidence,
     hmc_acceptance_evidence_from_payload,
     target_status_telemetry_has_failure,
@@ -111,7 +114,7 @@ class VerifiedFixedKernelHandoff:
         )
         anchor = _strict_integer(self.anchor_l, name="anchor_l", minimum=1)
         step = float(self.step_size)
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("verified fixed-kernel step_size must be positive and finite")
         for name in (
             "source_candidate_signature",
@@ -279,9 +282,9 @@ _RETUNE_SHARED_FAILURE_REASONS = frozenset(
 
 
 def _strict_integer(value: Any, *, name: str, minimum: int | None = None) -> int:
-    if isinstance(value, (bool, np.bool_)) or not isinstance(
+    if isinstance(value, bool) or not isinstance(
         value,
-        (int, np.integer),
+        Integral,
     ):
         raise ValueError(f"{name} must be an integer scalar")
     result = int(value)
@@ -303,9 +306,10 @@ def _strict_seed(value: Any, *, name: str) -> tuple[int, int]:
 
 
 def _strict_bool(value: Any, *, name: str) -> bool:
-    if not isinstance(value, (bool, np.bool_)):
+    tensor = tf.convert_to_tensor(value)
+    if tensor.shape.rank != 0 or tensor.dtype != tf.bool:
         raise ValueError(f"{name} must be boolean")
-    return bool(value)
+    return bool(tensor)
 
 
 def _target_status_policy(value: Any) -> str:
@@ -322,7 +326,9 @@ def _json_ready(value: Any) -> Any:
         return {str(key): _json_ready(item) for key, item in sorted(value.items())}
     if isinstance(value, (tuple, list)):
         return [_json_ready(item) for item in value]
-    if isinstance(value, np.generic):
+    if tf.is_tensor(value):
+        return value.numpy().tolist()
+    if hasattr(value, "item") and getattr(value, "shape", None) == ():
         return value.item()
     return value
 
@@ -341,8 +347,8 @@ def private_start_bank_content_signature(
     private_start_bank: Any,
     coordinate_signature: str,
 ) -> str:
-    bank = np.asarray(private_start_bank, dtype=float)
-    digest = hashlib.sha256(np.ascontiguousarray(bank).tobytes())
+    bank = _float64_tensor(private_start_bank)
+    digest = hashlib.sha256(memoryview(bank.numpy()).tobytes())
     digest.update(str(coordinate_signature).encode("ascii"))
     return digest.hexdigest()
 
@@ -601,7 +607,7 @@ class FixedTrajectoryReplication:
             value = getattr(self, name)
             if value is not None:
                 value = float(value)
-                if not np.isfinite(value) or value < 0.0:
+                if not math.isfinite(value) or value < 0.0:
                     raise ValueError(f"{name} must be finite and nonnegative")
                 if name == "path_return_fraction" and value > 1.0:
                     raise ValueError("path_return_fraction must lie inside [0, 1]")
@@ -678,7 +684,7 @@ class FixedTrajectoryCandidateResult:
             raise ValueError("exact-L retuned step and signature must be paired")
         if step is not None:
             step = float(step)
-            if not np.isfinite(step) or step <= 0.0 or not str(signature):
+            if not math.isfinite(step) or step <= 0.0 or not str(signature):
                 raise ValueError("exact-L retune fields are invalid")
             object.__setattr__(self, "exact_l_retuned_step_size", step)
             object.__setattr__(self, "exact_l_retune_signature", str(signature))
@@ -1448,7 +1454,7 @@ class FixedTrajectoryEvidenceExtension:
             round_index < 0
             or checkpoint <= 0
             or len(root_seed) != 2
-            or not np.isfinite(frozen_step)
+            or not math.isfinite(frozen_step)
             or frozen_step <= 0.0
             or burnin <= 0
             or not slots
@@ -1838,7 +1844,7 @@ class FixedTrajectorySelectionRepairAttempt:
         step = float(self.input_step_size)
         if index < 0 or len(seed) != 2:
             raise ValueError("selection repair attempt identity is invalid")
-        if not np.isfinite(step) or step <= 0.0:
+        if not math.isfinite(step) or step <= 0.0:
             raise ValueError("selection repair input step must be positive and finite")
         if not isinstance(self.selection, FixedTrajectorySelection):
             raise TypeError("selection repair attempt requires a selection")
@@ -1890,7 +1896,7 @@ class FixedTrajectorySelectionRepairAttempt:
             raise ValueError("terminal selection cannot carry a step repair")
         if self.selection.disposition == "candidate_set_exhausted" and repair is not None:
             raise ValueError("candidate-invalid evidence cannot supply step repair")
-        if repair is not None and not np.isclose(
+        if repair is not None and not _scalar_close(
             repair.base_step_size, step, rtol=1.0e-12, atol=0.0
         ):
             raise ValueError("selection repair base step does not match its attempt")
@@ -1907,7 +1913,7 @@ class FixedTrajectorySelectionRepairAttempt:
         if any(item.root_seed != seed for item in extensions):
             raise ValueError("evidence extension changed the attempt root seed")
         if any(
-            not np.isclose(
+            not _scalar_close(
                 item.frozen_step_size,
                 step,
                 rtol=1.0e-12,
@@ -2063,14 +2069,14 @@ class FixedTrajectorySelectionRepairAttempt:
             return before
         prior_lower = self.bracket_before[0]
         next_lower = self.bracket_after[0]
-        lower_changed = prior_lower is None or not np.isclose(
+        lower_changed = prior_lower is None or not _scalar_close(
             float(prior_lower),
             float(next_lower),
             rtol=1.0e-12,
             atol=0.0,
         )
         if self.repair.one_sided_directional_support:
-            if np.isclose(
+            if _scalar_close(
                 float(next_lower),
                 self.input_step_size,
                 rtol=1.0e-12,
@@ -2258,7 +2264,7 @@ class BoundedFixedTrajectorySelectionResult:
         if len(set(lineage_seeds)) != len(lineage_seeds):
             raise ValueError("bounded selection seed lineage contains a collision")
         for previous, current in zip(attempts, attempts[1:]):
-            if previous.output_step_size is None or not np.isclose(
+            if previous.output_step_size is None or not _scalar_close(
                 previous.output_step_size,
                 current.input_step_size,
                 rtol=1.0e-12,
@@ -2284,7 +2290,7 @@ class BoundedFixedTrajectorySelectionResult:
                 or source.repair is None
                 or source.repair.direction != "higher_epsilon"
                 or not source.repair.one_sided_directional_support
-                or not np.isclose(
+                or not _scalar_close(
                     float(source.bracket_after[0]),
                     float(attempt.bracket_before[0]),
                     rtol=1.0e-12,
@@ -2610,7 +2616,7 @@ def run_bounded_operational_fixed_trajectory_selection(
     if maximum <= 0 or maximum > 5:
         raise ValueError("max_attempts must lie inside [1, 5]")
     step = float(initial_step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("initial_step_size must be positive and finite")
     bank = _validated_operational_start_bank(private_start_bank, acceptance_policy)
     target_status_policy = _target_status_policy(target_status_trace_policy)
@@ -2943,7 +2949,7 @@ def _coerce_empirical_bracket(
     lower = None if lower is None else float(lower)
     upper = None if upper is None else float(upper)
     for name, value in (("lower", lower), ("upper", upper)):
-        if value is not None and (not np.isfinite(value) or value <= 0.0):
+        if value is not None and (not math.isfinite(value) or value <= 0.0):
             raise ValueError(f"empirical bracket {name} bound is invalid")
     if lower is not None and upper is not None and lower >= upper:
         raise ValueError("empirical acceptance bracket is inverted")
@@ -3109,7 +3115,7 @@ def _validate_returned_evidence_extension(
         extension.source_selection_signature != source_selection.signature
         or extension.finalized_selection_signature != finalized_selection.signature
         or extension.root_seed != _strict_seed(root_seed, name="root_seed")
-        or not np.isclose(
+        or not _scalar_close(
             extension.frozen_step_size,
             float(frozen_step_size),
             rtol=1.0e-12,
@@ -3355,7 +3361,7 @@ def run_operational_fixed_trajectory_selection(
     ):
         raise ValueError("private start bank signature does not match its content")
     step = float(frozen_step_size)
-    if not np.isfinite(step) or step <= 0.0:
+    if not math.isfinite(step) or step <= 0.0:
         raise ValueError("frozen_step_size must be positive and finite")
     results_count = _strict_integer(
         screen_num_results,
@@ -3447,15 +3453,15 @@ def run_operational_fixed_trajectory_selection(
 def _validated_operational_start_bank(
     private_start_bank: Any,
     acceptance_policy: Any,
-) -> np.ndarray:
-    bank = np.asarray(private_start_bank, dtype=float)
+) -> tf.Tensor:
+    bank = _float64_tensor(private_start_bank)
     if (
-        bank.ndim != 2
+        bank.shape.rank != 2
         or bank.shape[0] != acceptance_policy.chain_count
         or bank.shape[1] == 0
     ):
         raise ValueError("private_start_bank must contain the policy chain count")
-    if not np.all(np.isfinite(bank)):
+    if not bool(tf.reduce_all(tf.math.is_finite(bank))):
         raise ValueError("private_start_bank must be finite")
     return bank
 
@@ -3463,7 +3469,7 @@ def _validated_operational_start_bank(
 def _run_operational_candidate_replication(
     *,
     adapter: Any,
-    bank: np.ndarray,
+    bank: tf.Tensor,
     candidate: FixedTrajectoryCandidate,
     replication_index: int,
     seed: tuple[int, int],
@@ -3498,7 +3504,7 @@ def _run_operational_candidate_replication(
         int(bank.shape[1]),
     )
     expected_trace_shape = expected_sample_shape[:2]
-    samples = _numpy(run.samples)
+    samples = _tensor(run.samples)
     trace = dict(run.trace) if isinstance(run.trace, Mapping) else {}
     missing = tuple(
         key
@@ -3509,37 +3515,37 @@ def _run_operational_candidate_replication(
     if samples.shape != expected_sample_shape:
         malformed.append("samples_shape")
     for key in ("log_accept_ratio", "target_log_prob"):
-        if key in trace and _numpy(trace[key]).shape != expected_trace_shape:
+        if key in trace and _tensor(trace[key]).shape != expected_trace_shape:
             malformed.append(f"{key}_shape")
     if "is_accepted" in trace:
-        accepted_value = _numpy(trace["is_accepted"])
+        accepted_value = _tensor(trace["is_accepted"])
         if accepted_value.shape != expected_trace_shape:
             malformed.append("is_accepted_shape")
-        elif not np.issubdtype(accepted_value.dtype, np.bool_):
+        elif accepted_value.dtype != tf.bool:
             malformed.append("is_accepted_dtype")
     schema_invalid = bool(malformed)
     candidate_samples_nonfinite = bool(
-        not schema_invalid and not np.all(np.isfinite(samples))
+        not schema_invalid and not bool(tf.reduce_all(tf.math.is_finite(samples)))
     )
     shape = expected_trace_shape
     log_accept = (
-        np.zeros(shape, dtype=float)
+        tf.zeros(shape, dtype=tf.float64)
         if missing or schema_invalid
-        else _numpy(trace["log_accept_ratio"])
+        else _tensor(trace["log_accept_ratio"])
     )
     is_accepted = (
-        np.zeros(shape, dtype=bool)
+        tf.zeros(shape, dtype=tf.bool)
         if missing or schema_invalid
-        else _numpy(trace["is_accepted"])
+        else _tensor(trace["is_accepted"])
     )
     target_log_prob = (
-        np.zeros(shape, dtype=float)
+        tf.zeros(shape, dtype=tf.float64)
         if missing or schema_invalid
-        else _numpy(trace["target_log_prob"])
+        else _tensor(trace["target_log_prob"])
     )
     diagnostics = dict(run.diagnostics) if isinstance(run.diagnostics, Mapping) else {}
     evidence_samples = (
-        np.zeros(expected_sample_shape, dtype=float)
+        tf.zeros(expected_sample_shape, dtype=tf.float64)
         if schema_invalid
         else samples
     )
@@ -3582,7 +3588,7 @@ def _run_operational_candidate_replication(
         # Invalid candidate endpoints are never reused or re-evaluated. A
         # finite placeholder lets the typed local-invalidity record own scope.
         samples=(
-            np.zeros(expected_sample_shape, dtype=float)
+            tf.zeros(expected_sample_shape, dtype=tf.float64)
             if candidate_samples_nonfinite
             else evidence_samples
         ),
@@ -3600,7 +3606,7 @@ def _run_operational_candidate_replication(
     mean_esjd_per_gradient = None
     if evidence.evidence_validity == "valid" and samples.shape[0] >= 2:
         jump = samples[1:] - samples[:-1]
-        mean_esjd = float(np.mean(np.sum(np.square(jump), axis=-1)))
+        mean_esjd = float(tf.reduce_mean(tf.reduce_sum(tf.square(jump), axis=-1)))
         mean_esjd_per_gradient = mean_esjd / float(candidate.num_leapfrog_steps)
     path_return_fraction = (
         max(evidence.path_return_fraction_by_chain)
@@ -3644,7 +3650,7 @@ def _finalize_operational_selection_nomination(
     *,
     selection: FixedTrajectorySelection,
     adapter: Any,
-    bank: np.ndarray,
+    bank: tf.Tensor,
     bank_signature: str,
     coordinate_signature: str,
     metric_signature: str,
@@ -3816,7 +3822,7 @@ def _validated_exact_l_retune_step(
 ) -> float:
     """Bind an exact-L retuned step to its finite adaptive TF/TFP trace."""
 
-    samples = _numpy(run.samples)
+    samples = _tensor(run.samples)
     expected_sample_shape = (
         int(expected_results),
         int(expected_chains),
@@ -3824,7 +3830,7 @@ def _validated_exact_l_retune_step(
     )
     if samples.shape != expected_sample_shape:
         raise _SharedRetuneInvalidityError("shared_schema_invalid")
-    if not np.all(np.isfinite(samples)):
+    if not bool(tf.reduce_all(tf.math.is_finite(samples))):
         raise _CandidateRetuneHealthError("nonfinite_candidate_state")
     if not isinstance(run.trace, Mapping):
         raise _SharedRetuneInvalidityError("shared_schema_invalid")
@@ -3834,10 +3840,10 @@ def _validated_exact_l_retune_step(
     if any(key not in trace for key in required):
         raise _SharedRetuneInvalidityError("shared_schema_invalid")
     for key in ("log_accept_ratio", "target_log_prob"):
-        array = _numpy(trace[key])
+        array = _tensor(trace[key])
         if array.shape != expected_trace_shape:
             raise _SharedRetuneInvalidityError("shared_schema_invalid")
-        if not np.all(np.isfinite(array)):
+        if not bool(tf.reduce_all(tf.math.is_finite(array))):
             raise _CandidateRetuneHealthError(
                 "nonfinite_log_accept_ratio"
                 if key == "log_accept_ratio"
@@ -3859,10 +3865,10 @@ def _validated_exact_l_retune_step(
             raise _SharedRetuneInvalidityError("shared_schema_invalid") from exc
         if target_status_failed:
             raise _CandidateRetuneHealthError("target_status_telemetry_failure")
-    accepted = _numpy(trace["is_accepted"])
+    accepted = _tensor(trace["is_accepted"])
     if (
         accepted.shape != expected_trace_shape
-        or not np.issubdtype(accepted.dtype, np.bool_)
+        or accepted.dtype != tf.bool
     ):
         raise _SharedRetuneInvalidityError("shared_schema_invalid")
     health = _evaluate_retained_target_health(
@@ -3876,10 +3882,10 @@ def _validated_exact_l_retune_step(
         raise _CandidateRetuneHealthError(
             *health["candidate_data_invalidity_reasons"]
         )
-    step_trace = _numpy(trace["step_size"])
+    step_trace = _tensor(trace["step_size"])
     if step_trace.shape != (int(expected_results),):
         raise _SharedRetuneInvalidityError("shared_schema_invalid")
-    if not np.all(np.isfinite(step_trace)) or np.any(step_trace <= 0.0):
+    if not bool(tf.reduce_all(tf.math.is_finite(step_trace))) or bool(tf.reduce_any(step_trace <= 0.0)):
         raise _CandidateRetuneHealthError("nonfinite_adapted_step_size")
     diagnostics = dict(run.diagnostics) if isinstance(run.diagnostics, Mapping) else {}
     tuned_step = _optional_float(diagnostics.get("final_step_size"))
@@ -3887,7 +3893,7 @@ def _validated_exact_l_retune_step(
         raise _SharedRetuneInvalidityError("shared_schema_invalid")
     if tuned_step <= 0.0:
         raise _CandidateRetuneHealthError("nonfinite_adapted_step_size")
-    if not np.isclose(
+    if not _scalar_close(
             tuned_step,
             float(step_trace[-1]),
             rtol=1.0e-12,
@@ -3897,35 +3903,40 @@ def _validated_exact_l_retune_step(
     return tuned_step
 
 
-def _numpy(value: Any) -> np.ndarray:
-    if hasattr(value, "numpy"):
-        value = value.numpy()
-    return np.asarray(value)
+def _scalar_close(actual: float, expected: float, *, rtol: float = 1e-5, atol: float = 1e-8) -> bool:
+    """Preserve abs(actual-expected) <= atol + rtol*abs(expected).
+
+    The reference side is intentionally asymmetric, as in the original NumPy
+    check. Symmetric math.isclose would change a retune-lineage boundary.
+    """
+
+    return bool(actual == expected or (
+        math.isfinite(actual) and math.isfinite(expected)
+        and abs(actual - expected) <= atol + rtol * abs(expected)
+    ))
+
+
+def _tensor(value: Any) -> tf.Tensor:
+    tensor = tf.convert_to_tensor(value)
+    if isinstance(value, (float, list, tuple)) and tensor.dtype.is_floating:
+        return tf.convert_to_tensor(value, dtype=tf.float64)
+    return tensor
 
 
 def _optional_float(value: Any) -> float | None:
     if value is None:
         return None
-    if hasattr(value, "numpy"):
-        value = value.numpy()
-    array = np.asarray(value)
-    if array.size != 1:
+    tensor = _tensor(value)
+    if int(tf.size(tensor)) != 1:
         return None
-    result = float(array.reshape(()))
-    return result if np.isfinite(result) else None
+    result = float(tf.reshape(tensor, ()))
+    return result if math.isfinite(result) else None
 
 
 def _optional_int(value: Any) -> int | None:
     if value is None:
         return None
-    if hasattr(value, "numpy"):
-        value = value.numpy()
-    array = np.asarray(value)
-    if array.size != 1:
+    tensor = _tensor(value)
+    if int(tf.size(tensor)) != 1 or not tensor.dtype.is_integer:
         return None
-    scalar = array.reshape(()).item()
-    if isinstance(scalar, (bool, np.bool_)):
-        return None
-    if isinstance(scalar, (int, np.integer)):
-        return int(scalar)
-    return None
+    return int(tf.reshape(tensor, ()))

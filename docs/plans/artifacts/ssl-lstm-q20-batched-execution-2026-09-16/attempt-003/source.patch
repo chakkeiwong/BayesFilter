@@ -1,0 +1,575 @@
+diff --git a/bayesfilter/inference/hmc_candidate_set_execution.py b/bayesfilter/inference/hmc_candidate_set_execution.py
+index db56b609..b724a93d 100644
+--- a/bayesfilter/inference/hmc_candidate_set_execution.py
++++ b/bayesfilter/inference/hmc_candidate_set_execution.py
+@@ -1,7 +1,7 @@
+ """Repository TF/TFP observations and frozen geometry for candidate-set HMC.
+ 
+ The host owns scheduling, evidence and persistence. Numerical transitions use
+-the same independent-chain TensorFlow runner during tuning and retained replay.
++the same declared TensorFlow chain topology during tuning and retained replay.
+ No caller observation callback can supply this module's executable binding.
+ """
+ from __future__ import annotations
+@@ -149,8 +149,8 @@ class HMCCandidateExecutionConfig:
+             raise ValueError("non-XLA execution requires an explicit non_xla_reason")
+         if self.target_status_trace_policy not in {"none", "per_chain_step"}:
+             raise ValueError("declare none or per_chain_step target status")
+-        if self.chain_mode not in {"serial", "threaded"}:
+-            raise ValueError("chain_mode must be serial or threaded")
++        if self.chain_mode not in {"serial", "threaded", "batched"}:
++            raise ValueError("chain_mode must be serial, threaded or batched")
+ 
+     def payload(self) -> Mapping[str, Any]:
+         payload = {**asdict(self), "acceptance_policy": self.acceptance_policy.payload()}
+@@ -434,7 +434,10 @@ class HMCCandidateExecutionBinding:
+         return tuple(int.from_bytes(digest[i:i+4], "big") & 0x7fffffff for i in (0, 4))
+ 
+     def _run(self, candidate: HMCTuningCandidateRecord, state: Any, count: int, seed: tuple[int, int]) -> Any:
+-        from bayesfilter.inference.hmc import FullChainHMCConfig, build_independent_chain_tfp_hmc_runner
++        from bayesfilter.inference.hmc import (
++            FullChainHMCConfig, ReusableFullChainHMCRunner,
++            build_independent_chain_tfp_hmc_runner,
++        )
+ 
+         HMCTuningCandidateRecord.from_payload(self.scope, candidate.payload())
+         key = (candidate.leapfrog_steps, count)
+@@ -445,8 +448,17 @@ class HMCCandidateExecutionBinding:
+                 use_xla=self.config.use_xla, target_scope=self._spec["target_scope"],
+                 target_status_trace_policy=self.config.target_status_trace_policy,
+                 capture_candidate_health=True)
+-            self._runners[key] = build_independent_chain_tfp_hmc_runner(
++            factory = (ReusableFullChainHMCRunner if self.config.chain_mode == "batched"
++                       else build_independent_chain_tfp_hmc_runner)
++            self._runners[key] = factory(
+                 self._active_adapter, self.initial_active_state, config)
++        if self.config.chain_mode == "batched":
++            result = self._runners[key].run(current_state=state, seed=seed,
++                                            step_size=candidate.epsilon)
++            return replace(result, metadata={**result.metadata,
++                "execution_mode": "batched", "chain_count": int(state.shape[0]),
++                "single_batched_sample_chain_invocation": True,
++                "seed_layout": "tfp_stateless_vector_state_independent_chain_rows"})
+         return self._runners[key].run(current_state=state, root_seed=seed,
+                                       step_size=candidate.epsilon, mode=self.config.chain_mode)
+ 
+@@ -680,7 +692,9 @@ def _issue_binding(*, adapter: Any, layers: Sequence[Mapping[str, Any]], initial
+     preparation_identity = _sha256({"layers": layers, "lineage": target_lineage, "preparation": preparation})
+     numerical_policy = dict(config.payload())
+     numerical_policy.pop("preparation_elapsed_seconds")
+-    transition_identity = _sha256({"runner": "independent_chain_tfp_fixed_hmc",
++    runner_kind = ("batched_chain_tfp_fixed_hmc" if config.chain_mode == "batched"
++                   else "independent_chain_tfp_fixed_hmc")
++    transition_identity = _sha256({"runner": runner_kind,
+                                     "config": numerical_policy, "source": closure})
+     scope = HMCCandidateSetScope(
+         scope_id=scope_id, search_id=search_id, target_signature=stable_adapter_signature(adapter),
+diff --git a/bayesfilter/inference/hmc_candidate_set_retained.py b/bayesfilter/inference/hmc_candidate_set_retained.py
+index a3e24ece..d6a93f00 100644
+--- a/bayesfilter/inference/hmc_candidate_set_retained.py
++++ b/bayesfilter/inference/hmc_candidate_set_retained.py
+@@ -6,6 +6,7 @@ backend/target policy check, never posterior convergence or scientific proof.
+ from __future__ import annotations
+ 
+ import json
++import time
+ from collections.abc import Mapping
+ from pathlib import Path
+ from typing import Any
+@@ -134,9 +135,16 @@ def _run_sequential_member(*, binding, candidate, initial_state, model_transform
+         run_sequential_neutra_hmc, BatchedHMCConfig, _summarize_batched_hmc_output,
+     )
+     def run_chunk(state, count, seed, checkpoint_store, checkpoint_index):
++        started = time.monotonic()
++        runtime = {"checkpoint_reused": True}
+         binding.validate()
+         def execute():
+             result = binding._run(candidate, state, count, seed)
++            runtime.update(checkpoint_reused=False, native=result.metadata)
++            call_count = result.metadata.get("ensemble_call_count",
++                                             result.metadata.get("sample_chain_invocation_count"))
++            runtime["call_class"] = ("first_compile_plus_execute" if call_count == 1
++                                     else "repeated_execute")
+             return result.samples, result.trace
+         if checkpoint_store is None:
+             samples, trace = execute()
+@@ -151,13 +159,14 @@ def _run_sequential_member(*, binding, candidate, initial_state, model_transform
+         failures = binding.health_failures(state, samples, trace)
+         chunk = _summarize_batched_hmc_output(initial_state=state,
+             samples=samples, trace=trace, chain_count=int(state.shape[0]),
+-            elapsed_seconds=0., config=BatchedHMCConfig(num_results=count, num_burnin_steps=0,
++            elapsed_seconds=time.monotonic() - started, config=BatchedHMCConfig(num_results=count, num_burnin_steps=0,
+                 step_size=candidate.epsilon, num_leapfrog_steps=candidate.leapfrog_steps,
+                 seed=seed, jit_compile=config.jit_compile,
+                 energy_error_log_accept_threshold=config.energy_error_log_accept_threshold))
+-        chunk["diagnostics"].update(single_batched_sample_chain_invocation=False,
++        chunk["diagnostics"].update(single_batched_sample_chain_invocation=binding.config.chain_mode == "batched",
+             execution_topology=binding.config.chain_mode,
+             target_status_trace_policy=binding.config.target_status_trace_policy,
++            runtime=runtime,
+             member_health_failures=failures,
+             health_passed=chunk["diagnostics"]["health_passed"] and not failures)
+         chunk["trace"] = trace
+diff --git a/bayesfilter/inference/neutra_hmc.py b/bayesfilter/inference/neutra_hmc.py
+index 477c1572..fe526063 100644
+--- a/bayesfilter/inference/neutra_hmc.py
++++ b/bayesfilter/inference/neutra_hmc.py
+@@ -594,8 +594,10 @@ def _run_shared_sequential_neutra_hmc(
+             f"sequential HMC requires at least {config.minimum_chain_count} chains"
+         )
+     names = tuple(str(item) for item in parameter_names)
+-    if len(names) != dimension:
+-        raise NeuTraHMCError("parameter_names must match the HMC dimension")
++    if not names or len(set(names)) != len(names):
++        raise NeuTraHMCError("parameter_names must uniquely name model quantities")
++    if model_transform is None and raw_transform is None and len(names) != dimension:
++        raise NeuTraHMCError("parameter_names must match the HMC dimension without a transform")
+     if model_transform is not None and raw_transform is not None:
+         raise NeuTraHMCError("provide only one of model_transform or raw_transform")
+     transform_fn = model_transform or raw_transform or (lambda values: values)
+@@ -604,9 +606,9 @@ def _run_shared_sequential_neutra_hmc(
+ 
+     def transform(samples: tf.Tensor) -> tf.Tensor:
+         values = tf.convert_to_tensor(transform_fn(samples), tf.float64)
+-        if values.shape != samples.shape:
++        if values.shape != samples.shape[:-1].concatenate([len(names)]):
+             raise NeuTraHMCError(
+-                "model_transform must preserve [draw, chain, parameter] shape"
++                "model_transform must preserve draw/chain axes and match named model quantities"
+             )
+         return values
+ 
+@@ -834,6 +836,7 @@ def _run_shared_sequential_neutra_hmc(
+             break
+ 
+     empty = tf.zeros((0, chain_count, dimension), tf.float64)
++    empty_model = tf.zeros((0, chain_count, len(names)), tf.float64)
+     warmup_latent = (
+         tf.concat(warmup_latent_chunks, axis=0)
+         if warmup_latent_chunks
+@@ -842,7 +845,7 @@ def _run_shared_sequential_neutra_hmc(
+     warmup_model = (
+         tf.concat(warmup_model_chunks, axis=0)
+         if warmup_model_chunks
+-        else empty
++        else empty_model
+     )
+     retained_latent = (
+         tf.concat(retained_latent_chunks, axis=0)
+@@ -852,7 +855,7 @@ def _run_shared_sequential_neutra_hmc(
+     retained_model = (
+         tf.concat(retained_model_chunks, axis=0)
+         if retained_model_chunks
+-        else empty
++        else empty_model
+     )
+     cumulative_archives = None
+     if archive_callback is not None:
+@@ -1340,9 +1343,10 @@ def run_retained_neutra_hmc_continuation(
+     validate_sequential_seeds(config)
+     latent = tf.convert_to_tensor(prefix_latent, tf.float64)
+     model = tf.convert_to_tensor(prefix_model, tf.float64)
+-    if latent.shape.rank != 3 or model.shape != latent.shape:
++    if (latent.shape.rank != 3 or model.shape.rank != 3
++            or model.shape[:2] != latent.shape[:2]):
+         raise NeuTraHMCError(
+-            "continuation prefixes must share [draw, chain, parameter] shape"
++            "continuation prefixes must share draw/chain axes"
+         )
+     static_shape = latent.shape.as_list()
+     if any(value is None for value in static_shape):
+@@ -1355,8 +1359,11 @@ def run_retained_neutra_hmc_continuation(
+             f"sequential HMC requires at least {config.minimum_chain_count} chains"
+         )
+     names = tuple(str(item) for item in parameter_names)
+-    if len(names) != dimension:
+-        raise NeuTraHMCError("parameter_names must match the HMC dimension")
++    if (not names or len(set(names)) != len(names)
++            or model.shape[-1] != len(names)):
++        raise NeuTraHMCError("parameter_names must uniquely match the model prefix dimension")
++    if model_transform is None and raw_transform is None and len(names) != dimension:
++        raise NeuTraHMCError("a transform is required for different active and model dimensions")
+     if not bool(tf.reduce_all(tf.math.is_finite(latent)).numpy()) or not bool(
+         tf.reduce_all(tf.math.is_finite(model)).numpy()
+     ):
+@@ -1378,9 +1385,9 @@ def run_retained_neutra_hmc_continuation(
+ 
+     def transform(samples: tf.Tensor) -> tf.Tensor:
+         values = tf.convert_to_tensor(transform_fn(samples), tf.float64)
+-        if values.shape != samples.shape:
++        if values.shape != samples.shape[:-1].concatenate([len(names)]):
+             raise NeuTraHMCError(
+-                "model_transform must preserve [draw, chain, parameter] shape"
++                "model_transform must preserve draw/chain axes and match named model quantities"
+             )
+         return values
+ 
+diff --git a/bayesfilter/inference/q20_hmc_qualification.py b/bayesfilter/inference/q20_hmc_qualification.py
+index 83cdd3f2..524579f1 100644
+--- a/bayesfilter/inference/q20_hmc_qualification.py
++++ b/bayesfilter/inference/q20_hmc_qualification.py
+@@ -18,6 +18,9 @@ from bayesfilter.inference.q20_production_config import digest, scoped_seed, wri
+ from bayesfilter.inference.q20_production_training import source_snapshot
+ 
+ 
++QUALIFICATION_SCHEMA = "bayesfilter.q20.bridge_hmc_qualification.v2"
++
++
+ def check_full_chain_health(result):
+     """Check real public-runner endpoint/proposal telemetry, including rejects."""
+     from bayesfilter.inference.hmc_verification import target_status_telemetry_has_failure
+@@ -80,11 +83,11 @@ def qualify_bridge(config, bridge, root, *, betas=None):
+         if not bool(valid):
+             raise ValueError("q20 steady qualification trajectory invalid")
+         # The preliminary enclosing-graph check licenses only this diagnostic
+-        # use. No external receipt is issued until the actual scalar-chain
++        # use. No external receipt is issued until the actual batched-chain
+         # public runner and its proposal/status traces have also passed.
+-        from bayesfilter.inference.hmc import FullChainHMCConfig, build_independent_chain_tfp_hmc_runner
++        from bayesfilter.inference.hmc import FullChainHMCConfig, ReusableFullChainHMCRunner
+         diagnostic_adapter = _QualifiedAdapter(bridge, beta=beta)
+-        runner = build_independent_chain_tfp_hmc_runner(diagnostic_adapter, starts,
++        runner = ReusableFullChainHMCRunner(diagnostic_adapter, starts,
+             FullChainHMCConfig(num_results=count, num_burnin_steps=0,
+                 step_size=config["tuning"]["initial_epsilon"],
+                 num_leapfrog_steps=config["tuning"]["l_grid"][0],
+@@ -92,15 +95,19 @@ def qualify_bridge(config, bridge, root, *, betas=None):
+                 use_xla=config["jit_compile"], target_scope=adapter.target_scope,
+                 target_status_trace_policy="per_chain_step",capture_candidate_health=True))
+         begin=time.monotonic()
+-        public=runner.run(mode="serial")
++        public=runner.run()
+         check_full_chain_health(public)
++        if tuple(public.samples.shape) != (count, shape[0], shape[1]):
++            raise ValueError("q20 public qualification lost its batched chain shape")
+         public_seconds=time.monotonic()-begin
+         evidence[str(beta)]={"passed":True,"adapter_signature":adapter.adapter_signature(),
+             "first_seconds":first,"steady_seconds":elapsed,"transitions_per_chain":count,
+             "chains":shape[0],"leapfrog_steps":config["tuning"]["l_grid"][0],"step_size":config["tuning"]["initial_epsilon"],
+             "endpoint_device":endpoint.device,"traces":program.experimental_get_tracing_count(),
+-            "public_serial_runner_passed":True,"public_serial_runner_seconds":public_seconds}
+-    body={"schema":"bayesfilter.q20.bridge_hmc_qualification.v1","bridge_signature":bridge.signature,
++            "public_batched_runner_passed":True,"public_batched_runner_seconds":public_seconds,
++            "public_state_shape":list(runner.state_shape),
++            "public_traces":runner._runner.experimental_get_tracing_count()}
++    body={"schema":QUALIFICATION_SCHEMA,"bridge_signature":bridge.signature,
+         "sources":source_snapshot(),"jit_compile":config["jit_compile"],"cpu_reference":config["cpu_reference"],
+         "betas":evidence,"full_chain_role":"numerical_graph_diagnostic_only","passed":True}
+     write_json(root/"result.json",{**body,"checksum":digest(body)})
+@@ -118,13 +125,18 @@ def attach_qualification(bridge, path, config):
+     """Validate measured receipt before exposing the full-chain capability."""
+     record=json.loads(Path(path).read_text())
+     checksum=record.pop("checksum")
++    if record.get("schema") != QUALIFICATION_SCHEMA:
++        raise ValueError("qualification requires current batched public-runner evidence")
+     if checksum!=digest(record) or record["sources"]!=source_snapshot() or record["bridge_signature"]!=bridge.signature:
+         raise ValueError("stale/mismatched q20 HMC qualification")
+     if record["jit_compile"]!=config["jit_compile"] or record["cpu_reference"]!=config["cpu_reference"]:
+         raise ValueError("qualification backend differs")
+     if set(record["betas"]) != {str(float(b)) for b in config["training"]["betas"][1:]}:
+         raise ValueError("qualification temperature inventory differs")
+-    if not record["passed"] or any(not v["passed"] or v["traces"]!=1 or not v.get("public_serial_runner_passed") for v in record["betas"].values()):
++    shape = [config["posterior"]["chains"], bridge.parameter_dim]
++    if not record["passed"] or any(not v["passed"] or v["traces"]!=1
++            or not v.get("public_batched_runner_passed") or v.get("public_traces")!=1
++            or v.get("public_state_shape") != shape for v in record["betas"].values()):
+         raise ValueError("qualification failed")
+     if not config["cpu_reference"] and any("GPU" not in v["endpoint_device"] for v in record["betas"].values()):
+         raise ValueError("serious qualification requires actual GPU endpoints")
+diff --git a/bayesfilter/inference/q20_master_stages.py b/bayesfilter/inference/q20_master_stages.py
+index c7a4220b..0301ccd2 100644
+--- a/bayesfilter/inference/q20_master_stages.py
++++ b/bayesfilter/inference/q20_master_stages.py
+@@ -136,7 +136,7 @@ def price_complete(config, bridge, root, memory, *, reservation_limit_seconds=No
+     from bayesfilter.inference.neutra_training_protocol import export_weighted_transport
+     from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact
+     from bayesfilter.inference.hmc_kernel_tuning import HMCKernelTuningConfig, prepare_operational_windowed_mass_handoff
+-    from bayesfilter.inference.hmc import FullChainHMCConfig, build_independent_chain_tfp_hmc_runner
++    from bayesfilter.inference.hmc import FullChainHMCConfig, ReusableFullChainHMCRunner
+     from bayesfilter.inference.q20_hmc_qualification import check_full_chain_health
+     from bayesfilter.inference.q20_production_config import scoped_seed
+     root.mkdir(parents=True, exist_ok=False)
+@@ -183,7 +183,7 @@ def price_complete(config, bridge, root, memory, *, reservation_limit_seconds=No
+         for name,target,state in targets:
+             for length in sorted({min(config["tuning"]["l_grid"]),max(config["tuning"]["l_grid"])}):
+                 count = config["execution"]["pricing_transitions"]
+-                runner=build_independent_chain_tfp_hmc_runner(target,state,FullChainHMCConfig(
++                runner=ReusableFullChainHMCRunner(target,state,FullChainHMCConfig(
+                     num_results=count,num_burnin_steps=0,step_size=config["tuning"]["initial_epsilon"],
+                     num_leapfrog_steps=length,use_xla=config["jit_compile"],
+                     seed=scoped_seed(config,"price-hmc",beta,name,length),target_scope=adapter.target_scope,
+@@ -191,13 +191,13 @@ def price_complete(config, bridge, root, memory, *, reservation_limit_seconds=No
+                 times=[]
+                 for index in range(config["budget"]["pricing_updates"]):
+                     begin=time.monotonic()
+-                    result=runner.run(current_state=state,root_seed=scoped_seed(config,"price-hmc",beta,name,length,index),mode="serial")
++                    result=runner.run(current_state=state,seed=scoped_seed(config,"price-hmc",beta,name,length,index))
+                     result.samples.numpy()
+                     times.append(time.monotonic()-begin)
+                     check_full_chain_health(result)
+                 rows.append({"beta":beta,"kind":name,"L":length,"first_seconds":times[0],
+                     "steady_seconds":max(times[1:] or times)/count,"transitions_per_chain":count,
+-                    "runner":"public_independent_chain_serial_with_proposal_telemetry"})
++                    "runner":"public_batched_chain_with_proposal_telemetry"})
+                 write_json(root / f"hmc-{beta}-{name}-{length}.json",rows[-1])
+         # Last target is the widest actual transport; use its measured primitive
+         # inside the real full replica-exchange graph for an initial cost quote.
+diff --git a/bayesfilter/inference/q20_production_hmc.py b/bayesfilter/inference/q20_production_hmc.py
+index 245c3806..ebbc17e0 100644
+--- a/bayesfilter/inference/q20_production_hmc.py
++++ b/bayesfilter/inference/q20_production_hmc.py
+@@ -87,7 +87,7 @@ def tuning_configs(config, label):
+         num_warmup_steps=h["startup"], seed=scoped_seed(config, "tuning", label),
+         acceptance_policy=HMCAcceptancePolicy(target=h["target_acceptance"],
+             practical_region=tuple(h["practical_region"]), repair_region=tuple(h["repair_region"])),
+-        target_status_trace_policy="per_chain_step", use_xla=config["jit_compile"],
++        target_status_trace_policy="per_chain_step", use_xla=config["jit_compile"], chain_mode="batched",
+         chunk_max_results=h["chunk_max_results"],
+         non_xla_reason="explicit tiny CPU reference smoke" if not config["jit_compile"] else None)
+     search = HMCControllerConfig(primary_l_grid=tuple(h["l_grid"]), initial_epsilon=h["initial_epsilon"],
+diff --git a/docs/plans/bayesfilter-ssl-lstm-q20-production-parameter-ledger-2026-09-15.md b/docs/plans/bayesfilter-ssl-lstm-q20-production-parameter-ledger-2026-09-15.md
+index c5f2f260..047fb13d 100644
+--- a/docs/plans/bayesfilter-ssl-lstm-q20-production-parameter-ledger-2026-09-15.md
++++ b/docs/plans/bayesfilter-ssl-lstm-q20-production-parameter-ledger-2026-09-15.md
+@@ -21,6 +21,13 @@ budget. An executable production configuration is obtained by completing the
+ selection rules and the cost calculation here, preserving the resulting values,
+ and exercising the actual training-to-posterior consumer.
+ 
++September 16 execution amendment: the
++[batched execution repair and cost clarification](bayesfilter-ssl-lstm-q20-batched-execution-repair-2026-09-16.md)
++connects q20 to the public batched four-chain runner. The training counts and
++fine validation-loss resolution below remain uncalibrated hypotheses; the
++449-hour reservation is not a mathematical requirement. The actual filter
++placement includes process noise, so its dimension is 80, as corrected below.
++
+ ## Reading the tables
+ 
+ - **Fixed:** defines the existing scientific target or an applicable owner policy.
+@@ -83,7 +90,7 @@ Source: `bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py:32,85,94,117`,
+ | Runtime arrays and derivatives | TensorFlow/TFP; float64 for this q20 UKF target | Inherited target-specific protocol. The LEDH TF32 direction does not make this UKF target float32. |
+ | Training and sampling device | One GPU visible per worker; memory growth before import/initialization; XLA on | Fixed owner policy. Record GPU UUID, actual device placement, versions and allocator peak. No silent CPU, non-XLA or scalar-training fallback. |
+ | TF32 flag | `True`, recorded explicitly, as in the audited launcher | Inherited launcher setting; it is not a claim that float64 operations use TF32. Any float32 subpath needs separate scrutiny. |
+-| UKF rule | Unscented: alpha=1, beta=2, kappa=0 | Fixed current target. At dimension 60, lambda=0, 121 points, center mean weight 0, center covariance weight 2, other weights `1/120`. |
++| UKF rule | Unscented: alpha=1, beta=2, kappa=0 | Fixed current target. The actual placement dimension is 80: state 60 plus process innovation 20. Lambda=0, 161 points, center mean weight 0, center covariance weight 2, other weights `1/160`. The earlier 60-dimensional calculation described the state rather than the executed placement. |
+ | Square-root backend | `tensorflow_eigh_strict` as the initial target-specific route | Earlier feasibility/parity evidence exists. The factor-cached route is an optional separately checked engineering arm, using identical maps, starts and scopes for a causal comparison. |
+ | Explicit placement floor / added jitter | 0 / 0 at the public UKF call | Fixed current inputs. **This does not mean the implementation applies no shift:** the strict internal rule below remains active. |
+ | Innovation floor | `1e-12` | Inherited finite-program choice. Monitor actual innovation eigenvalues and floor applications; changing it changes the scope. |
+@@ -91,8 +98,8 @@ Source: `bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py:32,85,94,117`,
+ | Strict roundoff scale rho | `rho=max(requested_floor,1e-14)` | Current strict classifier. Valid covariance gets `C+rho*I`; a permitted near-SPD repair gets `C+2*rho*I`. This belongs to the finite target/value-score audit. |
+ | Permitted near-SPD repair | Minimum eigenvalue at least `-1e-14`, maximum absolute covariance entry at most `1e8` | Inherited numerical rule, not statistically calibrated. Exercise both sides of each boundary; no loosening to avoid a failed proposal. |
+ | Invalid target sentinel | `-1e100` plus invalid status | Existing implementation sentinel. It is not a legitimate finite posterior value; consumers must reject invalid status even though the sentinel is finite. |
+-| Eigensolver refinement | 8 sweeps | Existing measured repair: four failed a recorded residual check, eight passed. For the 60-dimensional block this is `8*(60-1)=472` rotation rounds. Recheck under the new batch/device scope. |
+-| Eigensystem residual and orthogonality limit | `64*n*epsilon_machine`; at n=60, approximately `8.5265e-13` | Existing engineering bound; residual is relative to matrix norm. Failed checks produce invalid numerical evidence. It is not proof that eight sweeps work on every covariance. |
++| Eigensolver refinement | 8 sweeps | Existing measured repair: four failed a recorded residual check, eight passed. For the executed 80-dimensional placement this is `8*(80-1)=632` rotation rounds per refined solve. Recheck under the new batch/device scope. |
++| Eigensystem residual and orthogonality limit | `64*n*epsilon_machine`; at n=80, approximately `1.13687e-12` | Existing engineering bound; residual is relative to matrix norm. Failed checks produce invalid numerical evidence. It is not proof that eight sweeps work on every covariance. |
+ | Value replay parity | `abs(diff)<=1e-10+1e-12*abs(reference)` | Existing q20 saved-endpoint regression tolerance. Retain for same-scope replay; extend the bank, not the tolerance, when coverage is missing. |
+ | Score replay parity | `abs(diff)<=1e-9+1e-10*abs(reference)` | Same provenance and limitation. Cross-backend parity alone cannot prove both scores correct. |
+ | Finite-difference initial step | `h_i=epsilon_machine^(1/3)*max(4,abs(theta_i))`; multiplier approximately `6.05545e-6` | Derived central-difference starting scale under smoothness, not a universal optimum. Compare `h/4,h/2,h,2h,4h` on the same numerical branch. |
+@@ -102,7 +109,7 @@ Source: `bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py:32,85,94,117`,
+ | Stress points | Signed coordinate axes at latent radii 2, 4, 6, plus self/cross-map and independently obtained posterior points | Inherited `sqrt(d),2*sqrt(d),3*sqrt(d)` at d=4. Axis checks do not establish global tail coverage. |
+ | GPU memory budget | 4 GiB pilot allocation as an inherited resource hypothesis; confirm machine availability before execution | This is a post-call stop budget under memory growth, not a hard reservation or proof of current free memory. Measure peak for each batch and complete graph. |
+ | CPU sample-generation workers | Probe `1,2,4,8,...` up to available affinity/physical cores and the measured memory bound | Select the smallest count whose throughput is indistinguishable from the largest feasible rate in the bounded pilot. Record explicit W. Per-worker intra/inter/OMP threads start at 1 as an oversubscription-avoidance hypothesis. |
+-| HMC chain parallelism | The inspected shared candidate binding builds independent chains with `chain_mode='serial'` by default | Record this actual execution topology. Batch-native training does not imply batched HMC. Any batched q20 extension needs a supported binding and parity/cost checks before assuming a speedup. |
++| HMC chain parallelism | q20 explicitly selects `chain_mode='batched'`, one `[4,4]` state in a reusable compiled TFP runner | September 16 repair: qualification, pricing, tuning and retained draws use batched chains. Other consumers retain their declared compatibility modes. Preserve independent row randomness, per-chain telemetry and fresh qualification for changed source/seed topology; scalar and batched seeds are not pathwise interchangeable. |
+ 
+ Fixed numeric controls remain hypotheses about numerical adequacy even when
+ they define the current finite program. Boundary tests, same-value derivative
+diff --git a/tests/test_hmc_candidate_set_execution.py b/tests/test_hmc_candidate_set_execution.py
+index 8be0abbd..fb436d27 100644
+--- a/tests/test_hmc_candidate_set_execution.py
++++ b/tests/test_hmc_candidate_set_execution.py
+@@ -83,9 +83,9 @@ def make_binding(*, target=None, config=None, **overrides):
+     return bind_hmc_candidate_set_execution(**(values | overrides))
+ 
+ 
+-@pytest.fixture(scope="module")
+-def tuned():
+-    binding = make_binding()
++@pytest.fixture(scope="module", params=("serial", "batched"))
++def tuned(request):
++    binding = make_binding(config=execution_config(chain_mode=request.param))
+     config = HMCControllerConfig(primary_l_grid=(2, 3),
+         epsilon_by_l=((2, (1.1, 1.3, 1.5)), (3, (1.1, 1.3, 1.5))),
+         total_budget_units=40, repair_reserve_units=3)
+@@ -109,13 +109,19 @@ def test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence(tuned):
+         assert tuple(evidence["seed"]) not in seen_seeds
+         seen_seeds.add(tuple(evidence["seed"]))
+         samples = _tensor_from_payload(evidence["samples"])
+-        assert samples.shape == (136, 4, 2)
+-        assert receipt.draw_range == (8, 136)
++        work = next(w for w in result.work_items if w.work_item_id == evidence["work"]["work_item_id"])
++        expected = (binding.config.num_warmup_steps
++                    + binding.config.verification_num_results * work.evidence_multiplier)
++        assert samples.shape == (expected, 4, 2)
++        assert receipt.draw_range == (binding.config.num_warmup_steps, expected)
+     assert len(result.verified_candidate_ids) >= 2
+ 
+ 
+ def test_member_export_reload_and_continuation_match_direct_runner(tuned, tmp_path):
+-    from bayesfilter.inference.hmc import FullChainHMCConfig, build_independent_chain_tfp_hmc_runner
++    from bayesfilter.inference.hmc import (
++        FullChainHMCConfig, ReusableFullChainHMCRunner,
++        build_independent_chain_tfp_hmc_runner,
++    )
+     binding, result = tuned
+     candidate_id = result.verified_candidate_ids[-1]  # Explicit member, not a nominee.
+     runner = build_retained_bound_hmc_archive_runner_from_candidate_set_result(
+@@ -131,11 +137,15 @@ def test_member_export_reload_and_continuation_match_direct_runner(tuned, tmp_pa
+     assert not np.array_equal(first["final_active_state"], runner.initial_active_state)
+     assert payload["predecessor"]["content_hash"] == first["content_hash"]
+     assert not payload["warmup_draws_included"] and not payload["tuning_draws_included"]
+-    baseline = build_independent_chain_tfp_hmc_runner(binding._active_adapter, binding.initial_active_state,
++    factory = (ReusableFullChainHMCRunner if binding.config.chain_mode == "batched"
++               else build_independent_chain_tfp_hmc_runner)
++    baseline = factory(binding._active_adapter, binding.initial_active_state,
+         FullChainHMCConfig(num_results=12, num_burnin_steps=0, step_size=runner.candidate.epsilon,
+             num_leapfrog_steps=runner.candidate.leapfrog_steps, seed=(19,42), use_xla=False,
+             target_scope="candidate-bridge-test"))
+-    direct = baseline.run(current_state=first["final_active_state"], mode="serial")
++    direct = baseline.run(current_state=first["final_active_state"],
++                          **({} if binding.config.chain_mode == "batched" else {"mode": "serial"}))
++    assert payload["runtime"]["execution_mode"] == binding.config.chain_mode
+     np.testing.assert_array_equal(second["samples"], direct.samples)
+     with pytest.raises(ValueError, match="fresh"):
+         reloaded.run(num_results=8, seed=(19, 41), output_dir=tmp_path / "reuse", previous_archive=second["archive_path"])
+@@ -235,12 +245,53 @@ def test_dispatch_rejects_wrong_target_or_start_before_work(tuned):
+ 
+ 
+ @pytest.mark.parametrize("overrides", [dict(measurement_num_results=63), dict(verification_num_results=0),
+-    dict(num_warmup_steps=-1), dict(seed=(1,)), dict(non_xla_reason=None), dict(use_xla="true")])
++    dict(num_warmup_steps=-1), dict(seed=(1,)), dict(non_xla_reason=None), dict(use_xla="true"),
++    dict(chain_mode="unknown")])
+ def test_execution_config_rejects_invalid_evidence_budgets(overrides):
+     with pytest.raises((ValueError, TypeError)):
+         execution_config(**overrides)
+ 
+ 
++def test_batched_binding_xla_preserves_independent_rows_and_dynamic_inputs(monkeypatch):
++    from bayesfilter.inference import hmc
++    from bayesfilter.inference.hmc_candidate_set_tuning import HMCTuningCandidateRecord
++
++    def forbid_scalar_runners(*_args, **_kwargs):
++        raise AssertionError("batched execution must not dispatch scalar chains")
++
++    monkeypatch.setattr(hmc, "build_independent_chain_tfp_hmc_runner", forbid_scalar_runners)
++    binding = make_binding(config=execution_config(chain_mode="batched", use_xla=True,
++                                                   non_xla_reason=None))
++    candidate = HMCTuningCandidateRecord.create(binding.scope, leapfrog_steps=2,
++                                                epsilon=.2, creation_ordinal=1)
++    starts = tf.zeros_like(binding.initial_active_state)
++    first = binding._run(candidate, starts, 4, (31, 7))
++    replay = binding._run(candidate, starts, 4, (31, 7))
++    tf.debugging.assert_equal(first.samples, replay.samples)
++    momenta = first.trace["initial_momentum"][0]
++    assert bool(tf.reduce_all(tf.reduce_any(momenta[1:] != momenta[:1], axis=-1)))
++    shifted = tf.tensor_scatter_nd_update(starts, [[0, 0]], [1.])
++    independent = binding._run(candidate, shifted, 4, (31, 7))
++    tf.debugging.assert_equal(first.samples[:, 1:], independent.samples[:, 1:])
++    assert bool(tf.reduce_any(first.samples[:, 0] != independent.samples[:, 0]))
++    changed_seed = binding._run(candidate, starts, 4, (31, 8))
++    assert bool(tf.reduce_any(first.samples != changed_seed.samples))
++    child = HMCTuningCandidateRecord.create(binding.scope, leapfrog_steps=2,
++                                            epsilon=.3, creation_ordinal=2)
++    changed_step = binding._run(child, starts, 4, (31, 7))
++    assert bool(tf.reduce_any(first.samples != changed_step.samples))
++    assert binding.health_failures(starts, first.samples, first.trace) == ()
++    assert first.trace["proposed_target_status_telemetry"]["status_code"].shape == (4, 4)
++    assert len(binding._runners) == 1
++    compiled = next(iter(binding._runners.values()))._runner
++    concrete = compiled.get_concrete_function()
++    assert compiled.experimental_get_tracing_count() == 1
++    assert concrete.function_def.attr["_XlaMustCompile"].b
++    definition = concrete.graph.as_graph_def()
++    nodes = list(definition.node) + [node for fn in definition.library.function for node in fn.node_def]
++    assert not any("PyFunc" in node.op or "HostCompute" in node.op for node in nodes)
++
++
+ def test_finite_guard_and_candidate_health_wrappers_compose():
+     from bayesfilter.inference.hmc import FullChainHMCConfig, build_independent_chain_tfp_hmc_runner
+     binding = make_binding()
+diff --git a/tests/test_q20_master_integration.py b/tests/test_q20_master_integration.py
+index 11457d65..5fb3a349 100644
+--- a/tests/test_q20_master_integration.py
++++ b/tests/test_q20_master_integration.py
+@@ -32,11 +32,31 @@ def test_actual_tuning_member_and_posterior(tmp_path, method):
+     tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
+     assert tuned["verified_members"], tuned
+     member = tuned["verified_members"][sorted(tuned["verified_members"])[0]]
++    from bayesfilter.inference import load_hmc_candidate_retained_runner
++    loaded = load_hmc_candidate_retained_runner(member, adapter=bridge.fixed_beta_adapter(1.))
++    assert loaded._binding.config.chain_mode == "batched"
+     result = sample_member(config, bridge, tmp_path / "posterior", member_path=member, label=method)
+     assert result["private_retained_raw"] is not None
+     saved = json.loads((tmp_path / "posterior/result.json").read_text())
+     assert saved["summary"]["reference_agreement"] == "incomplete"
+     assert saved["production_qualified"] is False
++    checks = (*result["warmup_checks"], *result["retained_checks"])
++    assert checks
++    for check in checks:
++        health = check["health"]
++        assert health["single_batched_sample_chain_invocation"] is True
++        assert health["execution_topology"] == "batched"
++        runtime = health["runtime"]
++        assert runtime["checkpoint_reused"] is False
++        count = runtime["native"]["sample_chain_invocation_count"]
++        assert runtime["call_class"] == ("first_compile_plus_execute" if count == 1 else "repeated_execute")
++    if method == "identity":
++        replay = sample_member(config, bridge, tmp_path / "posterior-replay", member_path=member,
++                               label=method, resume_chunks=str(tmp_path / "posterior/chunks"))
++        tf.debugging.assert_equal(result["private_retained_raw"], replay["private_retained_raw"])
++        replay_checks = (*replay["warmup_checks"], *replay["retained_checks"])
++        assert replay_checks
++        assert all(check["health"]["runtime"]["checkpoint_reused"] for check in replay_checks)
+     fresh, _ = draw_start_bank(config, bridge, 1., "fresh-confirmation")
+     confirmation = reverify_member(config, bridge, tmp_path / "reverify",
+         parent_member_path=member, beta=1., label="confirm-"+method, initial_position=fresh)
+@@ -98,6 +118,8 @@ def test_actual_pricing_dispatch_and_finite_complete_forecast(tmp_path):
+     config["training"]["pricing_batches"]=[8]
+     config["reference"].update(banks=4,rungs=[64,128],batch_size=32,ess_min=1.,minimum_tail_rows=1)
+     priced=dispatch(config,bridge,tmp_path/"price",{"stage":"price"},{"mode":"tiny_cpu_reference"})
++    prices = [json.loads(path.read_text()) for path in (tmp_path/"price").glob("hmc-*.json")]
++    assert prices and all(row["runner"] == "public_batched_chain_with_proposal_telemetry" for row in prices)
+     priced["worker_initialization_seconds"]=1. # Harness startup fixture; numerical prices are measured.
+     quote=forecast_campaign(config,priced)
+     assert quote["minimum_complete_seconds"]>0
+diff --git a/tests/test_q20_qualification.py b/tests/test_q20_qualification.py
+index 7e9a1f4c..a2934978 100644
+--- a/tests/test_q20_qualification.py
++++ b/tests/test_q20_qualification.py
+@@ -8,7 +8,8 @@ from tests.test_q20_master_integration import protocol
+ from tests.test_q20_production_repair import four_dimensional_bridge
+ from tests.test_hmc_candidate_set_execution import GaussianTarget, make_binding, execution_config
+ from bayesfilter.inference.fixed_transport_hmc_mechanics_tf import build_fixed_transport_one_step_transition
+-from bayesfilter.inference.q20_hmc_qualification import qualify_bridge, attach_qualification
++from bayesfilter.inference.q20_hmc_qualification import qualify_bridge, attach_qualification, QUALIFICATION_SCHEMA
++from bayesfilter.inference.q20_production_config import digest
+ 
+ 
+ def test_finite_large_energy_is_reporting_only_and_bad_status_is_veto():
+@@ -47,7 +48,7 @@ def test_new_starts_preserve_geometry_domain_and_round_trip():
+     tf.debugging.assert_near(round_trip(starts),starts,atol=1e-12)
+ 
+ 
+-def test_enclosing_xla_and_actual_serial_runner_qualification(tmp_path):
++def test_enclosing_xla_and_actual_batched_runner_qualification(tmp_path):
+     config=protocol()
+     config["jit_compile"]=True
+     config["training"]["betas"]=[0.,1.]
+@@ -66,8 +67,16 @@ def test_enclosing_xla_and_actual_serial_runner_qualification(tmp_path):
+     qualify_bridge(config,bridge,tmp_path/"qualification")
+     path=tmp_path/"qualification/result.json"
+     receipt=json.loads(path.read_text())
+-    assert receipt["betas"]["1.0"]["public_serial_runner_passed"]
++    assert receipt["schema"] == QUALIFICATION_SCHEMA
++    assert receipt["betas"]["1.0"]["public_batched_runner_passed"]
++    assert receipt["betas"]["1.0"]["public_state_shape"] == [4, 4]
++    assert receipt["betas"]["1.0"]["public_traces"] == 1
+     qualified=attach_qualification(bridge,path,config)
+     assert qualified.fixed_beta_adapter(1.).value_score_capability().full_chain_xla_diagnostic_ready
+     with pytest.raises(ValueError,match="unqualified"):
+         qualified.fixed_beta_adapter(.25)
++    receipt.pop("checksum")
++    receipt["schema"] = "bayesfilter.q20.bridge_hmc_qualification.v1"
++    path.write_text(json.dumps({**receipt, "checksum": digest(receipt)}))
++    with pytest.raises(ValueError, match="batched public-runner evidence"):
++        attach_qualification(bridge, path, config)

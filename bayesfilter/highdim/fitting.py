@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+import sys
 from types import MappingProxyType
 from typing import Mapping, Sequence
 
@@ -22,7 +23,7 @@ from bayesfilter.highdim.tt import FunctionalTT, TTCore
 from bayesfilter.highdim.validation import ComplexityBudget
 
 
-_FLOAT64_EPS = float(tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps)
+_FLOAT64_EPS = sys.float_info.epsilon
 _DEFAULT_COLUMN_SCALE_FLOOR = _FLOAT64_EPS
 _SCALE_FLOOR_RULE = (
     "max(sqrt(float64_eps) * max_weighted_column_norm, column_scale_floor)"
@@ -102,8 +103,8 @@ class FixedTTFitConfig:
             raise ValueError("stabilization_policy_id must be nonempty")
         object.__setattr__(self, "stabilization_policy_id", stabilization_policy_id)
         solver_backend = str(self.solver_backend)
-        if solver_backend != _SOLVER_BACKEND:
-            raise ValueError(f"solver_backend must be {_SOLVER_BACKEND!r}")
+        if solver_backend not in (_SOLVER_BACKEND, "tensorflow_native_complete_orthogonal_decomposition"):
+            raise ValueError("unsupported fixed TT solver_backend")
         object.__setattr__(self, "solver_backend", solver_backend)
 
 
@@ -230,7 +231,33 @@ class FixedTTFitter:
         branch_seed: int | str,
         measure_convention: MeasureConvention,
         initialization_rule: str = "supplied_initial_cores",
+        *,
+        jit_compile: bool = True,
     ) -> FixedTTFitResult:
+        """Run complete native ALS; materialize records only after execution.
+
+        The XLA-compatible COD solver preserves the original scaled augmented
+        least-squares objective and rank threshold. Result metadata records
+        the actual backend. ``fit_reference`` retains the old eager oracle.
+        """
+        from bayesfilter.highdim.fixed_tt_native_fit_tf import native_fixed_tt_fit
+
+        return native_fixed_tt_fit(
+            self, product_basis, samples, config, initial_cores, branch_seed,
+            measure_convention, initialization_rule, jit_compile=jit_compile,
+        )
+
+    def fit_reference(
+        self,
+        product_basis: ProductBasis,
+        samples: FixedTTFitSampleBatch,
+        config: FixedTTFitConfig,
+        initial_cores: Sequence[TTCore | tf.Tensor],
+        branch_seed: int | str,
+        measure_convention: MeasureConvention,
+        initialization_rule: str = "supplied_initial_cores",
+    ) -> FixedTTFitResult:
+        """Independent eager diagnostic oracle for the original ALS program."""
         if not isinstance(product_basis, ProductBasis):
             raise TypeError("product_basis must be a ProductBasis")
         if not isinstance(samples, FixedTTFitSampleBatch):
@@ -306,7 +333,7 @@ class FixedTTFitter:
             complexity_budget=_evaluation_budget_from_fit_config(config),
         )
         fit_residual = _weighted_rms_residual(
-            fitted_tt_without_identity.evaluate(samples.points),
+            fitted_tt_without_identity.evaluate(samples.points, jit_compile=False),
             samples.target_values,
             samples.weights,
         )
@@ -317,7 +344,7 @@ class FixedTTFitter:
         holdout_residual = None
         if status is HighDimStatus.OK and samples.holdout_points is not None:
             holdout_residual = _weighted_rms_residual(
-                fitted_tt_without_identity.evaluate(samples.holdout_points),
+                fitted_tt_without_identity.evaluate(samples.holdout_points, jit_compile=False),
                 samples.holdout_values,
                 samples.holdout_weights,
             )
@@ -776,30 +803,21 @@ def _core_matrices(
     points: tf.Tensor,
     cores: Sequence[TTCore],
 ) -> tuple[tf.Tensor, ...]:
-    matrices = []
-    for axis, core in enumerate(cores):
-        basis_values = product_basis.evaluate_axis(axis, points[:, axis])
-        matrices.append(tf.einsum("nl,alb->nab", basis_values, core.values))
-    return tuple(matrices)
+    from bayesfilter.highdim.tt_native_control_tf import core_matrices
+
+    return core_matrices(product_basis, points, cores)
 
 
 def _left_environments(matrices: Sequence[tf.Tensor]) -> tuple[tf.Tensor, ...]:
-    n_rows = tf.shape(matrices[0])[0]
-    environments = [tf.ones([n_rows, 1], dtype=tf.float64)]
-    for matrix in matrices[:-1]:
-        environments.append(tf.einsum("na,nab->nb", environments[-1], matrix))
-    return tuple(environments)
+    from bayesfilter.highdim.tt_native_control_tf import row_environments
+
+    return row_environments(matrices)
 
 
 def _right_environments(matrices: Sequence[tf.Tensor]) -> tuple[tf.Tensor, ...]:
-    n_rows = tf.shape(matrices[0])[0]
-    environments = [None] * len(matrices)
-    accumulator = tf.ones([n_rows, 1], dtype=tf.float64)
-    for axis in range(len(matrices) - 1, -1, -1):
-        environments[axis] = accumulator
-        if axis > 0:
-            accumulator = tf.einsum("nab,nb->na", matrices[axis], accumulator)
-    return tuple(environments)
+    from bayesfilter.highdim.tt_native_control_tf import row_environments
+
+    return row_environments(matrices, reverse=True)
 
 
 def _normal_equations(
@@ -978,8 +996,10 @@ def _solve_scaled_augmented_ridge(
     policy_id = str(stabilization_policy_id)
     if not policy_id.strip():
         raise ValueError("scaled augmented solve policy id must be nonempty")
-    if str(solver_backend) != _SOLVER_BACKEND:
-        raise ValueError(f"scaled augmented solve backend must be {_SOLVER_BACKEND!r}")
+    from bayesfilter.ops.qr_lstsq_tf import BACKEND, make_complete_orthogonal_lstsq
+    backend = str(solver_backend)
+    if backend not in (_SOLVER_BACKEND, BACKEND):
+        raise ValueError("unsupported scaled augmented solve backend")
 
     column_scales, raw_column_norms, scale_floor = _weighted_column_scales(
         design,
@@ -1006,7 +1026,9 @@ def _solve_scaled_augmented_ridge(
         and tf.reduce_all(tf.math.is_finite(augmented_rhs)).numpy()
     ):
         raise ValueError("scaled augmented solve nonfinite augmented system")
-    v_solution = _stable_overdetermined_lstsq(augmented_matrix, augmented_rhs)[:, 0]
+    solve = (_stable_overdetermined_lstsq if backend == _SOLVER_BACKEND else
+             make_complete_orthogonal_lstsq(augmented_matrix.shape[0], n_cols))
+    v_solution = solve(augmented_matrix, augmented_rhs)[:, 0]
     solution = v_solution / column_scales
     singular_values = tf.linalg.svd(augmented_matrix, compute_uv=False)
     condition_number = _condition_number_from_singular_values(singular_values)
@@ -1020,7 +1042,7 @@ def _solve_scaled_augmented_ridge(
         "stabilization_policy_id": policy_id,
         "stabilization_policy": {
             "stabilization_policy_id": policy_id,
-            "solver_backend": _SOLVER_BACKEND,
+            "solver_backend": backend,
             "solver_mode": _SOLVER_MODE,
             "objective_preserving_column_scaling": True,
             "column_scale_floor": floor_value,
@@ -1031,7 +1053,7 @@ def _solve_scaled_augmented_ridge(
             "ridge_coordinate_system": "u_coordinates",
             "ridge_metric_coordinate_system": "scaled_z_coordinates",
         },
-        "solver_backend": _SOLVER_BACKEND,
+        "solver_backend": backend,
         "solver_mode": _SOLVER_MODE,
         "objective_preserving_column_scaling": True,
         "scale_floor": float(scale_floor.numpy()),

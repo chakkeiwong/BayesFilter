@@ -565,22 +565,12 @@ def _formal(output_root: Path, args: argparse.Namespace) -> None:
     observations_all = sv.sv_simulate(model, 20, OBS_SEED)
     observations = tf.constant(observations_all[:RUN_HORIZON], tf.float64)
     adapter = sv.sv_adapter(model)
-    initial_raw, predictive_raw = sv.sv_gh_hint_factory(model, gh_points=9)
-    alpha_values = []
-
-    def _record_alpha(covariance):
-        minimum = tf.reduce_min(tf.linalg.eigvalsh(covariance[:N, :N]))
-        alpha_values.append(float((1.0 - minimum / sv.SIGMA**2).numpy()))
-
-    def initial_hint(observation):
-        mean, covariance = initial_raw(observation)
-        _record_alpha(covariance)
-        return mean, covariance
-
-    def predictive_hint(step, observation):
-        mean, covariance = predictive_raw(step, observation)
-        _record_alpha(covariance)
-        return mean, covariance
+    from bayesfilter.highdim.gaussian_moment_hints_tf import prepare_sv_gaussian_moment_hints
+    hints = prepare_sv_gaussian_moment_hints(model, observations, gh_points=9)
+    initial_hint, predictive_hint = hints.callbacks()
+    alpha_values = 1.0 - tf.reduce_min(
+        tf.linalg.eigvalsh(hints.filtered_covariances()), axis=-1,
+    ) / sv.SIGMA**2
 
     config = EngineConfig(
         basis_degree=DEGREE,
@@ -815,7 +805,7 @@ def _formal(output_root: Path, args: argparse.Namespace) -> None:
             "defensive_nu": nu,
             "student_t_mixture_weight": 0.5,
             "student_t_mixture_nu": nu,
-            "alpha_max_seen": max(alpha_values),
+            "alpha_max_seen": float(tf.reduce_max(alpha_values).numpy()),
         },
         "prefix_corrected_total": corrected_prefix_total,
         "per_step_diagnostics": diagnostics,

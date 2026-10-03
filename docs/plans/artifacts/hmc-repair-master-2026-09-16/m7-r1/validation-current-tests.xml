@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="80" time="26.755" timestamp="2026-09-17T03:45:38.581805+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_kernel_power" name="test_independent_energy_oracle_detects_reversed_ratio_at_weak_settings[0.3]" time="0.772"><failure message="ValueError: control is not implemented by this experiment engine">design = &lt;function design.&lt;locals&gt;.make at 0x76d54d0c4c20&gt;
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-403/test_independent_energy_oracle0')
+epsilon = 0.3
+
+    @pytest.mark.parametrize("epsilon", [.3, .6])
+    def test_independent_energy_oracle_detects_reversed_ratio_at_weak_settings(design, tmp_path, epsilon):
+        baseline = mechanics.run(design(step_size=epsilon), tmp_path/"baseline")
+        noop = mechanics.run(design(step_size=epsilon, control="noop"), tmp_path/"noop")
+&gt;       defective = mechanics.run(design(step_size=epsilon, control="wrong_energy"), tmp_path/"defective")
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/inference_validation/test_kernel_power.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/inference_validation/conftest.py:16: in make
+    return ValidationDesign(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:27: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ValidationDesign(design_id='unit-reference', engine='mechanics', scenario=ScenarioSpec(target='gaussian', route='froze...=128, posterior_cap=1024, mcse_tolerance=0.1, accuracy_tolerance=0.25, multiplicity=1, phase='development', options={})
+
+    def __post_init__(self):
+        if self.engine not in ENGINES or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*",self.design_id):
+            raise ValueError("invalid design identity/engine")
+        if self.device not in {"gpu", "cpu_reference"} or self.phase not in {"development", "confirmation"}:
+            raise ValueError("explicit supported device and phase required")
+        kernel_power = self.options.get("kernel_power", 1)
+        if (type(kernel_power) is not int or not 1 &lt;= kernel_power &lt; 2**31
+                or ("kernel_power" in self.options and self.engine != "invariance")):
+            raise ValueError("kernel_power is a positive int32 count for frozen invariance only")
+        if type(self.options.get("profile_execution", False)) is not bool:
+            raise ValueError("profile_execution must be a boolean")
+        for name in ("replications", "draws", "null_draws", "rank_draws", "leapfrog_steps",
+                     "member_l", "measurement_draws", "posterior_cap", "multiplicity"):
+            value = getattr(self, name)
+            if type(value) is not int or value &lt; 1:
+                raise ValueError(f"{name} must be a positive integer")
+        for name in ("budget_seconds", "step_size", "mcse_tolerance", "accuracy_tolerance"):
+            if not math.isfinite(getattr(self, name)) or getattr(self, name) &lt;= 0:
+                raise ValueError(f"{name} must be positive and finite")
+        if not 0 &lt; self.alpha &lt; 1 or not self.purpose or not self.numerical_provenance:
+            raise ValueError("test size, question and numerical provenance required")
+        if type(self.seed) is not int or self.seed &lt; 0:
+            raise ValueError("seed must be a nonnegative integer")
+        if not self.l_grid or len(set(self.l_grid)) != len(self.l_grid) or any(type(x) is not int or not 1 &lt;= x &lt;= 25 for x in self.l_grid):
+            raise ValueError("distinct L values in [1,25] required")
+        if self.measurement_draws &lt; 64:
+            raise ValueError("candidate evidence requires at least 64 draws")
+        if self.options.get("posterior_members", "all") not in {"all", "selected"}:
+            raise ValueError("posterior_members must be all or selected")
+        if self.options.get("member_rule", "declared_l_first") not in {"declared_l_first", "first_verified"}:
+            raise ValueError("unsupported predeclared member rule")
+        native=self.options.get("native_search",False)
+        if type(native) is not bool or (native and (self.scenario.route!="ordinary" or "search" in self.options)):
+            raise ValueError("native_search requires ordinary preparation without a search override")
+        if native and self.l_grid!=(3,5,9,13,18,25):
+            raise ValueError("native_search records the native broad L grid")
+        expansion = self.options.get("preparation_bound_expansion_steps", 0)
+        if type(expansion) is not int or not 0 &lt;= expansion &lt;= 5 or (expansion and self.scenario.route != "ordinary"):
+            raise ValueError("preparation_bound_expansion_steps requires ordinary preparation and an integer in [0,5]")
+        quantities = self.options.get("global_quantities", [])
+        if (not isinstance(quantities, list) or len(set(quantities)) != len(quantities)
+                or any(q != "left_mode_probability" for q in quantities)
+                or (quantities and self.scenario.target != "mixture")):
+            raise ValueError("global_quantities supports declared mixture left_mode_probability only")
+        count_options = {"warmup_chunk_results", "warmup_min_results", "warmup_check_window_results",
+                         "warmup_max_results", "retained_chunk_results", "retained_min_results", "retained_max_results"}
+        posterior = self.options.get("posterior_settings", {})
+        if not isinstance(posterior, dict) or set(posterior) - count_options:
+            raise ValueError("posterior_settings supports explicit count controls only")
+        if any(type(v) is not int or not 4 &lt;= v &lt;= 10000 for v in posterior.values()):
+            raise ValueError("posterior counts must be integers in [4,10000]")
+        fixed = self.options.get("fixed_comparator")
+        if fixed is not None:
+            if (self.engine != "stopping" or self.scenario.route not in {"ordinary", "prepared", "fixed_transport"}
+                    or not isinstance(fixed, dict) or set(fixed) != {"warmup_results", "retained_results"}
+                    or any(type(v) is not int or not 4 &lt;= v &lt;= 10000 for v in fixed.values())):
+                raise ValueError("fixed comparator requires numerical stopping and declared counts in [4,10000]")
+        if self.engine == "sbc":
+            if not get_target(self.scenario.target).generative:
+                raise ValueError("SBC requires a proper generative model")
+            if self.scenario.route not in {"ordinary", "prepared", "fixed_transport", "reference"}:
+                raise ValueError("SBC requires complete fits or an explicit reference control")
+            if self.scenario.start == "reference":
+                raise ValueError("generating truth/reference starts forbidden for full SBC")
+            if self.options.get("member_rule", "declared_l_first") == "declared_l_first" and self.member_l not in self.l_grid:
+                raise ValueError("SBC member group must be declared in the L grid")
+        if self.engine == "invariance" and self.scenario.route != "frozen":
+            raise ValueError("invariance requires a frozen kernel, not an adapting procedure")
+        if self.engine == "mechanics" and self.scenario.route != "frozen":
+            raise ValueError("mechanics covers a frozen numerical component only")
+        if self.engine == "power":
+            child = self.options.get("calibration_design")
+            if child is None:
+                if self.scenario.route != "reference" or self.scenario.target != "normal_conjugate":
+                    raise ValueError("primitive power calibration requires the normal_conjugate reference")
+            else:
+                if child.get("engine") == "power":
+                    raise ValueError("nested power engines are forbidden")
+                nested = ValidationDesign.from_payload(child)
+                if (nested.scenario.target,nested.scenario.route,nested.device) != (self.scenario.target,self.scenario.route,self.device):
+                    raise ValueError("power scenario must match the experiment it repeats")
+        if self.engine == "acceptance":
+            if self.scenario.route != "controller" or self.device != "cpu_reference":
+                raise ValueError("synthetic acceptance calibration requires the CPU diagnostic controller route")
+            mean = self.options.get("acceptance_mean", float("nan"))
+            concentration = self.options.get("acceptance_concentration", float("nan"))
+            persistence = self.options.get("acceptance_persistence", float("nan"))
+            if not 0 &lt; mean &lt; 1 or not math.isfinite(concentration) or concentration &lt;= 0 or not 0 &lt;= persistence &lt; 1:
+                raise ValueError("declare finite Beta mean/concentration and persistence in [0,1)")
+            rungs = self.options.get("evidence_rungs", [])
+            if (not rungs or rungs[0] != 1 or any(type(r) is not int or r &lt; 1 for r in rungs)
+                    or sorted(set(rungs)) != list(rungs)):
+                raise ValueError("declare strictly increasing evidence_rungs from one")
+        supported_controls = {
+            "mechanics": {"baseline", "noop", "wrong_score", "wrong_metric", "omit_jacobian"},
+            "invariance": {"baseline", "noop", "wrong_score", "omit_jacobian", "identity", "two_cycle", "wrong_energy", "duplicate_stream"},
+            "search": {"baseline", "noop", "drop_candidate", "cross_l_epsilon", "lost_chunk"},
+            "accuracy": {"baseline", "noop", "ignore_data", "omit_jacobian", "warmup_leak", "lost_chunk", "duplicate_stream"},
+            "stopping": {"baseline", "noop", "warmup_leak", "lost_chunk"},
+            "sbc": {"baseline", "noop", "ignore_data", "omit_jacobian"},
+            "power": {"baseline"},
+            "acceptance": {"baseline", "noop"},
+        }
+        if self.scenario.control not in supported_controls[self.engine]:
+&gt;           raise ValueError("control is not implemented by this experiment engine")
+E           ValueError: control is not implemented by this experiment engine
+
+bayesfilter/testing/inference_validation/designs.py:181: ValueError</failure></testcase><testcase classname="tests.inference_validation.test_kernel_power" name="test_independent_energy_oracle_detects_reversed_ratio_at_weak_settings[0.6]" time="0.664"><failure message="ValueError: control is not implemented by this experiment engine">design = &lt;function design.&lt;locals&gt;.make at 0x76d54494b740&gt;
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-403/test_independent_energy_oracle1')
+epsilon = 0.6
+
+    @pytest.mark.parametrize("epsilon", [.3, .6])
+    def test_independent_energy_oracle_detects_reversed_ratio_at_weak_settings(design, tmp_path, epsilon):
+        baseline = mechanics.run(design(step_size=epsilon), tmp_path/"baseline")
+        noop = mechanics.run(design(step_size=epsilon, control="noop"), tmp_path/"noop")
+&gt;       defective = mechanics.run(design(step_size=epsilon, control="wrong_energy"), tmp_path/"defective")
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/inference_validation/test_kernel_power.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/inference_validation/conftest.py:16: in make
+    return ValidationDesign(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;string&gt;:27: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ValidationDesign(design_id='unit-reference', engine='mechanics', scenario=ScenarioSpec(target='gaussian', route='froze...=128, posterior_cap=1024, mcse_tolerance=0.1, accuracy_tolerance=0.25, multiplicity=1, phase='development', options={})
+
+    def __post_init__(self):
+        if self.engine not in ENGINES or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*",self.design_id):
+            raise ValueError("invalid design identity/engine")
+        if self.device not in {"gpu", "cpu_reference"} or self.phase not in {"development", "confirmation"}:
+            raise ValueError("explicit supported device and phase required")
+        kernel_power = self.options.get("kernel_power", 1)
+        if (type(kernel_power) is not int or not 1 &lt;= kernel_power &lt; 2**31
+                or ("kernel_power" in self.options and self.engine != "invariance")):
+            raise ValueError("kernel_power is a positive int32 count for frozen invariance only")
+        if type(self.options.get("profile_execution", False)) is not bool:
+            raise ValueError("profile_execution must be a boolean")
+        for name in ("replications", "draws", "null_draws", "rank_draws", "leapfrog_steps",
+                     "member_l", "measurement_draws", "posterior_cap", "multiplicity"):
+            value = getattr(self, name)
+            if type(value) is not int or value &lt; 1:
+                raise ValueError(f"{name} must be a positive integer")
+        for name in ("budget_seconds", "step_size", "mcse_tolerance", "accuracy_tolerance"):
+            if not math.isfinite(getattr(self, name)) or getattr(self, name) &lt;= 0:
+                raise ValueError(f"{name} must be positive and finite")
+        if not 0 &lt; self.alpha &lt; 1 or not self.purpose or not self.numerical_provenance:
+            raise ValueError("test size, question and numerical provenance required")
+        if type(self.seed) is not int or self.seed &lt; 0:
+            raise ValueError("seed must be a nonnegative integer")
+        if not self.l_grid or len(set(self.l_grid)) != len(self.l_grid) or any(type(x) is not int or not 1 &lt;= x &lt;= 25 for x in self.l_grid):
+            raise ValueError("distinct L values in [1,25] required")
+        if self.measurement_draws &lt; 64:
+            raise ValueError("candidate evidence requires at least 64 draws")
+        if self.options.get("posterior_members", "all") not in {"all", "selected"}:
+            raise ValueError("posterior_members must be all or selected")
+        if self.options.get("member_rule", "declared_l_first") not in {"declared_l_first", "first_verified"}:
+            raise ValueError("unsupported predeclared member rule")
+        native=self.options.get("native_search",False)
+        if type(native) is not bool or (native and (self.scenario.route!="ordinary" or "search" in self.options)):
+            raise ValueError("native_search requires ordinary preparation without a search override")
+        if native and self.l_grid!=(3,5,9,13,18,25):
+            raise ValueError("native_search records the native broad L grid")
+        expansion = self.options.get("preparation_bound_expansion_steps", 0)
+        if type(expansion) is not int or not 0 &lt;= expansion &lt;= 5 or (expansion and self.scenario.route != "ordinary"):
+            raise ValueError("preparation_bound_expansion_steps requires ordinary preparation and an integer in [0,5]")
+        quantities = self.options.get("global_quantities", [])
+        if (not isinstance(quantities, list) or len(set(quantities)) != len(quantities)
+                or any(q != "left_mode_probability" for q in quantities)
+                or (quantities and self.scenario.target != "mixture")):
+            raise ValueError("global_quantities supports declared mixture left_mode_probability only")
+        count_options = {"warmup_chunk_results", "warmup_min_results", "warmup_check_window_results",
+                         "warmup_max_results", "retained_chunk_results", "retained_min_results", "retained_max_results"}
+        posterior = self.options.get("posterior_settings", {})
+        if not isinstance(posterior, dict) or set(posterior) - count_options:
+            raise ValueError("posterior_settings supports explicit count controls only")
+        if any(type(v) is not int or not 4 &lt;= v &lt;= 10000 for v in posterior.values()):
+            raise ValueError("posterior counts must be integers in [4,10000]")
+        fixed = self.options.get("fixed_comparator")
+        if fixed is not None:
+            if (self.engine != "stopping" or self.scenario.route not in {"ordinary", "prepared", "fixed_transport"}
+                    or not isinstance(fixed, dict) or set(fixed) != {"warmup_results", "retained_results"}
+                    or any(type(v) is not int or not 4 &lt;= v &lt;= 10000 for v in fixed.values())):
+                raise ValueError("fixed comparator requires numerical stopping and declared counts in [4,10000]")
+        if self.engine == "sbc":
+            if not get_target(self.scenario.target).generative:
+                raise ValueError("SBC requires a proper generative model")
+            if self.scenario.route not in {"ordinary", "prepared", "fixed_transport", "reference"}:
+                raise ValueError("SBC requires complete fits or an explicit reference control")
+            if self.scenario.start == "reference":
+                raise ValueError("generating truth/reference starts forbidden for full SBC")
+            if self.options.get("member_rule", "declared_l_first") == "declared_l_first" and self.member_l not in self.l_grid:
+                raise ValueError("SBC member group must be declared in the L grid")
+        if self.engine == "invariance" and self.scenario.route != "frozen":
+            raise ValueError("invariance requires a frozen kernel, not an adapting procedure")
+        if self.engine == "mechanics" and self.scenario.route != "frozen":
+            raise ValueError("mechanics covers a frozen numerical component only")
+        if self.engine == "power":
+            child = self.options.get("calibration_design")
+            if child is None:
+                if self.scenario.route != "reference" or self.scenario.target != "normal_conjugate":
+                    raise ValueError("primitive power calibration requires the normal_conjugate reference")
+            else:
+                if child.get("engine") == "power":
+                    raise ValueError("nested power engines are forbidden")
+                nested = ValidationDesign.from_payload(child)
+                if (nested.scenario.target,nested.scenario.route,nested.device) != (self.scenario.target,self.scenario.route,self.device):
+                    raise ValueError("power scenario must match the experiment it repeats")
+        if self.engine == "acceptance":
+            if self.scenario.route != "controller" or self.device != "cpu_reference":
+                raise ValueError("synthetic acceptance calibration requires the CPU diagnostic controller route")
+            mean = self.options.get("acceptance_mean", float("nan"))
+            concentration = self.options.get("acceptance_concentration", float("nan"))
+            persistence = self.options.get("acceptance_persistence", float("nan"))
+            if not 0 &lt; mean &lt; 1 or not math.isfinite(concentration) or concentration &lt;= 0 or not 0 &lt;= persistence &lt; 1:
+                raise ValueError("declare finite Beta mean/concentration and persistence in [0,1)")
+            rungs = self.options.get("evidence_rungs", [])
+            if (not rungs or rungs[0] != 1 or any(type(r) is not int or r &lt; 1 for r in rungs)
+                    or sorted(set(rungs)) != list(rungs)):
+                raise ValueError("declare strictly increasing evidence_rungs from one")
+        supported_controls = {
+            "mechanics": {"baseline", "noop", "wrong_score", "wrong_metric", "omit_jacobian"},
+            "invariance": {"baseline", "noop", "wrong_score", "omit_jacobian", "identity", "two_cycle", "wrong_energy", "duplicate_stream"},
+            "search": {"baseline", "noop", "drop_candidate", "cross_l_epsilon", "lost_chunk"},
+            "accuracy": {"baseline", "noop", "ignore_data", "omit_jacobian", "warmup_leak", "lost_chunk", "duplicate_stream"},
+            "stopping": {"baseline", "noop", "warmup_leak", "lost_chunk"},
+            "sbc": {"baseline", "noop", "ignore_data", "omit_jacobian"},
+            "power": {"baseline"},
+            "acceptance": {"baseline", "noop"},
+        }
+        if self.scenario.control not in supported_controls[self.engine]:
+&gt;           raise ValueError("control is not implemented by this experiment engine")
+E           ValueError: control is not implemented by this experiment engine
+
+bayesfilter/testing/inference_validation/designs.py:181: ValueError</failure></testcase><testcase classname="tests.inference_validation.test_kernel_power" name="test_power_composes_complete_transitions_with_the_recorded_substep_seeds[baseline]" time="0.202" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_power_composes_complete_transitions_with_the_recorded_substep_seeds[wrong_energy]" time="0.195" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_power_composes_complete_transitions_with_the_recorded_substep_seeds[identity]" time="0.033" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_power_composes_complete_transitions_with_the_recorded_substep_seeds[two_cycle]" time="0.039" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_power_one_preserves_the_original_invariance_experiment" time="0.579" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_even_power_preserves_the_stationary_but_immobile_cycle_counterexample" time="0.202" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_invalid_kernel_powers_fail_at_design_time[0]" time="0.001" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_invalid_kernel_powers_fail_at_design_time[-1]" time="0.000" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_invalid_kernel_powers_fail_at_design_time[True]" time="0.000" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_invalid_kernel_powers_fail_at_design_time[1.5]" time="0.000" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_invalid_kernel_powers_fail_at_design_time[2147483648]" time="0.000" /><testcase classname="tests.inference_validation.test_kernel_power" name="test_kernel_power_cannot_silently_thin_a_posterior_pipeline" time="0.000" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[gaussian]" time="0.329" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[rotated_gaussian]" time="0.082" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[banana]" time="0.052" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[funnel]" time="0.067" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[student_t]" time="0.038" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[cauchy]" time="0.036" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[mixture]" time="0.076" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[gamma]" time="0.038" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[beta]" time="0.051" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[dirichlet]" time="0.049" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[normal_conjugate]" time="0.022" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[beta_binomial]" time="0.051" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_every_target_density_score_against_independent_reference[lgssm_location]" time="0.022" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_likelihood_including_kalman_recursion[normal_conjugate-data0]" time="0.051" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_likelihood_including_kalman_recursion[beta_binomial-data1]" time="0.052" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_likelihood_including_kalman_recursion[lgssm_location-data2]" time="0.086" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_coordinate_roundtrip_and_model_dimension[gamma]" time="0.002" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_coordinate_roundtrip_and_model_dimension[beta]" time="0.001" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_coordinate_roundtrip_and_model_dimension[dirichlet]" time="0.003" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_coordinate_roundtrip_and_model_dimension[beta_binomial]" time="0.001" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_dirichlet_reference_contains_full_jacobian" time="0.001" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_invalid_laws_are_rejected[gamma-params0]" time="0.000" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_invalid_laws_are_rejected[lgssm_location-params1]" time="0.000" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_invalid_laws_are_rejected[dirichlet-params2]" time="0.000" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_invalid_laws_are_rejected[student_t-params3]" time="0.000" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_invalid_laws_are_rejected[normal_conjugate-params4]" time="0.000" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_target_defects_activate_and_are_detected[gaussian-wrong_score]" time="0.235" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_target_defects_activate_and_are_detected[gamma-omit_jacobian]" time="0.028" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_target_defects_activate_and_are_detected[beta-omit_jacobian]" time="0.033" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_target_defects_activate_and_are_detected[dirichlet-omit_jacobian]" time="0.030" /><testcase classname="tests.inference_validation.test_references_and_mechanics" name="test_noop_is_numerically_identical" time="0.669" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_controller_oracle_detects_lost_members_pairs_and_work" time="0.033" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_tensor_checksum_shape_and_immutable_observations" time="0.008" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_runtime_rhat_against_independent_rank_reference[stationary]" time="0.209" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_runtime_rhat_against_independent_rank_reference[transient]" time="0.033" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_runtime_rhat_against_independent_rank_reference[constant]" time="0.032" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_runtime_rhat_against_independent_rank_reference[missed_mode]" time="0.033" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_sbc_failures_stay_in_denominator" time="1.049" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_reference_sbc_reports_likelihood_and_independent_datasets" time="9.219" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_identity_invariance_is_not_mixing" time="0.200" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_gandy_scott_left_arm_order" time="0.000" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_energy_mutation_is_detected_and_recurrence_control_is_retained" time="0.525" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_power_runs_declared_experiment_instead_of_fake_sampler_results" time="1.126" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_external_references_require_identity_and_uncertainty" time="0.002" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_accuracy_control_response_classifies_reference_failure" time="0.000" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_partial_diagnostic_arrays_do_not_report_completion" time="0.001" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_empty_posterior_does_not_satisfy_output_or_interval_coverage" time="0.001" /><testcase classname="tests.inference_validation.test_engine_contracts" name="test_one_replication_without_a_candidate_stays_visible" time="0.001" /><testcase classname="tests.inference_validation.test_execution" name="test_cli_workers_resume_without_duplicate_trials_and_detect_corruption" time="7.847" /><testcase classname="tests.inference_validation.test_execution" name="test_interrupted_coordinator_reservation_is_not_forgotten" time="0.132" /><testcase classname="tests.inference_validation.test_execution" name="test_old_saved_empty_posteriors_do_not_count_as_complete_assessment" time="0.000" /><testcase classname="tests.inference_validation.test_execution" name="test_opt_in_host_profile_survives_success_and_failure[False]" time="0.009" /><testcase classname="tests.inference_validation.test_execution" name="test_opt_in_host_profile_survives_success_and_failure[True]" time="0.007" /><testcase classname="tests.inference_validation.test_definitions" name="test_design_round_trip_and_seed_separation" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_no_silent_route_or_mutation_fallback[invariance-gaussian-ordinary-baseline]" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_no_silent_route_or_mutation_fallback[sbc-funnel-ordinary-baseline]" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_no_silent_route_or_mutation_fallback[mechanics-gaussian-frozen-omit_jacobian]" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_no_silent_route_or_mutation_fallback[stopping-gamma-reference-baseline]" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_no_silent_route_or_mutation_fallback[mechanics-gaussian-ordinary-baseline]" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_no_silent_route_or_mutation_fallback[search-gaussian-controller-wrong_energy]" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_no_silent_route_or_mutation_fallback[invariance-gamma-frozen-two_cycle]" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_no_silent_route_or_mutation_fallback[power-gaussian-reference-baseline]" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_sbc_rejects_reference_start_and_coarse_null" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_suite_keeps_missing_consumer_and_enforces_profile" time="0.001" /><testcase classname="tests.inference_validation.test_definitions" name="test_planning_accepts_simplex_model_quantities" time="0.000" /><testcase classname="tests.inference_validation.test_definitions" name="test_planning_import_is_framework_free" time="0.073" /></testsuite></testsuites>

@@ -18,15 +18,70 @@ from bayesfilter.hardbound import model_tf
 _LOG2PI = tf.constant(1.8378770664093453, DTYPE)
 
 # Priors (master program Sec. 2, frozen).
+#
+# For the identification audit, displaced +3 standard deviations from truth.
+# Truth-centred values retained for reference:
+#   PRIOR_THETA_MEAN_TRUTH = [0.02, -0.01, 0.005, 0.015, -0.008, 0.004]
+#   PRIOR_LOG_NOISE_MEAN_TRUTH = [-7.600902459542082] * 3
+#
+# Under approximate Gaussian conjugacy, posterior_mean ≈
+#   (var_ratio * truth + prior_mean) / (1 + var_ratio),
+# so posterior shift ≈ prior_displacement / var_ratio.  At var_ratio 55-105
+# for theta0-5, the shift is <3%; at var_ratio 2.0 for theta8, shift ~50%.
 PRIOR_THETA_MEAN = tf.constant(
-    [0.02, -0.01, 0.005, 0.015, -0.008, 0.004], DTYPE)
+    [0.02 + 3*0.02, -0.01 + 3*0.02, 0.005 + 3*0.02,
+     0.015 + 3*0.02, -0.008 + 3*0.02, 0.004 + 3*0.02], DTYPE)
 PRIOR_THETA_SD = tf.constant([0.02] * 6, DTYPE)
-PRIOR_LOG_NOISE_MEAN = tf.constant([-7.600902459542082] * 3, DTYPE)  # log 5e-4
+PRIOR_LOG_NOISE_MEAN = tf.constant(
+    [(-7.600902459542082 + 3*0.5)] * 3, DTYPE)  # log 5e-4 + 3 sd
 PRIOR_LOG_NOISE_SD = tf.constant([0.5] * 3, DTYPE)
+
+# Prior location/scale stacked in the 9-dim chart order (6 theta_bar, then 3
+# log noise), for the non-centred parameter chart below.
+PRIOR_PARAM_MEAN = tf.concat([PRIOR_THETA_MEAN, PRIOR_LOG_NOISE_MEAN], axis=0)
+PRIOR_PARAM_SD = tf.concat([PRIOR_THETA_SD, PRIOR_LOG_NOISE_SD], axis=0)
+
+
+def theta_from_raw(theta_raw):
+    """Map the non-centred parameter chart to the natural chart.
+
+    ``theta = prior_mean + prior_sd * theta_raw``, so ``theta_raw`` carries a
+    standard normal prior and O(1) posterior scale. The Jacobian
+    ``prod(prior_sd)`` is constant, hence only an additive constant in the log
+    density, which MCMC ignores; ``joint_log_prob_raw_batched`` therefore omits
+    it and still targets the same posterior.
+
+    Motivation (master program Amendment A2): in the natural chart the
+    per-coordinate posterior sd spans 1.9e4 over the 337-dim state, with
+    theta_bar levels near 3e-5 against latent shock raws near 5.8e-1. Scaling
+    by the prior sd removes the parameter-block contribution analytically.
+    """
+    theta_raw = tf.convert_to_tensor(theta_raw, DTYPE)
+    return PRIOR_PARAM_MEAN + PRIOR_PARAM_SD * theta_raw
+
+
+def raw_from_theta(theta):
+    """Inverse of :func:`theta_from_raw`."""
+    theta = tf.convert_to_tensor(theta, DTYPE)
+    return (theta - PRIOR_PARAM_MEAN) / PRIOR_PARAM_SD
 
 
 def _std_normal_logpdf_sum(x):
     return tf.reduce_sum(-0.5 * x * x - 0.5 * _LOG2PI)
+
+
+def _affine_state_path(center, phi, initial, innovations):
+    """Time-major affine recurrence, with dense tensor state and native loop."""
+    horizon = tf.shape(innovations)[0]
+    history = tf.TensorArray(initial.dtype, size=horizon, element_shape=initial.shape)
+    def step(index, state, history):
+        state = center + phi * (state - center) + innovations[index]
+        return index + 1, state, history.write(index, state)
+    _, _, history = tf.while_loop(
+        lambda index, *_: index < horizon, step,
+        (tf.constant(0), initial, history), maximum_iterations=horizon,
+    )
+    return history.stack()
 
 
 def states_from_raws(theta_bar, x0_raw, eta_raw,
@@ -39,16 +94,7 @@ def states_from_raws(theta_bar, x0_raw, eta_raw,
     x0 = theta_ext + p0_sd * x0_raw
     etas = q_sd * eta_raw  # [T, 8]
 
-    # Unrolled recursion (T is small and static). tf.scan is avoided
-    # deliberately: its gradient under NUTS's graph tracing produced
-    # IndexedSlices that TFP's kernel bootstrap cannot handle.
-    horizon = eta_raw.shape[0]
-    states = []
-    x = x0
-    for t in range(horizon):
-        x = theta_ext + phi * (x - theta_ext) + etas[t]
-        states.append(x)
-    return tf.stack(states, axis=0)  # [T, 8]
+    return _affine_state_path(theta_ext, phi, x0, etas)
 
 
 def joint_log_prob(y, theta, x0_raw, eta_raw, target_id,
@@ -97,12 +143,7 @@ GATE = GateModel()
 
 def gate_states_from_raws(mu, raws, gm: GateModel = GATE):
     x0 = mu + gm.p0_sd * raws[0]
-    xs = []
-    x = x0
-    for t in range(gm.horizon):
-        x = mu + gm.phi * (x - mu) + gm.q_sd * raws[1 + t]
-        xs.append(x)
-    return tf.stack(xs)
+    return _affine_state_path(mu, gm.phi, x0, gm.q_sd * raws[1:1 + gm.horizon])
 
 
 def gate_observation_mean(states, gm: GateModel = GATE):
@@ -164,12 +205,9 @@ def joint_log_prob_batched(y, theta, x0_raw, eta_raw, target_id,
         [theta_bar, tf.zeros_like(theta_bar[:, :2])], axis=-1)  # [C, 8]
     x = theta_ext + p0_sd * x0_raw
     etas = q_sd * eta_raw  # [C, T, 8]
-    horizon = eta_raw.shape[1]
-    states = []
-    for t in range(horizon):
-        x = theta_ext + phi * (x - theta_ext) + etas[:, t]
-        states.append(x)
-    states = tf.stack(states, axis=1)  # [C, T, 8]
+    states = tf.transpose(_affine_state_path(
+        theta_ext, phi, x, tf.transpose(etas, [1, 0, 2]),
+    ), [1, 0, 2])
 
     mean = model_tf.observation_mean(states, target_id, fix)  # [C, T, 13]
     scales = model_tf.noise_scales_vector(noise_scales)  # [C, 13]
@@ -178,6 +216,18 @@ def joint_log_prob_batched(y, theta, x0_raw, eta_raw, target_id,
         -0.5 * z * z - tf.math.log(scales[:, None, :]) - 0.5 * _LOG2PI,
         axis=[-2, -1])
     return lp
+
+
+def joint_log_prob_raw_batched(y, theta_raw, x0_raw, eta_raw, target_id,
+                               fix: model_tf.HardBoundFixture = model_tf.FIXTURE):
+    """``joint_log_prob_batched`` in the non-centred parameter chart.
+
+    Same posterior as :func:`joint_log_prob_batched` up to the constant
+    Jacobian of :func:`theta_from_raw`, so draws map back exactly via
+    ``theta_from_raw(theta_raw)``.
+    """
+    return joint_log_prob_batched(y, theta_from_raw(theta_raw), x0_raw,
+                                  eta_raw, target_id, fix)
 
 
 def gate_joint_log_prob_batched(y, params, raws, gm: GateModel = GATE):
@@ -196,9 +246,14 @@ def gate_joint_log_prob_batched(y, params, raws, gm: GateModel = GATE):
            - 0.5 * _LOG2PI)
     x = mu + gm.p0_sd * raws[:, 0]
     y = tf.convert_to_tensor(y, DTYPE)
-    for t in range(gm.horizon):
+    def step(t, x, lp):
         x = mu + gm.phi * (x - mu) + gm.q_sd * raws[:, 1 + t]
         mean = tf.maximum(tf.constant(gm.lower_bound, DTYPE), x)
         z = (y[t] - mean) / sd
         lp += -0.5 * z * z - log_sd - 0.5 * _LOG2PI
+        return t + 1, x, lp
+    _, _, lp = tf.while_loop(
+        lambda t, *_: t < gm.horizon, step,
+        (tf.constant(0), x, lp), maximum_iterations=gm.horizon,
+    )
     return lp

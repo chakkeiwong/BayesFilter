@@ -39,6 +39,7 @@ build-tf221/
 # Generated JSON outputs. Only compact artifacts whose names identify a
 # promotion, claim, verification, or reproducibility role are re-included.
 *.json
+!scripts/kalman_ukf_runtime_loop_exceptions.json
 !docs/benchmarks/*.json
 !docs/benchmarks/configs/
 !docs/benchmarks/configs/**/*.json
@@ -46,6 +47,9 @@ build-tf221/
 !docs/benchmarks/artifacts/**/
 !docs/plans/artifacts/
 !docs/plans/artifacts/**/
+
+# Executable NeuTra posterior route policy, required by the discovery guard.
+!docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/c0/route_ledger.json
 
 # Claim-bearing and promotion-supporting experiment artifacts. Intermediate
 # preparations, traces, mutable progress, checkpoints, and private payloads
@@ -225,6 +229,20 @@ docs/benchmarks/artifacts/**/stderr
 # Transient campaign locks are runtime state, never evidence. Keep dependency
 # lockfiles visible.
 docs/plans/artifacts/**/.material-run.lock
+
+# Bounded static HMC migration audit output is reproducible local diagnostics.
+docs/plans/artifacts/ordinary-hmc-migration-debt-2026-09-03/
+
+# Per-worker summaries and test/review render sidecars are generated execution
+# output. The campaign-level summaries, manifests, and result receipts remain
+# visible through the allow-list rules above.
+docs/plans/artifacts/**/*worker_summary.json
+docs/plans/artifacts/**/*-junit.xml
+docs/plans/artifacts/**/note.tex
+
+# This malformed retry directory was emitted by an old wrapper with a literal
+# closing brace in its name; retain no generated copy in Git.
+docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-09-02/phase9a-full-replay[}]/
 
 # Compact receipts that support the current q=20 and PP-UKF decisions remain
 # visible; checkpoints, private payloads, and per-arm traces stay ignored by
@@ -562,6 +580,7 @@ docs/plans/INDEX-FULL.md
 !docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/replay-tieout.json
 !docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/resource-admission.json
 
+!scripts/filter_gradient_runtime_policy.json
 # Downloaded papers are local literature inputs, not repository evidence.
 docs/papers/
 
@@ -581,3 +600,18 @@ results/**/outputs/
 results/**/runs/
 results/**/checkpoints/
 results/**/tmp/
+
+# Authored KDM mathematical specification and compact receipts cited by the
+# September 9 continuation. Downloaded papers and raw campaign rows stay local.
+!docs/papers/
+docs/papers/*
+!docs/papers/ledh_younis_kdm_score/
+docs/papers/ledh_younis_kdm_score/*
+!docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex
+!docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.bib
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/result.json
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/manifest.json
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/*_result.json
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/*_selection.json

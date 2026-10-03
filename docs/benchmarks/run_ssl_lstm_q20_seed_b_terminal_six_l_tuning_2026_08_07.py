@@ -80,6 +80,7 @@ def _shifted_seed(seed: tuple[int, int], offset: int) -> tuple[int, int]:
 
 def _config_for_worker(*, leapfrog: int, candidate_index: int) -> Any:
     from bayesfilter.inference.fixed_transport_hmc_tuning import (
+        FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
         FixedTransportHMCKernelTuningConfig,
     )
 
@@ -92,6 +93,8 @@ def _config_for_worker(*, leapfrog: int, candidate_index: int) -> Any:
         target_accept_prob=0.70,
         acceptance_band=(0.65, 0.75),
         repair_band=(0.55, 0.85),
+        selection_policy="acceptance_target_distance",
+        selection_replications=1,
         budget_schedule=(8, 16, 32),
         tune_num_results=8,
         screen_num_results=16,
@@ -105,6 +108,7 @@ def _config_for_worker(*, leapfrog: int, candidate_index: int) -> Any:
         ),
         target_status_trace_policy="per_chain_step",
         target_scope=TARGET_SCOPE,
+        tuning_policy=FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
         use_xla=True,
         output_filename="tuning-result.json",
     )

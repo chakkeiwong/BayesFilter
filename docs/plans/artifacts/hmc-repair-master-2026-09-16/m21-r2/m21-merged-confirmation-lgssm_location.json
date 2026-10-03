@@ -1,0 +1,90 @@
+{
+  "designs": [
+    {
+      "accuracy_tolerance": 0.25,
+      "alpha": 0.05,
+      "budget_seconds": 3000,
+      "design_id": "m21-merged-confirmation-lgssm_location",
+      "device": "cpu_reference",
+      "draws": 500,
+      "engine": "stopping",
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "leapfrog_steps": 5,
+      "mcse_tolerance": 0.025,
+      "measurement_draws": 128,
+      "member_l": 3,
+      "multiplicity": 1,
+      "null_draws": 1999,
+      "numerical_provenance": "docs/plans/bayesfilter-hmc-merged-source-continuation-2026-09-22.md",
+      "options": {
+        "bootstrap_initialization_rounds": 20,
+        "data": [
+          1.0,
+          -0.3,
+          0.4,
+          0.5,
+          1.2,
+          -0.2
+        ],
+        "data_provenance": "fixed synthetic observations declared before execution",
+        "fixed_comparator": {
+          "retained_results": 10000,
+          "warmup_results": 2000
+        },
+        "member_rule": "declared_l_first",
+        "metric_evidence_policy": "finite_window",
+        "metric_probe_num_results": 16,
+        "native_search": true,
+        "plan_file": "docs/plans/bayesfilter-hmc-merged-source-continuation-2026-09-22.md",
+        "posterior_members": "selected",
+        "posterior_settings": {
+          "retained_chunk_results": 500,
+          "retained_max_results": 10000,
+          "retained_min_results": 1000,
+          "warmup_check_window_results": 1000,
+          "warmup_chunk_results": 500,
+          "warmup_max_results": 10000,
+          "warmup_min_results": 2000
+        },
+        "preparation_bound_expansion_steps": 1,
+        "preparation_max_restarts": 3,
+        "preparation_preset": "standard"
+      },
+      "phase": "confirmation",
+      "posterior_cap": 10000,
+      "purpose": "fresh fixed-inventory complete ordinary-HMC confirmation",
+      "rank_draws": 7,
+      "replications": 8,
+      "scenario": {
+        "control": "baseline",
+        "parameters": {
+          "n": 6,
+          "rho": 0.6,
+          "sigma": 0.5,
+          "state_variance": 1.0,
+          "tau": 2.0
+        },
+        "route": "ordinary",
+        "start": "dispersed",
+        "target": "lgssm_location"
+      },
+      "seed": 2026092242,
+      "step_size": 0.4
+    }
+  ],
+  "profile": "master",
+  "profiles": {
+    "master": [
+      "stopping"
+    ]
+  },
+  "schema": "bayesfilter.inference_validation_suite.v1",
+  "suite_id": "m21-merged-confirmation-lgssm_location"
+}

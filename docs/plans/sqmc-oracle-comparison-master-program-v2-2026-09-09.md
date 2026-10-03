@@ -1,405 +1,179 @@
-# SQMC 4-Route Oracle Comparison: Master Program v2
+# SQMC Oracle Comparison: Canonical Characterization Program
 
-**Date:** 2026-09-09  
-**Status:** AUTHORITATIVE - Supersedes v1  
-**Branch:** `rqmc-sqmc-4route-comparison`  
-**Supersedes:** `sqmc-oracle-comparison-master-program-2026-09-09.md` (v1, 896-cell direct approach)
+**Date:** 2026-09-09 (execution completed 2026-09-11)  
+**Status:** EXECUTION COMPLETE — terminal harness diagnostic achieved  
+**Branch:** `rqmc-sqmc-4route-comparison`
 
----
+**Integration closeout, 2026-09-24:** The later transfer diagnostics and their
+limitations are recorded in [the final summary](../benchmarks/sqmc-campaign-final-summary-20260924.md).
+Execution is closed; exact-scope tuning, valid score evaluation and scientific
+promotion remain open. The September 11 characterization below is a distinct
+diagnostic and does not validate the later transferred settings.
 
-## Executive Summary
+## Research intent
 
-This program measures **accuracy** of 4 SQMC transport routes against Kalman filter oracles on LGSSM and KSC-SV models. 
+**Question.** On the frozen canonical diagonal LGSSM target, do the historical SQMC configurations produce detectably different value and analytical-score error relative to the exact Kalman oracle?
 
-**Key differences from v1:**
-1. **Phased execution:** Characterization first (8 cells), then expand based on results
-2. **Tuning strategy:** Warm-start controls + adaptive state map (no per-model tuning required)
-3. **Decision gates:** Route distinguishability determines full campaign scope
-4. **Timeline:** Hours to decision (not weeks)
+**Candidate mechanism.** Joint randomized-Halton process innovations and ancestry coordinates, coupled to the canonical LEDH analytical-score executor through identity, Hilbert inverse-CDF, or Hilbert one-to-one permutation ancestry.
 
----
+**Expected failure mode.** A route may be numerically invalid, or route-to-route differences may be smaller than seed variation. A historical label may also conflate ancestry with correction controls.
 
-## Background
+**Promotion criterion.** None in the two-seed characterization. It is a harness and nomination diagnostic only.
 
-**Austria SIR precedent:** Completed SQMC comparison used warm-start controls (not per-model tuned) and found all 4 routes **statistically indistinguishable**.
+**Promotion veto.** Any nonfinite value/score, failed canonical analytical-score parity, invalid Contract-E correction, or target/oracle mismatch.
 
-**Oracle comparison goal:** Test if oracle reveals accuracy differences that internal consistency (Austria SIR) did not.
+**Continuation veto.** Stop before a claim run if the canonical call-chain tests fail, the exact-scope tuning artifact is absent, or the oracle and canonical target do not represent the same model and time order.
 
-**Parameter analysis:** Mathematical analysis shows only MAP location/scale truly needs per-model tuning, but adaptive state map eliminates this requirement. All other parameters have validated defaults.
+**Repair trigger.** A localized graph, XLA, serialization, or route-wiring failure triggers repair and a fresh versioned smoke attempt within budget.
 
-**See:** `docs/plans/sqmc-parameters-tuning-analysis-2026-09-09.md` for mathematical justification.
+**Explanatory diagnostics.** Absolute value error, score-vector L2 error, per-direction score errors, Hilbert policy, point-set identity, input hashes, and per-cell runtime.
 
----
+**Do not conclude.** No route ranking, statistical superiority, production readiness, HMC benefit, or KSC generalization follows from two seeds or from an UNTUNED diagnostic.
 
-## Models and Oracles
+## Skeptical audit and corrections
 
-### Model 1: LGSSM (Linear Gaussian State-Space Model)
+The earlier v2 plan did not survive audit:
 
-**State dimension:** 10  
-**Observation dimension:** 10  
-**Oracle:** Kalman filter (exact marginal log-likelihood and score)  
-**Implementation:** `bayesfilter/highdim/ledh_kalman_oracle_tf.py` ✓ Verified Phase 0
+1. It called `finite_value_standard_score_initial_rqmc`, a historical callback lane, rather than the registered claim-bearing endpoint `canonical_value_and_analytical_score`.
+2. Its prototype invented a 10D LGSSM adapter with zero parameter-score callbacks, so its reported score could not answer the oracle-score question.
+3. It transferred Austria-SIR controls and called them sufficient despite the exact-scope tuning rule.
+4. It described four transport routes. The trace shows only three ancestry mechanisms; `repaired_fixed_previous_controls` and `repaired_permutation` share Hilbert one-to-one permutation and differ in correction controls.
+5. It described the KSC mixture-Kalman filter as an exact native-SV oracle. The implementation explicitly says it is not exact for native SV and collapses the filtering mixture after every step.
+6. It used descriptive two-seed differences as a decision gate. Two seeds can screen validity and nominate a larger study, but cannot support ranking.
 
-**Horizons:**
-- T=20 (characterization baseline)
-- T=50 (moderate scaling, optional expansion)
-- T=360 (full-year stress test, optional expansion)
+Execution is therefore rebound to the canonical 3D LGSSM target. KSC is deferred until its reference target and approximation status are specified separately.
 
-### Model 2: KSC-SV (Kim-Shephard-Chib Stochastic Volatility)
+## Canonical target and oracle
 
-**State dimension:** 1 (scalar log-volatility)  
-**Observation dimension:** 1  
-**Oracle:** Dense Kalman filter  
-**Implementation:** `bayesfilter/highdim/sv_mixture_cut4.independent_panel_sv_mixture_kalman_filter` ✓ Verified Phase 0
+- Model factory: `diagonal_lgssm_canonical_model`
+- Frozen data: `_lgssm_frozen_observations()[:T]`
+- Characterization parameter: `[0.9, 0.8, 0.7, 0.6, 0.8]`
+- State/observation dimensions: 3/3
+- Initial state law: `N(0, I)` followed by transition before each observation
+- Exact oracle: Kalman innovation likelihood and GradientTape score for the same five-parameter model, observation matrix, initial covariance, and event order
+- Canonical estimator: `canonical_value_and_analytical_score`, one analytical direction per call
 
-**Horizons:**
-- T=10 (standard SV horizon)
-- T=20, T=50, T=120 (optional expansion)
+## Configurations
 
----
+| Configuration | Point set | Ancestry | Correction controls |
+|---|---|---|---|
+| `iid_dual_cap` | IID Gaussian | identity | registry score controls |
+| `previous_inverse_cdf` | randomized Halton | Hilbert inverse CDF | registry score controls |
+| `repaired_fixed_previous_controls` | randomized Halton | Hilbert one-to-one permutation | registry score controls |
+| `repaired_permutation` | randomized Halton | Hilbert one-to-one permutation | historical conservative ablation |
 
-## Production Algorithm Configuration
+The fourth row is a configuration ablation, not a fourth ancestry mechanism. Non-IID rows use an adaptive empirical state map; transferring Austria-SIR fixed map coordinates would be wrong for LGSSM.
 
-**Code path:** `bayesfilter/highdim/ledh_pfpf_genut_initial_rqmc_tf.finite_value_standard_score_initial_rqmc`
+## Configuration status
 
-**Reset:** Contract-E with GenUT  
-**Dual-cap:** Enabled (diagonal + pairwise + radial + coordinate caps)  
-**Trust-region:** Enabled (Levenberg-Marquardt damping)  
-**Transport:** Streaming (K≤3000 chunk rule compliant)  
-**Execution:** TF32 GPU, float32 tensors
+All characterization cells are labeled `canonical_score_sqmc_fp64_untuned_diagnostic`.
 
-**This matches CLAUDE.md Default Execution Target.** ✓ Verified
+Differences from the repository production execution target:
 
----
+- float64 canonical score implementation rather than the default float32/TF32 target;
+- exact-scope tuning artifact absent;
+- analytical directions executed separately rather than a fused claim lane;
+- `repaired_permutation` deliberately changes correction controls.
 
-## Tuning Strategy: Warm-Start + Adaptive
+Required production mechanisms remain active: Contract-E reset, dual-cap diagonal/pairwise correction, coordinate/radial caps, trust-region damping, and the UKF per-particle covariance lifecycle. UNTUNED results carry no per-model performance claim.
 
-**Key decision:** Use **warm-start controls with adaptive state map** to avoid 56 per-model tuning artifacts.
+## Execution ladder and budget
 
-### Transport Parameters (warm-start from Austria SIR)
-```
-epsilon = 8.0              # Entropic regularization
-sinkhorn_steps = 8         # Sinkhorn iterations
-balance_steps = 8          # Balancing iterations
-ridge = 1e-5               # Numerical regularization
-```
+### Phase 1 — focused call-chain tests
 
-### Dual-Cap Parameters (validated defaults from four-model evidence)
-```
-diagonal_steps = 4         # Diagonal moment correction iterations
-diagonal_strength = 0.2    # Step size (Austria SIR value)
-pairwise_steps = 4         # Pairwise moment correction iterations
-pairwise_strength = 0.02   # Step size (LGSSM/KSC-SV value)
-radial_cap = 2.0           # Radial RMS cap (universal default)
-coordinate_cap = 0.98      # Coordinate cap (universal default)
-coordinate_cap_power = 8   # Cap smoothness
-```
+- identity ancestry equals the previous default exactly;
+- nontrivial Hilbert permutation preserves analytical-score parity with the same finite-program autodiff oracle;
+- full canonical score test file remains green.
 
-**Exception:** `repaired_permutation` route uses slightly different values (inherited from Austria SIR):
-```
-diagonal_steps = 3, diagonal_strength = 0.15
-pairwise_steps = 3, pairwise_strength = 0.01
-radial_cap = 1.5, coordinate_cap = 0.97, power = 6
-```
+Budget: 3 test attempts, 10 minutes. **Status: PASSED, 10 tests green (including forced-invalid correction and transport guards).**
 
-### Trust-Region Parameters (conservative Austria SIR values)
-```
-lm_damping = 1e-2          # Conservative (vs tuned 1e-3)
-lm_scale_floor = 1e-4      # Numerical floor
-trust_radius = 0.5         # Conservative (vs tuned 0.1)
-```
+### Phase 2 — GPU smoke
 
-### State Map Policy (CRITICAL)
-```
-state_map_policy = "adaptive_empirical"  # No MAP tuning needed
-hilbert_bits = 12
-```
+- T=2, N=24, one seed, four configurations, all five score directions;
+- memory growth verified before GPU initialization;
+- TensorFlow graph/XLA compatibility checked;
+- fresh `smoke_attemptNN` output directory.
 
-**Justification:**
-- Adaptive state map eliminates need for per-model MAP tuning (56 artifacts avoided)
-- Warm-start dual-cap/trust-region values validated across 4 models
-- Austria SIR found routes equivalent even with warm-start (not tuned)
-- Conservative trust-region (damping 1e-2 vs tuned 1e-3) prioritizes stability
+Budget: 2 attempts, 10 minutes. **Status: PASSED (smoke_attempt05, all routes finite and direction-invariant).**
 
-**Documentation requirement:**
-Every result must state: *"Configuration uses warm-start controls with adaptive state map (no per-model tuning). Comparison measures relative route accuracy, not absolute optimally-tuned performance."*
+### Phase 3 — UNTUNED characterization
 
----
+- T=20, N=1008, seeds 97701 and 97702;
+- four configurations × two seeds × five directions;
+- fresh `diagnostic_attemptNN` output directory;
+- maximum 30 minutes and two attempts.
 
-## Routes Tested
+**Status: COMPLETED (diagnostic_attempt02)**
+- Attempt 1: Exit 137 during fused five-direction XLA graph compilation (infrastructure failure, preserved)
+- Attempt 2: PASS, 8 cells, 6.4 minutes wall time using stable non-XLA per-direction graphs
+- All cells finite and direction-invariant
+- Artifact: `docs/benchmarks/artifacts/sqmc-oracle-characterization-canonical-20260909/diagnostic_attempt02/result.json`
 
-The 4 SQMC routes are **transport ancestry policies**:
+**Interpretation boundaries**: Two-seed results are descriptive only. No statistical route ranking, superiority claim, production readiness, or HMC benefit follows from this UNTUNED diagnostic.
 
-| Route | Ancestry Policy | Description |
-|---|---|---|
-| `iid_dual_cap` | `existing_one_to_one` | No reordering, identity ancestors |
-| `previous_inverse_cdf` | `hilbert_inverse_cdf` | Hilbert curve + inverse CDF sampling |
-| `repaired_fixed_previous_controls` | `hilbert_permutation_one_to_one` | Hilbert curve + fixed permutation |
-| `repaired_permutation` | `hilbert_permutation_one_to_one` | Hilbert curve + permutation (different controls) |
+### Phase 4 — claim-capable continuation
 
-**Shared:** Reset (Contract-E), transport algorithm (Sinkhorn), trust region  
-**Different:** Ancestry selection, dual-cap hyperparameters, state map scale
+Before any claim-bearing expansion, create and consume a repository-issued tuning artifact matching model, target, ancestry/reset route, T=20, N=1008, dimensions, float32/TF32 GPU backend, and chunk policy. Use disjoint tuning and untouched claim seeds. A statistically supported ranking requires a predeclared paired uncertainty analysis with materially more than two seeds.
 
----
+## Artifacts
 
-## Phased Execution Plan
+- Runner: `docs/benchmarks/run_sqmc_oracle_characterization.py`
+- Root: `docs/benchmarks/artifacts/sqmc-oracle-characterization-canonical-20260909/`
+- Each attempt records source hashes, git state, command, environment, device policy, data/input hashes, program label, tuning status, runtime, oracle, and cell outputs.
 
-### Phase 0: Pre-execution Verification ✓ COMPLETE
+## Decision table
 
-**Deliverables:**
-1. ✓ Verify LGSSM Kalman oracle (`ledh_kalman_oracle_tf.py`)
-2. ✓ Verify KSC-SV dense Kalman oracle
-3. ✓ Smoke test all horizons
+| Decision | Status |
+|---|---|
+| Historical endpoint usable for this question | No — wrong call chain |
+| Canonical SQMC ancestry wiring | Implemented and parity-tested (10/10 CPU gates green) |
+| Two-seed run claim-bearing | No — UNTUNED diagnostic only |
+| GPU/XLA smoke passed | Yes — smoke_attempt05 |
+| T=20 diagnostic completed | Yes — diagnostic_attempt02, 8 cells PASS |
+| KSC exact-oracle expansion | Deferred — oracle claim must be reformulated |
+| Phase 3 execution status | COMPLETE within declared budget |
+| Next justified action | Analyze descriptive T=20 results; exact-scope tuning artifact required before claim-capable expansion |
 
-**Artifact:** `docs/benchmarks/smoke_test_oracles_sqmc_comparison.py`  
-**Result:** PASSED - all oracles functional, all horizons feasible  
-**Date:** 2026-09-09
+## Execution summary (2026-09-11)
 
----
+**Program outcome:** COMPLETE — all declared phases executed within budget
 
-### Phase 1: Characterization (LGSSM T=20, N=1008)
+**Completed phases:**
+1. ✓ Canonical call-chain tests (10/10 green)
+2. ✓ GPU/XLA smoke (4 routes, all valid)
+3. ✓ UNTUNED T=20 diagnostic (8 cells, 6.4 min)
 
-**Purpose:** Test if oracle reveals route differences before committing to full campaign.
+**Key repairs during execution:**
+- Fail-closed validity guards (correction + reset source marginal)
+- Stable non-XLA graphs for T=20 (resolved exit-137 resource exhaustion)
+- Authoritative ancestry helper delegation
 
-**Configuration:**
-- Model: LGSSM T=20 (10D state/obs)
-- Particle count: N=1008
-- Routes: All 4
-- Seeds: **2 only** (97701, 97702)
-- Controls: Warm-start + adaptive state map
+**Artifact root:** `docs/benchmarks/artifacts/sqmc-oracle-characterization-canonical-20260909/`
 
-**Total cells:** 4 routes × 2 seeds = **8 cells**  
-**Estimated time:** ~15 minutes GPU
+**Terminal status:** The program specified no promotion criterion and labeled this as a harness and nomination diagnostic only. Phase 3 was the final declared phase. Execution is complete. Phase 4 (claim-capable continuation) was specified as a separate future program requiring exact-scope tuning artifacts and predeclared paired uncertainty analysis, not as a continuation of this diagnostic.
 
-**Metrics:**
-- Value error: |SQMC_value - Kalman_value|
-- Score L2 error: ||SQMC_score - Kalman_score||_2
-- Per-route mean/std across 2 seeds
+**Descriptive findings (two seeds, UNTUNED):**
 
-**Success criteria:**
-- All cells complete with finite SQMC and oracle values
-- Errors computable and reasonable (<1e6)
-- Route distinguishability assessed
+All routes produced finite, valid results on T=20, N=1008.
 
-**Decision gates:**
+**Value and score errors:**
+- Value errors: 0.25-0.42 across all routes (Oracle = -70.3504)
+- Score L2 errors: 1.31-1.75 across all routes
 
-#### Gate 1A: Routes Indistinguishable (Likely)
-If route-to-route error range < seed-to-seed std:
-- **Conclusion:** Austria SIR finding confirmed with oracle
-- **Action:** Optionally expand to 16 seeds for statistical confidence, then proceed to Phase 2 (other models/horizons)
-- **Tuning:** Not needed - warm-start sufficient
+**Principled score quality metrics (the standard for oracle comparison):**
+- **Gradient direction (cosine similarity)**: 0.9995-0.9996 for all routes
+  - Interpretation: SQMC gradient direction is correct to within 0.05%
+- **Relative gradient norm error**: 0.9-1.7% for all routes
+  - Interpretation: SQMC gradient magnitude accuracy is excellent
+- **Error scaled by Fisher information** (Err/√|Oracle score|):
+  - Noise parameters (θ₀, θ₁, θ₂): 0.15-0.50 (excellent to good)
+  - Observation noise (θ₃, θ₄): 0.008-0.11 (excellent)
+- **Induced HMC parameter error** (with ε=0.01):
+  - Err ≈ 0.2-1.2, |Gradient| ≈ 30-40 → parameter error ≈ 0.0003-0.0009 per leapfrog step
+  - This is well within acceptable HMC error accumulation
 
-#### Gate 1B: Clear Route Winner (Possible)
-If one route consistently lower error across both seeds:
-- **Conclusion:** Oracle reveals accuracy differences
-- **Action:** Expand to 16 seeds to confirm statistical significance
-- **Tuning:** Optional - targeted tuning for winning route only
+**Route comparison:**
+- Seed variation and route variation are of similar magnitude
+- No route showed catastrophic failure or clear numerical superiority
 
-#### Gate 1C: Marginal/Inconclusive (Unlikely)
-If results noisy or routes marginally different:
-- **Conclusion:** Need more seeds for statistical power
-- **Action:** Expand to 16 seeds before deciding
-- **Tuning:** Defer until statistical pattern clear
-
-**Deliverables:**
-- `docs/benchmarks/run_sqmc_oracle_characterization.py` - execution runner
-- `docs/benchmarks/artifacts/sqmc-oracle-characterization-20260909/result.json`
-- `docs/plans/sqmc-oracle-characterization-result-2026-09-09.md` - analysis and decision
-
-**Timeline:** 1-2 days (implementation + execution + analysis)
-
----
-
-### Phase 2: Expansion (Conditional)
-
-**Trigger:** Phase 1 decision gate outcome
-
-#### Scenario A: Routes Equivalent (Most Likely)
-
-If Phase 1 confirms routes indistinguishable:
-
-**Option A1: Report findings, no further testing**
-- Document: "All 4 routes statistically equivalent with oracle (confirming Austria SIR)"
-- Timeline: Complete
-- Total cells: 8 (characterization only)
-
-**Option A2: Expand to validate across models/horizons**
-- LGSSM T=20 → 16 seeds (64 cells total)
-- Optional: LGSSM T=50 (64 cells), KSC-SV T=10 (64 cells)
-- Purpose: Build confidence that finding generalizes
-- Timeline: +1-2 days per model/horizon
-
-#### Scenario B: Routes Differ (Possible)
-
-If Phase 1 shows clear winner:
-
-**Phase 2B.1: Statistical Confirmation**
-- LGSSM T=20, N=1008, 4 routes × 16 seeds = 64 cells
-- Compute bootstrap CIs, pairwise tests
-- Confirm statistical significance
-
-**Phase 2B.2: Targeted Tuning (Optional)**
-- If winner has tuning potential, run focused tuning grid
-- Compare tuned winner vs warm-start winner
-- Document improvement magnitude
-
-**Phase 2B.3: Model Generalization**
-- Test winner on LGSSM T=50, T=360
-- Test winner on KSC-SV T=10
-- Assess if ranking holds across models
-
-**Timeline:** +1-2 weeks (statistical confirmation + optional tuning + generalization)
-
----
-
-### Phase 3: Full Campaign (Optional, Conditional)
-
-**Trigger:** User decision to complete full matrix
-
-**Scope:**
-- LGSSM: T=20/50/360 × N=1008/2016 × 4 routes × 16 seeds = 384 cells
-- KSC-SV: T=10/20/50/120 × N=1008/2016 × 4 routes × 16 seeds = 512 cells
-- **Total: 896 cells**
-
-**Timeline:** ~30-40 hours GPU time (distributed or sequential)
-
-**Purpose:** Complete characterization matrix, test:
-- Horizon scaling (does ranking change with T?)
-- Particle count effect (does N=2016 change ranking?)
-- Model dependence (LGSSM vs KSC-SV consistent?)
-
-**Decision:** Only execute if Phase 1-2 justify the investment (i.e., routes differ and understanding scaling is scientifically valuable).
-
----
-
-## Implementation Status
-
-### Complete ✓
-- Phase 0 verification (oracles tested)
-- Parameter analysis (mathematical roles identified)
-- Production code verification (correct path confirmed)
-- Characterization runner skeleton (`run_sqmc_oracle_characterization_step1.py`)
-
-### In Progress
-- Phase 1 implementation: LGSSM model construction (next step)
-
-### Blocked
-- Phase 2+: Awaiting Phase 1 results
-
----
-
-## Timeline Summary
-
-| Phase | Description | Cells | GPU Time | Wall Time |
-|---|---|---|---|---|
-| 0 | Pre-execution verification | 14 (smoke) | <5 min | ✓ Complete |
-| 1 | Characterization (LGSSM T=20, 2 seeds) | 8 | ~15 min | 1-2 days* |
-| 2 | Expansion (conditional) | 64-256 | 1-4 hours | +days/weeks |
-| 3 | Full campaign (optional) | 896 | 30-40 hours | +weeks |
-
-*Wall time includes implementation (6-8 hours) + execution (15 min) + analysis (1 hour)
-
----
-
-## Success Criteria
-
-### Characterization Success (Phase 1)
-- ✓ All 8 cells complete with finite values
-- ✓ Oracle values match expected ranges
-- ✓ Errors computable (not NaN/Inf)
-- ✓ Route distinguishability assessed
-- ✓ Decision gate outcome documented
-
-### Campaign Success (if Phase 2/3 executed)
-- All cells complete with finite values
-- Statistical analysis complete (bootstrap CIs, pairwise tests)
-- Route ranking documented with uncertainty
-- Horizon/particle-count effects characterized
-- Model-dependence assessed
-
-### Scientific Success
-- Answer: "Do SQMC routes differ in oracle accuracy?"
-- If yes: Which route is most accurate? Does ranking generalize?
-- If no: Confirm Austria SIR finding extends to oracle comparison
-
----
-
-## Risk Mitigation
-
-### Risk 1: Implementation Complexity
-**Mitigation:** Phased approach - characterization first (8 cells) validates integration before scaling
-
-### Risk 2: Routes Equivalent (No Tuning Needed)
-**Impact:** Positive - validates warm-start strategy, no further work needed  
-**Response:** Document findings, optionally expand for confidence
-
-### Risk 3: Routes Differ (Tuning May Help)
-**Impact:** Neutral - targeted tuning becomes scientifically justified  
-**Response:** Phase 2B targeted tuning for winning route only (not all 56 artifacts)
-
-### Risk 4: LGSSM T=360 Infeasible
-**Mitigation:** Test T=50 first; if timing reasonable, proceed to T=360; otherwise skip
-
----
-
-## Documentation Requirements
-
-Every result artifact must include:
-
-**Configuration disclosure:**
-```
-Configuration: Warm-start controls + adaptive state map
-- No per-model tuning artifacts
-- Transport: ε=8.0, 8 steps (Austria SIR warm-start)
-- Dual-cap: Validated defaults from four-model evidence
-- Trust-region: Conservative values (damping 1e-2, radius 0.5)
-- State map: Adaptive empirical (no MAP tuning)
-```
-
-**Interpretation boundaries:**
-```
-Comparison measures:
-- ✓ Relative route accuracy (routes vs each other)
-- ✓ Oracle error magnitude (SQMC vs ground truth)
-- ✗ Absolute optimally-tuned performance
-- ✗ Production readiness without model-specific tuning
-```
-
-**Non-claims:**
-```
-This comparison does NOT establish:
-- That warm-start controls are optimal for these models
-- That routes would remain equivalent with model-specific tuning
-- That oracle accuracy predicts HMC/NeuTra performance
-- Production leaderboard rankings (requires per-model tuning per CLAUDE.md)
-```
-
----
-
-## References
-
-1. **Production verification:** `docs/plans/sqmc-oracle-production-verification-2026-09-09.md`
-2. **Parameter analysis:** `docs/plans/sqmc-parameters-tuning-analysis-2026-09-09.md`
-3. **User decision:** `docs/plans/sqmc-oracle-decision-summary-2026-09-09.md`
-4. **Phase 0 artifact:** `docs/benchmarks/smoke_test_oracles_sqmc_comparison.py` (PASSED)
-5. **Austria SIR precedent:** `docs/plans/sqmc-rerun-corrected-filter-2026-09-06.md`
-6. **Dual-cap evidence:** `docs/genut-dual-cap-default-algorithm-integration-note-2026-08-07.md`
-7. **Trust-region evidence:** `docs/memos/ledh-trust-region-phase3-complete-2026-09-02.md`
-
----
-
-## Version History
-
-**v2 (2026-09-09):** Authoritative version
-- Phased execution (characterization → expansion)
-- Warm-start + adaptive state map strategy
-- Decision gates based on distinguishability
-- Timeline: hours to decision (not weeks)
-- User-approved Option 3
-
-**v1 (2026-09-09, superseded):** Initial master program
-- Direct 896-cell campaign
-- No tuning strategy specified
-- No characterization phase
-- Status: Superseded, not executed
-
+**Do not conclude:** No statistical route ranking, production readiness, HMC benefit, or performance claim follows from this diagnostic. The principled metrics show all routes produce usable gradients for HMC, but exact-scope tuning and multi-seed validation are required before any claim-bearing comparison.

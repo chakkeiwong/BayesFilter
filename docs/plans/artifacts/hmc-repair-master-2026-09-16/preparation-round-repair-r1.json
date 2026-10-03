@@ -1,0 +1,65 @@
+{
+  "gpu_intentionally_hidden": true,
+  "plan_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+  "purpose": "Preserve the actual public bootstrap round classification in failure reports",
+  "source_at_terminal_regression": {
+    "bayesfilter/inference/hmc_preparation.py": "f44384e6dcde9554dc1b8b7c5394c8b00a71d30d188b55da7dcde73275ef272b",
+    "tests/test_hmc_master_repair.py": "871b652269f25fd07dfc5a119d05f15fb0704b4c072e0a05bce8cdc6ecfd39e5"
+  },
+  "source_note": "The failing run predates the classification fallback; final hashes describe the passing regression.",
+  "statistical_conclusion": "N/A: failure-reporting regression",
+  "test_runs": [
+    {
+      "command": [
+        "env",
+        "CUDA_VISIBLE_DEVICES=-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH=true",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_master_repair.py::test_preparation_veto_causes_persist_before_exception",
+        "--junitxml=docs/plans/artifacts/hmc-repair-master-2026-09-16/tests-preparation-round-counterexample-r1.xml"
+      ],
+      "result": "docs/plans/artifacts/hmc-repair-master-2026-09-16/tests-preparation-round-counterexample-r1.xml",
+      "sha256": "491172a995a706ed24a3982b926ccf6e63210138166b68b16a38b65a686fb735",
+      "summary": {
+        "errors": "0",
+        "failures": "1",
+        "hostname": "ubuntu-MZ72-HB2-00",
+        "name": "pytest",
+        "skipped": "0",
+        "tests": "1",
+        "time": "2.990",
+        "timestamp": "2026-09-17T02:38:01.200008+08:00"
+      }
+    },
+    {
+      "command": [
+        "env",
+        "CUDA_VISIBLE_DEVICES=-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH=true",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_master_repair.py",
+        "-k",
+        "preparation",
+        "--junitxml=docs/plans/artifacts/hmc-repair-master-2026-09-16/tests-preparation-round-regressions-r1.xml"
+      ],
+      "result": "docs/plans/artifacts/hmc-repair-master-2026-09-16/tests-preparation-round-regressions-r1.xml",
+      "sha256": "271f5c8761bc7cd23bed684f5b18efa0e071832b4dae92f9dba28402379e8b90",
+      "summary": {
+        "errors": "0",
+        "failures": "0",
+        "hostname": "ubuntu-MZ72-HB2-00",
+        "name": "pytest",
+        "skipped": "0",
+        "tests": "8",
+        "time": "2.770",
+        "timestamp": "2026-09-17T02:38:51.200619+08:00"
+      }
+    }
+  ]
+}

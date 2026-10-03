@@ -1,0 +1,281 @@
+{
+  "mode": "fp64",
+  "scope": "engineering_precision_only",
+  "command": [
+    "docs/benchmarks/check_neutra_precision_2026_09_24.py",
+    "--gpu",
+    "1",
+    "--mode",
+    "fp64",
+    "--output",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-precision-training-2026-09-24/gpu-fp64-01"
+  ],
+  "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "cuda_visible_devices": "1",
+  "git_commit": "622d9a9ed028659328b6386f9e9de7f368e7bba3",
+  "arms": [
+    {
+      "kind": "iaf",
+      "estimator": "standard",
+      "config": {
+        "dimension": 4,
+        "kind": "iaf",
+        "hidden_layers": [
+          16,
+          16
+        ],
+        "stages": 3,
+        "activation": "elu",
+        "seed": [
+          247,
+          19
+        ],
+        "conditional_scale_cap": 2.0,
+        "scale_transform": "neutra_conditional_tanh",
+        "mixture_components": 8,
+        "slope_floor": 1e-06,
+        "final_weight_scale": 0.05,
+        "permutation_policy": "full_reverse",
+        "inverse_atol": 1e-11,
+        "inverse_rtol": 1e-11,
+        "inverse_max_iterations": 100,
+        "mask_policy": "hoffman_block_masks_v1",
+        "naf_conditioner": "author_cmade",
+        "iaf_initializer": "hoffman_variance_scaling",
+        "iaf_variance_scale": 0.02,
+        "dtype": "float64",
+        "affine_center": [],
+        "affine_scale": []
+      },
+      "gradient_scaled_l2_error": 1.8699349078667198e-16,
+      "loss_scaled_error": 0.0,
+      "precision_limit": 1e-09,
+      "inverse_scaled_max_error": 4.0683693232456895e-16,
+      "inverse_logdet_max_error": 2.7755575615628914e-17,
+      "frozen_inverse_max_error": 4.440892098500626e-16,
+      "compile_evaluation_seconds": 1.4906241281423718,
+      "compile_train_seconds": 3.363135182997212,
+      "steady_step_seconds": 0.0012121095787733793,
+      "accepted_updates": 8,
+      "evaluate_traces": 1,
+      "train_traces": 1,
+      "weight_dtype": "float64",
+      "weight_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "target_loss_dtype": "float64",
+      "hlo_tf32_mentions": 0,
+      "hlo_cublas_mentions": 39,
+      "gpu_allocator": {
+        "current": 165632,
+        "peak": 241408
+      }
+    },
+    {
+      "kind": "iaf",
+      "estimator": "path",
+      "config": {
+        "dimension": 4,
+        "kind": "iaf",
+        "hidden_layers": [
+          16,
+          16
+        ],
+        "stages": 3,
+        "activation": "elu",
+        "seed": [
+          247,
+          19
+        ],
+        "conditional_scale_cap": 2.0,
+        "scale_transform": "neutra_conditional_tanh",
+        "mixture_components": 8,
+        "slope_floor": 1e-06,
+        "final_weight_scale": 0.05,
+        "permutation_policy": "full_reverse",
+        "inverse_atol": 1e-11,
+        "inverse_rtol": 1e-11,
+        "inverse_max_iterations": 100,
+        "mask_policy": "hoffman_block_masks_v1",
+        "naf_conditioner": "author_cmade",
+        "iaf_initializer": "hoffman_variance_scaling",
+        "iaf_variance_scale": 0.02,
+        "dtype": "float64",
+        "affine_center": [],
+        "affine_scale": []
+      },
+      "gradient_scaled_l2_error": 1.7001323720981997e-16,
+      "loss_scaled_error": 0.0,
+      "precision_limit": 1e-09,
+      "inverse_scaled_max_error": 3.7246057624803424e-16,
+      "inverse_logdet_max_error": 1.3877787807814457e-17,
+      "frozen_inverse_max_error": 4.440892098500626e-16,
+      "compile_evaluation_seconds": 2.0883169600274414,
+      "compile_train_seconds": 4.154870955972001,
+      "steady_step_seconds": 0.0016470948633338725,
+      "accepted_updates": 8,
+      "evaluate_traces": 1,
+      "train_traces": 1,
+      "weight_dtype": "float64",
+      "weight_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "target_loss_dtype": "float64",
+      "hlo_tf32_mentions": 0,
+      "hlo_cublas_mentions": 67,
+      "gpu_allocator": {
+        "current": 246784,
+        "peak": 371968
+      }
+    },
+    {
+      "kind": "naf_dsf",
+      "estimator": "standard",
+      "config": {
+        "dimension": 4,
+        "kind": "naf_dsf",
+        "hidden_layers": [
+          16,
+          16
+        ],
+        "stages": 3,
+        "activation": "elu",
+        "seed": [
+          247,
+          19
+        ],
+        "conditional_scale_cap": 2.0,
+        "scale_transform": "neutra_conditional_tanh",
+        "mixture_components": 8,
+        "slope_floor": 1e-06,
+        "final_weight_scale": 0.05,
+        "permutation_policy": "full_reverse",
+        "inverse_atol": 1e-11,
+        "inverse_rtol": 1e-11,
+        "inverse_max_iterations": 100,
+        "mask_policy": "legacy_degree_masks_v1",
+        "naf_conditioner": "author_cmade",
+        "iaf_initializer": "hoffman_variance_scaling",
+        "iaf_variance_scale": 0.02,
+        "dtype": "float64",
+        "affine_center": [],
+        "affine_scale": []
+      },
+      "gradient_scaled_l2_error": 6.789545920775976e-16,
+      "loss_scaled_error": 3.090209780984977e-16,
+      "precision_limit": 1e-09,
+      "inverse_scaled_max_error": 2.0280108627633682e-11,
+      "inverse_logdet_max_error": 3.26272342476841e-12,
+      "frozen_inverse_max_error": 4.730882352532717e-11,
+      "compile_evaluation_seconds": 3.492134824860841,
+      "compile_train_seconds": 10.389902194030583,
+      "steady_step_seconds": 0.002696736715734005,
+      "accepted_updates": 8,
+      "evaluate_traces": 1,
+      "train_traces": 1,
+      "weight_dtype": "float64",
+      "weight_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "target_loss_dtype": "float64",
+      "hlo_tf32_mentions": 0,
+      "hlo_cublas_mentions": 51,
+      "gpu_allocator": {
+        "current": 666112,
+        "peak": 1070336
+      }
+    },
+    {
+      "kind": "naf_dsf",
+      "estimator": "path",
+      "config": {
+        "dimension": 4,
+        "kind": "naf_dsf",
+        "hidden_layers": [
+          16,
+          16
+        ],
+        "stages": 3,
+        "activation": "elu",
+        "seed": [
+          247,
+          19
+        ],
+        "conditional_scale_cap": 2.0,
+        "scale_transform": "neutra_conditional_tanh",
+        "mixture_components": 8,
+        "slope_floor": 1e-06,
+        "final_weight_scale": 0.05,
+        "permutation_policy": "full_reverse",
+        "inverse_atol": 1e-11,
+        "inverse_rtol": 1e-11,
+        "inverse_max_iterations": 100,
+        "mask_policy": "legacy_degree_masks_v1",
+        "naf_conditioner": "author_cmade",
+        "iaf_initializer": "hoffman_variance_scaling",
+        "iaf_variance_scale": 0.02,
+        "dtype": "float64",
+        "affine_center": [],
+        "affine_scale": []
+      },
+      "gradient_scaled_l2_error": 6.397053722619156e-16,
+      "loss_scaled_error": 3.090209780984977e-16,
+      "precision_limit": 1e-09,
+      "inverse_scaled_max_error": 2.1424937296660005e-11,
+      "inverse_logdet_max_error": 5.341727060681478e-12,
+      "frozen_inverse_max_error": 5.0686121966236897e-11,
+      "compile_evaluation_seconds": 5.406470021000132,
+      "compile_train_seconds": 12.246228420874104,
+      "steady_step_seconds": 0.0031974134035408497,
+      "accepted_updates": 8,
+      "evaluate_traces": 1,
+      "train_traces": 1,
+      "weight_dtype": "float64",
+      "weight_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "target_loss_dtype": "float64",
+      "hlo_tf32_mentions": 0,
+      "hlo_cublas_mentions": 91,
+      "gpu_allocator": {
+        "current": 920576,
+        "peak": 2062592
+      }
+    }
+  ],
+  "passed": true,
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0",
+  "tf32_enabled": false,
+  "transport_dtype": "float64",
+  "target_dtype": "float64",
+  "jit_compile": true,
+  "batch_size": 32,
+  "seeds": [
+    247,
+    19,
+    73,
+    91
+  ],
+  "cpu_reference": "small analytic float64 equation check; not CPU training",
+  "wall_seconds": 96.65129444212653,
+  "source_sha256": {
+    "docs/benchmarks/check_neutra_precision_2026_09_24.py": "7563402bba97772a0369872a4766df4c221ba3a13c4c97e9183ada120a21d47e",
+    "bayesfilter/inference/neutra_transport.py": "d688b2b720dc9e30a69601df2d6fda647564b098481f84bdcc6371ad56e48ab2",
+    "bayesfilter/inference/neutra_transport_core.py": "e1bd6f40f0b7041e7844ace8b8e404ab812cc518719c447d8cd9bd5275d70e2f"
+  }
+}

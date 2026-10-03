@@ -7,16 +7,16 @@ os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 import numpy as np
 import pytest
 import tensorflow as tf
-from scipy import stats
-
 from bayesfilter.inference.hmc_posterior_diagnostics import (
     Phase29DiagnosticThresholds,
+    _rank_normalize,
     epoch_drift_statistics,
     evaluate_phase29_posterior_pilot,
     evaluate_phase29_warmup_epoch,
     per_chain_ebfmi,
     rank_normalized_split_rhat,
 )
+from scipy import stats
 
 
 def _iid(seed: int = 12) -> np.ndarray:
@@ -45,13 +45,38 @@ def _independent_bulk_rhat(samples: np.ndarray) -> np.ndarray:
     for parameter in range(parameters):
         values = sample_major[:, :, parameter].reshape(-1)
         ranks = stats.rankdata(values, method="average")
-        z = stats.norm.ppf((ranks - 3.0 / 8.0) / (total - 1.0 / 4.0))
+        z = stats.norm.ppf((ranks - 3.0 / 8.0) / (total + 1.0 / 4.0))
         normalized[:, :, parameter] = z.reshape(half, chains * 2)
     chain_mean = normalized.mean(axis=0)
     within = normalized.var(axis=0, ddof=1).mean(axis=0)
     between_over_n = chain_mean.var(axis=0, ddof=1)
     variance_plus = ((half - 1.0) / half) * within + between_over_n
     return np.sqrt(variance_plus / within)
+
+
+@pytest.mark.parametrize("count", [4, 1024, 5120])
+def test_rank_normalization_preserves_reflection_symmetry(count: int) -> None:
+    # A sign change reverses pooled ranks. This invariant detects the quarter-
+    # sample sign error independently of repeating the implementation formula.
+    values = tf.reshape(tf.range(count, dtype=tf.float64), (count // 4, 4, 1))
+    original = _rank_normalize(values)
+    reflected = _rank_normalize(-values)
+    # Opposite tail probabilities lose absolute precision when rounded near
+    # one. Propagate one machine epsilon through the inverse-normal derivative
+    # 1 / phi(z), instead of assuming a count-independent tail tolerance.
+    tail = stats.norm.ppf((1.0 - 3.0 / 8.0) / (count + 1.0 / 4.0))
+    tolerance = np.finfo(np.float64).eps / stats.norm.pdf(tail)
+    np.testing.assert_allclose(original, -reflected, rtol=0.0, atol=tolerance)
+
+
+def test_rank_normalization_preserves_average_ties_and_zero_center() -> None:
+    values = np.asarray([-3., -3., 1., 1., 1., 1., 5., 5.]).reshape(2, 4, 1)
+    actual = _rank_normalize(tf.constant(values, tf.float64)).numpy()
+    ranks = stats.rankdata(values.ravel(), method="average")
+    expected = stats.norm.ppf((ranks - 3. / 8.) / (values.size + 1. / 4.))
+    np.testing.assert_allclose(actual.ravel(), expected, rtol=0.0, atol=2e-14)
+    np.testing.assert_array_equal(actual.ravel()[2:6], 0.)
+    np.testing.assert_array_equal(_rank_normalize(tf.ones((2, 4, 1), tf.float64)), 0.)
 
 
 def test_rank_normalized_bulk_rhat_matches_independent_scipy_reference() -> None:

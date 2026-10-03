@@ -1,0 +1,159 @@
+{
+  "schema": "bayesfilter.ssl_lstm_q20.phase9b.terminal_summary.v1",
+  "status": "M4_P0_RECOVERY_HEALTH_VALIDATED_STRICT_AFFORDABILITY_BLOCKED",
+  "completed_at": "2026-09-09T09:15:56Z",
+  "campaign_id": "campaign-10gpuh-20260908T192200Z",
+  "claim_boundary": "phase9b_p0_recovery_health_runtime_only",
+  "execution_complete": true,
+  "p1_launched": false,
+  "p2_launched": false,
+  "campaign_gpu_workers_remaining": 0,
+  "campaign_root": "docs/plans/artifacts/ssl-lstm-q20-phase9b-recovery-runtime-2026-09-09/campaign-10gpuh-20260908T192200Z",
+  "budget": {
+    "aggregate_authorized_seconds": 36000.0,
+    "per_arm_cap_seconds": 14400.0,
+    "consumed_seconds": 11352.55558313601,
+    "remaining_seconds": 24647.44441686399,
+    "reserved_seconds": 0.0,
+    "consumed_gpu_hours": 3.153487661982225,
+    "remaining_gpu_hours": 6.846512338017774,
+    "accounting_basis": "sum_of_parent_measured_worker_lifetimes_including_failed_attempts_and_component_profile",
+    "ledger_source_hash": "568437ae40ed94e72fa93856ac905bd113378637ef9e3b87bc2cf0252f66663d",
+    "ledger_file_sha256": "f7ad2484ca723cfb210a38a60ae3ea4f841cff46a321f6294285562e7c5207ce"
+  },
+  "hardware": {
+    "factor": {
+      "physical_gpu": 1,
+      "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+      "display_gpu": false
+    },
+    "strict": {
+      "physical_gpu": 0,
+      "gpu_uuid": "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3",
+      "display_gpu": false
+    },
+    "display_gpu_2_used": false,
+    "tensorflow": "2.20.0",
+    "tensorflow_probability": "0.25.0",
+    "dtype": "float64",
+    "xla": true,
+    "tf32": true,
+    "memory_growth_verified_before_logical_initialization": true,
+    "allocator_peak_bytes_per_arm": 34567168
+  },
+  "recovery_canaries": {
+    "factor": {
+      "passed": true,
+      "scope": "eight_transition_q20_recovery_mechanics_only",
+      "reused_first_chunk": true,
+      "recomputed_interrupted_second_chunk": true,
+      "exact_sample_and_full_trace_tensor_equality": true
+    },
+    "strict": {
+      "passed": true,
+      "scope": "eight_transition_q20_recovery_mechanics_only",
+      "reused_first_chunk": true,
+      "recomputed_interrupted_second_chunk": true,
+      "exact_sample_and_full_trace_tensor_equality": true
+    }
+  },
+  "full_runtime_measurements_seconds": {
+    "factor": {
+      "first_500_transition_call": 1398.5690538349736,
+      "repeated_500_transition_call": 1413.208817153005,
+      "parent_worker_lifetime": 2822.0830979679886,
+      "six_chunk_estimate_including_setup_and_overhead": 9305.422149146034,
+      "reserve_inclusive_estimate": 10751.036326912043,
+      "reserve_inclusive_fits_arm_cap": true
+    },
+    "strict": {
+      "first_500_transition_call": 2140.3011213080026,
+      "repeated_500_transition_call": 2129.127457385999,
+      "parent_worker_lifetime": 4279.573378795991,
+      "six_chunk_estimate_including_setup_and_overhead": 14040.614064473979,
+      "reserve_inclusive_estimate": 16202.11662056898,
+      "reserve_inclusive_fits_arm_cap": false
+    },
+    "fresh_two_arm_reserve_inclusive_total": 26953.152947481024,
+    "fresh_two_arm_reserve_inclusive_fits_remaining_campaign_balance": false,
+    "forecast_interpretation": "descriptive_single_repeated_call_per_arm_not_a_statistical_bound"
+  },
+  "health": {
+    "calls_per_arm": 2,
+    "sampled_states_per_call": 2000,
+    "factor": {
+      "all_calls_passed_required_health": true,
+      "acceptance_rates": [0.9635, 0.824],
+      "maximum_absolute_energy_error": [6.9938695098555685, 740.4364757596873],
+      "finite_log_acceptance_below_minus_1000": [0, 0]
+    },
+    "strict": {
+      "all_calls_passed_required_health": true,
+      "acceptance_rates": [0.5765, 0.561],
+      "maximum_absolute_energy_error": [2681.827254979027, 2631.552160724938],
+      "finite_log_acceptance_below_minus_1000": [39, 12]
+    },
+    "native_divergence_count": "not_exposed_by_shared_trace",
+    "proposed_state_score_check": "not_exposed_by_shared_trace",
+    "innovation_gap_positive_infinity": "declared scalar observation-dimension-one sentinel only"
+  },
+  "component_profile_seconds_mean": {
+    "factor": {
+      "transport_initial": 0.0005756964965257794,
+      "transport_terminal": 0.0004646300003514625,
+      "physical_value_score_initial": 0.5796198025127524,
+      "physical_value_score_terminal": 0.7160803092556307,
+      "transformed_value_score_initial": 0.582471796493337,
+      "transformed_value_score_terminal": 0.7180557167521329,
+      "sampled_state_status_initial": 0.5789272747351788,
+      "sampled_state_status_terminal": 0.716974094248144
+    },
+    "strict": {
+      "transport_initial": 0.0005689715035259724,
+      "transport_terminal": 0.00046192799345590174,
+      "physical_value_score_initial": 0.9142967057414353,
+      "physical_value_score_terminal": 1.0673666084985598,
+      "transformed_value_score_initial": 0.9147674717605696,
+      "transformed_value_score_terminal": 1.0644432750050328,
+      "sampled_state_status_initial": 0.9147678037552396,
+      "sampled_state_status_terminal": 1.064462393747817
+    },
+    "interpretation": "target_evaluation_dominates_transport;_accepted_state_status_reuse_is_a_hypothesis_only"
+  },
+  "verification": {
+    "postrun_status": "PASS_POSTRUN_CHECKPOINT_AND_HEALTH_VERIFICATION",
+    "committed_bundles_checked": 34,
+    "serialized_tensors_checked": 372,
+    "old_ledgers_unchanged": true,
+    "source_closure_unchanged": true,
+    "process_cleanup_status": "PASS_NO_CAMPAIGN_GPU_WORKERS_REMAIN",
+    "terminal_cpu_regressions": "152 passed, 191 dependency warnings, 21.95 seconds",
+    "compilation_and_git_diff_check": "passed"
+  },
+  "next_step": {
+    "action": "source_equivalent_accepted_state_status_reuse_repair_then_remeasure",
+    "required_checks": [
+      "rejected-state status selection equivalence",
+      "numerical and seed trajectory equivalence",
+      "full sampled-state health and interruption canary",
+      "actual P1 consumer checkpoint integration and current-source readiness",
+      "reserve-inclusive factor and strict forecasts fit both arm caps and remaining aggregate budget"
+    ],
+    "prohibited_shortcuts": [
+      "do not drop the interruption reserve",
+      "do not raise the four-hour cap implicitly",
+      "do not reuse diagnostic draws as untouched P1 evidence",
+      "do not claim convergence, posterior validity, superiority, or universal hardware recovery"
+    ]
+  },
+  "artifact_sha256": {
+    "result_note": "ab6853ac2edce0b28d6e63fc797e1dfb53c8d9db82a1123cbdf089d6b13bfcf9",
+    "canary_result": "852517f33da6e197187272b1c79d6eb1c94e197858f4d5d4b0f005c1496aa4bc",
+    "postrun_verification": "a0f23ec7dc3149b9cd18c4fe1c7e526b367e27753924b3f2ad058917771feea0",
+    "process_cleanup_verification": "b4f679399e7fdff8f4aa831ff4e5a47b32039fe7c21a7dd7c5c85f1edefc8b90",
+    "gpu_after": "658c264667b57b8ae702221510d9d8b7951498e66190028ae4757aa8a9801350",
+    "component_profile_summary": "5b3ded52d3d1cddf43d31a97b2ddbdb0dd90922fa8a0db689bd9fff43e5485ee",
+    "old_readiness_ledger": "1961d07cf421b06abfb6ec4b62830b44e4052849505d72cd3cf0cea087160415",
+    "old_parallel_tuning_ledger": "b3488d2fdd3af58a47b13bb14a47ec110c648a5ab5c88d45afe8134f10038a32"
+  }
+}

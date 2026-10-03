@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="3.065" timestamp="2026-09-17T02:25:16.694873+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_master_repair" name="test_nonfinite_preparation_diagnostics_do_not_mask_original_failure" time="0.002"><failure message="ValueError: Out of range float values are not JSON compliant: nan">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-393/test_nonfinite_preparation_dia0')
+
+    def test_nonfinite_preparation_diagnostics_do_not_mask_original_failure(tmp_path):
+        details = {"stage": "windowed_mass", "hard_vetoes": ("nonfinite_target_score",),
+                   "diagnostics": {"raw": [float("nan"), float("inf"), -float("inf"), 1.5]}}
+        failure = HMCPreparationFailure("original numerical failure", details=details)
+        with pytest.raises(HMCPreparationFailure) as raised:
+            with HMCPreparationProgress(tmp_path) as progress:
+&gt;               progress.phase("windowed_mass_failed", details)
+
+tests/test_hmc_master_repair.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/hmc_preparation.py:98: in phase
+    self._write()
+bayesfilter/inference/hmc_preparation.py:86: in _write
+    temporary.write_text(json.dumps(payload, indent=2, default=str, allow_nan=False) + "\n")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/json/__init__.py:242: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/json/encoder.py:202: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;json.encoder.JSONEncoder object at 0x7e2fa6f6f4d0&gt;
+o = {'artifact_authority': False, 'elapsed_seconds': 0.00019765301840379834, 'events': [{'details': {}, 'elapsed_seconds':...: 'windowed_mass'}, 'elapsed_seconds': 0.00018086301861330867, 'phase': 'windowed_mass_failed'}], 'failure': None, ...}
+_one_shot = True
+
+    def iterencode(self, o, _one_shot=False):
+        """Encode the given object and yield each string
+        representation as available.
+    
+        For example::
+    
+            for chunk in JSONEncoder().iterencode(bigobject):
+                mysocket.write(chunk)
+    
+        """
+        if self.check_circular:
+            markers = {}
+        else:
+            markers = None
+        if self.ensure_ascii:
+            _encoder = encode_basestring_ascii
+        else:
+            _encoder = encode_basestring
+    
+        def floatstr(o, allow_nan=self.allow_nan,
+                _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
+            # Check for specials.  Note that this type of test is processor
+            # and/or platform-specific, so do tests which don't depend on the
+            # internals.
+    
+            if o != o:
+                text = 'NaN'
+            elif o == _inf:
+                text = 'Infinity'
+            elif o == _neginf:
+                text = '-Infinity'
+            else:
+                return _repr(o)
+    
+            if not allow_nan:
+                raise ValueError(
+                    "Out of range float values are not JSON compliant: " +
+                    repr(o))
+    
+            return text
+    
+    
+        if self.indent is None or isinstance(self.indent, str):
+            indent = self.indent
+        else:
+            indent = ' ' * self.indent
+        if _one_shot and c_make_encoder is not None:
+            _iterencode = c_make_encoder(
+                markers, self.default, _encoder, indent,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, self.allow_nan)
+        else:
+            _iterencode = _make_iterencode(
+                markers, self.default, _encoder, indent, floatstr,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, _one_shot)
+&gt;       return _iterencode(o, 0)
+               ^^^^^^^^^^^^^^^^^
+E       ValueError: Out of range float values are not JSON compliant: nan
+
+../../anaconda3/envs/tfgpu/lib/python3.13/json/encoder.py:263: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-393/test_nonfinite_preparation_dia0')
+
+    def test_nonfinite_preparation_diagnostics_do_not_mask_original_failure(tmp_path):
+        details = {"stage": "windowed_mass", "hard_vetoes": ("nonfinite_target_score",),
+                   "diagnostics": {"raw": [float("nan"), float("inf"), -float("inf"), 1.5]}}
+        failure = HMCPreparationFailure("original numerical failure", details=details)
+        with pytest.raises(HMCPreparationFailure) as raised:
+&gt;           with HMCPreparationProgress(tmp_path) as progress:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_master_repair.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/hmc_preparation.py:110: in __exit__
+    self._write()
+bayesfilter/inference/hmc_preparation.py:86: in _write
+    temporary.write_text(json.dumps(payload, indent=2, default=str, allow_nan=False) + "\n")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/json/__init__.py:242: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/json/encoder.py:202: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;json.encoder.JSONEncoder object at 0x7e2b107dc3e0&gt;
+o = {'artifact_authority': False, 'elapsed_seconds': 0.00024133402621373534, 'events': [{'details': {}, 'elapsed_seconds':...s_failed'}], 'failure': {'reason': 'Out of range float values are not JSON compliant: nan', 'type': 'ValueError'}, ...}
+_one_shot = True
+
+    def iterencode(self, o, _one_shot=False):
+        """Encode the given object and yield each string
+        representation as available.
+    
+        For example::
+    
+            for chunk in JSONEncoder().iterencode(bigobject):
+                mysocket.write(chunk)
+    
+        """
+        if self.check_circular:
+            markers = {}
+        else:
+            markers = None
+        if self.ensure_ascii:
+            _encoder = encode_basestring_ascii
+        else:
+            _encoder = encode_basestring
+    
+        def floatstr(o, allow_nan=self.allow_nan,
+                _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
+            # Check for specials.  Note that this type of test is processor
+            # and/or platform-specific, so do tests which don't depend on the
+            # internals.
+    
+            if o != o:
+                text = 'NaN'
+            elif o == _inf:
+                text = 'Infinity'
+            elif o == _neginf:
+                text = '-Infinity'
+            else:
+                return _repr(o)
+    
+            if not allow_nan:
+                raise ValueError(
+                    "Out of range float values are not JSON compliant: " +
+                    repr(o))
+    
+            return text
+    
+    
+        if self.indent is None or isinstance(self.indent, str):
+            indent = self.indent
+        else:
+            indent = ' ' * self.indent
+        if _one_shot and c_make_encoder is not None:
+            _iterencode = c_make_encoder(
+                markers, self.default, _encoder, indent,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, self.allow_nan)
+        else:
+            _iterencode = _make_iterencode(
+                markers, self.default, _encoder, indent, floatstr,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, _one_shot)
+&gt;       return _iterencode(o, 0)
+               ^^^^^^^^^^^^^^^^^
+E       ValueError: Out of range float values are not JSON compliant: nan
+
+../../anaconda3/envs/tfgpu/lib/python3.13/json/encoder.py:263: ValueError</failure></testcase></testsuite></testsuites>

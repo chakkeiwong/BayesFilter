@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="7.292" timestamp="2026-09-20T12:37:54.356548+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_tuning_artifacts" name="test_v2_artifact_replay_is_deterministic_and_preserves_v1_attachment" time="4.145"><failure message="ValueError: warmup next reasonable epsilon field set or status is invalid">tests/test_hmc_tuning_artifacts.py:222: in test_v2_artifact_replay_is_deterministic_and_preserves_v1_attachment
+    artifact = _artifact()
+               ^^^^^^^^^^^
+tests/test_hmc_tuning_artifacts.py:197: in _artifact
+    return build_hmc_tuning_engineering_artifact(
+bayesfilter/inference/hmc_tuning_artifacts.py:783: in build_hmc_tuning_engineering_artifact
+    validate_hmc_tuning_engineering_artifact(core, require_hash=False)
+bayesfilter/inference/hmc_tuning_artifacts.py:846: in validate_hmc_tuning_engineering_artifact
+    _validate_operational_warmup_payload(warmup)
+bayesfilter/inference/hmc_tuning_artifacts.py:666: in _validate_operational_warmup_payload
+    next_step = _validate_reasonable_epsilon_payload(
+bayesfilter/inference/hmc_tuning_artifacts.py:219: in _validate_reasonable_epsilon_payload
+    raise ValueError(f"{name} field set or status is invalid")
+E   ValueError: warmup next reasonable epsilon field set or status is invalid</failure></testcase></testsuite></testsuites>

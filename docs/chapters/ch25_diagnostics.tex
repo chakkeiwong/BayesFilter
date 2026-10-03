@@ -24,6 +24,205 @@ NUTS is used diagnostically.  Short clean runs are smoke tests.  They can justif
 the next experiment, but they do not establish convergence for an industrial
 target.
 
+\section{Warm-up and posterior precision}
+
+A tuning allocation answers how much computation to spend learning geometry
+and qualifying a frozen transition. It does not answer how long the resulting
+chain must run to forget its initialization. BayesFilter therefore keeps all
+verified $(L,\epsilon)$ pairs and asks the caller to choose a member before
+posterior assessment. No R-hat, ESS or MCSE threshold changes tuning membership.
+
+The selected member runs a separate discarded warm-up, followed by cumulative
+retained draws. The shared keyword configuration inherits a minimum of 2,000
+warm-up transitions per chain, a recent window of 1,000, modern R-hat at most
+$1.05$, and a cap of 10,000. These numbers are operational owner-policy choices;
+they are not estimates of a sufficient burn-in for every target. Stan's
+windowed adaptation likewise allocates configured warm-up to fast step-size
+and slow metric updates. Finishing that schedule is not a proof of stationarity.
+
+\path{HMCPosteriorAssessmentPolicy} makes the additional requirements explicit:
+minimum bulk and tail ESS during warm-up and retention, the number of
+consecutive successful warm-up checks, and accuracy targets for the retained
+estimators. Every eligible look reports rank-normalized split and folded R-hat,
+bulk/tail ESS, original-scale mean ESS and mean MCSE. Bulk and tail ESS use
+the Stan/ArviZ initial-positive, initial-monotone recursion, with an explicit
+method identifier in the assessment report. The separate precision-policy
+autocorrelation estimator retains the TFP convention described below.
+Custom callbacks add
+requirements; they cannot replace core health and R-hat checks. The archived
+wrapper retains its historical strict inequality and declared coordinate/ESS
+screens, while using the same diagnostic arithmetic. The generic entry point
+for a verified member is \path{run_hmc_posterior}.
+
+Repeated successful windows are useful evidence of stability in the region
+visited. Overlapping windows are not independent replications, and all chains
+can remain in one unrepresentative mode. A small R-hat cannot detect a mode no
+chain visits. Model-specific functionals, event indicators and log density can
+be monitored with a named \path{quantities_fn} and a stable
+\path{quantities_id}. If the warm-up cap is exhausted, the result reports
+inconclusive equilibration and does not start retained inference. Warm-up draws
+remain archived and are always excluded from posterior estimates.
+
+A short recent window can itself contain too little effective information for
+the readiness screen, even after initialization bias has decayed. Increasing
+the warm-up cap while keeping that window fixed does not increase the
+information available at each check. A target-specific study should therefore
+declare both its recent-window length and its total allowance, using pilot
+dependence estimates to plan them and fresh replications to assess delivery.
+Changing these settings defines a new posterior policy and checkpoint; it
+does not revoke or retune the verified kernel.
+
+The shared configuration also permits an explicitly justified finite budget
+exception: \path{max_results_per_chain} sets the bound and
+\path{count_budget_reason} records why a bound above $10000$ is needed.
+Warm-up and retained maxima must lie within it. The serialized posterior
+policy labels the nondefault allocation; the canonical $10000$ default and
+all health, R-hat and precision requirements are unchanged.
+
+For a scalar functional $g(\theta)$, let $X_{it}=g(\theta_{it})$ be draw $t$
+of independent chain $i$, with $m$ chains of length $n$. Under stationarity and
+an applicable central limit theorem, define the chain's long-run variance by
+\begin{equation}
+ \sigma_i^2=\gamma_i(0)+2\sum_{k\ge1}\gamma_i(k),\qquad
+ \gamma_i(k)=\operatorname{Cov}(X_{i,t},X_{i,t+k}).
+\end{equation}
+Since the pooled estimate is $m^{-1}\sum_i\bar X_i$ and chains are independent,
+its approximate Monte Carlo variance is
+\begin{equation}
+ \widehat{\operatorname{Var}}_{\rm MC}(\bar X)
+   =\frac{1}{m^2 n}\sum_{i=1}^m\widehat\sigma_i^2,
+ \qquad \operatorname{MCSE}(\bar X)
+   =\sqrt{\widehat{\operatorname{Var}}_{\rm MC}(\bar X)}.
+ \label{eq:bf-pooled-mean-mcse}
+\end{equation}
+Serial dependence enters through $\sigma_i^2$, while independence between
+chains permits addition of their variances. Concatenating chains into a single
+serial process would introduce artificial transitions between their endpoints.
+
+For batch size $b$, let $a=\lfloor n/b\rfloor$ and let $\bar X_{ik}^{(b)}$
+denote the mean in complete batch $k$. Ordinary batch means estimates
+\begin{equation}
+ \widehat\sigma_{i,b}^2=
+ \frac{b}{a-1}\sum_{k=1}^{a}
+   \left(\bar X_{ik}^{(b)}-a^{-1}\sum_{j=1}^{a}\bar X_{ij}^{(b)}\right)^2.
+\end{equation}
+The lugsail estimate combines two batch sizes
+\citep[section 4, equation (7)]{vats2021lugsail}:
+\begin{equation}
+ \widehat\sigma_{i,L}^2=
+ \frac{\widehat\sigma_{i,b}^2-c\widehat\sigma_{i,\lfloor b/r\rfloor}^2}{1-c},
+ \qquad r\ge1,\quad 0\le c<1.
+ \label{eq:bf-lugsail-mcse}
+\end{equation}
+For positively correlated chains, this construction can offset downward bias
+in the ordinary estimate. It can also increase variability and yield a
+nonpositive estimate. BayesFilter reports such estimates as unavailable
+precision evidence instead of clipping them into a passing result. The
+literature values $r=3,c=1/2$ and $b=\lfloor\sqrt n\rfloor$ are configurable
+baselines, not universal recommendations. The minimum of twenty complete
+batches is an operational stability floor, not a theorem about coverage.
+Terminal incomplete batches are excluded from long-run variance estimation;
+their count is recorded, and all retained draws still enter the posterior mean.
+
+Batch length must also resolve the dependence in the chain. For a stationary
+unit-variance Gaussian AR(1) with correlation $\rho$, define
+$V(k)=k+2\sum_{j=1}^{k-1}(k-j)\rho^j$, the variance of a sum of $k$ draws.
+When $n=ab$, centering the batch means gives
+\begin{equation}
+ \mathbb{E}[\widehat\sigma_{i,b}^2]
+ =\frac{V(b)-V(n)/a^2}{b(1-1/a)}.
+\end{equation}
+This follows by subtracting the variance of the overall batch mean from the
+sum of the batch second moments. Substituting the two batch sizes into
+\eqref{eq:bf-lugsail-mcse} shows why a positive estimate can still be biased
+downward. With $\rho=0.995$, $n=10000$, $b=100$, $r=3$ and $c=1/2$, its expected
+mean-variance estimate is only about $34\%$ of the exact finite-count variance.
+The smaller batch calculation uses its own complete-batch count. Twenty or
+more batches therefore cannot certify adequate bandwidth. Dependence,
+longer-chain evidence and sensitivity to justified batch lengths must be
+examined when the required accuracy is consequential.
+
+The same calculation gives the exact variance of the pooled mean of $m$
+independent stationary chains as $V(n)/(mn^2)$. For fixed $|\rho|<1$ and long
+chains this is approximately
+\begin{equation}
+ \operatorname{Var}(\bar X) \simeq
+ \frac{1}{mn}\frac{1+\rho}{1-\rho}.
+\end{equation}
+At $\rho=0.995$, four unit-variance chains therefore need about $39900$
+retained draws each to attain mean MCSE $0.05$ in this planning approximation.
+A cap of $10000$ is inadequate for that typical precision requirement even
+when the transition and uncertainty calculation are correct. The actual
+stopping rule also depends on noisy diagnostic estimates and requires its own
+calibration; this count is neither a burn-in estimate nor a universal lower
+bound for HMC.
+
+The autocorrelation option retains the identified TFP 0.25 positive-pairs ESS
+calculation. Rank-normalized bulk ESS is useful for exploration diagnostics,
+but original-scale mean uncertainty needs the ESS of the actual functional.
+For a quantile, BayesFilter follows the indicator-ESS and order-statistic
+construction in \citet[section 4.4]{vehtari2021rank}, with the explicitly named
+TFP positive-pairs indicator ESS. The pooled percentile preserves equal
+interpolation endpoints exactly: otherwise rounding a cutoff below a repeated
+value can change every indicator at that value and hence its estimated ESS.
+The corrected quantile method has a versioned identifier in both the report
+and precision policy, so a checkpoint from the earlier arithmetic cannot be
+silently reused. A constant rare-event indicator or a tied zero-width quantile
+interval supplies no reliable accuracy evidence.
+
+The reported quantile MCSE approximates a standard error using central
+order statistics. Multiplying it by $1.96$ gives a symmetric diagnostic
+interval; this is not the same finite-sample calculation as propagating the
+$.025$ and $.975$ probabilities directly to empirical order statistics.
+Independent formula agreement checks the arithmetic, not the coverage of
+either interval under actual HMC stopping. Finite diagnostics do not establish
+the moments or mixing assumptions needed by any of these estimators.
+
+Each \path{HMCPrecisionTarget} specifies a mean or a quantile and an absolute
+MCSE tolerance, an MCSE-to-posterior-SD tolerance, or both. Accuracy is assessed
+on cumulative retained draws. No supplied tolerance means
+\path{precision_not_requested}; a successful diagnostic screen then carries
+no claim of sufficient estimator accuracy. At the retained cap, unmet targets
+remain insufficient. Repeated MCSE screening is an operational stopping rule:
+the implementation does not claim finite-sample or anytime-valid confidence
+coverage. The asymptotic fixed-width results in
+\citet[sections 2--3.1 and Appendix A]{flegalgongfixedwidth} require additional
+regularity and estimator-consistency conditions. Lugsail estimates uncertainty
+in retained means; it does not estimate how many burn-in draws are enough.
+Experiments that compare stopping policies must declare the batch size,
+minimum batch count and lugsail coefficients together with the recent-window
+length, effective-sample-size requirements and persistence of readiness checks.
+The fixed-count comparison uses the same declared estimator. A change to any
+of these choices requires a fresh fit identity, including when a previous fit
+has already saved its final summary. Otherwise a cached result could silently
+be attributed to a policy that never produced it.
+
+Absolute accuracy requirements must be interpreted in the units of the
+functional. For independent normal observations with standard deviation $s$
+and total count $N$, the mean has MCSE $s/\sqrt N$. The usual quantile
+approximation gives variance $p(1-p)/(N f(q_p)^2)$; substituting $p=1/2$
+and normal density $f(q_{1/2})=1/(\sqrt{2\pi}s)$ yields median MCSE
+$\sqrt{\pi/2}\,s/\sqrt N$. Thus a broad normal coordinate can need more
+draws to estimate its median than its mean at the same absolute tolerance.
+These independent-draw calculations help plan cost; correlated HMC can have
+different variances, including smaller ones under negative dependence.
+A retained cap therefore requires inspecting quantity-specific uncertainty
+and trajectory behavior before diagnosing a tuning failure. An unmet accuracy
+requirement remains unmet even when R-hat is favorable.
+
+The diagnostic version \path{bayesfilter.hmc_diagnostic_math.v2} corrects two
+prior arithmetic errors: normal-score ranks use $S+1/4$ in the denominator,
+and modern R-hat is the square root of the variance ratio. Earlier reported
+threshold results require recomputation from draws before current use.
+Adjacent-epoch drift statistics remain descriptive: the old normalization
+omits covariance between adjacent epoch means and is not a calibrated test.
+The legacy Phase 29 warmup screen still compares these statistics with its
+configured heuristic thresholds. Those comparisons can reject that legacy
+screen; they are not part of the common posterior assessment and do not have
+calibrated significance levels.
+
+\lstinputlisting[language=Python,caption={A verified Gaussian member with explicit posterior accuracy targets.}]{examples/hmc_posterior_precision.py}
+
 \section{Failure Taxonomy}
 \label{sec:bf-failure-taxonomy}
 

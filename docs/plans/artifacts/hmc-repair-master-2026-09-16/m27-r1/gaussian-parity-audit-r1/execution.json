@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-c",
+    "from pathlib import Path; import json; from docs.benchmarks.audit_hmc_m27_2026_09_23 import parity,audit_execution; r=Path(\"docs/plans/artifacts/hmc-repair-master-2026-09-16/m27-r1\"); roots=[r/(\"gaussian-\"+m+\"-gpu-r1\") for m in (\"persistent\",\"isolated\")]; row=parity(*(p/\"fits/replication-0000\" for p in roots)); files=json.loads((r/\"source-r2-manifest.json\").read_text())[\"files\"]; design=json.loads((r/\"m27-gpu-gaussian-lugsail-2026092283.json\").read_text()); row[\"runtime_audit\"]=[audit_execution(p,files,\"gpu\",m,design) for p,m in zip(roots,(\"persistent\",\"isolated\"))]; (r/\"gaussian-parity-audit-r1/result.json\").write_text(json.dumps(row,indent=2)+\"\\n\"); print({k:row[k] for k in (\"exact_tensor_and_numerical_parity\",\"verified_count\",\"tensor_count\")})"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 1.2174137870315462,
+  "cpu_worker_seconds": 1.2174137870315462,
+  "gpu_worker_seconds": 0,
+  "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m27-r1/gaussian-parity-audit-r1/manifest.json",
+  "launch_failure": null
+}

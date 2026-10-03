@@ -1,0 +1,389 @@
+{
+  "binding_hash": "a7c5ecd0ee912ea845e1be3d00a3d91309dea651cfc53489a2bb1a655696556a",
+  "execution": {
+    "adapter_kind": "ordinary",
+    "capability": {
+      "evidence_path": "/home/ubuntu/python/BayesFilter/tests/test_hmc_candidate_set_execution.py",
+      "full_chain_xla_diagnostic_ready": true,
+      "nonclaims": [
+        "fixed-mass HMC tuning-budget ladder only",
+        "acceptance is a tuning-screen diagnostic only",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default sampler readiness claim",
+        "no empirical validity claim",
+        "no GPU or XLA readiness claim",
+        "base value/score authority: graph_native",
+        "fixed-mass latent wrapper cannot promote fallback base authority",
+        "fixed-mass latent wrapper preserves XLA authority only from accepted base authority"
+      ],
+      "runtime_backend": "bayesfilter.inference.hmc_budget_ladder._FixedMassLatentValueScoreAdapter",
+      "score_provenance": "unspecified",
+      "target_scope": "candidate-bridge-test",
+      "value_score_authority": "graph_native",
+      "xla_hmc_ready": true
+    },
+    "config": {
+      "acceptance_policy": {
+        "allowed_cost_stop_reasons": [],
+        "block_count": 4,
+        "chain_count": 4,
+        "confidence_level": 0.9,
+        "dependence_unit": "independently_seeded_chain_mean",
+        "diagnostic_roles": {
+          "bounded_short_cycle_path_return": "promotion_veto_and_resonance_repair_trigger",
+          "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+          "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+          "movement": "promotion_veto_and_trajectory_repair_trigger",
+          "native_divergence": "promotion_veto",
+          "signed_log_accept_ratio_tails": "explanatory_alert_only"
+        },
+        "max_abs_log_accept_energy_proxy": 1000.0,
+        "max_repeated_state_fraction": 0.95,
+        "min_block_size": 16,
+        "min_decisions_per_chain": 64,
+        "min_movement_rate": 0.05,
+        "min_normalized_return_displacement": 0.0001,
+        "path_return_contract": {
+          "absolute_tolerance": 1e-12,
+          "aggregation": "maximum_recurrence_fraction_over_lags_per_chain",
+          "chain_rule": "veto_if_any_chain_exceeds_max_fraction",
+          "lags": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "max_fraction": 0.95,
+          "minimum_repetitions_at_minimum_evidence": 4,
+          "relative_tolerance": 1e-10
+        },
+        "practical_region": [
+          0.65,
+          0.75
+        ],
+        "repair_region": [
+          0.55,
+          0.85
+        ],
+        "schema": "bayesfilter.hmc_acceptance_policy.v5",
+        "target": 0.7,
+        "tuning_decision_role": "working_tuning_compatibility_interval_not_convergence_or_equivalence",
+        "uncertainty_method": "two_sided_student_t_independent_chain_means"
+      },
+      "chain_mode": "serial",
+      "chunk_max_results": 256,
+      "measurement_num_results": 64,
+      "non_xla_reason": "explicit public preparation CPU/reference exception",
+      "num_warmup_steps": 0,
+      "preparation_elapsed_seconds": 4.5024613630375825,
+      "seed": [
+        20260621,
+        8
+      ],
+      "target_status_trace_policy": "none",
+      "use_xla": false,
+      "verification_num_results": 64
+    },
+    "initial_active_state": {
+      "dtype": "float64",
+      "sha256": "7bc8b80294822f69d9fa373dac06dffbc505ebcee1894d03e2cd72ee19d7be21",
+      "shape": [
+        4,
+        2
+      ],
+      "tensor": "CAISCBICCAQSAggCIkASj/dSHRv/P6TUjyWgtfC/oBk+Sbqy/D+uCS4HIfTVPxJwOB3NObw/NWAeDoSg/L9oBEC/QvnPv82XCUlHUQBA"
+    },
+    "layers": [
+      {
+        "artifact": {
+          "adapter_signature": "review-anisotropic-gaussian-variance-1-9-v1",
+          "artifact_type": "bayesfilter_precomputed_mass_artifact",
+          "covariance": [
+            [
+              1.000000001,
+              0.0
+            ],
+            [
+              0.0,
+              9.000000001
+            ]
+          ],
+          "covariance_source": "parameter_scales",
+          "dimension": 2,
+          "eigen_summary": {
+            "condition_number": 8.999999992,
+            "eigenvalues": [
+              1.000000001,
+              9.000000001
+            ],
+            "finite": true,
+            "max": 9.000000001,
+            "min": 1.000000001,
+            "positive": true
+          },
+          "factor": [
+            [
+              1.0000000005,
+              0.0
+            ],
+            [
+              0.0,
+              3.0000000001666667
+            ]
+          ],
+          "factor_orientation": "row_right_transpose",
+          "include_arrays": true,
+          "log_jacobian_convention": "constant_omitted",
+          "matrix_used_for_square_root": "geometry_initialization_covariance",
+          "nonclaims": [
+            "geometry initialization only",
+            "no HMC runtime claim",
+            "no tuning success claim",
+            "no posterior convergence claim",
+            "no sampler superiority claim",
+            "no default-readiness claim"
+          ],
+          "position": [
+            0.0,
+            0.0
+          ],
+          "position_role": "initial_position",
+          "precision_eigen_summary": null,
+          "reconstruction_atol": 1e-10,
+          "reconstruction_rtol": 1e-10,
+          "regularization_report": {
+            "covariance_jitter": 1e-09,
+            "geometry_initializer_source": "bayesfilter.inference.tune_hmc_kernel.standard.geometry",
+            "method": "diagonal_scales"
+          },
+          "schema_version": 1,
+          "source": "geometry_initialization_parameter_scales"
+        },
+        "kind": "bootstrap_mass"
+      },
+      {
+        "artifact": {
+          "adapter_signature": "e7be4e288af5aaa26b2e6fe1ac5fc5cedba2422e1bd630e596cfafbb9416e393",
+          "artifact_type": "bayesfilter_precomputed_mass_artifact",
+          "covariance": [
+            [
+              0.5886456739483176,
+              0.0
+            ],
+            [
+              0.0,
+              0.8556819601998308
+            ]
+          ],
+          "covariance_source": "operational_final_covariance_in_geometry_latent",
+          "dimension": 2,
+          "eigen_summary": {
+            "condition_number": 1.453645202996869,
+            "eigenvalues": [
+              0.5886456739483176,
+              0.8556819601998308
+            ],
+            "finite": true,
+            "max": 0.8556819601998308,
+            "min": 0.5886456739483176,
+            "positive": true
+          },
+          "factor": [
+            [
+              0.7672324771204081,
+              0.0
+            ],
+            [
+              0.0,
+              0.9250307887848008
+            ]
+          ],
+          "factor_orientation": "row_right_transpose",
+          "include_arrays": true,
+          "log_jacobian_convention": "constant_omitted",
+          "matrix_used_for_square_root": "affine_composition_factor",
+          "nonclaims": [
+            "operational interleaved HMC warmup engineering evidence only",
+            "warmup draws are adaptation inputs and not posterior samples",
+            "native divergence may be unavailable from the active TFP HMC kernel",
+            "no posterior convergence claim",
+            "no sampler superiority claim",
+            "no GPU or XLA readiness claim"
+          ],
+          "position": [
+            0.06935537570210996,
+            0.025668223328575646
+          ],
+          "position_role": "operational_final_center_in_geometry_latent",
+          "precision_eigen_summary": null,
+          "reconstruction_atol": 1e-10,
+          "reconstruction_rtol": 1e-10,
+          "regularization_report": {
+            "base_coordinate_signature": "e4a5b4d8d82e240b7a83d168c676f8e1806a9d29d6b910bbbb106b2c511da25f",
+            "double_composition_forbidden": true,
+            "final_coordinate_signature": "2f10ae15e0ddffd40ba2cf834aa3e0e81a5fa210d28f52790f48ea714a03e520",
+            "method": "exact_affine_composition"
+          },
+          "schema_version": 1,
+          "source": "operational_windowed_warmup_composition"
+        },
+        "kind": "fixed_mass"
+      }
+    ],
+    "preparation": {
+      "epsilon_proposal_bound": {
+        "coordinate_signature": "2f10ae15e0ddffd40ba2cf834aa3e0e81a5fa210d28f52790f48ea714a03e520",
+        "metric_signature": "3247e08455c14510436b044bde8a4787d460f5432e80e54f83d1390f2c02325b",
+        "role": "proposal_safety_only",
+        "upper": 2.0897112113641323
+      },
+      "final_adapter_signature": "2ac129362a10b21ed44c3f8e61585ead26adadae031fd11210b922bc59612f25",
+      "geometry_hash": "0b100a4ae2af7a89d90ec96061f9537ef18bbd59a2a68569b92c425c69858dd7",
+      "source": "operational_windowed_handoff",
+      "start_lineage": {
+        "active_signature": "bb15a7362096955521d03f300aa4c0a16c01f791e66139dae615c2b99876dfc5",
+        "canonical_round_trip_passed": true,
+        "count": 4,
+        "evidence_role": "tuning_handoff",
+        "final_coordinate_match_passed": true,
+        "final_transform_signature": "2f10ae15e0ddffd40ba2cf834aa3e0e81a5fa210d28f52790f48ea714a03e520",
+        "frozen_post_warmup_bank_consumed": true,
+        "phase4_adapter_signature": "e7be4e288af5aaa26b2e6fe1ac5fc5cedba2422e1bd630e596cfafbb9416e393",
+        "policy_id": "bayesfilter.greedy_four_start_bank.v1",
+        "promotion_role": "phase5_candidate_start_only",
+        "raw_values_exposed": false,
+        "reports_operational_start_lineage": true,
+        "reports_posterior_convergence": false,
+        "source": "operational_post_warmup_start_bank_v2",
+        "source_signature": "3c29eb71d9fb2649e419eabb8bbbb190ff20b184add68b1dbc0a0a9ac138d632",
+        "target_scope": "candidate-bridge-test",
+        "verification_adapter_signature": "2ac129362a10b21ed44c3f8e61585ead26adadae031fd11210b922bc59612f25"
+      }
+    },
+    "probe": {
+      "scores": {
+        "dtype": "float64",
+        "sha256": "e79e11a1c9341a32a977842dc6bd61d58dd22b14731e376eb5628f4b28be5b67",
+        "shape": [
+          4,
+          2
+        ],
+        "tensor": "CAISCBICCAQSAggCIkB65pF1aCnzvwGzymYQ1us/fRy6F5O+8b8oCBAiEE7Uv/Oky+i3PL6/Cx5HsZ8d+D+D9NmmJwW4PyNyjUAZTvy/"
+      },
+      "values": {
+        "dtype": "float64",
+        "sha256": "1d09a0eb9a1f93958e64cfcce604d1895b49616b28828f1755c80a23b79c944c",
+        "shape": [
+          4
+        ],
+        "tensor": "CAISBBICCAQiID7uPBklkfq/1drwEReo8b8eXR95xW31v/QRzsUMYf2/"
+      }
+    },
+    "runtime_policy": {
+      "cuda_visible_devices": "-1",
+      "device_type": "CPU",
+      "memory_policy": {
+        "all_physical_devices_memory_growth": true,
+        "configured_before_logical_device_initialization": true,
+        "full_device_preallocation_disabled": true,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "mode": "memory_growth",
+        "physical_devices": [],
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "tf32_enabled": true
+    },
+    "schema": "bayesfilter.hmc_candidate_execution.v1",
+    "scope": {
+      "adapter_signature": "2ac129362a10b21ed44c3f8e61585ead26adadae031fd11210b922bc59612f25",
+      "backend": "tensorflow_probability",
+      "coordinate_system": "ordinary",
+      "dtype": "float64",
+      "epsilon_domain": [
+        0.07618738258251337,
+        2.0897112113641323
+      ],
+      "execution_mode": "tf_function",
+      "mass_signature": "3520e6cf2f4d80b63f1e1fbe54082048f91a6f1f6068604589a85b6964403fa4",
+      "max_repairs_per_family": 3,
+      "repair_factor": 2.0,
+      "schema": "bayesfilter.hmc_tuning_scope.v1",
+      "scope_id": "candidate-bridge-test",
+      "search_id": "016fa418f5dc79075799",
+      "source_dependency_hash": "39a93ea8578cfab20a74b8ae6bc55ed547ed4a0e46e9250097e3635db6cc5757",
+      "start_bank_signature": "9294f59dff46e7cbda8c544f6c60e88cd30daa263b35d1ea7360c8fbc2791078",
+      "target_preparation_identity": "ab8941f3a90bd168250d628a194134ef91c19c40ad46f58064a6cfdadebac660",
+      "target_signature": "review-anisotropic-gaussian-variance-1-9-v1",
+      "transition_identity": "a5e3322cdeec72ecff4676316d8dd69a5eb0726d9ef1c62f97aaa4d0c51c300c",
+      "use_xla": false,
+      "warmup_protocol": "74712ad3d59c31944cf06074b8d8ead044220f53a6c12032712a4b01548648d9"
+    },
+    "source_closure": {
+      "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_budget_contract.py": "a2bd9a4865ac5857268c21283a213b26ac4235fa3e6798214dabcb495001d4a4",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_ordinary_selection_policy.py": "0aa46488b2b5d2158ed000739cf7a0d379f8ac9bf1f6919966704aca0fb44177",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/hmc_route_contract.py": "ec0a8fd8e0e07b372ecf8775324a4b58be0fb9d906c6341ba37b8510c9b0e929",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/batched_value_score.py": "25dd24e5aeb56c0c32a22d21723761e100eff5ec6fbb9018dd613f0717dba13e",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_l_finite_bracket.py": "4bb83fac9253c72e548d8a36aa5668c98f980431cfee50d684222f51ddf006a7",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_transport_hmc_mechanics_tf.py": "4540826d97605e7d767b87d78959772d331b5b276cf39f2f41ba91bf707dcb89",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/fixed_transport_hmc_tuning_tf.py": "f8cdb824b8510b8fdf666f7469753c028d15c3d0f7bf8ccdbec6f7048eb9c4b2",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc.py": "be4e04804c3af3d8a619073771e84d7bffb72bbe9a2aaf8cede1b67773145ea4",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_artifact_identity.py": "947f5498e4cf8007f8e54c1ad8e9cec84186f6830b8b7067acc405f0985dc105",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_budget_ladder.py": "3056671a250cc581475c532dfe9ce4fb1c85f6c6257696fc43b96a7c0bf20894",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_decisions.py": "c6cda45ebfbfd6b38cdd38450c09a7d129d9149d7f1689b1ee38e0531051bad9",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_proposals.py": "188d291614ff7667d9a3c8d52581d22e262c704fd1c7e5b00e7195e14306f812",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_runtime.py": "f20f8cb0964d86498fb3d09a0ba4bc5f5b46af869a6e845cc6d7a96e758ac930",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_adapters.py": "d9606d07386cb7b4dcc40083c115001fbabce5482b433148518caeb95b6163b5",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_artifacts.py": "45ed96a38c455aec08740c362f844a6e28ef3c43b9c4d85fda2ae473b36c4906",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_checkpoint.py": "06223c1b9d16b03400616fc04ff82072f55ce366ce16983b60e62019f110f8c2",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_execution.py": "a97a68d581b80b0836286ec15fd4a07d391d39977fbd62ee77842857a5752385",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_position_field.py": "f6b8e79301c81ad707a4339e6150550e170307fbcd6cec1821983bedf6c7b37c",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_public.py": "f6e467712c2fed686e34f236d8ae6b230e5d48386950b1363eeb395a294daba0",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_retained.py": "aee37b6304ba2ba569a485f97a3bc67eb08079928da9d2bdee1f5aa733f0bc0f",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_candidate_set_tuning.py": "f74417c175101085ed4310ea3a9d1c772c88b0d80cc59a1616455c75813b1d0e",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_convergence.py": "b7544346f4beb63946c7482a8a9a2341f4d5cabe72a2b29fab7c4f4ab8408dd7",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_coordinates.py": "ca8e6512ea968c7351f1d3ad90ff3b79bef556a25c6010a700faad706112a154",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_diagnostics.py": "a33073bf16336b8c47a54d56f85295dd70c1b198eb09967b3a1f581c0ee87dd1",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_selection.py": "74cb15743189eb254dce9d115b8411c0bf10081c2a9974fbef585c1041bc6421",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_kernel_tuning.py": "6f66266d6b0cd85a351b5d21537fd068339319ac576c6af5440cafe3caf4fb9c",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_preparation.py": "de28d15b2502c539246f9bceadd8b33460003047f08b569e7e61653f15bdd3f3",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning.py": "c1f2ccde7d86a330b79de55ddf3154f692642184ddc74d4831ff978bd20bd78a",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning_dispatch.py": "676836cbf7c88637a201fae2de3cfb5094e3737d58f13f0207bd7b2ad3390be9",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_tuning_state.py": "63659b3202349048532fbf85c69fa58a5dac3faa63732ea8421fabb7d1ae283c",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_verification.py": "9ff0f90a83775a157421dc435a8813a968a0ab1015ecdb00ed3ad0ed674e4d7c",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/hmc_warmup.py": "d064d55fc8a53ef5f49bbf655744284edcafa4c8ea7c75b35f46cfc5116234c4",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/mass_matrix.py": "6a959080a1de9c3894697bda39667777596b73f469a32e5a7676a7032dbd53b3",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/neutra_artifacts.py": "80ce1b32103d45e2c6e772cae085ec17650e2f7e46537a1d5997d40e63396530",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/inference/tuning_contract.py": "bbb110186a9f49a6a4baf3bea21ae52c60cb7ddbe1180a781a5433810a3dce58",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/runner.py": "d0e49fb3ca650e2374674c31c05ed6d31c66ada364cd43e24c10f30bb0b76dcf",
+      "/home/ubuntu/python/BayesFilter/bayesfilter/runtime/selection.py": "3793e76dc5d619ed70973c621917aa6c4c76cf0ea7f857c45a19c8d66df885c4",
+      "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/automatic_search_check.py": "2bdea5aae47b011d61bc6979344dc5574bc444ff9c83a13c47ea955a1c28a54e",
+      "/home/ubuntu/python/BayesFilter/tests/test_hmc_candidate_set_execution.py": "6b5e69802ec0d057d7e5f12f8bed7aeb931fd34642c15c00fd697567de40b3f3"
+    },
+    "target_lineage": {
+      "data": "none",
+      "model": "anisotropic exact Gaussian",
+      "prior": "Gaussian"
+    },
+    "target_scope": "candidate-bridge-test",
+    "versions": {
+      "tensorflow": "2.20.0",
+      "tensorflow_probability": "0.25.0"
+    }
+  }
+}

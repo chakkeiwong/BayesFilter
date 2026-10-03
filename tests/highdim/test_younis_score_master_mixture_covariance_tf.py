@@ -1,5 +1,6 @@
 """Independent identities and actual LEDH consumption of mixture covariance."""
 import tensorflow as tf
+import pytest
 from bayesfilter.score_study.mixture_covariance_tf import (
     gaussian_mixture_initial,mixture_moments,mixture_schedule,make_mixture_covariance_kernel)
 from bayesfilter.score_study.canonical_adapter_tf import gaussian_direction_inputs
@@ -8,6 +9,31 @@ from test_younis_score_master_canonical_tf import CONTROLS
 
 
 THETA = [.62,-.8,-.6,.9,.25,-.3]
+
+
+@pytest.mark.parametrize("stage", ["predict", "update"])
+def test_shared_invalidity_reaches_actual_schedule_consumer(monkeypatch, stage):
+    from bayesfilter.score_study import mixture_covariance_tf as module
+    name = "quadrature_"+stage+"_with_parameter_tangent"
+    original = getattr(module, name)
+
+    def invalid(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return (*result[:4], tf.constant(False), *result[5:])
+
+    monkeypatch.setattr(module, name, invalid)
+    make_mixture_covariance_kernel.cache_clear()
+    theta = tf.constant(THETA, tf.float64)
+    kernel = make_mixture_covariance_kernel(2, 1, 8, 1, tuple(sorted(CONTROLS.items())), .5)
+    result = kernel(theta, tf.ones([6], tf.float64), tf.constant([[.5]], tf.float64),
+        tf.random.stateless_normal([8, 2], [82, 1], dtype=tf.float64),
+        tf.random.stateless_normal([1, 8, 2], [82, 2], dtype=tf.float64),
+        tf.random.stateless_normal([8, 2], [82, 3], dtype=tf.float64))
+    assert not bool(result[2]["post_valid"][0])
+    assert float(result[0]) == float("-inf")
+    # The shared consumer's invalid-target contract is (-inf, zero score).
+    assert float(result[1]) == 0.
+    make_mixture_covariance_kernel.cache_clear()
 
 
 def test_initial_mixture_matches_mean_covariance_and_total_tangents():

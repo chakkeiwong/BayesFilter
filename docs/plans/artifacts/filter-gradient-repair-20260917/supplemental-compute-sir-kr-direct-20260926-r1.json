@@ -1,0 +1,14 @@
+{
+  "schema": "filter_repair_supplemental_compute.v1",
+  "device": "CPU",
+  "charged_seconds": 180.0,
+  "measurement_kind": "conservative_upper_bound",
+  "reason": "Direct unsupervised validity and TTSIRT pytest localizations, plus the previous SIR review 27.2-second localization note with no separate supplemental receipt. These are explanatory diagnostics, never substitutes for the registered workers. The 180-second reservation covers recorded pytest durations 6.19, 5.32 and 102.31 seconds, prior 27.2 seconds and startup overhead.",
+  "commands": [
+    "pytest -q tests/test_filter_repair_latent_sir.py::test_unused_process_factor_and_nonfinite_noise",
+    "pytest -q tests/test_filter_repair_latent_sir.py::test_unused_process_factor_and_nonfinite_noise --junitxml=/tmp/latent_sir_validity.xml",
+    "pytest -q tests/test_filter_repair_mixed_kr.py tests/test_filter_repair_ttsirt.py"
+  ],
+  "cwd": "/tmp/bayesfilter-filter-gradient-xla-validation-20260918",
+  "gpu_intentionally_hidden_by_tests_conftest": true
+}

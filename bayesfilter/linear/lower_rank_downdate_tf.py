@@ -13,8 +13,8 @@ def batched_lower_rank_downdate(
 ):
     """Apply sequential lower-factor rank-one downdates.
 
-    Static state/observation dimensions are unrolled in Python; batch and
-    parameter proposal axes remain TensorFlow tensors throughout.
+    Rotation coordinates are a sequential TensorFlow loop with fixed-shape
+    state; chain and parameter directions are tensor-batched.
     """
     factor = tf.convert_to_tensor(factor, dtype=tf.float64)
     vectors = tf.convert_to_tensor(vectors, dtype=tf.float64)
@@ -46,103 +46,69 @@ def batched_lower_rank_downdate(
         tf.debugging.assert_all_finite(d_factor, "d_factor contains NaN or Inf")
         tf.debugging.assert_all_finite(d_vectors, "d_vectors contain NaN or Inf")
 
-    current = factor
-    current_vectors = vectors
-    current_d_factor = d_factor
-    current_d_vectors = d_vectors
-    margins = []
-    relative_margins = []
+    if not has_derivatives:
+        d_factor = tf.zeros([batch, 0, n, n], tf.float64)
+        d_vectors = tf.zeros([batch, 0, n, columns], tf.float64)
+    coordinates = tf.range(n)
+    inf = tf.fill([batch], tf.constant(float("inf"), tf.float64))
 
-    for j in range(columns):
-        for k in range(n):
-            lkk = current[:, k, k]
-            xk = current_vectors[:, k, j]
-            margin = lkk * lkk - xk * xk
-            tf.debugging.assert_all_finite(margin, "downdate margin contains NaN or Inf")
-            tf.debugging.assert_greater(margin, tf.zeros_like(margin), message="downdate_margin_nonpositive")
-            margins.append(margin)
-            relative_margins.append(
-                margin / tf.maximum(lkk * lkk, tf.constant(1.0e-300, tf.float64))
-            )
-            r = tf.sqrt(margin)
-            c = r / lkk
-            s = xk / lkk
-            old_column = current[:, :, k]
-            old_vector = current_vectors[:, :, j]
-            a_old = old_column[:, k + 1 :]
-            u_old = old_vector[:, k + 1 :]
-            a_new = (a_old - s[:, None] * u_old) / c[:, None]
-            u_new = c[:, None] * u_old - s[:, None] * a_new
-            new_column = tf.concat([old_column[:, :k], r[:, None], a_new], axis=1)
-            new_vector = tf.concat([old_vector[:, : k + 1], u_new], axis=1)
-            current = tf.concat(
-                [current[:, :, :k], new_column[:, :, None], current[:, :, k + 1 :]],
-                axis=2,
-            )
-            current_vectors = tf.concat(
-                [current_vectors[:, :, :j], new_vector[:, :, None], current_vectors[:, :, j + 1 :]],
-                axis=2,
-            )
+    def step(index, current, current_vectors, current_d_factor, current_d_vectors,
+             min_margin, min_relative_margin):
+        j, k = index // n, index % n
+        lkk = tf.gather(tf.linalg.diag_part(current), k, axis=-1)
+        old_column = tf.gather(current, k, axis=2)
+        old_vector = tf.gather(current_vectors, j, axis=2)
+        xk = tf.gather(old_vector, k, axis=1)
+        margin = lkk * lkk - xk * xk
+        tf.debugging.assert_greater(margin, tf.zeros_like(margin), message="downdate_margin_nonpositive")
+        r = tf.sqrt(margin)
+        c, s = r / lkk, xk / lkk
+        a_new = (old_column - s[:, None] * old_vector) / c[:, None]
+        u_new = c[:, None] * old_vector - s[:, None] * a_new
+        new_column = tf.where(coordinates[None, :] > k, a_new,
+                              tf.where(coordinates[None, :] == k, r[:, None], old_column))
+        new_vector = tf.where(coordinates[None, :] > k, u_new, old_vector)
+        column_mask = (coordinates == k)[None, None, :]
+        vector_mask = (tf.range(columns) == j)[None, None, :]
+        current = tf.where(column_mask, new_column[:, :, None], current)
+        current_vectors = tf.where(vector_mask, new_vector[:, :, None], current_vectors)
+        if has_derivatives:
+            old_d_column = tf.gather(current_d_factor, k, axis=3)
+            old_d_vector = tf.gather(current_d_vectors, j, axis=3)
+            dlkk = tf.gather(old_d_column, k, axis=2)
+            dxk = tf.gather(old_d_vector, k, axis=2)
+            lp, xp, rp = lkk[:, None], xk[:, None], r[:, None]
+            dr = (lp * dlkk - xp * dxk) / rp
+            dc = (dr * lp - rp * dlkk) / (lp * lp)
+            ds = (dxk * lp - xp * dlkk) / (lp * lp)
+            cp, sp = c[:, None, None], s[:, None, None]
+            da_new = ((old_d_column - ds[..., None] * old_vector[:, None, :]
+                       - sp * old_d_vector) * cp
+                      - (old_column[:, None, :] - sp * old_vector[:, None, :]) * dc[..., None]) / (cp * cp)
+            du_new = (dc[..., None] * old_vector[:, None, :] + cp * old_d_vector
+                      - ds[..., None] * a_new[:, None, :] - sp * da_new)
+            new_d_column = tf.where(coordinates[None, None, :] > k, da_new,
+                                    tf.where(coordinates[None, None, :] == k, dr[..., None], old_d_column))
+            new_d_vector = tf.where(coordinates[None, None, :] > k, du_new, old_d_vector)
+            current_d_factor = tf.where(column_mask[:, None], new_d_column[..., None], current_d_factor)
+            current_d_vectors = tf.where(vector_mask[:, None], new_d_vector[..., None], current_d_vectors)
+        return (index + 1, current, current_vectors, current_d_factor, current_d_vectors,
+                tf.minimum(min_margin, margin), tf.minimum(min_relative_margin,
+                    margin / tf.maximum(lkk*lkk, tf.constant(1e-300, tf.float64))))
 
-            if has_derivatives:
-                dlkk = current_d_factor[:, :, k, k]
-                dxk = current_d_vectors[:, :, k, j]
-                l_p = lkk[:, None]
-                x_p = xk[:, None]
-                r_p = r[:, None]
-                dr = (l_p * dlkk - x_p * dxk) / r_p
-                dc = (dr * l_p - r_p * dlkk) / (l_p * l_p)
-                ds = (dxk * l_p - x_p * dlkk) / (l_p * l_p)
-                old_d_column = current_d_factor[:, :, :, k]
-                old_d_vector = current_d_vectors[:, :, :, j]
-                da_old = old_d_column[:, :, k + 1 :]
-                du_old = old_d_vector[:, :, k + 1 :]
-                a_old_p = old_column[:, k + 1 :][:, None, :]
-                u_old_p = old_vector[:, k + 1 :][:, None, :]
-                c_p = c[:, None, None]
-                s_p = s[:, None, None]
-                da_new = (
-                    (da_old - ds[:, :, None] * u_old_p - s_p * du_old) * c_p
-                    - (a_old_p - s_p * u_old_p) * dc[:, :, None]
-                ) / (c_p * c_p)
-                du_new = (
-                    dc[:, :, None] * u_old_p
-                    + c_p * du_old
-                    - ds[:, :, None] * a_new[:, None, :]
-                    - s_p * da_new
-                )
-                new_d_column = tf.concat(
-                    [old_d_column[:, :, :k], dr[:, :, None], da_new], axis=2
-                )
-                new_d_vector = tf.concat(
-                    [old_d_vector[:, :, : k + 1], du_new], axis=2
-                )
-                current_d_factor = tf.concat(
-                    [
-                        current_d_factor[:, :, :, :k],
-                        new_d_column[:, :, :, None],
-                        current_d_factor[:, :, :, k + 1 :],
-                    ],
-                    axis=3,
-                )
-                current_d_vectors = tf.concat(
-                    [
-                        current_d_vectors[:, :, :, :j],
-                        new_d_vector[:, :, :, None],
-                        current_d_vectors[:, :, :, j + 1 :],
-                    ],
-                    axis=3,
-                )
+    _, current, _, current_d_factor, _, min_margin, min_relative_margin = tf.while_loop(
+        lambda index, *_: index < columns * n, step,
+        (tf.constant(0), factor, vectors, d_factor, d_vectors, inf, inf),
+        parallel_iterations=1, maximum_iterations=columns*n,
+    )
 
     diagonal = tf.linalg.diag_part(current)
     tf.debugging.assert_all_finite(current, "downdated factor contains NaN or Inf")
     tf.debugging.assert_greater(diagonal, tf.zeros_like(diagonal), message="downdate diagonal nonpositive")
-    min_margin = tf.reduce_min(tf.stack(margins, axis=1), axis=1)
-    min_relative_margin = tf.reduce_min(tf.stack(relative_margins, axis=1), axis=1)
     diagnostics = {
         "minimum_downdate_margin": min_margin,
         "relative_downdate_margin": min_relative_margin,
-        "downdate_failed": tf.zeros([batch], dtype=tf.bool),
+        "downdate_failed": ~(tf.math.is_finite(min_margin) & (min_margin > 0.0)),
     }
     return current, current_d_factor if has_derivatives else None, diagnostics
 

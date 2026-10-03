@@ -46,7 +46,7 @@ def main() -> int:
     import tensorflow as tf
 
     from bayesfilter.inference.batched_value_score import FixedTransportValueScoreAdapter
-    from bayesfilter.inference.hmc_kernel_tuning import HMCKernelTuningConfig, tune_hmc_kernel
+    from bayesfilter.inference import HMCKernelTuningConfig, tune_hmc_kernel
     from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact
     from bayesfilter.inference.neutra_end_to_end import BatchNativeBoundAdapter
     from bayesfilter.runtime.gpu_memory_policy import configure_tensorflow_gpu_memory_growth

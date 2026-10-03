@@ -34,8 +34,12 @@ from bayesfilter.highdim.squared_tt_engine_xla_tf import run_value_filter_branch
 DTYPE = tf.float64
 
 
-def case_with_steps(n, seed):
-    """Ladder _case plus per-step Kalman increments."""
+def case_with_steps(n, seed, *, include_model=False):
+    """Independent diagnostic fixture and Kalman oracle, preserving PCG draws.
+
+    Optional frozen matrices let runtime TF companions use the same fixture
+    without importing or executing the NumPy reference Kalman recurrence.
+    """
     rng = np.random.default_rng(seed)
     A = 0.7 * np.eye(n) + 0.1 * rng.standard_normal((n, n)) / max(1, n - 1)
     Q = 0.4 * np.eye(n); H = np.eye(n); R = 0.5 * np.eye(n)
@@ -68,7 +72,8 @@ def case_with_steps(n, seed):
             tf.linalg.matvec(tf.constant(H, DTYPE), xc), tf.convert_to_tensor(y, DTYPE), R),
         initial_log_density=lambda xc: _mvn_log_density(xc, tf.constant(m0, DTYPE), P0),
     )
-    return adapter, tf.constant(ys, DTYPE), steps
+    result = (adapter, tf.constant(ys, DTYPE), steps)
+    return (*result, (A, Q, H, R, m0, P0)) if include_model else result
 
 
 if __name__ == "__main__":

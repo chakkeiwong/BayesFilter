@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-c",
+    "import json; from pathlib import Path; from docs.benchmarks.audit_hmc_m30_2026_09_23 import replay_summary; r=Path(\"/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1\"); names=[\"gaussian-static-gpu-r2\",\"gaussian-dynamic-gpu-r1\",\"beta-binomial-static-gpu-r1\",\"beta-binomial-dynamic-gpu-r1\"]; d={n:replay_summary(r/n) for n in names}; (r/\"saved-replay-audit-r1/result.json\").write_text(json.dumps(d,indent=2)+\"\\n\"); print(\"Four replay workers independently verified\")"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 0.21540162502788007,
+  "cpu_worker_seconds": 0.21540162502788007,
+  "gpu_worker_seconds": 0,
+  "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m30-r1/saved-replay-audit-r1/manifest.json",
+  "launch_failure": null
+}

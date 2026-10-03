@@ -1,0 +1,981 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="19" failures="4" skipped="0" tests="170" time="212.020" timestamp="2026-09-21T17:33:03.874168+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_retains_all_viable_candidates_and_nominates_descriptively" time="0.001" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_candidate_local_rejection_does_not_stop_other_candidates[0]" time="0.001" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_candidate_local_rejection_does_not_stop_other_candidates[1]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates0-target_status_invalid]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates1-nonfinite_candidate_observation]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates2-chain_movement_failed]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates3-native_divergence_detected]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates4-native_divergence_count_invalid]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates5-native_divergence_count_invalid]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates6-native_divergence_count_invalid]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates7-native_divergence_count_missing]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates8-bulk_ess_screen_failed]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates9-tail_ess_screen_failed]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates10-mcse_sd_screen_failed]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates11-max_mcse_sd_ratio_negative]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_hard_screens_fail_closed[updates12-max_rhat_nonfinite_or_missing]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_invalid_rung_count[0]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_invalid_rung_count[-1]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_invalid_rung_count[1.5]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_invalid_rung_count[True]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_invalid_rung_count[nan]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_invalid_rung_count[inf]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_duplicate_ids_rejected_before_any_callback" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_callback_failure_is_not_candidate_rejection" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_invalid_nomination_score[score0]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_invalid_nomination_score[score1]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_invalid_nomination_score[score2]" time="0.000" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_tensor_diagnostics_use_unranked_mean_ess" time="0.239" /><testcase classname="tests.test_fixed_transport_candidate_selection" name="test_missing_target_status_and_degenerate_draws_are_not_valid" time="0.167" /><testcase classname="tests.test_fixed_transport_historical_caller_policy" name="test_review_named_callers_select_explicit_legacy_policy" time="0.092" /><testcase classname="tests.test_fixed_transport_historical_caller_policy" name="test_every_benchmark_fixed_transport_config_declares_a_policy" time="4.351" /><testcase classname="tests.test_fixed_transport_historical_caller_policy" name="test_historical_callers_do_not_claim_verified_fixed_transport_handoff" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_binding" name="test_fixed_transport_hmc_mechanics_manifest_and_value_score" time="0.009" /><testcase classname="tests.test_fixed_transport_hmc_binding" name="test_fixed_transport_hmc_manifest_signature_is_stable_and_changes_with_policy" time="0.006" /><testcase classname="tests.test_fixed_transport_hmc_binding" name="test_fixed_transport_hmc_binding_rejects_fallback_authority_for_xla" time="0.002" /><testcase classname="tests.test_fixed_transport_hmc_binding" name="test_fixed_transport_hmc_binding_allows_fallback_authority_for_non_xla_mechanics_only" time="0.003" /><testcase classname="tests.test_fixed_transport_hmc_binding" name="test_fixed_transport_hmc_binding_rejects_scalar_initial_position_and_bad_seed" time="0.004" /><testcase classname="tests.test_fixed_transport_hmc_binding" name="test_fixed_transport_hmc_mechanics_matches_fixed_transport_chain_rule" time="0.004" /><testcase classname="tests.test_fixed_transport_hmc_binding_c603_fixture" name="test_c603_fixed_transport_hmc_mechanics_smoke_preserves_loaded_artifact_identity" time="0.000"><failure message="AssertionError: c603 local handoff checkout is required for this mechanics test: /tmp/dsge_hmc-neutra-handoff-20260705">def test_c603_fixed_transport_hmc_mechanics_smoke_preserves_loaded_artifact_identity() -&gt; None:
+&gt;       artifact = _artifact()
+                   ^^^^^^^^^^^
+
+tests/test_fixed_transport_hmc_binding_c603_fixture.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_fixed_transport_hmc_binding_c603_fixture.py:139: in _artifact
+    root = _handoff_root()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _handoff_root() -&gt; Path:
+        raw = os.environ.get(HANDOFF_ROOT_ENV)
+        root = DEFAULT_HANDOFF_ROOT if not raw else Path(raw).expanduser()
+        if not root.exists():
+&gt;           raise AssertionError(
+                f"c603 local handoff checkout is required for this mechanics test: {root}"
+            )
+E           AssertionError: c603 local handoff checkout is required for this mechanics test: /tmp/dsge_hmc-neutra-handoff-20260705
+
+tests/test_fixed_transport_hmc_binding_c603_fixture.py:41: AssertionError</failure></testcase><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_discovers_unranked_six_l_union_and_preserves_start_bank" time="0.064" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_two_replication_sample_sd_rule_retains_noisy_candidate" time="0.056" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_statistically_incompatible_arm_is_not_a_hard_rejection" time="0.055" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_no_movement_is_a_hard_rejection" time="0.054" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_invalid_adaptation_target_status_fails_each_arm" time="0.023" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_distinct_start_policy_and_receipt_are_fail_closed" time="0.004" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_bayesfilter_issues_route_bound_xla_receipt" time="0.782" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_xla_qualification_fails_on_route_disagreement" time="0.096" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_discovery_rejects_tampered_xla_evidence" time="0.007" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_candidate_and_legacy_default_runners_share_numerical_mechanics" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_xla_qualification_and_discovery_are_publicly_exported" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_shared_mechanics_owns_no_workflow_decision_symbols" time="0.013" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_terminal_step_size_requires_scalar_or_equal_terminal_replicas" time="0.004" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_reusable_runner_changes_tensor_epsilon_and_l_without_retracing" time="0.303" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_one_process_campaign_reuses_four_runners_and_exact_adapted_epsilon" time="0.285" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_campaign_preserves_partial_arm_evidence_after_movement_veto" time="0.256" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_campaign_route_disagreement_is_explanatory_and_fixed_screens_continue" time="0.274" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_candidate_refinement_runs_500_then_continues_500_and_selects_lowest_rhat" time="0.135" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_required_xla_refinement_runs_exactly_warmup_then_diagnostic" time="0.145" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_candidate_refinement_resumes_after_warmup_checkpoint" time="0.049" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_candidate_refinement_checkpoint_rejects_mismatch_corruption_orphan_and_terminal" time="0.079" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_candidate_refinement_repairs_low_acceptance_once" time="0.064" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_explanatory_route_comparison_recurses_nested_status_mapping" time="0.002" /><testcase classname="tests.test_fixed_transport_hmc_candidate_discovery" name="test_campaign_comparison_delegates_to_recursive_route_helper" time="0.003" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_fixed_transport_hmc_grid_policy_builds_public_hashable_spec" time="0.003" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_fixed_transport_hmc_grid_policy_enforces_min_l_and_trajectory" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_fixed_transport_hmc_grid_policy_refines_observed_boundary" time="0.002" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_fixed_transport_hmc_grid_policy_hash_changes_with_rules" time="0.003" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_fixed_transport_hmc_grid_policy_public_imports" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_grid_policy_requires_real_attempts" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_grid_policy_builds_ready_spec" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_grid_policy_fails_warning_band_closed" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_joint_grid_policy_builds_ready_spec" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_joint_grid_policy_enforces_min_trajectory" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_joint_grid_policy_fails_without_in_band" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_joint_grid_policy_fails_invalid_closed" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_requests_high_scale" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_respects_finite_domain_ceiling" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_nudges_warning_with_finite_domain_ceiling" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_refines_too_high_same_l" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_local_refines_near_band_ceiling" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_treats_sylvester_factor_as_ceiling" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_ignores_short_in_band" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_requests_warning_scale_five" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_requests_low_scale" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_excludes_seen_invalid_rows" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_ready_later_round" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_grid_policy" name="test_prepare_fixed_transport_hmc_adaptive_joint_grid_max_rounds_closed" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_step_cap_config_is_positive_and_lineage_visible" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_capped_setter_changes_the_step_used_by_inner_hmc" time="0.004" /><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_real_dual_averaging_reports_applied_step_within_cap[False]" time="0.580" /><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_real_dual_averaging_reports_applied_step_within_cap[True]" time="1.123" /><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_cap_absence_preserves_unbounded_contract_and_records_nonclaim" time="0.394" /><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_adaptive_initial_step_above_cap_fails_closed" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_reusable_runner_xla_path_applies_cap_without_symbolic_numpy" time="1.100" /><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_tuner_fails_closed_when_cap_telemetry_is_missing" time="0.001"><failure message="ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding">def test_tuner_fails_closed_when_cap_telemetry_is_missing() -&gt; None:
+        config = FixedTransportHMCKernelTuningConfig(
+            initial_step_size=0.03,
+            step_size_candidates=(0.03, 0.04),
+            maximum_candidate_step_size=0.05,
+            leapfrog_grid=(3, 5),
+            chain_count=4,
+            budget_schedule=(2,),
+            tune_num_results=2,
+            screen_num_results=2,
+            screen_num_burnin_steps=1,
+            verification_num_results=2,
+            verification_num_burnin_steps=1,
+            acceptance_band=(0.6, 0.8),
+            repair_band=(0.5, 0.9),
+            chain_execution_mode="eager",
+            use_xla=False,
+            target_scope="step_cap_fixture:fixed_transport",
+        )
+        base = GaussianAdapter()
+&gt;       result = tune_fixed_transport_hmc_kernel(
+            base_adapter=base,
+            fixed_transport=IdentityTransport(),
+            initial_position=np.zeros(2),
+            config=config,
+            run_full_chain=MissingCapTelemetryRunner(),
+        )
+
+tests/test_fixed_transport_hmc_step_cap.py:309: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def tune_fixed_transport_hmc_kernel(
+        *, base_adapter: Any, fixed_transport: Any, initial_position: Any,
+        config: FixedTransportHMCKernelTuningConfig | HMCControllerConfig | None = None,
+        output_dir: str | Path | None = None,
+        run_full_chain: RunFullChainFn = _run_full_chain_tfp_hmc,
+        passthrough_exceptions: tuple[type[Exception], ...] = (),
+        candidate_set_adapter: Any | None = None,
+        frozen_transport_payload: Mapping[str, Any] | None = None,
+        search_config: HMCControllerConfig | None = None,
+        execution_config: Any | None = None, target_lineage: Any | None = None,
+        source_paths: Any = (), max_work_items: int | None = None,
+    ) -&gt; Any:
+        """Prepare frozen transport coordinates and run the common candidate set.
+    
+        Durable numerical replay requires the repository's frozen transport payload
+        or an already issued numerical binding. Custom callback runners are retired.
+        """
+        require_active_hmc_tuning_route("tune_fixed_transport_hmc_kernel")
+        if run_full_chain is not _run_full_chain_tfp_hmc or passthrough_exceptions:
+&gt;           raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+E           ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding
+
+bayesfilter/inference/fixed_transport_hmc_tuning_tf.py:842: ValueError</failure></testcase><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_tuner_stops_before_building_runner_for_repaired_step_above_cap" time="0.000"><failure message="ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding">def test_tuner_stops_before_building_runner_for_repaired_step_above_cap() -&gt; None:
+        from dataclasses import replace
+    
+        class HighAcceptanceRunner(MissingCapTelemetryRunner):
+            def __call__(self, adapter, initial_state, config):
+                result = super().__call__(adapter, initial_state, config)
+                diagnostics = dict(result.diagnostics)
+                diagnostics.update(
+                    {
+                        "maximum_candidate_step_size": 0.15,
+                        "step_size_cap_telemetry_complete": True,
+                        "step_size_cap_within_bound": True,
+                        "applied_step_size_max": 0.1,
+                    }
+                )
+                if config.tuning_policy.num_adaptation_steps == 0:
+                    diagnostics["acceptance_rate"] = tf.constant(0.9, tf.float64)
+                return replace(result, diagnostics=diagnostics)
+    
+        config = FixedTransportHMCKernelTuningConfig(
+            initial_step_size=0.1,
+            step_size_candidates=(0.1, 0.12),
+            maximum_candidate_step_size=0.15,
+            leapfrog_grid=(3, 5),
+            tuning_policy="legacy_directional_diagnostic_v1",
+            selection_policy="acceptance_target_distance",
+            chain_count=4,
+            budget_schedule=(2, 2),
+            tune_num_results=2,
+            screen_num_results=2,
+            screen_num_burnin_steps=1,
+            verification_num_results=2,
+            verification_num_burnin_steps=1,
+            acceptance_band=(0.6, 0.8),
+            repair_band=(0.5, 0.9),
+            chain_execution_mode="eager",
+            use_xla=False,
+            target_scope="step_cap_fixture:fixed_transport",
+        )
+&gt;       result = tune_fixed_transport_hmc_kernel(
+            base_adapter=GaussianAdapter(),
+            fixed_transport=IdentityTransport(),
+            initial_position=np.zeros(2),
+            config=config,
+            run_full_chain=HighAcceptanceRunner(),
+        )
+
+tests/test_fixed_transport_hmc_step_cap.py:359: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def tune_fixed_transport_hmc_kernel(
+        *, base_adapter: Any, fixed_transport: Any, initial_position: Any,
+        config: FixedTransportHMCKernelTuningConfig | HMCControllerConfig | None = None,
+        output_dir: str | Path | None = None,
+        run_full_chain: RunFullChainFn = _run_full_chain_tfp_hmc,
+        passthrough_exceptions: tuple[type[Exception], ...] = (),
+        candidate_set_adapter: Any | None = None,
+        frozen_transport_payload: Mapping[str, Any] | None = None,
+        search_config: HMCControllerConfig | None = None,
+        execution_config: Any | None = None, target_lineage: Any | None = None,
+        source_paths: Any = (), max_work_items: int | None = None,
+    ) -&gt; Any:
+        """Prepare frozen transport coordinates and run the common candidate set.
+    
+        Durable numerical replay requires the repository's frozen transport payload
+        or an already issued numerical binding. Custom callback runners are retired.
+        """
+        require_active_hmc_tuning_route("tune_fixed_transport_hmc_kernel")
+        if run_full_chain is not _run_full_chain_tfp_hmc or passthrough_exceptions:
+&gt;           raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+E           ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding
+
+bayesfilter/inference/fixed_transport_hmc_tuning_tf.py:842: ValueError</failure></testcase><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_successful_handoff_binds_the_configured_cap" time="0.000"><failure message="ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding">def test_successful_handoff_binds_the_configured_cap() -&gt; None:
+        from bayesfilter.inference import build_verified_fixed_transport_hmc_handoff_from_tuning_result
+    
+        config = FixedTransportHMCKernelTuningConfig(
+            initial_step_size=0.1,
+            step_size_candidates=(0.05, 0.1),
+            maximum_candidate_step_size=0.2,
+            leapfrog_grid=(3, 5),
+            chain_count=4,
+            budget_schedule=(2,),
+            tune_num_results=2,
+            screen_num_results=2,
+            screen_num_burnin_steps=1,
+            verification_num_results=2,
+            verification_num_burnin_steps=1,
+            acceptance_band=(0.6, 0.8),
+            repair_band=(0.5, 0.9),
+            chain_execution_mode="eager",
+            use_xla=False,
+            target_scope="step_cap_fixture:fixed_transport",
+        )
+        base = GaussianAdapter()
+        transport = IdentityTransport()
+&gt;       result = tune_fixed_transport_hmc_kernel(
+            base_adapter=base,
+            fixed_transport=transport,
+            initial_position=np.zeros(2),
+            config=config,
+            run_full_chain=CappedFakeHMC(),
+        )
+
+tests/test_fixed_transport_hmc_step_cap.py:393: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def tune_fixed_transport_hmc_kernel(
+        *, base_adapter: Any, fixed_transport: Any, initial_position: Any,
+        config: FixedTransportHMCKernelTuningConfig | HMCControllerConfig | None = None,
+        output_dir: str | Path | None = None,
+        run_full_chain: RunFullChainFn = _run_full_chain_tfp_hmc,
+        passthrough_exceptions: tuple[type[Exception], ...] = (),
+        candidate_set_adapter: Any | None = None,
+        frozen_transport_payload: Mapping[str, Any] | None = None,
+        search_config: HMCControllerConfig | None = None,
+        execution_config: Any | None = None, target_lineage: Any | None = None,
+        source_paths: Any = (), max_work_items: int | None = None,
+    ) -&gt; Any:
+        """Prepare frozen transport coordinates and run the common candidate set.
+    
+        Durable numerical replay requires the repository's frozen transport payload
+        or an already issued numerical binding. Custom callback runners are retired.
+        """
+        require_active_hmc_tuning_route("tune_fixed_transport_hmc_kernel")
+        if run_full_chain is not _run_full_chain_tfp_hmc or passthrough_exceptions:
+&gt;           raise ValueError("custom fixed-transport runners are historical diagnostics; use a numerical candidate binding")
+E           ValueError: custom fixed-transport runners are historical diagnostics; use a numerical candidate binding
+
+bayesfilter/inference/fixed_transport_hmc_tuning_tf.py:842: ValueError</failure></testcase><testcase classname="tests.test_fixed_transport_hmc_step_cap" name="test_full_chain_signature_changes_when_cap_changes" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_defaults_match_owner_acceptance_policy" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_tuning_forbids_one_leapfrog_step[overrides0]" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_tuning_forbids_one_leapfrog_step[overrides1]" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_hmc_tuner_selects_frozen_identity_z_kernel" time="0.720" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_hmc_tuner_passes_through_declared_resource_stop" time="0.004" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_reusable_pool_resource_hook_propagates_before_compilation" time="0.004" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_hmc_tuner_still_converts_undeclared_runtime_error" time="0.010" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_hmc_tuner_uses_and_records_explicit_initial_state_bank" time="0.522" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_hmc_tuner_broadcasts_nonzero_initial_position" time="0.535" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_nominal_acceptance_cannot_promote_stuck_chains" time="0.047" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_initial_jump_does_not_count_as_retained_movement" time="0.482" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_dual_averaging_does_not_validate_fixed_grid_fallback_against_pass_band" time="0.001" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_replicated_efficiency_policy_screens_every_ladder_nominee_then_holds_out_winner" time="0.630" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_replicated_efficiency_traverses_all_l_values_and_tunes_epsilon_independently" time="2.057" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_failed_post_selection_holdout_suppresses_kernel_without_trying_runner_up" time="0.547" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_selection_requires_complete_target_value_and_score_telemetry[proposed_target_log_prob]" time="0.522" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_selection_requires_complete_target_value_and_score_telemetry[target_score]" time="0.518" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_dual_averaging_screen_repairs_epsilon_in_the_correct_direction[lower-0.05-screen_acceptance_below_repair_band]" time="0.040" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_dual_averaging_screen_repairs_epsilon_in_the_correct_direction[higher-0.2-screen_acceptance_above_repair_band]" time="0.040" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_resource_stop_inside_efficiency_selection_is_not_scientific_failure" time="0.043" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_rejected_candidate_never_runs_efficiency_selection" time="0.283" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_verified_handoff_rejects_target_scope_substitution" time="0.512" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_verified_handoff_rejects_transport_substitution" time="0.511" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_tuning_artifact_binds_source_closure_scope_route_and_seed_domains" time="0.512" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_hmc_tuner_public_imports" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_reusable_runner_pool_reuses_dynamic_mechanics_and_rejects_target_crossing" time="0.250" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_public_route_avoids_legacy_numpy_backed_modules" time="2.916" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_real_tfp_xla_route_uses_shared_scalar_step_and_zero_chain_bank" time="1.830" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_hmc_tuner_forbids_gradient_tape_fallback" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_hmc_tuner_keeps_valid_high_acceptance_candidate" time="0.515" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_fixed_transport_hmc_tuner_runs_bayesfilter_fixed_grid_scale_repair" time="0.044" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_modern_reporting_does_not_impose_convergence_draw_budget" time="0.000" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_modern_verification_passes_from_real_iid_archive" time="0.460" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_historical_required_rhat_field_cannot_veto_in_band_acceptance" time="0.368" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_diagnostic_modern_rhat_is_reported_without_vetoing_healthy_mechanics" time="0.442" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_diagnostic_modern_rhat_computation_error_cannot_veto_mechanics" time="0.346" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_verification_target_status_failure_is_a_hard_veto" time="0.032" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_native_divergence_is_a_hard_veto" time="0.031" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_unavailable_native_divergence_is_recorded_but_not_a_veto" time="0.361" /><testcase classname="tests.test_fixed_transport_hmc_tuning" name="test_finite_log_accept_energy_tail_is_explanatory_only" time="0.374" /><testcase classname="tests.test_hmc_academic_campaign" name="test_real_preflight_pins_academic_typed_identities" time="0.003"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_context_round_trip_has_environment_source_inventory_and_no_authority" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_context_rejects_manifest_budget_or_deadline_drift" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_typed_identity_drift_is_rejected_before_directory_creation" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_run_directory_collision_is_fail_closed" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_concurrent_preparation_is_blocked" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_infrastructure_failure_allows_contiguous_retry_and_charges_time" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_non_infrastructure_terminal_blocks_retry[continuation_veto]" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_non_infrastructure_terminal_blocks_retry[diagnostic_cap_failure]" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_attempt_cap_blocks_fourth_infrastructure_retry" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_cleanup_overrun_is_terminal_and_history_remains_readable" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_terminal_semantic_tamper_is_rejected_before_checksums" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_complete_strict_pass_graph_finalizes_and_blocks_retry" time="0.001"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_strict_pass_graph_tamper_is_rejected[missing_progress]" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_strict_pass_graph_tamper_is_rejected[schedule]" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_strict_pass_graph_tamper_is_rejected[derived_metric]" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_strict_pass_graph_tamper_is_rejected[draw_count]" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_terminal_checksum_tamper_is_detected" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_launcher_written_failure_has_truthful_execution_facts" time="0.000"><error message="failed on setup with &quot;FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'&quot;">config = DeterministicLGSSMPhase7Config(payload={'adopted_identities': {'complete_tuning_payload_hash': 'sha256:735e0178a768613...home/ubuntu/python/BayesFilter/docs/benchmarks/configs/multidim_lgssm_phase7_typed_identity_baseline_2026_07_11.json'))
+
+    @pytest.fixture(scope="module")
+    def preflight(config: DeterministicLGSSMPhase7Config) -&gt; dict:
+&gt;       return dict(validate_phase7_inputs(config))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_hmc_academic_campaign.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1827: in validate_phase7_inputs
+    return validate_phase7_v2_inputs(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:1255: in validate_phase7_v2_inputs
+    certificate = _read_json(certificate_path)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/deterministic_lgssm_hmc_phase7_tf.py:4139: in _read_json
+    payload = json.loads(path.read_text(encoding="utf-8"))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json')
+mode = 'r', buffering = -1, encoding = 'utf-8', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/multidim_lgssm_serious_hmc_tuning_2026_07_09/private_diagnostics/hmc_semantic_identity_migration_certificate.json'
+
+../../anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError</error></testcase><testcase classname="tests.test_hmc_academic_campaign" name="test_launcher_failure_classification[payload0-strict_pass]" time="0.001" /><testcase classname="tests.test_hmc_academic_campaign" name="test_launcher_failure_classification[payload1-diagnostic_cap_failure]" time="0.000" /><testcase classname="tests.test_hmc_academic_campaign" name="test_launcher_failure_classification[payload2-infrastructure_failure]" time="0.000" /><testcase classname="tests.test_hmc_academic_campaign" name="test_launcher_failure_classification[payload3-continuation_veto]" time="0.000" /><testcase classname="tests.test_hmc_academic_campaign" name="test_uncaught_contract_error_is_not_retryable" time="0.000" /><testcase classname="tests.test_hmc_academic_campaign" name="test_generic_v2_runtime_remains_rejected_without_context" time="0.001" /><testcase classname="tests.test_hmc_academic_campaign" name="test_controller_rejects_multiple_context_kinds_before_worker_creation" time="0.000" /><testcase classname="tests.test_hmc_academic_campaign" name="test_academic_worker_reports_launch_inventory_not_child_byte_verification" time="0.000" /><testcase classname="tests.test_hmc_academic_campaign" name="test_remaining_time_and_inventory_are_forwarded_to_worker_waits" time="0.000" /><testcase classname="tests.test_hmc_academic_campaign" name="test_worker_transition_dispatch_is_recorded_before_response_validation" time="0.000" /><testcase classname="tests.test_hmc_academic_campaign" name="test_verified_teardown_rejects_surviving_worker" time="0.000" /><testcase classname="tests.test_hmc_academic_campaign" name="test_historical_authority_files_are_unchanged" time="0.001" /><testcase classname="tests.test_hmc_automatic_search_regression" name="test_automatic_preparation_and_search_complete_with_verified_members[isotropic]" time="129.365" /><testcase time="0.001" /></testsuite></testsuites>

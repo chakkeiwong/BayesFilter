@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="16.704" timestamp="2026-09-21T21:58:23.716082+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_tuning_posterior_oracle" name="test_ordinary_tuner_calibration_freezes_artifact_and_holdout_agrees" time="0.005"><failure message="ValueError: preparation and candidate execution policies disagree">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-588/test_ordinary_tuner_calibratio0')
+
+    def test_ordinary_tuner_calibration_freezes_artifact_and_holdout_agrees(tmp_path) -&gt; None:
+        adapter = GaussianOracleAdapter()
+&gt;       calibration = tune_hmc_kernel(
+            adapter=adapter,
+            initial_position=[0.0, 0.0],
+            config=HMCKernelTuningConfig.serious(
+                target_scope="gaussian_oracle",
+                mass_policy="fixed_identity",
+                use_xla=False,
+                seed=(20260818, 101),
+            ),
+            execution_config=_oracle_execution((20260818, 101)),
+            output_dir=tmp_path / "tuning",
+        )
+
+tests/test_hmc_tuning_posterior_oracle.py:459: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/hmc_tuning_dispatch.py:142: in tune_hmc_kernel
+    return run_shared_ordinary_tuning(
+bayesfilter/inference/hmc_candidate_set_public.py:168: in run_shared_ordinary_tuning
+    execution = _execution(execution_config, seed=cfg.seed, policy=policy,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+config = HMCCandidateExecutionConfig(measurement_num_results=64, verification_num_results=64, num_warmup_steps=8, seed=(2026081...alytic reference', chain_mode='serial', chunk_max_results=256, preparation_elapsed_seconds=0.0, pilot_num_results=None)
+
+    def _execution(config, *, seed, policy, status, use_xla, warmup=0, preparation_elapsed=0.):
+        if config is not None:
+            if not isinstance(config, HMCCandidateExecutionConfig):
+                raise TypeError("execution_config must be HMCCandidateExecutionConfig")
+            if config.use_xla != use_xla or config.target_status_trace_policy != status:
+&gt;               raise ValueError("preparation and candidate execution policies disagree")
+E               ValueError: preparation and candidate execution policies disagree
+
+bayesfilter/inference/hmc_candidate_set_public.py:66: ValueError</failure></testcase><testcase classname="tests.test_hmc_tuning_posterior_oracle" name="test_fixed_transport_tuner_and_affine_holdout_agree" time="13.538" /></testsuite></testsuites>

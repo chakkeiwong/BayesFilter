@@ -1,0 +1,148 @@
+{
+  "all_required_assessed": false,
+  "all_required_executed": false,
+  "coverage": [
+    {
+      "assessment_complete": false,
+      "designs": [
+        "prepared-gaussian"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "cpu_reference",
+        "engine": "accuracy",
+        "family": "quadratic",
+        "phase": "development",
+        "route": "prepared",
+        "start": "dispersed",
+        "target": "gaussian"
+      },
+      "status": "stale"
+    },
+    {
+      "assessment_complete": false,
+      "designs": [
+        "stopped-gaussian"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "cpu_reference",
+        "engine": "stopping",
+        "family": "quadratic",
+        "phase": "development",
+        "route": "prepared",
+        "start": "dispersed",
+        "target": "gaussian"
+      },
+      "status": "stale"
+    },
+    {
+      "assessment_complete": false,
+      "designs": [
+        "missed-mode-stopping"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "cpu_reference",
+        "engine": "stopping",
+        "family": "multimodal",
+        "phase": "development",
+        "route": "prepared",
+        "start": "single_mode",
+        "target": "mixture"
+      },
+      "status": "stale"
+    },
+    {
+      "assessment_complete": false,
+      "designs": [],
+      "required": {
+        "control": "baseline",
+        "device": "cpu_reference",
+        "engine": "accuracy",
+        "family": "bounded",
+        "phase": "development",
+        "route": "prepared",
+        "start": "dispersed",
+        "target": "beta"
+      },
+      "status": "uncovered"
+    }
+  ],
+  "interpretation": "Execution, statistical finding and expected defect detection are separate; no universal validation claim.",
+  "rows": [
+    {
+      "assessment_complete": false,
+      "control": "baseline",
+      "design_id": "prepared-gaussian",
+      "device": "cpu_reference",
+      "engine": "accuracy",
+      "execution_status": "complete",
+      "family": "quadratic",
+      "finding": "pipeline_assessed",
+      "phase": "development",
+      "reason": null,
+      "result": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-2026-09-15/cpu-pipeline-r2/prepared-gaussian/attempt-001-result.json",
+      "route": "prepared",
+      "seconds": 93.53401091200067,
+      "source_status": "stale",
+      "start": "dispersed",
+      "target": "gaussian",
+      "test_response": {
+        "control": "baseline",
+        "power_established": false,
+        "status": "baseline_observed"
+      },
+      "transport": "none"
+    },
+    {
+      "assessment_complete": false,
+      "control": "baseline",
+      "design_id": "stopped-gaussian",
+      "device": "cpu_reference",
+      "engine": "stopping",
+      "execution_status": "complete",
+      "family": "quadratic",
+      "finding": "pipeline_assessed",
+      "phase": "development",
+      "reason": null,
+      "result": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-2026-09-15/cpu-pipeline-r2/stopped-gaussian/attempt-001-result.json",
+      "route": "prepared",
+      "seconds": 186.48369924194412,
+      "source_status": "stale",
+      "start": "dispersed",
+      "target": "gaussian",
+      "test_response": {
+        "control": "baseline",
+        "power_established": false,
+        "status": "baseline_observed"
+      },
+      "transport": "none"
+    },
+    {
+      "assessment_complete": false,
+      "control": "baseline",
+      "design_id": "missed-mode-stopping",
+      "device": "cpu_reference",
+      "engine": "stopping",
+      "execution_status": "complete",
+      "family": "multimodal",
+      "finding": "pipeline_discrepancy",
+      "phase": "development",
+      "reason": null,
+      "result": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-2026-09-15/cpu-pipeline-r2/missed-mode-stopping/attempt-001-result.json",
+      "route": "prepared",
+      "seconds": 100.26978622295428,
+      "source_status": "stale",
+      "start": "single_mode",
+      "target": "mixture",
+      "test_response": {
+        "control": "baseline",
+        "power_established": false,
+        "status": "discrepancy_under_baseline"
+      },
+      "transport": "none"
+    }
+  ],
+  "schema": "bayesfilter.inference_validation_report.v1"
+}

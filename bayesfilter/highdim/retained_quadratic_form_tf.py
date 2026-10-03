@@ -80,11 +80,9 @@ def prefix_row_vectors(
     points = tf.convert_to_tensor(points, DTYPE)
     if points.shape.rank != 2 or int(points.shape[1]) != len(cores):
         raise ValueError("points must be [N, n_prefix_axes]")
-    state = tf.ones([tf.shape(points)[0], 1], DTYPE)
-    for axis, core in enumerate(cores):
-        basis_values = product_basis.evaluate_axis(axis, points[:, axis])
-        state = tf.einsum("nl,lkr,nk->nr", state, core.values, basis_values)
-    return state
+    from bayesfilter.highdim.tt_native_control_tf import prefix_rows
+
+    return prefix_rows(cores, product_basis, points)[0]
 
 
 def prefix_row_vectors_tangent(
@@ -96,16 +94,9 @@ def prefix_row_vectors_tangent(
     """Return (H_L(z), dot H_L(z)) by product-rule forward propagation."""
 
     points = tf.convert_to_tensor(points, DTYPE)
-    state = tf.ones([tf.shape(points)[0], 1], DTYPE)
-    dot_state = tf.zeros_like(state)
-    for axis, (core, dot_core) in enumerate(zip(cores, dot_cores)):
-        basis_values = product_basis.evaluate_axis(axis, points[:, axis])
-        new_state = tf.einsum("nl,lkr,nk->nr", state, core.values, basis_values)
-        dot_state = tf.einsum("nl,lkr,nk->nr", dot_state, core.values, basis_values) + tf.einsum(
-            "nl,lkr,nk->nr", state, dot_core.values, basis_values
-        )
-        state = new_state
-    return state, dot_state
+    from bayesfilter.highdim.tt_native_control_tf import prefix_rows
+
+    return prefix_rows(cores, product_basis, points, dot_cores)
 
 
 def _axis_mass(product_basis: ProductBasis, axis: int, measure: MassMeasure) -> tf.Tensor:
@@ -125,12 +116,11 @@ def suffix_gram_matrix(
     product basis (bases are indexed over the full adjacent block).
     """
 
-    state = tf.ones([1, 1], DTYPE)
-    for step, core in enumerate(reversed(tuple(suffix_cores))):
-        axis = axis_offset + len(suffix_cores) - 1 - step
-        mass = _axis_mass(product_basis, axis, measure)
-        state = tf.einsum("akb,AlB,kl,bB->aA", core.values, core.values, mass, state)
-    return state
+    from bayesfilter.highdim.tt_native_control_tf import basis_masses, gram_chain
+
+    masses = basis_masses(product_basis, suffix_cores, axis_offset=axis_offset, measure=measure)
+    result = gram_chain(suffix_cores, masses, reverse=True, dot_cores=None)
+    return result[0]
 
 
 def suffix_gram_matrix_tangent(
@@ -143,20 +133,11 @@ def suffix_gram_matrix_tangent(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Return (E, dot E) by product rule through the suffix Gram chain."""
 
-    state = tf.ones([1, 1], DTYPE)
-    dot_state = tf.zeros_like(state)
-    ordered = tuple(zip(suffix_cores, dot_suffix_cores))
-    for step, (core, dot_core) in enumerate(reversed(ordered)):
-        axis = axis_offset + len(ordered) - 1 - step
-        mass = _axis_mass(product_basis, axis, measure)
-        new_state = tf.einsum("akb,AlB,kl,bB->aA", core.values, core.values, mass, state)
-        dot_state = (
-            tf.einsum("akb,AlB,kl,bB->aA", dot_core.values, core.values, mass, state)
-            + tf.einsum("akb,AlB,kl,bB->aA", core.values, dot_core.values, mass, state)
-            + tf.einsum("akb,AlB,kl,bB->aA", core.values, core.values, mass, dot_state)
-        )
-        state = new_state
-    return state, dot_state
+    from bayesfilter.highdim.tt_native_control_tf import basis_masses, gram_chain
+
+    masses = basis_masses(product_basis, suffix_cores, axis_offset=axis_offset, measure=measure)
+    result = gram_chain(suffix_cores, masses, reverse=True, dot_cores=dot_suffix_cores)
+    return result
 
 
 def prefix_gram_matrix(
@@ -167,11 +148,11 @@ def prefix_gram_matrix(
 ) -> tf.Tensor:
     """Exact prefix Gram P = int H_L(z)' H_L(z) mu(dz), shape [r_c, r_c]."""
 
-    state = tf.ones([1, 1], DTYPE)
-    for axis, core in enumerate(prefix_cores):
-        mass = _axis_mass(product_basis, axis, measure)
-        state = tf.einsum("akb,AlB,kl,aA->bB", core.values, core.values, mass, state)
-    return state
+    from bayesfilter.highdim.tt_native_control_tf import basis_masses, gram_chain
+
+    masses = basis_masses(product_basis, prefix_cores, measure=measure)
+    result = gram_chain(prefix_cores, masses, reverse=False, dot_cores=None)
+    return result[0]
 
 
 def prefix_gram_matrix_tangent(
@@ -183,18 +164,11 @@ def prefix_gram_matrix_tangent(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Return (P, dot P) by product rule through the prefix Gram chain."""
 
-    state = tf.ones([1, 1], DTYPE)
-    dot_state = tf.zeros_like(state)
-    for axis, (core, dot_core) in enumerate(zip(prefix_cores, dot_prefix_cores)):
-        mass = _axis_mass(product_basis, axis, measure)
-        new_state = tf.einsum("akb,AlB,kl,aA->bB", core.values, core.values, mass, state)
-        dot_state = (
-            tf.einsum("akb,AlB,kl,aA->bB", dot_core.values, core.values, mass, state)
-            + tf.einsum("akb,AlB,kl,aA->bB", core.values, dot_core.values, mass, state)
-            + tf.einsum("akb,AlB,kl,aA->bB", core.values, core.values, mass, dot_state)
-        )
-        state = new_state
-    return state, dot_state
+    from bayesfilter.highdim.tt_native_control_tf import basis_masses, gram_chain
+
+    masses = basis_masses(product_basis, prefix_cores, measure=measure)
+    result = gram_chain(prefix_cores, masses, reverse=False, dot_cores=dot_prefix_cores)
+    return result
 
 
 @dataclass(frozen=True)
@@ -252,10 +226,9 @@ class RetainedQuadraticForm:
     def _reference_log_weight_density(self) -> tf.Tensor:
         """log w_ref = -sum_i log(length_i): reference-measure Lebesgue density."""
 
-        total = tf.constant(0.0, DTYPE)
-        for basis in self.prefix_basis.bases:
-            total = total - tf.math.log(basis.domain.length)
-        return total
+        bounds = tf.stack(tuple((basis.domain.left, basis.domain.right) for basis in self.prefix_basis.bases))
+        lengths = bounds[:, 1] - bounds[:, 0]
+        return -tf.reduce_sum(tf.math.log(lengths))
 
     def quadratic_form_values(self, reference_points: tf.Tensor) -> tf.Tensor:
         v = prefix_row_vectors(self.prefix_cores, self.prefix_basis, reference_points)

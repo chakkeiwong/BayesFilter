@@ -15,7 +15,6 @@ from bayesfilter.structural_tf import (
     structural_filter_metadata,
 )
 
-
 TFStructuralModelBuilder = Callable[[tf.Tensor], TFStructuralStateSpace]
 
 
@@ -79,7 +78,7 @@ def tf_svd_cut4_score_hessian_autodiff_oracle(
         dtype=tf.float64,
     )
 
-    with tf.GradientTape() as outer:
+    with tf.GradientTape(persistent=True) as outer:
         outer.watch(params)
         with tf.GradientTape() as inner:
             inner.watch(params)
@@ -92,6 +91,7 @@ def tf_svd_cut4_score_hessian_autodiff_oracle(
                 rank_tolerance=rank_tolerance,
                 jitter=jitter,
                 return_filtered=False,
+                jit_compile=False,  # explicit independent autodiff reference
             )
             checked_value = _checked_smooth_value(
                 value,
@@ -99,7 +99,7 @@ def tf_svd_cut4_score_hessian_autodiff_oracle(
                 spectral_gap_tolerance,
             )
         score = inner.gradient(checked_value, params)
-    hessian = outer.jacobian(score, params)
+    hessian = outer.jacobian(score, params, experimental_use_pfor=False)
 
     model = model_builder(params)
     block_metadata = dict(structural_block_metadata(model))

@@ -7,10 +7,9 @@ is differentiable only while ranks, charts, signs, and supports remain fixed.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from dataclasses import field
 import hashlib
 import json
+from dataclasses import dataclass, field
 from typing import Callable, Mapping
 
 import tensorflow as tf
@@ -21,8 +20,11 @@ from bayesfilter.linear.rectangular_factor_tf import (
     batched_fixed_pivot_rectangular_qr,
     batched_fixed_support_qr_update,
 )
-from bayesfilter.nonlinear.factor_srukf_tf import tf_factor_srukf_dz5_rule
-
+from bayesfilter.nonlinear.factor_srukf_tf import (
+    TransitionValueAndDerivativesFn,
+    _transition_value_and_derivatives,
+    tf_factor_srukf_dz5_rule,
+)
 
 TransitionFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 ObservationFn = Callable[[tf.Tensor], tf.Tensor]
@@ -98,6 +100,7 @@ class TFRectangularSRUKFDerivatives:
     d_transition_fn: TransitionParameterDerivativeFn
     observation_state_jacobian_fn: ObservationJacobianFn
     d_observation_fn: ObservationParameterDerivativeFn
+    transition_value_and_derivatives_fn: TransitionValueAndDerivativesFn | None = None
 
     def __post_init__(self) -> None:
         for field in ("d_initial_mean", "d_initial_factor", "d_process_factor", "d_observation_factor"):
@@ -302,7 +305,7 @@ def tf_rectangular_srukf_value(
         return value, mean, state_factor, on_support, min_rank, max_support_residual
 
     if jit_compile:
-        run = tf.function(run, jit_compile=True)
+        run = tf.function(run, input_signature=[tf.TensorSpec(observations.shape, tf.float64)], jit_compile=True)
     value, mean, factor, on_support, min_rank, max_support_residual = run(observations)
     return TFRectangularSRUKFResult(
         value,
@@ -373,16 +376,10 @@ def tf_rectangular_srukf_value_and_score(
             d_points = d_augmented_mean[:, :, None, :] + tf.einsum("rd,bpkd->bprk", offsets, d_augmented_factor)
             previous_points, process_points = points[:, :, :n], points[:, :, n:]
             d_previous_points, d_process_points = d_points[:, :, :, :n], d_points[:, :, :, n:]
-            predicted_points = tf.convert_to_tensor(model.transition_fn(previous_points, process_points), tf.float64)
-            d_predicted_points = tf.einsum(
-                "brij,bprj->bpri",
-                tf.convert_to_tensor(derivatives.transition_state_jacobian_fn(previous_points, process_points), tf.float64),
-                d_previous_points,
-            ) + tf.einsum(
-                "brij,bprj->bpri",
-                tf.convert_to_tensor(derivatives.transition_process_jacobian_fn(previous_points, process_points), tf.float64),
-                d_process_points,
-            ) + tf.convert_to_tensor(derivatives.d_transition_fn(previous_points, process_points), tf.float64)
+            predicted_points, state_j, process_j, direct = _transition_value_and_derivatives(
+                model, derivatives, previous_points, process_points)
+            d_predicted_points = (tf.einsum("brij,bprj->bpri", state_j, d_previous_points)
+                                  + tf.einsum("brij,bprj->bpri", process_j, d_process_points) + direct)
             predicted_mean = tf.einsum("r,brd->bd", mean_weights, predicted_points)
             d_predicted_mean = tf.einsum("r,bprd->bpd", mean_weights, d_predicted_points)
             state_stack = _stack(predicted_points, predicted_mean, covariance_weights)
@@ -449,7 +446,7 @@ def tf_rectangular_srukf_value_and_score(
         return result[1:]
 
     if jit_compile:
-        run = tf.function(run, jit_compile=True)
+        run = tf.function(run, input_signature=[tf.TensorSpec(observations.shape, tf.float64)], jit_compile=True)
     mean, factor, d_mean, d_factor, value, score, score_valid, minimum_pivot, maximum_chart_residual, maximum_support_residual = run(observations)
     score = tf.where(score_valid[:, None], score, tf.fill(tf.shape(score), tf.constant(float("nan"), tf.float64)))
     return TFRectangularSRUKFScoreResult(
@@ -457,7 +454,13 @@ def tf_rectangular_srukf_value_and_score(
         {
             "value_only": tf.constant(False),
             "score_valid": score_valid,
-            "branch_status": tf.where(score_valid, tf.constant("fixed_branch_valid"), tf.constant("fixed_branch_invalid")),
+            "branch_status_code": tf.cast(~score_valid, tf.int32),
+            # Dynamic string selection is host reporting, never part of an
+            # enclosing target/HMC XLA function. score_valid is authoritative.
+            "branch_status": (
+                tf.where(score_valid, tf.constant("fixed_branch_valid"), tf.constant("fixed_branch_invalid"))
+                if tf.executing_eagerly() else tf.constant("read_score_valid_or_branch_status_code")
+            ),
             "branch_identity": tf.constant(branch.identity),
             "factorization": tf.constant("direct_fixed_pivot_rectangular_qr"),
             "likelihood_measure": tf.constant("affine_support_gaussian_fixed_qr"),

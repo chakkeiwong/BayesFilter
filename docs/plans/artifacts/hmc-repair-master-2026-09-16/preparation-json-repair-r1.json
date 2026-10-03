@@ -1,0 +1,65 @@
+{
+  "gpu_intentionally_hidden": true,
+  "plan_file": "docs/plans/bayesfilter-hmc-repair-master-program-2026-09-16.md",
+  "purpose": "Reproduce and fix loss of the original preparation failure when diagnostics contain nonfinite numbers",
+  "source_at_terminal_regression": {
+    "bayesfilter/inference/hmc_preparation.py": "523e60ffa9d9204637d53777b0e4d12fff0fd2fb01cbfbe29887c05e6a728074",
+    "tests/test_hmc_master_repair.py": "c3eaa241d7de7ce70befcb6c576d21d5055fac9ccc40081bc8c26db011a334bf",
+    "tests/test_hmc_tuning_documentation_contract.py": "47a29633ef6328d4d277f1198aa08abf8aab4b5a07ee3a5016a96ce72fff042c"
+  },
+  "source_note": "The failing run predates the progress-boundary encoding; final code hashes describe the passing regression.",
+  "statistical_conclusion": "N/A: failure-reporting regression",
+  "test_runs": [
+    {
+      "command": [
+        "env",
+        "CUDA_VISIBLE_DEVICES=-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH=true",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_master_repair.py::test_nonfinite_preparation_diagnostics_do_not_mask_original_failure",
+        "--junitxml=docs/plans/artifacts/hmc-repair-master-2026-09-16/tests-preparation-json-counterexample-r1.xml"
+      ],
+      "result": "docs/plans/artifacts/hmc-repair-master-2026-09-16/tests-preparation-json-counterexample-r1.xml",
+      "sha256": "18069fe5b91bc88ccaf93da78abe034d5ef3c4ca85e281b8ed11ff181940ce40",
+      "summary": {
+        "errors": "0",
+        "failures": "1",
+        "hostname": "ubuntu-MZ72-HB2-00",
+        "name": "pytest",
+        "skipped": "0",
+        "tests": "1",
+        "time": "3.065",
+        "timestamp": "2026-09-17T02:25:16.694873+08:00"
+      }
+    },
+    {
+      "command": [
+        "env",
+        "CUDA_VISIBLE_DEVICES=-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH=true",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_master_repair.py",
+        "tests/test_hmc_tuning_documentation_contract.py",
+        "--junitxml=docs/plans/artifacts/hmc-repair-master-2026-09-16/tests-preparation-json-regressions-r1.xml"
+      ],
+      "result": "docs/plans/artifacts/hmc-repair-master-2026-09-16/tests-preparation-json-regressions-r1.xml",
+      "sha256": "f0790337f2b3640601bd1eacd0cfa7a80be9d26d889271f8f8f78ca98e1ffc75",
+      "summary": {
+        "errors": "0",
+        "failures": "0",
+        "hostname": "ubuntu-MZ72-HB2-00",
+        "name": "pytest",
+        "skipped": "0",
+        "tests": "33",
+        "time": "12.214",
+        "timestamp": "2026-09-17T02:25:55.784499+08:00"
+      }
+    }
+  ]
+}

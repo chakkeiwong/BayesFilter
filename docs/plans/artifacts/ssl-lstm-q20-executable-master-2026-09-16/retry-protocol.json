@@ -1,0 +1,207 @@
+{
+  "schema": "bayesfilter.q20.production_protocol.v2",
+  "role": "development",
+  "cpu_reference": false,
+  "jit_compile": true,
+  "seed": [
+    20260915,
+    150001
+  ],
+  "provenance": "docs/plans/bayesfilter-ssl-lstm-q20-production-parameter-ledger-2026-09-15.md",
+  "target": {
+    "q": 20,
+    "horizon": 30,
+    "dimension": 4,
+    "dtype": "float64",
+    "principal_sqrt_backend": "tensorflow_eigh_strict",
+    "prior_center": [
+      0.35,
+      -0.08,
+      0.65,
+      0.05
+    ],
+    "prior_sd": 4.0,
+    "ukf_alpha": 1.0,
+    "ukf_beta": 2.0,
+    "ukf_kappa": 0.0
+  },
+  "training": {
+    "widths": [
+      16,
+      32
+    ],
+    "learning_rates": [
+      0.0005,
+      0.001
+    ],
+    "roots": [
+      0,
+      1,
+      2
+    ],
+    "stages": 2,
+    "activation": "tanh",
+    "batch_size": 32,
+    "pricing_batches": [
+      8,
+      32,
+      128
+    ],
+    "s_max": 2.0,
+    "initialization_scale": 0.02,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "epsilon": 1e-07,
+    "gradient_clip_norm": 10.0,
+    "betas": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "rungs": [
+      128,
+      512,
+      2048,
+      8192
+    ],
+    "cohort_min_updates": 512,
+    "checkpoint_every": 128,
+    "carry_optimizer_across_beta": true,
+    "beta_zero_updates": 0
+  },
+  "validation": {
+    "bank_sizes": [
+      768,
+      3072,
+      12288
+    ],
+    "minimum_improvement": 0.04,
+    "maximum_half_width": 0.02,
+    "plateau_comparisons": 2,
+    "normal_interval_multiplier": 1.959963984540054,
+    "reliability_rows": 32,
+    "reliability_rtol": 1e-09,
+    "reliability_atol": 1e-10
+  },
+  "tuning": {
+    "l_grid": [
+      3,
+      5,
+      9,
+      13,
+      18,
+      25
+    ],
+    "initial_epsilon": 0.01,
+    "epsilon_domain": [
+      1e-06,
+      2.0
+    ],
+    "repair_factor": 1.5,
+    "max_repairs_per_family": 12,
+    "target_acceptance": 0.7,
+    "practical_region": [
+      0.65,
+      0.75
+    ],
+    "repair_region": [
+      0.55,
+      0.85
+    ],
+    "startup": 32,
+    "pilot": 64,
+    "measurement": 64,
+    "verification": 64,
+    "evidence_rungs": [
+      1,
+      2,
+      4
+    ],
+    "total_budget_units": 200,
+    "repair_reserve_units": 50,
+    "max_candidates": 100,
+    "chunk_max_results": 64,
+    "max_wall_seconds": 28800.0
+  },
+  "posterior": {
+    "chains": 4,
+    "warmup_min": 2000,
+    "warmup_window": 1000,
+    "warmup_chunk": 1000,
+    "warmup_max": 10000,
+    "warmup_rhat": 1.05,
+    "retained_min": 1000,
+    "retained_chunk": 1000,
+    "retained_max": 10000,
+    "retained_rhat": 1.01,
+    "bulk_ess": 400.0,
+    "tail_ess": 400.0,
+    "mean_mcse_sd": 0.02,
+    "quantile_mcse_sd": 0.05,
+    "event_mcse": 0.01,
+    "quantiles": [
+      0.025,
+      0.5,
+      0.975
+    ],
+    "event_coordinate": 2,
+    "energy_log_accept_alert": -1000.0
+  },
+  "starts": {
+    "max_proposals": 128,
+    "per_sign": 2
+  },
+  "ensemble": {
+    "charts": 2,
+    "conditional_charts": 4,
+    "alternative_betas": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ]
+  },
+  "comparison": {
+    "methods": [
+      "identity",
+      "classical",
+      "neutra",
+      "replica_exchange",
+      "ensemble"
+    ],
+    "mean_margin_sd": 0.1,
+    "quantile_margin_sd": 0.2,
+    "event_margin": 0.05,
+    "reference_error_fraction": 0.3333333333333333,
+    "confirmation_replicates": 3,
+    "interval_probability": 0.95
+  },
+  "reference": {
+    "banks": 8,
+    "rungs": [
+      1024,
+      4096,
+      16384
+    ],
+    "batch_size": 32,
+    "ess_min": 400.0,
+    "minimum_tail_rows": 20
+  },
+  "execution": {
+    "poll_seconds": 1.0,
+    "termination_grace_seconds": 5.0,
+    "diagnostic_attempt_seconds": 600.0,
+    "diagnostic_attempts": 3,
+    "pricing_transitions": 4,
+    "stage_attempts": 2
+  },
+  "budget": {
+    "campaign_remaining_seconds": 135275.83289109988,
+    "diagnostic_remaining_seconds": 54299.37991617,
+    "repair_allocation_seconds": 7200.0,
+    "arm_cap_seconds": 28800.0,
+    "pricing_updates": 2,
+    "forecast_safety_factor": 2.0
+  }
+}

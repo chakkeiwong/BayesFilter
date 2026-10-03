@@ -1,6 +1,16 @@
-"""Run the source-faithful LEDH/PF-PF repair for P44 M3 rows."""
+"""HISTORICAL — invalidated June P44 auxiliary-flow repair; do not execute.
+
+The former source-faithful claim is superseded by the August21 LEDH reset.
+Source is retained as provenance only, not as a numerical comparator.
+"""
 
 from __future__ import annotations
+
+raise RuntimeError(
+    "HISTORICAL_LEDH_P44_RETIRED: pre-August21 auxiliary-flow results and "
+    "implementation are ineligible for new LEDH evidence. See "
+    "docs/plans/filter_gradient_pfor_runner_closure_20260929.md."
+)
 
 import os
 
@@ -271,7 +281,7 @@ def _determinant_diagnostics() -> list[dict[str, Any]]:
             center = tf.reshape(tf.cast(prior_mean, DTYPE), [1])[0]
             spread = tf.sqrt(tf.cast(prior_variance, DTYPE))
             x0_values = center + spread * tf.constant([-1.25, -0.25, 0.25, 1.25], dtype=DTYPE)
-            with tf.GradientTape() as tape:
+            with tf.GradientTape(persistent=True) as tape:
                 tape.watch(x0_values)
                 old_post, old_logdet = _old_shortcut_flow_for_probe(
                     model,
@@ -281,7 +291,8 @@ def _determinant_diagnostics() -> list[dict[str, Any]]:
                     prior_variance,
                     observation,
                 )
-            old_true_diag = tf.linalg.diag_part(tape.jacobian(old_post, x0_values))
+            old_true_diag = tf.linalg.diag_part(tape.jacobian(old_post, x0_values, experimental_use_pfor=False))
+            del tape
             source_post, source_logdet = _source_faithful_flow_for_probe(
                 model,
                 theta,

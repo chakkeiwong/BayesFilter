@@ -1,0 +1,28 @@
+{
+  "readiness_helper": "no_idle_policy_permitted_gpu",
+  "trusted_occupancy": {
+    "gpu0": {
+      "used_mib": 337,
+      "free_mib": 31893,
+      "utilization_percent": 0
+    },
+    "gpu1": {
+      "used_mib": 377,
+      "free_mib": 31852,
+      "utilization_percent": 99
+    },
+    "gpu2": {
+      "used_mib": 690,
+      "free_mib": 31537,
+      "utilization_percent": 41
+    }
+  },
+  "compute_processes": [
+    "nxnode.bin (312 MiB)",
+    "tfgpu python (354 MiB)",
+    "gnome-remote-desktop-daemon (251 MiB)"
+  ],
+  "decision": "bounded Gaussian smoke on GPU 0 sharing desktop context; preserve GPU 1 research process",
+  "memory_policy": "TF_FORCE_GPU_ALLOW_GROWTH=true, repository helper verifies before initialization",
+  "role": "resource readiness only; no performance comparison"
+}

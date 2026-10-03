@@ -1,0 +1,148 @@
+{
+  "budget": {
+    "elapsed_seconds": 0.016574528999626637,
+    "material_cap_seconds": 120.0
+  },
+  "candidates": {
+    "k2": {
+      "architecture": {
+        "activation": "tanh",
+        "hidden_layers": [
+          16,
+          16
+        ],
+        "learning_rate": 0.001,
+        "name": "compact-high",
+        "stages": 2
+      },
+      "branching_policy": "pure_continuation",
+      "c2_nomination": {
+        "by_architecture": {
+          "compact-high": {
+            "architecture": {
+              "activation": "tanh",
+              "hidden_layers": [
+                16,
+                16
+              ],
+              "learning_rate": 0.001,
+              "name": "compact-high",
+              "stages": 2
+            },
+            "deltas": [
+              -25.94135352084165,
+              -25.48465265987063
+            ],
+            "mean_delta": -25.71300309035614,
+            "roots": [
+              0,
+              1
+            ]
+          },
+          "compact-low": {
+            "architecture": {
+              "activation": "tanh",
+              "hidden_layers": [
+                16,
+                16
+              ],
+              "learning_rate": 0.0005,
+              "name": "compact-low",
+              "stages": 2
+            },
+            "deltas": [
+              -12.610101465784266,
+              -8.620604703128254
+            ],
+            "mean_delta": -10.61535308445626,
+            "roots": [
+              0,
+              1
+            ]
+          }
+        },
+        "selected": "compact-high"
+      },
+      "candidate_id": "phase8-k2-compact-high-l3-pure",
+      "component_count": 2,
+      "confirmation_policy": "rebuild_or_tune_under_fresh_repository_scope; calibration checkpoints are not claim-bearing",
+      "gamma_policy": {
+        "policy_id": "fixed_state_independent_chart_mixture_v1",
+        "state_independent": true,
+        "values": [
+          0.5,
+          0.5
+        ]
+      },
+      "ladder": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "selection_basis": "predeclared compact-family parsimony and lower mean paired C2 held-out change; operational nomination only",
+      "status": "FROZEN_FOR_PHASE9_TUNING_ONLY"
+    },
+    "k4": {
+      "candidate_id": "phase8-k4-joint",
+      "component_count": 4,
+      "reason": "implementation/resource feasibility replicated, but no paired uncertainty-supported objective benefit; C4B row contrasts have opposite signs and the arm has quadratic cross-density cost",
+      "source_manifest_status": "PASS_PHASE8_C4B_JOINT_REPLICATION",
+      "status": "NOT_RETAINED_FOR_PHASE9"
+    }
+  },
+  "git_commit": "54201f5cd925ed15036bad8156606b812d53b045",
+  "git_status_porcelain": "M bayesfilter/__init__.py\n M bayesfilter/inference/__init__.py\n M bayesfilter/inference/fixed_transport_hmc_mechanics_tf.py\n M bayesfilter/inference/neutra_hmc.py\n M bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py\n M bayesfilter/nonlinear/ssl_lstm_complexity_batched_target_tf.py\n M docs/benchmarks/run_ssl_lstm_q20_gpu_native_eigh_localization_2026_07_31.py\n M docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-mathematical-note-2026-08-21.md\n M docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md\n M docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-subplan-2026-08-26.md\n M docs/plans/bayesfilter-ssl-lstm-q20-phase52-governance-migration-2026-08-28.md\n M docs/reference/hmc-tuning-interface.md\n M tests/test_experimental_batched_svd_sigma_point_tf.py\n?? bayesfilter/inference/hmc_stage_resume.py\n?? bayesfilter/inference/tempered_lineage_tf.py\n?? bayesfilter/inference/tempered_target_tf.py\n?? bayesfilter/inference/tempered_transitions_tf.py\n?? bayesfilter/inference/tempered_transport_ensemble_tf.py\n?? docs/benchmarks/freeze_ssl_lstm_q20_phase8_c5_2026_08_31.py\n?? docs/benchmarks/repair_ssl_lstm_q20_phase8_c3b_provenance_2026_08_31.py\n?? docs/benchmarks/run_ssl_lstm_q20_backend_parity_batch_2026_08_30.py\n?? docs/benchmarks/run_ssl_lstm_q20_phase8_c1_graph_repair_2026_08_30.py\n?? docs/benchmarks/run_ssl_lstm_q20_phase8_c2_strict_calibration_2026_08_30.py\n?? docs/benchmarks/run_ssl_lstm_q20_phase8_c3_diversity_repair_2026_08_31.py\n?? docs/benchmarks/run_ssl_lstm_q20_phase8_c3_lineage_overlap_2026_08_30.py\n?? docs/benchmarks/run_ssl_lstm_q20_phase8_c3b_l5_ladder_2026_08_31.py\n?? docs/benchmarks/run_ssl_lstm_q20_phase8_c4a_joint_feasibility_2026_08_31.py\n?? docs/benchmarks/run_ssl_lstm_q20_phase8_c4b_joint_replication_2026_08_31.py\n?? docs/benchmarks/run_ssl_lstm_q20_tempered_rkl_transport_ensemble_phase7_smoke_2026_08_28.py\n?? docs/benchmarks/run_ssl_lstm_q20_tempered_rkl_transport_ensemble_phase8_2026_08_29.py\n?? docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/q20-paired/\n?? docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/report/\n?? docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-08-28/\n?? docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-08-29/\n?? docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-08-30/\n?? docs/plans/bayesfilter-gpu-default-agent-handoff-2026-08-30.md\n?? docs/plans/bayesfilter-gpu-default-execution-boundary-2026-08-29.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-adaptive-replay-neutra-mathematical-note-2026-08-21.tex\n?? docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-repair-refresh-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-phase52-result-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c1-backend-localization-result-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c1-backend-localization-subplan-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c1-graph-repair-result-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c1-graph-repair-subplan-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c1-strict-backend-cost-result-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c1-strict-backend-cost-subplan-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c2-backend-parity-result-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c2-strict-calibration-result-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c2-strict-calibration-subplan-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c3-diversity-repair-subplan-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c3-lineage-overlap-result-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c3-lineage-overlap-subplan-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c3b-l5-ladder-result-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c3b-l5-ladder-subplan-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c4a-joint-feasibility-result-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c4a-joint-feasibility-subplan-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c4b-joint-replication-result-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c4b-joint-replication-subplan-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c5-freeze-result-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-phase8-c5-freeze-subplan-2026-08-31.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-claude-handoff-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-claude-math-review-reply-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-claude-plan-review-reply-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-claude-review-adjudication-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-execution-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-implementation-plan-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-implementation-plan-document-alignment-audit-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-mathdevmcp-audit-2026-08-28.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-phase8-c1-result-2026-08-30.md\n?? docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-phase8-calibration-subplan-2026-08-29.md\n?? scripts/run_ssl_lstm_q20_tempered_rkl_phase8_gpu_default.sh\n?? tests/test_hmc_stage_resume.py\n?? tests/test_tempered_lineage_transitions.py\n?? tests/test_tempered_transport_ensemble.py",
+  "inputs": {
+    "docs/benchmarks/freeze_ssl_lstm_q20_phase8_c5_2026_08_31.py": {
+      "sha256": "45c74d363154104b90cf66da802c854d6c4fcda5041c2a2df17c3ba53ff1c515"
+    },
+    "docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-08-30/c2-strict-calibration/screen/attempt-02-eight-rows/run_manifest.json": {
+      "sha256": "27c9f7723179a682b0570f58e89ca795e4c7dd4f2ea15da4e3e6fa81b6f01892"
+    },
+    "docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-08-30/c4a-joint-feasibility/attempt-01/run_manifest.json": {
+      "sha256": "11bfdc461fdc3cf4deda3a7e33223d4e4321ccf9850387aa32c56d57b5486203"
+    },
+    "docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-08-30/c4b-joint-replication/attempt-01/run_manifest.json": {
+      "sha256": "ee895091b7086b0f2183def0557e75edc406a2bbcdd7f10ebf5a3b9017f70e81"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-phase8-c2-strict-calibration-result-2026-08-30.md": {
+      "sha256": "7f950b90bd571d963bbfb5928dd0e4509d03a5691e4da2fdfb3aff5c80220ecb"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-phase8-c3-lineage-overlap-result-2026-08-31.md": {
+      "sha256": "37e86c65d3a6f9ba33ed0d2679d4ad281cf64a35818ec76cf9a6d46845317569"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-phase8-c3b-l5-ladder-result-2026-08-31.md": {
+      "sha256": "7ae4ee2bfc22bb84be3dd53ed420967565452d045f87a4bd8e0526e1c0c8b7c3"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-phase8-c4a-joint-feasibility-result-2026-08-31.md": {
+      "sha256": "434b20972d121a99b9ec634f03e7c13763df665c0de9ceea04be7d2807f113ff"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-phase8-c4b-joint-replication-result-2026-08-31.md": {
+      "sha256": "b63751b0899f41ea73655e68b9094f53a90765c1569b3ec655299b3225ce9d06"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-phase8-c5-freeze-subplan-2026-08-31.md": {
+      "sha256": "686607d306e09816142b2508c18d9440d3b6222f3b4c2a9d3fa4364eede1e040"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-phase8-calibration-subplan-2026-08-29.md": {
+      "sha256": "5162ae19026814c94f77b4a696db1fa1b6f434fc9945bb4683166df3a4870c32"
+    }
+  },
+  "manifest_hash": "97520dcc56c93c8d34b4251ab86e98b554ad0fced38cdb87e7d90e8627ba462e",
+  "nonclaims": [
+    "no whitening",
+    "no mode discovery",
+    "no posterior correctness",
+    "no convergence",
+    "no HMC readiness",
+    "no statistical or architecture ranking",
+    "no high-dimensional scaling"
+  ],
+  "principal_sqrt_backend": "tensorflow_eigh_strict",
+  "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "python_version": "3.13.13",
+  "role": "metadata_only_confirmation_protocol_freeze",
+  "schema": "bayesfilter.ssl_lstm_q20.tempered_rkl_phase8_c5_freeze.v1",
+  "status": "PASS_PHASE8_C5_FREEZE",
+  "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278",
+  "wall_time_seconds": 0.016574528999626637
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "bayesfilter.ssl_lstm_q20.phase9b.gpu_preflight.v1",
+  "status": "BLOCKED_GPU0_BUSY",
+  "claim_boundary": "phase9b_m4_p0_executable_readiness_only",
+  "command": "/home/ubuntu/.codex/bin/codex-gpu-probe --framework tensorflow --gpu 0 --python /home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "probe_status": "FAILED",
+  "probe_error": "requested_gpu_compute_busy:0",
+  "requested_gpu": "0",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "0",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+  },
+  "gpu_snapshot": {
+    "gpu_0_memory_used_mib": 337,
+    "gpu_0_memory_total_mib": 32760,
+    "gpu_0_compute_process": "/usr/NX/bin/nxnode.bin",
+    "gpu_0_compute_pid": 6826,
+    "gpu_0_compute_memory_mib": 312,
+    "gpu_0_compute_user": "ubuntu",
+    "gpu_0_process_was_stopped": false,
+    "gpu_1_substituted": false
+  },
+  "nonclaims": [
+    "no TensorFlow GPU initialization",
+    "no XLA or TF32 execution evidence",
+    "no posterior or sampler evidence",
+    "no P1 authorization"
+  ],
+  "next_action": "Retry the same probe and readiness diagnostic after GPU 0 is released; do not kill the existing process or substitute GPU 1 without an approved contract change."
+}

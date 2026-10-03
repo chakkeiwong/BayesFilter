@@ -1,0 +1,760 @@
+{
+  "schema": "compiled_filter_runtime_qualification.v1",
+  "command": [
+    "scripts/qualify_compiled_kalman_ukf_runtime.py",
+    "--device",
+    "GPU",
+    "--gpu",
+    "2",
+    "--output",
+    "docs/plans/artifacts/kalman-ukf-runtime-20260916/gpu-v1"
+  ],
+  "python": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.15 | packaged by conda-forge | (main, Aug 11 2026, 10:26:29) [GCC 14.4.0]",
+  "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+  "tensorflow": "2.19.1",
+  "git_head": "218281747ded3ab8bd65e5e7bfe28e23e58655de",
+  "started_utc": "2026-09-16T11:20:37.093716+00:00",
+  "device": "GPU",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4090"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "seed": [
+    20260916,
+    37
+  ],
+  "plan": "docs/plans/kalman_ukf_compiled_runtime_repair_20260916.md",
+  "trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+  "tf32": true,
+  "nonclaims": [
+    "No DZ5 qualification",
+    "No posterior, convergence, tuning or speedup claim",
+    "No profiling-based synchronization claim"
+  ],
+  "source_sha256": {
+    "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+    "bayesfilter/experimental_batched_value_score.py": "686e429434d00983ebde8b6596e5a0a6bac6ec06f39e3d946c28efbeb361aee8",
+    "bayesfilter/filters/kalman.py": "12c0e4a4c5d75027163c40748c6adea1839d6dd26e85974ea344e0681589a329",
+    "bayesfilter/filters/sigma_points.py": "df656f77d8586eeddb463c53888c45e26cc1f6bb71a41404cb6aa345c56ef868",
+    "bayesfilter/hardbound/gate_grid_reference.py": "1771c799e060a1561834497acf8e2e7ed07c0e728baca4738c7336313d38ac75",
+    "bayesfilter/highdim/actual_sv_srukf_tf.py": "f768d5074a5f8430ce3292a0c38dffa37888353a2767e6b880e9fbcfd0ce5589",
+    "bayesfilter/highdim/bases.py": "b780dfe9b1d6c746d1447c8403143bae4c7c1ccd50ade24c9a05dc4524227ec9",
+    "bayesfilter/highdim/cubature_genut_adapters.py": "9d312a17a916e4f908b6888202c17ae63cd1ff7ee2ef6dbf5ee3e429c16fcf7c",
+    "bayesfilter/highdim/cubature_genut_filter.py": "5440f470efdd1cb18dc7f864e5f516a8d5d3f1ad6b00bb703f0d7617709572d1",
+    "bayesfilter/highdim/derivatives.py": "f965cc531e288f169ba21db3c73341000998353983488205eb3b9d75c5123404",
+    "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+    "bayesfilter/highdim/filtering.py": "cbf59fc08b356f519cc79c365f58138c38605066f18f321196a824c3a0807745",
+    "bayesfilter/highdim/fitting.py": "c3748e29e6e78f1c5cc4d7c967b15340b76409adf7530f1ca4e5e016eaebc321",
+    "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+    "bayesfilter/highdim/genut_shape_lm_tf.py": "17007e0484633f4882173a09f0da1a91ab1a1cbf4f65eeff67936fec1489a2af",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "e7f55ca24798d4051aba57016625ca54219cfffc428133a3c27fe5a968bf5eea",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+    "bayesfilter/highdim/ledh_contract_e_tp_lgssm_tf.py": "b7aba78cfae7fa41a767423c56802f4174b8f73fecc6ba44bb7fda64024b557c",
+    "bayesfilter/highdim/models.py": "0ff67634786a8b30dac582cf711d581c6d52af155364c314b111a119826796e6",
+    "bayesfilter/highdim/sir_latent_preclip_tf.py": "88c8adb5c245d141bb3f9e00544732dc1b0430f313642790f29fc5ad20f5277f",
+    "bayesfilter/highdim/squared_tt.py": "703846596b66eb2834ae5a00052fbb03756cc6e9c876c9669422e52419793056",
+    "bayesfilter/highdim/stochastic_density_training.py": "3bace5ef92cc180a867300105a2106099b7b3e71d46b96df334ed5b7c6b1bbc8",
+    "bayesfilter/highdim/sv_mixture_cut4.py": "cd3c68d68d855ca2fa673ae5fc7a29bf41e10018cb2ac72556e2b99d75a473e9",
+    "bayesfilter/highdim/transport.py": "ff03fac036aa8486732962373e053ff63c4a2b0b26085517be86ac9034a0949c",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/highdim/tt.py": "cbe482ab3f595d3360bdca7e8fa7f0e24c56f99f74b531fd15694542eed6a8a8",
+    "bayesfilter/highdim/ukf_initializer.py": "19420fe0c7a7925c7ccc3199f8117fa27285082185ec14df5c17d6b79c180f00",
+    "bayesfilter/highdim/ukf_scout.py": "0171a3c6d835d67df28d238290322557893a8235cd5d7e8b86436d68e31ca6b7",
+    "bayesfilter/highdim/validation.py": "cc5820ca360c549ad9fa36eabaf6e25bb94d07eb851fce068aa51615c4314b20",
+    "bayesfilter/highdim/zhao_cui_actual_sv_batched_tt_tf.py": "952d24abf634a4f5645d04c29d7a193f6049cd53f61708504b816fc11de12363",
+    "bayesfilter/highdim/zhao_cui_austria_sir_fixed_variant_tf.py": "cc17d3848108b5b86c45ec8766340c85e451619dc63d847897c40f4bbd9f0300",
+    "bayesfilter/highdim/zhao_cui_austria_sir_proposal_tf.py": "771a3fb9dcd694922e2a008ee100408258ee8ad7bc5c1236ff7a2fb225dad0a4",
+    "bayesfilter/highdim/zhao_cui_predator_prey_fixed_variant_tf.py": "a55b31eb91808d0e98373207542b0de983b085073ca289f07c327eb82965708b",
+    "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+    "bayesfilter/linear/batched_kalman_svd_derivatives_tf.py": "566cc6ac2d445d7a07801b88a252529dfb8779343c658b4a74a3bfa2d5ea6363",
+    "bayesfilter/linear/block_qr_conditional_tf.py": "02362e4cc7f68a8ac026d348a821ea2a81b8f715d342c0ebc0de672dd4ae68dc",
+    "bayesfilter/linear/compiled_recurrence_tf.py": "3c3f4390be857f23a36345230ba147e55f14493390062cf0e1d523c8b2d04b10",
+    "bayesfilter/linear/correlated_kalman_tf.py": "677266ca37dbaea57eca5eeeaff5b74d0bcb46f9b6f19faca5df80e12c9394e4",
+    "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+    "bayesfilter/linear/experimental_batched_kalman_tf.py": "c542cfb6de7aa6dfd9014e586c37a534e124dad1e01597f5b1a4537e5e351f44",
+    "bayesfilter/linear/kalman_covariance_derivatives_tf.py": "c0662af0c4ff105e5f6962b37d32b1bb449672f7c031d7ce0d26deb2891a6f1b",
+    "bayesfilter/linear/kalman_derivatives_numpy.py": "282e4440ccbca1215aab6fc92b921ace819b42432c516de96cca62aab346c016",
+    "bayesfilter/linear/kalman_qr_derivatives_tf.py": "f12edc1dc5cd39a3d4171f876cc8210c21ef0edc0e4a90d76f14513d2e110d44",
+    "bayesfilter/linear/kalman_qr_tf.py": "c6e86d1e75f1ea3434ac27ed15361d22c54f27a4f07bbaaabe15629b234f8971",
+    "bayesfilter/linear/kalman_second_order_tf.py": "8f95cfe9f3d337b77f84ae7d4a8e55ad175c970e9185297b20913d21340fb351",
+    "bayesfilter/linear/kalman_svd_derivatives_tf.py": "9444cf455fd32bbf3e1082a688c3f8b129fdf89085305aa909126131dd482b84",
+    "bayesfilter/linear/kalman_svd_tf.py": "79a0e3f868cdc847f4c82f677bb7d7fb73c36aaaf8e74633d5753b443efc8965",
+    "bayesfilter/linear/kalman_tf.py": "077254faef7b103ed6578bbacad36a3992294051528878959ef14410efff19d6",
+    "bayesfilter/linear/lower_rank_downdate_tf.py": "059278cfade7eb29f98612da4d7ca4e0eea0efe653559dc3b2dc139e7639b01a",
+    "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+    "bayesfilter/linear/rectangular_factor_tf.py": "647b04349590da243a6bdb9e740c6e31b375ee964e60762935194159da8ddb7d",
+    "bayesfilter/linear/stack_qr_tf.py": "603c0dd2d61b3298082341b0c34665f5a90ebbaf3bedf8e1274c0eb23ec91c3e",
+    "bayesfilter/linear/svd_factor_tf.py": "b1f70b77fc840882427e8d7e930414ae011828b328e4decf31cb63e47b35683d",
+    "bayesfilter/linear/types.py": "e2e734a5e7454e0af19bc8189e34755268e172f9a1ffaa44688a77c9eb48d2ee",
+    "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+    "bayesfilter/nonlinear/batched_svd_sigma_point_tf.py": "90ad0d0cdc5a8e30b779642bbdd318edae49fadee2b2bd1158ebdb2bd086cbf1",
+    "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+    "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py": "6bb6778c9d4dd756533789cac598f66762503a53af1e0dec866904656b1f6b0f",
+    "bayesfilter/nonlinear/factor_srukf_compat.py": "b264999b3024c4ab51ac3c945de57117bd0f9771cf2ff11edf6b4112958a498d",
+    "bayesfilter/nonlinear/factor_srukf_tf.py": "c9d24049ae80b3eebebbe214d2e55b7da405131048615eaf2fd7511652e096c5",
+    "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "f6d879e91ea0ba23a7090cd856a9c0eeb7f50d55db2358f2702dc5857343a0b5",
+    "bayesfilter/nonlinear/fixed_sgqf_tf.py": "08fc474c5c09015a8c1c65ddce979e6645706ad2b79bc635caced08be2a1d1c0",
+    "bayesfilter/nonlinear/rectangular_srukf_tf.py": "7024958146bac8795913129fedc8fa40d3252ed65850bf761192afff873b38d7",
+    "bayesfilter/nonlinear/sigma_points_tf.py": "6778bd3297b87193a8bab6005307f62c432ac6220ba33f6dd7c2359ec0109487",
+    "bayesfilter/nonlinear/srukf_backend_policy.py": "9628eb27ca5f6f444f8b356d0fa3903ea36fac5f94c00e2eac1e8c60abcbd65f",
+    "bayesfilter/nonlinear/srukf_factor_tf.py": "fe05ac53b91ba09600fd828aa756feb34462371ae0ad4c0f40b39a190c447a43",
+    "bayesfilter/nonlinear/srukf_route_guard.py": "aff5af4af71b2225f0ec9640d7027babcce5c20cd855fc1f93d961f504af519c",
+    "bayesfilter/nonlinear/ssl_lstm_protocol.py": "b43b840275ed4fdf30a809f2c534e0a6a1a51c3467948d11d6ec5d8b5cfdb6be",
+    "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py": "098d60018f03fa870634697da63d2d5935bd3d5c05577d64df46ccd203dfbcc4",
+    "bayesfilter/nonlinear/svd_cut_tf.py": "951cc8e853b23f46950093d88463c300ecfec9f41e2919fae233820953850fb2",
+    "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "419da5f31bbf11250285e6bf72a04967a83aa6d2a1fd37a7ddbb50bc631c1f22",
+    "bayesfilter/results.py": "80cab18515581baaccdeb0bfb370baad31a8f241fbb34b3d27f4ba9c6588086d",
+    "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+    "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+    "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+    "bayesfilter/testing/deterministic_lgssm_exact_target_tf.py": "137716a379862428c5a8800de155bddf5afa3e6cf740e87f88f108e42043e8c7",
+    "bayesfilter/testing/direct_factor_srukf_adapters_tf.py": "20d05b944767f244e21d54971e02f749ea6799625205ea05594eed8b826625b6",
+    "bayesfilter/testing/exact_sv_sgqf_neutra_target_tf.py": "f097ffc36e3b69cac4bd5fa83c073757c81f98a96243e81d425d3d7d9e13c65e",
+    "bayesfilter/testing/ksc_gaussian_sum_ukf_neutra_target_tf.py": "fc62b984a1a46f01a27119ac4dfc7b3e5ee8efeb4c0059fd477b22441ca5e6b6",
+    "bayesfilter/testing/ksc_gaussian_sum_ukf_scope.py": "a6ae588b2cb4983f3acc0fe54817ec3b9e2c999c19b7735f26dd0c1422dccd72",
+    "bayesfilter/testing/ksc_ukf_neutra_target_tf.py": "1b9b26817e68d96708c2069ad41bc23bc328c9004a6dcce356ec60220ed98ead",
+    "bayesfilter/testing/multidim_triangular_lgssm_batched_tf.py": "332b9d5ebcad06f47c45beabb8a849c72b713a11f721221af771f7d700069e45",
+    "bayesfilter/testing/multidim_triangular_lgssm_tf.py": "92951662ef8f211b4e99500855fa594fce28f02c85a21b5964ca796df3e767c9",
+    "bayesfilter/testing/neutra_model_registry_tf.py": "633f22e662a0785d35575b0e250e69cc8e7f2c7f000b0d285fd34288b750a3f8",
+    "bayesfilter/testing/nonlinear_models_tf.py": "ef59d9d504f7eabdf4cf55bd1e7e57e966095e5cec9752fb9db06fb19d477567",
+    "bayesfilter/testing/predator_prey_sgqf_neutra_target_tf.py": "8e37eacbf9b37d6e1966d7c01b482901ccafef0dc804cc43499f4e31b6c503dd",
+    "bayesfilter/testing/predator_prey_ukf_neutra_target_tf.py": "2ea9dd737ae837ee14fafc3d962c303309def4b45de982c90e10b6fc03796528",
+    "bayesfilter/testing/simple_nonlinear_generic_target_adapter_tf.py": "8377d96111e3ae2f85dd1d60e93fbf849dc9565e9b75b327acec3697d272a999",
+    "bayesfilter/testing/sir_filter_neutra_target_design_tf.py": "64ac011c4d0604804650dc0613b15036312789e0279bd3e0006a3cf39a01836f",
+    "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py": "9ff1f846d486a1c696bcb9ca05f7482e49b42740914c75c8416c89e54db4716d",
+    "bayesfilter/testing/tf_covariance_differentiated_kalman_reference.py": "ba26234beeba3aaa8ae943444fdb9f179eab9b7ab098e49088ca2405302258e6",
+    "bayesfilter/testing/tf_solve_differentiated_kalman_reference.py": "b43666beea615c2add37dd9e7bbddcff624309bfaee66f705f664f7605fe4daf",
+    "bayesfilter/testing/zhao_cui_actual_sv_neutra_target_tf.py": "38012abc8da04612adee3bb343a3b2977febeb10e346d32ac8395c15dfaf0e01",
+    "experiments/dpf_implementation/tf_tfp/cubature/cut4_tf.py": "9d55080a4da485f5cceeae6c1bafaa218814624f9ca8a63906ad47bc24bd7686",
+    "experiments/dpf_implementation/tf_tfp/filters/bootstrap_pf_tf.py": "2099bcc1bd3b192b5ee529a5578f0a6570776e7e79ecdfece8516b71588e757f",
+    "experiments/dpf_implementation/tf_tfp/filters/ledh_pfpf_alg1_ukf_tf.py": "6d1bcde9c6bcd38b068f60c593bc91f530f0ad1a7c830b7467b1ae2f4d90a8d7",
+    "experiments/dpf_implementation/tf_tfp/fixtures/common_model_suite_tf.py": "c1caf4ef9896126031b396f591aea03e6f3a4014bfab799a93bcfba543f532b8",
+    "experiments/dpf_implementation/tf_tfp/fixtures/lgssm_tf.py": "7cc15463472344094604f8032e2a271956d3b23acb29540bd9d7f36f152b238f",
+    "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "80cf1a0a7be4beb216ded8fe51b75cbbb02d17b8b8b924617c23ac4dc465dcc3",
+    "experiments/dpf_implementation/tf_tfp/fixtures/structural_ar1_quadratic_tf.py": "fd175e19b10aae37975b29b977fdf83ce637bb2d26d3a34f2e234ad62ef23672",
+    "experiments/dpf_implementation/tf_tfp/flows/jacobians_tf.py": "7e590940d4b2fb178dfbbfbe04e94ed8ad99874be0421032b3023da53347d3c0",
+    "experiments/dpf_implementation/tf_tfp/flows/ledh_tf.py": "8a9b674183ff5972782cac68df31112f1cf323965a846a2d0bdea0b3ad277159",
+    "experiments/dpf_implementation/tf_tfp/references/cut4_structural_tf.py": "82faa90505ec05eab4d24614029d49afc15eeeb6753409855c0a3d6866d9fb7d",
+    "experiments/dpf_implementation/tf_tfp/references/kalman_lgssm_tf.py": "28b69d18ed7463010d553c32de148f87d4990fb1320c67a2286c56cc41c0da37",
+    "experiments/dpf_implementation/tf_tfp/references/kalman_structural_ar1_tf.py": "7639ac94bbe4afa7829b12e6194224f01a6b50d8bc1d12cf94e427892117eed0",
+    "experiments/dpf_implementation/tf_tfp/references/ukf_tf.py": "c611cd2438e4aeda7037e0d4554caf7a290638c350bb3a244ad84a3164fa22d6",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168",
+    "experiments/dpf_implementation/tf_tfp/resampling/sinkhorn_tf.py": "70807359bc28a7f253237cb593febdba4405afe92216fc465863d02ba5b85996",
+    "experiments/dpf_implementation/tf_tfp/runners/common_tf.py": "9d00ca5d665b4e26e0e0b0c3b2bc6dfd474039057a0dbf6be45d0384ef7c3fda",
+    "experiments/dpf_implementation/tf_tfp/runners/filterflow_reference_policy.py": "9ff05ca36dc7ae508cf75dc81cfe67611ca33341b5ab892415bebfd0c8e4e858",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p0_registry_tf.py": "80f064dc2e7f542f2c5aec19c0f8a687694f27040cc3e3e349addb181927ed37",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p1_lgssm_exact_oracle_tf.py": "fbb2e2cfb7e274bb7f6a61677b32ffb4440f302c4b0eb547f7e2ac2e69b921bc",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p2_tiny_nonlinear_dense_oracle_tf.py": "eea2da38514f0aa3397219175f35b50418f266f575c512b30556b6abb725409f",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p3_conditional_gaussian_mixture_tf.py": "ebc9b82adf5ee69c6344587645bea659ceae5ef08be1f9e2926afafb1dd9455a",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p5_alg1_ukf_statistical_closeness_tf.py": "194240f55417ca719e7a1a311955695367223841eb052565273a4b1f814fb1dc",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p6_alg1_ukf_cross_filter_calibration_tf.py": "93382b87a3aeb4bf0d8724f1698441db829056b0d2a735bd6e3d20b28909590b",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p8_p44_alg1_ukf_blocker_closure_tf.py": "de3b431b540e37229b9d2f36bd82c9156e83048e08b08a9097de078c33b9c0a0",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_float64_branch_reference_tf.py": "468d078fcf358b501bd0d35463fee3a882dfc01da26c0cce0f4cab0b302d3816",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_float64_reference_probe_tf.py": "7dcd68b50261b111915e118e5be0cb03aacd18645dbdf86c78ba1c4cd9c17d0b",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_lgssm_cross_audit_tf.py": "188cc094d7e7d26a29b9ed0824960b315164fedf6520afde1b211c558b1f4380",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_lgssm_matched_cross_audit_tf.py": "6c085ecd8346ee1937faef17a13c8585b09f0ca2067dcd53cb20b3c2240e50bb",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_lgssm_paper_table_gated_comparator_tf.py": "9082010ee502b3a9fd390ef91208e2806e5f3d918ecbbfb38e36a2823410609f",
+    "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_alg1_ukf_direct_replacements_tf.py": "5f19409699cf8dc0bb54ef98957c1047c52b8e269dd686d9b0074feabb429975",
+    "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_alg1_ukf_extension_historical_classification.py": "f3aed948c12cf5eafce4072cfd5bea64d4fc2e43c0b8487a12ca287f1d8fb1cc",
+    "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_alg1_ukf_ledh_pfpf_ot_rerun_closeout.py": "d009dda3e2a003719a8e40facb83d70a42b8c80b3b27e6b3a98754b95c066d08",
+    "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_alg1_ukf_p5_lgssm_comparison_tf.py": "6b76358f567f097ba2f5f1e72e562dc4da22b5a5aad8c0de2c4607aeecf28602",
+    "experiments/dpf_implementation/tf_tfp/runners/run_structural_ar1_cut4_ledh_gradient_mle_tf.py": "38b9a72bb6b546db14da2bc47520ec7c5cceea0f24fcd020479183e61f72d5b0",
+    "experiments/dpf_implementation/tf_tfp/runners/run_structural_ar1_linear_kalman_ledh_mle_tf.py": "19e55544a1257f67df9c9f4e61aebb547e7b0f53d25222723251b3d6637bf67d",
+    "experiments/dpf_implementation/tf_tfp/runners/run_structural_interface_linear_ar1_tf.py": "1254e24484a21233fdb2a5504289c3d78f00db225e5fc9fd70ff4f51a17446fd",
+    "experiments/dpf_implementation/tf_tfp/runners/run_v2_bootstrap_ot_values_tf.py": "9bc379f8b67b8af9e88c4ccffeed4a58649a8e2170e371a8dc143bcf527bf52b",
+    "experiments/dpf_implementation/tf_tfp/runners/run_v2_ledh_pfpf_alg1_ukf_contracts_tf.py": "540166834ed7a83cabf6b343a6b3f7b143e5e0f2ac0c067318c80d2be13fe4df",
+    "experiments/dpf_implementation/tf_tfp/runners/run_v2_ledh_pfpf_alg1_ukf_gradients_tf.py": "60f32adadb4cfeb263fb6a25ad10529ef3146f23be567f277c74b517a596d82c",
+    "experiments/dpf_implementation/tf_tfp/runners/run_v2_ledh_pfpf_alg1_ukf_values_tf.py": "db4d226f5a30333fe0e25ac87f862f4a8866bd103c5055f03add2311500a4d21",
+    "experiments/dpf_implementation/tf_tfp/structural/contracts_tf.py": "2bb18b815c497085288b8a5a3ecfc6eff2c2a249871b1f24dfdc831adabfa83a",
+    "experiments/dpf_implementation/tf_tfp/structural/models/structural_ar1_tf.py": "c148326e1d0f1b1a8d482caeb60e63c33e6e1f0aff480ab79e307088287ff906",
+    "experiments/dpf_implementation/tf_tfp/structural/particle_state_tf.py": "227433fb3e774db3c68b9a57a82bc2647272270182c2bbcc0781ba3941befbf4",
+    "experiments/dpf_implementation/tf_tfp/structural/resampling_policies_tf.py": "9a79421796dc33cd0e437d522d87c50ad57cab50d571e43fc03894ebc4ffeb0d",
+    "experiments/dpf_implementation/tf_tfp/structural/structural_filter_tf.py": "54f01ace0dbf864104d43e9e77d072d930411c069a65357bd63e5ee01949f77b",
+    "bayesfilter/testing/compiled_filter_runtime_fixture_tf.py": "25a00107f9f9a71e08ea04d991983ccc4469f1b145d92c7510a0deee2043a03f",
+    "scripts/qualify_compiled_kalman_ukf_runtime.py": "b53fbdd74095b23524daf0f2ce30c233ea75892c1dd34ab7ae46a49592a152c7"
+  },
+  "hardware": "0, GPU-08d989e5-2702-1b9d-c1ef-7795ff299e02, NVIDIA GeForce RTX 4090, 595.91.07, 49140 MiB\n1, GPU-225f4834-d8ad-f91a-2378-03ad0524381b, NVIDIA GeForce RTX 4090, 595.91.07, 49140 MiB\n2, GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba, NVIDIA GeForce RTX 4090, 595.91.07, 49140 MiB\n3, GPU-b8045e28-4433-ec7a-77a5-db0636748322, NVIDIA GeForce RTX 4090, 595.91.07, 49140 MiB",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "2",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "XLA_FLAGS": null
+  },
+  "square_target": {
+    "cold_synchronized_seconds": 5.045359873998677,
+    "warm_synchronized_seconds": [
+      0.0016705989983165637,
+      0.0013535909965867177
+    ],
+    "trace_count": 1,
+    "graph_node_count": 1294,
+    "reachable_operation_counts": {
+      "Abs": 4,
+      "AddV2": 31,
+      "All": 16,
+      "Assert": 7,
+      "BroadcastTo": 6,
+      "Cast": 10,
+      "CheckNumerics": 16,
+      "ConcatV2": 21,
+      "Const": 644,
+      "Cos": 2,
+      "Einsum": 26,
+      "Equal": 2,
+      "Exp": 1,
+      "ExpandDims": 4,
+      "Fill": 9,
+      "Greater": 11,
+      "GreaterEqual": 5,
+      "Identity": 89,
+      "If": 7,
+      "IsFinite": 7,
+      "Less": 1,
+      "Log": 1,
+      "LogicalAnd": 9,
+      "LogicalNot": 4,
+      "LogicalOr": 3,
+      "MatrixBandPart": 2,
+      "MatrixDiagPartV3": 20,
+      "MatrixDiagV3": 4,
+      "MatrixTriangularSolve": 8,
+      "Max": 2,
+      "Maximum": 6,
+      "Min": 6,
+      "Minimum": 7,
+      "Mul": 50,
+      "Neg": 4,
+      "NoOp": 21,
+      "OneHot": 2,
+      "Pack": 23,
+      "Placeholder": 1,
+      "Pow": 3,
+      "Qr": 2,
+      "Range": 1,
+      "RealDiv": 3,
+      "Reshape": 16,
+      "SelectV2": 6,
+      "Sin": 2,
+      "Sqrt": 11,
+      "Squeeze": 6,
+      "StatefulPartitionedCall": 1,
+      "StridedSlice": 79,
+      "Sub": 19,
+      "Sum": 10,
+      "Tile": 4,
+      "Transpose": 38,
+      "While": 1
+    },
+    "hlo_sha256": "d1755a3fccc8673671c5fd81fd72bd51ff26fe69943f00397585d1f17bd58a85",
+    "hlo_while_count": 4,
+    "forbidden_callbacks": [],
+    "reference_max_abs_errors": [
+      1.3877787807814457e-16,
+      5.551115123125783e-17,
+      2.7755575615628914e-17,
+      5.551115123125783e-17,
+      6.938893903907228e-18,
+      1.0408340855860843e-17
+    ],
+    "directional_score_passed": true,
+    "outputs": [
+      [
+        -0.04074267960928385,
+        -0.10423694815216898
+      ],
+      [
+        [
+          -0.12695824133468858,
+          -0.259903077585256,
+          0.007083295606506307
+        ],
+        [
+          -0.11382812713443968,
+          -0.2875532702897969,
+          0.0132777772357241
+        ]
+      ],
+      [
+        [
+          0.1982532535729562,
+          -0.0653735289596333
+        ],
+        [
+          0.19328346298179777,
+          -0.06944485999146406
+        ]
+      ],
+      [
+        [
+          [
+            0.2052747453456281,
+            -0.0
+          ],
+          [
+            0.018908364651790646,
+            0.1917807833845043
+          ]
+        ],
+        [
+          [
+            0.20963934784844676,
+            -0.0
+          ],
+          [
+            0.019225365328837216,
+            0.20275044697224676
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            0.02314078016463533,
+            -0.005198911361972112
+          ],
+          [
+            0.006200882229494217,
+            -0.014869662671092259
+          ],
+          [
+            0.0011093253457787856,
+            0.00040014209473113464
+          ]
+        ],
+        [
+          [
+            0.02135856440633619,
+            -0.00531876348298106
+          ],
+          [
+            0.007608114496104911,
+            -0.016391546094053903
+          ],
+          [
+            0.0008888632518278212,
+            0.0003846837452785658
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            [
+              0.0064457736334848584,
+              0.0
+            ],
+            [
+              -0.002049984803555438,
+              0.00028950349404507485
+            ]
+          ],
+          [
+            [
+              0.01725019606233525,
+              0.0
+            ],
+            [
+              -0.0006173484247292073,
+              0.029984903800125216
+            ]
+          ],
+          [
+            [
+              -3.2788581434964354e-06,
+              0.0
+            ],
+            [
+              -4.571769346282666e-05,
+              3.0161222331781113e-07
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.005619476137518646,
+              0.0
+            ],
+            [
+              -0.0018901370521730945,
+              0.0002637829244457148
+            ]
+          ],
+          [
+            [
+              0.01767420011323916,
+              0.0
+            ],
+            [
+              -0.0012119092112734204,
+              0.031439944731883586
+            ]
+          ],
+          [
+            [
+              -2.9007858040106095e-06,
+              0.0
+            ],
+            [
+              -4.004803269957447e-05,
+              -9.258958997219298e-07
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  "rectangular_target": {
+    "cold_synchronized_seconds": 5.1984389100034605,
+    "warm_synchronized_seconds": [
+      0.0024548119981773198,
+      0.001895285997306928
+    ],
+    "trace_count": 1,
+    "graph_node_count": 1407,
+    "reachable_operation_counts": {
+      "Abs": 3,
+      "AddV2": 39,
+      "All": 3,
+      "BroadcastTo": 6,
+      "Cast": 13,
+      "CheckNumerics": 26,
+      "ConcatV2": 23,
+      "Const": 682,
+      "Cos": 2,
+      "Einsum": 67,
+      "Exp": 1,
+      "ExpandDims": 2,
+      "Fill": 12,
+      "GatherV2": 12,
+      "Greater": 3,
+      "GreaterEqual": 5,
+      "Identity": 56,
+      "Less": 1,
+      "LessEqual": 4,
+      "Log": 1,
+      "LogicalAnd": 7,
+      "LogicalNot": 1,
+      "MatrixBandPart": 5,
+      "MatrixDiagPartV3": 15,
+      "MatrixDiagV3": 7,
+      "MatrixTriangularSolve": 14,
+      "Maximum": 14,
+      "Min": 6,
+      "Minimum": 3,
+      "Mul": 62,
+      "Neg": 11,
+      "NoOp": 3,
+      "OneHot": 2,
+      "Pack": 19,
+      "Placeholder": 1,
+      "Pow": 3,
+      "Qr": 5,
+      "Range": 1,
+      "RealDiv": 4,
+      "Reshape": 8,
+      "SelectV2": 8,
+      "Sin": 2,
+      "Sqrt": 14,
+      "Squeeze": 9,
+      "StatefulPartitionedCall": 1,
+      "StridedSlice": 100,
+      "Sub": 39,
+      "Sum": 13,
+      "Tile": 2,
+      "TopKV2": 3,
+      "Transpose": 63,
+      "While": 1
+    },
+    "hlo_sha256": "c5e9c6c8cbe64457624cbccd5508b63de5cc67f64b5728a25fe6644b4053f6bd",
+    "hlo_while_count": 8,
+    "forbidden_callbacks": [],
+    "reference_max_abs_errors": [
+      1.6653345369377348e-16,
+      5.551115123125783e-17,
+      5.551115123125783e-17,
+      2.7755575615628914e-17,
+      1.3877787807814457e-17,
+      1.0408340855860843e-17
+    ],
+    "directional_score_passed": true,
+    "outputs": [
+      [
+        -0.04074267960928396,
+        -0.10423694815216825
+      ],
+      [
+        [
+          -0.12695824133468847,
+          -0.259903077585256,
+          0.007083295606506308
+        ],
+        [
+          -0.11382812713443974,
+          -0.28755327028979694,
+          0.013277777235724101
+        ]
+      ],
+      [
+        [
+          0.19825325357295615,
+          -0.06537352895963332
+        ],
+        [
+          0.19328346298179783,
+          -0.06944485999146405
+        ]
+      ],
+      [
+        [
+          [
+            0.205274745345628,
+            0.0
+          ],
+          [
+            0.01890836465179065,
+            0.1917807833845043
+          ]
+        ],
+        [
+          [
+            0.20963934784844673,
+            0.0
+          ],
+          [
+            0.019225365328837216,
+            0.20275044697224678
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            0.023140780164635333,
+            -0.005198911361972111
+          ],
+          [
+            0.006200882229494222,
+            -0.014869662671092267
+          ],
+          [
+            0.001109325345778787,
+            0.0004001420947311343
+          ]
+        ],
+        [
+          [
+            0.021358564406336208,
+            -0.005318763482981061
+          ],
+          [
+            0.007608114496104904,
+            -0.016391546094053903
+          ],
+          [
+            0.0008888632518278205,
+            0.00038468374527856567
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            [
+              0.006445773633484857,
+              0.0
+            ],
+            [
+              -0.0020499848035554374,
+              0.00028950349404507507
+            ]
+          ],
+          [
+            [
+              0.01725019606233525,
+              0.0
+            ],
+            [
+              -0.0006173484247292088,
+              0.02998490380012522
+            ]
+          ],
+          [
+            [
+              -3.278858143496437e-06,
+              0.0
+            ],
+            [
+              -4.57176934628267e-05,
+              3.016122233178446e-07
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              0.005619476137518652,
+              0.0
+            ],
+            [
+              -0.0018901370521730943,
+              0.00026378292444571426
+            ]
+          ],
+          [
+            [
+              0.017674200113239162,
+              0.0
+            ],
+            [
+              -0.001211909211273417,
+              0.03143994473188357
+            ]
+          ],
+          [
+            [
+              -2.900785804010615e-06,
+              0.0
+            ],
+            [
+              -4.0048032699574426e-05,
+              -9.258958997219287e-07
+            ]
+          ]
+        ]
+      ]
+    ]
+  },
+  "native_hmc_archive": {
+    "cold_synchronized_seconds": 8.08979322900268,
+    "warm_synchronized_seconds": [
+      0.011765617004130036,
+      0.01152130000264151
+    ],
+    "trace_count": 1,
+    "graph_node_count": 3344,
+    "reachable_operation_counts": {
+      "Abs": 6,
+      "AddN": 2,
+      "AddV2": 101,
+      "All": 9,
+      "Assert": 3,
+      "BroadcastTo": 14,
+      "Cast": 27,
+      "CheckNumerics": 52,
+      "ConcatV2": 46,
+      "Const": 1569,
+      "Cos": 4,
+      "Einsum": 134,
+      "Exp": 2,
+      "ExpandDims": 26,
+      "Fill": 50,
+      "GatherV2": 24,
+      "Greater": 7,
+      "GreaterEqual": 11,
+      "Identity": 184,
+      "IdentityN": 2,
+      "IsFinite": 2,
+      "Less": 6,
+      "LessEqual": 9,
+      "Log": 7,
+      "LogicalAnd": 14,
+      "LogicalNot": 2,
+      "MatMul": 4,
+      "MatrixBandPart": 10,
+      "MatrixDiagPartV3": 32,
+      "MatrixDiagV3": 14,
+      "MatrixTriangularSolve": 28,
+      "Maximum": 28,
+      "Min": 12,
+      "Minimum": 6,
+      "Mul": 155,
+      "Neg": 26,
+      "NoOp": 7,
+      "OneHot": 4,
+      "Pack": 39,
+      "Placeholder": 3,
+      "Pow": 14,
+      "Qr": 10,
+      "Range": 6,
+      "RealDiv": 10,
+      "Reshape": 26,
+      "SelectV2": 24,
+      "Sin": 4,
+      "Sqrt": 28,
+      "Square": 2,
+      "Squeeze": 18,
+      "StatefulPartitionedCall": 2,
+      "StatelessRandomGetKeyCounter": 5,
+      "StatelessRandomNormalV2": 1,
+      "StatelessRandomUniformFullIntV2": 3,
+      "StatelessRandomUniformV2": 1,
+      "StopGradient": 6,
+      "StridedSlice": 200,
+      "Sub": 91,
+      "Sum": 36,
+      "Tanh": 8,
+      "TensorScatterUpdate": 23,
+      "Tile": 4,
+      "TopKV2": 6,
+      "Transpose": 128,
+      "Unpack": 2,
+      "While": 4,
+      "ZerosLike": 1
+    },
+    "hlo_sha256": "24e56cc122d036c331ccc717f26cfb693d627fdadb544406625db3e6bc3bd603",
+    "hlo_while_count": 18,
+    "forbidden_callbacks": [],
+    "saved_momentum_reference_max_abs_errors": {
+      "proposed_state": 0.0,
+      "proposed_target_log_prob": 1.1102230246251565e-16,
+      "proposed_grad_target_log_prob": 1.1102230246251565e-16,
+      "final_momentum": 2.220446049250313e-16,
+      "metropolis_state": 0.0
+    },
+    "random_stream_comparison": "TF and XLA streams differ; exact archived momentum replay used",
+    "final_state": [
+      [
+        0.12487621300492967,
+        -0.37730301981010816,
+        0.09869671190939361
+      ],
+      [
+        -0.019348991257254054,
+        0.16001493162682714,
+        -0.10016071841498891
+      ]
+    ],
+    "finite_active_tensors": true,
+    "energy_identity_max_abs": 1.6653345369377348e-16
+  },
+  "allocator": {
+    "current": 52992,
+    "peak": 86016
+  },
+  "peak_host_rss_kib": 1754532,
+  "wall_seconds": 59.40776894699957,
+  "status": "PASS_ENGINEERING_QUALIFICATION"
+}

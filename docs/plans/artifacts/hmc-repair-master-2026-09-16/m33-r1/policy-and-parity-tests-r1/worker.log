@@ -1,0 +1,177 @@
+.............FF...                                                       [100%]
+=================================== FAILURES ===================================
+__ test_comparator_matches_independent_batch_formula_and_unavailable_batches ___
+
+    def test_comparator_matches_independent_batch_formula_and_unavailable_batches():
+        values = np.random.default_rng(793).normal(size=(96, 4, 2))
+        def lrv(b):
+            return b * values.reshape(96 // b, b, 4, 2).mean(axis=1).var(axis=0, ddof=1)
+        expected = np.sqrt(((lrv(12) - .25 * lrv(6)) / .75).sum(axis=0) / (96 * 16))
+        result = arm_quantities(values, get_target("gaussian"), {}, None, jit_compile=False,
+                                batch_size=12, min_batches=8, lugsail_r=2, lugsail_c=.25)
+>       assert result["x:mean"]["mcse"] == pytest.approx(expected[0], rel=1e-12)
+E       assert None == 0.056515733861882446 ± 1.0e-12
+E         
+E         comparison failed
+E         Obtained: None
+E         Expected: 0.056515733861882446 ± 1.0e-12
+
+tests/inference_validation/test_posterior_policy_wiring.py:39: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-23 21:36:32.306969: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+____________ test_public_stopped_fixed_policy_and_restart_identity _____________
+
+design = <function design.<locals>.make at 0x73332041e5c0>
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-688/test_public_stopped_fixed_poli0')
+
+    def test_public_stopped_fixed_policy_and_restart_identity(design, tmp_path):
+        from bayesfilter.testing.inference_validation.engines.pipeline import run
+        settings = {"batch_size": 8, "min_batches": 4, "lugsail_r": 2, "lugsail_c": .25}
+        readiness = {"warmup_bulk_ess_min": 1., "warmup_tail_ess_min": 1.,
+                     "retained_bulk_ess_min": 1., "retained_tail_ess_min": 1.,
+                     "warmup_consecutive_checks": 2}
+        d = design("stopping", "gaussian", "prepared", replications=1, draws=64,
+            posterior_cap=128, step_size=1.3, l_grid=(2, 3),
+            options={"posterior_members": "selected", "member_rule": "first_verified",
+                "posterior_precision_settings": settings, "posterior_assessment_settings": readiness,
+                "acceptance_policy": {"practical_region": (.41, .99), "repair_region": (.405, .995)},
+                "search": {"pilot_enabled": False, "refinement_rounds": 0,
+                           "total_budget_units": 24, "repair_reserve_units": 4, "evidence_rungs": (1,)},
+                "fixed_comparator": {"warmup_results": 128, "retained_results": 128}})
+        result = run(d, tmp_path)
+        fit = tmp_path / "replication-0000"
+        pipeline = read_json(fit / "pipeline.json")
+        member = next(m for m in pipeline["members"] if m["status"] == "assessed")
+        policy = member["posterior"]["config"]["assessment_policy"]
+        assert all(policy[k] == v for k, v in readiness.items())
+        assert all(policy["precision"][k] == v for k, v in settings.items())
+        pair = result["replications"][0]["members"][0]["stopping_pair"]
+        for arm, path in (("stopped", member["draws_path"]),
+                          ("fixed", member["fixed_comparator"]["draws_path"])):
+            independent = arm_quantities(read_tensor(path), get_target("gaussian"), {}, None,
+                                          jit_compile=False, **settings)
+            assert pair[arm] == independent
+        assert execute_pipeline(d, fit)["verified_candidate_ids"] == pipeline["verified_candidate_ids"]
+        changed = replace(d, options={**d.options, "posterior_precision_settings": {**settings, "batch_size": 16}})
+        assert changed.identity != d.identity
+>       with pytest.raises(ValueError, match="identity|checkpoint|scope|policy"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/inference_validation/test_posterior_policy_wiring.py:76: Failed
+----------------------------- Captured stderr call -----------------------------
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790170600.198557  949692 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 5 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x73331a42cc20> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING  tensorflow:polymorphic_function.py:157 6 out of the last 6 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x73331a42cf40> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+=============================== warnings summary ===============================
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/inference_validation/test_posterior_policy_wiring.py: 19 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Constant.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Compare.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 85 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Attribute.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: BinOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 53 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Call.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 15 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: keyword.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 18 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FunctionDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py: 31 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Load.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Tuple.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Expr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Eq.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Is.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: IsNot.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Dict.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Try.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Subscript.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: List.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: alias.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Import.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/inference_validation/test_posterior_policy_wiring.py::test_comparator_matches_independent_batch_formula_and_unavailable_batches
+FAILED tests/inference_validation/test_posterior_policy_wiring.py::test_public_stopped_fixed_policy_and_restart_identity
+2 failed, 16 passed, 256 warnings in 73.47s (0:01:13)

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="4" time="3.507" timestamp="2026-09-22T22:00:40.306087+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_geometry_stream_identity" name="test_numerical_geometry_ignores_only_probe_clocks_and_keeps_full_artifact" time="0.119" /><testcase classname="tests.test_hmc_geometry_stream_identity" name="test_candidate_stream_identity_is_clock_invariant_but_numerically_sensitive" time="0.148" /><testcase classname="tests.test_hmc_m9_repairs" name="test_startup_bootstrap_exhaustion_cannot_fall_through_to_adaptation" time="0.173" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_real_windowed_preparation_preserves_both_affine_layers" time="0.096"><failure message="ValueError: windowed stage requires bootstrap preflight without hard veto">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-637/test_real_windowed_preparation0')
+
+    def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
+        # Reuse the existing rotated-Gaussian preparation fixture, with real TF
+        # operational warmup. Bootstrap's synthetic screen is preparation mechanics
+        # only; candidate verification below always runs the numerical evaluator.
+        from tests import test_hmc_kernel_tuning_windowed_mass as fixture
+        from bayesfilter.inference import bind_hmc_candidate_set_execution_from_preparation
+        from bayesfilter.inference.hmc_kernel_tuning import (
+            build_operational_fixed_mass_hmc_adapter, run_hmc_windowed_mass_stage,
+            OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+        )
+        adapter = fixture._RotatedGaussianAdapter()
+        geometry = fixture.initialize_hmc_kernel_geometry(adapter=adapter, initial_position=[.4,-.3],
+            initial_covariance=[[1.4,.3],[.3,.8]],
+            config=fixture.HMCGeometryInitializationConfig(covariance_jitter=0.0))
+        def bootstrap_fixture(_adapter, _state, config):
+            count = int(config.num_results)
+            result = fixture._runtime_shaped_result(warmup_steps=count,
+                acceptance_trace=([True, True, False, True] * count)[:count])
+            # Bootstrap now consumes Metropolis probabilities, independently of
+            # the binary reporting field. Declare a passing probability trace.
+            result.trace["log_accept_ratio"] = tf.fill([count], tf.math.log(tf.constant(.7, tf.float64)))
+            return result
+        bootstrap = fixture.run_hmc_bootstrap_screen(adapter=adapter, geometry=geometry,
+            run_full_chain=bootstrap_fixture)
+&gt;       stage = run_hmc_windowed_mass_stage(adapter=adapter, geometry=geometry, bootstrap=bootstrap,
+            config=fixture._stage_config(algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+                                         chain_execution_mode="tf_function"),
+            _attempt_budget_policy=fixture._operational_budget())
+
+tests/test_hmc_candidate_set_execution.py:342: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/hmc_mass_adaptation.py:2162: in run_hmc_windowed_mass_stage
+    _validate_windowed_stage_inputs(adapter=adapter, geometry=geometry, bootstrap=bootstrap)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _validate_windowed_stage_inputs(
+        *,
+        adapter: Any,
+        geometry: HMCGeometryInitializationResult,
+        bootstrap: HMCBootstrapScreenResult,
+    ) -&gt; None:
+        adapter_signature = stable_adapter_signature(adapter)
+        if adapter_signature != geometry.adapter_signature:
+            raise ValueError("windowed stage adapter signature must match geometry")
+        if adapter_signature != bootstrap.adapter_signature:
+            raise ValueError("windowed stage adapter signature must match bootstrap")
+        if not _bootstrap_preflight_passed(bootstrap):
+&gt;           raise ValueError("windowed stage requires bootstrap preflight without hard veto")
+E           ValueError: windowed stage requires bootstrap preflight without hard veto
+
+bayesfilter/inference/hmc_mass_adaptation.py:2944: ValueError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,28 @@
+2026-09-22 11:47:17.508832: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790048840.032016 3911573 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30421 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:21:00.0, compute capability: 8.9
+I0000 00:00:1790048841.236111 3911573 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x5cdffb946670
+2026-09-22 11:47:27.395327: I external/local_xla/xla/service/service.cc:163] XLA service 0x5ce0046a48a0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2026-09-22 11:47:27.395406: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9
+2026-09-22 11:47:27.469202: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+2026-09-22 11:47:27.749064: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal/Assert/AssertGuard/Assert
+2026-09-22 11:47:27.750521: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_1/Assert/AssertGuard/Assert
+2026-09-22 11:47:28.035473: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_2/Assert/AssertGuard/Assert
+2026-09-22 11:47:28.110332: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_3/Assert/AssertGuard/Assert
+2026-09-22 11:47:28.111796: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_4/Assert/AssertGuard/Assert
+2026-09-22 11:47:28.266659: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_5/Assert/AssertGuard/Assert
+2026-09-22 11:47:28.394188: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700
+I0000 00:00:1790048853.157224 3911573 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+Traceback (most recent call last):
+  File "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/q20-gaussian-epsilon-canary-2026-09-22/run_canary.py", line 306, in <module>
+    worker(sys.argv[2])
+    ~~~~~~^^^^^^^^^^^^^
+  File "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/q20-gaussian-epsilon-canary-2026-09-22/run_canary.py", line 208, in worker
+    not target_status_telemetry_has_failure(status, expected_shape=(4,)))
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-q20-recovery-20260922-r2/bayesfilter/inference/hmc_verification.py", line 177, in target_status_telemetry_has_failure
+    raise ValueError(
+        "target_status_telemetry conditioning fields must be both present or both absent"
+    )
+ValueError: target_status_telemetry conditioning fields must be both present or both absent

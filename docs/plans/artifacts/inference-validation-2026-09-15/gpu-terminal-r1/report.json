@@ -1,0 +1,195 @@
+{
+  "all_required_assessed": false,
+  "all_required_executed": false,
+  "coverage": [
+    {
+      "assessment_complete": true,
+      "designs": [
+        "gpu-mechanics-gaussian"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "mechanics",
+        "route": "frozen",
+        "target": "gaussian"
+      },
+      "status": "executed"
+    },
+    {
+      "assessment_complete": true,
+      "designs": [
+        "gpu-nonlinear-transport"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "accuracy",
+        "route": "fixed_transport",
+        "target": "gaussian",
+        "transport": "bayesfilter.neutra.dense_iaf_frozen_transport.v1"
+      },
+      "status": "executed"
+    },
+    {
+      "assessment_complete": true,
+      "designs": [
+        "gpu-invariance-wrong_energy"
+      ],
+      "required": {
+        "control": "wrong_energy",
+        "device": "gpu",
+        "engine": "invariance",
+        "route": "frozen",
+        "target": "gaussian"
+      },
+      "status": "executed"
+    },
+    {
+      "assessment_complete": false,
+      "designs": [
+        "gpu-automatic-gaussian"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "accuracy",
+        "route": "ordinary",
+        "target": "gaussian"
+      },
+      "status": "uncovered"
+    },
+    {
+      "assessment_complete": false,
+      "designs": [
+        "gpu-full-sbc"
+      ],
+      "required": {
+        "control": "baseline",
+        "device": "gpu",
+        "engine": "sbc",
+        "route": "ordinary",
+        "target": "normal_conjugate"
+      },
+      "status": "uncovered"
+    }
+  ],
+  "interpretation": "Execution, statistical finding and expected defect detection are separate; no universal validation claim.",
+  "rows": [
+    {
+      "assessment_complete": true,
+      "control": "baseline",
+      "design_id": "gpu-mechanics-gaussian",
+      "device": "gpu",
+      "engine": "mechanics",
+      "execution_status": "complete",
+      "family": "quadratic",
+      "finding": "mechanics_passed",
+      "phase": "development",
+      "reason": null,
+      "result": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-2026-09-15/gpu-terminal-r1/gpu-mechanics-gaussian/attempt-001-result.json",
+      "route": "frozen",
+      "seconds": 5.428494382998906,
+      "source_status": "matches_current_source",
+      "start": "dispersed",
+      "target": "gaussian",
+      "test_response": {
+        "control": "baseline",
+        "power_established": false,
+        "status": "baseline_observed"
+      },
+      "transport": "none"
+    },
+    {
+      "assessment_complete": true,
+      "control": "baseline",
+      "design_id": "gpu-nonlinear-transport",
+      "device": "gpu",
+      "engine": "accuracy",
+      "execution_status": "complete",
+      "family": "quadratic",
+      "finding": "pipeline_assessed",
+      "phase": "development",
+      "reason": null,
+      "result": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-2026-09-15/gpu-terminal-r1/gpu-nonlinear-transport/attempt-001-result.json",
+      "route": "fixed_transport",
+      "seconds": 183.15166707802564,
+      "source_status": "matches_current_source",
+      "start": "dispersed",
+      "target": "gaussian",
+      "test_response": {
+        "control": "baseline",
+        "power_established": false,
+        "status": "baseline_observed"
+      },
+      "transport": "bayesfilter.neutra.dense_iaf_frozen_transport.v1"
+    },
+    {
+      "assessment_complete": true,
+      "control": "wrong_energy",
+      "design_id": "gpu-invariance-wrong_energy",
+      "device": "gpu",
+      "engine": "invariance",
+      "execution_status": "complete",
+      "family": "quadratic",
+      "finding": "discrepancy_detected",
+      "phase": "development",
+      "reason": null,
+      "result": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/inference-validation-2026-09-15/gpu-terminal-r1/gpu-invariance-wrong_energy/attempt-001-result.json",
+      "route": "frozen",
+      "seconds": 7.634759314008988,
+      "source_status": "matches_current_source",
+      "start": "dispersed",
+      "target": "gaussian",
+      "test_response": {
+        "activation": "wrong_energy",
+        "control": "wrong_energy",
+        "interpretation": "one outcome is not a detection probability; execution failure never counts as detection",
+        "power_established": false,
+        "status": "intended_discrepancy_detected"
+      },
+      "transport": "none"
+    },
+    {
+      "assessment_complete": false,
+      "control": "baseline",
+      "design_id": "gpu-automatic-gaussian",
+      "device": "gpu",
+      "engine": "accuracy",
+      "execution_status": "timed_out",
+      "family": "quadratic",
+      "finding": null,
+      "phase": "development",
+      "reason": null,
+      "result": null,
+      "route": "ordinary",
+      "seconds": 600.7755851750262,
+      "source_status": "matches_current_source",
+      "start": "dispersed",
+      "target": "gaussian",
+      "test_response": null,
+      "transport": "none"
+    },
+    {
+      "assessment_complete": false,
+      "control": "baseline",
+      "design_id": "gpu-full-sbc",
+      "device": "gpu",
+      "engine": "sbc",
+      "execution_status": "timed_out",
+      "family": "conjugate",
+      "finding": null,
+      "phase": "development",
+      "reason": null,
+      "result": null,
+      "route": "ordinary",
+      "seconds": 800.975531243952,
+      "source_status": "matches_current_source",
+      "start": "dispersed",
+      "target": "normal_conjugate",
+      "test_response": null,
+      "transport": "none"
+    }
+  ],
+  "schema": "bayesfilter.inference_validation_report.v1"
+}

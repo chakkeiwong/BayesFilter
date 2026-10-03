@@ -1,0 +1,77 @@
+.F
+=================================== FAILURES ===================================
+_______________ test_actual_tuning_member_and_posterior[neutra] ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-320/test_actual_tuning_member_and_1')
+method = 'neutra'
+
+    @pytest.mark.parametrize("method", ["identity", "neutra"])
+    def test_actual_tuning_member_and_posterior(tmp_path, method):
+        config, bridge = protocol(), four_dimensional_bridge()
+        if method == "identity":
+            config["tuning"]["initial_epsilon"] = 1.1
+        export = None
+        if method == "neutra":
+            trained = run_training_cohort(config, bridge, tmp_path / "training",
+                memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
+            cohort = json.loads(Path(trained["checkpoint"]).read_text())["cohort"]
+            export = next(iter(cohort.values()))["exports"]["1.0"]
+>       tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_q20_master_integration.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:182: in tune_scope
+    run = tune_hmc_kernel(adapter=adapter, initial_position=binding.initial_active_state,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def tune_hmc_kernel(
+        *,
+        adapter: Any,
+        initial_position: Any,
+        config: Any = None,
+        output_dir: str | Path | None = None,
+        negative_hessian: Any | None = None,
+        initial_covariance: Any | None = None,
+        parameter_scales: Any | None = None,
+        diagnostic_callback: Any | None = None,
+        verification_checkpoint_writer_config: Any | None = None,
+        runner_binding: HMCTuningRunnerBinding | None = None,
+        candidate_set_adapter: Any | None = None,
+        _candidate_set_route_kind: str = "ordinary",
+        search_config: HMCControllerConfig | None = None,
+        execution_config: Any | None = None,
+        target_lineage: Any | None = None,
+        source_paths: Any = (),
+        max_work_items: int | None = None,
+    ) -> Any:
+        """Run the public tuner or the shared typed candidate-set controller.
+    
+        HMCControllerConfig selects the shared lifecycle with checked target/starts.
+        """
+    
+        require_active_hmc_tuning_route("tune_hmc_kernel")
+        if isinstance(config, HMCControllerConfig):
+            extras = {"search_config": search_config, "execution_config": execution_config,
+                      "target_lineage": target_lineage, "source_paths": source_paths or None}
+            supplied = [name for name, value in extras.items() if value is not None]
+            if supplied:
+                raise ValueError("an issued candidate binding rejects redundant options: " + ", ".join(supplied))
+            if candidate_set_adapter is None:
+                raise ValueError(
+                    "HMCControllerConfig requires a repository-issued candidate-set adapter"
+                )
+            if getattr(candidate_set_adapter, "adapter_kind", None) != _candidate_set_route_kind:
+>               raise ValueError(
+                    f"{_candidate_set_route_kind} candidate-set tuning requires a matching adapter"
+                )
+E               ValueError: ordinary candidate-set tuning requires a matching adapter
+
+bayesfilter/inference/hmc_tuning_dispatch.py:66: ValueError
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 9 calls to <function HeldoutLoss.__init__.<locals>.values at 0x7b79887c2660> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING  tensorflow:polymorphic_function.py:157 6 out of the last 11 calls to <function HeldoutLoss.__init__.<locals>.values at 0x7b79887c34c0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_integration.py::test_actual_tuning_member_and_posterior[neutra]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed, 2778 warnings in 19.90s

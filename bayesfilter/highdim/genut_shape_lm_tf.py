@@ -8,9 +8,6 @@ from __future__ import annotations
 
 import tensorflow as tf
 
-from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
-
-
 GENUT_SHAPE_SOLVER_ID = "genut_column_scaled_lm_smooth_rms_trust_v1"
 
 
@@ -32,29 +29,25 @@ def scaled_lm_coefficients_value(
         tf.reduce_sum(tf.square(jacobian), axis=-2) + tf.square(floor)
     )
     scaled_jacobian = jacobian / column_scale[..., None, :]
-    system = tf.linalg.matmul(
-        scaled_jacobian, scaled_jacobian, transpose_a=True
+    # These tiny two-column products feed a conditioned solve. GPU eager
+    # matmul/matvec may round operands to TF32 even though the tensors are
+    # float32, while XLA uses full float32 for the same shapes. Explicit
+    # products retain the declared dtype in both modes without global flags.
+    system = tf.reduce_sum(
+        scaled_jacobian[..., :, :, None] * scaled_jacobian[..., :, None, :],
+        axis=-3,
     )
     system += tf.cast(damping, dtype) * tf.eye(2, dtype=dtype)
-    rhs = tf.linalg.matvec(scaled_jacobian, residual, transpose_a=True)
-    system_valid, _ = safe_cholesky(system,"genut_lm_system")
-    system_valid &= tf.reduce_all(tf.math.is_finite(rhs),axis=-1)
-    safe_system = tf.where(system_valid[...,None,None],system,tf.eye(2,dtype=dtype))
-    safe_rhs = tf.where(system_valid[...,None],rhs,tf.zeros_like(rhs))
-    scaled_coefficient = tf.linalg.solve(safe_system,safe_rhs[...,None])[...,0]
-    # An internal invalid result remains visible to the enclosing correction's
-    # validity check; the factor passed to every solve is still safe.
-    scaled_coefficient = tf.where(system_valid[...,None],scaled_coefficient,
-                                  tf.constant(float('nan'),dtype))
+    rhs = tf.reduce_sum(scaled_jacobian * residual[..., :, None], axis=-2)
+    scaled_coefficient = tf.linalg.solve(system, rhs[..., None])[..., 0]
     coefficient = (
         tf.cast(strength, dtype) * scaled_coefficient / column_scale
     )
-    eigenvalues = tf.linalg.eigvalsh(safe_system)
+    eigenvalues = tf.linalg.eigvalsh(system)
     return {
         "coefficient": coefficient,
         "column_scale": column_scale,
-        "scaled_system": safe_system,
-        "value_valid": system_valid,
+        "scaled_system": system,
         "scaled_system_condition": eigenvalues[..., -1]
         / eigenvalues[..., 0],
     }
@@ -90,15 +83,15 @@ def scaled_lm_coefficients_jvp(
         * column_scale_tangent[..., None, :, :]
         / tf.square(column_scale)[..., None, :, None]
     )
-    system_tangent = tf.einsum(
-        "...kip,...kj->...ijp", scaled_jacobian_tangent, scaled_jacobian
-    ) + tf.einsum(
-        "...ki,...kjp->...ijp", scaled_jacobian, scaled_jacobian_tangent
+    system_tangent = tf.reduce_sum(
+        scaled_jacobian_tangent[..., :, :, None, :] * scaled_jacobian[..., :, None, :, None]
+        + scaled_jacobian[..., :, :, None, None] * scaled_jacobian_tangent[..., :, None, :, :],
+        axis=-4,
     )
-    rhs_tangent = tf.einsum(
-        "...kip,...k->...ip", scaled_jacobian_tangent, residual
-    ) + tf.einsum(
-        "...ki,...kp->...ip", scaled_jacobian, residual_tangent
+    rhs_tangent = tf.reduce_sum(
+        scaled_jacobian_tangent * residual[..., :, None, None]
+        + scaled_jacobian[..., :, :, None] * residual_tangent[..., :, None, :],
+        axis=-3,
     )
     if strength > 0.0:
         scaled_coefficient = (
@@ -108,8 +101,8 @@ def scaled_lm_coefficients_jvp(
         )
     else:
         scaled_coefficient = tf.zeros_like(result["coefficient"])
-    solve_rhs = rhs_tangent - tf.einsum(
-        "...ijp,...j->...ip", system_tangent, scaled_coefficient
+    solve_rhs = rhs_tangent - tf.reduce_sum(
+        system_tangent * scaled_coefficient[..., None, :, None], axis=-2
     )
     scaled_coefficient_tangent = tf.linalg.solve(
         result["scaled_system"], solve_rhs

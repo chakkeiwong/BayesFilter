@@ -1,0 +1,192 @@
+{
+  "manifest": {
+    "plan_file": "docs/plans/bayesfilter-hmc-merged-source-continuation-2026-09-22.md",
+    "source_manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/source-manifest-r1.json",
+    "source_identity": "13917d3625fa5a09dfd3bf1ab9d2894618ed7bc4259ca7603f16c766f6213d66",
+    "git_commit": "f9c86f41ac44efc5e6a5a5220633073fce803431",
+    "command": [
+      "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+      "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m21-r2/run_estimator_confirmation.py"
+    ],
+    "driver_sha256": "72881cd13059a8b248efff65105fc99006c4d49acdd36d6dce7004631006c286",
+    "seed": 2026092244,
+    "replications_per_case": 400,
+    "planned": 800,
+    "warmup": 10000,
+    "retained": 10000,
+    "chains": 4,
+    "cases": [
+      [
+        "slow_stationary",
+        0.98,
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        true
+      ],
+      [
+        "dispersed",
+        0.995,
+        [
+          -8.0,
+          -4.0,
+          4.0,
+          8.0
+        ],
+        false
+      ]
+    ],
+    "arms": [
+      "lugsail_100",
+      "lugsail_500",
+      "autocorrelation"
+    ],
+    "cpu_worker_limit_seconds": 900,
+    "device": "cpu_reference",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": false,
+    "tensorflow": "2.20.0",
+    "tfp": "0.25.0",
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+      "TF_NUM_INTRAOP_THREADS": "1",
+      "TF_NUM_INTEROP_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    },
+    "data_version": "synthetic exact Gaussian AR1 laws declared in this manifest"
+  },
+  "cases": {
+    "slow_stationary": {
+      "planned": 400,
+      "recorded": 400,
+      "exact_law": {
+        "mean": 0.0,
+        "variance": 0.0024627499999999975,
+        "mcse": 0.049626102002877454,
+        "stationary_start": true,
+        "fixed_counts_only": true,
+        "last_initial_mean_by_chain": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "arms": {
+        "lugsail_100": {
+          "available": 400,
+          "covered": 367,
+          "denominator": 400,
+          "coverage_interval": [
+            0.8860892715325912,
+            0.9425316426372068
+          ],
+          "median_mcse_over_exact": 0.9306538014186487,
+          "eligible_under_declared_screen": false
+        },
+        "lugsail_500": {
+          "available": 396,
+          "covered": 371,
+          "denominator": 400,
+          "coverage_interval": [
+            0.8975357094178138,
+            0.9509108985711245
+          ],
+          "median_mcse_over_exact": 1.0339222899887022,
+          "eligible_under_declared_screen": false
+        },
+        "autocorrelation": {
+          "available": 400,
+          "covered": 374,
+          "denominator": 400,
+          "coverage_interval": [
+            0.9062079801035046,
+            0.9571039986152016
+          ],
+          "median_mcse_over_exact": 0.9988965891012096,
+          "eligible_under_declared_screen": true
+        }
+      },
+      "oracle": {
+        "covered": 374,
+        "interval": [
+          0.9018496056126106,
+          0.9597085601440467
+        ],
+        "alpha": 0.025,
+        "screen_passed": true
+      }
+    },
+    "dispersed": {
+      "planned": 400,
+      "recorded": 400,
+      "exact_law": {
+        "mean": 0.0,
+        "variance": 0.009775999999999991,
+        "mcse": 0.09887365675446616,
+        "stationary_start": false,
+        "fixed_counts_only": true,
+        "last_initial_mean_by_chain": [
+          -1.36112322431538e-21,
+          -6.8056161215769e-22,
+          6.8056161215769e-22,
+          1.36112322431538e-21
+        ]
+      },
+      "arms": {
+        "lugsail_100": {
+          "available": 400,
+          "covered": 296,
+          "denominator": 400,
+          "coverage_interval": [
+            0.6940867977843044,
+            0.7823213717934455
+          ],
+          "median_mcse_over_exact": 0.5861634522428854,
+          "eligible_under_declared_screen": false
+        },
+        "lugsail_500": {
+          "available": 400,
+          "covered": 367,
+          "denominator": 400,
+          "coverage_interval": [
+            0.8860892715325912,
+            0.9425316426372068
+          ],
+          "median_mcse_over_exact": 0.9571347762103093,
+          "eligible_under_declared_screen": false
+        },
+        "autocorrelation": {
+          "available": 400,
+          "covered": 373,
+          "denominator": 400,
+          "coverage_interval": [
+            0.9033080931469479,
+            0.9550491988077467
+          ],
+          "median_mcse_over_exact": 0.9917595572292366,
+          "eligible_under_declared_screen": true
+        }
+      },
+      "oracle": {
+        "covered": 372,
+        "interval": [
+          0.8959521891362023,
+          0.9557176890569204
+        ],
+        "alpha": 0.025,
+        "screen_passed": true
+      }
+    }
+  },
+  "complete": true,
+  "ranking_supported": false,
+  "default_promoted": false,
+  "anytime_coverage_established": false,
+  "elapsed_seconds": 206.99877404992003
+}

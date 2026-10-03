@@ -1,6 +1,8 @@
 """Public TensorFlow-only fixed-transport HMC tuning API."""
 
 from bayesfilter.inference.fixed_transport_hmc_tuning_tf import (
+    FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
+    FIXED_TRANSPORT_HMC_MEASURED_POLICY,
     FIXED_TRANSPORT_HMC_TUNING_NONCLAIMS,
     FixedTransportHMCCandidateResult,
     FixedTransportHMCKernelTuningConfig,
@@ -15,6 +17,8 @@ from bayesfilter.inference.fixed_transport_hmc_mechanics_tf import (
 )
 
 __all__ = [
+    "FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY",
+    "FIXED_TRANSPORT_HMC_MEASURED_POLICY",
     "FIXED_TRANSPORT_HMC_TUNING_NONCLAIMS",
     "FixedTransportHMCCandidateResult",
     "FixedTransportHMCKernelTuningConfig",

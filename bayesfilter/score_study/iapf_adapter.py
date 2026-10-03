@@ -14,7 +14,14 @@ from .contracts import DiagnosticFailure, digest
 FIT_DIAGNOSTIC_COLUMNS = ["scaled_loss", "normalized_shape_residual", "log_lambda",
                           "boundary_active", "iterations", "projected_gradient",
                           "minimum_sd", "maximum_sd", "density_log_amplitude",
-                          "objective_underflow", "optimization_loss"]
+                          "objective_underflow", "optimization_loss",
+                          "minimum_cloud_sd", "maximum_cloud_sd",
+                          "initial_shape_residual", "initialization_valid",
+                          "initialization_rank_margin", "initialization_clipped",
+                          "objective_log_density_scale",
+                          "target_squared_effective_count", "target_squared_max_weight",
+                          "initial_log_density_energy", "log_density_energy",
+                          "initial_optimization_loss"]
 
 
 def iteration_decision(log_values,particle_counts,*,k,tau,max_particles):
@@ -49,21 +56,27 @@ def execute_iapf(row,settings,theta,observations,seed,context=None):
         row = selected_row(row, context)
     import tensorflow as tf
     from .fitted_twist_tf import make_fitted_twist_kernel
-    from .iapf_fit_tf import make_density_recursive_fit_kernel, FIT_OBJECTIVES
+    from .iapf_fit_tf import (make_density_recursive_fit_kernel, FIT_OBJECTIVES,
+                              FIT_INITIALIZATIONS, FIT_OBJECTIVE_SCALES)
     from .iapf_scope import cost_record, validate_adaptive_ledger
     from .conditional_means_tf import model_curves
     curves=model_curves(row,settings)
     d,o,N,T=(settings[k] for k in ("dimension","observation_dimension","particles","horizon"))
-    if d!=1 or o!=1:
-        raise ValueError("density-fit iAPF consumer currently requires scalar state and observation")
+    if any(type(value) is not int or value < 1 for value in (d, o)):
+        raise ValueError("density-fit iAPF requires positive integer state and observation dimensions")
     config=dict(row["iapf"])
     required={"k","tau","max_iterations","max_particles","mean_bound","sd_lower","sd_upper",
               "max_fit_steps","max_backtracks","fit_tolerance","floor_ratio","fit_theta"}
-    if not required<=set(config) or set(config)-required-{"fit_dtype", "fit_objective"}:
+    if not required<=set(config) or set(config)-required-{
+            "fit_dtype", "fit_objective", "fit_initialization", "fit_objective_scale"}:
         raise ValueError("explicit complete iAPF controls required")
     objective=config.get("fit_objective", "density_l2")
     if objective not in FIT_OBJECTIVES:
         raise ValueError("unknown iAPF fit objective")
+    initialization=config.get("fit_initialization","cloud_moments")
+    objective_scale=config.get("fit_objective_scale","native")
+    if initialization not in FIT_INITIALIZATIONS or objective_scale not in FIT_OBJECTIVE_SCALES:
+        raise ValueError("unknown iAPF initialization or objective scale")
     fit_dtype_name=config.get("fit_dtype",settings["dtype"])
     if fit_dtype_name not in ("float32","float64"):
         raise ValueError("iAPF fit_dtype must be float32 or float64")
@@ -110,7 +123,8 @@ def execute_iapf(row,settings,theta,observations,seed,context=None):
         if iteration+1==config["max_iterations"]:fail("iAPF iteration cap exhausted before convergence")
         fitter=make_density_recursive_fit_kernel(d,o,N,T,config["mean_bound"],config["sd_lower"],config["sd_upper"],
             config["max_fit_steps"],config["max_backtracks"],config["fit_tolerance"],config["floor_ratio"],
-            fit_dtype_name,settings["jit_compile"],objective=objective,**curves)
+            fit_dtype_name,settings["jit_compile"],objective=objective,
+            initialization=initialization,objective_scale=objective_scale,**curves)
         fit_kernels.append(fitter)
         fitted_centers,fitted_covariances,fitted_floors,valid,converged,fit_details=fitter(
             tf.cast(fit_theta,fit_dtype),tf.cast(observations,fit_dtype),tf.cast(output[2],fit_dtype));calls+=1
@@ -158,6 +172,7 @@ def execute_iapf(row,settings,theta,observations,seed,context=None):
         "fit_method":("bounded_diagonal_density_scale_least_squares_profiled_scale" if objective=="density_l2"
                       else "bounded_diagonal_relative_shape_profiled_scale_algorithm3_adaptation"),
         "fit_objective":objective,
+        "fit_initialization":initialization,"fit_objective_scale":objective_scale,
         "fit_stopping":"GJL_algorithm4_l_gt_k_sample_cv_with_iteration_and_particle_caps",
         "fit_diagnostic_columns":FIT_DIAGNOSTIC_COLUMNS,
         "fit_search_step_bound":"max_parameter_box_extent_divided_by_tolerance",

@@ -10,15 +10,98 @@ import tensorflow_probability as tfp
 
 from bayesfilter.diagnostics import TFFilterDiagnostics, TFRegularizationDiagnostics
 from bayesfilter.linear.types_tf import TFLinearGaussianStateSpace
+from bayesfilter.ops.accurate_svd_tf import accurate_svd
 from bayesfilter.results_tf import TFFilterValueResult
 from bayesfilter.structural import FilterRunMetadata
-
 
 TFLinearValueBackend = Literal["tf_cholesky", "tf_masked_cholesky"]
 
 
 def _symmetrize(matrix: tf.Tensor) -> tf.Tensor:
     return 0.5 * (matrix + tf.linalg.matrix_transpose(matrix))
+
+
+def _cholesky_validity(
+    matrix: tf.Tensor,
+    *,
+    psd_tolerance: float = 0.0,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Return a backend-portable SPD/PSD validity mask and safe factor.
+
+    ``tf.linalg.eigvalsh`` is useful telemetry, but CUDA/XLA can return an
+    incorrect zero or signed value for the tiny eigenvalues that arise in
+    batched state-space covariances.  Cholesky is already the factorization
+    used by the likelihood and is stable on the same matrices.  A positive
+    ``psd_tolerance`` is used only for structural PSD prechecks; it does not
+    alter a covariance passed to the probability law.  Invalid rows receive an
+    identity factor so NaNs cannot escape the checked branch.
+    """
+    symmetric = _symmetrize(tf.convert_to_tensor(matrix, tf.float64))
+    finite = tf.reduce_all(
+        tf.math.is_finite(symmetric), axis=(-2, -1)
+    )
+    dimension = tf.shape(symmetric)[-1]
+    identity = tf.eye(
+        dimension,
+        batch_shape=tf.shape(symmetric)[:-2],
+        dtype=tf.float64,
+    )
+    candidate = symmetric + tf.cast(psd_tolerance, tf.float64) * identity
+    safe_candidate = tf.where(
+        finite[..., tf.newaxis, tf.newaxis], candidate, identity
+    )
+    factor = tf.linalg.cholesky(safe_candidate)
+    diagonal = tf.linalg.diag_part(factor)
+    valid = (
+        finite
+        & tf.reduce_all(tf.math.is_finite(factor), axis=(-2, -1))
+        & tf.reduce_all(diagonal > tf.constant(0.0, tf.float64), axis=-1)
+    )
+    safe_factor = tf.where(
+        valid[..., tf.newaxis, tf.newaxis], factor, identity
+    )
+    return valid, safe_factor
+
+
+def _spectral_telemetry(
+    matrix: tf.Tensor,
+    valid: tf.Tensor,
+) -> tuple[tf.Tensor, tf.Tensor]:
+    """Return signed minimum-spectrum and condition telemetry portably.
+
+    For a valid symmetric positive-definite matrix, singular values equal its
+    eigenvalues.  CUDA/XLA has a known failure mode in ``eigvalsh`` for the
+    tiny positive modes used by this model. Magnitude normalization and explicit
+    binary64 SVD convergence also resolve small off-diagonal entries under XLA.
+    Invalid matrices are already rejected by ``valid``; their minimum value is
+    reported as a signed singular-value proxy so callers retain a negative
+    diagnostic without allowing it to enter the probability law.
+    """
+    symmetric = _symmetrize(tf.convert_to_tensor(matrix, tf.float64))
+    finite = tf.reduce_all(
+        tf.math.is_finite(symmetric), axis=tuple(range(-2, 0))
+    )
+    dimension = tf.shape(symmetric)[-1]
+    identity = tf.eye(
+        dimension,
+        batch_shape=tf.shape(symmetric)[:-2],
+        dtype=tf.float64,
+    )
+    safe_matrix = tf.where(
+        finite[..., tf.newaxis, tf.newaxis], symmetric, identity
+    )
+    singular_values = tf.stop_gradient(
+        accurate_svd(safe_matrix, compute_uv=False)
+    )
+    minimum = tf.reduce_min(singular_values, axis=-1)
+    maximum = tf.reduce_max(singular_values, axis=-1)
+    signed_minimum = tf.where(valid, minimum, -minimum)
+    condition = tf.where(
+        valid,
+        maximum / tf.maximum(minimum, tf.constant(1.0e-300, tf.float64)),
+        tf.zeros_like(maximum),
+    )
+    return signed_minimum, condition
 
 
 def _as_observation_matrix(observations: tf.Tensor) -> tf.Tensor:
@@ -188,10 +271,12 @@ def _checked_masked_step(
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
     """Advance only when the innovation covariance is positive definite.
 
-    The eigenvalue check precedes Cholesky, preventing an indefinite innovation
-    covariance from injecting NaNs into an HMC target. No ridge, floor, or
-    modified probability law is introduced. The caller must reject the whole
-    likelihood when any returned validity flag is false.
+    Cholesky validity precedes the probability-law factorization, preventing an
+    indefinite innovation covariance from injecting NaNs into an HMC target.
+    Eigenvalues remain telemetry only because CUDA/XLA eigensolvers can lose
+    tiny positive eigenvalues. No ridge, floor, or modified probability law is
+    introduced. The caller must reject the whole likelihood when any returned
+    validity flag is false.
     """
     c = _vector_at_time(transition_offset, time_index)
     T = _matrix_at_time(transition_matrix, time_index)
@@ -220,27 +305,18 @@ def _checked_masked_step(
         @ tf.transpose(masked_observation_matrix)
         + masked_observation_noise
     )
-    eigenvalues = tf.linalg.eigvalsh(innovation_covariance)
-    min_eigenvalue = tf.reduce_min(eigenvalues)
-    max_eigenvalue = tf.reduce_max(eigenvalues)
-    locally_valid = (
-        tf.reduce_all(tf.math.is_finite(innovation_covariance))
-        & tf.reduce_all(tf.math.is_finite(eigenvalues))
-        & (min_eigenvalue > tf.constant(0.0, tf.float64))
+    locally_valid, _diagnostic_factor = _cholesky_validity(
+        innovation_covariance
+    )
+    min_eigenvalue, condition_estimate = _spectral_telemetry(
+        innovation_covariance, locally_valid
     )
     step_valid = tf.logical_and(active, locally_valid)
-    safe_min_eigenvalue = tf.where(
-        locally_valid, min_eigenvalue, tf.constant(1.0, tf.float64)
-    )
-    condition_estimate = tf.where(
-        locally_valid,
-        max_eigenvalue / safe_min_eigenvalue,
-        tf.constant(0.0, tf.float64),
-    )
 
     # XLA differentiates every statically unrolled step. Selecting an identity
-    # covariance on an already-invalid branch keeps Cholesky total without
-    # altering a valid likelihood or admitting the invalid step.
+    # covariance on an already-invalid branch keeps the probability-law
+    # Cholesky total without altering a valid likelihood or admitting an
+    # invalid step.
     safe_innovation_covariance = tf.where(
         locally_valid, innovation_covariance, obs_identity
     )
@@ -278,6 +354,10 @@ def _checked_masked_step(
 
 
 def _validate_mask_shape(observations: tf.Tensor, observation_mask: tf.Tensor) -> None:
+    if not observations.shape.is_compatible_with(observation_mask.shape):
+        raise tf.errors.InvalidArgumentError(
+            None, None, "Observation mask shape must match observations shape."
+        )
     tf.debugging.assert_equal(
         tf.shape(observation_mask),
         tf.shape(observations),
@@ -347,7 +427,7 @@ def _validate_checked_batched_static_shapes(
     return time_steps, batch_size, state_dim, observation_dim
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_masked_kalman_filter_checked_batched_static_with_diagnostics(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -419,7 +499,7 @@ def tf_masked_kalman_filter_checked_batched_static_with_diagnostics(
     maximum_condition = tf.zeros([batch_size], tf.float64)
     log_two_pi = tf.math.log(tf.constant(2.0 * math.pi, tf.float64))
 
-    for time_index in range(time_steps):
+    def time_step(time_index, active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue):
         predicted_mean = transition_offset + tf.linalg.matvec(
             transition_matrix, mean
         )
@@ -452,23 +532,13 @@ def tf_masked_kalman_filter_checked_batched_static_with_diagnostics(
             @ tf.linalg.matrix_transpose(masked_observation_matrix)
             + masked_observation_noise
         )
-        eigenvalues = tf.linalg.eigvalsh(innovation_covariance)
-        local_minimum = tf.reduce_min(eigenvalues, axis=-1)
-        local_maximum = tf.reduce_max(eigenvalues, axis=-1)
-        locally_valid = (
-            tf.reduce_all(tf.math.is_finite(innovation_covariance), axis=(-2, -1))
-            & tf.reduce_all(tf.math.is_finite(eigenvalues), axis=-1)
-            & (local_minimum > tf.constant(0.0, tf.float64))
+        locally_valid, _diagnostic_factor = _cholesky_validity(
+            innovation_covariance
+        )
+        local_minimum, condition = _spectral_telemetry(
+            innovation_covariance, locally_valid
         )
         step_valid = active & locally_valid
-        safe_minimum = tf.where(
-            locally_valid, local_minimum, tf.ones_like(local_minimum)
-        )
-        condition = tf.where(
-            locally_valid,
-            local_maximum / safe_minimum,
-            tf.zeros_like(local_maximum),
-        )
         safe_innovation_covariance = tf.where(
             locally_valid[:, tf.newaxis, tf.newaxis],
             innovation_covariance,
@@ -523,6 +593,13 @@ def tf_masked_kalman_filter_checked_batched_static_with_diagnostics(
         )
         maximum_condition = tf.maximum(maximum_condition, condition)
         active = step_valid
+        return time_index + 1, active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue
+
+    _, active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue = tf.while_loop(
+        lambda time_index, active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue: time_index < time_steps,
+        time_step, (tf.constant(0, tf.int32), active, covariance, log_likelihood, maximum_condition, mean, minimum_eigenvalue), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     return (
         log_likelihood,
@@ -532,7 +609,7 @@ def tf_masked_kalman_filter_checked_batched_static_with_diagnostics(
     )
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_masked_kalman_filter_checked_batched_static_value(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -566,7 +643,7 @@ def tf_masked_kalman_filter_checked_batched_static_value(
     return value, valid
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -597,7 +674,7 @@ def tf_kalman_log_likelihood(
     return value
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_masked_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -630,7 +707,7 @@ def tf_masked_kalman_log_likelihood(
     return value
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -664,7 +741,7 @@ def tf_kalman_filter(
     means = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
     covariances = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
 
-    for t in tf.range(tf.shape(y)[0]):
+    def time_step(t, covariance, covariances, log_likelihood, mean, means):
         mean, covariance, contribution = _dense_step(
             time_index=t,
             row=y[t],
@@ -683,13 +760,20 @@ def tf_kalman_filter(
         if return_filtered:
             means = means.write(t, mean)
             covariances = covariances.write(t, covariance)
+        return t + 1, covariance, covariances, log_likelihood, mean, means
+
+    _, covariance, covariances, log_likelihood, mean, means = tf.while_loop(
+        lambda t, covariance, covariances, log_likelihood, mean, means: t < tf.shape(y)[0],
+        time_step, (tf.constant(0, tf.int32), covariance, covariances, log_likelihood, mean, means), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     filtered_means = means.stack() if return_filtered else None
     filtered_covariances = covariances.stack() if return_filtered else None
     return log_likelihood, filtered_means, filtered_covariances
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_masked_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -732,7 +816,7 @@ def tf_masked_kalman_filter(
     means = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
     covariances = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
 
-    for t in tf.range(tf.shape(y)[0]):
+    def time_step(t, covariance, covariances, log_likelihood, mean, means):
         mean, covariance, contribution, _, _ = _masked_step(
             time_index=t,
             row=y[t],
@@ -752,13 +836,20 @@ def tf_masked_kalman_filter(
         if return_filtered:
             means = means.write(t, mean)
             covariances = covariances.write(t, covariance)
+        return t + 1, covariance, covariances, log_likelihood, mean, means
+
+    _, covariance, covariances, log_likelihood, mean, means = tf.while_loop(
+        lambda t, covariance, covariances, log_likelihood, mean, means: t < tf.shape(y)[0],
+        time_step, (tf.constant(0, tf.int32), covariance, covariances, log_likelihood, mean, means), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     filtered_means = means.stack() if return_filtered else None
     filtered_covariances = covariances.stack() if return_filtered else None
     return log_likelihood, filtered_means, filtered_covariances
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_masked_kalman_filter_with_diagnostics(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -794,7 +885,7 @@ def tf_masked_kalman_filter_with_diagnostics(
     log_likelihood = tf.constant(0.0, dtype=tf.float64)
     min_eigenvalues = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
     condition_estimates = tf.TensorArray(tf.float64, size=tf.shape(y)[0])
-    for t in tf.range(tf.shape(y)[0]):
+    def time_step(t, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues):
         mean, covariance, contribution, min_eigenvalue, condition_estimate = _masked_step(
             time_index=t, row=y[t], row_mask=observation_mask[t], mean=mean,
             covariance=covariance, transition_offset=transition_offset,
@@ -806,6 +897,13 @@ def tf_masked_kalman_filter_with_diagnostics(
         log_likelihood += contribution
         min_eigenvalues = min_eigenvalues.write(t, min_eigenvalue)
         condition_estimates = condition_estimates.write(t, condition_estimate)
+        return t + 1, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues
+
+    _, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues = tf.while_loop(
+        lambda t, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues: t < tf.shape(y)[0],
+        time_step, (tf.constant(0, tf.int32), condition_estimates, covariance, log_likelihood, mean, min_eigenvalues), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
     return (
         log_likelihood,
         min_eigenvalues.stack(),
@@ -851,13 +949,10 @@ def _tf_masked_kalman_filter_checked_static(
         )
     log_likelihood = tf.constant(0.0, dtype=tf.float64)
     active = tf.constant(True)
-    min_eigenvalues: list[tf.Tensor] = []
-    condition_estimates: list[tf.Tensor] = []
-    validity: list[tf.Tensor] = []
-    # The horizon is part of the frozen target signature. Static unrolling
-    # avoids TensorFlow's while_grad TemporaryVariable collision, which makes
-    # a symbolically looped score fail from the third period onward.
-    for t in range(int(time_steps)):
+    min_eigenvalues = tf.TensorArray(tf.float64, size=int(time_steps))
+    condition_estimates = tf.TensorArray(tf.float64, size=int(time_steps))
+    validity = tf.TensorArray(tf.bool, size=int(time_steps))
+    def time_step(t, active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity):
         (
             mean,
             covariance,
@@ -884,12 +979,19 @@ def _tf_masked_kalman_filter_checked_static(
         log_likelihood += contribution
         active = step_valid
         if collect_diagnostics:
-            min_eigenvalues.append(min_eigenvalue)
-            condition_estimates.append(condition_estimate)
-            validity.append(step_valid)
+            min_eigenvalues = min_eigenvalues.write(t, min_eigenvalue)
+            condition_estimates = condition_estimates.write(t, condition_estimate)
+            validity = validity.write(t, step_valid)
+        return t + 1, active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity
+
+    _, active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity = tf.while_loop(
+        lambda t, active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity: t < int(time_steps),
+        time_step, (tf.constant(0, tf.int32), active, condition_estimates, covariance, log_likelihood, mean, min_eigenvalues, validity), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
     diagnostics = None
     if collect_diagnostics:
-        diagnostics = (min_eigenvalues, condition_estimates, validity)
+        diagnostics = (min_eigenvalues.stack(), condition_estimates.stack(), validity.stack())
     return log_likelihood, active, mean, covariance, diagnostics
 
 
@@ -941,9 +1043,9 @@ def tf_masked_kalman_filter_checked_with_diagnostics(
     min_eigenvalues, condition_estimates, validity = diagnostics
     return (
         log_likelihood,
-        tf.stack(min_eigenvalues),
-        tf.stack(condition_estimates),
-        tf.stack(validity),
+        min_eigenvalues,
+        condition_estimates,
+        validity,
         mean,
         covariance,
     )

@@ -1,0 +1,4039 @@
+{
+  "pass": {
+    "payload": {
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "config": {
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "step_repair_factor": 2.0,
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "screen_num_results": 4,
+        "screen_num_burnin_steps": 2,
+        "seed": [
+          20260621,
+          30
+        ],
+        "chain_execution_mode": "eager",
+        "use_xla": false,
+        "target_scope": "kernel_bootstrap_toy_gaussian",
+        "target_status_trace_policy": "none",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.bootstrap_screen"
+      },
+      "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+      "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+      "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+      "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+      "target_dimension": 2,
+      "rounds": [
+        {
+          "round_index": 0,
+          "seed": [
+            20260621,
+            30
+          ],
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "unclamped_num_leapfrog_steps": 4,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "passed",
+          "diagnostic_role": "bootstrap_screen_promotion_only",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.7,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.7,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": null,
+          "hard_vetoes": [],
+          "repair_triggers": []
+        }
+      ],
+      "selected_round_index": 0,
+      "selected_kernel_payload": {
+        "runtime": "bayesfilter.inference.run_hmc_bootstrap_screen",
+        "sample_space": "latent_fixed_mass",
+        "step_size": 0.42044820762685725,
+        "num_leapfrog_steps": 4,
+        "target_trajectory_length": 1.5707963267948966,
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+        "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+        "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+        "seed": [
+          20260621,
+          30
+        ],
+        "screen_config_payload": {
+          "num_results": 4,
+          "num_burnin_steps": 2,
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "seed": [
+            20260621,
+            30
+          ],
+          "use_xla": false,
+          "chain_execution_mode": "eager",
+          "trace_policy": "standard",
+          "target_status_trace_policy": "none",
+          "adaptation_policy": "fixed_kernel_no_adaptation",
+          "tuning_policy": {
+            "label": "fixed_kernel_screen",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "num_adaptation_steps": 0,
+            "target_accept_prob": null,
+            "step_size_upper_bound": null,
+            "source": "reviewed_stage_7_phase_3",
+            "enabled": false,
+            "implemented": true,
+            "diagnostic_role": "fixed-kernel bounded HMC screen",
+            "nonclaims": [
+              "fixed-kernel screen only",
+              "no posterior convergence claim",
+              "no sampler superiority claim",
+              "no default adaptation readiness claim"
+            ]
+          },
+          "target_scope": "kernel_bootstrap_toy_gaussian"
+        },
+        "nonclaims": [
+          "bootstrap fixed-kernel HMC screen only",
+          "acceptance is a bootstrap repair diagnostic only",
+          "no mass adaptation validity claim",
+          "no trajectory tuning claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim",
+          "no GPU or XLA readiness claim"
+        ]
+      },
+      "selected_kernel_hash": "8fee3f3dfa3c2af92887fcf0d7d47bfaac1dfccb09714f51f4370824b71ffdc5",
+      "final_status": "passed",
+      "seed_report": {
+        "geometry_root_seed": [
+          123,
+          456
+        ],
+        "geometry_seed": [
+          123,
+          9632
+        ],
+        "bootstrap_root_seed": [
+          20260621,
+          30
+        ],
+        "bootstrap_stage_seed": [
+          20260621,
+          9206
+        ],
+        "screen_round_seeds": [
+          [
+            20260621,
+            30
+          ]
+        ],
+        "seed_owner": "BayesFilter",
+        "geometry_seed_distinct_from_bootstrap_seed": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "repair_band": "bootstrap_repair_trigger",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "target_log_prob_finite": "hard_veto",
+        "adapter_signature_match": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "single_use_or_injected_runner",
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0,
+        "injected_runner_call_count": 1,
+        "reusable_runner_build_count": 0,
+        "distinct_static_runner_contract_count": 0,
+        "distinct_static_runner_contracts": [],
+        "bootstrap_round_count": 1,
+        "fallback_to_single_use_runner": false,
+        "fallback_status": "inactive_reusable_route",
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": "8fee3f3dfa3c2af92887fcf0d7d47bfaac1dfccb09714f51f4370824b71ffdc5",
+        "selected_kernel_preservation": {
+          "checked": true,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "payload_hash": "8fee3f3dfa3c2af92887fcf0d7d47bfaac1dfccb09714f51f4370824b71ffdc5",
+          "selected_round_index": 0,
+          "preserved": true,
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "seed": [
+            20260621,
+            30
+          ],
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          }
+        },
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "dynamic_inputs_preserve_round_semantics": true
+      },
+      "passed": true,
+      "reports_mass_adaptation_validity": false,
+      "reports_trajectory_tuning": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_gpu_or_xla_readiness": false,
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      }
+    },
+    "hash": "ae36a987f186f26fa597d585a45dcf2b6d2c30eb74c2ad8ffa854d8117826521",
+    "calls": [
+      {
+        "step": 0.42044820762685725,
+        "L": 4,
+        "seed": [
+          20260621,
+          30
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "low_repair": {
+    "payload": {
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "config": {
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "step_repair_factor": 2.0,
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "screen_num_results": 4,
+        "screen_num_burnin_steps": 2,
+        "seed": [
+          20260621,
+          30
+        ],
+        "chain_execution_mode": "eager",
+        "use_xla": false,
+        "target_scope": "kernel_bootstrap_toy_gaussian",
+        "target_status_trace_policy": "none",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.bootstrap_screen"
+      },
+      "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+      "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+      "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+      "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+      "target_dimension": 2,
+      "rounds": [
+        {
+          "round_index": 0,
+          "seed": [
+            20260621,
+            30
+          ],
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "unclamped_num_leapfrog_steps": 4,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.4,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.4,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": "reduce_epsilon_recompute_l",
+          "hard_vetoes": [],
+          "repair_triggers": [
+            "acceptance_below_repair_band",
+            "reduce_epsilon_recompute_l"
+          ]
+        },
+        {
+          "round_index": 1,
+          "seed": [
+            20260621,
+            31
+          ],
+          "step_size": 0.21022410381342863,
+          "num_leapfrog_steps": 8,
+          "unclamped_num_leapfrog_steps": 8,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "passed",
+          "diagnostic_role": "bootstrap_screen_promotion_only",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.21022410381342863,
+            "num_leapfrog_steps": 8,
+            "seed": [
+              20260621,
+              31
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.7,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.7,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": null,
+          "hard_vetoes": [],
+          "repair_triggers": []
+        }
+      ],
+      "selected_round_index": 1,
+      "selected_kernel_payload": {
+        "runtime": "bayesfilter.inference.run_hmc_bootstrap_screen",
+        "sample_space": "latent_fixed_mass",
+        "step_size": 0.21022410381342863,
+        "num_leapfrog_steps": 8,
+        "target_trajectory_length": 1.5707963267948966,
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+        "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+        "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+        "seed": [
+          20260621,
+          31
+        ],
+        "screen_config_payload": {
+          "num_results": 4,
+          "num_burnin_steps": 2,
+          "step_size": 0.21022410381342863,
+          "num_leapfrog_steps": 8,
+          "seed": [
+            20260621,
+            31
+          ],
+          "use_xla": false,
+          "chain_execution_mode": "eager",
+          "trace_policy": "standard",
+          "target_status_trace_policy": "none",
+          "adaptation_policy": "fixed_kernel_no_adaptation",
+          "tuning_policy": {
+            "label": "fixed_kernel_screen",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "num_adaptation_steps": 0,
+            "target_accept_prob": null,
+            "step_size_upper_bound": null,
+            "source": "reviewed_stage_7_phase_3",
+            "enabled": false,
+            "implemented": true,
+            "diagnostic_role": "fixed-kernel bounded HMC screen",
+            "nonclaims": [
+              "fixed-kernel screen only",
+              "no posterior convergence claim",
+              "no sampler superiority claim",
+              "no default adaptation readiness claim"
+            ]
+          },
+          "target_scope": "kernel_bootstrap_toy_gaussian"
+        },
+        "nonclaims": [
+          "bootstrap fixed-kernel HMC screen only",
+          "acceptance is a bootstrap repair diagnostic only",
+          "no mass adaptation validity claim",
+          "no trajectory tuning claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim",
+          "no GPU or XLA readiness claim"
+        ]
+      },
+      "selected_kernel_hash": "b6f5bac5b81eaac8186e1e024396022e0a55bc212c04a476c531620bc501b64e",
+      "final_status": "passed",
+      "seed_report": {
+        "geometry_root_seed": [
+          123,
+          456
+        ],
+        "geometry_seed": [
+          123,
+          9632
+        ],
+        "bootstrap_root_seed": [
+          20260621,
+          30
+        ],
+        "bootstrap_stage_seed": [
+          20260621,
+          9206
+        ],
+        "screen_round_seeds": [
+          [
+            20260621,
+            30
+          ],
+          [
+            20260621,
+            31
+          ]
+        ],
+        "seed_owner": "BayesFilter",
+        "geometry_seed_distinct_from_bootstrap_seed": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "repair_band": "bootstrap_repair_trigger",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "target_log_prob_finite": "hard_veto",
+        "adapter_signature_match": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "single_use_or_injected_runner",
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0,
+        "injected_runner_call_count": 2,
+        "reusable_runner_build_count": 0,
+        "distinct_static_runner_contract_count": 0,
+        "distinct_static_runner_contracts": [],
+        "bootstrap_round_count": 2,
+        "fallback_to_single_use_runner": false,
+        "fallback_status": "inactive_reusable_route",
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 1,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": "b6f5bac5b81eaac8186e1e024396022e0a55bc212c04a476c531620bc501b64e",
+        "selected_kernel_preservation": {
+          "checked": true,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "payload_hash": "b6f5bac5b81eaac8186e1e024396022e0a55bc212c04a476c531620bc501b64e",
+          "selected_round_index": 1,
+          "preserved": true,
+          "step_size": 0.21022410381342863,
+          "num_leapfrog_steps": 8,
+          "seed": [
+            20260621,
+            31
+          ],
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.21022410381342863,
+            "num_leapfrog_steps": 8,
+            "seed": [
+              20260621,
+              31
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          }
+        },
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "dynamic_inputs_preserve_round_semantics": true
+      },
+      "passed": true,
+      "reports_mass_adaptation_validity": false,
+      "reports_trajectory_tuning": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_gpu_or_xla_readiness": false,
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      }
+    },
+    "hash": "c654bf5cc115a512d473547d44ff6231a50a71075ecb2f78a893034910a9728c",
+    "calls": [
+      {
+        "step": 0.42044820762685725,
+        "L": 4,
+        "seed": [
+          20260621,
+          30
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "step": 0.21022410381342863,
+        "L": 8,
+        "seed": [
+          20260621,
+          31
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "high_repair": {
+    "payload": {
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "config": {
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "step_repair_factor": 2.0,
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "screen_num_results": 4,
+        "screen_num_burnin_steps": 2,
+        "seed": [
+          20260621,
+          30
+        ],
+        "chain_execution_mode": "eager",
+        "use_xla": false,
+        "target_scope": "kernel_bootstrap_toy_gaussian",
+        "target_status_trace_policy": "none",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.bootstrap_screen"
+      },
+      "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+      "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+      "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+      "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+      "target_dimension": 2,
+      "rounds": [
+        {
+          "round_index": 0,
+          "seed": [
+            20260621,
+            30
+          ],
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "unclamped_num_leapfrog_steps": 4,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.95,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.95,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": "increase_epsilon_recompute_l",
+          "hard_vetoes": [],
+          "repair_triggers": [
+            "acceptance_above_repair_band",
+            "increase_epsilon_recompute_l"
+          ]
+        },
+        {
+          "round_index": 1,
+          "seed": [
+            20260621,
+            31
+          ],
+          "step_size": 0.8408964152537145,
+          "num_leapfrog_steps": 3,
+          "unclamped_num_leapfrog_steps": 2,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": true,
+          "clamp_direction": "min",
+          "classification": "passed",
+          "diagnostic_role": "bootstrap_screen_promotion_only",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.8408964152537145,
+            "num_leapfrog_steps": 3,
+            "seed": [
+              20260621,
+              31
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.7,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.7,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": null,
+          "hard_vetoes": [],
+          "repair_triggers": []
+        }
+      ],
+      "selected_round_index": 1,
+      "selected_kernel_payload": {
+        "runtime": "bayesfilter.inference.run_hmc_bootstrap_screen",
+        "sample_space": "latent_fixed_mass",
+        "step_size": 0.8408964152537145,
+        "num_leapfrog_steps": 3,
+        "target_trajectory_length": 1.5707963267948966,
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+        "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+        "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+        "seed": [
+          20260621,
+          31
+        ],
+        "screen_config_payload": {
+          "num_results": 4,
+          "num_burnin_steps": 2,
+          "step_size": 0.8408964152537145,
+          "num_leapfrog_steps": 3,
+          "seed": [
+            20260621,
+            31
+          ],
+          "use_xla": false,
+          "chain_execution_mode": "eager",
+          "trace_policy": "standard",
+          "target_status_trace_policy": "none",
+          "adaptation_policy": "fixed_kernel_no_adaptation",
+          "tuning_policy": {
+            "label": "fixed_kernel_screen",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "num_adaptation_steps": 0,
+            "target_accept_prob": null,
+            "step_size_upper_bound": null,
+            "source": "reviewed_stage_7_phase_3",
+            "enabled": false,
+            "implemented": true,
+            "diagnostic_role": "fixed-kernel bounded HMC screen",
+            "nonclaims": [
+              "fixed-kernel screen only",
+              "no posterior convergence claim",
+              "no sampler superiority claim",
+              "no default adaptation readiness claim"
+            ]
+          },
+          "target_scope": "kernel_bootstrap_toy_gaussian"
+        },
+        "nonclaims": [
+          "bootstrap fixed-kernel HMC screen only",
+          "acceptance is a bootstrap repair diagnostic only",
+          "no mass adaptation validity claim",
+          "no trajectory tuning claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim",
+          "no GPU or XLA readiness claim"
+        ]
+      },
+      "selected_kernel_hash": "1f1f7eef3ebf0d25d2733a9a87c957f34f27a21d2652e50e42125b9597e91b0c",
+      "final_status": "passed",
+      "seed_report": {
+        "geometry_root_seed": [
+          123,
+          456
+        ],
+        "geometry_seed": [
+          123,
+          9632
+        ],
+        "bootstrap_root_seed": [
+          20260621,
+          30
+        ],
+        "bootstrap_stage_seed": [
+          20260621,
+          9206
+        ],
+        "screen_round_seeds": [
+          [
+            20260621,
+            30
+          ],
+          [
+            20260621,
+            31
+          ]
+        ],
+        "seed_owner": "BayesFilter",
+        "geometry_seed_distinct_from_bootstrap_seed": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "repair_band": "bootstrap_repair_trigger",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "target_log_prob_finite": "hard_veto",
+        "adapter_signature_match": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "single_use_or_injected_runner",
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0,
+        "injected_runner_call_count": 2,
+        "reusable_runner_build_count": 0,
+        "distinct_static_runner_contract_count": 0,
+        "distinct_static_runner_contracts": [],
+        "bootstrap_round_count": 2,
+        "fallback_to_single_use_runner": false,
+        "fallback_status": "inactive_reusable_route",
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 1,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": "1f1f7eef3ebf0d25d2733a9a87c957f34f27a21d2652e50e42125b9597e91b0c",
+        "selected_kernel_preservation": {
+          "checked": true,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "payload_hash": "1f1f7eef3ebf0d25d2733a9a87c957f34f27a21d2652e50e42125b9597e91b0c",
+          "selected_round_index": 1,
+          "preserved": true,
+          "step_size": 0.8408964152537145,
+          "num_leapfrog_steps": 3,
+          "seed": [
+            20260621,
+            31
+          ],
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.8408964152537145,
+            "num_leapfrog_steps": 3,
+            "seed": [
+              20260621,
+              31
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          }
+        },
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "dynamic_inputs_preserve_round_semantics": true
+      },
+      "passed": true,
+      "reports_mass_adaptation_validity": false,
+      "reports_trajectory_tuning": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_gpu_or_xla_readiness": false,
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      }
+    },
+    "hash": "35248978f237b490baad618f9c21180881fe55f58031de6612c1e518fdab7328",
+    "calls": [
+      {
+        "step": 0.42044820762685725,
+        "L": 4,
+        "seed": [
+          20260621,
+          30
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "step": 0.8408964152537145,
+        "L": 3,
+        "seed": [
+          20260621,
+          31
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "bracket_repair": {
+    "payload": {
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "config": {
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "step_repair_factor": 2.0,
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "screen_num_results": 4,
+        "screen_num_burnin_steps": 2,
+        "seed": [
+          20260621,
+          30
+        ],
+        "chain_execution_mode": "eager",
+        "use_xla": false,
+        "target_scope": "kernel_bootstrap_toy_gaussian",
+        "target_status_trace_policy": "none",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.bootstrap_screen"
+      },
+      "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+      "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+      "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+      "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+      "target_dimension": 2,
+      "rounds": [
+        {
+          "round_index": 0,
+          "seed": [
+            20260621,
+            30
+          ],
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "unclamped_num_leapfrog_steps": 4,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.4,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.4,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": "reduce_epsilon_recompute_l",
+          "hard_vetoes": [],
+          "repair_triggers": [
+            "acceptance_below_repair_band",
+            "reduce_epsilon_recompute_l"
+          ]
+        },
+        {
+          "round_index": 1,
+          "seed": [
+            20260621,
+            31
+          ],
+          "step_size": 0.21022410381342863,
+          "num_leapfrog_steps": 8,
+          "unclamped_num_leapfrog_steps": 8,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.21022410381342863,
+            "num_leapfrog_steps": 8,
+            "seed": [
+              20260621,
+              31
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.95,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.95,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": "bracketed_log_step_midpoint_recompute_l",
+          "hard_vetoes": [],
+          "repair_triggers": [
+            "acceptance_above_repair_band",
+            "bracketed_log_step_midpoint_recompute_l"
+          ]
+        },
+        {
+          "round_index": 2,
+          "seed": [
+            20260621,
+            32
+          ],
+          "step_size": 0.2973017787506803,
+          "num_leapfrog_steps": 6,
+          "unclamped_num_leapfrog_steps": 6,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "passed",
+          "diagnostic_role": "bootstrap_screen_promotion_only",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.2973017787506803,
+            "num_leapfrog_steps": 6,
+            "seed": [
+              20260621,
+              32
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.7,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.7,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": null,
+          "hard_vetoes": [],
+          "repair_triggers": []
+        }
+      ],
+      "selected_round_index": 2,
+      "selected_kernel_payload": {
+        "runtime": "bayesfilter.inference.run_hmc_bootstrap_screen",
+        "sample_space": "latent_fixed_mass",
+        "step_size": 0.2973017787506803,
+        "num_leapfrog_steps": 6,
+        "target_trajectory_length": 1.5707963267948966,
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+        "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+        "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+        "seed": [
+          20260621,
+          32
+        ],
+        "screen_config_payload": {
+          "num_results": 4,
+          "num_burnin_steps": 2,
+          "step_size": 0.2973017787506803,
+          "num_leapfrog_steps": 6,
+          "seed": [
+            20260621,
+            32
+          ],
+          "use_xla": false,
+          "chain_execution_mode": "eager",
+          "trace_policy": "standard",
+          "target_status_trace_policy": "none",
+          "adaptation_policy": "fixed_kernel_no_adaptation",
+          "tuning_policy": {
+            "label": "fixed_kernel_screen",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "num_adaptation_steps": 0,
+            "target_accept_prob": null,
+            "step_size_upper_bound": null,
+            "source": "reviewed_stage_7_phase_3",
+            "enabled": false,
+            "implemented": true,
+            "diagnostic_role": "fixed-kernel bounded HMC screen",
+            "nonclaims": [
+              "fixed-kernel screen only",
+              "no posterior convergence claim",
+              "no sampler superiority claim",
+              "no default adaptation readiness claim"
+            ]
+          },
+          "target_scope": "kernel_bootstrap_toy_gaussian"
+        },
+        "nonclaims": [
+          "bootstrap fixed-kernel HMC screen only",
+          "acceptance is a bootstrap repair diagnostic only",
+          "no mass adaptation validity claim",
+          "no trajectory tuning claim",
+          "no posterior convergence claim",
+          "no sampler superiority claim",
+          "no default-readiness claim",
+          "no GPU or XLA readiness claim"
+        ]
+      },
+      "selected_kernel_hash": "8799cddbd30765d5a204f4076f4bf28d7e7b009c64922d8279a60cd7e565d97a",
+      "final_status": "passed",
+      "seed_report": {
+        "geometry_root_seed": [
+          123,
+          456
+        ],
+        "geometry_seed": [
+          123,
+          9632
+        ],
+        "bootstrap_root_seed": [
+          20260621,
+          30
+        ],
+        "bootstrap_stage_seed": [
+          20260621,
+          9206
+        ],
+        "screen_round_seeds": [
+          [
+            20260621,
+            30
+          ],
+          [
+            20260621,
+            31
+          ],
+          [
+            20260621,
+            32
+          ]
+        ],
+        "seed_owner": "BayesFilter",
+        "geometry_seed_distinct_from_bootstrap_seed": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "repair_band": "bootstrap_repair_trigger",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "target_log_prob_finite": "hard_veto",
+        "adapter_signature_match": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "single_use_or_injected_runner",
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0,
+        "injected_runner_call_count": 3,
+        "reusable_runner_build_count": 0,
+        "distinct_static_runner_contract_count": 0,
+        "distinct_static_runner_contracts": [],
+        "bootstrap_round_count": 3,
+        "fallback_to_single_use_runner": false,
+        "fallback_status": "inactive_reusable_route",
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 1,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 2,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": "8799cddbd30765d5a204f4076f4bf28d7e7b009c64922d8279a60cd7e565d97a",
+        "selected_kernel_preservation": {
+          "checked": true,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "payload_hash": "8799cddbd30765d5a204f4076f4bf28d7e7b009c64922d8279a60cd7e565d97a",
+          "selected_round_index": 2,
+          "preserved": true,
+          "step_size": 0.2973017787506803,
+          "num_leapfrog_steps": 6,
+          "seed": [
+            20260621,
+            32
+          ],
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.2973017787506803,
+            "num_leapfrog_steps": 6,
+            "seed": [
+              20260621,
+              32
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          }
+        },
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "dynamic_inputs_preserve_round_semantics": true
+      },
+      "passed": true,
+      "reports_mass_adaptation_validity": false,
+      "reports_trajectory_tuning": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_gpu_or_xla_readiness": false,
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      }
+    },
+    "hash": "99b25bc3154132f6c846d8e95dc18884c57e9b9e5bffb4e6c9736125761cee5f",
+    "calls": [
+      {
+        "step": 0.42044820762685725,
+        "L": 4,
+        "seed": [
+          20260621,
+          30
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "step": 0.21022410381342863,
+        "L": 8,
+        "seed": [
+          20260621,
+          31
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "step": 0.2973017787506803,
+        "L": 6,
+        "seed": [
+          20260621,
+          32
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "repair_exhaustion": {
+    "payload": {
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "config": {
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "step_repair_factor": 2.0,
+        "max_leapfrog_steps": 25,
+        "max_repairs": 1,
+        "screen_num_results": 4,
+        "screen_num_burnin_steps": 2,
+        "seed": [
+          20260621,
+          30
+        ],
+        "chain_execution_mode": "eager",
+        "use_xla": false,
+        "target_scope": "kernel_bootstrap_toy_gaussian",
+        "target_status_trace_policy": "none",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.bootstrap_screen"
+      },
+      "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+      "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+      "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+      "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+      "target_dimension": 2,
+      "rounds": [
+        {
+          "round_index": 0,
+          "seed": [
+            20260621,
+            30
+          ],
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "unclamped_num_leapfrog_steps": 4,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.95,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.95,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": "increase_epsilon_recompute_l",
+          "hard_vetoes": [],
+          "repair_triggers": [
+            "acceptance_above_repair_band",
+            "increase_epsilon_recompute_l"
+          ]
+        },
+        {
+          "round_index": 1,
+          "seed": [
+            20260621,
+            31
+          ],
+          "step_size": 0.8408964152537145,
+          "num_leapfrog_steps": 3,
+          "unclamped_num_leapfrog_steps": 2,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": true,
+          "clamp_direction": "min",
+          "classification": "repair",
+          "diagnostic_role": "bootstrap_acceptance_repair_trigger",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.8408964152537145,
+            "num_leapfrog_steps": 3,
+            "seed": [
+              20260621,
+              31
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.95,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.95,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": "increase_epsilon_recompute_l",
+          "hard_vetoes": [],
+          "repair_triggers": [
+            "acceptance_above_repair_band",
+            "increase_epsilon_recompute_l"
+          ]
+        }
+      ],
+      "selected_round_index": null,
+      "selected_kernel_payload": null,
+      "selected_kernel_hash": null,
+      "final_status": "repair_budget_exhausted",
+      "seed_report": {
+        "geometry_root_seed": [
+          123,
+          456
+        ],
+        "geometry_seed": [
+          123,
+          9632
+        ],
+        "bootstrap_root_seed": [
+          20260621,
+          30
+        ],
+        "bootstrap_stage_seed": [
+          20260621,
+          9206
+        ],
+        "screen_round_seeds": [
+          [
+            20260621,
+            30
+          ],
+          [
+            20260621,
+            31
+          ]
+        ],
+        "seed_owner": "BayesFilter",
+        "geometry_seed_distinct_from_bootstrap_seed": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "repair_band": "bootstrap_repair_trigger",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "target_log_prob_finite": "hard_veto",
+        "adapter_signature_match": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "single_use_or_injected_runner",
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0,
+        "injected_runner_call_count": 2,
+        "reusable_runner_build_count": 0,
+        "distinct_static_runner_contract_count": 0,
+        "distinct_static_runner_contracts": [],
+        "bootstrap_round_count": 2,
+        "fallback_to_single_use_runner": false,
+        "fallback_status": "inactive_reusable_route",
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          },
+          {
+            "round_index": 1,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": null,
+        "selected_kernel_preservation": {
+          "checked": false,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "payload_hash": null,
+          "selected_round_index": null,
+          "preserved": false,
+          "step_size": null,
+          "num_leapfrog_steps": null,
+          "seed": null,
+          "screen_config_payload": null
+        },
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "dynamic_inputs_preserve_round_semantics": true
+      },
+      "passed": false,
+      "reports_mass_adaptation_validity": false,
+      "reports_trajectory_tuning": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_gpu_or_xla_readiness": false,
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      }
+    },
+    "hash": "ccf4bceba8379d5968a602c5744f9e9adf3dc0ab92ae8fb841e587cb818f54bd",
+    "calls": [
+      {
+        "step": 0.42044820762685725,
+        "L": 4,
+        "seed": [
+          20260621,
+          30
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "step": 0.8408964152537145,
+        "L": 3,
+        "seed": [
+          20260621,
+          31
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "invalid_log_accept": {
+    "payload": {
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "config": {
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "step_repair_factor": 2.0,
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "screen_num_results": 4,
+        "screen_num_burnin_steps": 2,
+        "seed": [
+          20260621,
+          30
+        ],
+        "chain_execution_mode": "eager",
+        "use_xla": false,
+        "target_scope": "kernel_bootstrap_toy_gaussian",
+        "target_status_trace_policy": "none",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.bootstrap_screen"
+      },
+      "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+      "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+      "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+      "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+      "target_dimension": 2,
+      "rounds": [
+        {
+          "round_index": 0,
+          "seed": [
+            20260621,
+            30
+          ],
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "unclamped_num_leapfrog_steps": 4,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "hard_veto",
+          "diagnostic_role": "hard_veto",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.7,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": false,
+            "max_abs_log_accept_ratio": 0.0,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": false,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.7,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": null,
+          "hard_vetoes": [
+            "screen_log_accept_nonfinite_or_missing"
+          ],
+          "repair_triggers": []
+        }
+      ],
+      "selected_round_index": null,
+      "selected_kernel_payload": null,
+      "selected_kernel_hash": null,
+      "final_status": "hard_veto",
+      "seed_report": {
+        "geometry_root_seed": [
+          123,
+          456
+        ],
+        "geometry_seed": [
+          123,
+          9632
+        ],
+        "bootstrap_root_seed": [
+          20260621,
+          30
+        ],
+        "bootstrap_stage_seed": [
+          20260621,
+          9206
+        ],
+        "screen_round_seeds": [
+          [
+            20260621,
+            30
+          ]
+        ],
+        "seed_owner": "BayesFilter",
+        "geometry_seed_distinct_from_bootstrap_seed": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "repair_band": "bootstrap_repair_trigger",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "target_log_prob_finite": "hard_veto",
+        "adapter_signature_match": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "single_use_or_injected_runner",
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0,
+        "injected_runner_call_count": 1,
+        "reusable_runner_build_count": 0,
+        "distinct_static_runner_contract_count": 0,
+        "distinct_static_runner_contracts": [],
+        "bootstrap_round_count": 1,
+        "fallback_to_single_use_runner": false,
+        "fallback_status": "inactive_reusable_route",
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": null,
+        "selected_kernel_preservation": {
+          "checked": false,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "payload_hash": null,
+          "selected_round_index": null,
+          "preserved": false,
+          "step_size": null,
+          "num_leapfrog_steps": null,
+          "seed": null,
+          "screen_config_payload": null
+        },
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "dynamic_inputs_preserve_round_semantics": true
+      },
+      "passed": false,
+      "reports_mass_adaptation_validity": false,
+      "reports_trajectory_tuning": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_gpu_or_xla_readiness": false,
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      }
+    },
+    "hash": "935c9da625a8cd4757b4dd41b162d5482086cff6d5f49fae42552e0d902f1aa7",
+    "calls": [
+      {
+        "step": 0.42044820762685725,
+        "L": 4,
+        "seed": [
+          20260621,
+          30
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "invalid_state": {
+    "payload": {
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "config": {
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "step_repair_factor": 2.0,
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "screen_num_results": 4,
+        "screen_num_burnin_steps": 2,
+        "seed": [
+          20260621,
+          30
+        ],
+        "chain_execution_mode": "eager",
+        "use_xla": false,
+        "target_scope": "kernel_bootstrap_toy_gaussian",
+        "target_status_trace_policy": "none",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.bootstrap_screen"
+      },
+      "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+      "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+      "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+      "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+      "target_dimension": 2,
+      "rounds": [
+        {
+          "round_index": 0,
+          "seed": [
+            20260621,
+            30
+          ],
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "unclamped_num_leapfrog_steps": 4,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "hard_veto",
+          "diagnostic_role": "hard_veto",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.7,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 0,
+            "nonfinite_sample_count": 2,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": false,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": false,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.7,
+              "finite_sample_count": 0,
+              "nonfinite_sample_count": 2,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": null,
+          "hard_vetoes": [
+            "screen_samples_nonfinite_or_missing"
+          ],
+          "repair_triggers": []
+        }
+      ],
+      "selected_round_index": null,
+      "selected_kernel_payload": null,
+      "selected_kernel_hash": null,
+      "final_status": "hard_veto",
+      "seed_report": {
+        "geometry_root_seed": [
+          123,
+          456
+        ],
+        "geometry_seed": [
+          123,
+          9632
+        ],
+        "bootstrap_root_seed": [
+          20260621,
+          30
+        ],
+        "bootstrap_stage_seed": [
+          20260621,
+          9206
+        ],
+        "screen_round_seeds": [
+          [
+            20260621,
+            30
+          ]
+        ],
+        "seed_owner": "BayesFilter",
+        "geometry_seed_distinct_from_bootstrap_seed": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "repair_band": "bootstrap_repair_trigger",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "target_log_prob_finite": "hard_veto",
+        "adapter_signature_match": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "single_use_or_injected_runner",
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0,
+        "injected_runner_call_count": 1,
+        "reusable_runner_build_count": 0,
+        "distinct_static_runner_contract_count": 0,
+        "distinct_static_runner_contracts": [],
+        "bootstrap_round_count": 1,
+        "fallback_to_single_use_runner": false,
+        "fallback_status": "inactive_reusable_route",
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": null,
+        "selected_kernel_preservation": {
+          "checked": false,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "payload_hash": null,
+          "selected_round_index": null,
+          "preserved": false,
+          "step_size": null,
+          "num_leapfrog_steps": null,
+          "seed": null,
+          "screen_config_payload": null
+        },
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "dynamic_inputs_preserve_round_semantics": true
+      },
+      "passed": false,
+      "reports_mass_adaptation_validity": false,
+      "reports_trajectory_tuning": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_gpu_or_xla_readiness": false,
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      }
+    },
+    "hash": "558b4fb8ca6259b10d316a1289ce2dc2c1dd3f7e21ab11518ba93aaf4dc53322",
+    "calls": [
+      {
+        "step": 0.42044820762685725,
+        "L": 4,
+        "seed": [
+          20260621,
+          30
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "invalid_target": {
+    "payload": {
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "config": {
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "step_repair_factor": 2.0,
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "screen_num_results": 4,
+        "screen_num_burnin_steps": 2,
+        "seed": [
+          20260621,
+          30
+        ],
+        "chain_execution_mode": "eager",
+        "use_xla": false,
+        "target_scope": "kernel_bootstrap_toy_gaussian",
+        "target_status_trace_policy": "none",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.bootstrap_screen"
+      },
+      "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+      "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+      "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+      "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+      "target_dimension": 2,
+      "rounds": [
+        {
+          "round_index": 0,
+          "seed": [
+            20260621,
+            30
+          ],
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "unclamped_num_leapfrog_steps": 4,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "hard_veto",
+          "diagnostic_role": "hard_veto",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.7,
+            "runtime_s": 0.01,
+            "runtime_finite": true,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": false,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": false,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.7,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": 0.01,
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": 0.0,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": null,
+          "hard_vetoes": [
+            "screen_target_log_prob_nonfinite_or_missing"
+          ],
+          "repair_triggers": []
+        }
+      ],
+      "selected_round_index": null,
+      "selected_kernel_payload": null,
+      "selected_kernel_hash": null,
+      "final_status": "hard_veto",
+      "seed_report": {
+        "geometry_root_seed": [
+          123,
+          456
+        ],
+        "geometry_seed": [
+          123,
+          9632
+        ],
+        "bootstrap_root_seed": [
+          20260621,
+          30
+        ],
+        "bootstrap_stage_seed": [
+          20260621,
+          9206
+        ],
+        "screen_round_seeds": [
+          [
+            20260621,
+            30
+          ]
+        ],
+        "seed_owner": "BayesFilter",
+        "geometry_seed_distinct_from_bootstrap_seed": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "repair_band": "bootstrap_repair_trigger",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "target_log_prob_finite": "hard_veto",
+        "adapter_signature_match": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "single_use_or_injected_runner",
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0,
+        "injected_runner_call_count": 1,
+        "reusable_runner_build_count": 0,
+        "distinct_static_runner_contract_count": 0,
+        "distinct_static_runner_contracts": [],
+        "bootstrap_round_count": 1,
+        "fallback_to_single_use_runner": false,
+        "fallback_status": "inactive_reusable_route",
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": null,
+        "selected_kernel_preservation": {
+          "checked": false,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "payload_hash": null,
+          "selected_round_index": null,
+          "preserved": false,
+          "step_size": null,
+          "num_leapfrog_steps": null,
+          "seed": null,
+          "screen_config_payload": null
+        },
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "dynamic_inputs_preserve_round_semantics": true
+      },
+      "passed": false,
+      "reports_mass_adaptation_validity": false,
+      "reports_trajectory_tuning": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_gpu_or_xla_readiness": false,
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      }
+    },
+    "hash": "b08f00d5be2e424356caa32be38448cd79bf8ca923dec5eb1f99dd4fd3b5b15d",
+    "calls": [
+      {
+        "step": 0.42044820762685725,
+        "L": 4,
+        "seed": [
+          20260621,
+          30
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "runtime_failure": {
+    "payload": {
+      "schema": "bayesfilter.hmc_bootstrap_screen.v1",
+      "config": {
+        "target_accept_prob": 0.7,
+        "acceptance_band": [
+          0.65,
+          0.75
+        ],
+        "repair_band": [
+          0.55,
+          0.85
+        ],
+        "step_repair_factor": 2.0,
+        "max_leapfrog_steps": 25,
+        "max_repairs": 5,
+        "screen_num_results": 4,
+        "screen_num_burnin_steps": 2,
+        "seed": [
+          20260621,
+          30
+        ],
+        "chain_execution_mode": "eager",
+        "use_xla": false,
+        "target_scope": "kernel_bootstrap_toy_gaussian",
+        "target_status_trace_policy": "none",
+        "source": "bayesfilter.inference.hmc_kernel_tuning.bootstrap_screen"
+      },
+      "geometry_artifact_hash": "f3e78aaf96ee2e24347af333d9f1bada22ac6f89bbecc61b12dff729f1610d3d",
+      "adapter_signature": "kernel-bootstrap-toy-gaussian-v1",
+      "hmc_adapter_signature": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+      "mass_artifact_signature": "23c71a871b8a313a4ca41ab7cd0eb832f3f501d8106531eecfa18cef2fd01f34",
+      "target_dimension": 2,
+      "rounds": [
+        {
+          "round_index": 0,
+          "seed": [
+            20260621,
+            30
+          ],
+          "step_size": 0.42044820762685725,
+          "num_leapfrog_steps": 4,
+          "unclamped_num_leapfrog_steps": 4,
+          "target_trajectory_length": 1.5707963267948966,
+          "leapfrog_clamped": false,
+          "clamp_direction": null,
+          "classification": "hard_veto",
+          "diagnostic_role": "hard_veto",
+          "screen_config_payload": {
+            "num_results": 4,
+            "num_burnin_steps": 2,
+            "step_size": 0.42044820762685725,
+            "num_leapfrog_steps": 4,
+            "seed": [
+              20260621,
+              30
+            ],
+            "use_xla": false,
+            "chain_execution_mode": "eager",
+            "trace_policy": "standard",
+            "target_status_trace_policy": "none",
+            "adaptation_policy": "fixed_kernel_no_adaptation",
+            "tuning_policy": {
+              "label": "fixed_kernel_screen",
+              "adaptation_policy": "fixed_kernel_no_adaptation",
+              "num_adaptation_steps": 0,
+              "target_accept_prob": null,
+              "step_size_upper_bound": null,
+              "source": "reviewed_stage_7_phase_3",
+              "enabled": false,
+              "implemented": true,
+              "diagnostic_role": "fixed-kernel bounded HMC screen",
+              "nonclaims": [
+                "fixed-kernel screen only",
+                "no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default adaptation readiness claim"
+              ]
+            },
+            "target_scope": "kernel_bootstrap_toy_gaussian"
+          },
+          "diagnostics": {
+            "acceptance_rate": 0.7,
+            "runtime_s": {
+              "nonfinite": "nan"
+            },
+            "runtime_finite": false,
+            "use_xla": false,
+            "xla_requested": false,
+            "compile_chain_with_xla": false,
+            "jit_compile_metadata": "false",
+            "finite_sample_count": 2,
+            "nonfinite_sample_count": 0,
+            "target_accept_prob": null,
+            "num_adaptation_steps": null,
+            "trace_policy": "standard",
+            "divergence_status": null,
+            "divergence_count": null,
+            "target_status_telemetry": null,
+            "log_accept_ratio_finite": true,
+            "max_abs_log_accept_ratio": 0.1,
+            "target_log_prob_finite": true,
+            "samples_all_finite": true,
+            "screen_diagnostic": {
+              "passed": false,
+              "checks": {
+                "sample_chain_returned": true,
+                "hmc_error_absent": true,
+                "required_arrays_finite": true,
+                "zero_divergences": false,
+                "log_accept_nonfinite_count_zero": true,
+                "acceptance_rate_by_chain_finite": true,
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": true,
+                "fixed_kernel_used": true,
+                "num_adaptation_steps_zero": true,
+                "latent_initial_scale_zero": true,
+                "use_xla_false": true,
+                "compile_chain_with_xla_false": true
+              },
+              "diagnostic_roles": {
+                "sample_chain_returned": "hard_veto",
+                "hmc_error_absent": "hard_veto",
+                "required_arrays_finite": "hard_veto",
+                "zero_divergences": "hard_veto",
+                "log_accept_nonfinite_count_zero": "hard_veto",
+                "acceptance_rate_by_chain_finite": "hard_veto",
+                "acceptance_rate_by_chain_strictly_between_0_05_and_0_99": "promotion_veto",
+                "fixed_kernel_used": "explanatory_or_contract",
+                "num_adaptation_steps_zero": "explanatory_or_contract",
+                "latent_initial_scale_zero": "explanatory_or_contract",
+                "use_xla_false": "explanatory_or_contract",
+                "compile_chain_with_xla_false": "explanatory_or_contract",
+                "screen": "bootstrap fixed-kernel screen only"
+              },
+              "unavailable_diagnostics": [
+                "zero_divergences"
+              ],
+              "nonclaims": [
+                "bounded HMC screen only; no posterior convergence claim",
+                "no sampler superiority claim",
+                "no default sampler readiness claim"
+              ]
+            },
+            "raw_diagnostics": {
+              "acceptance_rate": 0.7,
+              "finite_sample_count": 2,
+              "nonfinite_sample_count": 0,
+              "trace_policy": "standard"
+            },
+            "runtime_metadata": {
+              "sample_chain_call_s": {
+                "nonfinite": "nan"
+              },
+              "sample_chain_timing_scope": "unit_test_sample_chain_scope",
+              "jit_compile": false,
+              "use_xla": false,
+              "trace_unavailability": {},
+              "nonclaims": [
+                "fake runner only"
+              ]
+            },
+            "trace_summary": {
+              "trace_keys": [
+                "is_accepted",
+                "log_accept_ratio",
+                "target_log_prob"
+              ],
+              "trace_unavailability": {}
+            },
+            "target_log_prob_min": -0.5,
+            "target_log_prob_max": 0.0
+          },
+          "repair_action": null,
+          "hard_vetoes": [
+            "screen_runtime_missing_or_nonfinite"
+          ],
+          "repair_triggers": []
+        }
+      ],
+      "selected_round_index": null,
+      "selected_kernel_payload": null,
+      "selected_kernel_hash": null,
+      "final_status": "hard_veto",
+      "seed_report": {
+        "geometry_root_seed": [
+          123,
+          456
+        ],
+        "geometry_seed": [
+          123,
+          9632
+        ],
+        "bootstrap_root_seed": [
+          20260621,
+          30
+        ],
+        "bootstrap_stage_seed": [
+          20260621,
+          9206
+        ],
+        "screen_round_seeds": [
+          [
+            20260621,
+            30
+          ]
+        ],
+        "seed_owner": "BayesFilter",
+        "geometry_seed_distinct_from_bootstrap_seed": true
+      },
+      "diagnostic_roles": {
+        "acceptance_band": "bootstrap_promotion_only",
+        "repair_band": "bootstrap_repair_trigger",
+        "finite_samples": "hard_veto",
+        "log_accept_ratio_finite": "hard_veto",
+        "target_log_prob_finite": "hard_veto",
+        "adapter_signature_match": "hard_veto",
+        "mass_artifact_validity": "hard_veto",
+        "repeated_leapfrog_cap_saturation": "phase_blocker_handoff",
+        "runtime": "explanatory_diagnostic"
+      },
+      "bootstrap_runner_route": {
+        "active_route": "single_use_or_injected_runner",
+        "semantic_source": "run_hmc_bootstrap_screen",
+        "single_use_build_count_for_bootstrap_rounds": 0,
+        "injected_runner_call_count": 1,
+        "reusable_runner_build_count": 0,
+        "distinct_static_runner_contract_count": 0,
+        "distinct_static_runner_contracts": [],
+        "bootstrap_round_count": 1,
+        "fallback_to_single_use_runner": false,
+        "fallback_status": "inactive_reusable_route",
+        "round_route_events": [
+          {
+            "round_index": 0,
+            "route": "single_use_or_injected_runner",
+            "static_contract_hash": null,
+            "runner_reused": false,
+            "used_single_use_runner": false
+          }
+        ],
+        "selected_kernel_payload_hash": null,
+        "selected_kernel_preservation": {
+          "checked": false,
+          "semantic_source": "run_hmc_bootstrap_screen",
+          "payload_hash": null,
+          "selected_round_index": null,
+          "preserved": false,
+          "step_size": null,
+          "num_leapfrog_steps": null,
+          "seed": null,
+          "screen_config_payload": null
+        },
+        "dynamic_runner_inputs": [
+          "current_state",
+          "seed",
+          "step_size"
+        ],
+        "dynamic_inputs_preserve_round_semantics": true
+      },
+      "passed": false,
+      "reports_mass_adaptation_validity": false,
+      "reports_trajectory_tuning": false,
+      "reports_posterior_convergence": false,
+      "reports_sampler_superiority": false,
+      "reports_gpu_or_xla_readiness": false,
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim"
+      ],
+      "artifact_hash_components": {
+        "hash_function": "bayesfilter.runtime.stable_config_hash",
+        "json_normalization": "sort_keys_compact_json"
+      }
+    },
+    "hash": "bd42fd353aa90086a65c29c57118fdfb315fe080ba99639e2dff2fec4ce60089",
+    "calls": [
+      {
+        "step": 0.42044820762685725,
+        "L": 4,
+        "seed": [
+          20260621,
+          30
+        ],
+        "adapter": "c7e5a979a88a33995c692e2455cbe3bb9c346bdbd405ba87923193325b14284d",
+        "initial_state": [
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "adapter_mismatch": {
+    "exception": "ValueError",
+    "message": "bootstrap adapter signature must match geometry"
+  },
+  "invalid_repair_factor": {
+    "exception": "ValueError",
+    "message": "step_repair_factor must be finite and greater than 1"
+  },
+  "invalid_seed": {
+    "exception": "ValueError",
+    "message": "seed must contain exactly two integers"
+  },
+  "scalar_transform": {
+    "signature": "40cafdde1ccbb8d1cafb47e7050d383173c4a1fbf21b93867b08664992d03267",
+    "positions": [
+      0.4828427124746191,
+      -0.6676955262170048
+    ],
+    "values": -0.3394772003600253,
+    "scores": [
+      -0.4939898987322334,
+      0.5665584412271573
+    ],
+    "capability": {
+      "value_score_authority": "graph_native",
+      "xla_hmc_ready": false,
+      "runtime_backend": "bayesfilter.inference.hmc_kernel_tuning._BootstrapFixedMassLatentValueScoreAdapter",
+      "evidence_path": null,
+      "target_scope": "kernel_bootstrap_toy_gaussian",
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim",
+        "base value/score authority: graph_native",
+        "bootstrap latent wrapper cannot promote fallback base authority",
+        "bootstrap latent wrapper preserves XLA authority only from accepted base authority"
+      ],
+      "full_chain_xla_diagnostic_ready": false,
+      "score_provenance": "unspecified"
+    }
+  },
+  "chain_transform": {
+    "signature": "40cafdde1ccbb8d1cafb47e7050d383173c4a1fbf21b93867b08664992d03267",
+    "positions": [
+      [
+        0.4828427124746191,
+        -0.6676955262170048
+      ],
+      [
+        0.7656854249492382,
+        -0.10201010126776666
+      ]
+    ],
+    "values": [
+      -0.3394772003600253,
+      -0.29834011537017774
+    ],
+    "scores": [
+      [
+        -0.4939898987322334,
+        0.5665584412271573
+      ],
+      [
+        -1.0539898987322336,
+        0.0865584412271571
+      ]
+    ],
+    "capability": {
+      "value_score_authority": "graph_native",
+      "xla_hmc_ready": false,
+      "runtime_backend": "bayesfilter.inference.hmc_kernel_tuning._BootstrapFixedMassLatentValueScoreAdapter",
+      "evidence_path": null,
+      "target_scope": "kernel_bootstrap_toy_gaussian",
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim",
+        "base value/score authority: graph_native",
+        "bootstrap latent wrapper cannot promote fallback base authority",
+        "bootstrap latent wrapper preserves XLA authority only from accepted base authority"
+      ],
+      "full_chain_xla_diagnostic_ready": false,
+      "score_provenance": "unspecified"
+    }
+  },
+  "draw_chain_transform": {
+    "signature": "40cafdde1ccbb8d1cafb47e7050d383173c4a1fbf21b93867b08664992d03267",
+    "positions": [
+      [
+        [
+          0.4828427124746191,
+          -0.6676955262170048
+        ],
+        [
+          0.7656854249492382,
+          -0.10201010126776666
+        ]
+      ],
+      [
+        [
+          1.3313708498984762,
+          -0.32828427124746196
+        ],
+        [
+          0.4828427124746191,
+          0.5202438661763953
+        ]
+      ]
+    ],
+    "values": [
+      [
+        -0.3394772003600253,
+        -0.29834011537017774
+      ],
+      [
+        -0.940159451353934,
+        -0.2518953826420054
+      ]
+    ],
+    "scores": [
+      [
+        [
+          -0.4939898987322334,
+          0.5665584412271573
+        ],
+        [
+          -1.0539898987322336,
+          0.0865584412271571
+        ]
+      ],
+      [
+        [
+          -1.7899898987322338,
+          0.27855844122715717
+        ],
+        [
+          -0.8299898987322335,
+          -0.4414415587728431
+        ]
+      ]
+    ],
+    "capability": {
+      "value_score_authority": "graph_native",
+      "xla_hmc_ready": false,
+      "runtime_backend": "bayesfilter.inference.hmc_kernel_tuning._BootstrapFixedMassLatentValueScoreAdapter",
+      "evidence_path": null,
+      "target_scope": "kernel_bootstrap_toy_gaussian",
+      "nonclaims": [
+        "bootstrap fixed-kernel HMC screen only",
+        "acceptance is a bootstrap repair diagnostic only",
+        "no mass adaptation validity claim",
+        "no trajectory tuning claim",
+        "no posterior convergence claim",
+        "no sampler superiority claim",
+        "no default-readiness claim",
+        "no GPU or XLA readiness claim",
+        "base value/score authority: graph_native",
+        "bootstrap latent wrapper cannot promote fallback base authority",
+        "bootstrap latent wrapper preserves XLA authority only from accepted base authority"
+      ],
+      "full_chain_xla_diagnostic_ready": false,
+      "score_provenance": "unspecified"
+    }
+  }
+}

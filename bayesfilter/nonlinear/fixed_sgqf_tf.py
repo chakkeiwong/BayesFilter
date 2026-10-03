@@ -7,14 +7,13 @@ import json
 import math
 import struct
 from dataclasses import dataclass
-from itertools import product
+from functools import lru_cache
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, Sequence
 
 import tensorflow as tf
 
-
-FIXED_SGQF_RUNTIME_MODE = "eager_only_python_branch_records"
+FIXED_SGQF_RUNTIME_MODE = "xla_tensor_recurrence_python_branch_records"
 
 
 @dataclass(frozen=True)
@@ -600,20 +599,23 @@ def _canonicalize_tensor(tensor: tf.Tensor) -> Mapping[str, object]:
     }
 
 
+@lru_cache(maxsize=32)
+def _ghq_program(order, standard_normal=True):
+    from bayesfilter.highdim.gaussian_moment_hints_tf import _normal_hermite_rule
+
+    @tf.function(input_signature=[], jit_compile=True, autograph=False)
+    def evaluate():
+        nodes, weights = _normal_hermite_rule(order, True)
+        if standard_normal:
+            return nodes, weights
+        return nodes / tf.sqrt(tf.constant(2.0, tf.float64)), weights * tf.sqrt(tf.constant(math.pi, tf.float64))
+    return evaluate
+
+
 def _gauss_hermite_nodes_weights(order: int) -> tuple[tf.Tensor, tf.Tensor]:
     if int(order) <= 0:
         raise ValueError("order must be positive")
-    if int(order) == 1:
-        return (
-            tf.zeros([1], dtype=tf.float64),
-            tf.sqrt(tf.constant(math.pi, dtype=tf.float64))[tf.newaxis],
-        )
-    k = tf.cast(tf.range(1, int(order), dtype=tf.int32), tf.float64)
-    beta = tf.sqrt(k / 2.0)
-    jacobi = tf.linalg.diag(beta, k=1) + tf.linalg.diag(beta, k=-1)
-    eigenvalues, eigenvectors = tf.linalg.eigh(jacobi)
-    weights = tf.sqrt(tf.constant(math.pi, dtype=tf.float64)) * tf.square(eigenvectors[0, :])
-    return eigenvalues, weights
+    return _ghq_program(int(order), False)()
 
 
 def tf_standard_normal_ghq_level_rule(level: int) -> TFFixedSGQF1DLevelRule:
@@ -623,9 +625,7 @@ def tf_standard_normal_ghq_level_rule(level: int) -> TFFixedSGQF1DLevelRule:
     if level <= 0:
         raise ValueError("level must be positive")
     order = 2 * level - 1
-    hermite_nodes, hermite_weights = _gauss_hermite_nodes_weights(order)
-    nodes = tf.sqrt(tf.constant(2.0, dtype=tf.float64)) * hermite_nodes
-    weights = hermite_weights / tf.sqrt(tf.constant(math.pi, dtype=tf.float64))
+    nodes, weights = _ghq_program(order)()
     return TFFixedSGQF1DLevelRule(
         level=level,
         nodes=nodes,
@@ -678,36 +678,94 @@ def tf_fixed_sgqf_combination_coefficient(
     return int(((-1) ** gap) * math.comb(dim - 1, gap))
 
 
-def _merge_key(point: tuple[float, ...], tolerance: float) -> tuple[object, ...]:
-    if tolerance == 0.0:
-        return tuple(float(value).hex() for value in point)
-    return tuple(int(round(float(value) / tolerance)) for value in point)
+def _lexicographic_point_order(points: tf.Tensor) -> tf.Tensor:
+    count = tf.shape(points)[0]
+    def sort_axis(axis, order):
+        indices = tf.argsort(tf.gather(points[:, axis], order), stable=True)
+        return axis - 1, tf.gather(order, indices)
+    _, order = tf.while_loop(lambda axis, _: axis >= 0, sort_axis,
+                             (tf.shape(points)[1] - 1, tf.range(count)),
+                             maximum_iterations=tf.shape(points)[1])
+    return order
 
 
-def _find_merged_point(
-    merged: dict[tuple[object, ...], dict[str, object]],
-    point: tuple[float, ...],
-    tolerance: float,
-) -> tuple[object, ...] | None:
-    key = _merge_key(point, tolerance)
-    candidate_keys = [key]
-    if tolerance != 0.0:
-        for offsets in product((-1, 0, 1), repeat=len(point)):
-            neighbor = tuple(component + offset for component, offset in zip(key, offsets))
-            if neighbor not in candidate_keys:
-                candidate_keys.append(neighbor)
-    for candidate_key in candidate_keys:
-        existing = merged.get(candidate_key)
-        if existing is None:
-            continue
-        existing_point = tuple(float(value) for value in existing["point"])
-        if max(abs(point_component - existing_component) for point_component, existing_component in zip(point, existing_point)) <= tolerance:
-            return candidate_key
-    return None
+@tf.function(jit_compile=True, autograph=False, input_signature=(
+    tf.TensorSpec([None, None], tf.float64),
+    tf.TensorSpec([None], tf.float64), tf.TensorSpec([], tf.float64),
+))
+def _merge_sgqf_rule_points(points, weights, tolerance):
+    """Native sequential merge preserving bucket priority and summation order.
+
+    Representatives keep their first encountered point. A current bucket wins
+    before neighboring buckets; neighbors use the original lexicographic order.
+    The fixed-capacity result is compacted only at the preparation boundary.
+    """
+    count = tf.shape(weights)[0]
+    keys = tf.round(points / tf.where(tolerance > 0.0, tolerance, 1.0))
+    ranks = tf.argsort(_lexicographic_point_order(keys), stable=True)
+    representatives = tf.zeros([count], tf.bool)
+    accumulated = tf.zeros_like(weights)
+
+    def merge(index, representatives, accumulated):
+        key_distance = tf.abs(keys - keys[index])
+        same_bucket = tf.reduce_all(key_distance == 0.0, axis=1)
+        near = tf.reduce_all(key_distance <= 1.0, axis=1)
+        close = tf.reduce_all(tf.abs(points - points[index]) <= tolerance, axis=1)
+        # Exact mode follows float.hex identity, including the sign of zero.
+        exact = tf.reduce_all(tf.bitcast(points, tf.int64) == tf.bitcast(points[index], tf.int64), axis=1)
+        eligible = representatives & tf.where(tolerance > 0.0, near & close, exact)
+        priorities = tf.where(eligible, tf.where(same_bucket, -1, ranks), count)
+        existing = tf.argmin(priorities, output_type=tf.int32)
+        destination = tf.where(tf.reduce_any(eligible), existing, index)
+        representatives = tf.tensor_scatter_nd_update(representatives, [[destination]], [True])
+        accumulated = tf.tensor_scatter_nd_add(accumulated, [[destination]], [weights[index]])
+        return index + 1, representatives, accumulated
+
+    _, representatives, accumulated = tf.while_loop(
+        lambda index, *_: index < count, merge,
+        (tf.constant(0), representatives, accumulated), maximum_iterations=count,
+    )
+    order = _lexicographic_point_order(points)
+    return tf.gather(points, order), tf.gather(accumulated, order), tf.gather(representatives, order)
 
 
-def _unstack_floats(values: tf.Tensor) -> tuple[float, ...]:
-    return tuple(float(value) for value in tf.unstack(values))
+@lru_cache(maxsize=16)
+def _sgqf_cloud_program(dim, active_multi_indices, combination_coefficients):
+    from bayesfilter.highdim.gaussian_moment_hints_tf import _normal_hermite_rule
+    max_level = max(max(index) for index in active_multi_indices)
+    width = 2 * max_level - 1
+
+    @tf.function(input_signature=[tf.TensorSpec([], tf.float64)], jit_compile=True, autograph=False)
+    def evaluate(merge_tolerance):
+        def rule(level):
+            def generate():
+                nodes, weights = _normal_hermite_rule(2*level-1, True)
+                padding = [[0, width-(2*level-1)]]
+                return tf.pad(nodes, padding), tf.pad(weights, padding)
+            return generate
+        branches = tuple(rule(level) for level in range(1, max_level+1))
+        nodes_table, weights_table = tf.map_fn(lambda index: tf.switch_case(index, branches),
+            tf.range(max_level), fn_output_signature=(tf.TensorSpec([width], tf.float64),
+                tf.TensorSpec([width], tf.float64)), parallel_iterations=1)
+        levels = tf.constant(active_multi_indices, tf.int32)
+        orders = 2 * levels - 1
+        sizes = tf.reduce_prod(orders, axis=1)
+        ends = tf.cumsum(sizes)
+        row = tf.range(ends[-1])
+        term = tf.searchsorted(ends, row, side="right")
+        local_row = row - tf.gather(ends - sizes, term)
+        axis_orders = tf.gather(orders, term)
+        strides = tf.math.cumprod(axis_orders, axis=1, exclusive=True, reverse=True)
+        digit = (local_row[:, None] // strides) % axis_orders
+        table_index = tf.stack([tf.gather(levels, term) - 1, digit], axis=-1)
+        points = tf.gather_nd(nodes_table, table_index)
+        axis_weights = tf.gather_nd(weights_table, table_index)
+        weights = tf.gather(tf.constant(combination_coefficients, tf.float64), term)
+        _, weights = tf.while_loop(lambda axis, _: axis < dim,
+            lambda axis, weight: (axis+1, weight*axis_weights[:, axis]),
+            (tf.constant(0), weights), maximum_iterations=dim)
+        return _merge_sgqf_rule_points(points, weights, merge_tolerance)
+    return evaluate
 
 
 def tf_fixed_sgqf_cloud(
@@ -730,32 +788,16 @@ def tf_fixed_sgqf_cloud(
         raise ValueError("node_ordering must be lexicographic")
 
     active_multi_indices = tf_fixed_sgqf_active_multi_indices(dim, sparse_level)
-    max_level = max(max(multi_index) for multi_index in active_multi_indices)
-    rules = {level: tf_standard_normal_ghq_level_rule(level) for level in range(1, max_level + 1)}
-
-    merged: dict[tuple[object, ...], dict[str, object]] = {}
-    combination_coefficients = []
-    for multi_index in active_multi_indices:
-        coefficient = tf_fixed_sgqf_combination_coefficient(dim, sparse_level, multi_index)
-        combination_coefficients.append(coefficient)
-        rule_nodes = [_unstack_floats(rules[level].nodes) for level in multi_index]
-        rule_weights = [_unstack_floats(rules[level].weights) for level in multi_index]
-        axis_ranges = [range(len(nodes)) for nodes in rule_nodes]
-        for choice in product(*axis_ranges):
-            point = tuple(rule_nodes[axis][index] for axis, index in enumerate(choice))
-            weight = float(coefficient)
-            for axis, index in enumerate(choice):
-                weight *= rule_weights[axis][index]
-            existing_key = _find_merged_point(merged, point, merge_tolerance)
-            if existing_key is not None:
-                merged[existing_key]["weight"] = float(merged[existing_key]["weight"]) + weight
-            else:
-                merged[_merge_key(point, merge_tolerance)] = {"point": point, "weight": weight}
-
-    items = [item for item in merged.values() if abs(float(item["weight"])) > zero_weight_tolerance]
-    items.sort(key=lambda item: tuple(float(value) for value in item["point"]))
-    points = tf.constant([item["point"] for item in items], dtype=tf.float64)
-    weights = tf.constant([item["weight"] for item in items], dtype=tf.float64)
+    combination_coefficients = tuple(
+        tf_fixed_sgqf_combination_coefficient(dim, sparse_level, index)
+        for index in active_multi_indices
+    )
+    points, weights, representatives = _sgqf_cloud_program(
+        dim, active_multi_indices, combination_coefficients)(tf.constant(merge_tolerance, tf.float64))
+    keep = representatives & (tf.abs(weights) > zero_weight_tolerance)
+    # Compaction determines the immutable cloud's public shape. All quadrature
+    # arithmetic and merging have completed in the numerical program.
+    points, weights = tf.boolean_mask(points, keep), tf.boolean_mask(weights, keep)
     return TFFixedSGQFCloud(
         dim=dim,
         sparse_level=sparse_level,
@@ -788,20 +830,15 @@ def tf_fixed_sgqf_level2_axis_cloud(
     if tolerance < 0.0:
         raise ValueError("zero_weight_tolerance must be nonnegative")
 
-    radius = math.sqrt(3.0)
-    zero = (0.0,) * dimension
-    items: list[tuple[tuple[float, ...], float]] = [
-        (zero, 1.0 - float(dimension) / 3.0)
-    ]
-    for axis in range(dimension):
-        for sign in (-1.0, 1.0):
-            point = tuple(
-                sign * radius if index == axis else 0.0
-                for index in range(dimension)
-            )
-            items.append((point, 1.0 / 6.0))
-    items = [item for item in items if abs(item[1]) > tolerance]
-    items.sort(key=lambda item: item[0])
+    axes = tf.sqrt(tf.constant(3.0, tf.float64)) * tf.eye(dimension, dtype=tf.float64)
+    points = tf.concat([tf.zeros([1, dimension], tf.float64),
+                        tf.reshape(tf.stack([-axes, axes], axis=1), [2 * dimension, dimension])], axis=0)
+    weights = tf.concat([tf.constant([1.0 - dimension / 3.0], tf.float64),
+                         tf.fill([2 * dimension], tf.constant(1.0 / 6.0, tf.float64))], axis=0)
+    keep = tf.abs(weights) > tolerance
+    points, weights = tf.boolean_mask(points, keep), tf.boolean_mask(weights, keep)
+    order = _lexicographic_point_order(points)
+    points, weights = tf.gather(points, order), tf.gather(weights, order)
 
     active_multi_indices = tf_fixed_sgqf_active_multi_indices(dimension, 2)
     combination_coefficients = tuple(
@@ -811,8 +848,8 @@ def tf_fixed_sgqf_level2_axis_cloud(
     return TFFixedSGQFCloud(
         dim=dimension,
         sparse_level=2,
-        points=tf.constant([point for point, _weight in items], tf.float64),
-        weights=tf.constant([weight for _point, weight in items], tf.float64),
+        points=points,
+        weights=weights,
         active_multi_indices=active_multi_indices,
         combination_coefficients=combination_coefficients,
         merge_tolerance=0.0,
@@ -973,6 +1010,32 @@ def _branch_failure_result(
     )
 
 
+def _fixed_sgqf_tensor_step_diagnostics(history, time_index, config):
+    minima = history["minimum_eigenvalues"][time_index]
+    return {name: {"min_eigenvalue": minima[index], "epsilon": tf.constant(epsilon, tf.float64),
+                   "symmetrized_matrix": history[matrix][time_index]}
+            for index, name, epsilon, matrix in (
+                (0, "previous_covariance_diagnostics", config.predictive_epsilon, "previous_covariance"),
+                (1, "predictive_covariance_diagnostics", config.predictive_epsilon, "predicted_covariance"),
+                (2, "innovation_covariance_diagnostics", config.innovation_epsilon, "innovation_covariance"),
+                (3, "filtered_covariance_diagnostics", config.predictive_epsilon, "filtered_covariance"))}
+
+
+def _fixed_sgqf_tensor_failure(numeric, config):
+    """Materialize only the finished tensor status at the reporting boundary."""
+    code = int(numeric["status_code"].numpy())
+    if code == 0:
+        return None
+    time_index = int(numeric["attempted_steps"].numpy()) - 1
+    stages = ("previous_covariance", "predictive_covariance", "innovation_covariance", "carried_covariance", "numerical_output")
+    keys = ("previous_covariance_diagnostics", "predictive_covariance_diagnostics",
+            "innovation_covariance_diagnostics", "filtered_covariance_diagnostics")
+    diagnostics = (_fixed_sgqf_tensor_step_diagnostics(numeric["history"], time_index, config)[keys[code - 1]]
+                   if code <= 4 else {"status_code": numeric["status_code"]})
+    return TFFixedSGQFStepFailure(time_index=time_index, stage=stages[code - 1],
+        reason="positive_definiteness_veto" if code <= 4 else "nonfinite_output_veto", diagnostics=diagnostics)
+
+
 def tf_fixed_sgqf_filter(
     observations: tf.Tensor,
     model: TFFixedSGQFNonGaussianModel | TFFixedSGQFNonlinearModel | TFFixedSGQFAffineModel,
@@ -981,8 +1044,13 @@ def tf_fixed_sgqf_filter(
     branch_config: TFFixedSGQFBranchConfig | None = None,
     branch_identity: TFFixedSGQFBranchIdentity | None = None,
     return_filtered: bool = True,
+    jit_compile: bool = True,
 ) -> TFFixedSGQFValueResult:
-    """Evaluate the p47 Fixed-SGQF value recursion on a fixed branch."""
+    """Run the XLA recurrence and assemble the existing Python step report.
+
+    Compiled consumers use ``fixed_sgqf_tensor_result`` directly. The explicit
+    ``jit_compile=False`` option is for independent reference/autodiff checks.
+    """
 
     y = _as_observation_matrix(observations)
     branch_config = branch_config or TFFixedSGQFBranchConfig()
@@ -1023,246 +1091,43 @@ def tf_fixed_sgqf_filter(
             failure=failure,
         )
 
-    mean = tf.convert_to_tensor(model.initial_mean, dtype=tf.float64)
-    covariance = _symmetrize(model.initial_covariance)
-    process_covariance = _symmetrize(model.process_covariance)
-    observation_covariance = _symmetrize(model.observation_covariance)
-    state_dim = int(mean.shape[0])
-    observation_dim = int(observation_covariance.shape[0])
-    weights = tf.convert_to_tensor(cloud.weights, dtype=tf.float64)
-    log_likelihood = tf.constant(0.0, dtype=tf.float64)
-    step_results: list[TFFixedSGQFStepResult] = []
-    filtered_means = []
-    filtered_covariances = []
-    accepted_steps = 0
+    from bayesfilter.nonlinear.fixed_sgqf_compiled_tf import fixed_sgqf_tensor_result
 
-    for time_index in range(int(y.shape[0])):
-        previous_factor, previous_diag, previous_failure = _cholesky_factor_or_failure(
-            covariance,
-            epsilon=branch_config.predictive_epsilon,
-            time_index=time_index,
-            stage="previous_covariance",
-        )
-        if previous_failure is not None:
-            step = _branch_failure_result(
-                branch_identity=branch_identity,
-                time_index=time_index,
-                failure=previous_failure,
-                diagnostics={
-                    "branch_hash": branch_identity.hash.value,
-                    "previous_covariance_diagnostics": previous_diag,
-                },
-            )
-            step_results.append(step)
-            return TFFixedSGQFValueResult(
-                log_likelihood=None,
-                filtered_means=None,
-                filtered_covariances=None,
-                step_results=tuple(step_results),
-                branch_identity=branch_identity,
-                diagnostics=_common_result_diagnostics(
-                    branch_identity=branch_identity,
-                    branch_config=branch_config,
-                    cloud=cloud,
-                    accepted_steps=accepted_steps,
-                    failure=previous_failure,
-                ),
-                failure=previous_failure,
-            )
-
-        previous_points = mean[tf.newaxis, :] + cloud.points @ tf.transpose(previous_factor)
-        transition_values = model.transition(previous_points)
-        predicted_mean = _weighted_mean(transition_values, weights)
-        centered_predicted = transition_values - predicted_mean[tf.newaxis, :]
-        predicted_covariance = _symmetrize(process_covariance + _weighted_covariance(centered_predicted, weights))
-        predicted_factor, predictive_diag, predictive_failure = _cholesky_factor_or_failure(
-            predicted_covariance,
-            epsilon=branch_config.predictive_epsilon,
-            time_index=time_index,
-            stage="predictive_covariance",
-        )
-        if predictive_failure is not None:
-            step = _branch_failure_result(
-                branch_identity=branch_identity,
-                time_index=time_index,
-                failure=predictive_failure,
-                diagnostics={
-                    "branch_hash": branch_identity.hash.value,
-                    "previous_covariance_diagnostics": previous_diag,
-                    "predictive_covariance_diagnostics": predictive_diag,
-                    "predicted_mean": predicted_mean,
-                },
-            )
-            step_results.append(step)
-            return TFFixedSGQFValueResult(
-                log_likelihood=None,
-                filtered_means=None,
-                filtered_covariances=None,
-                step_results=tuple(step_results),
-                branch_identity=branch_identity,
-                diagnostics=_common_result_diagnostics(
-                    branch_identity=branch_identity,
-                    branch_config=branch_config,
-                    cloud=cloud,
-                    accepted_steps=accepted_steps,
-                    failure=predictive_failure,
-                ),
-                failure=predictive_failure,
-            )
-
-        predictive_points = predicted_mean[tf.newaxis, :] + cloud.points @ tf.transpose(predicted_factor)
-        observation_values = model.observe(predictive_points)
-        observation_mean = _weighted_mean(observation_values, weights)
-        centered_observation = observation_values - observation_mean[tf.newaxis, :]
-        innovation_covariance = _symmetrize(observation_covariance + _weighted_covariance(centered_observation, weights))
-        innovation_factor, innovation_diag, innovation_failure = _cholesky_factor_or_failure(
-            innovation_covariance,
-            epsilon=branch_config.innovation_epsilon,
-            time_index=time_index,
-            stage="innovation_covariance",
-        )
-        cross_covariance = tf.transpose(predictive_points - predicted_mean[tf.newaxis, :]) @ (
-            centered_observation * weights[:, tf.newaxis]
-        )
-        innovation = y[time_index] - observation_mean
-        if innovation_failure is not None:
-            step = _branch_failure_result(
-                branch_identity=branch_identity,
-                time_index=time_index,
-                failure=innovation_failure,
-                diagnostics={
-                    "branch_hash": branch_identity.hash.value,
-                    "predicted_mean": predicted_mean,
-                    "predicted_covariance": predicted_covariance,
-                    "observation_mean": observation_mean,
-                    "innovation_covariance_diagnostics": innovation_diag,
-                    "cross_covariance": cross_covariance,
-                },
-            )
-            step_results.append(step)
-            return TFFixedSGQFValueResult(
-                log_likelihood=None,
-                filtered_means=None,
-                filtered_covariances=None,
-                step_results=tuple(step_results),
-                branch_identity=branch_identity,
-                diagnostics=_common_result_diagnostics(
-                    branch_identity=branch_identity,
-                    branch_config=branch_config,
-                    cloud=cloud,
-                    accepted_steps=accepted_steps,
-                    failure=innovation_failure,
-                ),
-                failure=innovation_failure,
-            )
-
-        innovation_solve = tf.linalg.cholesky_solve(innovation_factor, innovation[:, tf.newaxis])[:, 0]
-        innovation_precision = tf.linalg.cholesky_solve(
-            innovation_factor,
-            tf.eye(observation_dim, dtype=tf.float64),
-        )
-        log_det = 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(innovation_factor)))
-        log_likelihood_increment = -0.5 * (
-            tf.cast(observation_dim, tf.float64) * tf.math.log(tf.constant(2.0 * math.pi, dtype=tf.float64))
-            + log_det
-            + tf.reduce_sum(innovation * innovation_solve)
-        )
-        gain = cross_covariance @ innovation_precision
-        filtered_mean = predicted_mean + tf.linalg.matvec(gain, innovation)
-        filtered_covariance = _symmetrize(
-            predicted_covariance - gain @ innovation_covariance @ tf.transpose(gain)
-        )
-        _carried_factor, carried_diag, carried_failure = _cholesky_factor_or_failure(
-            filtered_covariance,
-            epsilon=branch_config.predictive_epsilon,
-            time_index=time_index,
-            stage="carried_covariance",
-        )
-        if carried_failure is not None:
-            step = _branch_failure_result(
-                branch_identity=branch_identity,
-                time_index=time_index,
-                failure=carried_failure,
-                diagnostics={
-                    "branch_hash": branch_identity.hash.value,
-                    "predicted_mean": predicted_mean,
-                    "predicted_covariance": predicted_covariance,
-                    "observation_mean": observation_mean,
-                    "innovation_covariance": innovation_covariance,
-                    "cross_covariance": cross_covariance,
-                    "innovation": innovation,
-                    "gain": gain,
-                    "filtered_covariance_diagnostics": carried_diag,
-                },
-            )
-            step_results.append(step)
-            return TFFixedSGQFValueResult(
-                log_likelihood=None,
-                filtered_means=None,
-                filtered_covariances=None,
-                step_results=tuple(step_results),
-                branch_identity=branch_identity,
-                diagnostics=_common_result_diagnostics(
-                    branch_identity=branch_identity,
-                    branch_config=branch_config,
-                    cloud=cloud,
-                    accepted_steps=accepted_steps,
-                    failure=carried_failure,
-                ),
-                failure=carried_failure,
-            )
-
-        step = TFFixedSGQFStepResult(
-            accepted=True,
-            time_index=time_index,
-            log_likelihood_increment=log_likelihood_increment,
-            predicted_mean=predicted_mean,
-            predicted_covariance=predicted_covariance,
-            predicted_factor=predicted_factor,
-            observation_mean=observation_mean,
-            innovation_covariance=innovation_covariance,
-            innovation_factor=innovation_factor,
-            cross_covariance=cross_covariance,
-            innovation=innovation,
-            innovation_solve=innovation_solve,
-            gain=gain,
-            filtered_mean=filtered_mean,
-            filtered_covariance=filtered_covariance,
-            branch_identity=branch_identity,
-            diagnostics={
-                "branch_hash": branch_identity.hash.value,
-                "previous_covariance_diagnostics": previous_diag,
-                "predictive_covariance_diagnostics": predictive_diag,
-                "innovation_covariance_diagnostics": innovation_diag,
-                "cloud_point_count": tf.convert_to_tensor(cloud.point_count, dtype=tf.int32),
-                "weight_total": tf.convert_to_tensor(cloud.weight_total, dtype=tf.float64),
-                "negative_weight_count": tf.convert_to_tensor(cloud.negative_weight_count, dtype=tf.int32),
-            },
-        )
-        step_results.append(step)
-        log_likelihood = log_likelihood + log_likelihood_increment
-        accepted_steps += 1
-        mean = filtered_mean
-        covariance = filtered_covariance
-        if return_filtered:
-            filtered_means.append(filtered_mean)
-            filtered_covariances.append(filtered_covariance)
-
+    numeric = fixed_sgqf_tensor_result(y, model, cloud, branch_config, jit_compile=jit_compile)
+    failure = _fixed_sgqf_tensor_failure(numeric, branch_config)
+    accepted_steps = int(numeric["accepted_steps"].numpy())
+    history = numeric["history"]
+    fields = ("log_likelihood_increment", "predicted_mean", "predicted_covariance", "predicted_factor",
+              "observation_mean", "innovation_covariance", "innovation_factor", "cross_covariance",
+              "innovation", "innovation_solve", "gain", "filtered_mean", "filtered_covariance")
+    step_results = []
+    # Reporting only: all numerical recurrences and branch decisions completed above.
+    for time_index in range(int(numeric["attempted_steps"].numpy())):
+        diagnostic = _fixed_sgqf_tensor_step_diagnostics(history, time_index, branch_config)
+        diagnostic.update({"branch_hash": branch_identity.hash.value,
+                           "cloud_point_count": tf.constant(cloud.point_count),
+                           "weight_total": tf.constant(cloud.weight_total, tf.float64),
+                           "negative_weight_count": tf.constant(cloud.negative_weight_count)})
+        if failure is not None and time_index == failure.time_index:
+            step_results.append(_branch_failure_result(branch_identity=branch_identity,
+                time_index=time_index, failure=failure, diagnostics=diagnostic))
+        else:
+            payload = {name: history[name][time_index] for name in fields}
+            step_results.append(TFFixedSGQFStepResult(accepted=True, time_index=time_index,
+                branch_identity=branch_identity, diagnostics=diagnostic, **payload))
+    diagnostics = dict(_common_result_diagnostics(
+        branch_identity=branch_identity, branch_config=branch_config, cloud=cloud,
+        accepted_steps=accepted_steps, failure=failure))
+    diagnostics.update({"jit_compile": jit_compile, "numerical_runtime": "fixed_sgqf_tensor_result",
+                        "status_code": numeric["status_code"]})
     return TFFixedSGQFValueResult(
-        log_likelihood=log_likelihood,
-        filtered_means=tf.stack(filtered_means, axis=0) if return_filtered else None,
-        filtered_covariances=tf.stack(filtered_covariances, axis=0) if return_filtered else None,
-        step_results=tuple(step_results),
-        branch_identity=branch_identity,
-        diagnostics=_common_result_diagnostics(
-            branch_identity=branch_identity,
-            branch_config=branch_config,
-            cloud=cloud,
-            accepted_steps=accepted_steps,
-            failure=None,
-        ),
-        failure=None,
+        log_likelihood=numeric["log_likelihood"] if failure is None else None,
+        filtered_means=history["filtered_mean"] if failure is None and return_filtered else None,
+        filtered_covariances=history["filtered_covariance"] if failure is None and return_filtered else None,
+        step_results=tuple(step_results), branch_identity=branch_identity,
+        diagnostics=diagnostics, failure=failure,
     )
+
 
 
 def tf_fixed_sgqf_p47_one_step_oracle() -> tuple[TFFixedSGQFOneStepOracle, TFFixedSGQFCloud]:

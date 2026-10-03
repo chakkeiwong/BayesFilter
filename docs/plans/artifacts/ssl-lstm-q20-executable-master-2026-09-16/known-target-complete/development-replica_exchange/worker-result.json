@@ -1,0 +1,1508 @@
+{
+  "completed": true,
+  "production_qualified": false,
+  "result": {
+    "frozen_scope_hash": "f09284438868c952ebaee479ec2f0a9a77687a5c0506d90275f0c93d3c8e992e",
+    "production_qualified": false,
+    "reference_status": "not_assessed",
+    "role": "smoke",
+    "sequential": {
+      "config": {
+        "assessment_policy": {
+          "defaults_provenance": "inherited R-hat-only policy; additional requirements explicitly configured",
+          "precision": {
+            "batch_provenance": "sqrt(n), literature baseline",
+            "batch_size": null,
+            "jit_compile": false,
+            "lugsail_c": 0.5,
+            "lugsail_r": 3,
+            "method": "autocorrelation",
+            "min_batches": 20,
+            "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+            "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+            "schema": "bayesfilter.hmc_precision_policy.v1",
+            "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+            "targets": [
+              {
+                "kind": "mean",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "latent_mean_weight.0.0",
+                "probability": null
+              },
+              {
+                "kind": "mean",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "latent_mean_bias.0",
+                "probability": null
+              },
+              {
+                "kind": "mean",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "observation_weight.0.0",
+                "probability": null
+              },
+              {
+                "kind": "mean",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "observation_bias.0",
+                "probability": null
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "latent_mean_weight.0.0",
+                "probability": 0.025
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "latent_mean_weight.0.0",
+                "probability": 0.5
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "latent_mean_weight.0.0",
+                "probability": 0.975
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "latent_mean_bias.0",
+                "probability": 0.025
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "latent_mean_bias.0",
+                "probability": 0.5
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "latent_mean_bias.0",
+                "probability": 0.975
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "observation_weight.0.0",
+                "probability": 0.025
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "observation_weight.0.0",
+                "probability": 0.5
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "observation_weight.0.0",
+                "probability": 0.975
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "observation_bias.0",
+                "probability": 0.025
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "observation_bias.0",
+                "probability": 0.5
+              },
+              {
+                "kind": "quantile",
+                "mcse_absolute_max": null,
+                "mcse_sd_ratio_max": 2.0,
+                "name": "observation_bias.0",
+                "probability": 0.975
+              },
+              {
+                "kind": "mean",
+                "mcse_absolute_max": 1.0,
+                "mcse_sd_ratio_max": null,
+                "name": "positive_theta_2",
+                "probability": null
+              }
+            ]
+          },
+          "quantities_id": "q20_physical_coordinates_and_theta2_sign_v1",
+          "retained_bulk_ess_min": 1.0,
+          "retained_tail_ess_min": 1.0,
+          "schema": "bayesfilter.hmc_posterior_assessment.v1",
+          "warmup_bulk_ess_min": 0.0,
+          "warmup_consecutive_checks": 1,
+          "warmup_interpretation": "declared checks only; no stationarity proof",
+          "warmup_tail_ess_min": 0.0
+        },
+        "chain_count": 4,
+        "diagnostic_version": "bayesfilter.hmc_diagnostic_math.v2",
+        "minimum_chain_count": 4,
+        "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+        "posterior_stream_only": true,
+        "posterior_temperature": 1.0,
+        "retained_chunk_results": 64,
+        "retained_max_results": 128,
+        "retained_min_results": 64,
+        "retained_rhat_max": 10.0,
+        "retained_seed": [
+          861425891,
+          1050232728
+        ],
+        "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+        "transition_signature": "131271107ce3b45a1c9f4c127189be4e4239e72b20f693bd56961851ea13376b",
+        "warmup_check_window_results": 64,
+        "warmup_chunk_results": 64,
+        "warmup_excluded_from_posterior": true,
+        "warmup_max_results": 128,
+        "warmup_min_results": 64,
+        "warmup_rhat_max": 10.0,
+        "warmup_seed": [
+          1886671736,
+          408660183
+        ]
+      },
+      "cumulative_archives": null,
+      "decision": "ADMIT_SEQUENTIAL_EXACT_TRANSITION",
+      "elapsed_seconds": 3.645175859972369,
+      "equilibration_status": "checks_passed",
+      "hard_vetoes": [],
+      "initial_beta_one_state": [
+        [
+          -1.2379114347044098,
+          4.352437323174502,
+          -9.636578121038138,
+          0.6218541729089561
+        ],
+        [
+          1.6757905256787882,
+          1.795154041082189,
+          -1.4929765872737057,
+          0.6161711041387614
+        ],
+        [
+          1.827213936676062,
+          2.7035894410647336,
+          0.36005647800752477,
+          -2.634535274614755
+        ],
+        [
+          0.48302091268461034,
+          -2.8106042778127716,
+          5.795382857046872,
+          2.7937749042747235
+        ]
+      ],
+      "passed": true,
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "posterior_stream_only": true,
+      "posterior_temperature": 1.0,
+      "precision_status": "precision_met",
+      "retained_archives": [],
+      "retained_cap_hit": false,
+      "retained_checks": [
+        {
+          "chunk_index": 0,
+          "completed_results_per_chain": 64,
+          "diagnostic_role": "modern_rhat",
+          "health": {
+            "all_chains_moved": true,
+            "final_state_all_finite": true,
+            "final_state_equals_last_sample": true,
+            "hard_vetoes": [],
+            "health_passed": true,
+            "posterior_stream_only": true,
+            "posterior_temperature": 1.0,
+            "samples_all_finite": true,
+            "transition_health": {
+              "all_states_finite": true,
+              "all_target_status_valid": true,
+              "compiled_tracing_count": 1,
+              "hard_vetoes": [],
+              "jit_compile": false,
+              "passed": true,
+              "swap_accept_count": 4,
+              "swap_proposal_count": 128
+            },
+            "transition_signature": "131271107ce3b45a1c9f4c127189be4e4239e72b20f693bd56961851ea13376b"
+          },
+          "modern_rhat": {
+            "bulk_ess": [
+              86.06001559162677,
+              58.25418944839635,
+              93.97842089129479,
+              94.70066584211872,
+              149.9384190259048
+            ],
+            "chain_count": 4,
+            "consumer_diagnostic": null,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 64,
+            "finite_rhat_count": 5,
+            "folded_rank_normalized_split_rhat": [
+              1.0027549336828536,
+              1.0180131218734416,
+              1.0484292617751292,
+              1.0057614048891614,
+              1.028566966180709
+            ],
+            "hard_vetoes": [],
+            "information_passed": true,
+            "input_all_finite": true,
+            "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+            "max_finite_rhat": 1.076231406307085,
+            "max_folded_rank_normalized_split_rhat": 1.0484292617751292,
+            "max_rank_normalized_split_rhat": 1.076231406307085,
+            "mcse_sd_ratio": [
+              0.10870502691229406,
+              0.14463976821679672,
+              0.10546793392323345,
+              0.10621152337616682,
+              0.08525738837245896
+            ],
+            "mean_ess": [
+              84.62540189604329,
+              47.799633382507054,
+              89.899882299964,
+              88.64550616769226,
+              137.57386858107267
+            ],
+            "mean_mcse": [
+              0.10038349672605805,
+              0.13699840779568856,
+              0.101168198863035,
+              0.08175290438373636,
+              0.04188960642715901
+            ],
+            "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+            "modern_rhat": {
+              "chain_count": 4,
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 64,
+              "finite_rhat_count": 5,
+              "folded_rank_normalized_split_rhat": [
+                1.0027549336828536,
+                1.0180131218734416,
+                1.0484292617751292,
+                1.0057614048891614,
+                1.028566966180709
+              ],
+              "hard_vetoes": [],
+              "input_all_finite": true,
+              "max_finite_rhat": 1.076231406307085,
+              "max_folded_rank_normalized_split_rhat": 1.0484292617751292,
+              "max_rank_normalized_split_rhat": 1.076231406307085,
+              "nonfinite_rhat_count": 0,
+              "parameter_count": 5,
+              "passed": true,
+              "rank_normalized_split_rhat": [
+                1.0332049068476898,
+                1.076231406307085,
+                1.0305016055668117,
+                1.0284050040313657,
+                1.028566966180709
+              ],
+              "rhat": [
+                1.0332049068476898,
+                1.076231406307085,
+                1.0484292617751292,
+                1.0284050040313657,
+                1.028566966180709
+              ],
+              "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "rhat_threshold": 10.0,
+              "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 32
+            },
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 5,
+            "passed": true,
+            "precision": {
+              "batch_metadata": {},
+              "passed": true,
+              "policy": {
+                "batch_provenance": "sqrt(n), literature baseline",
+                "batch_size": null,
+                "jit_compile": false,
+                "lugsail_c": 0.5,
+                "lugsail_r": 3,
+                "method": "autocorrelation",
+                "min_batches": 20,
+                "minimum_batches_provenance": "operational stability floor; not calibrated coverage",
+                "moment_assumption": "finite variance and applicable mean CLT; not proved by these diagnostics",
+                "schema": "bayesfilter.hmc_precision_policy.v1",
+                "stopping_interpretation": "repeated-look operational MCSE screen; no anytime coverage",
+                "targets": [
+                  {
+                    "kind": "mean",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "latent_mean_weight.0.0",
+                    "probability": null
+                  },
+                  {
+                    "kind": "mean",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "latent_mean_bias.0",
+                    "probability": null
+                  },
+                  {
+                    "kind": "mean",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "observation_weight.0.0",
+                    "probability": null
+                  },
+                  {
+                    "kind": "mean",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "observation_bias.0",
+                    "probability": null
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "latent_mean_weight.0.0",
+                    "probability": 0.025
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "latent_mean_weight.0.0",
+                    "probability": 0.5
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "latent_mean_weight.0.0",
+                    "probability": 0.975
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "latent_mean_bias.0",
+                    "probability": 0.025
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "latent_mean_bias.0",
+                    "probability": 0.5
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "latent_mean_bias.0",
+                    "probability": 0.975
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "observation_weight.0.0",
+                    "probability": 0.025
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "observation_weight.0.0",
+                    "probability": 0.5
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "observation_weight.0.0",
+                    "probability": 0.975
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "observation_bias.0",
+                    "probability": 0.025
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "observation_bias.0",
+                    "probability": 0.5
+                  },
+                  {
+                    "kind": "quantile",
+                    "mcse_absolute_max": null,
+                    "mcse_sd_ratio_max": 2.0,
+                    "name": "observation_bias.0",
+                    "probability": 0.975
+                  },
+                  {
+                    "kind": "mean",
+                    "mcse_absolute_max": 1.0,
+                    "mcse_sd_ratio_max": null,
+                    "name": "positive_theta_2",
+                    "probability": null
+                  }
+                ]
+              },
+              "schema": "bayesfilter.hmc_precision_report.v1",
+              "status": "precision_met",
+              "targets": [
+                {
+                  "estimate": 0.538492723701669,
+                  "estimator": "tfp_0.25_positive_pairs_real_fft",
+                  "kind": "mean",
+                  "mcse": 0.10038349672605805,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.10870502691229406,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "latent_mean_weight.0.0",
+                  "passed": true,
+                  "probability": null,
+                  "valid": true
+                },
+                {
+                  "estimate": -0.45451775544175993,
+                  "estimator": "tfp_0.25_positive_pairs_real_fft",
+                  "kind": "mean",
+                  "mcse": 0.13699840779568856,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.14463976821679672,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "latent_mean_bias.0",
+                  "passed": true,
+                  "probability": null,
+                  "valid": true
+                },
+                {
+                  "estimate": 0.28646545139919866,
+                  "estimator": "tfp_0.25_positive_pairs_real_fft",
+                  "kind": "mean",
+                  "mcse": 0.101168198863035,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.10546793392323345,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "observation_weight.0.0",
+                  "passed": true,
+                  "probability": null,
+                  "valid": true
+                },
+                {
+                  "estimate": 0.919716224904016,
+                  "estimator": "tfp_0.25_positive_pairs_real_fft",
+                  "kind": "mean",
+                  "mcse": 0.08175290438373636,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.10621152337616682,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "observation_bias.0",
+                  "passed": true,
+                  "probability": null,
+                  "valid": true
+                },
+                {
+                  "estimate": -1.2429235812268318,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.15119353563880755,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.16372708559289564,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "latent_mean_weight.0.0",
+                  "passed": true,
+                  "probability": 0.025,
+                  "valid": true
+                },
+                {
+                  "estimate": 0.48890052725617594,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.17056982590468217,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.1847096198092551,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "latent_mean_weight.0.0",
+                  "passed": true,
+                  "probability": 0.5,
+                  "valid": true
+                },
+                {
+                  "estimate": 2.189277619576563,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.17651586220369153,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.19114856701657532,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "latent_mean_weight.0.0",
+                  "passed": true,
+                  "probability": 0.975,
+                  "valid": true
+                },
+                {
+                  "estimate": -2.052949808768957,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.19356429162914157,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.20436072744758257,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "latent_mean_bias.0",
+                  "passed": true,
+                  "probability": 0.025,
+                  "valid": true
+                },
+                {
+                  "estimate": -0.5101364162210347,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.10759324681963145,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.11359447552772105,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "latent_mean_bias.0",
+                  "passed": true,
+                  "probability": 0.5,
+                  "valid": true
+                },
+                {
+                  "estimate": 1.4983116441349318,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.1738866397663612,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.18358551516388957,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "latent_mean_bias.0",
+                  "passed": true,
+                  "probability": 0.975,
+                  "valid": true
+                },
+                {
+                  "estimate": -1.5877535534093987,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.4124541908085444,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.4299838470135168,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "observation_weight.0.0",
+                  "passed": true,
+                  "probability": 0.025,
+                  "valid": true
+                },
+                {
+                  "estimate": 0.2865667074381628,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.11980609007673948,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.12489795146912877,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "observation_weight.0.0",
+                  "passed": true,
+                  "probability": 0.5,
+                  "valid": true
+                },
+                {
+                  "estimate": 2.031074537485347,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.15960548279972553,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.166388852454482,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "observation_weight.0.0",
+                  "passed": true,
+                  "probability": 0.975,
+                  "valid": true
+                },
+                {
+                  "estimate": -0.6183625478931658,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.16945469921390577,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.22015171060197267,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "observation_bias.0",
+                  "passed": true,
+                  "probability": 0.025,
+                  "valid": true
+                },
+                {
+                  "estimate": 0.9270634250052037,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.1050780634509792,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.13651504220767782,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "observation_bias.0",
+                  "passed": true,
+                  "probability": 0.5,
+                  "valid": true
+                },
+                {
+                  "estimate": 2.360046375385968,
+                  "estimator": "vehtari_quantile_order_statistics_tfp_positive_pairs",
+                  "kind": "quantile",
+                  "mcse": 0.1590366779444028,
+                  "mcse_absolute_max": null,
+                  "mcse_sd_ratio": 0.2066168531196574,
+                  "mcse_sd_ratio_max": 2.0,
+                  "name": "observation_bias.0",
+                  "passed": true,
+                  "probability": 0.975,
+                  "valid": true
+                },
+                {
+                  "estimate": 0.59765625,
+                  "estimator": "tfp_0.25_positive_pairs_real_fft",
+                  "kind": "mean",
+                  "mcse": 0.04188960642715901,
+                  "mcse_absolute_max": 1.0,
+                  "mcse_sd_ratio": 0.08525738837245896,
+                  "mcse_sd_ratio_max": null,
+                  "name": "positive_theta_2",
+                  "passed": true,
+                  "probability": null,
+                  "valid": true
+                }
+              ]
+            },
+            "quantity_names": [
+              "latent_mean_weight.0.0",
+              "latent_mean_bias.0",
+              "observation_weight.0.0",
+              "observation_bias.0",
+              "positive_theta_2"
+            ],
+            "rank_normalized_split_rhat": [
+              1.0332049068476898,
+              1.076231406307085,
+              1.0305016055668117,
+              1.0284050040313657,
+              1.028566966180709
+            ],
+            "rhat": [
+              1.0332049068476898,
+              1.076231406307085,
+              1.0484292617751292,
+              1.0284050040313657,
+              1.028566966180709
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 10.0,
+            "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 32,
+            "stage": "retained",
+            "tail_ess": [
+              156.186310955609,
+              177.34469673405906,
+              130.93129770992368,
+              129.79163817079285,
+              149.93841902590478
+            ]
+          },
+          "passed": true,
+          "seed": [
+            861425891,
+            1050233737
+          ]
+        }
+      ],
+      "retained_passed": true,
+      "retained_results_per_chain": 64,
+      "warmup_archives": [],
+      "warmup_cap_hit": false,
+      "warmup_checks": [
+        {
+          "chunk_index": 0,
+          "completed_results_per_chain": 64,
+          "health": {
+            "all_chains_moved": true,
+            "final_state_all_finite": true,
+            "final_state_equals_last_sample": true,
+            "hard_vetoes": [],
+            "health_passed": true,
+            "posterior_stream_only": true,
+            "posterior_temperature": 1.0,
+            "samples_all_finite": true,
+            "transition_health": {
+              "all_states_finite": true,
+              "all_target_status_valid": true,
+              "compiled_tracing_count": 1,
+              "hard_vetoes": [],
+              "jit_compile": false,
+              "passed": true,
+              "swap_accept_count": 5,
+              "swap_proposal_count": 128
+            },
+            "transition_signature": "131271107ce3b45a1c9f4c127189be4e4239e72b20f693bd56961851ea13376b"
+          },
+          "modern_rhat": {
+            "assessment": {
+              "bulk_ess": [
+                103.15933273336856,
+                78.37437926593469,
+                36.88369218996334,
+                52.609444430965645,
+                89.44755041196711
+              ],
+              "chain_count": 4,
+              "consumer_diagnostic": null,
+              "diagnostics_all_finite": true,
+              "draw_count_per_chain": 64,
+              "finite_rhat_count": 5,
+              "folded_rank_normalized_split_rhat": [
+                0.990257852168262,
+                1.015348955547396,
+                1.0303756638610237,
+                1.0026379861658756,
+                1.0678301118678597
+              ],
+              "hard_vetoes": [],
+              "information_passed": true,
+              "input_all_finite": true,
+              "interpretation": "finite-window diagnostic evidence, not proof of global convergence",
+              "max_finite_rhat": 1.1122353605503845,
+              "max_folded_rank_normalized_split_rhat": 1.0678301118678597,
+              "max_rank_normalized_split_rhat": 1.1122353605503845,
+              "mcse_sd_ratio": [
+                0.12076418480296813,
+                0.12041366409256055,
+                0.21587655371146616,
+                0.14232396219750867,
+                0.11034431628385627
+              ],
+              "mean_ess": [
+                68.56834888339701,
+                68.96813089478681,
+                21.457990436608792,
+                49.36781985072173,
+                82.12966737302881
+              ],
+              "mean_mcse": [
+                0.10710273338502749,
+                0.13345320220243634,
+                0.22677201465772284,
+                0.13682836548931615,
+                0.054601255704549656
+              ],
+              "mean_mcse_method": "tfp_0.25_positive_pairs_real_fft",
+              "modern_rhat": {
+                "chain_count": 4,
+                "diagnostics_all_finite": true,
+                "draw_count_per_chain": 64,
+                "finite_rhat_count": 5,
+                "folded_rank_normalized_split_rhat": [
+                  0.990257852168262,
+                  1.015348955547396,
+                  1.0303756638610237,
+                  1.0026379861658756,
+                  1.0678301118678597
+                ],
+                "hard_vetoes": [],
+                "input_all_finite": true,
+                "max_finite_rhat": 1.1122353605503845,
+                "max_folded_rank_normalized_split_rhat": 1.0678301118678597,
+                "max_rank_normalized_split_rhat": 1.1122353605503845,
+                "nonfinite_rhat_count": 0,
+                "parameter_count": 5,
+                "passed": true,
+                "rank_normalized_split_rhat": [
+                  1.0172304947516337,
+                  1.0140531691058607,
+                  1.1122353605503845,
+                  1.0506332903326874,
+                  1.0678301118678597
+                ],
+                "rhat": [
+                  1.0172304947516337,
+                  1.015348955547396,
+                  1.1122353605503845,
+                  1.0506332903326874,
+                  1.0678301118678597
+                ],
+                "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+                "rhat_threshold": 10.0,
+                "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+                "split_chain_count": 8,
+                "split_draw_count_per_chain": 32
+              },
+              "nonfinite_rhat_count": 0,
+              "parameter_count": 5,
+              "passed": true,
+              "precision": {
+                "passed": true,
+                "status": "precision_not_requested",
+                "targets": []
+              },
+              "quantity_names": [
+                "latent_mean_weight.0.0",
+                "latent_mean_bias.0",
+                "observation_weight.0.0",
+                "observation_bias.0",
+                "positive_theta_2"
+              ],
+              "rank_normalized_split_rhat": [
+                1.0172304947516337,
+                1.0140531691058607,
+                1.1122353605503845,
+                1.0506332903326874,
+                1.0678301118678597
+              ],
+              "rhat": [
+                1.0172304947516337,
+                1.015348955547396,
+                1.1122353605503845,
+                1.0506332903326874,
+                1.0678301118678597
+              ],
+              "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+              "rhat_threshold": 10.0,
+              "schema": "bayesfilter.hmc_posterior_assessment_result.v1",
+              "split_chain_count": 8,
+              "split_draw_count_per_chain": 32,
+              "stage": "warmup",
+              "tail_ess": [
+                127.0169673155921,
+                141.02145328719723,
+                68.16257683327777,
+                70.5843621399177,
+                89.44755041196711
+              ]
+            },
+            "chain_count": 4,
+            "consecutive_passes": 1,
+            "diagnostics_all_finite": true,
+            "draw_count_per_chain": 64,
+            "finite_rhat_count": 4,
+            "folded_rank_normalized_split_rhat": [
+              0.990257852168262,
+              1.015348955547396,
+              1.0303756638610237,
+              1.0026379861658756
+            ],
+            "hard_vetoes": [],
+            "input_all_finite": true,
+            "max_finite_rhat": 1.1122353605503845,
+            "max_folded_rank_normalized_split_rhat": 1.0303756638610237,
+            "max_rank_normalized_split_rhat": 1.1122353605503845,
+            "nonfinite_rhat_count": 0,
+            "parameter_count": 4,
+            "passed": true,
+            "rank_normalized_split_rhat": [
+              1.0172304947516337,
+              1.0140531691058607,
+              1.1122353605503845,
+              1.0506332903326874
+            ],
+            "rhat": [
+              1.0172304947516337,
+              1.015348955547396,
+              1.1122353605503845,
+              1.0506332903326874
+            ],
+            "rhat_definition": "max(rank-normalized split R-hat, folded rank-normalized split R-hat)",
+            "rhat_threshold": 10.0,
+            "schema": "bayesfilter.rank_normalized_split_rhat_summary.v2",
+            "split_chain_count": 8,
+            "split_draw_count_per_chain": 32
+          },
+          "passed": true,
+          "seed": [
+            1886671736,
+            408661192
+          ]
+        }
+      ],
+      "warmup_excluded_from_posterior": true,
+      "warmup_passed": true,
+      "warmup_results_per_chain": 64
+    },
+    "summary": {
+      "frozen_scope_hash": "f09284438868c952ebaee479ec2f0a9a77687a5c0506d90275f0c93d3c8e992e",
+      "label": "development-replica_exchange",
+      "method_ranking": "not_estimated",
+      "nonclaims": [
+        "R-hat, ESS or MCSE does not establish target correctness or mode coverage",
+        "a missing independent reference cannot be replaced by a training score",
+        "one chart or one seed cannot establish ensemble or method superiority"
+      ],
+      "production_qualified": false,
+      "quantities": {
+        "latent_mean_bias.0": {
+          "estimate": -0.45451775544175993,
+          "kind": "mean",
+          "mcse": 0.13699840779568856,
+          "name": "latent_mean_bias.0",
+          "posterior_sd": 0.94531796234758,
+          "precision_passed": true,
+          "probability": null,
+          "valid": true
+        },
+        "latent_mean_bias.0:quantile:0.025": {
+          "estimate": -2.052949808768957,
+          "kind": "quantile",
+          "mcse": 0.19356429162914157,
+          "name": "latent_mean_bias.0",
+          "posterior_sd": 0.94531796234758,
+          "precision_passed": true,
+          "probability": 0.025,
+          "valid": true
+        },
+        "latent_mean_bias.0:quantile:0.5": {
+          "estimate": -0.5101364162210347,
+          "kind": "quantile",
+          "mcse": 0.10759324681963145,
+          "name": "latent_mean_bias.0",
+          "posterior_sd": 0.94531796234758,
+          "precision_passed": true,
+          "probability": 0.5,
+          "valid": true
+        },
+        "latent_mean_bias.0:quantile:0.975": {
+          "estimate": 1.4983116441349318,
+          "kind": "quantile",
+          "mcse": 0.1738866397663612,
+          "name": "latent_mean_bias.0",
+          "posterior_sd": 0.94531796234758,
+          "precision_passed": true,
+          "probability": 0.975,
+          "valid": true
+        },
+        "latent_mean_weight.0.0": {
+          "estimate": 0.538492723701669,
+          "kind": "mean",
+          "mcse": 0.10038349672605805,
+          "name": "latent_mean_weight.0.0",
+          "posterior_sd": 0.9216431494805678,
+          "precision_passed": true,
+          "probability": null,
+          "valid": true
+        },
+        "latent_mean_weight.0.0:quantile:0.025": {
+          "estimate": -1.2429235812268318,
+          "kind": "quantile",
+          "mcse": 0.15119353563880755,
+          "name": "latent_mean_weight.0.0",
+          "posterior_sd": 0.9216431494805678,
+          "precision_passed": true,
+          "probability": 0.025,
+          "valid": true
+        },
+        "latent_mean_weight.0.0:quantile:0.5": {
+          "estimate": 0.48890052725617594,
+          "kind": "quantile",
+          "mcse": 0.17056982590468217,
+          "name": "latent_mean_weight.0.0",
+          "posterior_sd": 0.9216431494805678,
+          "precision_passed": true,
+          "probability": 0.5,
+          "valid": true
+        },
+        "latent_mean_weight.0.0:quantile:0.975": {
+          "estimate": 2.189277619576563,
+          "kind": "quantile",
+          "mcse": 0.17651586220369153,
+          "name": "latent_mean_weight.0.0",
+          "posterior_sd": 0.9216431494805678,
+          "precision_passed": true,
+          "probability": 0.975,
+          "valid": true
+        },
+        "observation_bias.0": {
+          "estimate": 0.919716224904016,
+          "kind": "mean",
+          "mcse": 0.08175290438373636,
+          "name": "observation_bias.0",
+          "posterior_sd": 0.7682130141076721,
+          "precision_passed": true,
+          "probability": null,
+          "valid": true
+        },
+        "observation_bias.0:quantile:0.025": {
+          "estimate": -0.6183625478931658,
+          "kind": "quantile",
+          "mcse": 0.16945469921390577,
+          "name": "observation_bias.0",
+          "posterior_sd": 0.7682130141076721,
+          "precision_passed": true,
+          "probability": 0.025,
+          "valid": true
+        },
+        "observation_bias.0:quantile:0.5": {
+          "estimate": 0.9270634250052037,
+          "kind": "quantile",
+          "mcse": 0.1050780634509792,
+          "name": "observation_bias.0",
+          "posterior_sd": 0.7682130141076721,
+          "precision_passed": true,
+          "probability": 0.5,
+          "valid": true
+        },
+        "observation_bias.0:quantile:0.975": {
+          "estimate": 2.360046375385968,
+          "kind": "quantile",
+          "mcse": 0.1590366779444028,
+          "name": "observation_bias.0",
+          "posterior_sd": 0.7682130141076721,
+          "precision_passed": true,
+          "probability": 0.975,
+          "valid": true
+        },
+        "observation_weight.0.0": {
+          "estimate": 0.28646545139919866,
+          "kind": "mean",
+          "mcse": 0.101168198863035,
+          "name": "observation_weight.0.0",
+          "posterior_sd": 0.9573564933707174,
+          "precision_passed": true,
+          "probability": null,
+          "valid": true
+        },
+        "observation_weight.0.0:quantile:0.025": {
+          "estimate": -1.5877535534093987,
+          "kind": "quantile",
+          "mcse": 0.4124541908085444,
+          "name": "observation_weight.0.0",
+          "posterior_sd": 0.9573564933707174,
+          "precision_passed": true,
+          "probability": 0.025,
+          "valid": true
+        },
+        "observation_weight.0.0:quantile:0.5": {
+          "estimate": 0.2865667074381628,
+          "kind": "quantile",
+          "mcse": 0.11980609007673948,
+          "name": "observation_weight.0.0",
+          "posterior_sd": 0.9573564933707174,
+          "precision_passed": true,
+          "probability": 0.5,
+          "valid": true
+        },
+        "observation_weight.0.0:quantile:0.975": {
+          "estimate": 2.031074537485347,
+          "kind": "quantile",
+          "mcse": 0.15960548279972553,
+          "name": "observation_weight.0.0",
+          "posterior_sd": 0.9573564933707174,
+          "precision_passed": true,
+          "probability": 0.975,
+          "valid": true
+        },
+        "positive_theta_2": {
+          "estimate": 0.59765625,
+          "kind": "mean",
+          "mcse": 0.04188960642715901,
+          "name": "positive_theta_2",
+          "posterior_sd": null,
+          "precision_passed": true,
+          "probability": null,
+          "valid": true
+        }
+      },
+      "reference_agreement": "incomplete",
+      "reference_status": "unavailable",
+      "retained_archive": {
+        "dtype": "float64",
+        "path": "/tmp/pytest-of-ubuntu/pytest-339/test_master_runs_real_workers_0/campaign/attempts/00011-development-replica_exchange/worker/data/retained.tensor",
+        "sha256": "1243656786ae84f667d14e8237505ddb2b6d054aea339cfc1791d577317ee4a1",
+        "shape": [
+          64,
+          4,
+          4
+        ]
+      },
+      "retained_draws_per_chain": 64,
+      "retained_shape": [
+        64,
+        4,
+        4
+      ],
+      "schema": "bayesfilter.q20.posterior_summary.v1",
+      "sequential_declared_checks_passed": true,
+      "start_groups": {
+        "negative_start": {
+          "latent_mean_bias.0": {
+            "estimate": -0.46057756824362683,
+            "kind": "mean",
+            "mcse": 0.2987806017871835,
+            "name": "latent_mean_bias.0",
+            "posterior_sd": 0.9523193467143705,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          },
+          "latent_mean_bias.0:quantile:0.025": {
+            "estimate": -2.0918507874311705,
+            "kind": "quantile",
+            "mcse": 0.31022294143786633,
+            "name": "latent_mean_bias.0",
+            "posterior_sd": 0.9523193467143705,
+            "precision_passed": true,
+            "probability": 0.025,
+            "valid": true
+          },
+          "latent_mean_bias.0:quantile:0.5": {
+            "estimate": -0.5040726171823118,
+            "kind": "quantile",
+            "mcse": 0.13816363231053685,
+            "name": "latent_mean_bias.0",
+            "posterior_sd": 0.9523193467143705,
+            "precision_passed": true,
+            "probability": 0.5,
+            "valid": true
+          },
+          "latent_mean_bias.0:quantile:0.975": {
+            "estimate": 1.5992344068710016,
+            "kind": "quantile",
+            "mcse": 0.27310992669696454,
+            "name": "latent_mean_bias.0",
+            "posterior_sd": 0.9523193467143705,
+            "precision_passed": true,
+            "probability": 0.975,
+            "valid": true
+          },
+          "latent_mean_weight.0.0": {
+            "estimate": 0.7100791194432954,
+            "kind": "mean",
+            "mcse": 0.12233521560228988,
+            "name": "latent_mean_weight.0.0",
+            "posterior_sd": 0.8598877302399681,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          },
+          "latent_mean_weight.0.0:quantile:0.025": {
+            "estimate": -1.0344106556995492,
+            "kind": "quantile",
+            "mcse": 0.21816006425199996,
+            "name": "latent_mean_weight.0.0",
+            "posterior_sd": 0.8598877302399681,
+            "precision_passed": true,
+            "probability": 0.025,
+            "valid": true
+          },
+          "latent_mean_weight.0.0:quantile:0.5": {
+            "estimate": 0.6943061813175079,
+            "kind": "quantile",
+            "mcse": 0.18886806177064785,
+            "name": "latent_mean_weight.0.0",
+            "posterior_sd": 0.8598877302399681,
+            "precision_passed": true,
+            "probability": 0.5,
+            "valid": true
+          },
+          "latent_mean_weight.0.0:quantile:0.975": {
+            "estimate": 2.3413242291959957,
+            "kind": "quantile",
+            "mcse": 0.2808334697570547,
+            "name": "latent_mean_weight.0.0",
+            "posterior_sd": 0.8598877302399681,
+            "precision_passed": true,
+            "probability": 0.975,
+            "valid": true
+          },
+          "observation_bias.0": {
+            "estimate": 0.8720479131081947,
+            "kind": "mean",
+            "mcse": 0.11947580121722265,
+            "name": "observation_bias.0",
+            "posterior_sd": 0.7811670584255709,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          },
+          "observation_bias.0:quantile:0.025": {
+            "estimate": -0.6578503404326731,
+            "kind": "quantile",
+            "mcse": 0.13718415245527305,
+            "name": "observation_bias.0",
+            "posterior_sd": 0.7811670584255709,
+            "precision_passed": true,
+            "probability": 0.025,
+            "valid": true
+          },
+          "observation_bias.0:quantile:0.5": {
+            "estimate": 0.8532993780794991,
+            "kind": "quantile",
+            "mcse": 0.11792405353651059,
+            "name": "observation_bias.0",
+            "posterior_sd": 0.7811670584255709,
+            "precision_passed": true,
+            "probability": 0.5,
+            "valid": true
+          },
+          "observation_bias.0:quantile:0.975": {
+            "estimate": 2.3623635712182685,
+            "kind": "quantile",
+            "mcse": 0.24430428864585907,
+            "name": "observation_bias.0",
+            "posterior_sd": 0.7811670584255709,
+            "precision_passed": true,
+            "probability": 0.975,
+            "valid": true
+          },
+          "observation_weight.0.0": {
+            "estimate": 0.22354263838436203,
+            "kind": "mean",
+            "mcse": 0.17731819592335724,
+            "name": "observation_weight.0.0",
+            "posterior_sd": 1.0811441299622941,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          },
+          "observation_weight.0.0:quantile:0.025": {
+            "estimate": -2.142887967296656,
+            "kind": "quantile",
+            "mcse": 0.3954878270001294,
+            "name": "observation_weight.0.0",
+            "posterior_sd": 1.0811441299622941,
+            "precision_passed": true,
+            "probability": 0.025,
+            "valid": true
+          },
+          "observation_weight.0.0:quantile:0.5": {
+            "estimate": 0.13208573786593547,
+            "kind": "quantile",
+            "mcse": 0.22509271087486393,
+            "name": "observation_weight.0.0",
+            "posterior_sd": 1.0811441299622941,
+            "precision_passed": true,
+            "probability": 0.5,
+            "valid": true
+          },
+          "observation_weight.0.0:quantile:0.975": {
+            "estimate": 2.125673178136466,
+            "kind": "quantile",
+            "mcse": 0.16644852366200613,
+            "name": "observation_weight.0.0",
+            "posterior_sd": 1.0811441299622941,
+            "precision_passed": true,
+            "probability": 0.975,
+            "valid": true
+          },
+          "positive_theta_2": {
+            "estimate": 0.5625,
+            "kind": "mean",
+            "mcse": 0.13460495559662708,
+            "name": "positive_theta_2",
+            "posterior_sd": null,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          }
+        },
+        "positive_start": {
+          "latent_mean_bias.0": {
+            "estimate": -0.448457942639893,
+            "kind": "mean",
+            "mcse": 0.14695153738705402,
+            "name": "latent_mean_bias.0",
+            "posterior_sd": 0.9382251963601753,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          },
+          "latent_mean_bias.0:quantile:0.025": {
+            "estimate": -2.0036979068135303,
+            "kind": "quantile",
+            "mcse": 0.2566446338232673,
+            "name": "latent_mean_bias.0",
+            "posterior_sd": 0.9382251963601753,
+            "precision_passed": true,
+            "probability": 0.025,
+            "valid": true
+          },
+          "latent_mean_bias.0:quantile:0.5": {
+            "estimate": -0.520483209207597,
+            "kind": "quantile",
+            "mcse": 0.1798913045856203,
+            "name": "latent_mean_bias.0",
+            "posterior_sd": 0.9382251963601753,
+            "precision_passed": true,
+            "probability": 0.5,
+            "valid": true
+          },
+          "latent_mean_bias.0:quantile:0.975": {
+            "estimate": 1.3779256398000521,
+            "kind": "quantile",
+            "mcse": 0.20172760394221423,
+            "name": "latent_mean_bias.0",
+            "posterior_sd": 0.9382251963601753,
+            "precision_passed": true,
+            "probability": 0.975,
+            "valid": true
+          },
+          "latent_mean_weight.0.0": {
+            "estimate": 0.3669063279600425,
+            "kind": "mean",
+            "mcse": 0.14921455794867763,
+            "name": "latent_mean_weight.0.0",
+            "posterior_sd": 0.9489791878352614,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          },
+          "latent_mean_weight.0.0:quantile:0.025": {
+            "estimate": -1.3826728113742723,
+            "kind": "quantile",
+            "mcse": 0.19164531515867333,
+            "name": "latent_mean_weight.0.0",
+            "posterior_sd": 0.9489791878352614,
+            "precision_passed": true,
+            "probability": 0.025,
+            "valid": true
+          },
+          "latent_mean_weight.0.0:quantile:0.5": {
+            "estimate": 0.33349599294152077,
+            "kind": "quantile",
+            "mcse": 0.19409747929063548,
+            "name": "latent_mean_weight.0.0",
+            "posterior_sd": 0.9489791878352614,
+            "precision_passed": true,
+            "probability": 0.5,
+            "valid": true
+          },
+          "latent_mean_weight.0.0:quantile:0.975": {
+            "estimate": 2.0122076972981846,
+            "kind": "quantile",
+            "mcse": 0.12150079838630501,
+            "name": "latent_mean_weight.0.0",
+            "posterior_sd": 0.9489791878352614,
+            "precision_passed": true,
+            "probability": 0.975,
+            "valid": true
+          },
+          "observation_bias.0": {
+            "estimate": 0.9673845366998369,
+            "kind": "mean",
+            "mcse": 0.12544757865363712,
+            "name": "observation_bias.0",
+            "posterior_sd": 0.7520212503783399,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          },
+          "observation_bias.0:quantile:0.025": {
+            "estimate": -0.4850012673663453,
+            "kind": "quantile",
+            "mcse": 0.18397936038617435,
+            "name": "observation_bias.0",
+            "posterior_sd": 0.7520212503783399,
+            "precision_passed": true,
+            "probability": 0.025,
+            "valid": true
+          },
+          "observation_bias.0:quantile:0.5": {
+            "estimate": 1.0123765782499146,
+            "kind": "quantile",
+            "mcse": 0.13143027680797187,
+            "name": "observation_bias.0",
+            "posterior_sd": 0.7520212503783399,
+            "precision_passed": true,
+            "probability": 0.5,
+            "valid": true
+          },
+          "observation_bias.0:quantile:0.975": {
+            "estimate": 2.3327232778019615,
+            "kind": "quantile",
+            "mcse": 0.10925546289846899,
+            "name": "observation_bias.0",
+            "posterior_sd": 0.7520212503783399,
+            "precision_passed": true,
+            "probability": 0.975,
+            "valid": true
+          },
+          "observation_weight.0.0": {
+            "estimate": 0.34938826441403514,
+            "kind": "mean",
+            "mcse": 0.1055189385037152,
+            "name": "observation_weight.0.0",
+            "posterior_sd": 0.8101059932199158,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          },
+          "observation_weight.0.0:quantile:0.025": {
+            "estimate": -1.1583092213600592,
+            "kind": "quantile",
+            "mcse": 0.2585485784593242,
+            "name": "observation_weight.0.0",
+            "posterior_sd": 0.8101059932199158,
+            "precision_passed": true,
+            "probability": 0.025,
+            "valid": true
+          },
+          "observation_weight.0.0:quantile:0.5": {
+            "estimate": 0.3130952921024788,
+            "kind": "quantile",
+            "mcse": 0.08639384824608065,
+            "name": "observation_weight.0.0",
+            "posterior_sd": 0.8101059932199158,
+            "precision_passed": true,
+            "probability": 0.5,
+            "valid": true
+          },
+          "observation_weight.0.0:quantile:0.975": {
+            "estimate": 1.894467516009959,
+            "kind": "quantile",
+            "mcse": 0.1268993189430534,
+            "name": "observation_weight.0.0",
+            "posterior_sd": 0.8101059932199158,
+            "precision_passed": true,
+            "probability": 0.975,
+            "valid": true
+          },
+          "positive_theta_2": {
+            "estimate": 0.6328125,
+            "kind": "mean",
+            "mcse": 0.0494072068480594,
+            "name": "positive_theta_2",
+            "posterior_sd": null,
+            "precision_passed": true,
+            "probability": null,
+            "valid": true
+          }
+        }
+      },
+      "target_signature": "5622b7a9854d011bd537a0459781a630f1d6f7a66fb76d04a21887ca308c5d6f"
+    }
+  },
+  "result_path": "/tmp/pytest-of-ubuntu/pytest-339/test_master_runs_real_workers_0/campaign/attempts/00011-development-replica_exchange/worker/data/result.json",
+  "status": "computed",
+  "wall_seconds": 8.292081777995918
+}

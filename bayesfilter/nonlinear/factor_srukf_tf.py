@@ -14,14 +14,19 @@ from typing import Callable, Mapping
 import tensorflow as tf
 
 from bayesfilter.linear.block_qr_conditional_tf import batched_block_qr_conditional
-from bayesfilter.linear.stack_qr_tf import batched_stack_qr_lower
+from bayesfilter.linear.stack_qr_tf import (
+    DEFAULT_RELATIVE_PIVOT_TOLERANCE,
+    batched_stack_qr_lower,
+)
 from bayesfilter.nonlinear.srukf_backend_policy import (
     DEFAULT_SRUKF_BACKEND,
     srukf_backend_metadata,
 )
 
-
 TransitionFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
+TransitionValueAndDerivativesFn = Callable[
+    [tf.Tensor, tf.Tensor], tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]
+]
 ObservationFn = Callable[[tf.Tensor], tf.Tensor]
 TransitionJacobianFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 TransitionParameterDerivativeFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
@@ -38,7 +43,7 @@ ObservationMeanBranchMarginFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 
 
 DIRECT_FACTOR_STATUS_SCHEMA = "bayesfilter.direct_factor_srukf.status.v1"
-DIRECT_FACTOR_STATUS_CLASSIFIER = "geometry_transition_and_output_finiteness_v1"
+DIRECT_FACTOR_STATUS_CLASSIFIER = "inputs_pivots_geometry_and_output_finiteness_v2"
 DIRECT_FACTOR_ROUNDOFF_REPAIR_POLICY = "none_direct_factor_fail_closed"
 DIRECT_FACTOR_ROW_CLASS_VALID = 0
 DIRECT_FACTOR_ROW_CLASS_REPAIRED = 1
@@ -125,6 +130,9 @@ class TFFactorSRUKFDerivatives:
     observation_state_jacobian_fn: ObservationJacobianFn
     d_observation_fn: ObservationParameterDerivativeFn
     name: str = f"{DEFAULT_SRUKF_BACKEND}_derivatives"
+    # (value [B,R,N], J_state [B,R,N,N], J_process [B,R,N,Q],
+    # direct parameter derivative [B,P,R,N]); optional fused callback.
+    transition_value_and_derivatives_fn: TransitionValueAndDerivativesFn | None = None
 
     def __post_init__(self) -> None:
         for field in ("d_initial_mean", "d_initial_factor", "d_process_factor", "d_observation_factor"):
@@ -232,6 +240,20 @@ def _right_solve_batch(factor: tf.Tensor, matrix: tf.Tensor) -> tf.Tensor:
     return tf.reshape(tf.linalg.matrix_transpose(solved), [b, p, n, m])
 
 
+def _transition_value_and_derivatives(model, derivatives, previous_points, process_points):
+    """Evaluate a joint callback once, or the original separate callback contract."""
+    if derivatives.transition_value_and_derivatives_fn is not None:
+        value, state_j, process_j, direct = derivatives.transition_value_and_derivatives_fn(
+            previous_points, process_points)
+    else:
+        value = model.transition_fn(previous_points, process_points)
+        state_j = derivatives.transition_state_jacobian_fn(previous_points, process_points)
+        process_j = derivatives.transition_process_jacobian_fn(previous_points, process_points)
+        direct = derivatives.d_transition_fn(previous_points, process_points)
+    return (tf.convert_to_tensor(value, tf.float64), tf.convert_to_tensor(state_j, tf.float64),
+            tf.convert_to_tensor(process_j, tf.float64), tf.convert_to_tensor(direct, tf.float64))
+
+
 def _one_step(
     observation: tf.Tensor,
     mean: tf.Tensor,
@@ -257,10 +279,9 @@ def _one_step(
     )
     previous_points, process_points = points[:, :, :n], points[:, :, n:]
     d_previous_points, d_process_points = d_points[:, :, :, :n], d_points[:, :, :, n:]
-    predicted_points = tf.convert_to_tensor(model.transition_fn(previous_points, process_points), tf.float64)
-    transition_state_j = tf.convert_to_tensor(derivatives.transition_state_jacobian_fn(previous_points, process_points), tf.float64)
-    transition_process_j = tf.convert_to_tensor(derivatives.transition_process_jacobian_fn(previous_points, process_points), tf.float64)
-    d_transition_direct = tf.convert_to_tensor(derivatives.d_transition_fn(previous_points, process_points), tf.float64)
+    predicted_points, transition_state_j, transition_process_j, d_transition_direct = (
+        _transition_value_and_derivatives(model, derivatives, previous_points, process_points)
+    )
     d_predicted_points = tf.einsum("brij,bprj->bpri", transition_state_j, d_previous_points) + tf.einsum("brij,bprj->bpri", transition_process_j, d_process_points) + d_transition_direct
     predicted_mean = _weighted_mean(predicted_points, mean_weights)
     d_predicted_mean = _weighted_derivative(d_predicted_points, mean_weights)
@@ -397,6 +418,11 @@ def _one_step(
     return log_likelihood, score, filtered_mean, filtered_factor, d_filtered_mean, d_filtered_factor, diagnostics
 
 
+def _positive_finite_factor(factor):
+    return (tf.reduce_all(tf.math.is_finite(factor), axis=[1, 2])
+            & tf.reduce_all(tf.linalg.diag_part(factor) > 0.0, axis=1))
+
+
 def tf_factor_srukf_value_and_score(observations: tf.Tensor, model: TFFactorSRUKFModel, derivatives: TFFactorSRUKFDerivatives, *, jit_compile: bool = True) -> TFFactorSRUKFResult:
     observations = tf.convert_to_tensor(observations, dtype=tf.float64)
     if observations.shape.rank != 3 or observations.shape[0] != model.batch_dim or observations.shape[2] != model.observation_dim:
@@ -475,22 +501,26 @@ def tf_factor_srukf_value_and_score(observations: tf.Tensor, model: TFFactorSRUK
         return value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin, invalid_transition_count
 
     if jit_compile:
-        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin, invalid_transition_count = tf.function(run, jit_compile=True)(observations)
+        value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin, invalid_transition_count = tf.function(run, input_signature=[tf.TensorSpec(observations.shape, tf.float64)], jit_compile=True)(observations)
     else:
         value, score, mean, factor, d_mean, d_factor, min_qr_pivot, rel_qr_pivot, min_down_margin, rel_down_margin, max_factor_residual, max_derivative_residual, min_geometry_margin, invalid_transition_count = run(observations)
 
-    # The direct-factor route has no nugget, eigenvalue-floor, or repair
-    # branch. Its only classifiable invalid event is an already-computed
-    # geometry-branch failure or a completed row with nonfinite output. QR and
-    # block-conditional assertion failures remain hard backend errors and do
-    # not reach this classifier.
-    output_finite = tf.logical_and(
-        tf.math.is_finite(value), tf.reduce_all(tf.math.is_finite(score), axis=1)
+    # XLA can discard assertions. Preserve the numerical contract in returned
+    # status as well, including invalid input factors and relative QR pivots.
+    input_valid = (
+        tf.reduce_all(tf.math.is_finite(observations), axis=[1, 2])
+        & tf.reduce_all(tf.math.is_finite(model.initial_mean), axis=1)
+        & _positive_finite_factor(model.initial_factor)
+        & _positive_finite_factor(model.process_factor)
+        & _positive_finite_factor(model.observation_factor)
     )
-    nonfinite_output = tf.logical_not(output_finite)
-    classified_invalid = tf.logical_or(
-        invalid_transition_count > 0, nonfinite_output
-    )
+    pivot_valid = (min_qr_pivot > 0.0) & (
+        rel_qr_pivot >= tf.constant(DEFAULT_RELATIVE_PIVOT_TOLERANCE, tf.float64))
+    output_finite = tf.math.is_finite(value) & tf.reduce_all(tf.math.is_finite(score), axis=1)
+    nonfinite_output = ~output_finite
+    classified_invalid = (invalid_transition_count > 0) | nonfinite_output | ~input_valid | ~pivot_valid
+    value = tf.where(classified_invalid, tf.constant(float("nan"), tf.float64), value)
+    score = tf.where(classified_invalid[:, None], tf.constant(float("nan"), tf.float64), score)
     classified_invalid_count = tf.cast(classified_invalid, tf.int32)
     roundoff_repair_count = tf.zeros_like(classified_invalid_count)
     row_class_code = tf.where(
@@ -543,6 +573,8 @@ def tf_factor_srukf_value_and_score(observations: tf.Tensor, model: TFFactorSRUK
             "row_class_code": row_class_code,
             "status_code": row_class_code,
             "valid_pre_regularized_score": valid_pre_regularized_score,
+            "input_valid": input_valid,
+            "pivot_valid": pivot_valid,
             "output_finite": output_finite,
             "nonfinite_output": nonfinite_output,
         },

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="9" time="66.828" timestamp="2026-09-21T00:37:11.691347+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_multimodel_pipeline" name="test_public_multimodel_candidates_reload_and_exclude_warmup[gaussian-1.3]" time="9.838" /><testcase classname="tests.inference_validation.test_multimodel_pipeline" name="test_public_multimodel_candidates_reload_and_exclude_warmup[beta_binomial-0.8]" time="9.815" /><testcase classname="tests.inference_validation.test_multimodel_pipeline" name="test_public_multimodel_candidates_reload_and_exclude_warmup[lgssm_location-0.7]" time="10.260" /><testcase classname="tests.inference_validation.test_multimodel_pipeline" name="test_public_multimodel_candidates_reload_and_exclude_warmup[banana-0.5]" time="9.195" /><testcase classname="tests.inference_validation.test_multimodel_pipeline" name="test_public_multimodel_candidates_reload_and_exclude_warmup[funnel_noncentered-1.2]" time="10.109" /><testcase classname="tests.inference_validation.test_public_pipeline" name="test_real_tuning_all_verified_members_reach_posterior_assessment" time="9.031" /><testcase classname="tests.inference_validation.test_public_pipeline" name="test_reloading_complete_pipeline_does_not_append_draws" time="0.264" /><testcase classname="tests.inference_validation.test_public_pipeline" name="test_interval_assessment_uses_actual_controller_quantities" time="0.001" /><testcase classname="tests.test_hmc_kernel_tuning_windowed_mass" name="test_g1a_historical_manifest_preserves_its_named_seed_sites" time="6.499"><failure message="AssertionError: assert () == ('with_epsilon',)&#10;  &#10;  Right contains one more item: 'with_epsilon'&#10;  Use -v to get more diff">def test_g1a_historical_manifest_preserves_its_named_seed_sites() -&gt; None:
+        retained = _G1A_SOURCE_COVERAGE_MANIFEST.read_bytes()
+        assert retained == retained.rstrip(b"\n")
+        payload = json.loads(retained.decode("ascii"))
+        assert set(payload) == {
+            "schema",
+            "scope",
+            "source_files",
+            "sites",
+            "excluded_post_boundary",
+            "generator_contract",
+            "manifest_content_sha256",
+        }
+        assert payload["schema"] == (
+            "bayesfilter.hmc_g2_preboundary_seed_source_coverage.v2"
+        )
+        assert payload["scope"] == (
+            "g2_source_visible_named_closure_through_p4_boundary_only"
+        )
+        assert payload["excluded_post_boundary"] == {
+            "scope": "after_p4_boundary",
+            "reason": "not_executed_or_claimed_by_g2",
+            "future_review_required": True,
+        }
+        assert payload["generator_contract"] == {
+            "python_ast_only": True,
+            "no_project_import": True,
+            "source_files_final_before_generation": True,
+            "canonical_json": True,
+            "source_visible_named_closure_only": True,
+            "dynamic_routes_nonclaim": True,
+        }
+    
+        source_paths = {
+            str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_warmup.py"):
+                "seed_domain_repair_writable",
+            str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_kernel_tuning.py"):
+                "read_only_seed_domain_repair",
+            str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc.py"):
+                "read_only_seed_domain_repair",
+            str(_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_coordinates.py"):
+                "read_only_seed_domain_repair",
+        }
+        # Preserve the dated source manifest. Later numerical repairs change file
+        # hashes; matching it to the live checkout would falsely upgrade history.
+        # The named seed operations are still compared against current ASTs below,
+        # and live candidate bindings independently hash their complete source list.
+        assert {row["path"]: row["write_scope"] for row in payload["source_files"]} == source_paths
+        assert all(len(row["sha256"]) == 64 for row in payload["source_files"])
+        current_sites = _g1a_manifest_sites_from_final_sources(historical_preparation_locations=True)
+        for archived, current in zip(payload["sites"], current_sites, strict=True):
+            if archived["site_id"] == (
+                "hmc.bootstrap.ReusableFullChainHMCRunner.sample_chain_rng_call.v1"
+            ):
+                # The later failure recorder adds parallel_iterations to sample_chain.
+                # Preserve the historical whole-call digest, but compare its named
+                # routing identity rather than pinning unrelated call arguments.
+                # The separate sample_chain_seed_pass_through site below still pins
+                # the exact seed=seed AST in this same owner, like all other sites.
+                assert archived["node_ast_sha256"] == (
+                    "815eebb72503366add43911b36c940ba27aa9445035977e677868dcc82f2fa9f"
+                )
+                assert {k: v for k, v in archived.items() if k != "node_ast_sha256"} == {
+                    k: v for k, v in current.items() if k != "node_ast_sha256"
+                }
+            else:
+                assert archived == current
+    
+        historical_bytes = _G1A_HISTORICAL_SOURCE_COVERAGE_MANIFEST.read_bytes()
+        assert hashlib.sha256(historical_bytes).hexdigest() == (
+            "606649fde63ea8b729e2f923b5e9d257369aa1648f0bba5deaa0fc88b7ae397f"
+        )
+    
+        unsigned = dict(payload)
+        content_digest = unsigned.pop("manifest_content_sha256")
+        assert content_digest == hashlib.sha256(
+            _g1a_canonical_json_bytes(unsigned)
+        ).hexdigest()
+        assert retained == _g1a_canonical_json_bytes(payload)
+        retained_digest = hashlib.sha256(retained).hexdigest()
+        assert retained_digest != content_digest
+        for source_path in source_paths:
+            source_text = Path(source_path).read_text(encoding="utf-8")
+            assert content_digest not in source_text
+            assert retained_digest not in source_text
+        assert _G1A_HISTORICAL_SOURCE_COVERAGE_MANIFEST.read_bytes() == historical_bytes
+    
+        site_ids = tuple(row["site_id"] for row in payload["sites"])
+        assert len(site_ids) == 61
+        assert len(set(site_ids)) == 61
+        declared_ids = {
+            hmc_warmup._G2_P4_SEED_DERIVATION_SITE_ID,
+            hmc_warmup._G2_P4_SEED_GATE_SITE_ID,
+            hmc_warmup._G2_INITIAL_EPSILON_SEED_DERIVATION_SITE_ID,
+            hmc_warmup._G2_INITIAL_EPSILON_SEED_GATE_SITE_ID,
+            hmc_warmup._G2_SEGMENT_SEED_DERIVATION_SITE_ID,
+            hmc_warmup._G2_SEGMENT_SEED_GATE_SITE_ID,
+            hmc_warmup._G2_METRIC_BOUNDARY_SEED_DERIVATION_SITE_ID,
+            hmc_warmup._G2_METRIC_BOUNDARY_SEED_GATE_SITE_ID,
+            hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_DERIVATION_SITE_ID,
+            hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_GATE_SITE_ID,
+            hmc_kernel_tuning._G2_BOOTSTRAP_ROUND_SEED_DERIVATION_SITE_ID,
+            hmc_kernel_tuning._G2_BOOTSTRAP_ROUND_SEED_GATE_SITE_ID,
+            hmc_kernel_tuning._G2_WINDOWED_STAGE_SEED_DERIVATION_SITE_ID,
+            hmc_kernel_tuning._G2_WINDOWED_STAGE_SEED_GATE_SITE_ID,
+            *hmc_warmup._G2_P4_SEED_INTERFACE_HOPS,
+            *hmc_warmup._G2_INITIAL_EPSILON_SEED_INTERFACE_HOPS,
+            *hmc_warmup._G2_SEGMENT_SEED_INTERFACE_HOPS,
+            *hmc_warmup._G2_METRIC_BOUNDARY_SEED_INTERFACE_HOPS,
+            *hmc_warmup._G2_REASONABLE_PROPOSAL_SEED_INTERFACE_HOPS,
+            *hmc_kernel_tuning._G2_BOOTSTRAP_ROUND_SEED_INTERFACE_HOPS,
+            *hmc_kernel_tuning._G2_WINDOWED_STAGE_SEED_INTERFACE_HOPS,
+        }
+        assert set(site_ids) == declared_ids
+        proposal_rows = tuple(
+            row for row in payload["sites"] if "proposal_seed" in row["site_id"]
+        )
+        assert proposal_rows
+        assert all(row["site_id"].endswith(".v2") for row in proposal_rows)
+        assert all(
+            row["upstream_gate_site_id"] is None
+            or row["upstream_gate_site_id"].endswith(".v2")
+            for row in proposal_rows
+        )
+    
+        gate_ids = {
+            row["site_id"]
+            for row in payload["sites"]
+            if row["site_kind"] == "terminal_consumption_gate"
+        }
+        assert len(gate_ids) == 7
+        for row in payload["sites"]:
+            if row["site_kind"] == "read_only_pass_through":
+                assert row["upstream_gate_site_id"] in gate_ids
+            else:
+                assert row["upstream_gate_site_id"] is None
+    
+        # The exact P4 route excludes the ordinary stage seed branch and never
+        # invokes KernelState.remap. Geometry only reports reserved lineage seeds;
+        # it has no RNG consumer, so none of these are registry entries.
+        assert all(
+            row["owner_qualname"] != "run_hmc_windowed_mass_stage"
+            for row in payload["sites"]
+        )
+        for relative_path in (
+            "bayesfilter/inference/hmc_warmup.py",
+            "bayesfilter/inference/hmc_kernel_tuning.py",
+            "bayesfilter/inference/hmc_bootstrap.py",
+            "bayesfilter/inference/hmc_mass_adaptation.py",
+        ):
+            tree = ast.parse(
+                (_G1A_BAYESFILTER_ROOT / relative_path).read_text(encoding="utf-8")
+            )
+            assert not any(
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "remap"
+                    for node in ast.walk(tree)
+                )
+    
+        # Discover seed-lineage-preserving KernelState helper calls independently
+        # of the literal site list. Any new reachable replace/forwarding helper must
+        # acquire both a caller site and a method-body site in the retained map.
+        coordinates_tree = ast.parse(
+            (_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_coordinates.py").read_text(
+                encoding="utf-8"
+            )
+        )
+        kernel_state = next(
+            node
+            for node in coordinates_tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "KernelState"
+        )
+        forwarding_nodes: dict[str, ast.Call] = {}
+        for method in kernel_state.body:
+            if not isinstance(method, ast.FunctionDef):
+                continue
+            for node in ast.walk(method):
+                if not (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "replace"
+                    and node.args
+                    and isinstance(node.args[0], ast.Name)
+                    and node.args[0].id == "self"
+                ):
+                    continue
+                if not any(keyword.arg == "seed_lineage" for keyword in node.keywords):
+                    forwarding_nodes[method.name] = node
+    
+        warmup_tree = ast.parse(
+            (_G1A_BAYESFILTER_ROOT / "bayesfilter/inference/hmc_warmup.py").read_text(
+                encoding="utf-8"
+            )
+        )
+        warmup_owners = _g1a_owner_by_node(warmup_tree)
+        reachable_forwarding_calls = tuple(
+            node
+            for node in ast.walk(warmup_tree)
+            if isinstance(node, ast.Call)
+            and warmup_owners[node] == "run_operational_windowed_warmup"
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr in forwarding_nodes
+        )
+&gt;       assert tuple(node.func.attr for node in reachable_forwarding_calls) == (
+            "with_epsilon",
+        )
+E       AssertionError: assert () == ('with_epsilon',)
+E         
+E         Right contains one more item: 'with_epsilon'
+E         Use -v to get more diff
+
+tests/test_hmc_kernel_tuning_windowed_mass.py:3395: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,82 @@
+{
+  "passed": true,
+  "role": "engineering GPU/XLA smoke; no posterior or ranking claim",
+  "verified_candidate_ids": [
+    "whole-procedure-gpu:b80aab895bff92e23780:candidate:000002",
+    "whole-procedure-gpu:b80aab895bff92e23780:candidate:000003",
+    "whole-procedure-gpu:b80aab895bff92e23780:candidate:000005",
+    "whole-procedure-gpu:b80aab895bff92e23780:candidate:000006"
+  ],
+  "candidate_count": 6,
+  "completion_status": "complete",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "execution_policy": {
+    "device_type": "GPU",
+    "memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "tf32_enabled": true,
+    "cuda_visible_devices": "0"
+  },
+  "samples_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "allocator": {
+    "current": 54528,
+    "peak": 578816
+  },
+  "jit_compile": true,
+  "versions": {
+    "python": "3.13.13",
+    "tensorflow": "2.20.0",
+    "tfp": "0.25.0"
+  },
+  "wall_seconds": 58.95580737799173,
+  "command": [
+    "docs/plans/artifacts/hmc-whole-procedure-repair-2026-09-14/gpu_smoke.py",
+    "docs/plans/artifacts/hmc-whole-procedure-repair-2026-09-14/gpu-r3"
+  ],
+  "git_commit": "9329cadf3296211ccfa9e2539235225e041ad36a"
+}

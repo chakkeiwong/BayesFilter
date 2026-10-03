@@ -1,0 +1,75 @@
+{
+  "accuracy_tolerance": 0.25,
+  "alpha": 0.05,
+  "budget_seconds": 900,
+  "design_id": "m26-policy-beta_binomial-lugsail",
+  "device": "cpu_reference",
+  "draws": 500,
+  "engine": "stopping",
+  "l_grid": [
+    3,
+    5,
+    9,
+    13,
+    18,
+    25
+  ],
+  "leapfrog_steps": 5,
+  "mcse_tolerance": 0.005,
+  "measurement_draws": 128,
+  "member_l": 3,
+  "multiplicity": 1,
+  "null_draws": 1999,
+  "numerical_provenance": "docs/plans/bayesfilter-hmc-m26-lifetime-and-policy-plan-2026-09-22.md",
+  "options": {
+    "bootstrap_initialization_rounds": 20,
+    "data": [
+      5,
+      12
+    ],
+    "data_provenance": "fixed synthetic observations declared before execution",
+    "fixed_comparator": {
+      "warmup_results": 2000,
+      "retained_results": 10000
+    },
+    "member_rule": "first_verified",
+    "metric_evidence_policy": "finite_window",
+    "metric_probe_num_results": 16,
+    "native_search": true,
+    "plan_file": "docs/plans/bayesfilter-hmc-m26-lifetime-and-policy-plan-2026-09-22.md",
+    "posterior_members": "selected",
+    "posterior_settings": {
+      "warmup_min_results": 2000,
+      "warmup_check_window_results": 1000,
+      "warmup_max_results": 10000,
+      "warmup_chunk_results": 500,
+      "retained_min_results": 5000,
+      "retained_max_results": 10000,
+      "retained_chunk_results": 1000
+    },
+    "preparation_bound_expansion_steps": 1,
+    "preparation_max_restarts": 3,
+    "preparation_preset": "standard",
+    "posterior_precision_method": "lugsail",
+    "isolate_fits": true,
+    "fit_process_timeout_seconds": 880
+  },
+  "phase": "development",
+  "posterior_cap": 10000,
+  "purpose": "model-specific posterior allocation development; no statistical promotion",
+  "rank_draws": 7,
+  "replications": 1,
+  "scenario": {
+    "control": "baseline",
+    "parameters": {
+      "alpha": 2.0,
+      "beta": 3.0,
+      "n": 12
+    },
+    "route": "ordinary",
+    "start": "dispersed",
+    "target": "beta_binomial"
+  },
+  "seed": 2026092272,
+  "step_size": 0.4
+}

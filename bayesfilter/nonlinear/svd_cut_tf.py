@@ -28,6 +28,7 @@ def tf_svd_cut4_log_likelihood(
     rank_tolerance: tf.Tensor | float = 1e-12,
     jitter: tf.Tensor | float = 0.0,
     return_filtered: bool = False,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor | None, tf.Tensor | None, Mapping[str, tf.Tensor]]:
     """Evaluate the structural SVD-CUT4-G Gaussian value likelihood."""
 
@@ -43,6 +44,7 @@ def tf_svd_cut4_log_likelihood(
         rank_tolerance=rank_tolerance,
         jitter=jitter,
         return_filtered=return_filtered,
+        jit_compile=jit_compile,
     )
 
 

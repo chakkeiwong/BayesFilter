@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import tensorflow as tf
+from bayesfilter.inference import neutra_transport_core as _transport_core
 
 from bayesfilter.inference.posterior_adapter import ValueScoreCapability
 
@@ -360,8 +361,9 @@ class FrozenAffineLiftWeightedTransport:
     def forward_and_logdet(self, latent: Any) -> tuple[tf.Tensor, tf.Tensor]:
         values = _rank2(latent, self.parameter_dim, "latent")
         local, local_logdet = self.local_transport.forward_and_logdet(values)
-        physical = affine_local_to_physical(self.spec, local)
-        return physical, local_logdet + self._affine_logdet
+        physical, affine_logdet = _transport_core.affine_forward(
+            local, self._mu, None, matrix=self._lchol, logdet=self._affine_logdet)
+        return physical, local_logdet + affine_logdet
 
     def forward(self, latent: Any) -> tf.Tensor:
         values = tf.convert_to_tensor(latent, tf.float64)
@@ -393,7 +395,7 @@ class FrozenAffineLiftWeightedTransport:
     def pullback_score_batch(self, latent: Any, physical_score: Any) -> tf.Tensor:
         values = _rank2(latent, self.parameter_dim, "latent")
         score = _rank2(physical_score, self.parameter_dim, "physical_score")
-        local_score = tf.matmul(score, self._lchol)
+        local_score = _transport_core.affine_pullback(score, matrix=self._lchol)
         return self.local_transport.pullback_score_batch(values, local_score)
 
     def log_abs_det_jacobian_score(self, latent: Any) -> tf.Tensor:

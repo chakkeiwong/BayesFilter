@@ -1,0 +1,49 @@
+42.3. BROAD SEARCH, REPAIRS, AND FURTHER EVIDENCE                                       395
+
+Here starts are represented as row vectors. Caller order is preserved. A diagnostic may
+explicitly replicate one start; candidate preparation requires its declared four-chain bank.
+Affine metric windows use L = 1 and the configured adaptation counts. Their proposals
+receive fresh fixed-kernel measurements.
+    The ordinary preparation config and numerical binding default to GPU/XLA exe-
+cution. TensorFlow memory growth is configured before device initialization. Small
+CPU/non-XLA checks are explicit reference or debugging exceptions. Execution policy
+does not qualify an arbitrary target: the binding still checks its full-chain capability and
+the consumer must establish value/score fidelity.
+
+
+42.3      Broad search, repairs, and further evidence
+The ordinary convenience grid is L ∈ {3, 5, 9, 13, 18, 25}, subject to the explicit maximum.
+An explicit epsilon_by_l may supply several proposals at each L; initial_epsilon is
+a warm start when no grid is supplied. Every pair is measured independently. A shared
+numeric proposal at two values of L transfers no acceptance evidence between them. The
+final-metric epsilon bound from operational preparation is a proposal safety bound, not
+cross-L qualification. Its final coordinate and metric signatures are retained with the
+bound, and direct preparation bindings intersect the requested domain with it.
+    The automatic preparation translation enables one pilot per L and one bounded refine-
+ment round. A direct controller config can disable these optional stages for an explicitly
+supplied grid. A pilot proposes a frozen pair; measurement and fresh verification qual-
+ify it. Refinement applies declared epsilon factors and additional L hypotheses to every
+surviving family. Exact pairs are deduplicated, and all proposals remain subject to candi-
+date and work limits. The reciprocal convenience factors (0.8, 1.25) are hypotheses about
+useful nearby proposals, not universal numerical optima.
+    Work proceeds in closed cohorts. Every admitted peer receives its reserved stage
+before a repair child enters the next cohort. A first pass does not remove later candi-
+dates. Directional evidence creates an immutable child with the same L, mass, target,
+coordinates, and initial bank. The child has a new epsilon and must receive its own mea-
+surement and verification. A parent may fail movement because an oversized step rejects
+nearly everything; that promotion veto does not suppress a supported smaller-epsilon
+repair. A trajectory alert can propose only declared additional L values, as separate
+candidates. It never silently changes an existing candidate’s L.
+    The distinction between proposal and evidence matters for fixed-length HMC. For a
+transition from x, the acceptance probability is
+                         a(ϵ, L | x) = E[min{1, exp(−∆H)} | x] .                     (42.3)
+The reported probability mean averages the computed Metropolis probabilities over vis-
+ited states and sampled momenta. The realized acceptance rate also contains the uniform
+accept/reject decisions: for each proposal with probability a, that indicator has expec-
+tation a. Both summaries describe acceptance in the explored region; neither measures
+convergence. For the unit harmonic oscillator, one leapfrog matrix has determinant one
+and trace 2 − ϵ2 . In the stable range its conjugate eigenvalues therefore give the phase
+                         ϑ(ϵ) = arccos(1 − ϵ2 /2),     0 < ϵ < 2.                    (42.4)
+The trajectory phase is Lϑ(ϵ). Near a return phase, acceptance can be high with little
+net movement. A multiplicative epsilon repair is thus another hypothesis to measure. On
+

@@ -1,0 +1,259 @@
+FFFFFFFFF.FF...FFFFFFF                                                   [100%]
+=================================== FAILURES ===================================
+___ test_directional_repairs_preserve_the_observed_interval_on_resume[None] ____
+tests/test_hmc_consistency_gap_repair.py:43: in test_directional_repairs_preserve_the_observed_interval_on_resume
+    assert result.verified_candidate_ids
+E   AssertionError: assert ()
+E    +  where () = HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='scope', search_id='search-1', target_signature='targe...={'refinement_round': 0, 'gradient_work': 0, 'elapsed_seconds': 0.0006771810003556311, 'controller_policy_version': 2}).verified_candidate_ids
+_____ test_directional_repairs_preserve_the_observed_interval_on_resume[2] _____
+tests/test_hmc_consistency_gap_repair.py:43: in test_directional_repairs_preserve_the_observed_interval_on_resume
+    assert result.verified_candidate_ids
+E   AssertionError: assert ()
+E    +  where () = HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='scope', search_id='search-1', target_signature='targe...e={'refinement_round': 0, 'gradient_work': 0, 'elapsed_seconds': 0.000527556985616684, 'controller_policy_version': 2}).verified_candidate_ids
+_____ test_directional_repairs_preserve_the_observed_interval_on_resume[3] _____
+tests/test_hmc_consistency_gap_repair.py:43: in test_directional_repairs_preserve_the_observed_interval_on_resume
+    assert result.verified_candidate_ids
+E   AssertionError: assert ()
+E    +  where () = HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='scope', search_id='search-1', target_signature='targe...={'refinement_round': 0, 'gradient_work': 0, 'elapsed_seconds': 0.0004932379815727472, 'controller_policy_version': 2}).verified_candidate_ids
+____ test_refinement_uses_unresolved_directional_evidence_without_survivors ____
+tests/test_hmc_consistency_gap_repair.py:53: in test_refinement_uses_unresolved_directional_evidence_without_survivors
+    assert len(result.verified_candidate_ids) == 1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = len(())
+E    +    where () = HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='scope', search_id='search-1', target_signature='targe...e={'refinement_round': 1, 'gradient_work': 0, 'elapsed_seconds': 8.41960427351296e-05, 'controller_policy_version': 2}).verified_candidate_ids
+________ test_rejected_acceptance_receipt_does_not_poison_verified_peer ________
+tests/test_hmc_consistency_gap_repair.py:66: in test_rejected_acceptance_receipt_does_not_poison_verified_peer
+    loaded = load_candidate_set_result_payload(path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_artifacts.py:425: in load_candidate_set_result_payload
+    _validate_result_payload(payload, allow_legacy=True)
+bayesfilter/inference/hmc_candidate_set_artifacts.py:251: in _validate_result_payload
+    raise ValueError("verified verification receipt contains a hard veto")
+E   ValueError: verified verification receipt contains a hard veto
+_____ test_affordable_verification_runs_when_a_peer_measurement_cannot_fit _____
+tests/test_hmc_consistency_gap_repair.py:77: in test_affordable_verification_runs_when_a_peer_measurement_cannot_fit
+    assert result.search_state["gradient_work"] == 600
+E   assert 300 == 600
+______ test_resume_charges_attempted_chunks_and_preserves_completed_work _______
+tests/test_hmc_consistency_gap_repair.py:99: in test_resume_charges_attempted_chunks_and_preserves_completed_work
+    assert first.result.search_state["gradient_work"] == 2048
+E   assert 2176 == 2048
+----------------------------- Captured stderr call -----------------------------
+2026-09-15 03:30:11.206599: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+___ test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution ____
+tests/test_hmc_consistency_gap_repair.py:119: in test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+    runner.run(num_results=4, seed=seed, output_dir=tmp_path)
+bayesfilter/inference/hmc_candidate_set_retained.py:303: in run
+    result = self._binding._run(self.candidate, state, num_results, seed)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/unittest/mock.py:1169: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/unittest/mock.py:1173: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../anaconda3/envs/tfgpu/lib/python3.13/unittest/mock.py:1234: in _execute_mock_call
+    raise effect
+E   AssertionError: seed reuse reached numerical work
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 5 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76e8246fee80> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING  tensorflow:polymorphic_function.py:157 6 out of the last 6 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76e8246ff240> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+_ test_collection_resolves_each_search_and_completeness_without_order_dependence[False] _
+tests/test_hmc_consistency_gap_repair.py:128: in test_collection_resolves_each_search_and_completeness_without_order_dependence
+    assert not collection.complete
+E   AssertionError: assert not True
+E    +  where True = HMCTuningScopeCollection(results=(HMCTuningCandidateSetResult(scope=HMCCandidateSetScope(scope_id='scope', search_id='..._work': 0, 'elapsed_seconds': 0.00016716303071007133, 'controller_policy_version': 2})), expected_scope_ids=('scope',)).complete
+______ test_invalid_config_is_rejected_before_preparation[search_config] _______
+tests/test_hmc_consistency_gap_repair.py:137: in test_invalid_config_is_rejected_before_preparation
+    tune_hmc_kernel(adapter=GaussianTarget(), initial_position=[0., 0.],
+bayesfilter/inference/hmc_tuning_dispatch.py:139: in tune_hmc_kernel
+    return run_shared_ordinary_tuning(
+bayesfilter/inference/hmc_candidate_set_public.py:138: in run_shared_ordinary_tuning
+    upper = _fixed_mass_step_upper_bound(preparation["windowed_stage"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_kernel_tuning.py:21793: in _fixed_mass_step_upper_bound
+    raise ValueError("qualified step bound has stale final metric coordinates")
+E   ValueError: qualified step bound has stale final metric coordinates
+_____ test_invalid_config_is_rejected_before_preparation[execution_config] _____
+tests/test_hmc_consistency_gap_repair.py:137: in test_invalid_config_is_rejected_before_preparation
+    tune_hmc_kernel(adapter=GaussianTarget(), initial_position=[0., 0.],
+bayesfilter/inference/hmc_tuning_dispatch.py:139: in tune_hmc_kernel
+    return run_shared_ordinary_tuning(
+bayesfilter/inference/hmc_candidate_set_public.py:138: in run_shared_ordinary_tuning
+    upper = _fixed_mass_step_upper_bound(preparation["windowed_stage"])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_kernel_tuning.py:21793: in _fixed_mass_step_upper_bound
+    raise ValueError("qualified step bound has stale final metric coordinates")
+E   ValueError: qualified step bound has stale final metric coordinates
+_____ test_bound_fixed_transport_rejects_redundant_options[search_config] ______
+tests/test_hmc_consistency_gap_repair.py:161: in test_bound_fixed_transport_rejects_redundant_options
+    with pytest.raises(ValueError, match=option):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+____ test_bound_fixed_transport_rejects_redundant_options[execution_config] ____
+tests/test_hmc_consistency_gap_repair.py:161: in test_bound_fixed_transport_rejects_redundant_options
+    with pytest.raises(ValueError, match=option):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_____ test_bound_fixed_transport_rejects_redundant_options[target_lineage] _____
+tests/test_hmc_consistency_gap_repair.py:161: in test_bound_fixed_transport_rejects_redundant_options
+    with pytest.raises(ValueError, match=option):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+______ test_bound_fixed_transport_rejects_redundant_options[source_paths] ______
+tests/test_hmc_consistency_gap_repair.py:161: in test_bound_fixed_transport_rejects_redundant_options
+    with pytest.raises(ValueError, match=option):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_ test_bound_fixed_transport_rejects_redundant_options[frozen_transport_payload] _
+tests/test_hmc_consistency_gap_repair.py:161: in test_bound_fixed_transport_rejects_redundant_options
+    with pytest.raises(ValueError, match=option):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE <class 'ValueError'>
+_______ test_bound_ordinary_rejects_redundant_provenance[target_lineage] _______
+tests/test_hmc_consistency_gap_repair.py:171: in test_bound_ordinary_rejects_redundant_provenance
+    tune_hmc_kernel(adapter=object(), initial_position=[0.], config=_config(),
+bayesfilter/inference/hmc_tuning_dispatch.py:87: in tune_hmc_kernel
+    return run_typed_hmc_candidate_set(
+bayesfilter/inference/hmc_candidate_set_adapters.py:202: in run_typed_hmc_candidate_set
+    raise TypeError("adapter must be HMCTypedCandidateSetAdapter")
+E   TypeError: adapter must be HMCTypedCandidateSetAdapter
+________ test_bound_ordinary_rejects_redundant_provenance[source_paths] ________
+tests/test_hmc_consistency_gap_repair.py:171: in test_bound_ordinary_rejects_redundant_provenance
+    tune_hmc_kernel(adapter=object(), initial_position=[0.], config=_config(),
+bayesfilter/inference/hmc_tuning_dispatch.py:87: in tune_hmc_kernel
+    return run_typed_hmc_candidate_set(
+bayesfilter/inference/hmc_candidate_set_adapters.py:202: in run_typed_hmc_candidate_set
+    raise TypeError("adapter must be HMCTypedCandidateSetAdapter")
+E   TypeError: adapter must be HMCTypedCandidateSetAdapter
+=============================== warnings summary ===============================
+../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/test_hmc_consistency_gap_repair.py: 24 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Constant.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Compare.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 140 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Attribute.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: BinOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 91 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Call.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 17 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: keyword.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 15 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FunctionDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py: 24 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Load.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Tuple.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Expr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: IsNot.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Dict.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Try.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Subscript.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: List.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: alias.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Import.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Slice.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: UnaryOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_hmc_consistency_gap_repair.py::test_directional_repairs_preserve_the_observed_interval_on_resume[None]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_directional_repairs_preserve_the_observed_interval_on_resume[2]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_directional_repairs_preserve_the_observed_interval_on_resume[3]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_refinement_uses_unresolved_directional_evidence_without_survivors
+FAILED tests/test_hmc_consistency_gap_repair.py::test_rejected_acceptance_receipt_does_not_poison_verified_peer
+FAILED tests/test_hmc_consistency_gap_repair.py::test_affordable_verification_runs_when_a_peer_measurement_cannot_fit
+FAILED tests/test_hmc_consistency_gap_repair.py::test_resume_charges_attempted_chunks_and_preserves_completed_work
+FAILED tests/test_hmc_consistency_gap_repair.py::test_retained_sampling_rejects_every_tuning_chunk_seed_before_execution
+FAILED tests/test_hmc_consistency_gap_repair.py::test_collection_resolves_each_search_and_completeness_without_order_dependence[False]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_invalid_config_is_rejected_before_preparation[search_config]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_invalid_config_is_rejected_before_preparation[execution_config]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_bound_fixed_transport_rejects_redundant_options[search_config]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_bound_fixed_transport_rejects_redundant_options[execution_config]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_bound_fixed_transport_rejects_redundant_options[target_lineage]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_bound_fixed_transport_rejects_redundant_options[source_paths]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_bound_fixed_transport_rejects_redundant_options[frozen_transport_payload]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_bound_ordinary_rejects_redundant_provenance[target_lineage]
+FAILED tests/test_hmc_consistency_gap_repair.py::test_bound_ordinary_rejects_redundant_provenance[source_paths]
+18 failed, 4 passed, 351 warnings in 9.99s

@@ -1,0 +1,66 @@
+.F
+=================================== FAILURES ===================================
+______________ test_actual_tuning_member_and_posterior[classical] ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-327/test_actual_tuning_member_and_1')
+method = 'classical'
+
+    @pytest.mark.parametrize("method", ["identity", "classical", "neutra"])
+    def test_actual_tuning_member_and_posterior(tmp_path, method):
+        config, bridge = protocol(), four_dimensional_bridge()
+        if method in {"identity", "classical"}:
+            config["tuning"]["initial_epsilon"] = 1.1
+        export = None
+        if method == "neutra":
+            trained = run_training_cohort(config, bridge, tmp_path / "training",
+                memory_policy={"mode": "tiny_cpu_reference"}, max_seconds=120.)
+            cohort = json.loads(Path(trained["checkpoint"]).read_text())["cohort"]
+            export = next(iter(cohort.values()))["exports"]["1.0"]
+>       tuned = tune_scope(config, bridge, tmp_path / "tune", method=method, training_export=export)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_q20_master_integration.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:192: in tune_scope
+    run = tune_hmc_kernel(adapter=adapter, initial_position=binding.initial_active_state,
+bayesfilter/inference/hmc_tuning_dispatch.py:90: in tune_hmc_kernel
+    return run_typed_hmc_candidate_set(
+bayesfilter/inference/hmc_candidate_set_adapters.py:238: in run_typed_hmc_candidate_set
+    controller = _resume_controller or HMCTuningCandidateSetController(adapter.scope, config)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_tuning.py:882: in __init__
+    self._admit_primary_candidates()
+bayesfilter/inference/hmc_candidate_set_tuning.py:1084: in _admit_primary_candidates
+    candidate = self._new_candidate(leapfrog, epsilon)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_tuning.py:1162: in _new_candidate
+    candidate = HMCTuningCandidateRecord.create(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'bayesfilter.inference.hmc_candidate_set_tuning.HMCTuningCandidateRecord'>
+scope = HMCCandidateSetScope(scope_id='classical-beta1', search_id='01b32d80f1925f1ef5ad', target_signature='7bae089c931027d84...072f90b0c2ac16', epsilon_domain=(1e-06, 0.941979578267438), repair_factor=1.5, max_repairs_per_family=0, use_xla=False)
+
+    @classmethod
+    def create(
+        cls,
+        scope: HMCCandidateSetScope,
+        *,
+        leapfrog_steps: int,
+        epsilon: float,
+        creation_ordinal: int,
+        candidate_family_id: str | None = None,
+        parent_candidate_id: str | None = None,
+    ) -> "HMCTuningCandidateRecord":
+        steps = _integer(leapfrog_steps, "leapfrog_steps")
+        if steps <= 0:
+            raise ValueError("leapfrog_steps must be positive")
+        value = _finite_positive(epsilon, "epsilon")
+        if not scope.epsilon_domain[0] <= value <= scope.epsilon_domain[1]:
+>           raise ValueError("epsilon is outside the scope domain")
+E           ValueError: epsilon is outside the scope domain
+
+bayesfilter/inference/hmc_candidate_set_tuning.py:245: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_q20_master_integration.py::test_actual_tuning_member_and_posterior[classical]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 passed, 1343 warnings in 28.46s

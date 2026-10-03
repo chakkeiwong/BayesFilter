@@ -12,8 +12,6 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-
 
 @dataclass(frozen=True)
 class RunManifest:
@@ -575,9 +573,14 @@ def _normalize_for_json(value: Any) -> Any:
         return {str(key): _normalize_for_json(val) for key, val in value.items()}
     if isinstance(value, (tuple, list)):
         return [_normalize_for_json(item) for item in value]
-    if isinstance(value, np.ndarray):
+    # Materialize only at the JSON boundary; array arithmetic belongs to the
+    # caller's TensorFlow runtime. Duck typing also preserves diagnostic arrays
+    # without importing their numerical backend into ordinary tuning.
+    if callable(getattr(value, "numpy", None)):
+        value = value.numpy()
+    if callable(getattr(value, "tolist", None)):
         return _normalize_for_json(value.tolist())
-    if isinstance(value, np.generic):
+    if callable(getattr(value, "item", None)):
         return value.item()
     return value
 

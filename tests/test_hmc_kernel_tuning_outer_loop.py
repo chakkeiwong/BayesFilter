@@ -16,8 +16,10 @@ import pytest
 import bayesfilter
 import bayesfilter.inference.hmc_budget_ladder as hmc_budget_ladder
 import bayesfilter.inference.hmc_kernel_tuning as hmc_kernel_tuning
+import bayesfilter.inference.hmc_tuning_dispatch as hmc_tuning_dispatch
 from bayesfilter.hmc_route_contract import (
     LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
+    LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
     LEGACY_SEGMENTED_WINDOWED_MASS_ALGORITHM_ID,
     OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
 )
@@ -39,6 +41,7 @@ from bayesfilter.inference import (
     HMCTuneVerifyRepairAttempt,
     HMCTuneVerifyRepairLoopConfig,
     HMCTuneVerifyRepairLoopResult,
+    ORDINARY_BROAD_PRIMARY_L_GRID,
     SequentialRHatCheckpointWriterConfig,
     TUNE_VERIFY_REPAIR_LOOP_NONCLAIMS,
     admitted_kernel_mechanics_payload_from_tuning_result,
@@ -162,12 +165,12 @@ def _sequential_verification_diagnostics(
         cost_stop_reasons=cost_stop_reasons,
         native_divergence_count=native_divergence_count,
     )
-    rhat_gate_passed = bool(rhat_passed and evidence["promotion_eligible"])
     return {
         "sequential_rhat_verification": True,
-        "passed": rhat_gate_passed,
+        "passed": bool(evidence["promotion_eligible"]),
+        "rhat_role": "tuning_explanatory_only",
         "all_finite_rhat_at_or_below_threshold": bool(rhat_passed),
-        "cap_hit": bool(evidence["promotion_eligible"] and not rhat_passed),
+        "cap_hit": False,
         "rhat_threshold": 1.01,
         "check_interval": int(draw_count),
         "max_results": int(draw_count),
@@ -216,6 +219,7 @@ def _passed_phase7_stage_fixtures():
         bootstrap=_bootstrap(),
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -491,6 +495,7 @@ def _phase7_direct_fixture() -> tuple[
         bootstrap=bootstrap,
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -538,8 +543,20 @@ def _historical_phase5_stage(
             "algorithm": "historical_fixed_mass_step_fixture",
             "candidate_count": 0,
             "historical_phase5_compatibility_fixture": True,
+            # A historical fixture must not retain the repaired operational
+            # manifest.  Keeping that manifest would claim generic-grid work
+            # while deliberately bypassing the candidate batch.
+            "operational_joint_l_epsilon_route": False,
+            "operational_route_marker": None,
+            "operational_budget_policy_id": None,
+            "operational_budget_policy_hash": None,
+            "public_work_manifest_hash": None,
+            "private_work_manifest_hash": None,
+            "executed_work_reconciliation": None,
         },
         _candidate_batch_handoff=None,
+        _operational_private_work_manifest=None,
+        _operational_public_work_manifest=None,
     )
 
 
@@ -1638,6 +1655,7 @@ def test_terminal_phase6_repair_slot_does_not_bypass_pre_windowed_timeout(
         bootstrap=_bootstrap(),
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -1857,7 +1875,7 @@ def test_nonidentity_result_geometry_survives_durable_mechanics_replay(
     def forbidden_runtime(*_args: Any, **_kwargs: Any) -> None:
         raise AssertionError("durable replay must not invoke tuning or HMC")
 
-    monkeypatch.setattr(hmc_kernel_tuning, "tune_hmc_kernel", forbidden_runtime)
+    monkeypatch.setattr(hmc_tuning_dispatch, "tune_hmc_kernel", forbidden_runtime)
     monkeypatch.setattr(hmc_kernel_tuning, "run_full_chain_tfp_hmc", forbidden_runtime)
     monkeypatch.setattr(_ToyGaussianAdapter, "log_prob_and_grad", forbidden_runtime)
 
@@ -1893,6 +1911,9 @@ def test_nonidentity_result_geometry_survives_durable_mechanics_replay(
 
     mechanics = admitted["mechanics"]
     assert mechanics["mass_policy"] == "windowed_adaptive"
+    assert mechanics["tuning_config"]["ordinary_selection_policy"] == (
+        tuning_result.config.payload()["ordinary_selection_policy"]
+    )
     assert mechanics["initial_mass_artifact_payload"]["covariance"] == [
         [2.0, 0.0],
         [0.0, 5.0],
@@ -2210,7 +2231,7 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert route["evidence_role"] == "fixed_kernel_tuning_admission"
     assert route["promotion_role"] == "handoff_gate"
     assert route["stopping_rule_role"] == (
-        "required_with_acceptance_health_and_minimum_draws"
+        "acceptance_health_and_minimum_draws_only"
     )
     assert route["reports_posterior_convergence"] is False
     assert route["reports_sampler_superiority"] is False
@@ -2229,7 +2250,7 @@ def test_outer_loop_default_tf_function_verification_uses_sequential_rhat_route(
     assert verification["sequential_rhat_policy"]["check_interval"] == 64
     assert (
         verification["sequential_rhat_policy"]["rhat_threshold_role"]
-        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
+        == "tuning_explanatory_only"
     )
     assert (
         verification["sequential_rhat_policy"]["cap_rule"]
@@ -2923,6 +2944,7 @@ def test_operational_checkpoint_binds_complete_v2_lineage(
     }
     fixed = hmc_kernel_tuning.HMCFixedMassStepStageResult(
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
             target_scope="kernel_windowed_mass_toy_gaussian",
             chain_execution_mode="tf_function",
         ),
@@ -3044,6 +3066,8 @@ def test_phase7_checkpoint_writer_emits_boundary_before_windowed_execute_error(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
 ) -> None:
+    from bayesfilter.inference import hmc_mass_adaptation
+
     writer_config = SequentialRHatCheckpointWriterConfig(
         checkpoint_dir=tmp_path,
         checkpoint_label="boundary",
@@ -3086,12 +3110,12 @@ def test_phase7_checkpoint_writer_emits_boundary_before_windowed_execute_error(
             raise RuntimeError("windowed execute blocked after boundary checkpoint")
 
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "build_fixed_size_hmc_chunk_runner",
         lambda *_args, **_kwargs: _FailingChunkRunner(),
     )
     monkeypatch.setattr(
-        hmc_kernel_tuning,
+        hmc_mass_adaptation,
         "write_sequential_rhat_boundary_handoff_checkpoint",
         fake_boundary_writer,
     )
@@ -3149,7 +3173,7 @@ def test_sequential_verification_supported_high_acceptance_requests_repair() -> 
     assert repair_triggers == ("verification_acceptance_outside_pass_band",)
 
 
-def test_sequential_rhat_failure_requests_verification_retry() -> None:
+def test_sequential_rhat_failure_is_explanatory_only() -> None:
     diagnostics = _sequential_verification_diagnostics(0.70, rhat_passed=False)
     status, role, hard_vetoes, repair_triggers = (
         hmc_kernel_tuning._classify_phase7_final_verification(
@@ -3160,13 +3184,11 @@ def test_sequential_rhat_failure_requests_verification_retry() -> None:
         )
     )
 
-    assert status == "repair_or_retry"
-    assert role == "verification_rhat_repair_trigger"
+    assert status == "passed"
+    assert role == "acceptance_health_fixed_kernel_verification_passed"
     assert hard_vetoes == ()
-    assert repair_triggers == (
-        "verification_rhat_above_threshold_or_cap_hit",
-        "verification_rhat_cap_hit",
-    )
+    assert repair_triggers == ()
+    assert diagnostics["all_finite_rhat_at_or_below_threshold"] is False
 
 
 @pytest.mark.parametrize("acceptance", [0.82, 0.60])
@@ -3201,7 +3223,7 @@ def test_sequential_verification_passes_with_valid_in_band_evidence() -> None:
     )
 
     assert status == "passed"
-    assert role == "dependence_aware_fixed_kernel_verification_passed"
+    assert role == "acceptance_health_fixed_kernel_verification_passed"
     assert hard_vetoes == ()
     assert repair_triggers == ()
 
@@ -4299,6 +4321,7 @@ def test_phase4_repair_without_eligible_records_preserves_phase5_repair(
         bootstrap=bootstrap,
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -4703,10 +4726,8 @@ def test_verification_mixed_rhat_acceptance_handoff_supplies_private_repair_step
             "cap_hit": True,
         },
         verification_final_status="repair_or_retry",
-        verification_diagnostic_role="verification_rhat_repair_trigger",
+        verification_diagnostic_role="verification_acceptance_repair_trigger",
         verification_repair_triggers=(
-            "verification_rhat_above_threshold_or_cap_hit",
-            "verification_rhat_cap_hit",
             "verification_acceptance_outside_pass_band",
         ),
         verification_reserved=True,
@@ -5829,7 +5850,7 @@ def test_outer_loop_budget_exhausted_emits_no_final_kernel() -> None:
     assert "phase7_budget_exhausted" in result.repair_triggers
 
 
-def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
+def test_legacy_shared_epsilon_outer_loop_accepts_fallback_and_reserved_repair(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     adapter, geometry, bootstrap = _operational_inputs()
@@ -5924,7 +5945,7 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
             callback_result=FixedMassHMCTuningBudgetCallbackResult(),
             final_status="passed" if repaired else "repair_or_retry",
             diagnostic_role=(
-                "dependence_aware_fixed_kernel_verification_passed"
+                "acceptance_health_fixed_kernel_verification_passed"
                 if repaired
                 else "verification_acceptance_repair_trigger"
             ),
@@ -5979,6 +6000,7 @@ def test_operational_outer_loop_accepts_fallback_and_applies_reserved_repair(
         geometry=geometry,
         bootstrap=bootstrap,
         config=HMCTuneVerifyRepairLoopConfig(
+            algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
             target_accept_prob=0.70,
             acceptance_band=(0.65, 0.75),
             repair_band=(0.55, 0.85),
@@ -6181,6 +6203,7 @@ def test_operational_phase5_selection_repairs_through_empirical_midpoint(
         bootstrap=bootstrap,
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260711, 642),
             chain_execution_mode="tf_function",
@@ -6262,6 +6285,157 @@ def test_operational_phase5_selection_repairs_through_empirical_midpoint(
     assert "private_evidence_ledger" not in fixed.payload()
 
 
+def test_canonical_phase5_runs_complete_broad_grid_then_survivor_midpoints(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from bayesfilter.inference import hmc_warmup
+
+    adapter, geometry, bootstrap = _operational_inputs()
+    windowed = hmc_kernel_tuning.run_hmc_windowed_mass_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        config=hmc_kernel_tuning.HMCWindowedMassStageConfig(
+            target_accept_prob=0.70,
+            seed=(20260905, 641),
+            chain_execution_mode="tf_function",
+            target_scope="kernel_windowed_mass_toy_gaussian",
+        ),
+        _attempt_budget_policy=_operational_budget(),
+    )
+    calls: list[dict[str, Any]] = []
+    bracket_calls: list[tuple[int, tuple[int, int]]] = []
+    fixture_step_bound = hmc_kernel_tuning._fixed_mass_step_upper_bound(windowed)
+    assert fixture_step_bound is not None
+
+    def finite_bracket(**kwargs: Any):
+        # This fixture checks broad-grid scheduling, not numerical bracketing.
+        leapfrog = int(kwargs["num_leapfrog_steps"])
+        seed = tuple(kwargs["seed"])
+        bracket_calls.append((leapfrog, seed))
+        assert kwargs["hard_veto_nonfinite"] is True
+        step = min(
+            float(geometry.target_trajectory_length) / float(leapfrog),
+            fixture_step_bound,
+        )
+        return hmc_warmup.ReasonableEpsilonResult(
+            status="passed",
+            selected_step_size=step,
+            attempts=(hmc_warmup.ReasonableEpsilonAttempt(
+                step_size=step,
+                mean_acceptance_probability=0.70,
+                finite=True,
+                seed=seed,
+                num_leapfrog_steps=leapfrog,
+            ),),
+        )
+
+    monkeypatch.setattr(hmc_warmup, "find_reasonable_epsilon", finite_bracket)
+
+    def operational_runner(_adapter: Any, initial_state: Any, config: Any):
+        bank = np.asarray(initial_state, dtype=float)
+        leapfrog = int(config.num_leapfrog_steps)
+        uses_tuning = bool(config.tuning_policy.uses_dual_averaging)
+        tuned_step = min(
+            float(geometry.target_trajectory_length) / float(leapfrog),
+            fixture_step_bound,
+        )
+        calls.append(
+            {
+                "role": "tune" if uses_tuning else "screen",
+                "num_leapfrog_steps": leapfrog,
+                "seed": tuple(config.seed),
+                "input_step_size": float(config.step_size),
+                "returned_step_size": tuned_step if uses_tuning else float(config.step_size),
+                "initial_state": np.array(bank, copy=True),
+            }
+        )
+        result_count = int(config.num_results)
+        draw = np.arange(result_count, dtype=float)[:, None, None]
+        samples = draw + bank[None, :, :]
+        probability = np.full((result_count, 4), 0.70)
+        base = _fake_result(
+            num_results=result_count,
+            acceptance=0.70,
+            step_size=tuned_step if uses_tuning else None,
+            num_adaptation_steps=(
+                config.tuning_policy.num_adaptation_steps if uses_tuning else None
+            ),
+            samples=samples,
+        )
+        return replace(
+            base,
+            trace={
+                **dict(base.trace),
+                "log_accept_ratio": np.log(probability),
+                "is_accepted": np.ones_like(probability, dtype=bool),
+                "target_log_prob": np.zeros_like(probability),
+                **{
+                    name: np.ones_like(probability, dtype=bool)
+                    for name in (
+                        "target_score_finite", "proposal_finite", "movement_finite",
+                        "proposed_target_finite", "accepted_target_finite",
+                    )
+                },
+            },
+        )
+
+    monkeypatch.setattr(
+        hmc_kernel_tuning,
+        "run_full_chain_tfp_hmc",
+        operational_runner,
+    )
+    fixed = hmc_kernel_tuning.run_hmc_fixed_mass_step_stage(
+        adapter=adapter,
+        geometry=geometry,
+        bootstrap=bootstrap,
+        windowed_stage=windowed,
+        config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            target_accept_prob=0.70,
+            seed=(20260905, 642),
+            chain_execution_mode="tf_function",
+            target_scope="kernel_windowed_mass_toy_gaussian",
+        ),
+        run_full_chain=operational_runner,
+        _attempt_budget_policy=_operational_budget(),
+    )
+
+    expected_refinement = (4, 7, 11, 15, 16, 21, 22)
+    tune_calls = tuple(call for call in calls if call["role"] == "tune")
+    screen_calls = tuple(call for call in calls if call["role"] == "screen")
+    expected_l_values = ORDINARY_BROAD_PRIMARY_L_GRID + expected_refinement
+
+    assert fixed.passed is True
+    assert tuple(leapfrog for leapfrog, _seed in bracket_calls) == expected_l_values
+    assert len({seed for _leapfrog, seed in bracket_calls}) == len(expected_l_values)
+    assert tuple(call["num_leapfrog_steps"] for call in tune_calls) == expected_l_values
+    assert tuple(call["num_leapfrog_steps"] for call in screen_calls) == expected_l_values
+    assert len({call["seed"] for call in tune_calls}) == len(expected_l_values)
+    assert len({call["returned_step_size"] for call in tune_calls}) == len(
+        expected_l_values
+    )
+    diagnostics = fixed.diagnostics
+    assert diagnostics["algorithm"] == OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID
+    assert diagnostics["promoted_default"] is True
+    assert diagnostics["broad_primary_l_grid"] == ORDINARY_BROAD_PRIMARY_L_GRID
+    assert diagnostics["broad_primary_complete"] is True
+    assert diagnostics["broad_refinement_l_values"] == expected_refinement
+    assert diagnostics["broad_refinement_rounds"] == 1
+    assert diagnostics["candidate_count"] == len(expected_l_values)
+    assert diagnostics["per_l_epsilon_tuning"] is True
+    assert diagnostics["shared_epsilon_across_l"] is False
+    assert diagnostics["operational_start_bank_factory_call_count"] == 2 * len(
+        expected_l_values
+    )
+    handoff = hmc_kernel_tuning._phase5_candidate_batch_handoff(fixed)
+    assert handoff is not None
+    assert handoff.candidate_count == len(expected_l_values)
+    assert hmc_kernel_tuning._phase7_direct_candidate_queue_route(
+        fixed_mass_step_stage=fixed,
+        fixed_mass_step_stage_runner=hmc_kernel_tuning.run_hmc_fixed_mass_step_stage,
+    ) == "direct_phase5_candidate_queue"
+
+
 def test_operational_exact_l_candidate_failure_is_budget_exhausted_not_runtime_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -6320,6 +6494,7 @@ def test_operational_exact_l_candidate_failure_is_budget_exhausted_not_runtime_e
         bootstrap=bootstrap,
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260711, 644),
             chain_execution_mode="tf_function",
@@ -6485,7 +6660,7 @@ def test_outer_loop_propagates_fixed_mass_budget_incomplete_without_final_kernel
     assert "hard_veto" not in fixed_summary["public_timeout_closeout"]
 
 
-def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
+def test_outer_loop_high_rhat_does_not_block_handoff_at_public_budget() -> None:
     windowed = _windowed_stage()
     fixed = hmc_kernel_tuning.run_hmc_fixed_mass_step_stage(
         adapter=_ToyGaussianAdapter(),
@@ -6493,6 +6668,7 @@ def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
         bootstrap=_bootstrap(),
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -6577,7 +6753,7 @@ def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
                 "verification_policy": "sequential_rhat",
                 "max_results": int(budget_policy.verification_num_results),
                 "acceptance_band": (0.65, 0.75),
-                "rhat_threshold_role": "fixed_kernel_tuning_handoff_gate_not_posterior_proof",
+                "rhat_threshold_role": "tuning_explanatory_only",
             },
             diagnostics,
             FixedMassHMCTuningBudgetCallbackResult(),
@@ -6599,16 +6775,16 @@ def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
         _phase7_final_verification_runner=verification_wrapper,
     )
 
-    assert result.final_status == "budget_exhausted"
-    assert result.final_kernel_payload is None
-    assert result.final_kernel_hash is None
+    assert result.final_status == "passed"
+    assert result.final_kernel_payload is not None
+    assert result.final_kernel_hash is not None
     assert verification_calls == [0]
     assert stage_calls == ["windowed", "fixed", "trajectory"]
     assert len(result.attempts) == 1
     assert result.attempts[0].windowed_stage is windowed
     assert result.attempts[0].fixed_mass_step_stage is fixed
     assert result.attempts[0].frozen_step_trajectory_stage is trajectory
-    assert result.attempts[0].verification_diagnostics["cap_hit"] is True
+    assert result.attempts[0].verification_diagnostics["cap_hit"] is False
     assert (
         result.attempts[0].verification_diagnostics[
             "all_finite_rhat_at_or_below_threshold"
@@ -6622,11 +6798,11 @@ def test_outer_loop_rhat_cap_blocks_handoff_at_public_budget() -> None:
     assert verification["verification_only_retry"] is False
     assert verification["reused_frozen_kernel_handoff"] is False
     assert verification["hmc_mechanics_exposed"] is False
-    assert verification["cap_hit"] is True
+    assert verification["cap_hit"] is False
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
     assert (
         verification["rhat_threshold_role"]
-        == "fixed_kernel_tuning_handoff_gate_not_posterior_proof"
+        == "tuning_explanatory_only"
     )
 
 
@@ -6638,6 +6814,7 @@ def test_outer_loop_rhat_cap_with_out_of_band_acceptance_still_reenters_stage_re
         bootstrap=_bootstrap(),
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -6762,7 +6939,7 @@ def test_outer_loop_rhat_cap_with_out_of_band_acceptance_still_reenters_stage_re
     assert verification["all_finite_rhat_at_or_below_threshold"] is False
 
 
-def test_terminal_phase6_repair_slot_no_longer_depends_on_rhat_saturation() -> None:
+def test_high_rhat_does_not_consume_terminal_repair_slot() -> None:
     windowed = _windowed_stage()
     fixed = hmc_kernel_tuning.run_hmc_fixed_mass_step_stage(
         adapter=_ToyGaussianAdapter(),
@@ -6770,6 +6947,7 @@ def test_terminal_phase6_repair_slot_no_longer_depends_on_rhat_saturation() -> N
         bootstrap=_bootstrap(),
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -6864,34 +7042,17 @@ def test_terminal_phase6_repair_slot_no_longer_depends_on_rhat_saturation() -> N
         _phase7_final_verification_runner=verification_wrapper,
     )
 
-    assert result.final_status == "budget_exhausted"
-    assert result.final_kernel_payload is None
-    assert result.final_kernel_hash is None
-    assert verification_calls == [0, 1]
+    assert result.final_status == "passed"
+    assert result.final_kernel_payload is not None
+    assert result.final_kernel_hash is not None
+    assert verification_calls == [0]
     assert stage_calls == ["windowed", "fixed", "trajectory"]
-    assert result.terminal_budget_guard_payload is not None
-    assert result.terminal_budget_guard_payload["classification"] == (
-        "verification_only_rhat_cap_budget_saturated_no_repair_slot"
-    )
-    assert result.diagnostic_role == (
-        "verification_only_rhat_cap_budget_saturated_no_repair_slot"
-    )
-    assert len(result.attempts) == 2
-    assert all(
-        attempt.verification_diagnostics["cap_hit"] is True
-        for attempt in result.attempts
-    )
-    terminal_summary = hmc_kernel_tuning._phase7_public_summary(result)[
-        "attempt_summaries"
-    ][-1]["stage_statuses"]["verification"]
-    assert terminal_summary["verification_only_retry"] is True
-    assert terminal_summary["reused_frozen_kernel_handoff"] is True
-    assert (
-        result.attempts[0].verification_diagnostics[
-            "all_finite_rhat_at_or_below_threshold"
-        ]
-        is False
-    )
+    assert result.terminal_budget_guard_payload is None
+    assert len(result.attempts) == 1
+    assert result.attempts[0].repair_triggers == ()
+    diagnostics = result.attempts[0].verification_diagnostics
+    assert diagnostics["cap_hit"] is False
+    assert diagnostics["all_finite_rhat_at_or_below_threshold"] is False
 
 
 def test_outer_loop_out_of_band_direct_candidate_advances_before_stage_repair() -> None:
@@ -6985,7 +7146,7 @@ def test_outer_loop_conflicting_direct_repairs_rerun_without_scalar_mutation(
         _fixed_mass_step_stage_runner=lambda **_kwargs: stage_calls.append("fixed")
         or fixed,
         _frozen_step_trajectory_stage_runner=lambda **_kwargs: (_ for _ in ()).throw(
-            AssertionError("current joint route must bypass Phase 6")
+            AssertionError("direct Phase 5 route must bypass Phase 6")
         ),
     )
 
@@ -7018,6 +7179,7 @@ def test_outer_loop_out_of_band_historical_acceptance_reenters_full_stages() -> 
         bootstrap=_bootstrap(),
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -7078,7 +7240,9 @@ def test_outer_loop_out_of_band_historical_acceptance_reenters_full_stages() -> 
         diagnostics = _sequential_verification_diagnostics(
             acceptance,
             draw_count=max(64, int(budget_policy.verification_num_results)),
-            rhat_passed=False,
+            # The historical fixture models an acceptance-triggered repair on
+            # attempt zero and a fully passing verification on attempt one.
+            rhat_passed=len(verification_calls) > 1,
         )
         status, role, hard_vetoes, repair_triggers = (
             hmc_kernel_tuning._classify_phase7_final_verification(
@@ -7315,6 +7479,7 @@ def test_outer_loop_labels_phase6_repair_handoff_when_final_attempt_has_no_slot(
         bootstrap=_bootstrap(),
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -7470,6 +7635,7 @@ def test_outer_loop_terminal_phase6_repair_slot_can_pass_once() -> None:
         bootstrap=_bootstrap(),
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -7642,6 +7808,7 @@ def test_outer_loop_terminal_phase6_repair_slot_closes_after_one_extra_attempt()
         bootstrap=_bootstrap(),
         windowed_stage=windowed,
         config=hmc_kernel_tuning.HMCFixedMassStepStageConfig(
+            algorithm_id=LEGACY_JOINT_L_EPSILON_ALGORITHM_ID,
             target_accept_prob=0.70,
             seed=(20260621, 50),
             chain_execution_mode="eager",
@@ -7802,8 +7969,9 @@ def test_public_progress_writes_are_atomic_under_concurrent_reader(
     assert not tuple(tmp_path.glob("*.tmp"))
 
 
-def _verified_bracket_config() -> HMCTuneVerifyRepairLoopConfig:
+def _legacy_verified_bracket_config() -> HMCTuneVerifyRepairLoopConfig:
     return HMCTuneVerifyRepairLoopConfig(
+        algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         operational_verification_bracket_policy="one_verified_log_midpoint",
         max_attempts=3,
         seed=(20260730, 880),
@@ -7920,12 +8088,12 @@ def _verified_bracket_attempt_state(
     ("initial_step", "initial_acceptance", "second_acceptance"),
     ((1.0, 0.90, 0.40), (2.0, 0.40, 0.90)),
 )
-def test_verified_bracket_repairs_both_endpoint_orders_to_one_log_midpoint(
+def test_legacy_verified_bracket_repairs_both_endpoint_orders_to_one_log_midpoint(
     initial_step: float,
     initial_acceptance: float,
     second_acceptance: float,
 ) -> None:
-    config = _verified_bracket_config()
+    config = _legacy_verified_bracket_config()
     first_input = _verified_bracket_input(
         step_size=initial_step,
         step_hash="initial-step-hash",
@@ -7989,8 +8157,8 @@ def test_verified_bracket_repairs_both_endpoint_orders_to_one_log_midpoint(
     ] == midpoint_input.input_hash
 
 
-def test_verified_bracket_same_direction_and_invalid_second_evidence_do_not_repair() -> None:
-    config = _verified_bracket_config()
+def test_legacy_verified_bracket_same_direction_and_invalid_evidence_do_not_repair() -> None:
+    config = _legacy_verified_bracket_config()
     first_input = _verified_bracket_input(
         step_size=1.0,
         step_hash="initial-step-hash",
@@ -8039,8 +8207,8 @@ def test_verified_bracket_same_direction_and_invalid_second_evidence_do_not_repa
     assert invalid["verified_acceptance_bracket_state"]["phase"] == "one_endpoint"
 
 
-def test_verified_bracket_fails_closed_on_lineage_drift_or_noninterior_midpoint() -> None:
-    config = _verified_bracket_config()
+def test_legacy_verified_bracket_fails_on_lineage_drift_or_noninterior_midpoint() -> None:
+    config = _legacy_verified_bracket_config()
     first_input = _verified_bracket_input(
         step_size=1.0,
         step_hash="initial-step-hash",
@@ -8096,35 +8264,38 @@ def test_verified_bracket_fails_closed_on_lineage_drift_or_noninterior_midpoint(
         )
 
 
-def test_verified_bracket_policy_is_opt_in_and_budgets_three_starts() -> None:
+def test_public_verification_policy_is_fixed_and_legacy_bracket_is_explicit() -> None:
     default = hmc_kernel_tuning.HMCKernelTuningConfig.serious()
-    opted_in = hmc_kernel_tuning.HMCKernelTuningConfig.serious(
-        operational_verification_bracket_policy="one_verified_log_midpoint"
-    )
     default_budget = _public_budget_policy_factory(default)(2, 0)
-    opted_in_budget = _public_budget_policy_factory(opted_in)(2, 0)
 
     assert default.operational_verification_bracket_policy == "single_repair"
     assert default_budget.operational_verification_starts_per_outer_attempt == 2
-    assert opted_in_budget.operational_verification_starts_per_outer_attempt == 3
-    assert default_budget.operational_budget_policy_hash != (
-        opted_in_budget.operational_budget_policy_hash
-    )
-    assert hmc_kernel_tuning._public_loop_config(
-        opted_in
-    ).operational_verification_bracket_policy == "one_verified_log_midpoint"
-    with pytest.raises(ValueError, match="preset='serious'"):
-        hmc_kernel_tuning.HMCKernelTuningConfig.standard(
+    with pytest.raises(ValueError, match="fixes operational_verification"):
+        hmc_kernel_tuning.HMCKernelTuningConfig.serious(
             operational_verification_bracket_policy="one_verified_log_midpoint"
+        )
+    legacy = HMCTuneVerifyRepairLoopConfig(
+        algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
+        operational_verification_bracket_policy="one_verified_log_midpoint",
+        max_attempts=3,
+    )
+    assert legacy.operational_verification_bracket_policy == (
+        "one_verified_log_midpoint"
+    )
+    with pytest.raises(ValueError, match="historical compatibility logic"):
+        HMCTuneVerifyRepairLoopConfig(
+            operational_verification_bracket_policy="one_verified_log_midpoint",
+            max_attempts=3,
         )
     with pytest.raises(ValueError, match="at least three"):
         HMCTuneVerifyRepairLoopConfig(
+            algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
             operational_verification_bracket_policy="one_verified_log_midpoint",
             max_attempts=2,
         )
 
 
-def test_operational_outer_loop_runs_one_verified_midpoint_then_stops(
+def test_legacy_shared_epsilon_outer_loop_runs_one_verified_midpoint_then_stops(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     adapter, geometry, bootstrap = _operational_inputs()
@@ -8233,6 +8404,7 @@ def test_operational_outer_loop_runs_one_verified_midpoint_then_stops(
     )
 
     config = HMCTuneVerifyRepairLoopConfig(
+        algorithm_id=LEGACY_OPERATIONAL_FIXED_TRAJECTORY_ALGORITHM_ID,
         operational_verification_bracket_policy="one_verified_log_midpoint",
         target_accept_prob=0.70,
         acceptance_band=(0.65, 0.75),

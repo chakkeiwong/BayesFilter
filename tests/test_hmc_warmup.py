@@ -491,19 +491,23 @@ def test_tiny_scale_nonconstant_states_do_not_fail_absolute_ess_cutoff() -> None
     assert np.min(np.linalg.eigvalsh(decision.covariance)) > 0.0
 
 
-def test_dense_metric_gate_rejects_shifted_explicit_chains() -> None:
+def test_dense_metric_reports_shifted_chains_without_rhat_gate() -> None:
     rng = np.random.default_rng(20260716)
     states = rng.normal(size=(160, 4, 3))
     states[:, :, 0] += np.array([-4.0, -1.0, 1.0, 4.0])[None, :]
 
     decision = assess_metric_covariance(states)
 
-    assert decision.outcome != "dense_update"
-    assert decision.report["dense_checks"]["cross_chain_location_compatible"] is False
+    assert decision.outcome == "dense_update"
+    assert "cross_chain_location_compatible" not in decision.report["dense_checks"]
+    assert decision.report["rhat_used_for_metric_decision"] is False
     assert decision.report["maximum_split_rhat"] > 1.10
+    pooled = states.reshape(-1, 3)
+    empirical = np.cov(pooled, rowvar=False)
+    np.testing.assert_allclose(decision.covariance, .75 * empirical + .25 * np.diag(np.diag(empirical)))
 
 
-def test_metric_gate_rejects_undefined_explicit_chain_compatibility() -> None:
+def test_metric_reports_undefined_rhat_without_vetoing_covariance() -> None:
     states = np.array(
         [
             [[-1.0], [0.0], [1.0], [2.0]],
@@ -517,15 +521,12 @@ def test_metric_gate_rejects_undefined_explicit_chain_compatibility() -> None:
         diagonal_min_states=2,
     )
 
-    assert decision.outcome == "no_update_insufficient_metric_evidence"
+    assert decision.outcome == "dense_update"
     assert decision.report["maximum_split_rhat"] is None
     assert decision.report["cross_chain_compatibility_status"] == (
-        "undefined_fail_closed"
+        "unavailable_reporting_only"
     )
-    assert decision.report["dense_checks"]["cross_chain_location_compatible"] is False
-    assert decision.report["diagonal_checks"][
-        "cross_chain_location_compatible"
-    ] is False
+    assert "cross_chain_location_compatible" not in decision.report["dense_checks"]
 
 
 def test_metric_gate_uses_diagonal_fallback_when_dense_rank_is_inadequate() -> None:
@@ -1379,6 +1380,8 @@ def test_metric_boundary_epsilon_failure_rolls_back_to_qualified_initializer(
     assert rejected.metric_decision.report["candidate_rejection_stage"] == (
         "reasonable_epsilon"
     )
+    assert rejected.metric_decision.report["candidate_reasonable_epsilon"]["status"] == "inconclusive_bracket"
+    assert len(rejected.metric_decision.report["candidate_reasonable_epsilon"]["attempts"]) == 1
     assert rejected.next_coordinate_signature is None
     assert rejected.next_metric_signature is None
     assert rejected.next_reasonable_epsilon is None
@@ -3013,7 +3016,7 @@ def _registry_with_consumed_preboundary_seed(
         {
             derivation_id: {
                 "site_id": derivation_id,
-                "source_path": "bayesfilter/inference/hmc_kernel_tuning.py",
+                "source_path": "bayesfilter/inference/hmc_bootstrap.py",
                 "owner_qualname": "run_hmc_bootstrap_screen",
                 "site_kind": "derivation",
                 "terminal_consumer": None,
@@ -3022,7 +3025,7 @@ def _registry_with_consumed_preboundary_seed(
             },
             gate_id: {
                 "site_id": gate_id,
-                "source_path": "bayesfilter/inference/hmc_kernel_tuning.py",
+                "source_path": "bayesfilter/inference/hmc_bootstrap.py",
                 "owner_qualname": "run_hmc_bootstrap_screen",
                 "site_kind": "terminal_consumption_gate",
                 "terminal_consumer": "hmc_runner_interface",
@@ -3032,7 +3035,7 @@ def _registry_with_consumed_preboundary_seed(
             **{
                 hop_id: {
                     "site_id": hop_id,
-                    "source_path": "bayesfilter/inference/hmc_kernel_tuning.py",
+                    "source_path": "bayesfilter/inference/hmc_bootstrap.py",
                     "owner_qualname": "read_only_seed_pass_through",
                     "site_kind": "read_only_pass_through",
                     "terminal_consumer": None,
@@ -3049,7 +3052,7 @@ def _registry_with_consumed_preboundary_seed(
         derivation_site_id=derivation_id,
         terminal_gate_site_id=gate_id,
         key="bootstrap/round/00",
-        owner_file="hmc_kernel_tuning.py",
+        owner_file="hmc_bootstrap.py",
         owner_qualname="run_hmc_bootstrap_screen",
         terminal_consumer="hmc_runner_interface",
         derivation={

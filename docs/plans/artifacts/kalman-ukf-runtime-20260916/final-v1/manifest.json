@@ -1,0 +1,1524 @@
+{
+  "schema": "kalman_ukf_compiled_repair_final.v1",
+  "created_utc": "2026-09-16T15:29:06.817936+00:00",
+  "git_head": "218281747ded3ab8bd65e5e7bfe28e23e58655de",
+  "worktree_status": [
+    " M .gitignore",
+    " M bayesfilter/adapters/macrofinance.py",
+    " M bayesfilter/highdim/actual_sv_srukf_tf.py",
+    " M bayesfilter/highdim/filtering.py",
+    " M bayesfilter/highdim/models.py",
+    " M bayesfilter/highdim/sv_mixture_cut4.py",
+    " M bayesfilter/highdim/ukf_scout.py",
+    " M bayesfilter/linear/correlated_kalman_tf.py",
+    " M bayesfilter/linear/experimental_batched_kalman_tf.py",
+    " M bayesfilter/linear/kalman_covariance_derivatives_tf.py",
+    " M bayesfilter/linear/kalman_qr_derivatives_tf.py",
+    " M bayesfilter/linear/kalman_qr_tf.py",
+    " M bayesfilter/linear/kalman_svd_derivatives_tf.py",
+    " M bayesfilter/linear/kalman_svd_tf.py",
+    " M bayesfilter/linear/kalman_tf.py",
+    " M bayesfilter/linear/lower_rank_downdate_tf.py",
+    " M bayesfilter/linear/qr_factor_tf.py",
+    " M bayesfilter/linear/rectangular_factor_tf.py",
+    " M bayesfilter/linear/stack_qr_tf.py",
+    " M bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py",
+    " M bayesfilter/nonlinear/factor_srukf_compat.py",
+    " M bayesfilter/nonlinear/factor_srukf_tf.py",
+    " M bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py",
+    " M bayesfilter/nonlinear/fixed_sgqf_structural_adapter_tf.py",
+    " M bayesfilter/nonlinear/fixed_sgqf_tf.py",
+    " M bayesfilter/nonlinear/rectangular_srukf_tf.py",
+    " M bayesfilter/nonlinear/sigma_points_tf.py",
+    " M bayesfilter/nonlinear/srukf_factor_tf.py",
+    " M bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py",
+    " M bayesfilter/nonlinear/ssl_lstm_posterior_tf.py",
+    " M bayesfilter/nonlinear/ssl_lstm_precision_experiment_tf.py",
+    " M bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py",
+    " M bayesfilter/nonlinear/svd_cut_tf.py",
+    " M bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py",
+    " M bayesfilter/testing/direct_factor_srukf_adapters_tf.py",
+    " M bayesfilter/testing/ksc_gaussian_sum_ukf_neutra_target_tf.py",
+    " M bayesfilter/testing/ksc_ukf_neutra_target_tf.py",
+    " M bayesfilter/testing/lgssm_generic_target_adapter_tf.py",
+    " M bayesfilter/testing/predator_prey_ukf_neutra_target_tf.py",
+    " M bayesfilter/testing/structural_ukf_neutra_target_design_tf.py",
+    " M bayesfilter/testing/tf_hmc_readiness.py",
+    " M bayesfilter/testing/tf_svd_cut_autodiff_oracle.py",
+    " M tests/test_batched_kalman_svd_derivatives_tf.py",
+    " M tests/test_experimental_batched_linear_kalman_tf.py",
+    " M tests/test_experimental_batched_svd_sigma_point_tf.py",
+    " M tests/test_fixed_sgqf_testing_integration_tf.py",
+    " M tests/test_fixed_sgqf_tf.py",
+    " M tests/test_lgssm_generic_target_adapter_tf.py",
+    " M tests/test_linear_correlated_kalman_tf.py",
+    " M tests/test_linear_kalman_qr_derivatives_tf.py",
+    " M tests/test_linear_kalman_tf.py",
+    " M tests/test_nonlinear_sigma_point_scores_tf.py",
+    "?? bayesfilter/linear/compiled_recurrence_tf.py",
+    "?? bayesfilter/linear/kalman_second_order_tf.py",
+    "?? bayesfilter/nonlinear/fixed_sgqf_compiled_tf.py",
+    "?? bayesfilter/testing/compiled_filter_runtime_fixture_tf.py",
+    "?? docs/plans/artifacts/kalman-ukf-runtime-20260916/",
+    "?? docs/plans/kalman_ukf_compiled_runtime_repair_20260916.md",
+    "?? docs/plans/kalman_ukf_compiled_runtime_result_20260916.md",
+    "?? docs/plans/kalman_ukf_macrofinance_handoff_20260916.md",
+    "?? scripts/audit_kalman_ukf_runtime.py",
+    "?? scripts/kalman_ukf_runtime_loop_exceptions.json",
+    "?? scripts/qualify_compiled_kalman_ukf_runtime.py",
+    "?? tests/test_compiled_kalman_ukf_runtime.py"
+  ],
+  "plan": "docs/plans/kalman_ukf_compiled_runtime_repair_20260916.md",
+  "result": "docs/plans/kalman_ukf_compiled_runtime_result_20260916.md",
+  "handoff": "docs/plans/kalman_ukf_macrofinance_handoff_20260916.md",
+  "python": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.15",
+  "tensorflow_probability_version": "0.25.0",
+  "tfp_version_source": "/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/version.py",
+  "cpu_model": "AMD EPYC 7773X 64-Core Processor",
+  "source_sha256_at_finalization": {
+    ".gitignore": "2575f02958e720f5645c0ce838e032020bf8ce1438a4e2812277e1d37769157b",
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/adapters/macrofinance.py": "a8ff6e33310edf0c67357f641228afd2e2a07e3988b58652a5797ecfae14f70f",
+    "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+    "bayesfilter/experimental_batched_value_score.py": "686e429434d00983ebde8b6596e5a0a6bac6ec06f39e3d946c28efbeb361aee8",
+    "bayesfilter/filters/kalman.py": "12c0e4a4c5d75027163c40748c6adea1839d6dd26e85974ea344e0681589a329",
+    "bayesfilter/filters/sigma_points.py": "df656f77d8586eeddb463c53888c45e26cc1f6bb71a41404cb6aa345c56ef868",
+    "bayesfilter/hardbound/gate_grid_reference.py": "1771c799e060a1561834497acf8e2e7ed07c0e728baca4738c7336313d38ac75",
+    "bayesfilter/highdim/__init__.py": "9b731a16585ae3e0e3420212670802efea6f5088000bd5f32d0f9f130f5ac9fb",
+    "bayesfilter/highdim/actual_sv_srukf_tf.py": "854b2292430b77a6baa2e76bc480c5e26ecd03f4f382ab3762c2137c097655bd",
+    "bayesfilter/highdim/bases.py": "b780dfe9b1d6c746d1447c8403143bae4c7c1ccd50ade24c9a05dc4524227ec9",
+    "bayesfilter/highdim/cubature_genut_adapters.py": "9d312a17a916e4f908b6888202c17ae63cd1ff7ee2ef6dbf5ee3e429c16fcf7c",
+    "bayesfilter/highdim/cubature_genut_filter.py": "5440f470efdd1cb18dc7f864e5f516a8d5d3f1ad6b00bb703f0d7617709572d1",
+    "bayesfilter/highdim/derivatives.py": "f965cc531e288f169ba21db3c73341000998353983488205eb3b9d75c5123404",
+    "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+    "bayesfilter/highdim/filtering.py": "3d80efee049c3203f3124c927c6b8a8ecb595eedd3a92b5f358691913ea4b40d",
+    "bayesfilter/highdim/fitting.py": "c3748e29e6e78f1c5cc4d7c967b15340b76409adf7530f1ca4e5e016eaebc321",
+    "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+    "bayesfilter/highdim/genut_shape_lm_tf.py": "17007e0484633f4882173a09f0da1a91ab1a1cbf4f65eeff67936fec1489a2af",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "e7f55ca24798d4051aba57016625ca54219cfffc428133a3c27fe5a968bf5eea",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+    "bayesfilter/highdim/ledh_contract_e_tp_lgssm_tf.py": "b7aba78cfae7fa41a767423c56802f4174b8f73fecc6ba44bb7fda64024b557c",
+    "bayesfilter/highdim/ledh_forward_contract.py": "abc0c476b85a280996c82b789ed929a919e9eb9ed96ad4a1f30fe6cd6676b0dc",
+    "bayesfilter/highdim/models.py": "b5e91cc0730579da9252f581cff3839c28a4b95211a71bfccf81fb136b2b1258",
+    "bayesfilter/highdim/native_generalized_sv.py": "08cdba43165e745dd317a22fd77ed30e46f0dcd705376b7609f2192e4a3a069e",
+    "bayesfilter/highdim/rank_budget.py": "6a62b2b942b7eb766f2abf6b1a532e6bdda87f9a4206aef351edf9efed6a2751",
+    "bayesfilter/highdim/score_api.py": "f80353f9412260ddc771894b5ebbd9037ed099bab96483490277f2c4aff680b7",
+    "bayesfilter/highdim/sir_latent_preclip_tf.py": "88c8adb5c245d141bb3f9e00544732dc1b0430f313642790f29fc5ad20f5277f",
+    "bayesfilter/highdim/source_route.py": "864061837818e597a6ff03cc7ee37d9c18dd718a2a5486871c47eb8e81fe6281",
+    "bayesfilter/highdim/squared_tt.py": "703846596b66eb2834ae5a00052fbb03756cc6e9c876c9669422e52419793056",
+    "bayesfilter/highdim/stochastic_density_training.py": "3bace5ef92cc180a867300105a2106099b7b3e71d46b96df334ed5b7c6b1bbc8",
+    "bayesfilter/highdim/sv_mixture_cut4.py": "94921270407283d8639fb904af7fec956243c7a7899fb7567ce2e3988f0ca9d2",
+    "bayesfilter/highdim/transition_route.py": "f5764e42e27b099bd4a2511153368cf866176718ea3cc9bf93a91dead7f4229a",
+    "bayesfilter/highdim/transport.py": "ff03fac036aa8486732962373e053ff63c4a2b0b26085517be86ac9034a0949c",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/highdim/tt.py": "cbe482ab3f595d3360bdca7e8fa7f0e24c56f99f74b531fd15694542eed6a8a8",
+    "bayesfilter/highdim/ukf_initializer.py": "19420fe0c7a7925c7ccc3199f8117fa27285082185ec14df5c17d6b79c180f00",
+    "bayesfilter/highdim/ukf_scout.py": "16214c1c028887b22c94b96b5ee2321e6e72c71fef20e4c846e2a20dc5d0c80a",
+    "bayesfilter/highdim/validation.py": "cc5820ca360c549ad9fa36eabaf6e25bb94d07eb851fce068aa51615c4314b20",
+    "bayesfilter/highdim/zhao_cui_actual_sv_batched_tt_tf.py": "952d24abf634a4f5645d04c29d7a193f6049cd53f61708504b816fc11de12363",
+    "bayesfilter/highdim/zhao_cui_austria_sir_fixed_variant_tf.py": "cc17d3848108b5b86c45ec8766340c85e451619dc63d847897c40f4bbd9f0300",
+    "bayesfilter/highdim/zhao_cui_austria_sir_proposal_tf.py": "771a3fb9dcd694922e2a008ee100408258ee8ad7bc5c1236ff7a2fb225dad0a4",
+    "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": "22ae70bf7f3105ac0c2398f7a9560cd464f0c2bc1e8146bc12029227a9133334",
+    "bayesfilter/highdim/zhao_cui_predator_prey_fixed_variant_tf.py": "a55b31eb91808d0e98373207542b0de983b085073ca289f07c327eb82965708b",
+    "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+    "bayesfilter/inference/batched_value_score.py": "25dd24e5aeb56c0c32a22d21723761e100eff5ec6fbb9018dd613f0717dba13e",
+    "bayesfilter/inference/fixed_l_finite_bracket.py": "4bb83fac9253c72e548d8a36aa5668c98f980431cfee50d684222f51ddf006a7",
+    "bayesfilter/inference/hmc.py": "be4e04804c3af3d8a619073771e84d7bffb72bbe9a2aaf8cede1b67773145ea4",
+    "bayesfilter/inference/hmc_artifact_identity.py": "947f5498e4cf8007f8e54c1ad8e9cec84186f6830b8b7067acc405f0985dc105",
+    "bayesfilter/inference/hmc_convergence.py": "b7544346f4beb63946c7482a8a9a2341f4d5cabe72a2b29fab7c4f4ab8408dd7",
+    "bayesfilter/inference/hmc_diagnostics.py": "a33073bf16336b8c47a54d56f85295dd70c1b198eb09967b3a1f581c0ee87dd1",
+    "bayesfilter/inference/hmc_failure_capture.py": "657015d2cb8c01399daf045bc97d74d38964ea440ec40cbca2ee6ff845626736",
+    "bayesfilter/inference/hmc_transition_archive.py": "01afff74a876a442e50f0fc4e7ca1050bb1e62be985c1528ede78c4d5778d094",
+    "bayesfilter/inference/hmc_tuning.py": "c1f2ccde7d86a330b79de55ddf3154f692642184ddc74d4831ff978bd20bd78a",
+    "bayesfilter/inference/hmc_verification.py": "9ff0f90a83775a157421dc435a8813a968a0ab1015ecdb00ed3ad0ed674e4d7c",
+    "bayesfilter/inference/mass_matrix.py": "6a959080a1de9c3894697bda39667777596b73f469a32e5a7676a7032dbd53b3",
+    "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+    "bayesfilter/inference/tuning_contract.py": "bbb110186a9f49a6a4baf3bea21ae52c60cb7ddbe1180a781a5433810a3dce58",
+    "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+    "bayesfilter/linear/batched_kalman_svd_derivatives_tf.py": "566cc6ac2d445d7a07801b88a252529dfb8779343c658b4a74a3bfa2d5ea6363",
+    "bayesfilter/linear/block_qr_conditional_tf.py": "02362e4cc7f68a8ac026d348a821ea2a81b8f715d342c0ebc0de672dd4ae68dc",
+    "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+    "bayesfilter/linear/correlated_kalman_tf.py": "05e6aac9700819eeb7cc02942061d04d1ec2ff6913f4f6c0be6e33ff1125234f",
+    "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+    "bayesfilter/linear/experimental_batched_kalman_tf.py": "f6119c1c2e757c0577b8f8ebb22366dc0588ec00c6c599db37959a8ffa8153d5",
+    "bayesfilter/linear/kalman_covariance_derivatives_tf.py": "f2a5d48386307a5d780d3b93b65be0d8faa74e9754b7a5af731c2114e6227b66",
+    "bayesfilter/linear/kalman_derivatives_numpy.py": "282e4440ccbca1215aab6fc92b921ace819b42432c516de96cca62aab346c016",
+    "bayesfilter/linear/kalman_qr_derivatives_tf.py": "88dc420c91dbfdd85a7d5c62f78011b5ec49901e889cd67204ccff12c1dc9673",
+    "bayesfilter/linear/kalman_qr_tf.py": "216bd123298b03c9fe8c47b40c72b4b44a236f0555d1bf1eab674464256934ae",
+    "bayesfilter/linear/kalman_second_order_tf.py": "60828873db7a9815e75dc8c3510d3ba036a4625916e23d06bcf48e8a0496ca90",
+    "bayesfilter/linear/kalman_svd_derivatives_tf.py": "13df7f1c3c1dff755aa27ed927eec328520b408706202ba2d63b84d981abf87d",
+    "bayesfilter/linear/kalman_svd_tf.py": "3a661028ff23fddaf1c2572554886162ce6536e5fd9d9ba6847e168a4313f7db",
+    "bayesfilter/linear/kalman_tf.py": "e4b51116af465876a554d009eea2c78dd8f098ac19b12bc9c66a63541eba380b",
+    "bayesfilter/linear/lower_rank_downdate_tf.py": "059278cfade7eb29f98612da4d7ca4e0eea0efe653559dc3b2dc139e7639b01a",
+    "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+    "bayesfilter/linear/rectangular_factor_tf.py": "2a85e963cd810a8cd4052af1d786ad374ef6b8f2a69d33e966173dfd3b050aa5",
+    "bayesfilter/linear/stack_qr_tf.py": "fec58bb75a8306874592c4ac585380343ee31177d007e86c03a4cef0d530ba7f",
+    "bayesfilter/linear/stationary_lgssm_derivatives_tf.py": "31145f7dcc5130b3e4c79d11e9bbbf7eb25588f76f3ff36eed304b3bd2713db7",
+    "bayesfilter/linear/svd_factor_tf.py": "b1f70b77fc840882427e8d7e930414ae011828b328e4decf31cb63e47b35683d",
+    "bayesfilter/linear/types.py": "e2e734a5e7454e0af19bc8189e34755268e172f9a1ffaa44688a77c9eb48d2ee",
+    "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+    "bayesfilter/nonlinear/__init__.py": "f0edaabc1fdc132742f578b6351795c78d4aa5826fd88d04ed61a433c47b93ad",
+    "bayesfilter/nonlinear/batched_svd_sigma_point_tf.py": "90ad0d0cdc5a8e30b779642bbdd318edae49fadee2b2bd1158ebdb2bd086cbf1",
+    "bayesfilter/nonlinear/compiled_value_paths.py": "e8b244b2bf37c40ee60cbd8b09a751026015f60aabd4b85cc77d54749d6c1b35",
+    "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+    "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py": "cd6229c819a1eae8921b8900fcdb2f2bf4d95e846c574d5bf5f4768f0fee1d0d",
+    "bayesfilter/nonlinear/factor_srukf_compat.py": "b264999b3024c4ab51ac3c945de57117bd0f9771cf2ff11edf6b4112958a498d",
+    "bayesfilter/nonlinear/factor_srukf_tf.py": "46c6dcd11260a668a7b97c94b4199d2315bea6cc5d618cb316b91a074d9703d9",
+    "bayesfilter/nonlinear/fixed_sgqf_compiled_tf.py": "8af76e0d10bb5112d5248a1f264977efdb57a9f7949507a11dfb696fd242ef8b",
+    "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+    "bayesfilter/nonlinear/fixed_sgqf_structural_adapter_tf.py": "3a623716acae7eaf853998af7d489a2d0a81132ddb19756dbcb1f97d261c1c39",
+    "bayesfilter/nonlinear/fixed_sgqf_tf.py": "305fade8e9d9a5ce02bd294b54814f5c99f9b236944d8c01ffe19a172e1b403d",
+    "bayesfilter/nonlinear/rectangular_srukf_tf.py": "4854a9bcf6d5ec05136710a2c433348cd3abf47af397795f324c87a6bcaeffec",
+    "bayesfilter/nonlinear/sigma_points_tf.py": "1aa062a50d702e05d69d33cef26dabd8e941c43485f9f249b82b65711c361156",
+    "bayesfilter/nonlinear/srukf_backend_policy.py": "9628eb27ca5f6f444f8b356d0fa3903ea36fac5f94c00e2eac1e8c60abcbd65f",
+    "bayesfilter/nonlinear/srukf_factor_tf.py": "d6002d396d08d21e3f62ebd484640b8a6545390993fe5fb797b5fd0cd2142f37",
+    "bayesfilter/nonlinear/srukf_route_guard.py": "aff5af4af71b2225f0ec9640d7027babcce5c20cd855fc1f93d961f504af519c",
+    "bayesfilter/nonlinear/ssl_lstm_complexity_batched_target_tf.py": "cf3e5b0ea4ee98ce1adb41b4006bd0f6a3227f4abdef3358805e437d4fda0236",
+    "bayesfilter/nonlinear/ssl_lstm_complexity_target_tf.py": "21731e823624d31f0f19c6f6abef05c5e54f960c3f0bf85ee047e8286ade9c44",
+    "bayesfilter/nonlinear/ssl_lstm_posterior_tf.py": "42c362ffc5b2290d61809550ed919b59acbdfaa8b08082a4a18077e7adebc62a",
+    "bayesfilter/nonlinear/ssl_lstm_precision_experiment_tf.py": "0317ab1c66bf4cac15c2c977add66c14112ec5ffaec796238b26eebc8199b6ea",
+    "bayesfilter/nonlinear/ssl_lstm_predictive_tf.py": "18adba6915ba552cd63b87eec74b17079e841d7496682526ef0e3ce5d32cfd12",
+    "bayesfilter/nonlinear/ssl_lstm_protocol.py": "b43b840275ed4fdf30a809f2c534e0a6a1a51c3467948d11d6ec5d8b5cfdb6be",
+    "bayesfilter/nonlinear/ssl_lstm_sgqf_ukf_adapters.py": "f898c7dc1d199c362de750287a71347dfaa7018b1ab593acc272800564299ba6",
+    "bayesfilter/nonlinear/svd_cut_tf.py": "951cc8e853b23f46950093d88463c300ecfec9f41e2919fae233820953850fb2",
+    "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "91f59ecad8d62224e3fffe2d1eede2c79ee59e190eae04c493cd50e7ea4865ce",
+    "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+    "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+    "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+    "bayesfilter/results.py": "80cab18515581baaccdeb0bfb370baad31a8f241fbb34b3d27f4ba9c6588086d",
+    "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/device_policy.py": "a7f645e6f92bbc470a11eda2a4b8673c1cd78bcf32f814f50d56248f09b2c37e",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/ssm/__init__.py": "12ddee03c18ce9b358eb434034f22e1b3a2f9a1911ff1f02c94bbb621b579b68",
+    "bayesfilter/ssm/contracts.py": "a02ac20f789df4caa784fb185423940ebe95a73d51571bb5c30099991c729c7a",
+    "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+    "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+    "bayesfilter/testing/__init__.py": "7f737079ac5781554fca5e91b46f70253373a2da63b23a27b529ef9e05836105",
+    "bayesfilter/testing/compiled_filter_runtime_fixture_tf.py": "29ab1a9289be0f6898116c5691e3c4527ebdbcffa4b5e9e9822df45cd622342a",
+    "bayesfilter/testing/deterministic_lgssm_exact_target_tf.py": "137716a379862428c5a8800de155bddf5afa3e6cf740e87f88f108e42043e8c7",
+    "bayesfilter/testing/direct_factor_srukf_adapters_tf.py": "2175dc63aa014c513383d9e2f795bb465d0e7e49d8014017efc458159871d97a",
+    "bayesfilter/testing/exact_sv_sgqf_neutra_target_tf.py": "f097ffc36e3b69cac4bd5fa83c073757c81f98a96243e81d425d3d7d9e13c65e",
+    "bayesfilter/testing/ksc_gaussian_sum_ukf_neutra_target_tf.py": "4bd8c6ef4fdb9b8f081a7202d2f36a7daa00665304d90b17a8f0fdc224adeaff",
+    "bayesfilter/testing/ksc_gaussian_sum_ukf_scope.py": "a6ae588b2cb4983f3acc0fe54817ec3b9e2c999c19b7735f26dd0c1422dccd72",
+    "bayesfilter/testing/ksc_ukf_neutra_target_tf.py": "ed3bab0478c9b5237aac61f23505c567b2adc864bb827ba4498d7a22e4e1d2a1",
+    "bayesfilter/testing/lgssm_generic_target_adapter_tf.py": "96e8dca611bf34b3ff7006bdf11a431136e0fe5cc378affe9714a8e45224779a",
+    "bayesfilter/testing/multidim_triangular_lgssm_batched_tf.py": "332b9d5ebcad06f47c45beabb8a849c72b713a11f721221af771f7d700069e45",
+    "bayesfilter/testing/multidim_triangular_lgssm_tf.py": "92951662ef8f211b4e99500855fa594fce28f02c85a21b5964ca796df3e767c9",
+    "bayesfilter/testing/neutra_model_registry_tf.py": "633f22e662a0785d35575b0e250e69cc8e7f2c7f000b0d285fd34288b750a3f8",
+    "bayesfilter/testing/nonlinear_diagnostics_tf.py": "f90f38ca7a7836e377475b20409731066370bf3de5a03075358be958f3d67fd3",
+    "bayesfilter/testing/nonlinear_models_tf.py": "ef59d9d504f7eabdf4cf55bd1e7e57e966095e5cec9752fb9db06fb19d477567",
+    "bayesfilter/testing/predator_prey_sgqf_neutra_target_tf.py": "8e37eacbf9b37d6e1966d7c01b482901ccafef0dc804cc43499f4e31b6c503dd",
+    "bayesfilter/testing/predator_prey_ukf_neutra_target_tf.py": "b2462f8ea9f59d26447ae5f492ce90f27c4e750918a6235f460998451eab3755",
+    "bayesfilter/testing/simple_nonlinear_generic_target_adapter_tf.py": "8377d96111e3ae2f85dd1d60e93fbf849dc9565e9b75b327acec3697d272a999",
+    "bayesfilter/testing/sir_filter_neutra_target_design_tf.py": "64ac011c4d0604804650dc0613b15036312789e0279bd3e0006a3cf39a01836f",
+    "bayesfilter/testing/structural_ukf_neutra_target_design_tf.py": "8acc8b9370e6dbbd4a4d4dbfa7dc26106688a7ba2c7b92ca6b8020b419d8d81b",
+    "bayesfilter/testing/tf_covariance_differentiated_kalman_reference.py": "ba26234beeba3aaa8ae943444fdb9f179eab9b7ab098e49088ca2405302258e6",
+    "bayesfilter/testing/tf_hmc_readiness.py": "1b34be76ce567bd3806d06a6dd5bd9fd07fd07d79cf64b8c7affb6035726693d",
+    "bayesfilter/testing/tf_solve_differentiated_kalman_reference.py": "b43666beea615c2add37dd9e7bbddcff624309bfaee66f705f664f7605fe4daf",
+    "bayesfilter/testing/tf_svd_cut_autodiff_oracle.py": "6324323ff96f091b9d4e54935e22fa9c3b8e6fbd31721c8f82c1ac628f63aa7e",
+    "bayesfilter/testing/zhao_cui_actual_sv_neutra_target_tf.py": "38012abc8da04612adee3bb343a3b2977febeb10e346d32ac8395c15dfaf0e01",
+    "docs/plans/kalman_ukf_compiled_runtime_repair_20260916.md": "1119724ee028bcdcfb2f5e49c67d8f8c4b85c7ef38faf0f57e0bfc682731b794",
+    "docs/plans/kalman_ukf_compiled_runtime_result_20260916.md": "d1d6d7e672f4452b10a6995a48e710b32ab0012f6e03636c168937f84db616e0",
+    "docs/plans/kalman_ukf_macrofinance_handoff_20260916.md": "0585b17d83b749fcc3f59f56bd2c416bd989f73a3ce0f826ba074242182f21bc",
+    "experiments/dpf_implementation/tf_tfp/cubature/cut4_tf.py": "9d55080a4da485f5cceeae6c1bafaa218814624f9ca8a63906ad47bc24bd7686",
+    "experiments/dpf_implementation/tf_tfp/filters/bootstrap_pf_tf.py": "2099bcc1bd3b192b5ee529a5578f0a6570776e7e79ecdfece8516b71588e757f",
+    "experiments/dpf_implementation/tf_tfp/filters/ledh_pfpf_alg1_ukf_tf.py": "6d1bcde9c6bcd38b068f60c593bc91f530f0ad1a7c830b7467b1ae2f4d90a8d7",
+    "experiments/dpf_implementation/tf_tfp/fixtures/common_model_suite_tf.py": "c1caf4ef9896126031b396f591aea03e6f3a4014bfab799a93bcfba543f532b8",
+    "experiments/dpf_implementation/tf_tfp/fixtures/lgssm_tf.py": "7cc15463472344094604f8032e2a271956d3b23acb29540bd9d7f36f152b238f",
+    "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "80cf1a0a7be4beb216ded8fe51b75cbbb02d17b8b8b924617c23ac4dc465dcc3",
+    "experiments/dpf_implementation/tf_tfp/fixtures/structural_ar1_quadratic_tf.py": "fd175e19b10aae37975b29b977fdf83ce637bb2d26d3a34f2e234ad62ef23672",
+    "experiments/dpf_implementation/tf_tfp/flows/jacobians_tf.py": "7e590940d4b2fb178dfbbfbe04e94ed8ad99874be0421032b3023da53347d3c0",
+    "experiments/dpf_implementation/tf_tfp/flows/ledh_tf.py": "8a9b674183ff5972782cac68df31112f1cf323965a846a2d0bdea0b3ad277159",
+    "experiments/dpf_implementation/tf_tfp/references/cut4_structural_tf.py": "82faa90505ec05eab4d24614029d49afc15eeeb6753409855c0a3d6866d9fb7d",
+    "experiments/dpf_implementation/tf_tfp/references/kalman_lgssm_tf.py": "28b69d18ed7463010d553c32de148f87d4990fb1320c67a2286c56cc41c0da37",
+    "experiments/dpf_implementation/tf_tfp/references/kalman_structural_ar1_tf.py": "7639ac94bbe4afa7829b12e6194224f01a6b50d8bc1d12cf94e427892117eed0",
+    "experiments/dpf_implementation/tf_tfp/references/ukf_tf.py": "c611cd2438e4aeda7037e0d4554caf7a290638c350bb3a244ad84a3164fa22d6",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "6c2bc7e80052b1de050ec3757aff9a11e9b65d79229203f5d635b0e6bfdfd168",
+    "experiments/dpf_implementation/tf_tfp/resampling/sinkhorn_tf.py": "70807359bc28a7f253237cb593febdba4405afe92216fc465863d02ba5b85996",
+    "experiments/dpf_implementation/tf_tfp/runners/__init__.py": "851e8a26af95965dd4fde142d1404dd01f7e50cf93bd2c973f991b609e749d4e",
+    "experiments/dpf_implementation/tf_tfp/runners/common_tf.py": "9d00ca5d665b4e26e0e0b0c3b2bc6dfd474039057a0dbf6be45d0384ef7c3fda",
+    "experiments/dpf_implementation/tf_tfp/runners/filterflow_reference_policy.py": "9ff05ca36dc7ae508cf75dc81cfe67611ca33341b5ab892415bebfd0c8e4e858",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p0_registry_tf.py": "80f064dc2e7f542f2c5aec19c0f8a687694f27040cc3e3e349addb181927ed37",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p1_lgssm_exact_oracle_tf.py": "fbb2e2cfb7e274bb7f6a61677b32ffb4440f302c4b0eb547f7e2ac2e69b921bc",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p2_tiny_nonlinear_dense_oracle_tf.py": "eea2da38514f0aa3397219175f35b50418f266f575c512b30556b6abb725409f",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p3_conditional_gaussian_mixture_tf.py": "ebc9b82adf5ee69c6344587645bea659ceae5ef08be1f9e2926afafb1dd9455a",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p5_alg1_ukf_statistical_closeness_tf.py": "194240f55417ca719e7a1a311955695367223841eb052565273a4b1f814fb1dc",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p6_alg1_ukf_cross_filter_calibration_tf.py": "93382b87a3aeb4bf0d8724f1698441db829056b0d2a735bd6e3d20b28909590b",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filter_oracle_comparison_p8_p44_alg1_ukf_blocker_closure_tf.py": "de3b431b540e37229b9d2f36bd82c9156e83048e08b08a9097de078c33b9c0a0",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_float64_branch_reference_tf.py": "468d078fcf358b501bd0d35463fee3a882dfc01da26c0cce0f4cab0b302d3816",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_float64_reference_probe_tf.py": "7dcd68b50261b111915e118e5be0cb03aacd18645dbdf86c78ba1c4cd9c17d0b",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_lgssm_cross_audit_tf.py": "188cc094d7e7d26a29b9ed0824960b315164fedf6520afde1b211c558b1f4380",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_lgssm_matched_cross_audit_tf.py": "6c085ecd8346ee1937faef17a13c8585b09f0ca2067dcd53cb20b3c2240e50bb",
+    "experiments/dpf_implementation/tf_tfp/runners/run_filterflow_lgssm_paper_table_gated_comparator_tf.py": "9082010ee502b3a9fd390ef91208e2806e5f3d918ecbbfb38e36a2823410609f",
+    "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_alg1_ukf_direct_replacements_tf.py": "5f19409699cf8dc0bb54ef98957c1047c52b8e269dd686d9b0074feabb429975",
+    "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_alg1_ukf_extension_historical_classification.py": "f3aed948c12cf5eafce4072cfd5bea64d4fc2e43c0b8487a12ca287f1d8fb1cc",
+    "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_alg1_ukf_ledh_pfpf_ot_rerun_closeout.py": "d009dda3e2a003719a8e40facb83d70a42b8c80b3b27e6b3a98754b95c066d08",
+    "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_alg1_ukf_p5_lgssm_comparison_tf.py": "6b76358f567f097ba2f5f1e72e562dc4da22b5a5aad8c0de2c4607aeecf28602",
+    "experiments/dpf_implementation/tf_tfp/runners/run_structural_ar1_cut4_ledh_gradient_mle_tf.py": "38b9a72bb6b546db14da2bc47520ec7c5cceea0f24fcd020479183e61f72d5b0",
+    "experiments/dpf_implementation/tf_tfp/runners/run_structural_ar1_linear_kalman_ledh_mle_tf.py": "19e55544a1257f67df9c9f4e61aebb547e7b0f53d25222723251b3d6637bf67d",
+    "experiments/dpf_implementation/tf_tfp/runners/run_structural_interface_linear_ar1_tf.py": "1254e24484a21233fdb2a5504289c3d78f00db225e5fc9fd70ff4f51a17446fd",
+    "experiments/dpf_implementation/tf_tfp/runners/run_v2_bootstrap_ot_values_tf.py": "9bc379f8b67b8af9e88c4ccffeed4a58649a8e2170e371a8dc143bcf527bf52b",
+    "experiments/dpf_implementation/tf_tfp/runners/run_v2_ledh_pfpf_alg1_ukf_contracts_tf.py": "540166834ed7a83cabf6b343a6b3f7b143e5e0f2ac0c067318c80d2be13fe4df",
+    "experiments/dpf_implementation/tf_tfp/runners/run_v2_ledh_pfpf_alg1_ukf_gradients_tf.py": "60f32adadb4cfeb263fb6a25ad10529ef3146f23be567f277c74b517a596d82c",
+    "experiments/dpf_implementation/tf_tfp/runners/run_v2_ledh_pfpf_alg1_ukf_values_tf.py": "db4d226f5a30333fe0e25ac87f862f4a8866bd103c5055f03add2311500a4d21",
+    "experiments/dpf_implementation/tf_tfp/structural/contracts_tf.py": "2bb18b815c497085288b8a5a3ecfc6eff2c2a249871b1f24dfdc831adabfa83a",
+    "experiments/dpf_implementation/tf_tfp/structural/models/structural_ar1_tf.py": "c148326e1d0f1b1a8d482caeb60e63c33e6e1f0aff480ab79e307088287ff906",
+    "experiments/dpf_implementation/tf_tfp/structural/particle_state_tf.py": "227433fb3e774db3c68b9a57a82bc2647272270182c2bbcc0781ba3941befbf4",
+    "experiments/dpf_implementation/tf_tfp/structural/resampling_policies_tf.py": "9a79421796dc33cd0e437d522d87c50ad57cab50d571e43fc03894ebc4ffeb0d",
+    "experiments/dpf_implementation/tf_tfp/structural/structural_filter_tf.py": "54f01ace0dbf864104d43e9e77d072d930411c069a65357bd63e5ee01949f77b",
+    "scripts/audit_kalman_ukf_runtime.py": "ba327cfa7f38aff2b2e47c88a822ebfa7067194074777eea9cfcf09d9a6b5537",
+    "scripts/benchmark_kalman_qr_analytic_vs_autodiff_score.py": "e790b48c81322d0324de05d84bb702be4114709a9cb5dcc5dcf5364dc39bad54",
+    "scripts/benchmark_kalman_qr_parameter_count_scaling.py": "18ba3042c3b9c7261fb6f0fb290eae324e4169e1593b0ab001f01f8c8d03b4e3",
+    "scripts/filtering_value_gradient_benchmark_emit_p8_blocker_fix_gates.py": "e2bafe0d8edf6b63088c43a2f43a02c6e4ab8b4ef127aba79710c81c466ad59c",
+    "scripts/filtering_value_gradient_benchmark_generate_p8_datasets.py": "dc7801127b049f3bc3cef4007011ea3a8b0589224313c9a3aba322e1595450f3",
+    "scripts/filtering_value_gradient_benchmark_run_p8_numeric.py": "71e3718f07389321b0f96f19d299bec7ac3a7ce5205607df6a9efe54d4059652",
+    "scripts/filtering_value_gradient_benchmark_run_p8d_numeric.py": "210492bfca26f591f01cf2b50c4bad05c80cb3e1c9deeeba930a962a90483458",
+    "scripts/kalman_qr_benchmark_contract.py": "f52a20624eb3c8c72c59cc2809f4cd870de4c3c84276fed97f308bc4f0a75e64",
+    "scripts/kalman_ukf_runtime_loop_exceptions.json": "574a4834e052542a3caac2d220227cff95993849475b7f039f1b3fabea8ca379",
+    "scripts/p76_bounded_ukf_minibatch_pilot.py": "9f0d0e13e625b53015b80ce781cee0211c82251c1f54508d4492df70af4c8972",
+    "scripts/p76_tiny_ukf_initializer_smoke.py": "535e24e505e54b42359149066f42f9e623599a3dd0c9ba9e978e61484e932905",
+    "scripts/qualify_compiled_kalman_ukf_runtime.py": "4ac42d7dd77627fd02cbd80c47d3e9db5d8d53d3c993eca16e259ea4fe2e72d4",
+    "scripts/run_direct_factor_srukf_model_coverage_20260817.py": "29c6556d4321fcc8d2adf0d66316db81956121acc606fb4296be45cbc4052d14",
+    "scripts/run_direct_factor_srukf_remaining_adapter_closure_20260817.py": "61bb999c463d6f11702efe51b932c7b4f4ddf639bc671f302c69c548bf2cf3cc",
+    "scripts/run_direct_factor_srukf_remaining_gaps_hypotheses_20260817.py": "39ef2b462d6b7ec7bcc52c23a3ac893bde6549e2447557d7caa1f6459bf10b0a",
+    "scripts/run_fixed_rank_srukf_gpu_gate_20260818.py": "fbda79bbdd5b6584733cfa20e5095ada265b9cf59d2993501174a5cc211492df",
+    "tests/test_batched_kalman_svd_derivatives_tf.py": "e029c5bdcd0eab0e4b99e48376d75c81d801abce216c4e62ef687091f8ef4f9a",
+    "tests/test_compiled_kalman_ukf_runtime.py": "497a06fbc40325e020cc87e2cd943a98718719fd5e63c84646a7b318d5009b14",
+    "tests/test_experimental_batched_linear_kalman_tf.py": "f532d75eceea59f4f2be12bea6634cb88ca264107942b3ee5e530d6b22959ae6",
+    "tests/test_experimental_batched_svd_sigma_point_tf.py": "ca6069f6babc5460518f31a9b8677a77cd173b1ca14ce0248c47f910ece72753",
+    "tests/test_fixed_sgqf_testing_integration_tf.py": "824fc96a43816bda9c422a45c9165bf2473d6eb6cf0e8f0e38265d59f70a2130",
+    "tests/test_fixed_sgqf_tf.py": "18f4a1b740cfcf7bc6f939d5f3e72944a7ddb67d2a7042131cd055b9bd9c4a3a",
+    "tests/test_lgssm_generic_target_adapter_tf.py": "5e24b40ddc5d7a9183fa34835791edb697ecc2c544e6d34e7b61a27882cb1663",
+    "tests/test_linear_correlated_kalman_tf.py": "e5d2cf461e20161aa09088a8e20e0806ad4044b1aef1022f634935519a148945",
+    "tests/test_linear_kalman_qr_derivatives_tf.py": "e8f40c9650080704d5fa603f7d30507fea344726ad442e1113587ff1c1327f2a",
+    "tests/test_linear_kalman_tf.py": "93861c8d6689be4e071ed43bddafc5de82f75c7c309a4528cd09b44f1414bdda",
+    "tests/test_nonlinear_sigma_point_scores_tf.py": "c9403ff9f75c932321a36bbd3ef8d118acaef585413a4e120203002e0a519565"
+  },
+  "qualification_source_correspondence": {
+    "cpu-v5": {
+      "status": "PASS_ENGINEERING_QUALIFICATION",
+      "source_mismatches": [],
+      "source_count": 200
+    },
+    "gpu-v4": {
+      "status": "PASS_ENGINEERING_QUALIFICATION",
+      "source_mismatches": [],
+      "source_count": 200
+    }
+  },
+  "test_receipts": [
+    {
+      "path": "recovery-v1/callers.junit.xml",
+      "command": null,
+      "command_status": "full invocation not recovered; retained JUnit supplies exact executed test IDs",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "35",
+          "time": "28.580",
+          "timestamp": "2026-09-16T21:42:34.133506+08:00",
+          "hostname": "ubuntu-MZF2-AC0-00"
+        }
+      ],
+      "testcases": [
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_admitted_score_route_uses_no_gradient_tape",
+          "time": "0.003"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_contract_is_exact_stable_and_untransported",
+          "time": "0.003"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_adapter_emits_finite_batch_values_scores",
+          "time": "2.965"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_matches_prior_plus_qr_likelihood",
+          "time": "0.010"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_batch_of_one_matches_source_rank1_target",
+          "time": "3.470"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_batch_matches_independent_scalar_analytical_reference",
+          "time": "3.087"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_rejects_rank1_position",
+          "time": "0.002"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_signature_and_manifest_are_stable",
+          "time": "0.003"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_score_matches_finite_difference_reference",
+          "time": "0.029"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_likelihood_score_matches_analytic_qr_diagnostic",
+          "time": "0.007"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_precision_experiment_tf",
+          "name": "test_policy_dtypes_distinguish_storage_from_tf32_policy",
+          "time": "0.000"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_precision_experiment_tf",
+          "name": "test_experimental_float64_reproduces_production_target",
+          "time": "2.316"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_precision_experiment_tf",
+          "name": "test_mixed_and_float32_are_finite_with_declared_storage_dtype",
+          "time": "1.930"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_precision_experiment_tf",
+          "name": "test_precision_engine_compiles_with_cpu_xla",
+          "time": "2.627"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_level1_rule_is_the_center_point_rule",
+          "time": "0.002"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_level2_rule_matches_the_p47_three_point_rule",
+          "time": "0.004"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_level3_rule_reproduces_standard_normal_first_two_moments",
+          "time": "0.002"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_active_indices_and_coefficients_match_p47_3d_level2_preview",
+          "time": "0.000"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_level2_3d_cloud_merges_to_six_axis_points",
+          "time": "0.008"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_level2_2d_cloud_reproduces_selected_standard_normal_moments",
+          "time": "0.005"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_level2_4d_cloud_reproduces_standard_normal_covariance",
+          "time": "0.006"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_level2_axis_cloud_matches_generic_cloud_through_four_dimensions",
+          "time": "0.012"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_level2_axis_cloud_is_feasible_and_moment_exact_in_18_dimensions",
+          "time": "0.002"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_level3_1d_cloud_keeps_the_full_five_point_ghq_rule",
+          "time": "0.005"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_level3_2d_cloud_matches_jia_example_point_count_and_covariance",
+          "time": "0.005"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_branch_identity_is_stable_and_sensitive_to_branch_fields",
+          "time": "0.009"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_tf",
+          "name": "test_fixed_sgqf_numerical_core_has_no_numpy_boundary",
+          "time": "0.001"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_branch_contract_tf",
+          "name": "test_fixed_sgqf_value_and_score_share_branch_identity_on_success",
+          "time": "1.146"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_branch_contract_tf",
+          "name": "test_fixed_sgqf_value_and_score_record_same_failure_stage_when_branch_breaks",
+          "time": "1.094"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_audit_tf",
+          "name": "test_fixed_sgqf_branch_manifest_contains_core_p47_contract_fields",
+          "time": "0.004"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_audit_tf",
+          "name": "test_fixed_sgqf_branch_identity_changes_when_branch_policy_changes",
+          "time": "0.006"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_audit_tf",
+          "name": "test_fixed_sgqf_filter_records_cloud_weight_sum_failure_explicitly",
+          "time": "0.004"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_audit_tf",
+          "name": "test_fixed_sgqf_innovation_failure_records_stage_reason_and_branch_hash",
+          "time": "0.418"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_testing_integration_tf",
+          "name": "test_fixed_sgqf_testing_helpers_expose_diagnostics_for_successful_value_and_score",
+          "time": "1.073"
+        },
+        {
+          "classname": "tests.test_fixed_sgqf_testing_integration_tf",
+          "name": "test_fixed_sgqf_branch_summary_counts_mixed_success_and_failure",
+          "time": "2.160"
+        }
+      ]
+    },
+    {
+      "path": "recovery-v1/core.junit.xml",
+      "command": null,
+      "command_status": "full invocation not recovered; retained JUnit supplies exact executed test IDs",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "85",
+          "time": "103.861",
+          "timestamp": "2026-09-16T21:44:16.154723+08:00",
+          "hostname": "ubuntu-MZF2-AC0-00"
+        }
+      ],
+      "testcases": [
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_runtime_audit_has_no_unclassified_numerical_iteration",
+          "time": "4.354"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_runtime_audit_does_not_exempt_new_numerics_in_a_schema_function",
+          "time": "0.002"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_qr_graph_does_not_grow_with_parameter_count[False]",
+          "time": "0.701"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_qr_graph_does_not_grow_with_parameter_count[True]",
+          "time": "0.251"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_rectangular_qr_dq_dr_independent_differences_and_chain_isolation",
+          "time": "0.422"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_complete_nonlinear_filter_differences_and_joint_callback[False]",
+          "time": "3.669"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_complete_nonlinear_filter_differences_and_joint_callback[True]",
+          "time": "3.736"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_full_rank_rectangular_specialization_preserves_all_outputs",
+          "time": "3.591"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_compiled_direct_filter_rejects_invalid_input_factor_per_chain",
+          "time": "1.150"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_filter_graph_size_is_bounded_in_observation_horizon[False]",
+          "time": "0.919"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_filter_graph_size_is_bounded_in_observation_horizon[True]",
+          "time": "1.414"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_qr_derivative_preserves_an_ill_conditioned_valid_stack",
+          "time": "0.178"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_sgqf_tensor_status_survives_outer_xla_and_stops_at_first_failure",
+          "time": "1.978"
+        },
+        {
+          "classname": "tests.test_compiled_kalman_ukf_runtime",
+          "name": "test_rectangular_invalid_chain_reports_numeric_status_under_outer_xla",
+          "time": "1.484"
+        },
+        {
+          "classname": "tests.test_stack_qr_tf",
+          "name": "test_batched_qr_reconstructs_and_derivative_matches_fd",
+          "time": "0.020"
+        },
+        {
+          "classname": "tests.test_stack_qr_tf",
+          "name": "test_qr_batch_permutation_and_invalid_inputs",
+          "time": "0.010"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_fixed_pivot_rectangular_qr_reconstructs_exact_rank_two_stack",
+          "time": "0.006"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_fixed_pivot_rectangular_qr_derivative_matches_centered_finite_difference",
+          "time": "0.016"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_rectangular_qr_chart_failure_and_bad_permutation_are_explicit",
+          "time": "0.005"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_direct_stack_svd_handles_rank_zero_repeated_values_and_cutoff_branch",
+          "time": "0.010"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_support_likelihood_on_and_off_affine_support",
+          "time": "0.009"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_direct_support_conditional_is_value_only_and_removes_observed_stack",
+          "time": "0.008"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_rectangular_primitives_reject_nonfinite_and_invalid_shapes",
+          "time": "0.001"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_fixed_support_likelihood_derivative_and_renormalized_epsilon_limit",
+          "time": "0.027"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_fixed_support_conditional_value_and_derivatives_match_centered_fd",
+          "time": "0.057"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_fixed_chart_anisotropic_near_rank_change_fails_closed",
+          "time": "0.004"
+        },
+        {
+          "classname": "tests.test_rectangular_factor_tf",
+          "name": "test_rank_two_fixed_support_conditional_matches_dense_authority_and_fd",
+          "time": "0.058"
+        },
+        {
+          "classname": "tests.test_block_qr_conditional_tf",
+          "name": "test_block_qr_reconstructs_gain_and_conditional_schur_identity",
+          "time": "0.008"
+        },
+        {
+          "classname": "tests.test_block_qr_conditional_tf",
+          "name": "test_block_qr_derivatives_match_centered_finite_difference_without_covariance_diagnostics",
+          "time": "0.020"
+        },
+        {
+          "classname": "tests.test_block_qr_conditional_tf",
+          "name": "test_block_qr_rejects_bad_dimensions_and_nonfinite_values",
+          "time": "0.001"
+        },
+        {
+          "classname": "tests.test_block_qr_conditional_tf",
+          "name": "test_block_qr_relative_pivot_floor_fails_closed",
+          "time": "0.003"
+        },
+        {
+          "classname": "tests.test_factor_srukf_tf",
+          "name": "test_factor_filter_batch_and_modes_are_finite",
+          "time": "1.262"
+        },
+        {
+          "classname": "tests.test_factor_srukf_tf",
+          "name": "test_factor_filter_rejects_nonfinite_observations",
+          "time": "0.001"
+        },
+        {
+          "classname": "tests.test_factor_srukf_tf",
+          "name": "test_gain_right_triangular_solve_matches_dense_orientation",
+          "time": "0.001"
+        },
+        {
+          "classname": "tests.test_factor_srukf_tf",
+          "name": "test_factor_filter_score_and_carried_derivatives_match_centered_fd",
+          "time": "0.202"
+        },
+        {
+          "classname": "tests.test_rectangular_srukf_tf",
+          "name": "test_rectangular_temporal_value_route_handles_on_support_singular_observations",
+          "time": "0.022"
+        },
+        {
+          "classname": "tests.test_rectangular_srukf_tf",
+          "name": "test_rectangular_temporal_value_route_marks_off_support_without_nan",
+          "time": "0.012"
+        },
+        {
+          "classname": "tests.test_rectangular_srukf_tf",
+          "name": "test_fixed_rank_temporal_score_matches_fd_and_cpu_xla",
+          "time": "1.690"
+        },
+        {
+          "classname": "tests.test_rectangular_srukf_tf",
+          "name": "test_fixed_rank_temporal_off_support_invalidates_score_without_nan_value",
+          "time": "0.052"
+        },
+        {
+          "classname": "tests.test_factor_srukf_route_guard",
+          "name": "test_closed_admitted_file_list_passes",
+          "time": "0.003"
+        },
+        {
+          "classname": "tests.test_factor_srukf_route_guard",
+          "name": "test_route_guard_is_case_insensitive[TF.LINALG.SVD(x)]",
+          "time": "0.000"
+        },
+        {
+          "classname": "tests.test_factor_srukf_route_guard",
+          "name": "test_route_guard_is_case_insensitive[tf.linalg.ChOlEsKy(x)]",
+          "time": "0.000"
+        },
+        {
+          "classname": "tests.test_factor_srukf_route_guard",
+          "name": "test_route_guard_is_case_insensitive[Principal_Sqrt(x)]",
+          "time": "0.000"
+        },
+        {
+          "classname": "tests.test_factor_srukf_route_guard",
+          "name": "test_route_guard_is_case_insensitive[covariance_to_factor(x)]",
+          "time": "0.000"
+        },
+        {
+          "classname": "tests.test_factor_srukf_route_guard",
+          "name": "test_fixed_rectangular_score_primitive_closure_has_no_spectral_factorization",
+          "time": "0.012"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_qr_score_hessian_matches_value_and_solve_reference",
+          "time": "4.798"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_qr_score_hessian_preserves_float32_and_matches_autodiff_reference",
+          "time": "4.270"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_public_qr_score_preserves_float32_dtype",
+          "time": "1.323"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_public_qr_score_cpu_xla_preserves_dtype[dtype0]",
+          "time": "0.440"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_public_qr_score_cpu_xla_preserves_dtype[dtype1]",
+          "time": "0.714"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_masked_qr_score_hessian_preserves_float32_dtype",
+          "time": "1.710"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_qr_score_hessian_matches_autodiff_on_tiny_model",
+          "time": "2.455"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_private_qr_score_only_matches_score_hessian_and_autodiff_reference",
+          "time": "0.402"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_public_dynamic_qr_score_matches_score_hessian_without_hessian_claim",
+          "time": "0.350"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_public_qr_score_uses_dynamic_time_loop_not_static_time_unroll",
+          "time": "0.004"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_masked_qr_all_true_score_hessian_matches_dense_qr",
+          "time": "1.382"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_masked_qr_sparse_score_hessian_matches_autodiff_reference",
+          "time": "3.465"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_masked_qr_all_missing_series_has_zero_likelihood_score_hessian",
+          "time": "0.006"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_qr_derivative_wrapper_metadata_and_backend_validation",
+          "time": "0.006"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_masked_qr_derivative_tf_function_reuses_same_shape_concrete_function",
+          "time": "0.928"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_qr_derivative_tf_function_reuses_same_shape_concrete_function",
+          "time": "0.892"
+        },
+        {
+          "classname": "tests.test_linear_kalman_qr_derivatives_tf",
+          "name": "test_qr_derivative_module_does_not_import_numpy_or_call_dot_numpy",
+          "time": "0.001"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_scalar_correlated_filter_matches_numpy_multistep_oracle",
+          "time": "1.472"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_one_step_update_matches_direct_joint_gaussian_conditioning",
+          "time": "0.480"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_s_zero_matches_existing_dense_covariance_filter",
+          "time": "0.839"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_masked_nan_rows_match_compact_numpy_oracle_and_finite_dummy",
+          "time": "1.118"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_s_zero_matches_existing_masked_filter_for_finite_rows",
+          "time": "0.784"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_observed_nan_fails_closed_but_masked_nan_is_accepted",
+          "time": "0.009"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_exact_singular_and_zero_process_covariance_are_supported",
+          "time": "0.511"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_batched_time_varying_rows_match_scalar_and_have_frozen_shapes",
+          "time": "1.407"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_batched_masked_nan_singleton_and_permutation_contracts",
+          "time": "1.204"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_batched_api_rejects_per_batch_data_and_implicit_model_broadcasting",
+          "time": "0.051"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_log_likelihood_only_routes_match_filter_values",
+          "time": "0.540"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_autodiff_gradient_matches_central_difference_for_correlated_parameter",
+          "time": "0.489"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_target_only_cpu_xla_value_and_gradient_match_non_xla",
+          "time": "1.368"
+        },
+        {
+          "classname": "tests.test_linear_correlated_kalman_tf",
+          "name": "test_masked_batched_log_likelihood_matches_filter_value",
+          "time": "0.587"
+        },
+        {
+          "classname": "tests.test_batched_kalman_svd_derivatives_tf",
+          "name": "test_regular_batch_matches_scalar_value_score_and_status",
+          "time": "21.092"
+        },
+        {
+          "classname": "tests.test_batched_kalman_svd_derivatives_tf",
+          "name": "test_active_floor_status_matches_scalar_rows",
+          "time": "0.371"
+        },
+        {
+          "classname": "tests.test_batched_kalman_svd_derivatives_tf",
+          "name": "test_invalid_row_is_isolated_from_valid_rows",
+          "time": "0.071"
+        },
+        {
+          "classname": "tests.test_batched_kalman_svd_derivatives_tf",
+          "name": "test_row_permutation_equivariance",
+          "time": "0.741"
+        },
+        {
+          "classname": "tests.test_batched_kalman_svd_derivatives_tf",
+          "name": "test_compiled_graph_has_one_time_loop_and_no_mapping_or_callback",
+          "time": "0.012"
+        },
+        {
+          "classname": "tests.test_batched_kalman_svd_derivatives_tf",
+          "name": "test_distinct_static_parameter_dimensions_get_distinct_traces",
+          "time": "0.722"
+        },
+        {
+          "classname": "tests.test_batched_kalman_svd_derivatives_tf",
+          "name": "test_algorithmic_source_has_no_mapping_python_loop_numpy_or_callback",
+          "time": "0.006"
+        },
+        {
+          "classname": "tests.test_batched_kalman_svd_derivatives_tf",
+          "name": "test_single_row_python_body_preserves_batch_shapes",
+          "time": "7.397"
+        },
+        {
+          "classname": "tests.test_batched_kalman_svd_derivatives_tf",
+          "name": "test_explicit_eigendecomposition_backend_receives_one_full_batch_per_step",
+          "time": "6.228"
+        }
+      ]
+    },
+    {
+      "path": "recovery-v1/reference_hmc.junit.xml",
+      "command": null,
+      "command_status": "full invocation not recovered; retained JUnit supplies exact executed test IDs",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "3",
+          "time": "13.409",
+          "timestamp": "2026-09-16T21:48:42.336092+08:00",
+          "hostname": "ubuntu-MZF2-AC0-00"
+        }
+      ],
+      "testcases": [
+        {
+          "classname": "tests.test_hmc_linear_qr_readiness_tf",
+          "name": "test_qr_static_lgssm_target_value_gradient_and_curvature_are_finite",
+          "time": "5.857"
+        },
+        {
+          "classname": "tests.test_hmc_linear_qr_readiness_tf",
+          "name": "test_qr_static_lgssm_target_compiled_and_eager_parity",
+          "time": "1.166"
+        },
+        {
+          "classname": "tests.test_hmc_linear_qr_readiness_tf",
+          "name": "test_qr_static_lgssm_hmc_smoke_completes_with_finite_diagnostics",
+          "time": "0.807"
+        }
+      ]
+    },
+    {
+      "path": "recovery-v1/reference_hmc2.junit.xml",
+      "command": null,
+      "command_status": "full invocation not recovered; retained JUnit supplies exact executed test IDs",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "1",
+          "skipped": "0",
+          "tests": "3",
+          "time": "15.064",
+          "timestamp": "2026-09-16T21:50:01.455363+08:00",
+          "hostname": "ubuntu-MZF2-AC0-00"
+        }
+      ],
+      "testcases": [
+        {
+          "classname": "tests.test_hmc_linear_qr_readiness_tf",
+          "name": "test_qr_static_lgssm_target_value_gradient_and_curvature_are_finite",
+          "time": "6.166"
+        },
+        {
+          "classname": "tests.test_hmc_linear_qr_readiness_tf",
+          "name": "test_qr_static_lgssm_target_compiled_and_eager_parity",
+          "time": "1.266"
+        },
+        {
+          "classname": "tests.test_hmc_linear_qr_readiness_tf",
+          "name": "test_qr_static_lgssm_hmc_smoke_completes_with_finite_diagnostics",
+          "time": "1.916"
+        }
+      ]
+    },
+    {
+      "path": "recovery-v1/reference_hmc3.junit.xml",
+      "command": "TF_FORCE_GPU_ALLOW_GROWTH=true CUDA_VISIBLE_DEVICES='' TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OPENBLAS_NUM_THREADS=1 BAYESFILTER_RUN_HMC_READINESS=1 timeout 180 /home/ubuntu/miniforge3/envs/tf-gpu/bin/pytest -q tests/test_hmc_linear_qr_readiness_tf.py tests/test_lgssm_generic_target_adapter_tf.py --junitxml=docs/plans/artifacts/kalman-ukf-runtime-20260916/recovery-v1/reference_hmc3.junit.xml --tb=short > docs/plans/artifacts/kalman-ukf-runtime-20260916/recovery-v1/reference_hmc3.txt 2>&1",
+      "command_status": "exact command recovered",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "13",
+          "time": "18.066",
+          "timestamp": "2026-09-16T21:53:27.189668+08:00",
+          "hostname": "ubuntu-MZF2-AC0-00"
+        }
+      ],
+      "testcases": [
+        {
+          "classname": "tests.test_hmc_linear_qr_readiness_tf",
+          "name": "test_qr_static_lgssm_target_value_gradient_and_curvature_are_finite",
+          "time": "5.716"
+        },
+        {
+          "classname": "tests.test_hmc_linear_qr_readiness_tf",
+          "name": "test_qr_static_lgssm_target_compiled_and_eager_parity",
+          "time": "0.965"
+        },
+        {
+          "classname": "tests.test_hmc_linear_qr_readiness_tf",
+          "name": "test_qr_static_lgssm_hmc_smoke_completes_with_finite_diagnostics",
+          "time": "1.836"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_admitted_score_route_uses_no_gradient_tape",
+          "time": "0.001"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_contract_is_exact_stable_and_untransported",
+          "time": "0.003"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_adapter_emits_finite_batch_values_scores",
+          "time": "2.594"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_matches_prior_plus_qr_likelihood",
+          "time": "0.008"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_batch_of_one_matches_source_rank1_target",
+          "time": "1.160"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_batch_matches_independent_scalar_analytical_reference",
+          "time": "0.492"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_rejects_rank1_position",
+          "time": "0.001"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_signature_and_manifest_are_stable",
+          "time": "0.003"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_score_matches_finite_difference_reference",
+          "time": "0.028"
+        },
+        {
+          "classname": "tests.test_lgssm_generic_target_adapter_tf",
+          "name": "test_lgssm_generic_target_likelihood_score_matches_analytic_qr_diagnostic",
+          "time": "0.006"
+        }
+      ]
+    },
+    {
+      "path": "recovery-v2/remaining_paths.junit.xml",
+      "command": "TF_FORCE_GPU_ALLOW_GROWTH=true CUDA_VISIBLE_DEVICES='' TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OPENBLAS_NUM_THREADS=1 timeout 300 /home/ubuntu/miniforge3/envs/tf-gpu/bin/pytest -q tests/test_kalman_covariance_derivatives_tf.py tests/test_experimental_batched_linear_kalman_tf.py tests/test_sigma_points_tf.py tests/test_nonlinear_sigma_point_scores_tf.py tests/test_structural_svd_sigma_point_tf.py tests/test_actual_sv_srukf_tf.py tests/test_ssl_lstm_sgqf_ukf_adapters.py --junitxml=docs/plans/artifacts/kalman-ukf-runtime-20260916/recovery-v2/remaining_paths.junit.xml --tb=short",
+      "command_status": "exact command recovered",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "53",
+          "time": "133.040",
+          "timestamp": "2026-09-16T22:35:54.794067+08:00",
+          "hostname": "ubuntu-MZF2-AC0-00"
+        }
+      ],
+      "testcases": [
+        {
+          "classname": "tests.test_kalman_covariance_derivatives_tf",
+          "name": "test_covariance_kernel_is_public_and_not_experimental",
+          "time": "0.004"
+        },
+        {
+          "classname": "tests.test_kalman_covariance_derivatives_tf",
+          "name": "test_covariance_kernel_supports_positive_semidefinite_state_covariances",
+          "time": "0.780"
+        },
+        {
+          "classname": "tests.test_kalman_covariance_derivatives_tf",
+          "name": "test_experimental_compatibility_name_matches_reviewed_kernel",
+          "time": "0.633"
+        },
+        {
+          "classname": "tests.test_kalman_covariance_derivatives_tf",
+          "name": "test_covariance_kernel_target_only_xla_parity",
+          "time": "0.368"
+        },
+        {
+          "classname": "tests.test_experimental_batched_linear_kalman_tf",
+          "name": "test_experimental_batched_kalman_value_matches_scalar_rows",
+          "time": "3.174"
+        },
+        {
+          "classname": "tests.test_experimental_batched_linear_kalman_tf",
+          "name": "test_experimental_batched_kalman_filtered_states_match_scalar_rows",
+          "time": "0.539"
+        },
+        {
+          "classname": "tests.test_experimental_batched_linear_kalman_tf",
+          "name": "test_experimental_batched_kalman_value_and_score_matches_scalar_qr_score",
+          "time": "0.511"
+        },
+        {
+          "classname": "tests.test_experimental_batched_linear_kalman_tf",
+          "name": "test_experimental_batched_kalman_value_and_score_supports_singleton_batch",
+          "time": "0.496"
+        },
+        {
+          "classname": "tests.test_experimental_batched_linear_kalman_tf",
+          "name": "test_experimental_batched_kalman_row_permutation_preserves_order",
+          "time": "0.022"
+        },
+        {
+          "classname": "tests.test_experimental_batched_linear_kalman_tf",
+          "name": "test_experimental_batched_kalman_score_matches_tape_jacobian_reference",
+          "time": "2.190"
+        },
+        {
+          "classname": "tests.test_experimental_batched_linear_kalman_tf",
+          "name": "test_experimental_batched_kalman_graph_and_cpu_xla_parity",
+          "time": "1.126"
+        },
+        {
+          "classname": "tests.test_experimental_batched_linear_kalman_tf",
+          "name": "test_experimental_batched_kalman_shape_mismatch_fails_closed",
+          "time": "0.103"
+        },
+        {
+          "classname": "tests.test_experimental_batched_linear_kalman_tf",
+          "name": "test_experimental_batched_kalman_cpu_only_hides_gpu",
+          "time": "0.000"
+        },
+        {
+          "classname": "tests.test_sigma_points_tf",
+          "name": "test_cubature_rule_reproduces_standard_normal_first_two_moments",
+          "time": "0.008"
+        },
+        {
+          "classname": "tests.test_sigma_points_tf",
+          "name": "test_unscented_rule_reproduces_standard_normal_first_two_moments",
+          "time": "0.003"
+        },
+        {
+          "classname": "tests.test_sigma_points_tf",
+          "name": "test_svd_placement_stays_on_rank_deficient_support",
+          "time": "0.010"
+        },
+        {
+          "classname": "tests.test_sigma_points_tf",
+          "name": "test_svd_placement_reports_implemented_floored_covariance",
+          "time": "0.003"
+        },
+        {
+          "classname": "tests.test_sigma_points_tf",
+          "name": "test_nonlinear_sigma_point_module_does_not_import_numpy_or_call_dot_numpy",
+          "time": "0.000"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_svd_sigma_point_analytic_score_matches_finite_difference[tf_svd_cubature_score-cubature-tf_svd_cubature_score]",
+          "time": "3.586"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_svd_sigma_point_analytic_score_matches_finite_difference[tf_svd_ukf_score-unscented-tf_svd_ukf_score]",
+          "time": "5.013"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_svd_sigma_point_analytic_score_matches_finite_difference[tf_principal_sqrt_ukf_score-unscented-tf_principal_sqrt_ukf_score]",
+          "time": "5.286"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_svd_cut4_analytic_score_matches_finite_difference_and_oracle_score",
+          "time": "3.922"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_svd_cut4_analytic_score_blocks_active_floor",
+          "time": "0.966"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_svd_cut4_analytic_score_blocks_weak_spectral_gap",
+          "time": "0.974"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_svd_cubature_analytic_score_graph_parity",
+          "time": "5.112"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_b_analytic_score_matches_finite_difference[tf_svd_cubature_score-tf_svd_cubature]",
+          "time": "3.466"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_b_analytic_score_matches_finite_difference[tf_svd_ukf_score-tf_svd_ukf]",
+          "time": "3.479"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_b_analytic_score_matches_finite_difference[tf_svd_cut4_score-tf_svd_cut4]",
+          "time": "3.524"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_c_smooth_phase_analytic_score_matches_finite_difference[tf_svd_cubature_score-tf_svd_cubature]",
+          "time": "3.903"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_c_smooth_phase_analytic_score_matches_finite_difference[tf_svd_ukf_score-tf_svd_ukf]",
+          "time": "3.437"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_c_smooth_phase_analytic_score_matches_finite_difference[tf_svd_cut4_score-tf_svd_cut4]",
+          "time": "3.468"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_c_default_zero_phase_variance_blocks_smooth_score_branch",
+          "time": "0.968"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_c_default_structural_fixed_support_score_matches_finite_difference[tf_svd_cubature_score-tf_svd_cubature]",
+          "time": "3.545"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_c_default_structural_fixed_support_score_matches_finite_difference[tf_svd_ukf_score-tf_svd_ukf]",
+          "time": "3.520"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_c_default_structural_fixed_support_score_matches_finite_difference[tf_svd_cut4_score-tf_svd_cut4]",
+          "time": "4.009"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_c_structural_fixed_support_blocks_positive_placement_floor",
+          "time": "1.002"
+        },
+        {
+          "classname": "tests.test_nonlinear_sigma_point_scores_tf",
+          "name": "test_model_c_structural_fixed_support_blocks_moving_null_covariance",
+          "time": "1.010"
+        },
+        {
+          "classname": "tests.test_structural_svd_sigma_point_tf",
+          "name": "test_structural_svd_cubature_matches_linear_qr_on_affine_lgssm",
+          "time": "0.694"
+        },
+        {
+          "classname": "tests.test_structural_svd_sigma_point_tf",
+          "name": "test_structural_svd_ukf_matches_linear_qr_on_affine_lgssm",
+          "time": "0.662"
+        },
+        {
+          "classname": "tests.test_structural_svd_sigma_point_tf",
+          "name": "test_structural_svd_sigma_points_preserve_deterministic_completion_support",
+          "time": "0.007"
+        },
+        {
+          "classname": "tests.test_structural_svd_sigma_point_tf",
+          "name": "test_structural_svd_sigma_point_static_shape_graph_reuse",
+          "time": "1.805"
+        },
+        {
+          "classname": "tests.test_structural_svd_sigma_point_tf",
+          "name": "test_structural_svd_sigma_point_reports_rank_deficient_placement",
+          "time": "0.407"
+        },
+        {
+          "classname": "tests.test_actual_sv_srukf_tf",
+          "name": "test_actual_sv_srukf_admitted_module_passes_route_guard",
+          "time": "0.001"
+        },
+        {
+          "classname": "tests.test_actual_sv_srukf_tf",
+          "name": "test_actual_sv_srukf_short_prefix_finite_and_dimensioned",
+          "time": "1.865"
+        },
+        {
+          "classname": "tests.test_actual_sv_srukf_tf",
+          "name": "test_actual_sv_srukf_t1_score_matches_centered_finite_difference",
+          "time": "5.227"
+        },
+        {
+          "classname": "tests.test_actual_sv_srukf_tf",
+          "name": "test_actual_sv_srukf_same_scalar_score_matches_centered_finite_difference",
+          "time": "8.168"
+        },
+        {
+          "classname": "tests.test_actual_sv_srukf_tf",
+          "name": "test_actual_sv_srukf_parameterization_rejects_free_sigma_score",
+          "time": "1.003"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_sgqf_ukf_adapters",
+          "name": "test_ssl_lstm_parameter_layout_matches_phase1_config",
+          "time": "0.010"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_sgqf_ukf_adapters",
+          "name": "test_ssl_lstm_hand_transition_derivatives_match_finite_difference",
+          "time": "0.183"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_sgqf_ukf_adapters",
+          "name": "test_ssl_lstm_hand_observation_derivatives_match_finite_difference",
+          "time": "0.033"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_sgqf_ukf_adapters",
+          "name": "test_ssl_lstm_fixed_sgqf_score_is_finite_deterministic_and_matches_fd_subset",
+          "time": "16.936"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_sgqf_ukf_adapters",
+          "name": "test_ssl_lstm_svd_ukf_score_is_finite_deterministic_and_matches_fd_subset",
+          "time": "18.497"
+        },
+        {
+          "classname": "tests.test_ssl_lstm_sgqf_ukf_adapters",
+          "name": "test_ssl_lstm_transition_and_jacobian_xla_smoke",
+          "time": "1.760"
+        }
+      ]
+    },
+    {
+      "path": "recovery-v2/wrappers_callbacks.junit.xml",
+      "command": "TF_FORCE_GPU_ALLOW_GROWTH=true CUDA_VISIBLE_DEVICES='' TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OPENBLAS_NUM_THREADS=1 timeout 300 /home/ubuntu/miniforge3/envs/tf-gpu/bin/pytest -q tests/test_ksc_ukf_neutra_target.py tests/highdim/test_p43_sv_value_gradient_cut4_zhaocui.py::test_p43_ksc_ukf_single_component_time0_score_matches_centered_finite_difference tests/highdim/test_p43_sv_value_gradient_cut4_zhaocui.py::test_p43_ksc_ukf_time0_wrapper_score_matches_centered_finite_difference tests/highdim/test_p43_sv_value_gradient_cut4_zhaocui.py::test_p43_ksc_ukf_two_observation_wrapper_score_matches_centered_finite_difference tests/highdim/test_p43_sv_value_gradient_cut4_zhaocui.py::test_p43_lane_b_principal_sqrt_ukf_wrapper_score_matches_centered_finite_difference tests/highdim/test_p57_m1_author_sir_callback_parity.py tests/highdim/test_p30_predator_prey.py::test_p30_predator_prey_rk4_transition_matches_independent_reference --junitxml=docs/plans/artifacts/kalman-ukf-runtime-20260916/recovery-v2/wrappers_callbacks.junit.xml --tb=short > docs/plans/artifacts/kalman-ukf-runtime-20260916/recovery-v2/wrappers_callbacks.txt 2>&1",
+      "command_status": "exact command recovered",
+      "suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "19",
+          "time": "62.618",
+          "timestamp": "2026-09-16T23:17:33.134172+08:00",
+          "hostname": "ubuntu-MZF2-AC0-00"
+        }
+      ],
+      "testcases": [
+        {
+          "classname": "tests.test_ksc_ukf_neutra_target",
+          "name": "test_p3_admission_audit_points_are_frozen_float64",
+          "time": "0.016"
+        },
+        {
+          "classname": "tests.test_ksc_ukf_neutra_target",
+          "name": "test_frozen_raw_dataset_and_ksc_transform_are_distinct_and_stable",
+          "time": "1.606"
+        },
+        {
+          "classname": "tests.test_ksc_ukf_neutra_target",
+          "name": "test_graph_likelihood_matches_legacy_principal_sqrt_wrapper_t1_t2",
+          "time": "27.232"
+        },
+        {
+          "classname": "tests.test_ksc_ukf_neutra_target",
+          "name": "test_manual_score_matches_centered_finite_difference",
+          "time": "0.451"
+        },
+        {
+          "classname": "tests.test_ksc_ukf_neutra_target",
+          "name": "test_batch_permutation_status_and_typed_binding",
+          "time": "0.505"
+        },
+        {
+          "classname": "tests.test_ksc_ukf_neutra_target",
+          "name": "test_cpu_xla_value_score_status",
+          "time": "0.546"
+        },
+        {
+          "classname": "tests.test_ksc_ukf_neutra_target",
+          "name": "test_active_target_has_no_python_loop_or_callback",
+          "time": "0.008"
+        },
+        {
+          "classname": "tests.highdim.test_p43_sv_value_gradient_cut4_zhaocui",
+          "name": "test_p43_ksc_ukf_single_component_time0_score_matches_centered_finite_difference",
+          "time": "2.437"
+        },
+        {
+          "classname": "tests.highdim.test_p43_sv_value_gradient_cut4_zhaocui",
+          "name": "test_p43_ksc_ukf_time0_wrapper_score_matches_centered_finite_difference",
+          "time": "4.138"
+        },
+        {
+          "classname": "tests.highdim.test_p43_sv_value_gradient_cut4_zhaocui",
+          "name": "test_p43_ksc_ukf_two_observation_wrapper_score_matches_centered_finite_difference",
+          "time": "4.515"
+        },
+        {
+          "classname": "tests.highdim.test_p43_sv_value_gradient_cut4_zhaocui",
+          "name": "test_p43_lane_b_principal_sqrt_ukf_wrapper_score_matches_centered_finite_difference[1]",
+          "time": "3.080"
+        },
+        {
+          "classname": "tests.highdim.test_p43_sv_value_gradient_cut4_zhaocui",
+          "name": "test_p43_lane_b_principal_sqrt_ukf_wrapper_score_matches_centered_finite_difference[2]",
+          "time": "5.098"
+        },
+        {
+          "classname": "tests.highdim.test_p43_sv_value_gradient_cut4_zhaocui",
+          "name": "test_p43_lane_b_principal_sqrt_ukf_wrapper_score_matches_centered_finite_difference[3]",
+          "time": "7.198"
+        },
+        {
+          "classname": "tests.highdim.test_p57_m1_author_sir_callback_parity",
+          "name": "test_p57_m1_author_sir_factory_matches_source_setup_contract",
+          "time": "0.006"
+        },
+        {
+          "classname": "tests.highdim.test_p57_m1_author_sir_callback_parity",
+          "name": "test_p57_m1_author_sir_transition_mean_matches_mlx_sir_step",
+          "time": "0.075"
+        },
+        {
+          "classname": "tests.highdim.test_p57_m1_author_sir_callback_parity",
+          "name": "test_p57_m1_author_sir_likelihood_uses_source_observation_matrix",
+          "time": "0.044"
+        },
+        {
+          "classname": "tests.highdim.test_p57_m1_author_sir_callback_parity",
+          "name": "test_p57_m1_author_sir_push_clips_only_susceptible_after_noise",
+          "time": "0.039"
+        },
+        {
+          "classname": "tests.highdim.test_p57_m1_author_sir_callback_parity",
+          "name": "test_p57_m1_old_p30_fixture_is_explicitly_not_author_sir_austria",
+          "time": "0.006"
+        },
+        {
+          "classname": "tests.highdim.test_p30_predator_prey",
+          "name": "test_p30_predator_prey_rk4_transition_matches_independent_reference",
+          "time": "0.183"
+        }
+      ]
+    }
+  ],
+  "lint": {
+    "changed_file_findings": 65,
+    "comparison": "Match by path/code/message after normalizing embedded line numbers.",
+    "new_after_normalizing_line_numbers_in_messages": [],
+    "full_repository_lint_pass": false
+  },
+  "audit": {
+    "python_files_discovered": 734,
+    "modules_in_import_closure": 200,
+    "guard_violations": [],
+    "stale_exceptions": []
+  },
+  "qualification_commands": [
+    "TF_FORCE_GPU_ALLOW_GROWTH=true CUDA_VISIBLE_DEVICES='' TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OPENBLAS_NUM_THREADS=1 timeout 600 /home/ubuntu/miniforge3/envs/tf-gpu/bin/python scripts/qualify_compiled_kalman_ukf_runtime.py --device CPU --output docs/plans/artifacts/kalman-ukf-runtime-20260916/cpu-v5",
+    "TF_FORCE_GPU_ALLOW_GROWTH=true CUDA_VISIBLE_DEVICES=2 TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OPENBLAS_NUM_THREADS=1 timeout 600 /home/ubuntu/miniforge3/envs/tf-gpu/bin/python scripts/qualify_compiled_kalman_ukf_runtime.py --device GPU --gpu 2 --output docs/plans/artifacts/kalman-ukf-runtime-20260916/gpu-v4"
+  ],
+  "qualification_gpu_permissions": "require_escalated; approved by owner",
+  "known_limits": [
+    "Unit-test source digests are finalization snapshots, not contemporaneous per-run receipts. Qualification hashes are contemporaneous and match.",
+    "Earlier temporary logs were lost; aggregate pre-crash CPU-time accounting is incomplete.",
+    "The first final manifest attempt failed before writing because package metadata was absent; TFP version was read from its installed version.py.",
+    "No DZ5, posterior, convergence, tuning, speedup or canonical LEDH admission claim."
+  ]
+}

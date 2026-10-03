@@ -198,6 +198,7 @@ def _run_tuning(
     target_name: str,
 ) -> Mapping[str, Any]:
     from bayesfilter.inference.fixed_transport_hmc_tuning_tf import (
+        FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
         FixedTransportHMCKernelTuningConfig,
         tune_fixed_transport_hmc_kernel,
     )
@@ -210,6 +211,8 @@ def _run_tuning(
         target_accept_prob=0.70,
         acceptance_band=(0.55, 0.90),
         repair_band=(0.40, 0.95),
+        selection_policy="acceptance_target_distance",
+        selection_replications=1,
         fixed_grid_fallback_acceptance_max=0.95,
         budget_schedule=(32, 64, 128),
         tune_num_results=16,
@@ -226,6 +229,7 @@ def _run_tuning(
         chain_execution_mode="tf_function",
         use_xla=True,
         target_scope=f"weighted_neutra_varying_hessian:{target_name}:tuning_v1",
+        tuning_policy=FIXED_TRANSPORT_HMC_LEGACY_DIAGNOSTIC_POLICY,
         output_filename="tuning_result.json",
     )
     return tune_fixed_transport_hmc_kernel(

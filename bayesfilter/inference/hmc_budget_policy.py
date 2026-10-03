@@ -1,8 +1,8 @@
 """Public HMC tuning budget and timeout policy compatibility surface."""
 
-from bayesfilter.inference.hmc_kernel_tuning import (
+from bayesfilter.inference.hmc_configuration import (
     HMCGeometryScaledBudgetTimingPolicy,
-    HMCStagedTimeoutPolicy,
 )
+from bayesfilter.inference.hmc_mass_adaptation import HMCStagedTimeoutPolicy
 
 __all__ = ["HMCGeometryScaledBudgetTimingPolicy", "HMCStagedTimeoutPolicy"]

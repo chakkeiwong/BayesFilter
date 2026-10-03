@@ -9,41 +9,44 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass, replace
+from numbers import Integral
 from typing import Any, Mapping, Sequence
 
-import numpy as np
+from bayesfilter.inference.hmc_verification import _all_close, _all_finite, _float64_tensor
 
 
-def _immutable_array(value: Any, *, name: str, rank: int | None = None) -> np.ndarray:
-    array = np.asarray(value, dtype=float).copy()
-    if rank is not None and array.ndim != rank:
+def _immutable_array(value: Any, *, name: str, rank: int | None = None) -> Any:
+    """Freeze host metadata after TF validation; it is not an array backend."""
+
+    import tensorflow as tf
+
+    tensor = _float64_tensor(value)
+    if rank is not None and tensor.shape.rank != rank:
         raise ValueError(f"{name} must have rank {rank}")
-    if not np.all(np.isfinite(array)):
+    if not _all_finite(tensor):
         raise ValueError(f"{name} must be finite")
+    array = tf.identity(tensor).numpy()
     array.setflags(write=False)
     return array
 
 
-def _signature(label: str, payload: Mapping[str, Any], arrays: Sequence[np.ndarray]) -> str:
+def _signature(label: str, payload: Mapping[str, Any], arrays: Sequence[Any]) -> str:
     digest = hashlib.sha256()
     digest.update(str(label).encode("utf-8"))
     digest.update(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     )
     for array in arrays:
-        contiguous = np.ascontiguousarray(array)
-        digest.update(str(contiguous.dtype).encode("ascii"))
-        digest.update(json.dumps(contiguous.shape).encode("ascii"))
-        digest.update(contiguous.tobytes(order="C"))
+        digest.update(str(array.dtype).encode("ascii"))
+        digest.update(json.dumps(array.shape).encode("ascii"))
+        digest.update(memoryview(array).tobytes(order="C"))
     return digest.hexdigest()
 
 
 def _positive_int(value: Any, *, name: str, allow_zero: bool = False) -> int:
-    if isinstance(value, (bool, np.bool_)) or not isinstance(
-        value,
-        (int, np.integer),
-    ):
+    if isinstance(value, bool) or not isinstance(value, Integral):
         raise ValueError(f"{name} must be an integer scalar")
     result = int(value)
     minimum = 0 if allow_zero else 1
@@ -80,7 +83,8 @@ class PositionCovarianceEstimate:
         dimension = int(center.shape[0])
         if dimension <= 0 or covariance.shape != (dimension, dimension):
             raise ValueError("covariance shape must match non-empty center")
-        if not np.allclose(covariance, covariance.T, rtol=1.0e-10, atol=1.0e-12):
+        covariance_tensor = _float64_tensor(covariance)
+        if not _all_close(covariance_tensor, tf.transpose(covariance_tensor), rtol=1.0e-10, atol=1.0e-12):
             raise ValueError("covariance must be symmetric")
         covariance_tensor = tf.convert_to_tensor(covariance, dtype=tf.float64)
         try:
@@ -196,14 +200,11 @@ class AffineCoordinateTransform:
         return int(self.center.shape[0])
 
     @property
-    def covariance(self) -> np.ndarray:
+    def covariance(self) -> Any:
         import tensorflow as tf
 
         factor = tf.convert_to_tensor(self.factor, dtype=tf.float64)
-        covariance = np.asarray(
-            tf.matmul(factor, factor, transpose_b=True).numpy(),
-            dtype=float,
-        )
+        covariance = tf.matmul(factor, factor, transpose_b=True).numpy()
         covariance.setflags(write=False)
         return covariance
 
@@ -222,7 +223,7 @@ class AffineCoordinateTransform:
     def latent_to_theta(self, latent: Any) -> Any:
         import tensorflow as tf
 
-        z = tf.convert_to_tensor(latent, dtype=tf.float64)
+        z = _float64_tensor(latent)
         self._validate_tensor(z, name="latent")
         center = tf.convert_to_tensor(self.center, dtype=z.dtype)
         factor = tf.convert_to_tensor(self.factor, dtype=z.dtype)
@@ -231,18 +232,20 @@ class AffineCoordinateTransform:
     def theta_to_latent(self, theta: Any) -> Any:
         import tensorflow as tf
 
-        value = tf.convert_to_tensor(theta, dtype=tf.float64)
+        value = _float64_tensor(theta)
         self._validate_tensor(value, name="theta")
         centered = value - tf.convert_to_tensor(self.center, dtype=value.dtype)
         factor = tf.convert_to_tensor(self.factor, dtype=value.dtype)
         flat = tf.reshape(centered, [-1, self.dimension])
-        solved = tf.linalg.triangular_solve(factor, tf.transpose(flat), lower=True)
+        # The public factor contract is nonsingular, not necessarily triangular.
+        # Solve A z = theta-c using every entry of A, including its upper half.
+        solved = tf.linalg.solve(factor, tf.transpose(flat))
         return tf.reshape(tf.transpose(solved), tf.shape(centered))
 
     def theta_score_to_latent_score(self, theta_score: Any) -> Any:
         import tensorflow as tf
 
-        score = tf.convert_to_tensor(theta_score, dtype=tf.float64)
+        score = _float64_tensor(theta_score)
         self._validate_tensor(score, name="theta_score")
         factor = tf.convert_to_tensor(self.factor, dtype=score.dtype)
         return tf.tensordot(score, factor, axes=[[-1], [0]])
@@ -263,23 +266,36 @@ class MomentumMetric:
     convention: str = "identity_momentum_in_active_whitened_coordinates"
 
     def __post_init__(self) -> None:
+        import tensorflow as tf
+
         covariance = _immutable_array(
             self.momentum_covariance, name="momentum_covariance", rank=2
         )
         precision = _immutable_array(
             self.kinetic_precision, name="kinetic_precision", rank=2
         )
-        if covariance.shape[0] == 0 or covariance.shape != precision.shape:
+        if covariance.shape[0] == 0 or covariance.shape != precision.shape or covariance.shape[0] != covariance.shape[1]:
             raise ValueError("momentum covariance and precision shapes must match")
-        identity = np.eye(covariance.shape[0])
-        if not np.allclose(covariance @ precision, identity, rtol=1.0e-10, atol=1.0e-12):
+        covariance_tensor = _float64_tensor(covariance)
+        precision_tensor = _float64_tensor(precision)
+        if not _all_close(covariance_tensor, tf.transpose(covariance_tensor), rtol=1.0e-10, atol=1.0e-12):
+            raise ValueError("momentum covariance must be symmetric")
+        try:
+            tf.debugging.assert_all_finite(
+                tf.linalg.cholesky(covariance_tensor),
+                "momentum covariance Cholesky factor must be finite",
+            )
+        except tf.errors.InvalidArgumentError as exc:
+            raise ValueError("momentum covariance must be positive definite") from exc
+        identity = tf.eye(covariance.shape[0], dtype=tf.float64)
+        if not _all_close(tf.matmul(covariance_tensor, precision_tensor), identity, rtol=1.0e-10, atol=1.0e-12):
             raise ValueError("momentum covariance and kinetic precision must be inverses")
         coordinate_signature = str(self.coordinate_signature)
         convention = str(self.convention)
         if not coordinate_signature or not convention:
             raise ValueError("metric provenance fields must be non-empty")
         if convention == "identity_momentum_in_active_whitened_coordinates":
-            if not np.allclose(covariance, identity, rtol=0.0, atol=1.0e-12):
+            if not _all_close(covariance_tensor, identity, rtol=0.0, atol=1.0e-12):
                 raise ValueError("active whitening route requires identity momentum covariance")
         object.__setattr__(self, "momentum_covariance", covariance)
         object.__setattr__(self, "kinetic_precision", precision)
@@ -288,7 +304,9 @@ class MomentumMetric:
 
     @classmethod
     def identity_for(cls, transform: AffineCoordinateTransform) -> "MomentumMetric":
-        identity = np.eye(transform.dimension)
+        import tensorflow as tf
+
+        identity = tf.eye(transform.dimension, dtype=tf.float64)
         return cls(identity, identity, transform.signature)
 
     @property
@@ -366,8 +384,8 @@ class KernelState:
             raise ValueError("state trailing dimension must match transform")
         if self.momentum_metric.coordinate_signature != self.transform.signature:
             raise ValueError("momentum metric coordinate signature is stale")
-        mapped = np.asarray(self.transform.latent_to_theta(latent).numpy(), dtype=float)
-        if not np.allclose(mapped, theta, rtol=1.0e-10, atol=1.0e-10):
+        mapped = self.transform.latent_to_theta(latent)
+        if not _all_close(mapped, theta, rtol=1.0e-10, atol=1.0e-10):
             raise ValueError("canonical and latent states do not round trip")
         generation = _positive_int(
             self.adaptation_generation, name="adaptation_generation", allow_zero=True
@@ -394,7 +412,7 @@ class KernelState:
             if context is not None:
                 raise ValueError("epsilon context must be absent when epsilon is absent")
         else:
-            if not np.isfinite(epsilon) or epsilon <= 0.0:
+            if not math.isfinite(epsilon) or epsilon <= 0.0:
                 raise ValueError("epsilon must be positive and finite")
             if context != expected_context:
                 raise ValueError("epsilon context is stale for coordinate/metric/trajectory")
@@ -463,15 +481,17 @@ def transform_from_precomputed_mass_artifact(
 ) -> tuple[PositionCovarianceEstimate, AffineCoordinateTransform]:
     """Map the historical covariance artifact into the explicit v2 contract."""
 
-    center = np.asarray(artifact.position, dtype=float)
-    covariance = np.asarray(artifact.covariance, dtype=float)
+    import tensorflow as tf
+
+    center = _float64_tensor(artifact.position)
+    covariance = _float64_tensor(artifact.covariance)
     estimate = PositionCovarianceEstimate(
         center=center,
         covariance=covariance,
         source_coordinate_signature=source_coordinate_signature,
         estimator_family=estimator_family,
         state_count=max(1, int(getattr(artifact, "dimension", center.shape[0]))),
-        effective_rank=int(np.linalg.matrix_rank(covariance)),
+        effective_rank=int(tf.linalg.matrix_rank(covariance)),
         regularization_report=dict(getattr(artifact, "regularization_report", {}) or {}),
         adequacy_report={
             "legacy_compatibility_adapter": True,
@@ -481,9 +501,9 @@ def transform_from_precomputed_mass_artifact(
     )
     transform = AffineCoordinateTransform(
         center=center,
-        factor=np.asarray(artifact.factor, dtype=float),
+        factor=_float64_tensor(artifact.factor),
         covariance_signature=estimate.signature,
     )
-    if not np.allclose(transform.covariance, covariance, rtol=1.0e-10, atol=1.0e-10):
+    if not _all_close(transform.covariance, covariance, rtol=1.0e-10, atol=1.0e-10):
         raise ValueError("legacy factor does not reconstruct covariance")
     return estimate, transform

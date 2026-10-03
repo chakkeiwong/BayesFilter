@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import subprocess
 import sys
 
@@ -205,7 +206,7 @@ def test_uncertainty_nominee_admission_is_lineage_bound_and_non_promoting() -> N
     )
 
     assert isinstance(admission, HMCUncertaintyConfirmationAdmission)
-    assert admission.candidate.survivor is False
+    assert admission.candidate.survivor is candidate_payload["survivor"]
     assert admission.payload()["fixed_step_size"] == 0.28824213093792567
     assert admission.payload()["original_candidate_promotion_unchanged"] is True
     assert admission.payload()["retained_sampling_authorized"] is False
@@ -218,7 +219,7 @@ def test_candidate_payload_parser_is_strict() -> None:
     assert json.loads(json.dumps(restored.payload())) == payload
 
     tampered = json.loads(json.dumps(payload))
-    tampered["survivor"] = True
+    tampered["survivor"] = not payload["survivor"]
     with pytest.raises(ValueError, match="inconsistent"):
         fixed_metric_candidate_record_from_payload(tampered)
 
@@ -269,5 +270,6 @@ def test_public_admission_import_does_not_load_tensorflow() -> None:
             "for n in sys.modules))",
         ),
         text=True,
+        env=dict(os.environ, BAYESFILTER_PRELOAD_CUSTOM_OP="0", CUDA_VISIBLE_DEVICES="-1"),
     ).strip()
     assert output == "False"

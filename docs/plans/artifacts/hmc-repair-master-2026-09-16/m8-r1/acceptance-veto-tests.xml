@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="8" time="15.708" timestamp="2026-09-18T15:48:56.587871+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_acceptance_calibration" name="test_beta_refresh_preserves_stationary_mean_and_creates_dependence" time="0.052" /><testcase classname="tests.inference_validation.test_acceptance_calibration" name="test_screen_calibration_runs_real_stages_and_keeps_missing_denominator" time="0.482" /><testcase classname="tests.inference_validation.test_acceptance_calibration" name="test_actual_hmc_acceptance_uses_stationary_gaussian_transitions" time="0.707" /><testcase classname="tests.inference_validation.test_acceptance_calibration" name="test_actual_hmc_acceptance_rejects_non_gaussian_and_keeps_synthetic_contract" time="0.001" /><testcase classname="tests.inference_validation.test_acceptance_calibration" name="test_prepared_calibration_calls_public_tuner_and_issues_fresh_receipts" time="13.646" /><testcase classname="tests.inference_validation.test_acceptance_calibration" name="test_acceptance_routes_enforce_initialization_and_reference_contract" time="0.001" /><testcase classname="tests.inference_validation.test_acceptance_calibration" name="test_public_acceptance_reference_vetoes_an_incorrect_energy_ratio" time="0.001"><failure message="AttributeError: type object 'FrozenTransition' has no attribute 'audit_step'">design = &lt;function design.&lt;locals&gt;.make at 0x737cf1503b00&gt;
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-452/test_public_acceptance_referen0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x737cf11e2fd0&gt;
+
+    def test_public_acceptance_reference_vetoes_an_incorrect_energy_ratio(design,tmp_path,monkeypatch):
+        import tensorflow as tf
+        from bayesfilter.testing.inference_validation.engines import acceptance_hmc
+        from bayesfilter.testing.inference_validation.targets import ValidationTarget
+&gt;       original = acceptance_hmc.FrozenTransition.audit_step
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: type object 'FrozenTransition' has no attribute 'audit_step'
+
+tests/inference_validation/test_acceptance_calibration.py:87: AttributeError</failure></testcase><testcase classname="tests.inference_validation.test_acceptance_calibration" name="test_public_acceptance_expired_deadline_does_not_issue_receipts" time="0.001" /></testsuite></testsuites>

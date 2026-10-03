@@ -18,7 +18,6 @@ from bayesfilter.linear.types_tf import TFLinearGaussianStateSpace
 from bayesfilter.results_tf import TFFilterValueResult
 from bayesfilter.structural import FilterRunMetadata
 
-
 TFQRLinearValueBackend = Literal["tf_qr", "tf_masked_qr"]
 
 
@@ -90,6 +89,10 @@ def _vector_at_time(vector: tf.Tensor, time_index: tf.Tensor) -> tf.Tensor:
 
 
 def _validate_mask_shape(observations: tf.Tensor, observation_mask: tf.Tensor) -> None:
+    if not observations.shape.is_compatible_with(observation_mask.shape):
+        raise tf.errors.InvalidArgumentError(
+            None, None, "Observation mask shape must match observations shape."
+        )
     tf.debugging.assert_equal(
         tf.shape(observation_mask),
         tf.shape(observations),
@@ -184,7 +187,7 @@ def _batched_cholesky_factor(covariance: tf.Tensor, jitter: tf.Tensor | float = 
     return tf.linalg.cholesky(symmetric + jitter_tensor * identity)
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_qr_sqrt_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -215,7 +218,7 @@ def tf_qr_sqrt_kalman_log_likelihood(
     )
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_qr_sqrt_masked_kalman_log_likelihood(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -246,7 +249,7 @@ def tf_qr_sqrt_masked_kalman_log_likelihood(
     )
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_qr_sqrt_kalman_log_likelihood_compact(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -295,7 +298,7 @@ def tf_qr_sqrt_kalman_log_likelihood_compact(
     log_likelihood = tf.constant(0.0, dtype=dtype)
     two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance_factor, log_likelihood, mean):
         c = _vector_at_time(transition_offset, t)
         T = _matrix_at_time(transition_matrix, t)
         Q = _matrix_at_time(transition_covariance, t)
@@ -351,11 +354,18 @@ def tf_qr_sqrt_kalman_log_likelihood_compact(
         mean = filtered_mean
         covariance_factor = filtered_factor
         log_likelihood = log_likelihood + contribution
+        return t + 1, covariance_factor, log_likelihood, mean
+
+    _, covariance_factor, log_likelihood, mean = tf.while_loop(
+        lambda t, covariance_factor, log_likelihood, mean: t < n_timesteps,
+        time_step, (tf.constant(0, tf.int32), covariance_factor, log_likelihood, mean), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     return log_likelihood
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_qr_sqrt_kalman_log_likelihood_while_loop(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -686,7 +696,7 @@ def tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments(
     )
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments_graph(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -700,7 +710,7 @@ def tf_qr_sqrt_factorized_kalman_log_likelihood_with_increments_graph(
     jitter: tf.Tensor | float = 0.0,
     jitter_updates_filtered_covariance: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor]:
-    """Non-XLA diagnostic counterpart to the factorized QR value kernel."""
+    """Compatibility name for the XLA factorized QR value/increment kernel."""
 
     return _tf_qr_sqrt_factorized_kalman_log_likelihood_impl(
         observations,
@@ -751,7 +761,7 @@ def tf_qr_sqrt_factorized_kalman_log_likelihood(
     return value
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_qr_sqrt_kalman_log_likelihood_batched_static(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -828,7 +838,7 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static(
     log_likelihood = tf.zeros((batch_size,), dtype=dtype)
     two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance_factor, log_likelihood, mean):
         predicted_mean = transition_offset + _matvec(transition_matrix, mean)
         prediction_stack = tf.concat(
             (
@@ -885,11 +895,18 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static(
         mean = filtered_mean
         covariance_factor = filtered_factor
         log_likelihood = log_likelihood + contribution
+        return t + 1, covariance_factor, log_likelihood, mean
+
+    _, covariance_factor, log_likelihood, mean = tf.while_loop(
+        lambda t, covariance_factor, log_likelihood, mean: t < n_timesteps,
+        time_step, (tf.constant(0, tf.int32), covariance_factor, log_likelihood, mean), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     return log_likelihood
 
 
-@tf.function(reduce_retracing=True)
+@tf.function(jit_compile=True, reduce_retracing=False)
 def tf_qr_sqrt_kalman_log_likelihood_batched_static_while_loop(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -1034,7 +1051,7 @@ def tf_qr_sqrt_kalman_log_likelihood_batched_static_while_loop(
     return log_likelihood
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_qr_sqrt_masked_kalman_log_likelihood_batched_static(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -1105,7 +1122,7 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_batched_static(
     two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
     dummy_log_norm = tf.constant(math.log(2.0 * math.pi), dtype=dtype)
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance_factor, log_likelihood, mean):
         predicted_mean = transition_offset + _matvec(transition_matrix, mean)
         prediction_stack = tf.concat(
             (
@@ -1181,11 +1198,18 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_batched_static(
         mean = filtered_mean
         covariance_factor = filtered_factor
         log_likelihood = log_likelihood + contribution
+        return t + 1, covariance_factor, log_likelihood, mean
+
+    _, covariance_factor, log_likelihood, mean = tf.while_loop(
+        lambda t, covariance_factor, log_likelihood, mean: t < n_timesteps,
+        time_step, (tf.constant(0, tf.int32), covariance_factor, log_likelihood, mean), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     return log_likelihood
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_qr_sqrt_masked_kalman_log_likelihood_compact(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -1237,7 +1261,7 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_compact(
     two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
     dummy_log_norm = tf.constant(math.log(2.0 * math.pi), dtype=dtype)
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance_factor, log_likelihood, mean):
         c = _vector_at_time(transition_offset, t)
         T = _matrix_at_time(transition_matrix, t)
         Q = _matrix_at_time(transition_covariance, t)
@@ -1304,11 +1328,18 @@ def tf_qr_sqrt_masked_kalman_log_likelihood_compact(
         mean = filtered_mean
         covariance_factor = filtered_factor
         log_likelihood = log_likelihood + contribution
+        return t + 1, covariance_factor, log_likelihood, mean
+
+    _, covariance_factor, log_likelihood, mean = tf.while_loop(
+        lambda t, covariance_factor, log_likelihood, mean: t < n_timesteps,
+        time_step, (tf.constant(0, tf.int32), covariance_factor, log_likelihood, mean), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
 
     return log_likelihood
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_qr_sqrt_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -1356,10 +1387,10 @@ def tf_qr_sqrt_kalman_filter(
     covariance_factor = cholesky_factor(initial_state_covariance, 0.0)
     log_likelihood = tf.constant(0.0, dtype=dtype)
     two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
-    means = []
-    covariances = []
+    means = tf.TensorArray(dtype, size=n_timesteps, clear_after_read=False)
+    covariances = tf.TensorArray(dtype, size=n_timesteps, clear_after_read=False)
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance_factor, covariances, log_likelihood, mean, means):
         c = _vector_at_time(transition_offset, t)
         T = _matrix_at_time(transition_matrix, t)
         Q = _matrix_at_time(transition_covariance, t)
@@ -1416,14 +1447,21 @@ def tf_qr_sqrt_kalman_filter(
         mean = filtered_mean
         covariance_factor = filtered_factor
         log_likelihood = log_likelihood + contribution
-        means.append(filtered_mean)
-        covariances.append(filtered_covariance)
+        means = means.write(t, filtered_mean)
+        covariances = covariances.write(t, filtered_covariance)
+        return t + 1, covariance_factor, covariances, log_likelihood, mean, means
 
-    return log_likelihood, tf.stack(means, axis=0), tf.stack(covariances, axis=0)
+    _, covariance_factor, covariances, log_likelihood, mean, means = tf.while_loop(
+        lambda t, covariance_factor, covariances, log_likelihood, mean, means: t < n_timesteps,
+        time_step, (tf.constant(0, tf.int32), covariance_factor, covariances, log_likelihood, mean, means), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
+
+    return log_likelihood, means.stack(), covariances.stack()
 
 
 
-@tf.function
+@tf.function(jit_compile=True)
 def tf_qr_sqrt_masked_kalman_filter(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,
@@ -1474,10 +1512,10 @@ def tf_qr_sqrt_masked_kalman_filter(
     log_likelihood = tf.constant(0.0, dtype=dtype)
     two_pi = tf.constant(2.0 * math.pi, dtype=dtype)
     dummy_log_norm = tf.constant(math.log(2.0 * math.pi), dtype=dtype)
-    means = []
-    covariances = []
+    means = tf.TensorArray(dtype, size=n_timesteps, clear_after_read=False)
+    covariances = tf.TensorArray(dtype, size=n_timesteps, clear_after_read=False)
 
-    for t in range(n_timesteps):
+    def time_step(t, covariance_factor, covariances, log_likelihood, mean, means):
         c = _vector_at_time(transition_offset, t)
         T = _matrix_at_time(transition_matrix, t)
         Q = _matrix_at_time(transition_covariance, t)
@@ -1545,10 +1583,17 @@ def tf_qr_sqrt_masked_kalman_filter(
         mean = filtered_mean
         covariance_factor = filtered_factor
         log_likelihood = log_likelihood + contribution
-        means.append(filtered_mean)
-        covariances.append(filtered_covariance)
+        means = means.write(t, filtered_mean)
+        covariances = covariances.write(t, filtered_covariance)
+        return t + 1, covariance_factor, covariances, log_likelihood, mean, means
 
-    return log_likelihood, tf.stack(means, axis=0), tf.stack(covariances, axis=0)
+    _, covariance_factor, covariances, log_likelihood, mean, means = tf.while_loop(
+        lambda t, covariance_factor, covariances, log_likelihood, mean, means: t < n_timesteps,
+        time_step, (tf.constant(0, tf.int32), covariance_factor, covariances, log_likelihood, mean, means), parallel_iterations=1,
+        maximum_iterations=tf.shape(y)[0],
+    )
+
+    return log_likelihood, means.stack(), covariances.stack()
 
 
 

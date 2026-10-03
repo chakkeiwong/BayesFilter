@@ -389,7 +389,7 @@ def test_vectorized_particle_time_step_matches_looped_reference() -> None:
         looped.forward_log_det.numpy(),
         atol=1e-12,
     )
-    assert vectorized.diagnostics["particle_batch_route"] == "tf_vectorized_map"
+    assert vectorized.diagnostics["particle_batch_route"] == "tf_while_loop_fixed_rows"
 
 
 def test_sv_scalar_graph_matches_looped_reference_for_scalar_linear_fixture() -> None:
@@ -405,7 +405,7 @@ def test_sv_scalar_graph_matches_looped_reference_for_scalar_linear_fixture() ->
     initial_covariance = tf.reshape(tf.square(sigma) / (1.0 - tf.square(gamma)), [1, 1])
 
     def seed_pair(seed: int, salt: int) -> tf.Tensor:
-        return tf.constant([int(seed) % 2147483647, int(salt) % 2147483647], dtype=tf.int32)
+        return tf.stack((tf.cast(seed % 2147483647, tf.int32), tf.cast(salt % 2147483647, tf.int32)))
 
     def initial_sample(num_particles: int, seed: int) -> tf.Tensor:
         return tf.sqrt(initial_covariance[0, 0]) * tf.random.stateless_normal(
@@ -417,7 +417,7 @@ def test_sv_scalar_graph_matches_looped_reference_for_scalar_linear_fixture() ->
     def transition_sample(particles: tf.Tensor, seed: int, time_index: int) -> tf.Tensor:
         noise = sigma * tf.random.stateless_normal(
             [int(particles.shape[0]), 1],
-            seed=seed_pair(seed, 1110 + int(time_index)),
+            seed=seed_pair(seed, 1110 + time_index),
             dtype=DTYPE,
         )
         return gamma * tf.cast(particles, DTYPE) + noise
@@ -446,7 +446,7 @@ def test_sv_scalar_graph_matches_looped_reference_for_scalar_linear_fixture() ->
         )
 
     def target_observation_log_density(points: tf.Tensor, _observation: tf.Tensor, time_index: int) -> tf.Tensor:
-        return observation_log_density(points, raw_observations[int(time_index)], int(time_index))
+        return observation_log_density(points, raw_observations[time_index], time_index)
 
     def process_covariance(_point: tf.Tensor, _time_index: int) -> tf.Tensor:
         return tf.reshape(tf.square(sigma), [1, 1])
@@ -470,6 +470,7 @@ def test_sv_scalar_graph_matches_looped_reference_for_scalar_linear_fixture() ->
         num_particles=4,
         pseudo_time_steps=tf.constant([1.0], dtype=DTYPE),
         resampling_route="none",
+        jit_compile=False,
     )
     graph = run_ledh_pfpf_alg1_scalar_sv_graph_tf(
         flow_observations=flow_observations,
@@ -1075,7 +1076,7 @@ def test_p8h_sinkhorn_ot_path_has_connected_gradient_smoke() -> None:
     observations = tf.constant([[0.1], [0.2]], dtype=DTYPE)
     initial_covariance = tf.constant([[0.3]], dtype=DTYPE)
 
-    def value_for_scale(scale: tf.Tensor) -> tf.Tensor:
+    def value_for_scale(scale: tf.Tensor, observations: tf.Tensor) -> tf.Tensor:
         def initial_sample(num_particles: int, _seed: int) -> tf.Tensor:
             base = tf.linspace(tf.constant(-0.2, DTYPE), tf.constant(0.2, DTYPE), num_particles)
             return tf.reshape(base, [-1, 1])
@@ -1139,10 +1140,18 @@ def test_p8h_sinkhorn_ot_path_has_connected_gradient_smoke() -> None:
 
     scale = tf.Variable(0.8, dtype=DTYPE)
     with tf.GradientTape() as tape:
-        value = value_for_scale(scale)
-    gradient = tape.gradient(value, scale)
+        tape.watch(observations)
+        value = value_for_scale(scale, observations)
+    gradient, observation_gradient = tape.gradient(value, (scale, observations))
 
     assert gradient is not None
     assert bool(tf.math.is_finite(value).numpy())
     assert bool(tf.math.is_finite(gradient).numpy())
     assert abs(float(gradient.numpy())) > 0.0
+    assert observation_gradient is not None
+    direction = tf.constant([[.4], [-.6]], DTYPE)
+    step = tf.constant(1e-5, DTYPE)
+    upper = value_for_scale(scale, observations + step * direction)
+    lower = value_for_scale(scale, observations - step * direction)
+    np.testing.assert_allclose(tf.reduce_sum(observation_gradient * direction),
+                               (upper - lower) / (2. * step), rtol=1e-6, atol=1e-7)

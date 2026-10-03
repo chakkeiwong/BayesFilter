@@ -1,0 +1,220 @@
+{
+  "schema": "bayesfilter.hmc_consistency_gap_repair_run.v1",
+  "baseline_git_commit": "8275b4976a4be2a41936ab7d07c6f46ea9038653",
+  "source_state": "task-source-inventory.json and per-run source hashes; implementation uncommitted during validation",
+  "plan_file": "docs/plans/bayesfilter-hmc-consistency-gap-repair-plan-2026-09-15.md",
+  "result_file": "docs/plans/bayesfilter-hmc-consistency-gap-repair-execution-audit-2026-09-15.md",
+  "working_directory": "/home/ubuntu/python/BayesFilter",
+  "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "cpu_environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu"
+  },
+  "cpu_gpu_status": "GPUs deliberately hidden for numerical tests",
+  "gpu_validation": {
+    "status": "blocked_no_idle_policy_permitted_gpu",
+    "trusted": true,
+    "numerical_attempts": 0,
+    "probe_paths": [
+      "gpu-readiness-r1.json",
+      "gpu-readiness-r2.json"
+    ]
+  },
+  "data": "No dataset; exact Gaussian fixtures and synthetic traces",
+  "seed_policy": {
+    "automatic_default": [
+      20260621,
+      8
+    ],
+    "anisotropic_variances": [
+      1,
+      9
+    ],
+    "XLA_tuning": [
+      20260915,
+      31
+    ],
+    "XLA_retained": [
+      20260915,
+      91
+    ],
+    "unit_tests": "Explicit fixed seeds and derived work/chunk seeds are preserved in test source."
+  },
+  "primary_checks": [
+    {
+      "path": "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/validation-r8.xml",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "322",
+      "time": "403.780",
+      "timestamp": "2026-09-15T04:32:14.024940+08:00",
+      "hostname": "ubuntu-MZ72-HB2-00"
+    },
+    {
+      "path": "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/automatic-regressions-r2.xml",
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "2",
+      "time": "471.844",
+      "timestamp": "2026-09-15T04:29:48.972046+08:00",
+      "hostname": "ubuntu-MZ72-HB2-00"
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_hmc_consistency_gap_repair.py",
+        "tests/test_hmc_candidate_set_tuning.py",
+        "tests/test_hmc_candidate_set_artifacts.py",
+        "tests/test_hmc_candidate_set_adapters.py",
+        "tests/test_hmc_candidate_set_execution.py",
+        "tests/test_hmc_whole_procedure_repair.py",
+        "tests/test_hmc_tuning_dispatch.py",
+        "tests/test_hmc_tuning_documentation_contract.py",
+        "tests/test_hmc_kernel_tuning_public_api.py",
+        "tests/test_fixed_transport_hmc_tuning.py",
+        "tests/test_hmc_tuning_policy_repair.py",
+        "tests/test_neutra_all_models_end_to_end_contract.py",
+        "tests/test_neutra_hmc_route_policy.py",
+        "-q",
+        "--tb=short",
+        "--disable-warnings",
+        "--junitxml=docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/validation-r8.xml"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu"
+      },
+      "stdout_stderr": "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/validation-r8.log"
+    },
+    {
+      "argv": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_hmc_automatic_search_regression.py",
+        "-q",
+        "--tb=short",
+        "--disable-warnings",
+        "--basetemp=docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/automatic-regressions-r2",
+        "--junitxml=docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/automatic-regressions-r2.xml"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu"
+      },
+      "stdout_stderr": "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/automatic-regressions-r2.log"
+    },
+    {
+      "argv": [
+        "timeout",
+        "--kill-after=5s",
+        "180s",
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/xla_smoke.py",
+        "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/cpu-xla-r2",
+        "cpu"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "2",
+        "TF_NUM_INTEROP_THREADS": "2"
+      },
+      "stdout_stderr": "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/cpu-xla-r2.log"
+    },
+    {
+      "argv": [
+        "latexmk",
+        "-pdf",
+        "-interaction=nonstopmode",
+        "-halt-on-error",
+        "-outdir=/tmp/bayesfilter-hmc-consistency-guide-20260915-r1",
+        "main.tex"
+      ],
+      "cwd": "/home/ubuntu/python/BayesFilter/docs",
+      "stdout_stderr": "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/guide-build-r2.log"
+    },
+    {
+      "argv": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "scripts/render_hmc_tuning_interface_docs.py",
+        "--check"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+      },
+      "stdout_stderr": "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15/generated-docs-check.log"
+    }
+  ],
+  "protected_tracked_paths": {
+    "README.md": {
+      "before": "bde52934dc5e705c087add5eba282722689f46489e05b044481dc824837adc9d",
+      "after": "bde52934dc5e705c087add5eba282722689f46489e05b044481dc824837adc9d"
+    },
+    "bayesfilter/linear/stack_qr_tf.py": {
+      "before": "fd83f50cd7be6e037c84ea92d5c401f8356712883a6306c635f1c3389ac2ebbd",
+      "after": "fd83f50cd7be6e037c84ea92d5c401f8356712883a6306c635f1c3389ac2ebbd"
+    },
+    "bayesfilter/nonlinear/__init__.py": {
+      "before": "e9e08c353cd2f7996b808466842d451424b3d1c473ca301ce04f2df4f75d38a2",
+      "after": "e9e08c353cd2f7996b808466842d451424b3d1c473ca301ce04f2df4f75d38a2"
+    },
+    "bayesfilter/nonlinear/experimental_batched_svd_sigma_point_tf.py": {
+      "before": "64a86e2d4841b7261186f8d0e7c9129316262edff74fcb116dcb800137d7ef62",
+      "after": "64a86e2d4841b7261186f8d0e7c9129316262edff74fcb116dcb800137d7ef62"
+    },
+    "docs/benchmarks/benchmark_ssl_lstm_q20_factor_route_identity_admission_2026_09_04.py": {
+      "before": "c5395e92c82d88147bfcab8a3f271ff19011cac985ea0692d3f07e6ae7171246",
+      "after": "c5395e92c82d88147bfcab8a3f271ff19011cac985ea0692d3f07e6ae7171246"
+    },
+    "docs/benchmarks/run_ssl_lstm_q20_phase9b_recovery_runtime_2026_09_09.py": {
+      "before": "b96de3d126d03be3aa0e9d7cdb1969a1054b495576348f8066e943d3581ae93c",
+      "after": "b96de3d126d03be3aa0e9d7cdb1969a1054b495576348f8066e943d3581ae93c"
+    },
+    "docs/chapters/ch17_square_root_sigma_point.tex": {
+      "before": "b5fd82ef9ee6e1f794ad9607fccccb9b686acab808e0ac3cc1a01ed85e810436",
+      "after": "b5fd82ef9ee6e1f794ad9607fccccb9b686acab808e0ac3cc1a01ed85e810436"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-phase9b-recovery-runtime-8h-amendment-result-2026-09-09.md": {
+      "before": "0421b872cdf860c4342fd9bbd5afa114450b4e16092ec0b2c8934d0ddc3ba768",
+      "after": "0421b872cdf860c4342fd9bbd5afa114450b4e16092ec0b2c8934d0ddc3ba768"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-master-program-2026-09-02.md": {
+      "before": "621ec5e5806b590ce0228cf8d178276cfdff7abc0ca33f2a763ae69283eb14c1",
+      "after": "621ec5e5806b590ce0228cf8d178276cfdff7abc0ca33f2a763ae69283eb14c1"
+    },
+    "docs/plans/bayesfilter-ssl-lstm-q20-tempered-rkl-transport-ensemble-master-program-reset-memo-2026-09-06.md": {
+      "before": "d78228c6d7f9a7b0bbf8dd27ee7dc618eb78a347895fb05d895648e27c2278f2",
+      "after": "d78228c6d7f9a7b0bbf8dd27ee7dc618eb78a347895fb05d895648e27c2278f2"
+    },
+    "docs/source_map.yml": {
+      "before": "55b1634e3aa085c91068c488e26a725220a676ab3d8f61e03b216c3a8101258d",
+      "after": "55b1634e3aa085c91068c488e26a725220a676ab3d8f61e03b216c3a8101258d"
+    },
+    "tests/test_ssl_lstm_q20_phase9b_recovery_runtime.py": {
+      "before": "cc309495ec86d44400ae6802cc3b42743528858761fd2d13906d990d8a4c98ab",
+      "after": "cc309495ec86d44400ae6802cc3b42743528858761fd2d13906d990d8a4c98ab"
+    }
+  },
+  "policy_limits": {
+    "cpu_minutes": 45,
+    "gpu_minutes": 10,
+    "gpu_attempts": 4
+  },
+  "artifact_root": "docs/plans/artifacts/hmc-consistency-gap-repair-2026-09-15",
+  "interpretation": "engineering regressions, no posterior convergence or kernel ranking",
+  "recorded_numerical_process_wall_seconds": 1714.266005338973,
+  "compute_note": "Sum of recorded test/harness process wall times; nested automatic subprocess times are not double-counted. Readiness, editing and document build time excluded."
+}

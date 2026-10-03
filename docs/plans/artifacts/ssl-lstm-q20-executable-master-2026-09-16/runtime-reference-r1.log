@@ -1,0 +1,91 @@
+F.....F......                                                            [100%]
+=================================== FAILURES ===================================
+________________ test_process_tree_timeout_and_accounting_once _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-331/test_process_tree_timeout_and_0')
+
+    def test_process_tree_timeout_and_accounting_once(tmp_path):
+        c = campaign(tmp_path, cap=.5)
+        code = ("import subprocess,sys,time; "
+                "p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(20)']); "
+                "print(p.pid,flush=True); time.sleep(20)")
+        with c.locked():
+            attempt=c.execute("hang",[sys.executable,"-c",code],cap_seconds=.5,diagnostic=True)
+            assert attempt["status"]=="timed_out"
+            assert .35 <= attempt["elapsed_seconds"] < 2.
+            pid=int((Path(attempt["directory"])/"console.log").read_text())
+            from bayesfilter.inference.q20_campaign_runtime import _process_start
+            for _ in range(20):
+                if _process_start(pid) is None:
+                    break
+                time.sleep(.02)
+            assert _process_start(pid) is None
+            spent=c.state["spent_seconds"]
+            c.recover()
+            assert c.state["spent_seconds"]==spent==c.state["diagnostic_spent_seconds"]
+            assert c.state["campaign_limit"]==28.
+>           with pytest.raises(CampaignBudgetError,match="cumulative"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'bayesfilter.inference.q20_campaign_runtime.CampaignBudgetError'>
+
+tests/test_q20_campaign_runtime.py:42: Failed
+__________ test_reference_checkpoint_exact_replay_and_empty_posterior __________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-331/test_reference_checkpoint_exac0')
+
+    def test_reference_checkpoint_exact_replay_and_empty_posterior(tmp_path):
+        config=protocol()
+        config["reference"].update(banks=4,rungs=[64,128],batch_size=32,ess_min=1.,minimum_tail_rows=1)
+        bridge=four_dimensional_bridge()
+        first=run_reference(config,bridge,tmp_path/"first")
+        resumed=run_reference(config,bridge,tmp_path/"again",resume_chunks=tmp_path/"first/chunks")
+        assert first==resumed
+        summary=posterior_summary(config,tf.zeros([0,4,4],tf.float64),target_signature="fixture",label="empty",sequential_passed=False)
+        assert summary["quantities"]=={}
+        assert summary["production_qualified"] is False
+        changed=copy.deepcopy(config)
+        changed["seed"][0]+=1
+        with pytest.raises(ValueError):
+>           run_reference(changed,bridge,tmp_path/"wrong",resume_chunks=tmp_path/"first/chunks")
+
+tests/test_q20_reference_comparison.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_reference.py:119: in run_reference
+    with DurableTensorCheckpoint(chunks, scope) as store:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <bayesfilter.runtime.durable_tensor_checkpoint.DurableTensorCheckpoint object at 0x770702d59950>
+root = PosixPath('/tmp/pytest-of-ubuntu/pytest-331/test_reference_checkpoint_exac0/wrong/chunks')
+identity = {'frozen_scope_hash': 'b5d27e9bb1c2cf9e18a88d32b764c4571554c1cf8edb43c6efc664aa17d0d32a', 'seed': (1804631824, 5332041...4b1f21dcf1fc0aa87d445b4', ...}, 'target_signature': '5622b7a9854d011bd537a0459781a630f1d6f7a66fb76d04a21887ca308c5d6f'}
+
+    def __init__(
+        self,
+        root: str | Path,
+        identity: Mapping[str, Any],
+        *,
+        event_callback: Callable[[str, Mapping[str, Any]], None] | None = None,
+    ) -> None:
+        self.root = Path(root).resolve()
+        self.root.mkdir(parents=True, exist_ok=True)
+        self._lock = (self.root / ".writer.lock").open("a+b")
+        try:
+            fcntl.flock(self._lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            self._lock.close()
+            raise CheckpointError("checkpoint store already has a live writer") from exc
+        self.identity = json.loads(canonical_bytes(identity))
+        self.event_callback = event_callback
+        self.records: list[dict[str, Any]] = []
+        identity_path = self.root / "identity.json"
+        try:
+            if identity_path.exists():
+                if json.loads(identity_path.read_bytes()) != self.identity:
+>                   raise CheckpointError("checkpoint identity changed")
+E                   bayesfilter.runtime.durable_tensor_checkpoint.CheckpointError: checkpoint identity changed
+
+bayesfilter/runtime/durable_tensor_checkpoint.py:84: CheckpointError
+=========================== short test summary info ============================
+FAILED tests/test_q20_campaign_runtime.py::test_process_tree_timeout_and_accounting_once
+FAILED tests/test_q20_reference_comparison.py::test_reference_checkpoint_exact_replay_and_empty_posterior
+2 failed, 11 passed, 356 warnings in 6.15s

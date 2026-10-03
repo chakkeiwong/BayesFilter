@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -34,7 +35,8 @@ from bayesfilter.inference.neutra_training import (
 from bayesfilter.inference.neutra_training import _stable_hash
 
 
-DSGE_ROOT = Path("/home/ubuntu/python/dsge_hmc")
+DSGE_ROOT = Path(os.environ.get("BAYESFILTER_DSGE_REFERENCE_ROOT",
+    str(Path(__file__).resolve().parents[2] / "dsge_hmc")))
 DSGE_COMMIT = "d94566c9f70b3143e599a56eba7cb461ff2bda88"
 TARGET_SIGNATURE = "1" * 64
 ADAPTER_SIGNATURE = "2" * 64
@@ -831,7 +833,7 @@ def test_tuned_capacity_search_contract_fails_closed(field, value) -> None:
 
 def test_mutable_learning_rate_is_restricted_to_tuned_family() -> None:
     trainer = NeuTraReverseKLTrainer(_ParityTarget(), _capacity_config())
-    with pytest.raises(NeuTraTrainingError, match="restricted"):
+    with pytest.raises(NeuTraTrainingError, match="restricted|forbidden for paper_piecewise"):
         trainer.set_learning_rate(1.0e-3)
 
 

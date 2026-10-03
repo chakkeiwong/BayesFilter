@@ -1,0 +1,1548 @@
+{
+  "phase": "M29",
+  "attempts": [
+    {
+      "name": "audit-harness-check-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/audit-harness-check-r1/execution.json",
+      "receipt_sha256": "46a9f7abdfe2568911fd5c2744298951fe16e015884668a6ee9a4094b4453d21",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/audit-harness-check-r1/manifest.json",
+      "manifest_sha256": "41a4081344db9991e0a5f02dfeed957c70f64ee1d14ec854bf4d0998d1be1b4f",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/check_parity_harness.py"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 1.868983716936782,
+        "cpu_worker_seconds": 1.868983716936782,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/audit-harness-check-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/check_parity_harness.py"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:14:01.158126+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "092abd7e46ef6de93dd95a1fe57d4685087abf18777f34da9b86a9e1b97095e2"
+    },
+    {
+      "name": "beta_binomial-off-gpu-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-off-gpu-r1/execution.json",
+      "receipt_sha256": "da986c56a0e3483176c40ab2669df48eb3d07f75ed36823e3ed3762468e5ee7d",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-off-gpu-r1/manifest.json",
+      "manifest_sha256": "d6c7adf6523a5033dcd7ba5d98cd09dd83a9e295d6eaeb9c81ac642ab90790dd",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "bayesfilter.testing.inference_validation",
+          "run",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1/m29-gpu-beta-binomial-2026092392.json",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-off-gpu-r1/fits"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 613.0697170109488,
+        "cpu_worker_seconds": 0,
+        "gpu_worker_seconds": 613.0697170109488,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-off-gpu-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "bayesfilter.testing.inference_validation",
+        "run",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1/m29-gpu-beta-binomial-2026092392.json",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-off-gpu-r1/fits"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:32:35.504016+00:00",
+      "device_scope": "gpu",
+      "gpu_intentionally_hidden": false,
+      "gpu_preflight": {
+        "device": "1, GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c, NVIDIA GeForce RTX 4080 SUPER, 18 MiB, 32760 MiB, 0 %",
+        "compute_processes": "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 6866, /usr/NX/bin/nxnode.bin\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94243, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94266, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94289, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-4f1220f9-7ba2-21ad-3f9a-b24c2ca4ce91, 6247, /usr/libexec/gnome-remote-desktop-daemon",
+        "trust_basis": "trusted_escalated_tool_execution",
+        "memory_growth_before_import": true
+      },
+      "worker_log_sha256": "486a0e172a37b59e028ddf2733bb90b137462154b20af43a5021fd16b6a6ece0"
+    },
+    {
+      "name": "beta_binomial-on-gpu-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-on-gpu-r1/execution.json",
+      "receipt_sha256": "914a5465f61b9e467169717fa0579fb018ec00d0854747792318f811e48f582f",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-on-gpu-r1/manifest.json",
+      "manifest_sha256": "f8dffd8c883849d4bdbaa4356fc405577327ce560f14e84579e8a47d30a6c43f",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "bayesfilter.testing.inference_validation",
+          "run",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1/m29-gpu-beta-binomial-2026092392.json",
+          "--profile-execution",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-on-gpu-r1/fits"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 669.2963516989257,
+        "cpu_worker_seconds": 0,
+        "gpu_worker_seconds": 669.2963516989257,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-on-gpu-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "bayesfilter.testing.inference_validation",
+        "run",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1/m29-gpu-beta-binomial-2026092392.json",
+        "--profile-execution",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/beta_binomial-on-gpu-r1/fits"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:44:06.540489+00:00",
+      "device_scope": "gpu",
+      "gpu_intentionally_hidden": false,
+      "gpu_preflight": {
+        "device": "1, GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c, NVIDIA GeForce RTX 4080 SUPER, 18 MiB, 32760 MiB, 0 %",
+        "compute_processes": "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 6866, /usr/NX/bin/nxnode.bin\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94243, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94266, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94289, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-4f1220f9-7ba2-21ad-3f9a-b24c2ca4ce91, 6247, /usr/libexec/gnome-remote-desktop-daemon",
+        "trust_basis": "trusted_escalated_tool_execution",
+        "memory_growth_before_import": true
+      },
+      "worker_log_sha256": "6a6b8cfc5f601f4cb77670f0bfc8d2791dc20468e67f5440c1d216e1cbfae579"
+    },
+    {
+      "name": "documentation-contract-tests-final-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/documentation-contract-tests-final-r1/execution.json",
+      "receipt_sha256": "a08e681de30f2b919fbe07f119b11c2bd070c32bf2acb8be8ed70bf75dd726ae",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/documentation-contract-tests-final-r1/manifest.json",
+      "manifest_sha256": "9c36124d989da3055fc916fafef72eedd4b00b84d4a54cea11f77dcff28f981c",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_hmc_tuning_documentation_contract.py"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 4.375147472019307,
+        "cpu_worker_seconds": 4.375147472019307,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/documentation-contract-tests-final-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_tuning_documentation_contract.py"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:34:45.379443+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "de2deab1b4c9555807f18f0d52d6413686d8dda03208c9b099121a831e7d4ebf"
+    },
+    {
+      "name": "error-and-doc-tests-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r1/execution.json",
+      "receipt_sha256": "1b2a75f2dc3c97dd1aa1c4e15c7858670cb6e424ddf195b2eaf2e66bd33bdf5e",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r1/manifest.json",
+      "manifest_sha256": "c0cef347c91cef855316b180390ec7a1130babfe58527f0d39961cf1b5e55a9a",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/inference_validation/test_profiling.py",
+          "tests/inference_validation/test_execution.py",
+          "tests/test_hmc_tuning_documentation_contract.py",
+          "-k",
+          "not public_ordinary_pipeline and not cli_workers_resume",
+          "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r1/tests.xml"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 5.376754466095008,
+        "cpu_worker_seconds": 5.376754466095008,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/inference_validation/test_profiling.py",
+        "tests/inference_validation/test_execution.py",
+        "tests/test_hmc_tuning_documentation_contract.py",
+        "-k",
+        "not public_ordinary_pipeline and not cli_workers_resume",
+        "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r1/tests.xml"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:15:47.115837+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "4d3a8b39e1edb17e5a33951010e4dfe0a2ed5522178ebc5efdcb90d3e041dddf"
+    },
+    {
+      "name": "error-and-doc-tests-r2",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r2/execution.json",
+      "receipt_sha256": "d94babf75a7e498f1129501684b1acc8bcef40e2eb7f12efaf3e63fb38d92e95",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r2/manifest.json",
+      "manifest_sha256": "4ab52a21cec10f9553260ee8f39a90e57e37a9c5f8669fd2d119c5154b0cc51f",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_hmc_tuning_documentation_contract.py::test_capability_registry_covers_routes_and_has_resolvable_evidence",
+          "tests/test_hmc_tuning_documentation_contract.py::test_normative_chapter_and_agent_guide_are_wired_to_registry"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 4.224341106018983,
+        "cpu_worker_seconds": 4.224341106018983,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r2/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_tuning_documentation_contract.py::test_capability_registry_covers_routes_and_has_resolvable_evidence",
+        "tests/test_hmc_tuning_documentation_contract.py::test_normative_chapter_and_agent_guide_are_wired_to_registry"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:21:24.221497+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "c2d2721235773220b4aa093f918484fc0796d69b3227f7bf7b1e11ad2df285a5"
+    },
+    {
+      "name": "error-and-doc-tests-r3",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r3/execution.json",
+      "receipt_sha256": "c5c0f6143819dfc8bf59b0498417b945b3d66bc3caaaf238db333992db2d73a2",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r3/manifest.json",
+      "manifest_sha256": "b9b32d77871a43e4f58df500dc6d89159d9040518daeba6953aebc99ea28caa0",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_hmc_tuning_documentation_contract.py::test_capability_registry_covers_routes_and_has_resolvable_evidence",
+          "tests/test_hmc_tuning_documentation_contract.py::test_normative_chapter_and_agent_guide_are_wired_to_registry"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 4.023986387997866,
+        "cpu_worker_seconds": 4.023986387997866,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/error-and-doc-tests-r3/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_tuning_documentation_contract.py::test_capability_registry_covers_routes_and_has_resolvable_evidence",
+        "tests/test_hmc_tuning_documentation_contract.py::test_normative_chapter_and_agent_guide_are_wired_to_registry"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:22:25.951081+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "43da212ee00e3460c653f20338a3fc5a2b8c397f6ee268bd326dc12412681a81"
+    },
+    {
+      "name": "focused-tests-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r1/execution.json",
+      "receipt_sha256": "484f36ca283e0a386f9cd414ecaa9a076926b596a25321128343cb5745e201e5",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r1/manifest.json",
+      "manifest_sha256": "600f74076080defdc5a680b5eb0f455bb2fb326ca7b6918f7877b682c1ee0e56",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/inference_validation/test_profiling.py",
+          "tests/inference_validation/test_fit_process.py",
+          "tests/inference_validation/test_execution.py",
+          "tests/inference_validation/test_m29_design.py",
+          "--basetemp=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r1/tmp",
+          "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r1/tests.xml"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 133.04680326103698,
+        "cpu_worker_seconds": 133.04680326103698,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/inference_validation/test_profiling.py",
+        "tests/inference_validation/test_fit_process.py",
+        "tests/inference_validation/test_execution.py",
+        "tests/inference_validation/test_m29_design.py",
+        "--basetemp=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r1/tmp",
+        "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r1/tests.xml"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r1",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T07:48:39.426322+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "51dc7d5c832f7cc91d314985f93d6018d6b144f6e9f1793be0a98860b61353f7"
+    },
+    {
+      "name": "focused-tests-r3",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r3/execution.json",
+      "receipt_sha256": "4c2ddde23c34924219f6eb28c68f5095a278ae4e9112c013088e240204987962",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r3/manifest.json",
+      "manifest_sha256": "3f137e7c56386f806a7f3749f471344e4dabac0f6abe6146b5cd1aaed9f9369e",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/inference_validation/test_profiling.py",
+          "tests/inference_validation/test_fit_process.py",
+          "tests/inference_validation/test_execution.py",
+          "tests/inference_validation/test_m29_design.py",
+          "--basetemp=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r3/tmp",
+          "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r3/tests.xml"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 122.03663374891039,
+        "cpu_worker_seconds": 122.03663374891039,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r3/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/inference_validation/test_profiling.py",
+        "tests/inference_validation/test_fit_process.py",
+        "tests/inference_validation/test_execution.py",
+        "tests/inference_validation/test_m29_design.py",
+        "--basetemp=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r3/tmp",
+        "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/focused-tests-r3/tests.xml"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:04:42.858385+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "7c04407aba132e8ae9e5781c3b3372b688f381b07c4ae05ab42812957ea29d89"
+    },
+    {
+      "name": "gaussian-audit-cpu-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-audit-cpu-r1/execution.json",
+      "receipt_sha256": "4c56ec2b5583f9922e320f6d69797b770670099568df2b188f036ada52c616ee",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-audit-cpu-r1/manifest.json",
+      "manifest_sha256": "b8a87b984043d845d1dd8048eec52329002d1ed7231f1c9eab2041de1cfb065c",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "docs.benchmarks.audit_hmc_m29_2026_09_23",
+          "--root",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+          "--targets",
+          "gaussian",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-audit-r1/result.json"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 2.2698144339956343,
+        "cpu_worker_seconds": 2.2698144339956343,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-audit-cpu-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.audit_hmc_m29_2026_09_23",
+        "--root",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+        "--targets",
+        "gaussian",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-audit-r1/result.json"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:31:27.281979+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "8a182a35c2a7c8d356aba384a2817aca9562a880d6b04c353e19969ec328cb7c"
+    },
+    {
+      "name": "gaussian-off-gpu-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-off-gpu-r1/execution.json",
+      "receipt_sha256": "94599d84c7d43c9a18d55fe0ae120e2612d86b277893d4ca366195042f54fb6a",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-off-gpu-r1/manifest.json",
+      "manifest_sha256": "1780f579c045c8dc2809dbad83bdcd34572c6d09c88aef62b42c8bca1ec78626",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "bayesfilter.testing.inference_validation",
+          "run",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1/m29-gpu-gaussian-2026092391.json",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-off-gpu-r1/fits"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 617.9934403569205,
+        "cpu_worker_seconds": 0,
+        "gpu_worker_seconds": 617.9934403569205,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-off-gpu-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "bayesfilter.testing.inference_validation",
+        "run",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1/m29-gpu-gaussian-2026092391.json",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-off-gpu-r1/fits"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:08:04.410981+00:00",
+      "device_scope": "gpu",
+      "gpu_intentionally_hidden": false,
+      "gpu_preflight": {
+        "device": "1, GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c, NVIDIA GeForce RTX 4080 SUPER, 18 MiB, 32760 MiB, 0 %",
+        "compute_processes": "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 6866, /usr/NX/bin/nxnode.bin\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94243, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94266, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94289, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-4f1220f9-7ba2-21ad-3f9a-b24c2ca4ce91, 6247, /usr/libexec/gnome-remote-desktop-daemon",
+        "trust_basis": "trusted_escalated_tool_execution",
+        "memory_growth_before_import": true
+      },
+      "worker_log_sha256": "e54496e70a192a2c301fe192af384eaebee6325860ce061cd2e2b2a7ff03e93c"
+    },
+    {
+      "name": "gaussian-on-gpu-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-on-gpu-r1/execution.json",
+      "receipt_sha256": "2b02df4556c6e2f816bd5405b423b273dde0aa1dfad1349aeb195c084a8b0616",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-on-gpu-r1/manifest.json",
+      "manifest_sha256": "7132334cf91630c2d90a850a0c6aa2f0b70b34cd42761a55b8fc9c8e5e8973ce",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "bayesfilter.testing.inference_validation",
+          "run",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1/m29-gpu-gaussian-2026092391.json",
+          "--profile-execution",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-on-gpu-r1/fits"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 625.2420615250012,
+        "cpu_worker_seconds": 0,
+        "gpu_worker_seconds": 625.2420615250012,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-on-gpu-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "bayesfilter.testing.inference_validation",
+        "run",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1/m29-gpu-gaussian-2026092391.json",
+        "--profile-execution",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/gaussian-on-gpu-r1/fits"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:20:40.057906+00:00",
+      "device_scope": "gpu",
+      "gpu_intentionally_hidden": false,
+      "gpu_preflight": {
+        "device": "1, GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c, NVIDIA GeForce RTX 4080 SUPER, 18 MiB, 32760 MiB, 0 %",
+        "compute_processes": "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 6866, /usr/NX/bin/nxnode.bin\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94243, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94266, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 94289, /home/ubuntu/anaconda3/envs/tfgpu/bin/python\nGPU-4f1220f9-7ba2-21ad-3f9a-b24c2ca4ce91, 6247, /usr/libexec/gnome-remote-desktop-daemon",
+        "trust_basis": "trusted_escalated_tool_execution",
+        "memory_growth_before_import": true
+      },
+      "worker_log_sha256": "910f88ac78f8e561e291c9625e37337f7953e746a17959f2b7647b4ef4612548"
+    },
+    {
+      "name": "guide-bibtex-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-bibtex-r1/execution.json",
+      "receipt_sha256": "284e53f3beca96e167084c5edab5fbbfd0daf59c3d6bf56a53801859ff0f2d78",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-bibtex-r1/manifest.json",
+      "manifest_sha256": "ea90d5ca64af61184ccc0892e859f6a8187852ae702be40c5d1b5fef2cf19f05",
+      "record": {
+        "command": [
+          "/usr/bin/env",
+          "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+          "bibtex",
+          "/tmp/hmc-m29-guide-build-r1/main"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 0.03307003399822861,
+        "cpu_worker_seconds": 0.03307003399822861,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-bibtex-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/usr/bin/env",
+        "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+        "bibtex",
+        "/tmp/hmc-m29-guide-build-r1/main"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:24:17.029433+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "01fb066d4732f1eef03c2adda2e94729d83ea7222a52b774a41aa4974f1ca4fd"
+    },
+    {
+      "name": "guide-bibtex-r2",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-bibtex-r2/execution.json",
+      "receipt_sha256": "dd86b577ed407705567617583fc10f9d96aa239d13c9e1dace5ce59c8e6b8998",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-bibtex-r2/manifest.json",
+      "manifest_sha256": "68e48a1fab2fc36cb8107f3e23b432bf8d26e85306eea63e6e330cffad482d0c",
+      "record": {
+        "command": [
+          "bash",
+          "-lc",
+          "cd /tmp/hmc-m29-guide-build-r1 && /usr/bin/env BIBINPUTS=/home/ubuntu/python/BayesFilter/docs: bibtex main"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.06556031596846879,
+        "cpu_worker_seconds": 0.06556031596846879,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-bibtex-r2/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "bash",
+        "-lc",
+        "cd /tmp/hmc-m29-guide-build-r1 && /usr/bin/env BIBINPUTS=/home/ubuntu/python/BayesFilter/docs: bibtex main"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:24:28.355186+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "7b0a0a8d2f1749b44546479273ee9d474d9656cc2a276630ff83cc8a72044dc9"
+    },
+    {
+      "name": "guide-build-bibtex-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-bibtex-r1/execution.json",
+      "receipt_sha256": "0e1dbbcb1cc076d6f60f0e29fbf070f32a2fbd5df932e1e49c9e21a0e157765d",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-bibtex-r1/manifest.json",
+      "manifest_sha256": "7be699082b8964565ae106eec06b2a8decca55142571fe16c3ef777d2d40db26",
+      "record": {
+        "command": [
+          "/usr/bin/env",
+          "TEXINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+          "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+          "latexmk",
+          "-pdf",
+          "-bibtex",
+          "-interaction=nonstopmode",
+          "-halt-on-error",
+          "-outdir=/tmp/hmc-m29-guide-build-r1",
+          "/home/ubuntu/python/BayesFilter/docs/main.tex"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.11550340300891548,
+        "cpu_worker_seconds": 0.11550340300891548,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-bibtex-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/usr/bin/env",
+        "TEXINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+        "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+        "latexmk",
+        "-pdf",
+        "-bibtex",
+        "-interaction=nonstopmode",
+        "-halt-on-error",
+        "-outdir=/tmp/hmc-m29-guide-build-r1",
+        "/home/ubuntu/python/BayesFilter/docs/main.tex"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:24:02.780762+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "5bed85a29d5244529a896b1a03cd69e0c1629161efde081c80d888b4a77d9d09"
+    },
+    {
+      "name": "guide-build-final-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-final-r1/execution.json",
+      "receipt_sha256": "6e4a28ede30e77574e43f9d1ccef0496851bf1a1153e0a1f001e71128f7b4095",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-final-r1/manifest.json",
+      "manifest_sha256": "441a2da32d6a62fdd0affb755012f0eea4653930697ab42f59d431a46e65cba6",
+      "record": {
+        "command": [
+          "/usr/bin/env",
+          "TEXINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+          "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+          "latexmk",
+          "-pdf",
+          "-interaction=nonstopmode",
+          "-halt-on-error",
+          "-outdir=/tmp/hmc-m29-guide-build-r1",
+          "/home/ubuntu/python/BayesFilter/docs/main.tex"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.11548352101817727,
+        "cpu_worker_seconds": 0.11548352101817727,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-final-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/usr/bin/env",
+        "TEXINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+        "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+        "latexmk",
+        "-pdf",
+        "-interaction=nonstopmode",
+        "-halt-on-error",
+        "-outdir=/tmp/hmc-m29-guide-build-r1",
+        "/home/ubuntu/python/BayesFilter/docs/main.tex"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:24:38.983017+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "5bed85a29d5244529a896b1a03cd69e0c1629161efde081c80d888b4a77d9d09"
+    },
+    {
+      "name": "guide-build-force-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-force-r1/execution.json",
+      "receipt_sha256": "3a17632aea5933f48d837ee0252393b5e992917fe5da9d7c7a5ec9792f2fac1b",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-force-r1/manifest.json",
+      "manifest_sha256": "658c5987b497b477c0a4b32ddadf3c8fb500b47dd0a8b20bc31641736fb3e83c",
+      "record": {
+        "command": [
+          "/usr/bin/env",
+          "TEXINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+          "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+          "latexmk",
+          "-g",
+          "-pdf",
+          "-interaction=nonstopmode",
+          "-halt-on-error",
+          "-outdir=/tmp/hmc-m29-guide-build-r1",
+          "/home/ubuntu/python/BayesFilter/docs/main.tex"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 6.782206818927079,
+        "cpu_worker_seconds": 6.782206818927079,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-force-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/usr/bin/env",
+        "TEXINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+        "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+        "latexmk",
+        "-g",
+        "-pdf",
+        "-interaction=nonstopmode",
+        "-halt-on-error",
+        "-outdir=/tmp/hmc-m29-guide-build-r1",
+        "/home/ubuntu/python/BayesFilter/docs/main.tex"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:25:45.270904+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "1cd5a6f37600cf09d1147ef276d4bf8ba352740caa76491bd60cb25651530d70"
+    },
+    {
+      "name": "guide-build-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-r1/execution.json",
+      "receipt_sha256": "82fbffcff15cba5dd59287c9d5ea625ed96c0920b12343c3ca6f24f780b5e6d7",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-r1/manifest.json",
+      "manifest_sha256": "bb93ae9d6a7d0963253a5fb149c8d523e6e1f46ae32b39c8e7a42bce77b7469b",
+      "record": {
+        "command": [
+          "/usr/bin/env",
+          "TEXINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+          "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+          "latexmk",
+          "-pdf",
+          "-interaction=nonstopmode",
+          "-halt-on-error",
+          "-outdir=/tmp/hmc-m29-guide-build-r1",
+          "/home/ubuntu/python/BayesFilter/docs/main.tex"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 10.188195083057508,
+        "cpu_worker_seconds": 10.188195083057508,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-build-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/usr/bin/env",
+        "TEXINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+        "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs:",
+        "latexmk",
+        "-pdf",
+        "-interaction=nonstopmode",
+        "-halt-on-error",
+        "-outdir=/tmp/hmc-m29-guide-build-r1",
+        "/home/ubuntu/python/BayesFilter/docs/main.tex"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:23:11.515492+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "29da572d883a2837cfedb0b31e7d73edc4b1a845fb69698990678b944a9fd2c2"
+    },
+    {
+      "name": "guide-render-repair-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-render-repair-r1/execution.json",
+      "receipt_sha256": "69ebc3e69829292e682562a3ddb14badc97eb91ef1ccb7a3073a7f52fe0b787e",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-render-repair-r1/manifest.json",
+      "manifest_sha256": "722f3c0edfed7eb95c1206c0810e1b8105ce08df8cb19ff5b213b453af170c17",
+      "record": {
+        "command": [
+          "bash",
+          "-lc",
+          "cd /tmp/hmc-m29-guide-build-r1 && /usr/bin/env TEXINPUTS=/home/ubuntu/python/BayesFilter/docs: BIBINPUTS=/home/ubuntu/python/BayesFilter/docs: latexmk -pdf -interaction=nonstopmode -halt-on-error /home/ubuntu/python/BayesFilter/docs/main.tex"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 6.627137979958206,
+        "cpu_worker_seconds": 6.627137979958206,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/guide-render-repair-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "bash",
+        "-lc",
+        "cd /tmp/hmc-m29-guide-build-r1 && /usr/bin/env TEXINPUTS=/home/ubuntu/python/BayesFilter/docs: BIBINPUTS=/home/ubuntu/python/BayesFilter/docs: latexmk -pdf -interaction=nonstopmode -halt-on-error /home/ubuntu/python/BayesFilter/docs/main.tex"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T09:20:34.108241+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "2b364be82649333c45cbb5d96d7c597f043716e1f00ff84f88664b346fce2a19"
+    },
+    {
+      "name": "m29-focused-regressions-final-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-focused-regressions-final-r1/execution.json",
+      "receipt_sha256": "17b2e69f467753b3cd4386c9a65b4b7f50dbb9a21bec88837444f83008d07bc1",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-focused-regressions-final-r1/manifest.json",
+      "manifest_sha256": "e432e1a8ab3b6095241085c5d17f43e604835975d9f3d75b4e346597fbfba27d",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/inference_validation/test_profiling.py",
+          "tests/inference_validation/test_fit_process.py",
+          "tests/inference_validation/test_execution.py",
+          "tests/inference_validation/test_m29_design.py"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 122.41469887003768,
+        "cpu_worker_seconds": 122.41469887003768,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-focused-regressions-final-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/inference_validation/test_profiling.py",
+        "tests/inference_validation/test_fit_process.py",
+        "tests/inference_validation/test_execution.py",
+        "tests/inference_validation/test_m29_design.py"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:36:05.133908+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "2e5ecbf47dbfa1b4d9be8cc3c5ee61f98d7f877f0c5088abb62350a2b7c097b9"
+    },
+    {
+      "name": "m29-reconcile-cpu-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-reconcile-cpu-r1/execution.json",
+      "receipt_sha256": "a8debd636c00f8b659f1a07604e32ae258771c647d36247482f9169c520933d6",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-reconcile-cpu-r1/manifest.json",
+      "manifest_sha256": "f888e634f9dcd648438a146084470f7f2b754215fe3f8b673f0cc1b12366d397",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "/home/ubuntu/python/BayesFilter/docs/benchmarks/reconcile_hmc_m29_2026_09_23.py",
+          "--root",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/reconciliation-terminal.json",
+          "--terminal"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 0.06524922198150307,
+        "cpu_worker_seconds": 0.06524922198150307,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-reconcile-cpu-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/reconcile_hmc_m29_2026_09_23.py",
+        "--root",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/reconciliation-terminal.json",
+        "--terminal"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T09:07:05.360916+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "3a0e0256d86f6c836216c18b9f4f224dcbbdb9af0a6c931ae89a2ebfd91e9438"
+    },
+    {
+      "name": "m29-reconcile-cpu-r2",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-reconcile-cpu-r2/execution.json",
+      "receipt_sha256": "4647d74c75df4eea9111ef565bf583ec4b87199f22e2c7ab901767ae7a098bb7",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-reconcile-cpu-r2/manifest.json",
+      "manifest_sha256": "c4bac82727ea4d08a885cc24b3c82bfa126c4a0459f578571d6a0c3ae52cb69c",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "/home/ubuntu/python/BayesFilter/docs/benchmarks/reconcile_hmc_m29_2026_09_23.py",
+          "--root",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/reconciliation-terminal.json",
+          "--terminal",
+          "--ignore-attempt",
+          "m29-reconcile-cpu-r2"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.0647482790518552,
+        "cpu_worker_seconds": 0.0647482790518552,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-reconcile-cpu-r2/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/reconcile_hmc_m29_2026_09_23.py",
+        "--root",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/reconciliation-terminal.json",
+        "--terminal",
+        "--ignore-attempt",
+        "m29-reconcile-cpu-r2"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T09:09:55.103179+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "4a1475ab4a2927eb4ee7837ad93f82a6912b2e4e4c1cea55de317814a2ca9d68"
+    },
+    {
+      "name": "m29-reconcile-cpu-r3",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-reconcile-cpu-r3/execution.json",
+      "receipt_sha256": "731ca304de9d454612613366749fd3f1db310bb65e68b75872b7acae381c5cdb",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-reconcile-cpu-r3/manifest.json",
+      "manifest_sha256": "527cd613acec3671b4d1c4e6d9cd326cf88263c8c93f2b77a98ebdd476a304e2",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "/home/ubuntu/python/BayesFilter/docs/benchmarks/reconcile_hmc_m29_2026_09_23.py",
+          "--root",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/reconciliation-terminal.json",
+          "--terminal",
+          "--ignore-attempt",
+          "m29-reconcile-cpu-r3"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.06515747506637126,
+        "cpu_worker_seconds": 0.06515747506637126,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/m29-reconcile-cpu-r3/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/reconcile_hmc_m29_2026_09_23.py",
+        "--root",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/reconciliation-terminal.json",
+        "--terminal",
+        "--ignore-attempt",
+        "m29-reconcile-cpu-r3"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T09:11:07.938197+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "dc20c4b0c9cb54a32759f2c4a30858d6a33787deea20f2d3d0f75f54283f2b81"
+    },
+    {
+      "name": "prepare-designs-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/prepare-designs-r1/execution.json",
+      "receipt_sha256": "1b5be4dc46f1d09db1b85e78206e057e4eab7355313c1de8fccaeff014032195",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/prepare-designs-r1/manifest.json",
+      "manifest_sha256": "fdf775c374b6dbf31e2efc8a627d217a3aac53dca01cc2eb5cae8ea038b95db6",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "docs/benchmarks/prepare_hmc_m29_2026_09_23.py",
+          "--baseline-root",
+          "docs/plans/artifacts/hmc-repair-master-2026-09-16/m27-r1",
+          "--note",
+          "docs/plans/bayesfilter-hmc-m29-execution-note-2026-09-23.md",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.11526956991292536,
+        "cpu_worker_seconds": 0.11526956991292536,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/prepare-designs-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/prepare_hmc_m29_2026_09_23.py",
+        "--baseline-root",
+        "docs/plans/artifacts/hmc-repair-master-2026-09-16/m27-r1",
+        "--note",
+        "docs/plans/bayesfilter-hmc-m29-execution-note-2026-09-23.md",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/designs-r1"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r1",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T07:49:24.400084+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "e5da820cb5a8c162e839047e1bc639590d34d4eaf427ce8cd64c8535126e99b0"
+    },
+    {
+      "name": "profile-probe-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-probe-r1/execution.json",
+      "receipt_sha256": "55b23bd3b3395e8839ea623c1b1dda903530c1a4e918a074478a457ddda6893e",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-probe-r1/manifest.json",
+      "manifest_sha256": "b2ea7ce81aee907efc99b87049af53dc85f51b5c9bc8afb2785b5769bee901b6",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile_probe.py"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 2.420320346020162,
+        "cpu_worker_seconds": 2.420320346020162,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-probe-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile_probe.py"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r2",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T07:55:31.944807+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "14a543a6fb7cb5adefb272c751d1e7dcb1bc8f6cbd391fbefbdf18a96761694d"
+    },
+    {
+      "name": "profile-probe-r2",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-probe-r2/execution.json",
+      "receipt_sha256": "5b901b00c3b328101ba6d327d9d6add3528b2e60386e57be4d746c5dd72913a9",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-probe-r2/manifest.json",
+      "manifest_sha256": "a60d2b315c05c49577000ac14f74f5548e7b389b9d91d75f43095804a69e384a",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile_probe_r2.py"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 2.2723980689188465,
+        "cpu_worker_seconds": 2.2723980689188465,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-probe-r2/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile_probe_r2.py"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r2",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T07:56:47.669253+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "5c3fb3c6d8464ae9ac544cb94fa7f884346353e3fa89f0295b1e0659bb0239eb"
+    },
+    {
+      "name": "profile-probe-r3",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-probe-r3/execution.json",
+      "receipt_sha256": "f1134b16a9716cf347f606740f5941112dd7e44dad5a634d5d23f8f875140edf",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-probe-r3/manifest.json",
+      "manifest_sha256": "d0e5fcbb172d1c7707b8efe5801cc129afc3f2cb83f216aae403a00767690693",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile_probe_r3.py"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 2.272334565059282,
+        "cpu_worker_seconds": 2.272334565059282,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-probe-r3/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile_probe_r3.py"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r2",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T07:57:56.381105+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "e6cca61effe433f6f11c4760fd83ee0a48746cdd0eb49c5927f5cb5731c67603"
+    },
+    {
+      "name": "profile-regression-r2",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r2/execution.json",
+      "receipt_sha256": "b9de6e99a0fd26ad6385cbecef7e0bd810d610590f5e22d1120c828877a6c565",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r2/manifest.json",
+      "manifest_sha256": "9d678ea5862c5d7789d1ba3101ce7cf9533af82a99f83dbe40de21ddf8dd8a10",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/inference_validation/test_profiling.py",
+          "--basetemp=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r2/tmp",
+          "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r2/tests.xml"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 88.49616940901615,
+        "cpu_worker_seconds": 88.49616940901615,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r2/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/inference_validation/test_profiling.py",
+        "--basetemp=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r2/tmp",
+        "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r2/tests.xml"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r2",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T07:52:56.986498+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "4f013422f7feba496bf166a886a54b12ef7746507335a7589d65c6c54562eac2"
+    },
+    {
+      "name": "profile-regression-r3",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r3/execution.json",
+      "receipt_sha256": "c23ec70e7031e4c27cd6a77c50da915c4342665bdc2500acb5cc903fd236828d",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r3/manifest.json",
+      "manifest_sha256": "b0800d3bbe50f6b92eed2d70f4b5fe8886442b5507ff849e9738b3fbd4803d78",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/inference_validation/test_profiling.py",
+          "--basetemp=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r3/tmp",
+          "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r3/tests.xml"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 84.41184869490098,
+        "cpu_worker_seconds": 84.41184869490098,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r3/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/inference_validation/test_profiling.py",
+        "--basetemp=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r3/tmp",
+        "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/profile-regression-r3/tests.xml"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:01:16.164068+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "cdd5a4f7454e0e7778c84cc0cbea7897434e8621f4f5c0b2cfdf21a0786e5c7d"
+    },
+    {
+      "name": "saved-cost-attribution-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/saved-cost-attribution-r1/execution.json",
+      "receipt_sha256": "2048da5536b8fc0ab10948c148ce938a4fdf2b1852cf19e625ae4cfd93f8a8bd",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/saved-cost-attribution-r1/manifest.json",
+      "manifest_sha256": "bf8075c859fe0956cec49cb5012287472d864fd659845581e9dc8c0ecc8c8f7d",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "/home/ubuntu/python/BayesFilter/docs/benchmarks/attribute_hmc_m29_2026_09_23.py",
+          "--root",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/cost-attribution-r1.json"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 0.2654146479908377,
+        "cpu_worker_seconds": 0.2654146479908377,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/saved-cost-attribution-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/attribute_hmc_m29_2026_09_23.py",
+        "--root",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/cost-attribution-r1.json"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T09:21:35.108196+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "20542c8cbef2c8ff2c7738fcaa8e619512d8062e2b35d6ed2cb2ce59cb50a498"
+    },
+    {
+      "name": "saved-cost-attribution-r2",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/saved-cost-attribution-r2/execution.json",
+      "receipt_sha256": "ba6ee7783e61b2704b93f2691b65141f1214cca2efbe8fe8b69555dd023c6184",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/saved-cost-attribution-r2/manifest.json",
+      "manifest_sha256": "651a58b09104e08b031d3c7b199e9e4beb7da79308c81e2f90d8987e8a9f1a2c",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "/home/ubuntu/python/BayesFilter/docs/benchmarks/attribute_hmc_m29_2026_09_23.py",
+          "--root",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/cost-attribution-r2.json"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 0.3156978120096028,
+        "cpu_worker_seconds": 0.3156978120096028,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/saved-cost-attribution-r2/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/attribute_hmc_m29_2026_09_23.py",
+        "--root",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/cost-attribution-r2.json"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T09:22:14.829980+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "d7dcae65ad7bb5006a1f17b40cacb6925376e58f3378d526de55f314c8e6f013"
+    },
+    {
+      "name": "terminal-audit-cpu-r1",
+      "receipt": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/terminal-audit-cpu-r1/execution.json",
+      "receipt_sha256": "da90e2c3de8da50af6573a0cb8a00c669e2a08c2a83a99dc8247a0d894fdbad6",
+      "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/terminal-audit-cpu-r1/manifest.json",
+      "manifest_sha256": "3070e8f3c60920b2f6fee953c5afc01ccc3587a1340a65414a72a0c2da9258db",
+      "record": {
+        "command": [
+          "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+          "-m",
+          "docs.benchmarks.audit_hmc_m29_2026_09_23",
+          "--root",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+          "--output",
+          "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/terminal-audit-r1.json"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 3.8237036279169843,
+        "cpu_worker_seconds": 3.8237036279169843,
+        "gpu_worker_seconds": 0,
+        "manifest": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/terminal-audit-cpu-r1/manifest.json",
+        "launch_failure": null
+      },
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.audit_hmc_m29_2026_09_23",
+        "--root",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/terminal-audit-r1.json"
+      ],
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-repair-master-2026-09-16/m29-r1/source-r3",
+      "git_commit": "a5aa1fa94e5527fccb32898aeb810617142807c5",
+      "started_utc": "2026-09-23T08:57:44.035347+00:00",
+      "device_scope": "cpu_reference",
+      "gpu_intentionally_hidden": true,
+      "gpu_preflight": null,
+      "worker_log_sha256": "9d13e8e8e7d13bbf543a0305c88ac1b5915ab2a6da157838a26e436a1ce476ab"
+    }
+  ],
+  "full_runtime_source_hashes": "source-r3-manifest.json",
+  "plan_file": "docs/plans/bayesfilter-hmc-post-m28-next-phase-2026-09-23.md",
+  "result_file": "docs/plans/bayesfilter-hmc-m29-profiling-result-2026-09-23.md"
+}

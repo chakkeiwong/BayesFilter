@@ -1,0 +1,59 @@
+2026-09-16 05:46:57.802993: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789508819.663285 1765315 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30421 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:21:00.0, compute capability: 8.9
+2026-09-16 05:47:07.564188: I external/local_xla/xla/service/service.cc:163] XLA service 0x5deb6ef63740 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2026-09-16 05:47:07.564268: I external/local_xla/xla/service/service.cc:171]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9
+2026-09-16 05:47:07.655890: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+2026-09-16 05:47:08.028685: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal/Assert/AssertGuard/Assert
+2026-09-16 05:47:08.030132: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_1/Assert/AssertGuard/Assert
+2026-09-16 05:47:08.393005: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_2/Assert/AssertGuard/Assert
+2026-09-16 05:47:08.471465: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_3/Assert/AssertGuard/Assert
+2026-09-16 05:47:08.472921: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_4/Assert/AssertGuard/Assert
+2026-09-16 05:47:08.590362: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_5/Assert/AssertGuard/Assert
+2026-09-16 05:47:08.745955: I external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:473] Loaded cuDNN version 91700
+I0000 00:00:1789508834.326112 1765315 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+2026-09-16 05:47:21.028132: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal/Assert/AssertGuard/Assert
+2026-09-16 05:47:21.029914: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_1/Assert/AssertGuard/Assert
+2026-09-16 05:47:21.427508: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_2/Assert/AssertGuard/Assert
+2026-09-16 05:47:21.512746: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_3/Assert/AssertGuard/Assert
+2026-09-16 05:47:21.514518: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_4/Assert/AssertGuard/Assert
+2026-09-16 05:47:21.638596: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_5/Assert/AssertGuard/Assert
+2026-09-16 05:47:22.119002: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal/Assert/AssertGuard/Assert
+2026-09-16 05:47:22.120176: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_1/Assert/AssertGuard/Assert
+2026-09-16 05:47:22.430583: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_2/Assert/AssertGuard/Assert
+2026-09-16 05:47:22.503963: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_3/Assert/AssertGuard/Assert
+2026-09-16 05:47:22.505133: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_4/Assert/AssertGuard/Assert
+2026-09-16 05:47:22.613330: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_5/Assert/AssertGuard/Assert
+2026-09-16 05:47:23.039372: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal/Assert/AssertGuard/Assert
+2026-09-16 05:47:23.040531: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_less_equal_1/Assert/AssertGuard/Assert
+Traceback (most recent call last):
+  File "/tmp/BayesFilter-q20-master-repair-20260916/docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py", line 73, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/tmp/BayesFilter-q20-master-repair-20260916/docs/benchmarks/run_ssl_lstm_q20_production_2026_09_15.py", line 38, in main
+    result=run_worker(json.loads(args.request.read_text()),args.output_dir)
+  File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/q20_master_stages.py", line 57, in run_worker
+    result = dispatch(config, bridge, output / "data", request, memory)
+  File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/q20_master_stages.py", line 84, in dispatch
+    return qualify_bridge(config, bridge, root)
+  File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/q20_hmc_qualification.py", line 92, in qualify_bridge
+    public=runner.run(mode="serial")
+  File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc.py", line 3223, in run
+    diagnostics = _full_chain_hmc_diagnostics(
+        samples,
+        trace,
+        trace_policy=self.config.trace_policy,
+    )
+  File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc.py", line 6992, in _full_chain_hmc_diagnostics
+    diagnostics["target_status_telemetry"] = _target_status_telemetry_diagnostics(
+                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        trace["target_status_telemetry"]
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/BayesFilter-q20-master-repair-20260916/bayesfilter/inference/hmc.py", line 7395, in _target_status_telemetry_diagnostics
+    raise ValueError(
+        "target_status_telemetry conditioning fields must be both present or both absent"
+    )
+ValueError: target_status_telemetry conditioning fields must be both present or both absent

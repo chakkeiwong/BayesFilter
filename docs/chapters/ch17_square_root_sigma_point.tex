@@ -8,6 +8,53 @@ make the filtering recursion easier to monitor.  In BayesFilter, square-root
 bookkeeping is a backend discipline.  It does not by itself make an
 approximate likelihood exact or an autodiff gradient safe for HMC.
 
+\section{Pruned Second-Order Models: Executable API}
+\label{sec:bf-pruned-direct-factor-api}
+
+For a model with separate first- and second-order state components, use
+\texttt{TFPrunedSRUKFModel} and \texttt{tf\_pruned\_srukf\_filter} from
+\texttt{bayesfilter.nonlinear}. The parameterized entry point
+\texttt{make\_pruned\_srukf\_value\_and\_score} compiles the likelihood and its
+total parameter derivative. The field shapes, initialization conventions,
+and usage example are in
+\texttt{docs/reference/pruned-direct-factor-srukf.md}.
+
+Let $f_t$ and $s_t$ denote first- and second-order deviations, and let $e_t$
+be the innovation. With caller-supplied coefficients the recursion is
+\[
+ f_t=A f_{t-1}+B e_t,\qquad
+ s_t=A s_{t-1}+c+\tfrac12 H[(f_{t-1},e_t),(f_{t-1},e_t)].
+\]
+Both state components remain random and are conditioned jointly on the
+observations. The quadratic form uses only first-order deviations and
+innovations. Its full Hessian includes state--innovation cross terms, with
+the usual one-half convention; the caller supplies the second-order forcing
+$c$. The observation equation is
+\[
+ y_t=d+C(f_t+s_t)+\tfrac12 J[f_t,f_t]+v_t.
+\]
+This is a coefficient contract, not a solver for the coefficients. In
+particular, Taylor-expanding a learned transition defines a different model
+from an independently derived equilibrium perturbation solution.
+
+The initial joint factor may have zero rows for a deterministic second-order
+component. Scaled Householder QR of the joint observation/state residual
+stack propagates those factors without adding noise to fill the null space.
+If the lower factor is
+\[
+ L=\begin{bmatrix}L_y&0\\L_{xy}&L_f\end{bmatrix},
+\]
+then $L_f L_f^\top$ is the conditional state covariance and the mean correction
+is $L_{xy}L_y^{-1}(y_t-\bar y_t)$. Only $L_y$ must be nonsingular. The filter
+returns numerical validity flags even inside XLA; singular innovation laws
+and nonfinite values cannot be accepted silently. Derivatives apply on a
+fixed structural-rank branch, not at arbitrary rank changes.
+
+The positive-weight unscented rule uses $\alpha=1$, $\beta=2$, $\kappa=0$
+on the fixed augmented dimension. It does not integrate all fourth moments
+exactly. The API therefore computes an approximate Gaussian likelihood;
+passing factor and gradient tests does not establish posterior convergence.
+
 \section{Backend Contract}
 \label{sec:bf-square-root-contract}
 

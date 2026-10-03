@@ -1,0 +1,1428 @@
+{
+  "bootstrap_intervals": {
+    "covariance_offdiag_max_abs": {
+      "bootstrap_mean": -1.3500951077282854,
+      "bootstrap_nonpositive_fraction": 0.9987,
+      "bootstrap_standard_deviation": 0.29817351981101725,
+      "estimand": "range_geometry_minus_range_support",
+      "percentile_95_lower": -1.6207213968752758,
+      "percentile_95_upper": -0.555579565543316,
+      "point_estimate": -1.5029646274910187,
+      "upper_bound_nonpositive": true
+    },
+    "negative_mode_fraction": {
+      "bootstrap_mean": -0.035817362130015164,
+      "bootstrap_nonpositive_fraction": 0.98335,
+      "bootstrap_standard_deviation": 0.010764802139321565,
+      "estimand": "range_geometry_minus_range_support",
+      "percentile_95_lower": -0.046139656483750735,
+      "percentile_95_upper": -0.011080644252553895,
+      "point_estimate": -0.04310714185693976,
+      "upper_bound_nonpositive": true
+    },
+    "root_count": {
+      "bootstrap_mean": -1.33575,
+      "bootstrap_nonpositive_fraction": 0.75505,
+      "bootstrap_standard_deviation": 2.689725253162487,
+      "estimand": "range_geometry_minus_range_support",
+      "percentile_95_lower": -4.0,
+      "percentile_95_upper": 6.0,
+      "point_estimate": -2.0,
+      "upper_bound_nonpositive": false
+    },
+    "theta_mean_0": {
+      "bootstrap_mean": -0.3531482831822003,
+      "bootstrap_nonpositive_fraction": 0.8205,
+      "bootstrap_standard_deviation": 0.3230247643467072,
+      "estimand": "range_geometry_minus_range_support",
+      "percentile_95_lower": -0.8957940595290496,
+      "percentile_95_upper": 0.1823817845234077,
+      "point_estimate": -0.32254105894993235,
+      "upper_bound_nonpositive": false
+    },
+    "weighted_ess_fraction": {
+      "bootstrap_mean": -0.14058362878920616,
+      "bootstrap_nonpositive_fraction": 0.98475,
+      "bootstrap_standard_deviation": 0.04715611310086712,
+      "estimand": "range_geometry_minus_range_support",
+      "percentile_95_lower": -0.18144213620679728,
+      "percentile_95_upper": -0.013804679100633654,
+      "point_estimate": -0.177477849582524,
+      "upper_bound_nonpositive": true
+    }
+  },
+  "bootstrap_reps": 20000,
+  "bootstrap_scope": "paired percentile diagnostic for the observed six-bank design",
+  "bootstrap_seed": [
+    20260826,
+    52052
+  ],
+  "boundary_status": "PASS_V3_4_FRESH_PAIRED_BOUNDARY",
+  "branch": "fresh_geometry_uncertainty_incompatible",
+  "branch_is_population_or_superiority_ranking": false,
+  "decision_table": [
+    {
+      "decision": "retain_theta_target_and_three_arm_harness",
+      "main_uncertainty": "finite target/harness evidence does not establish posterior correctness",
+      "next_justified_action": "retain as a role-limited diagnostic harness",
+      "not_concluded": "posterior correctness",
+      "primary_criterion_status": "pass",
+      "veto_diagnostic_status": "none fired"
+    },
+    {
+      "decision": "retain_frozen_geometry_candidate",
+      "main_uncertainty": "six-bank percentile bootstrap is finite-design evidence only",
+      "next_justified_action": "do_not_retain_the_frozen_geometry_as_a_spread_reduction_nominee",
+      "not_concluded": "population ranking, superiority, or default readiness",
+      "primary_criterion_status": "fresh_geometry_uncertainty_incompatible",
+      "veto_diagnostic_status": "no engineering veto; scientific promotion remains vetoed"
+    },
+    {
+      "decision": "promote_IID_whitening_or_HMC",
+      "main_uncertainty": "proposal-cloud moments are not a whitening theorem",
+      "next_justified_action": "keep NeuTra whitening and HMC closed",
+      "not_concluded": "IID Gaussian law or HMC readiness",
+      "primary_criterion_status": "veto",
+      "veto_diagnostic_status": "no Gaussian-law, posterior-agreement, or HMC convergence evidence"
+    }
+  ],
+  "fixture_status": "PASS_V3_4_FRESH_PAIRED_FIXTURE",
+  "geometry_spreads": {
+    "covariance_offdiag_max_abs": 0.7191681583554659,
+    "negative_mode_fraction": 0.047779614825059324,
+    "root_count": 9.0,
+    "theta_mean_0": 0.9564468264716074,
+    "weighted_ess_fraction": 0.04271240345802274
+  },
+  "historical_context_not_pooled": {
+    "phase50_branch": "support_broadened_does_not_reduce_variability",
+    "phase50_status": "PASS_V3_2_DEFENSIVE_SUPPORT_REPORT",
+    "phase50_support_spreads": {
+      "covariance_offdiag_max_abs": 4.253474535052258,
+      "negative_mode_fraction": 0.06533211325460875,
+      "root_count": 11.0,
+      "theta_mean_0": 0.8011797849159568,
+      "weighted_ess_fraction": 0.04410268334541745
+    },
+    "phase51_branch": "mode_aware_geometry_reduces_between_bank_variability_descriptive",
+    "phase51_geometry_spreads": {
+      "covariance_offdiag_max_abs": 1.5080273142868106,
+      "negative_mode_fraction": 0.022514089142607052,
+      "root_count": 5.0,
+      "theta_mean_0": 0.7591391864886089,
+      "weighted_ess_fraction": 0.2664594272773575
+    },
+    "phase51_status": "PASS_V3_3_MODE_AWARE_GEOMETRY_REPORT"
+  },
+  "identity_spreads": {
+    "covariance_offdiag_max_abs": 4.1309718402807984,
+    "negative_mode_fraction": 0.2693292765098958,
+    "root_count": 15.0,
+    "theta_mean_0": 3.014388798136798,
+    "weighted_ess_fraction": 0.0976545435491355
+  },
+  "inference_status": {
+    "default_readiness": "not_ready",
+    "descriptive_only_differences": "six paired raw rows, ranges, sign counts, and finite-design bootstrap intervals",
+    "hard_veto_screen": "passed",
+    "next_evidence_needed": "do_not_retain_the_frozen_geometry_as_a_spread_reduction_nominee",
+    "statistically_supported_ranking": "none"
+  },
+  "nonclaims": [
+    "No population ranking or method superiority is inferred from the paired bootstrap.",
+    "No finite-run convergence, posterior correctness, IID whitening, exhaustive mode discovery, HMC, canonical LEDH, or default claim.",
+    "Acceptance, ESS, roots, mode mass, and range differences remain diagnostic quantities.",
+    "No Phase 50/51 row was pooled into the fresh six-bank estimand.",
+    "No fresh row was used to train NeuTra or tune the frozen proposal laws."
+  ],
+  "paired_differences": {
+    "covariance_offdiag_max_abs": {
+      "geometry_minus_support": [
+        -2.674730856312848,
+        -3.273665176788212,
+        -3.0087126977645737,
+        -1.748087885227438,
+        -0.3810629847754714,
+        -0.4501210019705182
+      ],
+      "sign_counts": {
+        "geometry_minus_support_negative": 6,
+        "geometry_minus_support_positive": 0,
+        "geometry_minus_support_zero": 0
+      }
+    },
+    "negative_mode_fraction": {
+      "geometry_minus_support": [
+        0.014185093756410916,
+        0.003104449503857021,
+        -0.0720868962144281,
+        0.0010145910194030439,
+        0.06657947529263031,
+        0.02895003569834509
+      ],
+      "sign_counts": {
+        "geometry_minus_support_negative": 1,
+        "geometry_minus_support_positive": 5,
+        "geometry_minus_support_zero": 0
+      }
+    },
+    "root_count": {
+      "geometry_minus_support": [
+        3.0,
+        2.0,
+        2.0,
+        13.0,
+        -1.0,
+        -1.0
+      ],
+      "sign_counts": {
+        "geometry_minus_support_negative": 2,
+        "geometry_minus_support_positive": 4,
+        "geometry_minus_support_zero": 0
+      }
+    },
+    "theta_mean_0": {
+      "geometry_minus_support": [
+        0.7619821810760277,
+        0.20562794330002682,
+        0.6748773828806666,
+        0.43937004133228064,
+        -0.6016016580369156,
+        -0.09206780857744445
+      ],
+      "sign_counts": {
+        "geometry_minus_support_negative": 2,
+        "geometry_minus_support_positive": 4,
+        "geometry_minus_support_zero": 0
+      }
+    },
+    "weighted_ess_fraction": {
+      "geometry_minus_support": [
+        0.23170407175994612,
+        0.21874424685444616,
+        0.24550875086057977,
+        0.21482378107566202,
+        0.07146067636333964,
+        0.0640666146537825
+      ],
+      "sign_counts": {
+        "geometry_minus_support_negative": 0,
+        "geometry_minus_support_positive": 6,
+        "geometry_minus_support_zero": 0
+      }
+    }
+  },
+  "plan_version": "v3.4-fresh-paired-uncertainty-replication",
+  "primary_metrics": [
+    "theta_mean_0",
+    "negative_mode_fraction",
+    "covariance_offdiag_max_abs"
+  ],
+  "red_team": {
+    "overturning_evidence": "larger fresh paired replication plus downstream target/posterior agreement under a separately reviewed protocol",
+    "strongest_alternative_explanation": "any favorable range relation may be driven by six sampled banks, inherited local mode representatives, or an ESS tradeoff rather than globally faithful geometry",
+    "weakest_evidence": "the range estimand is tail-sensitive and six banks cannot support a stable population claim"
+  },
+  "replicate_count": 6,
+  "replicate_rows": [
+    {
+      "identity": {
+        "covariance_offdiag_max_abs": 2.7232159060358407,
+        "negative_mode_fraction": 0.41831404653753196,
+        "root_count": 115,
+        "theta_mean_0": 0.4567730324183986,
+        "weighted_ess_fraction": 0.8779711641565797
+      },
+      "identity_mutation": {
+        "acceptance_rate_mean": 0.0,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 0,
+        "candidate_component_fraction_mean": 0.0,
+        "candidate_safe_fraction_mean": 0.0,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 0.0,
+        "move_fraction_mean": 0.0,
+        "proposal_kind": "none",
+        "stage_rows": []
+      },
+      "isotropic_support_mh": {
+        "covariance_offdiag_max_abs": 3.4266744270405356,
+        "negative_mode_fraction": 0.4914733570084799,
+        "root_count": 136,
+        "theta_mean_0": 0.030322948724413615,
+        "weighted_ess_fraction": 0.6234100547606143
+      },
+      "isotropic_support_mh_mutation": {
+        "acceptance_rate_mean": 0.220458984375,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.510498046875,
+        "candidate_safe_fraction_mean": 0.0999755859375,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 1.4787455252053934,
+        "move_fraction_mean": 0.220458984375,
+        "proposal_kind": "support",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.28466796875,
+            "accepted_count": 583,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.51025390625,
+            "candidate_safe_fraction": 0.09033203125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -895.0648114117955,
+            "mean_displacement": 1.9500369001311648,
+            "move_fraction": 0.28466796875,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.23876953125,
+            "accepted_count": 489,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.5068359375,
+            "candidate_safe_fraction": 0.10546875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1890.9797248036296,
+            "mean_displacement": 1.5854826822012233,
+            "move_fraction": 0.23876953125,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.21044921875,
+            "accepted_count": 431,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49853515625,
+            "candidate_safe_fraction": 0.10302734375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1955.4080273211323,
+            "mean_displacement": 1.4470498851127758,
+            "move_fraction": 0.21044921875,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.14794921875,
+            "accepted_count": 303,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.5263671875,
+            "candidate_safe_fraction": 0.10107421875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2344.475099100891,
+            "mean_displacement": 0.9324126333764091,
+            "move_fraction": 0.14794921875,
+            "proposal_kind": "support",
+            "steps": 8
+          }
+        ]
+      },
+      "mode_aware_geometry_mh": {
+        "covariance_offdiag_max_abs": 0.7519435707276876,
+        "negative_mode_fraction": 0.5056584507648908,
+        "root_count": 139,
+        "theta_mean_0": 0.7923051298004413,
+        "weighted_ess_fraction": 0.8551141265205604
+      },
+      "mode_aware_geometry_mh_mutation": {
+        "acceptance_rate_mean": 0.3099365234375,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.4989013671875,
+        "candidate_safe_fraction_mean": 0.109130859375,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 2.2023901078025134,
+        "move_fraction_mean": 0.3099365234375,
+        "proposal_kind": "geometry",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.36376953125,
+            "accepted_count": 745,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49609375,
+            "candidate_safe_fraction": 0.11279296875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2251.3142665898667,
+            "mean_displacement": 2.6062111765284235,
+            "move_fraction": 0.36376953125,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.32861328125,
+            "accepted_count": 673,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49951171875,
+            "candidate_safe_fraction": 0.10400390625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1940.675794509703,
+            "mean_displacement": 2.3866626906220194,
+            "move_fraction": 0.32861328125,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.2890625,
+            "accepted_count": 592,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49755859375,
+            "candidate_safe_fraction": 0.11572265625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2036.2286153082482,
+            "mean_displacement": 1.9575635881771538,
+            "move_fraction": 0.2890625,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.25830078125,
+            "accepted_count": 529,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.50244140625,
+            "candidate_safe_fraction": 0.10400390625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -4442.584867539577,
+            "mean_displacement": 1.859122975882457,
+            "move_fraction": 0.25830078125,
+            "proposal_kind": "geometry",
+            "steps": 8
+          }
+        ]
+      },
+      "pilot_m0_seed": [
+        20260826,
+        5201
+      ],
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/pilot-01",
+      "pilot_root_seed": [
+        20260826,
+        5101
+      ],
+      "pilot_sha256": "dbafcf5180daf3c0b03e56729c17191b27d51777f480dcb587c9f20d1b59384e",
+      "replicate": 1
+    },
+    {
+      "identity": {
+        "covariance_offdiag_max_abs": 4.9972496712666645,
+        "negative_mode_fraction": 0.5470860981165226,
+        "root_count": 109,
+        "theta_mean_0": 2.54222697268853,
+        "weighted_ess_fraction": 0.8713261826113821
+      },
+      "identity_mutation": {
+        "acceptance_rate_mean": 0.0,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 0,
+        "candidate_component_fraction_mean": 0.0,
+        "candidate_safe_fraction_mean": 0.0,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 0.0,
+        "move_fraction_mean": 0.0,
+        "proposal_kind": "none",
+        "stage_rows": []
+      },
+      "isotropic_support_mh": {
+        "covariance_offdiag_max_abs": 4.062423690465606,
+        "negative_mode_fraction": 0.5187410633793219,
+        "root_count": 136,
+        "theta_mean_0": 0.2223687489571941,
+        "weighted_ess_fraction": 0.6341247637511097
+      },
+      "isotropic_support_mh_mutation": {
+        "acceptance_rate_mean": 0.21435546875,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.513427734375,
+        "candidate_safe_fraction_mean": 0.0968017578125,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 1.4314235020629338,
+        "move_fraction_mean": 0.21435546875,
+        "proposal_kind": "support",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.28515625,
+            "accepted_count": 584,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.515625,
+            "candidate_safe_fraction": 0.08544921875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -895.0648114117955,
+            "mean_displacement": 1.8936279961567137,
+            "move_fraction": 0.28515625,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.236328125,
+            "accepted_count": 484,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.50634765625,
+            "candidate_safe_fraction": 0.10693359375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1890.9797248036296,
+            "mean_displacement": 1.568914119012952,
+            "move_fraction": 0.236328125,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.19482421875,
+            "accepted_count": 399,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.5029296875,
+            "candidate_safe_fraction": 0.09765625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1954.286388426469,
+            "mean_displacement": 1.3281251309995703,
+            "move_fraction": 0.19482421875,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.14111328125,
+            "accepted_count": 289,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.52880859375,
+            "candidate_safe_fraction": 0.09716796875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2342.8499433321736,
+            "mean_displacement": 0.935026762082499,
+            "move_fraction": 0.14111328125,
+            "proposal_kind": "support",
+            "steps": 8
+          }
+        ]
+      },
+      "mode_aware_geometry_mh": {
+        "covariance_offdiag_max_abs": 0.7887585136773947,
+        "negative_mode_fraction": 0.5218455128831789,
+        "root_count": 138,
+        "theta_mean_0": 0.4279966922572209,
+        "weighted_ess_fraction": 0.8528690106055559
+      },
+      "mode_aware_geometry_mh_mutation": {
+        "acceptance_rate_mean": 0.30908203125,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.497802734375,
+        "candidate_safe_fraction_mean": 0.1087646484375,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 2.1481493499594957,
+        "move_fraction_mean": 0.30908203125,
+        "proposal_kind": "geometry",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.37353515625,
+            "accepted_count": 765,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.4951171875,
+            "candidate_safe_fraction": 0.1142578125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2251.3142665898667,
+            "mean_displacement": 2.6485468305529314,
+            "move_fraction": 0.37353515625,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.318359375,
+            "accepted_count": 652,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.501953125,
+            "candidate_safe_fraction": 0.099609375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1665.332560853408,
+            "mean_displacement": 2.169296221748925,
+            "move_fraction": 0.318359375,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.28857421875,
+            "accepted_count": 591,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.501953125,
+            "candidate_safe_fraction": 0.11376953125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2036.6699632468772,
+            "mean_displacement": 2.0052708495840337,
+            "move_fraction": 0.28857421875,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.255859375,
+            "accepted_count": 524,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.4921875,
+            "candidate_safe_fraction": 0.107421875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -4442.584867539577,
+            "mean_displacement": 1.769483497952092,
+            "move_fraction": 0.255859375,
+            "proposal_kind": "geometry",
+            "steps": 8
+          }
+        ]
+      },
+      "pilot_m0_seed": [
+        20260826,
+        5202
+      ],
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/pilot-02",
+      "pilot_root_seed": [
+        20260826,
+        5102
+      ],
+      "pilot_sha256": "b9c141ce5d50a8f7f455654c5257be98eb194604631404f4cce228795a0da3a6",
+      "replicate": 2
+    },
+    {
+      "identity": {
+        "covariance_offdiag_max_abs": 2.317911107155364,
+        "negative_mode_fraction": 0.49094867236959094,
+        "root_count": 118,
+        "theta_mean_0": -0.05332420370193557,
+        "weighted_ess_fraction": 0.9681125986262967
+      },
+      "identity_mutation": {
+        "acceptance_rate_mean": 0.0,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 0,
+        "candidate_component_fraction_mean": 0.0,
+        "candidate_safe_fraction_mean": 0.0,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 0.0,
+        "move_fraction_mean": 0.0,
+        "proposal_kind": "none",
+        "stage_rows": []
+      },
+      "isotropic_support_mh": {
+        "covariance_offdiag_max_abs": 3.840825966374016,
+        "negative_mode_fraction": 0.549981002211058,
+        "root_count": 135,
+        "theta_mean_0": -0.6300745165159358,
+        "weighted_ess_fraction": 0.5770427585562767
+      },
+      "isotropic_support_mh_mutation": {
+        "acceptance_rate_mean": 0.2255859375,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.509033203125,
+        "candidate_safe_fraction_mean": 0.097900390625,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 1.5320208948663272,
+        "move_fraction_mean": 0.2255859375,
+        "proposal_kind": "support",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.291015625,
+            "accepted_count": 596,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.51318359375,
+            "candidate_safe_fraction": 0.0859375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -895.0648114117955,
+            "mean_displacement": 2.0135783451270743,
+            "move_fraction": 0.291015625,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.2412109375,
+            "accepted_count": 494,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.50537109375,
+            "candidate_safe_fraction": 0.1044921875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1890.9797248036296,
+            "mean_displacement": 1.6016202190105489,
+            "move_fraction": 0.2412109375,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.21630859375,
+            "accepted_count": 443,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49267578125,
+            "candidate_safe_fraction": 0.1025390625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1954.057189105798,
+            "mean_displacement": 1.4803381771506685,
+            "move_fraction": 0.21630859375,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.15380859375,
+            "accepted_count": 315,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.52490234375,
+            "candidate_safe_fraction": 0.0986328125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2432.8313221050016,
+            "mean_displacement": 1.0325468381770169,
+            "move_fraction": 0.15380859375,
+            "proposal_kind": "support",
+            "steps": 8
+          }
+        ]
+      },
+      "mode_aware_geometry_mh": {
+        "covariance_offdiag_max_abs": 0.8321132686094425,
+        "negative_mode_fraction": 0.47789410599662985,
+        "root_count": 137,
+        "theta_mean_0": 0.04480286636473072,
+        "weighted_ess_fraction": 0.8225515094168565
+      },
+      "mode_aware_geometry_mh_mutation": {
+        "acceptance_rate_mean": 0.3135986328125,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.49462890625,
+        "candidate_safe_fraction_mean": 0.1094970703125,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 2.207694216147555,
+        "move_fraction_mean": 0.3135986328125,
+        "proposal_kind": "geometry",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.38330078125,
+            "accepted_count": 785,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.48193359375,
+            "candidate_safe_fraction": 0.1171875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2251.3142665898667,
+            "mean_displacement": 2.747808143708231,
+            "move_fraction": 0.38330078125,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.322265625,
+            "accepted_count": 660,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.5078125,
+            "candidate_safe_fraction": 0.09912109375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1023.3239431256413,
+            "mean_displacement": 2.248502716623785,
+            "move_fraction": 0.322265625,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.28759765625,
+            "accepted_count": 589,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.4921875,
+            "candidate_safe_fraction": 0.11474609375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -4035.3716801810556,
+            "mean_displacement": 2.008236978313002,
+            "move_fraction": 0.28759765625,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.26123046875,
+            "accepted_count": 535,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49658203125,
+            "candidate_safe_fraction": 0.10693359375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -4442.584867539577,
+            "mean_displacement": 1.826229025945202,
+            "move_fraction": 0.26123046875,
+            "proposal_kind": "geometry",
+            "steps": 8
+          }
+        ]
+      },
+      "pilot_m0_seed": [
+        20260826,
+        5203
+      ],
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/pilot-03",
+      "pilot_root_seed": [
+        20260826,
+        5103
+      ],
+      "pilot_sha256": "27a655cdf338866df8c206391c1b62a4efd4a5593ebeb9bd66afa220a1224243",
+      "replicate": 3
+    },
+    {
+      "identity": {
+        "covariance_offdiag_max_abs": 1.5511887872332177,
+        "negative_mode_fraction": 0.4967791342280862,
+        "root_count": 124,
+        "theta_mean_0": 0.6863023709343427,
+        "weighted_ess_fraction": 0.9551037090799589
+      },
+      "identity_mutation": {
+        "acceptance_rate_mean": 0.0,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 0,
+        "candidate_component_fraction_mean": 0.0,
+        "candidate_safe_fraction_mean": 0.0,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 0.0,
+        "move_fraction_mean": 0.0,
+        "proposal_kind": "none",
+        "stage_rows": []
+      },
+      "isotropic_support_mh": {
+        "covariance_offdiag_max_abs": 2.910103355755797,
+        "negative_mode_fraction": 0.5166884500440593,
+        "root_count": 133,
+        "theta_mean_0": -0.6035117380034467,
+        "weighted_ess_fraction": 0.619003647284041
+      },
+      "isotropic_support_mh_mutation": {
+        "acceptance_rate_mean": 0.2222900390625,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.5069580078125,
+        "candidate_safe_fraction_mean": 0.0972900390625,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 1.4918159316617234,
+        "move_fraction_mean": 0.2222900390625,
+        "proposal_kind": "support",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.28466796875,
+            "accepted_count": 583,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.51220703125,
+            "candidate_safe_fraction": 0.08447265625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -894.7928873589974,
+            "mean_displacement": 1.963284568060017,
+            "move_fraction": 0.28466796875,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.23974609375,
+            "accepted_count": 491,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.5009765625,
+            "candidate_safe_fraction": 0.10595703125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1890.9797248036296,
+            "mean_displacement": 1.5743101335643805,
+            "move_fraction": 0.23974609375,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.2109375,
+            "accepted_count": 432,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49658203125,
+            "candidate_safe_fraction": 0.10107421875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1954.057189105798,
+            "mean_displacement": 1.409086097176442,
+            "move_fraction": 0.2109375,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.15380859375,
+            "accepted_count": 315,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.51806640625,
+            "candidate_safe_fraction": 0.09765625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2432.8313221050016,
+            "mean_displacement": 1.020582927846054,
+            "move_fraction": 0.15380859375,
+            "proposal_kind": "support",
+            "steps": 8
+          }
+        ]
+      },
+      "mode_aware_geometry_mh": {
+        "covariance_offdiag_max_abs": 1.1620154705283592,
+        "negative_mode_fraction": 0.5177030410634623,
+        "root_count": 146,
+        "theta_mean_0": -0.16414169667116607,
+        "weighted_ess_fraction": 0.833827428359703
+      },
+      "mode_aware_geometry_mh_mutation": {
+        "acceptance_rate_mean": 0.3072509765625,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.4906005859375,
+        "candidate_safe_fraction_mean": 0.10791015625,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 2.1374642099436265,
+        "move_fraction_mean": 0.3072509765625,
+        "proposal_kind": "geometry",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.37451171875,
+            "accepted_count": 767,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.478515625,
+            "candidate_safe_fraction": 0.11572265625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2251.3142665898667,
+            "mean_displacement": 2.6621158307084016,
+            "move_fraction": 0.37451171875,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.3212890625,
+            "accepted_count": 658,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49853515625,
+            "candidate_safe_fraction": 0.0966796875,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1246.3253047702242,
+            "mean_displacement": 2.222036430709975,
+            "move_fraction": 0.3212890625,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.29296875,
+            "accepted_count": 600,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49169921875,
+            "candidate_safe_fraction": 0.10986328125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -4035.3716801810556,
+            "mean_displacement": 2.03437244847096,
+            "move_fraction": 0.29296875,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.240234375,
+            "accepted_count": 492,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49365234375,
+            "candidate_safe_fraction": 0.109375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -5593.369886779467,
+            "mean_displacement": 1.6313321298851693,
+            "move_fraction": 0.240234375,
+            "proposal_kind": "geometry",
+            "steps": 8
+          }
+        ]
+      },
+      "pilot_m0_seed": [
+        20260826,
+        5204
+      ],
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/pilot-04",
+      "pilot_root_seed": [
+        20260826,
+        5104
+      ],
+      "pilot_sha256": "30068f0f272f42ce2f7c2c8d9f4188c6d91192a08ae53ff577f516a6957d5d5b",
+      "replicate": 4
+    },
+    {
+      "identity": {
+        "covariance_offdiag_max_abs": 4.5815947871457,
+        "negative_mode_fraction": 0.6291033805441596,
+        "root_count": 121,
+        "theta_mean_0": -0.47216182544826796,
+        "weighted_ess_fraction": 0.9463090869896983
+      },
+      "identity_mutation": {
+        "acceptance_rate_mean": 0.0,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 0,
+        "candidate_component_fraction_mean": 0.0,
+        "candidate_safe_fraction_mean": 0.0,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 0.0,
+        "move_fraction_mean": 0.0,
+        "proposal_kind": "none",
+        "stage_rows": []
+      },
+      "isotropic_support_mh": {
+        "covariance_offdiag_max_abs": 1.8521747138586249,
+        "negative_mode_fraction": 0.45909424552905886,
+        "root_count": 144,
+        "theta_mean_0": 0.6489133689056039,
+        "weighted_ess_fraction": 0.7471265464292436
+      },
+      "isotropic_support_mh_mutation": {
+        "acceptance_rate_mean": 0.2237548828125,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.50537109375,
+        "candidate_safe_fraction_mean": 0.096923828125,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 1.500044009082011,
+        "move_fraction_mean": 0.2237548828125,
+        "proposal_kind": "support",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.283203125,
+            "accepted_count": 580,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.51171875,
+            "candidate_safe_fraction": 0.0927734375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -719.4984313112503,
+            "mean_displacement": 1.955732289437043,
+            "move_fraction": 0.283203125,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.23193359375,
+            "accepted_count": 475,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.5078125,
+            "candidate_safe_fraction": 0.0986328125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1890.9797248036296,
+            "mean_displacement": 1.5390201797804077,
+            "move_fraction": 0.23193359375,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.21337890625,
+            "accepted_count": 437,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.4873046875,
+            "candidate_safe_fraction": 0.103515625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -3079.559730306494,
+            "mean_displacement": 1.431247136630613,
+            "move_fraction": 0.21337890625,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.16650390625,
+            "accepted_count": 341,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.5146484375,
+            "candidate_safe_fraction": 0.0927734375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -3820.1416212782033,
+            "mean_displacement": 1.0741764304799806,
+            "move_fraction": 0.16650390625,
+            "proposal_kind": "support",
+            "steps": 8
+          }
+        ]
+      },
+      "mode_aware_geometry_mh": {
+        "covariance_offdiag_max_abs": 1.4711117290831535,
+        "negative_mode_fraction": 0.5256737208216892,
+        "root_count": 143,
+        "theta_mean_0": 0.047311710868688364,
+        "weighted_ess_fraction": 0.8185872227925832
+      },
+      "mode_aware_geometry_mh_mutation": {
+        "acceptance_rate_mean": 0.307373046875,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.490966796875,
+        "candidate_safe_fraction_mean": 0.1085205078125,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 2.1327648456880706,
+        "move_fraction_mean": 0.307373046875,
+        "proposal_kind": "geometry",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.37939453125,
+            "accepted_count": 777,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.48388671875,
+            "candidate_safe_fraction": 0.11376953125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2251.3142665898667,
+            "mean_displacement": 2.6781215354631596,
+            "move_fraction": 0.37939453125,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.31884765625,
+            "accepted_count": 653,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49658203125,
+            "candidate_safe_fraction": 0.09912109375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1246.3253047702242,
+            "mean_displacement": 2.191011490845252,
+            "move_fraction": 0.31884765625,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.29296875,
+            "accepted_count": 600,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.4873046875,
+            "candidate_safe_fraction": 0.10791015625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -4035.3716801810556,
+            "mean_displacement": 2.0071063844137793,
+            "move_fraction": 0.29296875,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.23828125,
+            "accepted_count": 488,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49609375,
+            "candidate_safe_fraction": 0.11328125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -5593.369886779467,
+            "mean_displacement": 1.6548199720300913,
+            "move_fraction": 0.23828125,
+            "proposal_kind": "geometry",
+            "steps": 8
+          }
+        ]
+      },
+      "pilot_m0_seed": [
+        20260826,
+        5205
+      ],
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/pilot-05",
+      "pilot_root_seed": [
+        20260826,
+        5105
+      ],
+      "pilot_sha256": "73aa0f5bbcdb35ce09c4c2ffebbfd2bbfae25289605e82036a57b39a43383236",
+      "replicate": 5
+    },
+    {
+      "identity": {
+        "covariance_offdiag_max_abs": 0.8662778309858657,
+        "negative_mode_fraction": 0.3597741040342638,
+        "root_count": 115,
+        "theta_mean_0": 0.6205855408856065,
+        "weighted_ess_fraction": 0.8704580550771612
+      },
+      "identity_mutation": {
+        "acceptance_rate_mean": 0.0,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 0,
+        "candidate_component_fraction_mean": 0.0,
+        "candidate_safe_fraction_mean": 0.0,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 0.0,
+        "move_fraction_mean": 0.0,
+        "proposal_kind": "none",
+        "stage_rows": []
+      },
+      "isotropic_support_mh": {
+        "covariance_offdiag_max_abs": 1.8402909046191218,
+        "negative_mode_fraction": 0.47607700095904626,
+        "root_count": 140,
+        "theta_mean_0": 0.3489096842550171,
+        "weighted_ess_fraction": 0.7972330115968235
+      },
+      "isotropic_support_mh_mutation": {
+        "acceptance_rate_mean": 0.224365234375,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.504638671875,
+        "candidate_safe_fraction_mean": 0.099853515625,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 1.5084421583543839,
+        "move_fraction_mean": 0.224365234375,
+        "proposal_kind": "support",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.27880859375,
+            "accepted_count": 571,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.51171875,
+            "candidate_safe_fraction": 0.09765625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -776.9160403173356,
+            "mean_displacement": 1.85827079712121,
+            "move_fraction": 0.27880859375,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.23974609375,
+            "accepted_count": 491,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.509765625,
+            "candidate_safe_fraction": 0.1005859375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1890.9797248036296,
+            "mean_displacement": 1.6733996777735096,
+            "move_fraction": 0.23974609375,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.2158203125,
+            "accepted_count": 442,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.48583984375,
+            "candidate_safe_fraction": 0.103515625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -3079.559730306494,
+            "mean_displacement": 1.4352781419651868,
+            "move_fraction": 0.2158203125,
+            "proposal_kind": "support",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.1630859375,
+            "accepted_count": 334,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.51123046875,
+            "candidate_safe_fraction": 0.09765625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -3818.6396742740917,
+            "mean_displacement": 1.0668200165576296,
+            "move_fraction": 0.1630859375,
+            "proposal_kind": "support",
+            "steps": 8
+          }
+        ]
+      },
+      "mode_aware_geometry_mh": {
+        "covariance_offdiag_max_abs": 1.3901699026486036,
+        "negative_mode_fraction": 0.5050270366573913,
+        "root_count": 139,
+        "theta_mean_0": 0.25684187567757266,
+        "weighted_ess_fraction": 0.861299626250606
+      },
+      "mode_aware_geometry_mh_mutation": {
+        "acceptance_rate_mean": 0.317138671875,
+        "accepted_invalid_count": 0,
+        "active_stage_count": 4,
+        "candidate_component_fraction_mean": 0.4923095703125,
+        "candidate_safe_fraction_mean": 0.10498046875,
+        "invalid_candidate_count": 0,
+        "mean_displacement_mean": 2.211306944121242,
+        "move_fraction_mean": 0.317138671875,
+        "proposal_kind": "geometry",
+        "stage_rows": [
+          {
+            "acceptance_rate": 0.38330078125,
+            "accepted_count": 785,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.490234375,
+            "candidate_safe_fraction": 0.11376953125,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -2251.3142665898667,
+            "mean_displacement": 2.731269365312025,
+            "move_fraction": 0.38330078125,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.33203125,
+            "accepted_count": 680,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.49072265625,
+            "candidate_safe_fraction": 0.09912109375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -1246.3253047702242,
+            "mean_displacement": 2.3513455434697916,
+            "move_fraction": 0.33203125,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.2978515625,
+            "accepted_count": 610,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.484375,
+            "candidate_safe_fraction": 0.10009765625,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -4035.3716801810556,
+            "mean_displacement": 2.026929514411932,
+            "move_fraction": 0.2978515625,
+            "proposal_kind": "geometry",
+            "steps": 8
+          },
+          {
+            "acceptance_rate": 0.25537109375,
+            "accepted_count": 523,
+            "accepted_invalid_count": 0,
+            "candidate_component_fraction": 0.50390625,
+            "candidate_safe_fraction": 0.10693359375,
+            "invalid_candidate_count": 0,
+            "kernel": "independent_mh",
+            "log_alpha_max": 0.0,
+            "log_alpha_min": -5593.369886779467,
+            "mean_displacement": 1.7356833532912193,
+            "move_fraction": 0.25537109375,
+            "proposal_kind": "geometry",
+            "steps": 8
+          }
+        ]
+      },
+      "pilot_m0_seed": [
+        20260826,
+        5206
+      ],
+      "pilot_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/pilot-06",
+      "pilot_root_seed": [
+        20260826,
+        5106
+      ],
+      "pilot_sha256": "868fc6b69a2cf15e1a0192c236f389596ba333c06cf3b7e4dd009ffc657991d2",
+      "replicate": 6
+    }
+  ],
+  "role": "read_only_six_bank_paired_uncertainty_adjudication",
+  "run_manifest": {
+    "bootstrap_reps": 20000,
+    "bootstrap_seed": [
+      20260826,
+      52052
+    ],
+    "command": "docs/benchmarks/report_ssl_lstm_q20_parameter_authority_corrected_phase52_2026_08_26.py --fixture-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/fixture --boundary-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/q20-paired --output-root docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/report",
+    "cuda_visible_devices": "-1",
+    "git_commit": "70bda6863582a563405346934cb30d4813b9ea90",
+    "git_dirty": true,
+    "gpu_hidden_intentionally": true,
+    "jit_compile": false,
+    "program": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-ssl-lstm-q20-parameter-authority-corrected-continuation-2026-08-25.md",
+    "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "python_version": "3.13.13",
+    "runner": "/home/ubuntu/python/BayesFilter/docs/benchmarks/report_ssl_lstm_q20_parameter_authority_corrected_phase52_2026_08_26.py",
+    "source_sha256": {
+      "phase50_report": "6b1801c0716e81c1879f0d54b09b43cc213a9e589136d002fc5fc8d25b811c74",
+      "phase51_report": "942e396b1ea4c509c2547df64ed6c38ff7fc41aa48f91f2461de22cf206a2d25",
+      "plan": "3f455a6504d77c50aa4447219194b9b884d12d34092e74eccecb9e343d7d4cff",
+      "runner": "8124dae6918ac8323c5cc10cb5468004e57058210a0f2285007c17e84de8bab5"
+    },
+    "tensorflow": "2.20.0",
+    "tf_force_gpu_allow_growth": "true",
+    "wall_seconds": 0.3806818010052666
+  },
+  "schema": "bayesfilter.ssl_lstm.q20.corrected_theta_fresh_paired_report.v1",
+  "sources": {
+    "boundary_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/attempt-02/q20-paired",
+    "boundary_sha256": "515abb20bd4737b684f8a77995f06628a03c976f6c767c51c0e177f54a16e83d",
+    "fixture_root": "docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase52-fresh-paired-uncertainty-replication/fixture",
+    "fixture_sha256": "ccd2b17c26f6c6f1b578ff88782af0fb7492aa515c88ee6d2ff1865aebdbcadd",
+    "phase50_report": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase50-defensive-proposal-support/report/result.json",
+    "phase50_report_sha256": "6b1801c0716e81c1879f0d54b09b43cc213a9e589136d002fc5fc8d25b811c74",
+    "phase51_report": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-q20-parameter-authority-corrected-2026-08-25/phase51-mode-aware-proposal-geometry/report/result.json",
+    "phase51_report_sha256": "942e396b1ea4c509c2547df64ed6c38ff7fc41aa48f91f2461de22cf206a2d25"
+  },
+  "status": "PASS_V3_4_FRESH_PAIRED_REPORT",
+  "support_spreads": {
+    "covariance_offdiag_max_abs": 2.2221327858464845,
+    "negative_mode_fraction": 0.09088675668199908,
+    "root_count": 11.0,
+    "theta_mean_0": 1.2789878854215397,
+    "weighted_ess_fraction": 0.22019025304054674
+  },
+  "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278"
+}

@@ -12,7 +12,6 @@ from bayesfilter.nonlinear.fixed_sgqf_tf import (
 )
 from bayesfilter.structural_tf import TFStructuralStateSpace
 
-
 _ADMISSION_STATUSES = {"exact_eligible", "approximate_eligible", "ineligible"}
 
 
@@ -95,20 +94,13 @@ def tf_predator_prey_to_fixed_sgqf_model(
         values = tf.convert_to_tensor(points, dtype=tf.float64)
         if values.shape.rank == 1:
             values = values[tf.newaxis, :]
-        with tf.GradientTape() as tape:
-            tape.watch(values)
-            outputs = transition_fn(values)
-        return tape.batch_jacobian(outputs, values)
+        return model.transition_mean_state_jacobian(theta, values)[1]
 
     def d_transition_fn(points: tf.Tensor) -> tf.Tensor:
         values = tf.convert_to_tensor(points, dtype=tf.float64)
         if values.shape.rank == 1:
             values = values[tf.newaxis, :]
-        with tf.GradientTape() as tape:
-            tape.watch(theta)
-            outputs = model.transition_mean(theta, values)
-        jacobian = tape.jacobian(outputs, theta)
-        return tf.transpose(tf.convert_to_tensor(jacobian, dtype=tf.float64), perm=[2, 0, 1])
+        return model.transition_mean_parameter_jacobian(theta, values)[1]
 
     def observation_state_jacobian_fn(points: tf.Tensor) -> tf.Tensor:
         values = tf.convert_to_tensor(points, dtype=tf.float64)
@@ -248,16 +240,12 @@ def tf_structural_to_fixed_sgqf_model(
             ),
         )
 
-    parameter_dim = int(derivatives.d_initial_mean.shape[0])
     fixed_derivatives = TFFixedSGQFDerivatives(
         d_initial_mean=tf.convert_to_tensor(derivatives.d_initial_mean, dtype=tf.float64),
         d_initial_covariance=tf.convert_to_tensor(derivatives.d_initial_covariance, dtype=tf.float64),
-        d_process_covariance=tf.convert_to_tensor(
-            [
-                [[derivatives.d_innovation_covariance[i, 0, 0], 0.0], [0.0, 0.0]]
-                for i in range(parameter_dim)
-            ],
-            dtype=tf.float64,
+        d_process_covariance=(
+            derivatives.d_innovation_covariance[:, :1, :1]
+            * tf.constant([[[1.0, 0.0], [0.0, 0.0]]], tf.float64)
         ),
         d_observation_covariance=tf.convert_to_tensor(derivatives.d_observation_covariance, dtype=tf.float64),
         transition_state_jacobian_fn=lambda points: tf.convert_to_tensor(

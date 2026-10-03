@@ -11,6 +11,14 @@ from bayesfilter.score_study.gaussian_tf import parameterized_model
 from tests.highdim.test_younis_score_master_canonical_tf import CONTROLS
 
 
+def test_shared_invalidity_survives_positive_covariance_check():
+    mean = tf.zeros([2, 1], tf.float64)
+    covariance = tf.ones([2, 1, 1], tf.float64)
+    result = SGQFCovarianceProvider._checked((mean, covariance, mean, covariance, tf.constant(False)))
+    assert not bool(tf.reduce_any(result[4]))
+    assert bool(tf.reduce_all(tf.math.is_nan(result[1])))
+
+
 def test_batched_nonlinear_provider_matches_standalone_sgqf_and_tangents():
     provider = SGQFCovarianceProvider(2, 3)
     dtype = tf.float64
@@ -25,7 +33,7 @@ def test_batched_nonlinear_provider_matches_standalone_sgqf_and_tangents():
     @tf.function(input_signature=[tf.TensorSpec([2, 2], dtype)], jit_compile=True)
     def moments(x):
         pred = provider.predict(x, cov, tf.ones_like(x), tf.zeros_like(cov), transition, tangent, q)
-        return provider.update(*pred[:2], *pred[2:], observe, dobs, r, y)
+        return provider.update(*pred[:4], observe, dobs, r, y)
     result = moments(states)
     for i in range(2):
         model = TFFixedSGQFNonlinearModel(initial_mean=states[i], initial_covariance=cov[i],

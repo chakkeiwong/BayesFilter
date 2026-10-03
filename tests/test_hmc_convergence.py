@@ -14,6 +14,7 @@ from bayesfilter.inference.hmc_convergence import (
     rank_normalized_split_rhat_summary,
 )
 from bayesfilter.inference.hmc import _rhat_summary_from_retained_samples
+from bayesfilter.inference.hmc_diagnostic_math import _cross_chain_ess as _tfp_precision_ess
 
 
 def _thresholds(*, rhat: float = 1.05, bulk: float = 50.0, tail: float = 20.0):
@@ -45,6 +46,25 @@ def test_iid_chains_pass_relaxed_synthetic_gate() -> None:
         "b",
         "c",
     ]
+
+
+def test_public_convergence_bulk_tail_uses_shared_posterior_implementation(monkeypatch):
+    from bayesfilter.inference import hmc_posterior_diagnostics as posterior
+    values = tf.random.stateless_normal([65, 4, 2], seed=(20260922, 1), dtype=tf.float64)
+    original, calls = posterior.rank_normalized_bulk_tail_ess, []
+
+    def record(samples):
+        calls.append(samples)
+        return original(samples)
+
+    monkeypatch.setattr(posterior, "rank_normalized_bulk_tail_ess", record)
+    result = rank_normalized_hmc_diagnostics(values, parameter_names=("a", "b"), thresholds=_thresholds())
+    assert len(calls) == 1
+    np.testing.assert_array_equal(calls[0].numpy(), tf.transpose(values, (1, 0, 2)).numpy())
+    expected = original(calls[0])
+    for i, row in enumerate(result["parameter_diagnostics"]):
+        assert row["bulk_ess"] == float(expected["bulk"][i])
+        assert row["tail_ess"] == float(expected["tail"][i])
 
 
 def test_shifted_chain_fails_rhat_gate() -> None:
@@ -90,8 +110,9 @@ def test_tuning_and_phase7_share_folded_scale_mismatch_rhat() -> None:
 
 
 def test_ties_are_average_ranked_and_finite() -> None:
+    # More than twenty levels keeps each 5% CDF indicator nonconstant.
     values = tf.cast(
-        tf.math.floormod(tf.range(320 * 4 * 2), 7),
+        tf.math.floormod(tf.range(320 * 4 * 2), 101),
         tf.float64,
     )
     draws = tf.reshape(values, [320, 4, 2])
@@ -104,6 +125,14 @@ def test_ties_are_average_ranked_and_finite() -> None:
 
     assert payload["diagnostics_all_finite"] is True
     assert all(row["rhat"] is not None for row in payload["parameter_diagnostics"])
+
+
+def test_constant_upper_quantile_indicator_is_reported_as_unavailable():
+    draws = tf.reshape(tf.cast(tf.math.floormod(tf.range(320 * 4), 7), tf.float64), [320, 4, 1])
+    result = rank_normalized_hmc_diagnostics(draws, parameter_names=("tied",), thresholds=_thresholds())
+    assert not result["passed"]
+    assert not result["diagnostics_all_finite"]
+    assert np.isnan(result["parameter_diagnostics"][0]["upper_tail_ess"])
 
 
 def test_odd_draw_count_discards_middle_draw_for_split() -> None:
@@ -156,7 +185,7 @@ def test_threshold_validation() -> None:
 
 
 @pytest.mark.parametrize("seed_pair", [(20260730, 11), (20260730, 12)])
-def test_real_fft_ess_matches_tfp_reference(seed_pair: tuple[int, int]) -> None:
+def test_separate_precision_ess_matches_tfp_reference(seed_pair: tuple[int, int]) -> None:
     draws = tf.random.stateless_normal([257, 4, 3], seed=seed_pair, dtype=tf.float64)
     expected = tfp.mcmc.effective_sample_size(
         draws,
@@ -164,13 +193,13 @@ def test_real_fft_ess_matches_tfp_reference(seed_pair: tuple[int, int]) -> None:
         cross_chain_dims=1,
     )
 
-    observed = _real_fft_cross_chain_ess(draws)
+    observed = _tfp_precision_ess(draws)
 
     np.testing.assert_allclose(observed.numpy(), expected.numpy(), rtol=1.0e-10, atol=1.0e-10)
 
 
 @pytest.mark.parametrize("fixture", ["correlated", "tied_indicator"])
-def test_real_fft_ess_matches_tfp_on_non_iid_fixtures(fixture: str) -> None:
+def test_separate_precision_ess_matches_tfp_on_non_iid_fixtures(fixture: str) -> None:
     innovations = tf.random.stateless_normal(
         [257, 4, 3], seed=(20260730, 14), dtype=tf.float64
     )
@@ -184,7 +213,7 @@ def test_real_fft_ess_matches_tfp_on_non_iid_fixtures(fixture: str) -> None:
         cross_chain_dims=1,
     )
 
-    observed = _real_fft_cross_chain_ess(draws)
+    observed = _tfp_precision_ess(draws)
 
     np.testing.assert_allclose(observed.numpy(), expected.numpy(), rtol=1.0e-10, atol=1.0e-10)
 

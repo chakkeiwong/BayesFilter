@@ -1,0 +1,36 @@
+{
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/highdim/test_sqmc_campaign_repairs.py",
+    "tests/highdim/test_sqmc_primitives_tf.py",
+    "tests/highdim/test_sqmc_tuning_scope.py",
+    "tests/highdim/test_ledh_canonical_score_full.py",
+    "tests/highdim/test_ledh_pfpf_genut_sqmc.py",
+    "tests/highdim/test_ledh_pfpf_genut_sqmc_runner.py",
+    "tests/highdim/test_ledh_pfpf_genut_full_sqmc_all_models.py",
+    "-k",
+    "not production_score_lane",
+    "--tb=short"
+  ],
+  "cwd": "/home/chakwong/BayesFilter-SQMC",
+  "git_commit": "f3995a06a467f16574f96bbc8a68ccbbc4e30dad",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "BAYESFILTER_TEST_DEVICE_SCOPE": "cpu",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "2",
+    "OMP_NUM_THREADS": "2",
+    "PYTHONPATH": "/home/chakwong/BayesFilter-SQMC:/home/chakwong/python/src",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+  },
+  "execution_role": "CPU reference diagnostic; GPUs intentionally hidden",
+  "conda_env": "tftwogpu",
+  "seeds": "Declared in referenced test/probe",
+  "plan": "docs/plans/sqmc-repair-master-program-20260925.md",
+  "wall_seconds": 4.874445994006237,
+  "exit_code": 2,
+  "log": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/sqmc-repair-20260925/07-final-regressions/run.log"
+}

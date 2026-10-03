@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="0.282" timestamp="2026-09-17T17:29:19.352322+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_execution" name="test_planned_cells_do_not_borrow_completion_from_the_same_category[False]" time="0.011"><failure message="assert True is False">design = &lt;function design.&lt;locals&gt;.make at 0x7f0fb77f3740&gt;
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-415/test_planned_cells_do_not_borr0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f0fb77ec9d0&gt;
+explicit_category_requirement = False
+
+    @pytest.mark.parametrize("explicit_category_requirement", [False, True])
+    def test_planned_cells_do_not_borrow_completion_from_the_same_category(
+            design, tmp_path, monkeypatch, explicit_category_requirement):
+        from bayesfilter.testing.inference_validation import execution
+        from bayesfilter.testing.inference_validation.storage import write_json, file_hash
+        first = design(step_size=.3)
+        second = replace(first, design_id="second-epsilon", step_size=.6)
+        suite = dict(schema="bayesfilter.inference_validation_suite.v1", suite_id="coverage",
+                     profile="fast", profiles={"fast": ["mechanics"]},
+                     designs=[first.payload(), second.payload()])
+        if explicit_category_requirement:
+            suite["required_coverage"] = [first.coverage_key()]
+        monkeypatch.setattr(execution, "source_state", lambda: {"identity": "fixture"})
+        index = {"source": execution.source_state(), "plan": execution.plan_suite(suite), "jobs": {}}
+    
+        def complete(d):
+            result = write_json(tmp_path/d.design_id/"result.json", {
+                "design_identity": d.identity, "assessment": {"finding": "mechanics_passed"}})
+            index["jobs"][d.design_id] = {"status": "complete", "result": str(result),
+                                          "result_sha256": file_hash(result), "attempts": []}
+            write_json(tmp_path/"run_index.json", index)
+            return result
+    
+        complete(first)
+        partial = report(tmp_path)
+        assert partial["rows"][1]["execution_status"] == "not_run"
+&gt;       assert partial["all_required_executed"] is explicit_category_requirement
+E       assert True is False
+
+tests/inference_validation/test_execution.py:85: AssertionError</failure></testcase><testcase classname="tests.inference_validation.test_execution" name="test_planned_cells_do_not_borrow_completion_from_the_same_category[True]" time="0.006" /></testsuite></testsuites>

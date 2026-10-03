@@ -67,6 +67,28 @@ def test_moment_baseline_affine_and_nonlinear_identity(method):
     tf.debugging.assert_near(result[1],fd,atol=2e-8,rtol=2e-7)
 
 
+@pytest.mark.parametrize("stage", ["predict", "update"])
+def test_ukf_baseline_rejects_shared_quadrature_invalidity(monkeypatch, stage):
+    from bayesfilter.highdim import ledh_canonical_score_stages_tf as shared
+    name = "quadrature_" + stage + "_with_parameter_tangent"
+    original = getattr(shared, name)
+
+    def invalid(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return (*result[:4], tf.constant(False), *result[5:])
+
+    monkeypatch.setattr(shared, name, invalid)
+    make_moment_filter.cache_clear()
+    theta = tf.constant(THETA, tf.float64)
+    observations = tf.constant([[.5], [-.3]], tf.float64)
+    value, score, margin = make_moment_filter(2, .2, .12, "ukf")(
+        theta, tf.ones([6], tf.float64), observations)
+    assert bool(tf.math.is_nan(value))
+    assert bool(tf.math.is_nan(score))
+    assert float(margin) > 0
+    make_moment_filter.cache_clear()
+
+
 @pytest.mark.parametrize("adapted",[False,True])
 def test_corrected_particle_affine_and_nonlinear_identity(adapted):
     theta=tf.constant(THETA,tf.float64);direction=tf.constant([.1,.2,-.3,.4,.5,-.2],tf.float64)

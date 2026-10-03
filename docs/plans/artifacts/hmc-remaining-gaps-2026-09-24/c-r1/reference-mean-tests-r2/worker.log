@@ -1,0 +1,213 @@
+.................F..............                                         [100%]
+=================================== FAILURES ===================================
+_______________ test_public_full_fit_and_cached_policy_identity ________________
+
+design = <function design.<locals>.make at 0x76cf01de00e0>
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-707/test_public_full_fit_and_cache0')
+
+    def test_public_full_fit_and_cached_policy_identity(design, tmp_path):
+        # Explicitly small CPU mechanics integration. Broad scientific calibration
+        # uses the native-search campaign, not these permissive acceptance settings.
+        base = normal_design(design)
+        d = replace(base, budget_seconds=240, mcse_tolerance=.2, l_grid=(3, 5), options={
+            **base.options, "reference_mean_alarm":{"mcse_sd_max":.5},
+            "bootstrap_initialization_rounds":5, "metric_evidence_policy":"finite_window",
+            "metric_probe_num_results":16, "preparation_max_restarts":1,
+            "acceptance_policy":{"practical_region":(.41,.99), "repair_region":(.405,.995)},
+            "search":{"pilot_enabled":False, "refinement_rounds":0,
+                      "total_budget_units":32, "repair_reserve_units":4, "evidence_rungs":(1,)}})
+        report = engine.run(d, tmp_path)
+        assert report["recorded"] == report["planned"] == 1
+        row = report["records"][0]
+        pipeline = read_json(tmp_path / "replication-0000/pipeline.json")
+        assert row["data"] == pipeline["data"] and len(row["data"]) == 6
+        assert row["reference_mean"] == pytest.approx(sum(row["data"])/6.25)
+        assert pipeline["verified_candidate_ids"]
+        assert row["candidate_id"] == sorted(pipeline["verified_candidate_ids"])[0]
+        assert row["status"] == "qualified"
+        again = engine.run(d, tmp_path)
+>       assert again == report
+E       AssertionError: assert {'alarms': 0,...n': True, ...} == {'alarms': 0,...n': True, ...}
+E         
+E         Omitting 27 identical items, use -vv to show
+E         Differing items:
+E         {'records': [{'alarm': False, 'alpha': 0.01, 'candidate_id': 'inference_validation:f4a8780a08030117136d:candidate:000001', 'cutoff': 2.5758293035489004, ...}]} != {'records': [{'alarm': False, 'alpha': 0.01, 'candidate_id': 'inference_validation:f4a8780a08030117136d:candidate:000001', 'cutoff': 2.5758293035489004, ...}]}
+E         Use -v to get more diff
+
+tests/inference_validation/test_reference_mean.py:181: AssertionError
+----------------------------- Captured stderr call -----------------------------
+WARNING:tensorflow:5 out of the last 5 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76cef9ae27a0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING:tensorflow:5 out of the last 17 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76cef94c6160> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790192275.767042       3 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 5 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76cef9ae27a0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 17 calls to <function ReusableFullChainHMCRunner._build_runner.<locals>.run_chain at 0x76cef94c6160> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+=============================== warnings summary ===============================
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:64
+  /home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
+
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85
+  /home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89
+  /home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/reference-env/lib/python3.13/site-packages/matplotlib/_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../reference-env/lib/python3.13/site-packages/matplotlib/_mathtext.py:45
+  /home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-remaining-gaps-2026-09-24/reference-env/lib/python3.13/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../../../../../../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/inference_validation/test_reference_mean.py: 54 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Constant.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 12 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Compare.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 455 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Attribute.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 18 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: BinOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 284 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Call.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 28 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: keyword.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 30 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: FunctionDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 31 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Load.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 24 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Tuple.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Expr.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Eq.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Is.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: IsNot.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Dict.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 14 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Try.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py: 19 warnings
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Subscript.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: List.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: alias.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Import.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: With.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: UnaryOp.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: ClassDef.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Slice.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: AugAssign.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/gast/astn.py:23: DeprecationWarning: Lambda.__init__ got an unexpected keyword argument '___pyct_anno'. Support for arbitrary keyword arguments is deprecated and will be removed in Python 3.15.
+    new_node = cls(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/inference_validation/test_reference_mean.py::test_public_full_fit_and_cached_policy_identity
+1 failed, 31 passed, 1028 warnings in 17.37s

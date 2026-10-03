@@ -39,7 +39,6 @@ from bayesfilter.results_tf import TFFilterDerivativeResult
 from bayesfilter.structural import StatePartition, StructuralFilterConfig
 from bayesfilter.structural_tf import TFStructuralStateSpace
 
-
 GateName = Literal["input", "forget", "output", "candidate"]
 
 _GATE_INDEX: Mapping[GateName, int] = {
@@ -221,72 +220,19 @@ def unpack_ssl_lstm_parameters(
         index < 0 or index >= full_parameter_dim for index in selected
     ):
         raise ValueError("derivative_parameter_indices must be unique full-chart indices")
-    parameter_dim = len(selected)
-    local_index = {index: row for row, index in enumerate(selected)}
-    d_initial_mean = _scatter_rank2(
-        [parameter_dim, n],
-        [
-            (local_index[slices.initial_mean_start + row], row)
-            for row in range(n)
-            if slices.initial_mean_start + row in local_index
-        ],
-        tf.ones(
-            [sum(slices.initial_mean_start + row in local_index for row in range(n))],
-            dtype=tf.float64,
-        ),
-    )
-    d_initial_covariance = _scatter_rank3(
-        [parameter_dim, n, n],
-        [
-            (local_index[slices.initial_std_start + row], row, row)
-            for row in range(n)
-            if slices.initial_std_start + row in local_index
-        ],
-        tf.stack(
-            [d_initial_variance[row] for row in range(n) if slices.initial_std_start + row in local_index]
-        )
-        if any(slices.initial_std_start + row in local_index for row in range(n))
-        else tf.zeros([0], dtype=tf.float64),
-    )
-    d_sgqf_process_covariance = _scatter_rank3(
-        [parameter_dim, n, n],
-        [
-            (local_index[slices.process_std_start + row], row, row)
-            for row in range(k)
-            if slices.process_std_start + row in local_index
-        ],
-        tf.stack(
-            [d_process_variance[row] for row in range(k) if slices.process_std_start + row in local_index]
-        )
-        if any(slices.process_std_start + row in local_index for row in range(k))
-        else tf.zeros([0], dtype=tf.float64),
-    )
-    d_ukf_innovation_covariance = _scatter_rank3(
-        [parameter_dim, k, k],
-        [
-            (local_index[slices.process_std_start + row], row, row)
-            for row in range(k)
-            if slices.process_std_start + row in local_index
-        ],
-        tf.stack(
-            [d_process_variance[row] for row in range(k) if slices.process_std_start + row in local_index]
-        )
-        if any(slices.process_std_start + row in local_index for row in range(k))
-        else tf.zeros([0], dtype=tf.float64),
-    )
-    d_observation_covariance = _scatter_rank3(
-        [parameter_dim, d, d],
-        [
-            (local_index[slices.observation_std_start + row], row, row)
-            for row in range(d)
-            if slices.observation_std_start + row in local_index
-        ],
-        tf.stack(
-            [d_observation_variance[row] for row in range(d) if slices.observation_std_start + row in local_index]
-        )
-        if any(slices.observation_std_start + row in local_index for row in range(d))
-        else tf.zeros([0], dtype=tf.float64),
-    )
+    selected_tensor = tf.constant(selected, tf.int32)
+    d_initial_mean = tf.one_hot(selected_tensor - slices.initial_mean_start, n, dtype=tf.float64)
+    d_initial_covariance = tf.linalg.diag(
+        tf.one_hot(selected_tensor - slices.initial_std_start, n, dtype=tf.float64)
+        * d_initial_variance[None, :])
+    process_directions = (
+        tf.one_hot(selected_tensor - slices.process_std_start, k, dtype=tf.float64)
+        * d_process_variance[None, :])
+    d_sgqf_process_covariance = tf.linalg.diag(tf.pad(process_directions, [[0, 0], [0, n-k]]))
+    d_ukf_innovation_covariance = tf.linalg.diag(process_directions)
+    d_observation_covariance = tf.linalg.diag(
+        tf.one_hot(selected_tensor - slices.observation_std_start, d, dtype=tf.float64)
+        * d_observation_variance[None, :])
     sgqf_process_variance = tf.concat(
         [
             tf.square(process_std),
@@ -775,72 +721,25 @@ def ssl_lstm_transition_parameter_derivative(
     values = _as_points(points)
     z_prev, a_prev, c_prev = _split_state(params, values)
     gates = _gate_values(params, z_prev, a_prev, c_prev)
-    derivatives = _gate_activation_derivatives(gates)
-    k = int(params.config.latent_dim)
-    h = int(params.config.hidden_dim)
-    n = int(params.config.augmented_state_dim)
-    one_h = tf.eye(h, dtype=tf.float64)
-    one_k = tf.eye(k, dtype=tf.float64)
-    zeros = tf.zeros([tf.shape(values)[0], n], dtype=tf.float64)
-    pieces: list[tf.Tensor] = []
-
-    def from_gate(gate: GateName, row: int, values_for_pre: tf.Tensor) -> tf.Tensor:
-        direct_pre = tf.convert_to_tensor(values_for_pre, dtype=tf.float64)
-        if gate == "input":
-            dc_row = gates["candidate"][:, row] * derivatives["input"][:, row] * direct_pre
-            da_row = _cell_to_hidden_coeff(gates)[:, row] * dc_row
-        elif gate == "forget":
-            dc_row = c_prev[:, row] * derivatives["forget"][:, row] * direct_pre
-            da_row = _cell_to_hidden_coeff(gates)[:, row] * dc_row
-        elif gate == "candidate":
-            dc_row = gates["input"][:, row] * derivatives["candidate"][:, row] * direct_pre
-            da_row = _cell_to_hidden_coeff(gates)[:, row] * dc_row
-        elif gate == "output":
-            dc_row = tf.zeros_like(direct_pre)
-            da_row = tf.math.tanh(gates["cell"])[:, row] * derivatives["output"][:, row] * direct_pre
-        else:
-            raise ValueError(f"unknown gate: {gate}")
-        dc = dc_row[:, tf.newaxis] * one_h[row][tf.newaxis, :]
-        da = da_row[:, tf.newaxis] * one_h[row][tf.newaxis, :]
-        dz = da_row[:, tf.newaxis] * params.latent_weight[:, row][tf.newaxis, :]
-        return tf.concat([dz, da, dc], axis=1)
-
-    for gate in ("input", "forget", "output", "candidate"):
-        for row in range(h):
-            for col in range(k):
-                pieces.append(from_gate(gate, row, z_prev[:, col]))
-    for gate in ("input", "forget", "output", "candidate"):
-        for row in range(h):
-            for col in range(h):
-                pieces.append(from_gate(gate, row, a_prev[:, col]))
-    for gate in ("input", "forget", "output", "candidate"):
-        for row in range(h):
-            pieces.append(from_gate(gate, row, tf.ones([tf.shape(values)[0]], dtype=tf.float64)))
-    transition = ssl_lstm_transition(params, values)
-    a_next = transition[:, k : k + h]
-    for row in range(k):
-        for col in range(h):
-            dz = a_next[:, col, tf.newaxis] * one_k[row][tf.newaxis, :]
-            pieces.append(tf.concat([dz, tf.zeros([tf.shape(values)[0], 2 * h], dtype=tf.float64)], axis=1))
-    for row in range(k):
-        dz = tf.ones([tf.shape(values)[0], 1], dtype=tf.float64) * one_k[row][tf.newaxis, :]
-        pieces.append(tf.concat([dz, tf.zeros([tf.shape(values)[0], 2 * h], dtype=tf.float64)], axis=1))
-    for _row in range(params.config.observation_dim):
-        for _col in range(k):
-            pieces.append(zeros)
-    for _row in range(params.config.observation_dim):
-        pieces.append(zeros)
-    for _row in range(n):
-        pieces.append(zeros)
-    for _row in range(n):
-        pieces.append(zeros)
-    for _row in range(k):
-        pieces.append(zeros)
-    for _row in range(params.config.observation_dim):
-        pieces.append(zeros)
-    stacked = tf.stack(pieces, axis=0)
-    stacked.set_shape([params.config.parameter_dim, None, n])
-    return stacked
+    deriv = _gate_activation_derivatives(gates)
+    k, h, n = params.config.latent_dim, params.config.hidden_dim, params.config.augmented_state_dim
+    count = tf.shape(values)[0]
+    dc = tf.stack((gates["candidate"] * deriv["input"], c_prev * deriv["forget"],
+                   tf.zeros_like(c_prev), gates["input"] * deriv["candidate"]), axis=0)
+    da = dc * _cell_to_hidden_coeff(gates)[None, :, :]
+    da += tf.one_hot(2, 4, dtype=tf.float64)[:, None, None] * (
+        tf.math.tanh(gates["cell"]) * deriv["output"])[None, :, :]
+    # [gate,row,point,output], then outer products with each gate input.
+    cell = tf.einsum("grh,hi->ghri", dc, tf.eye(h, dtype=tf.float64))
+    hidden = tf.einsum("grh,hi->ghri", da, tf.eye(h, dtype=tf.float64))
+    latent = tf.einsum("grh,kh->ghrk", da, params.latent_weight)
+    base = tf.concat((latent, hidden, cell), axis=-1)
+    input_part = tf.reshape(tf.einsum("ghrn,rc->ghcrn", base, z_prev), [4*h*k, count, n])
+    recurrent_part = tf.reshape(tf.einsum("ghrn,rc->ghcrn", base, a_prev), [4*h*h, count, n])
+    bias_part = tf.reshape(base, [4*h, count, n])
+    remaining = ssl_lstm_transition_parameter_derivative_selected(
+        params, values, tf.range(params.slices.latent_weight_start, params.config.parameter_dim))
+    return tf.concat((input_part, recurrent_part, bias_part, remaining), axis=0)
 
 
 def ssl_lstm_transition_parameter_derivative_selected(
@@ -856,32 +755,17 @@ def ssl_lstm_transition_parameter_derivative_selected(
     """
 
     values = _as_points(points)
-    z_prev, _a_prev, _c_prev = _split_state(params, values)
     transition = ssl_lstm_transition(params, values)
-    k = int(params.config.latent_dim)
-    h = int(params.config.hidden_dim)
-    n = int(params.config.augmented_state_dim)
-    slices = params.slices
-    zeros = tf.zeros([tf.shape(values)[0], n], dtype=tf.float64)
-    one_k = tf.eye(k, dtype=tf.float64)
-    rows: list[tf.Tensor] = []
-    for index in parameter_indices:
-        index = int(index)
-        if slices.latent_weight_start <= index < slices.latent_weight_start + k * h:
-            row, col = divmod(index - slices.latent_weight_start, h)
-            derivative = transition[:, k + col, tf.newaxis] * one_k[row][tf.newaxis, :]
-            rows.append(tf.concat([derivative, tf.zeros([tf.shape(values)[0], 2 * h], tf.float64)], axis=1))
-        elif slices.latent_bias_start <= index < slices.latent_bias_start + k:
-            row = index - slices.latent_bias_start
-            derivative = tf.broadcast_to(one_k[row][tf.newaxis, :], [tf.shape(values)[0], k])
-            rows.append(tf.concat([derivative, tf.zeros([tf.shape(values)[0], 2 * h], tf.float64)], axis=1))
-        else:
-            rows.append(zeros)
-    if not rows:
-        return tf.zeros([0, tf.shape(values)[0], n], dtype=tf.float64)
-    result = tf.stack(rows, axis=0)
-    result.set_shape([len(parameter_indices), None, n])
-    return result
+    k, h, n = params.config.latent_dim, params.config.hidden_dim, params.config.augmented_state_dim
+    indices = tf.convert_to_tensor(parameter_indices, tf.int32)
+    wi = indices - params.slices.latent_weight_start
+    bi = indices - params.slices.latent_bias_start
+    weight_rows = tf.one_hot(wi // h, k, dtype=tf.float64) * tf.cast(
+        ((wi >= 0) & (wi < k*h))[:, None], tf.float64)
+    bias_rows = tf.one_hot(bi, k, dtype=tf.float64)
+    hidden = tf.transpose(tf.gather(transition[:, k:k+h], tf.math.floormod(wi, h), axis=1))
+    dz = weight_rows[:, None, :] * hidden[:, :, None] + bias_rows[:, None, :]
+    return tf.concat((dz, tf.zeros([tf.shape(indices)[0], tf.shape(values)[0], n-k], tf.float64)), -1)
 
 
 def ssl_lstm_observation_state_jacobian(
@@ -938,38 +822,8 @@ def ssl_lstm_observation_parameter_derivative(
 ) -> tf.Tensor:
     """Return direct ``d observation_mean / d theta`` with points held fixed."""
 
-    values = _as_points(points)
-    z = values[:, : params.config.latent_dim]
-    d = int(params.config.observation_dim)
-    k = int(params.config.latent_dim)
-    pieces: list[tf.Tensor] = []
-    zeros = tf.zeros([tf.shape(values)[0], d], dtype=tf.float64)
-    one_d = tf.eye(d, dtype=tf.float64)
-    prefix_count = (
-        4 * params.config.hidden_dim * k
-        + 4 * params.config.hidden_dim * params.config.hidden_dim
-        + 4 * params.config.hidden_dim
-        + k * params.config.hidden_dim
-        + k
-    )
-    for _ in range(prefix_count):
-        pieces.append(zeros)
-    for row in range(d):
-        for col in range(k):
-            pieces.append(z[:, col, tf.newaxis] * one_d[row][tf.newaxis, :])
-    for row in range(d):
-        pieces.append(tf.ones([tf.shape(values)[0], 1], dtype=tf.float64) * one_d[row][tf.newaxis, :])
-    tail_count = (
-        params.config.augmented_state_dim
-        + params.config.augmented_state_dim
-        + params.config.latent_dim
-        + params.config.observation_dim
-    )
-    for _ in range(tail_count):
-        pieces.append(zeros)
-    stacked = tf.stack(pieces, axis=0)
-    stacked.set_shape([params.config.parameter_dim, None, d])
-    return stacked
+    return ssl_lstm_observation_parameter_derivative_selected(
+        params, points, tf.range(params.config.parameter_dim))
 
 
 def ssl_lstm_observation_parameter_derivative_selected(
@@ -980,28 +834,15 @@ def ssl_lstm_observation_parameter_derivative_selected(
     """Return observation derivatives for a selected parameter subset only."""
 
     values = _as_points(points)
-    z = values[:, : params.config.latent_dim]
-    d = int(params.config.observation_dim)
-    k = int(params.config.latent_dim)
-    slices = params.slices
-    zeros = tf.zeros([tf.shape(values)[0], d], dtype=tf.float64)
-    one_d = tf.eye(d, dtype=tf.float64)
-    rows: list[tf.Tensor] = []
-    for index in parameter_indices:
-        index = int(index)
-        if slices.observation_weight_start <= index < slices.observation_weight_start + d * k:
-            row, col = divmod(index - slices.observation_weight_start, k)
-            rows.append(z[:, col, tf.newaxis] * one_d[row][tf.newaxis, :])
-        elif slices.observation_bias_start <= index < slices.observation_bias_start + d:
-            row = index - slices.observation_bias_start
-            rows.append(tf.ones([tf.shape(values)[0], 1], tf.float64) * one_d[row][tf.newaxis, :])
-        else:
-            rows.append(zeros)
-    if not rows:
-        return tf.zeros([0, tf.shape(values)[0], d], dtype=tf.float64)
-    result = tf.stack(rows, axis=0)
-    result.set_shape([len(parameter_indices), None, d])
-    return result
+    d, k = params.config.observation_dim, params.config.latent_dim
+    indices = tf.convert_to_tensor(parameter_indices, tf.int32)
+    wi = indices - params.slices.observation_weight_start
+    bi = indices - params.slices.observation_bias_start
+    weight_rows = tf.one_hot(wi // k, d, dtype=tf.float64) * tf.cast(
+        ((wi >= 0) & (wi < d*k))[:, None], tf.float64)
+    bias_rows = tf.one_hot(bi, d, dtype=tf.float64)
+    z = tf.transpose(tf.gather(values[:, :k], tf.math.floormod(wi, k), axis=1))
+    return weight_rows[:, None, :] * z[:, :, None] + bias_rows[:, None, :]
 
 
 def build_ssl_lstm_debug_value_score_artifact(

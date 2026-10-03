@@ -140,7 +140,13 @@ class FrozenPositionOnlyForce:
 
 @dataclass(frozen=True)
 class FrozenTargetPotential:
-    """Binding for the deterministic true endpoint potential."""
+    """Binding for the deterministic true endpoint potential.
+
+    ``includes_chart_log_jacobian`` records a caller-established property of
+    the model target. The generic ``transformed`` coordinate label may also
+    denote BayesFilter's affine mass coordinates, so the label alone cannot
+    establish whether a separate model chart Jacobian exists or is required.
+    """
 
     function: Callable[[tf.Tensor], tf.Tensor] = field(repr=False, compare=False)
     identity: str
@@ -154,10 +160,6 @@ class FrozenTargetPotential:
         if self.coordinate_system not in {"raw", "transformed"}:
             raise InvalidNeuralForceHMCConfiguration(
                 "coordinate_system must be 'raw' or 'transformed'"
-            )
-        if self.coordinate_system == "transformed" and not self.includes_chart_log_jacobian:
-            raise InvalidNeuralForceHMCConfiguration(
-                "transformed target potential must include the chart log-Jacobian"
             )
         if not self.deterministic:
             raise InvalidNeuralForceHMCConfiguration(
@@ -919,7 +921,7 @@ def run_full_chain_neural_force_hmc(
         function=mass_coordinate_target,
         identity=f"{target.identity}:native-fixed-mass-affine",
         coordinate_system="transformed",
-        includes_chart_log_jacobian=True,
+        includes_chart_log_jacobian=target.includes_chart_log_jacobian,
     )
     kernel_config = NeuralForceHMCConfig(
         step_size=config.step_size,
@@ -1137,7 +1139,7 @@ def build_affine_neural_force_transition_kernel(
         function=active_target,
         identity=f"{target.identity}:native-fixed-mass-affine",
         coordinate_system="transformed",
-        includes_chart_log_jacobian=True,
+        includes_chart_log_jacobian=target.includes_chart_log_jacobian,
     )
     return NeuralForceTransitionKernel(
         force=bound_force,

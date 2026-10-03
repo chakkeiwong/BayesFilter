@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="123" time="92.986" timestamp="2026-09-22T21:57:11.354037+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.test_hmc_geometry_stream_identity" name="test_numerical_geometry_ignores_only_probe_clocks_and_keeps_full_artifact" time="0.115" /><testcase classname="tests.test_hmc_geometry_stream_identity" name="test_candidate_stream_identity_is_clock_invariant_but_numerically_sensitive" time="0.154" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_healthy_start_preserves_target_mass_and_pair[False]" time="0.235" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_healthy_start_preserves_target_mass_and_pair[True]" time="0.828" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_rejected_nonfinite_proposal_shrinks_and_preserves_first_failure" time="0.751" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_combined_diagnostics_do_not_replace_public_hmc_telemetry[False]" time="0.227" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_combined_diagnostics_do_not_replace_public_hmc_telemetry[True]" time="0.730" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_invalid_initial_target_is_fatal_before_any_transition" time="0.050" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_runtime_and_retained_failures_are_not_epsilon_repairs[exception]" time="0.057" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_runtime_and_retained_failures_are_not_epsilon_repairs[invalid_retained]" time="0.214" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_search_exhaustion_has_evidence_and_no_startup_nomination" time="0.213" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_initializer_precedes_fresh_bootstrap_with_exact_pair" time="0.725" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_both_q20_consumers_call_shared_repair[pricing]" time="0.355" /><testcase classname="tests.test_hmc_bootstrap_initialization" name="test_both_q20_consumers_call_shared_repair[classical_tuning]" time="0.084" /><testcase classname="tests.test_hmc_m9_repairs" name="test_scaled_startup_without_status_preserves_failed_probes[False]" time="0.846" /><testcase classname="tests.test_hmc_m9_repairs" name="test_scaled_startup_without_status_preserves_failed_probes[True]" time="2.227" /><testcase classname="tests.test_hmc_m9_repairs" name="test_none_policy_still_vetoes_nonfinite_initial_score" time="0.034" /><testcase classname="tests.test_hmc_m9_repairs" name="test_declared_status_is_required_and_validated[missing]" time="0.027" /><testcase classname="tests.test_hmc_m9_repairs" name="test_declared_status_is_required_and_validated[dtype]" time="0.026" /><testcase classname="tests.test_hmc_m9_repairs" name="test_declared_status_is_required_and_validated[shape]" time="0.026" /><testcase classname="tests.test_hmc_m9_repairs" name="test_startup_budget_validation[True]" time="0.000" /><testcase classname="tests.test_hmc_m9_repairs" name="test_startup_budget_validation[-1]" time="0.000" /><testcase classname="tests.test_hmc_m9_repairs" name="test_startup_budget_validation[1.5]" time="0.000" /><testcase classname="tests.test_hmc_m9_repairs" name="test_startup_budget_validation[inf]" time="0.000" /><testcase classname="tests.test_hmc_m9_repairs" name="test_public_startup_option_reaches_fresh_bootstrap" time="0.575" /><testcase classname="tests.test_hmc_m9_repairs" name="test_disabled_startup_keeps_old_bootstrap_role" time="0.000" /><testcase classname="tests.test_hmc_m9_repairs" name="test_startup_bootstrap_exhaustion_cannot_fall_through_to_adaptation" time="0.165"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'payload'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7092b81594f0&gt;
+
+    def test_startup_bootstrap_exhaustion_cannot_fall_through_to_adaptation(monkeypatch):
+        from types import SimpleNamespace
+        from bayesfilter.inference import hmc_bootstrap, hmc_mass_adaptation
+        from bayesfilter.inference.hmc_preparation import prepare_operational_windowed_mass_handoff
+        monkeypatch.setattr(hmc_bootstrap, "run_hmc_bootstrap_screen", lambda **kwargs:
+            SimpleNamespace(passed=False, artifact_hash="failed", final_status="repair_budget_exhausted", rounds=()))
+        monkeypatch.setattr(hmc_mass_adaptation, "run_hmc_windowed_mass_stage", lambda **kwargs:
+            pytest.fail("exhausted startup must not run adaptation"))
+        with pytest.raises(HMCPreparationFailure, match="startup floor"):
+&gt;           prepare_operational_windowed_mass_handoff(adapter=NoStatusGaussian(), initial_position=[0., 0.],
+                config=HMCKernelTuningConfig.smoke(use_xla=False, bootstrap_initialization_rounds=20))
+
+tests/test_hmc_m9_repairs.py:119: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def prepare_operational_windowed_mass_handoff(
+        *,
+        adapter: Any,
+        initial_position: Any,
+        config: HMCKernelTuningConfig | None = None,
+        negative_hessian: Any | None = None,
+        initial_covariance: Any | None = None,
+        parameter_scales: Any | None = None,
+        metric_window_size: int | None = None,
+        progress_callback: Callable[[str, Mapping[str, Any]], None] | None = None,
+        initialize_bootstrap: bool = False,
+        bootstrap_execution: Any | None = None,
+    ) -&gt; Mapping[str, Any]:
+        """Prepare one public operational mass and post-warmup start-bank handoff.
+    
+        This is the bounded public prefix of ordinary HMC tuning: BayesFilter owns
+        geometry initialization, bootstrap repair, the dimension-scaled warmup
+        budget, operational windowed adaptation, and the final affine/start-bank
+        lineage checks.  It intentionally stops before fixed-step or trajectory
+        selection so callers that already own a reviewed fixed-kernel comparison
+        do not have to run a second candidate campaign.
+    
+        ``metric_window_size`` is an explicit experimental one-window schedule:
+        keep the preset's fast buffers and collect exactly this many consecutive
+        positions in one slow window. It changes the allocation, not covariance
+        adequacy gates or defaults. The schedule and all decisions are recorded.
+    
+        All warmup draws are discarded.  The returned mapping contains live
+        BayesFilter adapters plus the public geometry, bootstrap, windowed-stage,
+        and budget records needed to audit the handoff.  It is not posterior or
+        convergence evidence.
+        """
+        from bayesfilter.inference.hmc_geometry import (
+            _validate_position, initialize_hmc_kernel_geometry,
+        )
+        from bayesfilter.inference.hmc_bootstrap import run_hmc_bootstrap_screen
+        from bayesfilter.inference.hmc_mass_adaptation import (
+            _bootstrap_preflight_passed, run_hmc_windowed_mass_stage,
+            build_operational_fixed_mass_hmc_adapter, _windowed_mass_stage_internal_config,
+        )
+        from bayesfilter.inference.hmc_configuration import (
+            HMCKernelTuningConfig,
+            _public_geometry_config, _public_bootstrap_config,
+            _public_budget_policy_factory, _HMCAttemptBudgetPolicy,
+            _public_loop_config, _phase7_windowed_stage_config,
+        )
+        from bayesfilter.runtime import stable_config_hash
+    
+    
+        cfg = HMCKernelTuningConfig.standard() if config is None else config
+        if not isinstance(cfg, HMCKernelTuningConfig):
+            raise TypeError("config must be HMCKernelTuningConfig")
+        if cfg.mass_policy != "windowed_adaptive":
+            raise ValueError(
+                "operational windowed mass preparation requires mass_policy='windowed_adaptive'"
+            )
+        if metric_window_size is not None:
+            if isinstance(metric_window_size, bool):
+                raise TypeError("metric_window_size must be an integer count")
+            metric_window_size = operator.index(metric_window_size)
+            if metric_window_size &lt; 2:
+                raise ValueError("metric_window_size must be at least two")
+        position = _validate_position(initial_position)
+        scope = cfg.target_scope or str(getattr(adapter, "target_scope", ""))
+        if not scope:
+            raise ValueError("target_scope must be supplied by config or adapter")
+    
+        def progress(stage: str, payload: Mapping[str, Any] | None = None) -&gt; None:
+            if progress_callback is not None:
+                progress_callback(
+                    stage,
+                    {
+                        "schema": "bayesfilter.operational_windowed_mass_preparation_progress.v1",
+                        "stage": stage,
+                        "reports_posterior_convergence": False,
+                        "raw_samples_retained": False,
+                        **({} if payload is None else dict(payload)),
+                    },
+                )
+    
+        progress("geometry_started")
+        geometry = initialize_hmc_kernel_geometry(
+            adapter=adapter,
+            initial_position=position,
+            config=_public_geometry_config(cfg),
+            negative_hessian=negative_hessian,
+            initial_covariance=initial_covariance,
+            parameter_scales=parameter_scales,
+        )
+        progress(
+            "geometry_completed",
+            {"geometry_artifact_hash": geometry.artifact_hash},
+        )
+        if type(initialize_bootstrap) is not bool:
+            raise TypeError("initialize_bootstrap must be boolean")
+        if initialize_bootstrap or cfg.bootstrap_initialization_rounds:
+            from bayesfilter.inference.hmc_bootstrap_initialization import initialize_bootstrap_step
+            geometry = initialize_bootstrap_step(adapter=adapter, geometry=geometry,
+                config=_public_bootstrap_config(cfg, geometry=geometry), progress_callback=progress,
+                max_rounds=cfg.bootstrap_initialization_rounds or 20)
+        bootstrap_config = _public_bootstrap_config(cfg, geometry=geometry)
+        execution_kwargs = {}
+        if bootstrap_execution is not None:
+            from bayesfilter.inference.hmc_bootstrap_checkpoint import CheckpointedBootstrapRunner
+            if not isinstance(bootstrap_execution, CheckpointedBootstrapRunner):
+                raise TypeError("bootstrap execution must use the repository checkpointed runner")
+            bootstrap_execution.observe_initialization(geometry)
+            bootstrap_config = replace(bootstrap_config, acceptance_role="warmup_startup_only")
+            execution_kwargs["run_full_chain"] = bootstrap_execution
+        bootstrap = run_hmc_bootstrap_screen(
+            adapter=adapter,
+            geometry=geometry,
+            config=bootstrap_config,
+            progress_callback=lambda stage, payload: progress("bootstrap." + stage, payload),
+            **execution_kwargs,
+        )
+        # Keep round diagnostics and any first-failure record before the veto gate.
+&gt;       progress("bootstrap_result", {"result": bootstrap.payload()})
+                                                ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'payload'
+
+bayesfilter/inference/hmc_preparation.py:264: AttributeError</failure></testcase><testcase classname="tests.test_hmc_m9_repairs" name="test_optional_interval_recovers_member_and_preserves_every_failure" time="0.002" /><testcase classname="tests.test_hmc_m9_repairs" name="test_interval_resume_preserves_lineage_budget_and_all_members[1]" time="0.003" /><testcase classname="tests.test_hmc_m9_repairs" name="test_interval_resume_preserves_lineage_budget_and_all_members[3]" time="0.003" /><testcase classname="tests.test_hmc_m9_repairs" name="test_interval_resume_preserves_lineage_budget_and_all_members[5]" time="0.003" /><testcase classname="tests.test_hmc_m9_repairs" name="test_interval_resume_preserves_lineage_budget_and_all_members[6]" time="0.003" /><testcase classname="tests.test_hmc_m9_repairs" name="test_non_numerical_rejection_does_not_create_interval[required_target_status_telemetry_missing]" time="0.001" /><testcase classname="tests.test_hmc_m9_repairs" name="test_non_numerical_rejection_does_not_create_interval[nonfinite_state]" time="0.001" /><testcase classname="tests.test_hmc_m9_repairs" name="test_non_numerical_rejection_does_not_create_interval[unknown_failure]" time="0.001" /><testcase classname="tests.test_hmc_m9_repairs" name="test_non_numerical_rejection_does_not_create_interval[native_divergence_provenance_inconsistent]" time="0.001" /><testcase classname="tests.test_hmc_m9_repairs" name="test_invalid_root_has_no_direction_or_repair_authority" time="0.001" /><testcase classname="tests.test_hmc_m9_repairs" name="test_shared_failure_stops_scope_and_disables_verified_sibling" time="0.001" /><testcase classname="tests.test_hmc_m9_repairs" name="test_nonmonotone_lower_direction_can_explore_without_mutating_anchor" time="0.022" /><testcase classname="tests.test_hmc_m9_repairs" name="test_interval_search_respects_explicit_caps[config0]" time="0.002" /><testcase classname="tests.test_hmc_m9_repairs" name="test_interval_search_respects_explicit_caps[config1]" time="0.002" /><testcase classname="tests.test_hmc_m9_repairs" name="test_interval_search_respects_explicit_caps[config2]" time="0.001" /><testcase classname="tests.test_hmc_m9_repairs" name="test_interval_family_cap_and_config_roundtrip" time="0.001" /><testcase classname="tests.test_hmc_m9_repairs" name="test_interval_artifact_roundtrip_and_closed_primary_cohort" time="0.005" /><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[smoke]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[standard]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[diagnostic]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[diagnostic_plus]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_public_presets_reach_preparation[serious]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_config_rejects_invalid_steps[-1]" time="0.000" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_config_rejects_invalid_steps[True]" time="0.000" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_config_rejects_invalid_steps[1.5]" time="0.000" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_config_rejects_invalid_steps[6]" time="0.000" /><testcase classname="tests.test_hmc_master_repair" name="test_expansion_is_finite_explicit_and_serialized" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_preparation_veto_causes_persist_before_exception" time="0.003" /><testcase classname="tests.test_hmc_master_repair" name="test_windowed_preparation_failure_preserves_stage_diagnostics" time="0.003" /><testcase classname="tests.test_hmc_master_repair" name="test_nonfinite_preparation_diagnostics_do_not_mask_original_failure" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_repair_reports_the_actual_search_limit[0.5-1-max_candidates]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_repair_reports_the_actual_search_limit[2.0-4-epsilon_domain]" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_refinement_cap_counts_only_eligible_unadmitted_pairs" time="0.001" /><testcase classname="tests.test_hmc_master_repair" name="test_malformed_observation_does_not_poison_numerical_checkpoint" time="5.052" /><testcase classname="tests.test_hmc_master_repair" name="test_later_shared_invalidity_disables_an_earlier_live_member" time="4.321" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[serial]" time="5.315" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_member_export_reload_and_continuation_match_direct_runner[serial]" time="10.961" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_three_builders_share_numerical_validation_and_policy_boundary[serial]" time="0.116" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_callback_qualified_label_cannot_issue_numerical_bridge[serial]" time="0.023" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[serial-missing_evidence]" time="0.129" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[serial-tensor]" time="0.140" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[serial-endpoint]" time="0.360" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[serial-config]" time="0.114" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[serial-source]" time="0.120" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[serial-target]" time="0.131" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[serial-scope]" time="0.339" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_dispatch_rejects_wrong_target_or_start_before_work[serial]" time="0.012" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_retained_predecessor_endpoint_and_ancestry_are_checked[serial]" time="1.815" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[serial]" time="0.274" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_proposed_status_and_retained_health_failure_are_preserved[serial]" time="0.188" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[serial-epsilon-0.123]" time="0.026" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[serial-leapfrog_steps-99]" time="0.027" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[serial-mass_signature-wrong]" time="0.026" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[serial-backend-numpy]" time="0.026" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[serial-dtype-float32]" time="0.026" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[serial-use_xla-True]" time="0.026" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[serial-start_bank_signature-wrong]" time="0.026" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[batched]" time="3.501" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_member_export_reload_and_continuation_match_direct_runner[batched]" time="6.868" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_three_builders_share_numerical_validation_and_policy_boundary[batched]" time="0.138" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_callback_qualified_label_cannot_issue_numerical_bridge[batched]" time="0.026" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[batched-missing_evidence]" time="0.153" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[batched-tensor]" time="0.170" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[batched-endpoint]" time="0.441" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[batched-config]" time="0.146" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[batched-source]" time="0.146" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[batched-target]" time="0.157" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_durable_reload_rejects_drift_or_corruption[batched-scope]" time="0.399" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_dispatch_rejects_wrong_target_or_start_before_work[batched]" time="0.012" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_retained_predecessor_endpoint_and_ancestry_are_checked[batched]" time="0.605" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[batched]" time="0.138" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_proposed_status_and_retained_health_failure_are_preserved[batched]" time="0.195" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[batched-epsilon-0.123]" time="0.033" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[batched-leapfrog_steps-99]" time="0.033" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[batched-mass_signature-wrong]" time="0.033" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[batched-backend-numpy]" time="0.032" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[batched-dtype-float32]" time="0.033" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[batched-use_xla-True]" time="0.034" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_rehashed_candidate_record_cannot_change_bound_scope_or_kernel[batched-start_bank_signature-wrong]" time="0.032" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_default_policy_rejects_finite_out_of_band_acceptance_and_warmup_health" time="0.107" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_execution_config_rejects_invalid_evidence_budgets[overrides0]" time="0.000" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_execution_config_rejects_invalid_evidence_budgets[overrides1]" time="0.000" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_execution_config_rejects_invalid_evidence_budgets[overrides2]" time="0.000" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_execution_config_rejects_invalid_evidence_budgets[overrides3]" time="0.000" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_execution_config_rejects_invalid_evidence_budgets[overrides4]" time="0.000" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_execution_config_rejects_invalid_evidence_budgets[overrides5]" time="0.000" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_execution_config_rejects_invalid_evidence_budgets[overrides6]" time="0.000" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_batched_binding_xla_preserves_independent_rows_and_dynamic_inputs" time="1.070" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_finite_guard_and_candidate_health_wrappers_compose" time="2.587" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_real_windowed_preparation_preserves_both_affine_layers" time="0.037"><failure message="ValueError: windowed stage requires bootstrap preflight without hard veto">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-636/test_real_windowed_preparation0')
+
+    def test_real_windowed_preparation_preserves_both_affine_layers(tmp_path):
+        # Reuse the existing rotated-Gaussian preparation fixture, with real TF
+        # operational warmup. Bootstrap's synthetic screen is preparation mechanics
+        # only; candidate verification below always runs the numerical evaluator.
+        from tests import test_hmc_kernel_tuning_windowed_mass as fixture
+        from bayesfilter.inference import bind_hmc_candidate_set_execution_from_preparation
+        from bayesfilter.inference.hmc_kernel_tuning import (
+            build_operational_fixed_mass_hmc_adapter, run_hmc_windowed_mass_stage,
+            OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+        )
+        adapter = fixture._RotatedGaussianAdapter()
+        geometry = fixture.initialize_hmc_kernel_geometry(adapter=adapter, initial_position=[.4,-.3],
+            initial_covariance=[[1.4,.3],[.3,.8]],
+            config=fixture.HMCGeometryInitializationConfig(covariance_jitter=0.0))
+        bootstrap = fixture.run_hmc_bootstrap_screen(adapter=adapter, geometry=geometry,
+            run_full_chain=lambda _adapter, _state, config: fixture._runtime_shaped_result(
+                warmup_steps=int(config.num_results), acceptance_trace=[True,True,False,True]*4))
+&gt;       stage = run_hmc_windowed_mass_stage(adapter=adapter, geometry=geometry, bootstrap=bootstrap,
+            config=fixture._stage_config(algorithm_id=OPERATIONAL_WINDOWED_WARMUP_ALGORITHM_ID,
+                                         chain_execution_mode="tf_function"),
+            _attempt_budget_policy=fixture._operational_budget())
+
+tests/test_hmc_candidate_set_execution.py:335: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/hmc_mass_adaptation.py:2162: in run_hmc_windowed_mass_stage
+    _validate_windowed_stage_inputs(adapter=adapter, geometry=geometry, bootstrap=bootstrap)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _validate_windowed_stage_inputs(
+        *,
+        adapter: Any,
+        geometry: HMCGeometryInitializationResult,
+        bootstrap: HMCBootstrapScreenResult,
+    ) -&gt; None:
+        adapter_signature = stable_adapter_signature(adapter)
+        if adapter_signature != geometry.adapter_signature:
+            raise ValueError("windowed stage adapter signature must match geometry")
+        if adapter_signature != bootstrap.adapter_signature:
+            raise ValueError("windowed stage adapter signature must match bootstrap")
+        if not _bootstrap_preflight_passed(bootstrap):
+&gt;           raise ValueError("windowed stage requires bootstrap preflight without hard veto")
+E           ValueError: windowed stage requires bootstrap preflight without hard veto
+
+bayesfilter/inference/hmc_mass_adaptation.py:2944: ValueError</failure></testcase><testcase classname="tests.test_hmc_candidate_set_execution" name="test_supported_frozen_transports_use_numerical_controller_and_durable_geometry[affine]" time="8.584" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_supported_frozen_transports_use_numerical_controller_and_durable_geometry[dense_iaf]" time="18.644" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_unsupported_transport_and_fallback_force_fail_closed" time="0.026" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_live_frozen_geometry_mutation_is_rejected_even_for_invariant_target" time="0.036" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_source_dependency_drift_rejected_before_execution" time="0.037" /><testcase classname="tests.test_hmc_candidate_set_execution" name="test_numerically_repaired_child_bridges_with_exact_child_kernel" time="6.828" /></testsuite></testsuites>

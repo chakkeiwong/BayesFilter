@@ -1,5 +1,39 @@
 # BayesFilter Agent Governance
 
+## Canonical NeuTra Architecture And Historical Implementations
+
+Owner directive, 2026-09-25: all superseded local NeuTra implementations and
+configurations are **HISTORICAL — UNFAITHFUL TO THE AUTHOR'S CODE**. This includes
+old affine/dense/weighted/legacy recipes, scalar correction canaries, saved maps,
+archived source copies and their results, even where old text calls them
+canonical, faithful or production. Preserve them as labeled historical evidence;
+do not use them as the current implementation, defaults or canonical results.
+Calling the shared core or loading an old artifact does not upgrade its status.
+
+The canonical architecture is `bayesfilter_neutra_iaf_author_v1`: the repaired
+IAF in `bayesfilter/inference/neutra_transport.py`, using the single numerical
+authority `neutra_transport_core.py`. Its defining choices are author block
+masks, ELU conditioners, nonzero author variance-scaled kernels, coordinate
+reversal and `s_j=b_j+c*tanh(h_j/c)` with the free bias **outside** the cap.
+The current q20 instance has three stages, two width-16 hidden layers per stage
+and c=2. See `docs/reference/neutra-implementation.md` for the exact configuration,
+paper/source anchors, local adaptations and training-policy boundary. Configured
+NAF is a separately labeled alternative, not an automatic canonical substitute.
+
+Before deviating, document the exact difference, source anchors, concrete need,
+mathematical/engineering consequences, bounded canonical comparison, criteria,
+stop conditions and skeptical review in `docs/plans`. Convenience, inherited
+defaults and successful smokes are insufficient. Target-specific numerical
+calibration must be explicit; replacing this canonical architecture requires
+owner direction. All numerical implementations must remain configurations of
+the shared authority, not copied forks.
+
+The controlling migration notice and complete scope are
+`docs/plans/bayesfilter-neutra-canonical-architecture-policy-2026-09-25.md`.
+This directive supersedes contrary historical NeuTra architecture/default claims.
+Canonical architecture status does not establish trained-map quality, posterior
+coverage or HMC convergence, or prove that architecture caused every old failure.
+
 ## Academic Research Governance Profile
 
 Owner directive, 2026-07-13: BayesFilter is a trusted local academic research
@@ -294,9 +328,12 @@ TensorFlow/TFP sequential controller under `bayesfilter.inference.neutra_hmc`.
   rank-normalized split and folded rank-normalized split R-hat. The default is
   at least 2,000 warm-up transitions per chain, latest 1,000-transition window,
   threshold `<=1.05`, and maximum 10,000 per chain.
-- Grow retained sampling cumulatively. Tuning admission uses modern R-hat
+- Grow retained sampling cumulatively. Posterior assessment uses modern R-hat
   `<=1.01`; confirmation additionally uses declared bulk/tail ESS and downstream
   posterior gates. The retained maximum is 10,000 per chain.
+- Kernel tuning retains every acceptance/health-qualified candidate. R-hat is
+  reporting-only during tuning, including unavailable or failed computations;
+  it cannot reject, rank, repair, or delay tuning candidates.
 - Apply finite state/target/log-acceptance, target-status, all-chain movement,
   and declared energy-error vetoes to every chunk. Acceptance is nomination or
   explanation only, never convergence evidence.

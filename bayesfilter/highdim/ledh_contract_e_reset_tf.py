@@ -6,6 +6,8 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
+
 
 def _sym(value: tf.Tensor) -> tf.Tensor:
     return 0.5 * (value + tf.linalg.matrix_transpose(value))
@@ -480,7 +482,7 @@ def _contract_e_chol_cloud_vjp_core(
     }
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(dtype_like="source_particles")
 def contract_e_chol_cloud_forward_tf(
     source_particles: tf.Tensor,
     normalized_weights: tf.Tensor,
@@ -499,7 +501,7 @@ def contract_e_chol_cloud_forward_tf(
     )
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(dtype_like="source_particles")
 def contract_e_chol_cloud_jvp_tf(
     source_particles: tf.Tensor,
     normalized_weights: tf.Tensor,
@@ -528,7 +530,7 @@ def contract_e_chol_cloud_jvp_tf(
     )["particles"]
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(dtype_like="source_particles")
 def contract_e_chol_cloud_vjp_tf(
     source_particles: tf.Tensor,
     normalized_weights: tf.Tensor,

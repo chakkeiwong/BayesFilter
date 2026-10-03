@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="7" time="51.207" timestamp="2026-09-21T03:52:46.430030+08:00" hostname="ubuntu-MZ72-HB2-00"><testcase classname="tests.inference_validation.test_transport_route_integration" name="test_nonlinear_frozen_transport_retains_reloads_and_excludes_warmup[gaussian]" time="15.200" /><testcase classname="tests.inference_validation.test_transport_route_integration" name="test_nonlinear_frozen_transport_retains_reloads_and_excludes_warmup[banana]" time="14.013" /><testcase classname="tests.inference_validation.test_transport_route_integration" name="test_nonlinear_frozen_transport_retains_reloads_and_excludes_warmup[dirichlet]" time="11.093" /><testcase classname="tests.inference_validation.test_transport_route_integration" name="test_position_field_multimodel_resume_remains_conditional[gaussian-None]" time="2.728"><failure message="AssertionError: assert {'candidate_i...:work:000001'} == {'candidate_i...:work:000001'}&#10;  &#10;  Omitting 3 identical items, use -vv to show&#10;  Differing items:&#10;  {'observation': {'acceptance': 0.8660958017956699, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...89229521552]], 'candidate_health_alerts': [], 'candidate_promotion_vetoes': [], ...}, 'adapter_kind': 'ordinary', ...}} != {'observation': {'acceptance': 0.8660958017956699, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...89229521552)), 'candidate_health_alerts': (), 'candidate_promotion_vetoes': (), ...}, 'adapter_kind': 'ordinary', ...}}&#10;  Use -v to get more diff">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-567/test_position_field_multimodel0')
+target_id = 'gaussian', data = None
+
+    @pytest.mark.parametrize("target_id,data", [("gaussian", None), ("beta_binomial", [7, 12]),
+                                               ("lgssm_location", [1., -1., .5]), ("banana", None)])
+    def test_position_field_multimodel_resume_remains_conditional(tmp_path, target_id, data):
+        from bayesfilter.inference import (FourChainMeanBandAcceptancePolicy, FrozenPositionOnlyForce,
+            FrozenTargetPotential, DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
+            bind_neural_force_hmc_tuning_runner, tune_hmc_kernel, resume_position_field_candidate_tuning,
+            HMCControllerConfig, build_retained_bound_hmc_archive_runner_from_candidate_set_result)
+        from tests.test_hmc_tuning_dispatch import _config
+    
+        target = ValidationTarget(target_id, data=data, jit_compile=False)
+        binding = bind_neural_force_hmc_tuning_runner(
+            force=FrozenPositionOnlyForce(lambda q: -.8 * target.log_prob_and_grad(q)[1],
+                identity="m17-nonexact-force-" + target.adapter_signature(),
+                semantics=DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS),
+            target=FrozenTargetPotential(lambda q: -target.log_prob_and_grad(q)[0],
+                identity="m17-exact-potential-" + target.adapter_signature()), target_scope="inference_validation")
+        config = replace(_config(), parameter_dimension=target.parameter_dim, verification_results=64,
+            max_leapfrog_steps=3, target_scope="inference_validation",
+            acceptance_policy=FourChainMeanBandAcceptancePolicy(overall_band=(.65, .75), per_chain_band=(.55, .85)))
+        search = HMCControllerConfig(primary_l_grid=(2, 3), initial_epsilon=.8,
+            pilot_enabled=False, refinement_rounds=0, evidence_rungs=(1,),
+            max_candidates=8, total_budget_units=20, repair_reserve_units=4)
+        first = tune_hmc_kernel(adapter=target, initial_position=initial_starts(target, "dispersed"),
+            parameter_scales=tf.ones([target.parameter_dim], tf.float64), config=config,
+            search_config=search, runner_binding=binding, output_dir=tmp_path, max_work_items=1)
+        assert len(first.result.observations) == 1
+        resumed = resume_position_field_candidate_tuning(tmp_path / "controller_checkpoint.json",
+            adapter=target, runner_binding=binding)
+        assert resumed.result.completion_status == "complete"
+&gt;       assert resumed.result.observations[0] == first.result.observations[0]
+E       AssertionError: assert {'candidate_i...:work:000001'} == {'candidate_i...:work:000001'}
+E         
+E         Omitting 3 identical items, use -vv to show
+E         Differing items:
+E         {'observation': {'acceptance': 0.8660958017956699, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...89229521552]], 'candidate_health_alerts': [], 'candidate_promotion_vetoes': [], ...}, 'adapter_kind': 'ordinary', ...}} != {'observation': {'acceptance': 0.8660958017956699, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...89229521552)), 'candidate_health_alerts': (), 'candidate_promotion_vetoes': (), ...}, 'adapter_kind': 'ordinary', ...}}
+E         Use -v to get more diff
+
+tests/inference_validation/test_transport_route_integration.py:77: AssertionError</failure></testcase><testcase classname="tests.inference_validation.test_transport_route_integration" name="test_position_field_multimodel_resume_remains_conditional[beta_binomial-data1]" time="2.266"><failure message="AssertionError: assert {'candidate_i...:work:000001'} == {'candidate_i...:work:000001'}&#10;  &#10;  Omitting 3 identical items, use -vv to show&#10;  Differing items:&#10;  {'observation': {'acceptance': 0.8827498517518826, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...11745977485]], 'candidate_health_alerts': [], 'candidate_promotion_vetoes': [], ...}, 'adapter_kind': 'ordinary', ...}} != {'observation': {'acceptance': 0.8827498517518826, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...11745977485)), 'candidate_health_alerts': (), 'candidate_promotion_vetoes': (), ...}, 'adapter_kind': 'ordinary', ...}}&#10;  Use -v to get more diff">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-567/test_position_field_multimodel1')
+target_id = 'beta_binomial', data = [7, 12]
+
+    @pytest.mark.parametrize("target_id,data", [("gaussian", None), ("beta_binomial", [7, 12]),
+                                               ("lgssm_location", [1., -1., .5]), ("banana", None)])
+    def test_position_field_multimodel_resume_remains_conditional(tmp_path, target_id, data):
+        from bayesfilter.inference import (FourChainMeanBandAcceptancePolicy, FrozenPositionOnlyForce,
+            FrozenTargetPotential, DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
+            bind_neural_force_hmc_tuning_runner, tune_hmc_kernel, resume_position_field_candidate_tuning,
+            HMCControllerConfig, build_retained_bound_hmc_archive_runner_from_candidate_set_result)
+        from tests.test_hmc_tuning_dispatch import _config
+    
+        target = ValidationTarget(target_id, data=data, jit_compile=False)
+        binding = bind_neural_force_hmc_tuning_runner(
+            force=FrozenPositionOnlyForce(lambda q: -.8 * target.log_prob_and_grad(q)[1],
+                identity="m17-nonexact-force-" + target.adapter_signature(),
+                semantics=DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS),
+            target=FrozenTargetPotential(lambda q: -target.log_prob_and_grad(q)[0],
+                identity="m17-exact-potential-" + target.adapter_signature()), target_scope="inference_validation")
+        config = replace(_config(), parameter_dimension=target.parameter_dim, verification_results=64,
+            max_leapfrog_steps=3, target_scope="inference_validation",
+            acceptance_policy=FourChainMeanBandAcceptancePolicy(overall_band=(.65, .75), per_chain_band=(.55, .85)))
+        search = HMCControllerConfig(primary_l_grid=(2, 3), initial_epsilon=.8,
+            pilot_enabled=False, refinement_rounds=0, evidence_rungs=(1,),
+            max_candidates=8, total_budget_units=20, repair_reserve_units=4)
+        first = tune_hmc_kernel(adapter=target, initial_position=initial_starts(target, "dispersed"),
+            parameter_scales=tf.ones([target.parameter_dim], tf.float64), config=config,
+            search_config=search, runner_binding=binding, output_dir=tmp_path, max_work_items=1)
+        assert len(first.result.observations) == 1
+        resumed = resume_position_field_candidate_tuning(tmp_path / "controller_checkpoint.json",
+            adapter=target, runner_binding=binding)
+        assert resumed.result.completion_status == "complete"
+&gt;       assert resumed.result.observations[0] == first.result.observations[0]
+E       AssertionError: assert {'candidate_i...:work:000001'} == {'candidate_i...:work:000001'}
+E         
+E         Omitting 3 identical items, use -vv to show
+E         Differing items:
+E         {'observation': {'acceptance': 0.8827498517518826, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...11745977485]], 'candidate_health_alerts': [], 'candidate_promotion_vetoes': [], ...}, 'adapter_kind': 'ordinary', ...}} != {'observation': {'acceptance': 0.8827498517518826, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...11745977485)), 'candidate_health_alerts': (), 'candidate_promotion_vetoes': (), ...}, 'adapter_kind': 'ordinary', ...}}
+E         Use -v to get more diff
+
+tests/inference_validation/test_transport_route_integration.py:77: AssertionError</failure></testcase><testcase classname="tests.inference_validation.test_transport_route_integration" name="test_position_field_multimodel_resume_remains_conditional[lgssm_location-data2]" time="2.257"><failure message="AssertionError: assert {'candidate_i...:work:000001'} == {'candidate_i...:work:000001'}&#10;  &#10;  Omitting 3 identical items, use -vv to show&#10;  Differing items:&#10;  {'observation': {'acceptance': 0.8674503994183007, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...09176279192]], 'candidate_health_alerts': [], 'candidate_promotion_vetoes': [], ...}, 'adapter_kind': 'ordinary', ...}} != {'observation': {'acceptance': 0.8674503994183007, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...09176279192)), 'candidate_health_alerts': (), 'candidate_promotion_vetoes': (), ...}, 'adapter_kind': 'ordinary', ...}}&#10;  Use -v to get more diff">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-567/test_position_field_multimodel2')
+target_id = 'lgssm_location', data = [1.0, -1.0, 0.5]
+
+    @pytest.mark.parametrize("target_id,data", [("gaussian", None), ("beta_binomial", [7, 12]),
+                                               ("lgssm_location", [1., -1., .5]), ("banana", None)])
+    def test_position_field_multimodel_resume_remains_conditional(tmp_path, target_id, data):
+        from bayesfilter.inference import (FourChainMeanBandAcceptancePolicy, FrozenPositionOnlyForce,
+            FrozenTargetPotential, DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
+            bind_neural_force_hmc_tuning_runner, tune_hmc_kernel, resume_position_field_candidate_tuning,
+            HMCControllerConfig, build_retained_bound_hmc_archive_runner_from_candidate_set_result)
+        from tests.test_hmc_tuning_dispatch import _config
+    
+        target = ValidationTarget(target_id, data=data, jit_compile=False)
+        binding = bind_neural_force_hmc_tuning_runner(
+            force=FrozenPositionOnlyForce(lambda q: -.8 * target.log_prob_and_grad(q)[1],
+                identity="m17-nonexact-force-" + target.adapter_signature(),
+                semantics=DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS),
+            target=FrozenTargetPotential(lambda q: -target.log_prob_and_grad(q)[0],
+                identity="m17-exact-potential-" + target.adapter_signature()), target_scope="inference_validation")
+        config = replace(_config(), parameter_dimension=target.parameter_dim, verification_results=64,
+            max_leapfrog_steps=3, target_scope="inference_validation",
+            acceptance_policy=FourChainMeanBandAcceptancePolicy(overall_band=(.65, .75), per_chain_band=(.55, .85)))
+        search = HMCControllerConfig(primary_l_grid=(2, 3), initial_epsilon=.8,
+            pilot_enabled=False, refinement_rounds=0, evidence_rungs=(1,),
+            max_candidates=8, total_budget_units=20, repair_reserve_units=4)
+        first = tune_hmc_kernel(adapter=target, initial_position=initial_starts(target, "dispersed"),
+            parameter_scales=tf.ones([target.parameter_dim], tf.float64), config=config,
+            search_config=search, runner_binding=binding, output_dir=tmp_path, max_work_items=1)
+        assert len(first.result.observations) == 1
+        resumed = resume_position_field_candidate_tuning(tmp_path / "controller_checkpoint.json",
+            adapter=target, runner_binding=binding)
+        assert resumed.result.completion_status == "complete"
+&gt;       assert resumed.result.observations[0] == first.result.observations[0]
+E       AssertionError: assert {'candidate_i...:work:000001'} == {'candidate_i...:work:000001'}
+E         
+E         Omitting 3 identical items, use -vv to show
+E         Differing items:
+E         {'observation': {'acceptance': 0.8674503994183007, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...09176279192]], 'candidate_health_alerts': [], 'candidate_promotion_vetoes': [], ...}, 'adapter_kind': 'ordinary', ...}} != {'observation': {'acceptance': 0.8674503994183007, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...09176279192)), 'candidate_health_alerts': (), 'candidate_promotion_vetoes': (), ...}, 'adapter_kind': 'ordinary', ...}}
+E         Use -v to get more diff
+
+tests/inference_validation/test_transport_route_integration.py:77: AssertionError</failure></testcase><testcase classname="tests.inference_validation.test_transport_route_integration" name="test_position_field_multimodel_resume_remains_conditional[banana-None]" time="2.151"><failure message="AssertionError: assert {'candidate_i...:work:000001'} == {'candidate_i...:work:000001'}&#10;  &#10;  Omitting 3 identical items, use -vv to show&#10;  Differing items:&#10;  {'observation': {'acceptance': 0.8307959270227276, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...94267212208]], 'candidate_health_alerts': [], 'candidate_promotion_vetoes': [], ...}, 'adapter_kind': 'ordinary', ...}} != {'observation': {'acceptance': 0.8307959270227276, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...94267212208)), 'candidate_health_alerts': (), 'candidate_promotion_vetoes': (), ...}, 'adapter_kind': 'ordinary', ...}}&#10;  Use -v to get more diff">tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-567/test_position_field_multimodel3')
+target_id = 'banana', data = None
+
+    @pytest.mark.parametrize("target_id,data", [("gaussian", None), ("beta_binomial", [7, 12]),
+                                               ("lgssm_location", [1., -1., .5]), ("banana", None)])
+    def test_position_field_multimodel_resume_remains_conditional(tmp_path, target_id, data):
+        from bayesfilter.inference import (FourChainMeanBandAcceptancePolicy, FrozenPositionOnlyForce,
+            FrozenTargetPotential, DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS,
+            bind_neural_force_hmc_tuning_runner, tune_hmc_kernel, resume_position_field_candidate_tuning,
+            HMCControllerConfig, build_retained_bound_hmc_archive_runner_from_candidate_set_result)
+        from tests.test_hmc_tuning_dispatch import _config
+    
+        target = ValidationTarget(target_id, data=data, jit_compile=False)
+        binding = bind_neural_force_hmc_tuning_runner(
+            force=FrozenPositionOnlyForce(lambda q: -.8 * target.log_prob_and_grad(q)[1],
+                identity="m17-nonexact-force-" + target.adapter_signature(),
+                semantics=DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS),
+            target=FrozenTargetPotential(lambda q: -target.log_prob_and_grad(q)[0],
+                identity="m17-exact-potential-" + target.adapter_signature()), target_scope="inference_validation")
+        config = replace(_config(), parameter_dimension=target.parameter_dim, verification_results=64,
+            max_leapfrog_steps=3, target_scope="inference_validation",
+            acceptance_policy=FourChainMeanBandAcceptancePolicy(overall_band=(.65, .75), per_chain_band=(.55, .85)))
+        search = HMCControllerConfig(primary_l_grid=(2, 3), initial_epsilon=.8,
+            pilot_enabled=False, refinement_rounds=0, evidence_rungs=(1,),
+            max_candidates=8, total_budget_units=20, repair_reserve_units=4)
+        first = tune_hmc_kernel(adapter=target, initial_position=initial_starts(target, "dispersed"),
+            parameter_scales=tf.ones([target.parameter_dim], tf.float64), config=config,
+            search_config=search, runner_binding=binding, output_dir=tmp_path, max_work_items=1)
+        assert len(first.result.observations) == 1
+        resumed = resume_position_field_candidate_tuning(tmp_path / "controller_checkpoint.json",
+            adapter=target, runner_binding=binding)
+        assert resumed.result.completion_status == "complete"
+&gt;       assert resumed.result.observations[0] == first.result.observations[0]
+E       AssertionError: assert {'candidate_i...:work:000001'} == {'candidate_i...:work:000001'}
+E         
+E         Omitting 3 identical items, use -vv to show
+E         Differing items:
+E         {'observation': {'acceptance': 0.8307959270227276, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...94267212208]], 'candidate_health_alerts': [], 'candidate_promotion_vetoes': [], ...}, 'adapter_kind': 'ordinary', ...}} != {'observation': {'acceptance': 0.8307959270227276, 'acceptance_decision': 'repair_step_higher', 'acceptance_evidence':...94267212208)), 'candidate_health_alerts': (), 'candidate_promotion_vetoes': (), ...}, 'adapter_kind': 'ordinary', ...}}
+E         Use -v to get more diff
+
+tests/inference_validation/test_transport_route_integration.py:77: AssertionError</failure></testcase></testsuite></testsuites>
