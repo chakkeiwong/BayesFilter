@@ -1,0 +1,116 @@
+{
+  "schema": "zhao_cui_author_reference.v1",
+  "plan": "docs/plans/zhao-cui-reference-repair-20261003.md",
+  "result_file": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/zhao-cui-reference-repair-20261003/author-reference-02/results.json",
+  "started_utc": "2026-10-03T13:22:33.637373+00:00",
+  "git_commit": "a925f67a19d8c5d265b8ff71bfd2c78ac1964ff4",
+  "working_tree_status": "?? bayesfilter/testing/zhao_cui_reference_utils.py\n?? docs/benchmarks/run_zhao_cui_reference.py\n?? docs/plans/artifacts/zhao-cui-reference-repair-20261003/\n?? docs/plans/zhao-cui-reference-repair-20261003.md\n?? docs/reset-memos/zhao-cui-reference-repair-20261003.md\n?? tests/test_zhao_cui_reference_repair.py",
+  "implementation_sha256": {
+    "docs/benchmarks/run_zhao_cui_reference.py": "878e3168cc8b3107bd56f10f83f8e0ede06625f80021881712354da3212399f7",
+    "bayesfilter/testing/zhao_cui_reference_utils.py": "a175e367a17bbd27873982197e34aaf474e3fe6db1c0fdd5a3c9b685356a511c"
+  },
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/run_zhao_cui_reference.py",
+    "--output-root",
+    "docs/plans/artifacts/zhao-cui-reference-repair-20261003/author-reference-02",
+    "--dataset",
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/screen-01/worker-0001-predator_prey/dataset.json",
+    "--dataset",
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/screen-01/worker-0002-sir_d18/dataset.json",
+    "--timeout-seconds",
+    "150"
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "octave_version": "GNU Octave, version 6.4.0",
+  "cpu_only": true,
+  "gpu_status": "intentionally hidden: CUDA_VISIBLE_DEVICES=-1",
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "seeds": {
+    "data": 1,
+    "tt": 2,
+    "smoothing": 3
+  },
+  "source_commit": "80034dccb99eb1d86284a1839b4a12067d13b9da",
+  "source_tree_sha256_before": "264c5dc1d98481cd0d192603be2153672450839570ee14b8f24511dbf3d0cc8c",
+  "source_sha256_before": "486b14cbaef914cf37d3910bdb24af598845649028161271cb8ac3d0a5361330",
+  "cases": [
+    {
+      "model": "pp",
+      "command": [
+        "octave-cli",
+        "--quiet",
+        "--no-gui",
+        "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/zhao-cui-reference-repair-20261003/author-reference-02/pp.m"
+      ],
+      "mode": "author",
+      "target_parity": null,
+      "stable_log_pdf_max_error": 1.7763568394002505e-15,
+      "status": "passed",
+      "returncode": 0,
+      "failure_class": null,
+      "wall_seconds": 1.5178643090184778,
+      "independent_summary_parity": true,
+      "values": {
+        "corrected_logmeanexp": -16.35716943356462,
+        "legacy_mean_log_weight": -25.689790687597004,
+        "finite_fraction": 1.0,
+        "importance_ess": 1.0143777002420333,
+        "corrected_status": 1.0,
+        "tt_normalizer_accumulator": -21.475460862810593
+      },
+      "scope": {
+        "horizon": 2,
+        "particles": 64,
+        "rank": 4,
+        "als_passes": 1
+      },
+      "evidence_role": "mechanics_only",
+      "analytical_score": null
+    },
+    {
+      "model": "sir_austria",
+      "command": [
+        "octave-cli",
+        "--quiet",
+        "--no-gui",
+        "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/zhao-cui-reference-repair-20261003/author-reference-02/sir_austria.m"
+      ],
+      "mode": "author",
+      "target_parity": null,
+      "stable_log_pdf_max_error": 7.105427357601002e-15,
+      "status": "passed",
+      "returncode": 0,
+      "failure_class": null,
+      "wall_seconds": 5.225877279997803,
+      "independent_summary_parity": true,
+      "values": {
+        "corrected_logmeanexp": -243.14657612941963,
+        "legacy_mean_log_weight": -586.4072225527848,
+        "finite_fraction": 1.0,
+        "importance_ess": 1.0000280604560259,
+        "corrected_status": 1.0,
+        "tt_normalizer_accumulator": -145.77254986426703
+      },
+      "scope": {
+        "horizon": 2,
+        "particles": 64,
+        "rank": 4,
+        "als_passes": 1
+      },
+      "evidence_role": "mechanics_only",
+      "analytical_score": null
+    }
+  ],
+  "score_status": "not_implemented_in_author_source",
+  "evidence_role": "mechanics_only_no_accuracy_or_ranking_claim",
+  "mode": "author",
+  "data_version": "author-generated using extracted setup and complete; saved CSV per case",
+  "wall_seconds": 6.891642653965391,
+  "source_sha256_after": "486b14cbaef914cf37d3910bdb24af598845649028161271cb8ac3d0a5361330",
+  "source_tree_sha256_after": "264c5dc1d98481cd0d192603be2153672450839570ee14b8f24511dbf3d0cc8c"
+}

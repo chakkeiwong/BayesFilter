@@ -1,0 +1,99 @@
+{
+  "schema": "zhao_cui_author_reference.v1",
+  "plan": "docs/plans/zhao-cui-reference-repair-20261003.md",
+  "result_file": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/zhao-cui-reference-repair-20261003/author-smoke-05/results.json",
+  "started_utc": "2026-10-03T10:39:00.637570+00:00",
+  "git_commit": "a925f67a19d8c5d265b8ff71bfd2c78ac1964ff4",
+  "working_tree_diff": "",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/run_zhao_cui_reference.py",
+    "--output-root",
+    "docs/plans/artifacts/zhao-cui-reference-repair-20261003/author-smoke-05",
+    "--timeout-seconds",
+    "150"
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "octave_version": "GNU Octave, version 6.4.0",
+  "cpu_only": true,
+  "gpu_status": "intentionally hidden: CUDA_VISIBLE_DEVICES=-1",
+  "environment": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "seeds": {
+    "data": 1,
+    "tt": 2,
+    "smoothing": 3
+  },
+  "source_commit": "80034dccb99eb1d86284a1839b4a12067d13b9da",
+  "source_sha256_before": "486b14cbaef914cf37d3910bdb24af598845649028161271cb8ac3d0a5361330",
+  "cases": [
+    {
+      "model": "pp",
+      "command": [
+        "octave-cli",
+        "--quiet",
+        "--no-gui",
+        "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/zhao-cui-reference-repair-20261003/author-smoke-05/pp.m"
+      ],
+      "status": "passed",
+      "returncode": 0,
+      "failure_class": null,
+      "wall_seconds": 1.5680576959857717,
+      "independent_summary_parity": true,
+      "values": {
+        "corrected_logmeanexp": -16.35716943356462,
+        "legacy_mean_log_weight": -25.689790687597004,
+        "finite_fraction": 1.0,
+        "importance_ess": 1.0143777002420333,
+        "corrected_status": 1.0,
+        "tt_normalizer_accumulator": -21.475460862810593
+      },
+      "scope": {
+        "horizon": 2,
+        "particles": 64,
+        "rank": 4,
+        "als_passes": 1
+      },
+      "evidence_role": "mechanics_only",
+      "analytical_score": null
+    },
+    {
+      "model": "sir_austria",
+      "command": [
+        "octave-cli",
+        "--quiet",
+        "--no-gui",
+        "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/zhao-cui-reference-repair-20261003/author-smoke-05/sir_austria.m"
+      ],
+      "status": "passed",
+      "returncode": 0,
+      "failure_class": null,
+      "wall_seconds": 5.276189724099822,
+      "independent_summary_parity": true,
+      "values": {
+        "corrected_logmeanexp": -243.14657612941963,
+        "legacy_mean_log_weight": -586.4072225527848,
+        "finite_fraction": 1.0,
+        "importance_ess": 1.0000280604560259,
+        "corrected_status": 1.0,
+        "tt_normalizer_accumulator": -145.77254986426703
+      },
+      "scope": {
+        "horizon": 2,
+        "particles": 64,
+        "rank": 4,
+        "als_passes": 1
+      },
+      "evidence_role": "mechanics_only",
+      "analytical_score": null
+    }
+  ],
+  "score_status": "not_implemented_in_author_source",
+  "evidence_role": "mechanics_only_no_accuracy_or_ranking_claim",
+  "data_version": "author-generated using extracted setup and complete; saved CSV per case",
+  "wall_seconds": 7.024239656981081,
+  "source_sha256_after": "486b14cbaef914cf37d3910bdb24af598845649028161271cb8ac3d0a5361330"
+}
