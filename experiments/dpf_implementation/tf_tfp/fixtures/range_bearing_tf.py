@@ -47,7 +47,7 @@ class RangeBearingTFFixture:
         return {
             "model_id": self.name,
             "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)",
-            "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t",
+            "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
             "initial_distribution": "x_0 ~ Normal(m0, P0)",
             "A": _tensor_to_nested_float(self.A),
             "Q": _tensor_to_nested_float(self.Q),
@@ -164,7 +164,8 @@ def observation_log_density_tf(
 ) -> tf.Tensor:
     predicted = range_bearing_observation_tf(particles)
     residual = observation_residual_tf(predicted, observation)
-    return gaussian_logpdf_zero_mean_tf(residual, fixture.R)
+    from bayesfilter.wrapped_gaussian_tf import wrapped_gaussian_log_density
+    return wrapped_gaussian_log_density(residual, fixture.R)
 
 
 def range_bearing_observation_tf(x: tf.Tensor, *, eps: float = 1e-12) -> tf.Tensor:

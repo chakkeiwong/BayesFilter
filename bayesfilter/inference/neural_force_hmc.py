@@ -62,7 +62,8 @@ def _default_endpoint_status(value):
         value_failure_code=zeros, force_failure_code=zeros,
         first_failure_time=absent, first_failure_stage=absent,
         first_failure_particle=absent,
-        numerical_failure=tf.zeros(tf.shape(value), tf.bool))
+        numerical_failure=tf.zeros(tf.shape(value), tf.bool),
+        coordinate_boundary_rounding=tf.zeros(tf.shape(value), tf.bool))
 
 
 class InvalidNeuralForceHMCConfiguration(ValueError):
