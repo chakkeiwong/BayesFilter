@@ -1,23 +1,10 @@
-"""XLA-compiled branch-axis value filter (P3.3).
+"""Complete XLA branch-axis TT value recurrence with native time and ALS loops.
 
-Scoping note: docs/plans/bayesfilter-p3-xla-port-scoping-note-2026-08-18.md.
-Same declared program as `run_value_filter_branch_axis` (v0.2 relative tau,
-v0.3 smooth shift, Cholesky branch factor with declared floor): the Python
-filter loop stays host-side; each step (target assembly + unrolled ALS +
-exact Gram retention) runs as one jit-compiled function. Host syncs occur
-only at the per-step veto/diagnostic boundary (backend rule compliant).
-
-Solver note: the eager fit solves via `tf.linalg.lstsq(fast=False)`, which
-does not lower to XLA; the compiled route solves the SAME scaled augmented
-system by explicit QR (P3.1 probe: 1.5e-14 solution agreement incl.
-ill-conditioned fixtures) and computes the SAME SVD condition number for
-the veto. Eager-vs-XLA value parity is therefore a measured gate
-(P3 target 1e-12), not a bit-identity claim.
-
-Vetoes preserved fail-closed: per-update condition veto
-(config.condition_number_veto) and retained-Gram conditioning veto
-(gram_condition_veto) are computed in-graph and checked host-side after
-each step.
+The scaled CholeskyQR2 solver and eigvalsh condition estimator are unchanged.
+Frozen random designs have their own compiled preparation preserving their
+streams. The initial fit, first rank-changing transition, and remaining fixed-
+shape dates run in one compiled endpoint. Condition and finite vetoes are
+applied at its return boundary; Python formats only the diagnostic records.
 """
 
 from __future__ import annotations
@@ -28,10 +15,9 @@ import weakref
 import tensorflow as tf
 
 from bayesfilter.highdim.bases import ProductBasis
-from bayesfilter.highdim.filtering import AffineCoordinateMap
 from bayesfilter.highdim.fitting import (
-    FixedTTFitter,
     _DEFAULT_COLUMN_SCALE_FLOOR,
+    FixedTTFitter,
     _weighted_column_scales,
 )
 from bayesfilter.highdim.retained_quadratic_form_tf import (
@@ -42,19 +28,20 @@ from bayesfilter.highdim.retained_quadratic_form_tf import (
 from bayesfilter.highdim.squared_tt_engine_v0_tf import (
     DiscreteIndicatorBasis1D,
     EngineConfig,
-    _design_rows,
     _gauss_rows,
     _initial_tt_cores,
     _product_basis,
 )
 from bayesfilter.highdim.tt import TTCore
+from bayesfilter.highdim.tt_native_control_tf import random_core_start_program
+from bayesfilter.highdim.tt_preparation_tf import frozen_design_rows
 
 DTYPE = tf.float64
 
 # compiled-step cache: adapter (weak) -> {config: {"init": fn, branch_count: fn}}.
 # Adapter closures are baked into traced graphs, so the cache must not
 # outlive the adapter object; EngineConfig is a frozen dataclass (hashable).
-_STEP_CACHE: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
+_STEP_CACHE: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 
 
 def _tall_r_factor(matrix):
@@ -114,244 +101,167 @@ def _solve_scaled_qr(design, weights, target, ridge):
 
 
 def _fit_als_graph(fitter, basis, rows, target, weights, core_values, shapes, sweeps, ridge):
-    """Unrolled fixed-schedule ALS; returns (core values, worst cond, rms)."""
+    """Native fixed-schedule ALS; static branches preserve heterogeneous cores."""
 
-    cores = [TTCore(tf.reshape(v, s)) for v, s in zip(core_values, shapes)]
-    worst = tf.constant(0.0, DTYPE)
-    for _sweep in range(sweeps):
-        for idx in range(len(cores)):
-            design = fitter._build_design_matrix(basis, rows, tuple(cores), idx)
+    count = len(core_values)
+    def branch(axis, values, worst):
+        def update():
+            cores = tuple(TTCore(tf.reshape(v, shape)) for v, shape in zip(values, shapes))
+            design = fitter._build_design_matrix(basis, rows, cores, axis)
             solution, condition = _solve_scaled_qr(design, weights, target, ridge)
-            worst = tf.maximum(worst, condition)
-            cores[idx] = TTCore(tf.reshape(solution, shapes[idx]))
+            updated = values[:axis] + (tf.reshape(solution, shapes[axis]),) + values[axis + 1:]
+            return updated, tf.maximum(worst, condition)
+        return update
+    def body(index, values, worst):
+        branches = tuple(branch(axis, values, worst) for axis in range(count))
+        values, worst = tf.switch_case(index % count, branches)
+        return index + 1, values, worst
+    _, values, worst = tf.while_loop(lambda i, *_: i < sweeps * count, body,
+        (tf.constant(0), tuple(core_values), tf.constant(0.0, DTYPE)),
+        parallel_iterations=1, maximum_iterations=sweeps * count)
+    cores = [TTCore(value) for value in values]
     design = fitter._build_design_matrix(basis, rows, tuple(cores), len(cores) - 1)
     residual = tf.linalg.matvec(design, tf.reshape(cores[-1].values, [-1])) - target
     rms = tf.sqrt(tf.reduce_sum(weights * tf.square(residual)) / tf.reduce_sum(weights))
     return cores, worst, rms
 
 
-def run_value_filter_branch_axis_xla(
-    adapter,
-    observations: tf.Tensor,
-    config: EngineConfig,
-    *,
-    gram_condition_veto: float | None = None,
-) -> tuple[tf.Tensor, list[dict]]:
-    """XLA-compiled value filter; same program/veto semantics as eager."""
+def make_value_filter_branch_axis_xla(
+    adapter, observation_shape, config: EngineConfig, *, jit_compile=True,
+):
+    """Bind a complete fixed-signature TT value recurrence.
 
+    Rows and random starting cores are prepared once with native TF loops, so
+    the random streams match the existing non-XLA preparation exactly. Each
+    core's static shape is a branch specialization, not a numerical Python loop.
+    The returned numerical endpoint emits all veto inputs as tensor histories.
+    """
     n = adapter.state_dim
-    observations = tf.convert_to_tensor(observations, DTYPE)
-    horizon = int(observations.shape[0])
-    current_basis = _product_basis(n, config.basis_degree)
-    basis_dim = int(current_basis.bases[0].basis_dim)
+    horizon = int(observation_shape[0])
+    if horizon < 1:
+        raise ValueError("positive observation horizon required")
+    cache = _STEP_CACHE.setdefault(adapter, {}).setdefault(config, {})
+    key = ("complete", tuple(observation_shape), bool(jit_compile))
+    if key in cache:
+        return cache[key]
+    basis = _product_basis(n, config.basis_degree)
+    extended = _product_basis(n + 1, config.basis_degree)
+    basis_dim = int(basis.bases[0].basis_dim)
     half = tf.constant(config.coordinate_half_width, DTYPE)
-    conversion = tf.cast(n, DTYPE) * (
-        tf.math.log(half) + tf.math.log(tf.constant(2.0, DTYPE))
-    )
+    conversion = tf.cast(n, DTYPE) * (tf.math.log(half) + tf.math.log(tf.constant(2., DTYPE)))
     tau = tf.constant(config.tau, DTYPE)
     ridge = tf.constant(config.ridge, DTYPE)
     fitter = FixedTTFitter()
-    # bases are static program objects; construct OUTSIDE traced scope
-    # (BoundedInterval validation host-syncs and cannot trace).
-    extended_basis = _product_basis(n + 1, config.basis_degree)
-    per_adapter = _STEP_CACHE.setdefault(adapter, {})
-    step_cache = per_adapter.setdefault(config, {})
+    initial = tuple(c.values for c in _initial_tt_cores(n, basis_dim, config.rank))
+    initial_shapes = tuple(tuple(v.shape) for v in initial)
+    if config.quadrature_order is not None:
+        initial_rows, initial_weights = _gauss_rows(n, config.quadrature_order, jit_compile=jit_compile)
+        rows, z_weights = _gauss_rows(2 * n, config.quadrature_order, jit_compile=jit_compile)
+        all_rows = tf.repeat(rows[None], max(1, horizon - 1), axis=0)
+    else:
+        initial_rows = frozen_design_rows(config, config.row_count, n, tf.constant([0]), 17,
+            jit_compile=jit_compile)[0]
+        initial_weights = tf.fill([config.row_count], tf.constant(1. / config.row_count, DTYPE))
+        all_rows = frozen_design_rows(config, config.row_count, 2 * n,
+            tf.range(1, max(2, horizon)), 100, jit_compile=jit_compile)
+        z_weights = tf.fill([config.row_count], tf.constant(1. / config.row_count, DTYPE))
 
-    @tf.function(jit_compile=True)
-    def init_step(rows, weights, y0, core0_values):
-        shapes = [tuple(v.shape.as_list()) for v in core0_values]
-        x_current = rows * half
-        log_f = (
-            adapter.initial_log_density(x_current)
-            + adapter.observation_log_density(x_current, y0)
-            + conversion
-        )
-        shift = tf.reduce_logsumexp(log_f) - tf.math.log(
-            tf.cast(tf.shape(log_f)[0], DTYPE)
-        )
-        sqrt_target = tf.exp(0.5 * (log_f - shift))
-        cores, worst, rms = _fit_als_graph(
-            fitter, current_basis, rows, sqrt_target, weights,
-            core0_values, shapes, config.sweeps, ridge,
-        )
-        suffix_core = tf.zeros([int(cores[-1].right_rank), basis_dim, 1], DTYPE)
-        suffix_core = tf.tensor_scatter_nd_update(suffix_core, [[0, 0, 0]], [1.0])
-        gram = suffix_gram_matrix(
-            (TTCore(suffix_core),), extended_basis, axis_offset=n
-        )
-        p_gram = prefix_gram_matrix(tuple(cores), extended_basis)
-        z_h = tf.einsum("ab,ab->", p_gram, gram)
-        z_complete = (1.0 + tau) * z_h
-        log_increment = shift + tf.math.log(z_complete)
-        return (
-            [c.values for c in cores], gram, z_complete, log_increment, worst, rms
-        )
+    def phase(previous_shapes, dates):
+        branch_count = previous_shapes[-1][-1] + 1
+        mixed_basis = ProductBasis(list(basis.bases) + [DiscreteIndicatorBasis1D(branch_count)]
+                                   + list(basis.bases), basis.convention)
+        dims = (basis_dim,) * n + (branch_count,) + (basis_dim,) * n
+        shapes = tuple((1 if a == 0 else config.rank, dim,
+                        1 if a == 2 * n else config.rank) for a, dim in enumerate(dims))
+        starts = random_core_start_program(shapes, dates.shape[0], jit_compile=jit_compile)(
+            dates, tf.constant(config.seed, tf.int32))
 
-    def _make_transition_step(mixed_basis, mixed_shapes, prefix_shapes):
-        @tf.function(jit_compile=True)
-        def transition_step(prefix_values, gram, zc_prev, z_rows, z_weights, core0_values, y):
-            prefix_cores = tuple(
-                TTCore(tf.reshape(v, s)) for v, s in zip(prefix_values, prefix_shapes)
-            )
+        def transition(t, prefix, gram, previous_zc, y, packed):
+            prefix_cores = tuple(TTCore(value) for value in prefix)
             eigenvalues = tf.linalg.eigvalsh(gram)
-            gram_condition = eigenvalues[-1] / tf.maximum(
-                eigenvalues[0], tf.constant(1e-300, DTYPE)
-            )
+            gram_condition = eigenvalues[-1] / tf.maximum(eigenvalues[0], tf.constant(1e-300, DTYPE))
             floor_scale = tf.linalg.trace(gram) / tf.cast(tf.shape(gram)[0], DTYPE)
-            chol = tf.linalg.cholesky(
-                gram
-                + tf.constant(config.branch_gram_floor, DTYPE)
-                * floor_scale
-                * tf.eye(tf.shape(gram)[0], dtype=DTYPE)
-            )
-            branch_count = int(prefix_shapes[-1][-1]) + 1
-            x_current = z_rows[:, :n] * half
-            z_previous = z_rows[:, n:]
-            x_previous = z_previous * half
-            log_g_kernel = (
-                adapter.transition_log_density(x_current, x_previous)
-                + adapter.observation_log_density(x_current, y)
-                + conversion
-            )
-            v_prev = tf.einsum(
-                "na,ab->nb",
-                prefix_row_vectors(prefix_cores, current_basis, z_previous),
-                chol,
-            )
-            tau_abs = tau * (zc_prev / (1.0 + tau))
-            sum_sq = tf.reduce_sum(tf.square(v_prev), axis=1) + tau_abs
-            log_f_row = tf.math.log(sum_sq) + log_g_kernel
-            shift = tf.reduce_logsumexp(log_f_row) - tf.math.log(
-                tf.cast(tf.shape(log_f_row)[0], DTYPE)
-            )
-            sqrt_g_shifted = tf.exp(0.5 * (log_g_kernel - shift))
-            amplitudes = tf.concat(
-                [v_prev, tf.ones([int(z_rows.shape[0]), 1], DTYPE) * tf.sqrt(tau_abs)],
-                axis=1,
-            )
-            targets = amplitudes * sqrt_g_shifted[:, None]
-            g_codes = tf.tile(
-                tf.range(branch_count, dtype=DTYPE)[None, :], [int(z_rows.shape[0]), 1]
-            )
-            full_rows = tf.concat(
-                [
-                    tf.repeat(z_rows[:, :n], branch_count, axis=0),
-                    tf.reshape(g_codes, [-1, 1]),
-                    tf.repeat(z_rows[:, n:], branch_count, axis=0),
-                ],
-                axis=1,
-            )
-            sqrt_target = tf.reshape(targets, [-1])
+            chol = tf.linalg.cholesky(gram + tf.constant(config.branch_gram_floor, DTYPE)
+                                      * floor_scale * tf.eye(tf.shape(gram)[0], dtype=DTYPE))
+            rows = all_rows[t - 1]
+            x_current, z_previous = rows[:, :n] * half, rows[:, n:]
+            log_g = adapter.transition_log_density(x_current, z_previous * half) + adapter.observation_log_density(x_current, y) + conversion
+            v_prev = tf.einsum("na,ab->nb", prefix_row_vectors(prefix_cores, basis, z_previous), chol)
+            tau_abs = tau * (previous_zc / (1. + tau))
+            log_f = tf.math.log(tf.reduce_sum(tf.square(v_prev), axis=1) + tau_abs) + log_g
+            shift = tf.reduce_logsumexp(log_f) - tf.math.log(tf.cast(tf.shape(log_f)[0], DTYPE))
+            sqrt_g = tf.exp(.5 * (log_g - shift))
+            amplitudes = tf.concat((v_prev, tf.ones([rows.shape[0], 1], DTYPE) * tf.sqrt(tau_abs)), axis=1)
+            target = tf.reshape(amplitudes * sqrt_g[:, None], [-1])
+            codes = tf.tile(tf.range(branch_count, dtype=DTYPE)[None], [rows.shape[0], 1])
+            full_rows = tf.concat((tf.repeat(rows[:, :n], branch_count, axis=0),
+                                  tf.reshape(codes, [-1, 1]), tf.repeat(rows[:, n:], branch_count, axis=0)), axis=1)
             weights = tf.reshape(tf.repeat(z_weights, branch_count, axis=0), [-1])
-            cores, worst, rms = _fit_als_graph(
-                fitter, mixed_basis, full_rows, sqrt_target, weights,
-                core0_values, mixed_shapes, config.sweeps, ridge,
-            )
-            new_gram = suffix_gram_matrix(
-                tuple(cores[n:]), mixed_basis, axis_offset=n
-            )
-            p_gram = prefix_gram_matrix(tuple(cores[:n]), mixed_basis)
-            z_h_new = tf.einsum("ab,ab->", p_gram, new_gram)
-            zc_new = (1.0 + tau) * z_h_new
-            log_increment = shift + tf.math.log(zc_new) - tf.math.log(zc_prev)
-            return (
-                [c.values for c in cores[:n]], new_gram, zc_new, log_increment,
-                gram_condition, worst, rms,
-            )
+            start = tuple(tf.reshape(packed[a, :math.prod(shape)], shape) for a, shape in enumerate(shapes))
+            cores, worst, rms = _fit_als_graph(fitter, mixed_basis, full_rows, target, weights,
+                                              start, shapes, config.sweeps, ridge)
+            new_gram = suffix_gram_matrix(tuple(cores[n:]), mixed_basis, axis_offset=n)
+            prefix_gram = prefix_gram_matrix(tuple(cores[:n]), mixed_basis)
+            zc = (1. + tau) * tf.einsum("ab,ab->", prefix_gram, new_gram)
+            increment = shift + tf.math.log(zc) - tf.math.log(previous_zc)
+            return tuple(core.values for core in cores[:n]), new_gram, zc, tf.stack((increment, worst, rms, gram_condition))
+        return transition, starts, shapes[:n]
 
-        return transition_step
+    first_transition, first_starts, prefix_shapes = phase(initial_shapes, tf.constant([1], tf.int32))
+    transition, starts, _ = phase(prefix_shapes, tf.range(2, max(3, horizon)))
 
-    log_likelihood = tf.constant(0.0, DTYPE)
-    diagnostics: list[dict] = []
-    prefix_values = None
-    gram = None
-    zc = None
-
-    for t in range(horizon):
-        if t == 0:
-            if config.quadrature_order is not None:
-                rows, weights = _gauss_rows(n, config.quadrature_order)
-            else:
-                rows = _design_rows(config, config.row_count, n, (config.seed, 17))
-                weights = tf.fill(
-                    [int(rows.shape[0])], tf.constant(1.0 / int(rows.shape[0]), DTYPE)
-                )
-            cores0 = _initial_tt_cores(n, basis_dim, config.rank)
-            init_fn = step_cache.setdefault("init", init_step)
-            prefix_values, gram, zc, log_increment, worst, rms = init_fn(
-                rows, weights, observations[t], [c.values for c in cores0]
-            )
-            gram_condition = None
-        else:
-            branch_count = int(prefix_values[-1].shape[-1]) + 1
-            if config.quadrature_order is not None:
-                z_rows, z_weights = _gauss_rows(2 * n, config.quadrature_order)
-            else:
-                z_rows = _design_rows(config, config.row_count, 2 * n, (config.seed, 100 + t))
-                z_weights = tf.fill(
-                    [int(z_rows.shape[0])], tf.constant(1.0 / int(z_rows.shape[0]), DTYPE)
-                )
-            mixed_dims = [basis_dim] * n + [branch_count] + [basis_dim] * n
-            cores0_values = [
-                0.3
-                * tf.random.stateless_normal(
-                    [
-                        1 if axis == 0 else config.rank,
-                        mixed_dims[axis],
-                        1 if axis == 2 * n else config.rank,
-                    ],
-                    tf.constant((config.seed, 7000 + 31 * t + axis), tf.int32),
-                    dtype=DTYPE,
-                )
-                for axis in range(2 * n + 1)
-            ]
-            if branch_count not in step_cache:
-                mixed_basis = ProductBasis(
-                    list(current_basis.bases)
-                    + [DiscreteIndicatorBasis1D(branch_count)]
-                    + list(_product_basis(n, config.basis_degree).bases),
-                    current_basis.convention,
-                )
-                mixed_shapes = [tuple(v.shape.as_list()) for v in cores0_values]
-                prefix_shapes = [tuple(v.shape.as_list()) for v in prefix_values]
-                step_cache[branch_count] = _make_transition_step(
-                    mixed_basis, mixed_shapes, prefix_shapes
-                )
-            step_fn = step_cache[branch_count]
-            (
-                prefix_values, gram, zc, log_increment,
-                gram_condition_t, worst, rms,
-            ) = step_fn(
-                prefix_values, gram, zc, z_rows, z_weights, cores0_values,
-                observations[t],
-            )
-            gram_condition = float(gram_condition_t.numpy())
-            # parity with the eager VALUE engine: gram conditioning is a
-            # recorded diagnostic here; the hard veto is the SCORE-path
-            # claim gate (adjoint engine). gram_condition_veto is kept in
-            # the signature for callers that opt into a value-path check.
-            if gram_condition_veto is not None and gram_condition > gram_condition_veto:
-                raise ValueError("retained Gram conditioning veto requested by caller")
-        worst_condition = float(worst.numpy())
-        if worst_condition > config.condition_number_veto:
-            raise ValueError("condition number veto in fixed ALS fit")
-        increment_value = float(log_increment.numpy())
-        # fail-closed backstop: beyond the eigvalsh condition-estimator
-        # ceiling (~1e8) the Gram Cholesky fails and the step goes NaN.
-        if not math.isfinite(increment_value):
-            raise ValueError("non-finite step increment (fail-closed)")
-        log_likelihood += log_increment
-        diagnostics.append(
-            {
-                "time_index": t,
-                "log_increment": float(log_increment.numpy()),
-                "tie_flag": False,
-                "worst_condition": worst_condition,
-                "weighted_fit_rms": float(rms.numpy()),
-                **({"gram_condition": gram_condition} if gram_condition is not None else {}),
-            }
-        )
-    return log_likelihood, diagnostics
+    def evaluate(observations):
+        log_f = adapter.initial_log_density(initial_rows * half) + adapter.observation_log_density(initial_rows * half, observations[0]) + conversion
+        shift = tf.reduce_logsumexp(log_f) - tf.math.log(tf.cast(tf.shape(log_f)[0], DTYPE))
+        target = tf.exp(.5 * (log_f - shift))
+        cores, worst, rms = _fit_als_graph(fitter, basis, initial_rows, target, initial_weights,
+                                          initial, initial_shapes, config.sweeps, ridge)
+        suffix = tf.tensor_scatter_nd_update(tf.zeros([cores[-1].right_rank, basis_dim, 1], DTYPE), [[0, 0, 0]], [1.])
+        gram = suffix_gram_matrix((TTCore(suffix),), extended, axis_offset=n)
+        zc = (1. + tau) * tf.einsum("ab,ab->", prefix_gram_matrix(tuple(cores), extended), gram)
+        total = shift + tf.math.log(zc)
+        history = tf.TensorArray(DTYPE, size=horizon, element_shape=[4], clear_after_read=False)
+        history = history.write(0, tf.stack((total, worst, rms, tf.constant(1., DTYPE))))
+        if horizon > 1:
+            prefix, gram, zc, diagnostic = first_transition(tf.constant(1), tuple(c.values for c in cores), gram, zc, observations[1], first_starts[0])
+            total += diagnostic[0]
+            history = history.write(1, diagnostic)
+            def body(t, prefix, gram, zc, total, history):
+                prefix, gram, zc, diagnostic = transition(t, prefix, gram, zc, observations[t], starts[t - 2])
+                return t + 1, prefix, gram, zc, total + diagnostic[0], history.write(t, diagnostic)
+            if horizon > 2:
+                _, _, _, _, total, history = tf.while_loop(lambda t, *_: t < horizon, body,
+                    (tf.constant(2), prefix, gram, zc, total, history),
+                    maximum_iterations=horizon - 2, parallel_iterations=1)
+        return total, history.stack()
+    compiled = tf.function(evaluate, input_signature=[tf.TensorSpec(observation_shape, DTYPE)],
+                           jit_compile=jit_compile, autograph=False)
+    cache[key] = compiled
+    return compiled
 
 
-__all__ = ["run_value_filter_branch_axis_xla"]
+def run_value_filter_branch_axis_xla(
+    adapter, observations: tf.Tensor, config: EngineConfig, *, gram_condition_veto=None, jit_compile=True,
+) -> tuple[tf.Tensor, list[dict]]:
+    """Complete XLA value filter, followed by host veto/reporting only."""
+    observations = tf.convert_to_tensor(observations, DTYPE)
+    call = make_value_filter_branch_axis_xla(adapter, observations.shape, config, jit_compile=jit_compile)
+    value, history = call(observations)
+    # Fail closed at the return boundary: invalid states never reach callers.
+    if not bool(tf.reduce_all(tf.math.is_finite(history[:, :3])).numpy()):
+        raise ValueError("non-finite step increment or ALS diagnostic (fail-closed)")
+    if bool(tf.reduce_any(history[:, 1] > config.condition_number_veto).numpy()):
+        raise ValueError("condition number veto in fixed ALS fit")
+    if gram_condition_veto is not None and bool(tf.reduce_any(history[1:, 3] > gram_condition_veto).numpy()):
+        raise ValueError("retained Gram conditioning veto requested by caller")
+    diagnostics = []
+    for t, row in enumerate(history.numpy().tolist()):
+        record = {"time_index": t, "log_increment": row[0], "tie_flag": False,
+                  "worst_condition": row[1], "weighted_fit_rms": row[2]}
+        if t:
+            record["gram_condition"] = row[3]
+        diagnostics.append(record)
+    return value, diagnostics
+
+
+__all__ = ["make_value_filter_branch_axis_xla", "run_value_filter_branch_axis_xla"]

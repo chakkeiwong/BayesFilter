@@ -31,7 +31,7 @@ from bayesfilter.highdim.retained_quadratic_form_tf import (
 from bayesfilter.highdim.squared_tt_engine_gaussian_tf import (
     TAU_MIN,
     _hermite_product_basis,
-    run_value_filter_branch_axis_gaussian,
+    run_value_filter_branch_axis_gaussian_reference as run_value_filter_branch_axis_gaussian,
 )
 from bayesfilter.highdim.squared_tt_engine_v0_tf import (
     DensityKernelAdapter,
@@ -161,6 +161,17 @@ def _defensive_corrected(value: tf.Tensor, diagnostics: list[dict]) -> float:
     return float(value.numpy()) - sum(
         math.log1p(d["tau_t"]) for d in diagnostics
     )
+
+
+def _prepared_hint_factories(model,observations):
+    """Freeze the independent NumPy Kalman authority before runtime tracing."""
+    from bayesfilter.highdim.frozen_moment_hints_tf import frozen_moment_hint_callbacks
+    initial,predictive = _exact_hint_factories(model)
+    hints = []
+    for t,y in enumerate(tf.unstack(observations)):
+        mean,cov = initial(y) if t == 0 else predictive(t,y)
+        hints.append(dict(time_index=t,mean=mean.numpy().tolist(),covariance=cov.numpy().tolist()))
+    return frozen_moment_hint_callbacks(hints,len(hints))
 
 
 def test_u_ret_1_retention_matches_dense_quadrature() -> None:

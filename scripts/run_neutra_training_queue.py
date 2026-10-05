@@ -104,7 +104,9 @@ def main():
                     raise ValueError("request/queue budget or deadline mismatch")
                 output=args.output/job["name"]
                 log_path=args.output/(job["name"]+".log")
-                command=[sys.executable,str(Path(__file__).resolve().parents[1]/"docs/benchmarks/run_q20_configured_training_2026_09_24.py"),
+                worker = ("run_q20_configured_hmc_2026_09_24.py" if request["stage"] == "hmc_assessment"
+                          else "run_q20_configured_training_2026_09_24.py")
+                command=[sys.executable,str(Path(__file__).resolve().parents[1]/"docs/benchmarks"/worker),
                     "--request",job["request"],"--output",str(output),"--gpu",str(gpu)]
                 log=log_path.open("x")
                 env={**os.environ,"TF_FORCE_GPU_ALLOW_GROWTH":"true","CUDA_VISIBLE_DEVICES":str(gpu)}

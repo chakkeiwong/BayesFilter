@@ -10,6 +10,8 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.ops.accurate_svd_tf import accurate_svd
+
 _DEFAULT_PIVOT_TOLERANCE = 1.0e-12
 _DEFAULT_CHART_TOLERANCE = 1.0e-10
 _LOG_TWO_PI = tf.math.log(tf.constant(2.0 * 3.141592653589793, tf.float64))
@@ -191,7 +193,7 @@ def batched_direct_stack_svd_factor(
         raise ValueError("stack must have shape [B, dimension, columns]")
     if relative_cutoff < 0.0:
         raise ValueError("relative_cutoff must be nonnegative")
-    singular, u, _ = tf.linalg.svd(stack, full_matrices=False, compute_uv=True)
+    singular, u, _ = accurate_svd(stack)
     scale = tf.maximum(singular[:, :1], tf.constant(1.0e-300, tf.float64))
     active = singular > tf.cast(relative_cutoff, tf.float64) * scale
     rank = tf.reduce_sum(tf.cast(active, tf.int32), axis=-1)
@@ -279,7 +281,7 @@ def batched_direct_support_conditional(
     bs, nx, ks = state_stack.shape.as_list()
     if None in (b, ny, nx, k) or (b, ny, k) != (bs, ny, ks) or innovation.shape.as_list() != [b, ny]:
         raise ValueError("observation/state/innovation dimensions are incompatible")
-    singular, u, v = tf.linalg.svd(observation_stack, full_matrices=False, compute_uv=True)
+    singular, u, v = accurate_svd(observation_stack)
     scale = tf.maximum(singular[:, :1], tf.constant(1.0e-300, tf.float64))
     active = singular > tf.cast(relative_cutoff, tf.float64) * scale
     mask = tf.cast(active, tf.float64)

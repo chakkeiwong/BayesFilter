@@ -276,6 +276,7 @@ def tf_svd_sigma_point_log_likelihood(
     jitter: tf.Tensor | float = 0.0,
     return_filtered: bool = False,
     backend: TFSigmaPointValueBackend | None = None,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor | None, tf.Tensor | None, Mapping[str, tf.Tensor]]:
     """Evaluate a structural SVD/eigen sigma-point Gaussian likelihood."""
 
@@ -295,6 +296,7 @@ def tf_svd_sigma_point_log_likelihood(
         jitter=jitter,
         return_filtered=return_filtered,
         backend_name=inferred_backend,
+        jit_compile=jit_compile,
     )
 
 
@@ -472,10 +474,17 @@ def tf_svd_sigma_point_log_likelihood_with_rule(
         )
         max_placement_residual = tf.maximum(
             max_placement_residual,
-            placement.psd_projection_residual,
+            tf.stop_gradient(placement.psd_projection_residual),
         )
-        max_innovation_residual = tf.maximum(max_innovation_residual, innovation_residual)
-        max_support_residual = tf.maximum(max_support_residual, placement.support_residual)
+        # Reporting norms are nondifferentiable at zero. Their loop-state
+        # cotangents must not enter likelihood Hessians through 0 * NaN.
+        # The implemented covariances and sigma points remain differentiable.
+        max_innovation_residual = tf.maximum(
+            max_innovation_residual, tf.stop_gradient(innovation_residual)
+        )
+        max_support_residual = tf.maximum(
+            max_support_residual, tf.stop_gradient(placement.support_residual)
+        )
         min_placement_eigen_gap = tf.minimum(
             min_placement_eigen_gap,
             _min_eigen_gap(placement.raw_eigenvalues),
@@ -549,8 +558,9 @@ def tf_svd_sigma_point_filter(
     rank_tolerance: tf.Tensor | float = 1e-12,
     jitter: tf.Tensor | float = 0.0,
     return_filtered: bool = False,
+    jit_compile: bool = True,
 ) -> TFFilterValueResult:
-    """Dispatch to a TF structural SVD/eigen sigma-point value filter."""
+    """Dispatch to the XLA value filter; JIT off is a reference/debug exception."""
 
     rule = _backend_rule(backend)
     value, filtered_means, filtered_covariances, raw_diagnostics = (
@@ -564,6 +574,7 @@ def tf_svd_sigma_point_filter(
             jitter=jitter,
             return_filtered=return_filtered,
             backend=backend,
+            jit_compile=jit_compile,
         )
     )
     block_metadata = dict(structural_block_metadata(model))
@@ -587,6 +598,7 @@ def tf_svd_sigma_point_filter(
         "min_placement_eigen_gap": raw_diagnostics["min_placement_eigen_gap"],
         "min_innovation_eigen_gap": raw_diagnostics["min_innovation_eigen_gap"],
         "backend_role": _backend_role(backend),
+        "jit_compile": jit_compile,
         "factorization": (
             "historical_principal_square_root" if backend == "tf_principal_sqrt_ukf" else "tf.linalg.eigh"
         ),
@@ -626,7 +638,7 @@ def tf_svd_sigma_point_filter(
             model,
             filter_name=f"{backend}_filter",
             differentiability_status="value_only",
-            compiled_status="xla_tensor_recurrence",
+            compiled_status="xla_tensor_recurrence" if jit_compile else "graph_reference_exception",
         ),
         diagnostics=diagnostics,
     )

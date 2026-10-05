@@ -104,22 +104,12 @@ def run_cell(n, degree, rank, obs_seed, sweeps):
     model = SV.sv_model(n, MODEL_SEED)
     ys = SV.sv_simulate(model, T_HORIZON, obs_seed)
     adapter = SV.sv_adapter(model)
-    ih_raw, ph_raw = SV.sv_gh_hint_factory(model, gh_points=9)
-    alphas = []
-
-    def _alpha_from_cov(cov):
-        eig = float(np.min(np.linalg.eigvalsh(np.asarray(cov)[:n, :n])))
-        alphas.append(1.0 - eig / SV.SIGMA**2)
-
-    def initial_hint(y0):
-        m, c = ih_raw(y0)
-        _alpha_from_cov(c.numpy())
-        return m, c
-
-    def predictive_hint(t, y_t):
-        m, c = ph_raw(t, y_t)
-        _alpha_from_cov(c.numpy())
-        return m, c
+    from bayesfilter.highdim.gaussian_moment_hints_tf import prepare_sv_gaussian_moment_hints
+    hints = prepare_sv_gaussian_moment_hints(model, ys, gh_points=9)
+    initial_hint, predictive_hint = hints.callbacks()
+    alphas = 1.0 - tf.reduce_min(
+        tf.linalg.eigvalsh(hints.filtered_covariances()), axis=-1,
+    ) / SV.SIGMA**2
 
     config = EngineConfig(
         basis_degree=degree, rank=rank, row_count=ROWS, sweeps=sweeps,
@@ -144,7 +134,7 @@ def run_cell(n, degree, rank, obs_seed, sweeps):
         "tau_max_seen": max(d["tau_t"] for d in diags),
         "rms_max": max(d.get("weighted_fit_rms", 0.0) for d in diags),
         "cond_max": max(d.get("worst_condition", 0.0) for d in diags),
-        "alpha_max_seen": max(alphas),
+        "alpha_max_seen": float(tf.reduce_max(alphas).numpy()),
         "device": [tf.config.experimental.get_device_details(g).get("device_name")
                    for g in gpus],
         "memory_growth_verified": all(

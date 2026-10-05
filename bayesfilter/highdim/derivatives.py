@@ -493,28 +493,15 @@ def differentiate_design_matrix(
     cores: Sequence[TTCore],
     dot_cores: Sequence[TTCore],
     core_index: int,
+    *, jit_compile: bool = True,
 ) -> tf.Tensor:
     """Differentiate the fixed-design core matrix with frozen bases."""
 
     values = tf.convert_to_tensor(points, dtype=tf.float64)
-    checked_cores = tuple(cores)
-    checked_dot_cores = tuple(dot_cores)
-    matrices = _core_matrices(product_basis, values, checked_cores)
-    dot_matrices = _core_matrices(product_basis, values, checked_dot_cores)
-    left, dot_left = _left_and_dot_environments(matrices, dot_matrices)
-    right, dot_right = _right_and_dot_environments(matrices, dot_matrices)
-    basis_values = product_basis.evaluate_axis(core_index, values[:, core_index])
-    blocks = (
-        tf.einsum("na,nl,nb->nalb", dot_left[core_index], basis_values, right[core_index])
-        + tf.einsum("na,nl,nb->nalb", left[core_index], basis_values, dot_right[core_index])
-    )
-    core = checked_cores[core_index]
-    return tf.reshape(
-        blocks,
-        [
-            int(values.shape[0]),
-            core.left_rank * core.basis_dim * core.right_rank,
-        ],
+    from bayesfilter.highdim.tt_native_control_tf import functional_tt_jvp
+    return functional_tt_jvp(
+        product_basis, tuple(cores), tuple(dot_cores), points=values,
+        core_index=core_index, jit_compile=jit_compile,
     )
 
 
@@ -608,40 +595,24 @@ def tt_evaluation_derivative(
     points: tf.Tensor,
     cores: Sequence[TTCore],
     dot_cores: Sequence[TTCore],
+    *, jit_compile: bool = True,
 ) -> tf.Tensor:
     """Differentiate TT evaluation using left/right product-rule propagation."""
 
     values = tf.convert_to_tensor(points, dtype=tf.float64)
-    matrices = _core_matrices(product_basis, values, tuple(cores))
-    dot_matrices = _core_matrices(product_basis, values, tuple(dot_cores))
-    vector = tf.ones([tf.shape(values)[0], 1], dtype=tf.float64)
-    dot_vector = tf.zeros_like(vector)
-    for matrix, dot_matrix in zip(matrices, dot_matrices):
-        dot_vector = tf.einsum("na,nab->nb", dot_vector, matrix) + tf.einsum(
-            "na,nab->nb",
-            vector,
-            dot_matrix,
-        )
-        vector = tf.einsum("na,nab->nb", vector, matrix)
-    return tf.reshape(dot_vector, [tf.shape(values)[0]])
+    from bayesfilter.highdim.tt_native_control_tf import functional_tt_jvp
+    return functional_tt_jvp(product_basis, tuple(cores), tuple(dot_cores), points=values, jit_compile=jit_compile)
 
 
 def squared_tt_normalizer_derivative(
     sqrt_tt: FunctionalTT,
     dot_cores: Sequence[TTCore],
+    *, jit_compile: bool = True,
 ) -> tf.Tensor:
     """Differentiate ``integral h(z)^2 dM(z)`` for frozen bases."""
 
-    vector = tf.ones([1], dtype=tf.float64)
-    dot_vector = tf.zeros([1], dtype=tf.float64)
-    active_measure = sqrt_tt.measure_convention.mass_measure
-    for axis, (core, dot_core) in enumerate(zip(sqrt_tt.cores, dot_cores)):
-        mass = sqrt_tt.product_basis.bases[axis].mass_matrix(active_measure)
-        matrix = _paired_core_matrix(core, core, mass)
-        dot_matrix = _paired_core_matrix(dot_core, core, mass) + _paired_core_matrix(core, dot_core, mass)
-        dot_vector = tf.einsum("a,ab->b", dot_vector, matrix) + tf.einsum("a,ab->b", vector, dot_matrix)
-        vector = tf.einsum("a,ab->b", vector, matrix)
-    return tf.reshape(dot_vector, [])
+    from bayesfilter.highdim.tt_native_control_tf import functional_tt_jvp
+    return functional_tt_jvp(sqrt_tt.product_basis, sqrt_tt.cores, tuple(dot_cores), jit_compile=jit_compile)
 
 
 def squared_tt_log_normalizer_derivative(
@@ -816,48 +787,24 @@ def _core_matrices(
     points: tf.Tensor,
     cores: Sequence[TTCore],
 ) -> tuple[tf.Tensor, ...]:
-    matrices = []
-    for axis, core in enumerate(cores):
-        basis_values = product_basis.evaluate_axis(axis, points[:, axis])
-        matrices.append(tf.einsum("nl,alb->nab", basis_values, core.values))
-    return tuple(matrices)
+    from bayesfilter.highdim.tt_native_control_tf import core_matrices
+    return core_matrices(product_basis, points, cores)
 
 
 def _left_and_dot_environments(
     matrices: Sequence[tf.Tensor],
     dot_matrices: Sequence[tf.Tensor],
 ) -> tuple[tuple[tf.Tensor, ...], tuple[tf.Tensor, ...]]:
-    n_rows = tf.shape(matrices[0])[0]
-    left = [tf.ones([n_rows, 1], dtype=tf.float64)]
-    dot_left = [tf.zeros([n_rows, 1], dtype=tf.float64)]
-    for matrix, dot_matrix in zip(matrices[:-1], dot_matrices[:-1]):
-        dot_left.append(
-            tf.einsum("na,nab->nb", dot_left[-1], matrix)
-            + tf.einsum("na,nab->nb", left[-1], dot_matrix)
-        )
-        left.append(tf.einsum("na,nab->nb", left[-1], matrix))
-    return tuple(left), tuple(dot_left)
+    from bayesfilter.highdim.tt_native_control_tf import row_environment_jvp
+    return row_environment_jvp(matrices, dot_matrices)
 
 
 def _right_and_dot_environments(
     matrices: Sequence[tf.Tensor],
     dot_matrices: Sequence[tf.Tensor],
 ) -> tuple[tuple[tf.Tensor, ...], tuple[tf.Tensor, ...]]:
-    n_rows = tf.shape(matrices[0])[0]
-    right = [None] * len(matrices)
-    dot_right = [None] * len(matrices)
-    accumulator = tf.ones([n_rows, 1], dtype=tf.float64)
-    dot_accumulator = tf.zeros([n_rows, 1], dtype=tf.float64)
-    for axis in range(len(matrices) - 1, -1, -1):
-        right[axis] = accumulator
-        dot_right[axis] = dot_accumulator
-        if axis > 0:
-            dot_accumulator = (
-                tf.einsum("nab,nb->na", dot_matrices[axis], accumulator)
-                + tf.einsum("nab,nb->na", matrices[axis], dot_accumulator)
-            )
-            accumulator = tf.einsum("nab,nb->na", matrices[axis], accumulator)
-    return tuple(right), tuple(dot_right)
+    from bayesfilter.highdim.tt_native_control_tf import row_environment_jvp
+    return row_environment_jvp(matrices, dot_matrices, reverse=True)
 
 
 def _normal_matrix(design: tf.Tensor, weights: tf.Tensor, ridge: float) -> tf.Tensor:

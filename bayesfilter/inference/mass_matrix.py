@@ -1,19 +1,19 @@
 """TensorFlow mass-matrix construction with explicit provenance.
 
-TensorFlow performs every numerical operation in this module. Python scalars
-are materialized only for fail-closed validation and artifact metadata.
+Numerical programs default to XLA with stable signatures. Python scalars are
+materialized only for fail-closed validation and artifact metadata.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import math
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from typing import Any
 
 import tensorflow as tf
 
-
-_FLOAT64_EPSILON = 2.220446049250313e-16  # IEEE-754 binary64 machine epsilon.
+from bayesfilter.inference import mass_matrix_tf as native
 
 
 @dataclass(frozen=True)
@@ -54,10 +54,7 @@ class MassMatrixResult:
 def regularize_covariance(covariance: Any, *, jitter: float = 1e-9) -> tf.Tensor:
     matrix = _square_tensor(covariance, "covariance")
     jitter_value = _nonnegative_finite(jitter, "jitter")
-    dimension = tf.shape(matrix, out_type=tf.int32)[0]
-    return matrix + tf.cast(jitter_value, matrix.dtype) * tf.eye(
-        dimension, dtype=matrix.dtype
-    )
+    return native.covariance_program(matrix.shape[0])(matrix, tf.constant(jitter_value, tf.float32))
 
 
 def structured_covariance_from_empirical(
@@ -82,9 +79,9 @@ def structured_covariance_from_empirical(
     """
 
     empirical = _square_tensor(covariance, "empirical covariance")
-    if not _scalar_bool(tf.reduce_all(tf.math.is_finite(empirical))):
+    if not _scalar_bool(native.finite_matrix(empirical)):
         raise ValueError("empirical covariance must be finite")
-    dimension = _scalar_int(tf.shape(empirical, out_type=tf.int32)[0])
+    dimension = empirical.shape[0]
     if dimension == 0:
         raise ValueError("empirical covariance must have positive dimension")
     use_diagonal = bool(diagonal)
@@ -131,42 +128,13 @@ def structured_covariance_from_empirical(
         normalized_blocks = tuple(normalized)
         family = "structural_block"
 
-    regularized_blocks: list[tf.Tensor] = []
-    raw_block_eigenvalues: list[float] = []
-    regularized_block_eigenvalues: list[float] = []
-    for block in normalized_blocks:
-        start = int(block["start"])
-        stop = int(block["stop"])
-        empirical_block = empirical[start:stop, start:stop]
-        raw = 0.5 * (empirical_block + tf.linalg.matrix_transpose(empirical_block))
-        diagonal_target = tf.linalg.diag(tf.linalg.diag_part(raw))
-        shrunk = (1.0 - weight) * raw + weight * diagonal_target
-        shrunk = 0.5 * (shrunk + tf.linalg.matrix_transpose(shrunk))
-        values, vectors = tf.linalg.eigh(shrunk)
-        if not _scalar_bool(tf.reduce_all(tf.math.is_finite(values))):
-            raise ValueError("structured covariance eigenvalues must be finite")
-        raw_values = tuple(float(value) for value in values.numpy().tolist())
-        raw_block_eigenvalues.extend(raw_values)
-        largest = max(_scalar_float(tf.reduce_max(values)), floor)
-        effective_floor = max(floor, largest / condition_cap)
-        regularized_values = tf.maximum(
-            values, tf.constant(effective_floor, dtype=tf.float64)
-        )
-        regularized_block_eigenvalues.extend(
-            float(value) for value in regularized_values.numpy().tolist()
-        )
-        regularized = tf.matmul(
-            vectors * regularized_values[tf.newaxis, :],
-            vectors,
-            transpose_b=True,
-        )
-        regularized_blocks.append(
-            0.5 * (regularized + tf.linalg.matrix_transpose(regularized))
-        )
-
-    projected = tf.linalg.LinearOperatorBlockDiag(
-        tuple(tf.linalg.LinearOperatorFullMatrix(block) for block in regularized_blocks)
-    ).to_dense()
+    partition = tuple((block["start"], block["stop"]) for block in normalized_blocks)
+    projected, summary, valid = native.structured_program(dimension, partition)(
+        empirical, tf.constant(weight, tf.float64), tf.constant(floor, tf.float64),
+        tf.constant(condition_cap, tf.float64))
+    if not _scalar_bool(valid):
+        raise ValueError("structured covariance eigenvalues must be finite")
+    raw_minimum, regularized_minimum, regularized_maximum = summary.numpy().tolist()
 
     report = {
         "method": "empirical_covariance_structural_projection_shrinkage_eigen_clamp",
@@ -176,13 +144,9 @@ def structured_covariance_from_empirical(
         "shrinkage": weight,
         "requested_eigenvalue_floor": floor,
         "max_condition_number": condition_cap,
-        "raw_min_block_eigenvalue": float(min(raw_block_eigenvalues)),
-        "regularized_min_block_eigenvalue": float(
-            min(regularized_block_eigenvalues)
-        ),
-        "regularized_max_block_eigenvalue": float(
-            max(regularized_block_eigenvalues)
-        ),
+        "raw_min_block_eigenvalue": raw_minimum,
+        "regularized_min_block_eigenvalue": regularized_minimum,
+        "regularized_max_block_eigenvalue": regularized_maximum,
         "cross_block_entries_zero": True,
     }
     return MassMatrixResult(
@@ -204,23 +168,17 @@ def covariance_from_precision(
     max_condition_number: float | None = None,
     dense: bool = True,
 ) -> MassMatrixResult:
-    regularized, report = regularize_precision(
-        precision,
-        jitter=jitter,
-        eigenvalue_floor=eigenvalue_floor,
-        max_condition_number=max_condition_number,
-    )
+    matrix, jitter_value, floor, max_condition = _precision_inputs(
+        precision, jitter, eigenvalue_floor, max_condition_number)
+    regularized, covariance, diagnostics, flags, diagonal_valid = native.precision_program(
+        matrix.shape[0], dense=bool(dense))(matrix, tf.constant(jitter_value, tf.float64),
+            tf.constant(floor, tf.float64), tf.constant(max_condition or 0., tf.float64))
+    report = _precision_report(diagnostics, flags, jitter_value, eigenvalue_floor, max_condition)
     if dense:
-        covariance = tf.linalg.inv(regularized)
-        covariance = 0.5 * (covariance + tf.linalg.matrix_transpose(covariance))
         matrix_kind = "dense"
     else:
-        diagonal = tf.linalg.diag_part(regularized)
-        if not _scalar_bool(tf.reduce_all(tf.math.is_finite(diagonal))):
+        if not _scalar_bool(diagonal_valid):
             raise ValueError("regularized precision diagonal must be positive finite")
-        if not _scalar_bool(tf.reduce_all(diagonal > 0.0)):
-            raise ValueError("regularized precision diagonal must be positive finite")
-        covariance = tf.linalg.diag(tf.math.reciprocal(diagonal))
         matrix_kind = "diagonal"
         report = {
             **report,
@@ -234,8 +192,6 @@ def covariance_from_precision(
         jitter=float(jitter),
         eigenvalue_floor=report["effective_eigenvalue_floor"],
         regularized_precision=regularized,
-        precision_eigen_summary=_eigen_summary(regularized),
-        covariance_eigen_summary=_eigen_summary(covariance),
         regularization_report=report,
     )
 
@@ -270,8 +226,18 @@ def regularize_precision(
 ) -> tuple[tf.Tensor, dict[str, Any]]:
     """Return a positive-definite precision tensor and regularization report."""
 
+    matrix, jitter_value, floor, max_condition = _precision_inputs(
+        precision, jitter, eigenvalue_floor, max_condition_number)
+    regularized, diagnostics, flags = native.precision_program(matrix.shape[0])(
+        matrix, tf.constant(jitter_value, tf.float64), tf.constant(floor, tf.float64),
+        tf.constant(max_condition or 0., tf.float64))
+    report = _precision_report(diagnostics, flags, jitter_value, eigenvalue_floor, max_condition)
+    return regularized, report
+
+
+def _precision_inputs(precision, jitter, eigenvalue_floor, max_condition_number):
     matrix = _square_tensor(precision, "precision")
-    if not _scalar_bool(tf.reduce_all(tf.math.is_finite(matrix))):
+    if not _scalar_bool(native.finite_matrix(matrix)):
         raise ValueError("precision must be finite")
     jitter_value = _nonnegative_finite(jitter, "jitter")
     floor = 0.0 if eigenvalue_floor is None else _nonnegative_finite(
@@ -284,78 +250,52 @@ def regularize_precision(
         if not _python_finite(max_condition) or max_condition <= 1.0:
             raise ValueError("max_condition_number must be finite and greater than 1")
 
-    asymmetry = matrix - tf.linalg.matrix_transpose(matrix)
-    asymmetry_max_abs = _scalar_float(tf.reduce_max(tf.abs(asymmetry)))
-    symmetric = 0.5 * (matrix + tf.linalg.matrix_transpose(matrix))
-    dimension = tf.shape(symmetric, out_type=tf.int32)[0]
-    jittered = symmetric + tf.constant(jitter_value, dtype=symmetric.dtype) * tf.eye(
-        dimension, dtype=symmetric.dtype
-    )
-    raw_eigvals, eigvecs = tf.linalg.eigh(jittered)
-    if not _scalar_bool(tf.reduce_all(tf.math.is_finite(raw_eigvals))):
+    return matrix, jitter_value, floor, max_condition
+
+
+def _precision_report(diagnostics, flags, jitter, requested_floor, max_condition):
+    finite, finite_values, has_floor, asymmetric = flags.numpy().tolist()
+    if not finite:
+        raise ValueError("precision must be finite")
+    if not finite_values:
         raise ValueError("precision eigenvalues must be finite")
-
-    positive_raw = tf.boolean_mask(raw_eigvals, raw_eigvals > 0.0)
-    if floor == 0.0:
-        if _scalar_int(tf.size(positive_raw)) == 0:
-            raise ValueError("precision must have a positive eigenvalue; pass eigenvalue_floor")
-        maximum_positive = _scalar_float(tf.reduce_max(positive_raw))
-        floor = max(floor, _FLOAT64_EPSILON * max(1.0, maximum_positive))
-    raw_max = _scalar_float(tf.reduce_max(raw_eigvals))
-    if max_condition is not None:
-        floor = max(floor, raw_max / max_condition)
-    if floor <= 0.0:
-        floor = _FLOAT64_EPSILON
-
-    floor_tensor = tf.constant(floor, dtype=raw_eigvals.dtype)
-    regularized_eigvals = tf.maximum(raw_eigvals, floor_tensor)
-    regularized = tf.matmul(
-        eigvecs * regularized_eigvals[tf.newaxis, :],
-        eigvecs,
-        transpose_b=True,
-    )
-    regularized = 0.5 * (regularized + tf.linalg.matrix_transpose(regularized))
-    clipped = regularized_eigvals > raw_eigvals
-    report = {
+    if not has_floor:
+        raise ValueError("precision must have a positive eigenvalue; pass eigenvalue_floor")
+    floor, raw_min, raw_max, clipped_min, clipped_max, nonpositive, clipped, asymmetry = diagnostics.numpy().tolist()
+    return {
         "method": "symmetric_eigendecomposition_floor",
         "numerical_backend": "tensorflow",
-        "jitter": jitter_value,
-        "requested_eigenvalue_floor": (
-            None if eigenvalue_floor is None else float(eigenvalue_floor)
-        ),
+        "jitter": jitter,
+        "requested_eigenvalue_floor": None if requested_floor is None else float(requested_floor),
         "effective_eigenvalue_floor": float(floor),
         "max_condition_number": max_condition,
-        "raw_min_eigenvalue": _scalar_float(tf.reduce_min(raw_eigvals)),
+        "raw_min_eigenvalue": raw_min,
         "raw_max_eigenvalue": raw_max,
-        "regularized_min_eigenvalue": _scalar_float(tf.reduce_min(regularized_eigvals)),
-        "regularized_max_eigenvalue": _scalar_float(tf.reduce_max(regularized_eigvals)),
-        "raw_nonpositive_eigenvalue_count": _scalar_int(
-            tf.reduce_sum(tf.cast(raw_eigvals <= 0.0, tf.int32))
-        ),
-        "clipped_eigenvalue_count": _scalar_int(
-            tf.reduce_sum(tf.cast(clipped, tf.int32))
-        ),
+        "regularized_min_eigenvalue": clipped_min,
+        "regularized_max_eigenvalue": clipped_max,
+        "raw_nonpositive_eigenvalue_count": int(nonpositive),
+        "clipped_eigenvalue_count": int(clipped),
         "symmetry_projection": "average_with_transpose",
-        "input_asymmetry_max_abs": asymmetry_max_abs,
-        "input_asymmetric": bool(asymmetry_max_abs > 0.0),
+        "input_asymmetry_max_abs": asymmetry,
+        "input_asymmetric": asymmetric,
         "diagonal_fallback_used": False,
         "silent_eigenvalue_reflection": False,
     }
-    return regularized, report
 
 
 def whitening_from_covariance(covariance: Any, *, jitter: float = 1e-9) -> tf.Tensor:
     """Return `F` with covariance equal to `F @ F.T` up to roundoff."""
 
-    return tf.linalg.cholesky(regularize_covariance(covariance, jitter=jitter))
+    matrix = _square_tensor(covariance, "covariance")
+    jitter_value = _nonnegative_finite(jitter, "jitter")
+    return native.covariance_program(matrix.shape[0], whitening=True)(matrix, tf.constant(jitter_value, tf.float32))
 
 
 def _square_tensor(value: Any, name: str) -> tf.Tensor:
     matrix = tf.convert_to_tensor(value, dtype=tf.float64)
     if matrix.shape.rank != 2:
         raise ValueError(f"{name} must be a square matrix")
-    rows = _scalar_int(tf.shape(matrix, out_type=tf.int32)[0])
-    columns = _scalar_int(tf.shape(matrix, out_type=tf.int32)[1])
+    rows, columns = matrix.shape
     if rows != columns:
         raise ValueError(f"{name} must be a square matrix")
     return matrix
@@ -363,19 +303,15 @@ def _square_tensor(value: Any, name: str) -> tf.Tensor:
 
 def _eigen_summary(matrix: Any) -> dict[str, Any]:
     square = _square_tensor(matrix, "matrix")
-    symmetric = 0.5 * (square + tf.linalg.matrix_transpose(square))
-    eigenvalues = tf.linalg.eigvalsh(symmetric)
-    finite = _scalar_bool(tf.reduce_all(tf.math.is_finite(eigenvalues)))
-    minimum = _scalar_float(tf.reduce_min(eigenvalues)) if finite else float("nan")
-    maximum = _scalar_float(tf.reduce_max(eigenvalues)) if finite else float("nan")
-    positive = bool(finite and minimum > 0.0)
+    eigenvalues, summary, finite, positive = native.summary_program(square.shape[0])(square)
+    minimum, maximum, condition = summary.numpy().tolist()
     return {
-        "finite": finite,
-        "positive": positive,
+        "finite": bool(finite),
+        "positive": bool(positive),
         "min": minimum,
         "max": maximum,
-        "condition_number": maximum / minimum if positive else float("inf"),
-        "eigenvalues": tuple(float(value) for value in eigenvalues.numpy().tolist()),
+        "condition_number": condition,
+        "eigenvalues": tuple(eigenvalues.numpy().tolist()),
     }
 
 
@@ -399,7 +335,7 @@ def _nonnegative_finite(value: Any, name: str) -> float:
 
 
 def _python_finite(value: float) -> bool:
-    return bool(tf.math.is_finite(tf.convert_to_tensor(value, dtype=tf.float64)).numpy())
+    return math.isfinite(value)
 
 
 def _scalar_bool(value: tf.Tensor) -> bool:

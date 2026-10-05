@@ -16,11 +16,12 @@ from bayesfilter.highdim.ledh_younis_kdm_resampling_tf import (
     RESPONSIBILITY_COVARIANCE_MARK_POLICY,
 )
 from .canonical_adapter_tf import gaussian_direction_inputs, make_canonical_kernel
+from .direction_assembly_tf import make_direction_kernel
 
 
 @lru_cache(maxsize=16)
 def make_kdm_kernel(d, o, N, T, controls_tuple, representation,
-                    dtype_name="float64", jit_compile=True, replay=False):
+                    dtype_name="float64", jit_compile=True, replay=False, *, all_directions=False):
     if representation not in ("integrated_kdm", "resampling_kdm"):
         raise ValueError("unknown KDM finite program")
     # Reuse canonical configuration and chunk validation, without evaluating it.
@@ -81,4 +82,5 @@ def make_kdm_kernel(d, o, N, T, controls_tuple, representation,
             return (*summary, result["fixed_samples"], result["fixed_proposal_log_densities"],
                     result["component_indices"])
         return summary
-    return kernel
+    return (make_direction_kernel(kernel, jit_compile=jit_compile, validity_output_index=2)
+            if all_directions else kernel)

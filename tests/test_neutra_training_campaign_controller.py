@@ -73,3 +73,25 @@ def test_resume_rejects_changed_inputs_and_preserves_compute_reserve(controller,
     assert controller.check_allocation(tmp_path, phases, 50., 20.) == 70.
     with pytest.raises(ValueError, match="campaign budget"):
         controller.check_allocation(tmp_path, phases, 51., 20.)
+
+
+def test_measured_numerical_repair_resumes_original_naf_seeds(controller, cohort, tmp_path):
+    initial, selected = cohort
+    replay = tmp_path/"replay.json"
+    controller.save(replay, {"rows": [{"seed": seed, "exact_replay": {"valid": True}} for seed in (0, 1)]})
+    controller.save(tmp_path/"naf-log-weight-repair.json", {"verification_result": str(replay)})
+    for seed, accepted in enumerate((2327, 461, 4096)):
+        row = next(r for r in initial["jobs"] if r["name"] == f"naf16-seed{seed}-u4096")
+        row["status"] = "candidate_rejected" if seed < 2 else "failed"
+        directory = Path(row["output"])
+        directory.mkdir()
+        controller.save(directory/"last-valid-checkpoint.json", {"optimizer": [{"value": accepted}]})
+        if seed == 2:
+            controller.save(directory/"failure.json", {"type": "TypeError", "message":
+                "tf__inverse() takes 2 positional arguments but 3 were given"})
+    decision, requests, retained = controller.continuation_requests(tmp_path, initial, selected)
+    assert decision["family"] == "naf16"
+    assert all(request["updates"] == 8192 for _, request in requests[1:])
+    assert sum(request["worker_seconds"] for _, request in requests) == 65776.
+    assert len(retained) == 3
+    assert all("resume_checkpoint" in request for _, request in requests[1:])

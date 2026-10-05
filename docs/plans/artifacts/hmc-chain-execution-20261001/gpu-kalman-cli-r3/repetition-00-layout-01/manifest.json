@@ -1,0 +1,178 @@
+{
+  "schema": "bayesfilter.hmc_chain_execution.v1",
+  "target": {
+    "factory": "bayesfilter.testing.hmc_chain_benchmark_targets:kalman_target",
+    "kwargs": {}
+  },
+  "kernel": {
+    "num_results": 6,
+    "step_size": 0.03,
+    "num_leapfrog_steps": 2,
+    "seed": [
+      20261001,
+      17
+    ],
+    "dtype": "float64",
+    "jit_compile": true,
+    "non_xla_reason": null,
+    "target_scope": "hmc-chain-benchmark-fixture-v1",
+    "target_status_trace_policy": "auto"
+  },
+  "layout": {
+    "chains_per_batch": 1,
+    "workers": 2,
+    "cores_per_worker": 1,
+    "device": "GPU",
+    "gpu_devices": [
+      "GPU-b8045e28-4433-ec7a-77a5-db0636748322"
+    ],
+    "pin_cpu": true,
+    "tf32": true
+  },
+  "partition": [
+    {
+      "batch": 0,
+      "start": 0,
+      "stop": 1,
+      "worker": 0
+    },
+    {
+      "batch": 1,
+      "start": 1,
+      "stop": 2,
+      "worker": 1
+    }
+  ],
+  "workers": [
+    {
+      "kind": "ready",
+      "pid": 2233953,
+      "worker": 0,
+      "tensorflow": "2.19.1",
+      "tensorflow_probability": "0.25.0",
+      "python": "3.11.15 | packaged by conda-forge | (main, Aug 11 2026, 10:26:29) [GCC 14.4.0]",
+      "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+      "python_executable": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+      "cpu_model": "AMD EPYC 7773X 64-Core Processor",
+      "execution_source_sha256": {
+        "chain_worker.py": "7faccc9586c4cbc250105cd543197f0fa15e95d92e2e328cc112c2422bbdb717",
+        "chain_execution.py": "819dd75e9570611c6109568b04ed05f564b8d838eb3f6f2153bd054ae9a52dbe",
+        "hmc.py": "564376af42a5a7e76fc708faebae9bc345f69e0cb9c7c05d77ea962465aba90e",
+        "batched_value_score.py": "7037ec2272e4bfb45b2ed20ff87374aa5a02266fb3289121e6b0cc3f4b19296c"
+      },
+      "target_signature": "0311a45b46fb398986dc5ba84788b7c9ced4c5ccdbb789fe0245ceaa364c5fa3",
+      "factory_path": "/home/ubuntu/workspace/BayesFilter/bayesfilter/testing/hmc_chain_benchmark_targets.py",
+      "factory_sha256": "68f6d34512e3ab1b0d012ee9a2be44c60dcdcf561bed287580cd2233005f6873",
+      "cpu_affinity": [
+        0
+      ],
+      "intra_op_threads": 1,
+      "inter_op_threads": 1,
+      "cuda_visible_devices": "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "jit_compile": true,
+      "target_status_trace_policy": "none",
+      "gpu_intentionally_hidden": false,
+      "tf32": true,
+      "gpu_memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4090"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "memory": {
+        "host_rss_bytes": 875560960,
+        "host_peak_rss_bytes": 870318080,
+        "process_cpu_seconds": 3.95117,
+        "gpu_allocator": {
+          "current": 3072,
+          "peak": 3328
+        }
+      }
+    },
+    {
+      "kind": "ready",
+      "pid": 2233954,
+      "worker": 1,
+      "tensorflow": "2.19.1",
+      "tensorflow_probability": "0.25.0",
+      "python": "3.11.15 | packaged by conda-forge | (main, Aug 11 2026, 10:26:29) [GCC 14.4.0]",
+      "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+      "python_executable": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+      "cpu_model": "AMD EPYC 7773X 64-Core Processor",
+      "execution_source_sha256": {
+        "chain_worker.py": "7faccc9586c4cbc250105cd543197f0fa15e95d92e2e328cc112c2422bbdb717",
+        "chain_execution.py": "819dd75e9570611c6109568b04ed05f564b8d838eb3f6f2153bd054ae9a52dbe",
+        "hmc.py": "564376af42a5a7e76fc708faebae9bc345f69e0cb9c7c05d77ea962465aba90e",
+        "batched_value_score.py": "7037ec2272e4bfb45b2ed20ff87374aa5a02266fb3289121e6b0cc3f4b19296c"
+      },
+      "target_signature": "0311a45b46fb398986dc5ba84788b7c9ced4c5ccdbb789fe0245ceaa364c5fa3",
+      "factory_path": "/home/ubuntu/workspace/BayesFilter/bayesfilter/testing/hmc_chain_benchmark_targets.py",
+      "factory_sha256": "68f6d34512e3ab1b0d012ee9a2be44c60dcdcf561bed287580cd2233005f6873",
+      "cpu_affinity": [
+        1
+      ],
+      "intra_op_threads": 1,
+      "inter_op_threads": 1,
+      "cuda_visible_devices": "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "jit_compile": true,
+      "target_status_trace_policy": "none",
+      "gpu_intentionally_hidden": false,
+      "tf32": true,
+      "gpu_memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4090"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "memory": {
+        "host_rss_bytes": 875905024,
+        "host_peak_rss_bytes": 870318080,
+        "process_cpu_seconds": 3.9307969999999997,
+        "gpu_allocator": {
+          "current": 3072,
+          "peak": 3328
+        }
+      }
+    }
+  ],
+  "startup_seconds": 4.056666895048693,
+  "gpu_selection": null,
+  "seed_policy": "fold_call_index_then_batch_start_v1",
+  "role": "fixed_kernel_execution; no tuning or posterior admission"
+}

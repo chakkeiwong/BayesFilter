@@ -264,11 +264,12 @@ def prepare_reduced_dense_grids(
             center, time_index=time_index
         )[0]
         center_variable = tf.Variable(physical_center)
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=True) as tape:
             next_center = model.physical_model.transition_mean(
                 theta, center_variable[tf.newaxis, :]
             )[0]
-        jacobian = tape.jacobian(next_center, center_variable)
+        jacobian = tape.jacobian(next_center, center_variable, experimental_use_pfor=False)
+        del tape
         if jacobian is None:
             raise ValueError("grid scout transition Jacobian is disconnected")
         covariance = (

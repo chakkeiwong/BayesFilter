@@ -1,0 +1,42 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790613620.988204 1344285 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790613620.990995 1344285 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790613620.998042 1344285 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790613620.998079 1344285 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790613620.998085 1344285 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790613620.998087 1344285 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1790613622.810053 1344285 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1790613623.619456 1344285 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790613624.211398 1344285 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": false, "nomination_pass": false, "epsilon": 0.4, "maximum_column_tv": 0.019425485774351058, "wall_seconds": 35.67760333098704}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": false, "nomination_pass": false, "epsilon": 0.4, "maximum_column_tv": 0.02298347706822052, "wall_seconds": 2.749295284971595}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": false, "nomination_pass": false, "epsilon": 1.6, "maximum_column_tv": 0.00018611045064078366, "wall_seconds": 2.814276088029146}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": false, "nomination_pass": false, "epsilon": 1.6, "maximum_column_tv": 0.00014586535560733328, "wall_seconds": 2.539779111975804}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": false, "epsilon": 6.4, "maximum_column_tv": 1.8665460897632168e-05, "wall_seconds": 2.757554132025689}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": false, "epsilon": 6.4, "maximum_column_tv": 1.3028481330523234e-05, "wall_seconds": 2.560509215982165}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": false, "epsilon": 25.6, "maximum_column_tv": 3.7429008743031037e-06, "wall_seconds": 2.7689719769987278}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": false, "epsilon": 25.6, "maximum_column_tv": 2.672543525496289e-06, "wall_seconds": 2.8089589499868453}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": true, "epsilon": 102.4, "maximum_column_tv": 9.001936470292451e-07, "wall_seconds": 2.535148326016497}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": true, "epsilon": 102.4, "maximum_column_tv": 6.365230586169121e-07, "wall_seconds": 2.783750956004951}
+{"stage": "calibration", "route": "iid_dual_cap", "horizon": 120, "seed": 211001, "valid": true, "error": 1.5424054852996916}
+{"stage": "calibration", "route": "iid_dual_cap", "horizon": 120, "seed": 211002, "valid": true, "error": 0.5970561325863093}
+{"stage": "calibration", "route": "iid_dual_cap", "horizon": 120, "seed": 211001, "valid": true, "error": 1.3918650265445975}
+{"stage": "calibration", "route": "iid_dual_cap", "horizon": 120, "seed": 211002, "valid": true, "error": 0.39260872785365075}
+{"stage": "validation", "route": "iid_dual_cap", "horizon": 120, "seed": 212001, "valid": true, "error": 1.0914241906759001}
+{"stage": "safety_sensitivity", "route": "iid_dual_cap", "horizon": 120, "seed": 211001, "valid": true, "error": 1.391865180417462}
+{"stage": "safety_sensitivity", "route": "iid_dual_cap", "horizon": 120, "seed": 211001, "valid": true, "error": 1.391863489219681}
+WARNING:tensorflow:5 out of the last 9 calls to <function _kernel.<locals>.compute at 0x7feeb8a45b20> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+{"stage": "safety_sensitivity", "route": "iid_dual_cap", "horizon": 120, "seed": 211001, "valid": true, "error": 1.3913843462768252}
+WARNING:tensorflow:6 out of the last 10 calls to <function _kernel.<locals>.compute at 0x7fee99caba60> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+{"stage": "safety_sensitivity", "route": "iid_dual_cap", "horizon": 120, "seed": 211001, "valid": true, "error": 1.3935605409492884}
+{"stage": "safety_sensitivity", "route": "iid_dual_cap", "horizon": 120, "seed": 211001, "valid": true, "error": 1.4423439213633464}
+{"stage": "safety_sensitivity", "route": "iid_dual_cap", "horizon": 120, "seed": 211001, "valid": true, "error": 1.2091459451234483}
+{"stage": "final", "route": "iid_dual_cap", "horizon": 120, "seed": 214001, "valid": true, "error": 1.6490455723283797}
+{"stage": "final", "route": "iid_dual_cap", "horizon": 120, "seed": 214002, "valid": true, "error": 0.4402000400261799}
+{"stage": "final", "route": "iid_dual_cap", "horizon": 120, "seed": 214003, "valid": true, "error": 1.364065032318087}
+{"stage": "final", "route": "iid_dual_cap", "horizon": 120, "seed": 214004, "valid": true, "error": 3.0789737978325995}
+{"stage": "final", "route": "iid_dual_cap", "horizon": 120, "seed": 214005, "valid": true, "error": 0.3870669228742526}
+{"stage": "final", "route": "iid_dual_cap", "horizon": 120, "seed": 214006, "valid": true, "error": 0.6837454085080011}
+{"stage": "final", "route": "iid_dual_cap", "horizon": 120, "seed": 214007, "valid": true, "error": 3.419423103388454}
+{"stage": "final", "route": "iid_dual_cap", "horizon": 120, "seed": 214008, "valid": true, "error": 1.3264549160614858}

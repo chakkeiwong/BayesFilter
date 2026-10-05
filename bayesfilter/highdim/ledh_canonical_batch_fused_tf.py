@@ -1,9 +1,15 @@
-"""Batch-native adapter over the canonical LEDH analytical score engine.
+"""Row-mapped adapter over the canonical LEDH analytical score engine.
 
 The algorithmic finite program lives only in ``ledh_canonical_score_tf``.
 This module adapts per-point callbacks and explicit ``[B,K,P]`` directions to
 that authority with TensorFlow ``map_fn`` control flow. There is no Python row
-or direction loop in the traced graph, no pfor/vectorized-map, and no autodiff.
+or direction loop in the default traced graph and no autodiff. Unsupported
+direction modes are rejected; no pfor approval was established for this route.
+
+The historical ``fused`` name does not make this batch-native: each batch row
+still invokes the scalar target independently. Both this wrapper and its
+while-loop alternative are ineligible for NeuTra training. Native tensor loops
+alone do not satisfy the batch-native target policy.
 
 Primal cloud reductions therefore inherit the canonical single-cloud semantics;
 the explicit B and K axes are retained by the adapter. Contract-E reset,
@@ -156,8 +162,8 @@ def canonical_batch_fused_value_score(
 
     if jitter != 1.0e-12:
         raise ValueError("the unified canonical engine requires jitter=1e-12")
-    if k_batch_mode not in ("sequential", "pfor"):
-        raise ValueError("k_batch_mode must be 'sequential' or 'pfor'")
+    if k_batch_mode != "sequential":
+        raise ValueError("k_batch_mode must be 'sequential'; unapproved pfor execution is unavailable")
     if reset_policy not in ("none", "contract_e"):
         raise ValueError("reset_policy must be 'none' or 'contract_e'")
     if reset_policy == "contract_e" and reset_design is None:
@@ -236,27 +242,15 @@ def canonical_batch_fused_value_score(
             )
             return value, score[0]
 
-        if k_batch_mode == "pfor":
-            # Batch the K independent directions. Approved for evaluation in
-            # docs/plans/ledh-vectorized-map-approval-request.md: the K
-            # directional tangents share one primal trajectory, and the
-            # single-cloud engine takes a single [N,d] tangent, so a native
-            # tf.while_loop cannot express K-at-once without refactoring every
-            # tangent op in the canonical engine to carry a leading K axis.
-            values, scores = tf.vectorized_map(
-                evaluate_direction,
-                row_directions,
-            )
-        else:
-            values, scores = tf.map_fn(
-                evaluate_direction,
-                row_directions,
-                fn_output_signature=(
-                    tf.TensorSpec([], dtype),
-                    tf.TensorSpec([], dtype),
-                ),
-                parallel_iterations=1,
-            )
+        values, scores = tf.map_fn(
+            evaluate_direction,
+            row_directions,
+            fn_output_signature=(
+                tf.TensorSpec([], dtype),
+                tf.TensorSpec([], dtype),
+            ),
+            parallel_iterations=1,
+        )
         tf.debugging.assert_near(
             values,
             tf.broadcast_to(values[0], tf.shape(values)),

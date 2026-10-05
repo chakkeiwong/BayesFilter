@@ -172,12 +172,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     frozen = None
     pool_config = CPUValueScorePoolConfig(
         worker_factory_path=(
-            "bayesfilter.nonlinear.ssl_lstm_complexity_target_tf:"
-            "complexity_target_worker_factory"
+            "bayesfilter.nonlinear.ssl_lstm_complexity_batched_target_tf:"
+            "batch_native_complexity_target_worker_factory"
         ),
         worker_config={"q": int(args.q)},
         dimension=4,
         worker_count=int(args.worker_count),
+        batch_sizes=tuple(sorted({args.batch_size // args.worker_count, (args.batch_size + args.worker_count - 1) // args.worker_count})),
     )
     with CPUValueScorePool(pool_config) as value_score_pool:
         for stream_index, seed_tail in enumerate((3101, 3201)):

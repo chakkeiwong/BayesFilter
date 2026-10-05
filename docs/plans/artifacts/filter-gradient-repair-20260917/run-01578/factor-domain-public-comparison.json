@@ -1,0 +1,225 @@
+{
+  "role": "explanatory_domain_failure_semantics",
+  "observations": [
+    {
+      "arm": "original_eager",
+      "record": {
+        "schema": "bayesfilter.factor_correlation_geometry.v1",
+        "accepted": false,
+        "status": "factor_optimizer_failed",
+        "factor_count": 2,
+        "parameter_count": 14,
+        "anchor_indices": [
+          0,
+          1
+        ],
+        "covariance_z": null,
+        "precision_z": null,
+        "marginal_standard_deviations": null,
+        "loadings": null,
+        "diagnostics": {
+          "exception_type": "InvalidArgumentError"
+        },
+        "nonclaims": [
+          "structured local score geometry diagnostic only",
+          "not a certified MAP",
+          "not a certified posterior covariance",
+          "not HMC readiness evidence",
+          "not convergence evidence",
+          "not default-readiness evidence"
+        ]
+      }
+    },
+    {
+      "arm": "current_graph",
+      "record": {
+        "schema": "bayesfilter.factor_correlation_geometry.v1",
+        "accepted": false,
+        "status": "factor_optimizer_failed",
+        "factor_count": 2,
+        "parameter_count": 14,
+        "anchor_indices": [],
+        "covariance_z": null,
+        "precision_z": null,
+        "marginal_standard_deviations": null,
+        "loadings": null,
+        "diagnostics": {
+          "exception_type": "InvalidArgumentError",
+          "jit_compile": false
+        },
+        "nonclaims": [
+          "structured local score geometry diagnostic only",
+          "not a certified MAP",
+          "not a certified posterior covariance",
+          "not HMC readiness evidence",
+          "not convergence evidence",
+          "not default-readiness evidence"
+        ]
+      }
+    },
+    {
+      "arm": "current_xla",
+      "record": {
+        "schema": "bayesfilter.factor_correlation_geometry.v1",
+        "accepted": false,
+        "status": "second_factor_unidentified",
+        "factor_count": 2,
+        "parameter_count": 14,
+        "anchor_indices": [
+          0,
+          1
+        ],
+        "covariance_z": [
+          [
+            0.8658185050792562,
+            -0.09758091924946428,
+            -0.05499391992762585,
+            0.003658746341303192,
+            0.004402177143850468
+          ],
+          [
+            -0.09758091924946428,
+            0.5995822628445985,
+            -0.039307396946195276,
+            -0.013734430100843435,
+            -0.01664788859241751
+          ],
+          [
+            -0.05499391992762586,
+            -0.039307396946195276,
+            0.47445058975483984,
+            -0.01004103245603354,
+            -0.011919735000249098
+          ],
+          [
+            0.0036587463413031924,
+            -0.013734430100843435,
+            -0.01004103245603354,
+            0.3841362268220866,
+            0.000683040308415692
+          ],
+          [
+            0.004402177143850468,
+            -0.01664788859241751,
+            -0.011919735000249098,
+            0.000683040308415692,
+            0.32041662153033434
+          ]
+        ],
+        "precision_z": [
+          [
+            1.1877184837277879,
+            0.20342923525942483,
+            0.15452308446731147,
+            -1.2303512740146078e-08,
+            -1.7760253276104537e-08
+          ],
+          [
+            0.2034292352594248,
+            1.7160708392463973,
+            0.16942559418032715,
+            0.06368303935690199,
+            0.09253400956248307
+          ],
+          [
+            0.15452308446731147,
+            0.1694255941803272,
+            2.1430954230118267,
+            0.06045137762085823,
+            0.08627573403926941
+          ],
+          [
+            -1.2303512740069535e-08,
+            0.06368303935690199,
+            0.06045137762085823,
+            2.6071002280406006,
+            -6.0658163046597455e-09
+          ],
+          [
+            -1.7760253275574244e-08,
+            0.09253400956248307,
+            0.08627573403926943,
+            -6.065816304659744e-09,
+            3.1289540319815097
+          ]
+        ],
+        "marginal_standard_deviations": [
+          0.9304936888981333,
+          0.7743269741166185,
+          0.6888037381974925,
+          0.619787243190828,
+          0.5660535500554116
+        ],
+        "loadings": [
+          [
+            0.16603367295772284,
+            0.0
+          ],
+          [
+            -0.8157008396713842,
+            0.5784731110081079
+          ],
+          [
+            -0.516784613083445,
+            -0.8561148522318104
+          ],
+          [
+            0.03821026598145113,
+            0.004407914283778964
+          ],
+          [
+            0.050338513762232064,
+            0.005323010192825726
+          ]
+        ],
+        "diagnostics": {
+          "jit_compile": true,
+          "training_row_count": 11,
+          "holdout_row_count": 10,
+          "training_score_equation_count": 55,
+          "holdout_score_equation_count": 50,
+          "parameter_count": 14,
+          "train_score_rmse": 0.01616140973993837,
+          "holdout_score_rmse": 0.02012756607584879,
+          "holdout_score_relative_rmse": 0.06479412584205357,
+          "holdout_score_relative_rmse_cap": 0.35,
+          "covariance_eigenvalues": [
+            0.31793343233561056,
+            0.3811553435089449,
+            0.45102727766588174,
+            0.5923815200376922,
+            0.9019066324829862
+          ],
+          "condition_number": 2.836778208121672,
+          "prediction_jacobian_rank": 13,
+          "prediction_jacobian_condition_number": 63961033454916.6,
+          "second_factor_identified": false,
+          "optimizer_converged": true,
+          "optimizer_failed": false,
+          "optimizer_iterations": 140,
+          "optimizer_objective_evaluations": 385,
+          "final_loss": 0.0002611911647821748,
+          "loading_row_squared_norms": [
+            0.027567180555832065,
+            0.999999,
+            0.9999989765317006,
+            0.0014794541347063841,
+            0.0025623004053033534
+          ],
+          "covariance_parameterization": "D[diag(1-row_norm(L)^2)+LL^T]D",
+          "score_model": "center_score_minus_local_score_equals_precision_times_offset"
+        },
+        "nonclaims": [
+          "structured local score geometry diagnostic only",
+          "not a certified MAP",
+          "not a certified posterior covariance",
+          "not HMC readiness evidence",
+          "not convergence evidence",
+          "not default-readiness evidence"
+        ]
+      }
+    }
+  ],
+  "runtime_changed": false,
+  "full_graph_warm_timing_available": false
+}

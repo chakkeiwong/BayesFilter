@@ -8,13 +8,18 @@ closure is used only to construct a full-support proposal geometry.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import hashlib
 import math
-from typing import Mapping
+from collections import OrderedDict
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from functools import lru_cache
 
 import tensorflow as tf
 
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
+from bayesfilter.ops.stateless_gamma_tf import philox_gamma_float64
+from bayesfilter.ops.stateless_random_tf import philox_normal_float64
 
 DTYPE = tf.float64
 ROUTE_ID = "c2_transformed_log_square_student_defense_v1"
@@ -24,7 +29,36 @@ RAW_ZERO_GAIN_ID = "c2_raw_observation_zero_cross_covariance_v1"
 EULER_GAMMA = 0.5772156649015328606
 LOG_CHI_SQUARE_MEAN = -EULER_GAMMA - math.log(2.0)
 LOG_CHI_SQUARE_VARIANCE = math.pi**2 / 2.0
-_TRANSFORM_CACHE: dict[tuple[str, int, bool], object] = {}
+_TRANSFORM_CACHE = OrderedDict()
+
+
+def _cache_program(key, program):
+    _TRANSFORM_CACHE[key] = program
+    _TRANSFORM_CACHE.move_to_end(key)
+    if len(_TRANSFORM_CACHE) > 16:
+        _TRANSFORM_CACHE.popitem(last=False)
+    return program
+
+
+@fixed_signature_function(floating_dtype=DTYPE)
+def _transformed_observation_core(observed, parameters):
+    return tf.math.log(tf.square(observed)) - 2. * parameters[1] - tf.constant(LOG_CHI_SQUARE_MEAN, DTYPE)
+
+
+@lru_cache(maxsize=16)
+def _geometry_program(dimension, nu):
+    @tf.function(input_signature=[tf.TensorSpec([dimension, dimension], DTYPE)],
+                 jit_compile=True, autograph=False)
+    def evaluate(process):
+        innovation = process + tf.eye(dimension, dtype=DTYPE) * tf.constant(LOG_CHI_SQUARE_VARIANCE, DTYPE)
+        gain = tf.transpose(tf.linalg.solve(innovation, tf.transpose(process)))
+        posterior = process - tf.linalg.matmul(gain, process)
+        posterior = .5 * (posterior + tf.transpose(posterior))
+        # Preserve the existing tf.cast(Python float) scale conversion.
+        scale = tf.cast((nu - 2.) / nu, DTYPE) * posterior
+        return innovation, gain, posterior, scale, tf.linalg.cholesky(scale), tf.reduce_max(tf.abs(gain @ innovation - process))
+
+    return evaluate
 
 
 def transformed_log_square_observation(
@@ -38,11 +72,7 @@ def transformed_log_square_observation(
     parameters = tf.ensure_shape(tf.convert_to_tensor(theta_reference, DTYPE), [2])
     if bool(tf.reduce_any(tf.equal(observed, 0.0)).numpy()):
         raise ValueError("the transformed C2 guide requires nonzero observations")
-    transformed = (
-        tf.math.log(tf.square(observed))
-        - 2.0 * parameters[1]
-        - tf.constant(LOG_CHI_SQUARE_MEAN, DTYPE)
-    )
+    transformed = _transformed_observation_core(observed, parameters)
     if not bool(tf.reduce_all(tf.math.is_finite(transformed)).numpy()):
         raise ValueError("transformed observations must be finite")
     return transformed
@@ -121,26 +151,20 @@ class C2TransformedObservationStudentProposal:
         if int(self.time_index) < 1:
             raise ValueError("transformed proposals require time_index >= 1")
 
-        innovation_covariance = process + tf.eye(dimension, dtype=DTYPE) * tf.constant(
-            LOG_CHI_SQUARE_VARIANCE, DTYPE
-        )
+        innovation_covariance, gain, posterior_covariance, scale, chol, residual = _geometry_program(
+            dimension, float(self.nu))(process)
         _check_spd(innovation_covariance, "innovation_covariance")
-        # K (P + v I) = P, matching the manuscript's right-sided solve.
-        gain = tf.transpose(tf.linalg.solve(innovation_covariance, tf.transpose(process)))
-        posterior_covariance = process - tf.linalg.matmul(gain, process)
-        posterior_covariance = 0.5 * (
-            posterior_covariance + tf.transpose(posterior_covariance)
-        )
         _check_spd(posterior_covariance, "posterior_covariance")
-        scale = student_scale_from_covariance(posterior_covariance, float(self.nu))
-        chol = tf.linalg.cholesky(scale)
-        residual = tf.linalg.matmul(
-            gain, innovation_covariance
-        ) - process
-        residual_max = float(tf.reduce_max(tf.abs(residual)).numpy())
+        residual_max = float(residual.numpy())
         if residual_max > 2e-11:
             raise ValueError("transformed-guide gain solve residual is too large")
 
+        self._bind_completed(transition, process, observed, theta, gain,
+                             posterior_covariance, scale, chol, residual_max)
+
+    def _bind_completed(self, transition, process, observed, theta, gain,
+                        posterior_covariance, scale, chol, residual_max):
+        """Bind validated, completed tensors and issue their actual identity."""
         object.__setattr__(self, "transition_matrix", transition)
         object.__setattr__(self, "process_covariance", process)
         object.__setattr__(self, "transformed_observation", observed)
@@ -173,6 +197,8 @@ class C2TransformedObservationStudentProposal:
         parents = tf.ensure_shape(
             tf.convert_to_tensor(parent_states, DTYPE), [None, self.dimension]
         )
+        if tf.executing_eagerly():
+            return self._compiled_evaluation(int(parents.shape[0]), "mean")(parents)
         prior_mean = tf.linalg.matmul(
             parents, self.transition_matrix, transpose_b=True
         )
@@ -183,6 +209,9 @@ class C2TransformedObservationStudentProposal:
         values = tf.ensure_shape(
             tf.convert_to_tensor(states, DTYPE), [None, self.dimension]
         )
+        if tf.executing_eagerly():
+            return self._compiled_evaluation(int(values.shape[0]), "density")(
+                values, tf.convert_to_tensor(parent_states, DTYPE))
         means = self.conditional_mean(parent_states)
         centered = values - means
         whitened = tf.transpose(
@@ -201,6 +230,17 @@ class C2TransformedObservationStudentProposal:
         )
         return normalizer - 0.5 * (nu + dimension) * tf.math.log1p(quadratic / nu)
 
+    def _compiled_evaluation(self, count, kind):
+        key = (self.proposal_id, count, kind)
+        if key in _TRANSFORM_CACHE:
+            _TRANSFORM_CACHE.move_to_end(key)
+            return _TRANSFORM_CACHE[key]
+        specification = tf.TensorSpec([count, self.dimension], DTYPE)
+        function = self.conditional_mean if kind == "mean" else self.log_density
+        signature = [specification] if kind == "mean" else [specification, specification]
+        return _cache_program(key, tf.function(function, input_signature=signature,
+                                               jit_compile=True, autograph=False))
+
     def compiled_transform(self, particle_count: int, *, jit_compile: bool = True):
         count = int(particle_count)
         if count < 1:
@@ -208,6 +248,7 @@ class C2TransformedObservationStudentProposal:
         key = (self.proposal_id, count, bool(jit_compile))
         cached = _TRANSFORM_CACHE.get(key)
         if cached is not None:
+            _TRANSFORM_CACHE.move_to_end(key)
             return cached
 
         @tf.function(
@@ -220,20 +261,40 @@ class C2TransformedObservationStudentProposal:
             autograph=False,
         )
         def transform(parent_states, standard_normal, chi_square):
-            means = self.conditional_mean(parent_states)
-            whitened = standard_normal / tf.sqrt(
-                chi_square[:, None] / tf.constant(float(self.nu), DTYPE)
-            )
-            states = means + tf.einsum("ij,nj->ni", self.chol, whitened)
-            return {
-                "physical_points": states,
-                "physical_log_density": self.log_density(states, parent_states),
-                "finite": tf.reduce_all(tf.math.is_finite(states))
-                & tf.reduce_all(tf.math.is_finite(chi_square)),
-            }
+            return self._transform_core(parent_states, standard_normal, chi_square)
 
-        _TRANSFORM_CACHE[key] = transform
-        return transform
+        return _cache_program(key, transform)
+
+    def _transform_core(self, parent_states, standard_normal, chi_square):
+        means = self.conditional_mean(parent_states)
+        whitened = standard_normal / tf.sqrt(
+            chi_square[:, None] / tf.constant(float(self.nu), DTYPE)
+        )
+        states = means + tf.einsum("ij,nj->ni", self.chol, whitened)
+        return {
+            "physical_points": states,
+            "physical_log_density": self.log_density(states, parent_states),
+            "finite": tf.reduce_all(tf.math.is_finite(states))
+            & tf.reduce_all(tf.math.is_finite(chi_square)),
+        }
+
+    def compiled_seeded_sampler(self, particle_count: int, *, jit_compile: bool = True):
+        count = int(particle_count)
+        transform = self.compiled_transform(count, jit_compile=jit_compile).python_function
+        key = (self.proposal_id, count, bool(jit_compile), "seeded")
+        if key in _TRANSFORM_CACHE:
+            _TRANSFORM_CACHE.move_to_end(key)
+            return _TRANSFORM_CACHE[key]
+
+        @tf.function(input_signature=[tf.TensorSpec([count, self.dimension], DTYPE),
+            tf.TensorSpec([2], tf.int64)], jit_compile=bool(jit_compile), autograph=False)
+        def sample(parents, seed):
+            normal = philox_normal_float64([count, self.dimension], seed)
+            chi_square = philox_gamma_float64([count], seed + [0, 1],
+                tf.constant(float(self.nu) / 2., DTYPE), tf.constant(.5, DTYPE))
+            return transform(parents, normal, chi_square)
+
+        return _cache_program(key, sample)
 
     def sample_with_seed(
         self,
@@ -247,21 +308,11 @@ class C2TransformedObservationStudentProposal:
         parents = tf.ensure_shape(
             tf.convert_to_tensor(parent_states, DTYPE), [count, self.dimension]
         )
-        normal = tf.random.stateless_normal(
-            [count, self.dimension], [int(seed[0]), int(seed[1])], dtype=DTYPE
-        )
-        chi_square = tf.random.stateless_gamma(
-            [count],
-            [int(seed[0]), int(seed[1]) + 1],
-            alpha=tf.constant(float(self.nu) / 2.0, DTYPE),
-            # TensorFlow's beta argument is the gamma rate.  Chi-square(nu)
-            # is Gamma(nu/2, rate=1/2).
-            beta=tf.constant(0.5, DTYPE),
-            dtype=DTYPE,
-        )
-        return self.compiled_transform(count, jit_compile=jit_compile)(
-            parents, normal, chi_square
-        )
+        first, second = int(seed[0]), int(seed[1])
+        if not -2**63 <= first < 2**63 or not -2**63 <= second < 2**63 - 1:
+            raise ValueError("proposal seed and offsets must fit int64")
+        return self.compiled_seeded_sampler(count, jit_compile=jit_compile)(
+            parents, tf.constant([first, second], tf.int64))
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -305,6 +356,67 @@ def build_c2_transformed_observation_student_proposal(
     )
 
 
+@lru_cache(maxsize=16)
+def _batch_observation_program(count, dimension):
+    @tf.function(input_signature=[tf.TensorSpec([count, dimension], DTYPE),
+                                 tf.TensorSpec([2], DTYPE)],
+                 jit_compile=True, autograph=False)
+    def evaluate(observations, theta):
+        transformed = _transformed_observation_core(observations, theta)
+        status = tf.where(tf.reduce_all(tf.math.is_finite(transformed), axis=1), 0, 2)
+        status = tf.where(tf.reduce_any(observations == 0., axis=1), 1, status)
+        first_error = tf.argmax(tf.cast(status != 0, tf.int32), output_type=tf.int32)
+        return transformed, status[0], status[first_error]
+    return evaluate
+
+
+def build_c2_transformed_observation_student_proposals(
+    *, transition_matrix, process_covariance, observations, theta_reference, nu,
+):
+    """Batch transition guides; geometry is shared, completed records are host-side."""
+    observed = tf.convert_to_tensor(observations, DTYPE)
+    count, dimension = observed.shape
+    if count == 0:
+        return ()
+    theta = tf.ensure_shape(tf.convert_to_tensor(theta_reference, DTYPE), [2])
+    transformed, first_status, later_status = _batch_observation_program(count, dimension)(observed, theta)
+
+    def validate_observation(status):
+        if int(status.numpy()) == 1:
+            raise ValueError("the transformed C2 guide requires nonzero observations")
+        if int(status.numpy()) == 2:
+            raise ValueError("transformed observations must be finite")
+
+    validate_observation(first_status)
+    rows = tf.unstack(transformed)
+    first = C2TransformedObservationStudentProposal(
+        transition_matrix=transition_matrix, process_covariance=process_covariance,
+        transformed_observation=rows[0], theta_reference=theta, nu=float(nu), time_index=1)
+    validate_observation(later_status)
+    proposals = [first]
+    for time_index, row in enumerate(rows[1:], start=2):
+        proposal = object.__new__(C2TransformedObservationStudentProposal)
+        object.__setattr__(proposal, 'nu', float(nu))
+        object.__setattr__(proposal, 'time_index', time_index)
+        proposal._bind_completed(first.transition_matrix, first.process_covariance,
+            row, first.theta_reference, first.gain, first.posterior_covariance,
+            first.scale, first.chol, first.solve_residual_max)
+        proposals.append(proposal)
+    return tuple(proposals)
+
+
+def _student_tensor_view(nu, payload):
+    """Private view of validated tensors for tracing; cannot issue an identity."""
+    transition, gain, observed, chol = payload
+    view = object.__new__(C2TransformedObservationStudentProposal)
+    object.__setattr__(view, 'nu', nu)
+    object.__setattr__(view, 'transition_matrix', transition)
+    object.__setattr__(view, 'gain', gain)
+    object.__setattr__(view, 'transformed_observation', observed)
+    object.__setattr__(view, 'chol', chol)
+    return view
+
+
 def _check_spd(matrix: tf.Tensor, name: str) -> None:
     matrix = tf.convert_to_tensor(matrix, DTYPE)
     scale = tf.maximum(tf.reduce_max(tf.abs(matrix)), tf.constant(1.0, DTYPE))
@@ -326,7 +438,6 @@ def _hash_value(digest: object, value: object) -> None:
 
 
 __all__ = [
-    "C2TransformedObservationStudentProposal",
     "DTYPE",
     "EULER_GAMMA",
     "GUIDE_CONVENTION_ID",
@@ -335,6 +446,7 @@ __all__ = [
     "RAW_ZERO_GAIN_ID",
     "ROUTE_CLASSIFICATION",
     "ROUTE_ID",
+    "C2TransformedObservationStudentProposal",
     "build_c2_transformed_observation_student_proposal",
     "raw_observation_zero_cross_covariance",
     "student_scale_from_covariance",

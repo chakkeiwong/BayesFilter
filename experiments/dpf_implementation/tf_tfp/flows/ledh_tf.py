@@ -8,6 +8,7 @@ from typing import Any, Callable
 import tensorflow as tf
 
 
+
 DTYPE = tf.float64
 
 
@@ -51,43 +52,68 @@ def ledh_flow_batch_tf(
     prior_means = tf.linalg.matmul(ancestors, transition_matrix, transpose_b=True)
     pre_flow_log_density = gaussian_logpdf_tf(x0_batch - prior_means, transition_covariance)
 
-    mapped = []
-    logdets = []
-    posterior_means = []
-    posterior_covariances = []
-    min_singular_values = []
-    max_singular_values = []
-    transform_signs = []
+    state_dim = x0_batch.shape[-1]
+    if state_dim is None:
+        raise ValueError("LEDH flow requires a static state dimension")
+    # These repeated stabilizations were part of each local map. Keep them,
+    # but evaluate the particle-invariant factors outside the particle loop.
+    # This also avoids Grappler lifting eigensolver state out of nested loops.
+    prior_chol = tf.linalg.cholesky(_stabilize_covariance(transition_covariance, jitter))
+    prior_precision = tf.linalg.cholesky_solve(prior_chol, tf.eye(state_dim, dtype=DTYPE))
+    obs_chol = tf.linalg.cholesky(_stabilize_covariance(observation_covariance, jitter))
+    obs_precision = tf.linalg.cholesky_solve(obs_chol,
+        tf.eye(int(observation_covariance.shape[0]), dtype=DTYPE))
 
-    for x0, prior_mean in zip(tf.unstack(x0_batch, axis=0), tf.unstack(prior_means, axis=0)):
+    def map_one(inputs):
+        x0, prior_mean = inputs
         x1, post_mean, post_cov, affine_transform, logabsdet = _local_ledh_map_tf(
             x0=x0,
             prior_mean=prior_mean,
-            prior_covariance=transition_covariance,
+            prior_chol=prior_chol,
+            prior_precision=prior_precision,
             observation=observation,
-            observation_covariance=observation_covariance,
+            obs_precision=obs_precision,
             observation_fn=observation_fn,
             observation_jacobian_fn=observation_jacobian_fn,
             observation_residual_fn=observation_residual_fn,
             jitter=jitter,
         )
-        sign = tf.linalg.det(affine_transform)
         singular_values = tf.linalg.svd(affine_transform, compute_uv=False)
-        mapped.append(x1)
-        logdets.append(logabsdet)
-        posterior_means.append(post_mean)
-        posterior_covariances.append(post_cov)
-        min_singular_values.append(tf.reduce_min(singular_values))
-        max_singular_values.append(tf.reduce_max(singular_values))
-        transform_signs.append(sign)
+        return (
+            x1,
+            post_mean,
+            post_cov,
+            logabsdet,
+            tf.stop_gradient(tf.reduce_min(singular_values)),
+            tf.stop_gradient(tf.reduce_max(singular_values)),
+            # L_post @ inverse(L_prior) is lower triangular.
+            tf.stop_gradient(tf.reduce_prod(tf.linalg.diag_part(affine_transform))),
+        )
 
-    post_flow_particles = tf.stack(mapped, axis=0)
-    forward_log_det = tf.stack(logdets, axis=0)
-    local_posterior_means = tf.stack(posterior_means, axis=0)
-    local_posterior_covariances = tf.stack(posterior_covariances, axis=0)
-    min_singular_tensor = tf.stack(min_singular_values, axis=0)
-    max_singular_tensor = tf.stack(max_singular_values, axis=0)
-    transform_sign_tensor = tf.stack(transform_signs, axis=0)
+    count = x0_batch.shape[0]
+    if count is None:
+        raise ValueError("LEDH flow requires a fixed particle count")
+    # Dense fixed-shape buffers avoid a map_fn input TensorList whose gradient
+    # length can become a dynamic capture inside an enclosing date recurrence.
+    buffers = (tf.zeros([count, state_dim], DTYPE), tf.zeros([count, state_dim], DTYPE),
+               tf.zeros([count, state_dim, state_dim], DTYPE),
+               *(tf.zeros([count], DTYPE) for _ in range(4)))
+    def particle_step(index, buffers):
+        values = map_one((x0_batch[index], prior_means[index]))
+        buffers = tf.nest.map_structure(lambda buffer, value: tf.tensor_scatter_nd_update(
+            buffer, tf.reshape(index, [1, 1]), value[None]), buffers, values)
+        return index+1, buffers
+    _, buffers = tf.while_loop(lambda index, _: index < count, particle_step, (tf.constant(0), buffers),
+                               maximum_iterations=count, parallel_iterations=1)
+    (
+        post_flow_particles,
+        local_posterior_means,
+        local_posterior_covariances,
+        forward_log_det,
+        min_singular_tensor,
+        max_singular_tensor,
+        transform_sign_tensor,
+    ) = buffers
     diagnostics = {
         "component_id": "tf_tfp_ledh_local_affine_flow",
         "map_convention": "x1 = local_posterior_mean + L_post L_prior^{-1}(x0 - prior_mean)",
@@ -108,9 +134,12 @@ def ledh_flow_batch_tf(
         "max_affine_transform_det": _float(tf.reduce_max(transform_sign_tensor)),
         "backend": "tensorflow",
     }
-    if not diagnostics["finite_post_flow"] or not diagnostics["finite_forward_log_det"]:
+    diagnostics["valid_flow"] = (tf.reduce_all(tf.math.is_finite(post_flow_particles))
+        & tf.reduce_all(tf.math.is_finite(forward_log_det))
+        & (tf.reduce_min(min_singular_tensor) > tf.constant(1e-12, DTYPE)))
+    if tf.executing_eagerly() and (not diagnostics["finite_post_flow"] or not diagnostics["finite_forward_log_det"]):
         raise FloatingPointError("LEDH flow emitted non-finite map or log-det values")
-    if diagnostics["min_jacobian_singular_value"] <= 1e-12:
+    if tf.executing_eagerly() and diagnostics["min_jacobian_singular_value"] <= 1e-12:
         raise FloatingPointError("LEDH flow Jacobian is numerically singular")
     return LedhFlowBatchResult(
         pre_flow_particles=x0_batch,
@@ -140,26 +169,15 @@ def _local_ledh_map_tf(
     *,
     x0: tf.Tensor,
     prior_mean: tf.Tensor,
-    prior_covariance: tf.Tensor,
+    prior_chol: tf.Tensor,
+    prior_precision: tf.Tensor,
     observation: tf.Tensor,
-    observation_covariance: tf.Tensor,
+    obs_precision: tf.Tensor,
     observation_fn: Callable[[tf.Tensor], tf.Tensor],
     observation_jacobian_fn: Callable[[tf.Tensor], tf.Tensor],
     observation_residual_fn: Callable[[tf.Tensor, tf.Tensor], tf.Tensor],
     jitter: float,
 ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
-    prior_covariance = _stabilize_covariance(prior_covariance, jitter)
-    observation_covariance = _stabilize_covariance(observation_covariance, jitter)
-    prior_chol = tf.linalg.cholesky(prior_covariance)
-    prior_precision = tf.linalg.cholesky_solve(
-        prior_chol,
-        tf.eye(int(prior_covariance.shape[0]), dtype=DTYPE),
-    )
-    obs_chol = tf.linalg.cholesky(observation_covariance)
-    obs_precision = tf.linalg.cholesky_solve(
-        obs_chol,
-        tf.eye(int(observation_covariance.shape[0]), dtype=DTYPE),
-    )
     h_ref = tf.cast(observation_fn(x0), DTYPE)
     h_jac = tf.cast(observation_jacobian_fn(x0), DTYPE)
     residual = tf.reshape(observation_residual_fn(h_ref, observation), [-1])
@@ -196,8 +214,10 @@ def _stabilize_covariance(covariance: tf.Tensor, jitter: float = 1e-9) -> tf.Ten
 
 
 def _finite_bool(value: tf.Tensor) -> bool:
-    return bool(tf.reduce_all(tf.math.is_finite(tf.cast(value, DTYPE))).numpy())
+    result = tf.reduce_all(tf.math.is_finite(tf.cast(value, DTYPE)))
+    return bool(result.numpy()) if tf.executing_eagerly() else result
 
 
 def _float(value: tf.Tensor) -> float:
-    return float(tf.cast(value, DTYPE).numpy())
+    result = tf.cast(value, DTYPE)
+    return float(result.numpy()) if tf.executing_eagerly() else result

@@ -21,7 +21,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-import numpy as np
 
 
 def _configure_visibility_before_tensorflow_import() -> str:
@@ -89,6 +88,7 @@ if str(ROOT) not in sys.path:
 from bayesfilter.inference.cpu_value_score_pool import (  # noqa: E402
     CPUValueScorePool,
     CPUValueScorePoolConfig,
+    training_shard_sizes,
 )
 from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact  # noqa: E402
 from bayesfilter.inference.neutra_training import (  # noqa: E402
@@ -336,7 +336,7 @@ def repo_path(path: Path, *, label: str) -> Path:
     return resolved
 
 
-def pool_config(q: int, worker_count: int | None = None) -> CPUValueScorePoolConfig:
+def pool_config(q: int, worker_count: int | None = None, *, batch_size: int = BATCH_SIZE) -> CPUValueScorePoolConfig:
     q = int(q)
     if q not in Q_VALUES:
         raise ValueError("q is outside the complexity ladder")
@@ -345,13 +345,14 @@ def pool_config(q: int, worker_count: int | None = None) -> CPUValueScorePoolCon
         raise ValueError("worker_count must match the Phase 2 selected topology")
     return CPUValueScorePoolConfig(
         worker_factory_path=(
-            "bayesfilter.nonlinear.ssl_lstm_complexity_target_tf:"
-            "complexity_target_worker_factory"
+            "bayesfilter.nonlinear.ssl_lstm_complexity_batched_target_tf:"
+            "batch_native_complexity_target_worker_factory"
         ),
         worker_config={"q": q},
         dimension=4,
         worker_count=selected_workers,
         cores_per_worker=1,
+        batch_sizes=training_shard_sizes((batch_size, 9, VALIDATION_BATCH_SIZE, AUDIT_BATCH_SIZE), selected_workers),
     )
 
 
@@ -461,17 +462,15 @@ def _host_step(result: Any) -> dict[str, Any]:
 
 
 def _host_validation(validation: Any, *, step: int, learning_rate: float) -> dict[str, Any]:
-    losses = np.asarray(validation.per_sample_loss.numpy(), dtype=np.float64)
-    target_values = np.asarray(validation.target_value.numpy(), dtype=np.float64)
-    theta = np.asarray(validation.theta.numpy(), dtype=np.float64)
-    logdet = np.asarray(validation.logdet.numpy(), dtype=np.float64)
-    scale_log = np.asarray(validation.scale_log.numpy(), dtype=np.float64)
-    scale_logits = np.asarray(validation.scale_logits.numpy(), dtype=np.float64)
-    hidden_preactivations = np.asarray(
-        validation.hidden_preactivations.numpy(), dtype=np.float64
-    )
+    losses = tf.convert_to_tensor(validation.per_sample_loss, tf.float64)
+    target_values = tf.convert_to_tensor(validation.target_value, tf.float64)
+    theta = tf.convert_to_tensor(validation.theta, tf.float64)
+    logdet = tf.convert_to_tensor(validation.logdet, tf.float64)
+    scale_log = tf.convert_to_tensor(validation.scale_log, tf.float64)
+    scale_logits = tf.convert_to_tensor(validation.scale_logits, tf.float64)
+    hidden_preactivations = tf.convert_to_tensor(validation.hidden_preactivations, tf.float64)
     if not all(
-        np.all(np.isfinite(value))
+        bool(tf.reduce_all(tf.math.is_finite(value)))
         for value in (
             losses,
             target_values,
@@ -485,55 +484,57 @@ def _host_validation(validation: Any, *, step: int, learning_rate: float) -> dic
         raise FloatingPointError("validation returned nonfinite values")
     if scale_log.shape[-1] % theta.shape[-1] != 0:
         raise ValueError("scale_log width must be divisible by target dimension")
-    stage_scale_log = np.reshape(
+    stage_scale_log = tf.reshape(
         scale_log,
         (scale_log.shape[0], scale_log.shape[-1] // theta.shape[-1], theta.shape[-1]),
     )
-    if scale_logits.ndim != 3 or scale_logits.shape[:2] != stage_scale_log.shape[:2]:
+    if scale_logits.shape.rank != 3 or scale_logits.shape[:2] != stage_scale_log.shape[:2]:
         raise ValueError("scale_logits must have shape [batch, stages, dimension]")
-    if hidden_preactivations.ndim != 4:
+    if hidden_preactivations.shape.rank != 4:
         raise ValueError(
             "hidden_preactivations must have shape [batch, stages, layers, width]"
         )
-    raw_scale_threshold = float(np.arctanh(0.95))
-    hidden_abs = np.abs(hidden_preactivations)
+    raw_scale_threshold = math.atanh(0.95)
+    hidden_abs = tf.abs(hidden_preactivations)
+    def fraction(mask, axis=None):
+        return tf.reduce_mean(tf.cast(mask, tf.float64), axis=axis)
     return {
         "step": int(step),
         "learning_rate": float(learning_rate),
-        "per_sample_loss": losses.tolist(),
-        "mean_loss": float(np.mean(losses)),
-        "target_value_mean": float(np.mean(target_values)),
-        "logdet_mean": float(np.mean(logdet)),
-        "scale_log_min": float(np.min(scale_log)),
-        "scale_log_max": float(np.max(scale_log)),
-        "saturation_fraction": float(np.mean(np.abs(scale_log) >= 0.95)),
-        "saturation_fraction_by_stage": np.mean(
-            np.abs(stage_scale_log) >= 0.95, axis=(0, 2)
-        ).tolist(),
-        "scale_logit_min": float(np.min(scale_logits)),
-        "scale_logit_max": float(np.max(scale_logits)),
-        "scale_logit_tail_fraction_by_stage": np.mean(
-            np.abs(scale_logits) >= raw_scale_threshold, axis=(0, 2)
-        ).tolist(),
+        "per_sample_loss": losses.numpy().tolist(),
+        "mean_loss": float(tf.reduce_mean(losses)),
+        "target_value_mean": float(tf.reduce_mean(target_values)),
+        "logdet_mean": float(tf.reduce_mean(logdet)),
+        "scale_log_min": float(tf.reduce_min(scale_log)),
+        "scale_log_max": float(tf.reduce_max(scale_log)),
+        "saturation_fraction": float(fraction(tf.abs(scale_log) >= 0.95)),
+        "saturation_fraction_by_stage": fraction(
+            tf.abs(stage_scale_log) >= 0.95, axis=(0, 2)
+        ).numpy().tolist(),
+        "scale_logit_min": float(tf.reduce_min(scale_logits)),
+        "scale_logit_max": float(tf.reduce_max(scale_logits)),
+        "scale_logit_tail_fraction_by_stage": fraction(
+            tf.abs(scale_logits) >= raw_scale_threshold, axis=(0, 2)
+        ).numpy().tolist(),
         "scale_logit_tail_threshold": raw_scale_threshold,
-        "hidden_preactivation_min_by_stage": np.min(
+        "hidden_preactivation_min_by_stage": tf.reduce_min(
             hidden_preactivations, axis=(0, 2, 3)
-        ).tolist(),
-        "hidden_preactivation_max_by_stage": np.max(
+        ).numpy().tolist(),
+        "hidden_preactivation_max_by_stage": tf.reduce_max(
             hidden_preactivations, axis=(0, 2, 3)
-        ).tolist(),
-        "hidden_abs_tail_fraction_by_stage": np.mean(
+        ).numpy().tolist(),
+        "hidden_abs_tail_fraction_by_stage": fraction(
             hidden_abs >= 5.0, axis=(0, 2, 3)
-        ).tolist(),
-        "hidden_negative_tail_fraction_by_stage": np.mean(
+        ).numpy().tolist(),
+        "hidden_negative_tail_fraction_by_stage": fraction(
             hidden_preactivations <= -5.0, axis=(0, 2, 3)
-        ).tolist(),
-        "hidden_positive_tail_fraction_by_stage": np.mean(
+        ).numpy().tolist(),
+        "hidden_positive_tail_fraction_by_stage": fraction(
             hidden_preactivations >= 5.0, axis=(0, 2, 3)
-        ).tolist(),
+        ).numpy().tolist(),
         "hidden_preactivation_abs_threshold": 5.0,
-        "theta_min_by_coordinate": np.min(theta, axis=0).tolist(),
-        "theta_max_by_coordinate": np.max(theta, axis=0).tolist(),
+        "theta_min_by_coordinate": tf.reduce_min(theta, axis=0).numpy().tolist(),
+        "theta_max_by_coordinate": tf.reduce_max(theta, axis=0).numpy().tolist(),
     }
 
 
@@ -588,13 +589,13 @@ def _external_transport_audit(
     logdet = transport.log_abs_det_jacobian_batch(z)
     values, metadata = pool.evaluate_values(theta.numpy(), request_id=request_id)
     _enforce_host_memory(metadata)
-    losses = -np.asarray(values, np.float64) - np.asarray(logdet.numpy(), np.float64)
-    if losses.shape != (AUDIT_BATCH_SIZE,) or not np.all(np.isfinite(losses)):
+    losses = -tf.convert_to_tensor(values, tf.float64) - logdet
+    if losses.shape != (AUDIT_BATCH_SIZE,) or not bool(tf.reduce_all(tf.math.is_finite(losses))):
         raise FloatingPointError("audit loss returned nonfinite or wrong-shaped values")
     return {
         "batch_size": AUDIT_BATCH_SIZE,
-        "mean_loss": float(np.mean(losses)),
-        "per_sample_loss": losses.tolist(),
+        "mean_loss": float(tf.reduce_mean(losses)),
+        "per_sample_loss": losses.numpy().tolist(),
         "worker_backend": metadata,
         "audit_definition": "stateless_validation_seed_fold_20260721_final_only",
     }
@@ -613,12 +614,9 @@ def _enforce_host_memory(metadata: Mapping[str, Any]) -> int:
 
 
 def _latent_shell() -> tf.Tensor:
-    rows = [tf.zeros((4,), tf.float64)]
-    for coordinate in range(4):
-        direction = np.zeros(4, dtype=np.float64)
-        direction[coordinate] = SHELL_RADIUS
-        rows.extend((tf.constant(direction), tf.constant(-direction)))
-    return tf.stack(rows)
+    directions = tf.eye(4, dtype=tf.float64) * SHELL_RADIUS
+    return tf.concat([tf.zeros([1, 4], tf.float64),
+                      tf.reshape(tf.stack([directions, -directions], axis=1), [8, 4])], axis=0)
 
 
 def support_probe(
@@ -651,7 +649,7 @@ def support_probe(
         ).numpy()
     )
     return {
-        "all_finite": all_finite and bool(np.all(np.isfinite(values))),
+        "all_finite": all_finite and bool(tf.reduce_all(tf.math.is_finite(values))),
         "roundtrip_max_abs": roundtrip,
         "moderate_shell_max_inverse_radius": float(
             tf.reduce_max(tf.linalg.norm(replay_z, axis=-1)).numpy()
@@ -701,9 +699,9 @@ def _rung_vetoes(row: Mapping[str, Any]) -> list[str]:
 
 
 def _paired_upper(initial: list[float], final: list[float]) -> dict[str, float]:
-    differences = np.asarray(final, np.float64) - np.asarray(initial, np.float64)
-    mean = float(np.mean(differences))
-    se = float(np.std(differences, ddof=1) / math.sqrt(len(differences)))
+    differences = tf.convert_to_tensor(final, tf.float64) - tf.convert_to_tensor(initial, tf.float64)
+    mean = float(tf.reduce_mean(differences))
+    se = float(tf.sqrt(tf.reduce_sum(tf.square(differences - mean)) / (len(differences) - 1)) / math.sqrt(len(differences)))
     return {
         "mean_difference": mean,
         "standard_error": se,
@@ -1201,7 +1199,7 @@ def run_manifest(args: argparse.Namespace, charged_seconds: float) -> dict[str, 
         "gpu_allocator_memory_bytes": allocator_memory,
         "dtype": "float64",
         "jit_compile_parent": True,
-        "jit_compile_workers": False,
+        "jit_compile_workers": True,
         "tf32": bool(tf.config.experimental.tensor_float_32_execution_enabled()),
         "soft_device_placement": False,
         "worker_count": WORKERS_BY_Q[args.q],
@@ -1272,7 +1270,7 @@ def contract_payload(args: argparse.Namespace) -> dict[str, Any]:
         "q": args.q,
         "hidden_layers": list(args.hidden_layers),
         "selected_worker_count": WORKERS_BY_Q[args.q],
-        "pool_config": asdict(pool_config(args.q)),
+        "pool_config": asdict(pool_config(args.q, batch_size=args.batch_size)),
         "search_space": {
             "learning_rate": [1.0e-4, 2.0e-3, "log"],
             "initialization_scale": [0.005, 0.01, 0.02],
@@ -1347,7 +1345,7 @@ def run_study(args: argparse.Namespace) -> dict[str, Any]:
         ),
     )
     trial_records = previous_trial_records
-    with CPUValueScorePool(pool_config(args.q)) as pool:
+    with CPUValueScorePool(pool_config(args.q, batch_size=args.batch_size)) as pool:
         def objective(trial: Any) -> float:
             params = trial_parameters(trial)
             rows = []
@@ -1545,7 +1543,7 @@ def run_final(args: argparse.Namespace) -> dict[str, Any]:
     results = []
     resource_stop = None
     hard_veto = None
-    with CPUValueScorePool(pool_config(args.q)) as pool:
+    with CPUValueScorePool(pool_config(args.q, batch_size=args.batch_size)) as pool:
         for stream in STREAMS:
             if stream.label in previous_results:
                 row = previous_results[stream.label]
@@ -1690,7 +1688,7 @@ def run_single_diagnostic(args: argparse.Namespace) -> dict[str, Any]:
     resource_stop = None
     interrupted = None
     hard_veto = None
-    with CPUValueScorePool(pool_config(args.q)) as pool:
+    with CPUValueScorePool(pool_config(args.q, batch_size=args.batch_size)) as pool:
         try:
             result = run_final_stream(
                 target=target,
@@ -1944,7 +1942,7 @@ def run_confirmation(args: argparse.Namespace) -> dict[str, Any]:
     result_row = None
     resource_stop = None
     hard_veto = None
-    with CPUValueScorePool(pool_config(args.q)) as pool:
+    with CPUValueScorePool(pool_config(args.q, batch_size=args.batch_size)) as pool:
         try:
             result = run_final_stream(
                 target=target,

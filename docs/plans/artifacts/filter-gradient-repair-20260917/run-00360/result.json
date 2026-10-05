@@ -1,0 +1,525 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "geometry_fit",
+  "size": 2,
+  "jit": "eager",
+  "device": "GPU",
+  "source_root": "/tmp/bayesfilter-filter-repair-baseline-3582b4ac",
+  "worker_sha256": "977faa123ad252102feb15a38435f412c929e86371277423e00f6af216d7214a",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "977faa123ad252102feb15a38435f412c929e86371277423e00f6af216d7214a",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "filter_repair_endpoint_fixtures.py": "c664a5e4964f240b0bc2ab155f25bd6854c41ffa14a7eae1cabf9d899478dc0f"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 23228416,
+      "VmRSS": 23228416
+    },
+    "prepared": {
+      "VmHWM": 970661888,
+      "VmRSS": 970661888,
+      "gpu": {
+        "current": 16896,
+        "peak": 32000
+      }
+    },
+    "traced": {
+      "VmHWM": 970727424,
+      "VmRSS": 970727424,
+      "gpu": {
+        "current": 16896,
+        "peak": 16896
+      }
+    },
+    "cold_outputs_live": {
+      "VmHWM": 972066816,
+      "VmRSS": 972066816,
+      "gpu": {
+        "current": 19968,
+        "peak": 19968
+      }
+    },
+    "cold_outputs_released": {
+      "VmHWM": 972066816,
+      "VmRSS": 972066816,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    }
+  },
+  "status": "passed",
+  "phase": "complete",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4090"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "2",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": "index, name, uuid, driver_version\n0, NVIDIA GeForce RTX 4090, GPU-08d989e5-2702-1b9d-c1ef-7795ff299e02, 595.91.07\n1, NVIDIA GeForce RTX 4090, GPU-225f4834-d8ad-f91a-2378-03ad0524381b, 595.91.07\n2, NVIDIA GeForce RTX 4090, GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba, 595.91.07\n3, NVIDIA GeForce RTX 4090, GPU-b8045e28-4433-ec7a-77a5-db0636748322, 595.91.07",
+  "trust_basis": "trusted_escalated_gpu_diagnostic",
+  "numerical_backend": "legacy_numpy_host_fit_diagnostic_only",
+  "preparation_seconds": 0.744318912999006,
+  "dimensions": {
+    "samples": 100,
+    "parameters": 6,
+    "rank": 4,
+    "input_design": "frozen_trigonometric_cloud_v1",
+    "scope": "complete_quadratic_fit_not_complete_initializer"
+  },
+  "input_sha256": "98a8b220189d75767d8d4048c37fae36737e1b7bfa44f807bdf1cb94687f1154",
+  "input_shapes": [
+    [
+      100,
+      6
+    ],
+    [
+      100
+    ],
+    [
+      100,
+      6
+    ],
+    [
+      6,
+      4
+    ],
+    [
+      6
+    ]
+  ],
+  "input_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64"
+  ],
+  "trace_seconds": 3.699969965964556e-07,
+  "graph": {
+    "nodes": 0,
+    "functions": 0,
+    "callbacks": [],
+    "must_compile": false,
+    "nested_xla": [],
+    "xla_ops": []
+  },
+  "execution_exception": "existing_host_execution_reference_only; nested compilation may exist",
+  "cold": {
+    "synchronized_seconds": 0.004717921998235397,
+    "output_copy_seconds": 0.00030097499256953597,
+    "end_to_end_seconds": 0.005018896990804933
+  },
+  "output_shapes": [
+    [
+      6,
+      6
+    ],
+    [
+      6
+    ],
+    [
+      4
+    ],
+    [
+      4
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    []
+  ],
+  "output_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "float64",
+    "int64",
+    "int64"
+  ],
+  "output_devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0",
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "values": [
+    [
+      [
+        1.3647608731457364,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.3647608731457364,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.920000000000001,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        2.280000000000001,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.6400000000000006,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        3.000000000000001
+      ]
+    ],
+    [
+      -0.2,
+      -0.1,
+      0.0,
+      0.10000000000000003,
+      0.2,
+      0.3
+    ],
+    [
+      0.5552391268542647,
+      0.9152391268542647,
+      1.275239126854264,
+      1.6352391268542648
+    ],
+    [
+      0.5552391268542647,
+      0.9152391268542647,
+      1.275239126854264,
+      1.6352391268542648
+    ],
+    0.7000000000000023,
+    1.3647608731457364,
+    1.3647608731457364,
+    0.022730136612942466,
+    0.10847490248559988,
+    2.198187286161775,
+    5,
+    0
+  ],
+  "warm": [
+    {
+      "iteration": 0,
+      "synchronized_seconds": 0.0034142810036428273,
+      "output_copy_seconds": 0.00019371700182091445,
+      "end_to_end_seconds": 0.0036079980054637417,
+      "VmHWM": 972177408,
+      "VmRSS": 972177408,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 1,
+      "synchronized_seconds": 0.002788329991744831,
+      "output_copy_seconds": 0.00018565700156614184,
+      "end_to_end_seconds": 0.002973986993310973,
+      "VmHWM": 972181504,
+      "VmRSS": 972181504,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 2,
+      "synchronized_seconds": 0.0027119610022054985,
+      "output_copy_seconds": 0.00014005799312144518,
+      "end_to_end_seconds": 0.0028520189953269437,
+      "VmHWM": 972189696,
+      "VmRSS": 972189696,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 3,
+      "synchronized_seconds": 0.002583673005574383,
+      "output_copy_seconds": 0.00013625800784211606,
+      "end_to_end_seconds": 0.002719931013416499,
+      "VmHWM": 972189696,
+      "VmRSS": 972189696,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 4,
+      "synchronized_seconds": 0.002559643005952239,
+      "output_copy_seconds": 0.00014631799422204494,
+      "end_to_end_seconds": 0.002705961000174284,
+      "VmHWM": 972189696,
+      "VmRSS": 972189696,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 5,
+      "synchronized_seconds": 0.0025269339967053384,
+      "output_copy_seconds": 0.00013892800780013204,
+      "end_to_end_seconds": 0.0026658620045054704,
+      "VmHWM": 972193792,
+      "VmRSS": 972193792,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 6,
+      "synchronized_seconds": 0.0025731630012160167,
+      "output_copy_seconds": 0.00014022798859514296,
+      "end_to_end_seconds": 0.0027133909898111597,
+      "VmHWM": 972197888,
+      "VmRSS": 972197888,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 7,
+      "synchronized_seconds": 0.002526094001950696,
+      "output_copy_seconds": 0.00012738800432998687,
+      "end_to_end_seconds": 0.002653482006280683,
+      "VmHWM": 972201984,
+      "VmRSS": 972201984,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 8,
+      "synchronized_seconds": 0.0025501829950371757,
+      "output_copy_seconds": 0.00013172801118344069,
+      "end_to_end_seconds": 0.0026819110062206164,
+      "VmHWM": 972201984,
+      "VmRSS": 972201984,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 9,
+      "synchronized_seconds": 0.0025678329984657466,
+      "output_copy_seconds": 0.0001395779981976375,
+      "end_to_end_seconds": 0.002707410996663384,
+      "VmHWM": 972201984,
+      "VmRSS": 972201984,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 10,
+      "synchronized_seconds": 0.0025563230010448024,
+      "output_copy_seconds": 0.00012123800115659833,
+      "end_to_end_seconds": 0.0026775610022014007,
+      "VmHWM": 972201984,
+      "VmRSS": 972201984,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 11,
+      "synchronized_seconds": 0.009309596003731713,
+      "output_copy_seconds": 0.0001704479946056381,
+      "end_to_end_seconds": 0.00948004399833735,
+      "VmHWM": 972201984,
+      "VmRSS": 972201984,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 12,
+      "synchronized_seconds": 0.002970596993691288,
+      "output_copy_seconds": 0.00013869800022803247,
+      "end_to_end_seconds": 0.0031092949939193204,
+      "VmHWM": 972214272,
+      "VmRSS": 972214272,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 13,
+      "synchronized_seconds": 0.0026725620118668303,
+      "output_copy_seconds": 0.00014922699483577162,
+      "end_to_end_seconds": 0.002821789006702602,
+      "VmHWM": 972222464,
+      "VmRSS": 972222464,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 14,
+      "synchronized_seconds": 0.00274169999465812,
+      "output_copy_seconds": 0.00015916800475679338,
+      "end_to_end_seconds": 0.0029008679994149134,
+      "VmHWM": 972222464,
+      "VmRSS": 972222464,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 15,
+      "synchronized_seconds": 0.0026258120051352307,
+      "output_copy_seconds": 0.00013561800005845726,
+      "end_to_end_seconds": 0.002761430005193688,
+      "VmHWM": 972222464,
+      "VmRSS": 972222464,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 16,
+      "synchronized_seconds": 0.0025601429952075705,
+      "output_copy_seconds": 0.00013791800301987678,
+      "end_to_end_seconds": 0.0026980609982274473,
+      "VmHWM": 972222464,
+      "VmRSS": 972222464,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 17,
+      "synchronized_seconds": 0.0025270640035159886,
+      "output_copy_seconds": 0.00012910799705423415,
+      "end_to_end_seconds": 0.0026561720005702227,
+      "VmHWM": 972226560,
+      "VmRSS": 972226560,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 18,
+      "synchronized_seconds": 0.002525783987948671,
+      "output_copy_seconds": 0.00012974800483789295,
+      "end_to_end_seconds": 0.002655531992786564,
+      "VmHWM": 972226560,
+      "VmRSS": 972226560,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    },
+    {
+      "iteration": 19,
+      "synchronized_seconds": 0.0025204340054187924,
+      "output_copy_seconds": 0.00012735799828078598,
+      "end_to_end_seconds": 0.0026477920036995783,
+      "VmHWM": 972226560,
+      "VmRSS": 972226560,
+      "gpu": {
+        "current": 18688,
+        "peak": 19968
+      }
+    }
+  ],
+  "trace_count": null,
+  "imported_source_sha256": {
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/inference/__init__.py": "ce548ee41fd9b2e44fbb0135d0243300c553f83b6265854a0c0fc802a335f928",
+    "bayesfilter/inference/_exact_incumbent.py": "21191dd057380adafc6530cb15ef640666a2f3afb637bd90f4e98d3209ca5ed0",
+    "bayesfilter/inference/quadratic_geometry.py": "6a4865e98d97a441bf0146d1f581fa93f53f5ce1892ad81ebd69fc2526857fea"
+  },
+  "wall_seconds": 4.763042309990851
+}

@@ -79,10 +79,10 @@ def sv_adapter(model: dict):
     n = model["n"]
     A = tf.constant(model["A"], DTYPE)
     beta = float(model["beta"])
-    chol_q = tf.constant(np.linalg.cholesky(model["Q"]), DTYPE)
-    chol_p0 = tf.constant(np.linalg.cholesky(model["P0"]), DTYPE)
-    logdet_q = float(np.sum(np.log(np.diag(np.linalg.cholesky(model["Q"])))))
-    logdet_p0 = float(np.sum(np.log(np.diag(np.linalg.cholesky(model["P0"])))))
+    chol_q = tf.linalg.cholesky(tf.convert_to_tensor(model["Q"], DTYPE))
+    chol_p0 = tf.linalg.cholesky(tf.convert_to_tensor(model["P0"], DTYPE))
+    logdet_q = tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol_q)))
+    logdet_p0 = tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol_p0)))
 
     def _mvn(x, mean, chol, logdet):
         diff = tf.transpose(
@@ -236,7 +236,10 @@ def sv_particle_reference(model: dict, ys: np.ndarray, n_particles: int,
 
 
 def sv_gh_hint_factory(model: dict, gh_points: int = 9):
-    """Deterministic Gauss-Hermite Gaussian-filter hints (Phase C4).
+    """Independent diagnostic Gauss-Hermite hint reference (Phase C4).
+
+    Active TensorFlow consumers use prepare_sv_gaussian_moment_hints. This
+    stateful NumPy reference is only for independent numerical comparisons.
 
     M2-JOINT contract: predictive_moment_hint(t, y_t) returns the joint
     filtered moments of (x_t, x_{t-1}) | y_{1:t} in (current, previous)

@@ -1,0 +1,136 @@
+{
+  "schema": "filter_repair_merged_ledh_models_analysis.v1",
+  "passed": true,
+  "through_run": 3815,
+  "checks": {
+    "CPU": 8,
+    "GPU": 8,
+    "policy": 129
+  },
+  "preserved_failures": [
+    3812
+  ],
+  "source_files": 3369,
+  "gpu_uuid": "GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba",
+  "metadata": {
+    "3813": {
+      "tensorflow_version": "2.19.1",
+      "gpu_memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "cuda_visible_devices": "-1",
+      "bayesfilter_test_device_scope": "cpu",
+      "tf32_enabled": true,
+      "trust_basis": "explicit_cpu_reference"
+    },
+    "3814": {
+      "tensorflow_version": "2.19.1",
+      "gpu_memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4090"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "cuda_visible_devices": "GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba",
+      "bayesfilter_test_device_scope": "visible",
+      "tf32_enabled": true,
+      "trust_basis": "owner_designated_managed_session_visible_gpu_trusted"
+    }
+  },
+  "models": [
+    {
+      "model": "austria_sir_canonical_model",
+      "dtype": "float32",
+      "cross_device_max_scaled_error": 0.0074057315177935654,
+      "original_max_scaled_error": 0.012759977951645851,
+      "graph_max_scaled_error": 0.012759977951645851,
+      "derivative_max_scaled_error": 0.7731659412384033,
+      "native_loop_count": 2,
+      "trace_count": 1
+    },
+    {
+      "model": "austria_sir_canonical_model",
+      "dtype": "float64",
+      "cross_device_max_scaled_error": 0.00013066103516355372,
+      "original_max_scaled_error": 0.0001306610351635537,
+      "graph_max_scaled_error": 0.0001306610351635537,
+      "derivative_max_scaled_error": 0.0020090672872708176,
+      "native_loop_count": 2,
+      "trace_count": 1
+    },
+    {
+      "model": "diagonal_lgssm_canonical_model",
+      "dtype": "float64",
+      "cross_device_max_scaled_error": 0.00012650286032978706,
+      "original_max_scaled_error": 0.00031422633803948716,
+      "graph_max_scaled_error": 0.00031422633803948716,
+      "derivative_max_scaled_error": 0.005655482553629411,
+      "native_loop_count": 0,
+      "trace_count": 1
+    },
+    {
+      "model": "generalized_sv_canonical_model",
+      "dtype": "float64",
+      "cross_device_max_scaled_error": 7.168224971663089e-05,
+      "original_max_scaled_error": 7.168224971663089e-05,
+      "graph_max_scaled_error": 7.168224971663089e-05,
+      "derivative_max_scaled_error": 1.9669099464209432e-05,
+      "native_loop_count": 0,
+      "trace_count": 1
+    },
+    {
+      "model": "ksc_sv_canonical_model",
+      "dtype": "float64",
+      "cross_device_max_scaled_error": 0.0001528698938013809,
+      "original_max_scaled_error": 0.0001528698938013809,
+      "graph_max_scaled_error": 0.00015286989380138087,
+      "derivative_max_scaled_error": 6.606779081479844e-05,
+      "native_loop_count": 0,
+      "trace_count": 1
+    },
+    {
+      "model": "predator_prey_canonical_model",
+      "dtype": "float64",
+      "cross_device_max_scaled_error": 0.00020368220989468004,
+      "original_max_scaled_error": 0.0003055233148420201,
+      "graph_max_scaled_error": 0.0003055233148420201,
+      "derivative_max_scaled_error": 0.0014548762066773902,
+      "native_loop_count": 2,
+      "trace_count": 1
+    }
+  ],
+  "elapsed_seconds": {
+    "3812": 11.739725576946512,
+    "3813": 23.2139399680309,
+    "3814": 28.176409668987617,
+    "3815": 8.835340957040899
+  },
+  "nonclaims": [
+    "Full filter and score, default readiness, source equivalence, performance and memory attribution."
+  ]
+}

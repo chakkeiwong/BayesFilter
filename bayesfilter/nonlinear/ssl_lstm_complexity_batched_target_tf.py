@@ -584,6 +584,7 @@ def _batch_native_neutra_component_value_score_status(
             placement_floor=tf.constant(0.0, tf.float64),
             innovation_floor=tf.constant(1.0e-12, tf.float64),
             principal_sqrt_backend=target._principal_sqrt_backend,
+            jit_compile=target._jit_compile,
         )
     )
     delta = values - PRIOR_CENTER[tf.newaxis, :]
@@ -699,7 +700,7 @@ def batch_native_complexity_target_worker_factory(
         raise ValueError("batch-native worker config requires q")
     return batch_native_complexity_posterior_target(
         int(config["q"]),
-        jit_compile=bool(config.get("jit_compile", False)),
+        jit_compile=bool(config.get("jit_compile", True)),
         principal_sqrt_backend=str(
             config.get("principal_sqrt_backend", "tensorflow_eigh")
         ),

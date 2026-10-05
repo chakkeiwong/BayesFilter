@@ -103,7 +103,7 @@ def test_randomized_halton_joint_replays_and_preserves_rows() -> None:
     tf.debugging.assert_equal(innovations, tf.gather(raw[:, 1:], order))
 
 
-def test_primitives_jit_compile_on_cpu() -> None:
+def test_primitives_jit_compile_on_selected_device() -> None:
     @tf.function(jit_compile=True, autograph=False)
     def compiled(points, uniforms, weights):
         order, ties, saturation = hilbert_permutation(
@@ -112,12 +112,13 @@ def test_primitives_jit_compile_on_cpu() -> None:
         ancestors = inverse_cdf_ancestor_indices(uniforms, weights)
         return order, ties, saturation, ancestors
 
+    points = tf.constant(((0.0, 0.0), (1.0, 1.0), (-1.0, 0.5), (0.2, -0.3)))
     result = compiled(
-        tf.constant(((0.0, 0.0), (1.0, 1.0), (-1.0, 0.5), (0.2, -0.3))),
+        points,
         tf.constant((0.1, 0.3, 0.6, 0.9)),
         tf.fill([4], 0.25),
     )
-    assert result[0].device.endswith("CPU:0")
+    assert result[0].device == points.device
     concrete = compiled.get_concrete_function(
         tf.TensorSpec([4, 2], tf.float32),
         tf.TensorSpec([4], tf.float32),
@@ -127,15 +128,16 @@ def test_primitives_jit_compile_on_cpu() -> None:
 
 
 @pytest.mark.parametrize("dimension", (1, 18))
-def test_arbitrary_dimension_hilbert_jit_compiles_on_cpu(dimension: int) -> None:
+def test_arbitrary_dimension_hilbert_jit_compiles_on_selected_device(dimension: int) -> None:
     @tf.function(jit_compile=True, autograph=False)
     def compiled(points):
         return hilbert_permutation(
             points, tf.zeros([dimension]), tf.ones([dimension]), bits=12
         )
 
-    result = compiled(tf.zeros([72, dimension], tf.float32))
-    assert result[0].device.endswith("CPU:0")
+    points = tf.zeros([72, dimension], tf.float32)
+    result = compiled(points)
+    assert result[0].device == points.device
     assert int(result[1].numpy()) == 71
     concrete = compiled.get_concrete_function(
         tf.TensorSpec([72, dimension], tf.float32)

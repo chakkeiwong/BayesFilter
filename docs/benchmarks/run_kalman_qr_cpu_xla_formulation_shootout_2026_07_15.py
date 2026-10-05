@@ -41,14 +41,13 @@ SOURCE_PATHS = (
 )
 FORMULATIONS = (
     "native_batch",
-    "vectorized_strict",
-    "vectorized_fallback",
     "map_sequential",
     "map_parallel_16",
     "static_unrolled",
     "sequential_b1_calls",
 )
 SINGLE_PROCESS_CANDIDATES = frozenset(FORMULATIONS[1:-1])
+RETIRED_PFOR_FORMULATIONS = frozenset(("vectorized_strict", "vectorized_fallback"))
 PHYSICAL_CPU_POOL = tuple(range(16, 32))
 EXCLUDED_SMT_SIBLINGS = tuple(range(144, 160))
 FLOAT32_TOLERANCE = 2.0e-4
@@ -449,7 +448,15 @@ def _scalar_score_body(tf: Any, fixture: Any, parameters: Any) -> tuple[Any, Any
     )
 
 
+def _require_formulation(formulation: str) -> None:
+    if formulation in RETIRED_PFOR_FORMULATIONS:
+        raise ValueError("unapproved pfor formulation is retired")
+    if formulation not in FORMULATIONS:
+        raise ValueError(f"unknown formulation: {formulation}")
+
+
 def _build_formulation(tf: Any, fixture: Any, formulation: str, batch_size: int) -> tuple[Any, Any]:
+    _require_formulation(formulation)
     from scripts.benchmark_kalman_qr_parameter_count_scaling import (
         build_batch_native_analytic_fn,
         build_scalar_analytic_row_loop_fn,
@@ -479,10 +486,6 @@ def _build_formulation(tf: Any, fixture: Any, formulation: str, batch_size: int)
         def body(row: Any) -> tuple[Any, Any]:
             return _scalar_score_body(tf, fixture, row)
 
-        if formulation == "vectorized_strict":
-            return tf.vectorized_map(body, parameters_batch, fallback_to_while_loop=False, warn=True)
-        if formulation == "vectorized_fallback":
-            return tf.vectorized_map(body, parameters_batch, fallback_to_while_loop=True, warn=True)
         if formulation == "map_sequential":
             return tf.map_fn(body, parameters_batch, fn_output_signature=output_signature, parallel_iterations=1)
         if formulation == "map_parallel_16":
@@ -507,6 +510,7 @@ def _materialize(outputs: tuple[Any, Any]) -> dict[str, Any]:
 
 
 def _worker(args: argparse.Namespace) -> int:
+    _require_formulation(args.formulation)
     record_path = args.record_path.resolve()
     stage = "initialization"
     base = {
@@ -655,7 +659,7 @@ def _worker(args: argparse.Namespace) -> int:
             "dtype": "float32",
             "intra_op_threads": args.intra,
             "inter_op_threads": 1,
-            "vectorized_fallback_allowed": args.formulation == "vectorized_fallback",
+            "vectorized_fallback_allowed": False,
             "measurement_repetitions": measurement_repetitions,
             "output": output,
             "timing": {
@@ -706,6 +710,7 @@ def worker_command(
     batch_size: int,
     record_path: Path,
 ) -> list[str]:
+    _require_formulation(formulation)
     cpus = cpu_list(batch_size)
     return [
         str(HWLOC_BIND),

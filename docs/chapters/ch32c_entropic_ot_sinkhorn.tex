@@ -2042,7 +2042,8 @@ their likelihoods, applies entropic OT and Contract~E, and then applies a
 finite higher-moment correction to the carried cloud.  GenUT supplies the motivation and the axis algebra, but this is not the
 classical GenUT quadrature algorithm, and the whitened diagonal targets used
 here are not the same multivariate moment targets stated in the source paper.  The existing Contract~E route remains
-unchanged when the correction iteration count is zero.
+unchanged when correction is disabled.  The optional protected no-fit
+comparator below additionally applies its declared cap and affine restoration.
 
 \subsection{Finite filtering, OT, and Contract E stages}
 
@@ -2205,8 +2206,9 @@ definite and write \(C_wC_w^\top=P_w\).  With row-vector notation, define
  \label{eq:bf-eot-hm-target-moments}
 \end{equation}
 These are the selected standardized diagonal moments motivated by the GenUT
-axis rule of Proposition~\ref{prop:bf-eot-genut-axis}.  Mixed third- and
-fourth-order tensors are deliberately not formed.
+axis rule of Proposition~\ref{prop:bf-eot-genut-axis}.  Full third- and
+fourth-order tensors are not formed.  Selected mixed entries are retained by
+the pairwise correction in Section~\ref{sec:bf-eot-hm-pairwise-repair}.
 
 Before attempting a correction, the implementation records necessary
 one-dimensional realizability diagnostics.  For any standardized scalar
@@ -2328,7 +2330,8 @@ To bound the actual cloud move, let the RMS standardized displacement of row
 for trust radius \(\tau>0\).  The map is smooth for finite inputs and its
 post-cap RMS is \(r_i/\sqrt{1+r_i^2/\tau^2}<\tau\).  Thus even an infeasible
 residual or a large local coefficient cannot move any row farther than the
-declared radius in one iteration.  The corrected \(v_i\) are re-centered and
+declared radius before rewhitening.  This is not a bound on the complete
+iteration after its covariance rescaling.  The corrected \(v_i\) are re-centered and
 re-whitened before the next finite iteration.  After the declared number \(S\)
 of iterations, the standardized rows \(u_i^H\) are mapped back by
 \begin{equation}
@@ -2360,8 +2363,10 @@ For \(v=u+c_1q_3+c_2q_4\), differentiation of
 \(N^{-1}\sum_i v_i^3\) and \(N^{-1}\sum_i v_i^4\) at \(c=0\) gives
 respectively \(3N^{-1}\sum_i u_i^2q_j\) and
 \(4N^{-1}\sum_i u_i^3q_j\), which are exactly the rows of \(J_a\).
-Thus the directions preserve mean and variance to first order, while the
-subsequent finite rewhitening enforces those two moments exactly.
+Thus each direction preserves its coordinate mean and variance to first
+order; cross-coordinate covariances need not be preserved by the marginal
+proposal.  Un-ridged full-rank rewhitening restores the full covariance
+exactly.  The numerical relative-ridge convention is distinguished below.
 \end{proof}
 
 \begin{proposition}[Exact first and second moments after rewhitening]
@@ -2396,39 +2401,460 @@ solutions.  The implementation therefore reports the necessary-feasibility
 diagnostics, pre/post-cap displacement, and post-rewhitening residuals, and
 makes no exact higher-moment matching claim.
 
+\subsection{Why the residual design can obstruct kurtosis repair}
+\label{sec:bf-eot-hm-richer-design}
+
+A correction cannot change a moment unless its particle configuration supplies
+a direction in which that moment can move.  This is a concrete obstruction for
+the scalar replicated-axis residual design.  When the OT barycenters have
+nearly collapsed, residual injection dominates, and standardization of repeated
+\(-1,+1\) residuals gives a cloud close to two symmetric points.  For the exact
+binary cloud,
+\[
+ \overline u=0,\qquad \overline{u^2}=1,\qquad
+ m_3=0,\qquad m_4=1.
+\]
+Substitution in \eqref{eq:bf-eot-hm-directions} gives
+\(q_3=u^2-1=0\) and \(q_4=u^3-u=0\) at every particle.
+Consequently \(J=0\), and a damped solve returns a zero displacement even when
+the target kurtosis is near three.  A larger correction strength cannot repair
+this exact degeneracy.  The obstruction concerns this design and these
+correction directions; it does not say that every cloud produced by binary
+residual injection must itself be exactly binary.
+
+For any zero-mean, unit-variance scalar cloud there is also the useful identity
+\begin{equation}
+ m_4-1=\operatorname{Var}_{N}(u^2).
+ \label{eq:bf-eot-hm-kurtosis-radii}
+\end{equation}
+Indeed, \(\operatorname{Var}_{N}(u^2)=\overline{u^4}-(\overline{u^2})^2\).
+Kurtosis measures variation in squared distance from the mean.  Binary points
+all have the same distance and therefore attain the lower value one.  To
+represent larger kurtosis at the same variance, the cloud needs different
+radii: many smaller distances and some larger ones.  Replacing the binary
+residual design supplies those radii before the moment fit begins.
+
+The richer option uses a \emph{fixed finite normal-quantile design}, rather
+than sampling a new continuous random variable at each reset.  In one dimension,
+let \(\Phi\) be the standard normal distribution function and set
+\begin{equation}
+ b_i=\Phi^{-1}\!\left(\frac{i+1/2}{N}\right),\quad i=0,\ldots,N-1,
+ \qquad
+ \Xi_i=\frac{b_i-\bar b}{\sqrt{N^{-1}\sum_j(b_j-\bar b)^2}}.
+ \label{eq:bf-eot-hm-normal-quantile-design}
+\end{equation}
+The implementation arranges opposite-sign pairs.  In several dimensions it
+uses fixed permutations of the quantile coordinates, then centers and whitens
+the entire design so that \(N^{-1}\Xi^\top\Xi=I_d\), provided its covariance
+has full rank.  Both the ordering and the design are frozen for a finite
+value/score evaluation, so \(\mathrm d\Xi/\mathrm d\theta=0\).
+The implemented construction retains the divisibility requirement \(2d\mid N\).
+It is still an empirical distribution with \(N\) atoms; ``richer'' describes
+its range of coordinate magnitudes.  In particular, finite quantiles do not
+have exactly Gaussian fourth moments, and subsequent residual injection need
+not preserve their moments because the barycenters and cross covariance in
+\eqref{eq:bf-eot-hm-cross-covariance} also contribute.
+
+A September 2026 scalar KSC diagnostic separated this design change from the
+coordinate-cap change described below.  The weighted input kurtosis at the
+examined reset was 2.916221.  The same reset, under four choices, gave:
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Residual design and coordinate cap & Raw reset & After fit & Final reset\\
+\midrule
+Repeated axes, original cap & 1.000473 & 1.577655 & 1.328293\\
+Normal quantiles, original cap & 2.972274 & 2.966277 & 1.586420\\
+Repeated axes, identity-core cap & 1.000473 & 1.577655 & 1.577655\\
+Normal quantiles, identity-core cap & 2.972274 & 2.966277 & 2.966277\\
+\bottomrule
+\end{tabular}
+\end{center}
+These are standardized fourth moments at one saved reset, not estimates of a
+population-wide advantage.  They expose two different losses of shape: the
+binary residual design starts near kurtosis one, while the original cap can
+erase the spread supplied by the richer design.  The saved reset values are recorded in the September~29 KSC
+repair note.\footnote{\path{docs/benchmarks/sqmc-ksc-reset-repair-results-20260929.md}}
+The \(T=120\) comparison gives a more informative conclusion than its
+binary accuracy screen: the revised inverse-CDF route reduced score error on
+both examined datasets, while likelihood error fell on one and rose on the
+other.  Section~\ref{sec:bf-eot-hm-observed-results} gives the actual values and
+their uncertainty.  A repaired reset moment and a repaired filtering likelihood
+remain different empirical questions.
+
+\subsection{The pairwise skewness and kurtosis correction remains active}
+\label{sec:bf-eot-hm-pairwise-repair}
+
+Marginal moments cannot describe all dependence between state coordinates.
+For the whitened weighted source \(z_i\) in
+\eqref{eq:bf-eot-hm-target-moments}, the pairwise correction retains the targets
+\begin{equation}
+ S^\star_{ab}=\sum_i\alpha_i z_{ia}^{2}z_{ib},\qquad
+ K^\star_{ab}=\sum_i\alpha_i z_{ia}^{2}z_{ib}^{2},\qquad a\ne b.
+ \label{eq:bf-eot-hm-pair-targets}
+\end{equation}
+Co-skewness \(S^\star_{ab}\) is ordered: generally
+\(S^\star_{ab}\ne S^\star_{ba}\).  Co-kurtosis \(K^\star\) is symmetric.
+These selected mixed moments supplement the marginal moments; they are not the
+complete third- and fourth-order tensors.  For example,
+\(\mathbb E[z_a^3z_b]\) and entries involving three or four distinct coordinates
+are outside this pairwise fit.  An explicitly supplied moment teacher may
+replace the weighted empirical targets, but that changes what is being fitted
+and needs its own accuracy evidence.
+
+Let \(U\) be the current \(N\times d\) standardized cloud, let
+\(U^{\circ2}\) denote entrywise squares, and let \(M_3,M_4\) be fixed selection
+masks, with zero diagonal.  The all-pairs option sets every off-diagonal entry
+to one.  Define
+\begin{align}
+ S(U)&=N^{-1}(U^{\circ2})^\top U,&
+ K(U)&=N^{-1}(U^{\circ2})^\top U^{\circ2},\\
+ R_3&=M_3\odot(S^\star-S(U)),&
+ R_4&=M_4\odot(K^\star-K(U)).
+ \label{eq:bf-eot-hm-pair-residuals}
+\end{align}
+The implemented direction before projection is
+\begin{equation}
+ G=\frac{2U\odot(UR_3^\top)+(U^{\circ2})R_3
+             +2U\odot((U^{\circ2})R_4^\top)}{\max(d-1,1)}.
+ \label{eq:bf-eot-hm-pair-direction}
+\end{equation}
+For binary masks and symmetric \(M_4\), this equals
+\(-N/\max(d-1,1)\) times the gradient with respect to \(U\) of
+\(\tfrac12\lVert R_3\rVert_F^2+\tfrac14\lVert R_4\rVert_F^2\).
+The factor one quarter accounts for the two occurrences of a symmetric
+co-kurtosis entry.  To check the factors directly,
+\(\partial S_{ab}/\partial u_{ic}
+=N^{-1}(2u_{ia}u_{ib}\mathbf1_{c=a}+u_{ia}^2\mathbf1_{c=b})\);
+co-kurtosis has the corresponding two squared-coordinate terms.  Summing
+these derivatives gives \eqref{eq:bf-eot-hm-pair-direction}.
+
+The next projection removes the mean and the first-order covariance change:
+\begin{equation}
+ G_c=G-\mathbf1\bar G,\qquad
+ A=\operatorname{sym}(N^{-1}U^\top G_c),\qquad H=G_c-UA.
+ \label{eq:bf-eot-hm-pair-projection}
+\end{equation}
+If \(\bar U=0\) and \(N^{-1}U^\top U=I\), then \(\bar H=0\) and
+\(N^{-1}(U^\top H+H^\top U)=0\): substituting \(H\) cancels
+\(2A\).  The projection therefore preserves mean and covariance to first
+order, although a finite step still needs rewhitening.  With a positive floor
+\(\varepsilon_p\), normalize and cap the direction as
+\begin{equation}
+ V=\frac{H}{\sqrt{(Nd)^{-1}\lVert H\rVert_F^2+\varepsilon_p}},\quad
+ r_i^2=d^{-1}\lVert V_i\rVert_2^2,\quad
+ D_i=\eta_p\frac{V_i}{\sqrt{1+r_i^2/c_p^2}}.
+ \label{eq:bf-eot-hm-pair-cap}
+\end{equation}
+Each proposed displacement has RMS less than \(\eta_p c_p\).  The candidate
+\(U+D\) is then whitened.  Thus the existing pairwise cap remains a
+\emph{displacement} cap; changing the final coordinate cap does not remove it.
+For \(d=1\), there are no off-diagonal pairs and the pairwise loop is skipped.
+A scalar KSC result consequently provides no test of pairwise repair.
+
+\subsection{Why a bounded coordinate map is not a stability proof}
+\label{sec:bf-eot-hm-cap-stability}
+
+The original standardized coordinate cap is, for even \(p\),
+\begin{equation}
+ f_{\mathrm{old}}(u)=\frac{u}{[1+(u/c)^p]^{1/p}},\qquad c>0.
+ \label{eq:bf-eot-hm-original-cap}
+\end{equation}
+It bounds each mapped coordinate by \(c\), but compresses magnitudes throughout
+the cloud.  With \(c=0.98\) and \(p=8\), moderate and large standardized
+coordinates are pushed toward similar magnitudes.  After variance restoration,
+that compression can leave too little variation in \(u^2\), and hence too
+little kurtosis by \eqref{eq:bf-eot-hm-kurtosis-radii}.
+
+The revised optional map is exactly the identity inside radius \(r\):
+\begin{equation}
+ f_{r,c}(u)=
+ \begin{cases}
+ u,& |u|\le r,\\
+ \operatorname{sign}(u)\{r+w\tanh[(|u|-r)/w]\},& |u|>r,
+ \end{cases}
+ \qquad w=rc.
+ \label{eq:bf-eot-hm-identity-core-cap}
+\end{equation}
+At the join, the outside value is \(\operatorname{sign}(u)r\), its first
+derivative is one and its second derivative is zero.  It therefore joins the
+identity with two continuous derivatives.  Outside, its derivative is
+\(\operatorname{sech}^2[(|u|-r)/w]\), between zero and one, and
+\(\lvert f_{r,c}(u)\rvert<r(1+c)\).  The September candidate uses \(r=8\)
+and \(c=0.98\), giving a pre-restoration bound of 15.84.  These are recorded
+candidate settings, not universal settings for another model or tuning scope.
+The map is followed by centering, covariance restoration and mapping to
+\((\mu_w,P_w)\); those operations are part of the reset.
+
+There are three reasons why this bound alone cannot prevent a higher-moment
+fit from going wrong.  First, the cap is applied \emph{after} the fitting
+iterations, so it cannot repair an earlier invalid solve or factorization.
+Second, a bounded displacement need not improve a nonlinear moment residual,
+especially after rewhitening.  Third, whitening can amplify a cloud whose
+smallest covariance eigenvalue has collapsed.  A bound before whitening is
+not a bound after whitening.  Even well inside radius eight, a single
+standardized coordinate of magnitude eight contributes \(8^4/1008\simeq4.06\)
+to a 1008-particle fourth moment.  Finiteness alone is therefore a weak test
+of higher-moment stability.
+
+\subsection{A guarded finite fit with a protected fallback}
+\label{sec:bf-eot-hm-guarded-fit}
+
+The safety repair retains the scaled LM solve, both displacement caps and the
+final coordinate cap.  It adds a test of each proposed step \emph{after}
+rewhitening and a separate test of the complete capped reset.  The objective
+must be specified because marginal and mixed moments can compete.  For a
+selected target entry \(t_j\), let \(m_j(U)\) denote its empirical moment and
+let \(a_j=\max(1,|t_j|)\).  Stack the marginal third and fourth moments and,
+when pairwise correction is configured, the selected entries of
+\eqref{eq:bf-eot-hm-pair-targets}.  The checked discrepancy is
+\begin{equation}
+ \mathcal L(U)=\sum_{j\in\mathcal J}
+        \left(\frac{m_j(U)-t_j}{a_j}\right)^2.
+ \label{eq:bf-eot-hm-guard-loss}
+\end{equation}
+This scale gives absolute error near a zero target and relative error for
+large targets.  Symmetric co-kurtosis entries occur twice in the all-pairs
+sum.  The normalization is an explicit safety objective, not a proof that
+every moment has equal scientific importance.  In particular, a decrease in
+\(\mathcal L\) can accompany an increase in one individual kurtosis residual;
+the individual residual families must remain visible.  The marginal LM and
+pairwise proposals need not be descent directions for this combined objective.
+The acceptance test, rather than that assumption, decides whether to use them.
+
+For a current standardized cloud \(U\), define its empirical covariance \(C\)
+and a capped proposal displacement \(D\).  Try the fixed sequence
+\(\alpha\in\{1,1/2,\ldots,1/128\}\), stopping at the first accepted trial.
+For \(V_\alpha=U+\alpha D\), let \(C_\alpha\) be its centered empirical
+covariance.  Before factoring it, require finite values and tangents, a valid
+input covariance, and
+\begin{equation}
+ \tfrac14 C\preceq C_\alpha\preceq\tfrac94 C.
+ \label{eq:bf-eot-hm-guard-covariance}
+\end{equation}
+The positive-semidefinite inequalities are checked by symmetric eigenvalues.
+An inadmissible trial does not enter the Cholesky branch.  A valid trial is
+centered and whitened, using the same normalization convention as its original
+marginal or pairwise update, to obtain \(\mathcal W(V_\alpha)\).  Accept it only
+if the resulting value, analytical tangent and loss are finite and
+\begin{equation}
+ \mathcal L(\mathcal W(V_\alpha))
+       \le\mathcal L(U)+\tau_{\mathrm{fp}}(\mathcal L(U)),\qquad
+ \tau_{\mathrm{fp}}(l)=32\epsilon_{\mathrm{mach}}(1+|l|).
+ \label{eq:bf-eot-hm-guard-acceptance}
+\end{equation}
+If all eight trials fail, retain \(U\) and its incoming tangent.  This is a
+bounded search, with no assertion of eventual acceptance or convergence.
+Repeated rejection is reported, rather than concealed by a zero-loss claim.
+
+To interpret the covariance envelope, put
+\(B=C^{-1/2}C_\alpha C^{-1/2}\).  Equation
+\eqref{eq:bf-eot-hm-guard-covariance} implies
+\(\lambda(B)\in[1/4,9/4]\).  Consequently
+\(\lVert B^{-1/2}\rVert_2\le2\) and
+\(\lVert B^{1/2}\rVert_2\le3/2\).  These bounds concern relative whitening
+in the current covariance metric; they do not bound the source covariance,
+all accumulated derivatives, or the final physical-state coordinates.
+The implementation uses a roundoff margin
+\(32\epsilon_{\mathrm{mach}}\operatorname{tr}(C)/d\) in the matrix tests and
+requires the input minimum eigenvalue to exceed that margin.  It also requires
+the trial minimum eigenvalue to exceed
+\(32\epsilon_{\mathrm{mach}}\operatorname{tr}(C_\alpha)/d\): otherwise a
+Loewner roundoff allowance could admit a singular trial from an input already
+near that allowance.  The displayed
+exact-arithmetic bounds should therefore be read with that numerical allowance.
+
+The last check includes operations outside the fitting loop.  Let
+\(\mathcal F(U)\) mean applying the chosen coordinate cap, recentering,
+restoring covariance and mapping to the weighted source scale.  Compute both
+\(X_{\mathrm{fit}}=\mathcal F(U_{\mathrm{fit}})\) and
+\(X_0=\mathcal F(U_0)\), where \(U_0\) is the initial standardized raw
+Contract~E cloud and has undergone no moment fitting.  Evaluate their moments
+in the same whitening convention used for reporting.  Return the fitted cloud
+only if it is valid and
+\begin{equation}
+ \mathcal L(\mathcal W(X_{\mathrm{fit}}))
+ \le \mathcal L(\mathcal W(X_0))+
+             \tau_{\mathrm{fp}}(\mathcal L(\mathcal W(X_0))).
+ \label{eq:bf-eot-hm-complete-map-check}
+\end{equation}
+Otherwise return \(X_0\), together with its correctly recomputed total tangent.
+The baseline must itself be valid; an invalid baseline makes the route invalid.
+Both alternatives use the \emph{same} coordinate cap and restoration.  Thus
+rejecting a fit does not bypass the tail protection.  In this optional safety
+mode, a zero-iteration call deliberately evaluates that protected baseline;
+the historical zero-iteration, safety-disabled call remains a no-op.
+
+The exact covariance proposition above assumes un-ridged whitening.  The
+numerical implementation also uses, where declared, the relative ridge
+\(Q_\delta=\operatorname{sym}(Q)+\delta\operatorname{tr}(Q)I/d\), with
+\(\delta=10^{-12}\).  If \(RR^\top=Q_\delta\), then the empirical covariance
+after whitening is
+\[
+ R^{-1}QR^{-\top}
+ =I-\delta\operatorname{tr}(Q)R^{-1}R^{-\top}/d.
+\]
+It is not exactly the identity.  The ridge scale and its tangent belong to the
+finite numerical program, and covariance residuals are checked numerically.
+A small coefficient alone does not imply a small effect when \(Q\) is badly
+conditioned.  The step guard checks the fit; it does not rescue invalid source
+moments or an invalid upstream Contract~E factorization.
+
+The implementation records the trial count, rejected-step count, smallest
+accepted step, input-validity flag, largest accepted loss increase, protected
+baseline loss, final loss and final-fallback flag.  It is optional through
+\texttt{moment\_safety=True} in the shared marginal/pairwise routine and the
+canonical filtering consumer.  Full projected-cumulant correction is a distinct
+path and is explicitly rejected with this option, rather than silently omitted
+from its safety objective.  The richer residual design and identity-core cap
+also remain explicit settings; none has been promoted to a universal default.
+
+
+\paragraph{Bounded numerical evidence.}
+The October 2026 safety comparison used fresh fixed fixtures in dimensions
+1, 2, 3 and 10, with healthy, skewed, mixture, outlier, concentrated-weight,
+nearly collinear and repeated-axis cases.  All 112 GPU/XLA cases passed the
+finite-value and declared loss checks; a 14-case CPU reference also passed.
+The guard rejected at least one complete proposed step in 23 GPU cases and
+used a reduced step without a complete rejection in another 33 cases.
+These counts describe the evaluated fixtures, not probabilities of failure.
+The guard was less accurate in the declared combined moment loss than at least
+one simple comparator in 26 of the 112 GPU cases, including mixture,
+concentrated-weight and repeated-axis regimes.  This vetoes an accuracy-based
+promotion.  It does not contradict the narrower safety comparison with the
+identically protected no-fit cloud.
+
+A subsequent edge-case audit added the explicit positive trial-eigenvalue
+check described above.  Its focused CPU regression passed, and eight further
+GPU/XLA checks of the final implementation covered active tail capping,
+healthy-update agreement and analytical derivatives.  The largest FP64
+finite-difference tangent discrepancy in those checks was
+\(1.18\times10^{-10}\).  Healthy GPU particle values were unchanged; their
+largest tangent difference was \(4.34\times10^{-19}\), so bitwise equality of
+all GPU tangents is not asserted.  The broad comparison's largest relative
+covariance residual was \(1.10\times10^{-3}\) in FP32/TF32 and
+\(1.32\times10^{-15}\) in FP64.  These measured distinctions are why the
+exact covariance proposition must not be presented as an unconditional
+floating-point identity.  The complete comparisons, source versions, failures,
+commands and limitations are recorded in
+\path{docs/benchmarks/ledh-moment-safety-results-20261001.md}.
+The original historical explosive input was not recovered and replayed;
+fresh stress fixtures cannot establish that every such failure is resolved.
+
 \subsection{Complete algorithm and score statement}
 
-One time step of the candidate is the following fixed composition:
+For the LEDH--PFPF--OT filter, the following sequence specifies one complete
+time step.  It is essential to distinguish the proposal stage from the reset:
+the bootstrap weights in \eqref{eq:bf-eot-hm-likelihood}--
+\eqref{eq:bf-eot-hm-weights} illustrate the reset's input, whereas an LEDH
+proposal requires the importance correction in Chapter~\ref{ch:bf-dpf-pfpf}.
+Using observation likelihoods alone after a general particle-flow proposal
+would compute different weights.
 \begin{enumerate}[label=(\arabic*)]
- \item propagate every particle row by \eqref{eq:bf-eot-hm-transition};
- \item compute the likelihood increment and normalized weights using
-       \eqref{eq:bf-eot-hm-likelihood}--\eqref{eq:bf-eot-hm-weights};
- \item run the declared finite Sinkhorn and balance iterations in
-       \eqref{eq:bf-eot-hm-sinkhorn}, form the row quotient
-       \eqref{eq:bf-eot-hm-barycentric}, and check its marginal diagnostics;
- \item apply the residual injection \eqref{eq:bf-eot-hm-residual} and the
-       Contract~E affine restoration \eqref{eq:bf-eot-hm-contract-e};
- \item if \(S>0\), compute \eqref{eq:bf-eot-hm-target-moments}, apply
-       \eqref{eq:bf-eot-hm-scaled-lm-system}--\eqref{eq:bf-eot-hm-smooth-trust-cap}
-       exactly \(S\) times with rewhitening after each iteration, then map back
-       by \eqref{eq:bf-eot-hm-map-back};
- \item carry \(x_i^H\), or \(x_i^E\) when \(S=0\), with uniform weights to
-       the next time step.
+ \item Carry each particle, its UKF posterior covariance, its weight and their
+       analytical parameter tangents from the preceding step.  Predict its
+       local Gaussian, generate its fixed innovation, and execute the declared
+       finite LEDH flow using the particle's own covariance lifecycle.
+       Apply the proposal-density and flow-Jacobian importance correction;
+       accumulate the log normalizer and normalize the resulting weights.
+       Update the local UKF covariance and its total tangent.  These local
+       covariances are distinct from the global empirical reset covariance.
+ \item Regard the corrected weighted cloud as
+       \(\{x_{t,i}^{-},\alpha_{t,i}\}_{i=1}^N\).  Compute its mean and
+       covariance, diagonal shape targets, and any selected pairwise targets.
+       Keep the source and weight derivatives in all these quantities.
+ \item Run the fixed finite Sinkhorn and balancing schedule, form the
+       row-normalized barycenters in \eqref{eq:bf-eot-hm-barycentric}, and check
+       the declared marginal and validity diagnostics.  The streaming
+       implementation uses the repository's exact-divisor chunk policy.
+ \item Inject the frozen residual design through
+       \eqref{eq:bf-eot-hm-residual} and apply the realized-covariance
+       Contract~E restoration \eqref{eq:bf-eot-hm-contract-e}.  The revised
+       option uses \eqref{eq:bf-eot-hm-normal-quantile-design}; it does not
+       change the OT weights or claim to reproduce the full source law.
+       Standardize this raw reset to obtain \(U_0\).
+ \item For each of the declared \(S\) marginal iterations, compute the moment
+       directions, scaled LM coefficients and capped displacement in
+       \eqref{eq:bf-eot-hm-directions}--\eqref{eq:bf-eot-hm-smooth-trust-cap}.
+       With safety enabled, apply the covariance and post-whitening tests
+       \eqref{eq:bf-eot-hm-guard-covariance}--
+       \eqref{eq:bf-eot-hm-guard-acceptance}; reduce or reject the displacement
+       as specified.  With safety disabled, execute the original capped
+       update and whitening.
+ \item For each of the declared \(P\) pairwise iterations, form
+       \eqref{eq:bf-eot-hm-pair-residuals}, project and cap its direction by
+       \eqref{eq:bf-eot-hm-pair-projection}--\eqref{eq:bf-eot-hm-pair-cap},
+       and apply the same optional guard and rewhitening.  Skip this loop
+       when \(d=1\) or \(P=0\).
+ \item Apply the declared coordinate map, recenter, restore covariance and
+       map back to the source mean and scale.  With safety enabled, compare
+       this complete result with the identically capped and restored no-fit
+       cloud using \eqref{eq:bf-eot-hm-complete-map-check}.  Select both value
+       and total tangent from the accepted alternative and retain the
+       diagnostics.  Fail closed if the protected baseline is invalid.
+ \item Carry the selected particles with equal weights, together with the
+       reset route's per-particle covariance carry and its analytical
+       derivative, to the next observation.  Continue the score recursion
+       through the same branch as the value recursion.
 \end{enumerate}
-The particle count must satisfy the chosen residual-design rule: \(N\) is
-divisible by \(2d\) for replicated cubature, and a positive GenUT design must
-have exactly representable replication masses.  These requirements concern
-the fixed residual design; the adaptive correction itself keeps all \(N\)
-particle rows and uses \(O(Nd+d^2)\) storage beyond the OT workspace.
+All iteration counts, masks, caps, damping controls, residual permutations and
+halving schedules are fixed within an evaluation.  Scope-specific offline
+tuning, when needed for an accuracy claim, precedes the untouched claim run;
+this safety mechanism is not permission to retune controls inside HMC.
+The particle count satisfies the chosen residual-design rule: the implemented
+replicated-axis and normal-quantile designs require \(2d\mid N\), while an
+exactly replicated positive GenUT design requires representable masses.
+The correction retains all \(N\) rows.  Marginal and pairwise value calculations
+use \(O(Nd+d^2)\) additional storage beyond the OT workspace, with additional
+storage for the requested tangent directions.  Pairwise products and covariance
+checks add \(O(Nd^2+d^3)\) work per trial; eight trials bound the work, not the
+moment error.
+
+The analytical tangent must follow all dependencies of this finite algorithm.
+For example, writing a dot for a parameter-direction derivative,
+\begin{align}
+ \dot s_a&=\sum_i\dot\alpha_i z_{ia}^3
+          +3\sum_i\alpha_i z_{ia}^2\dot z_{ia},\\
+ \dot K^\star_{ab}&=\sum_i\dot\alpha_i z_{ia}^2z_{ib}^2
+       +2\sum_i\alpha_i(z_{ia}\dot z_{ia}z_{ib}^2
+                        +z_{ia}^2z_{ib}\dot z_{ib}).
+ \label{eq:bf-eot-hm-target-total-tangents}
+\end{align}
+The weight terms cannot be dropped.  If \(CC^\top=P\), put
+\(E=C^{-1}\dot P C^{-\top}\) and let \(\mathcal T(E)\) retain its strict
+lower triangle and half its diagonal.  Then
+\begin{equation}
+ \dot C=C\mathcal T(E),\qquad
+ \dot u=(\dot x-\dot\mu)C^{-\top}
+           -u\dot C^\top C^{-\top}.
+ \label{eq:bf-eot-hm-whitening-total-tangent}
+\end{equation}
+These formulas also differentiate a declared relative ridge through its trace
+scale.  Differentiate the LM linear system by solving
+\(M\dot y=\dot b-\dot M y\), where \(b=A^\top d\); differentiate the
+pairwise matrix products and smooth caps by the ordinary chain rule.
+The identity-core cap multiplies a tangent by one in its core and by the
+\(\operatorname{sech}^2\) factor in its tail.
+
+On a locally unchanged acceptance branch, the selected \(\alpha\) is a fixed
+member of the halving schedule, so
+\(\dot V_\alpha=\dot U+\alpha\dot D\).  A rejected step carries \(\dot U\),
+and a final fallback carries the total derivative of \(X_0\), rather than a
+zero tangent.  The eigenvalue comparisons and acceptance decisions select a
+branch; they are not differentiated as if they were smooth functions.
+Consequently branch boundaries may have a discontinuous derivative or value.
+A finite-difference check must verify that its two perturbations select the
+same branches, and local agreement is not a global smoothness or HMC theorem.
 
 \begin{proposition}[Finite-route total-score correctness]
 \label{prop:bf-eot-hm-score}
 Fix the innovation rows and ordering, residual design, finite Sinkhorn and
 balance counts, \(\epsilon\), OT ridge, \(\rho\), LM damping \(\lambda\),
-column-scale floor \(\varepsilon_s\), trust radius \(\tau\), and \(S\).
+column-scale floor \(\varepsilon_s\), trust radius \(\tau\), marginal and
+pairwise counts, masks, coordinate cap, and safety schedule.
 Assume every required covariance is strictly positive definite, every row mass
-is positive, the maximum branch in the cost scale is fixed locally, and every
-validity condition holds.  If the recursive tangent includes every operation
+is positive, the maximum branch in the cost scale and all safety-acceptance
+and final-fallback branches are fixed locally, and every validity condition holds.  If the recursive tangent includes every operation
 listed above, then its accumulated score is the total derivative with respect
 to \(\theta\) of the same finite scalar
 \(\widehat L^N(\theta)=\sum_t\widehat\ell_t^N(\theta)\) executed by the value
@@ -2439,7 +2865,8 @@ program.
 On the stated branch, the transition and likelihood adapters, normalization,
 finite Sinkhorn recurrences, row quotient, moment maps, matrix products,
 Cholesky factors, triangular solves, column scales, \(2\times2\) damped solves,
-smooth trust caps, and finite rewhitening maps are differentiable.  The ordinary chain rule therefore
+smooth trust and coordinate caps, selected pairwise operations, and finite
+rewhitening maps are differentiable on this branch.  The ordinary chain rule therefore
 applies to their finite composition.  The implemented tangent includes the
 dependence of the normalized weights, OT kernel and scalings, target moments,
 directions \(q_3,q_4\), Jacobians \(J_a\), column scales \(H_a\), scaled
@@ -2456,12 +2883,307 @@ statistical approximation questions tested against available references.
 
 \paragraph{Correctness boundary.}
 The propositions establish the OT quotient semantics, the Contract~E ridged
-identity, exact post-correction empirical mean and covariance, and the total
-derivative of one fixed finite program.  They do not establish global
+identity, exact post-correction empirical mean and covariance under the un-ridged
+full-rank assumptions, and the local total derivative of one fixed finite
+program.  Declared ridges have the covariance discrepancy derived above;
+safety selection gives its stated loss bound, not global differentiability.  They do not establish global
 higher-moment feasibility, exact mixed moments, unbiased likelihood, exact
 posterior score, superiority over Contract~E, HMC readiness, or a default
 change.  The model campaign below can reject this candidate or keep it viable;
 it cannot by itself prove broad nonlinear-model validity.
+
+
+\subsection{What the actual likelihoods and scores show}
+\label{sec:bf-eot-hm-observed-results}
+
+The downstream question is whether preserving the weighted cloud's shape
+brings the accumulated likelihood and score closer to the filtering reference.
+For the scalar KSC example, the full seven-mixture likelihood and its two
+parameter derivatives can be evaluated by a separately refined quadrature.
+The September comparison used this reference at
+\(\theta=(\gamma,\log\beta)=(1.5,0)\), two untouched datasets of length 120,
+and eight particle designs per method.  It ran in FP64 with GPU/XLA and TF32
+disabled.  Tables~\ref{tab:bf-eot-hm-ksc-120-a} and
+\ref{tab:bf-eot-hm-ksc-120-b} report the actual quantities, including the
+Gaussian Kalman approximation as a simple comparator.  The revised arm uses
+the richer residual, identity-core cap and controls selected for that scope;
+the comparison does not isolate the causal effect of each change.
+The full-mixture reference is an oracle for the declared seven-mixture target,
+rather than for a different stochastic-volatility observation law.
+The numerical values, refinement checks and component uncertainties are
+preserved in the comparison record.\footnote{\path{docs/plans/artifacts/sqmc-ksc-reset-repair-20260929/attempt-01/analysis-01/comparisons.md}}
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrrr}
+\toprule
+Method & Log likelihood & \(\gamma\) score & \(\log\beta\) score\\
+\midrule
+Seven-mixture reference & -270.702896202 & -0.508659556 & -1.291005193\\
+Gaussian Kalman heuristic & -275.542306325 & -0.813750759 & -0.892859070\\
+IID / original & -271.316778239 & -0.432267129 & -1.085171066\\
+IID / revised & -270.879543409 & -0.633906248 & -1.217855750\\
+Inverse CDF / original & -271.239752570 & -0.375158888 & -1.089143021\\
+Inverse CDF / revised & -270.821584886 & -0.580225487 & -1.269873809\\
+Permutation / original & -271.238543975 & -0.371483139 & -1.087564459\\
+Permutation / revised & -270.823316362 & -0.577390069 & -1.269882173\\
+Ablation / original & -271.239262624 & -0.368794285 & -1.087245064\\
+Ablation / revised & -270.823316362 & -0.577390069 & -1.269882173\\
+\bottomrule
+\end{tabular}
+\caption{KSC at \(T=120\), dataset A (seed 243001).
+Particle entries are means of eight independent designs with \(N=1008\).
+The revised arm uses the September design/cap repair and its selected controls;
+it does not include the October safety guard.}
+\label{tab:bf-eot-hm-ksc-120-a}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrrr}
+\toprule
+Method & Log likelihood & \(\gamma\) score & \(\log\beta\) score\\
+\midrule
+Seven-mixture reference & -284.105359942 & 2.358935308 & 0.299061235\\
+Gaussian Kalman heuristic & -289.119307428 & 2.448686517 & 0.655680321\\
+IID / original & -284.231222413 & 2.856512226 & 0.299130287\\
+IID / revised & -284.459443680 & 2.338869846 & 0.347294048\\
+Inverse CDF / original & -284.160036239 & 3.035272629 & 0.331255873\\
+Inverse CDF / revised & -284.225769251 & 2.368748070 & 0.350155526\\
+Permutation / original & -284.159942453 & 3.026332424 & 0.330404077\\
+Permutation / revised & -284.227196844 & 2.366669388 & 0.350044821\\
+Ablation / original & -284.158477299 & 3.046262376 & 0.333190588\\
+Ablation / revised & -284.227196844 & 2.366669388 & 0.350044821\\
+\bottomrule
+\end{tabular}
+\caption{KSC at \(T=120\), dataset B (seed 243002).
+Particle entries are means of eight independent designs with \(N=1008\).
+The revised arm uses the September design/cap repair and its selected controls;
+it does not include the October safety guard.}
+\label{tab:bf-eot-hm-ksc-120-b}
+\end{table}
+
+The inverse-CDF route illustrates the distinction between likelihood and score
+accuracy.  On dataset A its mean absolute log-likelihood error across designs
+fell from \(0.536856\) to \(0.163187\); on dataset B it rose from
+\(0.125318\) to \(0.213643\).  Its mean score-vector error norm fell from
+\(0.329639\) to \(0.144456\) on A and from \(0.681811\) to \(0.146093\) on B.
+These are means of per-design errors, which differ from the error of a mean
+reported in the tables.  The paired 95\% bootstrap intervals for revised
+minus original score-error norm were \([-0.291356,-0.084593]\) and
+\([-0.654304,-0.399304]\), respectively.  They support a conditional reduction
+on these two datasets; they are exploratory intervals across several examined
+cells, without a multiplicity adjustment.
+
+The uncertainty in each score coordinate also matters.  For the revised
+inverse-CDF arm, the standard errors of the mean \(\gamma\) and
+\(\log\beta\) scores were \((0.053617,0.012488)\) on A and
+\((0.055220,0.026190)\) on B.  Thus a visible difference in the last digits is
+not itself evidence of a persistent bias.  Conversely, the near equality of
+the original IID \(\log\beta\) score and reference on B does not establish
+that every coordinate improved after repair.  The aggregate score norm and
+the individual coordinates answer different questions.  These results make
+the revised mechanism worth testing further, while its failed strict accuracy
+screen and the dataset-B likelihood deterioration prevent a general accuracy
+or default-readiness conclusion.
+
+To see why a likelihood offset and a score discrepancy need not move together,
+write the error of a fixed-design finite filter as
+\begin{equation}
+ e_N(\theta)=\widehat L^N(\theta)-L(\theta).
+ \label{eq:bf-eot-hm-likelihood-error}
+\end{equation}
+Here \(L\) is the exact log likelihood for the declared model.  At a parameter
+where both functions are differentiable and the numerical selection branches
+are locally fixed, subtracting their derivatives gives
+\begin{equation}
+ \widehat s_N(\theta)-s(\theta)=\nabla_\theta e_N(\theta).
+ \label{eq:bf-eot-hm-score-error}
+\end{equation}
+A constant likelihood offset can therefore coexist with an accurate score;
+a small likelihood error at one parameter can coexist with a steep error
+gradient.  Likewise the error in a log-likelihood ratio between two parameters
+is \(e_N(\theta')-e_N(\theta)\), not either offset separately.  Assessing a
+parameter neighborhood, both score coordinates and branch changes is
+necessary before using these observations to argue for gradient-based
+inference.  The tables at one parameter do not establish HMC readiness.
+
+There are also two distinct fourth-moment questions.  Fitting can bring a reset
+closer to the weighted particle cloud's fourth moment.  That target may itself
+differ from the filtering distribution's fourth moment.  Let \(m_4^{R}\),
+\(m_4^{W}\) and \(m_4^\star\) denote the reset, weighted-cloud and reference
+fourth moments, all expressed in one common centering and scaling convention.
+Then
+\[
+ m_4^{R}-m_4^\star
+   =(m_4^{R}-m_4^{W})+(m_4^{W}-m_4^\star).
+\]
+The proposed correction addresses the first term.  The second requires an
+independent filtering reference or a better source cloud.  Comparing likelihoods
+and scores with their oracle directly tests the downstream approximation, but
+does not by itself identify which fourth-moment term caused an error.
+
+\subsection{The first nonlinear comparisons}
+
+Predator--prey and spatial SIR test different weaknesses of the repair.
+Predator--prey has two state coordinates and nonlinear coupled dynamics, so
+pairwise moments already have a substantive role.  Its six score coordinates
+are the physical parameters \(r,K,a,s,u,v\) used by the declared transition.
+The spatial SIR case has 18 state coordinates, nine observed infectious
+coordinates, and three parameters: the log infection-rate scale, log
+removal-rate scale and log observation-noise scale.  Its larger collection of
+mixed moments tests whether fitting dependence remains numerically useful as
+dimension grows.
+
+A master tester now sends both models through the same finite LEDH executor,
+per-particle UKF covariance recursion, Contract~E reset and analytical total
+score.  It compares covariance-only, original capped, richer marginal-only,
+richer marginal-and-pairwise, and guarded marginal-and-pairwise configurations.
+The last pair isolates the optional guard; the marginal-only comparison
+isolates the additional mixed-moment correction.  Likelihoods, every score
+coordinate, replication uncertainty, invalid evaluations and reset diagnostics
+are retained separately for each model, dataset, parameter point, particle
+count and ancestry rule.\footnote{\path{docs/benchmarks/ledh-nonlinear-master.md}}
+
+Fresh synthetic observations follow the declared initial Gaussian law and a
+transition before each observation.  This timing matters: a bootstrap filter
+that observes the initial state before its first transition estimates a
+different likelihood for the same numerical observations.  The independent
+reference used here starts from the same initial law and saved observations
+as LEDH, then transitions before every observation.  It also retains the same
+parameter values, including their original floating-point representation.
+
+The reference is a Gaussian bootstrap particle filter with an analytical
+Fisher-identity score.  Write \(x_{0:T}\) for a complete latent trajectory,
+\(f_\theta\) for its transition density and \(g_\theta\) for the observation
+density.  Because the initial law in these examples is parameter independent,
+regular differentiation under the integral gives
+\[
+ \nabla_\theta\log p_\theta(y_{1:T})
+ =\mathbb E_\theta\!\left[
+   \sum_{t=1}^T\{\nabla_\theta\log f_\theta(x_t\mid x_{t-1})
+              +\nabla_\theta\log g_\theta(y_t\mid x_t)\}
+       \,\middle|\,y_{1:T}\right].
+\]
+Each particle carries this accumulated complete-data score through resampling;
+the final weighted average estimates the conditional expectation.  State
+values are held fixed when differentiating the complete-data densities, and
+their Gaussian covariance derivatives are included.  This is an approximation
+to the observed-data score, whereas LEDH differentiates its own finite
+numerical likelihood.  Their finite-particle scores need not coincide.
+
+The reference passed fixed-state finite-difference checks for both nonlinear
+models and a separate linear-Gaussian comparison with an exact Kalman
+likelihood and score.  Four independent replications were then evaluated at
+8,192, 32,768, 131,072 and 524,288 particles.  The reported reference likelihood
+is the logarithm of the mean likelihood estimate; its score averages the
+Fisher estimates with likelihood weights.  Delete-one-replication jackknife
+standard errors describe Monte Carlo variation.  They do not certify that
+finite-particle bias has vanished, so this reference is not called an exact
+nonlinear oracle.
+
+The first comparison used \(T=20\) and \(N=1008\) for LEDH, with inherited,
+untuned numerical controls.  The two predator--prey datasets used seeds
+260401 and 260402; the SIR dataset used 260401.  LEDH ran on the GPU with
+XLA, FP32 and TF32.  Predator--prey returned finite likelihoods and all six
+score coordinates in 70 evaluations across the five correction choices and
+the tested ancestry rules.  Sixty-nine also passed the separate trace-score
+check.  Table~\ref{tab:bf-nonlinear-first-likelihoods} gives the IID means,
+which make the difference between the two models visible.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Model / dataset & Covariance only & Guarded pairwise & Reference (MCSE)\\
+\midrule
+Predator--prey, 260401 & $-97.43870$ & $-97.35035$ & $-97.34297\;(0.00657)$\\
+Predator--prey, 260402 & $-99.29759$ & $-99.28713$ & $-99.31152\;(0.00366)$\\
+SIR, 260401, FP64 & $-975.57354$ & $-1041.35394$ & $-678.07747\;(0.01486)$\\
+\bottomrule
+\end{tabular}
+\caption{Actual log likelihoods at \(T=20\).  LEDH means use two IID designs
+on dataset 260401 and four on predator--prey dataset 260402.  The SIR row is a
+same-data FP64 precision diagnostic; all ten initial FP32 SIR evaluations
+failed.  The SIR guarded mean includes one finite evaluation whose separate
+trace-score check failed.  References use four replications at 524,288
+particles.  These small-sample means do not establish a ranking.}
+\label{tab:bf-nonlinear-first-likelihoods}
+\end{table}
+
+For predator--prey dataset 260401, the guarded score mean in the order
+\((r,K,a,s,u,v)\) was
+\[
+ (-33.52772,\;-0.54696,\;0.01964,\;4.56826,\;-8.54557,\;10.63757),
+\]
+while the reference was
+\[
+ (-32.90524,\;-0.54394,\;0.02053,\;4.48734,\;-8.73240,\;10.86545).
+\]
+The reference coordinate MCSEs were
+\[
+ (0.07550,0.00339,0.0000942,0.00827,0.02200,0.02770).
+\]
+For dataset 260402, the corresponding guarded and reference score means were
+\begin{align*}
+ &(-21.21510,\;0.03513,\;0.01890,\;1.52016,\;-6.60116,\;8.16064),\\
+ &(-21.14020,\;0.03931,\;0.01868,\;1.50221,\;-6.53110,\;8.07440).
+\end{align*}
+The reference coordinate MCSEs there were
+\[
+ (0.09711,0.00155,0.00000666,0.00506,0.00271,0.00270).
+\]
+The full per-design scores, LEDH replication standard errors and conditional
+comparisons with covariance-only, original and marginal-only correction are
+retained in the result record.\footnote{\path{docs/benchmarks/ledh-nonlinear-execution-results-20261002.md}}
+The values support further predator--prey validation, but two or four design
+replications at a single parameter point do not establish that the repair
+improves the observed-data score.
+
+SIR exposes two separate problems.  In the localized FP32 run, the first
+failure occurred at observation 4 in the Contract~E reset.  Ancestry, UKF
+prediction, UKF update and model-callback validity checks still passed; flow
+states and derivatives and likelihood weights were finite.  Covariance-only
+reset states remained finite but their derivatives did not.  The guarded
+configuration lost finite reset states and derivatives, so the higher-moment
+guard no longer had a valid input to protect.  These observations locate the
+failure in the reset but do not yet identify its exact factorization or
+prove a remedy.
+
+Replaying the exact FP32 observations and random inputs in FP64 gave finite
+SIR likelihoods and scores.  Accuracy still failed conspicuously relative to
+the independent reference.  The two guarded likelihoods were \(-1041.82982\)
+and \(-1040.87806\), with score vectors
+\begin{align*}
+ &(-165.24294,\;-186.13243,\;963.39536),\\
+ &(3230.85495,\;-1581.97484,\;936.41325).
+\end{align*}
+In the log-scale parameter order given above, the reference score was
+\[
+ (106.31321,-65.96031,5.58635),
+\]
+with coordinate MCSEs \((5.53617,2.42038,0.03538)\).
+Thus restoring finite arithmetic did not restore filtering accuracy.  The
+hundreds of log-likelihood units separating SIR's LEDH and reference estimates
+are far larger than the measured reference replication noise.
+
+Two finite evaluations also retained trace-score consistency vetoes: original
+FP32 predator--prey differed by \(6.47\times10^{-4}\) in its first score
+coordinate, and one guarded FP64 SIR evaluation differed by
+\(1.71\times10^{-7}\).  The recorded tolerances were not relaxed.  Together
+with the absence of scope-specific calibration and untouched validation,
+these findings prevent admission or a default-readiness conclusion.
+The next SIR step is to diagnose the failing reset factorization and its
+analytical derivative, then evaluate any protection for non-harm before
+calibrating the approximation.  It is not evidence that fitting fourth
+moments should be abandoned: the failure occurs in a common reset stage,
+and the independent likelihood and score comparison remains necessary even
+when that stage is numerically healthy.
 
 \section{A Zhao--Cui squared-TT moment teacher for Contract E}
 \label{sec:bf-eot-zhao-cui-moment-teacher}

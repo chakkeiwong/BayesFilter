@@ -1,0 +1,280 @@
+{
+  "schema": "filter_repair_pfor_site_discovery.v1",
+  "scanned_files": 2009,
+  "roots": [
+    "bayesfilter",
+    "experiments/dpf_implementation/tf_tfp",
+    "scripts",
+    "docs/benchmarks"
+  ],
+  "baseline": "89f7cfd67 plus current pfor repairs",
+  "site_count": 29,
+  "sites": [
+    {
+      "path": "bayesfilter/testing/inference_validation/targets.py",
+      "function": "ValidationTarget.log_density",
+      "line": 157,
+      "kind": "implicit_pfor",
+      "ast_sha256": "f1d90ad0f0a9a0d30f91bcbcad0bf7ebb94f141b7970d6312d3b3913f364853e",
+      "source_sha256": "8ca6154e54683f041a16170da3b34a1d16f89aee629a4599fa0cf1c522d84bd5",
+      "disposition": "custom_log_jacobian_not_tensorflow_derivative"
+    },
+    {
+      "path": "experiments/dpf_implementation/tf_tfp/runners/run_ledh_pfpf_source_faithful_repair_tf.py",
+      "function": "_determinant_diagnostics",
+      "line": 284,
+      "kind": "implicit_pfor",
+      "ast_sha256": "bc5b68aef0f72b946f9c75d376b0a6498f2938b6e10fafa63ef7436bdef5f9c1",
+      "source_sha256": "4492f566e8e5ea86a1c9773a8626629b667aab5cd67ad7c793dfaef2a5d262ed",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "scripts/p91_gpu_xla_jit_check.py",
+      "function": "_batched_value_and_score_compiled.values_and_scores",
+      "line": 95,
+      "kind": "implicit_pfor",
+      "ast_sha256": "7314c9adf305515432a916345194423066497aa79b142fdcac986218dc19af5d",
+      "source_sha256": "cd59e66bd42ef880c6e77c90b49586a97aac6b6a7e3f4210b0708b804378f3e7",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "scripts/p91_hmc_smoke.py",
+      "function": "_make_target_log_prob.target_log_prob",
+      "line": 87,
+      "kind": "pfor",
+      "ast_sha256": "00c99c898aa5b4d0a9de425d79e7bf66804b7c3a4277777fd02bdac8b441342f",
+      "source_sha256": "7bd6e8dff20f6a249f03f59b958a8e347966fea655ea4c39000f691f3b0c74c0",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "scripts/p91_performance_benchmark.py",
+      "function": "_batched_compiled.values_and_scores",
+      "line": 93,
+      "kind": "implicit_pfor",
+      "ast_sha256": "7314c9adf305515432a916345194423066497aa79b142fdcac986218dc19af5d",
+      "source_sha256": "e2ff9c8314e66a629a0d9fa686049ffbf802fdd148848d2e970b9b0ab9094386",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/benchmark_identifiable_ssl_lstm_oracle_geometry_2026_07_08.py",
+      "function": "dense_negative_hessian",
+      "line": 426,
+      "kind": "implicit_pfor",
+      "ast_sha256": "118cab409e13b718c650af103978279c5ff08920355f89db80be717756277fe0",
+      "source_sha256": "843d21f96972c71c0513550e9e8fa6bb7dcedc995ca6357c91e81ac6b5980ce0",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/benchmark_minimal_ssl_lstm_zhaocui_hmc_oracle_2026_07_06.py",
+      "function": "target_log_prob_batch",
+      "line": 305,
+      "kind": "pfor",
+      "ast_sha256": "038aacf65c24d84bf0046a4c61bd8faa68c5b5cb54bbdc36a7714ab1aa6a5e2f",
+      "source_sha256": "a75ff2a52d1f1a217156e94a9802afb4f572f00353c224fc0b5667d61f6094f1",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/benchmark_minimal_ssl_lstm_zhaocui_hmc_tuning_phase5_2026_07_06.py",
+      "function": "score_jacobian",
+      "line": 753,
+      "kind": "implicit_pfor",
+      "ast_sha256": "f0ee4321adabd3626e862b6888441d339cb79f57dba64c3952c5f64173e227a5",
+      "source_sha256": "53317537cabfddc67212a877622a0b3c4c2377fee9d373619e4405c9df5f3406",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/benchmark_p8p_parameterized_sir_gradient.py",
+      "function": "_gradient_diagnostic",
+      "line": 2450,
+      "kind": "implicit_pfor",
+      "ast_sha256": "07f2441cf4a3aec39d93d67b07f0424bc1d66b090930ab09ce7e4778c3d292e3",
+      "source_sha256": "7b8cdd5415784459b521ba9c0f88131951eaa3fe528d06129901564f00f6f273",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/contract_e_score_aware_teacher_projection_2d_lgssm.py",
+      "function": "_jacobian",
+      "line": 198,
+      "kind": "implicit_pfor",
+      "ast_sha256": "a3c5f7f65ff948956574efee9935bcaf9668cbe012bae0fdbc1e8ac8441aeb18",
+      "source_sha256": "0ef0df0d2c0bf3959edbaaa53780e50840eebf6fd3ce139ce92ec782500587e6",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_contract_e_phase8_common_path_identity.py",
+      "function": "compute_diagnostic",
+      "line": 282,
+      "kind": "implicit_pfor",
+      "ast_sha256": "6d7c77dda93d81d81c64acff9cfd86d2c51271a1b83afb234d2cda1add256720",
+      "source_sha256": "fe72b7479df29c421cbce1d3228ee7caaf919be915fa1982d97e3aa79d0567ce",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_contract_e_phase8_common_path_identity.py",
+      "function": "compute_diagnostic",
+      "line": 283,
+      "kind": "implicit_pfor",
+      "ast_sha256": "bea0ea3b8c60e4d926239e9790d56cf68b165417621117102ef24813776136ae",
+      "source_sha256": "fe72b7479df29c421cbce1d3228ee7caaf919be915fa1982d97e3aa79d0567ce",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_contract_e_phase8_common_path_identity.py",
+      "function": "compute_diagnostic",
+      "line": 284,
+      "kind": "implicit_pfor",
+      "ast_sha256": "cab32bba9b8061018b9243f6829e53eac75a3b9f2e74faa87cd27e63cd3dfd21",
+      "source_sha256": "fe72b7479df29c421cbce1d3228ee7caaf919be915fa1982d97e3aa79d0567ce",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_contract_e_phase8_common_path_identity.py",
+      "function": "compute_diagnostic",
+      "line": 285,
+      "kind": "implicit_pfor",
+      "ast_sha256": "f022352c5834dc7e4d8b9f508c04e270738b82fbeef983968b1e52a4ec8761bb",
+      "source_sha256": "fe72b7479df29c421cbce1d3228ee7caaf919be915fa1982d97e3aa79d0567ce",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_contract_e_phase8_common_path_identity.py",
+      "function": "compute_diagnostic",
+      "line": 299,
+      "kind": "implicit_pfor",
+      "ast_sha256": "b18d3ed2e026179af87f951b7275aca591c3e236f3dfacfb321467cba8b8b023",
+      "source_sha256": "fe72b7479df29c421cbce1d3228ee7caaf919be915fa1982d97e3aa79d0567ce",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_contract_e_phase8_common_path_identity.py",
+      "function": "compute_diagnostic",
+      "line": 311,
+      "kind": "implicit_pfor",
+      "ast_sha256": "478c8989f41db417cfaeb44cf3b7e09be404b94173e7e7f6b6627705ed7fa5e2",
+      "source_sha256": "fe72b7479df29c421cbce1d3228ee7caaf919be915fa1982d97e3aa79d0567ce",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_p8p_sir_rk4_sensitivity_vjp.py",
+      "function": "_rhs_autodiff",
+      "line": 210,
+      "kind": "implicit_pfor",
+      "ast_sha256": "dcf8da7a85779a22cd68ecbd5348ab5d567200f4d068c49d8bb8e03af60dfab8",
+      "source_sha256": "c9fc9451f8133f40a8a1f6bde6215c4476146e03305aecd293b7ce5c0477a816",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_p8p_sir_rk4_sensitivity_vjp.py",
+      "function": "_rhs_autodiff",
+      "line": 211,
+      "kind": "implicit_pfor",
+      "ast_sha256": "4853d89754fd8b01fc4ac5920868341b69a200352711c1b1358cf614be104fc2",
+      "source_sha256": "c9fc9451f8133f40a8a1f6bde6215c4476146e03305aecd293b7ce5c0477a816",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_p8p_sir_rk4_sensitivity_vjp.py",
+      "function": "_transition_autodiff",
+      "line": 246,
+      "kind": "implicit_pfor",
+      "ast_sha256": "dcf8da7a85779a22cd68ecbd5348ab5d567200f4d068c49d8bb8e03af60dfab8",
+      "source_sha256": "c9fc9451f8133f40a8a1f6bde6215c4476146e03305aecd293b7ce5c0477a816",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_p8p_sir_rk4_sensitivity_vjp.py",
+      "function": "_transition_autodiff",
+      "line": 247,
+      "kind": "implicit_pfor",
+      "ast_sha256": "4853d89754fd8b01fc4ac5920868341b69a200352711c1b1358cf614be104fc2",
+      "source_sha256": "c9fc9451f8133f40a8a1f6bde6215c4476146e03305aecd293b7ce5c0477a816",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/diagnose_p8p_sir_rk4_sensitivity_vjp.py",
+      "function": "_regional_log_autodiff",
+      "line": 296,
+      "kind": "implicit_pfor",
+      "ast_sha256": "a12aed4d4717f86cf7fe92c83ecc1eae3b39200d3534d36fd368209a421eed3b",
+      "source_sha256": "c9fc9451f8133f40a8a1f6bde6215c4476146e03305aecd293b7ce5c0477a816",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/run_contract_e_tp_scalar_sv_prefix.py",
+      "function": "_result_value_score_and_increment_score",
+      "line": 104,
+      "kind": "implicit_pfor",
+      "ast_sha256": "6483082d39b115bfb5aab20110a7391514249222c708d262e84a5a07618f1e96",
+      "source_sha256": "0cd8d26406664de7a70e863f1cf7aca38ba6a297075742e6cfade2a57af95cbe",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/run_cubature_exact_sv_score_ladder.py",
+      "function": "_dense_reference",
+      "line": 161,
+      "kind": "implicit_pfor",
+      "ast_sha256": "7f2a954196e71cdac4848d77e2d8fed2755a00e776dc3fa0d5fc6a94ace9be4a",
+      "source_sha256": "a67c8d464b2402b9d82615e99d00d478eae81a6cd04b5064bc0b61ba930f8ef6",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/run_exact_sv_fixed_gaussian_genut_paired.py",
+      "function": "_dense_reference",
+      "line": 205,
+      "kind": "implicit_pfor",
+      "ast_sha256": "7f2a954196e71cdac4848d77e2d8fed2755a00e776dc3fa0d5fc6a94ace9be4a",
+      "source_sha256": "e23cebcce70740d7916bb4a12cb4d14b9ec880d78e3d59fcc30215cc7c0a9e17",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/run_genut_austria_endpoint_root_cause_20260817.py",
+      "function": "_local_autodiff_checks",
+      "line": 806,
+      "kind": "implicit_pfor",
+      "ast_sha256": "896410834058f05748bca9010c27075f8f9a1a7c08ba7205b099a553f66a061a",
+      "source_sha256": "f57a1eddbf8077dd5d270e1f1888771f19de1fa07b69b7d091308cedb46ab4ea",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/run_genut_austria_endpoint_root_cause_20260817.py",
+      "function": "_local_autodiff_checks",
+      "line": 834,
+      "kind": "implicit_pfor",
+      "ast_sha256": "3528e4b54849ac13abadb01907a4e1fc988dcd2929dd37983db2568a806ab8de",
+      "source_sha256": "f57a1eddbf8077dd5d270e1f1888771f19de1fa07b69b7d091308cedb46ab4ea",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/run_kalman_qr_cpu_xla_formulation_shootout_2026_07_15.py",
+      "function": "_build_formulation.mapped",
+      "line": 483,
+      "kind": "pfor",
+      "ast_sha256": "d0280f76334e933bfeb094df8d917cbdc5b676a17f43d08b722edc30f823eb44",
+      "source_sha256": "8eeacabf0a0ca37a1566e1e23c3e812578aeeb452dd34378ba1864b31eeba92c",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/run_kalman_qr_cpu_xla_formulation_shootout_2026_07_15.py",
+      "function": "_build_formulation.mapped",
+      "line": 485,
+      "kind": "pfor",
+      "ast_sha256": "a8c7d5f00ba9be54256208cc0e0426bbf80d22a3f6b2210b8610bbe84f78bfc3",
+      "source_sha256": "8eeacabf0a0ca37a1566e1e23c3e812578aeeb452dd34378ba1864b31eeba92c",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    },
+    {
+      "path": "docs/benchmarks/run_zhao_cui_moment_teacher_actual_sv.py",
+      "function": "_dense_arm",
+      "line": 203,
+      "kind": "implicit_pfor",
+      "ast_sha256": "52d45df897a0b47cdcb771b311b55c3e69e491e38f7c54e0ee90d8e057a0fa9f",
+      "source_sha256": "f9b2847d84dee7a56ec68d19670c74b9aab4629d277e9fc41ea876b9a2be5c56",
+      "disposition": "requires_individual_scope_approval_retirement_or_repair_review"
+    }
+  ],
+  "limitations": [
+    "Static name-based discovery requires call-chain interpretation.",
+    "Neither old date nor benchmark/diagnostic naming supplies pfor approval.",
+    "No training or old LEDH benchmark was executed."
+  ]
+}

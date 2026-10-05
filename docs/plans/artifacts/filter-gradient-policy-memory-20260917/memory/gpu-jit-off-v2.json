@@ -1,0 +1,82 @@
+{
+  "schema": "filter_xla_memory_diagnostic.v1",
+  "device": "GPU",
+  "jit_compile": false,
+  "tensorflow": "2.19.1",
+  "python": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+  "python_version": "3.11.15",
+  "git_head": "3582b4ac5fea67fb5da7fa60a1cbfaf19df35adf",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4090"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tf32": true,
+  "rss_kib": {
+    "post_import": 875080,
+    "inputs": 875144,
+    "after_trace": 875164,
+    "after_cold": 1061392,
+    "after_warm": 1061396
+  },
+  "gpu_memory": {
+    "post_import": {
+      "current": 2048,
+      "peak": 2048
+    },
+    "after_cold": {
+      "current": 17152,
+      "peak": 39936
+    },
+    "after_warm": {
+      "current": 18688,
+      "peak": 43520
+    }
+  },
+  "seed": [
+    20260917,
+    41
+  ],
+  "fixture": {
+    "batch": 2,
+    "parameters": 3,
+    "state": 2,
+    "horizon": 4,
+    "dtype": "float64"
+  },
+  "nonclaims": [
+    "No speedup, leak-free repository, posterior, tuning or scientific claim"
+  ],
+  "cold_seconds": 2.895866748000117,
+  "checksum": 0.3138544137473551,
+  "warm_seconds": [
+    0.01763312299954123,
+    0.01698059599948465,
+    0.017742587999237003,
+    0.017386450999765657,
+    0.01780289599992102
+  ],
+  "trace_count": 1,
+  "graph_node_count": 1395,
+  "forbidden_callbacks": [],
+  "peak_host_rss_kib": 1036288,
+  "source_sha256": "5d15f562b62665fc90c0e2993a8ab5c775f80703b20f7c219bbc7436df1bc625"
+}

@@ -133,7 +133,9 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
     d_left = tf.zeros_like(d_weights)
     d_right = tf.zeros_like(d_weights)
     tiny = tf.cast(1.0e-7, dtype)
-    for _ in range(sinkhorn_steps + balance_steps):
+    iteration_count = sinkhorn_steps + balance_steps
+
+    def balance_step(index, left, right, d_left, d_right):
         kr = tf.einsum("bij,bj->bi", kernel, right) + tiny
         d_kr = tf.einsum("kbij,bj->kbi", d_kernel, right) + tf.einsum(
             "bij,kbj->kbi", kernel, d_right
@@ -148,7 +150,13 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
         d_right = d_weights / kl[None, ...] - (
             weights[None, ...] * d_kl / tf.square(kl)[None, ...]
         )
-        left, d_left = left_new, d_left_new
+        return index + 1, left_new, right, d_left_new, d_right
+
+    _, left, right, d_left, d_right = tf.while_loop(
+        lambda index, *_: index < iteration_count,
+        balance_step, (tf.constant(0), left, right, d_left, d_right),
+        maximum_iterations=max(0, iteration_count), parallel_iterations=1,
+    )
 
     coupling = left[:, :, None] * kernel * right[:, None, :]
     d_coupling = (

@@ -114,6 +114,9 @@ def precision_policy_metadata() -> dict[str, Any]:
         "scope": "production_ledh_pfpf_ot_gpu_tf32_default_lane",
         "historical_module_path": "experiments/dpf_implementation",
         "public_api_exposure": "separately_gated",
+        "canonical_algorithm_admitted": False,
+        "score_provenance": "finite_program_autodiff_diagnostic_only",
+        "canonical_rebuild_required": True,
     }
 
 NONCLAIMS = (
@@ -121,6 +124,7 @@ NONCLAIMS = (
     "public API exposure remains separately gated",
     "no public API claim",
     "no categorical particle-filter gradient claim",
+    "finite-program autodiff scores are diagnostic; canonical LEDH rebuild incomplete",
     "no posterior correctness claim",
     "no HMC readiness claim",
     "no statistical superiority claim",
@@ -582,6 +586,7 @@ def batched_ledh_flow_core_tf(
     observation_residual_fn: Callable[[tf.Tensor, tf.Tensor], tf.Tensor],
     prior_mean_fn: Callable[[tf.Tensor], tf.Tensor] | None = None,
     jitter: float | tf.Tensor = 1.0e-9,
+    _covariances_are_stabilized: bool = False,
 ) -> BatchedLEDHFlowTensors:
     """Vectorized one-step LEDH affine flow over parameter rows and particles."""
 
@@ -589,16 +594,14 @@ def batched_ledh_flow_core_tf(
     ancestors = _to_float_tensor(ancestors, "ancestors")
     observation = _to_float_tensor(observation, "observation")
     transition_matrix = _to_float_tensor(transition_matrix, "transition_matrix")
-    transition_covariance = _stabilize_batch_covariance(
-        transition_covariance,
-        jitter,
-        "transition_covariance",
-    )
-    observation_covariance = _stabilize_batch_covariance(
-        observation_covariance,
-        jitter,
-        "observation_covariance",
-    )
+    if _covariances_are_stabilized:
+        transition_covariance = _to_float_tensor(transition_covariance, "transition_covariance")
+        observation_covariance = _to_float_tensor(observation_covariance, "observation_covariance")
+    else:
+        transition_covariance = _stabilize_batch_covariance(
+            transition_covariance, jitter, "transition_covariance")
+        observation_covariance = _stabilize_batch_covariance(
+            observation_covariance, jitter, "observation_covariance")
 
     _require_static_rank(x0, 3, "pre_flow_particles")
     _require_static_rank(ancestors, 3, "ancestors")
@@ -1688,33 +1691,42 @@ def batched_ledh_pfpf_ot_value_core_tf(
                 f"expected {expected_weights_shape}"
             )
 
+    # These covariances are fixed across dates. Hoisting their stabilization
+    # also avoids TF 2.19 Grappler's dead-output optimization for loop-invariant
+    # eigensystems inside a functional loop. The same ridge formula is applied
+    # once and its parameter dependence remains in the enclosing graph.
+    flow_transition_covariance = _stabilize_batch_covariance(
+        transition_covariance, ledh_jitter, "transition_covariance")
+    flow_observation_covariance = _stabilize_batch_covariance(
+        observation_covariance, ledh_jitter, "observation_covariance")
     log_likelihood = tf.zeros([batch_size], dtype=DTYPE)
-    means = []
-    variances = []
-    esses = []
-    for t in range(time_steps):
+    means = tf.TensorArray(DTYPE, size=time_steps, element_shape=[batch_size, state_dim])
+    variances = tf.TensorArray(DTYPE, size=time_steps, element_shape=[batch_size, state_dim])
+    esses = tf.TensorArray(DTYPE, size=time_steps, element_shape=[batch_size])
+
+    def time_body(t, particles, log_weights, log_likelihood, means, variances, esses):
         observation = observations[t]
         ancestors = particles
-        pre_flow = pre_flow_particles[:, t, :, :]
         flow = batched_ledh_flow_core_tf(
-            pre_flow_particles=pre_flow,
+            pre_flow_particles=pre_flow_particles[:, t, :, :],
             ancestors=ancestors,
             observation=observation,
             transition_matrix=transition_matrix,
-            transition_covariance=transition_covariance,
-            observation_covariance=observation_covariance,
+            transition_covariance=flow_transition_covariance,
+            observation_covariance=flow_observation_covariance,
             observation_fn=observation_fn,
             observation_jacobian_fn=observation_jacobian_fn,
             observation_residual_fn=observation_residual_fn,
             jitter=ledh_jitter,
+            _covariances_are_stabilized=True,
         )
         post_flow = flow.post_flow_particles
         target_transition = _to_float_tensor(
-            transition_log_density_fn(post_flow, ancestors, tf.constant(t, dtype=tf.int32)),
+            transition_log_density_fn(post_flow, ancestors, t),
             "transition_log_density_fn output",
         )
         target_observation = _to_float_tensor(
-            observation_log_density_fn(post_flow, observation, tf.constant(t, dtype=tf.int32)),
+            observation_log_density_fn(post_flow, observation, t),
             "observation_log_density_fn output",
         )
         _require_static_rank(target_transition, 2, "transition_log_density_fn output")
@@ -1740,9 +1752,9 @@ def batched_ledh_pfpf_ot_value_core_tf(
         log_likelihood = log_likelihood + incremental
         ess = 1.0 / tf.reduce_sum(weights * weights, axis=1)
         mean, variance = _weighted_mean_and_variance(post_flow, weights)
-        means.append(mean)
-        variances.append(variance)
-        esses.append(ess)
+        means = means.write(t, mean)
+        variances = variances.write(t, variance)
+        esses = esses.write(t, ess)
 
         transported = batched_annealed_transport_core_tf(
             post_flow,
@@ -1761,11 +1773,18 @@ def batched_ledh_pfpf_ot_value_core_tf(
         particles = transported.particles
         log_weights = transported.log_weights
 
+        return t + 1, particles, log_weights, log_likelihood, means, variances, esses
+
+    _, _, _, log_likelihood, means, variances, esses = tf.while_loop(
+        lambda t, *_: t < time_steps, time_body,
+        (tf.constant(0), particles, log_weights, log_likelihood, means, variances, esses),
+        maximum_iterations=time_steps, parallel_iterations=1)
+
     return BatchedLEDHPFPFOTValueTensors(
         log_likelihood=log_likelihood,
-        filtered_means=tf.stack(means, axis=0),
-        filtered_variances=tf.stack(variances, axis=0),
-        ess_by_time=tf.stack(esses, axis=0),
+        filtered_means=means.stack(),
+        filtered_variances=variances.stack(),
+        ess_by_time=esses.stack(),
     )
 
 
@@ -1777,7 +1796,8 @@ def batched_ledh_pfpf_ot_value_and_score_tf(
 
     The returned score is the TensorFlow autodiff gradient of
     ``sum(value_fn(theta_batch))``.  It is not a categorical classical
-    particle-filter likelihood score.
+    particle-filter likelihood score. It cannot establish canonical analytical
+    LEDH admission under the August 21 rebuild policy.
     """
 
     theta = _to_float_tensor(theta_batch, "theta_batch")

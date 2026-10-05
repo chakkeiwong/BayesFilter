@@ -13,12 +13,12 @@ mass-matrix, or HMC evidence. The exact endpoint is replayed before acceptance.
 
 from __future__ import annotations
 
+import math
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
@@ -26,7 +26,7 @@ from bayesfilter.inference._exact_incumbent import (
     ExactCandidate,
     select_exact_incumbent,
 )
-
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 JOINT_CENTER_NONCLAIMS = (
     "single-start finite-neighborhood locator only",
@@ -75,13 +75,13 @@ class JointCenterLocatorConfig:
             "x_tolerance",
         ):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value < 0.0:
+            if not math.isfinite(value) or value < 0.0:
                 raise ValueError(f"{name} must be finite and non-negative")
             object.__setattr__(self, name, value)
         object.__setattr__(self, "jit_compile", bool(self.jit_compile))
         if self.max_wall_seconds is not None:
             wall = float(self.max_wall_seconds)
-            if not np.isfinite(wall) or wall <= 0.0:
+            if not math.isfinite(wall) or wall <= 0.0:
                 raise ValueError("max_wall_seconds must be positive finite")
             if self.jit_compile:
                 raise ValueError("max_wall_seconds requires jit_compile=False")
@@ -144,13 +144,13 @@ class JointCenterStagedConfig:
             "x_tolerance",
         ):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value < 0.0:
+            if not math.isfinite(value) or value < 0.0:
                 raise ValueError(f"{name} must be finite and non-negative")
             object.__setattr__(self, name, value)
         object.__setattr__(self, "jit_compile", bool(self.jit_compile))
         if self.max_wall_seconds is not None:
             wall = float(self.max_wall_seconds)
-            if not np.isfinite(wall) or wall <= 0.0:
+            if not math.isfinite(wall) or wall <= 0.0:
                 raise ValueError("max_wall_seconds must be positive finite")
             if self.jit_compile:
                 raise ValueError("max_wall_seconds requires jit_compile=False")
@@ -179,14 +179,14 @@ class JointCenterResult:
 
     status: str
     endpoint_accepted: bool
-    initial_position: np.ndarray
-    endpoint_position: np.ndarray
-    initial_score: np.ndarray
-    endpoint_score: np.ndarray
+    initial_position: tf.Tensor
+    endpoint_position: tf.Tensor
+    initial_score: tf.Tensor
+    endpoint_score: tf.Tensor
     initial_objective: float
     endpoint_objective: float
-    best_evaluated_position: np.ndarray | None
-    best_evaluated_score: np.ndarray | None
+    best_evaluated_position: tf.Tensor | None
+    best_evaluated_score: tf.Tensor | None
     best_evaluated_objective: float | None
     best_evaluated_source: str | None
     best_evaluated_callback_index: int | None
@@ -215,14 +215,12 @@ class JointCenterResult:
             "initial_score",
             "endpoint_score",
         ):
-            value = np.asarray(getattr(self, name), dtype=float).copy()
-            value.setflags(write=False)
+            value = numeric_tensor(getattr(self, name), dtype=tf.float64)
             object.__setattr__(self, name, value)
         for name in ("best_evaluated_position", "best_evaluated_score"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).reshape([-1]).copy()
-                array.setflags(write=False)
+                array = tf.reshape(numeric_tensor(value, dtype=tf.float64), [-1])
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "status", str(self.status))
         object.__setattr__(self, "endpoint_accepted", bool(self.endpoint_accepted))
@@ -275,8 +273,8 @@ class JointCenterCheckpoint:
 
     status: str
     endpoint_accepted: bool
-    position: np.ndarray
-    score: np.ndarray
+    position: tf.Tensor
+    score: tf.Tensor
     objective: float
     score_l2: float
     score_max_abs: float
@@ -290,8 +288,7 @@ class JointCenterCheckpoint:
 
     def __post_init__(self) -> None:
         for name in ("position", "score"):
-            value = np.asarray(getattr(self, name), dtype=float).copy()
-            value.setflags(write=False)
+            value = numeric_tensor(getattr(self, name), dtype=tf.float64)
             object.__setattr__(self, name, value)
 
     def payload(self) -> Mapping[str, Any]:
@@ -317,8 +314,8 @@ class JointCenterStagedResult:
 
     status: str
     endpoint_accepted: bool
-    initial_position: np.ndarray
-    initial_score: np.ndarray
+    initial_position: tf.Tensor
+    initial_score: tf.Tensor
     initial_objective: float
     initial_score_l2: float
     initial_score_max_abs: float
@@ -326,8 +323,8 @@ class JointCenterStagedResult:
     checkpoint_validated: bool
     checkpoint_validator_calls: int
     continuation_started: bool
-    endpoint_position: np.ndarray
-    endpoint_score: np.ndarray
+    endpoint_position: tf.Tensor
+    endpoint_score: tf.Tensor
     endpoint_objective: float
     endpoint_score_l2: float
     endpoint_score_max_abs: float
@@ -342,8 +339,8 @@ class JointCenterStagedResult:
     wall_time_exhausted: bool
     jit_compile: bool
     exception_type: str | None
-    best_evaluated_position: np.ndarray | None = None
-    best_evaluated_score: np.ndarray | None = None
+    best_evaluated_position: tf.Tensor | None = None
+    best_evaluated_score: tf.Tensor | None = None
     best_evaluated_objective: float | None = None
     best_evaluated_source: str | None = None
     best_evaluated_callback_index: int | None = None
@@ -357,14 +354,12 @@ class JointCenterStagedResult:
             "endpoint_position",
             "endpoint_score",
         ):
-            value = np.asarray(getattr(self, name), dtype=float).copy()
-            value.setflags(write=False)
+            value = numeric_tensor(getattr(self, name), dtype=tf.float64)
             object.__setattr__(self, name, value)
         for name in ("best_evaluated_position", "best_evaluated_score"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).reshape([-1]).copy()
-                array.setflags(write=False)
+                array = tf.reshape(numeric_tensor(value, dtype=tf.float64), [-1])
                 object.__setattr__(self, name, array)
         object.__setattr__(
             self, "best_evaluated_is_endpoint", bool(self.best_evaluated_is_endpoint)
@@ -427,7 +422,45 @@ def locate_joint_center(
     scale: Any | None = None,
     config: JointCenterLocatorConfig | None = None,
 ) -> JointCenterResult:
-    """Run one bounded full-vector L-BFGS locator with exact endpoint replay."""
+    """Run reusable XLA initialization, L-BFGS and exact endpoint replay.
+
+    Starts and scales are operands. Compiler/device errors propagate without
+    an eager retry; an explicit non-JIT deadline selects the host diagnostic.
+    """
+    from bayesfilter.inference.joint_center_tf import (
+        joint_center_program,
+        joint_center_result,
+    )
+
+    cfg = JointCenterLocatorConfig() if config is None else config
+    if cfg.max_wall_seconds is not None:
+        return _locate_joint_center_wall_diagnostic(
+            value_and_score_fn, initial_position, scale=scale, config=cfg)
+    initial = _vector(initial_position, "initial_position")
+    dimension = int(initial.shape[0])
+    if dimension <= 0:
+        raise ValueError("initial_position must be nonempty")
+    scale_tensor = tf.ones_like(initial) if scale is None else _vector(scale, "scale")
+    if scale_tensor.shape != (dimension,) or not bool(tf.reduce_all(scale_tensor > 0)):
+        raise ValueError("scale must be positive finite with one entry per coordinate")
+    program = joint_center_program(value_and_score_fn, dimension, cfg, device=initial.device)
+    with program.invocation_lock:
+        with program.dependency_scope.activate():
+            raw = program(initial, scale_tensor)
+        return joint_center_result(raw, jit_compile=cfg.jit_compile,
+                                   construction_error=program.construction_error)
+
+
+def _locate_joint_center_wall_diagnostic(
+    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    initial_position: Any,
+    *,
+    scale: Any | None = None,
+    config: JointCenterLocatorConfig,
+) -> JointCenterResult:
+    """Historical host-clock diagnostic, explicitly non-JIT and never fallback."""
+    if config.jit_compile or config.max_wall_seconds is None:
+        raise ValueError("host-wall diagnostic requires an explicit non-JIT deadline")
 
     cfg = JointCenterLocatorConfig() if config is None else config
     initial = _vector(initial_position, "initial_position")
@@ -447,7 +480,7 @@ def locate_joint_center(
     initial_value, initial_score, initial_valid = _evaluate_value_score(
         value_and_score_fn, initial, dimension
     )
-    initial_np = np.asarray(initial.numpy(), dtype=float)
+    initial_np = tf.convert_to_tensor(initial, tf.float64)
     if not initial_valid:
         return _result(
             status="initial_target_invalid",
@@ -469,11 +502,13 @@ def locate_joint_center(
             wall_time_exhausted=False,
             jit_compile=cfg.jit_compile,
             exception_type=None,
-            scale=np.asarray(scale_tensor.numpy(), dtype=float),
+            scale=tf.convert_to_tensor(scale_tensor, tf.float64),
         )
 
-    attempts = tf.Variable(0, trainable=False, dtype=tf.int32)
-    target_rows = tf.Variable(0, trainable=False, dtype=tf.int32)
+    # TensorFlow pins int32 resources to the host. Integer accounting must
+    # stay with the GPU/XLA optimizer; int64 preserves all bounded counts.
+    attempts = tf.Variable(0, trainable=False, dtype=tf.int64)
+    target_rows = tf.Variable(0, trainable=False, dtype=tf.int64)
     best_callback_value = tf.Variable(
         initial_value, trainable=False, dtype=tf.float64
     )
@@ -483,20 +518,20 @@ def locate_joint_center(
     best_callback_score = tf.Variable(
         tf.constant(initial_score, tf.float64), trainable=False, dtype=tf.float64
     )
-    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int32)
+    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int64)
     cap_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
     wall_time_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
-    cap = tf.constant(cfg.max_objective_evaluations, tf.int32)
+    cap = tf.constant(cfg.max_objective_evaluations, tf.int64)
     started = time.monotonic()
 
     def wall_guard_passed() -> tf.Tensor:
         if cfg.max_wall_seconds is None:
             return tf.constant(True)
 
-        def remaining() -> np.ndarray:
-            return np.asarray(
+        def remaining() -> tf.Tensor:
+            return numeric_tensor(
                 time.monotonic() - started <= cfg.max_wall_seconds,
-                dtype=np.bool_,
+                dtype=tf.bool,
             )
 
         return tf.reshape(tf.py_function(remaining, [], tf.bool), [])
@@ -544,8 +579,8 @@ def locate_joint_center(
             with tf.control_dependencies([updated_flag]):
                 z_tensor = tf.reshape(tf.convert_to_tensor(z, tf.float64), [-1])
                 return (
-                    tf.constant(np.inf, tf.float64),
-                    tf.fill(tf.shape(z_tensor), tf.constant(np.nan, tf.float64)),
+                    tf.constant(float("inf"), tf.float64),
+                    tf.fill(tf.shape(z_tensor), tf.constant(float("nan"), tf.float64)),
                 )
 
         with tf.control_dependencies([updated_attempts]):
@@ -589,10 +624,10 @@ def locate_joint_center(
             initial_position=initial_np,
             initial_value=initial_value,
             initial_score=initial_score,
-            scale=np.asarray(scale_tensor.numpy(), dtype=float),
+            scale=tf.convert_to_tensor(scale_tensor, tf.float64),
             callback_value=float(best_callback_value.numpy()),
-            callback_z=np.asarray(best_callback_z.numpy(), dtype=float),
-            callback_score=np.asarray(best_callback_score.numpy(), dtype=float),
+            callback_z=tf.convert_to_tensor(best_callback_z, tf.float64),
+            callback_score=tf.convert_to_tensor(best_callback_score, tf.float64),
             callback_index=int(best_callback_index.numpy()),
         )
         return _result(
@@ -615,7 +650,7 @@ def locate_joint_center(
             wall_time_exhausted=bool(wall_time_exhausted.numpy()),
             jit_compile=cfg.jit_compile,
             exception_type=type(exc).__name__,
-            scale=np.asarray(scale_tensor.numpy(), dtype=float),
+            scale=tf.convert_to_tensor(scale_tensor, tf.float64),
             best_candidate=best,
             best_is_endpoint=False,
         )
@@ -633,7 +668,7 @@ def locate_joint_center(
     endpoint_value, endpoint_score, endpoint_valid = _evaluate_value_score(
         value_and_score_fn, candidate, dimension
     )
-    candidate_np = np.asarray(candidate.numpy(), dtype=float)
+    candidate_np = tf.convert_to_tensor(candidate, tf.float64)
     accounting_valid = bool(
         reported_evaluations == callback_attempts
         and (
@@ -665,10 +700,10 @@ def locate_joint_center(
         initial_position=initial_np,
         initial_value=initial_value,
         initial_score=initial_score,
-        scale=np.asarray(scale_tensor.numpy(), dtype=float),
+        scale=tf.convert_to_tensor(scale_tensor, tf.float64),
         callback_value=float(best_callback_value.numpy()),
-        callback_z=np.asarray(best_callback_z.numpy(), dtype=float),
-        callback_score=np.asarray(best_callback_score.numpy(), dtype=float),
+        callback_z=tf.convert_to_tensor(best_callback_z, tf.float64),
+        callback_score=tf.convert_to_tensor(best_callback_score, tf.float64),
         callback_index=int(best_callback_index.numpy()),
         endpoint_position=candidate_np,
         endpoint_value=endpoint_value,
@@ -712,7 +747,7 @@ def locate_joint_center(
         wall_time_exhausted=timed_out,
         jit_compile=cfg.jit_compile,
         exception_type=None,
-        scale=np.asarray(scale_tensor.numpy(), dtype=float),
+        scale=tf.convert_to_tensor(scale_tensor, tf.float64),
         best_candidate=best,
         best_is_endpoint=bool(
             best is not None and best.source_role == "endpoint_replay"
@@ -728,7 +763,45 @@ def locate_joint_center_staged(
     scale: Any | None = None,
     config: JointCenterStagedConfig | None = None,
 ) -> JointCenterStagedResult:
-    """Replay a checkpoint, validate it once, and resume the same L-BFGS state."""
+    """Run two reusable XLA stages around one external checkpoint validator.
+
+    Starts and scales are operands; continuation preserves the complete L-BFGS
+    state. Compiler/device errors propagate without an eager retry or a result
+    assembled from incomplete counters. Explicit host-wall-clock diagnostics
+    retain their non-JIT controller.
+    """
+    from bayesfilter.inference.joint_center_staged_tf import (
+        run_staged_program,
+        staged_joint_center_program,
+    )
+
+    cfg = JointCenterStagedConfig() if config is None else config
+    if cfg.max_wall_seconds is not None:
+        return _locate_joint_center_staged_wall_diagnostic(
+            value_and_score_fn, initial_position, checkpoint_validator=checkpoint_validator,
+            scale=scale, config=cfg)
+    initial = _vector(initial_position, "initial_position")
+    dimension = int(initial.shape[0])
+    if dimension <= 0:
+        raise ValueError("initial_position must be nonempty")
+    scale_tensor = tf.ones_like(initial) if scale is None else _vector(scale, "scale")
+    if scale_tensor.shape != (dimension,) or not bool(tf.reduce_all(scale_tensor > 0)):
+        raise ValueError("scale must be positive finite with one entry per coordinate")
+    owner = staged_joint_center_program(value_and_score_fn, dimension, cfg, device=initial.device)
+    return run_staged_program(owner, initial, scale_tensor, checkpoint_validator)
+
+
+def _locate_joint_center_staged_wall_diagnostic(
+    value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
+    initial_position: Any,
+    *,
+    checkpoint_validator: Callable[[JointCenterCheckpoint], bool],
+    scale: Any | None = None,
+    config: JointCenterStagedConfig,
+) -> JointCenterStagedResult:
+    """Historical host-clock diagnostic, explicitly non-JIT and never fallback."""
+    if config.jit_compile or config.max_wall_seconds is None:
+        raise ValueError("host-wall diagnostic requires an explicit non-JIT deadline")
 
     cfg = JointCenterStagedConfig() if config is None else config
     initial = _vector(initial_position, "initial_position")
@@ -744,11 +817,11 @@ def locate_joint_center_staged(
         tf.reduce_all(tf.math.is_finite(scale_tensor) & (scale_tensor > 0.0)).numpy()
     ):
         raise ValueError("scale must be positive finite with one entry per coordinate")
-    scale_np = np.asarray(scale_tensor.numpy(), dtype=float)
+    scale_np = tf.convert_to_tensor(scale_tensor, tf.float64)
     initial_value, initial_score, initial_valid = _evaluate_value_score(
         value_and_score_fn, initial, dimension
     )
-    initial_np = np.asarray(initial.numpy(), dtype=float)
+    initial_np = tf.convert_to_tensor(initial, tf.float64)
     if not initial_valid:
         checkpoint = _checkpoint(
             status="initial_target_invalid",
@@ -792,8 +865,9 @@ def locate_joint_center_staged(
             scale=scale_np,
         )
 
-    attempts = tf.Variable(0, trainable=False, dtype=tf.int32)
-    target_rows = tf.Variable(0, trainable=False, dtype=tf.int32)
+    # Keep staged-optimizer accounting on the same XLA device as its state.
+    attempts = tf.Variable(0, trainable=False, dtype=tf.int64)
+    target_rows = tf.Variable(0, trainable=False, dtype=tf.int64)
     best_callback_value = tf.Variable(
         initial_value, trainable=False, dtype=tf.float64
     )
@@ -803,20 +877,20 @@ def locate_joint_center_staged(
     best_callback_score = tf.Variable(
         tf.constant(initial_score, tf.float64), trainable=False, dtype=tf.float64
     )
-    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int32)
+    best_callback_index = tf.Variable(-1, trainable=False, dtype=tf.int64)
     cap_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
     wall_time_exhausted = tf.Variable(False, trainable=False, dtype=tf.bool)
-    cap = tf.constant(cfg.max_objective_evaluations, tf.int32)
+    cap = tf.constant(cfg.max_objective_evaluations, tf.int64)
     started = time.monotonic()
 
     def wall_guard_passed() -> tf.Tensor:
         if cfg.max_wall_seconds is None:
             return tf.constant(True)
 
-        def remaining() -> np.ndarray:
-            return np.asarray(
+        def remaining() -> tf.Tensor:
+            return numeric_tensor(
                 time.monotonic() - started <= cfg.max_wall_seconds,
-                dtype=np.bool_,
+                dtype=tf.bool,
             )
 
         return tf.reshape(tf.py_function(remaining, [], tf.bool), [])
@@ -864,8 +938,8 @@ def locate_joint_center_staged(
             with tf.control_dependencies([updated_flag]):
                 z_tensor = tf.reshape(tf.convert_to_tensor(z, tf.float64), [-1])
                 return (
-                    tf.constant(np.inf, tf.float64),
-                    tf.fill(tf.shape(z_tensor), tf.constant(np.nan, tf.float64)),
+                    tf.constant(float("inf"), tf.float64),
+                    tf.fill(tf.shape(z_tensor), tf.constant(float("nan"), tf.float64)),
                 )
 
         with tf.control_dependencies([updated_attempts]):
@@ -880,7 +954,7 @@ def locate_joint_center_staged(
             )
 
     def observed_best(
-        *extra_candidates: tuple[np.ndarray, float, np.ndarray, str, int],
+        *extra_candidates: tuple[tf.Tensor, float, tf.Tensor, str, int],
     ) -> ExactCandidate | None:
         candidates = [
             ExactCandidate(
@@ -897,10 +971,10 @@ def locate_joint_center_staged(
                 ExactCandidate(
                     position=(
                         initial_np
-                        + scale_np * np.asarray(best_callback_z.numpy(), dtype=float)
+                        + scale_np * tf.convert_to_tensor(best_callback_z, tf.float64)
                     ),
                     value=float(best_callback_value.numpy()),
-                    score=np.asarray(best_callback_score.numpy(), dtype=float),
+                    score=tf.convert_to_tensor(best_callback_score, tf.float64),
                     evaluation_index=1 + callback_index,
                     source_role="optimizer_callback",
                 )
@@ -997,7 +1071,7 @@ def locate_joint_center_staged(
     checkpoint_value, checkpoint_score, checkpoint_valid = _evaluate_value_score(
         value_and_score_fn, checkpoint_candidate, dimension
     )
-    checkpoint_np = np.asarray(checkpoint_candidate.numpy(), dtype=float)
+    checkpoint_np = tf.convert_to_tensor(checkpoint_candidate, tf.float64)
     checkpoint_attempts = int(attempts.numpy())
     checkpoint_rows = int(target_rows.numpy())
     checkpoint_reported = int(optimizer.num_objective_evaluations.numpy())
@@ -1201,7 +1275,7 @@ def locate_joint_center_staged(
     endpoint_value, endpoint_score, endpoint_valid = _evaluate_value_score(
         value_and_score_fn, final_candidate, dimension
     )
-    endpoint_np = np.asarray(final_candidate.numpy(), dtype=float)
+    endpoint_np = tf.convert_to_tensor(final_candidate, tf.float64)
     callback_attempts = int(attempts.numpy())
     optimizer_target_rows = int(target_rows.numpy())
     exhausted = bool(cap_exhausted.numpy())
@@ -1298,19 +1372,19 @@ def _evaluate_value_score(
     function: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     position: tf.Tensor,
     dimension: int,
-) -> tuple[float, np.ndarray, bool]:
+) -> tuple[float, tf.Tensor, bool]:
     try:
         value, score = function(position)
         value_tensor = tf.reshape(tf.convert_to_tensor(value, tf.float64), [])
         score_tensor = tf.reshape(tf.convert_to_tensor(score, tf.float64), [-1])
         if score_tensor.shape != (dimension,):
-            return float("nan"), np.full(dimension, np.nan), False
+            return float("nan"), tf.fill([dimension], tf.constant(float("nan"), tf.float64)), False
         value_np = float(value_tensor.numpy())
-        score_np = np.asarray(score_tensor.numpy(), dtype=float)
-        valid = bool(np.isfinite(value_np) and np.all(np.isfinite(score_np)))
+        score_np = tf.convert_to_tensor(score_tensor, tf.float64)
+        valid = bool(math.isfinite(value_np) and tf.reduce_all(tf.math.is_finite(score_np)))
         return value_np, score_np, valid
     except Exception:  # noqa: BLE001 - malformed exact target is invalid evidence.
-        return float("nan"), np.full(dimension, np.nan), False
+        return float("nan"), tf.fill([dimension], tf.constant(float("nan"), tf.float64)), False
 
 
 def _accounting_valid(
@@ -1372,10 +1446,10 @@ def _checkpoint(
     *,
     status: str,
     accepted: bool,
-    position: np.ndarray,
+    position: tf.Tensor,
     value: float,
-    score: np.ndarray,
-    scale: np.ndarray,
+    score: tf.Tensor,
+    scale: tf.Tensor,
     optimizer_converged: bool,
     optimizer_failed: bool,
     optimizer_iterations: int,
@@ -1384,15 +1458,15 @@ def _checkpoint(
     optimizer_target_rows: int,
     physical_target_rows: int,
 ) -> JointCenterCheckpoint:
-    scaled_score = np.asarray(score, dtype=float) * scale
+    scaled_score = numeric_tensor(score, dtype=tf.float64) * scale
     return JointCenterCheckpoint(
         status=str(status),
         endpoint_accepted=bool(accepted),
         position=position,
         score=score,
         objective=float(value),
-        score_l2=float(np.linalg.norm(scaled_score)),
-        score_max_abs=float(np.max(np.abs(scaled_score))),
+        score_l2=float(tf.linalg.norm(scaled_score)),
+        score_max_abs=float(tf.reduce_max(tf.abs(scaled_score))),
         optimizer_converged=bool(optimizer_converged),
         optimizer_failed=bool(optimizer_failed),
         optimizer_iterations=int(optimizer_iterations),
@@ -1407,16 +1481,16 @@ def _staged_result(
     *,
     status: str,
     accepted: bool,
-    initial_position: np.ndarray,
+    initial_position: tf.Tensor,
     initial_value: float,
-    initial_score: np.ndarray,
+    initial_score: tf.Tensor,
     checkpoint: JointCenterCheckpoint,
     checkpoint_validated: bool,
     checkpoint_validator_calls: int,
     continuation_started: bool,
-    endpoint_position: np.ndarray,
+    endpoint_position: tf.Tensor,
     endpoint_value: float,
-    endpoint_score: np.ndarray,
+    endpoint_score: tf.Tensor,
     optimizer_converged: bool,
     optimizer_failed: bool,
     optimizer_iterations: int,
@@ -1428,16 +1502,16 @@ def _staged_result(
     wall_time_exhausted: bool,
     jit_compile: bool,
     exception_type: str | None,
-    scale: np.ndarray,
+    scale: tf.Tensor,
     best_candidate: ExactCandidate | None = None,
     best_is_endpoint: bool = False,
 ) -> JointCenterStagedResult:
-    initial_scaled = np.asarray(initial_score, dtype=float) * scale
-    endpoint_scaled = np.asarray(endpoint_score, dtype=float) * scale
+    initial_scaled = numeric_tensor(initial_score, dtype=tf.float64) * scale
+    endpoint_scaled = numeric_tensor(endpoint_score, dtype=tf.float64) * scale
     if (
         best_candidate is None
-        and np.isfinite(initial_value)
-        and np.all(np.isfinite(initial_score))
+        and math.isfinite(initial_value)
+        and tf.reduce_all(tf.math.is_finite(initial_score))
     ):
         best_candidate = ExactCandidate(
             position=initial_position,
@@ -1452,8 +1526,8 @@ def _staged_result(
         initial_position=initial_position,
         initial_score=initial_score,
         initial_objective=float(initial_value),
-        initial_score_l2=float(np.linalg.norm(initial_scaled)),
-        initial_score_max_abs=float(np.max(np.abs(initial_scaled))),
+        initial_score_l2=float(tf.linalg.norm(initial_scaled)),
+        initial_score_max_abs=float(tf.reduce_max(tf.abs(initial_scaled))),
         checkpoint=checkpoint,
         checkpoint_validated=bool(checkpoint_validated),
         checkpoint_validator_calls=int(checkpoint_validator_calls),
@@ -1461,8 +1535,8 @@ def _staged_result(
         endpoint_position=endpoint_position,
         endpoint_score=endpoint_score,
         endpoint_objective=float(endpoint_value),
-        endpoint_score_l2=float(np.linalg.norm(endpoint_scaled)),
-        endpoint_score_max_abs=float(np.max(np.abs(endpoint_scaled))),
+        endpoint_score_l2=float(tf.linalg.norm(endpoint_scaled)),
+        endpoint_score_max_abs=float(tf.reduce_max(tf.abs(endpoint_scaled))),
         optimizer_converged=bool(optimizer_converged),
         optimizer_failed=bool(optimizer_failed),
         optimizer_iterations=int(optimizer_iterations),
@@ -1500,12 +1574,12 @@ def _result(
     *,
     status: str,
     accepted: bool,
-    initial_position: np.ndarray,
-    endpoint_position: np.ndarray,
+    initial_position: tf.Tensor,
+    endpoint_position: tf.Tensor,
     initial_value: float,
     endpoint_value: float,
-    initial_score: np.ndarray,
-    endpoint_score: np.ndarray,
+    initial_score: tf.Tensor,
+    endpoint_score: tf.Tensor,
     optimizer_converged: bool,
     optimizer_failed: bool,
     optimizer_iterations: int,
@@ -1517,12 +1591,12 @@ def _result(
     wall_time_exhausted: bool,
     jit_compile: bool,
     exception_type: str | None,
-    scale: np.ndarray,
+    scale: tf.Tensor,
     best_candidate: ExactCandidate | None = None,
     best_is_endpoint: bool = False,
 ) -> JointCenterResult:
-    initial_scaled = np.asarray(initial_score, dtype=float) * scale
-    endpoint_scaled = np.asarray(endpoint_score, dtype=float) * scale
+    initial_scaled = numeric_tensor(initial_score, dtype=tf.float64) * scale
+    endpoint_scaled = numeric_tensor(endpoint_score, dtype=tf.float64) * scale
     return JointCenterResult(
         status=status,
         endpoint_accepted=accepted,
@@ -1549,10 +1623,10 @@ def _result(
             else None
         ),
         best_evaluated_is_endpoint=best_is_endpoint,
-        initial_score_l2=float(np.linalg.norm(initial_scaled)),
-        endpoint_score_l2=float(np.linalg.norm(endpoint_scaled)),
-        initial_score_max_abs=float(np.max(np.abs(initial_scaled))),
-        endpoint_score_max_abs=float(np.max(np.abs(endpoint_scaled))),
+        initial_score_l2=float(tf.linalg.norm(initial_scaled)),
+        endpoint_score_l2=float(tf.linalg.norm(endpoint_scaled)),
+        initial_score_max_abs=float(tf.reduce_max(tf.abs(initial_scaled))),
+        endpoint_score_max_abs=float(tf.reduce_max(tf.abs(endpoint_scaled))),
         optimizer_converged=optimizer_converged,
         optimizer_failed=optimizer_failed,
         optimizer_iterations=int(optimizer_iterations),
@@ -1569,17 +1643,17 @@ def _result(
 
 def _joint_center_best_candidate(
     *,
-    initial_position: np.ndarray,
+    initial_position: tf.Tensor,
     initial_value: float,
-    initial_score: np.ndarray,
-    scale: np.ndarray,
+    initial_score: tf.Tensor,
+    scale: tf.Tensor,
     callback_value: float,
-    callback_z: np.ndarray,
-    callback_score: np.ndarray,
+    callback_z: tf.Tensor,
+    callback_score: tf.Tensor,
     callback_index: int,
-    endpoint_position: np.ndarray | None = None,
+    endpoint_position: tf.Tensor | None = None,
     endpoint_value: float | None = None,
-    endpoint_score: np.ndarray | None = None,
+    endpoint_score: tf.Tensor | None = None,
     endpoint_eligible: bool = False,
     endpoint_evaluation_index: int = -1,
 ) -> ExactCandidate | None:
@@ -1597,7 +1671,7 @@ def _joint_center_best_candidate(
     if callback_index >= 0:
         candidates.append(
             ExactCandidate(
-                position=np.asarray(initial_position) + np.asarray(scale) * callback_z,
+                position=numeric_tensor(initial_position) + numeric_tensor(scale) * callback_z,
                 value=callback_value,
                 score=callback_score,
                 evaluation_index=1 + callback_index,

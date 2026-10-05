@@ -641,9 +641,9 @@ def test_a2_terminal_trace_audit_accepts_one_resolved_write_open(
     verifier = a2_terminal_verifier
     trace = tmp_path / "allowed-trace.log"
     trace.write_text(
-        """10 chdir("/home/ubuntu/python/BayesFilter") = 0
+        f"""10 chdir("{verifier.ROOT}") = 0
 10 readlink("/proc/self/exe", "/usr/bin/python", 4096) = 15
-10 openat(AT_FDCWD, "docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a2/relative.log", O_WRONLY|O_CREAT, 0666) = 3</home/ubuntu/python/BayesFilter/docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a2/relative.log>
+10 openat(AT_FDCWD, "docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a2/relative.log", O_WRONLY|O_CREAT, 0666) = 3<{verifier.ROOT}/docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a2/relative.log>
 """,
         encoding="utf-8",
     )

@@ -84,13 +84,15 @@ def _make_target_log_prob(states: tf.Tensor, observations: tf.Tensor):
                 state_path,
                 observation_path,
             )
-        return tf.vectorized_map(
+        return tf.map_fn(
             lambda current_theta: highdim.zhao_cui_sir_austria_local_complete_data_log_density_xla(
                 current_theta,
                 state_path,
                 observation_path,
             ),
             theta_tensor,
+            fn_output_signature=tf.TensorSpec([], DTYPE),
+            parallel_iterations=1,
         )
 
     return target_log_prob

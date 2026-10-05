@@ -7,6 +7,64 @@ and mechanism APIs retain compatibility facades that call this core. New
 transport mathematics belongs in the core; a new target or campaign supplies
 configuration and a batch-native target callback.
 
+## Canonical architecture and historical boundary
+
+**Owner directive, 2026-09-25: `bayesfilter_neutra_iaf_author_v1` is the canonical
+NeuTra architecture. All superseded local implementations are HISTORICAL —
+UNFAITHFUL TO THE AUTHOR'S CODE.** The
+[migration notice](../plans/bayesfilter-neutra-canonical-architecture-policy-2026-09-25.md)
+covers old constructors, configurations, checkpoints, archived copies and
+results, including later compatibility facades that preserve those old maps.
+The repaired IAF introduced in `8e132893e` and evaluated in the September 24
+study is the current architecture; a blanket date cutoff is not its definition.
+
+The canonical IAF uses these explicit choices:
+
+| Property | Required mechanism | Current q20 instance / provenance |
+|---|---|---|
+| Numerical implementation | `NeuTraTransport` through `neutra_transport_core` | One authority for trainable and frozen evaluation |
+| Scalar transformation | `y_j=x_j*exp(s_j(x_<j))+mu_j(x_<j)` | Invertible autoregressive affine stage |
+| Conditional log scale | `neutra_conditional_tanh`: `b_j+c*tanh(h_j/c)` | Free bias outside the cap; c=2 is the recorded local choice |
+| Conditioner | ELU; `hoffman_block_masks_v1` | Two hidden layers per stage; exclusive first mask, inclusive later masks |
+| Initializer | `hoffman_variance_scaling`, `iaf_variance_scale=0.02` | Nonzero truncated-normal kernels including output kernels, zero biases; author initializer |
+| Composition | Full coordinate reversal between stages | Three stages, matching the source architectural profile |
+| Conditioner width | Explicit, source-compatible width, justified for the target | `(16,16)` for q20 dimension 4; this is a local width choice, not the paper's dimension-wide profile |
+| Fixed outer affine | Explicit center and positive scales with provenance | Moments of 8,192 saved-baseline draws in the completed study; an initialization hypothesis, not posterior moments |
+
+`NeuTraTransportConfig.hoffman_author_iaf` selects the defining source options;
+its hidden widths default to `(dimension, dimension)`. The q20 study explicitly
+used `(16,16)`. Direct construction of `NeuTraTransportConfig(kind="iaf", ...)`
+does **not** by itself select the author masks: its compatibility default is
+`legacy_degree_masks_v1`. Use the source profile or specify every defining
+choice explicitly. Generic constructor defaults are not architectural policy.
+
+The accompanying q20 training recipe used path gradients, batch 32, learning
+rate 0.01, Adam `(0.9,0.999,1e-8)`, calibrated emergency clipping, 4,096 updates
+per seed, FP32 transport/Adam with TF32 enabled and an FP64 target. These are
+recorded target-specific settings. They are not universal author defaults or
+proof of sufficient training on another target. Path gradients are the separately
+cited Vaitl/Roeder mechanism, and the TensorFlow port uses stateless seeds and
+grouped output storage. Thus canonical means the owner-designated, documented
+source-based architecture, not bitwise reproduction of one paper experiment.
+
+The configured full conditional DSF/NAF remains a separately identified research
+alternative with the source correspondence below. The preliminary scalar canary
+is historical and must not be called that full NAF. Old affine/dense artifact
+schemas and legacy scale conventions remain readable for historical purposes;
+conversion or successful checks cannot relabel them as canonical.
+
+Any departure requires a written, substantive explanation before implementation
+or execution: exact source/configuration difference, demonstrated need,
+mathematical consequences, bounded validation against the canonical setup,
+criteria, stop conditions and skeptical review. The migration notice specifies
+the requirements. Preserve every necessary local adaptation explicitly, and do
+not replace the canonical architecture without owner direction.
+
+This policy selects an implementation. The completed study supports local
+training improvement for its IAF fits; posterior coverage and HMC convergence
+remain unproved. Old-map continuation also improved, so the study does not
+attribute all past failures or present gains to architecture alone.
+
 ## Source correspondence
 
 The inspected sources are preserved in
@@ -135,15 +193,21 @@ universal variance advantage away from a fitted map.
 ## Public use and handoff
 
 ```python
+from dataclasses import replace
 from bayesfilter.inference.neutra_transport import (
     NeuTraTransportConfig, NeuTraTransport,
     NeuTraOptimizerConfig, NeuTraTransportTrainer,
 )
 
-# Architecture hypotheses must be chosen in the target's experiment plan.
-map_config = NeuTraTransportConfig.huang_dsf(
-    dimension, hidden_layers=hidden_layers, stages=stages,
-    mixture_components=mixture_components, seed=initialization_seed,
+# Canonical IAF source profile; numerical choices belong in the target plan.
+map_config = NeuTraTransportConfig.hoffman_author_iaf(
+    dimension, conditional_scale_cap=conditional_scale_cap,
+    seed=initialization_seed, dtype="float32",
+)
+# q20 uses (16, 16); other targets must justify their selected widths/moments.
+map_config = replace(
+    map_config, hidden_layers=hidden_layers,
+    affine_center=affine_center, affine_scale=affine_scale,
 )
 transport = NeuTraTransport(map_config)
 optimizer_config = NeuTraOptimizerConfig(
@@ -189,6 +253,12 @@ static layer lists are tracing-time architecture construction, not Python
 sample or leapfrog execution.
 
 ## Compatibility and drift prevention
+
+**Compatibility preserves old semantics; it does not confer canonical status.**
+The old map constructors and artifacts below are historical and unfaithful to
+the author-code architecture. Shared consumers may use the explicitly configured
+canonical IAF, while old default transports remain historical. Do not copy their
+settings into a new campaign or treat earlier reported readiness as current.
 
 | Existing caller | Shared numerical route |
 |---|---|

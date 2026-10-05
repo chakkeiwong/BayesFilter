@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
-import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 
@@ -353,6 +352,8 @@ def _legendre_interval_nodes_weights(
     left: float,
     right: float,
 ) -> tuple[tf.Tensor, tf.Tensor]:
+    import numpy as np  # Independent dense reference preparation only.
+
     nodes, weights = np.polynomial.legendre.leggauss(int(order))
     nodes_tensor = tf.constant(nodes, dtype=tf.float64)
     weights_tensor = tf.constant(weights, dtype=tf.float64)

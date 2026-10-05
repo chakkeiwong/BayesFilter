@@ -8,24 +8,41 @@ does not certify a global MAP, posterior correctness, or HMC readiness.
 
 from __future__ import annotations
 
+import math
+import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
 import tensorflow as tf
-import tensorflow_probability as tfp
 
-from bayesfilter.inference._exact_incumbent import (
-    candidates_from_rows,
-    select_exact_incumbent,
-)
-from bayesfilter.inference.mass_matrix import covariance_from_precision
 from bayesfilter.inference.factor_correlation_geometry import (
     FactorCorrelationGeometryConfig,
+    _factor_result_from_computed,
     fit_factor_correlation_score_geometry,
 )
-
+from bayesfilter.inference.factor_correlation_geometry import (
+    _rejected as _rejected_factor_fit,
+)
+from bayesfilter.inference.sequential_controller_report import sequential_result
+from bayesfilter.inference.sequential_controller_tf import sequential_controller
+from bayesfilter.inference.sequential_preparation_tf import (
+    cloud_program,
+    evaluation_program,
+    trust_region_program,
+)
+from bayesfilter.inference.sequential_score_fit_tf import (
+    partition_schema,
+    score_fit_program,
+)
+from bayesfilter.inference.sequential_selection_tf import replay_program, search_program
+from bayesfilter.inference.sequential_structured_fit_tf import (
+    structured_fit_data_program,
+)
+from bayesfilter.inference.sequential_structured_preparation_tf import (
+    structured_data_program,
+)
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS = (
     "local exact-stationary MAP candidate only",
@@ -106,11 +123,11 @@ class SequentialMapCovarianceConfig:
         )
         for name in positive_floats:
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value <= 0.0:
+            if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be positive finite")
             object.__setattr__(self, name, value)
         condition = float(self.max_condition_number)
-        if not np.isfinite(condition) or condition <= 1.0:
+        if not math.isfinite(condition) or condition <= 1.0:
             raise ValueError("max_condition_number must be finite and greater than 1")
         object.__setattr__(self, "max_condition_number", condition)
         for name in (
@@ -209,9 +226,9 @@ class SequentialMapCovarianceConfig:
 class SequentialMapCovarianceResult:
     accepted: bool
     status: str
-    map_candidate: np.ndarray | None
-    precision: np.ndarray | None
-    covariance: np.ndarray | None
+    map_candidate: tf.Tensor | None
+    precision: tf.Tensor | None
+    covariance: tf.Tensor | None
     diagnostics: Mapping[str, Any]
     nonclaims: tuple[str, ...] = SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS
 
@@ -221,8 +238,7 @@ class SequentialMapCovarianceResult:
         for name in ("map_candidate", "precision", "covariance"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=float).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
         object.__setattr__(self, "nonclaims", tuple(self.nonclaims))
@@ -258,7 +274,14 @@ def estimate_sequential_map_covariance(
     config: SequentialMapCovarianceConfig | None = None,
     progress_callback: Callable[[Mapping[str, Any]], None] | None = None,
 ) -> SequentialMapCovarianceResult:
-    """Locate an exact stationary point and fit independent terminal geometry."""
+    """Locate an exact stationary point and fit independent terminal geometry.
+
+    Numerical localization, refinement and mass preparation execute in one XLA
+    call. Progress after initializer_started is buffered and delivered in order
+    after completion; callbacks cannot interrupt that call. Buffered locator
+    overflow stops further target calls and raises before event delivery. Use an
+    independent process deadline when an interruptible wall-time limit is needed.
+    """
 
     cfg = SequentialMapCovarianceConfig() if config is None else config
     starts = tf.convert_to_tensor(initial_positions, dtype=tf.float64)
@@ -275,807 +298,19 @@ def estimate_sequential_map_covariance(
     ):
         raise ValueError("scale must be positive finite with one entry per dimension")
 
-    evaluations = 0
-    locator_objective_evaluations = 0
-
     start_count = int(starts.shape[0])
     if cfg.locator_policy == "center_first" and start_count != 1:
         raise ValueError("center_first locator_policy requires exactly one center")
-    _emit_progress(
-        progress_callback,
-        "initializer_started",
-        start_count=start_count,
-        dimension=dimension,
-        locator_policy=cfg.locator_policy,
-        locator_stopping_condition=cfg.locator_stopping_condition,
-    )
-    candidates: list[tf.Tensor] = [starts[index] for index in range(start_count)]
-    locator_rows: list[Mapping[str, Any]] = []
-    if cfg.locator_policy == "center_first":
-        locator_rows.append(
-            {
-                "finite": True,
-                "coordinate_system": "reviewed_exact_center",
-                "locator_policy": "center_first",
-                "locator_skipped": True,
-                "skip_reason": "exact_center_admission",
-            }
-        )
-        _emit_progress(
-            progress_callback,
-            "locator_skipped_center_first",
-            locator_policy=cfg.locator_policy,
-            start_count=start_count,
-        )
-    elif batched_locator_value_and_score_fn is not None and start_count > 1:
-        locator_calls = 0
-
-        def batched_standardized_objective(u: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-            nonlocal locator_calls
-            unconstrained = tf.convert_to_tensor(u, tf.float64)
-            box_radius = tf.constant(cfg.locator_standardized_box_radius, tf.float64)
-            z = box_radius * tf.math.tanh(unconstrained / box_radius)
-            values, scores = batched_locator_value_and_score_fn(starts + scale_tf[None, :] * z)
-            values = tf.ensure_shape(tf.convert_to_tensor(values, tf.float64), [start_count])
-            scores = tf.ensure_shape(tf.convert_to_tensor(scores, tf.float64), [start_count, dimension])
-            derivative = 1.0 - tf.square(z / box_radius)
-            locator_calls += 1
-            _emit_progress(
-                progress_callback,
-                "locator_objective_completed",
-                locator_objective_calls=locator_calls,
-                log_posterior=values.numpy(),
-                max_abs_scaled_score=tf.reduce_max(
-                    tf.abs(scores * scale_tf[None, :]), axis=1
-                ).numpy(),
-                max_abs_transformed_gradient=tf.reduce_max(
-                    tf.abs(scores * scale_tf[None, :] * derivative), axis=1
-                ).numpy(),
-                standardized_position=z.numpy(),
-            )
-            return -values, -(scores * scale_tf[None, :] * derivative)
-
-        stopping_condition = (
-            tfp.optimizer.converged_all
-            if cfg.locator_stopping_condition == "converged_all"
-            else tfp.optimizer.converged_any
-        )
-        optimizer = tfp.optimizer.lbfgs_minimize(
-            batched_standardized_objective,
-            initial_position=tf.zeros([start_count, dimension], tf.float64),
-            tolerance=tf.constant(cfg.locator_gradient_tolerance, tf.float64),
-            max_iterations=cfg.locator_max_iterations,
-            max_line_search_iterations=cfg.locator_max_line_search_iterations,
-            parallel_iterations=1,
-            stopping_condition=stopping_condition,
-        )
-        objective_calls = int(optimizer.num_objective_evaluations.numpy())
-        locator_objective_evaluations += objective_calls * start_count
-        box_radius = tf.constant(cfg.locator_standardized_box_radius, tf.float64)
-        endpoints_z = box_radius * tf.math.tanh(tf.convert_to_tensor(optimizer.position) / box_radius)
-        endpoints = starts + scale_tf[None, :] * endpoints_z
-        values, scores = batched_locator_value_and_score_fn(endpoints)
-        locator_objective_evaluations += start_count
-        for index in range(start_count):
-            finite = bool(
-                (tf.math.is_finite(values[index]) & tf.reduce_all(tf.math.is_finite(scores[index]))).numpy()
-            )
-            if finite:
-                candidates.append(endpoints[index])
-            locator_rows.append({
-                "finite": finite,
-                "converged": bool(optimizer.converged.numpy()[index]),
-                "failed": bool(optimizer.failed.numpy()[index]),
-                "iterations": int(optimizer.num_iterations.numpy()),
-                "objective_calls": objective_calls,
-                "conservative_row_evaluations": objective_calls * start_count,
-                "coordinate_system": "start_centered_prior_standardized_smooth_box",
-                "standardized_box_radius": cfg.locator_standardized_box_radius,
-                "gradient_tolerance": cfg.locator_gradient_tolerance,
-                "stopping_condition": cfg.locator_stopping_condition,
-                "endpoint_standardized_norm": float(tf.linalg.norm(endpoints_z[index]).numpy()),
-                "native_batched_locator": True,
-            })
-        _emit_progress(
-            progress_callback,
-            "locator_completed",
-            locator_objective_calls=objective_calls,
-            iterations=int(optimizer.num_iterations.numpy()),
-            converged=optimizer.converged.numpy(),
-            failed=optimizer.failed.numpy(),
-            stopping_condition=cfg.locator_stopping_condition,
-        )
-    else:
-        for start in tuple(candidates):
-            def standardized_objective(z: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
-                unconstrained = tf.reshape(tf.convert_to_tensor(z, tf.float64), [-1])
-                box_radius = tf.constant(
-                    cfg.locator_standardized_box_radius, tf.float64
-                )
-                z = box_radius * tf.math.tanh(unconstrained / box_radius)
-                value, score = _scalar_value_score(
-                    value_and_score_fn, start + scale_tf * z, dimension
-                )
-                transform_derivative = 1.0 - tf.square(z / box_radius)
-                return -value, -(scale_tf * score * transform_derivative)
-
-            try:
-                optimizer = tfp.optimizer.lbfgs_minimize(
-                    standardized_objective,
-                    initial_position=tf.zeros([dimension], tf.float64),
-                    tolerance=tf.constant(
-                        cfg.locator_gradient_tolerance, tf.float64
-                    ),
-                    max_iterations=cfg.locator_max_iterations,
-                    max_line_search_iterations=cfg.locator_max_line_search_iterations,
-                    parallel_iterations=1,
-                    stopping_condition=(
-                        tfp.optimizer.converged_all
-                        if cfg.locator_stopping_condition == "converged_all"
-                        else tfp.optimizer.converged_any
-                    ),
-                )
-                endpoint_unconstrained = tf.reshape(
-                    tf.convert_to_tensor(optimizer.position), [-1]
-                )
-                box_radius = tf.constant(
-                    cfg.locator_standardized_box_radius, tf.float64
-                )
-                endpoint_z = box_radius * tf.math.tanh(
-                    endpoint_unconstrained / box_radius
-                )
-                endpoint = start + scale_tf * endpoint_z
-                objective_evaluations = int(
-                    optimizer.num_objective_evaluations.numpy()
-                )
-                locator_objective_evaluations += objective_evaluations
-                value, score = _scalar_value_score(
-                    value_and_score_fn, endpoint, dimension
-                )
-                evaluations += 1
-                finite = bool(
-                    (
-                        tf.math.is_finite(value)
-                        & tf.reduce_all(tf.math.is_finite(score))
-                    ).numpy()
-                )
-                if finite:
-                    candidates.append(endpoint)
-                locator_rows.append(
-                    {
-                        "finite": finite,
-                        "converged": bool(optimizer.converged.numpy()),
-                        "failed": bool(optimizer.failed.numpy()),
-                        "iterations": int(optimizer.num_iterations.numpy()),
-                        "objective_evaluations": objective_evaluations,
-                        "coordinate_system": (
-                            "start_centered_prior_standardized_smooth_box"
-                        ),
-                        "standardized_box_radius": (
-                            cfg.locator_standardized_box_radius
-                        ),
-                        "gradient_tolerance": cfg.locator_gradient_tolerance,
-                        "stopping_condition": cfg.locator_stopping_condition,
-                        "endpoint_standardized_norm": float(
-                            tf.linalg.norm(endpoint_z).numpy()
-                        ),
-                    }
-                )
-            except Exception as exc:  # noqa: BLE001 - starts remain candidates.
-                locator_rows.append(
-                    {"finite": False, "exception_type": type(exc).__name__}
-                )
-
-    finite_candidates: list[tuple[float, tf.Tensor, tf.Tensor]] = []
-    for candidate in candidates:
-        value, score = _scalar_value_score(value_and_score_fn, candidate, dimension)
-        evaluations += 1
-        if bool(
-            (tf.math.is_finite(value) & tf.reduce_all(tf.math.is_finite(score))).numpy()
-        ):
-            finite_candidates.append((float(value.numpy()), candidate, score))
-    if not finite_candidates:
-        return _rejected(
-            "no_finite_locator_candidate",
-            evaluations + locator_objective_evaluations,
-            locator_rows,
-            cfg,
-        )
-    # Rank every exact replay before any rejection branch.  A budget failure
-    # still exposes the best finite candidate as a diagnostic; returning the
-    # first row here would make the reported incumbent depend on start order.
-    finite_candidates.sort(key=lambda row: row[0], reverse=True)
-    evaluations += locator_objective_evaluations
-    if evaluations > cfg.max_exact_evaluations:
-        return _rejected(
-            "maximum_exact_evaluations_after_bounded_locator",
-            evaluations,
-            locator_rows,
-            cfg,
-            map_candidate=finite_candidates[0][1].numpy(),
-        )
-    center_value, center, center_score = finite_candidates[0]
-    refinement_origin = center if cfg.record_refinement_movement_diagnostics else None
-    refinement_movement_initial = (
-        {
-            "position_z": np.zeros(dimension, dtype=np.float64),
-            "value": center_value,
-            "score_norm": float(tf.linalg.norm(scale_tf * center_score).numpy()),
-        }
-        if cfg.record_refinement_movement_diagnostics
-        else None
-    )
-    _emit_progress(
-        progress_callback,
-        "candidate_selected",
-        finite_candidate_count=len(finite_candidates),
-        selected_log_posterior=center_value,
-        selected_max_abs_scaled_score=float(
-            tf.reduce_max(tf.abs(scale_tf * center_score)).numpy()
-        ),
-    )
-    radius = cfg.initial_radius
-    history: list[Mapping[str, Any]] = []
-    stalled = 0
-    terminal_fit: Mapping[str, Any] | None = None
-    terminal_fit_attempts = 0
-
-    for attempt in range(cfg.max_attempts):
-        pre_value = center_value
-        pre_center = center
-        pre_score = center_score
-        scaled_score = scale_tf * center_score
-        max_score = float(tf.reduce_max(tf.abs(scaled_score)).numpy())
-        if max_score <= cfg.terminal_score_max_abs:
-            if (
-                cfg.max_terminal_fit_attempts is not None
-                and terminal_fit_attempts >= cfg.max_terminal_fit_attempts
-            ):
-                break
-            if (
-                cfg.refinement_geometry_policy == "factor_correlation"
-                and evaluations + cfg.terminal_sample_count
-                > cfg.max_exact_evaluations
-            ):
-                return _rejected(
-                    "maximum_exact_evaluations_before_terminal_fit",
-                    evaluations,
-                    locator_rows,
-                    cfg,
-                    map_candidate=center.numpy(),
-                    extra={
-                        "history": history,
-                        **(
-                            {"refinement_movement_initial": refinement_movement_initial}
-                            if refinement_movement_initial is not None
-                            else {}
-                        ),
-                    },
-                )
-            _emit_progress(
-                progress_callback,
-                "terminal_fit_started",
-                attempt=attempt,
-                exact_evaluations=evaluations,
-                max_abs_scaled_score=max_score,
-                radius=radius,
-            )
-            terminal_fit, evaluations = _fit_score_curvature(
-                value_and_score_fn,
-                center,
-                center_score,
-                scale_tf,
-                dimension=dimension,
-                radius=radius,
-                sample_count=cfg.terminal_sample_count,
-                seed=(cfg.seed[0], cfg.seed[1] + 100003 + attempt),
-                config=cfg,
-                evaluations=evaluations,
-                batched_value_and_score_fn=batched_value_and_score_fn,
-            )
-            terminal_fit_attempts += 1
-            _emit_progress(
-                progress_callback,
-                "terminal_fit_completed",
-                attempt=attempt,
-                exact_evaluations=evaluations,
-                fit_status=terminal_fit.get("status"),
-                projection_relative_frobenius=terminal_fit.get(
-                    "projection_relative_frobenius"
-                ),
-            )
-            terminal_winner = _fit_best_exact_candidate(terminal_fit)
-            if terminal_winner is not None and terminal_winner[0] > center_value:
-                center_value, center, center_score = terminal_winner
-                history.append(
-                    {
-                        "attempt": attempt,
-                        "action": "terminal_fit_cloud_recentered",
-                        "center_value": center_value,
-                        "fit": terminal_fit,
-                    }
-                )
-                terminal_fit = None
-                stalled = 0
-                continue
-            if terminal_fit["status"] != "usable":
-                radius *= cfg.shrink_factor
-                history.append({"attempt": attempt, "action": "terminal_fit_rejected", **terminal_fit})
-                if radius < cfg.minimum_radius:
-                    break
-                continue
-            if terminal_fit["projection_relative_frobenius"] > cfg.terminal_projection_relative_frobenius_cap:
-                return _rejected(
-                    "terminal_projection_exceeds_cap", evaluations, locator_rows, cfg,
-                    map_candidate=center.numpy(),
-                    extra={
-                        "history": history,
-                        "terminal_fit": terminal_fit,
-                        **(
-                            {"refinement_movement_initial": refinement_movement_initial}
-                            if refinement_movement_initial is not None
-                            else {}
-                        ),
-                    },
-                )
-            break
-
-        search_sample_count = (
-            dimension_scaled_search_count(dimension)
-            if cfg.dimension_scaled_search
-            else cfg.search_sample_count
-        )
-        structured_fresh_count = cfg.structured_fresh_sample_multiplier * dimension
-        proposal_replay_reserve = (
-            cfg.structured_max_factors
-            if cfg.refinement_geometry_policy == "factor_correlation"
-            else 1
-        )
-        fit_evaluation_count = (
-            structured_fresh_count
-            if cfg.refinement_geometry_policy == "factor_correlation"
-            else cfg.regression_sample_count
-        )
-        required = search_sample_count + fit_evaluation_count + proposal_replay_reserve
-        if evaluations + required > cfg.max_exact_evaluations:
-            return _rejected(
-                "maximum_exact_evaluations", evaluations, locator_rows, cfg,
-                map_candidate=center.numpy(),
-                extra={
-                    "history": history,
-                    **(
-                        {"refinement_movement_initial": refinement_movement_initial}
-                        if refinement_movement_initial is not None
-                        else {}
-                    ),
-                },
-            )
-        cloud_builder = (
-            _orthogonal_antithetic_cloud
-            if cfg.orthogonal_antithetic_search
-            else _antithetic_cloud
-        )
-        search_z = cloud_builder(
-            search_sample_count, dimension, radius,
-            (cfg.seed[0], cfg.seed[1] + 1000 + attempt),
-        )
-        search_theta = center[None, :] + search_z * scale_tf[None, :]
-        search_rows = [(center_value, center, center_score)]
-        search_values, search_scores = _evaluate_cloud(
-            value_and_score_fn,
-            search_theta,
-            dimension,
-            batched_value_and_score_fn=batched_value_and_score_fn,
-        )
-        evaluations += search_sample_count
-        for row, value, score in zip(
-            tf.unstack(search_theta),
-            tf.unstack(search_values),
-            tf.unstack(search_scores),
-            strict=True,
-        ):
-            if bool((tf.math.is_finite(value) & tf.reduce_all(tf.math.is_finite(score))).numpy()):
-                search_rows.append((float(value.numpy()), row, score))
-        search_rows.sort(key=lambda item: item[0], reverse=True)
-        selected_value, selected_center, selected_score = search_rows[0]
-        recentered = selected_value > center_value
-        center_value, center, center_score = selected_value, selected_center, selected_score
-
-        structured_data: Mapping[str, Any] | None = None
-        if cfg.refinement_geometry_policy == "factor_correlation":
-            structured_data, evaluations = _structured_factor_fit_data(
-                value_and_score_fn,
-                center,
-                center_score,
-                scale_tf,
-                search_theta=search_theta,
-                search_scores=search_scores,
-                dimension=dimension,
-                radius=radius,
-                fresh_sample_count=structured_fresh_count,
-                seed=(cfg.seed[0], cfg.seed[1] + 10000 + attempt),
-                evaluations=evaluations,
-                batched_value_and_score_fn=batched_value_and_score_fn,
-                reuse_search_scores=cfg.reuse_search_scores,
-            )
-            fit = _fit_factor_from_data(structured_data, factor_count=1, config=cfg)
-        else:
-            fit, evaluations = _fit_score_curvature(
-                value_and_score_fn, center, center_score, scale_tf,
-                dimension=dimension, radius=radius,
-                sample_count=cfg.regression_sample_count,
-                seed=(cfg.seed[0], cfg.seed[1] + 10000 + attempt),
-                config=cfg, evaluations=evaluations,
-                batched_value_and_score_fn=batched_value_and_score_fn,
-            )
-        fit_winner = _fit_best_exact_candidate(fit)
-        if fit_winner is not None and fit_winner[0] > center_value:
-            center_value, center, center_score = fit_winner
-            history.append(
-                {
-                    "attempt": attempt,
-                    "action": "fit_cloud_recentered",
-                    "center_value": center_value,
-                    "fit": fit,
-                    "radius_action": "retain",
-                    "radius_after": radius,
-                    "proposal_score_gate": {
-                        "policy": cfg.proposal_score_acceptance_policy,
-                        "active": cfg.require_proposal_score_reduction,
-                        "passed": not cfg.require_proposal_score_reduction,
-                        "proposal_evaluated": False,
-                    },
-                }
-            )
-            stalled = 0
-            continue
-        row_diag: dict[str, Any] = {
-            "attempt": attempt, "radius_before": radius, "recentered": recentered,
-            "center_value": center_value, "fit": fit,
-        }
-        if fit["status"] != "usable" and not (
-            cfg.refinement_geometry_policy == "factor_correlation"
-            and cfg.structured_max_factors == 2
-        ):
-            radius *= cfg.shrink_factor
-            stalled += 1
-            movement = None
-            if cfg.record_refinement_movement_diagnostics:
-                movement = _refinement_movement_payload(
-                    refinement_origin=refinement_origin,
-                    scale=scale_tf,
-                    pre_center=pre_center,
-                    pre_value=pre_value,
-                    pre_score=pre_score,
-                    search_center=center,
-                    search_value=center_value,
-                    search_score=center_score,
-                    evaluated_proposal=None,
-                    evaluated_proposal_value=None,
-                    evaluated_proposal_score=None,
-                    terminal_center=center,
-                    terminal_value=center_value,
-                    terminal_score=center_score,
-                    radius_before=float(row_diag["radius_before"]),
-                    radius_after=radius,
-                    search_recentered=recentered,
-                    proposal_accepted=False,
-                )
-            history.append(
-                {
-                    **row_diag,
-                    "action": "fit_rejected_contract",
-                    **(
-                        {"refinement_movement": movement}
-                        if movement is not None
-                        else {}
-                    ),
-                }
-            )
-            if radius < cfg.minimum_radius or (
-                cfg.stop_on_stalled_attempts and stalled >= cfg.max_stalled_attempts
-            ):
-                break
-            continue
-
-        proposal_rows: list[Mapping[str, Any]] = []
-        accepted = False
-        evaluated_proposal: tf.Tensor | None = None
-        evaluated_proposal_value: float | None = None
-        evaluated_proposal_score: tf.Tensor | None = None
-        best_proposal: tf.Tensor | None = None
-        best_proposal_value = center_value
-        best_proposal_score: tf.Tensor | None = None
-        selected_fit = fit
-        actual = float("-inf")
-        predicted = float("-inf")
-        rho = float("-inf")
-        old_norm = float(tf.linalg.norm(scale_tf * center_score).numpy())
-        new_norm = old_norm
-        step_info: Mapping[str, Any] = {"boundary_active": False}
-        proposal_score_gate: Mapping[str, Any] = {
-            "policy": cfg.proposal_score_acceptance_policy,
-            "active": cfg.require_proposal_score_reduction,
-            "passed": not cfg.require_proposal_score_reduction,
-        }
-        factor_candidates = [1]
-        if (
-            cfg.refinement_geometry_policy == "factor_correlation"
-            and cfg.structured_max_factors == 2
-        ):
-            factor_candidates.append(2)
-        for factor_count in factor_candidates:
-            if factor_count == 2:
-                if accepted:
-                    break
-                selected_fit = _fit_factor_from_data(
-                    structured_data, factor_count=2, config=cfg
-                )
-                if selected_fit["status"] != "usable":
-                    proposal_rows.append(
-                        {
-                            "factor_count": 2,
-                            "fit_status": selected_fit["status"],
-                            "proposal_evaluated": False,
-                        }
-                    )
-                    continue
-            if selected_fit["status"] != "usable":
-                proposal_rows.append(
-                    {
-                        "factor_count": factor_count,
-                        "fit_status": selected_fit["status"],
-                        "proposal_evaluated": False,
-                    }
-                )
-                continue
-            step_info = _solve_trust_region_tf(
-                tf.convert_to_tensor(selected_fit["projected_precision_z"], tf.float64),
-                scale_tf * center_score,
-                radius,
-            )
-            step = tf.convert_to_tensor(step_info["step"], tf.float64)
-            proposal = center + scale_tf * step
-            proposal_value_tf, proposal_score = _scalar_value_score(
-                value_and_score_fn, proposal, dimension
-            )
-            evaluations += 1
-            proposal_value = float(proposal_value_tf.numpy())
-            evaluated_proposal = proposal
-            evaluated_proposal_value = proposal_value
-            evaluated_proposal_score = proposal_score
-            actual = proposal_value - center_value
-            predicted = float(step_info["predicted_improvement"])
-            rho = actual / predicted if predicted > 0.0 else float("-inf")
-            old_norm = float(tf.linalg.norm(scale_tf * center_score).numpy())
-            new_norm = float(tf.linalg.norm(scale_tf * proposal_score).numpy())
-            finite = bool(
-                (tf.math.is_finite(proposal_value_tf) & tf.reduce_all(tf.math.is_finite(proposal_score))).numpy()
-            )
-            if finite and proposal_value > best_proposal_value:
-                best_proposal = proposal
-                best_proposal_value = proposal_value
-                best_proposal_score = proposal_score
-            proposal_score_gate = _proposal_score_gate(
-                old_norm,
-                new_norm,
-                policy=cfg.proposal_score_acceptance_policy,
-                fractional_factor=cfg.score_reduction_factor,
-                active=cfg.require_proposal_score_reduction,
-            )
-            score_reduction_passed = bool(proposal_score_gate["passed"])
-            accepted = _proposal_is_accepted(
-                finite,
-                actual=actual,
-                predicted=predicted,
-                rho=rho,
-                acceptance_ratio=cfg.acceptance_ratio,
-                score_gate_passed=score_reduction_passed,
-            )
-            proposal_rows.append(
-                {
-                    "factor_count": (
-                        factor_count
-                        if cfg.refinement_geometry_policy == "factor_correlation"
-                        else None
-                    ),
-                    "fit_status": selected_fit["status"],
-                    "proposal_evaluated": True,
-                    "actual_improvement": actual,
-                    "predicted_improvement": predicted,
-                    "rho": rho,
-                    "score_norm_before": old_norm,
-                    "score_norm_after": new_norm,
-                    "score_reduction_passed": score_reduction_passed,
-                    "proposal_score_gate": proposal_score_gate,
-                    "accepted": accepted,
-                }
-            )
-            if accepted:
-                break
-        incumbent_promoted_without_model_acceptance = bool(
-            best_proposal is not None
-            and best_proposal_score is not None
-            and (
-                not accepted
-                or evaluated_proposal_value is None
-                or best_proposal_value > evaluated_proposal_value
-            )
-        )
-        if best_proposal is not None and best_proposal_score is not None:
-            center_value = best_proposal_value
-            center = best_proposal
-            center_score = best_proposal_score
-            stalled = 0
-        else:
-            stalled += 1
-        if rho < cfg.shrink_threshold or not accepted:
-            radius *= cfg.shrink_factor
-            radius_action = "contract"
-        elif rho >= cfg.expansion_threshold and bool(step_info["boundary_active"]):
-            radius = min(cfg.maximum_radius, radius * cfg.expansion_factor)
-            radius_action = "expand"
-        else:
-            radius_action = "retain"
-        history.append({
-            **row_diag,
-            "fit": selected_fit,
-            "action": "proposal_accepted" if accepted else "proposal_rejected",
-            "actual_improvement": actual, "predicted_improvement": predicted,
-            "rho": rho, "score_norm_before": old_norm, "score_norm_after": new_norm,
-            "proposal_score_gate": proposal_score_gate,
-            "boundary_active": bool(step_info["boundary_active"]),
-            "radius_action": radius_action, "radius_after": radius,
-            "proposal_attempts": proposal_rows,
-            "exact_incumbent_promoted_without_model_acceptance": (
-                incumbent_promoted_without_model_acceptance
-            ),
-            **(
-                {
-                    "refinement_movement": _refinement_movement_payload(
-                        refinement_origin=refinement_origin,
-                        scale=scale_tf,
-                        pre_center=pre_center,
-                        pre_value=pre_value,
-                        pre_score=pre_score,
-                        search_center=selected_center,
-                        search_value=selected_value,
-                        search_score=selected_score,
-                        evaluated_proposal=evaluated_proposal,
-                        evaluated_proposal_value=evaluated_proposal_value,
-                        evaluated_proposal_score=evaluated_proposal_score,
-                        terminal_center=center,
-                        terminal_value=center_value,
-                        terminal_score=center_score,
-                        radius_before=float(row_diag["radius_before"]),
-                        radius_after=radius,
-                        search_recentered=recentered,
-                        proposal_accepted=accepted,
-                    )
-                }
-                if cfg.record_refinement_movement_diagnostics
-                else {}
-            ),
-        })
-        _emit_progress(
-            progress_callback,
-            "refinement_attempt_completed",
-            attempt=attempt,
-            exact_evaluations=evaluations,
-            action="proposal_accepted" if accepted else "proposal_rejected",
-            max_abs_scaled_score=float(
-                tf.reduce_max(tf.abs(scale_tf * center_score)).numpy()
-            ),
-            radius=radius,
-        )
-        if radius < cfg.minimum_radius or (
-            cfg.stop_on_stalled_attempts and stalled >= cfg.max_stalled_attempts
-        ):
-            break
-
-    scaled_score = scale_tf * center_score
-    max_score = float(tf.reduce_max(tf.abs(scaled_score)).numpy())
-    if (
-        max_score <= cfg.terminal_score_max_abs
-        and (terminal_fit is None or terminal_fit["status"] != "usable")
-        and evaluations + cfg.terminal_sample_count <= cfg.max_exact_evaluations
-        and (
-            cfg.max_terminal_fit_attempts is None
-            or terminal_fit_attempts < cfg.max_terminal_fit_attempts
-        )
-    ):
-        terminal_fit, evaluations = _fit_score_curvature(
-            value_and_score_fn,
-            center,
-            center_score,
-            scale_tf,
-            dimension=dimension,
-            radius=radius,
-            sample_count=cfg.terminal_sample_count,
-            seed=(cfg.seed[0], cfg.seed[1] + 200003),
-            config=cfg,
-            evaluations=evaluations,
-            batched_value_and_score_fn=batched_value_and_score_fn,
-        )
-        terminal_fit_attempts += 1
-    if max_score > cfg.terminal_score_max_abs or terminal_fit is None or terminal_fit["status"] != "usable":
-        return _rejected(
-            "sequential_refinement_without_terminal_geometry", evaluations,
-            locator_rows, cfg, map_candidate=center.numpy(),
-            extra={
-                "terminal_max_abs_scaled_score": max_score,
-                "history": history,
-                **(
-                    {"refinement_movement_initial": refinement_movement_initial}
-                    if refinement_movement_initial is not None
-                    else {}
-                ),
-            },
-        )
-    if terminal_fit["projection_relative_frobenius"] > cfg.terminal_projection_relative_frobenius_cap:
-        return _rejected(
-            "terminal_projection_exceeds_cap",
-            evaluations,
-            locator_rows,
-            cfg,
-            map_candidate=center.numpy(),
-            extra={
-                "history": history,
-                "terminal_fit": terminal_fit,
-                **(
-                    {"refinement_movement_initial": refinement_movement_initial}
-                    if refinement_movement_initial is not None
-                    else {}
-                ),
-            },
-        )
-
-    precision_z = tf.convert_to_tensor(terminal_fit["projected_precision_z"], tf.float64)
-    inv_scale = tf.math.reciprocal(scale_tf)
-    precision_theta = precision_z * inv_scale[:, None] * inv_scale[None, :]
-    mass = covariance_from_precision(
-        precision_theta.numpy(),
-        source="sequential_fresh_terminal_score_fit",
-        jitter=0.0,
-        eigenvalue_floor=cfg.eigenvalue_floor,
-        max_condition_number=cfg.max_condition_number,
-        dense=True,
-    )
-    _emit_progress(
-        progress_callback,
-        "initializer_completed",
-        accepted=True,
-        status="usable",
-        exact_evaluations=evaluations,
-        terminal_max_abs_scaled_score=max_score,
-    )
-    return SequentialMapCovarianceResult(
-        accepted=True,
-        status="usable",
-        map_candidate=center.numpy(),
-        precision=mass.regularized_precision,
-        covariance=mass.covariance,
-        diagnostics={
-            "exact_evaluations": evaluations,
-            "terminal_max_abs_scaled_score": max_score,
-            "terminal_fit_fresh": True,
-            "terminal_fit_attempts": terminal_fit_attempts,
-            "search_seed": list(cfg.seed),
-            "terminal_seed": terminal_fit["seed"],
-            "precision_coordinate_system": "theta",
-            "regression_coordinate_system": "z",
-            "locator": locator_rows,
-            "history": history,
-            "terminal_fit": terminal_fit,
-            "proposal_score_acceptance_policy": cfg.proposal_score_acceptance_policy,
-            "proposal_score_gate_active": cfg.require_proposal_score_reduction,
-            **(
-                {"refinement_movement_initial": refinement_movement_initial}
-                if refinement_movement_initial is not None
-                else {}
-            ),
-        },
-    )
+    _emit_progress(progress_callback, "initializer_started", start_count=start_count,
+        dimension=dimension, locator_policy=cfg.locator_policy,
+        locator_stopping_condition=cfg.locator_stopping_condition)
+    search_count = dimension_scaled_search_count(dimension) if cfg.dimension_scaled_search else cfg.search_sample_count
+    owner = sequential_controller(value_and_score_fn, batched_value_and_score_fn,
+        batched_locator_value_and_score_fn, start_count, dimension, cfg, search_count,
+        progress=progress_callback is not None, device=starts.device)
+    computed = owner(starts, scale_tf)
+    return sequential_result(computed, cfg, start_count, dimension, progress_callback,
+        emit_started=False)
 
 
 def _refinement_movement_payload(
@@ -1099,10 +334,10 @@ def _refinement_movement_payload(
     search_recentered: bool,
     proposal_accepted: bool,
 ) -> Mapping[str, Any]:
-    """Record exact refinement states without changing the transition logic."""
+    """Independent legacy diagnostic; runtime uses tensor movement records."""
 
-    def position_z(value: tf.Tensor) -> np.ndarray:
-        return ((value - refinement_origin) / scale).numpy()
+    def position_z(value: tf.Tensor) -> tf.Tensor:
+        return (value - refinement_origin) / scale
 
     def score_norm(value: tf.Tensor) -> float:
         return float(tf.linalg.norm(scale * value).numpy())
@@ -1140,18 +375,8 @@ def _refinement_movement_payload(
 def _antithetic_cloud(
     sample_count: int, dimension: int, radius: float, seed: tuple[int, int]
 ) -> tf.Tensor:
-    half = (sample_count + 1) // 2
-    directions = tf.random.stateless_normal(
-        [half, dimension], seed=tf.constant(seed, tf.int32), dtype=tf.float64
-    )
-    directions /= tf.maximum(tf.linalg.norm(directions, axis=1, keepdims=True), 1.0e-15)
-    radii = tf.linspace(
-        tf.constant(radius / float(half), tf.float64),
-        tf.constant(radius, tf.float64),
-        half,
-    )[:, None]
-    cloud = tf.concat([directions * radii, -directions * radii], axis=0)
-    return cloud[:sample_count]
+    return cloud_program(sample_count, dimension, False)(
+        tf.convert_to_tensor(radius, tf.float64), tf.convert_to_tensor(seed, tf.int32))
 
 
 def dimension_scaled_search_count(dimension: int) -> int:
@@ -1163,9 +388,9 @@ def dimension_scaled_search_count(dimension: int) -> int:
     raw = (
         float(size * size)
         if size <= 10
-        else 100.0 + float(size - 10) * np.log(float(size - 10))
+        else 100.0 + float(size - 10) * math.log(float(size - 10))
     )
-    return 2 * int(np.ceil(raw / 2.0))
+    return 2 * math.ceil(raw / 2.0)
 
 
 def _orthogonal_antithetic_cloud(
@@ -1180,33 +405,8 @@ def _orthogonal_antithetic_cloud(
     size = int(dimension)
     if count <= 0 or size <= 0:
         raise ValueError("sample_count and dimension must be positive")
-    pair_count = (count + 1) // 2
-    frame_count = (pair_count + size - 1) // size
-    directions = []
-    for frame in range(frame_count):
-        normal = tf.random.stateless_normal(
-            [size, size],
-            seed=tf.constant((seed[0], seed[1] + 7919 * frame), tf.int32),
-            dtype=tf.float64,
-        )
-        orthogonal, diagonal = tf.linalg.qr(normal)
-        signs = tf.where(
-            tf.linalg.diag_part(diagonal) >= 0.0,
-            tf.ones([size], tf.float64),
-            -tf.ones([size], tf.float64),
-        )
-        directions.append(tf.transpose(orthogonal * signs[None, :]))
-    positive = tf.concat(directions, axis=0)[:pair_count]
-    radii = tf.linspace(
-        tf.constant(radius / float(pair_count), tf.float64),
-        tf.constant(radius, tf.float64),
-        pair_count,
-    )[:, None]
-    cloud = tf.reshape(
-        tf.stack((positive * radii, -positive * radii), axis=1),
-        [-1, size],
-    )
-    return cloud[:count]
+    return cloud_program(count, size, True)(
+        tf.convert_to_tensor(radius, tf.float64), tf.convert_to_tensor(seed, tf.int32))
 
 
 def _structured_factor_fit_data(
@@ -1230,98 +430,31 @@ def _structured_factor_fit_data(
 ) -> tuple[Mapping[str, Any], int]:
     """Build independent fresh train/holdout frames plus eligible reused rows."""
 
-    if fresh_sample_count < 4 * dimension or fresh_sample_count % 2:
-        raise ValueError("structured fresh sample count must be even and at least 4N")
-    fresh_train_count = fresh_sample_count // 2
-    fresh_holdout_count = fresh_sample_count - fresh_train_count
-    train_z = _orthogonal_antithetic_cloud(
-        fresh_train_count, dimension, radius, seed
-    )
-    holdout_z = _orthogonal_antithetic_cloud(
-        fresh_holdout_count,
-        dimension,
-        radius,
-        (seed[0], seed[1] + 104729),
-    )
-    fresh_z = tf.concat((train_z, holdout_z), axis=0)
-    fresh_theta = center[None, :] + fresh_z * scale[None, :]
-    fresh_values, fresh_scores = _evaluate_cloud(
-        function,
-        fresh_theta,
-        dimension,
-        batched_value_and_score_fn=batched_value_and_score_fn,
-    )
-    evaluations += fresh_sample_count
-    fresh_train_scores = fresh_scores[:fresh_train_count]
-    holdout_scores = fresh_scores[fresh_train_count:]
-
-    reused_z = tf.zeros([0, dimension], tf.float64)
-    reused_scores = tf.zeros([0, dimension], tf.float64)
-    if reuse_search_scores:
-        translated = (search_theta - center[None, :]) / scale[None, :]
-        finite = tf.reduce_all(
-            tf.math.is_finite(translated) & tf.math.is_finite(search_scores), axis=1
-        )
-        nearby = tf.linalg.norm(translated, axis=1) <= radius * (1.0 + 1.0e-12)
-        nonzero = tf.linalg.norm(translated, axis=1) > 1.0e-12
-        eligible = finite & nearby & nonzero
-        reused_z = tf.boolean_mask(translated, eligible)
-        reused_scores = tf.boolean_mask(search_scores, eligible)
-
-    reused_count = int(tf.shape(reused_z)[0].numpy())
-    fresh_candidates = candidates_from_rows(
-        np.asarray(fresh_theta.numpy(), dtype=float),
-        np.asarray(fresh_values.numpy(), dtype=float),
-        np.asarray(fresh_scores.numpy(), dtype=float),
-        start_index=int(evaluations - fresh_sample_count),
-        source_role="structured_fit_cloud",
-    )
-    fresh_incumbent = select_exact_incumbent(fresh_candidates)
-    training_z = tf.concat((train_z, reused_z), axis=0)
-    training_scores = tf.concat((fresh_train_scores, reused_scores), axis=0)
-    if reused_count:
-        weights = tf.concat(
-            (
-                tf.fill(
-                    [fresh_train_count],
-                    tf.constant(0.5 / fresh_train_count, tf.float64),
-                ),
-                tf.fill(
-                    [reused_count],
-                    tf.constant(0.5 / reused_count, tf.float64),
-                ),
-            ),
-            axis=0,
-        )
-    else:
-        weights = tf.fill(
-            [fresh_train_count],
-            tf.constant(1.0 / fresh_train_count, tf.float64),
-        )
+    result = structured_data_program(function, batched_value_and_score_fn, dimension,
+        fresh_sample_count, int(search_theta.shape[0]), reuse_search_scores)(
+        center, center_score, scale, tf.convert_to_tensor(radius, tf.float64),
+        tf.convert_to_tensor(seed, tf.int32), search_theta, search_scores)
+    has_winner = int(result["best_index"]) >= 0
+    # Preserve the historical compact record at this host boundary. The
+    # optimizer consumes the fixed-capacity tensors directly, never these views.
+    active_rows = int(result["active_training_rows"])
     return {
-        "center_score_z": scale * center_score,
-        "training_offsets_z": training_z,
-        "training_scores_z": training_scores * scale[None, :],
-        "holdout_offsets_z": holdout_z,
-        "holdout_scores_z": holdout_scores * scale[None, :],
-        "training_weights": weights,
-        "fresh_training_count": fresh_train_count,
-        "fresh_holdout_count": fresh_holdout_count,
-        "reused_training_count": reused_count,
+        "center_score_z": result["center_score_z"],
+        "training_offsets_z": result["training_offsets_z"][:active_rows],
+        "training_scores_z": result["training_scores_z"][:active_rows],
+        "holdout_offsets_z": result["holdout_offsets_z"],
+        "holdout_scores_z": result["holdout_scores_z"],
+        "training_weights": result["training_weights"][:active_rows],
+        "_native_factor_data": result,
+        "fresh_training_count": int(result["fresh_training_count"]),
+        "fresh_holdout_count": int(result["fresh_holdout_count"]),
+        "reused_training_count": int(result["reused_training_count"]),
         "unique_fresh_evaluations": fresh_sample_count,
-        "best_exact_value": (
-            None if fresh_incumbent is None else fresh_incumbent.value
-        ),
-        "best_exact_position": (
-            None if fresh_incumbent is None else fresh_incumbent.position
-        ),
-        "best_exact_score": (
-            None if fresh_incumbent is None else fresh_incumbent.score
-        ),
-        "best_exact_source": (
-            None if fresh_incumbent is None else fresh_incumbent.source_role
-        ),
-    }, evaluations
+        "best_exact_value": float(result["best_value"]) if has_winner else None,
+        "best_exact_position": result["best_position"].numpy().tolist() if has_winner else None,
+        "best_exact_score": result["best_score"].numpy().tolist() if has_winner else None,
+        "best_exact_source": "structured_fit_cloud" if has_winner else None,
+    }, evaluations + fresh_sample_count
 
 
 def _fit_factor_from_data(
@@ -1332,21 +465,46 @@ def _fit_factor_from_data(
 ) -> Mapping[str, Any]:
     if data is None:
         return {"status": "missing_structured_fit_data"}
-    result = fit_factor_correlation_score_geometry(
-        data["center_score_z"],
-        data["training_offsets_z"],
-        data["training_scores_z"],
-        data["holdout_offsets_z"],
-        data["holdout_scores_z"],
-        training_weights=data["training_weights"],
-        config=FactorCorrelationGeometryConfig(
-            factor_count=factor_count,
-            max_condition_number=config.max_condition_number,
-            holdout_score_relative_rmse=(
-                config.structured_holdout_score_relative_rmse
-            ),
-        ),
-    )
+    factor_config = FactorCorrelationGeometryConfig(factor_count=factor_count,
+        max_condition_number=config.max_condition_number,
+        holdout_score_relative_rmse=config.structured_holdout_score_relative_rmse)
+    if "_native_factor_data" not in data:
+        result = fit_factor_correlation_score_geometry(data["center_score_z"],
+            data["training_offsets_z"], data["training_scores_z"], data["holdout_offsets_z"],
+            data["holdout_scores_z"], training_weights=data["training_weights"], config=factor_config)
+    else:
+        numerical = data["_native_factor_data"]
+        dimension = int(numerical["center_score_z"].shape[0])
+        rows = int(numerical["training_offsets_z"].shape[0])
+        holdout_rows = int(numerical["holdout_offsets_z"].shape[0])
+        program = structured_fit_data_program(dimension, rows, holdout_rows, factor_config)
+        computed = program(numerical["center_score_z"], numerical["training_offsets_z"], numerical["training_scores_z"],
+            numerical["holdout_offsets_z"], numerical["holdout_scores_z"], numerical["training_weights"],
+            numerical["active_training_rows"])
+        result = _factor_result_from_native(computed, factor_config, dimension,
+            int(numerical["active_training_rows"]), holdout_rows)
+    return _factor_fit_payload(result, data)
+
+
+def _factor_result_from_native(computed, factor_config, dimension, active_rows, holdout_rows, *, decision=None):
+    """Materialize the native input gate and complete fit without refitting."""
+    input_status = int(computed["input_status"])
+    if input_status == 1:
+        count = 2 * dimension if factor_config.factor_count == 1 else 3 * dimension - 1
+        return _rejected_factor_fit(factor_config, dimension,
+            "factor_parameterization_dimensionally_unidentified", parameter_count=count,
+            diagnostics={"parameter_count": count,
+                "symmetric_covariance_entry_count": dimension * (dimension + 1) // 2})
+    if input_status == 2:
+        return _rejected_factor_fit(factor_config, dimension, "nonfinite_fit_inputs")
+    if input_status in (3, 4):
+        raise ValueError("prepared training rows and active weights must be valid")
+    return _factor_result_from_computed(computed["fit"], factor_config, dimension,
+        active_rows, holdout_rows, True, decision=decision)
+
+
+def _factor_fit_payload(result, data):
+    """Restore existing reporting metadata after numerical completion."""
     payload = dict(result.payload())
     payload.update(
         {
@@ -1394,115 +552,55 @@ def _fit_score_curvature(
         )
         support_count = len(train_indices) // 2
     else:
-        holdout_count = max(1, int(round(sample_count * config.holdout_fraction)))
-        train_count = sample_count - holdout_count
         support_count = sample_count
     if support_count * dimension < coefficient_count + dimension:
         return {"status": "insufficient_symmetric_support", "seed": list(seed)}, evaluations
-    z = _antithetic_cloud(sample_count, dimension, radius, seed)
-    theta_rows = center[None, :] + z * scale[None, :]
-    values, scores = _evaluate_cloud(
-        function,
-        theta_rows,
-        dimension,
-        batched_value_and_score_fn=batched_value_and_score_fn,
-    )
+    training_indices, holdout_indices = partition_schema(sample_count,
+        config.holdout_fraction, pair_disjoint=config.pair_disjoint_score_holdout)
+    result = score_fit_program(function, batched_value_and_score_fn, sample_count,
+        dimension, training_indices, holdout_indices)(center, center_score, scale,
+        tf.convert_to_tensor(radius, tf.float64), tf.convert_to_tensor(seed, tf.int32),
+        tf.constant(config.ridge, tf.float64), tf.constant(config.eigenvalue_floor, tf.float64),
+        tf.constant(config.max_condition_number, tf.float64),
+        tf.constant(config.score_holdout_relative_rmse, tf.float64))
     evaluations += sample_count
-    exact_candidates = candidates_from_rows(
-        np.asarray(theta_rows.numpy(), dtype=float),
-        np.asarray(values.numpy(), dtype=float),
-        np.asarray(scores.numpy(), dtype=float),
-        start_index=int(evaluations - sample_count),
-        source_role="score_fit_cloud",
-    )
-    exact_incumbent = select_exact_incumbent(exact_candidates)
+    has_winner = int(result["best_index"]) >= 0
     best_exact = {
-        "best_exact_value": (
-            None if exact_incumbent is None else exact_incumbent.value
-        ),
-        "best_exact_position": (
-            None if exact_incumbent is None else exact_incumbent.position
-        ),
-        "best_exact_score": (
-            None if exact_incumbent is None else exact_incumbent.score
-        ),
-        "best_exact_source": (
-            None if exact_incumbent is None else exact_incumbent.source_role
-        ),
+        "best_exact_value": float(result["best_value"]) if has_winner else None,
+        "best_exact_position": result["best_position"] if has_winner else None,
+        "best_exact_score": result["best_score"] if has_winner else None,
+        "best_exact_source": "score_fit_cloud" if has_winner else None,
     }
-    response = scale[None, :] * center_score[None, :] - scale[None, :] * scores
-    design = _symmetric_score_design(z, dimension)
-    if config.pair_disjoint_score_holdout:
-        train_design_rows = tf.gather(design, train_indices)
-        train_response_rows = tf.gather(response, train_indices)
-        holdout_design_rows = tf.gather(design, holdout_indices)
-        holdout_response_rows = tf.gather(response, holdout_indices)
-    else:
-        train_design_rows = design[:train_count]
-        train_response_rows = response[:train_count]
-        holdout_design_rows = design[train_count:]
-        holdout_response_rows = response[train_count:]
-    train_design = tf.reshape(train_design_rows, [-1, coefficient_count])
-    train_response = tf.reshape(train_response_rows, [-1, 1])
-    singular_values = tf.linalg.svd(train_design, compute_uv=False)
-    tolerance = tf.reduce_max(singular_values) * tf.cast(tf.shape(train_design)[0], tf.float64) * tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps
-    rank = int(tf.reduce_sum(tf.cast(singular_values > tolerance, tf.int32)).numpy())
-    if rank < coefficient_count:
-        return {
-            "status": "rank_deficient_symmetric_fit",
-            "rank": rank,
-            "seed": list(seed),
-            **best_exact,
-        }, evaluations
-    ridge = tf.sqrt(tf.constant(config.ridge, tf.float64)) * tf.eye(coefficient_count, dtype=tf.float64)
-    beta = tf.linalg.lstsq(
-        tf.concat([train_design, ridge], axis=0),
-        tf.concat([train_response, tf.zeros([coefficient_count, 1], tf.float64)], axis=0),
-        fast=False,
-    )[:, 0]
-    precision = _unpack_symmetric(beta, dimension)
-    train_prediction = tf.einsum("nrc,c->nr", train_design_rows, beta)
-    holdout_prediction = tf.einsum("nrc,c->nr", holdout_design_rows, beta)
-    train_rmse = float(
-        tf.sqrt(tf.reduce_mean((train_prediction - train_response_rows) ** 2)).numpy()
-    )
-    holdout_error = tf.sqrt(
-        tf.reduce_mean((holdout_prediction - holdout_response_rows) ** 2)
-    )
-    holdout_scale = tf.maximum(
-        tf.sqrt(tf.reduce_mean(holdout_response_rows**2)), 1.0e-15
-    )
-    holdout_relative = float((holdout_error / holdout_scale).numpy())
-    raw_eigenvalues, eigenvectors = tf.linalg.eigh(precision)
-    floor = tf.maximum(
-        tf.constant(config.eigenvalue_floor, tf.float64),
-        tf.reduce_max(raw_eigenvalues) / config.max_condition_number,
-    )
-    projected_eigenvalues = tf.maximum(raw_eigenvalues, floor)
-    projected = tf.matmul(eigenvectors * projected_eigenvalues[None, :], eigenvectors, transpose_b=True)
-    projection_relative = float(
-        (tf.linalg.norm(projected - precision) / tf.maximum(tf.linalg.norm(precision), 1.0e-15)).numpy()
-    )
-    status = "usable" if holdout_relative <= config.score_holdout_relative_rmse else "score_holdout_failed"
+    status = ("rank_deficient_symmetric_fit", "usable", "score_holdout_failed")[int(result["status"])]
+    payload = {"status": status, "rank": int(result["rank"]), "seed": list(seed), **best_exact}
+    if status == "rank_deficient_symmetric_fit":
+        return payload, evaluations
+    # Restore the original host result schema after the complete numerical call.
+    # Fit arrays remain frozen to preserve the old materialization boundary.
     return {
-        "status": status, "seed": list(seed), "rank": rank,
-        "train_score_rmse": train_rmse,
-        "holdout_score_relative_rmse": holdout_relative,
-        "raw_eigenvalues": raw_eigenvalues.numpy(),
-        "projected_eigenvalues": projected_eigenvalues.numpy(),
-        "projection_relative_frobenius": projection_relative,
-        "projected_precision_z": projected.numpy(),
-        **best_exact,
-        **(
-            {
-                "pair_disjoint_score_holdout": True,
-                "training_sample_count": len(train_indices),
-                "holdout_sample_count": len(holdout_indices),
-            }
-            if config.pair_disjoint_score_holdout
-            else {}
-        ),
+        **payload,
+        "train_score_rmse": float(result["train_score_rmse"]),
+        "holdout_score_relative_rmse": float(result["holdout_score_relative_rmse"]),
+        "raw_eigenvalues": tf.stop_gradient(result["raw_eigenvalues"]),
+        "projected_eigenvalues": tf.stop_gradient(result["projected_eigenvalues"]),
+        "projection_relative_frobenius": float(result["projection_relative_frobenius"]),
+        "projected_precision_z": tf.stop_gradient(result["projected_precision_z"]),
+        **({"pair_disjoint_score_holdout": True,
+            "training_sample_count": len(training_indices),
+            "holdout_sample_count": len(holdout_indices)} if config.pair_disjoint_score_holdout else {}),
     }, evaluations
+
+
+def _replay_locator_candidates(function, positions):
+    """Replay every locator candidate with the scalar authority and select."""
+    return replay_program(function, int(positions.shape[0]), int(positions.shape[1]))(positions)
+
+
+def _search_exact_candidates(scalar, batched, center, value, score, scale, radius, seed,
+                             *, sample_count, orthogonal):
+    """Enclose seeded search, exact values/scores and stable incumbent choice."""
+    return search_program(scalar, batched, sample_count, int(center.shape[0]), orthogonal)(
+        center, value, score, scale, radius, seed)
 
 
 def _fit_best_exact_candidate(
@@ -1536,30 +634,11 @@ def _score_fit_partition_indices(
     holdout_fraction: float,
     *,
     pair_disjoint: bool,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[tf.Tensor, tf.Tensor]:
     """Partition score rows while optionally keeping antithetic pairs together."""
 
-    count = int(sample_count)
-    fraction = float(holdout_fraction)
-    if count <= 1 or not 0.0 < fraction < 1.0:
-        raise ValueError("score-fit partition requires count > 1 and 0 < fraction < 1")
-    if not pair_disjoint:
-        holdout_count = max(1, int(round(count * fraction)))
-        train_count = count - holdout_count
-        return np.arange(train_count), np.arange(train_count, count)
-    if count % 2:
-        raise ValueError("pair-disjoint score holdout requires an even sample count")
-    pair_count = count // 2
-    holdout_pair_count = max(1, int(round(pair_count * fraction)))
-    if holdout_pair_count >= pair_count:
-        raise ValueError("pair-disjoint score holdout requires at least one training pair")
-    train_pair_count = pair_count - holdout_pair_count
-    train_positive = np.arange(train_pair_count)
-    holdout_positive = np.arange(train_pair_count, pair_count)
-    return (
-        np.concatenate((train_positive, train_positive + pair_count)),
-        np.concatenate((holdout_positive, holdout_positive + pair_count)),
-    )
+    training, holdout = partition_schema(sample_count, holdout_fraction, pair_disjoint=pair_disjoint)
+    return tf.constant(training, tf.int64), tf.constant(holdout, tf.int64)
 
 
 def _evaluate_cloud(
@@ -1574,77 +653,26 @@ def _evaluate_cloud(
 ) -> tuple[tf.Tensor, tf.Tensor]:
     rows = tf.convert_to_tensor(points, tf.float64)
     row_count = int(rows.shape[0])
-    if batched_value_and_score_fn is not None:
-        values, scores = batched_value_and_score_fn(rows)
-        return (
-            tf.ensure_shape(tf.convert_to_tensor(values, tf.float64), [row_count]),
-            tf.ensure_shape(
-                tf.convert_to_tensor(scores, tf.float64), [row_count, dimension]
-            ),
-        )
-    values = []
-    scores = []
-    for point in tf.unstack(rows):
-        value, score = _scalar_value_score(scalar_function, point, dimension)
-        values.append(value)
-        scores.append(score)
-    return tf.stack(values), tf.stack(scores)
-
-
-def _symmetric_score_design(z: tf.Tensor, dimension: int) -> tf.Tensor:
-    columns = []
-    for row in range(dimension):
-        for column in range(row, dimension):
-            contribution = z[:, column, None] * tf.one_hot(
-                row, dimension, dtype=tf.float64
-            )[None, :]
-            if row != column:
-                contribution += z[:, row, None] * tf.one_hot(
-                    column, dimension, dtype=tf.float64
-                )[None, :]
-            columns.append(contribution)
-    return tf.stack(columns, axis=2)
-
-
-def _unpack_symmetric(coefficients: tf.Tensor, dimension: int) -> tf.Tensor:
-    matrix = tf.zeros([dimension, dimension], tf.float64)
-    index = 0
-    for row in range(dimension):
-        for column in range(row, dimension):
-            value = coefficients[index]
-            matrix += tf.scatter_nd([[row, column]], [value], [dimension, dimension])
-            if row != column:
-                matrix += tf.scatter_nd([[column, row]], [value], [dimension, dimension])
-            index += 1
-    return matrix
+    if row_count == 0 and batched_value_and_score_fn is None:
+        raise ValueError("scalar cloud must contain at least one row")
+    return evaluation_program(scalar_function, batched_value_and_score_fn, row_count, dimension)(rows)
 
 
 def _solve_trust_region_tf(precision: tf.Tensor, linear: tf.Tensor, radius: float) -> Mapping[str, Any]:
-    eigenvalues, eigenvectors = tf.linalg.eigh(precision)
-    projected = tf.linalg.matvec(eigenvectors, linear, transpose_a=True)
-    unconstrained = tf.linalg.matvec(eigenvectors, projected / eigenvalues)
-    unconstrained_norm = float(tf.linalg.norm(unconstrained).numpy())
-    boundary = unconstrained_norm > radius
-    if boundary:
-        lower = tf.constant(0.0, tf.float64)
-        upper = tf.constant(1.0, tf.float64)
-        for _ in range(80):
-            norm = tf.linalg.norm(tf.linalg.matvec(eigenvectors, projected / (eigenvalues + upper)))
-            if float(norm.numpy()) <= radius:
-                break
-            upper *= 2.0
-        for _ in range(80):
-            middle = 0.5 * (lower + upper)
-            norm = tf.linalg.norm(tf.linalg.matvec(eigenvectors, projected / (eigenvalues + middle)))
-            if float(norm.numpy()) > radius:
-                lower = middle
-            else:
-                upper = middle
-        step = tf.linalg.matvec(eigenvectors, projected / (eigenvalues + upper))
-    else:
-        step = unconstrained
-    predicted = tf.tensordot(linear, step, 1) - 0.5 * tf.tensordot(step, tf.linalg.matvec(precision, step), 1)
-    return {"step": step.numpy(), "boundary_active": boundary, "predicted_improvement": float(predicted.numpy())}
+    step, boundary, predicted = trust_region_program(int(linear.shape[0]))(
+        precision, linear, tf.convert_to_tensor(radius, tf.float64))
+    return {"step": step, "boundary_active": bool(boundary), "predicted_improvement": float(predicted)}
+
+
+def _proposal_gate_payload(row, config):
+    """Restore optional reporting fields from a completed native decision."""
+    return {"policy": config.proposal_score_acceptance_policy,
+        "active": config.require_proposal_score_reduction,
+        "passed": bool(row["score_passed"]), "legacy_fractional_passed": bool(row["legacy_passed"]),
+        "required_score_norm_max": float(row["required_norm_max"]) if config.require_proposal_score_reduction else None,
+        "numerical_resolution_floor": (float(row["resolution_floor"])
+            if config.require_proposal_score_reduction and config.proposal_score_acceptance_policy == "resolvable_decrease"
+            else None)}
 
 
 def _proposal_score_gate(
@@ -1655,12 +683,12 @@ def _proposal_score_gate(
     fractional_factor: float,
     active: bool,
 ) -> Mapping[str, Any]:
-    """Evaluate the exact standardized-score safeguard for one proposal."""
+    """Legacy diagnostic authority; runtime uses the native proposal program."""
 
     old = float(old_norm)
     new = float(new_norm)
     factor = float(fractional_factor)
-    finite = bool(np.isfinite(old) and np.isfinite(new))
+    finite = bool(math.isfinite(old) and math.isfinite(new))
     legacy_threshold = factor * old if finite else float("nan")
     legacy_passed = bool(finite and new <= legacy_threshold)
     if not active:
@@ -1684,7 +712,7 @@ def _proposal_score_gate(
     if policy != "resolvable_decrease":
         raise ValueError(f"unknown proposal score acceptance policy {policy!r}")
     resolution_floor = float(
-        np.sqrt(np.finfo(np.float64).eps) * max(1.0, abs(old))
+        math.sqrt(sys.float_info.epsilon) * max(1.0, abs(old))
     )
     required_max = old - resolution_floor
     return {
@@ -1706,7 +734,7 @@ def _proposal_is_accepted(
     acceptance_ratio: float,
     score_gate_passed: bool,
 ) -> bool:
-    """Preserve the exact trust-region acceptance conjunction."""
+    """Legacy diagnostic authority for the native acceptance conjunction."""
 
     return bool(
         finite
@@ -1772,10 +800,8 @@ def _emit_progress(
 
 
 def _json_ready(value: Any) -> Any:
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+    if tf.is_tensor(value) or hasattr(value, "__array_interface__"):
+        return numeric_tensor(value).numpy().tolist()
     if isinstance(value, Mapping):
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):

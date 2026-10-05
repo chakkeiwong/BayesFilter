@@ -14,12 +14,18 @@ from bayesfilter.highdim.ledh_canonical_score_tf import (
 )
 from bayesfilter.highdim.transport_chunk_policy import select_transport_chunk_size
 from .gaussian_tf import chol_tangent, parameterized_model
+from .direction_assembly_tf import make_direction_kernel
 
 
 def gaussian_direction_inputs(theta, direction, initial_noise, d, o):
     """Model, initial law and total tangents shared by canonical/KDM consumers."""
     A, all_dA, H, all_dH, mean, all_dm, P, all_dP, Q, all_dQ, R, all_dR = parameterized_model(theta, d, o)
-    dA, dH, dm, dP, dQ, dR = [tf.tensordot(direction, x, axes=1) for x in (all_dA, all_dH, all_dm, all_dP, all_dQ, all_dR)]
+    dA = tf.tensordot(direction, all_dA, axes=1)
+    dH = tf.tensordot(direction, all_dH, axes=1)
+    dm = tf.tensordot(direction, all_dm, axes=1)
+    dP = tf.tensordot(direction, all_dP, axes=1)
+    dQ = tf.tensordot(direction, all_dQ, axes=1)
+    dR = tf.tensordot(direction, all_dR, axes=1)
     L = tf.linalg.cholesky(P)
     dL = chol_tangent(L, dP)
     initial = mean + tf.einsum("ij,nj->ni", L, initial_noise)
@@ -40,7 +46,7 @@ def gaussian_direction_inputs(theta, direction, initial_noise, d, o):
 @lru_cache(maxsize=16)
 def make_canonical_kernel(dimension, observation_dimension, particles, horizon,
                           controls_tuple, dtype_name="float64", jit_compile=True,
-                          return_diagnostics=False):
+                          return_diagnostics=False, *, all_directions=False):
     dtype = tf.as_dtype(dtype_name)
     d, o, N, T = dimension, observation_dimension, particles, horizon
     controls = dict(controls_tuple)
@@ -71,4 +77,4 @@ def make_canonical_kernel(dimension, observation_dimension, particles, horizon,
             from .control_diagnostics_tf import compact_control_diagnostics
             return value,tf.ensure_shape(directional_score,[1])[0],compact_control_diagnostics(result[2])
         return value, tf.ensure_shape(directional_score, [1])[0]
-    return kernel
+    return make_direction_kernel(kernel, jit_compile=jit_compile) if all_directions else kernel

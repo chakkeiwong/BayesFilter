@@ -58,10 +58,16 @@ def test_actual_ssm_full_chain_xla_matches_graph(name):
         np.testing.assert_allclose(xla,graph,rtol=2e-5,atol=2e-5)
 
 
-@pytest.mark.parametrize("name", ["ssm_lgssm_qr", "ssm_nonlinear"])
-def test_generic_ssm_full_chain_xla_matches_graph_with_explicit_momenta(name):
+@pytest.mark.parametrize("name,parameters", [
+    ("ssm_lgssm_qr", {}),
+    ("ssm_nonlinear", {}),
+    pytest.param("ssm_nonlinear", {
+        "filter_id": "model-b-svd-cubature-deterministic-loglikelihood",
+    }, id="ssm_nonlinear_cubature"),
+])
+def test_generic_ssm_full_chain_xla_matches_graph_with_explicit_momenta(name, parameters):
     """The generic validation wrappers must compile before receiving tuner authority."""
-    target = ValidationTarget(name)
+    target = ValidationTarget(name, parameters=parameters)
     width = target.parameter_dim
     initial = (tf.constant([[.5, -1.5]] * 4, tf.float64) if width == 2 else
                tf.constant([[.65, .4, .75]] * 4, tf.float64))

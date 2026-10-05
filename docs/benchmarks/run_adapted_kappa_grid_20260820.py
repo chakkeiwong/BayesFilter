@@ -18,9 +18,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "docs", "benchmarks"))
 
-import numpy as np, tensorflow as tf
 from run_n4_step_localization_20260819 import case_with_steps
-from run_adapted_engine_validation_20260820 import kalman_hint_factory
+from bayesfilter.highdim.gaussian_moment_hints_tf import prepare_lgssm_moment_hints
 from bayesfilter.highdim.squared_tt_engine_v0_tf import EngineConfig
 from bayesfilter.highdim.squared_tt_engine_adapted_tf import (
     run_value_filter_branch_axis_adapted,
@@ -29,16 +28,16 @@ from bayesfilter.highdim.squared_tt_engine_adapted_tf import (
 HORIZON = 8
 n = int(os.environ.get("GRID_N", "4"))
 for kc, kp in ((5.0, 4.0), (6.0, 4.0), (6.0, 5.0)):
-    adapter, ys, kalman_steps = case_with_steps(n, 42 + n)
-    hint, observe_t0 = kalman_hint_factory(n, 42 + n)
-    observe_t0(ys[0].numpy())
+    adapter, ys, kalman_steps, model = case_with_steps(n, 42 + n, include_model=True)
+    hints = prepare_lgssm_moment_hints(ys, *model)
+    _, predictive_hint = hints.callbacks()
     config = EngineConfig(basis_degree=12, rank=6, row_count=8192, sweeps=3,
         ridge=1e-10, tau=1e-6, coordinate_half_width=3.0, seed=91046,
         row_design="sobol")
     t0 = time.time()
     try:
         value, diags = run_value_filter_branch_axis_adapted(
-            adapter, ys, config, predictive_moment_hint=hint,
+            adapter, ys, config, predictive_moment_hint=predictive_hint,
             map_kappa_prev=kp, map_kappa_current=kc)
         gap = abs(float(value.numpy()) - sum(kalman_steps))
         shr = min(d.get("map_shrink", 1.0) for d in diags[1:])

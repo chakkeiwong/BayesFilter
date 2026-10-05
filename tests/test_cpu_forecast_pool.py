@@ -5,6 +5,7 @@ import os
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import numpy as np
+import pytest
 
 from bayesfilter.inference.cpu_forecast_pool import (
     CPUForecastPool,
@@ -27,15 +28,19 @@ def _config(worker_count: int = 2) -> CPUForecastPoolConfig:
     )
 
 
-def test_forecast_pool_matches_native_scalar_order_and_replay() -> None:
+@pytest.mark.parametrize("count", [2, 5])
+def test_forecast_pool_matches_native_scalar_order_and_replay(count: int) -> None:
     rows = np.asarray(
         [
             [0.35, -0.08, 0.65, 0.05],
             [0.36, -0.07, 0.64, 0.04],
+            [0.37, -0.06, 0.63, 0.03],
+            [0.38, -0.05, 0.62, 0.02],
+            [0.39, -0.04, 0.61, 0.01],
         ],
         dtype=np.float64,
-    )
-    seeds = np.asarray(((20260719, 70001), (20260719, 70002)), dtype=np.int32)
+    )[:count]
+    seeds = np.asarray([(20260719, 70001 + index) for index in range(count)], dtype=np.int32)
     native = complexity_forecast_worker_factory({"q": 1})
     expected = [native.evaluate(row, seed) for row, seed in zip(rows, seeds, strict=True)]
     with CPUForecastPool(_config()) as pool:
@@ -57,6 +62,8 @@ def test_forecast_pool_matches_native_scalar_order_and_replay() -> None:
         row["tensorflow_gpu_devices"] == []
         for row in metadata["worker_metadata"]
     )
+    assert all(row["sample_wise_python_loop"] is False and row["neutra_training_eligible"] is False
+               for row in metadata["worker_metadata"])
     assert metadata["aggregate_parent_worker_ru_maxrss_bytes"] == (
         metadata["parent_ru_maxrss_bytes"]
         + metadata["worker_ru_maxrss_sum_bytes"]

@@ -2648,12 +2648,16 @@ def _static_hmc_state_template(
     initial_state_template: Any,
     *,
     runner_label: str,
+    state_dtype: Any | None = None,
 ) -> tuple[Any, tuple[int, ...]]:
     """Normalize one runner template while preserving its public error label."""
 
     import tensorflow as tf
 
-    template = tf.cast(tf.convert_to_tensor(initial_state_template), tf.float64)
+    dtype = tf.float64 if state_dtype is None else tf.as_dtype(state_dtype)
+    if dtype not in (tf.float32, tf.float64):
+        raise ValueError(f"{runner_label} requires float32 or float64 states")
+    template = tf.cast(tf.convert_to_tensor(initial_state_template), dtype)
     if template.shape.rank is None:
         raise ValueError(f"{runner_label} requires static state rank")
     if any(dim is None for dim in template.shape):
@@ -2807,6 +2811,9 @@ class ReusableFullChainHMCRunner:
     ``FullChainHMCConfig``. Leapfrog count is fixed unless the explicit
     ``dynamic_num_leapfrog_steps`` option adds a scalar tensor input. A change
     to any other contract field requires a different runner.
+
+    ``state_dtype`` explicitly selects float32 or float64 execution. Omitting
+    it retains the historical float64 behavior.
     """
 
     def __init__(
@@ -2816,6 +2823,7 @@ class ReusableFullChainHMCRunner:
         config: FullChainHMCConfig,
         *,
         dynamic_num_leapfrog_steps: bool = False,
+        state_dtype: Any | None = None,
     ) -> None:
         self.adapter = adapter
         self.config = config
@@ -2825,6 +2833,7 @@ class ReusableFullChainHMCRunner:
         template, self._state_shape = _static_hmc_state_template(
             initial_state_template,
             runner_label="reusable HMC runner",
+            state_dtype=state_dtype,
         )
         self._state_dtype = template.dtype
         self._initial_state_template = template
@@ -6915,7 +6924,7 @@ def _hmc_health_diagnostics(trace: Mapping[str, Any]) -> Mapping[str, Any]:
         health["acceptance_rate"] = None
         health["acceptance_finite"] = None
     if "log_accept_ratio" in trace:
-        log_accept = tf.convert_to_tensor(trace["log_accept_ratio"], dtype=tf.float64)
+        log_accept = _float64_tensor(trace["log_accept_ratio"])
         finite = tf.math.is_finite(log_accept)
         finite_values = tf.boolean_mask(log_accept, finite)
         health["log_accept_ratio"] = {
@@ -6932,7 +6941,7 @@ def _hmc_health_diagnostics(trace: Mapping[str, Any]) -> Mapping[str, Any]:
     else:
         health["log_accept_ratio"] = {"available": False}
     if "target_log_prob" in trace:
-        target_log_prob = tf.convert_to_tensor(trace["target_log_prob"], dtype=tf.float64)
+        target_log_prob = _float64_tensor(trace["target_log_prob"])
         health["target_log_prob"] = {
             "available": True,
             "finite": tf.reduce_all(tf.math.is_finite(target_log_prob)),
@@ -6942,10 +6951,7 @@ def _hmc_health_diagnostics(trace: Mapping[str, Any]) -> Mapping[str, Any]:
     else:
         health["target_log_prob"] = {"available": False}
     if "proposed_target_log_prob" in trace:
-        proposed_target_log_prob = tf.convert_to_tensor(
-            trace["proposed_target_log_prob"],
-            dtype=tf.float64,
-        )
+        proposed_target_log_prob = _float64_tensor(trace["proposed_target_log_prob"])
         health["proposed_target_log_prob"] = {
             "available": True,
             "finite": tf.reduce_all(tf.math.is_finite(proposed_target_log_prob)),
@@ -6955,10 +6961,7 @@ def _hmc_health_diagnostics(trace: Mapping[str, Any]) -> Mapping[str, Any]:
     else:
         health["proposed_target_log_prob"] = {"available": False}
     if "log_acceptance_correction" in trace:
-        correction = tf.convert_to_tensor(
-            trace["log_acceptance_correction"],
-            dtype=tf.float64,
-        )
+        correction = _float64_tensor(trace["log_acceptance_correction"])
         finite = tf.math.is_finite(correction)
         finite_values = tf.boolean_mask(correction, finite)
         health["log_acceptance_correction"] = {
@@ -7038,14 +7041,11 @@ def _full_chain_hmc_diagnostics(
             is_accepted=trace["is_accepted"],
         )
     if "step_size" in trace:
-        step_size = tf.convert_to_tensor(trace["step_size"], dtype=tf.float64)
+        step_size = _float64_tensor(trace["step_size"])
         diagnostics["final_step_size"] = step_size[-1]
         diagnostics["final_step_size_finite"] = tf.reduce_all(tf.math.is_finite(step_size))
     if "target_accept_prob" in trace:
-        target_accept = tf.convert_to_tensor(
-            trace["target_accept_prob"],
-            dtype=tf.float64,
-        )
+        target_accept = _float64_tensor(trace["target_accept_prob"])
         diagnostics["target_accept_prob"] = tf.reshape(target_accept, [-1])[-1]
     if "num_adaptation_steps" in trace:
         adaptation_steps = tf.convert_to_tensor(
@@ -7452,12 +7452,8 @@ def _target_status_telemetry_diagnostics(telemetry: Mapping[str, Any]) -> Mappin
         ),
     }
     if all(optional_present):
-        min_eigen = tf.convert_to_tensor(
-            telemetry["min_innovation_eigenvalue"], dtype=tf.float64
-        )
-        condition = tf.convert_to_tensor(
-            telemetry["innovation_condition_estimate"], dtype=tf.float64
-        )
+        min_eigen = _float64_tensor(telemetry["min_innovation_eigenvalue"])
+        condition = _float64_tensor(telemetry["innovation_condition_estimate"])
         summary.update(
             {
                 "min_min_innovation_eigenvalue": tf.reduce_min(min_eigen),

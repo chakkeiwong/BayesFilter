@@ -1,0 +1,98 @@
+{
+  "schema": "bayesfilter.hmc_chain_benchmark.v1",
+  "status": "running",
+  "target": {
+    "factory": "bayesfilter.testing.hmc_chain_benchmark_targets:kalman_target",
+    "kwargs": {}
+  },
+  "kernel": {
+    "num_results": 6,
+    "step_size": 0.03,
+    "num_leapfrog_steps": 2,
+    "seed": [
+      20261001,
+      17
+    ],
+    "dtype": "float64",
+    "jit_compile": true,
+    "non_xla_reason": null,
+    "target_scope": "hmc-chain-benchmark-fixture-v1",
+    "target_status_trace_policy": "auto"
+  },
+  "layouts": [
+    {
+      "chains_per_batch": 2,
+      "workers": 1,
+      "cores_per_worker": 2,
+      "device": "GPU",
+      "gpu_devices": [
+        "GPU-b8045e28-4433-ec7a-77a5-db0636748322"
+      ],
+      "pin_cpu": true,
+      "tf32": true
+    },
+    {
+      "chains_per_batch": 1,
+      "workers": 2,
+      "cores_per_worker": 1,
+      "device": "GPU",
+      "gpu_devices": [
+        "GPU-b8045e28-4433-ec7a-77a5-db0636748322"
+      ],
+      "pin_cpu": true,
+      "tf32": true
+    }
+  ],
+  "chain_count": 2,
+  "initial_state": [
+    [
+      0.2,
+      -1.05
+    ],
+    [
+      0.21000000000000002,
+      -1.04
+    ]
+  ],
+  "repetitions": 1,
+  "warm_calls": 2,
+  "command": [
+    "/home/ubuntu/workspace/BayesFilter/bayesfilter/inference/chain_benchmark.py",
+    "--chains",
+    "2",
+    "--layout",
+    "2:1:2",
+    "--layout",
+    "1:2:1",
+    "--gpu",
+    "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+    "--draws",
+    "6",
+    "--leapfrog-steps",
+    "2",
+    "--step-size",
+    "0.03",
+    "--repetitions",
+    "1",
+    "--warm-calls",
+    "2",
+    "--timeout-seconds",
+    "90",
+    "--output-dir",
+    "docs/plans/artifacts/hmc-chain-execution-20261001/gpu-kalman-cli-merged-r4"
+  ],
+  "python": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+  "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+  "git_commit": "67b51a3bf5088b72b114595f4b9eeaa08cb550d9",
+  "atol": 1e-10,
+  "rtol": 1e-10,
+  "max_energy_error": 100.0,
+  "cells": [],
+  "nonclaims": [
+    "Fixed-kernel hardware diagnostic, not posterior samples or tuning authority.",
+    "Fastest observed is descriptive; no statistical superiority or universal recommendation.",
+    "Changing chain batch size changes random streams; worker count alone does not.",
+    "First-call time includes tracing, compilation and execution; it is not compiler-only time.",
+    "Host RSS and TF live/peak allocator bytes are distinct from GPU process reservation."
+  ]
+}

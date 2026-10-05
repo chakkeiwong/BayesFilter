@@ -10,6 +10,7 @@ import tensorflow_probability as tfp
 
 from bayesfilter.diagnostics import TFFilterDiagnostics, TFRegularizationDiagnostics
 from bayesfilter.linear.types_tf import TFLinearGaussianStateSpace
+from bayesfilter.ops.accurate_svd_tf import accurate_svd
 from bayesfilter.results_tf import TFFilterValueResult
 from bayesfilter.structural import FilterRunMetadata
 
@@ -70,7 +71,8 @@ def _spectral_telemetry(
 
     For a valid symmetric positive-definite matrix, singular values equal its
     eigenvalues.  CUDA/XLA has a known failure mode in ``eigvalsh`` for the
-    tiny positive modes used by this model, whereas the SVD path is stable.
+    tiny positive modes used by this model. Magnitude normalization and explicit
+    binary64 SVD convergence also resolve small off-diagonal entries under XLA.
     Invalid matrices are already rejected by ``valid``; their minimum value is
     reported as a signed singular-value proxy so callers retain a negative
     diagnostic without allowing it to enter the probability law.
@@ -89,7 +91,7 @@ def _spectral_telemetry(
         finite[..., tf.newaxis, tf.newaxis], symmetric, identity
     )
     singular_values = tf.stop_gradient(
-        tf.linalg.svd(safe_matrix, compute_uv=False)
+        accurate_svd(safe_matrix, compute_uv=False)
     )
     minimum = tf.reduce_min(singular_values, axis=-1)
     maximum = tf.reduce_max(singular_values, axis=-1)

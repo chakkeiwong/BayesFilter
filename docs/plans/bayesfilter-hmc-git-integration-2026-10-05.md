@@ -60,4 +60,65 @@ preserved and cannot be replaced by recovery outcomes for the release criterion.
 
 ## Result
 
-Integration in progress. No release or default-promotion verdict is made here.
+The scoped repairs were committed as `3c8176d7e`. Merging `a925f67a1`
+produced three conflicts, resolved by inspecting individual changes:
+
+- `hmc_candidate_set_execution.py`: retain the replicated v7 policy decoder
+  alongside the remote v5/v6 decoder, with strict payload roundtrip checking.
+- `ssm_targets.py`: retain rejection of unknown fixture parameters; the rest
+  of the added target implementation agrees with remote.
+- `simple_nonlinear_generic_target_adapter_tf.py`: retain bounded executable
+  graph reuse with current theta, observations, and model constants passed as
+  inputs. The underlying likelihood and remote fixture interfaces are retained.
+
+The first test collection exposed the fresh checkout's unbuilt native library;
+it was then built from the merged source. The second collection exposed an
+untracked dependency omitted from the initial snapshot,
+`bayesfilter/runtime/execution_budget.py`. That dependency is now included.
+An AST import inventory found no other missing local module dependencies.
+Neither collection failure is a numerical or sampler result.
+
+The remote chain-execution suite passed all 12 tests. The acceptance, health,
+identity, timeout, monitoring, capability-registry and documentation suites
+passed all 562 tests. The larger replay and model suite passed 208 tests before
+stopping on three stale assertions that expected the generic LGSSM/nonlinear
+adapters to lack their now-implemented XLA capabilities. The numerical tests
+passed; the old capability expectations were wrong for the changed adapters.
+
+The assertions now reflect the supported XLA path. The nonlinear adapter test
+also checks both explicit JIT settings, requiring full-chain diagnostic
+readiness to remain false for the non-XLA configuration. The existing
+full-chain regression now additionally compiles the admitted cubature route
+and compares its trajectory calculation against a graph execution with
+identical explicit momenta. All three generic targets (QR LGSSM, nonlinear UKF,
+nonlinear cubature) passed this compilation/parity check. This is bounded
+engineering evidence, not posterior or GPU qualification.
+
+The focused adapter/remaining-test run passed 51 tests; two bootstrap consumer
+checks initially lacked tracked provenance scripts omitted by the sparse
+checkout. Materializing those scripts resolved both checks, without changing
+the consumers. A premature retry before all scripts were present is preserved
+alongside the other failed receipts. The final two consumer checks passed.
+All selected tests therefore have passing evidence on the final runtime;
+counts across these runs overlap and should not be summed without deduplication.
+The only changes after the larger numerical run were the three test files.
+
+Receipts, exact commands, environment, source hashes, and failed attempts are
+under `docs/plans/artifacts/hmc-git-integration-2026-10-05/`. Total enclosing CPU
+validation time, including native builds and failed attempts, was
+**1,087.305 seconds**, within the 2,000-second cap. Each enclosing receipt was
+charged once; the unused reservation was released. The release CPU balance is
+2,948.257 seconds, including the unchanged 1,800-second monitoring reservation.
+GPU allocation and the running frozen source were unchanged.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next action |
+| --- | --- | --- | --- | --- |
+| Ready for the requested Git integration | Conflicts resolved; focused source, replay, model, monitoring, and guide checks pass | No unresolved selected-test failure or merge conflict | This is scoped CPU validation; no whole-repository or new GPU qualification | Commit the merge, refresh remote state, and push without force |
+
+The final review checked missing dependencies, both sides of the conflicts,
+source immutability during the tests, and preservation of unrelated shared
+edits. It found no additional blocker to the requested Git operation. The
+generated guide tables were checked by the documentation suite; a full book
+PDF was not rebuilt in this integration.
+
+No release or default-promotion verdict is made here.

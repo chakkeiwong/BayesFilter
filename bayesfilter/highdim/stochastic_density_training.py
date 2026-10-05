@@ -12,6 +12,7 @@ from typing import Mapping, Sequence
 
 import tensorflow as tf
 
+from bayesfilter.highdim import stochastic_training_native_tf as native
 from bayesfilter.highdim.bases import ProductBasis
 from bayesfilter.highdim.diagnostics import (
     HighDimStatus,
@@ -345,6 +346,8 @@ class TrainableFunctionalTT:
             config.product_basis,
             config.product_basis.convention,
         )
+        self._execution_programs = native.program_cache()
+        self._optimizer_programs = native.program_cache()
 
     @property
     def variables(self) -> tuple[tf.Variable, ...]:
@@ -352,29 +355,18 @@ class TrainableFunctionalTT:
 
     def evaluate(self, points: tf.Tensor) -> tf.Tensor:
         values = _validate_points(points, self.config.product_basis.dimension)
-        vector = tf.ones([tf.shape(values)[0], 1], dtype=tf.float64)
-        for axis, core in enumerate(self.cores):
-            basis_values = self.config.product_basis.evaluate_axis(axis, values[:, axis])
-            matrices = tf.einsum("nl,alb->nab", basis_values, core)
-            vector = tf.einsum("na,nab->nb", vector, matrices)
-        return tf.reshape(vector, [tf.shape(values)[0]])
+        if not tf.inside_function():
+            return native.call_method(self, "evaluate", points=values)
+        return native.core_values(self.cores, self.config.product_basis, values)
 
     def sqrt_square_normalizer(self) -> tf.Tensor:
-        vector = tf.ones([1], dtype=tf.float64)
-        active_measure = self.config.product_basis.convention.mass_measure
-        for axis, core in enumerate(self.cores):
-            left_rank = int(core.shape[0])
-            right_rank = int(core.shape[2])
-            mass = self.config.product_basis.bases[axis].mass_matrix(active_measure)
-            paired = tf.einsum("alb,AmB,lm->aAbB", core, core, mass)
-            matrix = tf.reshape(
-                paired,
-                [left_rank * left_rank, right_rank * right_rank],
-            )
-            vector = tf.einsum("a,ab->b", vector, matrix)
-        return tf.reshape(vector, [])
+        if not tf.inside_function():
+            return native.call_method(self, "sqrt_square_normalizer")
+        return native.core_square_mass(self.cores, self.config.product_basis)
 
     def normalizer(self) -> tf.Tensor:
+        if not tf.inside_function():
+            return native.call_method(self, "normalizer")
         defensive_mass = self.defensive_density.normalizer(
             self.config.product_basis.convention.mass_measure
         )
@@ -382,11 +374,15 @@ class TrainableFunctionalTT:
 
     def rho_theta(self, points: tf.Tensor) -> tf.Tensor:
         values = _validate_points(points, self.config.product_basis.dimension)
+        if not tf.inside_function():
+            return native.call_method(self, "rho_theta", points=values)
         h_values = self.evaluate(values)
         q0 = tf.exp(self.defensive_density.log_density(values))
         return tf.square(h_values) + self.config.tau * q0
 
     def log_density(self, points: tf.Tensor) -> tf.Tensor:
+        if not tf.inside_function():
+            return native.call_method(self, "log_density", points=points)
         rho = self.rho_theta(points)
         z = self.normalizer()
         _assert_positive_tensor(rho, "rho_theta")
@@ -398,6 +394,8 @@ class TrainableFunctionalTT:
         batch: P75ObjectiveBatch,
     ) -> tf.Tensor:
         _validate_batch_dimension(batch, self.config.product_basis.dimension)
+        if not tf.inside_function():
+            return native.call_method(self, "weighted_empirical_cross_entropy_weights", batch=batch)
         q0 = tf.exp(self.defensive_density.log_density(batch.points))
         raw = batch.weights * (tf.square(batch.target_values) + self.config.tau * q0)
         _assert_positive_tensor(tf.reduce_sum(raw), "weighted_empirical_cross_entropy_mass")
@@ -408,6 +406,8 @@ class TrainableFunctionalTT:
         batch: P76CorrectedHeldoutMetricBatch,
     ) -> tf.Tensor:
         _validate_p76_metric_batch_dimension(batch, self.config.product_basis.dimension)
+        if not tf.inside_function():
+            return native.call_method(self, "corrected_heldout_metric_weights", batch=batch)
         raw = batch.integration_weights * tf.square(batch.target_sqrt_values)
         target_mass = tf.reduce_sum(raw)
         _assert_positive_tensor(target_mass, "corrected_heldout_target_mass")
@@ -418,6 +418,10 @@ class TrainableFunctionalTT:
         batch: P76CorrectedHeldoutMetricBatch,
     ) -> P76CorrectedHeldoutMetricTerms:
         _validate_p76_metric_batch_dimension(batch, self.config.product_basis.dimension)
+        if not tf.inside_function():
+            return native.call_method(self, "corrected_heldout_density_metric", batch=batch,
+                result_type=P76CorrectedHeldoutMetricTerms,
+                result_metadata={"role": batch.role, "provenance_label": batch.provenance_label})
         alpha = self.corrected_heldout_metric_weights(batch)
         rho = self.rho_theta(batch.points)
         normalizer = self.normalizer()
@@ -503,6 +507,8 @@ class TrainableFunctionalTT:
 
     def objective(self, batch: P75ObjectiveBatch) -> P75ObjectiveTerms:
         _validate_batch_dimension(batch, self.config.product_basis.dimension)
+        if not tf.inside_function():
+            return native.call_method(self, "objective", batch=batch, result_type=P75ObjectiveTerms)
         alpha = self.weighted_empirical_cross_entropy_weights(batch)
         rho = self.rho_theta(batch.points)
         normalizer = self.normalizer()
@@ -534,21 +540,7 @@ class TrainableFunctionalTT:
         batch: P75ObjectiveBatch,
         optimizer: tf.keras.optimizers.Optimizer,
     ) -> P75ObjectiveTerms:
-        with tf.GradientTape() as tape:
-            terms = self.objective(batch)
-        gradients = tape.gradient(terms.total_loss, self.variables)
-        if any(gradient is None for gradient in gradients):
-            raise ValueError("missing gradient for at least one trainable core")
-        checked = tuple(tf.convert_to_tensor(gradient, dtype=tf.float64) for gradient in gradients)
-        _assert_all_finite(checked, "gradients")
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            checked,
-            clip_norm=tf.constant(self.config.gradient_clip_norm, dtype=tf.float64),
-        )
-        _assert_all_finite(tuple(clipped) + (gradient_norm,), "clipped_gradients")
-        optimizer.apply_gradients(zip(clipped, self.variables))
-        _assert_all_finite(tuple(tf.convert_to_tensor(core) for core in self.variables), "parameters")
-        return terms.with_gradient_norm(gradient_norm)
+        return native.optimizer_step(self, batch, optimizer)
 
     def square_root_prefit_objective(
         self,
@@ -566,6 +558,10 @@ class TrainableFunctionalTT:
         """
 
         _validate_batch_dimension(batch, self.config.product_basis.dimension)
+        if not tf.inside_function():
+            return native.call_method(self, "square_root_prefit_objective", batch=batch,
+                result_type=P75PrefitTerms, reference_cores=reference_cores,
+                reference_l2_weight=reference_l2_weight, scale_floor=scale_floor)
         predictions = self.evaluate(batch.points)
         residual = predictions - batch.target_values
         weighted_square = tf.reduce_sum(batch.weights * tf.square(residual))
@@ -609,26 +605,9 @@ class TrainableFunctionalTT:
         reference_l2_weight: tf.Tensor | float | None = None,
         scale_floor: tf.Tensor | float | None = None,
     ) -> P75PrefitTerms:
-        with tf.GradientTape() as tape:
-            terms = self.square_root_prefit_objective(
-                batch,
-                reference_cores=reference_cores,
-                reference_l2_weight=reference_l2_weight,
-                scale_floor=scale_floor,
-            )
-        gradients = tape.gradient(terms.total_loss, self.variables)
-        if any(gradient is None for gradient in gradients):
-            raise ValueError("missing gradient for at least one trainable core")
-        checked = tuple(tf.convert_to_tensor(gradient, dtype=tf.float64) for gradient in gradients)
-        _assert_all_finite(checked, "prefit_gradients")
-        clipped, gradient_norm = tf.clip_by_global_norm(
-            checked,
-            clip_norm=tf.constant(self.config.gradient_clip_norm, dtype=tf.float64),
-        )
-        _assert_all_finite(tuple(clipped) + (gradient_norm,), "prefit_clipped_gradients")
-        optimizer.apply_gradients(zip(clipped, self.variables))
-        _assert_all_finite(tuple(tf.convert_to_tensor(core) for core in self.variables), "parameters")
-        return terms.with_gradient_norm(gradient_norm)
+        return native.optimizer_step(self, batch, optimizer, prefit=True,
+            reference_cores=reference_cores, reference_l2_weight=reference_l2_weight,
+            scale_floor=scale_floor)
 
     def snapshot_functional_tt(self) -> FunctionalTT:
         cores = tuple(TTCore(tf.identity(core)) for core in self.cores)
@@ -660,18 +639,19 @@ class TrainableFunctionalTT:
         )
 
     def _regularization(self, log_normalizer: tf.Tensor) -> tf.Tensor:
-        l1 = tf.add_n([tf.reduce_sum(tf.abs(core)) for core in self.cores])
-        l2 = tf.add_n([tf.reduce_sum(tf.square(core)) for core in self.cores])
+        l1, l2 = native.core_penalties(self.cores)
         penalty = self.config.l1_weight * l1 + self.config.l2_weight * l2
-        if self.config.logz_anchor_weight > 0.0:
+
+        def anchored_penalty():
             reference = (
                 tf.stop_gradient(log_normalizer)
                 if self.config.logz_reference is None
                 else self.config.logz_reference
             )
-            penalty = penalty + self.config.logz_anchor_weight * tf.square(
+            return penalty + self.config.logz_anchor_weight * tf.square(
                 log_normalizer - reference
             )
+        penalty = tf.cond(self.config.logz_anchor_weight > 0., anchored_penalty, lambda: penalty)
         return tf.reshape(penalty, [])
 
     def _prefit_regularization(
@@ -687,35 +667,23 @@ class TrainableFunctionalTT:
         )
         if weight.shape.rank != 0:
             raise ValueError(f"reference_l2_weight: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.math.is_finite(weight).numpy()) or bool((weight < 0.0).numpy()):
+        if tf.inside_function():
+            tf.debugging.assert_all_finite(weight, "reference_l2_weight must be finite")
+            tf.debugging.assert_non_negative(weight, "reference_l2_weight must be nonnegative")
+        elif not bool(tf.math.is_finite(weight).numpy()) or bool((weight < 0.0).numpy()):
             raise ValueError(f"reference_l2_weight: {HighDimStatus.NONFINITE_VALUE.value}")
         if reference_cores is None:
-            penalty = weight * tf.add_n([tf.reduce_sum(tf.square(core)) for core in self.cores])
+            penalty = weight * native.core_penalties(self.cores)[1]
             return tf.reshape(penalty, [])
         references = tuple(tf.convert_to_tensor(core, dtype=tf.float64) for core in reference_cores)
         self._validate_core_tensors(references)
-        penalty = weight * tf.add_n(
-            [
-                tf.reduce_sum(tf.square(core - reference))
-                for core, reference in zip(self.cores, references)
-            ]
-        )
+        penalty = weight * tf.reduce_sum(tf.square(native.flat_cores(self.cores) - native.flat_cores(references)))
         return tf.reshape(penalty, [])
 
     def _random_initial_core_tensors(self) -> tuple[tf.Tensor, ...]:
-        tensors = []
-        for axis, basis_dim in enumerate(self.config.product_basis.basis_dim_tuple()):
-            shape = (
-                self.config.ranks[axis],
-                basis_dim,
-                self.config.ranks[axis + 1],
-            )
-            seed = tf.constant([self.config.seed, axis + 1], dtype=tf.int32)
-            tensors.append(
-                0.05
-                * tf.random.stateless_normal(shape, seed=seed, dtype=tf.float64)
-            )
-        return tuple(tensors)
+        shapes = tuple((self.config.ranks[axis], width, self.config.ranks[axis + 1])
+                       for axis, width in enumerate(self.config.product_basis.basis_dim_tuple()))
+        return native.random_cores(shapes, self.config.seed)
 
     def _validate_core_tensors(self, tensors: Sequence[tf.Tensor]) -> None:
         if len(tensors) != self.config.product_basis.dimension:
@@ -732,7 +700,9 @@ class TrainableFunctionalTT:
             if value.shape != expected:
                 raise ValueError(f"core {axis}: {HighDimStatus.INVALID_SHAPE.value}")
             assert_tf_float64(f"core {axis}", value)
-            if not bool(tf.reduce_all(tf.math.is_finite(value)).numpy()):
+            if tf.inside_function():
+                tf.debugging.assert_all_finite(value, f"core {axis} must be finite")
+            elif not bool(tf.reduce_all(tf.math.is_finite(value)).numpy()):
                 raise ValueError(f"core {axis}: {HighDimStatus.NONFINITE_VALUE.value}")
 
 

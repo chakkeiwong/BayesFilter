@@ -1,0 +1,69 @@
+{
+  "schema": "bayesfilter.nonlinear_execution_rollup.v1",
+  "base_commit": "74bdc7777c6d030d6e59e12b24bbb36fbc701030",
+  "plan": "docs/plans/ledh-nonlinear-execution-20261002.md",
+  "result": "docs/benchmarks/ledh-nonlinear-execution-results-20261002.md",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu",
+  "gpu": "GPU1 RTX4080SUPER, CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=1",
+  "commands_and_seeds": "See each controller campaign/manifest and worker job/manifest; reference manifests contain exact argv and seeds.",
+  "dtype": "FP32/TF32/XLA LEDH; FP64/XLA reference and precision exception",
+  "cpu_validation": "CUDA_VISIBLE_DEVICES=-1: deliberate CPU reference/test exception",
+  "runs": [
+    {
+      "run": "bootstrap-reference-04",
+      "wall_seconds": 23.529445562977344,
+      "manifest": "docs/plans/artifacts/ledh-nonlinear-execution-20261002/bootstrap-reference-04/manifest.json",
+      "status": "complete"
+    },
+    {
+      "run": "bootstrap-reference-05",
+      "wall_seconds": 274.51653130096383,
+      "manifest": "docs/plans/artifacts/ledh-nonlinear-execution-20261002/bootstrap-reference-05/manifest.json",
+      "status": "complete"
+    },
+    {
+      "run": "pp-expanded-03",
+      "wall_seconds": 495.27016193792224,
+      "manifest": "docs/plans/artifacts/ledh-nonlinear-execution-20261002/pp-expanded-03/manifest.json",
+      "status": false
+    },
+    {
+      "run": "screen-01",
+      "wall_seconds": 323.5239921460161,
+      "manifest": "docs/plans/artifacts/ledh-nonlinear-execution-20261002/screen-01/manifest.json",
+      "status": false
+    },
+    {
+      "run": "sir-fp64-02",
+      "wall_seconds": 80.20867476798594,
+      "manifest": "docs/plans/artifacts/ledh-nonlinear-execution-20261002/sir-fp64-02/manifest.json",
+      "status": false
+    },
+    {
+      "run": "sir-localize-06",
+      "wall_seconds": 92.28575403697323,
+      "manifest": "docs/plans/artifacts/ledh-nonlinear-execution-20261002/sir-localize-06/manifest.json",
+      "status": false
+    }
+  ],
+  "gpu_wall_seconds": 1289.3345597528387,
+  "gpu_budget_seconds": 3600,
+  "gpu_launches": 6,
+  "maximum_gpu_launches": 8,
+  "tests": {
+    "focused_passed": 25,
+    "focused_wall_seconds": 30.24,
+    "reference_initial_import_error": "wrong test import name; repaired before reference launch",
+    "reference_validation_passed": 3
+  },
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "da88dfa6802d9b768f644aa3c66cfdf705fb96171efb3cb7eb780927f0585b46",
+    "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+    "docs/benchmarks/run_ledh_nonlinear_master.py": "2603aeff7949805cdf8a031427fd56067d9428ba30b022c0eb3d49698f6c3cdb",
+    "docs/benchmarks/run_nonlinear_bootstrap_reference.py": "5af91c74450d7864cfd3834d8ea201e57e263dc874e50f54ee5b3af7bade1662",
+    "docs/benchmarks/summarize_ledh_nonlinear_execution_20261002.py": "1b61eba195e88ead6dbd7688e3ceda7e24fe16090f2d206c32e4d704ff02e566"
+  },
+  "terminal_review": "self-review: exact target and source-parameter replay checked; approximate-reference bias and untuned scope prevent ranking; all numerical and trace vetoes retained",
+  "decision": "screening_complete_no_promotion",
+  "next_repair": "SIR observation-4 Contract E reset factorization/analytical tangent diagnostic, then fresh scope-specific calibration"
+}

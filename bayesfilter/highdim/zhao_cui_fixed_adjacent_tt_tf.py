@@ -21,7 +21,6 @@ from bayesfilter.highdim.filtering import (
     legendre_gauss_nodes_weights,
 )
 from bayesfilter.highdim.fixed_branch import BranchIdentity, BranchManifest
-from bayesfilter.highdim.fitting import FixedTTFitSampleBatch, FixedTTFitter
 from bayesfilter.highdim.models import TFHighDimStateSpaceModel
 from bayesfilter.highdim.squared_tt import (
     SquaredTTDensity,
@@ -150,214 +149,51 @@ def scalar_adjacent_state_fixed_tt_value(
     *,
     fixture_id: str = "contract-e-tp.phase6.scalar-adjacent-tt.v1",
     branch_seed_prefix: str = "contract-e-tp-phase6-scalar-adjacent-tt",
+    jit_compile: bool = True,
 ) -> ScalarAdjacentTTResult:
-    """Evaluate the fixed adjacent-state squared-TT finite likelihood."""
-
+    """Run the complete native recurrence, then construct its host report."""
+    from bayesfilter.highdim.scalar_adjacent_native_tf import make_scalar_adjacent_state_fixed_tt
     if int(model.state_dim()) != 1:
         raise TypeError("scalar adjacent-state TT route requires state_dim == 1")
     theta_vector = _theta_vector(theta, int(model.parameter_dim()))
     observation_matrix = _observation_matrix(observations, int(model.observation_dim()))
-    observation_count = int(observation_matrix.shape[0])
-    if observation_count < 1:
-        raise ValueError("observations must be nonempty")
+    program = make_scalar_adjacent_state_fixed_tt(model, config, observation_matrix.shape, jit_compile=jit_compile)
+    native = program[0](theta_vector, observation_matrix)
+    return _assemble_native_result(model, theta_vector, observation_matrix, config, native, program,
+                                   fixture_id=fixture_id, branch_seed_prefix=branch_seed_prefix)
 
-    previous_density: SquaredTTDensity | None = None
-    previous_keep_axes: tuple[int, ...] = ()
-    adjacent_initial_cores = config.adjacent.initial_cores
+
+def _assemble_native_result(model, theta_vector, observation_matrix, config, native, program,
+                            *, fixture_id, branch_seed_prefix):
+    """Reporting-only date iteration over completed tensor histories."""
+    increments, first, remaining = native
     steps = []
-    log_increments = []
-
+    observation_count = int(observation_matrix.shape[0])
     for time_index in range(observation_count):
-        if time_index == 0 and not config.transition_before_first_observation:
-            basis = _required_basis(config.initial)
-            reference_points, weights = _reference_quadrature(
-                basis,
-                config.initial.fit_quadrature_order,
-            )
-            physical_points, current_log_abs_det = config.scalar_coordinate_map.forward(
-                reference_points
-            )
-            log_target = (
-                model.initial_log_density(theta_vector, physical_points)
-                + model.observation_log_density(
-                    theta_vector,
-                    physical_points,
-                    observation_matrix[time_index],
-                    t=time_index,
-                )
-                + current_log_abs_det
-                - _log_reference_density(basis)
-            )
-            active_config = config.initial
-            initial_cores = _required_initial_cores(active_config)
-            target_kind = "initial_state_observation"
-            keep_axes = (0,)
-        elif time_index == 0:
-            basis = _required_basis(config.adjacent)
-            reference_points, weights = _reference_quadrature(
-                basis,
-                config.adjacent.fit_quadrature_order,
-            )
-            current_reference = reference_points[:, 0:1]
-            previous_reference = reference_points[:, 1:2]
-            current_physical, current_log_abs_det = config.scalar_coordinate_map.forward(
-                current_reference
-            )
-            previous_physical, previous_log_abs_det = config.scalar_coordinate_map.forward(
-                previous_reference
-            )
-            log_target = (
-                model.initial_log_density(theta_vector, previous_physical)
-                + model.transition_log_density(
-                    theta_vector,
-                    previous_physical,
-                    current_physical,
-                    t=time_index,
-                )
-                + model.observation_log_density(
-                    theta_vector,
-                    current_physical,
-                    observation_matrix[time_index],
-                    t=time_index,
-                )
-                + current_log_abs_det
-                + previous_log_abs_det
-                - _log_reference_density(basis)
-            )
-            active_config = config.adjacent
-            initial_cores = (
-                adjacent_initial_cores
-                if adjacent_initial_cores is not None
-                else _required_initial_cores(active_config)
-            )
-            target_kind = "transitioned_initial_adjacent_state_update"
-            keep_axes = (0,)
-        else:
-            if previous_density is None or previous_keep_axes != (0,):
-                raise RuntimeError("missing previous fitted marginal")
-            basis = _required_basis(config.adjacent)
-            reference_points, weights = _reference_quadrature(
-                basis,
-                config.adjacent.fit_quadrature_order,
-            )
-            current_reference = reference_points[:, 0:1]
-            previous_reference = reference_points[:, 1:2]
-            current_physical, current_log_abs_det = config.scalar_coordinate_map.forward(
-                current_reference
-            )
-            previous_physical, _ = config.scalar_coordinate_map.forward(
-                previous_reference
-            )
-            previous_log_density = tf.math.log(
-                previous_density.normalized_marginal_density_values(
-                    previous_keep_axes,
-                    previous_reference,
-                )
-            )
-            # The carried marginal is already a density under the one-axis
-            # reference measure.  The adjacent target therefore removes only
-            # the current-axis reference density, obtained from the active
-            # adjacent basis rather than the initial-config basis.
-            current_reference_density = _log_reference_density(
-                ProductBasis(
-                    [basis.bases[0]],
-                    basis.convention,
-                )
-            )
-            log_target = (
-                previous_log_density
-                + model.transition_log_density(
-                    theta_vector,
-                    previous_physical,
-                    current_physical,
-                    t=time_index,
-                )
-                + model.observation_log_density(
-                    theta_vector,
-                    current_physical,
-                    observation_matrix[time_index],
-                    t=time_index,
-                )
-                + current_log_abs_det
-                - current_reference_density
-            )
-            active_config = config.adjacent
-            initial_cores = (
-                adjacent_initial_cores
-                if adjacent_initial_cores is not None
-                else _required_initial_cores(active_config)
-            )
-            target_kind = "adjacent_state_update"
-            keep_axes = (0,)
-
-        log_scale_shift_index = int(tf.argmax(log_target).numpy())
-        log_scale_shift = tf.reduce_max(log_target)
-        sqrt_target = tf.exp(0.5 * (log_target - log_scale_shift))
-        fit_result = FixedTTFitter().fit(
-            product_basis=basis,
-            samples=FixedTTFitSampleBatch(
-                points=reference_points,
-                target_values=sqrt_target,
-                weights=weights,
-            ),
-            config=active_config.fit_config,
-            initial_cores=initial_cores,
-            branch_seed=f"{branch_seed_prefix}:t{time_index}:fit",
-            measure_convention=active_config.measure_convention,
-            initialization_rule=active_config.initialization_rule,
-        )
+        is_initial = time_index == 0 and not config.transition_before_first_observation
+        active_config = config.initial if is_initial else config.adjacent
+        fitter = program[2] if is_initial else program[3]
+        row = first if time_index == 0 else tf.nest.map_structure(lambda value: value[time_index-1], remaining)
+        fit_result = fitter.report(row["fit"], row["target"], row["initial"],
+            branch_seed=f"{branch_seed_prefix}:t{time_index}:fit", initialization_rule=active_config.initialization_rule)
         if fit_result.status is not HighDimStatus.OK:
             raise ValueError(fit_result.status.value)
+        if not bool(row["valid"]):
+            raise ValueError(HighDimStatus.NORMALIZER_FLOOR_EXCEEDED.value
+                if bool(tf.math.is_finite(row["z"])) else HighDimStatus.NONFINITE_VALUE.value)
         density = _density_from_fit(fit_result, active_config)
-        scaled_normalizer = density.normalizer()
-        log_increment = tf.math.log(scaled_normalizer) + log_scale_shift
-        marginal_mass = _marginal_mass(density, keep_axes)
-        step = ScalarAdjacentTTStep(
-            time_index=time_index,
-            target_kind=target_kind,
-            log_increment=log_increment,
-            scaled_normalizer=scaled_normalizer,
-            log_scale_shift=log_scale_shift,
-            log_scale_shift_index=log_scale_shift_index,
-            fit_result=fit_result,
-            density=density,
-            carried_keep_axes=keep_axes,
-            marginal_mass=marginal_mass,
-            diagnostics={
-                "axis_order": (
-                    ("x_0",)
-                    if time_index == 0
-                    and not config.transition_before_first_observation
-                    else AXIS_ORDER
-                ),
-                "integrated_axes": (
-                    ()
-                    if time_index == 0
-                    and not config.transition_before_first_observation
-                    else (1,)
-                ),
-                "fit_residual": fit_result.fit_residual,
+        target_kind = ("initial_state_observation" if is_initial else
+                       "transitioned_initial_adjacent_state_update" if time_index == 0 else "adjacent_state_update")
+        steps.append(ScalarAdjacentTTStep(
+            time_index=time_index, target_kind=target_kind, log_increment=row["increment"],
+            scaled_normalizer=row["z"], log_scale_shift=row["shift"], log_scale_shift_index=int(row["shift_index"]),
+            fit_result=fit_result, density=density, carried_keep_axes=(0,), marginal_mass=row["mass"],
+            diagnostics={"axis_order": ("x_0",) if is_initial else AXIS_ORDER,
+                "integrated_axes": () if is_initial else (1,), "fit_residual": fit_result.fit_residual,
                 "fit_update_structure": _fit_update_structure(fit_result),
-                "source_route_operation": (
-                    "initial_same_target_fit"
-                    if time_index == 0
-                    and not config.transition_before_first_observation
-                    else (
-                        "transitioned_initial_adjacent_fit_then_previous_state_marginal"
-                        if time_index == 0
-                        else "algorithm2_adjacent_fit_then_previous_state_marginal"
-                    )
-                ),
-            },
-        )
-        steps.append(step)
-        log_increments.append(log_increment)
-        previous_density = density
-        previous_keep_axes = keep_axes
-        if time_index > 0:
-            adjacent_initial_cores = tuple(fit_result.fitted_tt.cores)
-
-    increments = tf.stack(log_increments)
+                "source_route_operation": "initial_same_target_fit" if is_initial else
+                    "transitioned_initial_adjacent_fit_then_previous_state_marginal" if time_index == 0 else
+                    "algorithm2_adjacent_fit_then_previous_state_marginal"}))
     log_likelihood = tf.reduce_sum(increments)
     compatibility_hash = _compatibility_hash(
         model=model,
@@ -423,25 +259,20 @@ def scalar_adjacent_state_fixed_tt_score(
     finite_difference_h: Sequence[float] = (1e-2, 3e-3, 1e-3, 3e-4),
     fixture_id: str = "contract-e-tp.phase6.scalar-adjacent-tt.score.v1",
     branch_seed_prefix: str = "contract-e-tp-phase6-scalar-adjacent-tt",
+    jit_compile: bool = True,
 ) -> FixedBranchScoreResult:
     """Differentiate the same fixed adjacent-state finite value program."""
 
+    from bayesfilter.highdim.scalar_adjacent_native_tf import make_scalar_adjacent_state_fixed_tt
     theta_vector = _theta_vector(theta, int(model.parameter_dim()))
-    with tf.GradientTape() as tape:
-        tape.watch(theta_vector)
-        value_result = scalar_adjacent_state_fixed_tt_value(
-            model,
-            theta_vector,
-            observations,
-            config,
-            fixture_id=fixture_id.replace("score", "value"),
-            branch_seed_prefix=branch_seed_prefix,
-        )
-    score = tape.gradient(value_result.log_likelihood, theta_vector)
-    if score is None:
-        raise RuntimeError("TensorFlow did not produce a total gradient")
-    score = tf.convert_to_tensor(score, dtype=tf.float64)
-    if not bool(tf.reduce_all(tf.math.is_finite(score)).numpy()):
+    observation_matrix = _observation_matrix(observations, int(model.observation_dim()))
+    if int(model.state_dim()) != 1:
+        raise TypeError("scalar adjacent-state TT route requires state_dim == 1")
+    program = make_scalar_adjacent_state_fixed_tt(model, config, observation_matrix.shape, jit_compile=jit_compile)
+    native, score = program[1](theta_vector, observation_matrix)
+    value_result = _assemble_native_result(model, theta_vector, observation_matrix, config, native, program,
+        fixture_id=fixture_id.replace("score", "value"), branch_seed_prefix=branch_seed_prefix)
+    if not bool(tf.reduce_all(tf.math.is_finite(score))):
         raise ValueError(HighDimStatus.NONFINITE_VALUE.value)
 
     rows = []
@@ -465,6 +296,7 @@ def scalar_adjacent_state_fixed_tt_score(
                 config,
                 fixture_id=fixture_id.replace("score", "fd-plus"),
                 branch_seed_prefix=branch_seed_prefix,
+                jit_compile=jit_compile,
             )
             minus = scalar_adjacent_state_fixed_tt_value(
                 model,
@@ -473,6 +305,7 @@ def scalar_adjacent_state_fixed_tt_score(
                 config,
                 fixture_id=fixture_id.replace("score", "fd-minus"),
                 branch_seed_prefix=branch_seed_prefix,
+                jit_compile=jit_compile,
             )
             rows.append(
                 make_finite_difference_row(
@@ -569,8 +402,9 @@ def norm_balanced_initial_cores(
         [active_rank, product_basis.bases[1].basis_dim, 1],
         dtype=tf.float64,
     )
-    left_indices = [[0, channel, channel] for channel in range(active_rank)]
-    right_indices = [[channel, channel, 0] for channel in range(active_rank)]
+    channels = tf.range(active_rank)
+    left_indices = tf.stack((tf.zeros_like(channels), channels, channels), axis=1)
+    right_indices = tf.stack((channels, channels, tf.zeros_like(channels)), axis=1)
     updates = tf.fill([active_rank], coefficient)
     return (
         TTCore(tf.tensor_scatter_nd_update(left, left_indices, updates)),
@@ -611,27 +445,21 @@ def _reference_quadrature(
     order: int,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     nodes, weights = legendre_gauss_nodes_weights(int(order))
-    axis_nodes = []
-    axis_weights = []
-    for basis in product_basis.bases:
-        midpoint = 0.5 * (basis.domain.left + basis.domain.right)
-        half_length = 0.5 * basis.domain.length
-        axis_nodes.append(midpoint + half_length * nodes)
-        axis_weights.append(0.5 * weights)
-    node_mesh = tf.meshgrid(*axis_nodes, indexing="ij")
-    weight_mesh = tf.meshgrid(*axis_weights, indexing="ij")
-    points = tf.stack([tf.reshape(axis, [-1]) for axis in node_mesh], axis=1)
-    product_weights = tf.ones([tf.shape(points)[0]], dtype=tf.float64)
-    for axis_weight in weight_mesh:
-        product_weights = product_weights * tf.reshape(axis_weight, [-1])
+    left = tf.stack(tuple(axis.domain.left for axis in product_basis.bases))
+    right = tf.stack(tuple(axis.domain.right for axis in product_basis.bases))
+    midpoints = .5*(left+right)
+    half_lengths = .5*(right-left)
+    all_nodes = midpoints[:, None]+half_lengths[:, None]*nodes[None, :]
+    node_mesh = tf.meshgrid(*tf.unstack(all_nodes), indexing="ij")
+    weight_mesh = tf.meshgrid(*((.5*weights,)*product_basis.dimension), indexing="ij")
+    points = tf.stack(tuple(tf.reshape(axis, [-1]) for axis in node_mesh), axis=1)
+    product_weights = tf.reduce_prod(tf.stack(tuple(tf.reshape(axis, [-1]) for axis in weight_mesh)), axis=0)
     return points, product_weights
 
 
 def _log_reference_density(product_basis: ProductBasis) -> tf.Tensor:
-    value = tf.constant(0.0, dtype=tf.float64)
-    for basis in product_basis.bases:
-        value = value - tf.math.log(tf.constant(basis.domain.length, tf.float64))
-    return value
+    bounds = tf.stack(tuple((basis.domain.left, basis.domain.right) for basis in product_basis.bases))
+    return -tf.reduce_sum(tf.math.log(bounds[:, 1] - bounds[:, 0]))
 
 
 def _density_from_fit(

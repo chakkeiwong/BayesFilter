@@ -146,9 +146,10 @@ def _prepare_fixture(path: Path) -> None:
 
     model = fixture_source.sv_model(N, MODEL_SEED)
     observations = fixture_source.sv_simulate(model, 20, OBSERVATION_SEED)
-    initial_hint, predictive_hint = fixture_source.sv_gh_hint_factory(
-        model, gh_points=9
-    )
+    from bayesfilter.highdim.gaussian_moment_hints_tf import prepare_sv_gaussian_moment_hints
+    initial_hint, predictive_hint = prepare_sv_gaussian_moment_hints(
+        model, observations, gh_points=9,
+    ).callbacks()
     hint_rows = []
     mean, covariance = initial_hint(observations[0])
     hint_rows.append(
@@ -165,7 +166,7 @@ def _prepare_fixture(path: Path) -> None:
         )
     payload = {
         "schema_id": "bayesfilter.c2_sv_frozen_fixture.v1",
-        "classification": "cpu_only_numpy_diagnostic_fixture_freeze",
+        "classification": "cpu_only_numpy_data_reference_tf_xla_moment_preparation",
         "source_generator": str(FIXTURE_GENERATOR.relative_to(ROOT)),
         "source_generator_sha256": _sha256_file(FIXTURE_GENERATOR),
         "cuda_visible_devices": "-1",
@@ -331,28 +332,8 @@ def _frozen_adapter(tf, density_adapter_class, fixture: Mapping[str, object]):
 
 
 def _frozen_hint_factory(tf, fixture: Mapping[str, object], horizon: int):
-    hints = fixture["moment_hints"][:horizon]
-    state = {"next": 0}
-
-    def initial_hint(_observation):
-        if state["next"] != 0 or int(hints[0]["time_index"]) != 0:
-            raise RuntimeError("frozen hints must start at time zero")
-        state["next"] = 1
-        return (
-            tf.constant(hints[0]["mean"], tf.float64),
-            tf.constant(hints[0]["covariance"], tf.float64),
-        )
-
-    def predictive_hint(time_index, _observation):
-        if int(time_index) != state["next"] or int(hints[time_index]["time_index"]) != time_index:
-            raise RuntimeError("frozen hints must be consumed in time order")
-        state["next"] += 1
-        return (
-            tf.constant(hints[time_index]["mean"], tf.float64),
-            tf.constant(hints[time_index]["covariance"], tf.float64),
-        )
-
-    return initial_hint, predictive_hint
+    from bayesfilter.highdim.frozen_moment_hints_tf import frozen_moment_hint_callbacks
+    return frozen_moment_hint_callbacks(fixture["moment_hints"], horizon)
 
 
 def _save_snapshot(tf, snapshot_api, snapshot, output_root: Path) -> Mapping[str, object]:
@@ -1226,7 +1207,7 @@ def _run(args: argparse.Namespace) -> None:
                 else "production_seven_output_call_chain_and_cpu_parity"
             ),
             "historical_reference_match": historical_reference_match,
-            "seven_output_call_chain_check_pass": seven_output_call_chain_pass,
+            "seven_output_call_chain_check_pass": seven_output_call_chain_check_pass,
         },
         "reference": reference,
         "family_summary": family_summary,
