@@ -571,3 +571,50 @@ def test_numerically_repaired_child_bridges_with_exact_child_kernel(tmp_path):
     with pytest.raises(ValueError, match="not independently verified"):
         build_retained_frozen_kernel_hmc_adapter_from_candidate_set_result(candidate_set_result=result,
             candidate_id=candidate.parent_candidate_id, retained_binding=binding)
+
+
+def test_cooperative_chunk_stop_resumes_with_identical_numerical_evidence(tmp_path, monkeypatch):
+    from bayesfilter.runtime.execution_budget import execution_budget
+    from bayesfilter.inference import resume_hmc_candidate_set_tuning
+    cfg = execution_config(chunk_max_results=32, reuse_leapfrog_graphs=True)
+    search = HMCControllerConfig(primary_l_grid=(3,), epsilon_by_l=((3, (1.1,)),),
+                                total_budget_units=12, repair_reserve_units=3)
+    reference = make_binding(config=cfg)
+    direct = run_typed_hmc_candidate_set(reference.typed_adapter, search)
+    binding = make_binding(config=cfg)
+    allowed = True
+    original = binding._run
+    def one_chunk(*args, **kwargs):
+        nonlocal allowed
+        result = original(*args, **kwargs)
+        allowed = False
+        return result
+    monkeypatch.setattr(binding, '_run', one_chunk)
+    with execution_budget(check=lambda: allowed):
+        stopped = run_typed_hmc_candidate_set(binding.typed_adapter, search, output_dir=tmp_path)
+    assert stopped.result.completion_status == 'partial_budget'
+    checkpoint = json.loads((tmp_path/'tuning_checkpoint.json').read_text())
+    assert sum(len(hashes) for hashes in checkpoint['partial_chunks'].values()) == 1
+    resumed = resume_hmc_candidate_set_tuning(tmp_path/'tuning_checkpoint.json', adapter=binding._base_adapter)
+    assert resumed.result.completion_status == direct.result.completion_status == 'complete'
+    assert resumed.result.candidates == direct.result.candidates
+    assert resumed.result.verified_candidate_ids == direct.result.verified_candidate_ids
+    evidence = list(resumed.adapter._execution_binding._evidence.values())
+    baseline = list(reference._evidence.values())
+    assert len(evidence) == len(baseline)
+    for actual, expected in zip(evidence, baseline):
+        assert actual['seed'] == expected['seed']
+        assert actual['samples'] == expected['samples']
+        assert actual['trace'] == expected['trace']
+
+
+def test_public_ordinary_route_checks_execution_scope_before_target_work(tmp_path, monkeypatch):
+    from bayesfilter.inference import HMCKernelTuningConfig
+    from bayesfilter.inference import hmc_candidate_set_public
+    from bayesfilter.runtime.execution_budget import execution_budget, ExecutionBudgetExceeded
+    monkeypatch.setattr(hmc_candidate_set_public, '_preflight_exact_target',
+                        lambda *a, **k: pytest.fail('target work after allowance expired'))
+    with execution_budget(check=lambda: False), pytest.raises(ExecutionBudgetExceeded):
+        tune_hmc_kernel(adapter=GaussianTarget(),
+            initial_position=tf.constant([[-1., -.5], [-.3, .5], [.3, -.5], [1., .5]], tf.float64),
+            config=replace(HMCKernelTuningConfig.standard(), use_xla=False), output_dir=tmp_path)

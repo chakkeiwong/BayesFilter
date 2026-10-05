@@ -84,7 +84,7 @@ def test_invalid_residual_amplitudes_fail(amplitude):
 
 
 @pytest.mark.parametrize("kind", ["exact", "residual"])
-def test_public_supplied_map_continues_after_failed_first_member(tmp_path, monkeypatch, kind):
+def test_public_supplied_map_continues_after_paused_first_member(tmp_path, monkeypatch, kind):
     import bayesfilter.inference as public
     from bayesfilter.testing.inference_validation.designs import ScenarioSpec, ValidationDesign
     from bayesfilter.testing.inference_validation.procedures import execute_pipeline
@@ -117,13 +117,24 @@ def test_public_supplied_map_continues_after_failed_first_member(tmp_path, monke
     selected = result["selection"]["candidate_ids"]
     members = {m["candidate_id"]: m for m in result["members"]}
     assert set(members) == set(result["verified_candidate_ids"])
-    assert members[selected[0]]["recorded_retained_count"] == 0
+    # A resource refusal preserves a resumable pause, not a terminal empty
+    # posterior. The sibling can still run when its own budget check permits it.
+    assert members[selected[0]]["status"] == "budget_exhausted"
+    assert members[selected[0]]["posterior"]["retained_results_per_chain"] == 0
     assert not members[selected[0]]["posterior"]["passed"]
+    first_directory = tmp_path / "members" / selected[0]
+    assert list((first_directory / "budget_pauses").glob("pause-*.json"))
+    assert not (first_directory / "result.json").exists()
+    assert not (first_directory / "draws.tensor").exists()
     assert members[selected[1]]["posterior"]["warmup_results_per_chain"] > 0
-    assert all(members[c]["warmup_exclusion_matches"] for c in selected)
-    hashes = {c: file_hash(members[c]["warmup_path"]) for c in selected}
+    assert members[selected[1]]["warmup_exclusion_matches"]
+    sibling_hash = file_hash(members[selected[1]]["warmup_path"])
     again = execute_pipeline(design, tmp_path)
     assert again["verified_candidate_ids"] == result["verified_candidate_ids"]
-    assert calls == [3, 5]
-    assert hashes == {m["candidate_id"]: file_hash(m["warmup_path"])
-                      for m in again["members"] if m["candidate_id"] in selected}
+    assert calls == [3, 5, 3]
+    restored = {m["candidate_id"]: m for m in again["members"]}
+    assert restored[selected[0]]["status"] == "assessed"
+    assert all(restored[c]["warmup_exclusion_matches"] for c in selected)
+    assert sibling_hash == file_hash(restored[selected[1]]["warmup_path"])
+    execute_pipeline(design, tmp_path)
+    assert calls == [3, 5, 3]  # Completed members stay immutable on later reloads.

@@ -1,0 +1,18 @@
+{
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-c",
+    "\nimport sys\nfrom pathlib import Path\nfrom bayesfilter.testing.inference_validation.designs import ValidationDesign\nfrom bayesfilter.testing.inference_validation.fit_process import _record\nfrom bayesfilter.testing.inference_validation.engines.pipeline import summarize_replications\nfrom bayesfilter.testing.inference_validation.storage import read_json,write_json,file_hash\nold,new,output=map(Path,sys.argv[1:4])\nprevious=Path(sys.argv[4]) if len(sys.argv)>4 else None\ndesign=ValidationDesign.from_payload(read_json(old/'isolated_design.json'))\nrecords=[]; origins=[]\nfor index in range(256):\n    old_path=old/f'replication-{index:04d}'\n    recovery=new/old_path.name\n    original=read_json(old_path/'process-attempt-001-exit.json')\n    prior=previous/old_path.name if previous is not None else old_path\n    path=(recovery if (recovery/'process-attempt-001-exit.json').exists() else\n          prior if (prior/'process-attempt-001-exit.json').exists() else old_path)\n    receipt=read_json(path/'process-attempt-001-exit.json')\n    if path!=old_path and original['status']!='timed_out':raise ValueError('replaced a completed original fit')\n    assessment=path/'independent_assessment.json'\n    if assessment.exists() and file_hash(assessment)!=receipt.get('assessment_sha256'):raise ValueError('assessment changed')\n    records.append(_record(path,index,receipt,design))\n    origins.append({'replication':index,'origin':'recovery' if path==recovery else 'prior_recovery' if path!=old_path else 'original','status':receipt['status']})\nreport=summarize_replications(design,records)\nwrite_json(output,{'interpretation':'post-hoc recovery, not a new prospective confirmation',\n    'original_denominator':256,'origins':origins,'assessment':report})\n",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/confirmation-r1/suite/closure-i2-c1-beta_binomial",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-ssm-funded-2026-09-28/no-new-fit",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-ssm-funded-2026-09-28/prior-recovery-summary-check.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-c1-recovery-ssm-2026-09-28/sequence-r1/recovery/closure-i2-c1-beta_binomial"
+  ],
+  "completed": 247,
+  "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/source-confirmation-r1",
+  "elapsed_seconds": 3.305077013093978,
+  "gpu_intentionally_hidden": true,
+  "planned": 256,
+  "resource": "cpu_reference",
+  "status": "passed"
+}

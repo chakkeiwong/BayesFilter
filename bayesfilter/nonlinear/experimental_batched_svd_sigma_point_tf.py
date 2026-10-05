@@ -3652,6 +3652,7 @@ def tf_batched_svd_sigma_point_value_and_score(
         principal_sqrt_backend=principal_sqrt_backend,
         jitter=jitter,
         allow_fixed_null_support=allow_fixed_null_support,
+        jit_compile=jit_compile,
     )
 
 

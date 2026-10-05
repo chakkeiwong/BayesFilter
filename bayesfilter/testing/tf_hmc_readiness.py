@@ -39,6 +39,7 @@ class QRStaticLGSSMTarget:
     initial_parameters: tf.Tensor
     prior_scale: tf.Tensor
     jitter: tf.Tensor
+    persistence_cap: float = 0.75
 
     @staticmethod
     def default() -> "QRStaticLGSSMTarget":
@@ -47,6 +48,7 @@ class QRStaticLGSSMTarget:
             initial_parameters=tf.constant([0.20, -1.05], dtype=tf.float64),
             prior_scale=tf.constant([1.0, 1.0], dtype=tf.float64),
             jitter=tf.constant(1e-9, dtype=tf.float64),
+            persistence_cap=0.75,
         )
 
     def model_and_derivatives(
@@ -57,9 +59,10 @@ class QRStaticLGSSMTarget:
             tf.convert_to_tensor(parameters, dtype=tf.float64)
         )
         tanh_rho = tf.math.tanh(rho_param)
-        rho = 0.75 * tanh_rho
-        drho = 0.75 * (1.0 - tanh_rho**2)
-        d2rho = -1.5 * tanh_rho * (1.0 - tanh_rho**2)
+        cap = tf.constant(self.persistence_cap, dtype=tf.float64)
+        rho = cap * tanh_rho
+        drho = cap * (1.0 - tanh_rho**2)
+        d2rho = -2.0 * cap * tanh_rho * (1.0 - tanh_rho**2)
         measurement_variance = tf.exp(2.0 * log_measurement_noise)
         d_measurement_variance = 2.0 * measurement_variance
         d2_measurement_variance = 4.0 * measurement_variance

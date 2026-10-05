@@ -98,7 +98,13 @@ def accuracy_assessment(draws, reference, *, tolerance, finite_variance=True, re
     x=np.asarray(draws); ref=np.asarray(reference)
     if x.ndim!=3 or ref.ndim!=2 or x.shape[-1]!=ref.shape[-1]: raise ValueError("draw/chain/parameter and reference-row/parameter shapes required")
     if x.shape[1]<1 or x.shape[-1]<1 or len(ref)<2: raise ValueError("nonempty chains and quantities and at least two reference rows required")
-    if x.shape[0]<2: return {"finding":"unavailable","reason":"no retained posterior draws"}
+    if x.shape[0]<2:
+        # Keep the result schema stable for a member whose posterior controller
+        # produced no retained rows (for example after a warmup diagnostic
+        # failure).  This is an unavailable accuracy assessment, never a
+        # successful accuracy result.
+        return {"finding":"unavailable", "reason":"no retained posterior draws",
+                "accuracy_established":False, "reference_iid":reference_iid}
     if not np.all(np.isfinite(x)) or not np.all(np.isfinite(ref)): return {"finding":"invalid","reason":"nonfinite draws"}
     rows=[]
     for j in range(x.shape[-1]):

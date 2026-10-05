@@ -1,0 +1,91 @@
+{
+  "created_utc": "2026-09-25T07:01:07.148448+00:00",
+  "command": [
+    "/usr/bin/python3",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-gap-closure-phases-2026-09-24/run_check.py",
+    "--output",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/confirmation-r1",
+    "--cwd",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/source-confirmation-r1",
+    "--seconds",
+    "165600.0",
+    "--gpu-uuid",
+    "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+    "--",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-m",
+    "bayesfilter.testing.inference_validation",
+    "run",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/confirmation-suite.json",
+    "--output",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/confirmation-r1/suite",
+    "--reuse-leapfrog-graphs",
+    "--share-unused-budget"
+  ],
+  "plan_file": "docs/plans/bayesfilter-hmc-budget-debug-2026-09-25.md",
+  "result_file": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/confirmation-terminal-result.json",
+  "source_snapshot": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/source-confirmation-r1/source_snapshot.json",
+  "git_commit": "de80aaff5812ebfbed551977476c0868551a2c88",
+  "prepared_suite_sha256": "a1c1b744996d3608e756c2f78eb61bfd805d074a87f0389f18b60fdf246b345d",
+  "confirmation_suite_sha256": "4f859f10d3e671680ee9e9e116bc77f32700ce19233ca9abfba8c80934ae5ba2",
+  "source_difference_from_pricing": [
+    "bayesfilter/testing/inference_validation/fit_process.py"
+  ],
+  "source_difference_review": "Only preparation retry exception classification; no pricing fit retried",
+  "pricing_evidence": [
+    {
+      "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/gpu-prices-r1/data/fit-0-reuse-false/c1-price-0-0-20260925/replication-0000",
+      "receipt_sha256": "49ba859072501475cf7726805190afe4c37745fb0087cc1fa928b457d7ba007d",
+      "assessment_sha256": "669b6cdc04aee8420f0bdd882d43801515941877aa005df64f16789aec9a6176"
+    },
+    {
+      "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/gpu-prices-r1/data/fit-0-reuse-true/c1-price-0-0-20260925/replication-0000",
+      "receipt_sha256": "712dd489db652fd952afc1e594ac14db5c1977c1a3f3877a95c1c3d9088e9363",
+      "assessment_sha256": "69283b3be0c85d4b4edab64bafdec04fc84fcc8d1380d7b849f1ac20f7b4ec03"
+    },
+    {
+      "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/gpu-prices-r1/data/fit-2-reuse-false/c1-price-1-0-20260925/replication-0000",
+      "receipt_sha256": "b930bf53bfe198fe82b9108489edb816bc4090828b980fa29fe37e1d80c38220",
+      "assessment_sha256": "a3923d6ab457b556402cf595391e7904bdadf593da28b3eadd04fa2415600e2d"
+    },
+    {
+      "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/gpu-prices-r1/data/fit-2-reuse-true/c1-price-1-0-20260925/replication-0000",
+      "receipt_sha256": "f660051da12e05d49044da92f1080a7904bfebfbb5a71f7568769fe46fbe0216",
+      "assessment_sha256": "7bf94aa91fc37ffb9b98515ef00e9e2d17978a3d77af9b74b1ed7d68e9cd3b4e"
+    },
+    {
+      "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/gpu-prices-r1/data/fit-1-reuse-true/c1-price-0-1-20260925/replication-0000",
+      "receipt_sha256": "f7cd16d38a82277ae42e82e7f0dd53dee0bcda4c3fbcb708ad091b13361ab77c",
+      "assessment_sha256": "e0479e11aecd331e6c367cb4a7526310ca249e801c3d3d3cdd364d0cb9999e0b"
+    },
+    {
+      "fit": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-budget-debug-2026-09-25/gpu-prices-r1/data/fit-3-reuse-true/c1-price-1-1-20260925/replication-0000",
+      "receipt_sha256": "ddefdfa90bac1a5d3024b69715713b78610d7e8eaf2169e1ee613a29bbbf2e00",
+      "assessment_sha256": "d885c65268c082c8ee18f5f42a2f75afbbd06f0cde7b77e17b7cb632fd5eae20"
+    }
+  ],
+  "pricing_result_sha256": "7acb1cbd9794fff0822f66b0bb5d239c1e27adb51fdfab9e38962cddfd93d085",
+  "forecast_seconds": 134904.3262668252,
+  "ceiling_seconds": 165600.0,
+  "systemd_runtime_max_seconds": 165610.0,
+  "shutdown_seconds": 1,
+  "margin_above_observed_forecast_seconds": 30695.6737331748,
+  "grant_remaining_before_launch": 175300.7983980507,
+  "environment": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "jit_compile": true,
+  "memory_growth": "before import, verified in every child",
+  "profiling": false,
+  "reuse_leapfrog_graphs": true,
+  "share_unused_budget": true,
+  "confirmation_root_seeds": [
+    2026092481,
+    2026092482
+  ],
+  "full_fit_inventory": 512,
+  "data": "Gaussian scale 1; beta-binomial alpha 2 beta 3, observations [5,12]",
+  "service": "bayesfilter-hmc-c1-repaired-20260925-r1.service",
+  "scientific_design_unchanged": true,
+  "all_jobs_ready": true,
+  "scientific_review_pending": true
+}

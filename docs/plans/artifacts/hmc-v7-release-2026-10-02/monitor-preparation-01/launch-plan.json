@@ -1,0 +1,41 @@
+{
+  "recorded_utc": "2026-10-04T18:06:58.926812+00:00",
+  "command": [
+    "systemd-run",
+    "--user",
+    "--unit=bayesfilter-hmc-v7-monitor-20261005-r1",
+    "--property=Type=exec",
+    "--property=RuntimeMaxSec=186476",
+    "--property=TimeoutStopSec=30",
+    "--property=KillMode=control-group",
+    "--property=Restart=no",
+    "--property=StandardOutput=append:/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/monitor-preparation-01/service.log",
+    "--property=StandardError=inherit",
+    "--working-directory=/home/ubuntu/python/BayesFilter",
+    "--setenv=CUDA_VISIBLE_DEVICES=-1",
+    "--setenv=TF_FORCE_GPU_ALLOW_GROWTH=true",
+    "--setenv=PYTHONPATH=",
+    "--setenv=PYTHONUNBUFFERED=1",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/monitor-preparation-01/observer.py",
+    "--request",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/monitor-preparation-01/request.json"
+  ],
+  "observer_sha256": "63ec751d642ba78a645821f225d1f4d1f80e364f6f0e0e0aeebafea20b7e21e7",
+  "tests_sha256": "6ac80f336620e25717883b6c06295e4a69ac29d65187efa95b7829f984d69401",
+  "distinct_monitor_and_supervisor_tests": 77,
+  "monitor_tests": 27,
+  "focused_test_receipts": [
+    "monitor-checks-01/receipt.json",
+    "monitor-checks-02/receipt.json",
+    "monitor-checks-03/receipt.json"
+  ],
+  "live_input_audit": "live-input-audit.json",
+  "runtime_cap_seconds": 186476,
+  "runtime_cap_provenance": "Remaining original campaign wall envelope plus active observer cap and two polling intervals.",
+  "stop_allowance_seconds": 30,
+  "stop_allowance_provenance": "Operational convenience for one 10-second owned-service stop, bounded five-second notification and final ledger/report writes; no numerical cap change.",
+  "primary_numerical_source_or_design_changed": false,
+  "primary_results_may_be_replaced": false,
+  "review": "Passed focused fault-injection and actual input checks; original evidence and confirmation rule preserved."
+}

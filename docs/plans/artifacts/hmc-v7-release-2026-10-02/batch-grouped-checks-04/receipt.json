@@ -1,0 +1,37 @@
+{
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "--disable-warnings",
+    "tests/test_hmc_replicated_batch.py",
+    "tests/test_hmc_replicated_batch_integration.py",
+    "tests/test_hmc_acceptance_accounting.py",
+    "tests/test_hmc_acceptance_release_validation.py",
+    "tests/test_hmc_release_pricing.py",
+    "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/batch-grouped-checks-04/results.xml"
+  ],
+  "cwd": "/home/ubuntu/python/BayesFilter",
+  "started_utc": "2026-10-03T15:19:50.518838+00:00",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OMP_NUM_THREADS": "2",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "cpu_affinity": [
+    20,
+    21,
+    22,
+    23
+  ],
+  "gpu_intentionally_hidden": true,
+  "resource": "cpu_reference",
+  "plan": "docs/plans/bayesfilter-hmc-v7-release-plan-2026-10-02.md",
+  "exit_code": 124,
+  "wall_seconds": 1001.8900643009692,
+  "log_sha256": "6b8ff19ad16a479f0071d204f8475582371dc02a58f89ca5f4e6c5da1a009e34"
+}

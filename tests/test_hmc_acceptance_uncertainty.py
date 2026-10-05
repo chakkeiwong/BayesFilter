@@ -230,6 +230,40 @@ def test_current_paired_screen_misses_exactly_opposing_drifts():
     assert not bool(temporal_block_conflicts(blocks, practical_width=.1)[0])
 
 
+@pytest.mark.parametrize("method,schema", [
+    ("raw_block_crossing_v1", "v5"),
+    ("paired_chain_block_contrasts_v1", "v6"),
+])
+def test_temporal_policy_roundtrips_through_execution_config(method, schema):
+    from bayesfilter.inference.hmc_candidate_set_execution import HMCCandidateExecutionConfig
+    from bayesfilter.inference.hmc_verification import (
+        HMCAcceptancePolicy, _acceptance_policy_from_payload,
+    )
+    acceptance_policy = HMCAcceptancePolicy(temporal_conflict_method=method)
+    payload = acceptance_policy.payload()
+    assert payload["schema"] == f"bayesfilter.hmc_acceptance_policy.{schema}"
+    assert _acceptance_policy_from_payload(json.loads(json.dumps(payload))) == acceptance_policy
+    config = HMCCandidateExecutionConfig(
+        measurement_num_results=64, verification_num_results=64,
+        num_warmup_steps=0, seed=(11, 9), acceptance_policy=acceptance_policy,
+        target_status_trace_policy="none",
+    )
+    assert HMCCandidateExecutionConfig.from_payload(config.payload()) == config
+    payload["schema"] = "bayesfilter.hmc_acceptance_policy.v6" if schema == "v5" else "bayesfilter.hmc_acceptance_policy.v5"
+    with pytest.raises(ValueError):
+        _acceptance_policy_from_payload(payload)
+
+
+def test_optional_screen_separates_common_drift_from_noisy_single_chain():
+    from bayesfilter.inference.hmc_verification import temporal_block_conflicts
+    blocks = tf.constant([
+        [[.68, .79, .635, .768], [.7, .7, .7, .7],
+         [.69, .71, .70, .70], [.71, .69, .70, .70]],
+        [[.2, .4, .8, .95]] * 4,
+    ], tf.float64)
+    assert temporal_block_conflicts(blocks, practical_width=.1).numpy().tolist() == [False, True]
+
+
 def test_multivariate_and_replication_axes_are_not_pooled_as_chains():
     x = np.random.default_rng(526).normal(size=(2, 512, 3, 2))
     all_rows = chain_batch_covariance(x, batch_size=24, min_batches=8)

@@ -15,6 +15,7 @@ from bayesfilter.inference.hmc_candidate_runtime import tuning_seed_inventory
 
 from bayesfilter.inference.hmc_candidate_set_artifacts import (
     candidate_set_result_payload, load_candidate_set_result_payload, require_verified_member,
+    HMC_CANDIDATE_SET_ARTIFACT_SCHEMA, _validate_result_payload,
 )
 from bayesfilter.inference.hmc_candidate_set_execution import (
     EXECUTION_SCHEMA, HMCCandidateExecutionBinding, _ISSUER, _json_copy, _positive_int,
@@ -22,6 +23,7 @@ from bayesfilter.inference.hmc_candidate_set_execution import (
 )
 from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMCTuningCandidateSetResult, HMCTuningCandidateRecord, HMCWorkItem, _sha256,
+    _json_native_sha256,
 )
 
 RETAINED_MEMBER_SCHEMA = "bayesfilter.hmc_candidate_retained_member.v1"
@@ -38,10 +40,13 @@ def _write_new(payload: Mapping[str, Any], path: str | Path) -> Path:
     return destination
 
 
-def _checked_payload(path: str | Path, schema: str) -> Mapping[str, Any]:
+def _checked_payload(path: str | Path, schema: str | tuple[str, ...], *,
+                     expected_hash: str | None = None) -> Mapping[str, Any]:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     digest = payload.pop("content_hash", None)
-    if payload.get("schema") != schema or digest != _sha256(payload):
+    schemas = (schema,) if isinstance(schema, str) else schema
+    if (payload.get("schema") not in schemas or digest != _json_native_sha256(payload)
+            or (expected_hash is not None and digest != expected_hash)):
         raise ValueError("retained artifact schema/checksum mismatch")
     return payload
 
@@ -56,12 +61,34 @@ def _result_payload(result: Any) -> Mapping[str, Any]:
     raise TypeError("supply a candidate-set result or its checked durable payload")
 
 
-def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecutionBinding) -> tuple[Any, Any, Any]:
+def _validate_member_set(result: Any, binding: HMCCandidateExecutionBinding) -> tuple[Any, dict[str, Any]]:
+    """Check shared evidence once within one synchronous replay operation."""
     if type(binding) is not HMCCandidateExecutionBinding:
         raise TypeError("retained_binding must be a repository-issued execution binding")
     binding.validate()
+    payload = _result_payload(result)
+    body = dict(payload)
+    supplied_hash = body.pop('result_hash', None)
+    if (payload.get('artifact_schema') != HMC_CANDIDATE_SET_ARTIFACT_SCHEMA
+            or supplied_hash != _json_native_sha256(body)):
+        raise ValueError('candidate-set artifact schema/hash mismatch')
+    _validate_result_payload(payload)
+    if payload['completion_status'] == 'shared_invalidity':
+        raise ValueError('shared-invalidity result cannot be replayed')
+    from .hmc_candidate_set_tuning import HMCControllerConfig
+    from .hmc_acceptance_trials import validate_execution_protocol
+    search = HMCControllerConfig.from_payload(payload["config"])
+    validate_execution_protocol(search, binding.config)
+    previous = getattr(binding, "_replicated_evidence_rungs", None)
+    if previous is not None and previous != search.evidence_rungs:
+        raise ValueError("retained evidence look schedule changed")
+    binding._replicated_evidence_rungs = search.evidence_rungs
+    if search.replicated_acceptance_policy is not None:
+        from .hmc_acceptance_trials import initialize_seed_registry
+        initialize_seed_registry(binding, payload)
+    checked_analyses = {}
     for digest, evidence in binding._evidence.items():
-        if _sha256(evidence) != digest or evidence.get("binding_hash") != binding.binding_hash:
+        if _json_native_sha256(evidence) != digest or evidence.get("binding_hash") != binding.binding_hash:
             raise ValueError("corrupt numerical evidence inventory")
         analysis = binding.evidence_analysis(evidence)
         if _json_copy(analysis) != evidence["analysis"]:
@@ -70,18 +97,15 @@ def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecut
         # shared failure disables even members verified before that failure.
         if analysis["evidence_validity"] == "shared_execution_invalid":
             raise ValueError("shared-invalid numerical evidence disables scope replay")
-    payload = _result_payload(result)
-    record = require_verified_member(payload, scope_id=binding.scope.scope_id,
-        candidate_id=candidate_id, expected_scope=_json_copy(binding.scope.payload()))
-    selected = HMCTuningCandidateRecord.from_payload(binding.scope, record)
-    endpoint = None
+        checked_analyses[digest] = analysis
+    endpoints = {}
     work_items = {item["work_item_id"]: item for item in payload["work_items"]}
     # Validate every receipt, including failed directional ancestors. The
     # selected child's own fresh verification must pass; ancestors need not.
     for receipt in payload["verification_receipts"]:
         digest = receipt.get("numerical_evidence_hash")
         numerical = binding._evidence.get(digest)
-        if numerical is None or _sha256(numerical) != digest:
+        if numerical is None or digest not in checked_analyses:
             raise ValueError("missing or corrupt repository numerical evidence")
         if numerical["binding_hash"] != binding.binding_hash:
             raise ValueError("numerical evidence binding mismatch")
@@ -111,15 +135,19 @@ def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecut
         count = binding.work_count(work)
         warmup = binding.config.num_warmup_steps
         failed_execution = "execution_failure" in numerical
-        if receipt["draw_range"] != ([0, 0] if failed_execution else [warmup, warmup + count]):
+        if receipt["draw_range"] != ([0, 0] if failed_execution or work.trial_range is not None else [warmup, warmup + count]):
             raise ValueError("numerical draw range mismatch")
+        if work.trial_range is not None and tuple(receipt.get("trial_range", ())) != work.trial_range:
+            raise ValueError("numerical receipt trial range mismatch")
         initial = _tensor_from_payload(numerical["initial_state"])
         if _tensor_payload(initial) != _tensor_payload(binding.initial_active_state):
             raise ValueError("numerical initial state mismatch")
         samples = None if failed_execution else _tensor_from_payload(numerical["samples"])
         if samples is not None and samples.shape[0] != count + warmup:
             raise ValueError("numerical draw count mismatch")
-        analysis = binding.evidence_analysis(numerical)
+        # Reuse only within this validation call. The inventory scan above
+        # just recomputed this exact hashed record; later calls recheck it.
+        analysis = checked_analyses[digest]
         if _json_copy(analysis) != numerical["analysis"]:
             raise ValueError("numerical evidence recomputation mismatch")
         if analysis["evidence_validity"] == "shared_execution_invalid":
@@ -127,13 +155,26 @@ def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecut
         for key in ("decision", "acceptance", "hard_vetoes", "evidence_validity", "promotion_vetoes", "repair_eligible"):
             if _json_copy(analysis[key]) != receipt[key]:
                 raise ValueError("numerical receipt decision mismatch")
-        if (candidate.candidate_id == candidate_id and work.stage == "verification"
+        if (work.stage == "verification"
                 and analysis["decision"] == "passed" and not analysis["hard_vetoes"]
                 and not analysis["promotion_vetoes"] and analysis["evidence_validity"] == "valid"):
-            endpoint = samples[-1]
+            endpoints[candidate.candidate_id] = samples[-1]
+    return payload, endpoints
+
+
+def _checked_member(payload, candidate_id, binding, endpoints):
+    record = require_verified_member(payload, scope_id=binding.scope.scope_id,
+        candidate_id=candidate_id, expected_scope=_json_copy(binding.scope.payload()))
+    selected = HMCTuningCandidateRecord.from_payload(binding.scope, record)
+    endpoint = endpoints.get(candidate_id)
     if endpoint is None:
         raise ValueError("selected member lacks passing fresh numerical verification")
     return payload, selected, endpoint
+
+
+def _validate_member(result: Any, candidate_id: str, binding: HMCCandidateExecutionBinding) -> tuple[Any, Any, Any]:
+    payload, endpoints = _validate_member_set(result, binding)
+    return _checked_member(payload, candidate_id, binding, endpoints)
 
 
 def _run_sequential_member(*, binding, candidate, initial_state, model_transform, config, **kwargs):
@@ -194,7 +235,11 @@ class HMCCandidateRetainedRunner:
                  binding: HMCCandidateExecutionBinding, claim_eligible: bool = False) -> None:
         if token is not _ISSUER:
             raise ValueError("retained runners must be repository-issued")
-        payload, candidate, endpoint = _validate_member(result, candidate_id, binding)
+        self._initialize_checked(_validate_member(result, candidate_id, binding),
+                                 binding, claim_eligible)
+
+    def _initialize_checked(self, checked, binding, claim_eligible):
+        payload, candidate, endpoint = checked
         if claim_eligible and (not binding.config.use_xla or binding._runtime["device_type"] != "GPU"):
             raise ValueError("CPU or non-XLA exception is mechanics-only, not claim eligible")
         if claim_eligible and any("execution_failure" not in evidence and "GPU" not in evidence.get("samples_device", "")
@@ -235,11 +280,16 @@ class HMCCandidateRetainedRunner:
     def _tuning_seeds(self) -> set[tuple[int, int]]:
         works = {row["work_item_id"]: HMCWorkItem.from_payload(row)
                  for row in self._result["work_items"]}
-        attempts = ((self._binding.work_seed(works[event["work_item_id"]]), event["chunk_index"])
+        attempts = ((tuple(event["seed"]), 0) if "seed" in event else
+                    (self._binding.work_seed(works[event["work_item_id"]]), event["chunk_index"])
                     for event in self._result["accounting_events"]
                     if event["event"] == "numerical_chunk_charged")
-        return tuning_seed_inventory(self._binding._evidence.values(), self._binding._partial.values(),
-                                     attempted_chunks=attempts)
+        seeds = tuning_seed_inventory(self._binding._evidence.values(), self._binding._partial.values(),
+                                      attempted_chunks=attempts)
+        if self._binding.config.chain_mode != "batched":
+            for root in tuple(seeds):
+                seeds.update(self._binding.trial_seed_lineage(root))
+        return seeds
 
     def run_sequential(self, *, config: Any, model_transform: Any = None, **kwargs: Any) -> Any:
         """Assess one explicitly selected member with the posterior controller.
@@ -282,7 +332,7 @@ class HMCCandidateRetainedRunner:
         else:
             from bayesfilter.inference.hmc_candidate_set_checkpoint import _persist_once
             bundle = {"schema": "bayesfilter.hmc_candidate_evidence_bundle.v1", **common}
-            digest = _sha256(bundle)
+            digest = _json_native_sha256(bundle)
             bundle_path = Path(path).parent / ("evidence-" + digest + ".json")
             _persist_once(self._binding, {**bundle, "content_hash": digest}, bundle_path)
             payload.update(schema="bayesfilter.hmc_candidate_retained_member.v2",
@@ -435,25 +485,99 @@ def build_claim_bearing_retained_frozen_kernel_hmc_adapter_from_candidate_set_re
 def load_hmc_candidate_retained_runner(path: str | Path, *, adapter: Any,
         claim_eligible: bool = False) -> HMCCandidateRetainedRunner:
     """Reload using the original target; BayesFilter reconstructs frozen geometry."""
-    schema = json.loads(Path(path).read_text()).get("schema")
-    if schema not in {RETAINED_MEMBER_SCHEMA, "bayesfilter.hmc_candidate_retained_member.v2"}:
-        raise ValueError("retained member schema mismatch")
-    payload = dict(_checked_payload(path, schema))
-    if schema != RETAINED_MEMBER_SCHEMA:
-        reference = payload["evidence_bundle"]
-        bundle_path = Path(path).parent / reference["path"]
-        bundle = _checked_payload(bundle_path, "bayesfilter.hmc_candidate_evidence_bundle.v1")
-        if _sha256(bundle) != reference["content_hash"]:
-            raise ValueError("retained evidence bundle checksum mismatch")
-        for key in ("execution", "binding_hash", "candidate_set_result", "numerical_evidence"):
-            payload[key] = bundle[key]
-    spec = payload["execution"]
-    if spec.get("schema") != EXECUTION_SCHEMA or _sha256(spec) != payload["binding_hash"]:
-        raise ValueError("retained execution binding mismatch")
-    binding = HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
-    binding._evidence = payload["numerical_evidence"]
-    runner = HMCCandidateRetainedRunner(_ISSUER, result=payload["candidate_set_result"],
-        candidate_id=payload["candidate_id"], binding=binding, claim_eligible=claim_eligible)
-    if runner.member_hash != payload["member_hash"] or _tensor_payload(runner.initial_active_state) != payload["verified_endpoint"]:
-        raise ValueError("retained member or verified endpoint mismatch")
+    runners = load_hmc_candidate_retained_runners((path,), adapter=adapter,
+                                                 claim_eligible=claim_eligible)
+    return next(iter(runners.values()))
+
+
+def _runner_from_checked(checked, binding, claim_eligible=False):
+    # Only callers that just checked the common evidence and this member use
+    # this constructor. There is no persistent validation or filesystem cache.
+    runner = HMCCandidateRetainedRunner.__new__(HMCCandidateRetainedRunner)
+    runner._initialize_checked(checked, binding, claim_eligible)
     return runner
+
+
+def export_hmc_candidate_retained_runners(*, candidate_set_result: Any,
+        retained_binding: HMCCandidateExecutionBinding,
+        output_dir: str | Path) -> dict[str, Path]:
+    """Export every verified member using the existing shared-bundle format.
+
+    Common evidence is checked once in this call. Individual exports remain
+    reloadable by the single-member API, and later operations revalidate.
+    """
+    payload, endpoints = _validate_member_set(candidate_set_result, retained_binding)
+    members = [_runner_from_checked(_checked_member(payload, cid, retained_binding, endpoints),
+                                   retained_binding)
+               for cid in payload['verified_candidate_ids']]
+    if not members:
+        return {}
+    from .hmc_candidate_set_checkpoint import _persist_once
+    root = Path(output_dir)
+    bundle = dict(schema='bayesfilter.hmc_candidate_evidence_bundle.v1',
+                  candidate_set_result=payload, execution=retained_binding._spec,
+                  binding_hash=retained_binding.binding_hash,
+                  numerical_evidence=retained_binding._evidence)
+    digest = _json_native_sha256(bundle)
+    bundle_path = root / ('evidence-' + digest + '.json')
+    _persist_once(retained_binding, {**bundle, 'content_hash': digest}, bundle_path)
+    exported = {}
+    for member in members:
+        record = dict(schema='bayesfilter.hmc_candidate_retained_member.v2',
+                      candidate_id=member.candidate.candidate_id, member_hash=member.member_hash,
+                      verified_endpoint=_tensor_payload(member.initial_active_state),
+                      evidence_bundle=dict(path=bundle_path.name, content_hash=digest))
+        path = root / (member.candidate.candidate_id.split(':')[-1] + '-member.json')
+        exported[member.candidate.candidate_id] = _write_new(
+            {**record, 'content_hash': _json_native_sha256(record)}, path)
+    return exported
+
+
+def load_hmc_candidate_retained_runners(paths, *, adapter: Any,
+        claim_eligible: bool = False) -> dict[str, HMCCandidateRetainedRunner]:
+    """Reload requested members, checking each shared bundle once per call.
+
+    Both portable v1 files and compact v2 files retain their existing meaning.
+    Returned runners share their checked binding; every later run or export
+    revalidates it, so subsequent mutation or shared invalidity remains a veto.
+    """
+    if isinstance(paths, (str, Path)):
+        raise TypeError('supply a sequence of member paths')
+    groups = {}
+    ids = set()
+    schemas = (RETAINED_MEMBER_SCHEMA, 'bayesfilter.hmc_candidate_retained_member.v2')
+    for path in paths:
+        path = Path(path)
+        member = _checked_payload(path, schemas)
+        if member['candidate_id'] in ids:
+            raise ValueError('duplicate retained candidate ID')
+        ids.add(member['candidate_id'])
+        if member['schema'] == RETAINED_MEMBER_SCHEMA:
+            key = ('portable', str(path.resolve()))
+            common = member
+        else:
+            reference = member['evidence_bundle']
+            bundle_path = path.parent / reference['path']
+            key = (str(bundle_path.resolve()), reference['content_hash'])
+            common = (groups[key][0] if key in groups else
+                      _checked_payload(bundle_path, 'bayesfilter.hmc_candidate_evidence_bundle.v1',
+                                       expected_hash=reference['content_hash']))
+        if key not in groups:
+            groups[key] = (common, [])
+        groups[key][1].append(member)
+    runners = {}
+    for common, members in groups.values():
+        spec = common['execution']
+        if spec.get('schema') != EXECUTION_SCHEMA or _sha256(spec) != common['binding_hash']:
+            raise ValueError('retained execution binding mismatch')
+        binding = HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
+        binding._evidence = common['numerical_evidence']
+        payload, endpoints = _validate_member_set(common['candidate_set_result'], binding)
+        for member in members:
+            runner = _runner_from_checked(_checked_member(payload, member['candidate_id'], binding, endpoints),
+                                          binding, claim_eligible)
+            if (runner.member_hash != member['member_hash'] or
+                    _tensor_payload(runner.initial_active_state) != member['verified_endpoint']):
+                raise ValueError('retained member or verified endpoint mismatch')
+            runners[member['candidate_id']] = runner
+    return runners

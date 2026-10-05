@@ -15,6 +15,8 @@ from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMCCandidateSetScope,
     HMCTuningCandidateRecord,
     HMCWorkItem,
+    HMCVerificationReceipt,
+    HMCControllerConfig,
     HMCTuningCandidateSetController,
     HMCTuningCandidateSetResult,
     _sha256,
@@ -80,6 +82,7 @@ def _validate_result_payload(
         "screened",
         "validating",
         "inconclusive_at_cap",
+        "preparation_review_required",
         "promotion_failed",
         "verified",
     }
@@ -91,6 +94,7 @@ def _validate_result_payload(
     config = payload.get("config")
     if not isinstance(config, Mapping):
         raise ValueError("candidate-set artifact has invalid controller config")
+    checked_config = HMCControllerConfig.from_payload(config)
     total_budget = int(config.get("total_budget_units", 0))
     used_budget = int(payload.get("budget_used_units", 0))
     remaining_budget = int(payload.get("remaining_budget_units", -1))
@@ -179,6 +183,23 @@ def _validate_result_payload(
         if checked_work.candidate_id not in by_id:
             raise ValueError("candidate-set work item references an unknown candidate")
         candidate = by_id[checked_work.candidate_id]
+        policy = checked_config.replicated_acceptance_policy
+        if (policy is not None) != (checked_work.trial_range is not None):
+            raise ValueError("work evidence unit differs from controller policy")
+        if policy is not None:
+            rungs = checked_config.evidence_rungs
+            rung = checked_work.evidence_rung
+            if rung >= len(rungs):
+                raise ValueError("work evidence rung exceeds policy")
+            expected = (0 if rung == 0 else policy.repetition_target(rungs[rung-1]),
+                        policy.repetition_target(rungs[rung]))
+            if checked_work.evidence_multiplier != rungs[rung] or checked_work.trial_range != expected:
+                raise ValueError("work trial range differs from controller policy")
+            if rung:
+                predecessor = work_by_id.get(checked_work.predecessor_work_id)
+                if (predecessor is None or predecessor["candidate_id"] != checked_work.candidate_id
+                        or predecessor["stage"] != checked_work.stage or predecessor["evidence_rung"] != rung-1):
+                    raise ValueError("work trial predecessor mismatch")
         if checked_work.candidate_record_hash != candidate["candidate_record_hash"]:
             raise ValueError("candidate-set work item candidate hash mismatch")
         if checked_work.candidate_family_id != candidate["candidate_family_id"]:
@@ -222,9 +243,13 @@ def _validate_result_payload(
         if receipt.get("mass_signature") != candidate.get("mass_signature"):
             raise ValueError("verification receipt mass mismatch")
         attempt_id = str(receipt.get("verification_attempt_id", ""))
+        checked_receipt = HMCVerificationReceipt.from_payload(receipt)
         if not attempt_id or attempt_id in receipt_ids:
             raise ValueError("duplicate verification attempt identity")
         work = work_by_attempt.get(attempt_id)
+        if work is not None and checked_receipt.trial_range != (
+                tuple(work["trial_range"]) if "trial_range" in work else None):
+            raise ValueError("receipt trial allocation differs from work")
         if (
             work is None
             or work.get("candidate_id") != candidate_id

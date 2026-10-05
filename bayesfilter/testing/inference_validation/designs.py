@@ -85,6 +85,13 @@ class ValidationDesign:
             raise ValueError("kernel_power is a positive int32 count for frozen invariance only")
         if type(self.options.get("profile_execution", False)) is not bool:
             raise ValueError("profile_execution must be a boolean")
+        coverage_floor = self.options.get("coverage_floor")
+        if coverage_floor is not None and (type(coverage_floor) not in (int, float)
+                or not math.isfinite(coverage_floor) or not 0 < coverage_floor < 1
+                or self.engine != "stopping"):
+            raise ValueError("coverage_floor requires a stopping design and a probability in (0,1)")
+        from .timeout_policy import TimeoutPolicy
+        timeout_policy = TimeoutPolicy.from_options(self.options)
         isolate = self.options.get("isolate_fits", False)
         fit_timeout = self.options.get("fit_process_timeout_seconds")
         if type(isolate) is not bool:
@@ -96,6 +103,10 @@ class ValidationDesign:
                          or not math.isfinite(fit_timeout) or not 0 < fit_timeout <= self.budget_seconds)
                 or not isolate and fit_timeout is not None):
             raise ValueError("isolated fits require an explicit timeout within the design budget")
+        if not isolate and "timeout_policy" in self.options:
+            raise ValueError("timeout_policy requires isolated numerical fits")
+        if isolate and fit_timeout + timeout_policy.max_extension_seconds > self.budget_seconds:
+            raise ValueError("timeout_policy extension cannot exceed the design budget")
         energy = self.options.get("gaussian_energy_test", False)
         if (type(energy) is not bool or (energy and
                 (self.engine != "invariance" or self.scenario.target != "gaussian"))):
@@ -145,6 +156,12 @@ class ValidationDesign:
             raise ValueError("posterior_precision_method requires a supported mean estimator")
         from .posterior_policy import validate_posterior_options
         validate_posterior_options(self.options)
+        tolerances = self.options.get("mcse_tolerance_by_parameter", {})
+        if (not isinstance(tolerances, dict)
+                or set(tolerances) - set(get_target(self.scenario.target).parameters)
+                or any(type(v) not in (int, float) or not math.isfinite(v) or v <= 0
+                       for v in tolerances.values())):
+            raise ValueError("mcse_tolerance_by_parameter needs positive finite named tolerances")
         alarm = self.options.get("reference_mean_alarm")
         if self.engine == "reference_mean":
             params = self.scenario.parameters
@@ -264,7 +281,7 @@ class ValidationDesign:
                         or sorted(set(rungs)) != list(rungs)):
                     raise ValueError("declare strictly increasing evidence_rungs from one")
         supported_controls = {
-            "mechanics": {"baseline", "noop", "wrong_score", "wrong_metric", "wrong_energy", "omit_jacobian", "location_shift"},
+            "mechanics": {"baseline", "noop", "wrong_score", "wrong_metric", "wrong_energy", "omit_jacobian", "location_shift", "ignore_data"},
             "invariance": {"baseline", "noop", "wrong_score", "omit_jacobian", "identity", "two_cycle", "wrong_energy", "duplicate_stream"},
             "search": {"baseline", "noop", "drop_candidate", "cross_l_epsilon", "lost_chunk"},
             "accuracy": {"baseline", "noop", "ignore_data", "omit_jacobian", "warmup_leak", "lost_chunk", "duplicate_stream", "location_shift"},
@@ -296,7 +313,9 @@ class ValidationDesign:
                 raise ValueError("insufficient null resolution for the first sequential rejection threshold")
         if self.scenario.control == "omit_jacobian" and get_target(self.scenario.target).support not in {"positive", "unit_interval", "simplex3"}:
             raise ValueError("omitted Jacobian requires constrained coordinates")
-        if self.scenario.control == "ignore_data" and not get_target(self.scenario.target).generative:
+        if (self.scenario.control == "ignore_data" and not get_target(self.scenario.target).generative
+                and not (self.engine == "mechanics" and self.scenario.target.startswith("ssm_campaign_")
+                         and self.options.get("data") is not None)):
             raise ValueError("ignored-data control requires a generative target")
         if self.scenario.control == "two_cycle" and self.scenario.target != "gaussian":
             raise ValueError("two-cycle control requires the symmetric Gaussian law")

@@ -13,7 +13,7 @@ from typing import Any
 PASSING_DECISIONS = frozenset({"passed", "acceptance_in_band"})
 DIRECTIONAL_DECISIONS = frozenset({"repair_step_higher", "repair_step_lower"})
 DECISIONS = PASSING_DECISIONS | DIRECTIONAL_DECISIONS | frozenset({
-    "inconclusive_evidence", "inconclusive_conflict", "repair_trajectory",
+    "inconclusive_evidence", "inconclusive_conflict", "inconclusive_preparation", "repair_trajectory",
     "promotion_failed", "failed", "unavailable",
 })
 VALIDITIES = frozenset({"valid", "candidate_data_invalid", "shared_execution_invalid"})

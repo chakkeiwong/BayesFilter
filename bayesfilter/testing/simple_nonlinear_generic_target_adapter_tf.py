@@ -9,6 +9,7 @@ train NeuTra, run HMC, tune a sampler, or establish posterior correctness.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Mapping
 
 import tensorflow as tf
@@ -124,32 +125,60 @@ class SimpleNonlinearGenericTargetFixture:
     contract: SSMTargetContract
     adapter: GenericSSMPosteriorAdapter
     initial_batch: tf.Tensor
+    observations: tf.Tensor
 
 
 def make_simple_nonlinear_generic_target_fixture(
     *,
     filter_id: str = SIMPLE_NONLINEAR_DEFAULT_FILTER_ID,
+    observations: tf.Tensor | None = None,
+    data_hash: str = "sha256:model-b-fixed-observations-v1",
+    model_hash: str = "sha256:model-b-nonlinear-accumulation-v1",
+    transform_hash: str = "sha256:model-b-identity-unconstrained-v1",
+    prior_hash: str = "sha256:model-b-phase7-gaussian-prior-v1",
+    filter_hash: str | None = None,
+    jit_compile: bool = True,
 ) -> SimpleNonlinearGenericTargetFixture:
     """Return a simple nonlinear non-DSGE target via the generic SSM adapter."""
 
     route = _require_admitted_filter_route(filter_id)
-    contract = make_simple_nonlinear_generic_target_contract(filter_id=filter_id)
+    observations = (
+        model_b_observations_tf()
+        if observations is None
+        else tf.convert_to_tensor(observations, dtype=tf.float64)
+    )
+    if observations.shape.rank != 2 or observations.shape[-1] != 1:
+        raise ValueError("nonlinear observations must have shape [time, 1]")
+    contract = make_simple_nonlinear_generic_target_contract(
+        filter_id=filter_id,
+        observations=observations,
+        data_hash=data_hash,
+        model_hash=model_hash,
+        transform_hash=transform_hash,
+        prior_hash=prior_hash,
+        filter_hash=filter_hash,
+    )
     target_scope = "model-b-nonlinear-accumulation-generic-target-fixture"
     if filter_id != SIMPLE_NONLINEAR_DEFAULT_FILTER_ID:
         target_scope = f"{target_scope}:{filter_id}"
     adapter = build_ssm_posterior_adapter(
         contract=contract,
         prior_log_prob_and_grad=simple_nonlinear_gaussian_prior_log_prob_and_grad,
-        filter_log_likelihood_and_grad=_filter_log_likelihood_fn(route),
+        filter_log_likelihood_and_grad=_filter_log_likelihood_fn(
+            route, observations, jit_compile=jit_compile
+        ),
         dtype=tf.float64,
         target_scope=target_scope,
         evidence_path="bayesfilter/testing/simple_nonlinear_generic_target_adapter_tf.py",
+        xla_hmc_ready=True,
+        full_chain_xla_diagnostic_ready=bool(jit_compile),
         nonclaims=SIMPLE_NONLINEAR_GENERIC_TARGET_NONCLAIMS,
     )
     return SimpleNonlinearGenericTargetFixture(
         contract=contract,
         adapter=adapter,
         initial_batch=MODEL_B_INITIAL_BATCH,
+        observations=observations,
     )
 
 
@@ -161,12 +190,17 @@ def make_simple_nonlinear_generic_target_contract(
     prior_hash: str = "sha256:model-b-phase7-gaussian-prior-v1",
     filter_hash: str | None = None,
     filter_id: str = SIMPLE_NONLINEAR_DEFAULT_FILTER_ID,
+    observations: tf.Tensor | None = None,
 ) -> SSMTargetContract:
     """Build a stable generic target contract for Model B."""
 
     route = _require_admitted_filter_route(filter_id)
     selected_filter_hash = route.filter_hash if filter_hash is None else filter_hash
-    observations = model_b_observations_tf()
+    observations = (
+        model_b_observations_tf()
+        if observations is None
+        else tf.convert_to_tensor(observations, dtype=tf.float64)
+    )
     if observations.shape.rank != 2:
         raise ValueError("Model B observations must have shape [time, observation]")
     horizon = observations.shape[0]
@@ -293,23 +327,33 @@ def simple_nonlinear_gaussian_prior_log_prob_and_grad(
 
 def simple_nonlinear_svd_ukf_log_likelihood_and_grad(
     theta: Any,
+    *,
+    observations: tf.Tensor | None = None,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Return deterministic SVD-UKF likelihood value and first-order score."""
 
     return simple_nonlinear_sigma_point_log_likelihood_and_grad(
         theta,
         backend="tf_svd_ukf",
+        observations=observations,
+        jit_compile=jit_compile,
     )
 
 
 def simple_nonlinear_svd_cubature_log_likelihood_and_grad(
     theta: Any,
+    *,
+    observations: tf.Tensor | None = None,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Return deterministic SVD cubature likelihood value and first-order score."""
 
     return simple_nonlinear_sigma_point_log_likelihood_and_grad(
         theta,
         backend="tf_svd_cubature",
+        observations=observations,
+        jit_compile=jit_compile,
     )
 
 
@@ -317,21 +361,68 @@ def simple_nonlinear_sigma_point_log_likelihood_and_grad(
     theta: Any,
     *,
     backend: str,
+    observations: tf.Tensor | None = None,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     """Return deterministic sigma-point likelihood value and first-order score."""
 
     if backend not in {"tf_svd_ukf", "tf_svd_cubature"}:
         raise ValueError(f"simple nonlinear filter backend is not admitted: {backend}")
     theta_tensor = _rank2_theta(theta)
-    model, derivatives = make_batched_model_b_svd_ukf_components(theta_tensor)
+    observations = model_b_observations_tf() if observations is None else observations
+    observations = tf.convert_to_tensor(observations, dtype=tf.float64)
+    alpha = tf.convert_to_tensor(MODEL_B_ALPHA, dtype=tf.float64)
+    observation_sigma = tf.convert_to_tensor(MODEL_B_OBSERVATION_SIGMA, dtype=tf.float64)
+    if (tf.executing_eagerly() and jit_compile
+            and observations.shape.rank == 2 and observations.shape.is_fully_defined()):
+        # Host-side probes must not build a new XLA recurrence for every start.
+        # Pass every mutable numerical input; only the executable is reused.
+        return _eager_likelihood_graph(
+            backend, int(theta_tensor.shape[0]), tuple(observations.shape)
+        )(theta_tensor, observations, alpha, observation_sigma)
+    return _simple_nonlinear_likelihood(
+        theta_tensor, observations, alpha, observation_sigma,
+        backend=backend, jit_compile=jit_compile,
+    )
+
+
+@lru_cache(maxsize=16)
+def _eager_likelihood_graph(backend: str, batch_size: int, observation_shape: tuple[int, ...]):
+    """Bound tracing for host inspection while preserving the inner XLA boundary.
+
+    The non-XLA outer graph is an explicit inspection exception reviewed in
+    the October 2 v7 release plan. HMC traces the implementation directly into
+    its own XLA graph. Numerical inputs, including model constants, are never
+    captured here. The LRU bounds graph retention, not the target's support.
+    """
+    @tf.function(input_signature=[
+        tf.TensorSpec([batch_size, 3], tf.float64),
+        tf.TensorSpec(observation_shape, tf.float64),
+        tf.TensorSpec([], tf.float64), tf.TensorSpec([], tf.float64),
+    ], autograph=False, jit_compile=False)
+    def evaluate(theta, observations, alpha, observation_sigma):
+        return _simple_nonlinear_likelihood(
+            theta, observations, alpha, observation_sigma,
+            backend=backend, jit_compile=True,
+        )
+    return evaluate
+
+
+def _simple_nonlinear_likelihood(
+    theta, observations, alpha, observation_sigma, *, backend: str, jit_compile: bool,
+):
+    model, derivatives = make_batched_model_b_svd_ukf_components(
+        theta, alpha=alpha, observation_sigma=observation_sigma,
+    )
     value, score, diagnostics = tf_batched_svd_sigma_point_value_and_score(
-        model_b_observations_tf(),
+        observations,
         model,
         derivatives,
         backend=backend,
         placement_floor=tf.constant(0.0, dtype=tf.float64),
         innovation_floor=tf.constant(1.0e-12, dtype=tf.float64),
         spectral_gap_tolerance=tf.constant(1.0e-8, dtype=tf.float64),
+        jit_compile=jit_compile,
     )
     checks = [
         tf.debugging.assert_all_finite(value, "Model B SVD-UKF value must be finite"),
@@ -350,6 +441,8 @@ def simple_nonlinear_filter_diagnostics(
     theta: Any,
     *,
     backend: str = "tf_svd_ukf",
+    observations: tf.Tensor | None = None,
+    jit_compile: bool = True,
 ) -> Mapping[str, tf.Tensor]:
     """Return deterministic filter diagnostics for Phase 7 tests/results."""
 
@@ -357,14 +450,16 @@ def simple_nonlinear_filter_diagnostics(
         raise ValueError(f"simple nonlinear filter backend is not admitted: {backend}")
     theta_tensor = _rank2_theta(theta)
     model, derivatives = make_batched_model_b_svd_ukf_components(theta_tensor)
+    observations = model_b_observations_tf() if observations is None else observations
     _value, _score, diagnostics = tf_batched_svd_sigma_point_value_and_score(
-        model_b_observations_tf(),
+        observations,
         model,
         derivatives,
         backend=backend,
         placement_floor=tf.constant(0.0, dtype=tf.float64),
         innovation_floor=tf.constant(1.0e-12, dtype=tf.float64),
         spectral_gap_tolerance=tf.constant(1.0e-8, dtype=tf.float64),
+        jit_compile=jit_compile,
     )
     return diagnostics
 
@@ -382,11 +477,17 @@ def _require_admitted_filter_route(filter_id: str) -> SimpleNonlinearFilterRoute
     return route
 
 
-def _filter_log_likelihood_fn(route: SimpleNonlinearFilterRoute):
+def _filter_log_likelihood_fn(
+    route: SimpleNonlinearFilterRoute, observations: tf.Tensor, *, jit_compile: bool = True
+):
     if route.sigma_point_backend == "tf_svd_ukf":
-        return simple_nonlinear_svd_ukf_log_likelihood_and_grad
+        return lambda theta: simple_nonlinear_svd_ukf_log_likelihood_and_grad(
+            theta, observations=observations, jit_compile=jit_compile
+        )
     if route.sigma_point_backend == "tf_svd_cubature":
-        return simple_nonlinear_svd_cubature_log_likelihood_and_grad
+        return lambda theta: simple_nonlinear_svd_cubature_log_likelihood_and_grad(
+            theta, observations=observations, jit_compile=jit_compile
+        )
     raise ValueError(
         "simple nonlinear filter route has no admitted likelihood function: "
         f"{route.filter_id}"
@@ -395,10 +496,17 @@ def _filter_log_likelihood_fn(route: SimpleNonlinearFilterRoute):
 
 def make_batched_model_b_svd_ukf_components(
     theta: Any,
+    *,
+    alpha: Any = None,
+    observation_sigma: Any = None,
 ) -> tuple[TFBatchedStructuralStateSpace, TFBatchedStructuralFirstDerivatives]:
     """Build batched Model B structural tensors and first derivatives."""
 
     theta_tensor = _rank2_theta(theta)
+    alpha = tf.convert_to_tensor(MODEL_B_ALPHA if alpha is None else alpha, dtype=tf.float64)
+    observation_sigma = tf.convert_to_tensor(
+        MODEL_B_OBSERVATION_SIGMA if observation_sigma is None else observation_sigma, dtype=tf.float64,
+    )
     rho = theta_tensor[:, 0]
     sigma = theta_tensor[:, 1]
     beta = theta_tensor[:, 2]
@@ -412,7 +520,7 @@ def make_batched_model_b_svd_ukf_components(
         eps = innovation[:, :, 0]
         m_next = rho[:, tf.newaxis] * previous[:, :, 0] + sigma[:, tf.newaxis] * eps
         k_next = (
-            MODEL_B_ALPHA * previous[:, :, 1]
+            alpha * previous[:, :, 1]
             + beta[:, tf.newaxis] * tf.math.tanh(m_next)
         )
         return tf.stack([m_next, k_next], axis=2)
@@ -426,7 +534,7 @@ def make_batched_model_b_svd_ukf_components(
         next_points: tf.Tensor,
     ) -> tf.Tensor:
         del innovation
-        expected = MODEL_B_ALPHA * previous[:, :, 1] + beta[:, tf.newaxis] * tf.math.tanh(
+        expected = alpha * previous[:, :, 1] + beta[:, tf.newaxis] * tf.math.tanh(
             next_points[:, :, 0]
         )
         return (next_points[:, :, 1] - expected)[:, :, tf.newaxis]
@@ -446,7 +554,7 @@ def make_batched_model_b_svd_ukf_components(
         row_k = tf.stack(
             [
                 beta[:, tf.newaxis] * sech2 * rho[:, tf.newaxis],
-                tf.fill(tf.shape(m_next), MODEL_B_ALPHA),
+                tf.fill(tf.shape(m_next), alpha),
             ],
             axis=2,
         )
@@ -507,7 +615,7 @@ def make_batched_model_b_svd_ukf_components(
         ),
         observation_covariance=tf.fill(
             [batch_size, observation_dim, observation_dim],
-            tf.square(MODEL_B_OBSERVATION_SIGMA),
+            tf.square(observation_sigma),
         ),
         transition_fn=transition,
         observation_fn=observe,

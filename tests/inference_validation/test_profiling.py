@@ -88,7 +88,7 @@ def test_completed_isolated_resume_reports_missing_profile_without_a_child(desig
     monkeypatch.setattr(execution, "source_state", lambda: {"identity": "fixture"})
     d = design("stopping", "gaussian", "ordinary", replications=1,
                options={"isolate_fits": True, "fit_process_timeout_seconds": 10})
-    def complete(command, *args):
+    def complete(command, *args, **kwargs):
         write_json(tmp_path / "replication-0000/independent_assessment.json", {
             "replication": 0, "inventory": {"failures": []}, "members": [],
             "tuning_completion": "complete", "pipeline": str(tmp_path / "pipeline.json")})

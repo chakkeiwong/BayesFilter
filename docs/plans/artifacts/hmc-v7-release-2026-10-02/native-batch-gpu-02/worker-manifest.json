@@ -1,0 +1,46 @@
+{
+  "source_manifest_sha256": "189cc96955150ef9774776f7d4d0c64518695c7b4421102bdc66393f4fd464f2",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow_version": "2.20.0",
+  "tfp_version": "0.25.0",
+  "tfp_sources": {
+    "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/internal/samplers.py": "b9e250930cac2ccc971090dd3eda866050db7ff6fd022d7b6ecaa3a3f570d27b",
+    "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/hmc.py": "14815d9f04a5f8249b5a804dfb088ac0838c9b4e123dda45f5b12876fc50bb70",
+    "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/sample.py": "b12b8f7846eb184b0591ec35b5d285d7ad8e449e25d5fd6d8a9bbba8522f0e13",
+    "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/metropolis_hastings.py": "78cf5db5c0457adcd96d050c566a8414dcbecb59e0f5ffe76c0d434d502fa53d",
+    "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/internal/leapfrog_integrator.py": "3fb94d17f3f633ef0000aa659684536f188617c009109723e2f2323a910122e2"
+  },
+  "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "jit_compile": true,
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "BAYESFILTER_TEST_DEVICE_SCOPE": "visible",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1"
+  },
+  "scope": "native parity only, no tuning or release evidence"
+}

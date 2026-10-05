@@ -1,0 +1,340 @@
+{
+  "schema": "bayesfilter.hmc_endpoint_return_counterexample.v1",
+  "source_evidence_hash": "8adfdfe78d9217b6a5de3efc9081ffc76249e96329bdb2204f1579bcb47fc4be",
+  "source_configuration": {
+    "schema": "bayesfilter.acceptance_model_config.v1",
+    "case_id": "regression-k0",
+    "target": "ssm_campaign_location",
+    "parameters": {},
+    "data": [
+      1.0,
+      1.0088656061998402,
+      1.016939274201851,
+      1.0234998072888244,
+      1.0279611725790168,
+      1.0299248495981217,
+      1.0292154289263458,
+      1.0258962809994663,
+      1.0202638954165346,
+      1.012821396407015,
+      1.004233600241796,
+      0.9952676291757026,
+      0.9867243867011544,
+      0.9793670152244808,
+      0.9738527268275923,
+      0.9706740964700471,
+      0.9701150617349248,
+      0.9722255595301681,
+      0.9768170653733204,
+      0.9834794337220709,
+      0.9916175350540322,
+      1.0005044170145305,
+      1.0093462409054013,
+      1.017353192931646,
+      1.0238100359154747,
+      1.0281399993032423,
+      1.0299563003612382,
+      1.0290966943253526,
+      1.0256379672426483,
+      1.0198890769024656,
+      1.0123635545572527,
+      1.003733632705212
+    ],
+    "route": "ordinary",
+    "geometry": {
+      "kind": "quadratic_location"
+    },
+    "active_starts": [
+      [
+        -1.0
+      ],
+      [
+        -0.3
+      ],
+      [
+        0.4
+      ],
+      [
+        1.0
+      ]
+    ],
+    "epsilon_by_l": [
+      [
+        1,
+        [
+          1.55
+        ]
+      ]
+    ],
+    "epsilon_domain": [
+      0.0001,
+      1.95
+    ],
+    "repair_factor": 1.3,
+    "max_repairs_per_family": 0,
+    "policy": {
+      "schema": "bayesfilter.hmc_replicated_acceptance_policy.v7",
+      "trial_num_results": 65,
+      "discarded_prefix": 3,
+      "base_repetitions": 32,
+      "max_repetitions": 128,
+      "max_candidates": 2,
+      "search_family_alpha": 0.05,
+      "verification_family_alpha": 0.05,
+      "diagnostic_family_alpha": 0.05,
+      "temporal_tolerance": 0.1,
+      "preferred_region": [
+        0.65,
+        0.75
+      ],
+      "qualification_region": [
+        0.55,
+        0.85
+      ],
+      "start_weights": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "method": "bounded_betting_mixture_v1",
+      "bet_fractions": [
+        1.0,
+        0.5,
+        0.25,
+        0.125
+      ],
+      "min_movement_rate": 0.05,
+      "max_repeated_state_fraction": 0.95,
+      "min_normalized_return_displacement": 0.0001,
+      "max_abs_log_accept_energy_proxy": 1000.0,
+      "evidence_unit": "independent_fixed_horizon_trial",
+      "estimand": "conditional_frozen_start_bank_fixed_horizon_mean_metropolis_probability",
+      "temporal_diagnostic_role": "preparation_investigation_not_admission",
+      "rhat_role": "reporting_only",
+      "independent_unit": "complete_start_bank_trial",
+      "default_promotion_status": "experimental_pending_validation"
+    },
+    "evidence_rungs": [
+      1,
+      2,
+      4
+    ],
+    "seed": [
+      20261002,
+      2202
+    ],
+    "wall_seconds": 240,
+    "expected_outcome": "positive_delivery",
+    "classification": "regression",
+    "provenance": "Frozen diagnostic hypotheses from the October 2 matrix: explicit steps/scales/starts; deterministic synthetic data; K0 uses native quadratic score preparation; supplied funnel maps have no learning claim. Evidence counts and budget are caller-declared. No posterior or default claim.; three predetermined shifted observation panels and independent tuning/posterior streams; exact-reference diagnostic, no coverage claim"
+  },
+  "trial_ordinal": 68,
+  "samples": {
+    "dtype": "float64",
+    "sha256": "8f0b3c318054b0fb645ae57315dadfcb13c8c086909089448f1eb521f77c49b9",
+    "shape": [
+      68,
+      4,
+      1
+    ],
+    "tensor": "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"
+  },
+  "trace": {
+    "log_accept_ratio": {
+      "dtype": "float64",
+      "sha256": "52b1b67f39ccba277fba7cd56269c0d45c679176cb2c1827c700486738ce6563",
+      "shape": [
+        68,
+        4
+      ],
+      "tensor": "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"
+    },
+    "is_accepted": {
+      "dtype": "bool",
+      "sha256": "2419d4be88226fadd0dd6044d0fdc42ffc95a54ad1c5793ee4ef5fdd78f45429",
+      "shape": [
+        68,
+        4
+      ],
+      "tensor": "CAoSCBICCEQSAggEIpACAQEBAQEBAQEBAQEAAQABAQABAAEBAQEBAQABAQABAQAAAAEBAQABAQEAAQEBAQEBAQABAAEAAQEAAAAAAQEBAAEBAQABAQABAQABAQEBAQEBAAABAAEBAQEBAAEBAQEAAQAAAQABAAABAAABAQEBAQABAQABAAEBAAEBAQEBAAEBAQABAQEBAQEBAAEBAAEBAQEAAAABAQEBAQABAQEAAQEBAQEBAQEAAQEBAQAAAQEBAQEBAAEBAQEBAQEBAAEBAAABAQEBAQEAAQABAAEBAQABAAABAAEBAAABAQEAAQABAQEAAQEAAQEBAQABAQEBAQABAQABAQABAAAAAQABAAEBAQEBAQEAAQABAAEBAQE="
+    },
+    "target_log_prob": {
+      "dtype": "float64",
+      "sha256": "298cb27af7b7c80a466a84fb3190c3513f4d3f1ed9c75b7953841177739312b0",
+      "shape": [
+        68,
+        4
+      ],
+      "tensor": "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"
+    }
+  },
+  "health": {
+    "acceptance_decision": "inconclusive_evidence",
+    "decision": "inconclusive_evidence",
+    "diagnostic_alerts": [],
+    "evidence_validity": "valid",
+    "hard_vetoes": [],
+    "health_evidence": {
+      "acceptance_decision": "inconclusive_evidence",
+      "block_means_by_chain": [],
+      "candidate_health_alerts": [],
+      "candidate_promotion_vetoes": [
+        "movement_gate_failed"
+      ],
+      "chain_mean_uncertainty_interval": null,
+      "chain_mean_uncertainty_level": null,
+      "chain_mean_uncertainty_method": null,
+      "chain_means": [
+        0.7206572327889206,
+        0.683659874965239,
+        0.7442096407292095,
+        0.6936484679007768
+      ],
+      "compatibility_aliases_non_authoritative": true,
+      "cost_stop_reasons": [],
+      "cost_stop_scope": null,
+      "decision": "inconclusive_evidence",
+      "diagnostic_followups": [],
+      "engineering_invalidity_reasons": [],
+      "evidence_validity": "valid",
+      "excluded_remainder_per_chain": 65,
+      "explanatory_notes": [
+        "health_only_no_acceptance_decision"
+      ],
+      "max_abs_log_accept_energy_proxy": 6.115482231844808,
+      "max_log_accept_ratio": 1.349539972962668,
+      "min_log_accept_ratio": -6.115482231844808,
+      "movement_rate_by_chain": [
+        0.734375,
+        0.640625,
+        0.71875,
+        0.703125
+      ],
+      "native_divergence_count": null,
+      "native_divergence_status": "not_exposed_by_kernel",
+      "negative_proxy_exceedance_count_by_chain": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "negative_proxy_exceedance_rate_by_chain": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "normalized_return_displacement_by_chain": [
+        5.787317960593729e-05,
+        0.3789716292742425,
+        0.2786081244550931,
+        0.6762243954200048
+      ],
+      "passed": false,
+      "path_return_fraction_by_chain": [
+        0.047619047619047616,
+        0.12698412698412698,
+        0.06349206349206349,
+        0.09523809523809523
+      ],
+      "policy": {
+        "allowed_cost_stop_reasons": [],
+        "block_count": 4,
+        "chain_count": 4,
+        "confidence_level": 0.9,
+        "dependence_unit": "independently_seeded_chain_mean",
+        "diagnostic_roles": {
+          "bounded_short_cycle_path_return": "promotion_veto_and_resonance_repair_trigger",
+          "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+          "mean_acceptance_probability": "promotion_criterion_and_repair_trigger",
+          "movement": "promotion_veto_and_trajectory_repair_trigger",
+          "native_divergence": "promotion_veto",
+          "signed_log_accept_ratio_tails": "explanatory_alert_only"
+        },
+        "max_abs_log_accept_energy_proxy": 1000.0,
+        "max_repeated_state_fraction": 0.95,
+        "min_block_size": 16,
+        "min_decisions_per_chain": 64,
+        "min_movement_rate": 0.05,
+        "min_normalized_return_displacement": 0.0001,
+        "path_return_contract": {
+          "absolute_tolerance": 1e-12,
+          "aggregation": "maximum_recurrence_fraction_over_lags_per_chain",
+          "chain_rule": "veto_if_any_chain_exceeds_max_fraction",
+          "lags": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "max_fraction": 0.95,
+          "minimum_repetitions_at_minimum_evidence": 4,
+          "relative_tolerance": 1e-10
+        },
+        "practical_region": [
+          0.65,
+          0.75
+        ],
+        "repair_region": [
+          0.55,
+          0.85
+        ],
+        "schema": "bayesfilter.hmc_acceptance_policy.v5",
+        "target": 0.7,
+        "tuning_decision_role": "working_tuning_compatibility_interval_not_convergence_or_equivalence",
+        "uncertainty_method": "two_sided_student_t_independent_chain_means"
+      },
+      "pooled_mean": 0.7105438040960365,
+      "positive_proxy_exceedance_count_by_chain": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "positive_proxy_exceedance_rate_by_chain": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "promotion_eligible": false,
+      "raw_traces_exposed": false,
+      "realized_acceptance_rate": 0.7000000000000001,
+      "realized_acceptance_rate_by_chain": [
+        0.7384615384615385,
+        0.6307692307692307,
+        0.7230769230769231,
+        0.7076923076923077
+      ],
+      "repair_direction": null,
+      "repeated_state_fraction_by_chain": [
+        0.265625,
+        0.359375,
+        0.28125,
+        0.296875
+      ],
+      "reports_posterior_convergence": false,
+      "schema": "bayesfilter.hmc_acceptance_evidence.v5",
+      "tuning_repair_triggers": [],
+      "usable_decisions_per_chain": 0
+    },
+    "promotion_eligible": false,
+    "promotion_vetoes": [
+      "movement_gate_failed"
+    ],
+    "repair_eligible": false
+  },
+  "classification": "saved failed-trial diagnostic reference, no new tuning authority"
+}

@@ -167,6 +167,10 @@ def run_shared_ordinary_tuning(*, adapter: Any, initial_position: Any, config: A
     policy = HMCAcceptancePolicy(target=cfg.target_accept_prob, practical_region=cfg.acceptance_band, repair_region=cfg.repair_band)
     execution = _execution(execution_config, seed=cfg.seed, policy=policy,
         status=cfg.target_status_trace_policy, use_xla=cfg.use_xla)
+    from .hmc_acceptance_trials import validate_execution_protocol
+    validate_execution_protocol(search_config, execution)
+    from bayesfilter.runtime.execution_budget import require_execution_budget
+    require_execution_budget()
     _preflight_exact_target(adapter, use_xla=cfg.use_xla, target_scope=cfg.target_scope)
     progress = HMCPreparationProgress(output_dir,
         max_wall_time_seconds=_wall_limit(search_config, cfg.public_timeout_budget_s))
@@ -260,6 +264,10 @@ def run_shared_fixed_transport_tuning(*, base_adapter, fixed_transport, initial_
     execution = _execution(execution_config, seed=cfg.tune_seed_base, policy=policy,
         status=cfg.target_status_trace_policy, use_xla=cfg.use_xla,
         warmup=cfg.screen_num_burnin_steps)
+    from .hmc_acceptance_trials import validate_execution_protocol
+    validate_execution_protocol(search_config, execution)
+    from bayesfilter.runtime.execution_budget import require_execution_budget
+    require_execution_budget()
     _preflight_exact_target(base_adapter, use_xla=cfg.use_xla, target_scope=cfg.target_scope)
     if execution_config is None:
         if cfg.screen_num_burnin_steps != cfg.verification_num_burnin_steps:

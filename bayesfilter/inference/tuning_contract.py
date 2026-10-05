@@ -998,7 +998,8 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "acceptance, health, and minimum draws; rank-normalized split/folded "
             f"R-hat is retained as an explanatory diagnostic with threshold "
             f"metadata ({HMC_TUNING_ORDINARY_RHAT_THRESHOLD:.2f}), not a tuning "
-            "handoff gate"
+            "handoff gate; explicit experimental v7 uses independent fixed-horizon "
+            "start-bank repetitions with separate search/verification error allocations"
         ),
         ess_admission_policy=(
             "disabled for ordinary tuning admission; retained posterior ESS is separate"
@@ -1035,6 +1036,9 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         evidence_anchors=(
             "tests/test_hmc_candidate_set_execution.py::test_member_export_reload_and_continuation_match_direct_runner",
             "tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers",
+            "tests/test_hmc_acceptance_trials.py::test_replicated_gaussian_delivers_multiple_members_with_checked_exports",
+            "tests/test_hmc_acceptance_accounting.py",
+            "tests/test_hmc_acceptance_ssm_recovery.py",
             "tests/test_hmc_tuning_documentation_contract.py::test_ordinary_capability_matches_public_signature",
             "tests/test_hmc_whole_procedure_repair.py::test_public_ordinary_configuration_uses_common_search_and_retains_multiple_members",
             "tests/test_hmc_kernel_tuning_public_api.py::test_public_ordinary_config_rejects_typed_runner_binding",
@@ -1065,7 +1069,8 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "all declared (epsilon, L) pairs measured; all-survivor refinement and retention"
         ),
         fresh_verification_policy=(
-            "fresh fixed-kernel verification for every survivor; declared evidence rungs; R-hat reporting-only"
+            "fresh fixed-kernel verification for every survivor; declared evidence rungs; R-hat reporting-only; "
+            "explicit experimental v7 appends independent repetitions at fixed prefix and horizon"
         ),
         ess_admission_policy=(
             "disabled for kernel tuning admission; cumulative posterior ESS is separate"
@@ -1095,6 +1100,7 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         evidence_anchors=(
             "tests/test_hmc_whole_procedure_repair.py::test_public_fixed_transport_config_enters_common_scheduler",
             "tests/test_fixed_transport_hmc_binding.py",
+            "tests/test_hmc_acceptance_trials.py::test_replicated_gaussian_delivers_multiple_members_with_checked_exports",
         ),
         mass_capability="fixed",
         step_size_capability="owned",

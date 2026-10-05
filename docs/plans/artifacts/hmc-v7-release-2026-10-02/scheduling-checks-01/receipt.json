@@ -1,0 +1,22 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "16-19",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "--disable-warnings",
+    "tests/test_hmc_replicated_scheduling.py",
+    "tests/test_hmc_candidate_set_tuning.py",
+    "tests/test_hmc_acceptance_calibration.py",
+    "tests/test_hmc_acceptance_trials.py",
+    "tests/test_hmc_acceptance_release_validation.py",
+    "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/scheduling-checks-01/results.xml"
+  ],
+  "exit_code": 1,
+  "wall_seconds": 360.10052025387995,
+  "resource": "cpu_reference",
+  "gpu_intentionally_hidden": true
+}

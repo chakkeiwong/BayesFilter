@@ -1,0 +1,28 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "16-19",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "--disable-warnings",
+    "tests/test_hmc_checkpoint_hashing.py",
+    "tests/test_hmc_acceptance_accounting.py",
+    "tests/test_hmc_acceptance_release_validation.py",
+    "tests/test_hmc_acceptance_ssm_recovery.py",
+    "tests/test_hmc_acceptance_posterior_integration.py",
+    "tests/test_hmc_acceptance_adversarial.py",
+    "tests/test_hmc_candidate_set_execution.py",
+    "tests/test_hmc_candidate_set_artifacts.py",
+    "tests/test_hmc_whole_procedure_repair.py",
+    "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/clean-checks-03/results.xml"
+  ],
+  "cwd": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-03/source",
+  "exit_code": 0,
+  "wall_seconds": 1152.4545460350346,
+  "resource": "cpu_reference",
+  "gpu_intentionally_hidden": true,
+  "plan": "docs/plans/bayesfilter-hmc-v7-release-plan-2026-10-02.md"
+}

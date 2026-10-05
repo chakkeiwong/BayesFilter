@@ -105,11 +105,64 @@ half-SD fit 0 reached the cumulative 890-second per-fit ceiling. All nine
 normally completed fits qualified; the five null fits produced no alarm and
 the four quarter-SD fits produced alarms. These incomplete outcomes do not
 establish null size or power. The full-denominator summaries correctly report
-`calibration_incomplete`. Logs contain retracing warnings, but the cause of
-the long fits has not been established. Diagnose the saved timing and tuning
-records before a localized repair or continuation; preserve the design,
-completed outcomes and spent per-fit/cell budgets. A new launch must not reset
-an exhausted fit's allowance or select a faster subset.
+`calibration_incomplete`. A subsequent read-only inspection of the frozen
+source and saved numerical chunks localized all three timeouts to active
+candidate-set tuning, before posterior sampling. Numerical evidence continued
+to be written shortly before termination. The checkpoints already contained
+verified candidates; none of these exits was a posterior R-hat rejection.
+
+| Timed-out fit (zero-based) | Completed tuning observations | Verified candidates already retained | Sum of completed tuning-chunk wall seconds |
+| --- | --- | --- | --- |
+| Null 5 | 106 | 2 | 778.055 |
+| Quarter-SD 4 | 47 | 5 | 808.884 |
+| Half-SD 0 | 44 | 4 | 795.212 |
+
+These chunk times account for about 87--91% of each 890.367-second process
+attempt. They exclude preparation, analysis and checkpoint overhead, and any
+chunk interrupted by termination. They are wall times, not measurements of
+exclusive GPU compute. For a matched chunk shape (four scalar chains,
+136 transitions per chain, L=13), calls after the first cached-runner call had
+median times of 0.251 seconds in completed null fit 0, 15.596 seconds in
+quarter-SD fit 4 and 16.286 seconds in half-SD fit 0. Quarter-SD fit 4 itself
+contained both a 0.248-second and a 16.249-second call at that same shape.
+Null fit 5 likewise alternated between fast and slow calls. Changing L or
+merely counting more proposals cannot by itself explain that discrepancy.
+The sums and medians above come from each fit's
+`tuning/numerical_chunks/*.json`; candidate counts come from
+`tuning/tuning_checkpoint.json`, and elapsed totals from
+`process-attempt-001-exit.json`.
+
+Two execution-control problems are established by frozen `c-r1/source-r7`.
+First, `procedures.py:327` uses `search_config=None` for native search, and its
+preparation config does not receive the fit deadline. All three checkpoints
+therefore record `max_wall_time_seconds: null`, although the outer supervisor
+kills the process at 890 seconds. The public tuner already accepts a wall
+budget through `public_timeout_budget_s`; this validation caller did not wire
+it through. Second, `fit_process.py:215` breaks the entire cell on every
+non-complete process receipt, conflating an exhausted local fit allowance with
+an invalid harness. That is why three timeouts left only nine completed fits
+out of the planned 256, despite substantial aggregate allowance remaining.
+
+The underlying cause of the slow numerical calls remains unproved. The saved
+records do not distinguish device contention, runtime scheduling or graph
+execution overhead. Retracing warnings alone cannot settle that question;
+the slow calls include reused runners with unchanged shapes. The three
+development prices supported a point forecast, not a calibrated runtime-tail
+bound. The earlier statement that the full inventory was affordable was too
+strong: its estimated cost fit the allowance, but completion within it was
+not established.
+
+The next repair should propagate the remaining fit deadline through
+preparation, tuning and posterior execution, preserve a partial checkpoint
+before the hard process limit, and distinguish local budget exhaustion from
+source/artifact/harness invalidity. After checking that a timeout is local,
+remaining declared fits should continue within their original cumulative
+allowances and full denominators. A bounded diagnostic comparing representative
+fast and slow saved workloads, with runtime/device telemetry, is needed before
+repricing or increasing any limit. Preserve every verified candidate and every
+failed attempt. A new launch must not reset an exhausted fit's allowance,
+select a faster subset, or treat an unfinished fit as a completed assessment.
+No numerical rerun or code repair was performed for this read-only diagnosis.
 
 C1 is still unfunded alongside C2. Subtracting fixed-comparator time from the
 uncontended B observations gives price scenarios of 65,585 Gaussian and 71,604
@@ -158,7 +211,7 @@ training default is promoted here.
 | --- | --- | --- | --- | --- | --- |
 | Keep narrow runtime repairs | Independent arithmetic and public regressions pass | No remaining scoped engineering failure | Untested concurrent edits and external fixture | Preserve corrected policy identity | Broad calibration |
 | Keep posterior candidates optional | Eight development fits deliver | One interval miss; no health veto | Finite-fit coverage and selection cost | Fund full C1 later | Superiority or a default change |
-| Diagnose incomplete C2 confirmation | Nine of 256 fits completed | Three process timeouts stopped the cells; full denominators retained | Cause of long fits and affordability of continuation | Inspect timing/tuning evidence; repair within cumulative budgets before resuming | Null size, power or detector rejection |
+| Preserve incomplete C2; timeout repair passes | Nine of 256 historical fits completed; new supervision/resume tests pass | Original failures retained; fresh GPU canary also reaches its finite allocation | Complete-fit prices under shared workload and source-stratified continuation | Price before an explicitly accounted continuation design | Null size, power or detector rejection |
 | Revise learned-mixture protocol | Training arithmetic/composition pass | Single-stage marginal cannot equal target marginal | Adequate representable training and exploration | Capacity check, controls, deeper training, downstream assessment | Learned-map quality |
 | Leave exact consumers open | Input inventory rechecked | Named bootstrap files and joint reference absent | Exact target/data availability | Use local MacroFinance reply and await matching inputs | Substitute-model validation |
 
@@ -182,3 +235,18 @@ once. Its unspent C2 allocation is reserved for diagnosis/continuation; no run
 is active. Numerical, engineering and scientific dispositions remain
 separate. C2's final report must be inspected before its scientific requirement
 can change; the other open requirements do not inherit a C2 pass.
+
+## Timeout amendment closeout
+
+The [timeout repair result](bayesfilter-hmc-timeout-aware-supervision-result-2026-09-24.md)
+records completed supervision, deadline propagation, cumulative accounting and
+partial-resume repairs, 91 isolated-source checks and 41 terminal checks with
+overlap. The official tuning chapter and aligned API reference are updated.
+The bounded GPU canary observed real foreign-device activity and numerical
+progress, granted its declared 90 seconds, then terminated the incomplete fit
+at the hard boundary. Checkpoints and final unavailable-fit assessment survive;
+trusted inspection found no remaining worker. Its enclosing 541.547 GPU seconds
+are charged once, leaving 64,667.835 GPU seconds, including the unchanged
+60,022.255 C2 reservation. It establishes execution behavior, not the cause of
+historical slowdown or statistical confirmation. Complete-fit pricing and an
+explicit continuation design remain the next research work.
