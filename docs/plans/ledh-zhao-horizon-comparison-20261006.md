@@ -201,3 +201,22 @@ uses its launch-time accounting; the auxiliary reservation protects its four
 remaining slots. Future parent launches now use the shared accounting helper.
 A budget denial preserves all completed evidence and lists the missing scores;
 it does not change either the numerical design or the campaign allocation.
+
+## Checkpoint return-format repair
+
+A final call-chain inspection found that the generated checkpoint writer reads
+the linear overlay's legacy_mean_log_weight field unconditionally. Original
+pre_sol.m:270–343 returns samples, normalized weights and an optional proposal
+history, with no lml diagnostic; its local observability overlay therefore has
+no such field. The latest writer would fail in a new nonlinear paper/source
+run, although the current linear comparison is unaffected. Preserve the missing
+quantity as NaN with an explicit availability flag, rather than inventing an
+absolute evidence value. Execute the actual generated Octave writer against
+both documented return formats as the smallest regression. This is a routine
+serialization repair, with no fitter, sampler, target or budget change. The
+prior nonlinear results came from a writer predating this added field.
+
+Validation: all 47 focused tests pass (61.21 seconds), including both generated
+Octave writer cases. The two added cases verify the availability flag, NaN
+for absent evidence, preserved linear values, weights and completion row.
+No source solver or active fit was changed.

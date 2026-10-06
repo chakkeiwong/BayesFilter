@@ -118,3 +118,40 @@ def test_launch_accounting_includes_separate_score_repair_ledger(tmp_path,monkey
         dict(status='failed',wall_seconds=7.,limit_seconds=10),
         dict(status='running',started_utc=dt.datetime.now(dt.timezone.utc).isoformat(),limit_seconds=100)]))
     assert campaign.budget_accounting()['reserved_including_running_caps']==127.
+
+
+@pytest.mark.parametrize('linear_output',[False,True])
+def test_generated_checkpoint_writer_accepts_both_author_return_formats(tmp_path,linear_output):
+    """Execute the generated writer; pre_sol has no legacy-lml diagnostic."""
+    import os
+    import shutil
+    import subprocess
+    from scipy.io import loadmat
+    from docs.benchmarks.run_zhao_cui_publication_replication import prepare, SOURCE
+    octave=shutil.which('octave-cli')
+    if octave is None: pytest.skip('Octave is required for the generated writer check')
+    derived=prepare(tmp_path,'author_driver')
+    (tmp_path/'smooth.m').write_text("""function [thetas,sams,w,history,lml,stats]=smooth(sol,N,T)
+    thetas=[]; sams=reshape(1:(2*N*(T+1)),2,N,T+1);
+    w=ones(1,N)/N;history=zeros(N,T);
+    stats=struct('raw_log_weight',zeros(1,N),'finite_fraction',1);
+    lml=NaN;
+    if sol.linear_output, lml=1.25;stats.legacy_mean_log_weight=-2.5; end
+    end
+    """)
+    source=(derived/'models').as_posix().replace("'","''")
+    compat=(SOURCE/'octave_compat').as_posix().replace("'","''")
+    script=f"addpath('{compat}'); addpath('{source}'); sol=struct('model',struct('m',2),'linear_output',{int(linear_output)}); reference_save_smoothing(sol,1);"
+    env=dict(os.environ,CUDA_VISIBLE_DEVICES='-1',BAYESFILTER_SMOOTH_REPETITIONS='1',
+        BAYESFILTER_REPEATED_TIMES='1',BAYESFILTER_SMOOTH_SEED='17',BAYESFILTER_SMOOTH_N='4')
+    completed=subprocess.run([octave,'--quiet','--no-gui','--eval',script],cwd=tmp_path,
+        env=env,capture_output=True,text=True,timeout=45)
+    assert completed.returncode==0,completed.stderr
+    saved=loadmat(tmp_path/'smoothing-t01.mat')
+    assert bool(saved['legacy_mean_log_weight_available'].item())==linear_output
+    if linear_output:
+        assert saved['legacy_mean_log_weight'].item()==-2.5 and saved['lml'].item()==1.25
+    else:
+        assert np.isnan(saved['legacy_mean_log_weight'].item()) and np.isnan(saved['lml'].item())
+    np.testing.assert_array_equal(saved['w'],np.full((1,4),.25))
+    assert (tmp_path/'smoothing-summary.csv').read_text().startswith('1,4,1,0.25,1,')

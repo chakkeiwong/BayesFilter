@@ -73,6 +73,9 @@ later timeout only after validating the completion row, source fingerprint,
 path shapes and proposal densities. The incremental checkpoint hook restores
 the fitter RNG. Existing matched hook-on/off tests give exact equality for
 samples, proposal densities, raw weights, fitter ESS and rank in both models.
+The checkpoint writer now accepts both author return formats: the nonlinear
+route has no legacy log-evidence field, so it records an explicit unavailable
+flag and NaN. Both formats were executed through the generated Octave writer.
 
 Long-horizon quadratic runs exceeded their estimated runtime. Their completed
 radii are retained; only missing predeclared radii are retried with the same
@@ -90,7 +93,7 @@ exact replication of published numerical values.
 
 ## Verification and interpretation
 
-45 focused tests pass. The one-component path preserves LGSSM/KSC values and
+47 focused tests pass. The one-component path preserves LGSSM/KSC values and
 scores to numerical precision; the multiple-component M13 path matches the
 other branch. These engineering checks are recorded with the shared correction
 commit b3f4ca646. A smaller N144 finite-difference diagnostic checks the recursive

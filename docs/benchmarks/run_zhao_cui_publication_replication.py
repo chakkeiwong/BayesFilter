@@ -130,7 +130,13 @@ unwind_protect
  smoothing_seconds=toc(smoothing_timer);
  if any(~isfinite(w)) || abs(sum(w)-1)>1e-10, error('invalid weights'); end
  raw_log_weight=stats.raw_log_weight;
- legacy_mean_log_weight=stats.legacy_mean_log_weight;
+ % pre_sol.m:270-343 has no author lml return or absolute density constant.
+ legacy_mean_log_weight_available=isfield(stats,'legacy_mean_log_weight');
+ if legacy_mean_log_weight_available
+  legacy_mean_log_weight=stats.legacy_mean_log_weight;
+ else
+  legacy_mean_log_weight=NaN;
+ end
  m=sol.model.m;
  path_quantiles=zeros(m,terminal+1,3);
  for k=1:terminal+1
@@ -140,7 +146,7 @@ unwind_protect
  end
  if replicate==1
  filename=sprintf('smoothing-t%02d.mat',terminal);
- save('-mat7-binary',[filename '.partial'],'thetas','sams','w','raw_log_weight','proposal_history','path_quantiles','smoothing_seconds','lml','legacy_mean_log_weight');
+ save('-mat7-binary',[filename '.partial'],'thetas','sams','w','raw_log_weight','proposal_history','path_quantiles','smoothing_seconds','lml','legacy_mean_log_weight','legacy_mean_log_weight_available');
  [ok,message]=movefile([filename '.partial'],filename);
  if ~ok, error(message); end
  fid=fopen('smoothing-summary.csv','a');
