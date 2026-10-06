@@ -1,42 +1,54 @@
 # Active LEDH/Zhao–Cui checkpoint
 
-Question: marginal versus ancestor LEDH likelihoods/scores for PP and SIR d18,
-T=10/20/40/50, with original author TT and bootstrap references. Branch
-sqmc-development; correction commit b3f4ca646; campaign/evidence commit
-8f0ebe955. User authorized commits, scoped permissions, matched comparisons
-and remaining reference-harness repairs. No main merge/push this stage.
+Question: marginal versus ancestor LEDH likelihoods and scores for predator–prey
+and SIR d18, T=10/20/40/50, with original author TT and bootstrap references.
+Branch sqmc-development. Commits: b3f4ca646 shared correction; 8f0ebe955 campaign;
+509fe726c nonlinear writer repair; 2b909c343 completed rank20 comparison.
 Plan: docs/plans/ledh-zhao-horizon-comparison-20261006.md.
 Root: docs/plans/artifacts/ledh-zhao-horizons-20261006-01/.
+Result: docs/benchmarks/ledh-zhao-horizon-results-20261006.md.
+User authorized commits, scoped permissions, comparisons and replication repairs.
+No main merge/push or new agents this stage.
 
-All 64 main GPU FP64/XLA LEDH, 32 covariance-only and bootstrap checks complete.
-Three PP rank20 fits and all PP scores complete. SIR rank20 fit17 has all four likelihoods and T10/20/40/50 scores; the
-T50 missing radius completed successfully in auxiliary session4604. The watcher
-now waits for later rank40 score timeouts. Do not relaunch it or write score-repair-attempts.json. Primary
-session15473 runs rank40 fit2 (T10 complete), cap115200sec, then four score jobs.
-Do not create another attempts.json writer. Ranks and independent fits remain
-separate; two radii/retries of one proposal are not independent fits.
+Complete: all 64 main GPU FP64/XLA LEDH evaluations, 32 covariance-only checks,
+bootstrap N=1008/32768/131072 with four seeds, three PP rank20 fits and all
+PP scores, one SIR rank20 fit and all T10/20/40/50 scores. T40/T50 missing-radius
+repairs succeeded, preserving their original paths, design and radius.
+Report009 has 309 cells and zero invalid LEDH evaluations. Committed-evidence-03
+preserves it; completed-comparison.md puts the explicitly labeled rank20
+reference beside both LEDH arms. Ranks and independent fits remain separate.
+
+Still running: primary session15473, rank40 SIR fit2 in attempt036, capped at
+115200sec; step12 of50 finished at this checkpoint. It schedules four quadratic
+jobs on success. Auxiliary session4604 is waiting for later quadratic timeouts;
+it retries missing predeclared radii only. Do not relaunch either supervisor or
+write their attempts.json / score-repair-attempts.json ledgers. If the rank40
+fit times out, recover valid completed prefixes and assess missing scores within
+the remaining budget; the current primary does not score a failed full fit.
 
 Budget172800 aggregate job-seconds, including failures and derivative checks.
-09:07UTC: used50632sec, reserved148424 including active caps, remaining24376.
-Auxiliary watcher additionally reserves9600sec for future primary score slots.
-Future parent launches use shared accounting. Current primary retains its
-launch-time code; the auxiliary reservation protects its remaining launches.
+09:38UTC: completed27958sec, used53809 including active elapsed, reserved143158
+including full active caps, remaining29642. Auxiliary watcher also protects
+9600sec of future primary score slots. Current primary retains its launch-time
+code; new launches use shared accounting. No expanded campaign is authorized.
 
-47 focused tests pass (61.21sec). Latest repair: generated checkpoint writer
-accepts nonlinear pre_sol without legacy_mean_log_weight, recording NaN and
-an availability flag. Actual Octave writer tested for both return formats;
-no source solver or running fit changed. Commit this follow-up next.
+47 focused tests and three commit-contract checks pass. Nonlinear checkpoint
+writer now records unavailable legacy evidence as NaN plus a flag; both return
+formats execute through the actual Octave writer. Shared singleton and M13
+parity passed earlier. GPU derivative diagnostic002 agrees locally for SIR:
+maximum normalized errors7.44e-6/6.04e-5; exact trace value/coordinate0 parity.
+Moment-safety branches can change under perturbation; global smoothness is open.
+Monograph compiled614pages and new pages402–404 were visually inspected.
 
-Report009 has all completed values and scores, including SIR rank20 T50, separate rank references and
-conditional/between-fit uncertainties. SIR likelihood error remains about255
-ancestor/233 mixture afterT20; even bootstrap N1008 is much closer. PP value
-differences small; references disagree on some scores. No ranking, oracle,
-default or HMC claim. GPU derivative check002 passes both SIR policies, maximum
-normalized errors7.44e-6/6.04e-5; exact trace value/coordinate0 score parity.
-Moment-safety branch changes under perturbation; no global smoothness claim.
-Monograph built614pages; new pages402–404 visually inspected. Compact frozen
-evidence is committed under committed-evidence-01; large MAT/source trees stay
-local and ignored. Latest result note is still explicitly interim.
+Finding: the marginal change does not repair this untuned SIR configuration.
+T50 log likelihoods: ancestor-1924.200, mixture-1902.554, rank20TT-1669.094,
+bootstrap131072-1669.111. SIR scores remain unstable across four LEDH designs.
+PP value differences are small; some reference scores disagree. No supported
+ranking, oracle certification, scope-specific admission, default or HMC claim.
+Original paper numbers remain incompletely replicated; current-target callbacks
+are explicit extensions, not relabeled paper experiments.
 
-Next: preserve report009 and update the result note; retain the rank40
-convergence check and any rank40 score repairs within budget. Preserve all prior evidence and unrelated changes.
+Next: finish rank40/prefix score checks within budget, refresh the report and
+commit the final evidence. Preserve large local MAT/source trees and all prior
+attempts. Exact approved wrapper: Python -B docs/benchmarks/run_ledh_zhao_horizons.py
+with absolute env/script paths, actions status/report/repair_scores as applicable.

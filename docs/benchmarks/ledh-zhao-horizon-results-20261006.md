@@ -1,18 +1,18 @@
 # Marginal LEDH versus ancestor LEDH and original Zhao–Cui references
 
 The marginal weight change alone does not repair the present untuned SIR d18
-filter. Even a bootstrap filter with the same1008 particles is much closer to
+filter. Even a bootstrap filter with the same 1008 particles is much closer to
 the independent high-particle and author-TT likelihood calculations. Predator–
 prey likelihood differences are small; the four designs do not establish a
 ranking. Both LEDH arms return finite likelihoods and analytical scores at all
-requested horizons10,20,40,50.
+requested horizons 10, 20, 40, 50.
 
 This remains an interim result while the SIR rank40 reference and its later
 quadratic checks run. The rank20 SIR T50 score repair is complete. All requested
-LEDH likelihoods and score coordinates are in [the full numerical tables](../plans/artifacts/ledh-zhao-horizons-20261006-01/committed-evidence-03/report-009/results.md)
+LEDH likelihoods and score coordinates are in [the full numerical tables](../plans/artifacts/ledh-zhao-horizons-20261006-01/committed-evidence-03/completed-comparison.md)
 and [CSV](../plans/artifacts/ledh-zhao-horizons-20261006-01/committed-evidence-03/report-009/values-and-scores.csv).
-The [plan](../plans/ledh-zhao-horizon-comparison-20261006.md) fixes one length50
-dataset per model, exact prefixes, four paired LEDH designs, N1008 and GPU
+The [plan](../plans/ledh-zhao-horizon-comparison-20261006.md) fixes one length-50
+dataset per model, exact prefixes, four paired LEDH designs, N=1008 and GPU
 FP64/XLA. Inherited controls are held fixed to isolate the weighting change;
 this is not scope-specific tuning or TF32 production validation.
 
@@ -22,7 +22,7 @@ The following means use four LEDH designs. The author column uses three
 rank20 fits for predator–prey and one rank20 fit for SIR; the separate rank40
 SIR check is retained in the full tables and never pooled with rank20.
 
-| Model | T | Ancestor LEDH | Marginal LEDH | Author TT importance calculation | Bootstrap N131072 |
+| Model | T | Ancestor LEDH | Marginal LEDH | Author TT importance calculation | Bootstrap N=131072 |
 |---|---:|---:|---:|---:|---:|
 | Predator–prey |10| -47.370765 | -47.375320 | -47.404361 | -47.401235 |
 | Predator–prey |20| -93.905989 | -93.896008 | -93.905788 | -93.905077 |
@@ -34,10 +34,10 @@ SIR check is retained in the full tables and never pooled with rank20.
 | SIR d18 |50| -1924.199574 | -1902.553778 | -1669.093917 | -1669.110558 |
 
 Full tables report standard errors and all individual designs. At SIR T50,
-the LEDH standard errors are36.623 and25.898, respectively; the bootstrap
-reference SE is0.0511. The author rank20 conditional path SE is0.00494, which
-excludes fitting error and finite-path bias. At T10 the bootstrap with only1008
-particles gives-346.0071 ±0.3480, compared with-600.4985 ±37.0875 and
+the LEDH standard errors are 36.623 and 25.898, respectively; the bootstrap
+reference SE is 0.0511. The author rank20 conditional path SE is 0.00494, which
+excludes fitting error and finite-path bias. At T10 the bootstrap with only 1008
+particles gives -346.0071 ±0.3480, compared with -600.4985 ±37.0875 and
 -579.6591 ±25.8836 for the two LEDH arms. The early discrepancy persists across
 later prefixes. This suggests investigating early cloud/flow/reset behavior;
 it does not identify a cause.
@@ -52,13 +52,27 @@ particle bootstrap/Fisher estimate is
 likelihoods does not remove this reference-score disagreement. Neither
 reference is established as an oracle.
 
+At SIR T50, the three score components are derivatives with respect to
+(log kappa scale, log nu scale, log observation-noise scale). The means are
+(-1624.905, 745.927, 606.639) for ancestor LEDH and
+(999.186, -265.064, 286.511) for marginal LEDH. Their between-design standard
+errors are approximately (1509, 642, 227) and (1792, 851, 578), respectively.
+The completed rank20 author quadratic calculation gives
+(108.593, -50.440, -30.385), with conditional path standard errors
+(5.157, 2.207, 0.042). The large bootstrap calculation gives
+(87.551, -37.113, -30.268), with standard errors (13.7, 3.06, 0.205).
+Thus the SIR score discrepancy remains substantial under both weight policies;
+the reference disagreement also requires further rank and sampling checks.
+The quadratic heldout residual RMS is 1.07e-6 at the smaller predeclared radius;
+this checks the local regression fit, not reference bias.
+
 ## What was traced and repaired
 
 The immutable author source is pinned to commit
 80034dccb99eb1d86284a1839b4a12067d13b9da. The call chain follows the author's
 TT fitting and backward inverse-Rosenblatt sampling, with fixed current-model
 callbacks explicitly classified as an extension. Source anchors are Zhao–Cui,
-JMLR2024, equation26 and Algorithm4, and local
+JMLR 2024, equation 26 and Algorithm 4, and local
 models/full_sol.m:139–206. The sampler's proposal density is the cumulative
 path density in proposal_history[:,0]. The author code's returned lml is
 mean(log weight), whereas a marginal log likelihood estimate is
@@ -79,7 +93,7 @@ flag and NaN. Both formats were executed through the generated Octave writer.
 
 Long-horizon quadratic runs exceeded their estimated runtime. Their completed
 radii are retained; only missing predeclared radii are retried with the same
-paths, random design,128 training points,64 heldout points and uncertainty
+paths, random design, 128 training points, 64 heldout points and uncertainty
 calculation. Reports group by fitted proposal so a retry cannot inflate the
 number of independent fits. Separate job ledgers are combined in the total
 172800-second budget, including failures and derivative checks.
@@ -97,13 +111,13 @@ exact replication of published numerical values.
 scores to numerical precision; the multiple-component M13 path matches the
 other branch. These engineering checks are recorded with the shared correction
 commit b3f4ca646. A smaller N144 finite-difference diagnostic checks the recursive
-score of the same finite LEDH program. PP agrees at roughly2.2e-9 normalized
+score of the same finite LEDH program. PP agrees at roughly 2.2e-9 normalized
 error. A coarse SIR check was step-sensitive; the subsequent GPU FP64/XLA
-check gives maximum normalized errors7.44e-6 and6.04e-5 over its fine step
+check gives maximum normalized errors 7.44e-6 and 6.04e-5 over its fine step
 ladder, with exact trace value/coordinate-zero score parity. A moment-safety
 branch changes under a small perturbation, so local agreement does not prove
 global smoothness. These tests do not establish agreement with the statistical
-likelihood score. The monograph compiles to614pages, and the three pages of
+likelihood score. The monograph compiles to 614 pages, and the three pages of
 new equations and evidence were visually inspected.
 
 | Decision | Primary criterion | Veto status | Main uncertainty | Next justified action | Not concluded |
