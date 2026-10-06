@@ -7,10 +7,10 @@ prey likelihood differences are small; the four designs do not establish a
 ranking. Both LEDH arms return finite likelihoods and analytical scores at all
 requested horizons10,20,40,50.
 
-This is an interim result while the SIR rank40 reference and two missing
-rank20 score radii finish. The completed evaluations and every score coordinate
-are in [the full numerical tables](../plans/artifacts/ledh-zhao-horizons-20261006-01/committed-evidence-01/report-007/results.md)
-and [CSV](../plans/artifacts/ledh-zhao-horizons-20261006-01/committed-evidence-01/report-007/values-and-scores.csv).
+This remains an interim result while the SIR rank40 reference and its later
+quadratic checks run. The rank20 SIR T50 score repair is complete. All requested
+LEDH likelihoods and score coordinates are in [the full numerical tables](../plans/artifacts/ledh-zhao-horizons-20261006-01/committed-evidence-03/report-009/results.md)
+and [CSV](../plans/artifacts/ledh-zhao-horizons-20261006-01/committed-evidence-03/report-009/values-and-scores.csv).
 The [plan](../plans/ledh-zhao-horizon-comparison-20261006.md) fixes one length50
 dataset per model, exact prefixes, four paired LEDH designs, N1008 and GPU
 FP64/XLA. Inherited controls are held fixed to isolate the weighting change;
@@ -93,7 +93,7 @@ exact replication of published numerical values.
 
 ## Verification and interpretation
 
-47 focused tests pass. The one-component path preserves LGSSM/KSC values and
+47 focused tests pass. The T50 SIR rank20 quadratic repair also completed with finite heldout diagnostics. The one-component path preserves LGSSM/KSC values and
 scores to numerical precision; the multiple-component M13 path matches the
 other branch. These engineering checks are recorded with the shared correction
 commit b3f4ca646. A smaller N144 finite-difference diagnostic checks the recursive
@@ -111,7 +111,7 @@ new equations and evidence were visually inspected.
 | Retain shared optional weighting implementation | Parity and mechanics checks pass | No unresolved stable derivative mismatch at checked points | Global branch smoothness | Finish reference comparison | Default or HMC readiness |
 | SIR configuration cannot be promoted | Large likelihood discrepancy persists | Same-N bootstrap is much closer | Cause and reference-score accuracy | Investigate early filter behavior after comparison | Marginal weighting is universally ineffective |
 | PP remains a diagnostic candidate | Small value differences | References disagree on some scores | Reference bias and only four designs | Additional independent reference validation | Superiority |
-| Continue source reference checks | Rank20 values complete; rank40 partial | Runtime underestimation repaired | Between-fit/rank error | Finish within existing budget | Exact paper-number replication |
+| Continue source reference checks | Rank20 values and all requested rank20 scores complete; rank40 partial | Runtime underestimation repaired | Between-fit/rank error | Finish within existing budget | Exact paper-number replication |
 
 | Inference status | Evidence |
 |---|---|
