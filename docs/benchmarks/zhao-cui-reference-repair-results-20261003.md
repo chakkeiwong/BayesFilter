@@ -1,10 +1,62 @@
 # Original Zhao--Cui code reference repair: completed execution
 
-The original TT solver now runs through a reproducible Octave reference harness,
+The linear-preconditioned author TT solver now runs through a reproducible
+Octave diagnostic harness,
 including fixed-target runs on the exact saved T=20 observations. Predator--prey
 has a finite, useful diagnostic estimate. The tiny SIR configuration has severe
 importance-weight collapse and is unsuitable as an accuracy reference. The
 repair does not supply an analytical likelihood score.
+
+## Published-result comparison: not reproduced
+
+Correction and source recheck, 2026-10-04: this work completed a reduced
+execution diagnostic, not reproduction of the published experiments. The SIR
+result does not establish that Zhao--Cui's method or published results are wrong.
+Even its cause is not isolated: inadequate approximation effort is plausible,
+but source/adapter fidelity must also be established by a matched reproduction.
+
+The checked primary publication is Zhao and Cui, JMLR 25(244), 2024,
+[Sections 6.3--6.4, pp. 38--42](https://jmlr.org/papers/volume25/23-0743/23-0743.pdf).
+The local copy is
+`.localresources/papers/zhao-cui-tensor-train-sequential-learning-jmlr-2024.pdf`.
+The publisher page was checked on 2026-10-04 and displayed no correction notice;
+this is a bounded comparison, not a comprehensive errata or literature survey.
+
+| Quantity or choice | Published experiment / checked author driver | Executed diagnostic |
+|---|---|---|
+| SIR maximum TT rank | Paper: 10, 20, 40; text reports ranks above 20 needed for accuracy | 4 |
+| SIR ALS iterations | Paper: 5; pinned main/low options: at most 8/2 | 1/1 |
+| SIR base fitting samples | Pinned driver: 5,000 | 64 |
+| SIR smoothing draws | Pinned driver: 10,000 | 64 |
+| Data | Paper/author synthetic experiment | Different saved BayesFilter observations |
+| PP unknown parameters | Jointly infer six parameters | Fix all six at the current target point |
+| PP successful preconditioning route | Paper: nonlinear preconditioning, rank 20, five ALS iterations; about 40% joint ESS at T=20 | Linear-preconditioned full_sol route, rank 4, one iteration |
+| Reported quantities | Sections 6.3--6.4 show joint-posterior ESS and state paths | Added log-evidence diagnostic and bootstrap comparison |
+
+Paper anchors are Section 6.3, Figure 15 and the paragraph spanning pp. 39--40;
+Section 6.4, Figure 17 and the discussion on p. 42. Author-code anchors under
+`third_party/audit/zhao_cui_tensor_ssm_p10/source/` are
+`eg3_sir/mainscript.m:39-64` and `eg4_predatorprey/mainscript.m:45-93`.
+The actual reduced consumer is
+`docs/benchmarks/run_zhao_cui_reference.py:121-130`; it hardcodes one ALS
+iteration and calls full_sol_reference, never pre_sol. Raising its rank alone
+would still not reproduce the paper. The paper and pinned drivers also differ
+in their ALS settings; a reproduction must declare which it follows.
+
+The narrow statistic correction remains valid: if a raw log importance weight
+is w, averaging w is a different quantity from log(mean(exp(w))). However, the
+optional fifth output lml at `models/full_sol.m:191-204` is not requested by
+the SIR or PP example drivers (`eg3_sir/mainscript.m:64`;
+`eg4_predatorprey/mainscript.m:88,92`). Correcting that diagnostic for our
+likelihood use does not establish a defect in the paper's filtering, ESS or
+state-estimation results. These sections publish no matching log-likelihood
+table for our saved observations.
+
+The original-code reference is therefore not yet validated against the
+publication. The next scientific task is an explicitly matched reproduction
+of the published ESS and trajectory results, including the PP pre_sol route,
+before adapting it into a likelihood/score reference for our data. No new
+experiments were run for this source recheck.
 
 ## Actual saved-data results
 

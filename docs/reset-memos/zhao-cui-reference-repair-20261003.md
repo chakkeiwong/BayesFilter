@@ -26,8 +26,17 @@ Final validation, 2026-10-04: 11 focused regressions, Python compilation,
 extraction-only/source-immutability smoke and rejected-preparation record check
 pass. Evidence is in `validation/validation.json` and its individual logs.
 
-Next research question, outside this completed mechanics plan: can calibrated
-TT rank/sample/ALS settings give repeated, stable SIR normalization and
-importance estimates on the same target? A separate bounded accuracy plan must
-freeze settings and quantify uncertainty; do not reuse these smokes as oracle
-or default-readiness evidence. A score reference needs separate construction.
+Source recheck after the user's challenge, 2026-10-04: published reproduction
+has NOT been performed. Paper SIR uses ranks 10/20/40 and five ALS iterations;
+our rank-4/one-pass/64-draw result cannot judge that method. The PP paper's
+successful nonlinear pre_sol route was not executed. The disputed optional
+fifth lml output is not requested by either author example driver. See the
+new published-comparison section in the result note for exact anchors.
+
+Next scientific question: reproduce the paper's ESS and trajectory findings
+with matched author targets and declared paper/driver settings, including PP
+nonlinear preconditioning, before adapting the code as our likelihood/score
+reference. This requires its own bounded reproduction plan. No new research
+runs were launched for this clarification; no rejection of the published
+method is supported. The previous commit completed mechanics, not this
+publication-validation obligation.
