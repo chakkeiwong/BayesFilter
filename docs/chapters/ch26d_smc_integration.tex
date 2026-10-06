@@ -1,0 +1,246 @@
+\section{Implementations and systematic tests}
+\label{sec:bf-is-smc-software}
+
+The methods surveyed above have different levels of reusable software.
+Some authors provide licensed libraries with numerical tests; others provide
+public research scripts without an explicit reuse licence. These differences
+determine how code can enter BayesFilter, while the mathematical target
+determines which experiments can be compared. The following assessment
+concerns the revisions inspected on 29 September 2026.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.25\textwidth}
+                  >{\raggedright\arraybackslash}p{0.22\textwidth}
+                  >{\raggedright\arraybackslash}p{0.44\textwidth}}
+\toprule
+Method and code & Language and licence & Appropriate use here\\
+\midrule
+\endfirsthead
+\toprule
+Method and code & Language and licence & Appropriate use here\\
+\midrule
+\endhead
+Annealed, waste-free and nested SMC:
+\href{https://github.com/nchopin/particles}{\texttt{particles}}
+& Python/NumPy; MIT
+& Reference for particle bookkeeping, adaptive tempering and SMC$^2$.
+Permitted source-derived TensorFlow components must retain the licence notice.\\[3pt]
+AFT and CRAFT:
+\href{https://github.com/google-deepmind/annealed_flow_transport}{author code}
+& JAX; Apache-2.0
+& Port corrected transport, loss/update ordering and relevant tests while
+using the existing TensorFlow target and shared IAF core.\\[3pt]
+Adaptive HMC--SMC:
+\href{https://github.com/alexanderbuchholz/hsmc}{\texttt{hsmc}}
+& Python/NumPy with compiled helpers; no reuse licence found
+& Inspect as a source reference. Independently implement published tuning
+equations unless suitable permission is established for a code port.\\[3pt]
+Adaptive inner counts:
+\href{https://github.com/imkebotha/adaptive-exact-approximate-smc}{author code}
+& MATLAB; no reuse licence found
+& Reconstruct the allocation methods from the paper; explicitly distinguish
+exact exchange from approximate replacement.\\[3pt]
+Kernel-switching SMC$^2$:
+\href{https://github.com/imkebotha/kernel_switching_smc2}{author code}
+& MATLAB; no reuse licence found
+& Treat switches as separate mathematical operations requiring an
+extended-target derivation, especially for deterministic state components.\\[3pt]
+Recent adaptive/waste-free SMC experiments:
+\href{https://github.com/ylefay/jaxSMC}{\texttt{jaxSMC}}
+& JAX; MIT
+& Additional reference for the 2026 complexity study and adaptive
+waste-free implementation; no local performance claim follows.\\
+\bottomrule
+\end{longtable}
+
+Public availability alone is not a licence to copy source. The licence
+findings above are based on the inspected repository trees, file headers,
+README material and repository metadata; absence of a detected licence is
+not a claim that the authors would refuse permission. The Apache-2.0 and
+MIT notices must accompany any permitted derived code. An independently
+written implementation of published mathematics must still cite the paper
+and identify deliberate departures.
+
+The upstream tests are useful but uneven. AFT's repository includes tests
+for flow corrections, optimal-map gradients, resampling and optimization
+ordering. It has no separately named CRAFT test module in the inspected
+tree, so the complete repeated-pass training schedule needs its own local
+test. The inspected \texttt{particles} tree includes a linear-regression
+SMC test, and \texttt{jaxSMC} includes Gaussian and adaptive-schedule tests.
+The two MATLAB repositories provide example drivers; no dedicated test
+suite was found in their inspected trees. HMC--SMC contains profiler and
+Numba test scripts, which do not constitute numerical parity coverage for
+the complete sampler. An upstream test passing establishes only what that
+test checks, particularly when the proposed backend, flow and posterior
+evaluator differ.
+
+\subsection{One target and one transport}
+
+The reusable mathematical components are a tempered target, a normalized
+weighted population, a corrected transport step, an invariant mutation,
+and, for SMC$^2$, a state-filter likelihood estimator with its auxiliary
+state. They should have separate interfaces so that a change in one
+component does not silently change the others.
+
+For the current UKF study, a target adapter should evaluate the log prior
+$\log r(\theta)$ and log likelihood $\log L_{\rm UKF}(\theta)$ in batches,
+together with their required scores and
+numerical validity. The same adapter must serve ordinary SMC, corrected
+flow SMC and the final UKF-based inference route. A different adapter
+should expose the generative model and particle likelihood required by
+SMC$^2$. Each result must identify which likelihood it used. Comparing
+their runtimes as if they computed the same posterior would be misleading.
+
+All candidate numerical implementations in BayesFilter remain TensorFlow/
+TensorFlow Probability, batched across particles and parameter populations,
+with stable traced signatures and the required XLA/device checks. JAX,
+NumPy and MATLAB sources serve as independent references rather than
+dependencies in the admitted runtime. Backend parity should feed the same
+explicit noise arrays, momenta, uniforms and ancestor choices into each
+implementation. A common integer seed does not generate identical random
+streams across libraries.
+
+The final learned map remains the configured author-based IAF implemented
+by the existing shared numerical core. A weighted forward-KL trainer can
+consume posterior particles without creating a new IAF class. CRAFT
+requires maps between temperatures; these may use configurations of the
+same core, but their composition is not automatically the already approved
+final-map architecture. A sampler can instead generate training data for
+the unchanged final IAF. Both designs are possible; they answer different
+engineering and training questions and must be declared separately.
+
+Existing diagnostic annealing helpers and reference particle filters are
+useful starting points for verification. Their presence does not establish
+a complete production SMC or SMC$^2$ consumer. Reuse requires checks of
+likelihood increments, zero-weight support, invalid-value behavior, shape
+contracts, ancestry and actual calls from the consumer. A historical
+weighted transport is not upgraded by importing the shared core.
+
+\subsection{Begin with identities that have exact answers}
+
+The first tests should distinguish implementation errors from sampling
+difficulty. For a Gaussian bridge with a known affine transport, the
+Jacobian-corrected weights are constant and the normalizer ratio is known.
+An identity map must reproduce the declared ordinary-SMC ordering.
+Prescribed uniforms make resampling and acceptance decisions deterministic,
+including cases with zero weights and highly unequal weights. An invertible
+IAF must satisfy forward/inverse round trips, the change-of-variables
+identity and parameter-gradient checks with samples held fixed.
+
+CRAFT additionally needs a deliberately sensitive ordering test: alter a
+map parameter by an exaggerated diagnostic update and verify that the
+current pass's samples, weights and normalizer use the pre-update map.
+Check the local weighted gradient against a separately differentiated
+finite cloud, then use independent clouds to distinguish that empirical
+objective from the ideal population objective. Waste-free tests must verify
+the $M\times P$ genealogy and the target/potential ordering, including the
+identity-kernel case where the apparent $MP$ samples reduce to $M$ unique
+ancestors.
+
+For SMC$^2$, a finite-state model permits exact enumeration of likelihoods,
+auxiliary particle systems and selected posterior quantities. The two-point
+likelihood example in Section~\ref{sec:bf-is-smc2-refresh} is a particularly
+cheap negative control: unweighted refresh must fail the extended-law
+identity, while correctly weighted exchange must satisfy it. A separate
+linear-Gaussian state model supplies a Kalman likelihood for checking
+bootstrap and observation-adapted filters. Independent repetitions should
+assess the mean of $\widehat L/L$, not the mean log likelihood. PMMH tests
+must verify that rejection retains the old auxiliary state and likelihood.
+
+These are correctness tests. They neither require nor demonstrate useful
+mixing on the q20 posterior. Conversely, a failure of an algebraic identity
+blocks interpretation of later performance numbers even if a stochastic
+run happens to resemble a reference.
+
+\subsection{Separate geometry, coverage and likelihood noise}
+
+After correctness, use targets with known probability masses to isolate the
+scientific weaknesses. A correlated Gaussian tests linear conditioning; a
+nonlinear but analytically invertible transformation of a Gaussian tests
+nonlinear geometry; a separated unequal-weight Gaussian mixture tests
+mode mass and tail coverage. For the last example, a sign-region probability
+can be computed from each component's Gaussian CDF. It should not be
+confused with the mixture-component weight when components overlap.
+Vary separation, rare-region probability and dimension one factor at a
+time, with exact densities and normalization constants retained.
+
+The comparison should include simple controls that can expose an inadequate
+complex method: direct prior importance sampling, tuned ordinary annealed
+SMC, an independently fitted defensive Gaussian/Student mixture, and, where
+available, exact draws or an analytic whitening map. Within this set, add
+waste-free retention, tuned mutation and learned transport separately before
+combining them. These controls answer different failure questions; their
+presence does not require a large all-method campaign before attempting a
+useful NeuTra estimate.
+
+For SMC$^2$, begin with the inner filter at dispersed parameter values,
+including distinct posterior regions and difficult boundary cases. Compare
+bootstrap and observation-adapted proposals at matched state-transition
+and observation-evaluation cost. Measure likelihood variability and ancestry
+alongside cost; low variance at the posterior mean alone is insufficient.
+Only then compare fixed and adaptive inner counts and exact rejuvenation
+choices. Approximate replacement may be studied as a separately labeled
+bias experiment, not silently admitted as an exact control.
+
+Particle counts, number of temperatures and mutation effort should be
+increased only when the preceding result identifies what extra work would
+resolve. A schedule that repeatedly loses a rare mode needs a discovery or
+global-move repair; merely doubling within-mode HMC may add little evidence.
+A noisy inner likelihood calls for a proposal or particle-count repair.
+A wrong normalizer calls for implementation repair. These outcomes should
+not all be reported as failure of SMC as a research direction.
+
+\subsection{Assess precision on independent populations}
+
+Resampled particles and waste-free chain states are dependent. Let
+$\widehat m_{a,r}$ be an estimate of a declared quantity from method $a$
+in independent population $r$. Comparisons can use population-level
+differences $D_r=\widehat m_{a,r}-\widehat m_{b,r}$ when the pairing is
+deliberate; otherwise use an unpaired analysis. A conventional interval
+under its sampling assumptions is
+\begin{equation}
+ \overline D\ \pm\
+ t_{R-1,\,1-\alpha/2}\frac{s_D}{\sqrt R}.
+ \label{eq:bf-is-smc-replicate-interval}
+\end{equation}
+Small $R$, heavy-tailed importance errors or unreliable variance estimates
+can make this interval inadequate. The design must declare its uncertainty
+method and fixed analysis points in advance; repeatedly inspecting ordinary
+fixed-sample intervals does not provide sequential coverage. Costs should
+include compilation, calibration, flow training, fresh evaluation and all
+workers, with reusable training cost also reported separately.
+
+Zero observed missing-mode failures is not proof of reliable discovery.
+If $R$ independent populations all succeed, the exact one-sided binomial
+upper bound at confidence $1-\alpha$ for the failure probability is
+\begin{equation}
+ p_{\rm fail}\le 1-\alpha^{1/R}.
+ \label{eq:bf-is-smc-failure-bound}
+\end{equation}
+Thus a desired upper bound $\delta$ would require at least
+$\log(\alpha)/\log(1-\delta)$ successful populations under this model.
+The scientific choice of $\delta$ must precede the calculation. Likewise,
+required precision for a region mass or posterior moment determines the
+replication budget; a convenient number of seeds cannot establish the
+desired reliability retrospectively.
+
+For an unknown posterior, agreement among populations and particle-count
+ladders supplies consistency evidence but cannot prove that every mode was
+found. Dispersed starts, external mode searches and independent proposal
+families make repeated shared omissions easier to detect. The standard
+1000-point post-training score-residual check remains useful for the IAF,
+but points generated from its own base distribution may rarely reach a
+missing physical region. It must be accompanied by posterior/reference
+region checks and downstream estimation diagnostics.
+
+The final distinction is the inference target. An IAF trained from SMC$^2$
+samples does not change the UKF likelihood in the existing NeuTra HMC
+potential. To estimate the generative-model posterior, inference must
+retain a valid particle correction or use another separately justified
+target evaluation. A stochastic particle likelihood is not an interchangeable
+replacement for a deterministic HMC value and score. The detailed proposed
+interfaces, source revisions and staged tests are recorded in the companion
+integration plan;\footnote{\raggedright
+\def\UrlBreaks{\do\/\do\-}
+\path{plans/bayesfilter-smc-library-integration-and-tests-2026-09-29.md}.\par}
+the survey establishes their rationale, not an implemented
+or empirically qualified sampler.

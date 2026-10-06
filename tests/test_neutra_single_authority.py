@@ -162,6 +162,34 @@ def test_naf_inverse_input_and_parameter_derivatives_are_implicit():
     np.testing.assert_allclose(predicted, (plus-minus)/(2*h), atol=2.e-6, rtol=2.e-6)
 
 
+def test_naf_inverse_near_stopping_boundary_is_valid_after_compiled_return():
+    # Oct 5 continuation failure: separately fused loop/final evaluations
+    # disagreed by ~7e-17 at a 1.211690191e-11 residual threshold. These are
+    # the saved scalar conditional, plus neighboring queries in one batch.
+    slopes=tf.constant([[.9491963185483825,.9488458809664849,
+                         .9490736429806774,.9485766262854454]],tf.float64)
+    offsets=tf.constant([[-.8611369042786093,-.8613585281907308,
+                          -.8606700985012884,-.8608618597763835]],tf.float64)
+    weights=tf.constant([[.2512312664630102,.26772220636112815,
+                         .2448309527332113,.23621557444265037]],tf.float64)
+    queries=tf.constant([.21169019112003085],tf.float64)+tf.linspace(
+        tf.constant(-1e-10,tf.float64),tf.constant(1e-10,tf.float64),65)
+    @tf.function(input_signature=[tf.TensorSpec([65],tf.float64)],jit_compile=True,autograph=False)
+    def solve(y):
+        x,ld,valid,iterations=core.sigmoid_inverse(y,tf.math.log(slopes),offsets,
+            tf.math.log(weights),atol=1e-11,rtol=1e-11,max_iterations=100)
+        recovered=core.sigmoid_mixture(x,tf.math.log(slopes),offsets,tf.math.log(weights))[0]
+        return x,ld,valid,iterations,recovered
+    x,ld,valid,iterations,recovered=solve(queries)
+    assert bool(tf.reduce_all(valid)) and int(iterations)<100
+    assert bool(tf.reduce_all(tf.math.is_finite(ld)))
+    # Leave space between numerical work and the final required tolerance;
+    # do not loosen the latter to hide the observed failure.
+    tolerance=1e-11*(1+tf.abs(queries))
+    assert bool(tf.reduce_all(tf.abs(recovered-queries)<.75*tolerance))
+    np.testing.assert_allclose(x[32],1.130443347795746,atol=3e-11,rtol=0.)
+
+
 def test_naf_author_conditioner_matches_independent_source_operations():
     stage = NeuTraTransport(config(stages=1)).stages[0]
     x = rows().numpy()

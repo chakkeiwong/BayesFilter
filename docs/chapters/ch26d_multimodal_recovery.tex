@@ -1,0 +1,381 @@
+\section[Posterior mode coverage]{Covering posterior modes before fitting the transport}
+\label{sec:bf-is-multimode-recovery}
+
+For this application, posterior annealing followed by weighted forward-KL
+fitting of the existing IAF is a candidate for further study. The modern
+mutation, retention and flow-transport methods in
+Sections~\ref{sec:bf-is-craft-detail}--\ref{sec:bf-is-modern-smc-dimension}
+provide alternatives to a fixed, locally mutating SMC implementation. The
+sampler must find relevant regions and estimate their probabilities; the IAF
+then learns from those probabilities. This separates three tasks that were
+previously too easily conflated: discovering basins, estimating their relative
+mass, and making the transformed posterior easy for HMC. It also removes the
+current flow density from the denominator of the sampling target. This is a
+proposed change of training objective, not a repaired alpha-two FAB estimator
+or an empirically established winner among methods.
+
+Historical BayesFilter tests motivate this choice within a limited scope.
+Defensive importance-weighted forward-KL fits represented known two- and
+three-component targets, but their proposals already covered the components
+and their neural architectures are now retired as unfaithful to the author's
+code. Earlier q20 SMC supplied useful mass evidence for two known sign regions;
+no mutation crossed between those signs. Earlier replica exchange achieved
+temperature round trips without a converged cold posterior. None of those
+results establishes unknown-mode coverage or validates the current IAF. They
+suggest which mechanisms deserve a fresh, correctly scoped investigation.\footnote{\raggedright
+\def\UrlBreaks{\do\/\do\-}
+The historical findings and their source reports are recorded in
+\path{plans/bayesfilter-neutra-multimodal-history-recovery-2026-09-25.md}.\par}
+
+\subsection{Use a path ending at the posterior}
+
+Write the intended unnormalized posterior as $\gamma(x)=r(x)L(x)$ with
+normalized prior $r$, and assume for the following derivations that its
+likelihood is a well-defined function with $0<L(x)\le M<\infty$. In the
+ordinary UKF value model, the fixed scalar observation variance floor gives
+$M=(2\pi R)^{-T/2}$; time-varying floors give the corresponding product.
+The executable's numerical-domain issues must be resolved before applying
+these identities to its output.
+
+The usual likelihood-annealing path is
+\begin{equation}
+ \gamma_\beta(x)=r(x)L(x)^\beta,\qquad
+ Z_\beta=\int r(x)L(x)^\beta\,dx,\qquad
+ p_\beta=\gamma_\beta/Z_\beta,\quad 0\le\beta\le1.
+ \label{eq:bf-is-posterior-path}
+\end{equation}
+Every $Z_\beta$ is finite and positive since $L^\beta\le M^\beta$; the path
+starts at the prior and ends at the desired posterior. By contrast, the FAB
+path in \eqref{eq:bf-fab-bridge} continues past the posterior to an auxiliary
+law containing $1/q_\phi$. Ordinary posterior annealing therefore avoids
+the specific integrability failure just proved, without assuming that the
+sampler will explore efficiently.
+
+For a fixed ladder $0=\beta_0<\cdots<\beta_J=1$, SMC begins with prior
+draws and updates normalized weights by
+\begin{equation}
+ u_{ki}=L(X_{k-1,i})^{\beta_k-\beta_{k-1}},\qquad
+ \bar W_{ki}=
+ \frac{\bar W_{k-1,i}u_{ki}}{\sum_j\bar W_{k-1,j}u_{kj}}.
+ \label{eq:bf-is-posterior-smc-weight}
+\end{equation}
+Resampling uses these probabilities, and subsequent mutation must preserve
+$p_{\beta_k}$. The importance factors estimate changes in probability mass;
+mutation explores locations. Neither operation can compensate for an
+incorrect likelihood, a missing Metropolis correction, or silently discarded
+invalid evaluations. \citet[Algorithm 2.1 and Sections 2.3--2.4]{dai2022smc}
+describe this construction and distinguish adaptive tuning from fixed-design
+identities.
+
+A pilot can choose a temperature increment by controlling the concentration
+of its incremental weights. Replacing expectations under $p_\beta$ by the
+current weighted empirical measure gives the conditional ESS diagnostic
+\begin{equation}
+ \operatorname{CESS}(\Delta\beta)=
+ N\frac{\{\sum_i\bar W_i L(X_i)^{\Delta\beta}\}^2}
+          {\sum_i\bar W_i L(X_i)^{2\Delta\beta}}.
+ \label{eq:bf-is-weighted-cess}
+\end{equation}
+For equal weights this reduces to the ESS expression in
+\citet[Equation 2.7]{dai2022smc}. It measures the incremental discrepancy
+under the represented distribution, not the number of independent particles
+or the mass of unseen modes. The threshold and mutation effort require
+target-specific pilot checks. For subsequent fixed-design evidence, freeze
+the ladder and all proposal or kernel parameters, then use independent
+populations. Freezing the ladder alone while estimating a mass matrix from
+the same population does not produce a fixed kernel. Resampling according
+to a declared ESS rule can remain adaptive under the usual unbiased
+resampling construction.
+
+The finite-population estimates remain approximate even with correct weights.
+Independent populations, surviving ancestral lineages, region occupation and
+sensitivity to particle count and mutation effort are needed to assess them.
+The ancestry-based variance analysis in \citet[Section 4.1]{dai2022smc}
+explains why resampled copies are not independent observations. Its favorable
+dimensional scaling arguments assume strong, sometimes perfect, intermediate
+mixing; those assumptions must not be transferred to a difficult local kernel.
+
+\subsection{Search for basins, but infer their masses from weighted sampling}
+
+This target has four free parameters, so a broad multistart search is a
+plausible aid despite its much larger latent state. Optimizing $\log\gamma$
+from dispersed starts can identify candidate basins, with local curvature
+helping to distinguish duplicate solutions. \citet[Section 2.2 and
+Algorithm 3]{pompe2020adaptive} use this idea with an adaptive multimodal
+MCMC construction. A mode is a density maximum; its height and the number of
+optimizer starts reaching it are not its posterior probability. Curved ridges,
+unequal widths and small attraction basins can defeat a naive count of modes.
+The paper's asymptotic discovery conditions do not certify a finite search.
+
+Candidate basins can instead guide evaluable proposals. One useful family at
+temperature $\beta$ is
+\begin{equation}
+ m_\beta(x)=\lambda r(x)+(1-\lambda)
+              \sum_{k=1}^{K_{\rm loc}}v_k t_k(x),\qquad
+ 0<\lambda\le1,\quad v_k\ge0,\quad\sum_kv_k=1,
+ \label{eq:bf-is-mode-mixture}
+\end{equation}
+where $t_k$ are normalized Gaussian or Student components fitted around the
+discovered basins. Their $v_k$ are proposal allocations, not assumed posterior
+masses. The prior component preserves support while the fitted components
+spend more proposals in plausible regions. GRAMIS supplies gradient and
+curvature-based ways to move such components; safe adaptive importance
+sampling supplies domination arguments
+\citep{elvira2023gramis,delyon2021safe}. A Hessian approximation is a proposal
+construction here, not an assertion that a nonlinear posterior is Gaussian.
+
+For a frozen $m_\beta$, the independence Metropolis move $Y\sim m_\beta$
+accepts with
+\begin{equation}
+ a_\beta(x,y)=1\wedge
+ \frac{\gamma_\beta(y)m_\beta(x)}{\gamma_\beta(x)m_\beta(y)}.
+ \label{eq:bf-is-mode-mh}
+\end{equation}
+Indeed, the accepted flux is
+$Z_\beta^{-1}\min\{\gamma_\beta(x)m_\beta(y),
+\gamma_\beta(y)m_\beta(x)\}$, which is symmetric. This establishes
+invariance and the relative weighting of global moves without knowing
+$Z_\beta$. Composing this kernel with any $p_\beta$-invariant local kernel
+preserves $p_\beta$: $p_\beta K_{\rm local}K_{\rm global}=p_\beta$.
+The composition need not itself be reversible.
+
+The defensive component also gives a quantitative, although possibly weak,
+protection. Since $m_\beta\ge\lambda r$ and
+$p_\beta\le M^\beta r/Z_\beta$,
+\begin{equation}
+ \sup_x\frac{p_\beta(x)}{m_\beta(x)}
+ \le\frac{M^\beta}{\lambda Z_\beta},\qquad
+ K_{\rm global}(x,A)\ge
+ \frac{\lambda Z_\beta}{M^\beta}\,p_\beta(A).
+ \label{eq:bf-is-defensive-mh-bound}
+\end{equation}
+The second inequality follows by bounding both ratios in the accepted flux.
+It is a minorization for the frozen kernel, not a useful runtime guarantee
+when $Z_\beta/M^\beta$ is tiny. Domination makes a mathematical argument
+possible; it does not make the initial proposal accurate.
+
+Optimizer points must enter through such a corrected proposal, rather than
+being inserted into an SMC population with unit weights. If initialization
+draws from a fitted mixture $m_0$ instead of $r$, its initial importance
+weight is $r/m_0$. Proposals may be calibrated in pilot runs, but any subsequent
+adaptation using the same evidence population requires its own justification.
+Mixture weights, component widths and the safe share $\lambda$ are tuning
+hypotheses to check, not universal constants supplied by the literature.
+
+\subsection{Fit the IAF to the posterior weights}
+
+For a weighted posterior population $(X_i,\bar W_i)$, the forward-KL
+training objective and its empirical approximation are
+\begin{align}
+ D_{\rm KL}(p\Vert q_\phi)
+   &=\E_p[\log p(X)]+\mathcal C(\phi),
+   &\mathcal C(\phi)&=-\E_p[\log q_\phi(X)],\\
+ \widehat{\mathcal C}(\phi)
+   &=-\sum_i\bar W_i\log q_\phi(X_i),
+   &\nabla_\phi\widehat{\mathcal C}
+   &=-\sum_i\bar W_i\nabla_\phi\log q_\phi(X_i).
+ \label{eq:bf-is-posterior-fkl}
+\end{align}
+The samples and weights are held fixed when differentiating. The inverse
+$T_\phi^{-1}(X_i)$ still depends on $\phi$ and must be differentiated as in
+\eqref{eq:bf-fab-inverse-derivative}. The IAF, its triangular Jacobian, its
+canonical scale parameterization and the posterior evaluator can all remain
+unchanged. Evaluating the inverse costs more than sampling this IAF; batched
+inverse and gradient measurements must therefore precede a training budget.
+
+These weights target $p$, which does not change when $\phi$ changes.
+Consequently a frozen posterior dataset does not require FAB's
+$q_{\rm old}/q_\phi$ replay correction. It does require an adequate posterior
+sample in the first place. Repeated fitting can overfit a finite dependent
+cloud; heldout validation should use independent sampler populations, with
+lineage-aware uncertainty inside each population. If a weighted minibatch
+draws indices with probabilities $s_i$, an unbiased gradient for the fixed
+empirical objective uses coefficient $\bar W_i/s_i$ in its minibatch mean.
+Sampling with $s_i=\bar W_i$ gives ordinary mean negative log density;
+uniform sampling needs coefficient $N\bar W_i$.
+
+Forward KL also has a less demanding integrability requirement here. For a
+fixed finite IAF parameter vector, each ELU conditioner has at most linear
+growth. Its complete log scale is bounded because its free bias is finite
+and its conditional part is capped. The inverse recursion
+$z_j=(u_j-\mu_j(z_{<j}))e^{-s_j(z_{<j})}$ then has at most linear growth by
+induction on coordinates, and a finite composition preserves that property.
+The log determinant is bounded. Thus there are finite map-dependent constants
+such that
+\begin{equation}
+ |\log q_\phi(x)|\le C_\phi(1+\|x\|^2),\qquad
+ \E_p\|X\|^2\le\frac{M}{Z}\E_r\|X\|^2<\infty.
+ \label{eq:bf-is-fkl-finite}
+\end{equation}
+The cross-entropy is finite even when $\int p^2/q_\phi$ is infinite.
+Moreover, $u|\log u|$ is bounded for $u\in[0,M]$, so
+$\E_p|\log L|=Z^{-1}\int rL|\log L|<\infty$; together with the Gaussian
+prior this makes $\E_p|\log p|$ finite as well. Hence the forward KL itself
+is well-defined under these assumptions. This local derivation proves
+existence, not low gradient variance, sufficient IAF capacity or successful
+optimization. Constants may grow as parameters change.
+
+To see why relative masses matter, partition the space into disjoint regions
+$A_k$, with $a_k=p(A_k)>0$ and $p_k=p(\cdot\mid A_k)$. Then
+\begin{equation}
+ \mathcal C(\phi)=-\sum_k a_k\E_{p_k}\log q_\phi(X),\qquad
+ \widehat a_k=\sum_i\bar W_i\mathbf1_{A_k}(X_i).
+ \label{eq:bf-is-region-fkl}
+\end{equation}
+An equal number of unweighted local samples from unequal-mass modes trains
+the wrong mixture. If region $k$ is deliberately sampled with probability
+$s_k$, its loss contribution needs multiplier $a_k/s_k$, or the corresponding
+estimated weight with its uncertainty retained. Broad regions should include
+an unassigned remainder; a discovered set of maxima need not exhaust the
+posterior. Region counts and optimizer attraction frequencies cannot replace
+the weighted mass estimates.
+
+\subsection{What the other methods can contribute}
+
+\citet[Equation 8, Algorithm 1 and Appendix G.1]{gabrie2022adaptiveflows}
+combine forward-KL fitting with local moves and flow-based independence
+Metropolis proposals. Their experiments explicitly distinguish three cases:
+local chains trapped in separate modes do not rebalance their masses; chains
+started only in one mode may never discover another; representative starts
+in both modes allow the learned global proposals to rebalance them. This is
+support for coupling sampling with learning, together with a direct warning
+against making discovery depend solely on the initially narrow flow. Their
+continuous-time analysis and finite experiments using unadjusted Langevin
+steps do not establish exactness of an arbitrary adaptive implementation.
+The corrected, frozen-kernel construction above states the finite-step
+invariance argument needed here.
+
+Parallel tempering provides a different way to transport information between
+regions. Adjacent likelihood temperatures can exchange states with probability
+\begin{equation}
+ a_{\rm swap}=1\wedge
+ \exp\{(\beta'-\beta)[\log L(x)-\log L(y)]\},
+ \quad x\sim p_\beta,\ y\sim p_{\beta'}.
+ \label{eq:bf-is-posterior-swap}
+\end{equation}
+The prior cancels in this ratio. Non-reversible even/odd exchange schedules
+can improve temperature communication
+\citep[Section 2.3 and assumptions A1--A3]{syed2022nrpt}; their analysis
+requires stationarity and efficient local energy exploration. A replica can
+make round trips without estimating all cold-mode probabilities correctly.
+The existing tempered NeuTra ensemble remains a possible final estimator,
+with cold-chain convergence and region-mass uncertainty assessed directly.
+
+Table~\ref{tab:bf-is-coverage-options} summarizes the roles of the main
+alternatives. These are mathematical distinctions and proposed uses, not a
+performance ranking from the failed calibration.
+\begingroup
+\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.23\textwidth}
+>{\raggedright\arraybackslash}p{0.34\textwidth}
+>{\raggedright\arraybackslash}p{0.37\textwidth}@{}}
+\caption{Methods for the next multimodal investigation.}
+\label{tab:bf-is-coverage-options}\\
+\toprule
+Method & Useful contribution & Remaining obstacle \\
+\midrule
+\endfirsthead
+\toprule
+Method & Useful contribution & Remaining obstacle \\
+\midrule
+\endhead
+More alpha-two FAB tuning & Can reduce finite sampling error when its
+auxiliary law exists. & Cannot normalize the current divergent ideal target;
+proposal tails or the objective must change first. \\
+Defensive FAB mixture & A dominating prior component makes the modified
+second-moment objective finite. & Changes the density family and its
+gradient; does not by itself find modes or whiten the posterior. \\
+Mode search, kernel mixtures and GRAMIS & Locate candidate basins and supply
+global proposals with evaluable densities. & Search may miss narrow basins;
+local curvature and mode height do not determine mass. \\
+GMMVI & Efficiently fits and adapts a parametric mixture by reverse KL.
+& Reverse KL can still omit regions; mixture components are not independent
+evidence of posterior coverage. \\
+Posterior SMC plus forward-KL IAF & Uses posterior weights to train the
+existing transport; avoids the inverse-flow auxiliary target. & Finite
+populations can lose or never discover modes; sampling must be checked
+before its weights are treated as training truth. \\
+Parallel tempering and flow-assisted MCMC & Corrected global moves can
+communicate between represented regions. & Round trips or good acceptance
+do not certify cold-mode probabilities or unseen-mode discovery. \\
+AFT and CRAFT & Learned stage maps reduce mismatch along an annealed path,
+with explicit Jacobian and weight corrections. & Extra maps, adaptation
+analysis and training cost; finite-particle mode loss remains possible. \\
+Stein and controlled-diffusion methods & Offer alternative exploration or
+learned path proposals, sometimes with importance correction. & Kernel or
+control training adds new assumptions and cost; a tractable terminal IAF
+still requires a separate fitting step. \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+A defensive FAB variant is mathematically possible but must be described
+accurately. Let $m_\phi=(1-\lambda)q_\phi+\lambda r$. Then
+\begin{equation}
+ J_\lambda(\phi)=\int\frac{(rL)^2}{m_\phi}\,dx
+ \le\frac1\lambda\int rL^2\,dx\le\frac{M^2}{\lambda}.
+ \label{eq:bf-is-defensive-fab}
+\end{equation}
+Under valid differentiation, with $g_\lambda=\gamma^2/(m_\phi J_\lambda)$,
+\begin{equation}
+ \nabla_\phi\log J_\lambda
+ =-\E_{g_\lambda}\left[
+ \frac{(1-\lambda)q_\phi(X)}{m_\phi(X)}
+ \nabla_\phi\log q_\phi(X)\right].
+ \label{eq:bf-is-defensive-fab-gradient}
+\end{equation}
+The mixture responsibility changes the gradient. Merely drawing from a
+defensive proposal while keeping the original objective $\int\gamma^2/q_\phi$
+does not repair its divergence. This mixture extension has not been tested
+here and is not a claim to reproduce the author's Gaussian-flow recipe.
+
+AFT or CRAFT would be a later option if ordinary SMC requires too many
+intermediate steps or ineffective local moves. Their weights must include
+the stage Jacobian in \eqref{eq:bf-is-aft-weight}; learned maps reduce
+transport cost only if their fitting and inverse costs justify it. The
+surveyed SCLD and continuous-flow methods address related exploration
+problems, but adopting them would add a larger implementation and training
+problem. The present evidence supports first investigating the ordinary
+posterior sampling and forward-KL mechanism while preserving the IAF.
+
+\subsection{Evidence needed before claiming coverage or an estimate}
+
+The first experiment should establish a common, evaluable target, then test
+whether independent posterior SMC populations agree on region masses and
+the quantities ultimately to be estimated. Region definitions can use
+discovered basins and scientifically interpretable sign regions, while
+retaining an unassigned remainder. Genealogical survival, maximum weights,
+incremental ESS, actual cross-region moves and temperature sensitivity explain
+failures; none individually proves coverage. A single region-level discrepancy
+can reject the present sample as a training reference without rejecting
+posterior SMC as a research direction.
+
+Even independent agreement has a limit. If a basin has prior probability
+$a$, then $N$ independent prior starts miss it with probability
+\begin{equation}
+ \Pr(\hbox{no initial hit})=(1-a)^N.
+ \label{eq:bf-is-missing-basin}
+\end{equation}
+Mutation can subsequently enter it, but resampling alone cannot. A basin
+with tiny prior mass may have important posterior mass. Repeated populations,
+broader discovery searches and sensitivity checks provide evidence against
+particular omissions; they are not a finite proof that all modes were found.
+
+Only after the sampler supplies usable weights should the canonical IAF be
+trained and assessed on independent populations. Keep the standard
+$1{,}000$-point normal-base score-residual test, but also evaluate
+$Z_i=T_\phi^{-1}(X_i)$ for independent posterior samples and inspect their
+weighted latent distribution and region-specific residuals. A map that
+generates only one mode may look good on its own samples while transforming
+the missing mode badly. Agreement of weighted posterior region masses with
+fresh IAF draws tests coverage; transformed scores test geometry. Neither
+replaces the other.
+
+Finally freeze the map and tune the supported NeuTra kernel for the exact
+transformed posterior in \eqref{eq:bf-fab-neutra-target}, using identity
+latent mass. Plain NeuTra HMC or the existing tempered NeuTra ensemble can
+supply the estimate; completing a comparison of every method is unnecessary.
+Retained-chain convergence, Monte Carlo uncertainty, consistency across
+dispersed starts and agreement with the independently assessed region masses
+determine whether the estimate is usable. No such posterior estimate or
+validated canonical forward-KL fit is supplied by this documentation study.

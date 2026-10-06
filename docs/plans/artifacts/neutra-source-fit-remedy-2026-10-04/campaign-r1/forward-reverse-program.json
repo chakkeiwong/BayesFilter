@@ -1,0 +1,385 @@
+{
+  "policy": "bayesfilter_neutra_naf_forward_reverse_v1",
+  "plan": "docs/plans/bayesfilter-neutra-naf-forward-reverse-master-2026-10-06.md",
+  "default": "naf_dsf/author_cmade",
+  "criterion": "bayesfilter_neutra_forward_warm_start_then_final_v2",
+  "criterion_plan": "docs/plans/bayesfilter-neutra-forward-warm-start-criterion-repair-2026-10-06.md",
+  "method_status": {
+    "smc": "executable native posterior teacher",
+    "ais": "executable native posterior teacher; no resampling",
+    "fab": "deferred: auxiliary target integrability not established",
+    "gabrie": "deferred: frozen-map control is not the complete adaptive teacher",
+    "aft": "deferred: complete source-controller equivalence not established",
+    "craft": "deferred: complete source-controller equivalence not established"
+  },
+  "student": {
+    "kind": "naf_dsf",
+    "width": 64,
+    "batch": 64,
+    "forward_updates": [
+      8192,
+      8192
+    ],
+    "forward_rates": [
+      0.001,
+      0.0003
+    ],
+    "rkl_rates": [
+      0.0001,
+      0.0003
+    ],
+    "rkl_rungs": [
+      256,
+      1024,
+      4096
+    ],
+    "reference_rows": 32768,
+    "gradient_clip": 1000.0,
+    "jit_compile": true
+  },
+  "teacher_candidates": [
+    {
+      "profile_id": "native_0",
+      "particles": 4096,
+      "stages": 32,
+      "mutation_steps": 8,
+      "step_size": 0.05,
+      "mode_starts": 64,
+      "mode_iterations": 200,
+      "replications": 4,
+      "jit_compile": true
+    },
+    {
+      "profile_id": "native_1",
+      "particles": 8192,
+      "stages": 64,
+      "mutation_steps": 16,
+      "step_size": 0.025,
+      "mode_starts": 128,
+      "mode_iterations": 400,
+      "replications": 4,
+      "jit_compile": true
+    }
+  ],
+  "target_catalog": {
+    "calibration_random_two": {
+      "kind": "isotropic_mixture",
+      "dimension": 2,
+      "centers": [
+        [
+          -3.683750609674541,
+          -1.9121750997587128
+        ],
+        [
+          6.1012020035366765,
+          -0.6641971702345124
+        ]
+      ],
+      "variances": [
+        1.5375834774396637,
+        1.1447999214935285
+      ],
+      "weights": [
+        0.7330223579505158,
+        0.26697764204948415
+      ],
+      "warp_curvature": 0.0,
+      "warp_center": 0.0,
+      "design_seed": 9101,
+      "design_bounds": {
+        "distance": [
+          6.0,
+          10.0
+        ],
+        "variance": [
+          0.5,
+          2.0
+        ],
+        "translation": 2.0
+      }
+    },
+    "calibration_random_three": {
+      "kind": "isotropic_mixture",
+      "dimension": 2,
+      "centers": [
+        [
+          -3.003537908359767,
+          -5.312885719824278
+        ],
+        [
+          5.062319167113537,
+          -1.28487602872287
+        ],
+        [
+          -1.2835665239945466,
+          3.514467822482902
+        ]
+      ],
+      "variances": [
+        1.4045789537417992,
+        0.7134361187229132,
+        1.2360614709123807
+      ],
+      "weights": [
+        0.5224926195038567,
+        0.24959146233163698,
+        0.22791591816450635
+      ],
+      "warp_curvature": 0.0,
+      "warp_center": 0.0,
+      "design_seed": 9201,
+      "design_bounds": {
+        "distance": [
+          6.0,
+          10.0
+        ],
+        "variance": [
+          0.5,
+          2.0
+        ],
+        "translation": 2.0
+      }
+    },
+    "fixed_unwarped": {
+      "kind": "isotropic_mixture",
+      "dimension": 2,
+      "centers": [
+        [
+          -5.0,
+          0.0
+        ],
+        [
+          5.0,
+          0.0
+        ]
+      ],
+      "variances": [
+        1.0,
+        1.0
+      ],
+      "weights": [
+        0.3333333333333333,
+        0.6666666666666666
+      ],
+      "warp_curvature": 0.0,
+      "warp_center": 26.0
+    },
+    "fixed_warped": {
+      "kind": "isotropic_mixture",
+      "dimension": 2,
+      "centers": [
+        [
+          -5.0,
+          0.0
+        ],
+        [
+          5.0,
+          0.0
+        ]
+      ],
+      "variances": [
+        1.0,
+        1.0
+      ],
+      "weights": [
+        0.3333333333333333,
+        0.6666666666666666
+      ],
+      "warp_curvature": 0.1,
+      "warp_center": 26.0
+    },
+    "random_two_1103": {
+      "kind": "isotropic_mixture",
+      "dimension": 2,
+      "centers": [
+        [
+          3.6272028197446637,
+          1.2367541392323762
+        ],
+        [
+          -3.8805213772018528,
+          2.449773955932473
+        ]
+      ],
+      "variances": [
+        1.698975952345203,
+        0.7143287954412918
+      ],
+      "weights": [
+        0.7595611701898062,
+        0.2404388298101939
+      ],
+      "warp_curvature": 0.0,
+      "warp_center": 0.0,
+      "design_seed": 1103,
+      "design_bounds": {
+        "distance": [
+          6.0,
+          10.0
+        ],
+        "variance": [
+          0.5,
+          2.0
+        ],
+        "translation": 2.0
+      }
+    },
+    "random_two_1104": {
+      "kind": "isotropic_mixture",
+      "dimension": 2,
+      "centers": [
+        [
+          -4.881575308574833,
+          2.4960068886957787
+        ],
+        [
+          1.7164564511737557,
+          0.11197914032597378
+        ]
+      ],
+      "variances": [
+        1.0772772646530058,
+        1.9926414108352954
+      ],
+      "weights": [
+        0.1798607789526989,
+        0.8201392210473011
+      ],
+      "warp_curvature": 0.0,
+      "warp_center": 0.0,
+      "design_seed": 1104,
+      "design_bounds": {
+        "distance": [
+          6.0,
+          10.0
+        ],
+        "variance": [
+          0.5,
+          2.0
+        ],
+        "translation": 2.0
+      }
+    },
+    "random_three_2103": {
+      "kind": "isotropic_mixture",
+      "dimension": 2,
+      "centers": [
+        [
+          -0.025693395040851774,
+          5.726721345700166
+        ],
+        [
+          -3.6064351040646683,
+          -2.6523644310606644
+        ],
+        [
+          2.589322117041479,
+          -1.8731322664235357
+        ]
+      ],
+      "variances": [
+        1.886343069232147,
+        1.2473281565485845,
+        1.4481004839616247
+      ],
+      "weights": [
+        0.40058039164088033,
+        0.279420107919082,
+        0.3199995004400378
+      ],
+      "warp_curvature": 0.0,
+      "warp_center": 0.0,
+      "design_seed": 2103,
+      "design_bounds": {
+        "distance": [
+          6.0,
+          10.0
+        ],
+        "variance": [
+          0.5,
+          2.0
+        ],
+        "translation": 2.0
+      }
+    },
+    "random_three_2104": {
+      "kind": "isotropic_mixture",
+      "dimension": 2,
+      "centers": [
+        [
+          1.7610487348920978,
+          3.6136487871991094
+        ],
+        [
+          -2.395077755895044,
+          -1.6838332957859643
+        ],
+        [
+          6.584776274432902,
+          -1.2054665692512652
+        ]
+      ],
+      "variances": [
+        1.0185740943184873,
+        0.949076419551118,
+        1.9913487880803271
+      ],
+      "weights": [
+        0.6430899566354606,
+        0.21961754800793865,
+        0.13729249535660068
+      ],
+      "warp_curvature": 0.0,
+      "warp_center": 0.0,
+      "design_seed": 2104,
+      "design_bounds": {
+        "distance": [
+          6.0,
+          10.0
+        ],
+        "variance": [
+          0.5,
+          2.0
+        ],
+        "translation": 2.0
+      }
+    }
+  },
+  "calibration_targets": [
+    "calibration_random_two",
+    "calibration_random_three"
+  ],
+  "calibration_seeds": [
+    601,
+    607,
+    613
+  ],
+  "final_targets": [
+    "fixed_unwarped",
+    "fixed_warped",
+    "random_two_1103",
+    "random_two_1104",
+    "random_three_2103",
+    "random_three_2104"
+  ],
+  "final_seeds": [
+    51,
+    52,
+    53
+  ],
+  "stage_order": [
+    "native_teacher_calibration",
+    "forward_and_reverse_calibration",
+    "freeze_recipe",
+    "fixed_unwarped_and_warped",
+    "untouched_random_geometries"
+  ],
+  "remaining": {
+    "gpu_process_seconds": 117853.24228632239,
+    "cpu_core_seconds": 111298.848853
+  },
+  "full_campaign_affordability": "requires_measured_stage_reservations",
+  "readiness": "executable_calibration_protocol_not_yet_scientifically_validated",
+  "command": "bash /home/ubuntu/python/BayesFilter/scripts/run_neutra_scientific_campaign.sh forward-reverse",
+  "resume_command": "bash /home/ubuntu/python/BayesFilter/scripts/run_neutra_scientific_campaign.sh resume"
+}

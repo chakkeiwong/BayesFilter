@@ -1,0 +1,503 @@
+\chapter[Rare Regions and Learned Transports]{Rare Posterior Regions and Learned Transports}
+\label{ch:rare-regions-transport}
+
+A posterior region can contribute little to an average training loss and still
+matter greatly for computation. A narrow valley between modes is one example:
+its probability may be small, but a smooth transport must represent the rapid
+change in density across it. In financial applications, a small-probability
+region can also matter directly because the loss conditional on that region is
+large. These are different reasons to study rare regions. Estimating a tail
+probability, learning a density, and constructing useful Hamiltonian coordinates
+require different evidence.
+
+Let $\gamma(x)$ be an evaluable unnormalized posterior density on
+$\mathbb R^d$, $Z=\int\gamma(x)\,dx\in(0,\infty)$, and
+$\pi(x)=\gamma(x)/Z$. Write $A$ for an event and
+$a=\Pr_\pi(X\in A)$. We assume that the densities and proposal probabilities
+used below can be evaluated where their corrections require them. Knowing
+$\gamma$ does not mean that its integral over $A$, its normalizer, or all of
+its modes are known.
+
+\section[Precision from ordinary samples]{What ordinary samples can and cannot resolve}
+
+For independent $X_i\sim\pi$, the estimator
+$\widehat a=N^{-1}\sum_i\mathbf1_A(X_i)$ has
+\begin{equation}
+ \mathbb E\widehat a=a,\qquad
+ \operatorname{Var}(\widehat a)=\frac{a(1-a)}{N},\qquad
+ \frac{\operatorname{SE}(\widehat a)}{a}
+ =\sqrt{\frac{1-a}{Na}}.
+ \label{eq:rare-iid-error}
+\end{equation}
+The variance follows by summing $N$ independent Bernoulli variances and
+dividing by $N^2$. Achieving relative standard error $\delta$ requires
+$N\geq(1-a)/(a\delta^2)$. This is a statement about standard error, not a
+finite-sample confidence guarantee. The probability of observing no event is
+$(1-a)^N$. For stationary correlated samples, the variance instead contains
+the autocovariances of the event indicator. Effective sample size for a mean
+coordinate cannot simply be substituted for effective sample size of a rare
+indicator; a trace with almost no events provides little information about
+the latter's dependence.
+
+Consider the benchmark
+\begin{equation}
+ \pi(x_1,x_2)=\left[\tfrac13\phi(x_1+5)+\tfrac23\phi(x_1-5)\right]\phi(x_2),
+ \label{eq:rare-mixture-target}
+\end{equation}
+where $\phi$ and $\Phi$ are the standard normal density and distribution
+function. Symmetry gives
+\begin{equation}
+ \Pr(|X_1|<b)=\Phi(5+b)-\Phi(5-b).
+ \label{eq:rare-mixture-mass}
+\end{equation}
+The broad valley $b=2$ has mass $0.001349898$, whereas the illustrative central
+interval $b=0.1$ has mass $3.093565\times10^{-7}$. At a 10 percent relative
+standard error, independent sampling requires about $74{,}000$ observations
+for the former and $323$ million for the latter. The interval $0.1$ illustrates
+the scaling; it is not an estimated width of a particular learned error.
+
+In the recorded October 1 benchmark, one HMC run visited the broad valley
+twice in $24{,}000$ retained draws, both times in one chain. Independent exact
+sampling would average $32.4$ visits. This observation establishes inadequate
+evidence for the valley probability, not an asymptotic bias theorem. The
+previous validation allowance included a term proportional to $\sqrt a$;
+for small $a$, that allowance can exceed the quantity being estimated. Relative
+probability accuracy must be specified in units of $a$, with uncertainty
+appropriate to the actual estimator.
+
+\section[Density approximation and transport derivatives]{Density approximation does not bound transport derivatives}
+
+For an invertible differentiable map $x=T(z)$, the latent posterior is
+\begin{equation}
+ \pi_z(z)=\pi(T(z))|\det J_T(z)|,\qquad
+ r(z)=J_T(z)^\mathsf T\nabla\log\pi(T(z))
+      +\nabla\log|\det J_T(z)|+z.
+ \label{eq:rare-pullback-score}
+\end{equation}
+The residual $r$ vanishes for a standard Gaussian latent posterior. The unknown
+$Z$ disappears on differentiation. Both terms involving the map are necessary;
+a large individual term can be harmless if the terms cancel correctly.
+
+The increasing exact transport of the first marginal of
+\eqref{eq:rare-mixture-target} obeys $F_1(T_1(z))=\Phi(z)$. Differentiation
+and then a logarithmic derivative give
+\begin{align}
+ T_1'(z)&=\frac{\phi(z)}{\pi_1(T_1(z))},\label{eq:rare-quantile-derivative}\\
+ (\log T_1')'(z)&=-z-(\log\pi_1)'(T_1(z))T_1'(z).
+\end{align}
+Substitution in \eqref{eq:rare-pullback-score} proves exact cancellation. At
+$T_1(z)=0$, $z\simeq-0.430727$ and $T_1'(z)\simeq244{,}565$. A large
+derivative is therefore not itself an error. A learned map may fail because
+it does not reproduce the cancellation. This example is a marginal
+construction, not a lower bound for every multidimensional map.
+
+Small KL divergence alone cannot exclude such derivative problems. To see
+this, define $p_k(z)=Z_k^{-1}\phi(z)\exp\{k^{-1/2}\sin(kz)\}$. Since
+$e^{-k^{-1/2}}\leq Z_k\leq e^{k^{-1/2}}$, the absolute log-density ratio
+is at most $2k^{-1/2}$, so both KL directions tend to zero. Nevertheless,
+\begin{equation}
+ \mathbb E_\phi\left[(\partial_z\log p_k(Z)+Z)^2\right]
+ =k\,\mathbb E_\phi[\cos^2(kZ)]
+ =\frac{k}{2}(1+e^{-2k^2})\longrightarrow\infty.
+ \label{eq:rare-kl-score-counterexample}
+\end{equation}
+The last equality uses the Gaussian characteristic function. This is a logical
+counterexample, not a fitted description of the benchmark's error. Uniform or
+derivative accuracy requires additional regularity, an appropriate objective,
+or independent checks in the regions that matter.
+
+Random base-space score checks can also miss an entire mode. In
+\eqref{eq:rare-mixture-target}, take the simple map
+$T(z)=(z_1+5,z_2)$, which generates just the right Gaussian component.
+Writing $\phi_2$ for the standard bivariate Gaussian density gives the exact
+identity
+\begin{equation}
+ \frac{\pi_z(z)}{\phi_2(z)}
+ =\frac23+\frac13 e^{-10z_1-50},\qquad
+ r_1(z)=-\frac{10e^{-10z_1-50}}{2+e^{-10z_1-50}},\quad r_2(z)=0.
+ \label{eq:rare-missing-mode-score}
+\end{equation}
+At ordinary Gaussian base points the exponential term is tiny, so the score
+residual is tiny, although one-third of the target mass lies near $z_1=-10$.
+The sampled log-density offset
+$\log\pi_z(z)+\|z\|^2/2$ is then close to
+$-\log(2\pi)+\log(2/3)=-2.243342$, instead of the globally Gaussian value
+$-\log(2\pi)=-1.837877$. This absolute-offset comparison uses the known
+normalization of this benchmark. It cannot be applied unchanged when the
+posterior normalizer is unknown. The example proves that small residuals on
+ordinary base draws can coexist with a missed mode; it does not diagnose the
+mode coverage of every learned map without further evidence.
+
+\section[Umbrella sampling and relative probabilities]{Umbrella sampling and the recovery of relative probabilities}
+
+Umbrella sampling allocates separate simulations to overlapping regions. For
+nonnegative bias functions $\psi_k$ with $S(x)=\sum_k\psi_k(x)>0$ on the
+target support, define
+\begin{equation}
+ c_k=\mathbb E_\pi\psi_k(X),\qquad
+ \pi_k(x)=\frac{\psi_k(x)\pi(x)}{c_k}.
+ \label{eq:rare-umbrella-density}
+\end{equation}
+A common choice is
+$\psi_k(x)=\exp\{-\kappa_k(\xi(x)-b_k)^2/2\}$, where $\xi$ identifies a
+barrier or rare region. A simulation centered in a valley then observes that
+valley frequently under $\pi_k$, even when it is rare under $\pi$.
+
+The biased distribution can be simulated without knowing $c_k$. For example,
+put $\ell_k=\log\gamma+\log\psi_k$ and propose the Langevin step
+\begin{equation}
+ Y=X+h\nabla\ell_k(X)+\sqrt{2h}\,\varepsilon,
+ \qquad \varepsilon\sim N(0,I),\quad h>0.
+ \label{eq:rare-window-mala}
+\end{equation}
+Its Gaussian proposal density is
+$Q_k(y\mid x)=(4\pi h)^{-d/2}
+\exp\{-\|y-x-h\nabla\ell_k(x)\|^2/(4h)\}$.
+Accept with probability
+$\min\{1,e^{\ell_k(y)-\ell_k(x)}Q_k(x\mid y)/Q_k(y\mid x)\}$.
+The unknown normalizers cancel, and the accepted flux is symmetric after
+multiplication by $\pi_k(x)Q_k(y\mid x)$. Omitting the proposal ratio would
+generally change the invariant distribution. A rejection leaves $X$
+unchanged. This correction establishes invariance; the simulation must still
+explore its biased distribution adequately.
+
+The unknown constants $c_k$ prevent simple pooling. The eigenvector method
+for umbrella sampling (EMUS) resolves their ratios from overlapping simulations
+\citep[sections II--IV]{thiede2016emus}. Define
+\begin{equation}
+ F_{ij}=\mathbb E_{\pi_i}\!\left[\frac{\psi_j(X)}{S(X)}\right],
+ \qquad z_i=\frac{c_i}{\sum_k c_k}.
+ \label{eq:rare-emus-overlap}
+\end{equation}
+Every row of $F$ sums to one. Moreover,
+\begin{align}
+ \sum_i c_iF_{ij}
+ &=\sum_i\int\frac{\psi_i(x)\psi_j(x)}{S(x)}\pi(x)\,dx\\
+ &=\int\psi_j(x)\pi(x)\,dx=c_j.
+\end{align}
+Hence $z^\mathsf TF=z^\mathsf T$ and $\sum_i z_i=1$. Connected overlap,
+expressed by irreducibility of $F$, supplies a unique normalized solution.
+For an integrable observable $g$,
+\begin{equation}
+ \mathbb E_\pi g(X)=
+ \frac{\sum_i z_i\mathbb E_{\pi_i}[g(X)/S(X)]}
+      {\sum_i z_i\mathbb E_{\pi_i}[1/S(X)]}.
+ \label{eq:rare-emus-average}
+\end{equation}
+Indeed, multiplying each expectation by $c_i$ cancels its normalizer, and
+summing cancels $S$. The denominator removes the common scale lost when
+replacing $c$ by $z$. Setting $g=\mathbf1_A$ estimates the event probability;
+setting $g=-\log q_\theta$ supplies a corrected training objective.
+
+EMUS is related to multistate Bennett acceptance ratio estimation (MBAR),
+as explained in the paper's section IV. Neither method makes disconnected or
+unequilibrated windows informative. Section VII derives a central limit
+theorem assuming within-window central limit theorems, independent windows,
+positive limiting sample allocations, and irreducible overlap. Its asymptotic
+variance has the form
+\begin{equation}
+ \sigma^2=\sum_i\frac{\chi_i^2}{\alpha_i},\qquad
+ \alpha_i=N_i/\sum_jN_j.
+ \label{eq:rare-emus-allocation}
+\end{equation}
+Here $\chi_i^2$ combines the sensitivity of the reported observable to window
+$i$ with that window's integrated autocovariance. When all $\chi_i>0$,
+minimizing this expression subject to $\sum_i\alpha_i=1$ gives
+$\alpha_i\propto\chi_i$ by a Lagrange multiplier. A zero contribution gives
+a boundary optimum; removing that window still requires preserving the
+coverage and overlap assumptions. Thus useful allocation depends on the observable, not just on the
+posterior mass of the window. These are asymptotic statements; short traces
+cannot certify their own equilibration.
+
+\section[Importance sampling for an observable]{Importance sampling directed at an observable}
+
+Let $q$ be a normalized, samplable proposal with support covering $\pi$.
+For $X_i\sim q$ and $w_i=\gamma(X_i)/q(X_i)$, the self-normalized estimate is
+\begin{equation}
+ \widehat\mu_g=\frac{\sum_iw_ig(X_i)}{\sum_iw_i}
+ \longrightarrow\frac{\int\gamma(x)g(x)\,dx}{\int\gamma(x)\,dx}
+ =\mathbb E_\pi g(X).
+ \label{eq:rare-snis}
+\end{equation}
+The convergence follows from laws of large numbers for numerator and
+denominator, under the corresponding integrability conditions. The ratio is
+generally biased at finite $N$. Its asymptotic variance, when finite, is
+\begin{equation}
+ \sigma_g^2(q)=\int\frac{\pi(x)^2(g(x)-\mu_g)^2}{q(x)}\,dx.
+ \label{eq:rare-snis-variance}
+\end{equation}
+To obtain this expression, subtract $\mu_g$ from
+\eqref{eq:rare-snis} and multiply by $\sqrt N$. The numerator becomes
+$N^{-1/2}\sum_iw_i(g(X_i)-\mu_g)$, whose expectation is zero. The
+denominator $N^{-1}\sum_iw_i$ converges to $Z$. A central limit theorem
+for the numerator, followed by this denominator limit, gives variance
+$Z^{-2}\mathbb E_q[w^2(g-\mu_g)^2]$, which is
+\eqref{eq:rare-snis-variance}. A finite value of this integral is an
+additional assumption, not a consequence of support coverage alone.
+Applying Cauchy--Schwarz shows that the oracle minimizing proposal is
+$q^*(x)\propto\pi(x)|g(x)-\mu_g|$. For an event indicator with $0<a<1$, the integrals
+of this unnormalized proposal inside and outside $A$ are both $a(1-a)$.
+The optimal proposal therefore assigns half its probability to each side,
+however small $a$ is. This derivation, discussed in Owen's chapter 9,
+explains why matching the entire posterior is not the same problem as
+estimating one rare probability \citep[section 9.2]{owen2013mc}.
+
+The oracle proposal requires information that is ordinarily unknown. A
+practical mixture can combine approximations around modes, proposals near the
+event, and a full-support component. Every sample must be weighted by the
+density of the complete mixture. Full support prevents one particular bias,
+but does not establish finite variance or useful finite-sample overlap.
+Proposal adaptation should use pilot draws and be frozen before an independent
+assessment. If old and new proposal samples are combined, their distinct
+sampling laws must enter an appropriate multiple-importance correction.
+
+\section{Multilevel splitting and conditional exploration}
+
+Choose nested events $A_0=\mathbb R^d\supset A_1\supset\cdots\supset A_m=A$.
+The multiplication rule for conditional probabilities yields
+\begin{equation}
+ a=\prod_{j=1}^m a_j,\qquad
+ a_j=\Pr_\pi(X\in A_j\mid X\in A_{j-1}).
+ \label{eq:rare-splitting-product}
+\end{equation}
+Splitting estimates each factor with a population directed toward the next
+event. Survivors are resampled and moved using a kernel invariant for
+$\pi(\cdot\mid A_j)$. Adaptive multilevel splitting (AMS) chooses levels
+from particle quantiles. The idealized AMS analysis of \citet{brehier2015ams} assumes exact
+independent conditional draws; section 2.2 explicitly distinguishes that
+assumption from approximate finite Metropolis mutation in a static problem.
+Consequently, its unbiasedness and cost results must not be transferred to
+an arbitrary approximate implementation.
+
+The same populations can supply a weighted training bank. Let
+$B_j=A_{j-1}\setminus A_j$ and $P_j=\Pr_\pi(A_j)$ with $P_0=1$. Then
+\begin{equation}
+ \mathbb E_\pi g
+ =\sum_{j=1}^m(P_{j-1}-P_j)\mathbb E_\pi[g\mid B_j]
+   +P_m\mathbb E_\pi[g\mid A_m].
+ \label{eq:rare-splitting-shells}
+\end{equation}
+This is the law of total expectation over a disjoint partition. If stage
+$j$ starts with $N$ equal-weight particles approximating
+$\pi(\cdot\mid A_{j-1})$, each rejected shell particle carries weight
+$\widehat P_{j-1}/N$; the surviving fraction defines
+$\widehat P_j$. After the final mutation, terminal particles carry
+$\widehat P_m/N$. The estimated shell masses telescope to one. Conservation
+of this mass verifies bookkeeping, not correctness of the approximate
+conditional samples. Resampling ancestry, mutation movement, repeated
+populations, and uncertainty in the product remain necessary diagnostics.
+
+\section[Local maps and corrected global moves]{Local learned maps and global corrected moves}
+
+A single smooth map from a unimodal base may have difficulty representing a
+narrow connection between distant modes. Gabri\'e, Rotskoff and
+Vanden-Eijnden discuss mixtures of maps trained in distinct modes
+\citep[section IV.E]{gabrie2022adaptiveflows}. If $q_k$ is the density induced
+by map $T_k$ and $\eta_k>0$ with $\sum_k\eta_k=1$, form
+\begin{equation}
+ q_\eta(x)=\sum_k\eta_kq_k(x).
+ \label{eq:rare-local-map-mixture}
+\end{equation}
+Draw a component and then a point from its map. Given current state $x$, a
+global proposal $y\sim q_\eta$ is accepted with probability
+\begin{equation}
+ \alpha(x,y)=\min\left\{1,
+ \frac{\gamma(y)q_\eta(x)}{\gamma(x)q_\eta(y)}\right\}.
+ \label{eq:rare-mixture-mh}
+\end{equation}
+Detailed balance follows because the accepted probability flux,
+\[
+ \min\{\pi(x)q_\eta(y),\pi(y)q_\eta(x)\},
+\]
+is symmetric in $x,y$.
+Composition with a target-invariant local kernel preserves invariance. In
+particular, global proposals can cross from one mode to another without
+following a continuous path through the valley.
+
+Local training need not know the modes' posterior masses. Those masses are
+recovered through corrected sampling, rather than set equal to the initial
+numbers of walkers. Mixture weights may be adapted during warm-up by fitting
+the current sampled distribution, then frozen before retained estimation.
+For example, write $\eta_k=e^{a_k}/\sum_j e^{a_j}$ and let
+$R_k(x)=\eta_kq_k(x)/q_\eta(x)$ be the component responsibility.
+Differentiation gives
+\begin{equation}
+ \frac{\partial[-\log q_\eta(x)]}{\partial a_k}
+ =\eta_k-R_k(x).
+ \label{eq:rare-mixture-logit-gradient}
+\end{equation}
+A stochastic gradient step on the average of this expression adjusts the
+mixture weights using sampled occupancy. If a fixed defensive component
+has mass $d$, write $q=(1-d)\sum_k\eta_kq_k+dq_D$ instead. Defining
+$R_k=(1-d)\eta_kq_k/q$ changes the gradient to
+$\eta_k\sum_jR_j-R_k$; the defensive mass itself stays fixed. These are
+cross-entropy derivatives, not independent estimates of unknown mode masses.
+Frozen-kernel invariance does not prove convergence of an arbitrary indefinitely
+adaptive procedure. The authors' section IV.C and Appendix E also state that
+unknown modes should not be expected to be discovered automatically. Their
+Appendix G.1 uses a mixture with separation ten and weights one-third and
+two-thirds, and discusses the residual connection learned by a unimodal-base
+flow. Successful mode mixing still does not imply a precise probability for
+an extremely rare region between the modes.
+
+\section[Deliberate exploration and NeuTra training]{Combining deliberate exploration with NeuTra training}
+
+For a disjoint partition $B_k$ with masses $b_k$, forward-KL training minimizes
+the cross entropy
+\begin{equation}
+ L(\theta)=-\mathbb E_\pi\log q_\theta(X)
+ =-\sum_kb_k\mathbb E_{\pi(\cdot\mid B_k)}\log q_\theta(X).
+ \label{eq:rare-stratified-training}
+\end{equation}
+Drawing $n_k$ points within each stratum gives the corrected estimator
+\begin{equation}
+ \widehat L(\theta)=-\sum_k\frac{b_k}{n_k}
+     \sum_{i=1}^{n_k}\log q_\theta(X_{ki}).
+ \label{eq:rare-stratified-estimator}
+\end{equation}
+Thus the training batch can deliberately contain many valley points without
+pretending that the valley has large posterior mass. For an existing weighted
+bank, sample within each stratum proportionally to its conditional weights
+and give each selected point weight $b_k/n_k$. The total batch weight is then
+exactly one; ordinary posterior resampling would undo the deliberate allocation.
+Estimated stratum masses and imperfect conditional samples introduce their
+own error. Overlapping umbrellas require \eqref{eq:rare-emus-average}, not
+unweighted pooling or the disjoint formula applied without correction.
+
+This allocation repairs the information available to the optimizer. It does
+not change the small coefficient $b_k$ in the original objective. Increasing
+that coefficient or adding a score penalty defines a different optimization
+problem and must be stated explicitly. Reverse-KL refinement can subsequently
+use the exact transformed target, but a decreasing objective still cannot
+replace derivative and downstream checks.
+
+More explicitly, for standard Gaussian base density $\phi_d$ and invertible
+$T_\theta$, change of variables gives
+$q_\theta(T_\theta(z))=\phi_d(z)/|\det J_{T_\theta}(z)|$. Substitution
+in the reverse KL objective yields the computable loss
+\begin{equation}
+ L_{\mathrm{RKL}}(\theta)=\mathbb E_{z\sim\phi_d}\!\left[
+  \log\phi_d(z)-\log\gamma(T_\theta(z))
+  -\log|\det J_{T_\theta}(z)|\right].
+ \label{eq:rare-rkl-refinement}
+\end{equation}
+It differs from $\mathrm{KL}(q_\theta\|\pi)$ by the constant
+$-\log Z$, so the unknown posterior normalizer does not affect its gradient.
+The weighted forward fit uses deliberately collected physical-space points;
+this refinement instead draws Gaussian base points and maps them with the
+current parameters. Consequently,
+it does not keep presenting a rare physical region merely because that region
+was represented in the earlier bank. Retaining forward checkpoints and checking
+mode and valley behavior after refinement are therefore necessary to distinguish
+a useful refinement from a loss decrease accompanied by lost coverage.
+
+For the separable benchmark, the exact marginal CDF provides a direct
+reference construction. Directed physical-space probes can inspect the valley
+and then be mapped back to latent coordinates. Such probes complement random
+Gaussian probes; neither their finite maximum nor a sample quantile bounds
+the score everywhere. In higher dimensions, an informative coordinate,
+overlap between windows, well-mixing conditional kernels, and tractable local
+structure become substantive modeling and computational questions. These
+methods allocate effort more deliberately than passive sampling, but none
+guarantees discovery of every arbitrary rare feature from finitely many
+density evaluations.
+
+\section[Two-dimensional sampling evidence]{Evidence from the two-dimensional benchmark}
+
+An October 2 experiment applied the four constructions to
+\eqref{eq:rare-mixture-target} and to the transformed target
+$(X_1,X_2+0.1(X_1^2-26))$. This transformation has unit Jacobian and
+preserves the first-coordinate event probabilities. Mode locations and the
+valley coordinate were supplied; mode probabilities and exact reference draws
+were withheld from proposal training. Eight independent estimator runs per
+method supplied the means and between-run standard errors in
+Table~\ref{tab:rare-region-estimation}. Fixed-level splitting used finite
+Metropolis mutation, so the ideal independent-conditional AMS theorem does
+not apply to these estimates.
+
+\begin{table}[htbp]
+ \centering\small
+ \caption{Estimated probabilities, with between-run standard errors in
+ parentheses. The narrow event has exact probability
+ $3.093565\times10^{-7}$. Local maps report the longer repair run;
+ ``no visits'' supplies no usable estimate of relative precision.}
+ \label{tab:rare-region-estimation}
+ \begin{tabular}{llrrr}
+ \hline
+ Target & Method & $10^3\Pr(|X_1|<2)$ & $10^7\Pr(|X_1|<0.1)$ & $\Pr(X_1>0)$\\
+ \hline
+ Unwarped & Umbrella & 1.070 (0.162) & 2.469 (0.552) & 0.638 (0.065)\\
+ & Importance & 1.296 (0.033) & 3.012 (0.034) & 0.670 (0.004)\\
+ & Splitting & 1.341 (0.049) & 3.057 (0.138) & 0.665 (0.002)\\
+ & Local maps & 1.373 (0.159) & no visits & 0.666 (0.003)\\
+ Warped & Umbrella & 1.027 (0.131) & 2.343 (0.460) & 0.589 (0.067)\\
+ & Importance & 1.298 (0.032) & 3.010 (0.033) & 0.669 (0.004)\\
+ & Splitting & 1.343 (0.029) & 2.963 (0.130) & 0.666 (0.003)\\
+ & Local maps & 1.694 (0.169) & no visits & 0.666 (0.003)\\
+ \hline
+ Exact & & 1.349898 & 3.093565 & 0.666667\\
+ \hline
+ \end{tabular}
+\end{table}
+
+Umbrella sampling, importance sampling, and splitting passed the declared
+feasibility screen on both targets: every replication observed each event,
+the standard error of each aggregate probability estimate was at most
+20 percent of its exact probability, and its discrepancy was no greater than
+the larger of four standard errors and 10 percent of that probability.
+First and second moments were checked separately. This is a working
+feasibility screen, not a simultaneous confidence guarantee or a statistically
+established ranking. The sizeable uncertainty of the umbrella estimates is
+visible in the table.
+
+The local-map mixture passed the mode and moment checks but never visited
+the narrow event, including after its longer warm-up and doubled retained
+sample count. The latter run had 8192 retained states per replication. Even
+65536 independent posterior draws would have only about 0.020 expected
+narrow-event visits; independence is not assumed for these chains. The
+absence of visits therefore fails the requested rare-probability measurement
+without contradicting invariance of the corrected sampler. Exact iid
+sampling with 4096 points per replication also missed this event, and the
+unaugmented local Laplace importance proposal failed the precision screen.
+These controls expose the cost of passive sampling and the value of directing
+proposal mass toward the specified event.
+
+For subsequent global-map training, the first replication was fixed in
+advance as the weighted bank. Aggregate agreement over eight replications
+does not certify this bank individually: the two umbrella banks, for example,
+assigned the right mode probabilities 0.759 and 0.762. Stratified minibatches
+preserved each bank's weights, including rare rows. They did not remove its
+sampling error or replace the need to check the learned map and its HMC draws.
+
+The subsequent test trained a global inverse autoregressive flow (IAF) from
+each bank, using two training seeds per target and teacher: sixteen fits in
+total. Each used a crossed width/learning-rate pilot, 1024 forward-KL updates,
+and reverse-KL checkpoints at 256 and 1024 updates. Forty-eight checkpoints
+produced finite 1000-point Gaussian-base diagnostics and directed valley
+checks. Final median random-point residuals ranged from 0.052 to 0.574,
+whereas the maxima on the directed valley line ranged from 10.252 to 380.096.
+These describe different probe measures, not uniform error bounds. Several
+sampled log-density offsets lay near the one-mode value in
+\eqref{eq:rare-missing-mode-score}, which supplies an alternative explanation
+for their small local residuals.
+
+All twelve fits whose teachers passed the probability screen then underwent
+fresh fixed-transport HMC tuning and sequential posterior assessment with
+identity mass in latent coordinates. The earlier checkpoints remained
+available. The assessment covered moments, mode occupancy, marginal CDF cuts,
+and the broad valley; it did not demand precise ordinary-sampling estimation
+of the $3.09\times10^{-7}$ central event. No fit passed within the declared
+limits. Of 41 verified kernel members assessed, four reached retained
+sampling and exhausted the 10000-draw-per-chain limit without the required
+ESS and precision. Fourteen members failed warm-up because a chain stopped
+moving; other failures involved convergence, missing event observations,
+or an exhausted search allocation. Final confirmation data remained unopened.
+
+The experiment therefore supports deliberate estimation of the specified
+rare probabilities on these two targets, while leaving the global NeuTra
+training problem unresolved. It does not establish a ranking among the three
+viable estimators or an impossibility result for IAFs. The limited training
+ladder, individual bank error, and bounded HMC search remain alternative
+failure explanations. The exact marginal transport available here provides
+a useful next control for separating a learned-coordinate failure from a
+restriction in downstream qualification.

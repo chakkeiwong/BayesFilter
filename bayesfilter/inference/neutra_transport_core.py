@@ -6,10 +6,9 @@ layers only. Batch rows stay in native tensor operations; coordinate derivative
 and inverse loops have a single TensorFlow body, with no pfor.
 Source/derivation: docs/reference/neutra-implementation.md.
 
-Canonical architecture: bayesfilter_neutra_iaf_author_v1 (owner, 2026-09-25).
-This core also preserves historical author-code-unfaithful configurations and
-explicit alternatives. Shared-core use alone does not confer canonical status;
-the configured map must meet the architecture in the implementation reference.
+Configured author IAF remains the canonical q20 consumer architecture. Full
+author-cMADE NAF is the scoped October 6 training-study default. Shared-core
+use does not upgrade historical maps or establish trained-map quality.
 """
 from __future__ import annotations
 
@@ -51,12 +50,14 @@ def dense_masks(dimension, hidden_layers, *, outputs_per_dimension=2, dtype=tf.f
         for i, (left, right) in enumerate(zip(degrees[:-1], degrees[1:])))
 
 
+
 def strict_autoregressive_mask(dimension, *, dtype=tf.float64):
     return tf.constant([[float(i < j) for j in range(dimension)]
                         for i in range(dimension)], dtype)
 
 
-def hoffman_masks(dimension, hidden_layers, *, dtype=tf.float64):
+
+def hoffman_masks(dimension, hidden_layers, outputs_per_dimension=2, *, dtype=tf.float64):
     """TFP masked_dense blocks: exclusive first, inclusive remaining layers.
 
     NeuTra author code uses separate scale/shift output heads when pre-clipping.
@@ -66,7 +67,7 @@ def hoffman_masks(dimension, hidden_layers, *, dtype=tf.float64):
         raise ValueError("author block-mask widths must be multiples of dimension")
     degrees = [list(range(dimension))]
     degrees.extend([[i//(width//dimension) for i in range(width)] for width in hidden_layers])
-    degrees.append(list(range(dimension))*2)
+    degrees.append(list(range(dimension))*outputs_per_dimension)
     return tuple(tf.constant([[float(a < b if index == 0 else a <= b) for b in right]
         for a in left], dtype) for index, (left, right) in enumerate(zip(degrees[:-1], degrees[1:])))
 
@@ -280,14 +281,23 @@ def sigmoid_mixture(x, log_slopes, offsets, weight_logits):
     score = (tf.reduce_sum(tf.nn.softmax(terms, axis=-1)*slopes*(1.-2.*tf.math.sigmoid(u)), axis=-1)
              -tf.exp(log_n-log_s)+tf.exp(log_n-log_complement))
     # Finite log weights represent strictly positive mathematical weights.
-    # The value/log-Jacobian formulas consume log_w directly; exponentiating
-    # here adds an unrelated underflow check (e.g. exp(-119) in float32)
-    # that used to inject NaNs into an otherwise valid log-domain mixture.
+    # Log-domain calculations remain valid even when exp(log_w) underflows.
     valid = tf.reduce_all(tf.math.is_finite(slopes) & (slopes > 0.)
                          & tf.math.is_finite(offsets) & tf.math.is_finite(log_w), axis=-1)
     nan = tf.constant(float("nan"), x.dtype)
     return tuple(tf.where(valid, v, nan) for v in
                  (log_s-log_complement, log_n-log_s-log_complement, score))
+
+
+def affine_mixture(x, log_slopes, offsets, weight_logits):
+    """Diagnostic affine ablation of DSF, retaining all conditioner outputs.
+
+    This is a local attribution control, not an author IAF architecture.
+    """
+    log_w = tf.nn.log_softmax(weight_logits, axis=-1)
+    log_slope = tf.reduce_logsumexp(log_w+log_slopes, axis=-1)
+    shift = tf.reduce_sum(tf.exp(log_w)*offsets, axis=-1)
+    return tf.exp(log_slope)*x+shift, log_slope, tf.zeros_like(x)
 
 
 def sigmoid_inverse(y, log_slopes, offsets, logits, *, atol, rtol, max_iterations):
@@ -296,17 +306,22 @@ def sigmoid_inverse(y, log_slopes, offsets, logits, *, atol, rtol, max_iteration
     crossings = (y[..., None]-offsets)*tf.exp(-log_slopes)
     lo, hi = tf.reduce_min(crossings, axis=-1), tf.reduce_max(crossings, axis=-1)
     tolerance = tf.constant(atol, y.dtype)+tf.constant(rtol, y.dtype)*tf.abs(y)
-    def evaluate(x, lower, upper):
+    def evaluate(x, lower, upper, *, working=False):
         value, ld, _ = sigmoid_mixture(x, log_slopes, offsets, logits)
         residual = value-y
         xtol = tf.constant(atol, y.dtype)+tf.constant(rtol, y.dtype)*tf.abs(x)
+        # XLA may fuse the loop predicate and final evaluation differently.
+        # Work strictly inside the requested tolerances so a last-bit change
+        # cannot turn a just-accepted root into an invalid final result. This
+        # tightens iteration stopping; the public acceptance test is unchanged.
+        margin = tf.constant(.5 if working else 1., y.dtype)
         valid = (tf.math.is_finite(x) & tf.math.is_finite(ld) & tf.math.is_finite(residual)
-                 & (tf.abs(residual) <= tolerance) & ((upper-lower) <= 2.*xtol))
+                 & (tf.abs(residual) <= margin*tolerance) & ((upper-lower) <= 2.*margin*xtol))
         return residual, ld, valid
     def condition(i, lower, upper, x):
-        return (i < max_iterations) & ~tf.reduce_all(evaluate(x, lower, upper)[2])
+        return (i < max_iterations) & ~tf.reduce_all(evaluate(x, lower, upper, working=True)[2])
     def body(i, lower, upper, x):
-        residual, _, done = evaluate(x, lower, upper)
+        residual, _, done = evaluate(x, lower, upper, working=True)
         lower = tf.where((residual < 0.) & ~done, x, lower)
         upper = tf.where((residual >= 0.) & ~done, x, upper)
         return i+1, lower, upper, tf.where(done, x, .5*lower+.5*upper)
@@ -413,6 +428,7 @@ def reverse_kl_evaluate(transport, target_value_score, latent, *, estimator, var
             "proposal_score": proposal_score}
 
 
+
 class AutoregressiveStage:
     """Shared configured IAF or Huang conditional DSF layer."""
     autoregressive = True
@@ -430,8 +446,9 @@ class AutoregressiveStage:
             self._initialize_author_conditioner(config, index, trainable)
             return
         count = 2 if self.kind == "iaf" else 3*config.mixture_components
-        self.masks = (hoffman_masks(self.dimension, self.hidden_layers, dtype=self.dtype)
-                      if config.mask_policy == "hoffman_block_masks_v1" else
+        diagnostic_hoffman = config.naf_conditioner == "diagnostic_hoffman_made" and self.kind == "naf_dsf"
+        self.masks = (hoffman_masks(self.dimension, self.hidden_layers, count, dtype=self.dtype)
+                      if config.mask_policy == "hoffman_block_masks_v1" or diagnostic_hoffman else
                       dense_masks(self.dimension, self.hidden_layers, outputs_per_dimension=count, dtype=self.dtype))
         sizes = (self.dimension, *self.hidden_layers, count*self.dimension)
         root = tf.random.experimental.stateless_fold_in(tf.constant(config.seed, tf.int32), index)
@@ -443,7 +460,7 @@ class AutoregressiveStage:
             radius = (config.final_weight_scale if self.kind == "naf_dsf" or i == len(sizes)-2
                       else math.sqrt(6./(n_in+n_out)))
             w = tf.random.stateless_uniform((n_in, n_out), seed, minval=-radius, maxval=radius, dtype=self.dtype)
-            if self.kind == "iaf" and config.iaf_initializer == "hoffman_variance_scaling":
+            if (self.kind == "iaf" and config.iaf_initializer == "hoffman_variance_scaling") or diagnostic_hoffman:
                 # MakeIAFBijectorFn -> L2HMCInitializer(.01): fan-in variance
                 # scale 2*.01. TF variance-scaling corrects truncation at 2 SD.
                 stddev = math.sqrt(config.iaf_variance_scale/n_in)/.87962566103423978
@@ -454,6 +471,12 @@ class AutoregressiveStage:
                 n = config.mixture_components*self.dimension
                 base = math.log(math.expm1(1.-config.slope_floor))
                 b = tf.concat((tf.fill([n], tf.constant(base, self.dtype)), tf.zeros([2*n], self.dtype)), axis=0)
+                if diagnostic_hoffman:
+                    # First-coordinate output biases otherwise leave every
+                    # sigmoid identical. Break symmetry in both paired arms.
+                    jitter = tf.random.stateless_normal([n],
+                        tf.random.experimental.stateless_fold_in(seed, 991), dtype=self.dtype)*.001
+                    b = tf.concat((b[:n], jitter, b[2*n:]), axis=0)
             if trainable:
                 w, b = tf.Variable(w, name=f"neutra_{index}_weight_{i}"), tf.Variable(b, name=f"neutra_{index}_bias_{i}")
             weights.append(w)
@@ -539,7 +562,8 @@ class AutoregressiveStage:
     def forward_and_logdet(self, values):
         if self.kind == "iaf":
             return iaf_forward(self, values)
-        output, ld, _ = sigmoid_mixture(values, *self.pseudo_parameters(values))
+        scalar = affine_mixture if self.config.diagnostic_naf_affine else sigmoid_mixture
+        output, ld, _ = scalar(values, *self.pseudo_parameters(values))
         return output, tf.reduce_sum(ld, axis=-1)
 
     def pullback_score(self, values, score):
@@ -561,9 +585,15 @@ class AutoregressiveStage:
     def _inverse_value(self, output):
         def solve(i, x, valid):
             slopes, offsets, logits = self.pseudo_parameters(x)
-            solved, _, ok, _ = sigmoid_inverse(output[:, i], slopes[:, i], offsets[:, i], logits[:, i],
-                atol=self.config.inverse_atol, rtol=self.config.inverse_rtol,
-                max_iterations=self.config.inverse_max_iterations)
+            if self.config.diagnostic_naf_affine:
+                shift, log_scale, _ = affine_mixture(tf.zeros_like(output[:, i]),
+                    slopes[:, i], offsets[:, i], logits[:, i])
+                solved = (output[:, i]-shift)*tf.exp(-log_scale)
+                ok = tf.math.is_finite(solved) & tf.math.is_finite(log_scale)
+            else:
+                solved, _, ok, _ = sigmoid_inverse(output[:, i], slopes[:, i], offsets[:, i], logits[:, i],
+                    atol=self.config.inverse_atol, rtol=self.config.inverse_rtol,
+                    max_iterations=self.config.inverse_max_iterations)
             x += (solved-x[:, i])[:, None]*tf.one_hot(i, self.dimension, dtype=self.dtype)
             return i+1, x, valid & ok
         _, x, valid = tf.while_loop(lambda i, x, valid: i < self.dimension, solve,
@@ -601,7 +631,8 @@ class AutoregressiveStage:
         if self.kind == "iaf":
             scale, _, derivative, _, _ = iaf_parameters(self, values)
             return scale, derivative
-        _, ld, _ = sigmoid_mixture(values, *self.pseudo_parameters(values))
+        scalar = affine_mixture if self.config.diagnostic_naf_affine else sigmoid_mixture
+        _, ld, _ = scalar(values, *self.pseudo_parameters(values))
         # No conditional tanh cap in DSF. Report diagonal log derivative only.
         return ld, tf.ones_like(ld)
 

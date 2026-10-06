@@ -381,6 +381,8 @@ The next pass uses the updated maps. Optimizer updates and particle transport
 must follow the chosen algorithm's ordering; a map fitted using a particle
 cloud cannot be silently replaced in the weight denominator by a later map.
 
+\input{chapters/ch26d_smc_advances}
+
 \section{FAB: minimizing the importance-weight second moment}
 \label{sec:bf-is-fab}
 
@@ -519,6 +521,8 @@ dimension. It is not a guarantee for arbitrary dependent posteriors with local
 HMC. The 32-dimensional Many-Well benchmark has $65{,}536$ modes through a
 product construction; it demonstrates exploitation of structure, not an
 exhaustive optimizer search over arbitrary modes.
+
+\input{chapters/ch26d_fab_calibration_failure}
 
 \section{Combining FAB with IAF and NeuTra}
 \label{sec:bf-fab-iaf}
@@ -712,7 +716,12 @@ additional approximation. SCLD's reported multimodal examples include a
 Cox example is primarily evaluated through an ELBO; it is not evidence of
 exhaustive unknown-mode coverage in 1,600 dimensions.
 
+\input{chapters/ch26d_multimodal_recovery}
+
+\input{chapters/ch26d_smc_integration}
+
 \section{Evaluation and implementation}
+\label{sec:bf-is-evaluation}
 
 The broad evaluation of \citet[Sections 7--8 and Appendices D--F]{blessing2024beyond}
 compares eleven variational and sampling methods across synthetic and Bayesian
@@ -735,12 +744,16 @@ and training from its bundled coupling-layer flow. Its MIT license permits
 adaptation with the notice retained. BayesFilter ports those FAB components to
 TensorFlow while keeping the existing IAF and batch-native posterior evaluator.
 This preserves a single transport implementation and avoids a second target
-implementation solely for a different autodiff backend. The port follows the
-paper's normalized-weight sum in \eqref{eq:bf-fab-detached-loss}; the inspected
-JAX no-replay function takes a mean of those weighted terms, adding a factor
-$1/N$. The replay loss, correction cap and without-replacement choice are
-recorded separately. These are explicit source differences, not interchangeable
-normalizations under arbitrary optimizer settings.
+implementation solely for a different autodiff backend. In the executed
+September 28 source, the port's fresh no-replay loss follows the inspected
+JAX implementation: it takes a mean of normalized weighted terms, adding a
+factor $1/B$ to the sum in \eqref{eq:bf-fab-detached-loss}. The calibration
+reports that sum without the extra factor when comparing gradient noise
+across batch sizes. The replay loss, correction cap and without-replacement
+choice are recorded separately. The two loss scales are not interchangeable
+under arbitrary optimizer settings. The executed source is preserved with
+the calibration evidence; this statement does not imply that every checkout
+contains the same integrated training code.
 
 \enlargethispage{\baselineskip}
 Three remaining costs determine the application. First, AIS requires repeated
