@@ -430,7 +430,7 @@ class TeacherGeometry:
         return report
 
 
-def fit(output, teacher_path, seed, *, extended=False):
+def fit(output, teacher_path, seed, *, extended=False, reverse_from=None):
     from bayesfilter.inference.neutra_transport import NeuTraTransport, NeuTraTransportConfig, NeuTraOptimizerConfig
     from bayesfilter.inference.neutra_joint_training import JointNeuTraTrainer
     from bayesfilter.inference.neutra_artifacts import load_frozen_neutra_artifact
@@ -445,18 +445,33 @@ def fit(output, teacher_path, seed, *, extended=False):
     cfg = NeuTraTransportConfig.huang_dsf(4,hidden_layers=(64,64),stages=3,
         mixture_components=4,seed=(seed,731))
     flow = NeuTraTransport(cfg)
-    opt = NeuTraOptimizerConfig(64,'standard',.001,.9,.999,1e-8,None,True)
+    parent = None
+    if reverse_from is not None:
+        reverse_from = Path(reverse_from)
+        parent = json.loads(reverse_from.read_text())
+        parent_manifest = json.loads((reverse_from.parent/'manifest.json').read_text())
+        digest = hashlib.sha256(reverse_from.read_bytes()).hexdigest()
+        if parent_manifest.get('artifact_sha256',{}).get(reverse_from.name)!=digest:
+            raise ValueError('reverse parent is not the preserved checked checkpoint')
+        if parent.get('forward_weight')!=0. or parent.get('reverse_weight')!=1.:
+            raise ValueError('reverse continuation requires a reverse objective parent')
+    opt = (NeuTraOptimizerConfig(**parent['base']['optimizer_config']) if parent else
+           NeuTraOptimizerConfig(64,'standard',.001,.9,.999,1e-8,None,True))
     trainer = JointNeuTraTrainer(flow,target.value_score,opt,target_signature=target.signature,
         teacher_id=hashlib.sha256((Path(teacher_path)/'result.json').read_bytes()).hexdigest(),
-        forward_weight=1.,reverse_weight=0.)
+        forward_weight=0. if parent else 1.,reverse_weight=1. if parent else 0.)
+    if parent:
+        trainer.restore(parent)
     report = dict(status='running',target_signature=target.signature,seed=seed,
         teacher=str(teacher_path),teacher_kind=teacher['teacher_kind'],configuration=cfg.payload(),
         scientific_promotion=False,batch_size=64,dtype='float64_diagnostic_exception',
         jit_compile=True,samplewise_loop=False,checkpoints=[],controls={},
-        forward_budget=2048 if extended else 512,reverse_budget=128 if extended else 32)
-    for name,center,cov in (('prior',target.bridge.prior_center,16*tf.eye(4,dtype=F64)),
+        forward_budget=0 if parent else (2048 if extended else 512),
+        reverse_budget=128 if (extended or parent) else 32)
+    controls = (('prior',target.bridge.prior_center,16*tf.eye(4,dtype=F64)),
         ('diagonal',training['mean'],tf.linalg.diag(tf.linalg.diag_part(tf.constant(training['covariance'],F64)))),
-        ('full_covariance',training['mean'],training['covariance'])):
+        ('full_covariance',training['mean'],training['covariance']))
+    for name,center,cov in (() if parent else controls):
         control = AffineControl(center,cov)
         report['controls'][name] = GeometryProbe(control,target)(short,output,name)
         write(output/'progress.json',report)
@@ -493,6 +508,19 @@ def fit(output, teacher_path, seed, *, extended=False):
         write(output/'progress.json',report)
         print(json.dumps(dict(label=label,ce=ce,coverage=coverage,score=diagnostic.get('score_residual_norm'))),flush=True)
         return record
+    if parent:
+        counter = int(trainer.optimizer.iterations.numpy())
+        report.update(parent_checkpoint=str(reverse_from),parent_sha256=digest,
+                      starting_reverse_updates=counter,training_blocks=[])
+        for offset in range(counter,counter+128,32):
+            report['training_blocks'].append(train_block(trainer,banks['training'],32,[seed,4001],offset))
+            write(output/f'reverse{offset+32}-checkpoint.json',trainer.checkpoint())
+            write(output/'progress.json',report)
+            print(json.dumps(dict(reverse_updates=offset+32,block=report['training_blocks'][-1])),flush=True)
+        final = assess(f'reverse{counter+128}',latent)
+        report['status'] = 'reverse_continuation_viable' if final['probe']['finite'] and final['coverage_passed'] else 'reverse_repair_required'
+        write(output/'result.json',report)
+        return report
     assess('initial',short)
     report['training_blocks'] = []
     rungs = ((0,128,'forward128'),(128,384,'forward512'))

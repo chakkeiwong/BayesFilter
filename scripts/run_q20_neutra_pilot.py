@@ -59,7 +59,8 @@ def worker(args):
             elif args.phase == 'reuse-smc':
                 result = pilot.reuse_smc(output,args.teacher,args.data_root)
             else:
-                result = pilot.fit(output,args.teacher,args.seed,extended=args.phase=='fit-extended')
+                result = pilot.fit(output,args.teacher,args.seed,extended=args.phase=='fit-extended',
+                                   reverse_from=args.resume)
         manifest['status'] = 'complete'
         manifest['result_status'] = result['status']
     except BaseException as error:
@@ -83,7 +84,7 @@ def launch(args):
         if state.get('active'):
             raise ValueError('unsettled active attempt; reconcile before resuming')
         remaining = {k:INITIAL[k]-sum(r[k] for r in state['attempts']) for k in INITIAL}
-        cap = {'price':900,'reuse-smc':450,'fit':4200,'fit-extended':4200}[args.phase]
+        cap = {'price':900,'reuse-smc':450,'fit':4200,'fit-extended':4200,'continue-reverse':1800}[args.phase]
         if sum(r['gpu_process_seconds'] for r in state['attempts'])+cap>7200:
             raise ValueError('initial pilot exposure cap requires a measured continuation decision')
         if remaining['gpu_process_seconds'] < cap or remaining['cpu_core_seconds'] < 2*cap:
@@ -109,6 +110,8 @@ def launch(args):
             '--data-root',str(ROOT)]
         if args.teacher:
             command += ['--teacher',str(args.teacher.resolve())]
+        if args.resume:
+            command += ['--resume',str(args.resume.resolve())]
         started = time.monotonic()
         before = resource.getrusage(resource.RUSAGE_CHILDREN)
         row = dict(output=str(output),phase=args.phase,command=command,git_commit=commit,
@@ -148,18 +151,21 @@ def launch(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('phase',choices=('price','reuse-smc','fit','fit-extended'))
+    parser.add_argument('phase',choices=('price','reuse-smc','fit','fit-extended','continue-reverse'))
     parser.add_argument('--gpu',default='0')
     parser.add_argument('--seed',type=int,default=61007)
     parser.add_argument('--teacher',type=Path)
     parser.add_argument('--worker',action='store_true')
     parser.add_argument('--output',type=Path)
     parser.add_argument('--data-root',type=Path,default=ROOT)
+    parser.add_argument('--resume',type=Path)
     args = parser.parse_args()
     if not args.gpu.isdecimal():
         parser.error('one physical GPU index is required')
-    if args.phase in ('fit','fit-extended','reuse-smc') and args.teacher is None:
+    if args.phase in ('fit','fit-extended','reuse-smc','continue-reverse') and args.teacher is None:
         parser.error('fit/reuse requires a teacher source path')
+    if (args.phase=='continue-reverse') != (args.resume is not None):
+        parser.error('only continue-reverse requires a saved --resume checkpoint')
     if args.worker:
         worker(args)
     else:

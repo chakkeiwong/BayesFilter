@@ -198,7 +198,61 @@ coverage guard saves its full endpoint and blocks the 128 rung for that
 candidate; the planned lower-rate repair remains available within the total
 campaign budget. Decide about long training after this bounded continuation.
 
+Stage-six decision after the second seed: 2048 forward/128 reverse updates
+completed in 2323.38 GPU-process seconds. The final 1000-point median/p99/max
+residuals were 1.995/74.28/671.22. Coverage, finite updates and reloads passed.
+All ten largest residuals had estimated log(p/q)<-3 in the same base bank;
+the worst point lies inside ||z||<=3, so these are not exclusively far-base-tail
+events. These are explanatory observations, not a new pass/fail threshold.
+Additional empirical forward training would not directly penalize excess q
+mass where the finite teacher supplies few particles. Reverse KL explicitly
+averages log(q/gamma) under q and addresses this excess mass. The smallest
+next test therefore extends the saved reverse128 checkpoint to reverse256,
+preserving Adam and the RNG counter, at the same rate .0001 in four 32-update
+blocks. This tests insufficient reverse refinement without another 8192-step
+forward fit. The 256 total is the synthetic study's inherited budget hypothesis,
+not a q20 convergence criterion. Retain complete endpoint probes and coverage.
+
+Reserve 1800 seconds: 128 updates at the measured 6.53 seconds/update cost
+about 836 seconds; compilation, inverse/teacher validation and the 1000-point
+probe justify the remaining margin. Current pilot charges are 5220.15 GPU
+seconds, so the reservation totals 7020.15, within the original 7200 limit.
+Skeptical review: no new target, data, objective, architecture, precision or
+scientific threshold is introduced; comparisons reuse the same probe and
+teacher, with no statistical ranking claim. A failed coverage or finite check
+rejects the candidate. This bounded refinement closes the initial short-test
+allocation; any larger forward/capacity/teacher study needs a separately priced
+continuation plan under the remaining campaign budget. Finite residuals alone
+must not be relabeled as a numerical or posterior-validity veto.
+
 Artifacts: `docs/plans/artifacts/q20-naf-forward-reverse-2026-10-06/` with unique
 attempt directories, source snapshot, manifests, checkpoints, teacher tensors,
 paired probe tensors, result and accounting records. Exact commands and phase
 decisions will be recorded in the companion results file before/after execution.
+
+## Terminal short-test decision
+
+All six stages above are complete. The last 128 reverse updates took 1052.64
+GPU-process seconds including final validation; total pilot GPU charge is
+6272.79 seconds. Reverse256 passed finite, reload, inverse and represented-region
+checks. Its 1000-point residual median/p99/max is 1.681/57.44/279.99; 76.4% of
+points still exceed norm one. These finite errors do not invalidate the harness
+or impose a continuation veto. The bounded pilot supports a further calibrated
+training experiment but does not promote this map as correctly whitened.
+
+The next discriminating stage is a matched reverse-rate/budget calibration,
+not an automatic 8192/16384 empirical-forward ladder. At the measured 6.53
+seconds/update, two 512-update reverse arms require about 6687 GPU seconds
+before setup and diagnostics; an 8400-second exposure allowance is a
+convenience margin supported by the observed compilation/probe costs. This
+estimate is recorded for a subsequent continuation plan, not charged or launched.
+Preserve the unused campaign allocation. Full HMC remains outside this
+training-only pilot.
+
+Terminal skeptical review: the engineering checks answer whether this route
+executes the declared objective; they do not certify the approximate UKF target.
+The two fitting seeds have different budgets, so they cannot support a seed-only
+comparison. The common base bank gives descriptive within-map contrasts, not
+independent confirmation. The approximate teacher remains restricted by its
+proposal-supported regions. Both the lost-time backend mismatch and the finite
+tail errors are preserved rather than excluded from cost or interpretation.

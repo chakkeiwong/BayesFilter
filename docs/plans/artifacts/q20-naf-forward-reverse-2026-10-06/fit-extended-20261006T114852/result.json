@@ -1,0 +1,1010 @@
+{
+  "status": "short_pair_viable",
+  "target_signature": "9a86e60081f1b9cd288dbdb1dcbe1e9a5b5e23d9b5ef97afdb72ee95c23d7278",
+  "seed": 61008,
+  "teacher": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/q20-naf-forward-reverse-2026-10-06/reuse-smc-20261006T111325",
+  "teacher_kind": "replayed_approximate_annealed_smc",
+  "configuration": {
+    "dimension": 4,
+    "kind": "naf_dsf",
+    "hidden_layers": [
+      64,
+      64
+    ],
+    "stages": 3,
+    "activation": "elu",
+    "seed": [
+      61008,
+      731
+    ],
+    "conditional_scale_cap": 2.0,
+    "scale_transform": "neutra_conditional_tanh",
+    "mixture_components": 4,
+    "slope_floor": 1e-06,
+    "final_weight_scale": 0.001,
+    "permutation_policy": "full_reverse",
+    "inverse_atol": 1e-11,
+    "inverse_rtol": 1e-11,
+    "inverse_max_iterations": 100,
+    "mask_policy": "legacy_degree_masks_v1",
+    "naf_conditioner": "author_cmade",
+    "iaf_initializer": "hoffman_variance_scaling",
+    "iaf_variance_scale": 0.02,
+    "dtype": "float64",
+    "affine_center": [],
+    "affine_scale": []
+  },
+  "scientific_promotion": false,
+  "batch_size": 64,
+  "dtype": "float64_diagnostic_exception",
+  "jit_compile": true,
+  "samplewise_loop": false,
+  "checkpoints": [
+    {
+      "label": "initial",
+      "probe": {
+        "rows": 128,
+        "complete": true,
+        "finite": true,
+        "valid_rows": 128,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "short_diagnostic_only",
+        "batch_size": 32,
+        "padded_rows": 0,
+        "jit_compile": true,
+        "traces": 1,
+        "geometry_role": "explanatory_only_no_posterior_promotion",
+        "wall_seconds": 32.40848083794117,
+        "artifact_sha256": {
+          "initial-latent.tensor": "5e0a36f03b9f0351fa4499c46151e6728752edff9719d36be42115de629f809a",
+          "initial-physical.tensor": "5a3a3946b947508f119efd50d7a05a8cc72023089eb5f04d325ffafe62840fa0",
+          "initial-residual.tensor": "37f76aa7507fc6607092ff880e286974cede0b9be06fa892b01f4ada60fbe9f1",
+          "initial-log_ratio.tensor": "0cdaead8b018a5cc8e0f2dcb374aac23bea008735ee08438caafb13ef92b3796",
+          "initial-valid.tensor": "3f42bd2da4a1ed7124bb4829db8ec60ad3dc0bd48c59ba6592c1d1fd34c8b536"
+        },
+        "score_residual_norm": {
+          "median": 33.00586460977827,
+          "p95": 171.70241612023437,
+          "p99": 240.5768348223903,
+          "max": 337.8531061583014,
+          "mean": 54.3694348720348,
+          "rms": 78.5354286905938
+        },
+        "centered_log_density_rms": 29.445529311183236,
+        "negative_mass": 0.515625,
+        "importance_ess": 4.269734842754474,
+        "residual_exceeds_one_fraction": 1.0,
+        "residual_exceeds_base_score_fraction": 1.0,
+        "conditional": {
+          "negative_region": {
+            "rows": 66,
+            "mean": 59.89808004632455,
+            "max": 337.8531061583014
+          },
+          "positive_region": {
+            "rows": 62,
+            "mean": 48.484102912307,
+            "max": 271.49233521240564
+          },
+          "base_center": {
+            "rows": 121,
+            "mean": 50.97368568890236,
+            "max": 337.8531061583014
+          },
+          "base_tail": {
+            "rows": 7,
+            "mean": 113.06738503760987,
+            "max": 271.49233521240564
+          }
+        }
+      },
+      "validation_cross_entropy": 18.03145070793548,
+      "validation_teacher_geometry": {
+        "rows": 400,
+        "finite": true,
+        "latent_mean": [
+          1.0051401024899569,
+          0.14346638917623536,
+          -0.037716357737459995,
+          -0.06222037952587151
+        ],
+        "latent_covariance": [
+          [
+            17.76778562525434,
+            0.47199017865563825,
+            0.13618467120365116,
+            -0.5155553773177891
+          ],
+          [
+            0.4719901786556385,
+            7.191163210221572,
+            0.3515715268304679,
+            0.6272843938908296
+          ],
+          [
+            0.13618467120365121,
+            0.3515715268304679,
+            0.38383893786950396,
+            -0.052180862806238175
+          ],
+          [
+            -0.515555377317789,
+            0.6272843938908299,
+            -0.052180862806238196,
+            2.3320947019276437
+          ]
+        ],
+        "weighted_residual_mean": 16.877854043927233,
+        "weighted_residual_rms": 22.604732058650562,
+        "max_residual": 93.13714490445355,
+        "scope": "approximate_independent_validation_teacher_not_exact_posterior",
+        "conditional": {
+          "negative": {
+            "mass": 0.5239706663148522,
+            "weighted_residual_mean": 18.143226656194408
+          },
+          "positive": {
+            "mass": 0.47602933368514777,
+            "weighted_residual_mean": 15.485044643604171
+          }
+        },
+        "artifact_sha256": {
+          "initial-teacher-latent.tensor": "d758884d94972f49cc1669ccced10f73d462abc9a85827190535251eb60c2f3b",
+          "initial-teacher-residual.tensor": "b271228c14c7db75b54d7f4e3182d6369a585dcf47f47b73f22f45940ca32488",
+          "initial-teacher-weights.tensor": "a7a8fb8e34f4e56e7c3edfa668d0d1fd8fa3e6a35d00fc999d98b4d97a69b22e"
+        }
+      },
+      "coverage_passed": true,
+      "teacher_negative_mass": 0.5239706663148522,
+      "checkpoint_reloaded": true,
+      "inverse_error": 9.842551024125509e-12,
+      "logdet_error": 1.9984014443252818e-15,
+      "forward_reload_error": 0.0
+    },
+    {
+      "label": "forward128",
+      "probe": {
+        "rows": 128,
+        "complete": true,
+        "finite": true,
+        "valid_rows": 128,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "short_diagnostic_only",
+        "batch_size": 32,
+        "padded_rows": 0,
+        "jit_compile": true,
+        "traces": 1,
+        "geometry_role": "explanatory_only_no_posterior_promotion",
+        "wall_seconds": 15.852281159255654,
+        "artifact_sha256": {
+          "forward128-latent.tensor": "5e0a36f03b9f0351fa4499c46151e6728752edff9719d36be42115de629f809a",
+          "forward128-physical.tensor": "fb7b8261bcec028466291e8ae4727635a6c0b7d5e963ef63108142cba8074820",
+          "forward128-residual.tensor": "a0d8de69c9e79b0d68a0d11b30d1ceab37c21d7cf5fa6c83290b4cc7721199de",
+          "forward128-log_ratio.tensor": "66f76316aff4cbe503e307b8b99bf0970dafffc1b506463042ce78df3ff00937",
+          "forward128-valid.tensor": "3f42bd2da4a1ed7124bb4829db8ec60ad3dc0bd48c59ba6592c1d1fd34c8b536"
+        },
+        "score_residual_norm": {
+          "median": 161.22349696280904,
+          "p95": 560.2171455112008,
+          "p99": 614.0043068536451,
+          "max": 734.6301608598893,
+          "mean": 187.2566360975025,
+          "rms": 241.4039368127684
+        },
+        "centered_log_density_rms": 121.48853143723892,
+        "negative_mass": 0.453125,
+        "importance_ess": 8.882157994539073,
+        "residual_exceeds_one_fraction": 1.0,
+        "residual_exceeds_base_score_fraction": 1.0,
+        "conditional": {
+          "negative_region": {
+            "rows": 58,
+            "mean": 196.9644924562308,
+            "max": 670.1374938933492
+          },
+          "positive_region": {
+            "rows": 70,
+            "mean": 179.2129836859848,
+            "max": 734.6301608598893
+          },
+          "base_center": {
+            "rows": 121,
+            "mean": 174.23065836450857,
+            "max": 670.1374938933492
+          },
+          "base_tail": {
+            "rows": 7,
+            "mean": 412.4199654821119,
+            "max": 734.6301608598893
+          }
+        }
+      },
+      "validation_cross_entropy": 8.09936345864295,
+      "validation_teacher_geometry": {
+        "rows": 400,
+        "finite": true,
+        "latent_mean": [
+          -0.07745964437369074,
+          -0.14716211925138384,
+          -0.2641702597670216,
+          -0.07918502547149325
+        ],
+        "latent_covariance": [
+          [
+            0.9308768920421525,
+            0.041000099429602394,
+            0.05403977542436045,
+            -0.07463887768240492
+          ],
+          [
+            0.04100009942960241,
+            0.9565927003506876,
+            0.2098549197793897,
+            0.14992472770890472
+          ],
+          [
+            0.054039775424360434,
+            0.20985491977938966,
+            1.0673775674733477,
+            -0.04508009345847152
+          ],
+          [
+            -0.07463887768240489,
+            0.14992472770890472,
+            -0.04508009345847149,
+            0.9531998619144348
+          ]
+        ],
+        "weighted_residual_mean": 15.418710953722929,
+        "weighted_residual_rms": 19.91345706650444,
+        "max_residual": 65.05352990003522,
+        "scope": "approximate_independent_validation_teacher_not_exact_posterior",
+        "conditional": {
+          "negative": {
+            "mass": 0.5239706663148522,
+            "weighted_residual_mean": 16.512503184275683
+          },
+          "positive": {
+            "mass": 0.47602933368514777,
+            "weighted_residual_mean": 14.214761946177525
+          }
+        },
+        "artifact_sha256": {
+          "forward128-teacher-latent.tensor": "6997f9252346eea871ab921452a8168aa0228c2dca8f8428a5ff6696724a697e",
+          "forward128-teacher-residual.tensor": "f4cfc86fd3ad661f48d90cbcdb89c34745a0574159c17530ca16c043d0fb39c5",
+          "forward128-teacher-weights.tensor": "a7a8fb8e34f4e56e7c3edfa668d0d1fd8fa3e6a35d00fc999d98b4d97a69b22e"
+        }
+      },
+      "coverage_passed": true,
+      "teacher_negative_mass": 0.5239706663148522,
+      "checkpoint_reloaded": true,
+      "inverse_error": 7.390494579218183e-12,
+      "logdet_error": 5.480060849549773e-13,
+      "forward_reload_error": 0.0
+    },
+    {
+      "label": "forward512",
+      "probe": {
+        "rows": 128,
+        "complete": true,
+        "finite": true,
+        "valid_rows": 128,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "short_diagnostic_only",
+        "batch_size": 32,
+        "padded_rows": 0,
+        "jit_compile": true,
+        "traces": 1,
+        "geometry_role": "explanatory_only_no_posterior_promotion",
+        "wall_seconds": 15.859022921416909,
+        "artifact_sha256": {
+          "forward512-latent.tensor": "5e0a36f03b9f0351fa4499c46151e6728752edff9719d36be42115de629f809a",
+          "forward512-physical.tensor": "c61eff34e56ac4166c0842ba984822385c77c27d2d33d99b8ed0b04d499f00ce",
+          "forward512-residual.tensor": "9e92aba17d130b9d72b4b9b002b4aa7e1b2c9c466404804562d6d44c03922f25",
+          "forward512-log_ratio.tensor": "83be2010f9746aca639bcac094471dfbaa8a4bd5ee618e877fc7352bd186ce5b",
+          "forward512-valid.tensor": "3f42bd2da4a1ed7124bb4829db8ec60ad3dc0bd48c59ba6592c1d1fd34c8b536"
+        },
+        "score_residual_norm": {
+          "median": 6.5446623009542115,
+          "p95": 460.17873398062255,
+          "p99": 907.9942186709227,
+          "max": 2959.0823759168247,
+          "mean": 92.46470750674037,
+          "rms": 333.07522686679744
+        },
+        "centered_log_density_rms": 104.68084115146353,
+        "negative_mass": 0.484375,
+        "importance_ess": 21.6571378401571,
+        "residual_exceeds_one_fraction": 0.96875,
+        "residual_exceeds_base_score_fraction": 0.8671875,
+        "conditional": {
+          "negative_region": {
+            "rows": 62,
+            "mean": 125.39926814330208,
+            "max": 2959.0823759168247
+          },
+          "positive_region": {
+            "rows": 66,
+            "mean": 61.52618084815211,
+            "max": 1400.8569267224066
+          },
+          "base_center": {
+            "rows": 121,
+            "mean": 81.10222128717083,
+            "max": 2959.0823759168247
+          },
+          "base_tail": {
+            "rows": 7,
+            "mean": 288.8733978735853,
+            "max": 1400.8569267224066
+          }
+        }
+      },
+      "validation_cross_entropy": 5.982765764528181,
+      "validation_teacher_geometry": {
+        "rows": 400,
+        "finite": true,
+        "latent_mean": [
+          -0.04385802253778344,
+          -0.04904155169046308,
+          -0.14405500786684922,
+          -0.25250206896270827
+        ],
+        "latent_covariance": [
+          [
+            0.8521276405515442,
+            0.058830316852096526,
+            0.053124867109543,
+            0.00724269358776827
+          ],
+          [
+            0.05883031685209653,
+            0.949332382851258,
+            0.14358541276319534,
+            0.35623119832867745
+          ],
+          [
+            0.053124867109543,
+            0.14358541276319534,
+            0.8012151798647534,
+            0.33363046455243056
+          ],
+          [
+            0.007242693587768282,
+            0.35623119832867745,
+            0.33363046455243056,
+            0.8391719016570955
+          ]
+        ],
+        "weighted_residual_mean": 6.304209085828843,
+        "weighted_residual_rms": 13.350282410429228,
+        "max_residual": 121.77746303543275,
+        "scope": "approximate_independent_validation_teacher_not_exact_posterior",
+        "conditional": {
+          "negative": {
+            "mass": 0.5239706663148522,
+            "weighted_residual_mean": 7.989969485022074
+          },
+          "positive": {
+            "mass": 0.47602933368514777,
+            "weighted_residual_mean": 4.448674275033574
+          }
+        },
+        "artifact_sha256": {
+          "forward512-teacher-latent.tensor": "ab3513c3912c2c6f19d4bdf6ffd1b979e1dc92693ea616e0951f065151fcbc7b",
+          "forward512-teacher-residual.tensor": "a51881b3a8362b5ed8805d7bfdec7ed4578ad7347c082df13515e7412e8165bd",
+          "forward512-teacher-weights.tensor": "a7a8fb8e34f4e56e7c3edfa668d0d1fd8fa3e6a35d00fc999d98b4d97a69b22e"
+        }
+      },
+      "coverage_passed": true,
+      "teacher_negative_mass": 0.5239706663148522,
+      "checkpoint_reloaded": true,
+      "inverse_error": 9.31827286811817e-11,
+      "logdet_error": 7.251310663036747e-11,
+      "forward_reload_error": 0.0
+    },
+    {
+      "label": "forward2048",
+      "probe": {
+        "rows": 1000,
+        "complete": true,
+        "finite": true,
+        "valid_rows": 1000,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "standard_1000_point",
+        "batch_size": 32,
+        "padded_rows": 24,
+        "jit_compile": true,
+        "traces": 1,
+        "geometry_role": "explanatory_only_no_posterior_promotion",
+        "wall_seconds": 124.12500087590888,
+        "artifact_sha256": {
+          "forward2048-latent.tensor": "76385f2acb35eaad25920e2072061811248ae41e495d93e8455ab89cffa25980",
+          "forward2048-physical.tensor": "52341847d810476b01ce165540d9cd8f4991b3c83c428851a7e9486bfb929b56",
+          "forward2048-residual.tensor": "1b95d3730e9d7e770c2cfc946e10ca98000290f069f8a98cd44ce8e735a64c5d",
+          "forward2048-log_ratio.tensor": "deae36d974f3ad9ce0bc847d17eb2bd3a072ab5271d0e2201ab7e86f17e8f9a4",
+          "forward2048-valid.tensor": "7d02d6ed35b80370d736f875ba4b6f363c6769e90e11b83e1c1f7f0dc67bfde2"
+        },
+        "score_residual_norm": {
+          "median": 3.0867420506873384,
+          "p95": 53.830107521976956,
+          "p99": 342.33651477691495,
+          "max": 1694.001026634541,
+          "mean": 18.901962360308698,
+          "rms": 89.95701295110997
+        },
+        "centered_log_density_rms": 16.6192782467396,
+        "negative_mass": 0.462,
+        "importance_ess": 311.63483501709817,
+        "residual_exceeds_one_fraction": 0.908,
+        "residual_exceeds_base_score_fraction": 0.727,
+        "conditional": {
+          "negative_region": {
+            "rows": 462,
+            "mean": 20.527503381478564,
+            "max": 747.385412768151
+          },
+          "positive_region": {
+            "rows": 538,
+            "mean": 17.50605166926691,
+            "max": 1694.001026634541
+          },
+          "base_center": {
+            "rows": 944,
+            "mean": 16.927523832760105,
+            "max": 1694.001026634541
+          },
+          "base_tail": {
+            "rows": 56,
+            "mean": 52.185354681842014,
+            "max": 766.0256996122519
+          }
+        }
+      },
+      "validation_cross_entropy": 5.808655435728481,
+      "validation_teacher_geometry": {
+        "rows": 400,
+        "finite": true,
+        "latent_mean": [
+          -0.09773515780076382,
+          -0.13042287803723757,
+          -0.2452897021855008,
+          0.03900358019099207
+        ],
+        "latent_covariance": [
+          [
+            1.2610329095227633,
+            0.05789018868803589,
+            0.10817337069755421,
+            0.2501060193209682
+          ],
+          [
+            0.057890188688035846,
+            0.9435968592074685,
+            0.2634938943286713,
+            0.3257624726418044
+          ],
+          [
+            0.10817337069755423,
+            0.2634938943286713,
+            1.0372433878271494,
+            0.06109659401427465
+          ],
+          [
+            0.25010601932096815,
+            0.3257624726418044,
+            0.06109659401427465,
+            1.6901999681431614
+          ]
+        ],
+        "weighted_residual_mean": 4.241923281965531,
+        "weighted_residual_rms": 6.6305311793933965,
+        "max_residual": 53.52702883509564,
+        "scope": "approximate_independent_validation_teacher_not_exact_posterior",
+        "conditional": {
+          "negative": {
+            "mass": 0.5239706663148522,
+            "weighted_residual_mean": 4.069327813382854
+          },
+          "positive": {
+            "mass": 0.47602933368514777,
+            "weighted_residual_mean": 4.431900991902213
+          }
+        },
+        "artifact_sha256": {
+          "forward2048-teacher-latent.tensor": "3a3ec335f3327a1c6cca1dfdf93cb8d463e28e46ea1e17437a8092c5f1c9e629",
+          "forward2048-teacher-residual.tensor": "3ca8c5065115855c97c14ac2f444a839fff684c1dcfa428249d45e596854e838",
+          "forward2048-teacher-weights.tensor": "a7a8fb8e34f4e56e7c3edfa668d0d1fd8fa3e6a35d00fc999d98b4d97a69b22e"
+        }
+      },
+      "coverage_passed": true,
+      "teacher_negative_mass": 0.5239706663148522,
+      "checkpoint_reloaded": true,
+      "inverse_error": 1.0290334583573678e-10,
+      "logdet_error": 1.3608825177868766e-10,
+      "forward_reload_error": 0.0
+    },
+    {
+      "label": "reverse32",
+      "probe": {
+        "rows": 128,
+        "complete": true,
+        "finite": true,
+        "valid_rows": 128,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "short_diagnostic_only",
+        "batch_size": 32,
+        "padded_rows": 0,
+        "jit_compile": true,
+        "traces": 1,
+        "geometry_role": "explanatory_only_no_posterior_promotion",
+        "wall_seconds": 15.633435091935098,
+        "artifact_sha256": {
+          "reverse32-latent.tensor": "5e0a36f03b9f0351fa4499c46151e6728752edff9719d36be42115de629f809a",
+          "reverse32-physical.tensor": "e1ad36d2b6f32ae0ec750d2bc66f27929236dc15e641e690226fa7cf1417fcb6",
+          "reverse32-residual.tensor": "7051fc5a50ae6716c5d69e9a752b31fc82d818e48fba5b4cc1b0e086e1737adf",
+          "reverse32-log_ratio.tensor": "49082e36df153d742735ce07345d66a5ca15bf5d17957db99e0e0b206e78186d",
+          "reverse32-valid.tensor": "3f42bd2da4a1ed7124bb4829db8ec60ad3dc0bd48c59ba6592c1d1fd34c8b536"
+        },
+        "score_residual_norm": {
+          "median": 2.2708736850685782,
+          "p95": 31.738743343508837,
+          "p99": 74.44828310492511,
+          "max": 190.3864669696234,
+          "mean": 8.842781524356077,
+          "rms": 25.96012584084609
+        },
+        "centered_log_density_rms": 3.6643528116886155,
+        "negative_mass": 0.46875,
+        "importance_ess": 54.13016770019951,
+        "residual_exceeds_one_fraction": 0.90625,
+        "residual_exceeds_base_score_fraction": 0.6640625,
+        "conditional": {
+          "negative_region": {
+            "rows": 60,
+            "mean": 7.643831930604675,
+            "max": 49.06510758715487
+          },
+          "positive_region": {
+            "rows": 68,
+            "mean": 9.90067822472496,
+            "max": 190.3864669696234
+          },
+          "base_center": {
+            "rows": 121,
+            "mean": 7.677204811396745,
+            "max": 190.3864669696234
+          },
+          "base_tail": {
+            "rows": 7,
+            "mean": 28.9906075626531,
+            "max": 173.71372833621717
+          }
+        }
+      },
+      "validation_cross_entropy": 5.829390346133972,
+      "validation_teacher_geometry": {
+        "rows": 400,
+        "finite": true,
+        "latent_mean": [
+          -0.07232059216385492,
+          -0.19861285284830904,
+          -0.22621674542527387,
+          0.17026019472092874
+        ],
+        "latent_covariance": [
+          [
+            1.4315286794912343,
+            0.07171744124844517,
+            0.10158178045844005,
+            0.2641173681535796
+          ],
+          [
+            0.07171744124844519,
+            1.351681626982332,
+            0.4092418812764101,
+            0.2518106917139231
+          ],
+          [
+            0.10158178045844005,
+            0.40924188127641,
+            1.2696290319052441,
+            0.010812466539525226
+          ],
+          [
+            0.2641173681535796,
+            0.2518106917139231,
+            0.010812466539525223,
+            1.598281654984726
+          ]
+        ],
+        "weighted_residual_mean": 4.044440074102109,
+        "weighted_residual_rms": 6.402758463554909,
+        "max_residual": 49.32729304157083,
+        "scope": "approximate_independent_validation_teacher_not_exact_posterior",
+        "conditional": {
+          "negative": {
+            "mass": 0.5239706663148522,
+            "weighted_residual_mean": 4.192809073012156
+          },
+          "positive": {
+            "mass": 0.47602933368514777,
+            "weighted_residual_mean": 3.8811287028940824
+          }
+        },
+        "artifact_sha256": {
+          "reverse32-teacher-latent.tensor": "d89f5935350e10329af1912f704f4219c131b281748fc0fd61169755ef45f2be",
+          "reverse32-teacher-residual.tensor": "611702564c5e607c3c0d4d92ffc1ff6b024ce7ed49f8ca1932d54bd8259157b3",
+          "reverse32-teacher-weights.tensor": "a7a8fb8e34f4e56e7c3edfa668d0d1fd8fa3e6a35d00fc999d98b4d97a69b22e"
+        }
+      },
+      "coverage_passed": true,
+      "teacher_negative_mass": 0.5239706663148522,
+      "checkpoint_reloaded": true,
+      "inverse_error": 8.575151272408707e-11,
+      "logdet_error": 1.0847123199653197e-10,
+      "forward_reload_error": 0.0
+    },
+    {
+      "label": "reverse128",
+      "probe": {
+        "rows": 1000,
+        "complete": true,
+        "finite": true,
+        "valid_rows": 1000,
+        "distribution": "standard_normal_base_draws_not_posterior_draws",
+        "verification_scope": "standard_1000_point",
+        "batch_size": 32,
+        "padded_rows": 24,
+        "jit_compile": true,
+        "traces": 1,
+        "geometry_role": "explanatory_only_no_posterior_promotion",
+        "wall_seconds": 122.57802192913368,
+        "artifact_sha256": {
+          "reverse128-latent.tensor": "76385f2acb35eaad25920e2072061811248ae41e495d93e8455ab89cffa25980",
+          "reverse128-physical.tensor": "7e75e8f5423c7fec544b8c87445a36b588003b15734386dba2433e083061c380",
+          "reverse128-residual.tensor": "7fd7811a9390846d37b74af69be32fa5d7f7ab4eb2ea39cd54885725e4a56cbb",
+          "reverse128-log_ratio.tensor": "873f15df24a64198de6bb3666993962a230a61ae6627bd39d12f50ff06210ae5",
+          "reverse128-valid.tensor": "7d02d6ed35b80370d736f875ba4b6f363c6769e90e11b83e1c1f7f0dc67bfde2"
+        },
+        "score_residual_norm": {
+          "median": 1.9953136612182898,
+          "p95": 25.869998052992752,
+          "p99": 74.28118780631654,
+          "max": 671.2209092891692,
+          "mean": 6.555643777576689,
+          "rms": 26.453817734154658
+        },
+        "centered_log_density_rms": 2.8201378507197097,
+        "negative_mass": 0.457,
+        "importance_ess": 185.58940178066794,
+        "residual_exceeds_one_fraction": 0.807,
+        "residual_exceeds_base_score_fraction": 0.539,
+        "conditional": {
+          "negative_region": {
+            "rows": 457,
+            "mean": 6.39670720102772,
+            "max": 228.61781364191057
+          },
+          "positive_region": {
+            "rows": 543,
+            "mean": 6.689408078650132,
+            "max": 671.2209092891692
+          },
+          "base_center": {
+            "rows": 944,
+            "mean": 6.386825237222903,
+            "max": 671.2209092891692
+          },
+          "base_tail": {
+            "rows": 56,
+            "mean": 9.40144202925482,
+            "max": 142.1829522790166
+          }
+        }
+      },
+      "validation_cross_entropy": 5.989064834032927,
+      "validation_teacher_geometry": {
+        "rows": 400,
+        "finite": true,
+        "latent_mean": [
+          -0.046068931994002256,
+          -0.2193674459171716,
+          -0.3074479486180886,
+          -0.07790685322617702
+        ],
+        "latent_covariance": [
+          [
+            1.7328729347073113,
+            0.06941714013733713,
+            0.07678037195655123,
+            0.40353031821317237
+          ],
+          [
+            0.06941714013733712,
+            1.7277540014626058,
+            0.5073778276429449,
+            0.12399265887148814
+          ],
+          [
+            0.07678037195655124,
+            0.5073778276429449,
+            1.203298836487435,
+            0.08842661561498033
+          ],
+          [
+            0.40353031821317237,
+            0.12399265887148814,
+            0.08842661561498033,
+            2.043491390268403
+          ]
+        ],
+        "weighted_residual_mean": 3.9175262551712784,
+        "weighted_residual_rms": 6.527004257837664,
+        "max_residual": 50.280178781551975,
+        "scope": "approximate_independent_validation_teacher_not_exact_posterior",
+        "conditional": {
+          "negative": {
+            "mass": 0.5239706663148522,
+            "weighted_residual_mean": 3.793178673232921
+          },
+          "positive": {
+            "mass": 0.47602933368514777,
+            "weighted_residual_mean": 4.0543969913893445
+          }
+        },
+        "artifact_sha256": {
+          "reverse128-teacher-latent.tensor": "473040de9f917a03691a423cbe39c6a6ebee02307503e9e5d8bc8e09a7926a26",
+          "reverse128-teacher-residual.tensor": "12de50c680cf22a4ef81ce823034e5f70571f44978ce41aeb1ac022ae3a6ece0",
+          "reverse128-teacher-weights.tensor": "a7a8fb8e34f4e56e7c3edfa668d0d1fd8fa3e6a35d00fc999d98b4d97a69b22e"
+        }
+      },
+      "coverage_passed": true,
+      "teacher_negative_mass": 0.5239706663148522,
+      "checkpoint_reloaded": true,
+      "inverse_error": 8.500919649467094e-11,
+      "logdet_error": 6.487188564108237e-11,
+      "forward_reload_error": 0.0
+    }
+  ],
+  "controls": {
+    "prior": {
+      "rows": 128,
+      "complete": true,
+      "finite": true,
+      "valid_rows": 128,
+      "distribution": "standard_normal_base_draws_not_posterior_draws",
+      "verification_scope": "short_diagnostic_only",
+      "batch_size": 32,
+      "padded_rows": 0,
+      "jit_compile": true,
+      "traces": 1,
+      "geometry_role": "explanatory_only_no_posterior_promotion",
+      "wall_seconds": 28.0902030300349,
+      "artifact_sha256": {
+        "prior-latent.tensor": "5e0a36f03b9f0351fa4499c46151e6728752edff9719d36be42115de629f809a",
+        "prior-physical.tensor": "a402bf5edaf46290ff167c7e064a7e8fa826279400e057ee330bc4f56b9315f2",
+        "prior-residual.tensor": "7dbb07c16e521569fddde00a4b14e1a0ccd2de9935d808107e4780654d6e61cf",
+        "prior-log_ratio.tensor": "9f64fd7a5103dafb44847a2554b3d2bc3a5b1c98a0ccaba1704242cc4a213369",
+        "prior-valid.tensor": "3f42bd2da4a1ed7124bb4829db8ec60ad3dc0bd48c59ba6592c1d1fd34c8b536"
+      },
+      "score_residual_norm": {
+        "median": 345.54686215335033,
+        "p95": 2534.989710864169,
+        "p99": 5087.352848046032,
+        "max": 15530.67506183433,
+        "mean": 786.5239435483934,
+        "rms": 1831.3406809384705
+      },
+      "centered_log_density_rms": 328.528174558697,
+      "negative_mass": 0.46875,
+      "importance_ess": 1.069959182520399,
+      "residual_exceeds_one_fraction": 1.0,
+      "residual_exceeds_base_score_fraction": 1.0,
+      "conditional": {
+        "negative_region": {
+          "rows": 60,
+          "mean": 949.1122647014544,
+          "max": 15530.67506183433
+        },
+        "positive_region": {
+          "rows": 68,
+          "mean": 643.0636601780454,
+          "max": 7455.932114871889
+        },
+        "base_center": {
+          "rows": 121,
+          "mean": 798.0009650794532,
+          "max": 15530.67506183433
+        },
+        "base_tail": {
+          "rows": 7,
+          "mean": 588.1354285115023,
+          "max": 1579.0494752735597
+        }
+      }
+    },
+    "diagonal": {
+      "rows": 128,
+      "complete": true,
+      "finite": true,
+      "valid_rows": 128,
+      "distribution": "standard_normal_base_draws_not_posterior_draws",
+      "verification_scope": "short_diagnostic_only",
+      "batch_size": 32,
+      "padded_rows": 0,
+      "jit_compile": true,
+      "traces": 1,
+      "geometry_role": "explanatory_only_no_posterior_promotion",
+      "wall_seconds": 21.849356893915683,
+      "artifact_sha256": {
+        "diagonal-latent.tensor": "5e0a36f03b9f0351fa4499c46151e6728752edff9719d36be42115de629f809a",
+        "diagonal-physical.tensor": "6679be7d43184909193a390453849b8a258b13ff7a5cff309668610550f15cc4",
+        "diagonal-residual.tensor": "079977803aefc25f520e846a641714da0f5a974825b93c119e06860184b86c1f",
+        "diagonal-log_ratio.tensor": "2868ba04287028726aebed36f47e227096d8c58362d50d55de078d0ac51b87e9",
+        "diagonal-valid.tensor": "3f42bd2da4a1ed7124bb4829db8ec60ad3dc0bd48c59ba6592c1d1fd34c8b536"
+      },
+      "score_residual_norm": {
+        "median": 183.44049514852694,
+        "p95": 586.235832650323,
+        "p99": 699.118942958277,
+        "max": 847.1096001452183,
+        "mean": 209.25095266964323,
+        "rms": 269.87785851216586
+      },
+      "centered_log_density_rms": 134.80318726112498,
+      "negative_mass": 0.46875,
+      "importance_ess": 4.692643983685669,
+      "residual_exceeds_one_fraction": 1.0,
+      "residual_exceeds_base_score_fraction": 1.0,
+      "conditional": {
+        "negative_region": {
+          "rows": 60,
+          "mean": 216.0619141543399,
+          "max": 793.318315467872
+        },
+        "positive_region": {
+          "rows": 68,
+          "mean": 203.24128077138144,
+          "max": 847.1096001452183
+        },
+        "base_center": {
+          "rows": 121,
+          "mean": 194.3927212640397,
+          "max": 793.318315467872
+        },
+        "base_tail": {
+          "rows": 7,
+          "mean": 466.0860955379322,
+          "max": 847.1096001452183
+        }
+      }
+    },
+    "full_covariance": {
+      "rows": 128,
+      "complete": true,
+      "finite": true,
+      "valid_rows": 128,
+      "distribution": "standard_normal_base_draws_not_posterior_draws",
+      "verification_scope": "short_diagnostic_only",
+      "batch_size": 32,
+      "padded_rows": 0,
+      "jit_compile": true,
+      "traces": 1,
+      "geometry_role": "explanatory_only_no_posterior_promotion",
+      "wall_seconds": 21.698724157642573,
+      "artifact_sha256": {
+        "full_covariance-latent.tensor": "5e0a36f03b9f0351fa4499c46151e6728752edff9719d36be42115de629f809a",
+        "full_covariance-physical.tensor": "0a322eb110ca16fa24777979be1f73b86e6c050ef9ce070299438117df505562",
+        "full_covariance-residual.tensor": "f9063f79d5411bcaab7931db4c78781dbfb9789f25264f8dac1829ebe7d6a2f0",
+        "full_covariance-log_ratio.tensor": "bb9a8ebd64800935c837ab1cda1e4ddef44553fb6702cf65185db197ca575ae6",
+        "full_covariance-valid.tensor": "3f42bd2da4a1ed7124bb4829db8ec60ad3dc0bd48c59ba6592c1d1fd34c8b536"
+      },
+      "score_residual_norm": {
+        "median": 167.18144565747937,
+        "p95": 496.9038454936294,
+        "p99": 710.9056345704364,
+        "max": 779.6291988796871,
+        "mean": 198.0369570014056,
+        "rms": 253.7067440705192
+      },
+      "centered_log_density_rms": 124.3879324299377,
+      "negative_mass": 0.46875,
+      "importance_ess": 3.711225483181114,
+      "residual_exceeds_one_fraction": 1.0,
+      "residual_exceeds_base_score_fraction": 1.0,
+      "conditional": {
+        "negative_region": {
+          "rows": 60,
+          "mean": 221.40907703223425,
+          "max": 715.7193005031221
+        },
+        "positive_region": {
+          "rows": 68,
+          "mean": 177.4144981506744,
+          "max": 779.6291988796871
+        },
+        "base_center": {
+          "rows": 121,
+          "mean": 184.1219933064479,
+          "max": 715.7193005031221
+        },
+        "base_tail": {
+          "rows": 7,
+          "mean": 438.56704372853164,
+          "max": 779.6291988796871
+        }
+      }
+    }
+  },
+  "forward_budget": 2048,
+  "reverse_budget": 128,
+  "training_blocks": [
+    {
+      "updates": 128,
+      "mean_loss": 8.71311179060623,
+      "max_gradient_norm": 82.18564509171715,
+      "clipped_updates": 0,
+      "finite": true,
+      "batch_size": 64,
+      "wall_seconds": 70.68244060873985,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "jit_compile": true,
+      "samplewise_loop": false,
+      "next_counter": 128
+    },
+    {
+      "updates": 384,
+      "mean_loss": 6.995356879027169,
+      "max_gradient_norm": 161.41010529667594,
+      "clipped_updates": 0,
+      "finite": true,
+      "batch_size": 64,
+      "wall_seconds": 162.85641860822216,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "jit_compile": true,
+      "samplewise_loop": false,
+      "next_counter": 512
+    },
+    {
+      "updates": 1536,
+      "mean_loss": 5.257385633893286,
+      "max_gradient_norm": 128.42812481531664,
+      "clipped_updates": 0,
+      "finite": true,
+      "batch_size": 64,
+      "wall_seconds": 690.6159006217495,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "jit_compile": true,
+      "samplewise_loop": false,
+      "next_counter": 2048
+    },
+    {
+      "updates": 32,
+      "mean_loss": 42.17375094569351,
+      "max_gradient_norm": 533.9981716712143,
+      "clipped_updates": 0,
+      "finite": true,
+      "batch_size": 64,
+      "wall_seconds": 230.58248067321256,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "jit_compile": true,
+      "samplewise_loop": false,
+      "next_counter": 32
+    },
+    {
+      "updates": 96,
+      "mean_loss": 40.871001360715425,
+      "max_gradient_norm": 194.72725387101045,
+      "clipped_updates": 0,
+      "finite": true,
+      "batch_size": 64,
+      "wall_seconds": 627.3377332724631,
+      "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "jit_compile": true,
+      "samplewise_loop": false,
+      "next_counter": 128
+    }
+  ],
+  "heuristic_dominance": "diagnostic_controls_recorded_no_statistical_ranking"
+}

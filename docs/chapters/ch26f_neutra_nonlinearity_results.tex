@@ -353,9 +353,11 @@ $\log|\det F|$. For every one of the 800 particles,
  {1+|\ell_{\mathrm{saved}}(z)-\log|\det F|} < 5.20\times 10^{-16}.
 \end{equation}
 Four populations were frozen for training and four for validation. Their
-effective sample sizes ranged from 87.83 to 100 out of 100, and their negative
-observation-weight masses differed by .1062 (between-population standard error
-.0408). This establishes a checked approximate teacher conditional on the two
+effective sample sizes ranged from 87.83 to 100 out of 100. The training and
+validation averages of negative observation-weight mass differed by .1062
+(between-population standard error .0408). This supplies an approximate
+teacher checked for replay consistency and agreement between populations,
+conditional on the two
 known proposal-supported sign regions. It does not establish exhaustive mode
 discovery.
 
@@ -385,17 +387,72 @@ Reverse & 32 & 9.757 & .421 & 8.34 & 479.51 & 745.13\\
 Here $e(z)=\nabla_z\log\gamma_z(z)+z$ is the exact-Gaussian whitening
 residual defined above. Every update was finite, XLA compiled and unclipped;
 the maps reloaded with inverse and log-determinant checks, and the represented
-sign regions retained the declared coverage. Cross entropy therefore shows
-that the NAF learned the approximate teacher. The residual tails show that
-this short map is not correctly whitened throughout the tested base region.
+sign regions retained the declared coverage. Cross entropy shows a closer fit
+to the approximate teacher. The residual tails show substantial departures
+from the Gaussian score within the tested base region.
 The reverse phase reduced the residual median and the weighted residual mean
 on held-out teacher points (from 16.85 initially to 5.81), while its P99
 remained 479.51. The full-moment Gaussian control had median/P99 residuals
 167.18/710.91, so the NAF center is descriptively better; no uncertainty
-analysis supports a method ranking. Because the teacher covers only two known
-sign regions and the tails remain large, the long q20 training ladder is held
-until a conditional-tail diagnosis and target-specific calibration or repair
-are completed. This short test rules out a trivial frozen or nonexecuting
+analysis supports a method ranking. The large tails motivated a second fitting
+seed and a bounded reverse-training continuation. This short test rules out a trivial frozen or nonexecuting
 training path, but it does not establish posterior correctness, complete mode
 coverage, uniform whitening, HMC readiness or transfer to the full latent
 state distribution.
+
+A second fitting seed tested a larger, still bounded budget: 2,048 forward
+updates at $.001$, then 128 reverse updates at $.0001$. Validation cross entropy
+was 5.809 at the forward endpoint and 5.989 after reverse refinement. The
+generated negative sign fraction was .457, and all finite, inverse and
+represented-region checks passed. Table~\ref{tab:neutra-q20-continuation}
+reports the paired score diagnostics and the subsequent continuation.
+These are within-seed changes; the different budget prevents attributing the
+difference from the first seed to randomness alone.
+
+The largest residuals were not confined to $\|z\|>3$: the maximum after 128
+reverse updates also occurred inside that ball. To examine whether these
+points represent excess generated density, write
+$r_i=\log\gamma_z(z_i)+\|z_i\|^2/2$ for each of the $n=1000$ base draws.
+Since $\gamma(T(z))/q(T(z))=(2\pi)^{d/2}\exp r(z)$, normalizing by the same
+bank's importance estimate of $Z_\gamma$ gives
+\begin{equation}
+ \widehat{\log\frac{p(T(z_i))}{q(T(z_i))}}
+ =r_i-\log\left\{\frac1n\sum_{j=1}^{n}\exp r_j\right\}.
+\end{equation}
+All ten points with the largest residuals had this estimate below $-3$.
+The normalizer is itself estimated from the generated sample, so this is an
+explanatory diagnostic, not an exact posterior-density comparison.
+Forward fitting a finite teacher does not directly penalize density placed
+where that teacher has few particles. Reverse KL averages
+$\log\{q(X)/\gamma(X)\}$ under $q$ itself and can therefore penalize this
+excess density. This diagnosis motivated an extension from 128 to 256 reverse
+updates, preserving Adam's state and the random-number counter. It took
+17.5 minutes, including compilation and endpoint diagnostics.
+
+\begin{table}[htbp]
+\centering
+\caption{Second q20 fit and its reverse continuation. The forward map used
+2,048 updates; reverse counts are cumulative updates from that map. Every
+row uses the same 1,000 base points. Score columns summarize $\|e(z)\|$.}
+\label{tab:neutra-q20-continuation}
+\begin{tabular}{lrrrrrr}
+\toprule
+Endpoint & Updates & $\widehat L_F$ & $\hat p_-$ & Median & P99 & Maximum\\
+\midrule
+Forward & 2048 & 5.809 & .462 & 3.087 & 342.34 & 1694.00\\
+Reverse & 128 & 5.989 & .457 & 1.995 & 74.28 & 671.22\\
+Reverse & 256 & 5.735 & .457 & 1.681 & 57.44 & 279.99\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The continued map passed its finite-value, inverse and represented-region
+checks. The measured residuals decreased, including the held-out teacher's
+weighted residual mean, from 3.918 to 3.236. Nevertheless, 76.4\% of base
+draws still had residual norm greater than one. The observed changes support
+further target-specific calibration; they do not establish a statistical
+ranking, adequate Gaussianization or HMC readiness. Reverse KL does not itself
+control the maximum score error, and the finite teacher still cannot establish
+complete mode coverage. The short-test allocation therefore closes with a
+working, resumable training procedure and an unresolved geometry problem,
+rather than a promoted q20 map.

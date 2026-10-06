@@ -28,7 +28,7 @@ training and q20 pilot decisions. The five new pilot tests also passed separatel
 CPU-only tests intentionally hid GPUs and do not establish GPU training quality.
 
 The isolated integration build exposed two omitted figure dependencies, now
-included together with their gnuplot source/data. The merged 667-page monograph
+included together with their gnuplot source/data. The final merged 668-page monograph
 compiles without unresolved references or citations; the q20 table and chart
 Jacobian derivation were inspected in the rendered output. Existing unrelated
 layout warnings remain.
@@ -65,6 +65,8 @@ charges are in `artifacts/q20-naf-forward-reverse-2026-10-06/state.json`.
 | reuse-smc-20261006T111325 | All 800 saved target values replay; teacher screen passes | 141.39 | 143.76 |
 | fit-20261006T111646 | FP32 construction in diagnostic control rejected before training | 35.60 | 37.75 |
 | fit-20261006T111910 | Short NAF forward/reverse ladder completed | 764.70 | 795.73 |
+| fit-extended-20261006T114852 | Second seed: 2048 forward, 128 reverse updates | 2323.38 | 2358.89 |
+| continue-reverse-20261006T123655 | Continued saved Adam state from reverse128 to reverse256 | 1052.64 | 1069.42 |
 
 The first two attempts inadvertently inherited the bridge's older
 `compiled_custom_op` backend. Explicitly selecting the previously used q20
@@ -126,12 +128,12 @@ objective differs from teacher cross entropy. The base-draw score residual norm
 2041.89, 5490.36) after 512 forward updates, and (8.34, 479.51, 745.13) after
 reverse updates. On inverse-mapped validation-teacher points, weighted residual
 means were 16.85, 7.15 and 5.81, with maxima 92.89, 61.26 and 27.62. Thus the
-reverse phase improved central teacher geometry and the residual median while
+reverse phase reduced the measured teacher residual and base residual median while
 leaving very large tails. The full-moment Gaussian control had median/p99
 residuals 167.18/710.91; the NAF short endpoint is descriptively better in the
 center, but no ranking uncertainty was estimated.
 
-The stage-five decision is to execute the planned second seed at 2,048 forward
+The stage-five decision was to execute the planned second seed at 2,048 forward
 and up to 128 reverse updates. Large finite residuals do not invalidate the
 harness or trigger a declared continuation veto. The first fit learned its
 teacher and remained numerically valid, so stopping before that planned
@@ -140,24 +142,104 @@ requires a measured decision after this bounded second seed. Its 4,200-second
 reservation fits the initial 7,200-second exposure cap together with the
 2,896.77 seconds already charged.
 
+The second seed completed 2048 forward and 128 reverse updates in 2323.38
+seconds (38.7 minutes), above the initial 20--25 minute estimate but within its
+4200-second ceiling. The 1536-update forward block cost 690.62 seconds and the
+last 96 reverse updates cost 627.34 seconds. Validation cross entropy changed
+from 18.031 initially to 5.809 forward and 5.989 reverse. Paired 1000-point
+residual median/p99/max changed from 3.087/342.34/1694.00 at the forward endpoint
+to 1.995/74.28/671.22 after reverse refinement. Final sign mass was .457; 80.7%
+of the base draws still had residual norm above one. Inverse-teacher weighted
+mean residual was 3.918. All updates were finite and unclipped, and both
+objective endpoints passed reload, inverse and represented-region checks.
+There is no statistical cross-seed ranking: seed and forward/reverse budgets
+both differ from the first pilot.
+
+A read-only CPU inspection of the preserved tensors found all ten largest
+residuals at points with estimated log(p/q)<-3. The largest residual was inside
+||z||<=3, so it is not exclusively an extreme-base-tail problem. The estimate
+uses the same bank's importance normalizer and is explanatory, not an exact
+posterior-density certificate. This points to generated excess density that
+finite empirical forward fitting does not directly penalize. The current
+stage-six test continued the saved reverse128 Adam state to reverse256 at the
+same .0001 rate and fresh RNG counter, with four 32-update checkpointed blocks.
+Its 1800-second reservation fits the initial 7200-second pilot exposure limit.
+A CPU reference check restored the saved parameters, Adam state and counter
+exactly without target evaluation or training. No long forward ladder has
+been launched.
+
+The reverse continuation completed in 1052.64 GPU-process seconds (17.5 minutes).
+All four 32-update blocks were finite, unclipped, batch-native and GPU/XLA.
+The frozen map reloaded exactly; relative inverse error was 1.34e-10 and
+log-determinant discrepancy was 6.63e-11. Its complete 1000-point probe gave
+residual median/p99/maximum 1.681/57.44/279.99, compared with
+1.995/74.28/671.22 before continuation on the same base bank. Validation cross
+entropy was 5.7347; the negative sign fraction remained .457 against the
+validation teacher's .524, passing the predeclared exploratory coverage rule.
+Inverse-teacher weighted residual mean was 3.236, maximum 48.46. Importance
+ESS was 294.09/1000, and 76.4% of base points still had residual norm above one.
+These are descriptive measurements, not a statistically established ranking.
+
+The initial short-test plan is complete. It used 6272.79 measured GPU-process
+seconds, including failed infrastructure attempts, below its 7200-second cap.
+The result passes the finite training, heldout-fit and represented-region
+requirements for considering further target-specific calibration. It does not
+supply a correctly whitened q20 map. No numerical, target, data or mathematical
+continuation veto occurred: residual tails are a candidate limitation and a
+repair signal. Completion of this bounded pilot is not rejection of NAF or
+the forward/reverse research direction.
+
+The next justified experiment is a separately priced reverse-rate/budget
+calibration from the preserved forward2048 checkpoint, followed by a fresh
+fitting seed and independent teacher check. The measured steady reverse cost
+is about 6.53 seconds/update: a 512-update arm costs about 3343 seconds before
+compilation and diagnostics. A two-arm exposure allowance of 8400 GPU seconds
+would cover that measured cost plus setup margins. This is a planning estimate,
+not a launched run or an optimization result. A much longer empirical forward
+fit is not the next discriminating test of the observed excess-density tails.
+
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
 |---|---|---|---|---|---|
 | Reject prior teacher | Weight screen fails in all eight banks | Severe weight concentration | Better full-support proposals | Use replay-checked SMC warm start | Failure of NAF |
 | Admit saved SMC for a bounded warm start | Replay and replicated heuristic screens pass | No numerical/identity veto | Known-region support and finite particles | Short GPU fitting with independent validation | Exhaustive posterior coverage |
 | Retry the local control repair | No training occurred in failed fit | Dtype error repaired | Unmeasured training geometry | Preserve completed short fit | q20 whitening or HMC readiness |
-| Admit the short NAF pair | Finite training, coverage and reload checks pass | Tail score residuals remain very large | Teacher support and optimization tails | Execute second seed and larger bounded rungs | Correctly whitened q20 posterior |
+| Complete two short NAF fits and saved-state continuation | Finite training, heldout fit, coverage and reload checks pass | No numerical veto; large finite score tails remain | Teacher support and reverse-rate/budget calibration | Preserve checkpoints; price matched reverse calibration | Correctly whitened q20 posterior |
 | Preserve synthetic results | Completed 12/12 random screens | Large finite tail residuals remain | Limited geometries | New-target short tests | General posterior transfer |
 
 | Inference status | Finding |
 |---|---|
 | Hard veto screen | Prior weights fail; current target derivatives and replayed SMC teacher pass their bounded checks. |
 | Statistically supported ranking | None. |
-| Descriptive differences | Prior/SMC weights, region masses and measured runtime; the first q20 pair completed and bounded calibration continues. |
+| Descriptive differences | On the second fit's common base bank, residual median/p99/max changed from 3.087/342.34/1694.00 forward to 1.681/57.44/279.99 after 256 reverse updates. |
 | Default readiness | Existing q20 consumer default unchanged. |
-| Next evidence | Conditional tail diagnostics, a fresh teacher partition or calibrated reverse retry, then a new decision on long training. |
+| Next evidence | Matched reverse-rate/budget calibration, a fresh fit and independent teacher check before downstream validation. |
 
 Post-run review: the strongest
 alternative explanation for a favorable student is incomplete teacher support.
 Paired base probes plus inverse-mapped validation points can expose local
 geometry errors, but both can miss undiscovered regions. A new independent
 teacher disagreeing materially would invalidate a stronger coverage claim.
+
+## Terminal verification and accounting
+
+The continuation's focused CPU-only checks passed (7 tests). The terminal audit
+verified 229 result artifacts and 5176 saved source files across all attempts,
+complete finite endpoint probes, GPU/XLA training records, parent-checkpoint
+identity and identical local/shared charges. See `terminal-audit-r1.json`.
+These checks establish record integrity and the checked mechanics, not q20
+posterior correctness. No worker remains active.
+
+Measured engineering checks/builds consumed 972.54 CPU-core seconds. An
+additional 4000 CPU-core seconds was deducted as a contingency for earlier
+unmetered checks and small audit/render operations. The latter is explicitly
+not measured consumption or a proved upper bound. Its rationale and individual
+measured charges are in `engineering-accounting-r1/result.json`. The remaining
+bookkeeping allocation is 105674.49 GPU-process seconds (29.35 hours) and
+92964.58 CPU-core seconds (25.82 hours), including that contingency deduction.
+
+Final LaTeX build `monograph-integration-r1/build-r5.json` passed with no
+unresolved citations/references or overfull boxes in the changed section.
+Rendered q20 pages 587--588 were inspected; the earlier synthetic pages were
+already reviewed. `manuscript-review.json` binds this review to the final PDF
+and section hashes. Existing layout warnings elsewhere in the monograph are
+not represented as repaired.
