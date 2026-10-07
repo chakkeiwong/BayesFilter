@@ -1,0 +1,1257 @@
+{
+  "source": "/home/ubuntu/python/BayesFilter/docs/chapters/ch26g_modern_hmc_methods.tex",
+  "source_sha256": "98324375370438910effb252fa4229708d2200d66d374b494aaf7c6f30a72b03",
+  "method": "MathDevMCP proof_obligations.check_proof_obligation, SymPy backend",
+  "limits": [
+    "Scalar algebra and finite-dimensional reductions only.",
+    "Domain assumptions are recorded and manually checked; not formally discharged.",
+    "No proof of convergence, mixing, finite-sample coverage or implementation speed.",
+    "Probability and matrix arguments also receive manual source/derivation review."
+  ],
+  "checks": [
+    {
+      "name": "sphere norm",
+      "chapter_label": "eq:bf-modern-force-norm-identity",
+      "domain": "t real; -1 <= c <= 1",
+      "result": {
+        "lhs": "-c**2 + (-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2 + 1",
+        "rhs": "((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2",
+        "assumptions": [
+          "t real; -1 <= c <= 1"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "-c**2+(-(1-c)*exp-t/2+(c+1)*expt/2)**2+1",
+            "normalized_rhs": "((1-c)*exp-t/2+(c+1)*expt/2)**2",
+            "readable_lhs": "-c**2 + (-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2 + 1",
+            "readable_rhs": "((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2",
+            "assumptions": [
+              "t real; -1 <= c <= 1"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "force projection ODE",
+      "chapter_label": "eq:bf-modern-force-projection",
+      "domain": "t real; -1 <= c <= 1; denominator > 0",
+      "result": {
+        "lhs": "(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)*((1 - c)*exp(-t)/2 - (c + 1)*exp(t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2 + 1",
+        "rhs": "-(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2 + 1",
+        "assumptions": [
+          "t real; -1 <= c <= 1; denominator > 0"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "(-(1-c)*exp-t/2+(c+1)*expt/2)*((1-c)*exp-t/2-(c+1)*expt/2)/((1-c)*exp-t/2+(c+1)*expt/2)**2+1",
+            "normalized_rhs": "-(-(1-c)*exp-t/2+(c+1)*expt/2)**2/((1-c)*exp-t/2+(c+1)*expt/2)**2+1",
+            "readable_lhs": "(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)*((1 - c)*exp(-t)/2 - (c + 1)*exp(t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2 + 1",
+            "readable_rhs": "-(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)**2 + 1",
+            "assumptions": [
+              "t real; -1 <= c <= 1; denominator > 0"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "surface Jacobian integral",
+      "chapter_label": "eq:bf-modern-force-jacobian",
+      "domain": "same domain; t=k*h",
+      "result": {
+        "lhs": "(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)",
+        "rhs": "(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)",
+        "assumptions": [
+          "same domain; t=k*h"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "The proof obligation is certified by exact normalization.",
+        "evidence": [
+          {
+            "kind": "normalized_match",
+            "backend": "normalizer",
+            "backend_status": "proved",
+            "reason": "The two sides match after MathDevMCP normalization.",
+            "normalized_lhs": "(-(1-c)*exp-t/2+(c+1)*expt/2)/((1-c)*exp-t/2+(c+1)*expt/2)",
+            "normalized_rhs": "(-(1-c)*exp-t/2+(c+1)*expt/2)/((1-c)*exp-t/2+(c+1)*expt/2)",
+            "readable_lhs": "(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)",
+            "readable_rhs": "(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)",
+            "assumptions": [
+              "same domain; t=k*h"
+            ],
+            "severity": "certifying"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "force inverse projection",
+      "chapter_label": "eq:bf-modern-force-projection",
+      "domain": "real t; -1 <= c <= 1",
+      "result": {
+        "lhs": "((-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)*(exp(t)/2 + exp(-t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2) - exp(t)/2 + exp(-t)/2)/(-(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)*(exp(t)/2 - exp(-t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2) + exp(t)/2 + exp(-t)/2)",
+        "rhs": "c",
+        "assumptions": [
+          "real t; -1 <= c <= 1"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "((-(1-c)*exp-t/2+(c+1)*expt/2)*(expt/2+exp-t/2)/((1-c)*exp-t/2+(c+1)*expt/2)-expt/2+exp-t/2)/(-(-(1-c)*exp-t/2+(c+1)*expt/2)*(expt/2-exp-t/2)/((1-c)*exp-t/2+(c+1)*expt/2)+expt/2+exp-t/2)",
+            "normalized_rhs": "c",
+            "readable_lhs": "((-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)*(exp(t)/2 + exp(-t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2) - exp(t)/2 + exp(-t)/2)/(-(-(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2)*(exp(t)/2 - exp(-t)/2)/((1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2) + exp(t)/2 + exp(-t)/2)",
+            "readable_rhs": "c",
+            "assumptions": [
+              "real t; -1 <= c <= 1"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "stable force denominator",
+      "chapter_label": "eq:bf-modern-stable-force-denominator",
+      "domain": "real t,c",
+      "result": {
+        "lhs": "c*(exp(t) - exp(-t))/2 + exp(t)/2 + exp(-t)/2",
+        "rhs": "(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2",
+        "assumptions": [
+          "real t,c"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "c*(expt-exp-t)/2+expt/2+exp-t/2",
+            "normalized_rhs": "(1-c)*exp-t/2+(c+1)*expt/2",
+            "readable_lhs": "c*(exp(t) - exp(-t))/2 + exp(t)/2 + exp(-t)/2",
+            "readable_rhs": "(1 - c)*exp(-t)/2 + (c + 1)*exp(t)/2",
+            "assumptions": [
+              "real t,c"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "OU Gaussian exponent balance",
+      "chapter_label": "eq:bf-modern-ou-balance",
+      "domain": "unit mass; real p,q; abs(a)<1",
+      "result": {
+        "lhs": "p**2 + (-a*p + q)**2/(1 - a**2)",
+        "rhs": "q**2 + (-a*q + p)**2/(1 - a**2)",
+        "assumptions": [
+          "unit mass; real p,q; abs(a)<1"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "p**2+(-a*p+q)**2/(1-a**2)",
+            "normalized_rhs": "q**2+(-a*q+p)**2/(1-a**2)",
+            "readable_lhs": "p**2 + (-a*p + q)**2/(1 - a**2)",
+            "readable_rhs": "q**2 + (-a*q + p)**2/(1 - a**2)",
+            "assumptions": [
+              "unit mass; real p,q; abs(a)<1"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "MALT local energy error",
+      "chapter_label": "eq:bf-modern-malt-local-error",
+      "domain": "h nonzero; scalar reduction per coordinate",
+      "result": {
+        "lhs": "-(gx*h/2 + z/h)**2/2 + (-gy*h/2 + z/h)**2/2",
+        "rhs": "h**2*(-gx**2 + gy**2)/8 - z*(gx + gy)/2",
+        "assumptions": [
+          "h nonzero; scalar reduction per coordinate"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "-(gx*h/2+z/h)**2/2+(-gy*h/2+z/h)**2/2",
+            "normalized_rhs": "h**2*(-gx**2+gy**2)/8-z*(gx+gy)/2",
+            "readable_lhs": "-(gx*h/2 + z/h)**2/2 + (-gy*h/2 + z/h)**2/2",
+            "readable_rhs": "h**2*(-gx**2 + gy**2)/8 - z*(gx + gy)/2",
+            "assumptions": [
+              "h nonzero; scalar reduction per coordinate"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "leapfrog determinant",
+      "chapter_label": "eq:bf-modern-gaussian-leapfrog-matrix",
+      "domain": "dimensionless q=x/sigma; t=h/sigma real",
+      "result": {
+        "lhs": "1",
+        "rhs": "1",
+        "assumptions": [
+          "dimensionless q=x/sigma; t=h/sigma real"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "The proof obligation is certified by exact normalization.",
+        "evidence": [
+          {
+            "kind": "normalized_match",
+            "backend": "normalizer",
+            "backend_status": "proved",
+            "reason": "The two sides match after MathDevMCP normalization.",
+            "normalized_lhs": "1",
+            "normalized_rhs": "1",
+            "readable_lhs": "1",
+            "readable_rhs": "1",
+            "assumptions": [
+              "dimensionless q=x/sigma; t=h/sigma real"
+            ],
+            "severity": "certifying"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "energy error Q11",
+      "chapter_label": "eq:bf-modern-gaussian-error-entries",
+      "domain": "dimensionless q",
+      "result": {
+        "lhs": "t**2*(1 - t**2/4)**2 + (1 - t**2/2)**2 - 1",
+        "rhs": "-t**4*(1 - t**2/4)/4",
+        "assumptions": [
+          "dimensionless q"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "t**2*(1-t**2/4)**2+(1-t**2/2)**2-1",
+            "normalized_rhs": "-t**4*(1-t**2/4)/4",
+            "readable_lhs": "t**2*(1 - t**2/4)**2 + (1 - t**2/2)**2 - 1",
+            "readable_rhs": "-t**4*(1 - t**2/4)/4",
+            "assumptions": [
+              "dimensionless q"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "energy error Q12",
+      "chapter_label": "eq:bf-modern-gaussian-error-entries",
+      "domain": "dimensionless q",
+      "result": {
+        "lhs": "-t*(1 - t**2/2)*(1 - t**2/4) + t*(1 - t**2/2)",
+        "rhs": "t**3*(1 - t**2/2)/4",
+        "assumptions": [
+          "dimensionless q"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "-t*(1-t**2/2)*(1-t**2/4)+t*(1-t**2/2)",
+            "normalized_rhs": "t**3*(1-t**2/2)/4",
+            "readable_lhs": "-t*(1 - t**2/2)*(1 - t**2/4) + t*(1 - t**2/2)",
+            "readable_rhs": "t**3*(1 - t**2/2)/4",
+            "assumptions": [
+              "dimensionless q"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "energy error Q22",
+      "chapter_label": "eq:bf-modern-gaussian-error-entries",
+      "domain": "dimensionless q",
+      "result": {
+        "lhs": "t**2 + (1 - t**2/2)**2 - 1",
+        "rhs": "t**4/4",
+        "assumptions": [
+          "dimensionless q"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "t**2+(1-t**2/2)**2-1",
+            "normalized_rhs": "t**4/4",
+            "readable_lhs": "t**2 + (1 - t**2/2)**2 - 1",
+            "readable_rhs": "t**4/4",
+            "assumptions": [
+              "dimensionless q"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "unadjusted stationary variance",
+      "chapter_label": "eq:bf-modern-gaussian-biased-variance",
+      "domain": "0<t*t<4",
+      "result": {
+        "lhs": "t**2/(1 - (1 - t**2/2)**2)",
+        "rhs": "1/(1 - t**2/4)",
+        "assumptions": [
+          "0<t*t<4"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "t**2/(1-(1-t**2/2)**2)",
+            "normalized_rhs": "1/(1-t**2/4)",
+            "readable_lhs": "t**2/(1 - (1 - t**2/2)**2)",
+            "readable_rhs": "1/(1 - t**2/4)",
+            "assumptions": [
+              "0<t*t<4"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "energy error variance",
+      "chapter_label": "eq:bf-modern-gaussian-eevpd",
+      "domain": "0<y<4",
+      "result": {
+        "lhs": "y**4/16 + y**3*(1 - y/2)**2/(16 - 4*y)",
+        "rhs": "y**3/(16 - 4*y)",
+        "assumptions": [
+          "0<y<4"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "y**4/16+y**3*(1-y/2)**2/(16-4*y)",
+            "normalized_rhs": "y**3/(16-4*y)",
+            "readable_lhs": "y**4/16 + y**3*(1 - y/2)**2/(16 - 4*y)",
+            "readable_rhs": "y**3/(16 - 4*y)",
+            "assumptions": [
+              "0<y<4"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "bias/error conversion",
+      "chapter_label": "eq:bf-modern-gaussian-eevpd",
+      "domain": "b>0; y=4*b/(1+b)",
+      "result": {
+        "lhs": "64*b**3/((b + 1)**3*(-16*b/(b + 1) + 16))",
+        "rhs": "4*b**3/(b + 1)**2",
+        "assumptions": [
+          "b>0; y=4*b/(1+b)"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "64*b**3/((b+1)**3*(-16*b/(b+1)+16))",
+            "normalized_rhs": "4*b**3/(b+1)**2",
+            "readable_lhs": "64*b**3/((b + 1)**3*(-16*b/(b + 1) + 16))",
+            "readable_rhs": "4*b**3/(b + 1)**2",
+            "assumptions": [
+              "b>0; y=4*b/(1+b)"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "F first derivative",
+      "chapter_label": "eq:bf-modern-bias-function-derivatives",
+      "domain": "r=sqrt(D)>0",
+      "result": {
+        "lhs": "(-8*r**3/(r + 1)**3 + 12*r**2/(r + 1)**2)/(2*r)",
+        "rhs": "2*r*(r + 3)/(r + 1)**3",
+        "assumptions": [
+          "r=sqrt(D)>0"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "(-8*r**3/(r+1)**3+12*r**2/(r+1)**2)/(2*r)",
+            "normalized_rhs": "2*r*(r+3)/(r+1)**3",
+            "readable_lhs": "(-8*r**3/(r + 1)**3 + 12*r**2/(r + 1)**2)/(2*r)",
+            "readable_rhs": "2*r*(r + 3)/(r + 1)**3",
+            "assumptions": [
+              "r=sqrt(D)>0"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "F second derivative",
+      "chapter_label": "eq:bf-modern-bias-function-derivatives",
+      "domain": "r=sqrt(D)>0",
+      "result": {
+        "lhs": "(2*r/(r + 1)**3 - 6*r*(r + 3)/(r + 1)**4 + 2*(r + 3)/(r + 1)**3)/(2*r)",
+        "rhs": "(-r**2 - 4*r + 3)/(r*(r + 1)**4)",
+        "assumptions": [
+          "r=sqrt(D)>0"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "(2*r/(r+1)**3-6*r*(r+3)/(r+1)**4+2*(r+3)/(r+1)**3)/(2*r)",
+            "normalized_rhs": "(-r**2-4*r+3)/(r*(r+1)**4)",
+            "readable_lhs": "(2*r/(r + 1)**3 - 6*r*(r + 3)/(r + 1)**4 + 2*(r + 3)/(r + 1)**3)/(2*r)",
+            "readable_rhs": "(-r**2 - 4*r + 3)/(r*(r + 1)**4)",
+            "assumptions": [
+              "r=sqrt(D)>0"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "convexity boundary",
+      "chapter_label": "eq:bf-modern-bias-function-derivatives",
+      "domain": "positive root in r is sqrt(7)-2",
+      "result": {
+        "lhs": "(-2 + sqrt(7))**2",
+        "rhs": "11 - 4*sqrt(7)",
+        "assumptions": [
+          "positive root in r is sqrt(7)-2"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "(-2+sqrt7)**2",
+            "normalized_rhs": "11-4*sqrt7",
+            "readable_lhs": "(-2 + sqrt(7))**2",
+            "readable_rhs": "11 - 4*sqrt(7)",
+            "assumptions": [
+              "positive root in r is sqrt(7)-2"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "LAPS rate derivative",
+      "chapter_label": "eq:bf-modern-laps-rate",
+      "domain": "h,tau,C,kap,D>0 and 0<c<1",
+      "result": {
+        "lhs": "-C*h**kap*kap*(2 - c)/tau + (-C*h**kap*(2 - c) + D*c)/tau",
+        "rhs": "(-C*h**kap*(2 - c)*(kap + 1) + D*c)/tau",
+        "assumptions": [
+          "h,tau,C,kap,D>0 and 0<c<1"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "-C*h**kap*kap*(2-c)/tau+(-C*h**kap*(2-c)+D*c)/tau",
+            "normalized_rhs": "(-C*h**kap*(2-c)*(kap+1)+D*c)/tau",
+            "readable_lhs": "-C*h**kap*kap*(2 - c)/tau + (-C*h**kap*(2 - c) + D*c)/tau",
+            "readable_rhs": "(-C*h**kap*(2 - c)*(kap + 1) + D*c)/tau",
+            "assumptions": [
+              "h,tau,C,kap,D>0 and 0<c<1"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "LAPS contraction after optimum",
+      "chapter_label": "eq:bf-modern-laps-ideal-schedule",
+      "domain": "kap>0; 0<c<1",
+      "result": {
+        "lhs": "D*c/(kap + 1) + D*(1 - c)",
+        "rhs": "D*(-c*kap/(kap + 1) + 1)",
+        "assumptions": [
+          "kap>0; 0<c<1"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "D*c/(kap+1)+D*(1-c)",
+            "normalized_rhs": "D*(-c*kap/(kap+1)+1)",
+            "readable_lhs": "D*c/(kap + 1) + D*(1 - c)",
+            "readable_rhs": "D*(-c*kap/(kap + 1) + 1)",
+            "assumptions": [
+              "kap>0; 0<c<1"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "equal-variance mixture fourth moment",
+      "chapter_label": "eq:bf-modern-equipartition-gaussian",
+      "domain": "0<a<1; symmetric mixture means +/-a, variance 1-a*a",
+      "result": {
+        "lhs": "a**4 + 6*a**2*(1 - a**2) + 3*(1 - a**2)**2",
+        "rhs": "3 - 2*a**4",
+        "assumptions": [
+          "0<a<1; symmetric mixture means +/-a, variance 1-a*a"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "a**4+6*a**2*(1-a**2)+3*(1-a**2)**2",
+            "normalized_rhs": "3-2*a**4",
+            "readable_lhs": "a**4 + 6*a**2*(1 - a**2) + 3*(1 - a**2)**2",
+            "readable_rhs": "3 - 2*a**4",
+            "assumptions": [
+              "0<a<1; symmetric mixture means +/-a, variance 1-a*a"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "funnel density cancellation",
+      "chapter_label": "eq:bf-modern-funnel-whitened",
+      "domain": "one child contribution; k children in log determinant",
+      "result": {
+        "lhs": "-v**2/2 - z**2/2",
+        "rhs": "-v**2/2 - z**2/2",
+        "assumptions": [
+          "one child contribution; k children in log determinant"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "The proof obligation is certified by exact normalization.",
+        "evidence": [
+          {
+            "kind": "normalized_match",
+            "backend": "normalizer",
+            "backend_status": "proved",
+            "reason": "The two sides match after MathDevMCP normalization.",
+            "normalized_lhs": "-v**2/2-z**2/2",
+            "normalized_rhs": "-v**2/2-z**2/2",
+            "readable_lhs": "-v**2/2 - z**2/2",
+            "readable_rhs": "-v**2/2 - z**2/2",
+            "assumptions": [
+              "one child contribution; k children in log determinant"
+            ],
+            "severity": "certifying"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "partial funnel scale",
+      "chapter_label": "eq:bf-modern-funnel-partial",
+      "domain": "real v,D; D=delta(v)",
+      "result": {
+        "lhs": "exp(-v)*exp(-2*D + v)",
+        "rhs": "exp(-2*D)",
+        "assumptions": [
+          "real v,D; D=delta(v)"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "exp-v*exp-2*D+v",
+            "normalized_rhs": "exp-2*D",
+            "readable_lhs": "exp(-v)*exp(-2*D + v)",
+            "readable_rhs": "exp(-2*D)",
+            "assumptions": [
+              "real v,D; D=delta(v)"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "spectral Jensen convexity",
+      "chapter_label": "eq:bf-modern-esjd-bound",
+      "domain": "-1<t<1",
+      "result": {
+        "lhs": "2*(1 - (t + 1)/(t - 1))/(t - 1)**2",
+        "rhs": "4/(1 - t)**3",
+        "assumptions": [
+          "-1<t<1"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "2*(1-(t+1)/(t-1))/(t-1)**2",
+            "normalized_rhs": "4/(1-t)**3",
+            "readable_lhs": "2*(1 - (t + 1)/(t - 1))/(t - 1)**2",
+            "readable_rhs": "4/(1 - t)**3",
+            "assumptions": [
+              "-1<t<1"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "Gaussian square IAT",
+      "chapter_label": "eq:bf-modern-gaussian-iat",
+      "domain": "abs(r)<1",
+      "result": {
+        "lhs": "2*r**2/(1 - r**2) + 1",
+        "rhs": "(r**2 + 1)/(1 - r**2)",
+        "assumptions": [
+          "abs(r)<1"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "2*r**2/(1-r**2)+1",
+            "normalized_rhs": "(r**2+1)/(1-r**2)",
+            "readable_lhs": "2*r**2/(1 - r**2) + 1",
+            "readable_rhs": "(r**2 + 1)/(1 - r**2)",
+            "assumptions": [
+              "abs(r)<1"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "random length cosine integral",
+      "chapter_label": "eq:bf-modern-random-length-correlations",
+      "domain": "a>0",
+      "result": {
+        "lhs": "sin(2*a)/(2*a)",
+        "rhs": "sin(2*a)/(2*a)",
+        "assumptions": [
+          "a>0"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "The proof obligation is certified by exact normalization.",
+        "evidence": [
+          {
+            "kind": "normalized_match",
+            "backend": "normalizer",
+            "backend_status": "proved",
+            "reason": "The two sides match after MathDevMCP normalization.",
+            "normalized_lhs": "sin2*a/(2*a)",
+            "normalized_rhs": "sin2*a/(2*a)",
+            "readable_lhs": "sin(2*a)/(2*a)",
+            "readable_rhs": "sin(2*a)/(2*a)",
+            "assumptions": [
+              "a>0"
+            ],
+            "severity": "certifying"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "random length square integral",
+      "chapter_label": "eq:bf-modern-random-length-correlations",
+      "domain": "a>0",
+      "result": {
+        "lhs": "(a + sin(2*a)*cos(2*a)/2)/(2*a)",
+        "rhs": "1/2 + sin(4*a)/(8*a)",
+        "assumptions": [
+          "a>0"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "(a+sin2*a*cos2*a/2)/(2*a)",
+            "normalized_rhs": "1/2+sin4*a/(8*a)",
+            "readable_lhs": "(a + sin(2*a)*cos(2*a)/2)/(2*a)",
+            "readable_rhs": "1/2 + sin(4*a)/(8*a)",
+            "assumptions": [
+              "a>0"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "Gaussian Schur square expansion",
+      "chapter_label": "eq:bf-modern-gaussian-schur",
+      "domain": "S>0; scalar reduction of symmetric quadratic form",
+      "result": {
+        "lhs": "H*x - R*x**2/2 + (-J*x + u)**2/(2*S)",
+        "rhs": "x**2*(J**2/S - R)/2 + x*(H - J*u/S) + u**2/(2*S)",
+        "assumptions": [
+          "S>0; scalar reduction of symmetric quadratic form"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "H*x-R*x**2/2+(-J*x+u)**2/(2*S)",
+            "normalized_rhs": "x**2*(J**2/S-R)/2+x*(H-J*u/S)+u**2/(2*S)",
+            "readable_lhs": "H*x - R*x**2/2 + (-J*x + u)**2/(2*S)",
+            "readable_rhs": "x**2*(J**2/S - R)/2 + x*(H - J*u/S) + u**2/(2*S)",
+            "assumptions": [
+              "S>0; scalar reduction of symmetric quadratic form"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "Kalman covariance differential",
+      "chapter_label": "eq:bf-modern-kalman-score-differential",
+      "domain": "S>0; scalar innovation",
+      "result": {
+        "lhs": "-1/(2*S) + v**2/(2*S**2)",
+        "rhs": "-1/(2*S) + v**2/(2*S**2)",
+        "assumptions": [
+          "S>0; scalar innovation"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "The proof obligation is certified by exact normalization.",
+        "evidence": [
+          {
+            "kind": "normalized_match",
+            "backend": "normalizer",
+            "backend_status": "proved",
+            "reason": "The two sides match after MathDevMCP normalization.",
+            "normalized_lhs": "-1/(2*S)+v**2/(2*S**2)",
+            "normalized_rhs": "-1/(2*S)+v**2/(2*S**2)",
+            "readable_lhs": "-1/(2*S) + v**2/(2*S**2)",
+            "readable_rhs": "-1/(2*S) + v**2/(2*S**2)",
+            "assumptions": [
+              "S>0; scalar innovation"
+            ],
+            "severity": "certifying"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "GRAD conditional covariance",
+      "chapter_label": "eq:bf-modern-grad-gaussian-product",
+      "domain": "q>0,r>0",
+      "result": {
+        "lhs": "1/(1/r + 1/q)",
+        "rhs": "q*r/(q + r)",
+        "assumptions": [
+          "q>0,r>0"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "1/(1/r+1/q)",
+            "normalized_rhs": "q*r/(q+r)",
+            "readable_lhs": "1/(1/r + 1/q)",
+            "readable_rhs": "q*r/(q + r)",
+            "assumptions": [
+              "q>0,r>0"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "GRAD conditional mean",
+      "chapter_label": "eq:bf-modern-grad-gaussian-product",
+      "domain": "q>0,r>0",
+      "result": {
+        "lhs": "(m/q + u/r)/(1/r + 1/q)",
+        "rhs": "m*r/(q + r) + q*u/(q + r)",
+        "assumptions": [
+          "q>0,r>0"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "(m/q+u/r)/(1/r+1/q)",
+            "normalized_rhs": "m*r/(q+r)+q*u/(q+r)",
+            "readable_lhs": "(m/q + u/r)/(1/r + 1/q)",
+            "readable_rhs": "m*r/(q + r) + q*u/(q + r)",
+            "assumptions": [
+              "q>0,r>0"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "GRAD log auxiliary weight",
+      "chapter_label": "eq:bf-modern-grad-conditional-weight",
+      "domain": "r>0; scalar coordinate reduction",
+      "result": {
+        "lhs": "((u - x)**2 - (-G*r + u - x)**2)/(2*r)",
+        "rhs": "-G**2*r/2 + G*(u - x)",
+        "assumptions": [
+          "r>0; scalar coordinate reduction"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "((u-x)**2-(-G*r+u-x)**2)/(2*r)",
+            "normalized_rhs": "-G**2*r/2+G*(u-x)",
+            "readable_lhs": "((u - x)**2 - (-G*r + u - x)**2)/(2*r)",
+            "readable_rhs": "-G**2*r/2 + G*(u - x)",
+            "assumptions": [
+              "r>0; scalar coordinate reduction"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "lugsail leading bias",
+      "chapter_label": "eq:bf-modern-lugsail-bias",
+      "domain": "b>0, r>1, 0<=c<1",
+      "result": {
+        "lhs": "(-G*c*r/b + G/b)/(1 - c)",
+        "rhs": "G*(-c*r + 1)/(b*(1 - c))",
+        "assumptions": [
+          "b>0, r>1, 0<=c<1"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "SymPy simplified lhs - rhs to zero.",
+        "evidence": [
+          {
+            "kind": "backend_verified",
+            "backend": "sympy",
+            "backend_status": "proved",
+            "reason": "SymPy simplified lhs - rhs to zero.",
+            "normalized_lhs": "(-G*c*r/b+G/b)/(1-c)",
+            "normalized_rhs": "G*(-c*r+1)/(b*(1-c))",
+            "readable_lhs": "(-G*c*r/b + G/b)/(1 - c)",
+            "readable_rhs": "G*(-c*r + 1)/(b*(1 - c))",
+            "assumptions": [
+              "b>0, r>1, 0<=c<1"
+            ],
+            "severity": "certifying",
+            "backend_expression": "0"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "AR1 first weighted sum",
+      "chapter_label": "eq:bf-modern-ar1-batch-bias",
+      "domain": "0<r<1; G=gamma0",
+      "result": {
+        "lhs": "-2*G*r/(1 - r)**2",
+        "rhs": "-2*G*r/(1 - r)**2",
+        "assumptions": [
+          "0<r<1; G=gamma0"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "The proof obligation is certified by exact normalization.",
+        "evidence": [
+          {
+            "kind": "normalized_match",
+            "backend": "normalizer",
+            "backend_status": "proved",
+            "reason": "The two sides match after MathDevMCP normalization.",
+            "normalized_lhs": "-2*G*r/(1-r)**2",
+            "normalized_rhs": "-2*G*r/(1-r)**2",
+            "readable_lhs": "-2*G*r/(1 - r)**2",
+            "readable_rhs": "-2*G*r/(1 - r)**2",
+            "assumptions": [
+              "0<r<1; G=gamma0"
+            ],
+            "severity": "certifying"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    },
+    {
+      "name": "nested independent variance",
+      "chapter_label": "eq:bf-modern-nested-decomposition",
+      "domain": "k=M positive; conditional independence is separately assumed",
+      "result": {
+        "lhs": "v/k",
+        "rhs": "v/k",
+        "assumptions": [
+          "k=M positive; conditional independence is separately assumed"
+        ],
+        "backend": "sympy",
+        "status": "equivalent",
+        "reason": "The proof obligation is certified by exact normalization.",
+        "evidence": [
+          {
+            "kind": "normalized_match",
+            "backend": "normalizer",
+            "backend_status": "proved",
+            "reason": "The two sides match after MathDevMCP normalization.",
+            "normalized_lhs": "v/k",
+            "normalized_rhs": "v/k",
+            "readable_lhs": "v/k",
+            "readable_rhs": "v/k",
+            "assumptions": [
+              "k=M positive; conditional independence is separately assumed"
+            ],
+            "severity": "certifying"
+          }
+        ],
+        "metadata": {
+          "schema_version": "1.0",
+          "contract": "proof_obligation_result"
+        }
+      }
+    }
+  ],
+  "negative_control": {
+    "lhs": "1+1",
+    "rhs": "3",
+    "assumptions": [],
+    "backend": "sympy",
+    "status": "mismatch",
+    "reason": "SymPy simplified lhs - rhs to a nonzero numeric value.",
+    "evidence": [
+      {
+        "kind": "backend_counterexample",
+        "backend": "sympy",
+        "backend_status": "disproved",
+        "reason": "SymPy simplified lhs - rhs to a nonzero numeric value.",
+        "normalized_lhs": "1+1",
+        "normalized_rhs": "3",
+        "readable_lhs": "1+1",
+        "readable_rhs": "3",
+        "assumptions": [],
+        "severity": "blocking",
+        "backend_expression": "-1"
+      }
+    ],
+    "metadata": {
+      "schema_version": "1.0",
+      "contract": "proof_obligation_result"
+    }
+  }
+}
