@@ -1006,6 +1006,391 @@ and every score coordinate are preserved in the accompanying dated comparison
 report; SIR score consistency and reference-rank checks are reported separately
 from likelihood finiteness.
 
+
+
+\section[Oracle-free tuning and the SIR reset diagnostic]{Oracle-Free Tuning, Variance Control, And The SIR Reset Diagnostic}
+\label{sec:bf-hd-oracle-free-sir-tuning}
+
+The marginal correction gives a valid importance-sampling identity, but the
+identity alone does not tell us whether a finite particle cloud is useful.  In
+particular, a moment reset changes the cloud on which the next transition is
+evaluated.  This section derives the variance criterion used for tuning and
+then gives a conditional diagnostic that separates a local reset error from
+the proposal error that precedes it.  The distinction is essential for the
+SIR experiment: an effective sample size can improve while the reset still
+moves the predictive likelihood in the wrong direction.
+
+\subsection{What the mixture correction can and cannot guarantee}
+
+Let the incoming weighted cloud be
+\[
+ \mu_\theta^N=\sum_{j=1}^N\omega_j(\theta)\,\delta_{z_j(\theta)},
+ \qquad \omega_j>0,\quad\sum_j\omega_j=1.
+\]
+For one filtering step write $f_{j,\theta}(x)$ for the transition density
+from $z_j$, $q_{j,\eta}(x)$ for the density induced by its flowed proposal,
+and $g_\theta(y\mid x)$ for the observation density.  The predictive
+transition and proposal mixtures are
+\[
+ m_\theta(x)=\sum_j\omega_j f_{j,\theta}(x),\qquad
+ q_\eta(x)=\sum_j\omega_j q_{j,\eta}(x),\qquad
+ a_\theta(x)=g_\theta(y\mid x)m_\theta(x).
+\]
+Assume that $q_\eta$ is normalized and positive wherever $a_\theta$ is
+positive, and put
+\[
+ Z_\theta=\int a_\theta(x)\,dx,\qquad
+ \pi_\theta(x)=a_\theta(x)/Z_\theta,\qquad
+ W_{\theta,\eta}(x)=a_\theta(x)/q_\eta(x).
+\]
+A draw from the proposal therefore has
+\[
+ \mathbb E_{q_\eta}W_{\theta,\eta}=Z_\theta,\qquad
+ \mathbb E_{q_\eta}W_{\theta,\eta}^2
+ =Z_\theta^2\int\frac{\pi_\theta(x)^2}{q_\eta(x)}\,dx.
+\]
+For $M$ independent draws, the usual likelihood estimator
+$\widehat Z=M^{-1}\sum_{r=1}^M W(X_r)$ has
+\begin{equation}
+ \frac{\operatorname{Var}(\widehat Z)}{Z_\theta^2}
+ =\frac{1}{M}\left\{\int
+   \frac{(\pi_\theta(x)-q_\eta(x))^2}{q_\eta(x)}\,dx\right\}.
+ \label{eq:bf-hd-chi-square-proposal-variance}
+\end{equation}
+The expression in braces is $\chi^2(\pi_\theta\mathbin\Vert q_\eta)$.
+It is nonnegative and vanishes exactly when $q_\eta=\pi_\theta$ almost
+everywhere.  Thus the complete mixture ratio targets the variance of the
+proposal correction, but it cannot make a deterministic reset
+$\mu_\theta^N\mapsto\nu_\theta^N$ distribution-preserving.
+
+The implementation uses one draw from each component rather than independent
+draws from the mixture.  If $X_j\sim q_{j,\eta}$ independently and
+$\widehat Z_{\rm strat}=\sum_j\omega_j W(X_j)$, then
+\begin{equation}
+ \operatorname{Var}(\widehat Z_{\rm strat}\mid\mu_\theta^N)
+   =\sum_j\omega_j^2\operatorname{Var}_{q_{j,\eta}}W(X_j),
+ \qquad
+ \widehat Z_{\rm strat}=\sum_j\omega_jW(X_j).
+ \label{eq:bf-hd-stratified-variance}
+\end{equation}
+Writing $J$ for a categorical component index with probabilities $\omega_j$
+and $X\mid J=j\sim q_j$, the iid-mixture variance is
+\[
+ \frac{\operatorname{Var}_{q}W(X)}{M}
+ =\frac{1}{M}\left\{\sum_j\omega_j
+       \operatorname{Var}_{q_j}W(X)+\operatorname{Var}_{J}
+       \left(\mathbb E_{q_J}W(X)\right)\right\}.
+\]
+For equal incoming weights $\omega_j=1/N$ and one draw per component, the
+first term equals the stratified variance in
+Eq.~\eqref{eq:bf-hd-stratified-variance}; the second term is the component
+selection variance that a complete stratified sweep removes.
+Repeated complete stratified sweeps are therefore the appropriate variance
+diagnostic for the actual code path.  Particle-level ESS is useful for
+explaining a result, but it is not a substitute for this repeated-sweep
+quantity.
+
+The variance identity also explains why small effective sample size is useful
+as a warning. For iid weights with finite second moment, the law of large
+numbers gives
+\[
+ \frac{\operatorname{ESS}}{M}
+ =\frac{(M^{-1}\sum_r W_r)^2}{M^{-1}\sum_r W_r^2}
+ \longrightarrow \frac{Z_\theta^2}{\mathbb E_q W^2}
+ =\frac{1}{1+\chi^2(\pi_\theta\Vert q_\eta)}.
+\]
+The equality concerns a fixed target and iid sampling. It supplies no error
+bound for a deterministic reset or an accumulated log likelihood. Repeated
+complete filtering sweeps measure the variability of the computation that is
+actually used.
+
+The score requires the same finite value program. For a differentiable
+reparameterization
+$X=H_{\theta,\eta}(U)$ with tangent $G=D H_{\theta,\eta}(U)$, define
+$A=W(H(U))$ and $B=D A$.  For iid copies of $U$, with bars denoting sample averages,
+\[
+ \widehat s=\frac{\overline B}{\overline A},\qquad
+ s_\theta=D\log Z_\theta,\qquad
+ \widehat s-s_\theta
+ =\frac{\overline{B-s_\theta A}}{\overline A}.
+\]
+Consequently the score variation is controlled by the residual
+$B-s_\theta A$, not by the value variation alone.  Assuming differentiation under the integral, a finite second moment, and
+a valid central limit theorem for independent, parameter-independent draws of $U$, the first-order
+covariance approximation is
+\begin{equation}
+ \operatorname{Cov}(\widehat s)\simeq\frac{1}{MZ_\theta^2}
+   \operatorname{Var}_{U}\!\left(B-s_\theta A\right).
+ \label{eq:bf-hd-score-residual-variance}
+\end{equation}
+For the actual stratified calculation the exact finite derivative is instead
+\[
+ A_j=\omega_j W(H_j(U_j)),\qquad B_j=D A_j,\qquad
+ D\log\widehat Z_{\rm strat}=\frac{\sum_j B_j}{\sum_j A_j}.
+\]
+Thus $B_j$ includes $D\omega_j$ as well as the particle, transition, proposal,
+and observation derivatives. Under independence and the same regularity
+conditions, a linearization around $Z_\theta$ gives the covariance contribution
+$Z_\theta^{-2}\sum_j\operatorname{Cov}(B_j-s_\theta A_j)$.
+The implemented multi-step filter need not satisfy an iid particle argument;
+we estimate its value and score variability by independent complete runs.
+This is why the tuning record reports value variance and every score-coordinate
+variance separately.  A setting that lowers likelihood variance while inflating
+the score residual is not an acceptable repair.
+
+\subsection{A conditional SIR check for the reset}
+
+Let $\mu=\sum_i b_i\delta_{x_i}$ be the weighted cloud immediately before a
+Contract-E reset and let
+$\nu=N^{-1}\sum_i\delta_{\widetilde x_i}$ be the uniform cloud immediately
+after it.  For one subsequent SIR transition and observation define
+\[
+ h_\theta(z)=\int f_\theta(x\mid z)g_\theta(y\mid x)\,dx,\qquad
+ Z_\mu=\sum_i b_i h_\theta(x_i),\qquad
+ Z_\nu=\frac{1}{N}\sum_i h_\theta(\widetilde x_i).
+\]
+The exact conditional local reset error is
+\begin{equation}
+ e_\theta=Z_\nu-Z_\mu,\qquad
+ \Delta_\ell=\log Z_\nu-\log Z_\mu
+ =\log\!\left(1+\frac{e_\theta}{Z_\mu}\right).
+ \label{eq:bf-hd-conditional-reset-error}
+\end{equation}
+If $|e_\theta|\leq\delta Z_\mu$ for some $\delta<1$, then
+\[
+ |\Delta_\ell|\leq
+ \max\{-\log(1-\delta),\log(1+\delta)\}.
+\]
+The cloud derivatives entering this check are
+\[
+ D Z_\mu=\sum_i\{(D b_i)h_\theta(x_i)
+            +b_i D[h_\theta(x_i)]\},\qquad
+ D Z_\nu=N^{-1}\sum_i D[h_\theta(\widetilde x_i)].
+\]
+Here $D[h_\theta(x_i)]$ includes both the explicit parameter dependence and
+$D x_i$. In particular, holding the clouds fixed would test a different
+quantity. For a directional derivative, writing $d=D Z_\mu$, $\widetilde d=D Z_\nu$,
+and $s_\mu=d/Z_\mu$, the score displacement is exactly
+\begin{equation}
+ s_\nu-s_\mu
+ =\frac{\widetilde d-d-s_\mu e_\theta}{Z_\nu}.
+ \label{eq:bf-hd-conditional-reset-score}
+\end{equation}
+To see the score identity, substitute $Z_\nu=Z_\mu+e_\theta$ into
+$\widetilde d/Z_\nu-d/Z_\mu$, take a common denominator, and use
+$s_\mu=d/Z_\mu$. If also $|D e_\theta|\leq\epsilon Z_\mu$, the same
+assumption $|e_\theta|\leq\delta Z_\mu$ implies
+\[
+ |s_\nu-s_\mu|\leq\frac{\epsilon+|s_\mu|\delta}{1-\delta}.
+\]
+Small value distortion alone therefore does not bound score distortion:
+its parameter derivative must also be controlled.
+These identities are conditional on the two realized clouds.  They diagnose
+the reset operation; they do not remove the error in the transition proposal,
+the flow, the preceding filtering steps, or the finite initial cloud.
+
+For Austria SIR, the source model in
+\texttt{ledh\_canonical\_models\_tf.py} uses $Q=I_{18}$,
+the infectious-coordinate matrix $H\in\mathbb R^{9\times18}$ with
+$HH^\mathsf T=I_9$, and
+$R_\theta=100e^{2\theta_\sigma}I_9$.  If $F_\theta(z)$ is the implemented
+half-step/RK4 transition mean, then
+\[
+ S_\theta=HQH^\mathsf T+R_\theta
+       =\left(1+100e^{2\theta_\sigma}\right)I_9,\qquad
+ r_\theta(z)=y-HF_\theta(z),
+\]
+and
+\begin{align}
+ \log h_\theta(z)
+ &= -\frac{9}{2}\log(2\pi v_\theta)
+    -\frac{\|r_\theta(z)\|^2}{2v_\theta},
+ &v_\theta&=1+100e^{2\theta_\sigma},\\
+ D\log h_\theta(z)
+ &=\frac{r_\theta(z)^\mathsf T D(HF_\theta(z))}{v_\theta}
+   +\frac{Dv_\theta\{\|r_\theta(z)\|^2-9v_\theta\}}
+          {2v_\theta^2}.
+ \label{eq:bf-hd-sir-predictive-integrand}
+\end{align}
+The tuning diagnostic evaluates these formulas on the pre-reset and
+post-reset trace fields produced by the same canonical finite program.
+A small conditional error is evidence that the reset is locally harmless for
+that cloud; it is not evidence that the full SIR likelihood is exact.
+
+\subsection{Scope-specific selection without an oracle}
+
+The controls are chosen offline and then held fixed while differentiating
+with respect to $\theta$.  Let $\eta_0$ denote the guarded marginal baseline
+and let $\mathcal C$ be a finite set of numerical settings.  The ancestor
+probabilities still describe the incoming cloud; they are not free parameters
+of this optimization.  Changing them in the predictive numerator would change
+that cloud's predictive target.  The search below changes flow integration,
+transport regularization, and the strength of the existing moment correction.
+The coordinate and pairwise caps remain enabled.
+
+For each horizon $T\in\{10,20,40,50\}$ separately, the complete procedure is:
+\begin{enumerate}
+ \item Fix the model, observation regime, particle count, precision, execution
+ route, reset design, baseline, candidate set, seed partitions, and compute
+ budget.  Record these choices with the data and source versions.  The current
+ diagnostic uses $N=1008$, FP64, and the same Gaussian-quantile residual design
+ as the guarded baseline.
+ \item Generate independent calibration, validation, and confirmation
+ observation data sets and disjoint particle-design seeds.  Within a partition,
+ give every candidate the same observations and paired random inputs.
+ \item For each calibration candidate and seed, run the complete shared
+ filter and all three analytical score directions.  Preserve the log likelihood
+ $L_{\eta,r}$, score $S_{\eta,r,k}$, and every conditional reset displacement
+ $\Delta_{\ell,\eta,r,t}$ and $\Delta_{s,\eta,r,t,k}$ for $t<T$.
+ Reject invalid values, inconsistent directional values, and invalid resets.
+ \item Compute sample variances across complete runs and average the
+ within-run reset root-mean-square errors.  Screen every value and score
+ coordinate separately using the rule below.  Among eligible candidates,
+ minimize the sum of four baseline-standardized variances; include the
+ baseline itself so that an unsuccessful search leaves the controls unchanged.
+ \item Freeze the selected controls and run validation and confirmation
+ without reselection.  Report all value/score means, paired differences,
+ uncertainty, reset errors, numerical failures, and finite-difference checks.
+ Compare simple ancestor-weight, covariance-only, and diagonal-moment
+ alternatives on paired confirmation seeds as falsification checks.
+ \item Replay LGSSM, KSC SV, and predator--prey values and all score coordinates
+ through the pre-change and current public evaluators.  Any change blocks
+ acceptance.  Store the SIR choice only for its exact tuning scope; using it
+ for another horizon or inside parameter-dependent HMC retuning requires a
+ different investigation.
+\end{enumerate}
+
+For $R$ calibration runs, the actual statistics are
+\begin{align}
+ \widehat V_{\eta,0}
+ &=\frac{1}{R-1}\sum_{r=1}^R(L_{\eta,r}-\overline L_\eta)^2,
+ &\widehat V_{\eta,k}
+ &=\frac{1}{R-1}\sum_{r=1}^R(S_{\eta,r,k}-\overline S_{\eta,k})^2,\\
+ \widehat E_{\eta,0}
+ &=\frac1R\sum_{r=1}^R
+   \sqrt{\frac{1}{T-1}\sum_{t=1}^{T-1}\Delta_{\ell,\eta,r,t}^2},
+ &\widehat E_{\eta,k}
+ &=\frac1R\sum_{r=1}^R
+   \sqrt{\frac{1}{T-1}\sum_{t=1}^{T-1}\Delta_{s,\eta,r,t,k}^2},
+ \qquad k=1,2,3.
+\end{align}
+With the diagnostic margin $m=0.10$, a candidate is eligible only if
+\[
+ \frac{\widehat V_{\eta,k}}{\widehat V_{\eta_0,k}}\leq1+m,
+ \qquad
+ \frac{\widehat E_{\eta,k}}{\widehat E_{\eta_0,k}}\leq1+m,
+ \qquad k=0,1,2,3.
+\]
+These formulas assume positive baseline denominators; a zero denominator
+requires exact non-deterioration or an explicitly declared absolute scale.
+The implementation uses a $10^{-30}$ denominator floor solely for that
+numerical edge case.  The ranking objective among eligible settings is
+$\sum_{k=0}^3\widehat V_{\eta,k}/\widehat V_{\eta_0,k}$.
+The mean likelihood is never optimized.  Four calibration, four validation,
+and eight confirmation runs provide descriptive estimates with considerable
+uncertainty.  A point ratio below 1.10 is a nomination rule, not a statistical
+proof of non-inferiority; paired confidence intervals and the full continuous
+measurements remain necessary for interpretation.  Independent observation
+partitions prevent choosing a setting by repeatedly inspecting the same
+held-out likelihood, but one data set per partition cannot establish broad
+SIR accuracy.
+
+For an unbiased one-step importance estimate conditional on a fixed incoming
+cloud, the mean-square decomposition is
+\[
+ \mathbb E[(\widehat Z-Z_{\rm true})^2\mid\mu]
+ =
+ \operatorname{Var}(\widehat Z\mid\mu)
+ +(Z_\mu-Z_{\rm true})^2.
+\]
+This identity does not assume that the accumulated finite-filter log likelihood
+is unbiased. Proposal tuning can reduce the first term; it cannot certify that the second
+term, which contains reset and filtering bias, is small.  LGSSM, KSC SV, and
+predator-prey value/score regressions are therefore retained as independent
+non-deterioration checks.  A SIR setting selected under this rule is a
+scope-bound diagnostic choice, not a new repository default.
+
+\subsection{What the first bounded SIR search found}
+
+The October 2026 search evaluated six settings at each horizon, followed by
+independent validation and eight confirmation designs. None of the five
+alternatives passed every calibration screen. For example, at $T=50$,
+reducing the transport regularization from $102.4$ to $51.2$ gave observed
+score-variance ratios $(0.246,0.230,0.236)$ relative to the guarded marginal
+baseline, but its observation-scale reset-score RMSE ratio was $1.142$,
+exceeding the predeclared $1.10$ margin. The baseline was consequently retained
+at all four horizons. This is an unsuccessful search for a replacement under
+that grid, rather than evidence that no useful tuning exists.
+
+Table~\ref{tab:bf-hd-sir-tuning-confirmation} reports the resulting held-out
+values. Parentheses contain the sample standard deviation across eight
+independent particle designs on the same observation dataset. These
+standard deviations measure variability of the finite computation, not
+error relative to an exact SIR likelihood or score. In particular, the large
+score dispersion cannot be hidden by reporting only its average.
+\begin{table}[htbp]
+ \centering
+ \small
+ \setlength{\tabcolsep}{5pt}
+ \begin{tabular}{rrrrr}
+  \hline
+  $T$ & Log likelihood & $s_{\kappa}$ & $s_{\nu}$ & $s_{\sigma}$ \\
+  \hline
+  10 & $-482.537$ & $-499.824$ & $144.928$ & $694.433$ \\
+     & $(33.092)$ & $(5896.601)$ & $(2582.780)$ & $(1979.734)$ \\
+  20 & $-825.825$ & $-619.644$ & $165.859$ & $973.700$ \\
+     & $(33.111)$ & $(5679.031)$ & $(2515.258)$ & $(2157.958)$ \\
+  40 & $-1505.941$ & $-604.499$ & $156.673$ & $975.347$ \\
+     & $(33.044)$ & $(5688.078)$ & $(2517.966)$ & $(2140.283)$ \\
+  50 & $-1845.160$ & $-604.523$ & $156.634$ & $981.950$ \\
+     & $(33.048)$ & $(5688.166)$ & $(2518.024)$ & $(2140.270)$ \\
+  \hline
+ \end{tabular}
+ \caption{SIR confirmation mean and design standard deviation, $N=1008$,
+ FP64/XLA. Scores use the log multipliers of $\kappa$, $\nu$, and observation
+ scale. One held-out observation dataset and eight designs were used; no
+ full filtering oracle is asserted.}
+ \label{tab:bf-hd-sir-tuning-confirmation}
+\end{table}
+
+An initial derivative diagnostic using central differences of width $10^{-4}$
+and $5\times10^{-5}$ disagreed with the first two analytical score coordinates.
+A predeclared six-step ladder from $10^{-5}$ to $3\times10^{-8}$ subsequently
+agreed in all three coordinates at every horizon on the first confirmation
+design. The acceptance rule required two adjacent widths with scaled error
+$|s_{\rm FD}-s|/(1+|s|)\leq10^{-3}$; the smallest discrepancies were below
+$5.1\times10^{-8}$. Thus the coarse differences were unreliable at these
+inputs. This calculation verifies a local derivative of the same finite
+program; it does not turn that derivative into the exact model score, and
+it does not isolate whether the coarse discrepancy arose from curvature or
+changes in discrete branches.
+
+The time-resolved reset diagnostic identifies a more useful next question.
+At $T=50$, pooling the eight confirmation designs, resets after observations
+1--5 had log-likelihood RMS displacement $0.05629$ and score RMS
+displacements $(30.628,11.662,6.269)$. For resets after observations 20--49,
+the corresponding numbers were $0.000465$ and
+$(0.00590,0.00222,0.00429)$. The minimum relative ESS in the early group was
+$0.0009923$, approximately one effective particle out of 1008; the later
+minimum was $0.4901$. These groupings were formed after the run as explanatory
+diagnostics. They show that the decline of horizon-averaged reset error partly
+reflects adding quiet later steps. They do not establish that the reset caused
+all of the accumulated score variability.
+
+The simpler ancestor-weight and covariance-only comparators also exposed
+score-variance deterioration on two paired confirmation designs, so the
+heuristic screen prevents promotion of the retained SIR setting. Two designs
+cannot establish a ranking. The next discriminating investigation should
+therefore focus on early weight concentration using fresh tuning data,
+while preserving the caps and separating proposal variability from reset
+sensitivity. The protected LGSSM, KSC SV, and predator--prey replay produced
+exactly unchanged likelihoods and all score coordinates at $T=10,20,40,50$.
+The complete numeric record, seed partitions, commands, uncertainty estimates,
+and failed screens are preserved in the dated SIR tuning result note and its
+terminal evidence. This campaign establishes the diagnostic procedure and
+preservation checks; it establishes no SIR accuracy improvement or new
+HMC-ready setting.
+
 \section[Approximate targets and HMC]{Approximate Targets, Exact-Target Corrections, And HMC Admissibility}
 \label{sec:bf-hd-fixed-branch-hmc}
 
