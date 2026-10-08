@@ -57,9 +57,23 @@ def fixed_inputs(tf,spec,seed,n=N,h=T):
     return shared,(shared[0],shared[1],extra)
 
 
-def data_and_reference(tf,spec,name):
+def data_and_reference(tf,spec,name,dataset_file=None,data_seed=DATA):
     theta=spec.default_theta(tf.float64)
-    if name in ('predator_prey','sir_d18'):
+    if dataset_file is not None:
+        data=read(dataset_file)
+        if (data['target_id']!=spec.target_id or data['data_seed']!=data_seed
+                or data['dtype']!='float64' or len(data['observations'])!=T):
+            raise ValueError('independent dataset scope mismatch')
+        obs=tf.constant(data['observations'],tf.float64)
+        if tensor_sha(tf,obs)!=data['observation_sha256']:
+            raise ValueError('corrupted independent observations')
+        if name in ('lgssm','ksc'):
+            value,score=spec.reference_value_and_score(theta,obs)
+            ref=dict(value=value,score=score,value_se=0.,score_se=[0.]*spec.parameter_count,
+                     kind='exact Kalman' if name=='lgssm' else 'independently checked refined KSC grid')
+        else:
+            ref=dict(value=None,score=None,kind='independent references assembled after evaluation')
+    elif name in ('predator_prey','sir_d18'):
         path=OLD/'inputs'/f'{name}-T50'/'dataset.json'
         data=read(path); obs=tf.constant(data['observations'],tf.float64)
         if data['target_id']!=spec.target_id or data['data_seed']!=DATA: raise ValueError('target/data mismatch')
@@ -110,13 +124,19 @@ def replay_check(name,seed,row):
 def worker(args):
     folder=Path(args.output);folder.mkdir(parents=True,exist_ok=False)
     started=time.monotonic();tf,memory=candidate.prepare(args)
-    spec=specs(args.model);theta,obs,data,reference=data_and_reference(tf,spec,args.model)
+    spec=specs(args.model)
+    dataset_file=getattr(args,'dataset_file',None)
+    data_seed=getattr(args,'data_seed',DATA)
+    independent=dataset_file is not None
+    if independent != bool(getattr(args,'independent',False)):
+        raise ValueError('independent mode requires an explicit dataset file')
+    theta,obs,data,reference=data_and_reference(tf,spec,args.model,dataset_file,data_seed)
     from bayesfilter.highdim.sqmc_campaign_tf import value_and_score
     from bayesfilter.highdim.covariance_proposal_tf import make_filter,TRACE_FIELDS
     ctl=candidate.controls(args)
     tuning=read(args.tuning)
     if not tuning['valid'] or tuning['scope']!=candidate.scope(args,spec): raise ValueError('invalid tuning scope')
-    if DATA in (tuning['calibration_data_seed'],tuning['validation_data_seed']): raise ValueError('tuning data leakage')
+    if data_seed in (tuning['calibration_data_seed'],tuning['validation_data_seed']): raise ValueError('tuning data leakage')
     beta=tf.constant(tuning['beta'],tf.float64)
     program=make_filter(spec,N,T,ctl,tf.float64)
     metadata=dict(model=args.model,target_id=spec.target_id,theta=theta,particles=N,horizon=T,
@@ -124,21 +144,22 @@ def worker(args):
        git_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
        command=sys.argv,environment=sys.executable,device=args.device,cuda_visible_devices=os.environ.get('CUDA_VISIBLE_DEVICES'),
        memory_policy=memory,tf_version=tf.__version__,dtype='float64',jit_compile=True,tf32=False,
-       plan=str(PLAN),result_file='docs/benchmarks/ledh-matched-comparison-results-20261008.md',
+       plan=getattr(args,'plan_file',str(PLAN)),result_file=getattr(args,'result_file','docs/benchmarks/ledh-matched-comparison-results-20261008.md'),
+       tuning_source=str(args.tuning),tuning_sha256=sha(args.tuning),independent_dataset=independent,
        source_sha256={str(p.relative_to(ROOT)):sha(p) for p in source_paths()})
     write(folder/'manifest.json',metadata)
     rows=[]
     def keep(row):
         rows.append(candidate.clean(row));write(folder/'rows.json',rows)
         print(json.dumps({k:rows[-1][k] for k in ('model','method','seed','value','score','valid','wall_seconds')}),flush=True)
-    if args.model!='sir_d18':
+    if args.model!='sir_d18' and not independent:
         tick=time.monotonic();seed=261006201;old_input,_=fixed_inputs(tf,spec,seed)
         oc,design=old_controls(args.model)
         val,score,valid=value_and_score(spec,ROUTE,oc,theta,obs,seed,N,inputs=old_input,reset_design_kind=design)
         row=candidate.clean(dict(model=args.model,method='old_replay',seed=seed,value=val,score=score,valid=valid,wall_seconds=time.monotonic()-tick))
         row['replay']=replay_check(args.model,seed,row);keep(row)
         if not row['valid'] or (row['replay'] is not None and not row['replay']['passed']):raise ValueError('old protected replay failed')
-    for seed in SEEDS:
+    for seed in getattr(args,'design_seeds',SEEDS):
         old_input,new_input=fixed_inputs(tf,spec,seed)
         if old_input[0] is not new_input[0] or old_input[1] is not new_input[1]: raise AssertionError('unpaired inputs')
         hashes=dict(initial=tensor_sha(tf,old_input[0]),process=tensor_sha(tf,old_input[1]),
@@ -153,7 +174,7 @@ def worker(args):
                 row=candidate.clean(dict(model=args.model,method=method,seed=seed,value=val,score=score,
                     valid=valid,wall_seconds=time.monotonic()-tick,input_sha256=hashes,diagnostics=diagnostics))
                 if method=='old':
-                    check=replay_check(args.model,seed,row);row['replay']=check
+                    check=None if independent else replay_check(args.model,seed,row);row['replay']=check
                     keep(row)
                     if check and not check['passed']:raise ValueError('nonlinear old replay failed')
                     continue
@@ -278,6 +299,12 @@ def main():
     p.add_argument('--particles',type=int,default=N);p.add_argument('--horizon',type=int,default=T)
     p.add_argument('--flow-steps',type=int,default=16);p.add_argument('--reset-steps',type=int,default=40)
     p.add_argument('--reset-epsilon',type=float,default=1.);p.add_argument('--correction-steps',type=int,default=0)
+    p.add_argument('--dataset-file',type=Path)
+    p.add_argument('--data-seed',type=int,default=DATA)
+    p.add_argument('--design-seeds',type=int,nargs='+',default=SEEDS)
+    p.add_argument('--independent',action='store_true',help='Checked new dataset; historical replay does not apply')
+    p.add_argument('--plan-file',default=str(PLAN))
+    p.add_argument('--result-file',default='docs/benchmarks/ledh-matched-comparison-results-20261008.md')
     args=p.parse_args()
     if args.particles!=N or args.horizon!=T or args.dtype!='float64':p.error('matched scope is fixed')
     return globals()[args.command](args) or 0
