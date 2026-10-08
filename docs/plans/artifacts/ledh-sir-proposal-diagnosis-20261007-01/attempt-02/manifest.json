@@ -1,0 +1,96 @@
+{
+  "git_commit": "209223fdd061fa39726c69550f39e2ee324f489c",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/diagnose_ledh_sir_proposal.py",
+    "--output",
+    "docs/plans/artifacts/ledh-sir-proposal-diagnosis-20261007-01/attempt-02"
+  ],
+  "created_utc": "2026-10-07T06:31:25.874801+00:00",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "cpu_only": false,
+  "device": "GPU",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "jit_compile": true,
+  "tf32": false,
+  "dtype": "float64",
+  "particles": 1008,
+  "seed": 261006101,
+  "horizon": 10,
+  "controls": {
+    "flow_substeps": 8,
+    "reset_policy": "contract_e",
+    "reset_ridge": 1e-05,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap_power": 8,
+    "state_map_policy": "adaptive_empirical",
+    "hilbert_bits": 12,
+    "coordinate_cap_identity_radius": 8.0,
+    "moment_safety": true,
+    "importance_weight_policy": "marginal_mixture",
+    "reset_epsilon": 102.4,
+    "reset_sinkhorn_steps": 24,
+    "reset_balance_steps": 12,
+    "correction_steps": 4,
+    "correction_strength": 0.12,
+    "pairwise_steps": 4,
+    "pairwise_strength": 0.03,
+    "ancestry_policy": "existing_one_to_one",
+    "coordinate_cap": 0.98
+  },
+  "observation_sha256": "79d11f34110875464b83e1b9caa68e76d412e87e0fa0cd0ea75e79eacee67429",
+  "dataset_file": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-zhao-horizons-20261006-01/013-ledh-sir_d18-T10/worker-0002-sir_d18/dataset.json",
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-sir-proposal-diagnosis-20261007.md",
+  "output": "docs/plans/artifacts/ledh-sir-proposal-diagnosis-20261007-01/attempt-02",
+  "results": "docs/plans/artifacts/ledh-sir-proposal-diagnosis-20261007-01/attempt-02/result.json",
+  "role": "conditional_cloud_proposal_diagnostic_only",
+  "source_sha256": {
+    "docs/benchmarks/diagnose_ledh_sir_proposal.py": "f4ac06ede7ce434454f1eafd23d1d1a32576bd016015fbd561bfe8a1fdce46a8",
+    "docs/plans/ledh-sir-proposal-diagnosis-20261007.md": "1154f87b88f36bf387c1d0393aa3fd0d145eb6b64c2ab8b7fb8ce31fd6f08466",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "d367b2a40289bbeda12f0831967f14d971108498432068543bed37059b5c6e3b",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "3cf2c703616f2d794c8f1cc7ebfc6245d83a559fc3037bea15ef4154772c7b63",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "5de3c494f0a9d82f3f54854906f37dea54ad3c9e76bcd2a159aea7190f08e2ae"
+  },
+  "wall_seconds": 43.09311030921526,
+  "allocator": {
+    "current": 40056576,
+    "peak": 679440896
+  }
+}

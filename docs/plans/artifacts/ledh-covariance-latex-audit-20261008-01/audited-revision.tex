@@ -1,0 +1,1474 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{booktabs,tabularx,array,enumitem}
+\usepackage{graphicx,xcolor,tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage{listings}
+\usepackage[authoryear,round]{natbib}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!45!black,citecolor=blue!45!black,
+urlcolor=blue!45!black,pdftitle={UKF-guided particle proposals and covariance-preserving resets}}
+\newcommand{\R}{\mathbb R}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\one}{\mathbf 1}
+\newcommand{\Ncal}{\mathcal N}
+\newcommand{\dd}{\mathrm d}
+\newcommand{\softmax}{\operatorname{softmax}}
+\newcommand{\lse}{\operatorname{LSE}}
+\newcommand{\SPD}{\mathbb S_{++}}
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{assumption}[proposition]{Assumption}
+\newtheorem{remark}[proposition]{Remark}
+\lstset{basicstyle=\ttfamily\footnotesize,columns=fullflexible,
+keepspaces=true,breaklines=true,showstringspaces=false,
+frame=single,rulecolor=\color{black!25},xleftmargin=3pt,xrightmargin=3pt}
+\setlist{itemsep=3pt,topsep=5pt}
+\setlength{\emergencystretch}{2em}
+\title{UKF-guided particle proposals and covariance-preserving resets\\
+\large A self-contained proposal for likelihoods, analytical scores,\\
+and bounded higher-moment correction}
+\author{BayesFilter research note}
+\date{8 October 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A particle filter contains several different covariances. The uncertainty
+conditional on one ancestor determines an ancestor-centred proposal; the
+uncertainty of the whole predictive mixture determines a common proposal; and
+the covariance represented by the importance weights determines what a
+resampling transform should preserve. Confusing these quantities can cause a
+well-defined importance sampler to perform very poorly. We derive a filter
+that gives the unscented Kalman filter (UKF) an explicit role in a common
+proposal, combines that proposal with conditional local flows and an unflowed
+transition component, and corrects all components with one marginal density
+ratio. We give a complete covariance reset, a bounded candidate correction for
+selected third and fourth moments, and the analytical derivatives of the
+resulting finite computation. The identities are proved under stated
+conditions. Accuracy of the combined filter, non-regression across models,
+and suitability for Hamiltonian Monte Carlo remain empirical and numerical
+questions; this note does not promote a new implementation.
+\end{abstract}
+
+\tableofcontents
+
+\section{The variance puzzle and the filtering problem}
+
+Consider the scalar state equation
+\(X_t=\phi X_{t-1}+\eta_t\), with independent
+\(\eta_t\sim\Ncal(0,Q)\), \(Q>0\), and \(|\phi|<1\).
+At stationarity, the state variance is \(P_\infty=Q/(1-\phi^2)\).
+For \(\phi=0.9\) and \(Q=1\), this is \(100/19\), much larger than one.
+Nevertheless, conditional on a particular previous state \(a\), the next
+state has variance exactly one. The two statements describe different
+conditioning events:
+\begin{equation}
+\label{eq:ar1-total}
+ \frac{Q}{1-\phi^2}
+ =\phi^2\frac{Q}{1-\phi^2}+Q.
+\end{equation}
+The first term on the right is uncertainty between ancestors; the second is
+uncertainty within one ancestor's transition. Replacing the second by one
+does not remove the first. Replacing the entire left-hand side by one would.
+
+The same distinction matters when a Gaussian flow moves particles. A common
+map centred on the whole predictive mean may correctly use the whole
+predictive covariance. Separate maps centred on individual ancestors need
+covariances appropriate to those conditional distributions. An importance
+correction can remain mathematically valid even when the chosen maps are
+poor proposals; validity of the density ratio does not guarantee usable
+finite-sample error.
+
+We work with a state \(X_t\in\R^d\), an observation \(Y_t\in\R^m\), and a parameter
+\(\theta\in\R^p\). The model supplies an initial law, transition density
+\(f_\theta(x\mid a)\), and observation density \(g_\theta(y\mid x)\).
+For the main construction these are densities on Euclidean spaces with
+respect to their stated base measures. A differentiable transition simulator
+has the form \(x=F_\theta(a,\xi)\), where the law of \(\xi\) does not depend
+on \(\theta\). A fixed draw of all base noises defines a deterministic
+finite filtering computation.
+
+At a particular observation, suppose the previous filtering law is
+approximated by equally weighted particles \(a_1,\ldots,a_N\). Equality of
+weights follows from the preceding reset, not from a claim that the previous
+approximation is exact. Suppress \(t\) temporarily and define
+\begin{equation}
+\label{eq:finite-target}
+ f_j(x)=f_\theta(x\mid a_j),\qquad
+ p_N^-(x)=\frac1N\sum_{j=1}^N f_j(x),\qquad
+ Z_N=\int g_\theta(y\mid x)p_N^-(x)\,\dd x .
+\end{equation}
+Here \(0<Z_N<\infty\) is assumed. The one-step posterior conditional on this
+finite incoming cloud is
+\(\pi_N^+(x)=g_\theta(y\mid x)p_N^-(x)/Z_N\).
+It is distinct from the exact model posterior, because the incoming cloud
+itself is an approximation. Keeping this distinction visible prevents a
+one-step integration identity from becoming an unjustified claim about the
+full likelihood.
+
+For non-Euclidean or restricted state spaces, density transformations must
+include any coordinate-chart Jacobian. A proposal may put mass outside the
+target support only if the extended target density there is defined to be
+zero. The reset must still produce states on which the next transition is
+defined. Unrecorded clipping changes the computation and is not part of the
+algorithm below.
+
+\section{From conditional uncertainty to a UKF proposal}
+
+\subsection{The covariance of the predictive mixture}
+
+Assume the conditional first two moments are finite and available:
+\(m_j=\E[X_t\mid X_{t-1}=a_j]\) and
+\(C_j=\Cov(X_t\mid X_{t-1}=a_j)\).
+For additive Gaussian transitions, \(m_j=F_\theta(a_j)\) and
+\(C_j=Q_\theta(a_j)\). For non-additive transitions, conditional quadrature
+may approximate these moments, in which case the following identity applies
+to the actual mixture only when the supplied moments are exact.
+
+\begin{proposition}[Total predictive covariance]
+The mean and covariance of \(p_N^-\) are
+\begin{equation}
+\label{eq:mixture-moments}
+ m^-=\frac1N\sum_jm_j,\qquad
+ P^-=\frac1N\sum_j\left[
+ C_j+(m_j-m^-)(m_j-m^-)^\top\right].
+\end{equation}
+\end{proposition}
+\begin{proof}
+Let \(J\) be uniform on \(\{1,\ldots,N\}\), and condition \(X\) on
+\(J=j\) using density \(f_j\). Since
+\(\E[X-m_j\mid J=j]=0\), expanding the outer product of
+\(X-m^-=(X-m_j)+(m_j-m^-)\) gives
+\[
+ \E[(X-m^-)(X-m^-)^\top\mid J=j]
+ =C_j+(m_j-m^-)(m_j-m^-)^\top .
+\]
+The mixed terms have zero conditional expectation. Averaging over \(J\)
+proves the covariance expression; the mean follows by the same conditioning.
+\end{proof}
+
+This identity reconstructs the whole predictive covariance from the actual
+incoming particles. It avoids treating a separately propagated Gaussian
+covariance as an exact description of their cloud. In the AR(1) example,
+the between-ancestor contribution approaches \(81/19\) at stationarity,
+while each conditional contribution remains one.
+
+\subsection{The UKF observation update}
+
+The UKF approximates observation moments under a Gaussian guide with mean
+\(m^-\) and covariance \(P^-\). We require \(P^-\in\SPD^d\).
+For clarity, first consider an additive observation
+\(Y=h_\theta(X)+\epsilon\), with independent centred noise of covariance
+\(R\in\SPD^m\). A sigma-point rule consists of standardized points
+\(\zeta_r\), mean weights \(u_r\), and covariance weights \(v_r\).
+Its prescribed normalization reproduces constant, linear, and quadratic
+state moments. For example, a fully specified scaled unscented rule uses
+frozen \(\alpha_U>0,\kappa_U,\beta_U\), with
+\(\lambda_U=\alpha_U^2(d+\kappa_U)-d\) and \(d+\lambda_U>0\):
+\[
+ \zeta_0=0,\quad
+ \zeta_k=\sqrt{d+\lambda_U}\,e_k,\quad
+ \zeta_{d+k}=-\sqrt{d+\lambda_U}\,e_k
+ \quad (k=1,\ldots,d),
+\]
+\[
+ u_0=\frac{\lambda_U}{d+\lambda_U},\quad
+ v_0=u_0+1-\alpha_U^2+\beta_U,\qquad
+ u_r=v_r=\frac{1}{2(d+\lambda_U)}\quad(r=1,\ldots,2d).
+\]
+Here \(e_k\) is a coordinate basis vector. Symmetry gives
+\(\sum_ru_r\zeta_r=0\); the two points on each axis give
+\(\sum_rv_r\zeta_r\zeta_r^\top=I_d\).
+No particular values of these tuning constants are promoted.
+If \(P^-=L_-L_-^\top\) is the Cholesky factorization, its state
+points are \(\chi_r=m^-+L_-\zeta_r\). Define
+\begin{align}
+\label{eq:ukf-observation}
+ \bar y_{\rm obs}&=\sum_r u_r h_\theta(\chi_r),&
+ S_{\rm obs}&=\sum_r v_r(h_\theta(\chi_r)-\bar y_{\rm obs})
+                  (h_\theta(\chi_r)-\bar y_{\rm obs})^\top+R.
+\end{align}
+Assume the realized \(S_{\rm obs}\) is positive definite and hence
+invertible; the cross-covariance and gain are
+\begin{align}
+\label{eq:ukf-cross}
+ C_{xy}&=\sum_r v_r(\chi_r-m^-)
+                  (h_\theta(\chi_r)-\bar y_{\rm obs})^\top,&
+ K_U&=C_{xy}S_{\rm obs}^{-1}.
+\end{align}
+The inverse in \eqref{eq:ukf-cross} requires \(S_{\rm obs}\in\SPD^m\).
+Negative sigma-point covariance weights can complicate this condition, so it
+must be checked for the chosen rule. The UKF guide is
+\begin{equation}
+\label{eq:ukf-update}
+ m_U^+=m^-+K_U(y-\bar y_{\rm obs}),\qquad
+ P_U^+=P^- - K_US_{\rm obs}K_U^\top.
+\end{equation}
+We also require \(P_U^+\in\SPD^d\). Non-additive observation noise requires
+an augmented rule or direct joint-moment calculation; it must not be
+replaced silently by the additive formulas.
+
+These are Gaussian-guide moments, not a theorem about the true nonlinear
+posterior. Even high-order quadrature accuracy for a specified input law
+does not establish that the actual posterior is Gaussian. If the supplied
+conditional moments or the UKF moments are approximate, their role remains
+proposal construction; the weight uses the actual model densities.
+
+\subsection{The exact place where the UKF variance is used}
+
+Factor \(P_U^+=L_+L_+^\top\), with positive Cholesky diagonals, and define
+\begin{equation}
+\label{eq:global-map}
+ A_G=L_+L_-^{-1},\qquad c_G=m_U^+-A_Gm^-,
+ \qquad T_G(x)=A_Gx+c_G .
+\end{equation}
+All inverses in this note are implemented by solves. Since \(P^-\succ0\)
+and \(P_U^+\succ0\), both Cholesky factors are invertible. Since both factors
+are nonsingular, \(T_G\) is an invertible affine map.
+
+\begin{proposition}[Moments of the common proposal]
+If \(X\) has moments \((m^-,P^-)\), the random vector \(T_G(X)\) has
+moments \((m_U^+,P_U^+)\), regardless of whether \(X\) is Gaussian.
+\end{proposition}
+\begin{proof}
+The mean follows by substituting \(\E X=m^-\). For the covariance,
+\begin{equation}
+\label{eq:global-covariance}
+ \Cov(T_G(X))
+ =L_+L_-^{-1}(L_-L_-^\top)L_-^{-\top}L_+^\top
+ =L_+L_+^\top=P_U^+ .
+\end{equation}
+\end{proof}
+
+Thus \(P^-\) standardizes the whole predictive spread and \(P_U^+\)
+sets the proposed spread. This is an active use of UKF covariance.
+It is different from inserting \(P^-\) into every ancestor-centred flow.
+
+In the ideal linear-Gaussian case with a Gaussian predictive distribution,
+the common map pushes that distribution to the exact Gaussian posterior.
+With \(P^-=100/19\), observation variance \(R=1\), observation matrix one,
+and predictive mean zero, the posterior variance is \(100/119\).
+The common map is
+\[
+ T_G(x)=\frac{100}{119}y+\sqrt{\frac{19}{119}}\,x.
+\]
+It contracts both within-ancestor and between-ancestor spread coherently
+around the whole-cloud centre. A finite Gaussian mixture need not itself
+be Gaussian, so this limiting case is not a finite-\(N\) exactness claim.
+
+After the importance update below, the covariance target changes to the
+weighted particle covariance. Figure~\ref{fig:covariance-roles} locates
+the three operations without conflating their targets.
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[>=Latex,
+ box/.style={draw,rounded corners,align=center,text width=39mm,
+ minimum height=17mm,font=\small},node distance=8mm]
+\node[box] (guide) {Predictive moments\\\(m^-,P^-\)\\UKF guide \(m_U^+,P_U^+\)};
+\node[box,right=of guide] (weight) {Draw proposals\\Correct with actual\\\(g\,p_N^-/q\)};
+\node[box,right=of weight] (reset) {Weighted moments\\\(\mu_w,P_w\)\\Preserve during reset};
+\draw[->] (guide)--(weight);
+\draw[->] (weight)--(reset);
+\end{tikzpicture}
+\caption{The UKF guides sampling. Importance weights determine the moments
+that resampling preserves. No arrow forces the weighted cloud back to
+the UKF covariance.}
+\label{fig:covariance-roles}
+\end{figure}
+
+\section{Conditional local flows and a single proposal mixture}
+
+\subsection{A concrete local affine construction}
+
+A local map should describe uncertainty around one ancestor. The following
+construction makes that requirement explicit and supplies a mathematical
+realization of the local-flow component. It is not a claim that the current
+BayesFilter LEDH implementation already executes this construction.
+
+For ancestor \(j\), approximate its conditional law by
+\(\Ncal(m_j,C_j)\), with \(C_j\in\SPD^d\).
+At a deterministic or independently generated pilot \(\xi_j\), approximate
+the log likelihood by a quadratic potential
+\begin{equation}
+\label{eq:quadratic-guide}
+ \log \widetilde g_j(x)
+ =\mathrm{constant}+a_j^{\rm loc\,\top}x-\tfrac12x^\top B_jx,
+ \qquad B_j=B_j^\top\succeq0 .
+\end{equation}
+Here \(a_j^{\rm loc}\) is a coefficient vector, not the ancestor \(a_j\).
+For an additive Gaussian observation, a linearization
+\(h(x)\simeq H_jx+e_j\) gives
+\(B_j=H_j^\top R^{-1}H_j\) and
+\(a_j^{\rm loc}=H_j^\top R^{-1}(y-e_j)\).
+The approximation is used to construct a proposal, while \(g_\theta\)
+remains the density in the weight.
+
+For a more general differentiable likelihood, one possible score-matching
+choice is
+\[
+ a_j^{\rm loc}
+ =\nabla_x\log g_\theta(y\mid \xi_j)+B_j\xi_j .
+\]
+It matches the local gradient at \(\xi_j\). A specified positive
+semidefinite information matrix can supply \(B_j\); for example, a fixed
+positive-weight quadrature of observation-score outer products has that
+property. The quadrature, simulated observations, weights and their
+parameter dependence must be declared. This is a candidate approximation,
+not an inherited universal curvature default. Negative-Hessian projection,
+if used instead, introduces spectral and differentiability choices that
+need separate examination.
+
+A concrete positive-weight construction is
+\(B_j=\sum_{r=1}^{R_g}\omega_r s_{jr}s_{jr}^\top\),
+where \(\omega_r>0\), \(\sum_r\omega_r=1\), and
+\(s_{jr}=\nabla_x\log g_\theta(\widetilde y_{jr}\mid x)|_{x=\xi_j}\).
+The pseudo-observations \(\widetilde y_{jr}\) are generated from fixed,
+independent base noises by the observation simulator at \(\xi_j\);
+their total derivatives are retained. For every vector \(v\),
+\(v^\top B_jv=\sum_r\omega_r(v^\top s_{jr})^2\geq0\).
+Thus this is a completely defined information approximation when the
+model has that simulator and the required derivatives. It is still a
+tunable candidate and can be a poor curvature approximation.
+
+Multiplying the Gaussian conditional guide by
+\(\widetilde g_j^\lambda\), \(0\leq\lambda\leq1\), and completing the
+square gives the following formulas. Both \(C_j\) and
+\(C_j^{-1}+\lambda B_j\) are invertible: the first is positive definite
+by assumption, and the second is positive definite for
+\(0\leq\lambda\leq1\) because \(B_j\succeq0\).
+\begin{equation}
+\label{eq:bridge-moments}
+ P_j(\lambda)=(C_j^{-1}+\lambda B_j)^{-1},\qquad
+ m_j(\lambda)=P_j(\lambda)
+       (C_j^{-1}m_j+\lambda a_j^{\rm loc}).
+\end{equation}
+The precision is positive definite because \(C_j^{-1}\succ0\) and
+\(\lambda B_j\succeq0\). Differentiate with the coefficients held fixed
+in pseudo-time:
+\begin{equation}
+\label{eq:bridge-derivatives}
+ \dot P_j=-P_jB_jP_j,\qquad
+ \dot m_j=P_j(a_j^{\rm loc}-B_jm_j(\lambda)).
+\end{equation}
+The first identity follows by differentiating
+\(P_j(C_j^{-1}+\lambda B_j)=I\). Substituting it into the derivative
+of \(m_j(\lambda)\) proves the second.
+
+Define the affine ODE coefficients
+\begin{equation}
+\label{eq:local-ode}
+ F_j(\lambda)=-\tfrac12P_j(\lambda)B_j,\qquad
+ b_j(\lambda)=\dot m_j(\lambda)-F_j(\lambda)m_j(\lambda),
+ \qquad \dot x=F_j(\lambda)x+b_j(\lambda).
+\end{equation}
+For a Gaussian input, this ODE has the prescribed mean and covariance:
+its mean derivative is \(F_jm_j+b_j=\dot m_j\), and its covariance
+derivative is
+\[
+ F_jP_j+P_jF_j^\top
+ =-\tfrac12P_jB_jP_j-\tfrac12P_jB_jP_j
+ =\dot P_j .
+\]
+The Gaussian law is determined by these moments. The exact ODE therefore
+transports the Gaussian guide to the quadratic-guide posterior.
+
+A fixed discretization defines a concrete invertible proposal map even
+when it only approximates this ODE. On a frozen pseudo-time grid, an Euler
+step has \(M_k=I+h_kF_j(\lambda_k)\), \(d_k=h_kb_j(\lambda_k)\).
+Compose
+\begin{equation}
+\label{eq:affine-composition}
+ A^{(0)}=I,\quad c^{(0)}=0,\qquad
+ A^{(k+1)}=M_kA^{(k)},\quad
+ c^{(k+1)}=M_kc^{(k)}+d_k .
+\end{equation}
+Every \(M_k\) must be nonsingular with adequate numerical margin.
+The final \(T_{L,j}(u)=A_{L,j}u+c_{L,j}\) is then an affine bijection.
+Its actual determinant is used in the density; ODE integration error
+does not justify replacing it by the determinant of an ideal limiting map.
+For fixed \(B_j\), a direct Cholesky map between the endpoint Gaussian
+moments is another valid affine realization.
+
+A moving pilot may refresh the local quadratic guide on the grid, provided
+the entire pilot design is fixed independently of the particle's transition
+noise. The refreshed map remains a proposal with an evaluable density.
+The exact Gaussian-bridge statement above applies to fixed coefficients,
+not automatically to a sequence of refreshed quadratic approximations.
+
+\subsection{Why retain a likelihood-aware component?}
+
+An ordinary UKF gain uses state--observation cross covariance. It can miss
+information conveyed purely through conditional variance. For example, in
+the scalar stochastic-volatility observation
+\(Y=\exp(X/2)\epsilon\), where \(\epsilon\sim\Ncal(0,1)\) is independent
+of \(X\), suitable finite moments give
+\(\E[Y\mid X]=0\) and hence \(\Cov(X,Y)=0\).
+Nevertheless,
+\begin{equation}
+\label{eq:sv-score}
+ \frac{\partial}{\partial x}\log g(y\mid x)
+ =\tfrac12(y^2e^{-x}-1)
+\end{equation}
+is usually nonzero. It follows by differentiating
+\(\log g(y\mid x)=-\tfrac12\log(2\pi)-x/2-y^2e^{-x}/2\).
+A local proposal informed by this likelihood can respond when the
+ordinary UKF mean update cannot. This calculation motivates retaining a
+likelihood-aware branch; it does not certify the current KSC-SV call chain
+or choose its tuning settings.
+
+\subsection{The actual marginal density}
+
+Use three branch labels \(b\in\{0,G,L\}\):
+\(T_{0,j}(u)=u\), \(T_{G,j}=T_G\), and \(T_{L,j}\) as above.
+Let \(\beta_b\geq0\), \(\sum_b\beta_b=1\), and \(\beta_0>0\).
+These probabilities are frozen within a parameter-evaluation scope.
+Conditional on the incoming cloud and any independent pilot, every map
+must be fixed before its input transition draw is generated.
+
+\begin{proposition}[Density of the declared sampler]
+Sample \(J\) uniformly, \(B\) with probabilities \(\beta_b\), and
+\(U\mid J=j\sim f_j\), independently of \(B\) conditional on the fixed
+proposal construction. Set \(X=T_{B,J}(U)\). If every map is an invertible
+affine map \(T_{b,j}(u)=A_{b,j}u+c_{b,j}\), then
+\begin{equation}
+\label{eq:mapped-density}
+ q_{b,j}(x)=
+ f_j\bigl(A_{b,j}^{-1}(x-c_{b,j})\bigr)
+ |\det A_{b,j}|^{-1},\qquad
+ q(x)=\frac1N\sum_j\sum_b\beta_b q_{b,j}(x).
+\end{equation}
+\end{proposition}
+\begin{proof}
+The inverse change of variables has Jacobian \(A_{b,j}^{-1}\), proving
+the first formula. Conditioning on the sampled pair \((B,J)\) and summing
+its probabilities proves the second.
+\end{proof}
+
+All branches use one density evaluator with different affine parameters.
+They do not require different importance-correction implementations.
+If a map were fitted to its own random input \(U\), its derivative would
+generally include that fitting dependence. Treating the fitted matrix
+\(A(U)\) alone as the Jacobian would then be wrong. Independent pilots
+avoid that particular error.
+
+Uniform ancestor selection is appropriate because the incoming reset
+weights are equal. If a different route carries nonuniform ancestor
+weights, those weights must appear in the sampler, predictive density,
+proposal density and their derivatives. Fixed branch allocations can
+replace random branch labels, but the denominator must then use the
+actual allocation fractions for the pooled estimator.
+
+\section{Importance correction, likelihood and its limits}
+
+For samples \(x_i\) from the declared proposal, define
+\begin{equation}
+\label{eq:importance-ratio}
+ r_i=g_\theta(y\mid x_i)\frac{p_N^-(x_i)}{q(x_i)},\qquad
+ \widehat Z_N=\frac1N\sum_i r_i,\qquad
+ w_i=\frac{r_i}{\sum_k r_k}.
+\end{equation}
+For logarithmic derivatives we work on a region where all participating
+densities and \(\widehat Z_N\) are positive and finite.
+Zero target weights require an explicitly supported limiting or masked
+calculation, rather than taking an undefined logarithm.
+
+\begin{proposition}[Conditional integration identity and defensive bound]
+Under the density and support conditions above,
+\begin{equation}
+\label{eq:is-identity}
+ \E_q[r(X)]
+ =\int q(x)\frac{g_\theta(y\mid x)p_N^-(x)}{q(x)}\,\dd x
+ =Z_N .
+\end{equation}
+Furthermore, wherever the target is positive,
+\begin{equation}
+\label{eq:defensive-bound}
+ q(x)\geq\beta_0p_N^-(x),\qquad
+ 0\leq r(x)\leq\frac{g_\theta(y\mid x)}{\beta_0}.
+\end{equation}
+\end{proposition}
+\begin{proof}
+The identity component has density \(q_{0,j}=f_j\). Its contribution to
+\(q\) is \(\beta_0p_N^-\); the remaining components are nonnegative.
+This proves the lower bound and ensures proposal support wherever the
+predictive density is positive. Cancellation inside the integral proves
+\eqref{eq:is-identity}. Dividing the nonnegative target by the lower
+bound proves \eqref{eq:defensive-bound}.
+\end{proof}
+
+If \(g_\theta(y\mid x)\) is bounded in \(x\), the importance ratio is
+bounded. There is no implied bound on its parameter derivative, no
+guarantee of high effective sample size, and no guarantee that a finite
+draw visits all relevant modes. A poor UKF guide changes the variance of
+the integration scheme, not the target in \eqref{eq:is-identity}.
+
+The observation increment is
+\begin{equation}
+\label{eq:log-increment}
+ \widehat\ell_t
+ =\log\widehat Z_{N,t}
+ =\lse_i(\log r_{t,i})-\log N,\qquad
+ \widehat\ell=\sum_{t=1}^T\widehat\ell_t.
+\end{equation}
+The UKF Gaussian observation normalizer is not multiplied into this
+quantity. The observation has already informed the proposal; its actual
+density appears once in the importance numerator.
+
+The one-step identity does not establish an unbiased full likelihood.
+A deterministic reset changes the finite approximation handed to the
+next observation, and logarithms introduce their own bias. In particular,
+\(\nabla_\theta\widehat\ell\), the derivative of this finite computation,
+and \(\nabla_\theta\log p_\theta(y_{1:T})\), the true model score, are
+different targets. Their numerical agreement is a research question.
+
+
+\section{What the resampling transform should preserve}
+
+After importance weighting, the empirical posterior consists of
+\(x_1,\ldots,x_N\) with weights \(w_i>0\), \(\sum_iw_i=1\). Put these states
+in the columns of \(X\in\R^{d\times N}\), and let \(W=\diag(w)\). Its mean
+and covariance are
+\begin{equation}
+\label{eq:weighted-moments}
+ \mu_w=Xw,\qquad
+ P_w=\sum_iw_i(x_i-\mu_w)(x_i-\mu_w)^\top
+     =X(W-ww^\top)X^\top .
+\end{equation}
+This is a covariance of a probability measure, with no sample-unbiasedness
+factor. An equally weighted replacement therefore uses \(1/N\), not
+\(1/(N-1)\).
+
+The reset should preserve these moments if its purpose is to represent
+the importance-weighted posterior. The UKF covariance \(P_U^+\) has already
+served as a proposal guide. Replacing \(P_w\) by \(P_U^+\) here would impose
+a different moment approximation after importance correction. Such a
+choice could be investigated, but it is a different algorithm.
+
+\subsection{Why a barycentric transform loses spread}
+
+Let a nonnegative coupling \(\Pi\in\R^{N\times N}\) have row sums \(w\)
+and column sums \(\one/N\). Define a pair of indices by
+\(\Pr(I=i,J=j)=\Pi_{ij}\). The source state \(x_I\) has the weighted
+empirical law, while the barycentric output
+\(y_j=N\sum_i\Pi_{ij}x_i\) is \(\E[x_I\mid J=j]\). Total covariance gives
+\begin{equation}
+\label{eq:barycentric-loss}
+ P_w
+ =\Cov\!\left(\E[x_I\mid J]\right)
+  +\E\!\left[\Cov(x_I\mid J)\right].
+\end{equation}
+The second term is positive semidefinite. The covariance of the equal-weight
+barycentres is therefore no larger than \(P_w\) in the matrix ordering.
+This is the precise spread loss that a second-order transform corrects.
+
+\citet[Definition 3.1 and Sections 4--6]{acevedo2017} give an ensemble-space
+formulation. If \(Z=X\widehat D\), it is sufficient to impose
+\begin{equation}
+\label{eq:transform-constraints}
+ \widehat D\one=Nw,\quad
+ \widehat D^\top\one=\one,\quad
+ (\widehat D-w\one^\top)(\widehat D-w\one^\top)^\top
+       =N(W-ww^\top).
+\end{equation}
+Indeed, \(Z\one/N=Xw=\mu_w\). Its centred matrix is
+\(X(\widehat D-w\one^\top)\), so the final identity gives covariance \(P_w\).
+The second constraint makes each output an affine combination of the inputs;
+it is useful structurally, although the first and third identities already
+establish these two moments.
+
+Starting from a first-order transform \(D\), set \(B=D-w\one^\top\) and
+\(\widehat D=D+\Delta\), where \(\Delta=\Delta^\top\) and
+\(\Delta\one=0\). Expanding the last constraint gives the matrix equation
+\begin{equation}
+\label{eq:riccati-correction}
+ B\Delta+\Delta B^\top+\Delta^2
+   =N(W-ww^\top)-BB^\top.
+\end{equation}
+The cross terms follow from \((B+\Delta)(B+\Delta)^\top\).
+Writing this equation alone does not specify a unique solver, a root,
+or its parameter derivative. We therefore give a complete alternative
+realization below, whose moment identities can be checked directly.
+
+\subsection{A complete finite-iteration reset}
+
+Assume \(N>d\) and the two covariance matrices factored below are positive
+definite. The particle-count condition is necessary for full rank, but does
+not guarantee it. Choose a fixed symmetric positive definite cost metric
+\(M_c\), entropic scale \(\varepsilon>0\), and number \(L\) of Sinkhorn
+iterations. These are declared numerical choices, not universal defaults.
+For the source and reference locations both equal to the current \(x_i\), set
+\(c_{ij}=(x_i-x_j)^\top M_c(x_i-x_j)\).
+Initialize \(\gamma_j^{(0)}=0\), and perform exactly \(L\) iterations:
+\begin{align}
+\label{eq:sinkhorn-iterations}
+ \alpha_i^{(\ell)}
+  &=\log w_i-\lse_j\!\left(-c_{ij}/\varepsilon+
+                                 \gamma_j^{(\ell-1)}\right),\\
+ \gamma_j^{(\ell)}
+  &=-\log N-\lse_i\!\left(-c_{ij}/\varepsilon+
+                                 \alpha_i^{(\ell)}\right).
+ \nonumber
+\end{align}
+Here \(\lse_j a_j=\log\sum_j e^{a_j}\). Define
+\(\log\Pi_{ij}=\alpha_i^{(L)}-c_{ij}/\varepsilon+\gamma_j^{(L)}\).
+In exact arithmetic the last update fixes the column sums; the row sums
+need not yet equal \(w\). Finite iteration and finite precision are reasons
+to compute the actual column masses rather than silently assume both
+constraints have converged:
+\begin{equation}
+\label{eq:actual-barycentres}
+ d_{ij}=\frac{\Pi_{ij}}{\sum_k\Pi_{kj}},\quad
+ y_j=\sum_i d_{ij}x_i,\quad
+ \bar y=\frac1N\sum_j y_j,\quad
+ S_y=\frac1N\sum_j(y_j-\bar y)(y_j-\bar y)^\top .
+\end{equation}
+Column softmax evaluation of \(\log\Pi\) avoids unnecessary underflow.
+The observation covariance denoted \(S_{\rm obs}\) earlier is a different
+quantity from this barycentre covariance \(S_y\).
+
+Let \(L_wL_w^\top=P_w\) and \(L_yL_y^\top=S_y\) be Cholesky factorizations
+with positive diagonal entries. Thus \(L_w\) and \(L_y\) are invertible;
+in particular, the inverse of \(L_y\) below is well-defined.
+The proposed reset is
+\begin{equation}
+\label{eq:cholesky-reset}
+ z_j=\mu_w+L_wL_y^{-1}(y_j-\bar y).
+\end{equation}
+Triangular solves implement the inverse action.
+
+\begin{proposition}[Mean and covariance of the actual reset]
+Under the stated full-rank assumptions, the outputs in
+\eqref{eq:cholesky-reset} satisfy
+\begin{equation}
+\label{eq:reset-covariance}
+ \frac1N\sum_jz_j=\mu_w,\qquad
+ \frac1N\sum_j(z_j-\mu_w)(z_j-\mu_w)^\top=P_w .
+\end{equation}
+These identities do not require the finite Sinkhorn iterate to have exact
+row sums.
+\end{proposition}
+\begin{proof}
+The centred \(y_j\)'s sum to zero, which proves the first identity.
+Their covariance is the actual matrix \(S_y\). The transformed covariance is
+\(L_wL_y^{-1}S_yL_y^{-\top}L_w^\top
+ =L_wL_y^{-1}L_yL_y^\top L_y^{-\top}L_w^\top
+ =L_wL_w^\top=P_w\).
+\end{proof}
+
+This construction specifies the mathematics of a candidate reset; it does
+not assert that an existing repository callable executes every operation
+written here. In particular, adding a ridge to either matrix changes this
+identity unless its effect is explicitly accounted for. The basic algorithm
+rejects rank failure and records numerical validity separately from the
+model likelihood. A failed factorization does not imply that the model's
+likelihood is zero. A low-rank extension or regularized target needs its own
+derivation and score.
+
+Covariance preservation also does not ensure support preservation.
+Consider a weighted scalar law with mass \(0.99\) at zero and mass \(0.01\)
+at 100. Its mean is one and its variance is 99. Two equally weighted
+nonnegative numbers with mean one have the form \(1-a,1+a\), with
+\(|a|\leq1\), so their variance is at most one. No transform can preserve
+these moments, the support constraint, and that ensemble size simultaneously.
+The negative-coefficient/support issue is also explicit in
+\citet[Section 7.3]{acevedo2017}. A smooth unconstrained chart can be useful
+when available, but preserving moments in a chart is not preserving moments
+in the original physical coordinates.
+
+\section{A bounded correction for selected third and fourth moments}
+
+The earlier concern about uncontrolled kurtosis fitting remains relevant.
+An unconstrained fit can move a few particles very far even while reducing
+a selected moment residual. We propose an optional correction that preserves
+the already established mean and covariance algebraically and limits every
+particle's displacement. Its feasibility and usefulness still require testing.
+
+Write \(E=Z-\mu_w\one^\top\), so \(E\one=0\) and \(EE^\top/N=P_w\).
+For an orthogonal matrix \(O\in\R^{N\times N}\) that fixes \(\one\), define
+\begin{equation}
+\label{eq:orthogonal-repair}
+ OO^\top=I,\quad O\one=\one,\qquad
+ Z_{\rm new}=\mu_w\one^\top+EO.
+\end{equation}
+The new mean is \(\mu_w+EO\one/N=\mu_w\).
+The new covariance is \(EOO^\top E^\top/N=P_w\).
+Third and fourth moments are not invariant under this mixing of centred
+columns, which is why there is freedom to adjust them.
+
+This is an ensemble-space rotation: it mixes particle columns rather than
+rotating physical state coordinates. It moves individual particles while
+leaving the physical covariance matrix fixed. For a scalar example, the
+four equally weighted points \((-1,-1,1,1)\) have mean zero, variance one,
+and standardized fourth moment one. The points
+\((-\sqrt2,0,0,\sqrt2)\) have the same mean and variance but fourth moment
+two. Both centred row vectors have norm two and lie in the subspace
+orthogonal to \(\one\); an orthogonal transformation in that subspace
+maps one to the other. This demonstrates freedom to change kurtosis,
+not feasibility under every displacement cap or convergence of a
+particular optimizer. In fact the first ensemble is a stationary
+configuration for its fourth moment under smooth variance-preserving
+rotations, so a zero-start gradient method can stall there.
+Indeed, along a smooth path \(u(t)\) preserving \(\sum_i u_i^2\),
+the derivative of \(N^{-1}\sum_i u_i^4\) at this first ensemble is
+\(4N^{-1}\sum_i u_i^3\dot u_i
+=4N^{-1}\sum_i u_i\dot u_i=0\), because \(u_i^3=u_i\) and
+the derivative of the fixed squared norm is zero.
+
+\subsection{A smooth parameterization with explicit displacement bounds}
+
+Choose a skew-symmetric matrix \(K\), \(K^\top=-K\), satisfying \(K\one=0\).
+The matrix \(H=I-K/2\) is invertible for every such real \(K\), as the
+norm identity immediately below proves. Its Cayley transform is
+\begin{equation}
+\label{eq:cayley}
+ H=I-K/2,\qquad O=H^{-1}(I+K/2).
+\end{equation}
+For every real vector \(v\),
+\(\|Hv\|^2=\|v\|^2+\|Kv\|^2/4\), since \(v^\top Kv=0\).
+Thus \(H\) is nonsingular and \(\|H^{-1}\|_2\leq1\).
+The matrices \(I-K/2\) and \(I+K/2\) commute, being polynomials in \(K\).
+Together with \(K^\top=-K\), this proves \(OO^\top=I\).
+Finally \(H\one=\one=(I+K/2)\one\), so \(O\one=\one\).
+
+Subtracting the identity yields \(O-I=H^{-1}K\). Consequently,
+\begin{equation}
+\label{eq:cayley-bound}
+ \|O-I\|_2\leq\|K\|_2,\qquad
+ \|(EO-E)e_i\|_2\leq\|E\|_2\|K\|_2,
+\end{equation}
+where \(e_i\) selects particle \(i\).
+This parameterization excludes orthogonal matrices with eigenvalue \(-1\);
+a small displacement cap further restricts what moments can be attained.
+There is no assertion that every requested skewness or kurtosis is feasible.
+
+A more interpretable cap uses \(U=L_w^{-1}E\). Here \(L_w\) is invertible
+because \(L_wL_w^\top=P_w\succ0\). Since \(UU^\top=NI_d\),
+\(\|U\|_2=\sqrt N\). Also the Euclidean norm of row \(k\) of \(E\) is
+\(\sqrt{N(P_w)_{kk}}\). Therefore every particle displacement satisfies
+\begin{align}
+\label{eq:dual-caps}
+ \|L_w^{-1}(z_i^{\rm new}-z_i)\|_2
+       &\leq\sqrt N\,\|K\|_2,\\
+ |(z_i^{\rm new}-z_i)_k|
+       &\leq\sqrt{N(P_w)_{kk}}\,\|K\|_2 .
+ \nonumber
+\end{align}
+Choose a dimensionless whole-vector radius \(\delta>0\) and dimensionless
+coordinate radii \(a_k>0\). Setting
+\begin{equation}
+\label{eq:kappa}
+ \kappa=\frac{\min(\delta,a_1,\ldots,a_d)}{\sqrt N}
+\end{equation}
+and enforcing \(\|K\|_2<\kappa\) ensures both
+\(\|L_w^{-1}(z_i^{\rm new}-z_i)\|_2\leq\delta\) and
+\(|(z_i^{\rm new}-z_i)_k|\leq a_k\sqrt{(P_w)_{kk}}\).
+The bound is conservative but explicit. If physical absolute caps \(c_k\)
+are required, replacing \(a_k\) by \(c_k/\sqrt{(P_w)_{kk}}\) introduces
+parameter dependence and possible nondifferentiability of the minimum.
+That is a different derivative specification from the frozen standardized
+radii used here.
+
+One smooth way to enforce the bound is
+\begin{equation}
+\label{eq:bounded-skew}
+ J=I-\one\one^\top/N,\quad
+ G(v)=J\{V(v)-V(v)^\top\}J,\quad
+ K(v)=\kappa\,\frac{G(v)}{\sqrt{1+\|G(v)\|_F^2}} .
+\end{equation}
+The map \(V\) is a declared smooth parameterization, for example a linear
+combination of fixed basis matrices. Since \(J\one=0\), \(G\one=0\);
+it is also skew-symmetric. Moreover
+\(\|K\|_2\leq\|K\|_F<\kappa\).
+A low-rank or sparse basis can reduce cost, at the price of less moment
+freedom. The choice of basis is part of the candidate, not a hidden
+implementation shortcut.
+
+These caps limit the additional rotation step relative to \(Z\).
+They do not bound the preceding recolouring move in
+\eqref{eq:cholesky-reset}. Its conditioning and displacement must be
+reported separately. Preventing an explosion in the optional correction
+does not make an ill-conditioned earlier reset safe.
+
+\subsection{What is fitted, and what remains fixed}
+
+Since \(P_w\succ0\), its Cholesky factor \(L_w\) is invertible.
+Define standardized coordinates \(s(x)=L_w^{-1}(x-\mu_w)\).
+For a chosen set \(\mathcal A\) of multiindices with total degree three
+or four, let \(s^\nu=\prod_k s_k^{\nu_k}\). The weighted target moments
+and an explicit objective are
+\begin{equation}
+\label{eq:moment-objective}
+ M_\nu=\sum_iw_i s(x_i)^\nu,\qquad
+ F(v)=\frac12\sum_{\nu\in\mathcal A}
+ \left\{\frac{N^{-1}\sum_i s(z_i(v))^\nu-M_\nu}{\tau_\nu}\right\}^{\!2},
+ \quad \tau_\nu>0 .
+\end{equation}
+For example, the features may include marginal \(s_k^3,s_k^4\) and
+pairwise \(s_k^2s_l,s_ks_l^2,s_k^3s_l,s_ks_l^3,s_k^2s_l^2\).
+This specifies what pairwise skew and kurtosis repair means. It does not
+match the entire third- or fourth-order tensor unless all required
+multiindices are included and the residuals actually vanish.
+The scales \(\tau_\nu\) are frozen positive constants chosen during
+calibration. The targets \(M_\nu\) are fixed while optimizing \(v\);
+they still depend on \(\theta\) when differentiating the full filter.
+
+A complete finite optimizer can use a fixed number \(M_{\rm opt}\) of
+gradient steps with fixed step sizes \(\eta_r>0\):
+\begin{equation}
+\label{eq:fixed-optimizer}
+ v^{(0)}=0,\qquad
+ v^{(r+1)}=v^{(r)}-\eta_r\nabla_v F(v^{(r)}),
+ \quad r=0,\ldots,M_{\rm opt}-1.
+\end{equation}
+Take \(V(0)=0\), so the initial output is the unrotated reset.
+Every finite iterate obeys the displacement cap, regardless of whether
+the objective decreases. Finite parameter values and all matrix solves
+must still pass numerical checks. The algorithm records initial and
+final residuals; it does not promise descent for arbitrary step sizes.
+Choosing the best iterate or reverting according to a data-dependent
+threshold would define another, generally piecewise differentiable
+finite program. Such decisions cannot be silently omitted from its score.
+
+The weighted targets themselves can have large sampling error when
+importance weights concentrate in the tails. Exact fitting of a noisy
+fourth moment need not improve the approximation to the true posterior.
+This optional stage therefore needs a dedicated non-harm evaluation:
+unchanged first and second moments, respected displacement caps, and
+no unacceptable deterioration of likelihoods or scores. It remains
+unpromoted until those checks are made.
+
+There is also an asymptotic issue. For any Lipschitz function \(\varphi\)
+with constant \(L_\varphi\),
+\begin{equation}
+\label{eq:weak-displacement}
+ \left|\frac1N\sum_i\varphi(z_i^{\rm new})
+       -\frac1N\sum_i\varphi(z_i)\right|
+ \leq L_\varphi\max_i\|z_i^{\rm new}-z_i\|.
+\end{equation}
+If the right-hand displacement tends to zero, the correction inherits
+the same weak limit for such tests as the original reset, provided that
+limit exists. A fixed positive cap does not establish that condition.
+Covariance identities alone therefore prove neither consistency of this
+correction nor consistency of the complete filter.
+
+
+\section{The analytical score of the same finite computation}
+\label{sec:analytical-score}
+
+For parameter inference, the derivative must follow the computation that
+actually produced \(\widehat\ell\). Replacing a finite optimization loop by
+an ideal optimum, holding source weights fixed in the reset, or omitting
+a map's parameter dependence would give a different derivative.
+
+Fix all base noises, ancestor and branch labels, sigma-point rule constants,
+flow grid points, Sinkhorn iteration counts, optimizer iteration counts,
+and calibration choices. Consider a parameter neighbourhood in which the
+relevant densities are positive, the maps are invertible, the required
+covariances are positive definite, and the declared formulas are
+differentiable. We use \(\dd\) for a total directional derivative in
+\(\theta\). Repeating the calculation for parameter directions gives the
+gradient. If a support boundary or validity decision is crossed, these
+smooth-region formulas alone do not justify differentiability across it.
+
+\subsection{Likelihood and mixture derivatives}
+
+Differentiating the logarithm of the mean importance ratio gives
+\begin{equation}
+\label{eq:total-score}
+ \dd\widehat\ell
+ =\sum_{t=1}^T\sum_{i=1}^Nw_{t,i}\,\dd\log r_{t,i},
+ \qquad
+ \dd\log r_i=\dd\log g_\theta(y\mid x_i)
+             +\dd\log p_N^-(x_i)-\dd\log q(x_i).
+\end{equation}
+For example,
+\(\dd\log\sum_i r_i=(\sum_i r_i)^{-1}\sum_i r_i\,\dd\log r_i\).
+There is no additional \(\dd w_i\) term in this first derivative;
+the weights are the coefficients arising from differentiating log-sum-exp.
+They do have derivatives in subsequent particle propagation.
+
+The responsibilities at a state \(x\) are
+\begin{equation}
+\label{eq:responsibilities}
+ \rho_j(x)=\frac{f_j(x)}{\sum_k f_k(x)},\qquad
+ \eta_{b,j}(x)=
+ \frac{\beta_bq_{b,j}(x)}
+      {\sum_{c,k}\beta_cq_{c,k}(x)}.
+\end{equation}
+Differentiating the two log-sums yields
+\begin{equation}
+\label{eq:mixture-differentials}
+ \dd\log p_N^-(x)=\sum_j\rho_j(x)\,\dd\log f_j(x),\qquad
+ \dd\log q(x)=\sum_{b,j}\eta_{b,j}(x)\,\dd\log q_{b,j}(x).
+\end{equation}
+These are total derivatives, including movement of the evaluated state
+and of every ancestor. The \(\beta_b\)'s are frozen. Parameter-dependent
+mixture probabilities would introduce their derivatives and a separate
+sampling-path issue; that is not the algorithm defined here. Terms with
+identically zero branch probability are omitted.
+
+For a component, assume \(A\) is invertible throughout the
+parameter neighbourhood. With \(u=A^{-1}(x-c)\), differentiate \(Au=x-c\):
+\begin{equation}
+\label{eq:inverse-tangent}
+ \dd u=A^{-1}(\dd x-\dd c-(\dd A)u),\qquad
+ \dd\log|\det A|=\tr(A^{-1}\dd A).
+\end{equation}
+The determinant formula holds on a neighbourhood where \(A\) is
+nonsingular; its sign is then locally constant. The component uses the same invertible \(A\).
+For \(f_\theta(u\mid a)\),
+\begin{equation}
+\label{eq:component-tangent}
+ \dd\log q_{b,j}(x)
+ =(\partial_\theta\log f_\theta(u\mid a))\,\dd\theta
+  +(\nabla_u\log f_\theta(u\mid a))^\top\dd u
+  +(\nabla_a\log f_\theta(u\mid a))^\top\dd a
+  -\tr(A^{-1}\dd A).
+\end{equation}
+The observation term is differentiated similarly, with the observation
+held fixed. The actual sampled state has tangent
+\(\dd x=(\dd A)u+A\,\dd u_{\rm base}+\dd c\), where
+\(\dd u_{\rm base}\) is obtained by differentiating the transition simulator
+with its base noise fixed. Equation \eqref{eq:inverse-tangent} is used
+when evaluating any mixture component at that state; its \(u\) need not
+be the generating component's original input.
+
+\subsection{Prediction, Cholesky factors, and the UKF guide}
+
+Set \(v_j=m_j-m^-\). Differentiating total covariance gives
+\begin{equation}
+\label{eq:prediction-tangent}
+ \dd m^-=\frac1N\sum_j\dd m_j,\qquad
+ \dd P^-=\frac1N\sum_j\left[
+ \dd C_j+(\dd v_j)v_j^\top+v_j(\dd v_j)^\top\right],
+ \quad \dd v_j=\dd m_j-\dd m^-.
+\end{equation}
+Conditional-moment approximations, when used, must be differentiated as
+the actual approximations being evaluated.
+
+For any \(P=LL^\top\succ0\) with the positive-diagonal Cholesky factor,
+put \(B=L^{-1}(\dd P)L^{-\top}\). Define \(\Phi(B)\) to keep the strictly
+lower triangle, halve the diagonal, and zero the upper triangle. Then
+\begin{equation}
+\label{eq:chol-tangent}
+ \dd L=L\Phi(B).
+\end{equation}
+To verify this, let \(C=L^{-1}\dd L\), which is lower triangular.
+Differentiation of \(P=LL^\top\) gives \(B=C+C^\top\), whose unique
+lower-triangular solution is \(C=\Phi(B)\).
+
+Differentiate every sigma point
+\(\chi_r=m^-+L_-\zeta_r\) as
+\(\dd\chi_r=\dd m^-+(\dd L_-)\zeta_r\), and then the model evaluations
+and the sums defining \(\bar y_{\rm obs},S_{\rm obs},C_{xy}\).
+The inverse rule follows from differentiating \(MM^{-1}=I\):
+\(\dd(M^{-1})=-M^{-1}(\dd M)M^{-1}\).
+For the UKF formulas, \(S_{\rm obs}\succ0\) makes the inverse
+well-defined. The rule gives
+\begin{align}
+\label{eq:ukf-tangent}
+ \dd K_U&=(\dd C_{xy})S_{\rm obs}^{-1}
+                -K_U(\dd S_{\rm obs})S_{\rm obs}^{-1},\\
+ \dd m_U^+&=\dd m^-+(\dd K_U)(y-\bar y_{\rm obs})
+                   -K_U\,\dd\bar y_{\rm obs},\nonumber\\
+ \dd P_U^+&=\dd P^--(\dd K_U)S_{\rm obs}K_U^\top
+                    -K_U(\dd S_{\rm obs})K_U^\top
+                    -K_US_{\rm obs}(\dd K_U)^\top.\nonumber
+\end{align}
+The common affine map uses the invertible Cholesky factor \(L_-\)
+of \(P^-\succ0\). It then has tangents
+\begin{equation}
+\label{eq:global-tangent}
+ \dd A_G=(\dd L_+-A_G\dd L_-)L_-^{-1},\qquad
+ \dd c_G=\dd m_U^+-(\dd A_G)m^- -A_G\dd m^-.
+\end{equation}
+
+The same rules differentiate each local bridge and every actual flow
+step. If \(A_{\rm new}=MA\) and \(c_{\rm new}=Mc+d\), then
+\[
+ \dd A_{\rm new}=(\dd M)A+M\dd A,\qquad
+ \dd c_{\rm new}=(\dd M)c+M\dd c+\dd d .
+\]
+The derivatives of \(B_j,a_j^{\rm loc},C_j\) include their dependence on
+ancestors, parameters, and any pilot calculations. A likelihood-score-based
+local guide may require higher model derivatives when differentiated.
+Calling the filter's derivative \emph{analytical} does not remove these
+model-level requirements.
+
+\subsection{Source weights and reset derivatives}
+
+Let \(\bar h=\sum_kw_k\,\dd\log r_k\). Normalized weights satisfy
+\begin{equation}
+\label{eq:weight-tangent}
+ \dd w_i=w_i(\dd\log r_i-\bar h),\qquad \sum_i\dd w_i=0.
+\end{equation}
+For \(e_i=x_i-\mu_w\), the weighted moments satisfy
+\begin{align}
+\label{eq:weighted-moment-tangent}
+ \dd\mu_w
+   &=\sum_i\{(\dd w_i)x_i+w_i\dd x_i\},\\
+ \dd P_w
+   &=\sum_i\left[
+      (\dd w_i)e_ie_i^\top+
+      w_i\{(\dd e_i)e_i^\top+e_i(\dd e_i)^\top\}\right],
+ \quad \dd e_i=\dd x_i-\dd\mu_w.\nonumber
+\end{align}
+The terms involving \(\dd w_i\) and the direct source-cloud derivatives
+are required even if the transported barycentres have already been
+differentiated. Omitting them is a partial derivative, wrong relative to
+the total derivative in \eqref{eq:total-score}.
+
+Every finite Sinkhorn update is differentiated through its log-sum-exp.
+For example, if \(l_j=\log\sum_i e^{a_{ij}}\), then
+\(\dd l_j=\sum_i\softmax_i(a_{\cdot j})\,\dd a_{ij}\).
+With the fixed metric used above,
+\[
+ \dd c_{ij}
+ =2(x_i-x_j)^\top M_c(\dd x_i-\dd x_j).
+\]
+The actual normalized columns satisfy
+\[
+ \dd d_{ij}
+ =d_{ij}\left(\dd\log\Pi_{ij}
+       -\sum_kd_{kj}\dd\log\Pi_{kj}\right),\qquad
+ \dd y_j=\sum_i\{(\dd d_{ij})x_i+d_{ij}\dd x_i\}.
+\]
+Differentiate their actual mean and covariance, use
+\eqref{eq:chol-tangent} for both factors, and differentiate
+\eqref{eq:cholesky-reset}. Explicitly, put
+\(A_R=L_wL_y^{-1}\); then
+\[
+ \dd A_R=(\dd L_w-A_R\dd L_y)L_y^{-1},\qquad
+ \dd z_j=\dd\mu_w+(\dd A_R)(y_j-\bar y)
+                         +A_R(\dd y_j-\dd\bar y).
+\]
+Differentiating a converged optimal-transport solution implicitly would
+be a different computation from differentiating these \(L\) finite
+iterations.
+
+\subsection{Optional higher-moment derivatives}
+
+Since \(K^\top=-K\), the preceding norm identity makes
+\(H=I-K/2\) invertible. Differentiation of \(HO=I+K/2\) gives
+\begin{equation}
+\label{eq:cayley-tangent}
+ \dd O=H^{-1}\frac{\dd K}{2}(I+O),\qquad
+ \dd Z_{\rm new}=(\dd\mu_w)\one^\top+(\dd E)O+E\,\dd O .
+\end{equation}
+For \(s=\sqrt{1+\|G\|_F^2}\), the bounded parameterization gives
+\[
+ \dd K=\frac{\dd\kappa}{s}G+\frac{\kappa}{s}\dd G
+       -\frac{\kappa}{s^3}G\langle G,\dd G\rangle_F.
+\]
+Here \(\dd\kappa=0\) for the frozen standardized radii and fixed \(N\).
+All dependence of the moments, whitening factor, and feature evaluations
+on \(\theta\) remains in \(\dd G\) through the optimized parameters
+and in the objective derivatives.
+
+Writing \(I_{\rm in}\) for the optimizer's input quantities, the tangent
+of an actual finite gradient step is
+\begin{equation}
+\label{eq:optimizer-tangent}
+ \dd v^{(r+1)}
+ =\dd v^{(r)}
+ -\eta_r\left[
+   \nabla_v^2F(v^{(r)};I_{\rm in})\,\dd v^{(r)}
+   +\dd_{I_{\rm in}}\nabla_vF(v^{(r)};I_{\rm in})\right].
+\end{equation}
+The second term includes the source particles, weights, moment targets,
+and Cholesky whitening. There is no assumption that the last iterate is
+stationary. The formula may be expensive, but dropping these terms would
+change the score.
+
+These recurrences define the analytical derivative of the proposed
+finite program. They are not an implementation audit. A future implementation
+must show that every value/score entry point reaches these same operations,
+and verify directional derivatives with common-noise finite differences.
+Even exact finite-program derivative parity would not establish agreement
+with the true model score.
+
+
+\section{The whole algorithm in execution order}
+
+The following pseudocode specifies the value computation and the associated
+total derivative. Its model interface provides the transition simulator and
+density, observation density, conditional moments or a declared approximation
+to them, and their required derivatives. The initial sampler is treated in
+the same way. For a non-additive observation model, \texttt{UKF\_GUIDE}
+uses an augmented sigma-point rule for joint observation/state moments.
+
+The fixed configuration contains the branch probabilities, sigma-point rule,
+local quadratic-guide construction, flow grid, cost metric, entropic scale,
+all iteration counts, and optional moment features, basis, scales, radii,
+and step sizes. A user can run a conditional-local-only comparator or a
+global-guide ablation by fixing the relevant branch probabilities to zero.
+The proposal density always uses the probabilities of the sampler actually
+run. The full candidate retains \(\beta_0>0\) for the transition branch.
+No model-independent numerical choices for these controls are established
+by the derivations.
+
+\begin{lstlisting}
+Algorithm 1. One fixed-design likelihood and analytical score
+
+Inputs:
+  model, theta, observations y[1:T], particle count N > d
+  frozen configuration C and fixed base random design U
+Outputs:
+  ell, its total derivative score, equal-weight particles,
+  per-step diagnostics and an explicit numerical-validity status
+
+(a[1:N], da[1:N]) = INITIAL_SAMPLE_AND_TANGENT(theta, U.initial)
+ell = 0
+score = 0
+
+for t = 1,...,T:
+
+  # Conditional spread and whole predictive spread are different.
+  for j = 1,...,N:
+    (m[j], Ccond[j], dm[j], dCcond[j]) =
+        CONDITIONAL_MOMENTS_AND_TANGENT(theta, a[j], da[j])
+  (mminus, Pminus, dmminus, dPminus) =
+      TOTAL_COVARIANCE(m, Ccond, dm, dCcond)
+
+  # The UKF filtered covariance is used HERE.
+  (mplus, Pplus, dmplus, dPplus) =
+      UKF_GUIDE_AND_TANGENT(mminus, Pminus, y[t], theta, C)
+  require Pminus and Pplus positive definite
+  LGminus = chol(Pminus)
+  LGplus  = chol(Pplus)
+  AG = LGplus * inverse(LGminus)
+  cG = mplus - AG * mminus
+  differentiate these actual factors and solves
+
+  # Build every map before generating its integration inputs.
+  for j = 1,...,N:
+    map[0,j] = (identity, zero)                     # transition
+    map[G,j] = (AG, cG)                             # whole cloud
+    map[L,j] = CONDITIONAL_AFFINE_FLOW(
+        m[j], Ccond[j], theta, y[t], C, U.pilot[t,j])
+    differentiate all map coefficients and pilot dependencies
+    require every used map nonsingular
+
+  for i = 1,...,N:
+    (b,j) = FIXED_LABEL(U.labels[t,i], C.beta, N)
+    (u, du) = TRANSITION_SAMPLE_AND_TANGENT(
+        theta, a[j], da[j], U.transition[t,i])
+    (x[i], dx[i]) = APPLY_MAP_AND_TANGENT(map[b,j], u, du)
+
+    # One evaluator sums ALL ancestors and ALL used branches.
+    logp[i] = logsumexp_j(log f_theta(x[i] | a[j])) - log N
+    logq[i] = logsumexp_(b,j)(
+        log beta[b] + log MAPPED_DENSITY(x[i], map[b,j], a[j]))
+        - log N
+    logr[i] = log g_theta(y[t] | x[i]) + logp[i] - logq[i]
+    dlogr[i] = TOTAL_DERIVATIVE_OF_THE_SAME_THREE_TERMS
+    require relevant densities/derivatives finite and supported
+
+  ell   += logsumexp(logr) - log N
+  w      = softmax(logr)
+  score += sum_i w[i] * dlogr[i]
+  dw[i]  = w[i] * (dlogr[i] - sum_k w[k] * dlogr[k])
+
+  (z, dz, reset_diagnostics) =
+      RESET_ACTUAL_WEIGHTED_MOMENTS(x, w, dx, dw, C)
+
+  if C.use_bounded_higher_moment_correction:
+    (z, dz, moment_diagnostics) =
+        BOUNDED_MOMENT_CORRECTION(x, w, dx, dw, z, dz, C)
+
+  check final mean/covariance against the weighted source
+  check support, factor conditioning, and all numerical margins
+  save diagnostics, including any invalidity
+  if invalid: return INVALID_COMPUTATION with diagnostics
+
+  (a, da) = (z, dz)             # all new weights are 1/N
+
+return ell, score, a, diagnostics
+\end{lstlisting}
+
+The reference to total covariance in the listing means
+\eqref{eq:mixture-moments}; the score recurrences are those in
+Section~\ref{sec:analytical-score}. If no global branch is used in an ablation, its unused
+factorizations can be skipped, with that finite program recorded explicitly.
+In the full candidate \(P^-\) and \(P_U^+\) determine \(A_G\), and the
+conditional \(C_j\)'s determine the local maps. There is no subtraction
+of \(Q\) from a UKF filtered covariance to manufacture either input.
+
+The label routine uses the fixed uniform random numbers with the frozen
+probabilities. It does not resample a parameter-dependent set of ancestor
+weights: the incoming particles are equally weighted after reset.
+Pilot randomness is separate from the integration inputs. Fixing randomness
+makes the value a reproducible function of \(\theta\); independence is the
+sampling assumption used for the conditional one-step importance identity.
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Algorithm 2. Reset to the actual importance-weighted moments
+
+Inputs: x, w, dx, dw, and fixed cost metric, epsilon, L
+(mu, Pw, dmu, dPw) = WEIGHTED_MOMENTS_AND_TANGENT(x,w,dx,dw)
+require Pw positive definite
+
+cost[i,j] = (x[i]-x[j])' * M_cost * (x[i]-x[j])
+differentiate the actual cost
+gamma = 0
+for l = 1,...,L:
+  alpha[i] = log w[i] - logsumexp_j(-cost[i,j]/epsilon + gamma[j])
+  gamma[j] = -log N - logsumexp_i(-cost[i,j]/epsilon + alpha[i])
+  propagate derivatives through both finite updates
+
+logPi[i,j] = alpha[i] - cost[i,j]/epsilon + gamma[j]
+D[:,j] = softmax_i(logPi[:,j])            # actual column masses
+y[j] = sum_i D[i,j] * x[i]
+ybar = mean_j y[j]
+Sy = mean_j (y[j]-ybar) * (y[j]-ybar)'
+propagate derivatives of D, y, ybar, and Sy
+require Sy positive definite
+
+Lw = chol(Pw)
+Ly = chol(Sy)
+AR = Lw * inverse(Ly)
+z[j] = mu + AR * (y[j]-ybar)
+propagate derivatives of both Cholesky factors and this map
+
+record actual row/column marginal residuals, factor margins,
+reset displacement, and final moment residuals
+return z, dz, diagnostics
+\end{lstlisting}
+\end{minipage}
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Algorithm 3. Optional bounded pairwise/higher-moment correction
+
+Inputs: weighted source (x,w), reset z, all tangents, fixed controls
+(mu, Pw, Lw) = source weighted mean, covariance, Cholesky factor
+E = z - mu * ones'
+target[nu] = sum_i w[i] * standardized(x[i])^nu
+v = 0
+dv = 0
+
+for r = 0,...,Mopt-1:
+  G = J * (V(v) - V(v)') * J
+  K = kappa * G / sqrt(1 + frobenius_norm(G)^2)
+  O = solve(identity - K/2, identity + K/2)
+  candidate = mu * ones' + E * O
+  F = scaled squared moment residual against target
+  v_next = v - eta[r] * gradient_v(F)
+  dv_next = derivative of this actual update,
+            including input and objective dependencies
+  (v,dv) = (v_next,dv_next)
+
+recompute G, K, O, final z, and all tangents at the final v
+record initial/final feature residuals and optimizer finiteness
+verify displacement caps and final first/second moments
+return final z, dz, diagnostics
+\end{lstlisting}
+\end{minipage}
+
+All three routines return invalidity rather than silently clipping a state,
+adding a covariance ridge, or changing a step count. Such protections may be
+valuable, but they alter the finite computation and require declared
+semantics, a derivative treatment, and dedicated evaluation. In particular,
+\texttt{INVALID\_COMPUTATION} must not be converted to a mathematical assertion
+that the observation or parameter has zero probability.
+
+The mixture evaluation is generally quadratic in particle count: each of
+\(N\) states is assessed under all ancestors and proposal branches.
+Dense transport is also quadratic. Full ensemble-space rotations can cost
+more unless a suitable basis and linear algebra reduce them. These costs
+are part of the proposal's tradeoff. The covariance formulas do not remove
+the need for an implementation and memory analysis.
+
+\section{What the literature supplies, and what is proposed here}
+
+The unscented particle filter of \citet{vandermerwe2000} uses unscented
+Gaussian approximations to construct measurement-informed proposals,
+followed by importance correction. Its relevance is the role of the UKF
+as a proposal construction tool. It does not make a UKF covariance an
+independent posterior truth. The common-map/conditional-map mixture
+specified here is a separate synthesis.
+
+The second-order ensemble-transform work of \citet{acevedo2017} directly
+answers the spread-loss problem. Its target is the weighted ensemble's
+first two moments. Sections 4--6 develop corrections and their solution;
+Section 7.3 makes clear that moment constraints can conflict with bounded
+state support. These results motivate preserving \(P_w\), while leaving
+the accuracy of the weighted ensemble itself to importance sampling and
+subsequent validation.
+
+\citet[Algorithm 3, Section 4 and Proposition 4.3]{corenflos2021} develop
+differentiable particle filtering through entropy-regularized transport.
+The paper explains why neglecting resampling derivatives gives a different
+gradient, and explicitly discusses bias of the finite likelihood estimate.
+Its consistency results impose assumptions on the model, potentials,
+transport, and limiting regime. They cannot be transferred automatically
+to this mixture proposal, Cholesky reset, and bounded finite optimizer.
+The author FilterFlow transport/Sinkhorn source was also inspected in the
+preceding source review; that corroborates those operations, not this new
+combination.
+
+A different response to missing ensemble spread is the covariance-shrinkage
+rejuvenation studied by \citet[Sections 4--6]{popov2022}. It augments an
+ensemble with synthetic anomalies carrying external climatological covariance.
+This can supply directions that the current finite cloud lacks. It also adds
+information and changes the represented ensemble, so it is not a proof that
+the current weighted cloud already contains the correct posterior covariance.
+The paper was inspected; its linked author-code archive was not successfully
+retrieved in this review.
+
+For a more flexible observation update, \citet[Sections 3.3, 3.7 and
+Appendix A]{spantini2022} construct nonlinear triangular coupling maps.
+The inspected author \texttt{StochasticMapFilter.m} fits a map to simulated
+observation/state pairs and applies an inverse conditional transformation.
+This is a principled way to move beyond Gaussian conditional approximations.
+It introduces map-fitting error and cost; differentiating a fitted map
+requires a corresponding specification. It is a longer-term alternative,
+not a free covariance correction inside the present algorithm.
+
+\citet[Sections III--V]{csuzdi2024} give a differentiable
+optimal-placement resampling construction in one dimension.
+Its inspected scope does not supply an 18-dimensional replacement.
+\citet[Sections IV--V]{ebeigbe2025} construct generalized unscented points
+using marginal third and fourth moments, and discuss the effect of bound
+constraints. Their weighted sigma-point construction does not prove that
+an arbitrary equally weighted ensemble can match every mixed moment.
+The author GenUT code was checked for its relevant ensemble construction.
+
+Taken together, these works support distinctions and individual mechanisms:
+measurement-informed proposals, correction of resampling spread loss,
+differentiation through transport, and explicit treatment of higher moments.
+The three-branch common/conditional proposal, the particular finite
+Cholesky realization, and the bounded Cayley fitting scheme are the
+candidate synthesis in this note. No cited paper proves that the combined
+algorithm cures the observed SIR likelihood or score errors.
+
+\section{What must be checked before implementation or promotion}
+
+A correct density formula can coexist with a useless proposal. A correct
+reset can faithfully preserve inaccurate weighted moments. A correct
+finite-program score can disagree strongly with the true score. These
+are different failure mechanisms and require different comparisons.
+
+The smallest next implementation step is the conditional-covariance
+proposal repair, retaining the existing likelihood target and one
+marginal-density evaluator. A claim about its implementation must follow
+every value and score entry point through the actual call chain.
+Only after this simpler comparison should the common UKF branch be added;
+the optional higher-moment optimizer is a further separate change.
+This order permits attribution of a failure or gain.
+
+For the proposal, exact linear-Gaussian identities, density normalization
+checks, and common-noise directional finite differences test mathematical
+and implementation mechanics. A scalar stochastic-volatility test checks
+the observation-cross-covariance blind spot discussed above. The zero-flow
+branch and single-component cases test the shared evaluator. These checks
+are necessary but do not establish nonlinear filtering accuracy.
+
+For the reset, check the weighted mean and covariance after the \emph{last}
+operation, not just after recolouring. Report actual marginal residuals,
+relative factorization margins, smallest singular values of flow maps,
+state support, reset displacement, moment-feature residuals, and the two
+caps. Exact algebra permits floating-point residuals; tolerances need a
+scale-aware numerical analysis rather than a universal absolute constant.
+A failed support or factorization check is a numerical-validity veto,
+whereas effective sample size or a disagreement between \(P_w\) and
+\(P_U^+\) is explanatory unless a reviewed experiment defines a different
+role. Neither is an oracle-free certificate of likelihood or score accuracy.
+
+Scientific comparison then needs the same prepared data, parameter points,
+horizons, particle counts, and uncertainty accounting across eligible
+implementations. Protected scopes include LGSSM, KSC stochastic volatility,
+range bearing, predator--prey, and SIR, with the observation horizon part of
+each tuning scope. Linear-Gaussian values and scores can use exact references.
+Other models need checked independent references, including source-grounded
+Zhao--Cui computations where applicable, and convergence/uncertainty analysis
+of a large bootstrap filter. Previously invalidated historical results
+cannot silently become current baselines.
+
+The comparison should also include simple competitors constructed for
+the situation: the transition/bootstrap proposal when observations are
+weak, the exact conditional Gaussian proposal when available, and a plain
+UKF proposal when the joint distribution is close to Gaussian.
+Regimes with informative observations, non-Gaussian observation dependence,
+concentrated weights, or support boundaries should be assessed separately.
+A pooled average can conceal exactly the pathology being investigated.
+
+Branch probabilities, local curvature rules, transport regularization,
+caps, feature scales, and optimization step sizes are hypotheses to
+calibrate, not consequences of the covariance identities.
+Oracle-free diagnostics can nominate settings on separate calibration data;
+they cannot prove proximity to the true likelihood or score.
+Settings must be frozen before held-out evaluation and parameter-dependent
+retuning inside an HMC trajectory is outside this proposal.
+The optional correction additionally needs a non-harm study of its caps
+and failure handling, including the symmetric stationary example above.
+No expensive campaign is authorized or reported by this document.
+
+The established results in this note are conditional mathematical statements:
+the mixture covariance decomposition, the change-of-variables proposal
+density and one-step importance identity, the reset's first two moments,
+the rotation's invariants and displacement bounds, and the derivative
+recurrences for the stated finite program. Global accuracy, weak convergence
+of the entire composite method, reliable tail moments, efficient computation,
+and suitability for HMC remain to be demonstrated.
+
+\begin{thebibliography}{9}
+
+\bibitem[Acevedo et al.(2017)]{acevedo2017}
+W. Acevedo, J. de Wiljes, and S. Reich.
+Second-order accurate ensemble transform particle filters.
+\emph{SIAM Journal on Scientific Computing}, 39(5):A1834--A1850, 2017.
+\href{https://doi.org/10.1137/16M1095184}{doi:10.1137/16M1095184}.
+Open manuscript: \url{https://arxiv.org/abs/1608.08179}.
+
+\bibitem[Corenflos et al.(2021)]{corenflos2021}
+A. Corenflos, J. Thornton, G. Deligiannidis, and A. Doucet.
+Differentiable particle filtering via entropy-regularized optimal transport.
+In \emph{Proceedings of the 38th International Conference on Machine Learning},
+PMLR 139:2100--2111, 2021.
+\url{https://proceedings.mlr.press/v139/corenflos21a.html}.
+
+\bibitem[Popov et al.(2022)]{popov2022}
+A. A. Popov, A. N. Subrahmanya, and A. Sandu.
+A stochastic covariance shrinkage approach in ensemble transform particle
+filter rejuvenation.
+\emph{Nonlinear Processes in Geophysics}, 29:241--253, 2022.
+\href{https://doi.org/10.5194/npg-29-241-2022}{doi:10.5194/npg-29-241-2022}.
+
+\bibitem[Spantini et al.(2022)]{spantini2022}
+A. Spantini, R. Baptista, and Y. Marzouk.
+Coupling techniques for nonlinear ensemble filtering.
+\emph{SIAM Review}, 2022.
+\href{https://doi.org/10.1137/20M1312204}{doi:10.1137/20M1312204}.
+Open manuscript: \url{https://arxiv.org/abs/1907.00389}.
+
+\bibitem[Csuzdi et al.(2024)]{csuzdi2024}
+D. Csuzdi, O. T\"or\H{o}, and T. B\'ecsi.
+Differentiable particle filtering using optimal placement resampling.
+2024. \url{https://arxiv.org/abs/2402.16639}.
+
+\bibitem[Ebeigbe et al.(2025)]{ebeigbe2025}
+D. Ebeigbe et al.
+Generalized unscented transformation for forecasting non-Gaussian processes.
+\emph{Physical Review E}, 111:054135, 2025.
+\href{https://doi.org/10.1103/PhysRevE.111.054135}
+{doi:10.1103/PhysRevE.111.054135}.
+
+\bibitem[van der Merwe et al.(2000)]{vandermerwe2000}
+R. van der Merwe, A. Doucet, N. de Freitas, and E. Wan.
+The unscented particle filter.
+In \emph{Advances in Neural Information Processing Systems 13}, 2000.
+\url{https://proceedings.neurips.cc/paper/1818-the-unscented-particle-filter.pdf}.
+
+\end{thebibliography}
+\end{document}
+
