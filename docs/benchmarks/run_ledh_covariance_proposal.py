@@ -48,10 +48,10 @@ def prepare(args):
     tf.config.experimental.enable_tensor_float_32_execution(args.dtype=='float32' and not args.no_tf32)
     return tf,memory
 
-def spec_for(name):
+def spec_for(name,lgssm_family='frozen_3d'):
     if name=='lgssm':
         from bayesfilter.highdim.sqmc_lgssm_tf import LGSSMSpec
-        return LGSSMSpec('frozen_3d',3)
+        return LGSSMSpec(lgssm_family,3)
     if name=='ksc':
         from bayesfilter.highdim.sqmc_ksc_tf import KSCSpec
         return KSCSpec()
@@ -140,7 +140,7 @@ def calibrate(args):
     out=destination(args); tf,memory=prepare(args); start=time.monotonic()
     from bayesfilter.highdim.covariance_proposal_tf import make_filter,build_maps,draw_from_maps,component_densities,observation_density
     from bayesfilter.highdim.covariance_proposal_beta_tf import make_beta_solver,pilot_ratios,pilot_objective
-    spec=spec_for(args.model); dt=tf.as_dtype(args.dtype); theta=spec.default_theta(dt); ctl=controls(args)
+    spec=spec_for(args.model,args.lgssm_family); dt=tf.as_dtype(args.dtype); theta=spec.default_theta(dt); ctl=controls(args)
     program=make_filter(spec,args.particles,args.horizon,ctl,dt)
     equal=tf.constant([1/3]*3,dt); n=args.particles; d=spec.dimension
     times=sorted(set([0,args.horizon//2,args.horizon-1]))
@@ -177,7 +177,7 @@ def run(args):
     if args.campaign: return campaign(args)
     out=destination(args); tf,memory=prepare(args); start=time.monotonic()
     from bayesfilter.highdim.covariance_proposal_tf import make_filter
-    spec=spec_for(args.model); dt=tf.as_dtype(args.dtype); theta=spec.default_theta(dt)
+    spec=spec_for(args.model,args.lgssm_family); dt=tf.as_dtype(args.dtype); theta=spec.default_theta(dt)
     beta=tf.constant([float(x) for x in args.beta.split(',')],dt)
     if args.tuning:
         tuning=json.loads(Path(args.tuning).read_text())
@@ -286,6 +286,7 @@ def main():
     parser.add_argument('--device',choices=['gpu','cpu'],default='gpu')
     parser.add_argument('--dtype',choices=['float32','float64'],default='float32')
     parser.add_argument('--model',choices=['lgssm','ksc','predator_prey','sir_d18'],default='sir_d18')
+    parser.add_argument('--lgssm-family',choices=['frozen_3d','p44'],default='frozen_3d')
     parser.add_argument('--particles',type=int,default=64);parser.add_argument('--horizon',type=int,default=3)
     parser.add_argument('--seed',type=int,default=261008100);parser.add_argument('--data-seed',type=int,default=26100810)
     parser.add_argument('--seeds',type=int,default=2);parser.add_argument('--output')
