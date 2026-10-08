@@ -34,6 +34,7 @@ FIT_SEEDS = (41, 53)
 BUDGET = 86400
 MAX_ATTEMPTS = 40
 WALL_CAP = 43200
+GPU_DEVICE = 'GPU-68251639-fe82-8f81-3ccc-2953c32e805b'
 LOCK = threading.Lock()
 read = matched.read
 sha = matched.sha
@@ -53,7 +54,7 @@ def design_seeds(data_seed):
 
 
 def environment(gpu):
-    return dict(os.environ, CUDA_VISIBLE_DEVICES='1' if gpu else '-1',
+    return dict(os.environ, CUDA_VISIBLE_DEVICES=GPU_DEVICE if gpu else '-1',
                 TF_FORCE_GPU_ALLOW_GROWTH='true', TF_CPP_MIN_LOG_LEVEL='2',
                 TF_NUM_INTRAOP_THREADS='2', TF_NUM_INTEROP_THREADS='2',
                 OMP_NUM_THREADS='2', OPENBLAS_NUM_THREADS='2', MKL_NUM_THREADS='2')
@@ -74,7 +75,7 @@ def prepare():
         ['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), command=[sys.executable,*sys.argv],
         environment=sys.executable, data_seeds=DATA_SEEDS, designs={str(s):design_seeds(s) for s in DATA_SEEDS},
         models=MODELS, particles=1008, horizon=50, dtype='float64', jit_compile=True, tf32=False,
-        cpu_only=False, cuda_visible_devices='1', memory_policy=memory, tensorflow=tf.__version__,
+        cpu_only=False, cuda_visible_devices=GPU_DEVICE, memory_policy=memory, tensorflow=tf.__version__,
         budget_seconds=BUDGET, max_attempts=MAX_ATTEMPTS, wall_cap_seconds=WALL_CAP,
         source_sha256={str(p.relative_to(ROOT)):sha(p) for p in [Path(__file__),PLAN,*matched.source_paths()]},
         frozen_tuning={}, data=[])
@@ -134,7 +135,7 @@ def attempt(label, script, arguments, cap, gpu=False, **scope):
         row=dict(index=index,label=label,command=command,output=str(destination),log=str(destination)+'.log',
             limit_seconds=limit,status='running',started_utc=dt.datetime.now(dt.timezone.utc).isoformat(),
             environment=sys.executable,cpu_only=not gpu,gpu_intentionally_hidden=not gpu,
-            cuda_visible_devices='1' if gpu else '-1',plan=str(PLAN),result=str(RESULT),
+            cuda_visible_devices=GPU_DEVICE if gpu else '-1',plan=str(PLAN),result=str(RESULT),
             git_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
             source_sha256=sha(ROOT/script),**scope)
         rows.append(row);write(OUT/'attempts.json',rows)

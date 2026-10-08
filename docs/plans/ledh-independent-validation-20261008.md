@@ -119,3 +119,9 @@ Command, environment and full log are preserved under
 docs/plans/artifacts/ledh-independent-validation-checks-20261008-01/.
 Paper Eq.26/Algorithm 4 and author full_sol.m:139–206 were inspected directly;
 the source distinction between mean log weights and logmeanexp is retained.
+
+The eight datasets were prepared successfully at ae4d41ba2 using CUDA index 1
+(RTX 5080, as recorded by TensorFlow). CUDA indices differ from nvidia-smi
+indices here. Worker execution selects the idle RTX 4080 SUPER by UUID
+GPU-68251639-fe82-8f81-3ccc-2953c32e805b; every attempt records that selection.
+This resource-isolation repair changes neither data nor frozen controls.
