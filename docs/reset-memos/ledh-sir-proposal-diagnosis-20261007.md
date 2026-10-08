@@ -1,46 +1,37 @@
 # Active covariance-proposal checkpoint
 
-Current question: how are beta_0, beta_G and beta_L selected, and are transforms
-or proposal densities mixed? Completed 2026-10-08 on sqmc-development, base
-209223fdd061fa39726c69550f39e2ee324f489c.
+Completed 8 October 2026 on branch sqmc-development. Documentation base commit
+03b50cd6f; final implementation commit contains this checkpoint. The user requested
+implementation, audit against LaTeX, bounded execution and a git commit.
 
-Checked: the old text omitted selection. The shared chapter now explains
-categorical branch sampling and supplies Algorithm 0: independent-pilot convex
-second-moment fitting, a declared transition floor, projected-gradient solving
-with a gap certificate, independent validation and frozen probabilities.
-The objective holds incoming clouds/maps fixed; it does not optimize the
-analytical score or the whole recursive filter.
+Master: docs/benchmarks/run_ledh_covariance_proposal.py.
+Plan: docs/plans/ledh-covariance-proposal-implementation-20261008.md.
+Results: docs/benchmarks/ledh-covariance-proposal-results-20261008.md.
+Equation/function audit: docs/benchmarks/ledh-covariance-proposal-audit-20261008.md.
+Evidence: docs/plans/artifacts/ledh-covariance-implementation-20261008-01/.
 
-Both documents compile and use the same body. Section 27.5 in docs/main.pdf
-(647 pages; printed 252–255 / PDF 272–275) and Section 5 of the standalone
-(23 pages; pages 8–11) contain the addition. All 49 existing labelled equations
-and three algorithms are unchanged; eight equations and Algorithm 0 are added.
-All labels/citations resolve. Rendered new pages passed inspection.
+Shared TensorFlow/XLA authorities implement the conditional-Q/global/transition
+mixture, independent-pilot beta fit, all-ancestor correction, weighted-moment reset,
+optional bounded marginal/pairwise third/fourth-moment correction, and analytical
+total finite-program scores. Existing defaults remain unchanged. Final CPU-hidden
+suite: 41 passed in 74.55s. Final identical-input GPU SIR correction check: value
+and score changes exactly zero; column/coordinate diagnostics and guards pass.
+Both LaTeX documents compile without unresolved references: monograph 648 pages,
+standalone 24 pages. Standalone has no overfull boxes; monograph retains 215
+pre-existing overfull boxes elsewhere. MathDevMCP obligations remain unverified;
+manual derivations, executable call-chain checks and numerical tests are recorded.
 
-MathDevMCP extracted no usable targets in the focused audit. It proved one
-scalar cancellation; two derivative requests were not encodable. Direct
-SymPy checks confirmed those derivative identities. This is partial algebra
-coverage, not a fully formal proof or performance validation.
+The 4-hour stage ended at 11:40 UTC with 48/48 model/calibration attempts used;
+no experiment is queued. Final report assembly and commit follow the compute stage.
+SIR FP32/TF32 fails a covariance guard; same inputs without TF32 pass. FP64 SIR
+T50 global-heavy collapses. Equal mixture has a real extreme finite-program score
+near -2193; finer differences converge to it. The fitted mixture avoids those
+observed failures in two seeds but does not establish model-score accuracy or
+statistical superiority. Moment correction moves very little. No HMC/default/
+canonical admission, general kurtosis improvement, or Zhao-Cui replication claim.
 
-Evidence:
-- docs/plans/ledh-proposal-beta-calibration-results-20261008.md
-- docs/plans/ledh-proposal-beta-calibration-20261008.md
-- docs/plans/artifacts/ledh-proposal-beta-calibration-20261008-01/
-- docs/chapters/ledh_covariance_proposal_body.tex
-- docs/benchmarks/ledh-sir-proposal-diagnosis-20261007.md (earlier diagnosis)
-
-The prior checkpoint is preserved in this artifact directory's baseline.
-Earlier integration and MathDevMCP reports remain historical stage records.
-Unrelated dirty diagnostics and document work remain preserved.
-
-Remaining limits: the composite proposal and new beta procedure are not runtime
-implementations; no numerical beta has been fitted or validated. No new model
-test, GPU job, scientific promotion, commit or push occurred. The SIR diagnostic
-campaign remains closed. Documentation work finished within its 45-minute
-budget using five TeX passes per document. No experiments are queued.
-Human readability feedback is pending.
-
-Exact next action: explain the probabilities and the new selection rule to the
-user, linking the compiled section. Further implementation would need its own
-bounded plan and full recursive value/all-score validation across protected
-model/horizon scopes.
+Next research, if continued: fresh scope-specific precision/reset calibration,
+larger particle/seed ladders and independent reference convergence. Do not reuse
+failed holdouts for tuning or treat beta fitting as complete numerical tuning.
+Narrow master command rules are installed; normal platform permissions still apply.
+Earlier documentation history: docs/plans/ledh-proposal-beta-calibration-results-20261008.md.

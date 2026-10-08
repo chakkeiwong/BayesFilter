@@ -1,0 +1,105 @@
+{
+  "git_commit": "03b50cd6f5abe0076a6da4c6b98a15e087f9d5dc",
+  "source_sha256": {
+    "bayesfilter/highdim/covariance_proposal_tf.py": "26c49a6127d1d85bda8eaad9168566b4efb1a053b7f68bb9b3085c4d88e1bb28",
+    "bayesfilter/highdim/covariance_proposal_beta_tf.py": "d96511b3ec5c8b3962ff5e2f23fa91cf353942fd2550a4669049f51ef01c63bd",
+    "bayesfilter/highdim/covariance_proposal_moments_tf.py": "0537d110677bfa7f77aa60c44e53ccbc650bbf678dbff71196a17966fed9171e",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "7798dc09a1078af67665c13d55d862cfb9831286ed51dac5e2439e0cd46b6437",
+    "docs/plans/ledh-covariance-proposal-implementation-20261008.md": "05384eabbde1285a36ca26d5be40f9d45af9f7e1a33efefcc5b8f5fa630dddc5"
+  },
+  "command": [
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_ledh_covariance_proposal.py",
+    "preflight"
+  ],
+  "created_utc": "2026-10-08T10:17:42.492767+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "device": "gpu",
+  "cpu_only": false,
+  "gpu_intentionally_hidden": false,
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "jit_compile": true,
+  "dtype": "float32",
+  "tf32": true,
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-covariance-proposal-implementation-20261008.md",
+  "args": {
+    "command": "preflight",
+    "device": "gpu",
+    "dtype": "float32",
+    "model": "sir_d18",
+    "particles": 64,
+    "horizon": 3,
+    "seed": 261008100,
+    "data_seed": 26100810,
+    "seeds": 2,
+    "output": null,
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 1.0,
+    "correction_steps": 0,
+    "floor": 0.1,
+    "beta": "0.3333333333333333,0.3333333333333333,0.3333333333333333",
+    "tuning": null,
+    "reference": false,
+    "regressions": false,
+    "timeout": 1200
+  },
+  "evidence_role": "candidate_diagnostic_not_admission",
+  "default_promoted": false,
+  "logical_devices": [
+    "LogicalDevice(name='/device:CPU:0', device_type='CPU')",
+    "LogicalDevice(name='/device:GPU:0', device_type='GPU')",
+    "LogicalDevice(name='/device:GPU:1', device_type='GPU')"
+  ],
+  "probe": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0"
+}

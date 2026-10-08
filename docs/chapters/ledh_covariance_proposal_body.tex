@@ -238,8 +238,9 @@ the UKF covariance.}
 
 A local map should describe uncertainty around one ancestor. The following
 construction makes that requirement explicit and supplies a mathematical
-realization of the local-flow component. It is not a claim that the current
-BayesFilter LEDH implementation already executes this construction.
+realization of the local-flow component. The optional implementation described
+at the end of this chapter uses this construction with additive Gaussian
+transitions; it does not replace the established LEDH implementation.
 
 For ancestor \(j\), approximate its conditional law by
 \(\bfCovNormal(m_j,C_j)\), with \(C_j\in\bfCovSPD^d\).
@@ -728,8 +729,10 @@ base branch-label uniforms fixed throughout all likelihood/score calls.
 The maps and their parameter derivatives still vary as specified below.
 Refitting the probabilities at each parameter value would define another
 algorithm, requiring their derivatives and a treatment of changing labels.
-Algorithm~0 is a proposed calibration procedure in this document; neither
-its implementation nor a validated numerical mixture is asserted here.
+The implementation described below executes Algorithm~0 with independent
+pilots and records its optimization gap. Its validation objective measures
+proposal-weight variability; downstream likelihood and score accuracy require
+the separate recursive comparisons described below.
 
 
 \section{What the resampling transform should preserve}
@@ -1293,8 +1296,7 @@ stationary. The formula may be expensive, but dropping these terms would
 change the score.
 
 These recurrences define the analytical derivative of the proposed
-finite program. They are not an implementation audit. A future implementation
-must show that every value/score entry point reaches these same operations,
+finite program. An implementation audit must additionally show that every value/score entry point reaches these same operations,
 and verify directional derivatives with common-noise finite differences.
 Even exact finite-program derivative parity would not establish agreement
 with the true model score.
@@ -1556,20 +1558,19 @@ Cholesky realization, and the bounded Cayley fitting scheme are the
 candidate synthesis in this note. No cited paper proves that the combined
 algorithm cures the observed SIR likelihood or score errors.
 
-\section[Checks before implementation]{What must be checked before implementation or promotion}
+\section[Implementation and promotion checks]{What implementation and promotion require}
 
 A correct density formula can coexist with a useless proposal. A correct
 reset can faithfully preserve inaccurate weighted moments. A correct
 finite-program score can disagree strongly with the true score. These
 are different failure mechanisms and require different comparisons.
 
-The smallest next implementation step is the conditional-covariance
-proposal repair, retaining the existing likelihood target and one
-marginal-density evaluator. A claim about its implementation must follow
-every value and score entry point through the actual call chain.
-Only after this simpler comparison should the common UKF branch be added;
-the optional higher-moment optimizer is a further separate change.
-This order permits attribution of a failure or gain.
+The implementation separates the conditional-covariance proposal, the
+common UKF branch, and the optional higher-moment optimizer so that each
+can be checked independently. Every value and score entry point must reach
+the same marginal-density evaluator. Comparisons with the transition-only,
+equal-mixture, global-heavy and local-heavy proposals help identify which
+component causes a failure or an observed gain.
 
 For the proposal, exact linear-Gaussian identities, density normalization
 checks, and common-noise directional finite differences test mathematical
@@ -1616,7 +1617,8 @@ Settings must be frozen before held-out evaluation and parameter-dependent
 retuning inside an HMC trajectory is outside this proposal.
 The optional correction additionally needs a non-harm study of its caps
 and failure handling, including the symmetric stationary example above.
-No expensive campaign is authorized or reported by this document.
+The bounded implementation study below was authorized separately; it does
+not establish a generally tuned configuration.
 
 The established results in this note are conditional mathematical statements:
 the mixture covariance decomposition, the change-of-variables proposal
@@ -1626,3 +1628,69 @@ recurrences for the stated finite program. Global accuracy, weak convergence
 of the entire composite method, reliable tail moments, efficient computation,
 and suitability for HMC remain to be demonstrated.
 
+
+\section{Implementation and first numerical checks}
+
+The optional TensorFlow implementation in
+\texttt{covariance\_proposal\_tf.py} executes Algorithms~1 and~2 through one
+shared value and analytical directional-derivative function. The companion
+\texttt{covariance\_proposal\_beta\_tf.py} implements Algorithm~0, and
+\texttt{covariance\_proposal\_moments\_tf.py} implements Algorithm~3.
+The master program is
+\path{docs/benchmarks/run_ledh_covariance_proposal.py}.
+It supplies calibration, execution, test and reporting commands; its saved
+results include the configuration, fixed seeds, source hashes, hardware,
+likelihood, every parameter score and numerical diagnostics.
+
+This first implementation covers additive Gaussian transitions with a common
+conditional covariance, using the conditional mean as each local linearization
+point. The actual observation density enters the importance weights, including
+the non-Gaussian KSC mixture. The common guide uses the declared unscented rule.
+The dense reset supports \(d<N\leq3000\). The optional moment fit uses four
+fixed cosine-pair skew directions, unit feature scales, all marginal third and
+fourth powers, and all pairwise powers of total degree three or four. Its common
+standardized radius sets both the whole-vector and coordinate caps.
+These are explicit choices for a first candidate, rather than a full
+implementation of every model interface and parameterization allowed above.
+
+The bounded study of 8 October 2026 used LGSSM, KSC stochastic volatility,
+predator--prey and \(d=18\) SIR. Independent pilots at the first, middle and
+last observation selected \(\beta\) with transition floor \(0.1\), while the
+Euler grid of 16 steps and 40 Sinkhorn iterations remained fixed hypotheses.
+This stage therefore tunes the branch probabilities only. It does not complete
+the separate calibration of every numerical control. CPU reference tests cover
+all parameters, both with and without the optional moment correction; GPU/XLA
+runs check the same shared implementation.
+
+The tests distinguish three questions. Finite differences check whether the
+analytical recurrence differentiates the implemented likelihood. Mean,
+covariance and displacement checks test the reset and correction invariants.
+Exact Kalman, refined KSC and independent bootstrap comparisons assess proximity
+to the model likelihood and score. Passing the first two does not settle the
+third. The bootstrap reference also has Monte Carlo error and finite-particle
+bias; it is not an exact oracle.
+
+An initial SIR check exposed a precision problem: FP32 with TF32 failed the
+final covariance check, while the same saved inputs in FP32 without TF32 passed.
+The broader comparison therefore used the explicit FP64 GPU/XLA reference
+configuration. At \(T=50\), \(N=128\), one fitted SIR mixture selected
+\((\beta_0,\beta_G,\beta_L)=(0.1,0,0.9)\). Its two log likelihoods were
+\(-1679.56\) and \(-1678.66\), versus a bootstrap estimate of \(-1677.30\)
+with estimated Monte Carlo standard error \(0.36\). The corresponding third
+scores were \(-11.80\) and \(-20.84\), versus \(-20.00\) with standard error
+\(1.77\). The equal mixture produced an extreme third score of \(-2193.07\)
+on one seed, and the global-heavy proposal failed numerical checks after
+three or four observations. These outcomes require investigation of recursive
+sensitivity and precision. Two candidate seeds and an imperfect reference do
+not establish a ranking or suitability for HMC.
+
+The complete values, all score coordinates, finite-difference diagnostics,
+failed attempts and source-to-equation audit are preserved in
+\begin{quote}\small
+\path{docs/benchmarks/}\\
+\path{ledh-covariance-proposal-results-20261008.md}
+\end{quote}
+MathDevMCP found the requested operations and terms but returned unverified
+obligations, including parser limitations. The mathematical derivations,
+executable invariants and derivative tests supply partial, explicitly scoped
+evidence; they do not constitute a formal certificate for the whole filter.

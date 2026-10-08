@@ -1,0 +1,403 @@
+{
+  "scope": {
+    "model": "ksc",
+    "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+    "n": 64,
+    "horizon": 3,
+    "dtype": "float64",
+    "device": "gpu",
+    "jit_compile": true,
+    "tf32": false,
+    "controls": {
+      "flow_steps": 16,
+      "reset_steps": 40,
+      "reset_epsilon": 1.0,
+      "correction_steps": 2,
+      "correction_basis": 4,
+      "correction_rate": 0.1,
+      "correction_radius": 0.25
+    }
+  },
+  "theta": [
+    1.5,
+    0.0
+  ],
+  "observations": [
+    [
+      -1.3890506137118708
+    ],
+    [
+      -6.089018484493499
+    ],
+    [
+      1.533667076581951
+    ]
+  ],
+  "data_seed": 26100830,
+  "beta": [
+    0.3333333333333333,
+    0.3333333333333333,
+    0.3333333333333333
+  ],
+  "results": [
+    {
+      "value": -8.037563525257992,
+      "score": [
+        -0.06960672293838496,
+        -0.18677604415725912
+      ],
+      "valid": true,
+      "steps_completed": 3,
+      "trace_fields": [
+        "log_increment",
+        "score_increment",
+        "ess",
+        "max_weight",
+        "max_prior_proposal_ratio",
+        "reset_mean_error",
+        "reset_covariance_relative_error",
+        "reset_margin",
+        "guide_margin",
+        "map_margin",
+        "correction_displacement",
+        "moment_loss_before",
+        "moment_loss_after",
+        "valid",
+        "sinkhorn_row_error",
+        "reset_displacement"
+      ],
+      "trace": [
+        [
+          -1.8161210854584695,
+          -0.009284888263089148,
+          58.00111827570381,
+          0.024761091465760582,
+          1.1723220282532545,
+          1.6653345369377348e-16,
+          4.2159679546390526e-16,
+          1.0,
+          1.0,
+          1.0,
+          6.588424596751744e-07,
+          0.04123474320081531,
+          0.04123467922610483,
+          1.0,
+          4.995587346567909e-10,
+          0.34540109828391174
+        ],
+        [
+          -3.5762252751093992,
+          0.04631743006234315,
+          62.86138804042069,
+          0.020132612542236503,
+          2.5995739707048875,
+          0.0,
+          1.1473858437727236e-15,
+          1.0,
+          1.0,
+          1.0,
+          1.1114812417137457e-07,
+          0.0014752447719137782,
+          0.0014752426677211163,
+          1.0,
+          2.1599737720645606e-08,
+          0.432645322627788
+        ],
+        [
+          -2.645217164690124,
+          -0.10663926473763896,
+          39.10010746232912,
+          0.03260604030011473,
+          1.8298387052503104,
+          2.220446049250313e-16,
+          1.1014525222132062e-15,
+          1.0,
+          1.0,
+          1.0,
+          2.776288738631922e-06,
+          0.0496077877540652,
+          0.04960730234486624,
+          1.0,
+          1.5588436305669084e-09,
+          0.3947289095458446
+        ]
+      ],
+      "derivative_diagnostics": [
+        {
+          "coordinate": 0,
+          "analytical": -0.06960672293838496,
+          "differences": [
+            {
+              "step": 0.00015000000000000001,
+              "finite_difference": -0.06960672307580276,
+              "error": -1.3741779936182752e-10,
+              "valid": true
+            },
+            {
+              "step": 7.500000000000001e-05,
+              "finite_difference": -0.06960672295737898,
+              "error": -1.8994014694406758e-11,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "coordinate": 1,
+          "analytical": -0.18677604415725912,
+          "differences": [
+            {
+              "step": 0.0001,
+              "finite_difference": -0.1867760425700027,
+              "error": 1.5872564373964337e-09,
+              "valid": true
+            },
+            {
+              "step": 5e-05,
+              "finite_difference": -0.18677604376904355,
+              "error": 3.882155708012647e-10,
+              "valid": true
+            }
+          ]
+        }
+      ],
+      "seed": 261008100
+    },
+    {
+      "value": -8.317467648540482,
+      "score": [
+        -0.14593864137176182,
+        -0.005962331223318906
+      ],
+      "valid": true,
+      "steps_completed": 3,
+      "trace_fields": [
+        "log_increment",
+        "score_increment",
+        "ess",
+        "max_weight",
+        "max_prior_proposal_ratio",
+        "reset_mean_error",
+        "reset_covariance_relative_error",
+        "reset_margin",
+        "guide_margin",
+        "map_margin",
+        "correction_displacement",
+        "moment_loss_before",
+        "moment_loss_after",
+        "valid",
+        "sinkhorn_row_error",
+        "reset_displacement"
+      ],
+      "trace": [
+        [
+          -1.8049562557061383,
+          -0.019763543300295613,
+          58.69692022439672,
+          0.02431057329900272,
+          1.2891901315332799,
+          1.1102230246251565e-16,
+          0.0,
+          1.0,
+          1.0,
+          1.0,
+          7.958610676745131e-06,
+          0.022418110946743203,
+          0.022416989532381044,
+          1.0,
+          1.0114740399413957e-09,
+          0.3854830330151011
+        ],
+        [
+          -3.5335349683875967,
+          0.05648046244819462,
+          60.957333461305424,
+          0.02504792672097573,
+          2.9260301756559204,
+          0.0,
+          1.593563367782951e-15,
+          1.0,
+          1.0,
+          1.0,
+          2.6624673349396494e-07,
+          0.0014026147663398468,
+          0.0014026071429134555,
+          1.0,
+          5.775563527606054e-07,
+          0.411978943620644
+        ],
+        [
+          -2.978976424446748,
+          -0.18265556051966084,
+          30.26364308373546,
+          0.044318930010948075,
+          2.395211205558874,
+          1.1102230246251565e-16,
+          2.098034390029611e-15,
+          1.0,
+          1.0,
+          1.0,
+          3.8405161268763196e-07,
+          0.00995834013070375,
+          0.009958330896286928,
+          1.0,
+          6.372895877682083e-09,
+          0.4040610980197079
+        ]
+      ],
+      "derivative_diagnostics": [
+        {
+          "coordinate": 0,
+          "analytical": -0.14593864137176182,
+          "differences": [
+            {
+              "step": 0.00015000000000000001,
+              "finite_difference": -0.14593864192965117,
+              "error": -5.578893458313416e-10,
+              "valid": true
+            },
+            {
+              "step": 7.500000000000001e-05,
+              "finite_difference": -0.14593864149740435,
+              "error": -1.2564252416247257e-10,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "coordinate": 1,
+          "analytical": -0.005962331223318906,
+          "differences": [
+            {
+              "step": 0.0001,
+              "finite_difference": -0.005962330202891053,
+              "error": 1.0204278533265665e-09,
+              "valid": true
+            },
+            {
+              "step": 5e-05,
+              "finite_difference": -0.005962330966724494,
+              "error": 2.565944123844588e-10,
+              "valid": true
+            }
+          ]
+        }
+      ],
+      "seed": 261008101
+    }
+  ],
+  "reference": null,
+  "wall_seconds": 8.688085638917983,
+  "provenance": {
+    "git_commit": "03b50cd6f5abe0076a6da4c6b98a15e087f9d5dc",
+    "source_sha256": {
+      "bayesfilter/highdim/covariance_proposal_tf.py": "83f131da92a0bd1ae70a1de62c6157742c95eabb72b7c83a04a5321a91094d29",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "42d3eef866c31af8a07aed4be6667d41fdac248b2ff5f4338cf03ccadad1d481",
+      "docs/plans/ledh-covariance-proposal-implementation-20261008.md": "aacf01221da5bc30c856718c2f3463b7e67b808ac908b64ba9dd638cec4f1db3",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "879c56d91c0ced5d1104989973b1e71a63fa05be82b82940555375c48a5d3ce3",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "5de3c494f0a9d82f3f54854906f37dea54ad3c9e76bcd2a159aea7190f08e2ae",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "docs/chapters/ledh_covariance_proposal_body.tex": "e7b9d0bb172fc88300bd2150427728d1bfb9679b2510b76361fe52bbd6da2cdc"
+    },
+    "command": [
+      "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_ledh_covariance_proposal.py",
+      "run",
+      "--dtype",
+      "float64",
+      "--seeds",
+      "2",
+      "--data-seed",
+      "26100830",
+      "--model",
+      "ksc",
+      "--particles",
+      "64",
+      "--horizon",
+      "3",
+      "--correction-steps",
+      "2",
+      "--check-derivatives",
+      "--output",
+      "docs/plans/artifacts/ledh-covariance-implementation-20261008-01/ksc-t3-correction-01"
+    ],
+    "created_utc": "2026-10-08T11:12:38.026384+00:00",
+    "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "device": "gpu",
+    "cpu_only": false,
+    "gpu_intentionally_hidden": false,
+    "memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        },
+        {
+          "device": "/physical_device:GPU:1",
+          "device_details": {
+            "compute_capability": [
+              12,
+              0
+            ],
+            "device_name": "NVIDIA GeForce RTX 5080"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile": true,
+    "dtype": "float64",
+    "tf32": false,
+    "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-covariance-proposal-implementation-20261008.md",
+    "args": {
+      "command": "run",
+      "device": "gpu",
+      "dtype": "float64",
+      "model": "ksc",
+      "particles": 64,
+      "horizon": 3,
+      "seed": 261008100,
+      "data_seed": 26100830,
+      "seeds": 2,
+      "output": "docs/plans/artifacts/ledh-covariance-implementation-20261008-01/ksc-t3-correction-01",
+      "flow_steps": 16,
+      "reset_steps": 40,
+      "reset_epsilon": 1.0,
+      "correction_steps": 2,
+      "floor": 0.1,
+      "beta": "0.3333333333333333,0.3333333333333333,0.3333333333333333",
+      "tuning": null,
+      "reference": false,
+      "regressions": false,
+      "timeout": 1200,
+      "reference_particles": 8192,
+      "no_tf32": false,
+      "check_derivatives": true,
+      "dataset": null,
+      "campaign": false
+    },
+    "evidence_role": "candidate_diagnostic_not_admission",
+    "default_promoted": false
+  },
+  "tuning": null
+}
