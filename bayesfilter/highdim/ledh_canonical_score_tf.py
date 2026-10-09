@@ -36,6 +36,10 @@ from bayesfilter.highdim.ledh_failure_status_tf import (
     FailureCode, FailureStage, initial_status, record_failure, first_invalid_particle,
 )
 
+from bayesfilter.highdim.ledh_marginal_weights_tf import (
+    IMPORTANCE_WEIGHT_POLICIES, marginal_prior_ratio_tangent,
+)
+
 Tensor = tf.Tensor
 
 ANCESTRY_POLICIES = (
@@ -229,7 +233,7 @@ def _value_and_analytical_score_impl(
     """
 
     dtype = initial_states.dtype
-    if importance_weight_policy not in ("ancestor", "marginal_mixture"):
+    if importance_weight_policy not in IMPORTANCE_WEIGHT_POLICIES:
         raise ValueError("unsupported importance_weight_policy")
     if importance_weight_policy == "marginal_mixture":
         if (annealed_stages != 1 or ancestry_policy != "existing_one_to_one"
@@ -238,6 +242,13 @@ def _value_and_analytical_score_impl(
                 or model.transition_log_density_tangent_fn is not None):
             raise ValueError("marginal_mixture requires full-rank Gaussian transitions, "
                              "one-to-one ancestry and one annealing stage")
+    # Share Gaussian density and tangent authority across both weight policies.
+    # Structural innovations/custom transition laws retain their density route.
+    gaussian_transition = (
+        model.innovation_matrix is None
+        and model.transition_log_density_fn is None
+        and model.transition_log_density_tangent_fn is None
+    )
     if return_trace and annealed_stages != 1:
         raise ValueError(
             "return_trace currently supports only annealed_stages=1; "
@@ -617,43 +628,34 @@ def _value_and_analytical_score_impl(
                 substeps=flow_substeps,
                 eye=eye,
                 innovation_geometry=geometry,
-                return_affine=importance_weight_policy == "marginal_mixture",
+                return_affine=gaussian_transition,
             )
             children, d_children, log_det, d_log_det, flow_value_valid, flow_force_valid = flow_outputs[:6]
             status = record_failure(status, flow_value_valid & all_finite(pre_flow, anchors),
                 flow_force_valid & all_finite(d_pre_flow, d_anchors), time=t, stage=FailureStage.FLOW,
                 value_code=FailureCode.FACTORIZATION, particle=first_invalid_particle(flow_value_valid))
-            transition_log, d_transition_log = _transition_density(
-                children, d_children, anchors, d_anchors
-            )
-            observation_log, d_observation_log = _observation_density(
-                children, d_children
-            )
-            proposal_log, d_proposal_log = _transition_density(
-                pre_flow, d_pre_flow, anchors, d_anchors
-            )
-            weights_log = step_incoming_log_weights
-            prior_observation_logits = (
-                weights_log + transition_log + log_det - proposal_log
-            )
-            d_prior_observation_logits = (
-                d_step_incoming_log_weights
-                + d_transition_log
-                + d_log_det
-                - d_proposal_log
-            )
-            if importance_weight_policy == "marginal_mixture":
-                from bayesfilter.highdim.ledh_marginal_weights_tf import marginal_prior_ratio_tangent
+            if gaussian_transition:
                 proposal_means, d_proposal_means, matrix, d_matrix = flow_outputs[6:]
                 ratio, d_ratio, mixture_valid, mixture_force_valid = marginal_prior_ratio_tangent(
                     children, d_children, anchors, d_anchors, process_covariance,
                     tf.zeros_like(process_covariance) if d_q is None else d_q,
                     proposal_means, d_proposal_means, matrix, d_matrix,
-                    weights_log, d_step_incoming_log_weights)
-                prior_observation_logits = weights_log + ratio
-                d_prior_observation_logits = d_step_incoming_log_weights + d_ratio
+                    step_incoming_log_weights, d_step_incoming_log_weights,
+                    component_policy=importance_weight_policy)
                 status = record_failure(status, mixture_valid, mixture_force_valid,
                     time=t, stage=FailureStage.WEIGHTS, value_code=FailureCode.FACTORIZATION)
+            else:
+                transition_log, d_transition_log = _transition_density(
+                    children, d_children, anchors, d_anchors)
+                proposal_log, d_proposal_log = _transition_density(
+                    pre_flow, d_pre_flow, anchors, d_anchors)
+                ratio = transition_log + log_det - proposal_log
+                d_ratio = d_transition_log + d_log_det - d_proposal_log
+            observation_log, d_observation_log = _observation_density(
+                children, d_children)
+            weights_log = step_incoming_log_weights
+            prior_observation_logits = weights_log + ratio
+            d_prior_observation_logits = d_step_incoming_log_weights + d_ratio
             prior_observation_normalizer = tf.reduce_logsumexp(prior_observation_logits)
             prior_observation_weights = tf.exp(
                 prior_observation_logits - prior_observation_normalizer

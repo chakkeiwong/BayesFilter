@@ -110,8 +110,13 @@ def _simulation(spec, horizon, dtype_name, jit_compile):
 
 
 def trace_kernel(spec, route, controls, n, horizon, dtype, *, jit_compile=True,
-                 reset_design_kind="normal_quantiles"):
-    """Retain diagnostics from the actual shared reset, using direction zero."""
+                 reset_design_kind="normal_quantiles", include_clouds=False,
+                 dynamic_direction=False):
+    """Retain shared-reset diagnostics, with optional clouds and tensor direction.
+
+    Existing callers use direction zero. Both options affect only diagnostic
+    retention and leave the canonical value and analytical derivative intact.
+    """
     from bayesfilter.highdim import sqmc_campaign_tf as common
     from bayesfilter.highdim.ledh_canonical_score_tf import canonical_value_and_analytical_score
     design = common.reset_design(n, spec.dimension, dtype, reset_design_kind)
@@ -122,17 +127,29 @@ def trace_kernel(spec, route, controls, n, horizon, dtype, *, jit_compile=True,
                  tf.TensorSpec([horizon, n], dtype),
                  tf.TensorSpec([horizon, spec.observation_dimension], dtype)]
 
+    if dynamic_direction:
+        signature.append(tf.TensorSpec([spec.parameter_count], dtype))
+
     @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
-    def compute(theta, initial, noise, uniforms, observations):
-        direction = tf.one_hot(0, spec.parameter_count, dtype=dtype)
+    def compute(theta, initial, noise, uniforms, observations, direction=None):
+        if direction is None:
+            direction = tf.one_hot(0, spec.parameter_count, dtype=dtype)
         model, _ = spec.model(theta, direction)
         states, covs, ds, dc = spec.initial_cloud(theta, initial, direction)
         value, score, trace = canonical_value_and_analytical_score(
             model, theta, states, covs, noise, observations, with_score=True,
             return_trace=True, initial_state_tangent=ds, initial_covariance_tangent=dc,
             reset_design=design, process_ancestor_uniforms=uniforms, **settings)
+        # Keep scalar validity fields and per-step arrays for the reset diagnostic.
+        # The arrays are read only at this diagnostic boundary.
+        trace_array_keys = frozenset({
+            "children", "posterior_weights", "states_after_reset",
+            "d_children", "d_posterior_weights", "d_states_after_reset",
+            "posterior_logits", "d_posterior_logits",
+        })
         records = tuple({key: val for key, val in row.items()
                          if (tf.is_tensor(val) and val.shape.rank == 0)
+                         or (include_clouds and key in trace_array_keys)
                          or (key.startswith("higher_moment_") and "stage_" not in key)}
                         for row in trace)
         return value, score, records

@@ -50,7 +50,7 @@ class KSCSpec:
 
     def model(self, theta, direction=None):
         from bayesfilter.highdim.ledh_canonical_models_tf import ksc_sv_canonical_model
-        model, setter = ksc_sv_canonical_model(theta)
+        model, setter = ksc_sv_canonical_model(theta, dtype=theta.dtype)
         setter(tf.zeros_like(theta) if direction is None else direction)
         return model, setter
 

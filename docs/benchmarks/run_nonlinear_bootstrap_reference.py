@@ -54,6 +54,8 @@ def summarize(rows):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--plan-file',default='docs/plans/ledh-nonlinear-execution-20261002.md')
+    parser.add_argument('--result-file',default='docs/benchmarks/ledh-nonlinear-execution-results-20261002.md')
     parser.add_argument('--worker-dirs', nargs='+', type=Path, required=True)
     parser.add_argument('--particles', nargs='+', type=int, default=[8192,32768])
     parser.add_argument('--seeds', nargs='+', type=int, default=[260601,260602,260603,260604])
@@ -82,8 +84,8 @@ def main():
                     tensorflow=tf.__version__, dtype='float64', jit_compile=True, tf32=False,
                     device='/GPU:0', visible_gpu=os.environ.get('CUDA_VISIBLE_DEVICES'),
                     memory_policy=memory, GPU_trust='escalated_GPU_access',
-                    plan='docs/plans/ledh-nonlinear-execution-20261002.md',
-                    result='docs/benchmarks/ledh-nonlinear-execution-results-20261002.md',
+                    plan=args.plan_file,
+                    result=args.result_file,
                     particles=args.particles, seeds=args.seeds, budget_seconds=args.budget_seconds,
                     evidence_role='approximate_independent_reference_not_oracle',
                     score_method='posterior_average_analytical_complete_data_Fisher_score',
@@ -104,8 +106,8 @@ def main():
             for worker in args.worker_dirs:
                 job = read(worker/'job.json')
                 spec = NonlinearSQMCSpec(job['model'])
-                prior_rows = read(worker/'rows.json')
-                points = {tuple(row['theta']) for row in prior_rows}
+                points = ({tuple(theta) for theta in job['theta_points']} if job.get('theta_points')
+                          else {tuple(row['theta']) for row in read(worker/'rows.json')})
                 if len(points) != 1:
                     raise ValueError('reference runner currently requires exactly one saved parameter point')
                 theta = tf.constant(list(next(iter(points))),tf.float64)

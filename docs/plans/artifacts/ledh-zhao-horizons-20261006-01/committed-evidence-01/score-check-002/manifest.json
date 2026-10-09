@@ -1,0 +1,72 @@
+{
+  "command": [
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/check_ledh_nonlinear_score_fd.py",
+    "--output",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-zhao-horizons-20261006-01/score-check-002",
+    "--timeout-seconds",
+    "1000",
+    "--models",
+    "sir_d18",
+    "--device",
+    "gpu",
+    "--steps",
+    "1e-6",
+    "5e-7",
+    "1e-7",
+    "5e-8"
+  ],
+  "git_commit": "b3f4ca6468b6694b91080fc875cb4b76259cd446",
+  "source_sha256": "d3550bd32c11a7d440201d43e36d7105cc5be33942b47026756170f2b94f0b27",
+  "plan": "docs/plans/ledh-zhao-horizon-comparison-20261006.md",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "cpu_only": false,
+  "gpu_status": "trusted escalated GPU",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "jit_compile": true,
+  "dtype": "float64",
+  "particles": 144,
+  "horizon": 10,
+  "design_seed": 261006101,
+  "steps": [
+    1e-06,
+    5e-07,
+    1e-07,
+    5e-08
+  ],
+  "normalized_tolerance": 0.0002,
+  "claim": "derivative of the same fixed finite program only"
+}
