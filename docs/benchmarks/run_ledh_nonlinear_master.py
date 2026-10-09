@@ -177,7 +177,7 @@ def worker(job_path):
                     tf32=tf.config.experimental.tensor_float_32_execution_enabled(),
                     jit_compile=job["jit_compile"], chunk_size=select_transport_chunk_size(job["particles"]),
                     evidence_role="diagnostic_only", tuning_status="untuned_scope_warm_start",
-                    plan=PLAN, score_method="analytical_recursive_total_selected_branch",
+                    plan=job.get("plan", PLAN), score_method="analytical_recursive_total_selected_branch",
                     observations_timing="x0_then_transition_then_observe_y1_to_yT")
     dump(out / "manifest.json", manifest)
     with tf.device(device):
@@ -212,6 +212,7 @@ def worker(job_path):
                     ell, scores = float(value), score.numpy().tolist()
                     finite = bool(valid) and math.isfinite(ell) and all(math.isfinite(x) for x in scores)
                     row = dict(**scope, model=spec.name, route=job["route"], arm=arm,
+                               importance_weight_policy=controls.get("importance_weight_policy", "ancestor"),
                                point_index=point_index, particles=job["particles"], data_seed=job["data_seed"],
                                design_seed=seed, log_likelihood=ell, score=scores, valid=finite,
                                controls=common.numerical_settings(controls), reset_design=design,
@@ -272,7 +273,7 @@ def heuristic_comparisons(rows, keys):
             other = lookup.get(tuple(row[k] for k in keys[:-1])+(adversary,row["design_seed"]))
             if other is None:
                 continue
-            key = tuple(row[k] for k in keys)+(adversary,)
+            key = tuple(row.get(k, "ancestor") if k == "importance_weight_policy" else row[k] for k in keys)+(adversary,)
             grouped.setdefault(key, []).append((
                 row["score_l2_error"]-other["score_l2_error"],
                 abs(row["log_likelihood_error"])-abs(other["log_likelihood_error"])))
@@ -299,10 +300,12 @@ def summarize(out, attempts):
         if path.exists():
             rows.extend(read(path))
     dump(out / "rows.json", rows)
-    keys = ("model", "horizon", "particles", "data_seed", "point_index", "route", "arm")
+    for row in rows:
+        row.setdefault("importance_weight_policy", "ancestor")
+    keys = ("model", "horizon", "particles", "data_seed", "point_index", "route", "importance_weight_policy", "arm")
     groups = {}
     for row in rows:
-        groups.setdefault(tuple(row[k] for k in keys), []).append(row)
+        groups.setdefault(tuple(row.get(k, "ancestor") if k == "importance_weight_policy" else row[k] for k in keys), []).append(row)
     summaries, components = [], []
     for key, group in groups.items():
         good = [r for r in group if r["valid"]]
@@ -348,12 +351,12 @@ def summarize(out, attempts):
              "Means and standard errors are conditional on each dataset and parameter point. "
              "Missing references are unavailable, not zero. Invalid/unfinished runs are counted; "
              "means over valid runs alone must not support a ranking.", "",
-             "| Model / T / N / dataset / point | Route / arm | Valid / returned | Mean log likelihood | Score means |",
+             "| Model / T / N / dataset / point | Route / weight policy / arm | Valid / returned | Mean log likelihood | Score means |",
              "|---|---|---:|---:|---|"]
     for c in summaries:
         ell = "unavailable" if c["log_likelihood"] is None else f'{c["log_likelihood"]["mean"]:.9g}'
         scores = "unavailable" if c["score"] is None else ", ".join(f'{s["mean"]:.9g}' for s in c["score"])
-        lines.append(f'| {c["model"]} / {c["horizon"]} / {c["particles"]} / {c["data_seed"]} / {c["point_index"]} | {c["route"]} / {c["arm"]} | {c["valid_n"]} / {c["n"]} | {ell} | {scores} |')
+        lines.append(f'| {c["model"]} / {c["horizon"]} / {c["particles"]} / {c["data_seed"]} / {c["point_index"]} | {c["route"]} / {c["importance_weight_policy"]} / {c["arm"]} | {c["valid_n"]} / {c["n"]} | {ell} | {scores} |')
     lines += ["", "Full per-coordinate SE, reference values and kinds are in `values-and-scores.csv`. "
               "Paired changes are in `summary.json`; all realized values are in `rows.json`.", "",
               "| Worker | Exit | Wall seconds |", "|---|---:|---:|"]
@@ -371,8 +374,9 @@ def controller(args):
         if set(config)-set(MODELS):
             raise ValueError("configuration contains an unknown model")
     jobs = []
-    for model, horizon, n, data_seed, route in itertools.product(
-            args.models, args.horizons, args.particles, args.data_seeds, args.routes):
+    for model, horizon, n, data_seed, route, policy in itertools.product(
+            args.models, args.horizons, args.particles, args.data_seeds, args.routes,
+            args.importance_weight_policies):
         job = dict(model=model, horizon=horizon, particles=n, data_seed=data_seed, route=route,
                    controls=dict(BASE, **controls.get(model, {})), theta_points=theta.get(model),
                    design_seeds=args.design_seeds, arms=args.arms, device=args.device,
@@ -380,9 +384,11 @@ def controller(args):
                    references=references,
                    dataset_file=str(args.dataset_file.resolve()) if args.dataset_file else None,
                    random_input_dtype=args.random_input_dtype)
+        job["controls"]["importance_weight_policy"] = policy
+        job["plan"] = str(args.plan_file)
         validate_job(job)
         jobs.append(job)
-    description = dict(schema=SCHEMA, plan=PLAN, jobs=jobs, worker_count=len(jobs),
+    description = dict(schema=SCHEMA, plan=str(args.plan_file), jobs=jobs, worker_count=len(jobs),
                        evidence_role="diagnostic_only", controls_status="untuned_scope_warm_start",
                        budget_seconds=args.budget_seconds, per_worker_seconds=args.worker_seconds,
                        reference_mode="supplied_same_target" if references else "unavailable",
@@ -397,10 +403,10 @@ def controller(args):
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
     dump(out / "campaign.json", description)
-    sources = [Path(__file__), ROOT/PLAN, *sorted((ROOT/"bayesfilter/highdim").glob("*.py"))]
+    sources = [Path(__file__), ROOT/args.plan_file, *sorted((ROOT/"bayesfilter/highdim").glob("*.py"))]
     dump(out / "manifest.json", dict(git_commit=git("rev-parse","HEAD"),
           git_status=git("status","--short"), command=sys.argv, python=sys.executable,
-          started_utc=dt.datetime.now(dt.timezone.utc).isoformat(), plan=PLAN,
+          started_utc=dt.datetime.now(dt.timezone.utc).isoformat(), plan=str(args.plan_file),
           sources={str(p.relative_to(ROOT)):sha(p) for p in sources}, output=str(out)))
     started, attempts = time.monotonic(), []
     interrupted = False
@@ -447,6 +453,8 @@ def parser():
     p.add_argument("--job",type=Path)
     p.add_argument("--output",type=Path,default=ROOT/"docs/plans/artifacts/ledh-nonlinear-master-20261002/run-01")
     p.add_argument("--models",nargs="+",choices=tuple(MODELS),default=list(MODELS))
+    p.add_argument("--importance-weight-policies", nargs="+", choices=("ancestor", "marginal_mixture"), default=["ancestor"])
+    p.add_argument("--plan-file", type=Path, default=Path(PLAN))
     p.add_argument("--horizons",nargs="+",type=int,default=[20])
     p.add_argument("--particles",nargs="+",type=int,default=[1008])
     p.add_argument("--data-seeds",nargs="+",type=int,default=[260201,260202])

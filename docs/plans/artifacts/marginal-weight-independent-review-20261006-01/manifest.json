@@ -1,0 +1,34 @@
+{
+  "created_utc": "2026-10-05T17:29:07.629062+00:00",
+  "reviewed_commit": "f5e69d716818ff9ecf28b732a8952f5ec7f87739",
+  "reviewer_checkout_commit": "0b91a64f6d38009b5f081d7981f51fab958425c0",
+  "plan": "docs/plans/marginal-weight-independent-review-2026-10-06.md",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_gpu": "CPU only; CUDA_VISIBLE_DEVICES=-1 before import",
+  "data": "Generated M13 T=2 calibration mechanics fixture from reviewed source; no claim dataset used for selection",
+  "seeds": "designs(spec,N=16,partition=calibration,replicate=0); model fixture seed 1704",
+  "commands": [
+    "CPU-only pytest -q -p no:cacheprovider tests/highdim/test_ledh_marginal_weights.py (120-second cap)",
+    "CPU-only check_batch_parity.py (180-second cap)"
+  ],
+  "wall_seconds": {
+    "pytest_reported": 4.86,
+    "batch_after_import": 14.914327637990937
+  },
+  "outcomes": {
+    "focused_tests_passed": 5,
+    "two_row_xla_parity": true,
+    "same_compiled_cpu_repeat": true
+  },
+  "hashes": {
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "6b7c8caeec53d06cb89115048cceabaad7ed4a5a949ad807cb75dd63931bb660",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "526949211b67fbdc068bf7f8c136e777ac62973f16564a464f1c39a391422da2",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "2effce92b394bd51826ea5a1bed6c407cd9d0f0e97169eff70b84d212a9d748d"
+  },
+  "artifact_paths": [
+    "docs/plans/artifacts/marginal-weight-independent-review-20261006-01/mixture-tests.log",
+    "docs/plans/artifacts/marginal-weight-independent-review-20261006-01/batch-parity.log",
+    "docs/plans/artifacts/marginal-weight-independent-review-20261006-01/check_batch_parity.json"
+  ],
+  "result_file": "docs/benchmarks/marginal-weight-independent-review-2026-10-06.md"
+}

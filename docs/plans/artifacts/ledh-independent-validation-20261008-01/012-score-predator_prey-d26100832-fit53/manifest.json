@@ -1,0 +1,118 @@
+{
+  "schema": "zhao_cui_quadratic_reference.v1",
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-independent-validation-20261008.md",
+  "result": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/012-score-predator_prey-d26100832-fit53/result.json",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_zhao_cui_quadratic_score_reference.py",
+    "--proposal",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/010-zhao-predator_prey-d26100832-fit53",
+    "--model",
+    "predator_prey",
+    "--output-root",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/012-score-predator_prey-d26100832-fit53",
+    "--plan-file",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-independent-validation-20261008.md",
+    "--horizon",
+    "50",
+    "--points",
+    "128",
+    "--heldout",
+    "64",
+    "--design-seed",
+    "43017",
+    "--radii",
+    "0.000625",
+    "0.0003125",
+    "--timeout-seconds",
+    "5300"
+  ],
+  "git_commit": "2a7b37852c216cbe897b396d0cda6bd7bd16062e",
+  "started_utc": "2026-10-08T15:57:07.334057+00:00",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow_version": "2.20.0-dev0+selfbuilt",
+  "cpu_only": true,
+  "gpu_status": "intentionally hidden with CUDA_VISIBLE_DEVICES=-1",
+  "jit_compile": true,
+  "parameter_names": [
+    "r",
+    "carrying_capacity",
+    "half_saturation",
+    "s",
+    "u",
+    "v"
+  ],
+  "theta0": [
+    0.6,
+    114.0,
+    25.0,
+    0.3,
+    0.5,
+    0.5
+  ],
+  "scales": [
+    0.6,
+    114.0,
+    25.0,
+    0.3,
+    0.5,
+    0.5
+  ],
+  "design_seed": 43017,
+  "path_chunk": 2048,
+  "radii": [
+    0.000625,
+    0.0003125
+  ],
+  "design_points": 128,
+  "heldout_points": 64,
+  "status": "complete",
+  "jackknife_groups": 20,
+  "sample_prefix_fractions": [
+    0.25,
+    0.5
+  ],
+  "diagnostic_max_paths": null,
+  "threads": 2,
+  "likelihood_source": "canonical TensorFlow model value callbacks on author-TT conditional paths",
+  "derivative_method": "full quadratic local regression, no analytic scores or autodiff",
+  "wall_seconds": 195.69829012895934,
+  "proposals": [
+    {
+      "directory": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/010-zhao-predator_prey-d26100832-fit53",
+      "parent_status": "complete",
+      "manifest_sha256": "c220cf906a663d2ee200d2405dd0c0485f9b51a82e342de120091c556da95204",
+      "smoothing_sha256": "2c88c377a1d0b8acc4a00300db1227f31c637f742af6a9d48e2c6b7313811d10",
+      "observation_sha256": "5c7a8d9cbf90a08200ff771798105bc7fd38019c8f5f58dabc5851b1aa4a486b",
+      "source_observation_sha256": "5c7a8d9cbf90a08200ff771798105bc7fd38019c8f5f58dabc5851b1aa4a486b",
+      "source_horizon": 50,
+      "horizon": 50,
+      "fit_seed": 53,
+      "smooth_seed": 3053,
+      "rank": 20,
+      "samples": 100000,
+      "target_parity_max": 0.0,
+      "evaluated_paths": 100000,
+      "joint_density_parity_max": 5.115907697472721e-13,
+      "log_likelihood": -248.1063515689458,
+      "ess": 99998.34361962686,
+      "max_weight": 1.0855210993797927e-05,
+      "zero_weight_count": 0,
+      "likelihood_evaluator": "canonical TensorFlow joint minus fixed finite Octave log proposal",
+      "prefix_baselines": [
+        {
+          "paths": 25000,
+          "log_likelihood": -248.1064133642421,
+          "ess": 24998.898576302425
+        },
+        {
+          "paths": 50000,
+          "log_likelihood": -248.10637775790056,
+          "ess": 49998.71560515739
+        }
+      ],
+      "maximum_baseline_group_mass": 0.050004284144317186,
+      "conditional_log_likelihood_jackknife_se": 1.687843139328116e-05
+    }
+  ]
+}

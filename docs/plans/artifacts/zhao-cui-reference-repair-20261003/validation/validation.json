@@ -1,0 +1,72 @@
+{
+  "started_utc": "2026-10-03T18:29:48.950041+00:00",
+  "git_commit": "a925f67a19d8c5d265b8ff71bfd2c78ac1964ff4",
+  "cpu_only": true,
+  "gpu_status": "GPU intentionally hidden with CUDA_VISIBLE_DEVICES=-1 before imports",
+  "checks": [
+    {
+      "check": "compile",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "py_compile",
+        "docs/benchmarks/run_zhao_cui_reference.py",
+        "bayesfilter/testing/zhao_cui_reference_utils.py",
+        "tests/test_zhao_cui_reference_repair.py"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "wall_seconds": 0.032084638020023704,
+      "log": "docs/plans/artifacts/zhao-cui-reference-repair-20261003/validation/compile.log",
+      "passed": true
+    },
+    {
+      "check": "pytest",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_zhao_cui_reference_repair.py",
+        "-q"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "wall_seconds": 5.027386054978706,
+      "log": "docs/plans/artifacts/zhao-cui-reference-repair-20261003/validation/pytest.log",
+      "passed": true
+    },
+    {
+      "check": "extract-only",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "docs/benchmarks/run_zhao_cui_reference.py",
+        "--output-root",
+        "/tmp/zhao-cui-reference-final-4hw4kgz9/extract",
+        "--extract-only"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "wall_seconds": 0.36507304199039936,
+      "log": "docs/plans/artifacts/zhao-cui-reference-repair-20261003/validation/extract-only.log",
+      "passed": true
+    },
+    {
+      "check": "preflight-rejection",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "docs/benchmarks/run_zhao_cui_reference.py",
+        "--output-root",
+        "/tmp/zhao-cui-reference-final-4hw4kgz9/invalid",
+        "--mode",
+        "fixed_target",
+        "--extract-only"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "wall_seconds": 3.4617573979776353,
+      "log": "docs/plans/artifacts/zhao-cui-reference-repair-20261003/validation/preflight-rejection.log",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

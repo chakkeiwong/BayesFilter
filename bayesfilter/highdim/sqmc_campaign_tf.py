@@ -129,11 +129,13 @@ def numerical_settings(controls):
                   correction_lm_damping=.01, correction_lm_scale_floor=.0001,
                   correction_trust_radius=.5, pairwise_rms_cap=2., coordinate_cap_power=8,
                   state_map_policy='adaptive_empirical', hilbert_bits=12, coordinate_cap_identity_radius=0.,
-                  moment_safety=False)
+                  moment_safety=False, importance_weight_policy='ancestor')
     allowed = set(result) | set(required)
     if set(controls) - allowed:
         raise ValueError(f'unknown SQMC controls: {sorted(set(controls) - allowed)}')
     result.update(controls)
+    if result['importance_weight_policy'] not in ('ancestor', 'marginal_mixture'):
+        raise ValueError('unknown importance weight policy')
     if result['reset_policy'] != 'contract_e':
         raise ValueError('SQMC campaign requires Contract E')
     for name, value in result.items():

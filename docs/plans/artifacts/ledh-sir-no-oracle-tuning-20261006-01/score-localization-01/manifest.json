@@ -1,0 +1,103 @@
+{
+  "git_commit": "b98366bc92bfa7ff7b6c6737236b7e9096a4bfd7",
+  "source_sha256": {
+    "docs/benchmarks/run_ledh_sir_no_oracle_tuning.py": "fcdfe111305c7964de58afbde490a91d4c470553eb2caaa48e1655702a7d0371",
+    "docs/plans/ledh-sir-no-oracle-tuning-20261006.md": "2b1379f6f665475f646b4a27b0478c9db4b7eaf5b3c5a9b0f32c9f2c1ba0cf45",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "d367b2a40289bbeda12f0831967f14d971108498432068543bed37059b5c6e3b"
+  },
+  "command": [
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_ledh_sir_score_localization.py",
+    "--output",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/score-localization-01",
+    "--device",
+    "gpu"
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "device": "gpu",
+  "cpu_only": false,
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": false,
+  "steps": [
+    1e-05,
+    3e-06,
+    1e-06,
+    3e-07,
+    1e-07,
+    3e-08
+  ],
+  "total_budget_seconds": 28800,
+  "prior_worker_seconds": 10060.316985470128,
+  "local_budget_seconds": 3600.0,
+  "design_seed": 261006411,
+  "observation_seed": 26100613,
+  "controls": {
+    "flow_substeps": 8,
+    "reset_epsilon": 102.4,
+    "reset_sinkhorn_steps": 24,
+    "reset_balance_steps": 12,
+    "correction_steps": 4,
+    "correction_strength": 0.12,
+    "pairwise_steps": 4,
+    "pairwise_strength": 0.03,
+    "reset_ridge": 1e-05,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap_power": 8,
+    "state_map_policy": "adaptive_empirical",
+    "hilbert_bits": 12,
+    "moment_safety": true,
+    "coordinate_cap_identity_radius": 8.0,
+    "importance_weight_policy": "marginal_mixture"
+  },
+  "particles": 1008,
+  "horizons": [
+    10,
+    20,
+    40,
+    50
+  ],
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-sir-score-localization-20261006.md",
+  "results": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/score-localization-01/result.json",
+  "diagnostic_sha256": "54b2f8a2c71761c4f2d008f8357574440bb1a438bacd2302198fc55519589f66",
+  "evidence_role": "local_finite_program_derivative_only"
+}

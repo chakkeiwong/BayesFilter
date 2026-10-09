@@ -1,0 +1,343 @@
+[
+  {
+    "label": "eq:bf-covariance-proposal-beta-derivatives",
+    "code": "covariance_proposal_beta_tf.py",
+    "status": "unverified",
+    "reason": "High-priority diagnostic actions remain before this implementation can be treated as structurally supported.",
+    "observed_operations": [
+      "assignment",
+      "call",
+      "covariance_update",
+      "gradient",
+      "innovation_covariance",
+      "kalman_gain",
+      "logsumexp",
+      "particle_normalization",
+      "quadratic_form",
+      "reparameterization_gradient",
+      "return",
+      "shape_reference",
+      "subscript",
+      "time_step_update"
+    ],
+    "term_status": "consistent",
+    "actions": [
+      {
+        "kind": "fix_parser_provenance_before_certification",
+        "target": null,
+        "severity": "high",
+        "reason": "Current parser has provenance, but expected label preservation is incomplete; certification should remain blocked.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "fix_parser_provenance_before_certification",
+        "target": null,
+        "severity": "high",
+        "reason": "Current parser has provenance, but expected label preservation is incomplete; certification should remain blocked.",
+        "obligation_id": "obligation_2"
+      },
+      {
+        "kind": "human_formalization_or_review",
+        "target": null,
+        "severity": "high",
+        "reason": "Typed obligation has missing assumptions or dimension constraints.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "human_formalization_or_review",
+        "target": null,
+        "severity": "high",
+        "reason": "Typed obligation has missing assumptions or dimension constraints.",
+        "obligation_id": "obligation_2"
+      },
+      {
+        "kind": "state_or_verify_missing_constraint",
+        "target": "differentiability_required",
+        "severity": "high",
+        "reason": "Derivative or gradient notation requires differentiability assumptions.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "state_or_verify_missing_constraint",
+        "target": "differentiability_required",
+        "severity": "high",
+        "reason": "Derivative or gradient notation requires differentiability assumptions.",
+        "obligation_id": "obligation_2"
+      },
+      {
+        "kind": "state_or_verify_missing_constraint",
+        "target": "conformable_product_required",
+        "severity": "high",
+        "reason": "Transpose and matrix product notation require conformable dimensions.",
+        "obligation_id": "obligation_2"
+      },
+      {
+        "kind": "batch_axis_contract",
+        "severity": "medium",
+        "reason": "No batch-axis policy evidence was found."
+      },
+      {
+        "kind": "xla_custom_op_boundary",
+        "severity": "medium",
+        "reason": "XLA/JIT/custom-op evidence should be reviewed as an implementation boundary."
+      }
+    ],
+    "verification_boundary": "This implementation audit is diagnostic. AST, term, semantic, and shape evidence can support review, but only deterministic backend certificates for scoped obligations can verify mathematical claims.",
+    "provenance": {
+      "file": "ledh_covariance_proposal_body.tex",
+      "line_start": 624,
+      "line_end": 630,
+      "label": "eq:bf-covariance-proposal-beta-derivatives",
+      "block_id": "ledh_covariance_proposal_body.tex:624:equation:eq:bf-covariance-proposal-beta-derivatives",
+      "section_path": [
+        "Selecting the three proposal probabilities",
+        "Solve the small constrained problem and freeze its answer"
+      ]
+    }
+  },
+  {
+    "label": "eq:bf-covariance-proposal-cayley",
+    "code": "covariance_proposal_moments_tf.py",
+    "status": "unverified",
+    "reason": "High-priority diagnostic actions remain before this implementation can be treated as structurally supported.",
+    "observed_operations": [
+      "assignment",
+      "augmented_assignment",
+      "call",
+      "expectation",
+      "gradient",
+      "innovation_covariance",
+      "innovation_update",
+      "inverse_or_solve",
+      "kalman_gain",
+      "loop",
+      "quadratic_form",
+      "reparameterization_gradient",
+      "return",
+      "shape_reference",
+      "subscript",
+      "time_step_update"
+    ],
+    "term_status": "consistent",
+    "actions": [
+      {
+        "kind": "fix_parser_provenance_before_certification",
+        "target": null,
+        "severity": "high",
+        "reason": "Current parser has provenance, but expected label preservation is incomplete; certification should remain blocked.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "human_formalization_or_review",
+        "target": null,
+        "severity": "high",
+        "reason": "Typed obligation has missing assumptions or dimension constraints.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "invertibility_or_spd_guard_required",
+        "severity": "high",
+        "reason": "Solve/inverse operation lacks explicit SPD, Cholesky, or covariance guard evidence."
+      },
+      {
+        "kind": "linear_solve_residual_check",
+        "target": "inverse/solve operand",
+        "severity": "high",
+        "reason": "Inverse notation should be checked with solve residuals and conditioning diagnostics.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "state_or_verify_missing_constraint",
+        "target": "invertibility_required",
+        "severity": "high",
+        "reason": "Matrix inverse or solve notation requires an invertible operand; positive definiteness is one structured sufficient condition.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "batch_axis_contract",
+        "severity": "medium",
+        "reason": "No batch-axis policy evidence was found."
+      },
+      {
+        "kind": "finite_value_contract",
+        "severity": "medium",
+        "reason": "No finite target/gradient guard evidence was found."
+      },
+      {
+        "kind": "shape_guard_missing",
+        "severity": "medium",
+        "reason": "Matrix-heavy document obligation lacks code shape-guard evidence."
+      }
+    ],
+    "verification_boundary": "This implementation audit is diagnostic. AST, term, semantic, and shape evidence can support review, but only deterministic backend certificates for scoped obligations can verify mathematical claims.",
+    "provenance": {
+      "file": "ledh_covariance_proposal_body.tex",
+      "line_start": 932,
+      "line_end": 935,
+      "label": "eq:bf-covariance-proposal-cayley",
+      "block_id": "ledh_covariance_proposal_body.tex:932:equation:eq:bf-covariance-proposal-cayley",
+      "section_path": [
+        "What the resampling transform should preserve",
+        "A smooth parameterization with explicit displacement bounds"
+      ]
+    }
+  },
+  {
+    "label": "eq:bf-covariance-proposal-total-score",
+    "code": "covariance_proposal_tf.py",
+    "status": "unverified",
+    "reason": "High-priority diagnostic actions remain before this implementation can be treated as structurally supported.",
+    "observed_operations": [
+      "assignment",
+      "augmented_assignment",
+      "call",
+      "cholesky",
+      "covariance_update",
+      "expectation",
+      "gradient",
+      "innovation_covariance",
+      "innovation_update",
+      "inverse_or_solve",
+      "kalman_gain",
+      "logsumexp",
+      "loop",
+      "particle_normalization",
+      "posterior_or_likelihood",
+      "prediction_update",
+      "quadratic_form",
+      "reparameterization_gradient",
+      "return",
+      "shape_guard",
+      "shape_reference",
+      "subscript",
+      "time_step_update"
+    ],
+    "term_status": "consistent",
+    "actions": [
+      {
+        "kind": "fix_parser_provenance_before_certification",
+        "target": null,
+        "severity": "high",
+        "reason": "Current parser has provenance, but expected label preservation is incomplete; certification should remain blocked.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "fix_parser_provenance_before_certification",
+        "target": null,
+        "severity": "high",
+        "reason": "Current parser has provenance, but expected label preservation is incomplete; certification should remain blocked.",
+        "obligation_id": "obligation_2"
+      },
+      {
+        "kind": "fix_parser_provenance_before_certification",
+        "target": null,
+        "severity": "high",
+        "reason": "Current parser has provenance, but expected label preservation is incomplete; certification should remain blocked.",
+        "obligation_id": "obligation_3"
+      },
+      {
+        "kind": "split_or_rewrite_ambiguous_derivation_row",
+        "target": null,
+        "severity": "high",
+        "reason": "The derivation row was not split into a safe proof obligation.",
+        "obligation_id": "obligation_2"
+      },
+      {
+        "kind": "xla_custom_op_boundary",
+        "severity": "medium",
+        "reason": "XLA/JIT/custom-op evidence should be reviewed as an implementation boundary."
+      }
+    ],
+    "verification_boundary": "This implementation audit is diagnostic. AST, term, semantic, and shape evidence can support review, but only deterministic backend certificates for scoped obligations can verify mathematical claims.",
+    "provenance": {
+      "file": "ledh_covariance_proposal_body.tex",
+      "line_start": 1086,
+      "line_end": 1093,
+      "label": "eq:bf-covariance-proposal-total-score",
+      "block_id": "ledh_covariance_proposal_body.tex:1086:equation:eq:bf-covariance-proposal-total-score",
+      "section_path": [
+        "The analytical score of the same finite computation",
+        "Likelihood and mixture derivatives"
+      ]
+    }
+  },
+  {
+    "label": "eq:bf-covariance-proposal-cholesky-reset",
+    "code": "/home/chakwong/BayesFilter-SQMC/bayesfilter/highdim/covariance_proposal_tf.py",
+    "status": "unverified",
+    "reason": "High-priority diagnostic actions remain before this implementation can be treated as structurally supported.",
+    "observed_operations": [
+      "assignment",
+      "augmented_assignment",
+      "call",
+      "cholesky",
+      "covariance_update",
+      "expectation",
+      "gradient",
+      "innovation_covariance",
+      "innovation_update",
+      "inverse_or_solve",
+      "kalman_gain",
+      "logsumexp",
+      "loop",
+      "particle_normalization",
+      "posterior_or_likelihood",
+      "prediction_update",
+      "quadratic_form",
+      "reparameterization_gradient",
+      "return",
+      "shape_guard",
+      "shape_reference",
+      "subscript",
+      "time_step_update"
+    ],
+    "term_status": "consistent",
+    "actions": [
+      {
+        "kind": "fix_parser_provenance_before_certification",
+        "target": null,
+        "severity": "high",
+        "reason": "Current parser has provenance, but expected label preservation is incomplete; certification should remain blocked.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "human_formalization_or_review",
+        "target": null,
+        "severity": "high",
+        "reason": "Typed obligation has missing assumptions or dimension constraints.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "linear_solve_residual_check",
+        "target": "inverse/solve operand",
+        "severity": "high",
+        "reason": "Inverse notation should be checked with solve residuals and conditioning diagnostics.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "state_or_verify_missing_constraint",
+        "target": "invertibility_required",
+        "severity": "high",
+        "reason": "Matrix inverse or solve notation requires an invertible operand; positive definiteness is one structured sufficient condition.",
+        "obligation_id": "obligation_1"
+      },
+      {
+        "kind": "xla_custom_op_boundary",
+        "severity": "medium",
+        "reason": "XLA/JIT/custom-op evidence should be reviewed as an implementation boundary."
+      }
+    ],
+    "verification_boundary": "This implementation audit is diagnostic. AST, term, semantic, and shape evidence can support review, but only deterministic backend certificates for scoped obligations can verify mathematical claims.",
+    "provenance": {
+      "file": "ledh_covariance_proposal_body.tex",
+      "line_start": 843,
+      "line_end": 846,
+      "label": "eq:bf-covariance-proposal-cholesky-reset",
+      "block_id": "ledh_covariance_proposal_body.tex:843:equation:eq:bf-covariance-proposal-cholesky-reset",
+      "section_path": [
+        "What the resampling transform should preserve",
+        "A complete finite-iteration reset"
+      ]
+    }
+  }
+]

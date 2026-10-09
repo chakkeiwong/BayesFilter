@@ -595,7 +595,7 @@ def diagonal_lgssm_canonical_model(theta_fixed: Tensor):
     return model, set_score_direction
 
 
-def ksc_sv_canonical_model(theta_fixed: Tensor):
+def ksc_sv_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE):
     """KSC mixture SV — CORRECTED 2026-08-23.
 
     STATE IS 1-DIMENSIONAL: the log-volatility AR(1) h' = gamma*h + eta,
@@ -619,18 +619,18 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
 
     import math
 
-    theta_fixed = tf.convert_to_tensor(theta_fixed, DTYPE)
+    theta_fixed = tf.convert_to_tensor(theta_fixed, dtype)
     weights = tf.constant(
         [0.00730, 0.10556, 0.00002, 0.04395, 0.34001, 0.24566, 0.25750],
-        DTYPE,
+        dtype,
     )
     means = tf.constant(
         [-10.12999, -3.97281, -8.56686, 2.77786, 0.61942, 1.79518, -1.08819],
-        DTYPE,
-    ) - tf.constant(1.2704, DTYPE)
+        dtype,
+    ) - tf.constant(1.2704, dtype)
     variances = tf.constant(
         [5.79596, 2.61369, 5.17950, 0.16735, 0.64009, 0.34023, 1.26261],
-        DTYPE,
+        dtype,
     )
     mixture_mean = tf.reduce_sum(weights * means)
     mixture_var = tf.reduce_sum(
@@ -639,21 +639,21 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
 
     def gamma_of(theta):
         return 0.5 * (
-            1.0 + tf.math.erf(theta[0] / tf.sqrt(tf.constant(2.0, DTYPE)))
+            1.0 + tf.math.erf(theta[0] / tf.sqrt(tf.constant(2.0, dtype)))
         )
 
     def transition_mean_fn(theta, points):
         return gamma_of(theta) * points
 
-    _direction = [tf.zeros([2], DTYPE)]
+    _direction = [tf.zeros([2], dtype)]
 
     def set_score_direction(direction: Tensor) -> None:
-        _direction[0] = tf.convert_to_tensor(direction, DTYPE)
+        _direction[0] = tf.convert_to_tensor(direction, dtype)
 
     def transition_mean_tangent_fn(theta, points, d_points):
         d_theta = _direction[0]
         gamma = gamma_of(theta)
-        normalizer = tf.constant(1.0 / math.sqrt(2.0 * math.pi), DTYPE)
+        normalizer = tf.constant(1.0 / math.sqrt(2.0 * math.pi), dtype)
         dgamma = normalizer * tf.exp(-0.5 * tf.square(theta[0])) * d_theta[0]
         return dgamma * points + gamma * d_points
 
@@ -673,7 +673,7 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
             * (
                 tf.square(w[:, None] - means[None, :]) / variances[None, :]
                 + tf.math.log(variances)[None, :]
-                + tf.constant(math.log(2.0 * math.pi), DTYPE)
+                + tf.constant(math.log(2.0 * math.pi), dtype)
             )
         )
         return tf.reduce_logsumexp(terms, axis=1)
@@ -687,7 +687,7 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
             * (
                 tf.square(w[:, None] - means[None, :]) / variances[None, :]
                 + tf.math.log(variances)[None, :]
-                + tf.constant(math.log(2.0 * math.pi), DTYPE)
+                + tf.constant(math.log(2.0 * math.pi), dtype)
             )
         )
         responsibilities = tf.nn.softmax(terms, axis=1)
@@ -704,10 +704,10 @@ def ksc_sv_canonical_model(theta_fixed: Tensor):
         transition_mean_tangent_fn=transition_mean_tangent_fn,
         observation_fn=lambda points: points + mixture_mean + two_log_beta,
         observation_jacobian_fn=lambda points: tf.ones(
-            [tf.shape(points)[0], 1, 1], DTYPE
+            [tf.shape(points)[0], 1, 1], dtype
         ),
         observation_tangent_fn=lambda points, d_points: d_points + 2.0 * _direction[0][1],
-        process_covariance=tf.ones([1, 1], DTYPE),
+        process_covariance=tf.ones([1, 1], dtype),
         observation_covariance=mixture_var[None, None],
         observation_log_density_fn=observation_log_density_fn,
         observation_log_density_tangent_fn=observation_log_density_tangent_fn,

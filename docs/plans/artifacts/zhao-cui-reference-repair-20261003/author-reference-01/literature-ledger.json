@@ -1,0 +1,42 @@
+{
+  "seed_paper": "Zhao and Cui, JMLR 2024, Tensor-Train Methods for Sequential State and Parameter Learning in State-Space Models",
+  "local_paper": ".localresources/papers/zhao-cui-tensor-train-sequential-learning-jmlr-2024.pdf",
+  "upstream_commit": "80034dccb99eb1d86284a1839b4a12067d13b9da",
+  "claims": [
+    {
+      "claim": "recursive two-slice TT filtering density",
+      "paper": "Algorithm 1, equation (12)",
+      "source": "models/full_sol.m:21-134",
+      "status": "inspected"
+    },
+    {
+      "claim": "author SIR and PP model definitions",
+      "paper": "Sections 6.3 and 6.4",
+      "source": "eg3_sir/mainscript.m; eg4_predatorprey/mainscript.m; extracted models/*/*.m",
+      "status": "inspected; source RK half-step differs from textbook RK4"
+    },
+    {
+      "claim": "legacy reported lml is mean log weight",
+      "paper": "not a paper claim; local source finding",
+      "source": "models/full_sol.m:181-205",
+      "status": "checked"
+    },
+    {
+      "claim": "corrected logmeanexp",
+      "paper": "local importance-sampling derivation in plan",
+      "source": "derived full_sol_reference.m",
+      "status": "local correction, subject to proposal support and Monte Carlo error"
+    },
+    {
+      "claim": "observed-data analytical score",
+      "paper": "not established by inspected route",
+      "source": "models/full_sol.m",
+      "status": "unavailable in this source route"
+    }
+  ],
+  "snowballing": {
+    "backward": "bounded to Algorithm 1 and source dependencies used by these examples",
+    "forward": "not performed; no completeness or novelty claim"
+  },
+  "omission_risk": "No MATLAB parity, convergence study, or score-oracle certification. Octave overlays are local adaptations."
+}

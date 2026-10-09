@@ -1,0 +1,545 @@
+{
+  "scope": {
+    "model": "sir_d18",
+    "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+    "n": 64,
+    "horizon": 3,
+    "dtype": "float64",
+    "device": "gpu",
+    "jit_compile": true,
+    "tf32": false,
+    "controls": {
+      "flow_steps": 16,
+      "reset_steps": 40,
+      "reset_epsilon": 1.0,
+      "correction_steps": 0,
+      "correction_basis": 4,
+      "correction_rate": 0.1,
+      "correction_radius": 0.25
+    }
+  },
+  "theta": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "observations": [
+    [
+      42.00061305088764,
+      13.308476785412463,
+      7.127690751444607,
+      25.67171075498309,
+      15.140023783345226,
+      11.00412049736402,
+      20.726709945819326,
+      5.080124273855429,
+      4.547297279450243
+    ],
+    [
+      28.371635679554977,
+      33.94701567510244,
+      21.1840139434479,
+      33.512224281535005,
+      22.5117381472804,
+      26.29487194054768,
+      27.727652074907507,
+      6.345261784308381,
+      19.230344131382587
+    ],
+    [
+      67.39170537299512,
+      55.82993712522473,
+      72.09271931601604,
+      60.78927962990571,
+      35.522792649339486,
+      47.70167120131056,
+      60.4865521445286,
+      30.914850797837996,
+      47.02167829466377
+    ]
+  ],
+  "data_seed": 26100820,
+  "beta": [
+    0.3333333333333333,
+    0.3333333333333333,
+    0.3333333333333333
+  ],
+  "results": [
+    {
+      "value": -99.86166296631546,
+      "score": [
+        5.523204139989403,
+        -2.8276114047344265,
+        -5.25739306042002
+      ],
+      "valid": true,
+      "steps_completed": 3,
+      "trace_fields": [
+        "log_increment",
+        "score_increment",
+        "ess",
+        "max_weight",
+        "max_prior_proposal_ratio",
+        "reset_mean_error",
+        "reset_covariance_relative_error",
+        "reset_margin",
+        "guide_margin",
+        "map_margin",
+        "correction_displacement",
+        "moment_loss_before",
+        "moment_loss_after",
+        "valid",
+        "sinkhorn_row_error",
+        "reset_displacement"
+      ],
+      "trace": [
+        [
+          -33.04774787493747,
+          -0.07292444243805452,
+          48.34039393364571,
+          0.04118334837879535,
+          2.149672115410231,
+          1.1368683772161603e-13,
+          3.2051928064092584e-15,
+          0.034949938739783186,
+          0.11623458361755198,
+          0.945490617457188,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.018701608326036748,
+          4.040706039477753
+        ],
+        [
+          -32.53169894723391,
+          -25.948004338294314,
+          29.981423559870844,
+          0.06705512416481232,
+          2.457656063004092,
+          5.684341886080802e-14,
+          1.3790106120308173e-15,
+          0.006915831946745875,
+          0.02915957930066443,
+          0.7529465998118853,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.04485600405887744,
+          12.454006697549381
+        ],
+        [
+          -34.28221614414409,
+          31.544132920721772,
+          11.302685010008002,
+          0.14217724771859863,
+          2.0424736668171515,
+          5.684341886080802e-14,
+          1.7097367476450069e-15,
+          0.00036551096696532193,
+          0.007229297758669109,
+          0.21652518493222628,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.06493508979024286,
+          34.5861199427813
+        ]
+      ],
+      "derivative_diagnostics": [
+        {
+          "coordinate": 0,
+          "analytical": 5.523204139989403,
+          "differences": [
+            {
+              "step": 0.0001,
+              "finite_difference": 5.520487444385935,
+              "error": -0.002716695603467656,
+              "valid": true
+            },
+            {
+              "step": 5e-05,
+              "finite_difference": 5.522523916852151,
+              "error": -0.0006802231372518008,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "coordinate": 1,
+          "analytical": -2.8276114047344265,
+          "differences": [
+            {
+              "step": 0.0001,
+              "finite_difference": -2.8274934557970255,
+              "error": 0.00011794893740102452,
+              "valid": true
+            },
+            {
+              "step": 5e-05,
+              "finite_difference": -2.8275819116174716,
+              "error": 2.949311695488177e-05,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "coordinate": 2,
+          "analytical": -5.25739306042002,
+          "differences": [
+            {
+              "step": 0.0001,
+              "finite_difference": -5.257087084729051,
+              "error": 0.0003059756909689071,
+              "valid": true
+            },
+            {
+              "step": 5e-05,
+              "finite_difference": -5.257316554150293,
+              "error": 7.650626972655061e-05,
+              "valid": true
+            }
+          ]
+        }
+      ],
+      "seed": 261008100
+    },
+    {
+      "value": -100.45159921540971,
+      "score": [
+        1.9670515114517855,
+        -0.9004481537814772,
+        -0.8126233899596897
+      ],
+      "valid": true,
+      "steps_completed": 3,
+      "trace_fields": [
+        "log_increment",
+        "score_increment",
+        "ess",
+        "max_weight",
+        "max_prior_proposal_ratio",
+        "reset_mean_error",
+        "reset_covariance_relative_error",
+        "reset_margin",
+        "guide_margin",
+        "map_margin",
+        "correction_displacement",
+        "moment_loss_before",
+        "moment_loss_after",
+        "valid",
+        "sinkhorn_row_error",
+        "reset_displacement"
+      ],
+      "trace": [
+        [
+          -32.72026430626865,
+          -0.13318312801285748,
+          52.91296831626318,
+          0.03716800893980017,
+          1.8369966133968394,
+          5.684341886080802e-14,
+          3.2944563368376812e-15,
+          0.02845840867423137,
+          0.11605470601986247,
+          0.9464443608747354,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.021509062177968157,
+          2.1605433751654783
+        ],
+        [
+          -32.13216425388589,
+          -24.496570447480746,
+          33.818051544914226,
+          0.0530836792555711,
+          1.8970037442265708,
+          5.684341886080802e-14,
+          1.866737122978123e-15,
+          0.007693038577560397,
+          0.023019639142279988,
+          0.6699664911807077,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.03745867925557111,
+          11.639128563214884
+        ],
+        [
+          -35.59917065525516,
+          26.596805086945388,
+          10.541742940219804,
+          0.1911231070623362,
+          1.9033200031478885,
+          1.1368683772161603e-13,
+          1.3444665957330257e-15,
+          0.0005100518582675226,
+          0.009009079467583185,
+          0.31646007584479574,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.13218824019323758,
+          30.666169193689225
+        ]
+      ],
+      "derivative_diagnostics": [
+        {
+          "coordinate": 0,
+          "analytical": 1.9670515114517855,
+          "differences": [
+            {
+              "step": 0.0001,
+              "finite_difference": 1.9668201761646742,
+              "error": -0.00023133528711127838,
+              "valid": true
+            },
+            {
+              "step": 5e-05,
+              "finite_difference": 1.9669938862421077,
+              "error": -5.762520967778073e-05,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "coordinate": 1,
+          "analytical": -0.9004481537814772,
+          "differences": [
+            {
+              "step": 0.0001,
+              "finite_difference": -0.9004366895482008,
+              "error": 1.1464233276470281e-05,
+              "valid": true
+            },
+            {
+              "step": 5e-05,
+              "finite_difference": -0.9004452898864201,
+              "error": 2.863895057103605e-06,
+              "valid": true
+            }
+          ]
+        },
+        {
+          "coordinate": 2,
+          "analytical": -0.8126233899596897,
+          "differences": [
+            {
+              "step": 0.0001,
+              "finite_difference": -0.8126251435669474,
+              "error": -1.7536072576262995e-06,
+              "valid": true
+            },
+            {
+              "step": 5e-05,
+              "finite_difference": -0.8126238289207777,
+              "error": -4.389610879229622e-07,
+              "valid": true
+            }
+          ]
+        }
+      ],
+      "seed": 261008101
+    }
+  ],
+  "reference": {
+    "value": -99.81706157413095,
+    "score": [
+      15.499055888924005,
+      -6.206394811464535,
+      -4.436680544505042
+    ],
+    "kind": "bootstrap Fisher diagnostic, not exact oracle",
+    "particles": 8192,
+    "rows": [
+      {
+        "log_likelihood": -99.81792801062507,
+        "score": [
+          25.96217982204659,
+          -8.593168169107123,
+          -4.345934366487611
+        ],
+        "minimum_particle_ess": 1417.5940102854718,
+        "maximum_particle_weight": 0.0060677495702174886,
+        "final_distinct_initial_ancestors": 2994.0,
+        "seed": 261018100
+      },
+      {
+        "log_likelihood": -99.78871969055847,
+        "score": [
+          15.395844143282112,
+          -5.431875594492524,
+          -4.745459695489828
+        ],
+        "minimum_particle_ess": 856.259390960252,
+        "maximum_particle_weight": 0.013293653971793261,
+        "final_distinct_initial_ancestors": 3044.0,
+        "seed": 261018101
+      },
+      {
+        "log_likelihood": -99.84990847868947,
+        "score": [
+          1.6535202408037764,
+          -3.394006640502176,
+          -4.25935891543309
+        ],
+        "minimum_particle_ess": 1374.9425000746553,
+        "maximum_particle_weight": 0.0047973424902889705,
+        "final_distinct_initial_ancestors": 2992.0,
+        "seed": 261018102
+      },
+      {
+        "log_likelihood": -99.81263933819123,
+        "score": [
+          18.535853949897444,
+          -7.334981816162416,
+          -4.38152861814126
+        ],
+        "minimum_particle_ess": 1316.3564002870642,
+        "maximum_particle_weight": 0.00448940047349121,
+        "final_distinct_initial_ancestors": 3029.0,
+        "seed": 261018103
+      }
+    ],
+    "summary": {
+      "log_likelihood": -99.81706157413095,
+      "score": [
+        15.499055888924005,
+        -6.206394811464535,
+        -4.436680544505042
+      ],
+      "jackknife_mcse_log_likelihood": 0.012542622102327598,
+      "jackknife_mcse_score": [
+        4.951994973829063,
+        1.113143575421168,
+        0.10915377279500445
+      ],
+      "mean_log_likelihood": -99.81729887951606,
+      "sd_log_likelihood": 0.025181098275191202,
+      "replications": 4,
+      "between_replication_likelihood_ess": 3.99810994165798,
+      "minimum_particle_ess": 856.259390960252,
+      "maximum_particle_weight": 0.013293653971793261,
+      "minimum_final_distinct_initial_ancestors": 2992.0
+    }
+  },
+  "wall_seconds": 19.646461205091327,
+  "provenance": {
+    "git_commit": "03b50cd6f5abe0076a6da4c6b98a15e087f9d5dc",
+    "source_sha256": {
+      "bayesfilter/highdim/covariance_proposal_tf.py": "83f131da92a0bd1ae70a1de62c6157742c95eabb72b7c83a04a5321a91094d29",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "42d3eef866c31af8a07aed4be6667d41fdac248b2ff5f4338cf03ccadad1d481",
+      "docs/plans/ledh-covariance-proposal-implementation-20261008.md": "c6175b8c2bd81979a487835fb32bdf7627018f56360ee8898b6e5544295c1fe4",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "879c56d91c0ced5d1104989973b1e71a63fa05be82b82940555375c48a5d3ce3",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "5de3c494f0a9d82f3f54854906f37dea54ad3c9e76bcd2a159aea7190f08e2ae",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "docs/chapters/ledh_covariance_proposal_body.tex": "e7b9d0bb172fc88300bd2150427728d1bfb9679b2510b76361fe52bbd6da2cdc"
+    },
+    "command": [
+      "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_ledh_covariance_proposal.py",
+      "run",
+      "--model",
+      "sir_d18",
+      "--horizon",
+      "3",
+      "--particles",
+      "64",
+      "--dtype",
+      "float64",
+      "--seeds",
+      "2",
+      "--data-seed",
+      "26100820",
+      "--output",
+      "docs/plans/artifacts/ledh-covariance-implementation-20261008-01/campaign-01/sir_d18-t3-parity",
+      "--reference",
+      "--check-derivatives"
+    ],
+    "created_utc": "2026-10-08T10:52:08.914891+00:00",
+    "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "device": "gpu",
+    "cpu_only": false,
+    "gpu_intentionally_hidden": false,
+    "memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        },
+        {
+          "device": "/physical_device:GPU:1",
+          "device_details": {
+            "compute_capability": [
+              12,
+              0
+            ],
+            "device_name": "NVIDIA GeForce RTX 5080"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile": true,
+    "dtype": "float64",
+    "tf32": false,
+    "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-covariance-proposal-implementation-20261008.md",
+    "args": {
+      "command": "run",
+      "device": "gpu",
+      "dtype": "float64",
+      "model": "sir_d18",
+      "particles": 64,
+      "horizon": 3,
+      "seed": 261008100,
+      "data_seed": 26100820,
+      "seeds": 2,
+      "output": "docs/plans/artifacts/ledh-covariance-implementation-20261008-01/campaign-01/sir_d18-t3-parity",
+      "flow_steps": 16,
+      "reset_steps": 40,
+      "reset_epsilon": 1.0,
+      "correction_steps": 0,
+      "floor": 0.1,
+      "beta": "0.3333333333333333,0.3333333333333333,0.3333333333333333",
+      "tuning": null,
+      "reference": true,
+      "regressions": false,
+      "timeout": 1200,
+      "reference_particles": 8192,
+      "no_tf32": false,
+      "check_derivatives": true,
+      "dataset": null,
+      "campaign": false
+    },
+    "evidence_role": "candidate_diagnostic_not_admission",
+    "default_promoted": false
+  },
+  "tuning": null
+}

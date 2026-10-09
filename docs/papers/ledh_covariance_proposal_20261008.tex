@@ -1,0 +1,68 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{booktabs,tabularx,array,enumitem}
+\usepackage{graphicx,xcolor,tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage{listings}
+\usepackage[authoryear,round]{natbib}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!45!black,citecolor=blue!45!black,
+urlcolor=blue!45!black,pdftitle={UKF-guided particle proposals and covariance-preserving resets}}
+\newcommand{\R}{\mathbb R}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\one}{\mathbf 1}
+\newcommand{\Ncal}{\mathcal N}
+\newcommand{\dd}{\mathrm d}
+\newcommand{\softmax}{\operatorname{softmax}}
+\newcommand{\lse}{\operatorname{LSE}}
+\newcommand{\SPD}{\mathbb S_{++}}
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{assumption}[proposition]{Assumption}
+\newtheorem{remark}[proposition]{Remark}
+\lstset{basicstyle=\ttfamily\footnotesize,columns=fullflexible,
+keepspaces=true,breaklines=true,showstringspaces=false,
+frame=single,rulecolor=\color{black!25},xleftmargin=3pt,xrightmargin=3pt}
+\setlist{itemsep=3pt,topsep=5pt}
+\setlength{\emergencystretch}{2em}
+\title{UKF-guided particle proposals and covariance-preserving resets\\
+\large A self-contained proposal for likelihoods, analytical scores,\\
+and bounded higher-moment correction}
+\author{BayesFilter research note}
+\date{8 October 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A particle filter contains several different covariances. The uncertainty
+conditional on one ancestor determines an ancestor-centred proposal; the
+uncertainty of the whole predictive mixture determines a common proposal; and
+the covariance represented by the importance weights determines what a
+resampling transform should preserve. Confusing these quantities can cause a
+well-defined importance sampler to perform very poorly. We derive a filter
+that gives the unscented Kalman filter (UKF) an explicit role in a common
+proposal, combines that proposal with conditional local flows and an unflowed
+transition component, and corrects all components with one marginal density
+ratio. We give a complete covariance reset, a bounded candidate correction for
+selected third and fourth moments, and the analytical derivatives of the
+resulting finite computation. The identities are proved under stated
+conditions. Accuracy of the combined filter, non-regression across models,
+and suitability for Hamiltonian Monte Carlo remain empirical and numerical
+questions; this note does not promote a new implementation.
+\end{abstract}
+
+\tableofcontents
+
+% Compile from docs/ so both outputs use the central bibliography.
+\input{chapters/ledh_covariance_proposal_body}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+\end{document}

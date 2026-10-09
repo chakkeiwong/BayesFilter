@@ -145,6 +145,7 @@ def canonical_batch_fused_value_score(
     pairwise_rms_cap: float = 2.0,
     coordinate_cap: float = 0.0,
     coordinate_cap_power: int = 8,
+    importance_weight_policy: str = "ancestor",
     annealed_stages: int = 1,
     annealed_seed: int = 0,
     k_batch_mode: str = "sequential",
@@ -222,6 +223,7 @@ def canonical_batch_fused_value_score(
         pairwise_rms_cap=pairwise_rms_cap,
         coordinate_cap=coordinate_cap,
         coordinate_cap_power=coordinate_cap_power,
+        importance_weight_policy=importance_weight_policy,
         annealed_stages=annealed_stages,
         annealed_seed=annealed_seed,
     )
@@ -308,6 +310,8 @@ def canonical_batch_fused_value_score_whileloop(
     coordinate_cap_power: float = 1.0,
     annealed_stages: int = 1,
     annealed_seed: int | None = None,
+    *,
+    importance_weight_policy: str = "ancestor",
 ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
     """XLA-compatible while_loop variant of canonical_batch_fused_value_score.
 
@@ -367,6 +371,7 @@ def canonical_batch_fused_value_score_whileloop(
         pairwise_rms_cap=pairwise_rms_cap,
         coordinate_cap=coordinate_cap,
         coordinate_cap_power=coordinate_cap_power,
+        importance_weight_policy=importance_weight_policy,
         annealed_stages=annealed_stages,
         annealed_seed=annealed_seed,
     )

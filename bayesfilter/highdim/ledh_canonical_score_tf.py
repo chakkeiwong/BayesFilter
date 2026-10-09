@@ -27,6 +27,10 @@ from bayesfilter.highdim.ledh_canonical_score_stages_tf import (
     ukf_update_with_parameter_tangent,
 )
 
+from bayesfilter.highdim.ledh_marginal_weights_tf import (
+    IMPORTANCE_WEIGHT_POLICIES, marginal_prior_ratio_tangent,
+)
+
 Tensor = tf.Tensor
 
 ANCESTRY_POLICIES = (
@@ -121,6 +125,7 @@ def _value_and_analytical_score_impl(
     *,
     flow_substeps: int = 24,
     with_score: bool,
+    importance_weight_policy: str = "ancestor",
     return_trace: bool = False,
     _stacked_trace: bool = False,
     initial_state_tangent: Tensor | None = None,
@@ -213,6 +218,16 @@ def _value_and_analytical_score_impl(
     """
 
     dtype = initial_states.dtype
+    if importance_weight_policy not in IMPORTANCE_WEIGHT_POLICIES:
+        raise ValueError(f"unsupported importance weight policy: {importance_weight_policy}")
+    gaussian_transition = (model.transition_log_density_fn is None
+                           and model.transition_log_density_tangent_fn is None)
+    if importance_weight_policy == "marginal_mixture" and (
+        not gaussian_transition or annealed_stages != 1
+        or ancestry_policy != "existing_one_to_one"
+    ):
+        raise ValueError("marginal_mixture requires Gaussian transitions, one annealing "
+                         "stage and existing_one_to_one ancestry")
     if return_trace and annealed_stages != 1:
         raise ValueError(
             "return_trace currently supports only annealed_stages=1; "
@@ -480,7 +495,7 @@ def _value_and_analytical_score_impl(
             # tangent (shared helper), then S4: weight assembly (the
             # transition density tangent needs the total tangent of the
             # transition mean AT the ancestor: d_anchors).
-            children, d_children, log_det, d_log_det = _flow_substeps_with_tangent(
+            flow_result = _flow_substeps_with_tangent(
                 model,
                 pre_flow,
                 d_pre_flow,
@@ -495,26 +510,33 @@ def _value_and_analytical_score_impl(
                 d_r_inv,
                 substeps=flow_substeps,
                 eye=eye,
+                return_affine=gaussian_transition,
             )
-            transition_log, d_transition_log = _transition_density(
-                children, d_children, anchors, d_anchors
-            )
+            children, d_children, log_det, d_log_det = flow_result[:4]
+            if gaussian_transition:
+                proposal_means, d_proposal_means, flow_matrix, d_flow_matrix = flow_result[4:]
+                prior_ratio, d_prior_ratio, ratio_valid, ratio_force = marginal_prior_ratio_tangent(
+                    children, d_children, anchors, d_anchors, model.process_covariance,
+                    tf.zeros_like(model.process_covariance) if d_q is None else d_q,
+                    proposal_means, d_proposal_means, flow_matrix, d_flow_matrix,
+                    step_incoming_log_weights, d_step_incoming_log_weights,
+                    component_policy=importance_weight_policy)
+                program_valid &= ratio_valid & ratio_force
+            else:
+                # Custom non-Gaussian transitions retain their exact callbacks;
+                # requesting a Gaussian mixture for them fails above.
+                transition_log, d_transition_log = _transition_density(
+                    children, d_children, anchors, d_anchors)
+                proposal_log, d_proposal_log = _transition_density(
+                    pre_flow, d_pre_flow, anchors, d_anchors)
+                prior_ratio = transition_log + log_det - proposal_log
+                d_prior_ratio = d_transition_log + d_log_det - d_proposal_log
             observation_log, d_observation_log = _observation_density(
                 children, d_children
             )
-            proposal_log, d_proposal_log = _transition_density(
-                pre_flow, d_pre_flow, anchors, d_anchors
-            )
             weights_log = step_incoming_log_weights
-            prior_observation_logits = (
-                weights_log + transition_log + log_det - proposal_log
-            )
-            d_prior_observation_logits = (
-                d_step_incoming_log_weights
-                + d_transition_log
-                + d_log_det
-                - d_proposal_log
-            )
+            prior_observation_logits = weights_log + prior_ratio
+            d_prior_observation_logits = d_step_incoming_log_weights + d_prior_ratio
             prior_observation_normalizer = tf.reduce_logsumexp(prior_observation_logits)
             prior_observation_weights = tf.exp(
                 prior_observation_logits - prior_observation_normalizer
@@ -896,6 +918,7 @@ def canonical_value_and_analytical_score(
     *,
     flow_substeps: int = 24,
     with_score: bool,
+    importance_weight_policy: str = "ancestor",
     return_trace: bool = False,
     initial_state_tangent: Tensor | None = None,
     initial_covariance_tangent: Tensor | None = None,
@@ -941,6 +964,12 @@ def canonical_value_and_analytical_score(
     parameterized initial law into the same analytical recursion. Omitting
     them declares fixed initial inputs; it does not differentiate their
     construction. Their direction must match the model tangent callbacks.
+
+    ``importance_weight_policy='ancestor'`` selects each child's generating
+    component. ``'marginal_mixture'`` selects all components in the same
+    Gaussian density/total-tangent engine. Both retain the outer ancestor
+    weight; the latter requires Gaussian transitions, one-to-one ancestry
+    and a single annealing stage.
     """
 
     return _value_and_analytical_score_impl(
@@ -952,6 +981,7 @@ def canonical_value_and_analytical_score(
         observations,
         flow_substeps=flow_substeps,
         with_score=with_score,
+        importance_weight_policy=importance_weight_policy,
         return_trace=return_trace,
         initial_state_tangent=initial_state_tangent,
         initial_covariance_tangent=initial_covariance_tangent,
@@ -1086,7 +1116,9 @@ def _flow_substep_body_impl(
     substeps: tf.Tensor,
     eye: Tensor,
     eps: Tensor,
-) -> tuple[tf.Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    *,
+    return_affine: bool = False,
+) -> tuple[Tensor, ...]:
     """Single flow substep with analytical tangent.
 
     Extracted body for tf.while_loop conversion (Phase 3.5.2).
@@ -1211,7 +1243,7 @@ def _flow_substep_body_impl(
     solved_d_a = tf.linalg.triangular_solve(r_factor, q_transpose_d_a, lower=False)
     new_d_log_det = d_log_det + eps * tf.linalg.trace(solved_d_a)
 
-    return (
+    result = (
         step_index + 1,
         new_actual,
         new_d_actual,
@@ -1220,6 +1252,7 @@ def _flow_substep_body_impl(
         new_log_det,
         new_d_log_det,
     )
+    return (*result, step_matrix, eps * d_a_matrix) if return_affine else result
 
 
 def _flow_substeps_with_tangent(
@@ -1238,13 +1271,18 @@ def _flow_substeps_with_tangent(
     *,
     substeps: int,
     eye: Tensor,
-) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    return_affine: bool = False,
+) -> tuple[Tensor, ...]:
     """S3 substep loop with analytical tangent, shared by the base path
     and the annealed telescope's tempered stages (which pass P/k, R*k and
     the correspondingly scaled tangents/inverse). H is evaluated along
     the auxiliary path; its state dependence enters through the model
     jacobian at the moving anchor. Returns (post_flow, tangent, log_det,
-    d_log_det)."""
+    d_log_det). With ``return_affine``, append the auxiliary endpoint and its
+    tangent, and the accumulated affine matrix B and its tangent. Every
+    coefficient comes from this same substep body, independent of the sampled
+    innovation. No separate proposal flow is reconstructed.
+    """
 
     dtype = actual.dtype
     count = tf.shape(actual)[0]
@@ -1258,8 +1296,8 @@ def _flow_substeps_with_tangent(
     def substep_cond(i, *_):
         return i < substeps_tensor
 
-    def substep_body_wrapper(i, act, d_act, aux, d_aux, ld, d_ld):
-        return _flow_substep_body_impl(
+    def substep_body_wrapper(i, act, d_act, aux, d_aux, ld, d_ld, *affine_state):
+        result = _flow_substep_body_impl(
             i,
             act,
             d_act,
@@ -1280,7 +1318,14 @@ def _flow_substeps_with_tangent(
             substeps_tensor,
             eye,
             eps,
+            return_affine=return_affine,
         )
+        if not return_affine:
+            return result
+        matrix, d_matrix = affine_state
+        step, d_step = result[-2:]
+        return (*result[:-2], tf.linalg.matmul(step, matrix),
+                tf.linalg.matmul(d_step, matrix) + tf.linalg.matmul(step, d_matrix))
 
     initial_loop_vars = (
         tf.constant(0, dtype=tf.int32),
@@ -1292,13 +1337,18 @@ def _flow_substeps_with_tangent(
         d_log_det,
     )
 
-    _, actual, d_actual, auxiliary, d_auxiliary, log_det, d_log_det = tf.while_loop(
+    if return_affine:
+        matrix = tf.broadcast_to(eye, [count, eye.shape[0], eye.shape[1]])
+        initial_loop_vars += (matrix, tf.zeros_like(matrix))
+    result = tf.while_loop(
         cond=substep_cond,
         body=substep_body_wrapper,
         loop_vars=initial_loop_vars,
     )
 
-    return actual, d_actual, log_det, d_log_det
+    _, actual, d_actual, auxiliary, d_auxiliary, log_det, d_log_det = result[:7]
+    output = (actual, d_actual, log_det, d_log_det)
+    return (*output, auxiliary, d_auxiliary, *result[7:]) if return_affine else output
 
 
 def _cholesky_forward_diff_local(chol: Tensor, d_matrix: Tensor) -> Tensor:
