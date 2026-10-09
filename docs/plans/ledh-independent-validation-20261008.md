@@ -125,3 +125,35 @@ The eight datasets were prepared successfully at ae4d41ba2 using CUDA index 1
 indices here. Worker execution selects the idle RTX 4080 SUPER by UUID
 GPU-68251639-fe82-8f81-3ccc-2953c32e805b; every attempt records that selection.
 This resource-isolation repair changes neither data nor frozen controls.
+
+Reference aggregation is fixed before result inspection: equal-path independent
+Zhao–Cui fits combine by logmeanexp of their likelihood estimates and
+likelihood-weighted score vectors. Preserve each fit and both radii separately.
+Report errors against both the largest bootstrap reference and the author-path
+reference, without selecting the reference giving the most favorable result.
+Between-fit delete-one uncertainty with only two fits is weak and excludes
+shared approximation bias. No across-model pooling will determine a ranking.
+
+## Completed campaign
+
+All 25 planned jobs completed without failure at numerical commit 2a7b37852:
+192/192 valid filter rows, 48 bootstrap reference runs, eight independent author
+fits and eight quadratic-score jobs. Wall time was 8.29 hours; aggregate worker
+time was 16.56 hours. All limits were respected and no retry was needed.
+Frozen source/tuning/data checks passed again in terminal-review.json.
+The final comparison is report-20261009-011148/comparison.json under the output
+root, with the full continuous results in the linked benchmark result note.
+
+The skeptical terminal review preserves the reference uncertainty, the two-data
+limitation, and the distinction between complete-algorithm comparison and a
+single-mechanism ablation. KSC and SIR have favorable conditional comparisons;
+LGSSM and predator--prey do not support universal non-deterioration. The candidate
+remains optional. Numerical validity did not establish canonical/default or HMC
+admission; these runs used zero optional higher-moment correction steps.
+
+Final reporting regressions: four passed in 0.08 seconds, recorded in
+ledh-independent-reporting-checks-20261009-01/. The shared LaTeX body includes
+matched and independent findings. Both PDFs compile with resolved citations/references and the new table was
+visually checked. Build and rendered-page receipts are in
+ledh-independent-validation-docs-20261009-final/. Remaining execution is the
+owner-authorized documentation commit and Git synchronization described above.

@@ -1,0 +1,109 @@
+{
+  "schema": "zhao_cui_quadratic_reference.v1",
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-independent-validation-20261008.md",
+  "result": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/020-score-sir_d18-d26100832-fit41/result.json",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_zhao_cui_quadratic_score_reference.py",
+    "--proposal",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/016-zhao-sir_d18-d26100832-fit41",
+    "--model",
+    "sir_d18",
+    "--output-root",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/020-score-sir_d18-d26100832-fit41",
+    "--plan-file",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-independent-validation-20261008.md",
+    "--horizon",
+    "50",
+    "--points",
+    "128",
+    "--heldout",
+    "64",
+    "--design-seed",
+    "43017",
+    "--radii",
+    "0.000625",
+    "0.00015625",
+    "--timeout-seconds",
+    "5300"
+  ],
+  "git_commit": "2a7b37852c216cbe897b396d0cda6bd7bd16062e",
+  "started_utc": "2026-10-08T19:01:03.591478+00:00",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow_version": "2.20.0-dev0+selfbuilt",
+  "cpu_only": true,
+  "gpu_status": "intentionally hidden with CUDA_VISIBLE_DEVICES=-1",
+  "jit_compile": true,
+  "parameter_names": [
+    "log_kappa_scale",
+    "log_nu_scale",
+    "log_observation_noise_scale"
+  ],
+  "theta0": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "scales": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "design_seed": 43017,
+  "path_chunk": 2048,
+  "radii": [
+    0.000625,
+    0.00015625
+  ],
+  "design_points": 128,
+  "heldout_points": 64,
+  "status": "complete",
+  "jackknife_groups": 20,
+  "sample_prefix_fractions": [
+    0.25,
+    0.5
+  ],
+  "diagnostic_max_paths": null,
+  "threads": 2,
+  "likelihood_source": "canonical TensorFlow model value callbacks on author-TT conditional paths",
+  "derivative_method": "full quadratic local regression, no analytic scores or autodiff",
+  "wall_seconds": 3577.2674041970167,
+  "proposals": [
+    {
+      "directory": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/016-zhao-sir_d18-d26100832-fit41",
+      "parent_status": "complete",
+      "manifest_sha256": "69ff63719da49ce0197da67c275716656e2bed08944c153a73e71a2261374827",
+      "smoothing_sha256": "72f85698c2c3e8818e952c957e9cc38434838838214b067bf995ad6728ae8dab",
+      "observation_sha256": "1ac6ec96a24c0c6a798994728169418ffbd3bec6fef64888b50b49d6850bf4a7",
+      "source_observation_sha256": "1ac6ec96a24c0c6a798994728169418ffbd3bec6fef64888b50b49d6850bf4a7",
+      "source_horizon": 50,
+      "horizon": 50,
+      "fit_seed": 41,
+      "smooth_seed": 3041,
+      "rank": 20,
+      "samples": 100000,
+      "target_parity_max": 2.3283064365386963e-10,
+      "evaluated_paths": 100000,
+      "joint_density_parity_max": 4.547473508864641e-12,
+      "log_likelihood": -1689.3097414443564,
+      "ess": 18158.553686932944,
+      "max_weight": 0.003358874001002447,
+      "zero_weight_count": 0,
+      "likelihood_evaluator": "canonical TensorFlow joint minus fixed finite Octave log proposal",
+      "prefix_baselines": [
+        {
+          "paths": 25000,
+          "log_likelihood": -1689.3156238572687,
+          "ess": 3084.751883201126
+        },
+        {
+          "paths": 50000,
+          "log_likelihood": -1689.3166389523435,
+          "ess": 8326.965186698042
+        }
+      ],
+      "maximum_baseline_group_mass": 0.05252234687705678,
+      "conditional_log_likelihood_jackknife_se": 0.006103628928284247
+    }
+  ]
+}

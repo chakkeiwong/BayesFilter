@@ -1690,6 +1690,113 @@ failed attempts and source-to-equation audit are preserved in
 \path{docs/benchmarks/}\\
 \path{ledh-covariance-proposal-results-20261008.md}
 \end{quote}
+
+A subsequent comparison used the original campaign's particle count and
+observations: \(T=50\), \(N=1008\), data seed 26100611 and four paired designs.
+Each pair shared the same initial and process-noise tensors. The older complete
+filter and the new proposal retained their respective numerical controls, so
+this comparison measures the whole algorithmic change rather than one isolated
+operation. Both ran in FP64 with GPU/XLA and TF32 disabled.
+
+On this fixed dataset, mean absolute log-likelihood errors for the old and new
+filters were respectively \(0.0378,0.0282\) for LGSSM,
+\(0.4648,0.2119\) for KSC, \(0.1120,0.0433\) for predator--prey,
+and \(233.44,0.1811\) for SIR. The corresponding mean Euclidean score errors
+were \(0.0995,0.0840\), \(0.2040,0.0637\), \(1.2416,1.2340\),
+and \(2925.10,31.63\). These are averages of errors from individual designs,
+not errors of an averaged score. The nonlinear comparisons used a four-run
+bootstrap/Fisher reference with 131072 particles. That reference is numerical
+and has both Monte Carlo uncertainty and finite-particle bias.
+
+The SIR likelihood-error difference had a paired 95\% interval
+\([-315.73,-150.80]\), conditional on these observations and this reference.
+The other paired intervals, including the SIR score-error interval, contained
+zero. Thus the matched comparison supplied a strong fixed-data likelihood
+result for SIR, while the apparent gains in the other comparisons remained
+descriptive. It did not establish performance on new observations or universal
+non-deterioration. The full score vectors, paired intervals and controls are in
+\begin{quote}\small
+\path{docs/benchmarks/}\\
+\path{ledh-matched-comparison-results-20261008.md}.
+\end{quote}
+
+An independent validation then held the calibrated mixture weights and all
+numerical controls fixed and generated two new observation datasets, with seeds
+26100831 and 26100832. Each dataset used eight paired particle designs at
+\(T=50\), \(N=1008\), again in FP64 with GPU/XLA and TF32 disabled. All 192
+filter evaluations passed the implemented numerical checks. The complete
+campaign finished its 25 jobs, including 48 bootstrap runs, eight independent
+author-code fits and eight quadratic-score calculations. No new observations
+were used to retune the mixture.
+
+Table~\ref{tab:covariance-proposal-independent} reports errors against the exact
+Kalman reference for LGSSM, the refined grid for KSC, and the pooled rank-20
+Zhao--Cui path/quadratic reference for the nonlinear models. Each entry averages
+individual-run errors; averaging score vectors first would conceal cancellation.
+The old and new filters retain their respective controls, so these remain
+comparisons of complete algorithms.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrr}
+\toprule
+& & \multicolumn{2}{c}{Absolute log-likelihood error}
+& \multicolumn{2}{c}{Score Euclidean error} \\
+Model & Data seed & Old & New & Old & New \\
+\midrule
+LGSSM & 26100831 & 0.02799 & 0.04716 & 0.10476 & 0.09628 \\
+LGSSM & 26100832 & 0.02491 & 0.04638 & 0.08601 & 0.09389 \\
+KSC & 26100831 & 1.65356 & 0.15061 & 1.36923 & 0.11737 \\
+KSC & 26100832 & 1.10619 & 0.18548 & 1.09880 & 0.16210 \\
+Predator--prey & 26100831 & 0.07340 & 0.06162 & 0.64384 & 0.82719 \\
+Predator--prey & 26100832 & 0.13468 & 0.12338 & 0.81632 & 0.65032 \\
+SIR & 26100831 & 235.40112 & 1.07612 & 16212.28286 & 44.20341 \\
+SIR & 26100832 & 148.26810 & 0.53160 & 14189.00801 & 40.73632 \\
+\bottomrule
+\end{tabular}
+\caption{Independent-data comparison at \(T=50\). Errors are means over eight
+paired designs per dataset. Nonlinear references have approximation and Monte
+Carlo uncertainty.}
+\label{tab:covariance-proposal-independent}
+\end{table}
+
+The paired 95\% intervals for new-minus-old error exclude zero in the favorable
+direction for both KSC quantities on both datasets, and for SIR log likelihood
+on both datasets. The SIR score interval excludes zero only on dataset
+26100832. All LGSSM and predator--prey intervals include zero: the larger
+observed LGSSM likelihood errors and mixed predator--prey score errors do not
+support universal non-deterioration, but neither establish statistically
+significant deterioration. These intervals vary particle designs conditional
+on one observation dataset and a fixed reference; two datasets do not establish
+a broad ranking across observation regimes.
+
+For each nonlinear dataset, the Zhao--Cui comparison uses two independent
+rank-20 fits with 100000 paths per fit and preserves two quadratic-regression
+radii. It applies the author path-importance route to the current model, not a
+fresh replication of the paper's original experiment. Equal-path likelihood
+estimates are pooled before taking logs, and their score vectors are pooled with
+likelihood weights. The SIR Zhao--Cui minus bootstrap log-likelihood differences
+are \(-0.143\) and \(+0.128\); the first score-coordinate differences are
+\(-76.8\) and \(-17.6\), against bootstrap Monte Carlo standard errors of
+\(36.6\) and \(23.6\). Thus the remaining SIR score errors must be interpreted
+with reference uncertainty. Agreement between two rank-20 fits, small
+regression residuals and density-parity checks cannot rule out shared rank or
+support bias. Between-fit and conditional path uncertainty are reported
+separately.
+
+These results support keeping the covariance-guided mixture as an optional
+candidate. They do not promote the FP64 diagnostic implementation to the
+canonical FP32/TF32 route or establish HMC readiness. Optional higher-moment
+correction was disabled in these comparisons, so their likelihood and score
+results do not validate fourth-moment repair. Complete likelihoods, score
+vectors, uncertainty estimates, controls and source anchors are recorded in
+\begin{quote}\small
+\path{docs/benchmarks/}\\
+\path{ledh-independent-validation-results-20261008.md}.
+\end{quote}
+
 MathDevMCP found the requested operations and terms but returned unverified
 obligations, including parser limitations. The mathematical derivations,
 executable invariants and derivative tests supply partial, explicitly scoped

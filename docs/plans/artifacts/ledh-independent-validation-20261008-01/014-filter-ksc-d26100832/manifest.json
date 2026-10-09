@@ -1,0 +1,473 @@
+{
+  "model": "ksc",
+  "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+  "theta": [
+    1.5,
+    0.0
+  ],
+  "particles": 1008,
+  "horizon": 50,
+  "data": {
+    "observations": [
+      [
+        -2.713037389308472
+      ],
+      [
+        1.1762340374513693
+      ],
+      [
+        1.4040818802390924
+      ],
+      [
+        -0.24396011274452156
+      ],
+      [
+        1.8992473844596955
+      ],
+      [
+        1.2321088460188587
+      ],
+      [
+        4.054515657826836
+      ],
+      [
+        -2.8927386572521034
+      ],
+      [
+        1.1321561775357663
+      ],
+      [
+        -0.25585082022437344
+      ],
+      [
+        4.003303391145299
+      ],
+      [
+        2.948124718826682
+      ],
+      [
+        4.086431923891158
+      ],
+      [
+        4.600764317853146
+      ],
+      [
+        0.8351146365599186
+      ],
+      [
+        1.8158130441263651
+      ],
+      [
+        2.112431847576942
+      ],
+      [
+        1.9797302225013786
+      ],
+      [
+        2.867090711553981
+      ],
+      [
+        -11.749409887257762
+      ],
+      [
+        -2.8319913224671662
+      ],
+      [
+        -0.032544669190104125
+      ],
+      [
+        0.5910551709129284
+      ],
+      [
+        -0.5983030913665521
+      ],
+      [
+        -3.536828351767996
+      ],
+      [
+        -1.5135370844673859
+      ],
+      [
+        -3.3622913548615134
+      ],
+      [
+        -5.656981775770575
+      ],
+      [
+        -4.0396188501386785
+      ],
+      [
+        -2.7283514262398225
+      ],
+      [
+        -3.439325210365231
+      ],
+      [
+        -1.7399638642799624
+      ],
+      [
+        -12.1903934995476
+      ],
+      [
+        -5.516982085010037
+      ],
+      [
+        -4.524549495679666
+      ],
+      [
+        -5.568778102677759
+      ],
+      [
+        -5.519713636059255
+      ],
+      [
+        -5.289799179901751
+      ],
+      [
+        -6.058047194661253
+      ],
+      [
+        -1.6518011735966602
+      ],
+      [
+        -1.0570724723616054
+      ],
+      [
+        -0.0264552797035566
+      ],
+      [
+        -4.626036826774574
+      ],
+      [
+        -0.973856444158264
+      ],
+      [
+        -1.6763036362269725
+      ],
+      [
+        1.0998146781456848
+      ],
+      [
+        0.864774518115177
+      ],
+      [
+        1.922011920789448
+      ],
+      [
+        -2.4402123876721995
+      ],
+      [
+        0.48003395830842666
+      ]
+    ],
+    "observation_sha256": "71c33042332cde1d59ce5f198cb558146de60e0874e414038304b6d427b10d10",
+    "data_seed": 26100832,
+    "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+    "dtype": "float64",
+    "generator": "same_model_simulator_independent_T50_GPU_XLA",
+    "cpu_only": false
+  },
+  "reference": {
+    "value": -117.21374117465992,
+    "score": [
+      -0.20596251898379825,
+      0.425198459034081
+    ],
+    "value_se": 0.0,
+    "score_se": [
+      0.0,
+      0.0
+    ],
+    "kind": "independently checked refined KSC grid"
+  },
+  "tuning": {
+    "scope": {
+      "model": "ksc",
+      "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+      "n": 1008,
+      "horizon": 50,
+      "dtype": "float64",
+      "device": "gpu",
+      "jit_compile": true,
+      "tf32": false,
+      "controls": {
+        "flow_steps": 16,
+        "reset_steps": 40,
+        "reset_epsilon": 1.0,
+        "correction_steps": 0,
+        "correction_basis": 4,
+        "correction_rate": 0.1,
+        "correction_radius": 0.25
+      }
+    },
+    "beta": [
+      0.1,
+      0.8999999999999999,
+      0.0
+    ],
+    "floor": 0.1,
+    "calibration_objective": 1.1049181653495048,
+    "gap": 1.2346004401698586e-16,
+    "iterations": 29,
+    "converged": true,
+    "validation_objective": 1.2282393421155915,
+    "validation_equal_objective": 1.3734460557046273,
+    "valid": true,
+    "context_valid": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "times": [
+      0,
+      25,
+      49
+    ],
+    "calibration_data_seed": 26100820,
+    "validation_data_seed": 26100821,
+    "seed": 261008100,
+    "wall_seconds": 10.960448169149458,
+    "provenance": {
+      "git_commit": "729e2182590e2213a4d455c72db495a3a1e7efb0",
+      "source_sha256": {
+        "bayesfilter/highdim/covariance_proposal_tf.py": "909d74e0f911bab47310bec18c5886ffe045cc663239d90d5706988ff4b0fba4",
+        "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+        "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+        "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+        "docs/plans/ledh-covariance-proposal-implementation-20261008.md": "758a1cf2c2a6cfb8eb455298937229427e59c29af17e612cb2e2185405e2978e",
+        "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+        "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "879c56d91c0ced5d1104989973b1e71a63fa05be82b82940555375c48a5d3ce3",
+        "bayesfilter/highdim/ledh_marginal_weights_tf.py": "5de3c494f0a9d82f3f54854906f37dea54ad3c9e76bcd2a159aea7190f08e2ae",
+        "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+        "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+        "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+        "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+        "docs/chapters/ledh_covariance_proposal_body.tex": "38240cbecb6262fb301f376355a59fe975107735e1662d8206412c186a216282"
+      },
+      "command": [
+        "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_ledh_covariance_proposal.py",
+        "calibrate",
+        "--device",
+        "gpu",
+        "--dtype",
+        "float64",
+        "--no-tf32",
+        "--particles",
+        "1008",
+        "--horizon",
+        "50",
+        "--model",
+        "ksc",
+        "--lgssm-family",
+        "p44",
+        "--flow-steps",
+        "16",
+        "--reset-steps",
+        "40",
+        "--reset-epsilon",
+        "1",
+        "--correction-steps",
+        "0",
+        "--seed",
+        "261008100",
+        "--data-seed",
+        "26100820",
+        "--output",
+        "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-matched-comparison-20261008-01/ksc-tuning"
+      ],
+      "created_utc": "2026-10-08T13:34:20.356945+00:00",
+      "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "tensorflow": "2.20.0-dev0+selfbuilt",
+      "device": "gpu",
+      "cpu_only": false,
+      "gpu_intentionally_hidden": false,
+      "memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                12,
+                0
+              ],
+              "device_name": "NVIDIA GeForce RTX 5080"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "jit_compile": true,
+      "dtype": "float64",
+      "tf32": false,
+      "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-covariance-proposal-implementation-20261008.md",
+      "args": {
+        "command": "calibrate",
+        "device": "gpu",
+        "dtype": "float64",
+        "model": "ksc",
+        "lgssm_family": "p44",
+        "particles": 1008,
+        "horizon": 50,
+        "seed": 261008100,
+        "data_seed": 26100820,
+        "seeds": 2,
+        "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-matched-comparison-20261008-01/ksc-tuning",
+        "flow_steps": 16,
+        "reset_steps": 40,
+        "reset_epsilon": 1.0,
+        "correction_steps": 0,
+        "floor": 0.1,
+        "beta": "0.3333333333333333,0.3333333333333333,0.3333333333333333",
+        "tuning": null,
+        "reference": false,
+        "regressions": false,
+        "timeout": 1200,
+        "reference_particles": 8192,
+        "no_tf32": true,
+        "check_derivatives": false,
+        "fd_scales": "1e-4,5e-5",
+        "dataset": null,
+        "campaign": false
+      },
+      "evidence_role": "candidate_diagnostic_not_admission",
+      "default_promoted": false
+    },
+    "no_score_or_full_filter_optimality_claim": true
+  },
+  "controls_old": [
+    {
+      "flow_substeps": 8,
+      "reset_epsilon": 102.4,
+      "reset_sinkhorn_steps": 24,
+      "reset_balance_steps": 12,
+      "correction_steps": 4,
+      "correction_strength": 0.12,
+      "pairwise_steps": 4,
+      "pairwise_strength": 0.03,
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12,
+      "moment_safety": true,
+      "coordinate_cap_identity_radius": 8.0,
+      "importance_weight_policy": "ancestor"
+    },
+    "normal_quantiles"
+  ],
+  "controls_new": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 1.0,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25
+  },
+  "git_commit": "2a7b37852c216cbe897b396d0cda6bd7bd16062e",
+  "command": [
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_ledh_matched_comparison.py",
+    "worker",
+    "--model",
+    "ksc",
+    "--output",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/014-filter-ksc-d26100832",
+    "--tuning",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/frozen/ksc-tuning.json",
+    "--device",
+    "gpu",
+    "--dtype",
+    "float64",
+    "--no-tf32",
+    "--particles",
+    "1008",
+    "--horizon",
+    "50",
+    "--lgssm-family",
+    "p44",
+    "--independent",
+    "--data-seed",
+    "26100832",
+    "--dataset-file",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/ksc-d26100832/dataset.json",
+    "--design-seeds",
+    "261008401",
+    "261008402",
+    "261008403",
+    "261008404",
+    "261008405",
+    "261008406",
+    "261008407",
+    "261008408",
+    "--plan-file",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-independent-validation-20261008.md",
+    "--result-file",
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/ledh-independent-validation-results-20261008.md"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "device": "gpu",
+  "cuda_visible_devices": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tf_version": "2.20.0-dev0+selfbuilt",
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": false,
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-independent-validation-20261008.md",
+  "result_file": "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/ledh-independent-validation-results-20261008.md",
+  "tuning_source": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/frozen/ksc-tuning.json",
+  "tuning_sha256": "cbf46922934da6e0ab5a3645f9e2715c6113e13aae7fc8d90aae84c6441b11ff",
+  "independent_dataset": true,
+  "source_sha256": {
+    "docs/benchmarks/run_ledh_matched_comparison.py": "83b7930618e091f61059fe15901f310faf0ed336051a9b2aa7ec8b2971951a06",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+    "docs/plans/ledh-matched-comparison-20261008.md": "f74e28bfe17d56729761e2b36ed11b885fdf8d3dab363ef8dfc18b2911953e0d",
+    "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+    "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "909d74e0f911bab47310bec18c5886ffe045cc663239d90d5706988ff4b0fba4",
+    "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+    "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+    "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "d367b2a40289bbeda12f0831967f14d971108498432068543bed37059b5c6e3b",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "879c56d91c0ced5d1104989973b1e71a63fa05be82b82940555375c48a5d3ce3",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "5de3c494f0a9d82f3f54854906f37dea54ad3c9e76bcd2a159aea7190f08e2ae"
+  }
+}

@@ -27,7 +27,9 @@ likelihood interval is favorable but its score interval is wide. Keep the new
 filter optional and diagnostic only. Do not promote a default, HMC route,
 production claim, or general accuracy claim from this run.
 
-Remaining gap: repeat independent T=50 data/design partitions and investigate
-SIR reference uncertainty before ranking or selecting controls. The old/new
+Follow-up complete: two independent T=50 datasets, eight paired designs each,
+and extra author/bootstrap references are documented in
+`docs/reset-memos/ledh-independent-validation-20261008.md`. Reference uncertainty
+and broader-ranking limitations remain. The old/new
 controls differ as complete algorithm variants, so this run does not isolate a
 single code-line change.

@@ -1,0 +1,97 @@
+{
+  "schema": "bayesfilter.bootstrap_fisher_reference.v1",
+  "command": [
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_nonlinear_bootstrap_reference.py",
+    "--worker-dirs",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/predator_prey-d26100831",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100831",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/predator_prey-d26100832",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100832",
+    "--particles",
+    "1008",
+    "32768",
+    "131072",
+    "--seeds",
+    "261008501",
+    "261008502",
+    "261008503",
+    "261008504",
+    "--budget-seconds",
+    "3300",
+    "--output",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/019-bootstrap",
+    "--plan-file",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-independent-validation-20261008.md",
+    "--result-file",
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/ledh-independent-validation-results-20261008.md"
+  ],
+  "git_commit": "2a7b37852c216cbe897b396d0cda6bd7bd16062e",
+  "git_dirty": true,
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": false,
+  "device": "/GPU:0",
+  "visible_gpu": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "GPU_trust": "escalated_GPU_access",
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-independent-validation-20261008.md",
+  "result": "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/ledh-independent-validation-results-20261008.md",
+  "particles": [
+    1008,
+    32768,
+    131072
+  ],
+  "seeds": [
+    261008501,
+    261008502,
+    261008503,
+    261008504
+  ],
+  "budget_seconds": 3300,
+  "evidence_role": "approximate_independent_reference_not_oracle",
+  "score_method": "posterior_average_analytical_complete_data_Fisher_score",
+  "aggregation": "log_mean_unbiased_likelihood_and_likelihood_weighted_score",
+  "uncertainty": "delete_one_replication_jackknife_MCSE_not_particle_bias",
+  "validation": "tests/highdim/test_nonlinear_bootstrap_fisher_reference.py",
+  "source_sha256": {
+    "docs/benchmarks/run_nonlinear_bootstrap_reference.py": "dae45010ea7483794c2b27cae6f8f2dba3146d80f22ba83aff95a5edd04269ab",
+    "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2"
+  },
+  "wall_seconds": 163.4096029039938,
+  "status": "complete",
+  "allocator": {
+    "current": 11008,
+    "peak": 334520832
+  },
+  "artifact_paths": [
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/019-bootstrap/manifest.json",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/019-bootstrap/replications.json",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/019-bootstrap/scopes.json",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/019-bootstrap/summary.json"
+  ]
+}
