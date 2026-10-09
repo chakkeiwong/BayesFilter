@@ -70,7 +70,9 @@ def test_lgssm_generic_target_adapter_emits_finite_batch_values_scores() -> None
     assert capability.value_score_authority == "graph_native"
     assert capability.xla_hmc_ready is True
     assert capability.is_accepted_xla_hmc_authority is True
-    assert capability.full_chain_xla_diagnostic_ready is False
+    # Full-chain compilation and explicit-momentum parity are exercised in
+    # tests/inference_validation/test_ssm_xla_full_chain.py.
+    assert capability.full_chain_xla_diagnostic_ready is True
     assert capability.nonclaims == LGSSM_GENERIC_TARGET_XLA_HMC_NONCLAIMS
 
 

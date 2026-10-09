@@ -13,6 +13,8 @@ import json
 import os
 import time
 from collections.abc import Mapping, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import asdict, dataclass, fields, replace
 from pathlib import Path
 from typing import Any
@@ -27,6 +29,22 @@ from bayesfilter.inference.hmc_candidate_runtime import chunk_seed, before_numer
 
 EXECUTION_SCHEMA = "bayesfilter.hmc_candidate_execution.v1"
 _ISSUER = object()
+_REPLAY_ANALYSES = ContextVar("hmc_fresh_replay_analyses", default=None)
+
+
+@contextmanager
+def _fresh_numerical_replay_scope():
+    """Share raw reconstruction only among new readers in this operation.
+
+    Existing tuning bindings and their local caches cannot populate this memo.
+    Every reader still validates its files and hashes current numerical content.
+    The unique token prevents nested or later operations from sharing entries.
+    """
+    token = _REPLAY_ANALYSES.set((object(), {}))
+    try:
+        yield
+    finally:
+        _REPLAY_ANALYSES.reset(token)
 
 
 def _report_rhat(samples: Any) -> Mapping[str, Any]:
@@ -130,10 +148,19 @@ class HMCCandidateExecutionConfig:
     preparation_elapsed_seconds: float = 0.0
     pilot_num_results: int | None = None
     reuse_leapfrog_graphs: bool = False
+    replicated_trial_batch_size: int = 1
 
     def __post_init__(self) -> None:
-        if not isinstance(self.acceptance_policy, HMCAcceptancePolicy):
-            raise TypeError("acceptance_policy must be HMCAcceptancePolicy")
+        from .hmc_acceptance_protocol import HMCReplicatedAcceptancePolicy
+        if not isinstance(self.acceptance_policy, (HMCAcceptancePolicy, HMCReplicatedAcceptancePolicy)):
+            raise TypeError("acceptance_policy must be a supported acceptance policy")
+        if isinstance(self.acceptance_policy, HMCReplicatedAcceptancePolicy):
+            policy = self.acceptance_policy
+            if (self.measurement_num_results != policy.trial_num_results
+                    or self.verification_num_results != policy.trial_num_results
+                    or self.pilot_num_results not in (None, policy.trial_num_results)
+                    or self.num_warmup_steps != policy.discarded_prefix):
+                raise ValueError("execution must preserve the frozen trial horizon and prefix")
         for name in ("measurement_num_results", "verification_num_results"):
             _positive_int(getattr(self, name), name, self.acceptance_policy.min_decisions_per_chain)
         if self.pilot_num_results is not None:
@@ -154,6 +181,14 @@ class HMCCandidateExecutionConfig:
             raise ValueError("declare none or per_chain_step target status")
         if self.chain_mode not in {"serial", "threaded", "batched"}:
             raise ValueError("chain_mode must be serial, threaded or batched")
+        if (type(self.replicated_trial_batch_size) is not int
+                or not 1 <= self.replicated_trial_batch_size <= 32):
+            raise ValueError("replicated_trial_batch_size must be an integer in [1, 32]")
+        if self.replicated_trial_batch_size > 1 and (
+                not isinstance(self.acceptance_policy, HMCReplicatedAcceptancePolicy)
+                or self.chain_mode != "batched"
+                or self.chunk_max_results < self.num_warmup_steps + self.measurement_num_results):
+            raise ValueError("replicated trial batching requires v7, batched chains and whole-trial chunks")
 
     def payload(self) -> Mapping[str, Any]:
         payload = {**asdict(self), "acceptance_policy": self.acceptance_policy.payload()}
@@ -161,6 +196,8 @@ class HMCCandidateExecutionConfig:
             payload.pop("pilot_num_results")
         if not self.reuse_leapfrog_graphs:
             payload.pop("reuse_leapfrog_graphs")
+        if self.replicated_trial_batch_size == 1:
+            payload.pop("replicated_trial_batch_size")
         return payload
 
     @classmethod
@@ -168,7 +205,9 @@ class HMCCandidateExecutionConfig:
         values = dict(payload)
         policy = values.pop("acceptance_policy")
         from .hmc_verification import _acceptance_policy_from_payload
-        values["acceptance_policy"] = _acceptance_policy_from_payload(policy)
+        from .hmc_acceptance_protocol import HMCReplicatedAcceptancePolicy, PROTOCOL_SCHEMA
+        values["acceptance_policy"] = (HMCReplicatedAcceptancePolicy.from_payload(policy)
+            if policy.get("schema") == PROTOCOL_SCHEMA else _acceptance_policy_from_payload(policy))
         result = cls(**values)
         if _json_copy(result.payload()) != _json_copy(payload):
             raise ValueError("execution policy metadata mismatch")
@@ -185,7 +224,9 @@ def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping
              "hmc_candidate_set_execution", "hmc_candidate_set_retained",
              "hmc_candidate_set_adapters", "hmc_candidate_set_tuning",
              "hmc_candidate_set_checkpoint", "hmc_candidate_set_public", "hmc_candidate_set_position_field",
+             "hmc_candidate_health", "hmc_replicated_batch",
              "hmc_candidate_decisions", "hmc_candidate_proposals", "hmc_candidate_runtime", "hmc_preparation",
+             "hmc_acceptance_protocol", "hmc_acceptance_statistics", "hmc_acceptance_trials",
              "hmc_candidate_set_artifacts", "hmc_verification", "hmc_convergence",
              "hmc_diagnostic_math", "hmc_posterior_diagnostics", "hmc_precision", "hmc_posterior_assessment", "neutra_hmc",
              "tuning_contract", "hmc_tuning_dispatch", "fixed_transport_hmc_tuning_tf",
@@ -196,7 +237,7 @@ def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping
     paths.add(Path(__file__).parents[1] / "runtime" / "gpu_memory_policy.py")
     paths.update(Path(__file__).parents[1] / (name + ".py") for name in (
         "hmc_route_contract", "hmc_ordinary_selection_policy", "hmc_budget_contract",
-        "runtime/runner", "runtime/selection"))
+        "runtime/runner", "runtime/selection", "runtime/execution_budget"))
     if not source_paths:
         raise ValueError("source_paths must include the target's actual source dependencies")
     paths.update(Path(path).resolve() for path in source_paths)
@@ -321,6 +362,8 @@ class HMCCandidateExecutionBinding:
         self.binding_hash = _sha256(self._spec)
         self._evidence: dict[str, Mapping[str, Any]] = {}
         self._analysis_cache: dict[str, Mapping[str, Any]] = {}
+        replay_scope = _REPLAY_ANALYSES.get()
+        self._replay_scope_token = None if replay_scope is None else replay_scope[0]
         self._persisted_files: dict[str, tuple[int, int]] = {}
         self._partial: dict[str, list[Mapping[str, Any]]] = {}
         self._checkpoint_callback = None
@@ -432,6 +475,9 @@ class HMCCandidateExecutionBinding:
         return tf.reshape(state, shape)
 
     def work_seed(self, work: HMCWorkItem) -> tuple[int, int]:
+        if work.trial_range is not None:
+            from .hmc_acceptance_trials import work_seed
+            return work_seed(self, work)
         digest = hashlib.sha256(json.dumps({
             "seed": self.config.seed, "scope": self.scope.payload(),
             "work_id": work.work_item_id, "stage": work.stage,
@@ -443,6 +489,15 @@ class HMCCandidateExecutionBinding:
         # Cache ownership is the binding: target, frozen geometry, dtype/shape,
         # chain topology, trace policy and backend cannot cross this boundary.
         return (None if self.config.reuse_leapfrog_graphs else candidate.leapfrog_steps, count)
+
+    def trial_seed_lineage(self, seed):
+        """Match the numerical runner's actual root and per-start stream layout."""
+        if self.config.chain_mode == "batched":
+            return (tuple(seed),)
+        import tensorflow as tf
+        root = tf.constant(seed, tf.int32)
+        return (tuple(seed), *(tuple(int(v) for v in tf.random.experimental.stateless_fold_in(root, i).numpy())
+                              for i in range(int(self.initial_active_state.shape[0]))))
 
     def _run(self, candidate: HMCTuningCandidateRecord, state: Any, count: int, seed: tuple[int, int]) -> Any:
         from bayesfilter.inference.hmc import (
@@ -476,6 +531,38 @@ class HMCCandidateExecutionBinding:
         return self._runners[key].run(current_state=state, root_seed=seed,
                                       step_size=candidate.epsilon, mode=self.config.chain_mode, **runtime_l)
 
+    def _run_replicated_batch(self, candidate, count, seeds):
+        """Return separately identified trials from one stream-preserving call."""
+        import tensorflow as tf
+        from types import SimpleNamespace
+        from .hmc import FullChainHMCConfig
+        from .hmc_replicated_batch import ReplicatedTrialBatchRunner
+
+        HMCTuningCandidateRecord.from_payload(self.scope, candidate.payload())
+        batch = len(seeds)
+        if not 1 <= batch <= self.config.replicated_trial_batch_size:
+            raise ValueError("trial batch exceeds its execution allocation")
+        key = ("independent_trials", count, batch)
+        if key not in self._runners:
+            config = FullChainHMCConfig(num_results=count, num_burnin_steps=0,
+                step_size=candidate.epsilon, num_leapfrog_steps=candidate.leapfrog_steps,
+                seed=seeds[0], use_xla=self.config.use_xla, target_scope=self._spec["target_scope"],
+                target_status_trace_policy=self.config.target_status_trace_policy,
+                capture_candidate_health=True)
+            self._runners[key] = ReplicatedTrialBatchRunner(self._active_adapter,
+                self.initial_active_state, config, batch_size=batch)
+        states = tf.broadcast_to(self.initial_active_state, [batch, *self.initial_active_state.shape])
+        samples, trace, metadata = self._runners[key].run(states=states, seeds=seeds,
+            step_size=candidate.epsilon, num_leapfrog_steps=candidate.leapfrog_steps)
+        return [SimpleNamespace(samples=samples[:, index],
+            trace=tf.nest.map_structure(lambda value: value[:, index], trace),
+            metadata={**metadata, "trial_batch_row": index, "trial_batch_seeds": seeds,
+                      "chain_count": int(self.initial_active_state.shape[0]),
+                      # Sum per-trial cost without counting the batch B times.
+                      "sample_chain_call_s": metadata["sample_chain_call_s"] / batch,
+                      "sample_chain_call_s_scope": "equal_share_of_enclosing_batch_call"})
+            for index in range(batch)]
+
     def health_failures(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> tuple[str, ...]:
         import tensorflow as tf
         from bayesfilter.inference.hmc_verification import target_status_telemetry_has_failure
@@ -491,24 +578,26 @@ class HMCCandidateExecutionBinding:
             raise ValueError("health and acceptance bits must be boolean")
         if "proposed_state" not in trace or trace["proposed_state"].shape != samples.shape:
             raise ValueError("missing or misaligned proposed states")
-        previous = tf.concat([initial[None], samples[:-1]], axis=0)
-        arrays = {"state": samples, "initial_state": initial, "proposal": trace["proposed_state"],
-                  "proposal_displacement": trace["proposed_state"] - previous,
-                  **{key: trace[key] for key in ("log_accept_ratio", "target_log_prob", "proposed_target_log_prob")}}
         for key in ("initial_momentum", "final_momentum"):
             if key not in trace or trace[key].shape != samples.shape:
                 raise ValueError("missing or misaligned momentum health trace")
-            arrays[key] = trace[key]
-        if "log_acceptance_correction" in trace:
-            arrays["log_acceptance_correction"] = trace["log_acceptance_correction"]
-        for key, array in arrays.items():
-            if not bool(tf.reduce_all(tf.math.is_finite(array))):
-                failures.append("nonfinite_" + key)
-        if not bool(tf.reduce_all(trace["target_score_finite"])):
-            failures.append("nonfinite_target_score")
+        from .hmc_candidate_health import native_health_program
+        correction = trace.get("log_acceptance_correction")
+        if correction is None:
+            correction = tf.zeros_like(trace["log_accept_ratio"])
+        elif correction.shape != samples.shape[:2]:
+            raise ValueError("misaligned log acceptance correction")
+        valid = native_health_program(self.config.use_xla)(
+            initial, samples, trace["proposed_state"], trace["initial_momentum"],
+            trace["final_momentum"], trace["log_accept_ratio"], trace["target_log_prob"],
+            trace["proposed_target_log_prob"], correction, trace["is_accepted"],
+            trace["target_score_finite"]).numpy().tolist()
+        names = ("state", "initial_state", "proposal", "proposal_displacement",
+                 "log_accept_ratio", "target_log_prob", "proposed_target_log_prob",
+                 "initial_momentum", "final_momentum", "log_acceptance_correction", "target_score")
+        failures.extend("nonfinite_" + name for name, okay in zip(names, valid[:-1]) if not okay)
         # This invariant also checks the first transition and rejected proposals.
-        expected = tf.where(trace["is_accepted"][..., None], trace["proposed_state"], previous)
-        if not bool(tf.reduce_all(tf.equal(expected, samples))):
+        if not valid[-1]:
             failures.append("metropolis_state_mismatch")
         if "divergence" in trace:
             if tuple(trace["divergence"].shape) != shape or trace["divergence"].dtype != tf.bool:
@@ -542,7 +631,37 @@ class HMCCandidateExecutionBinding:
                 "engineering_invalidity_reasons": evidence.engineering_invalidity_reasons,
                 "diagnostic_alerts": evidence.payload().get("diagnostic_alerts", ())}
 
+    def analyze_trial(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> Mapping[str, Any]:
+        import tensorflow as tf
+        from .hmc_verification import evaluate_hmc_trial_health
+        policy = self.config.acceptance_policy
+        # Only the pre-existing health thresholds cross this bridge. The legacy
+        # evaluator's acceptance bands, t interval and temporal decision do not.
+        health_policy = HMCAcceptancePolicy(**{name: getattr(policy, name) for name in (
+            "min_movement_rate", "max_repeated_state_fraction",
+            "min_normalized_return_displacement", "max_abs_log_accept_energy_proxy")})
+        failures = self.health_failures(initial, samples, trace)
+        warmup = self.config.num_warmup_steps
+        divergence = trace.get("divergence")
+        evidence = evaluate_hmc_trial_health(samples=samples[warmup:],
+            log_accept_ratio=trace["log_accept_ratio"][warmup:],
+            is_accepted=trace["is_accepted"][warmup:], policy=health_policy,
+            target_log_prob=trace["target_log_prob"][warmup:],
+            native_divergence_status="available" if divergence is not None else "not_exposed_by_kernel",
+            native_divergence_count=int(tf.reduce_sum(tf.cast(divergence, tf.int32))) if divergence is not None else None)
+        decision = HMCCandidateDecision.from_evidence(evidence,
+            hard_vetoes=tuple(reason for reason in failures if reason != "native_divergence_positive"),
+            shared_invalidity="metropolis_state_mismatch" in failures)
+        # A bad discarded-prefix trace must also suppress statistical evidence.
+        if decision.hard_vetoes and decision.evidence_validity == "valid":
+            decision = HMCCandidateDecision("unavailable", "candidate_data_invalid",
+                hard_vetoes=decision.hard_vetoes, promotion_vetoes=decision.promotion_vetoes)
+        return {**decision.payload(), "health_evidence": evidence.payload(),
+                "diagnostic_alerts": evidence.payload().get("diagnostic_alerts", ())}
+
     def work_count(self, work: HMCWorkItem) -> int:
+        if work.trial_range is not None:
+            return self.config.acceptance_policy.trial_num_results
         if work.stage == "pilot" and self.config.pilot_num_results is not None:
             return self.config.pilot_num_results * work.evidence_multiplier
         stage = "measurement" if work.stage == "pilot" else work.stage
@@ -552,9 +671,34 @@ class HMCCandidateExecutionBinding:
         """Recompute successful evidence or validate a typed native failure."""
         # Numerical evidence is host JSON and can be mutated by a caller.
         # Hash its current content before using a cached numerical analysis.
-        digest = _sha256(numerical)
+        from .hmc_candidate_set_tuning import _json_native_sha256
+        digest = _json_native_sha256(numerical)
         if digest in self._analysis_cache:
             return _json_copy(self._analysis_cache[digest])
+        from .hmc_acceptance_trials import NUMERICAL_SCHEMA, evidence_analysis
+        if numerical.get("schema") == NUMERICAL_SCHEMA:
+            replay_scope = _REPLAY_ANALYSES.get()
+            shared = (replay_scope[1] if replay_scope is not None
+                      and self._replay_scope_token is replay_scope[0] else None)
+            # The rung schedule belongs to the search, not the execution hash.
+            # All three reconstruction inputs must agree across fresh bindings.
+            key = (self.binding_hash, tuple(self._replicated_evidence_rungs), digest)
+            if shared is not None and key in shared:
+                # Prefix evidence belongs to each reader's current inventory.
+                # A matching final record cannot stand in for a missing,
+                # duplicated or changed predecessor in that inventory.
+                from .hmc_acceptance_trials import _prior
+                _, predecessor = _prior(self, HMCWorkItem.from_payload(numerical["work"]))
+                if predecessor != numerical["predecessor_evidence_hash"]:
+                    raise ValueError("replicated evidence predecessor hash mismatch")
+                analysis = _json_copy(shared[key])
+                self._analysis_cache[digest] = _json_copy(analysis)
+                return analysis
+            analysis = evidence_analysis(self, numerical)
+            self._analysis_cache[digest] = _json_copy(analysis)
+            if shared is not None:
+                shared[key] = _json_copy(analysis)
+            return analysis
         if "execution_failure" in numerical:
             failure = HMCCandidateExecutionFailure.from_payload(numerical["execution_failure"])
             if numerical.get("samples") is not None or numerical.get("trace") is not None:
@@ -603,6 +747,9 @@ class HMCCandidateExecutionBinding:
                 "draw_range": (0, 0), "seed_lineage": seed}
 
     def work_cost(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord, *, remaining=True) -> Mapping[str, Any]:
+        if work.trial_range is not None:
+            from .hmc_acceptance_trials import work_cost
+            return work_cost(self, work, candidate, remaining=remaining)
         count = self.work_count(work) + self.config.num_warmup_steps
         if remaining:
             count -= sum(chunk["count"] for chunk in self._partial.get(work.work_item_id, ()))
@@ -622,6 +769,13 @@ class HMCCandidateExecutionBinding:
             raise ValueError("work item candidate mismatch")
         if work.stage not in {"pilot", "measurement", "verification"}:
             raise ValueError("unsupported numerical work stage")
+        from .hmc_acceptance_protocol import HMCReplicatedAcceptancePolicy
+        replicated = isinstance(self.config.acceptance_policy, HMCReplicatedAcceptancePolicy)
+        if replicated != (work.trial_range is not None):
+            raise ValueError("work and execution disagree on independent evidence unit")
+        if replicated:
+            from .hmc_acceptance_trials import observe
+            return observe(self, work, candidate)
         count = self.work_count(work)
         seed = self.work_seed(work)
         total = count + self.config.num_warmup_steps
@@ -701,6 +855,9 @@ def _issue_binding(*, adapter: Any, layers: Sequence[Mapping[str, Any]], initial
         raise ValueError("explicit target scope and target/data/prior lineage are required")
     active, _ = _rebuild_geometry(adapter, layers, target_scope)
     starts = tf.convert_to_tensor(initial_active_state, dtype=tf.float64)
+    if config.replicated_trial_batch_size > 1:
+        from .hmc_replicated_batch import dependency_paths
+        source_paths = (*source_paths, *dependency_paths())
     closure = _source_closure(adapter, source_paths)
     kind = "fixed_transport" if layers[0]["kind"] == "frozen_transport" else "ordinary"
     numerical_preparation = dict(preparation)

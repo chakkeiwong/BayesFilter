@@ -102,9 +102,11 @@ class HMCPreparationProgress:
         temporary.replace(self.path)
 
     def phase(self, stage, payload=None):
+        from bayesfilter.runtime.execution_budget import execution_budget_available
         self.events.append({"phase": stage, "elapsed_seconds": self.elapsed_seconds,
                             "details": dict(payload or {})})
-        if self.max_wall_time_seconds is not None and self.elapsed_seconds >= self.max_wall_time_seconds:
+        if (not execution_budget_available() or
+                self.max_wall_time_seconds is not None and self.elapsed_seconds >= self.max_wall_time_seconds):
             reason = "preparation deadline reached at " + stage
             self.status = "failed"
             self.failure = {"type": "HMCPreparationBudgetExceeded", "reason": reason}

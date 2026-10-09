@@ -390,6 +390,27 @@
       ],
       "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
       "reason": "Configured learned map is freshly tuned by the public fixed-map tuner; posterior assessment uses the shared sequential controller and preserves every warmup/retained chunk. Pricing is explicitly separate."
+    },
+    {
+      "path": "bayesfilter/testing/neutra_warm_start_qualification.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "delegated",
+      "delegate_path": "bayesfilter/inference/hmc_candidate_set_retained.py",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Simpler-model frozen-map qualification uses the supported fixed-transport tuner and verified member's shared sequential controller with archived warm-up, precision and independent reference checks. No local sampler or mass adaptation."
+    },
+    {
+      "path": "bayesfilter/testing/neutra_source_fit_validation.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "delegated",
+      "delegate_path": "bayesfilter/inference/hmc_candidate_set_retained.py",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Development-only fitted-map validation uses the public fixed-transport tuner and verified member's shared sequential controller; archived warm-up, physical quantities, precision and independent reference assessment. No local sampler or mass adaptation."
+    },
+    {
+      "path": "bayesfilter/testing/acceptance_uncertainty_models.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Explicit tiny fixed-kernel CPU acceptance fixtures with supplied analytic geometry. Their fixed draws and discarded prefix make no learned-map, convergence, stationary acceptance or posterior claim."
     }
   ]
 }

@@ -40,9 +40,8 @@ LGSSM_GENERIC_TARGET_NONCLAIMS = (
 
 LGSSM_GENERIC_TARGET_XLA_HMC_NONCLAIMS = (
     "LGSSM generic target adapter XLA-HMC value/score opt-in only",
-    "Phase 15 trusted GPU/XLA objective compile gate is the evidence anchor",
-    "no fixed-transport HMC chain execution claim",
-    "no HMC tuning or sampling claim",
+    "full-chain graph/XLA parity is a validation diagnostic, not a GPU claim",
+    "public tuning is a bounded validation diagnostic only",
     "no posterior convergence claim",
     "no production readiness claim",
     "no scientific validity claim",
@@ -112,7 +111,7 @@ def make_lgssm_generic_target_fixture(
             "compile-gate-result-2026-07-08.md"
         ),
         xla_hmc_ready=True,
-        full_chain_xla_diagnostic_ready=False,
+        full_chain_xla_diagnostic_ready=True,
         nonclaims=LGSSM_GENERIC_TARGET_XLA_HMC_NONCLAIMS,
     )
     return LGSSMGenericTargetFixture(

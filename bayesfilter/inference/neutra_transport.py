@@ -54,6 +54,7 @@ class NeuTraTransportConfig:
     dtype: str = "float64"
     affine_center: tuple[float, ...] = ()
     affine_scale: tuple[float, ...] = ()
+    diagnostic_naf_affine: bool = False
 
     def __post_init__(self):
         object.__setattr__(self, "hidden_layers", tuple(self.hidden_layers))
@@ -83,7 +84,11 @@ class NeuTraTransportConfig:
             raise ValueError("seed must contain two int32 integers")
         if self.kind not in ("iaf", "naf_dsf"):
             raise ValueError("kind must be iaf or naf_dsf")
-        if self.naf_conditioner not in ("author_cmade", "paper_made"):
+        if type(self.diagnostic_naf_affine) is not bool or (self.diagnostic_naf_affine and self.kind != "naf_dsf"):
+            raise ValueError("diagnostic affine readout requires configured NAF")
+        if self.naf_conditioner == "diagnostic_hoffman_made" and any(w % self.dimension for w in self.hidden_layers):
+            raise ValueError("diagnostic Hoffman widths must be dimension multiples")
+        if self.naf_conditioner not in ("author_cmade", "paper_made", "diagnostic_hoffman_made"):
             raise ValueError("unsupported naf_conditioner")
         if self.iaf_initializer not in ("hoffman_variance_scaling", "glorot_small_final"):
             raise ValueError("unsupported iaf_initializer")
@@ -123,7 +128,12 @@ class NeuTraTransportConfig:
                    2., mixture_components=mixture_components, dtype=dtype)
 
     def payload(self):
-        return json.loads(json.dumps(asdict(self), allow_nan=False))
+        payload = json.loads(json.dumps(asdict(self), allow_nan=False))
+        # Preserve configuration hashes of all existing saved maps.
+        if not payload['diagnostic_naf_affine']:
+            del payload['diagnostic_naf_affine']
+        return payload
+
 
     def manifest_payload(self):
         return {"schema": "bayesfilter.neutra.transport_config.v1", **self.payload()}
@@ -376,7 +386,10 @@ class NeuTraTransportTrainer:
             target_dtype=tf.as_dtype(self.config.target_dtype))
 
     def _train_step(self, latent):
-        result = self._evaluate(latent)
+        return self._apply_evaluation(self._evaluate(latent), latent)
+
+    def _apply_evaluation(self, result, latent):
+        """Apply one checked objective gradient with the common Adam rollback."""
         gradients = result["gradients"]
         norm = tf.linalg.global_norm(gradients)
         if self.config.gradient_clip_norm is not None:
@@ -400,6 +413,7 @@ class NeuTraTransportTrainer:
         return {**result, "valid": valid, "gradient_norm": norm,
                 "clipped_gradient_norm": tf.linalg.global_norm(gradients),
                 "iteration": tf.identity(self.optimizer.iterations)}
+
 
     def checkpoint(self):
         payload = {"schema": CHECKPOINT_SCHEMA, "target_signature": self.target_signature,

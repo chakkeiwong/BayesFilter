@@ -1,5 +1,23 @@
 # BayesFilter Claude Governance
 
+## NAF Default For The Forward/Reverse Training Study
+
+Owner directive, 2026-10-06: promote the full configured Huang DSF/NAF with
+`author_cmade` to the default for the current NeuTra training and randomized
+geometry work. Use `NeuTraTransportConfig.huang_dsf` through the single shared
+`neutra_transport_core` authority. The repaired author IAF remains an explicit
+baseline; it is not reclassified as an unfaithful implementation.
+
+This directive supersedes the September 25 IAF-default requirement within this
+study. It does not change historical artifact semantics or silently switch q20
+consumers. The initial three-stage, width-64, four-component configuration is a
+target-specific starting point, not a universal numerical default. The owner
+promotion selects the architecture; approximate-teacher reliability, RKL
+coverage preservation, TF32 and downstream posterior validity still require
+their own evidence. Active master and source-grounded rationale:
+`docs/plans/bayesfilter-neutra-naf-forward-reverse-master-2026-10-06.md`.
+
+
 Claude Code reviewers and workers must follow `AGENTS.md`.
 
 ## Canonical NeuTra Architecture Rule

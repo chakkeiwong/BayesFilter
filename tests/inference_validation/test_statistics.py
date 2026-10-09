@@ -40,6 +40,7 @@ def test_clopper_pearson_endpoints_and_empty_draws():
     assert binomial_interval(0, 10)[1] == pytest.approx(1-.025**.1)
     r = accuracy_assessment(np.zeros((0, 4, 2)), np.zeros((10, 2)), tolerance=.1)
     assert r["finding"] == "unavailable"
+    assert r["accuracy_established"] is False
 
 
 def test_correlated_external_reference_does_not_receive_iid_standard_error():

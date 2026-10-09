@@ -15,22 +15,10 @@ from bayesfilter.inference.hmc_candidate_set_artifacts import (
 )
 from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMCTuningCandidateSetController, HMCTuningCandidateRecord, HMCWorkItem, _sha256,
+    _json_native_sha256,
 )
 
 CHECKPOINT_SCHEMA = "bayesfilter.hmc_numerical_tuning_checkpoint.v1"
-
-
-def _json_native_sha256(payload: Mapping[str, Any]) -> str:
-    """Hash a record already normalized by the execution binding's JSON copy.
-
-    These records contain string-key dictionaries, lists and JSON scalars only.
-    Recheck their current contents on every call, without repeating the generic
-    arbitrary-object normalization. General candidate identity hashing must
-    continue to use _sha256.
-    """
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"),
-                         allow_nan=False).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
 
 
 def _persist_once(binding, payload, path):
@@ -45,9 +33,16 @@ def _persist_once(binding, payload, path):
     binding._persisted_files[key] = (stat.st_mtime_ns, stat.st_size)
 
 
+def _already_persisted(binding, path):
+    """Use the existing persistence cache, without treating it as admission."""
+    stat = path.stat() if path.exists() else None
+    return stat is not None and binding._persisted_files.get(str(path.resolve())) == (
+        stat.st_mtime_ns, stat.st_size)
+
+
 def _write(payload: Mapping[str, Any], path: Path, *, replace: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    encoded = json.dumps(payload, sort_keys=True, indent=2, allow_nan=False) + "\n"
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
     if not replace:
         if path.exists():
             if json.loads(path.read_text()) != json.loads(encoded):
@@ -61,15 +56,23 @@ def _write(payload: Mapping[str, Any], path: Path, *, replace: bool = False) -> 
         temporary.replace(path)
 
 
-def write_numerical_tuning_checkpoint(binding: Any, result: Any, output_dir: str | Path) -> Path:
+def write_numerical_tuning_checkpoint(binding: Any, result: Any, output_dir: str | Path,
+                                     *, _incremental: bool = False) -> Path:
+    """Persist all state; explicit and stage-boundary writes recheck live data.
+
+    The private fast mode is used only for within-work native chunk saves.
+    It reuses previously persisted evidence until the next full boundary;
+    new/changed evidence and every attempted-work charge remain durable.
+    """
     root = Path(output_dir)
     if _json_native_sha256(binding._spec) != binding.binding_hash:
         raise ValueError("corrupt execution specification")
     _persist_once(binding, {"execution": binding._spec, "binding_hash": binding.binding_hash}, root / "execution_spec.json")
     for digest, evidence in binding._evidence.items():
-        if _json_native_sha256(evidence) != digest:
+        path = root / "numerical_evidence" / (digest + ".json")
+        if (not _incremental or not _already_persisted(binding, path)) and _json_native_sha256(evidence) != digest:
             raise ValueError("corrupt live numerical evidence")
-        _persist_once(binding, evidence, root / "numerical_evidence" / (digest + ".json"))
+        _persist_once(binding, evidence, path)
     partial = {}
     for work_id, chunks in binding._partial.items():
         partial[work_id] = []
@@ -81,7 +84,9 @@ def write_numerical_tuning_checkpoint(binding: Any, result: Any, output_dir: str
             "result": candidate_set_result_payload(result),
             "numerical_evidence_hashes": list(binding._evidence), "partial_chunks": partial}
     destination = root / "tuning_checkpoint.json"
-    _write({**body, "content_hash": _sha256(body)}, destination, replace=True)
+    if result.config.replicated_acceptance_policy is not None:
+        body["schema"] = "bayesfilter.hmc_numerical_tuning_checkpoint.v2"
+    _write({**body, "content_hash": _json_native_sha256(body)}, destination, replace=True)
     return destination
 
 
@@ -92,7 +97,7 @@ def load_numerical_tuning_checkpoint(path: str | Path, *, adapter: Any):
     path = Path(path)
     payload = json.loads(path.read_text())
     digest = payload.pop("content_hash", None)
-    if payload.get("schema") != CHECKPOINT_SCHEMA or digest != _sha256(payload):
+    if payload.get("schema") not in {CHECKPOINT_SCHEMA, "bayesfilter.hmc_numerical_tuning_checkpoint.v2"} or digest != _sha256(payload):
         raise ValueError("numerical checkpoint schema/checksum mismatch")
     spec = json.loads((path.parent / "execution_spec.json").read_text())
     if spec["binding_hash"] != payload["binding_hash"] or _sha256(spec["execution"]) != spec["binding_hash"]:
@@ -107,12 +112,18 @@ def load_numerical_tuning_checkpoint(path: str | Path, *, adapter: Any):
         raise ValueError("checkpoint result checksum mismatch")
     _validate_result_payload(result)
     controller = HMCTuningCandidateSetController.from_result_payload(result)
+    from .hmc_acceptance_trials import validate_execution_protocol, validate_chunks
+    validate_execution_protocol(controller.config, binding.config)
+    if ((controller.config.replicated_acceptance_policy is not None)
+            != (payload["schema"] == "bayesfilter.hmc_numerical_tuning_checkpoint.v2")):
+        raise ValueError("checkpoint version differs from its evidence unit")
+    binding._replicated_evidence_rungs = controller.config.evidence_rungs
     if _sha256(controller.scope.payload()) != _sha256(binding.scope.payload()):
         raise ValueError("checkpoint scope mismatch")
     works = {w.work_item_id: w for w in controller.result().work_items}
     for evidence_hash in payload["numerical_evidence_hashes"]:
         evidence = json.loads((path.parent / "numerical_evidence" / (evidence_hash + ".json")).read_text())
-        if _sha256(evidence) != evidence_hash or evidence["binding_hash"] != binding.binding_hash:
+        if _json_native_sha256(evidence) != evidence_hash or evidence["binding_hash"] != binding.binding_hash:
             raise ValueError("checkpoint numerical evidence checksum mismatch")
         work = HMCWorkItem.from_payload(evidence["work"])
         issued = works.get(work.work_item_id)
@@ -130,7 +141,7 @@ def load_numerical_tuning_checkpoint(path: str | Path, *, adapter: Any):
             samples = _tensor_from_payload(evidence["samples"])
             if samples.shape[0] != binding.work_count(work) + binding.config.num_warmup_steps:
                 raise ValueError("checkpoint numerical count mismatch")
-        if _sha256(binding.evidence_analysis(evidence)) != _sha256(evidence["analysis"]):
+        if _json_native_sha256(binding.evidence_analysis(evidence)) != _json_native_sha256(evidence["analysis"]):
             raise ValueError("checkpoint numerical analysis mismatch")
         binding._evidence[evidence_hash] = evidence
     observed = set()
@@ -155,6 +166,8 @@ def load_numerical_tuning_checkpoint(path: str | Path, *, adapter: Any):
         state = binding.initial_active_state
         for chunk_hash in hashes:
             chunk = json.loads((path.parent / "numerical_chunks" / (chunk_hash + ".json")).read_text())
+            if works[work_id].trial_range is not None and chunk.get("trial_chunk_index") == 0:
+                state = binding.initial_active_state
             if _sha256(chunk) != chunk_hash or _tensor_payload(state) != chunk["initial_state"]:
                 raise ValueError("checkpoint chunk checksum or state continuity mismatch")
             if (chunk["binding_hash"] != binding.binding_hash
@@ -167,9 +180,14 @@ def load_numerical_tuning_checkpoint(path: str | Path, *, adapter: Any):
             _trace_from_payload(chunk["trace"])
             state = samples[-1]
             chunks.append(chunk)
-        if sum(c["count"] for c in chunks) > binding.work_count(works[work_id]) + binding.config.num_warmup_steps:
+        if works[work_id].trial_range is not None:
+            validate_chunks(binding, works[work_id], chunks)
+        elif sum(c["count"] for c in chunks) > binding.work_count(works[work_id]) + binding.config.num_warmup_steps:
             raise ValueError("checkpoint exceeds declared evidence allocation")
         binding._partial[work_id] = chunks
+    if controller.config.replicated_acceptance_policy is not None:
+        from .hmc_acceptance_trials import initialize_seed_registry
+        initialize_seed_registry(binding, controller.result())
     binding.validate()
     return binding, controller
 

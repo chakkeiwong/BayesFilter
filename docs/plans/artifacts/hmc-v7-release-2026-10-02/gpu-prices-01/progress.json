@@ -1,0 +1,129 @@
+{
+  "schema": "bayesfilter.hmc_v7_full_search_prices.v1",
+  "cases": [
+    "lgssm_qr",
+    "nonlinear",
+    "funnel_residual"
+  ],
+  "source_manifest_sha256": "63e119af4456f533781fb1964cf9eb8018884abb9bce279170b7329ad3295c4c",
+  "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "budget_seconds": 6000,
+  "attempts": [
+    {
+      "case": "lgssm_qr",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-01/runner.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-03/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-01/lgssm_qr",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--config",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-01/lgssm_qr-config.json"
+      ],
+      "exit_code": 2,
+      "wall_seconds": 1927.6750647630543,
+      "result": {
+        "status": "not_delivered",
+        "expectation_met": false,
+        "completion_status": "partial_budget",
+        "verified_members": 0,
+        "candidates": 9,
+        "repairs": 3,
+        "sample_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "allocator": {
+          "current": 310784,
+          "peak": 851200
+        },
+        "wall_seconds": 1926.233096587006,
+        "evidence_accounting": {
+          "unique_complete_trials": 960,
+          "valid_complete_trials": 960,
+          "invalid_complete_trials": 0,
+          "completed_trial_transitions": 261120,
+          "attempted_transitions": 267104,
+          "gradient_work": 3861312,
+          "attempted_work_outside_complete_trials": 83776,
+          "charged_chunks": 982,
+          "independent_trial_streams": 960
+        },
+        "default_promotion": false,
+        "release_ready": false
+      }
+    },
+    {
+      "case": "nonlinear",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-01/runner.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-03/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-01/nonlinear",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--config",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-01/nonlinear-config.json"
+      ],
+      "exit_code": 2,
+      "wall_seconds": 1978.377364698099,
+      "result": {
+        "status": "not_delivered",
+        "expectation_met": false,
+        "completion_status": "partial_budget",
+        "verified_members": 0,
+        "candidates": 6,
+        "repairs": 0,
+        "sample_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "allocator": {
+          "current": 217856,
+          "peak": 770048
+        },
+        "wall_seconds": 1976.2157345670275,
+        "evidence_accounting": {
+          "unique_complete_trials": 640,
+          "valid_complete_trials": 640,
+          "invalid_complete_trials": 0,
+          "completed_trial_transitions": 174080,
+          "attempted_transitions": 184960,
+          "gradient_work": 2173824,
+          "attempted_work_outside_complete_trials": 206720,
+          "charged_chunks": 680,
+          "independent_trial_streams": 640
+        },
+        "default_promotion": false,
+        "release_ready": false
+      }
+    },
+    {
+      "case": "funnel_residual",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-01/runner.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-03/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-01/funnel_residual",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--config",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-01/funnel_residual-config.json"
+      ],
+      "exit_code": 124,
+      "wall_seconds": 1980.2769658400211
+    }
+  ],
+  "status": "incomplete_prices",
+  "release_ready": false,
+  "confirmation_authorized_by_price": false,
+  "wall_seconds": 5886.334025911987,
+  "unstarted_cases": [],
+  "point_forecast_32_per_family_seconds": null,
+  "forecast_scope": "descriptive single-price extrapolation; not a runtime guarantee or confirmation design"
+}

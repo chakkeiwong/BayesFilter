@@ -1,7 +1,8 @@
-"""Optional host profiling; instrumentation cannot change numerical outcomes.
+"""Optional host profiling preserves numerical policy but adds execution cost.
 
 Use the execution flag for comparisons so the scientific design and seeds stay
-identical. A host profile includes Python work and synchronization, not device
+identical. Its overhead can affect completion within a wall-clock budget.
+A host profile includes Python work and synchronization, not device
 kernel timing. Profile availability is separate from numerical completion.
 """
 from __future__ import annotations

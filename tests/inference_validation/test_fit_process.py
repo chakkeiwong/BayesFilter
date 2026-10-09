@@ -49,7 +49,7 @@ def saved_assessment(command):
 def test_fresh_children_keep_replication_ids_and_resume_without_replay(design, tmp_path, monkeypatch):
     fake_parent(monkeypatch)
     commands = []
-    def complete(command, log, seconds, device):
+    def complete(command, log, seconds, device, **kwargs):
         commands.append(command)
         saved_assessment(command)
         return {"status": "complete", "exit_code": 0, "elapsed_seconds": .01}
@@ -74,14 +74,15 @@ def test_fresh_children_keep_replication_ids_and_resume_without_replay(design, t
 def test_failed_child_and_missing_output_keep_full_denominator(design, tmp_path, monkeypatch,
                                                               status, code, save):
     fake_parent(monkeypatch)
-    def fail(command, log, seconds, device):
+    def fail(command, log, seconds, device, **kwargs):
         if save:
             saved_assessment(command)
         return {"status": status, "exit_code": code, "elapsed_seconds": 10.}
     monkeypatch.setattr(fit_process, "_supervise", fail)
     result = fit_process.run_isolated_replications(isolated(design), tmp_path,
                                                   deadline=time.monotonic()+30)
-    assert result["completed"] == 0 and result["execution_failures"] == 1
+    expected_failures = 2 if status == "timed_out" else 1
+    assert result["completed"] == 0 and result["execution_failures"] == expected_failures
     assert result["planned"] == 2 and not result["assessment_complete"]
     assert all(row["planned"] == row["unavailable"] == 2
                for row in result["interval_coverage_at_stop"].values())
@@ -108,7 +109,7 @@ def test_unreconciled_launch_does_not_start_duplicate_worker(design, tmp_path, m
 def test_partial_failure_resumes_under_remaining_cap(design, tmp_path, monkeypatch):
     fake_parent(monkeypatch)
     cap = []
-    def execute(command, log, seconds, device):
+    def execute(command, log, seconds, device, **kwargs):
         cap.append(seconds)
         if len(cap) == 1:
             write_json(Path(command[5]) / "replication-0000" / "partial.json", {"preserved": True})
@@ -153,6 +154,22 @@ def test_resource_inspection_accepts_extension_type_module_descriptors(monkeypat
     snapshot = fit_process.resource_snapshot()
     assert snapshot["live_objects"] == {}
     assert snapshot["max_rss_kib"] > 0
+
+
+def test_busy_gpu_defers_all_later_fits_without_launching(design, tmp_path, monkeypatch):
+    fake_parent(monkeypatch)
+    calls = []
+    def admission(**kwargs):
+        calls.append(kwargs)
+        return {"admitted": False, "wait_seconds": 10, "samples": []}
+    monkeypatch.setattr(fit_process, "wait_for_gpu_admission", admission)
+    monkeypatch.setattr(fit_process, "_supervise", lambda *a, **k: pytest.fail("busy GPU must not launch"))
+    d = replace(isolated(design, timeout_policy={"gpu_admission_wait_seconds":10}), device="gpu")
+    result = fit_process.run_isolated_replications(d, tmp_path, deadline=time.monotonic()+30)
+    assert len(calls) == 1
+    assert result["completed"] == 0 and result["planned"] == 2
+    assert not list(tmp_path.glob("replication-*/process-attempt-*-launch.json"))
+    assert read_json(tmp_path/"replication-0000/admission/check-001.json")["admitted"] is False
 
 
 @pytest.mark.parametrize("target", ["gaussian", "beta_binomial"])
@@ -205,7 +222,7 @@ def test_reference_mean_failed_exit_preserves_numerics_without_detection(design,
     from bayesfilter.testing.inference_validation.engines import reference_mean
     fake_parent(monkeypatch)
     d = reference_design(design)
-    def fail(command, log, seconds, device):
+    def fail(command, log, seconds, device, **kwargs):
         if save:
             row = reference_mean.unavailable_record(d, 0, "qualified")
             row.update(status="qualified", alarm=True, z=4., stream=[1, 2])
@@ -255,3 +272,37 @@ def test_public_reference_mean_isolation_uses_independent_data_and_restart(desig
     resumed = run_suite(suite, tmp_path / "run", resume=True)
     assert resumed["jobs"] == index["jobs"]
     assert len(list(root.glob("replication-*/process-attempt-*-exit.json"))) == 2
+
+
+@pytest.mark.parametrize("status", ["timed_out", "budget_exhausted"])
+def test_budget_exhaustion_continues_next_fit_and_never_restarts_slot(design, tmp_path, monkeypatch, status):
+    fake_parent(monkeypatch)
+    launched = []
+    def execute(command, log, seconds, device, **kwargs):
+        replication = int(command[6])
+        launched.append(replication)
+        if replication == 0:
+            return {"status": status, "exit_code": 75, "elapsed_seconds": 9.}
+        saved_assessment(command)
+        return {"status": "complete", "exit_code": 0, "elapsed_seconds": .1}
+    monkeypatch.setattr(fit_process, "_supervise", execute)
+    d = isolated(design)
+    result = fit_process.run_isolated_replications(d, tmp_path, deadline=time.monotonic()+30)
+    assert launched == [0, 1]
+    assert result["completed"] == 1 and result["execution_failures"] == 1
+    monkeypatch.setattr(fit_process, "_supervise", lambda *a, **k: pytest.fail("exhausted slot relaunched"))
+    resumed = fit_process.run_isolated_replications(d, tmp_path, deadline=time.monotonic()+30)
+    assert resumed["completed"] == 1 and resumed["planned"] == 2
+
+
+@pytest.mark.parametrize("status", ["stalled", "supervision_failed", "failed"])
+def test_invalid_process_stops_cell(design, tmp_path, monkeypatch, status):
+    fake_parent(monkeypatch)
+    calls = []
+    def fail(command, *args, **kwargs):
+        calls.append(int(command[6]))
+        return {"status": status, "exit_code": 1, "elapsed_seconds": .1}
+    monkeypatch.setattr(fit_process, "_supervise", fail)
+    result = fit_process.run_isolated_replications(isolated(design), tmp_path, deadline=time.monotonic()+30)
+    assert calls == [0]
+    assert result["planned"] == 2 and result["execution_failures"] == 1

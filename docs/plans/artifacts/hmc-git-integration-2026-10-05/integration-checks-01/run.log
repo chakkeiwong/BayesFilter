@@ -1,0 +1,101 @@
+........................................................................ [ 29%]
+........................................................................ [ 58%]
+.......................................................F.........FF
+=================================== FAILURES ===================================
+______ test_lgssm_generic_target_adapter_emits_finite_batch_values_scores ______
+
+    def test_lgssm_generic_target_adapter_emits_finite_batch_values_scores() -> None:
+        fixture = make_lgssm_generic_target_fixture()
+        theta = tf.constant([[0.20, -1.05], [0.05, -0.80]], dtype=tf.float64)
+    
+        value, score = fixture.adapter.log_prob_and_grad(theta)
+        result = evaluate_batch_native_value_score(fixture.adapter, theta, dtype=tf.float64)
+    
+        assert value.shape == (2,)
+        assert score.shape == (2, 2)
+        assert result.metadata.rank == "batch"
+        assert result.metadata.parameter_dim == 2
+        assert tf.reduce_all(tf.math.is_finite(value))
+        assert tf.reduce_all(tf.math.is_finite(score))
+        assert fixture.adapter.metadata().batch_rank_policy == "rank2_required"
+        assert fixture.adapter.metadata().nonclaims == LGSSM_GENERIC_TARGET_XLA_HMC_NONCLAIMS
+        capability = fixture.adapter.value_score_capability()
+        assert capability.value_score_authority == "graph_native"
+        assert capability.xla_hmc_ready is True
+        assert capability.is_accepted_xla_hmc_authority is True
+>       assert capability.full_chain_xla_diagnostic_ready is False
+E       AssertionError: assert True is False
+E        +  where True = ValueScoreCapability(value_score_authority='graph_native', xla_hmc_ready=True, runtime_backend='tensorflow', evidence_...eadiness claim', 'no scientific validity claim'), full_chain_xla_diagnostic_ready=True, score_provenance='unspecified').full_chain_xla_diagnostic_ready
+
+tests/test_lgssm_generic_target_adapter_tf.py:73: AssertionError
+________ test_simple_nonlinear_adapter_emits_finite_batch_values_scores ________
+
+    def test_simple_nonlinear_adapter_emits_finite_batch_values_scores() -> None:
+        fixture = make_simple_nonlinear_generic_target_fixture()
+        theta = _theta_batch()
+    
+        value, score = fixture.adapter.log_prob_and_grad(theta)
+        result = evaluate_batch_native_value_score(fixture.adapter, theta, dtype=tf.float64)
+    
+        assert value.shape == (2,)
+        assert score.shape == (2, 3)
+        assert result.metadata.rank == "batch"
+        assert result.metadata.parameter_dim == 3
+        assert tf.reduce_all(tf.math.is_finite(value))
+        assert tf.reduce_all(tf.math.is_finite(score))
+        assert fixture.adapter.metadata().batch_rank_policy == "rank2_required"
+        assert fixture.adapter.metadata().nonclaims == SIMPLE_NONLINEAR_GENERIC_TARGET_NONCLAIMS
+>       assert fixture.adapter.value_score_capability().xla_hmc_ready is False
+E       AssertionError: assert True is False
+E        +  where True = ValueScoreCapability(value_score_authority='graph_native', xla_hmc_ready=True, runtime_backend='tensorflow', evidence_...eadiness claim', 'no scientific validity claim'), full_chain_xla_diagnostic_ready=True, score_provenance='unspecified').xla_hmc_ready
+E        +    where ValueScoreCapability(value_score_authority='graph_native', xla_hmc_ready=True, runtime_backend='tensorflow', evidence_...eadiness claim', 'no scientific validity claim'), full_chain_xla_diagnostic_ready=True, score_provenance='unspecified') = value_score_capability()
+E        +      where value_score_capability = <bayesfilter.ssm.target_builder.GenericSSMPosteriorAdapter object at 0x70eb16e1c3d0>.value_score_capability
+E        +        where <bayesfilter.ssm.target_builder.GenericSSMPosteriorAdapter object at 0x70eb16e1c3d0> = SimpleNonlinearGenericTargetFixture(contract=SSMTargetContract(problem=BayesianSSMProblem(problem_id='model-b-nonlinea... 0.8 ]])>, observations=<tf.Tensor: shape=(3, 1), dtype=float64, numpy=\narray([[0.1 ],\n       [0.04],\n       [0.16]])>).adapter
+
+tests/test_simple_nonlinear_generic_target_adapter_tf.py:106: AssertionError
+_ test_simple_nonlinear_admitted_filter_adapters_emit_finite_batch_values_scores[model-b-svd-ukf-deterministic-loglikelihood] _
+
+filter_id = 'model-b-svd-ukf-deterministic-loglikelihood'
+
+    @pytest.mark.parametrize("filter_id", simple_nonlinear_admitted_filter_ids())
+    def test_simple_nonlinear_admitted_filter_adapters_emit_finite_batch_values_scores(
+        filter_id: str,
+    ) -> None:
+        fixture = make_simple_nonlinear_generic_target_fixture(filter_id=filter_id)
+        theta = _theta_batch()
+    
+        value, score = fixture.adapter.log_prob_and_grad(theta)
+        result = evaluate_batch_native_value_score(fixture.adapter, theta, dtype=tf.float64)
+    
+        assert fixture.contract.filter_program.filter_id == filter_id
+        assert fixture.contract.filter_program.approximation_semantics == (
+            "deterministic_approximation"
+        )
+        assert value.shape == (2,)
+        assert score.shape == (2, 3)
+        assert result.metadata.rank == "batch"
+        assert tf.reduce_all(tf.math.is_finite(value))
+        assert tf.reduce_all(tf.math.is_finite(score))
+>       assert fixture.adapter.value_score_capability().xla_hmc_ready is False
+E       AssertionError: assert True is False
+E        +  where True = ValueScoreCapability(value_score_authority='graph_native', xla_hmc_ready=True, runtime_backend='tensorflow', evidence_...eadiness claim', 'no scientific validity claim'), full_chain_xla_diagnostic_ready=True, score_provenance='unspecified').xla_hmc_ready
+E        +    where ValueScoreCapability(value_score_authority='graph_native', xla_hmc_ready=True, runtime_backend='tensorflow', evidence_...eadiness claim', 'no scientific validity claim'), full_chain_xla_diagnostic_ready=True, score_provenance='unspecified') = value_score_capability()
+E        +      where value_score_capability = <bayesfilter.ssm.target_builder.GenericSSMPosteriorAdapter object at 0x70eafdc8d710>.value_score_capability
+E        +        where <bayesfilter.ssm.target_builder.GenericSSMPosteriorAdapter object at 0x70eafdc8d710> = SimpleNonlinearGenericTargetFixture(contract=SSMTargetContract(problem=BayesianSSMProblem(problem_id='model-b-nonlinea... 0.8 ]])>, observations=<tf.Tensor: shape=(3, 1), dtype=float64, numpy=\narray([[0.1 ],\n       [0.04],\n       [0.16]])>).adapter
+
+tests/test_simple_nonlinear_generic_target_adapter_tf.py:128: AssertionError
+============================= slowest 8 durations ==============================
+40.86s call     tests/test_hmc_acceptance_model_integrations.py::test_positive_prepared_model_delivers_verifies_exports_and_reloads[k0]
+40.83s call     tests/test_hmc_candidate_set_execution.py::test_supported_frozen_transports_use_numerical_controller_and_durable_geometry[False-configured_naf_dsf]
+36.97s call     tests/test_hmc_candidate_set_execution.py::test_supported_frozen_transports_use_numerical_controller_and_durable_geometry[False-configured_iaf]
+34.91s call     tests/test_hmc_acceptance_trials.py::test_replicated_gaussian_delivers_multiple_members_with_checked_exports[ordinary]
+34.82s call     tests/test_hmc_replicated_batch_integration.py::test_batch_recovers_same_trial_values_in_fresh_process[one_saved_row-nonlinear]
+32.49s call     tests/test_hmc_replicated_batch_integration.py::test_batch_recovers_same_trial_values_in_fresh_process[lost_batch-nonlinear]
+31.66s call     tests/test_hmc_candidate_set_execution.py::test_supported_frozen_transports_use_numerical_controller_and_durable_geometry[False-dense_iaf]
+30.80s call     tests/test_hmc_acceptance_model_integrations.py::test_positive_prepared_model_delivers_verifies_exports_and_reloads[funnel_residual]
+=========================== short test summary info ============================
+FAILED tests/test_lgssm_generic_target_adapter_tf.py::test_lgssm_generic_target_adapter_emits_finite_batch_values_scores
+FAILED tests/test_simple_nonlinear_generic_target_adapter_tf.py::test_simple_nonlinear_adapter_emits_finite_batch_values_scores
+FAILED tests/test_simple_nonlinear_generic_target_adapter_tf.py::test_simple_nonlinear_admitted_filter_adapters_emit_finite_batch_values_scores[model-b-svd-ukf-deterministic-loglikelihood]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 3 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+3 failed, 208 passed, 21792 warnings in 786.02s (0:13:06)

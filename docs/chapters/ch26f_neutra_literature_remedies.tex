@@ -1,0 +1,261 @@
+\section[What the subsequent fits identify]{What the subsequent exact-sample fits identify}
+\label{sec:neutra-october-fit-attribution}
+
+The subsequent experiment on randomized two- and three-component Gaussian
+mixtures isolates a failure that occurs even before an approximate sampler
+supplies the training data. Its four independent exact-sample banks contain
+$4{,}096$ observations in total. The forward fit resamples these observations
+with their empirical probabilities, so its expected minibatch gradient is
+the gradient of the empirical forward cross entropy. Exact sampling removes
+an approximate sampler as the cause of this failure; it does not remove
+finite-data error or establish that the optimizer reaches the population
+optimum.
+
+In the October 4 experiment, both widths, $32$ and $64$, retained three IAF
+stages. They received $4{,}096$ and $8{,}192$ forward updates respectively,
+followed by $256$ reverse-KL updates with a fresh Adam state. The objective
+switch occurred regardless of the forward assessment. Changing width and
+update count together prevents this comparison from identifying a width
+effect. Moreover, the learning histories did not establish a stationary
+forward optimum. All four final maps failed the declared distribution screen,
+and the native teacher experiments consequently did not run.
+
+Checks of the eight saved forward and final maps found inverse and
+log-determinant discrepancies of approximately $10^{-14}$ and directional
+parameter-derivative discrepancies up to $1.29\times10^{-7}$ in the
+checked FP64 reference calculations. No gradient clipping occurred during
+these fits, and the sampled conditional-scale diagnostics did not show strong
+cap saturation. These observations weaken specific explanations based on
+incorrect local derivatives or clipping. They do not prove every execution
+path correct, establish sufficient capacity, or validate the complete
+training procedure.
+
+The forward maps already assigned excessive mass away from the components.
+For a two-dimensional Gaussian mixture
+$p(x)=\sum_{k=1}^K w_k\varphi_k(x)$, let
+$d_k^2(x)=(x-\mu_k)^\mathsf T\Sigma_k^{-1}(x-\mu_k)$ and define
+\begin{equation}
+ E=\{x:d_k^2(x)>8\ \text{for every }k\}.
+\end{equation}
+Conditional on component $k$, this event is contained in
+$\{d_k^2(X)>8\}$. Since a component's squared Mahalanobis distance is
+$\chi^2_2$, the exact target therefore satisfies
+\begin{equation}
+ p(E)=\sum_k w_k\Pr_{\varphi_k}(E)
+ \leq\sum_k w_k e^{-4}=e^{-4}\simeq0.01832.
+ \label{eq:neutra-mixture-ellipse-bound}
+\end{equation}
+The width-$64$ forward maps assigned approximately $8.39$ percent and
+$21.62$ percent to this event for the two- and three-component targets.
+These estimates use $32{,}768$ new Gaussian-base draws per target. Their
+uncertainty concerns numerical integration for fixed fitted maps, rather
+than variability across repeated training runs. The bound is an upper
+bound on target mass, not a formula for its exact value.
+
+The subsequent coverage loss has an exact reverse-KL interpretation that
+does not require disjoint Gaussian components. Define the target
+responsibilities and the learned responsibility masses by
+\begin{equation}
+ r_k(x)=\frac{w_k\varphi_k(x)}{p(x)},\qquad
+ a_k=\int q(x)r_k(x)\,dx,\qquad
+ q_k(x)=\frac{q(x)r_k(x)}{a_k}.
+\end{equation}
+Here $q_k$ is the conditional density induced by assigning target
+responsibilities to draws from $q$; it is not assumed to be Gaussian.
+The augmented densities
+$\widetilde p(x,k)=p(x)r_k(x)=w_k\varphi_k(x)$ and
+$\widetilde q(x,k)=q(x)r_k(x)=a_kq_k(x)$ have ratio $q(x)/p(x)$.
+Summing the augmented KL over $k$ therefore leaves the marginal KL
+unchanged and yields
+\begin{align}
+ D_{\mathrm{KL}}(q\|p)
+ &=\sum_k\int a_kq_k(x)
+       \log\frac{a_kq_k(x)}{w_k\varphi_k(x)}\,dx\\
+ &=\sum_k a_k\log\frac{a_k}{w_k}
+   +\sum_k a_kD_{\mathrm{KL}}(q_k\|\varphi_k).
+ \label{eq:neutra-responsibility-kl-decomposition}
+\end{align}
+The first term penalizes incorrect component allocation. The second
+penalizes conditional shape error, weighted by the probability that the
+learned density itself assigns to that component.
+
+\begin{table}[htbp]
+ \centering
+ \begin{tabular}{lrr}
+  \toprule
+  Quantity, width-$64$ three-component fit & Forward endpoint & After RKL\\
+  \midrule
+  Second responsibility mass $a_2$ & $0.21572$ & $0.02240$\\
+  Allocation KL & $0.00319$ & $0.20984$\\
+  Weighted conditional-shape KL & $1.69401$ & $0.41727$\\
+  Total reverse KL & $1.69721$ & $0.62711$\\
+  Heldout forward KL & $0.42979$ & $1.14216$\\
+  \bottomrule
+ \end{tabular}
+ \caption{The objective switch reduces reverse KL while worsening coverage.
+ The target second-component weight is $0.249591$. Estimates describe one
+ pair of fixed checkpoints; they do not rank training methods.}
+ \label{tab:neutra-objective-switch-attribution}
+\end{table}
+
+Table~\ref{tab:neutra-objective-switch-attribution} shows that the reduction
+in weighted shape cost exceeds the increase in allocation cost. With common
+integration draws, the change in $a_2$ is $-0.19333$, with an approximate
+$95$ percent integration interval $[-0.19753,-0.18913]$. The reverse-KL
+change is $-1.07010$, with estimated integration standard error $0.03867$.
+Thus this coverage regression is compatible with correctly computed
+reverse-KL optimization. It does not show that reverse KL always loses modes.
+The poor forward endpoints also show why simply omitting the reverse stage
+would leave a substantial fitting problem.
+
+\section[Published remedies]{Remedies in the literature}
+\label{sec:neutra-literature-remedies}
+
+The combined objective in \eqref{eq:controlled-joint-loss} has a direct
+precedent in \citet[][Methods, Eq.~(9)]{noe2019boltzmanngenerators}.
+Their original double-well notebook performs maximum-likelihood pretraining
+and then retains both maximum-likelihood and energy terms. Similarly,
+\citet[][Sec.~III.B and Appendix~A.2]{gabrie2022adaptiveflows} describe
+combining the two objectives after a sufficiently accurate forward fit.
+Equation~\eqref{eq:controlled-kl-partition} explains the protection that
+the forward term supplies: eliminating a region with positive target mass
+has an unbounded forward penalty. Finite weights, finite examples and
+nonconvex optimization still permit substantial error. In particular, the
+earlier eight-case experiment in this chapter already tried joint and
+joint-continuation training without attaining fresh posterior confirmation.
+The literature supports testing this mechanism carefully; it does not make
+it a previously untried or sufficient cure for the present failure.
+
+Representation is a separate choice. A scalar affine transformation of a
+Gaussian remains Gaussian at fixed conditioning variables. The nonlinear
+monotone transformations of \citet[][Sec.~3 and Fig.~5]{huang2018naf}
+can instead create multiple scalar density peaks through changes in their
+derivative. Composing and permuting affine autoregressive stages can also
+produce complex multivariate densities, so this distinction is not a proof
+that the current IAF family cannot represent the mixture. It identifies a
+reason to compare representations after controlling optimization effort.
+The Gaussian mixtures considered here are positive throughout
+$\mathbb R^d$; an impossibility argument based on disconnected support does
+not apply to them. The exact transport in
+\eqref{eq:controlled-exact-transports} is also a constructive reminder that
+Gaussianization and numerical ease of learning that Gaussianization are
+different questions.
+
+\citet[][Sec.~3.1, Eqs.~(4)--(8)]{durkan2019splines} offer a useful
+computational alternative. Their monotone rational-quadratic scalar splines
+have analytic derivatives and inverses. In an autoregressive construction
+the Jacobian remains triangular, with
+\begin{equation}
+ \log|\det J_T(z)|
+ =\sum_j\log\left|\frac{\partial T_j(z)}{\partial z_j}\right|.
+\end{equation}
+The inverse within a spline bin follows from a quadratic equation, as in
+the original implementation. This avoids a dense determinant, although an
+autoregressive inverse can still require sequential coordinate evaluation.
+The usual splines are continuously differentiable; regularity of the
+transformed force at knots requires separate attention for HMC. Such a
+comparison would evaluate an explicitly different map family, rather than
+silently redefining the canonical IAF.
+
+\citet[][Sec.~IV.E]{gabrie2022adaptiveflows} also recommend informed base
+distributions, appropriate coordinate scaling and mixtures of maps fitted
+to different modes. Their Gaussian-mixture experiment uses six pairs of
+RealNVP coupling layers with width-$100$ conditioners. It is therefore not
+an experiment with our three-stage IAF. Appendix~G.1 reports a residual
+connection between modes even in the successful example and states that
+additional training would make it thinner. The proposed mixture-of-maps
+strategy reduces the burden on any individual map, but produces a mixture
+proposal, not automatically a single invertible Gaussian coordinate chart
+for the existing NeuTra HMC procedure.
+
+Fresh training information addresses another failure mechanism. Gabri\'e's
+Algorithm~1 alternates local moves, global flow proposals and forward
+training. Local moves explore details the flow misses, while accepted
+global proposals help adjust relative mode weights. Section~IV.C assumes
+initial representatives of the relevant modes; the method does not promise
+to discover every unrepresented basin. Moreover, the paper's ULA experiments
+retain discretization error, even though corrected MALA is available in the
+algorithm. Fixed-kernel invariance and convergence of a finite adaptive
+implementation must be assessed separately.
+
+Annealed flow transport divides a difficult transformation into transitions
+between intermediate distributions. The practical AFT procedure of
+\citet[][Sec.~3.3 and Appendix~F]{arbel2021aft} uses training, validation
+and test populations to limit overfitting and separate fitting from
+evaluation. \citet[][Sec.~2.3]{matthews2022craft} identify the remaining
+sample-replenishment problem: repeatedly optimizing on one finite
+population can exhaust the information available for learning a flow.
+CRAFT uses repeated annealed passes with fresh initial particles and retains
+importance, resampling and Markov corrections. Its finite-particle gradient
+is not generally an unbiased gradient of the exact-target objective;
+Section~3.2 instead gives an unbiased-gradient interpretation for a modified
+objective involving the expected finite-particle distribution. These methods
+improve the sampling-and-learning procedure, but cannot alone explain or
+repair failure of a separate student already supplied with exact samples.
+
+FAB strengthens the penalty for missed mass through an objective
+proportional to $\int p(x)^2/q(x)\,dx$, with AIS targeting its normalized
+integrand \citep[][Sec.~3.1]{midgley2023fab}. The method concentrates effort
+where the target density is appreciable but the flow density is small.
+Its applicability requires a finite integral and effective intermediate
+transitions. The favorable dimensional-scaling analysis in that section
+assumes factorized distributions and perfect intermediate transitions.
+It does not resolve the previously observed q20 tail-applicability and
+transition-calibration problems for an arbitrary starting map.
+
+For rare transition regions, deliberate sampling is often necessary.
+The reaction-coordinate objective of \citet{noe2019boltzmanngenerators}
+encourages configurations that ordinary equilibrium sampling seldom visits.
+Umbrella sampling instead uses overlapping biased windows; the EMUS method
+of \citet[][Secs.~II--III, Eqs.~(9)--(17)]{thiede2016emus} estimates their
+relative normalizations from overlap and combines their weighted information.
+A useful reaction coordinate, sufficient overlap and adequate sampling within
+each window remain assumptions. Correct reweighting improves information
+about a rare region without assigning it an artificial posterior mass.
+As the partition calculation above shows, this still leaves a rare region
+with a small contribution to ordinary KL. Accurate derivatives there do not
+follow from a small integrated density loss.
+
+\section[Reproduction and transfer]{Reproducing training before testing transfer}
+\label{sec:neutra-original-code-comparison}
+
+The available original-code evidence has different scopes. The FAB audit
+executed pinned author JAX operations, compatibility-adjusted upstream tests
+and four matched optimizer iterations in each of four sampling/replay
+configurations. The FP64 stress comparison passed $1{,}804$ checks. The final
+compiled-callback TF32 comparison failed seven declared gradient checks.
+These are meaningful finite numerical comparisons; they do not reproduce
+converged training on the current separated mixtures. The precision-screen
+failure also does not explain an FP64 exact-teacher run in which FAB never
+executed.
+
+The Gabri\'e reference executed selected original MH/MALA transitions and
+target-density checks, but did not train the original RealNVP through its
+complete adaptive controller. The available AFT/CRAFT work inspected author
+source and checked local gradients and update ordering, without reproducing
+complete original-controller training on these targets. NeuTra architecture
+and derivative tests likewise do not reproduce an entire published training
+experiment. Consequently, failure of the common IAF student cannot be
+counted as failure of each of these literature methods.
+
+A discriminating comparison begins with an author's documented target,
+architecture, initialization, objective and sampling cadence. A matched
+port then preserves those choices while comparing densities, gradients,
+optimizer state and full training behavior. Substituting the canonical IAF
+is a subsequent scientific change; switching objectives is another.
+If the original and its matched port agree but fail after the substitution,
+the representation or its training calibration becomes a specific suspect.
+If both implementations fail under the same settings on a new target,
+the result establishes that transfer failure, rather than a theorem against
+the method. Calibration targets and untouched randomized targets must remain
+separate throughout this comparison.
+
+Finally, the sampling corrections retained in the literature explain how an
+imperfect density can still be useful. Metropolis correction preserves the
+target for an appropriate fixed proposal; importance and SMC corrections
+recover target integrals under their support and integrability assumptions.
+Their finite accuracy and efficiency still need evidence. Accurate corrected
+sampling, accurate raw-flow density and Gaussian latent scores therefore
+remain distinct conclusions. For the state-space application, the decisive
+test is the frozen map's actual posterior computation, accompanied by the
+distribution and geometric checks needed to explain its behavior.

@@ -8,6 +8,9 @@ import tensorflow_probability as tfp
 
 from .designs import seed_for
 from .targets import ValidationTarget
+from bayesfilter.runtime.execution_budget import (
+    ExecutionBudgetExceeded, execution_budget, execution_budget_available, require_execution_budget,
+)
 
 
 class FrozenTransition:
@@ -121,6 +124,10 @@ class FrozenTransition:
 
 
 def initial_starts(target, regime):
+    if target.target_id.startswith("ssm_campaign_"):
+        if regime != "dispersed":
+            raise ValueError("campaign targets require the frozen prior-based start bank")
+        return target._ssm.initial_starts()
     d = target.parameter_dim
     # Data-independent fixture starts. No posterior/reference draws enter here.
     shifts = tf.constant([-1., -.3, .4, 1.], tf.float64)[:,None]
@@ -195,7 +202,7 @@ def run_fixed_comparator(member, target, settings, directory, seed_parts, deadli
             payload, _ = member._archive(archive)
             positions = _tensor_from_payload(payload["position_samples"])
         else:
-            if deadline is not None and time.monotonic() >= deadline:
+            if not execution_budget_available() or deadline is not None and time.monotonic() >= deadline:
                 return {"status": "unavailable", "reason": "fixed_arm_deadline", "archives": archives}
             block = member.run(num_results=count, seed=seed_for(*seed_parts, stage),
                                output_dir=archive.parent, previous_archive=previous)
@@ -239,6 +246,14 @@ def check_fit_identity(design, destination, *, data=None, fit_id=0, dataset_id=0
 
 def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, deadline=None,
                      reuse_leapfrog_graphs=False):
+    """Apply an invocation allowance without changing frozen numerical identity."""
+    with execution_budget(deadline=deadline):
+        return _execute_pipeline(design, destination, data=data, fit_id=fit_id,
+            dataset_id=dataset_id, deadline=deadline, reuse_leapfrog_graphs=reuse_leapfrog_graphs)
+
+
+def _execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, deadline=None,
+                      reuse_leapfrog_graphs=False):
     """Complete public tuning plus actual replay/posterior controller for all members.
 
     Native checkpoints allow a repeated call at the same path to finish existing
@@ -274,7 +289,8 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     acceptance_policy = HMCAcceptancePolicy(**design.options.get("acceptance_policy", {}))
     execution = HMCCandidateExecutionConfig(measurement_num_results=design.measurement_draws,
         verification_num_results=design.measurement_draws, num_warmup_steps=8,
-        seed=seed, use_xla=design.device=="gpu", target_status_trace_policy="none",
+        seed=seed, use_xla=design.device=="gpu",
+        target_status_trace_policy="per_chain_step" if scenario.target.startswith("ssm_campaign_") else "none",
         acceptance_policy=acceptance_policy, reuse_leapfrog_graphs=reuse_leapfrog_graphs,
         non_xla_reason="explicit CPU diagnostic validation profile" if design.device!="gpu" else None)
     search_options = dict(design.options.get("search", {}))
@@ -286,10 +302,23 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     search_values.update(search_options)
     search = HMCControllerConfig(primary_l_grid=design.l_grid, initial_epsilon=design.step_size,
         max_wall_time_seconds=design.budget_seconds, **search_values)
+    source_paths = [__file__, str(Path(__file__).with_name("targets.py"))]
+    if scenario.target.startswith("ssm_campaign_"):
+        source_paths.extend(target._ssm.source_paths())
+    elif scenario.target.startswith("ssm_"):
+        from . import ssm_targets
+        source_paths.extend([ssm_targets.__file__, target.value_score_capability().evidence_path])
+        if target.target_id.startswith("ssm_lgssm_"):
+            from bayesfilter.testing import lgssm_generic_target_adapter_tf
+            source_paths.append(lgssm_generic_target_adapter_tf.__file__)
+        else:
+            from bayesfilter.testing import simple_nonlinear_generic_target_adapter_tf
+            source_paths.append(simple_nonlinear_generic_target_adapter_tf.__file__)
     common = dict(target_lineage={"model":scenario.target,"data":data,"prior":scenario.parameters,
-                                 "control":target.control}, source_paths=[__file__, str(Path(__file__).with_name("targets.py"))])
+                                 "control":target.control}, source_paths=[path for path in source_paths if path])
     tuning_path = root/"tuning"
     tuning_started = time.monotonic()
+    require_execution_budget()
     run = None
     if (tuning_path/"candidate_set_result.json").exists():
         binding, controller = load_numerical_tuning_checkpoint(tuning_path/"tuning_checkpoint.json",adapter=target)
@@ -314,6 +343,7 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     elif scenario.route == "ordinary":
         cfg = HMCKernelTuningConfig(preset=design.options.get("preparation_preset","standard"),
             use_xla=design.device=="gpu", target_scope="inference_validation", seed=seed,
+            target_status_trace_policy=execution.target_status_trace_policy,
             candidate_search_bound_expansion_steps=design.options.get("preparation_bound_expansion_steps", 0),
             bootstrap_initialization_rounds=design.options.get("bootstrap_initialization_rounds", 0),
             metric_evidence_policy=design.options.get("metric_evidence_policy", "temporal_information"),
@@ -369,6 +399,30 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
     from bayesfilter.inference.hmc_candidate_set_artifacts import candidate_set_result_payload
     observed_tuning_path=write_json(root/"tuning_observation.json",candidate_set_result_payload(result))
     tuning_seconds = time.monotonic() - tuning_started
+    if result.completion_status != "complete" and not execution_budget_available():
+        # Preserve all verified members, but do not start posterior work after
+        # the external allowance ends. Numerical count-budget policy is unchanged.
+        payload = {
+            "tuning_path": str(observed_tuning_path),
+            "completion": result.completion_status,
+            "verified_candidate_ids": list(result.verified_candidate_ids),
+            "candidate_count": len(result.candidates),
+            "members": [],
+            "source_binding": binding.binding_hash,
+            "numerical_route": scenario.route,
+            "data": data,
+            "dataset_id": dataset_id,
+            "fit_id": fit_id,
+            "selection": {"candidate_ids": [], "scope": "none",
+                           "rule": "incomplete_tuning_no_handoff"},
+            "timing": {"tuning_or_reload_seconds": tuning_seconds,
+                       "preparation_seconds": binding.config.preparation_elapsed_seconds,
+                       "invocation_seconds": time.monotonic() - started,
+                       "compilation_separated": False},
+            "status": "tuning_incomplete",
+        }
+        write_json(root / "pipeline.json", payload)
+        raise ExecutionBudgetExceeded("fit allowance exhausted during tuning; checkpoint preserved")
     selected = selected_member_ids(design, (result.replay_candidate(cid) for cid in result.verified_candidate_ids))
     selection_note = {
         "rule": design.options.get("member_rule", "declared_l_first"),
@@ -398,8 +452,11 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         directory=root/"members"/candidate_id
         directory.mkdir(parents=True,exist_ok=True)
         if (directory/"result.json").exists():
-            members.append(read_json(directory/"result.json")); continue
-        if deadline is not None and time.monotonic()>=deadline:
+            saved = read_json(directory/"result.json")
+            if "campaign_resource_cap" in saved.get("posterior", {}).get("hard_vetoes", ()):
+                raise ValueError("legacy budget-stopped member result requires inspection before resume")
+            members.append(saved); continue
+        if not execution_budget_available():
             candidate = result.replay_candidate(candidate_id)
             members.append({"candidate_id":candidate_id,"L":candidate.leapfrog_steps,
                 "epsilon":candidate.epsilon,"status":"unfunded"}); continue
@@ -412,11 +469,12 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         construction_seconds = time.monotonic() - member_started
         count=max(64,min(design.draws,design.posterior_cap))
         # Count is a declared engineering profile allocation, never a default.
+        tolerances = design.options.get("mcse_tolerance_by_parameter", {})
         precision_targets = [
-            HMCPrecisionTarget(name, kind="quantile",probability=.5,mcse_absolute_max=design.mcse_tolerance)
+            HMCPrecisionTarget(name, kind="quantile",probability=.5,mcse_absolute_max=tolerances.get(name, design.mcse_tolerance))
             for name in target.spec.parameters]
         if target.spec.finite_variance:
-            precision_targets.extend(HMCPrecisionTarget(name, kind="mean", mcse_absolute_max=design.mcse_tolerance)
+            precision_targets.extend(HMCPrecisionTarget(name, kind="mean", mcse_absolute_max=tolerances.get(name, design.mcse_tolerance))
                                      for name in target.spec.parameters)
         quantities_id, quantities_fn = posterior_quantities(design)
         precision_targets.extend(HMCPrecisionTarget(name, kind="mean", mcse_absolute_max=design.mcse_tolerance)
@@ -440,8 +498,17 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
             posterior=run_hmc_posterior(member=member,config=config,parameter_names=target.spec.parameters,
                 model_transform=target.to_model,checkpoint_store=store,
                 quantities_fn=quantities_fn,
-                budget_check=lambda _: deadline is None or time.monotonic() < deadline)
+                budget_check=lambda _: execution_budget_available())
         posterior_seconds = time.monotonic() - posterior_started
+        if "campaign_resource_cap" in posterior["hard_vetoes"]:
+            # Chunk commits are the resumable numerical authority. Do not seal
+            # partial tensors or a terminal member result at their final paths.
+            partial = {"candidate_id": candidate_id, "status": "budget_exhausted",
+                       "posterior": {k: v for k, v in posterior.items() if not k.startswith("private_")}}
+            pauses = directory / "budget_pauses"
+            write_json(pauses / f"pause-{len(list(pauses.glob('pause-*.json')))+1:04d}.json", partial)
+            members.append(partial)
+            continue
         raw=posterior["private_retained_raw"]
         warmup=posterior["private_warmup_raw"]
         if scenario.control=="warmup_leak": raw=tf.concat([warmup,raw],axis=0)
@@ -467,11 +534,17 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
                 summary["fixed_comparator"] = {"status":"failed", "exception":type(exc).__name__,
                                                 "reason":str(exc)}
                 write_json(directory/"fixed_comparator"/"failure.json",summary["fixed_comparator"])
-        write_json(directory/"result.json",summary); members.append(summary)
+        if summary.get("fixed_comparator", {}).get("reason") == "fixed_arm_deadline":
+            pauses = directory / "budget_pauses"
+            write_json(pauses / f"pause-{len(list(pauses.glob('pause-*.json')))+1:04d}.json", summary)
+        else:
+            write_json(directory/"result.json",summary)
+        members.append(summary)
     payload={"tuning_path":str(observed_tuning_path),"completion":result.completion_status,
         "verified_candidate_ids":list(result.verified_candidate_ids),"candidate_count":len(result.candidates),
         "members":members,"source_binding":binding.binding_hash,"numerical_route":scenario.route,
         "data":data,"dataset_id":dataset_id,"fit_id":fit_id,
+        "reference_contract":{"parameters":target.parameters,"data":target.data},
         "selection":{"candidate_ids":selected,"scope":design.options.get("posterior_members","all"),
                      "rule":design.options.get("member_rule","declared_l_first")},
         "timing":{"tuning_or_reload_seconds":tuning_seconds,
@@ -482,4 +555,5 @@ def execute_pipeline(design, destination, *, data=None, fit_id=0, dataset_id=0, 
         payload["selection"].update({key: selection_note[key] for key in
             ("requested_member_count", "selection_shortfall", "slot_definition")})
     write_json(root/"pipeline.json",payload)
+    require_execution_budget()
     return payload

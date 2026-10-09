@@ -13,7 +13,7 @@ from ..storage import read_json,read_tensor,write_json
 from .statistics import accuracy_assessment,binomial_interval
 
 
-def stopped_intervals(member, spec, params, data):
+def stopped_intervals(member, spec, params, data, *, reference_metadata=None):
     """Evaluate the actual final controller check, including unfavorable stops."""
     from scipy import stats
     references={(spec.parameters[index], kind): truth for (kind, index), truth in
@@ -34,9 +34,14 @@ def stopped_intervals(member, spec, params, data):
         available=truth is not None and estimate["valid"] and se is not None
         error=estimate["estimate"]-truth if truth is not None and estimate["estimate"] is not None else None
         available=available and error is not None
-        rows.append({"name":estimate["name"],"kind":estimate["kind"],"reference":truth,
+        row = {"name":estimate["name"],"kind":estimate["kind"],"reference":truth,
             "estimate":estimate["estimate"],"error_at_stop":error,"reported_mcse":se,
-            "available":available,"covered":available and abs(error)<=stats.norm.ppf(.975)*se})
+            "available":available,"covered":available and abs(error)<=stats.norm.ppf(.975)*se}
+        if truth is None and reference_metadata is not None:
+            from ..references.intervals import numerical_interval_agreement
+            row["numerical_reference"] = numerical_interval_agreement(
+                estimate, spec.parameters, reference_metadata)
+        rows.append(row)
     return {"quantities":rows,"runtime_passed":member["posterior"]["passed"],
         "warmup_cap_hit":member["posterior"]["warmup_cap_hit"],
         "retained_cap_hit":member["posterior"]["retained_cap_hit"],
@@ -158,6 +163,8 @@ def run_replication(design, root, replication, deadline=None, *, reuse_leapfrog_
     data=design.options.get("data")
     output=execute_pipeline(design,path,data=data,fit_id=replication,deadline=deadline,
                             reuse_leapfrog_graphs=reuse_leapfrog_graphs)
+    reference_contract = output.get("reference_contract", {"parameters":design.scenario.parameters, "data":data})
+    params, data = reference_contract["parameters"], reference_contract["data"]
     payload=read_json(output["tuning_path"])
     # Mutations act on a copy of observations. Native tuning authority remains intact.
     payload=copy.deepcopy(payload)
@@ -172,18 +179,45 @@ def run_replication(design, root, replication, deadline=None, *, reuse_leapfrog_
         if member["status"]!="assessed":
             members.append(member); continue
         draws=read_tensor(member["draws_path"]).numpy()
-        reference=analytic.model_coordinates(spec.target_id,analytic.draw(spec.target_id,
-            max(4096,design.draws),seed_for(design.seed,design.design_id,replication,member["candidate_id"],"reference"),
-            design.scenario.parameters,data))
-        assessment=accuracy_assessment(draws,reference,tolerance=design.accuracy_tolerance,
-            finite_variance=spec.finite_variance)
+        if spec.target_id.startswith("ssm_campaign_"):
+            from ..references.ssm import posterior_reference
+            reference, metadata = posterior_reference(spec.target_id, max(4096, design.draws),
+                seed_for(design.seed, design.design_id, replication, member["candidate_id"], "reference"), data,
+                **design.options.get("reference_settings", {}))
+            assessment = (accuracy_assessment(draws, reference, tolerance=design.accuracy_tolerance,
+                finite_variance=spec.finite_variance) if reference is not None else
+                {"finding":"reference_unavailable", "accuracy_established":False,
+                 "reason":"reference absent or domain/resolution checks failed"})
+            assessment["reference_metadata"] = metadata
+        elif spec.reference.kind == "reference_unavailable":
+            assessment = {
+                "finding": "reference_unavailable",
+                "reference_role": "mechanics_only",
+                "accuracy_established": False,
+                "reason": (
+                    "profile has an independent filter-mechanics oracle but no "
+                    "checked posterior draw/reference bundle"
+                ),
+            }
+        else:
+            reference=analytic.model_coordinates(spec.target_id,analytic.draw(spec.target_id,
+                max(4096,design.draws),seed_for(design.seed,design.design_id,replication,member["candidate_id"],"reference"),
+                params,data), params)
+            assessment=accuracy_assessment(draws,reference,tolerance=design.accuracy_tolerance,
+                finite_variance=spec.finite_variance)
         reported=member["posterior"]["passed"]
         row={"candidate_id":member["candidate_id"],"L":member["L"],"epsilon":member["epsilon"],
+            # Preserve the public member lifecycle state in the independent
+            # record.  The assessor adds its own assessment fields, but must
+            # not make an assessed member indistinguishable from an
+            # unassessed-by-design or unfunded member.
+            "status":member["status"],
             "assessment":assessment,"runtime_checks_passed":reported,
             "false_favorable_screen_observed":reported and assessment["finding"]=="reference_discrepancy",
             "warmup_exclusion_matches":member["warmup_exclusion_matches"],
             "duplicate_chains":member["duplicate_chains"],
-            "stopped_intervals":stopped_intervals(member,spec,design.scenario.parameters,data),
+            "stopped_intervals":stopped_intervals(member,spec,params,data,
+                reference_metadata=assessment.get("reference_metadata")),
             "warmup_count":member["posterior"]["warmup_results_per_chain"],
             "retained_count":member["recorded_retained_count"],"member_record":member}
         if design.options.get("fixed_comparator") is not None:
@@ -206,12 +240,13 @@ def run_replication(design, root, replication, deadline=None, *, reuse_leapfrog_
     return record
 
 
-def run(design,root,deadline=None):
+def run(design,root,deadline=None, *, reuse_leapfrog_graphs=False):
     if design.scenario.route=="controller": return controller_experiment(design,root)
     records=[]
     for replication in range(design.replications):
         if deadline and time.monotonic()>=deadline: break
-        records.append(run_replication(design, root, replication, deadline))
+        records.append(run_replication(design, root, replication, deadline,
+                                       reuse_leapfrog_graphs=reuse_leapfrog_graphs))
     result=summarize_replications(design,records)
     write_json(root/"assessment.json",result)
     return result
@@ -290,6 +325,12 @@ def summarize_replications(design, records):
             "false_favorable_interpretation":"observed false-favorable outcomes per executed replication; missing outputs remain unavailable, never successful",
             "finding":finding,
             "accuracy_established":False}
+    from .delivery_coverage import summarize_delivery_coverage
+    result["delivery_coverage"] = summarize_delivery_coverage(
+        records, design.replications, declared_names=interval_groups,
+        member_rule=design.options.get("member_rule", "declared_l_first"),
+        member_l=design.member_l,
+        coverage_floor=design.options.get("coverage_floor"), alpha=design.alpha)
     if design.options.get("fixed_comparator") is not None:
         from .stopping import summarize_pairs
         pairs=[]
@@ -321,7 +362,7 @@ def _summarize_siblings(design, records):
     single = replace(design, options=options)
     # Reuse total inventory/accounting, then replace single-member summaries.
     result = summarize_replications(single, records)
-    for key in ("interval_coverage_at_stop", "coverage_member_L", "stopped_versus_fixed"):
+    for key in ("interval_coverage_at_stop", "coverage_member_L", "stopped_versus_fixed", "delivery_coverage"):
         result.pop(key, None)
     selections = []
     for row in records:
@@ -340,7 +381,7 @@ def _summarize_siblings(design, records):
         summary = summarize_replications(single, projected)
         selected = [group[index] for group in selections if len(group) > index]
         slots[str(index+1)] = {key: summary[key] for key in (
-            "interval_coverage_at_stop", "stopped_versus_fixed", "assessment_complete", "comparison_complete",
+            "interval_coverage_at_stop", "stopped_versus_fixed", "delivery_coverage", "assessment_complete", "comparison_complete",
             "posterior_available_replications", "posterior_unavailable_members") if key in summary}
         slots[str(index+1)].update(planned=design.replications,
             selected_members=[{"replication": row["replication"], "candidate_id": group[index]["candidate_id"],

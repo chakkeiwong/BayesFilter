@@ -103,14 +103,20 @@ def test_simple_nonlinear_adapter_emits_finite_batch_values_scores() -> None:
     assert tf.reduce_all(tf.math.is_finite(score))
     assert fixture.adapter.metadata().batch_rank_policy == "rank2_required"
     assert fixture.adapter.metadata().nonclaims == SIMPLE_NONLINEAR_GENERIC_TARGET_NONCLAIMS
-    assert fixture.adapter.value_score_capability().xla_hmc_ready is False
+    capability = fixture.adapter.value_score_capability()
+    assert capability.xla_hmc_ready is True
+    assert capability.full_chain_xla_diagnostic_ready is True
 
 
 @pytest.mark.parametrize("filter_id", simple_nonlinear_admitted_filter_ids())
+@pytest.mark.parametrize("jit_compile", [False, True])
 def test_simple_nonlinear_admitted_filter_adapters_emit_finite_batch_values_scores(
     filter_id: str,
+    jit_compile: bool,
 ) -> None:
-    fixture = make_simple_nonlinear_generic_target_fixture(filter_id=filter_id)
+    fixture = make_simple_nonlinear_generic_target_fixture(
+        filter_id=filter_id, jit_compile=jit_compile,
+    )
     theta = _theta_batch()
 
     value, score = fixture.adapter.log_prob_and_grad(theta)
@@ -125,7 +131,11 @@ def test_simple_nonlinear_admitted_filter_adapters_emit_finite_batch_values_scor
     assert result.metadata.rank == "batch"
     assert tf.reduce_all(tf.math.is_finite(value))
     assert tf.reduce_all(tf.math.is_finite(score))
-    assert fixture.adapter.value_score_capability().xla_hmc_ready is False
+    capability = fixture.adapter.value_score_capability()
+    assert capability.xla_hmc_ready is True
+    # The explicit non-XLA diagnostic configuration cannot claim a compiled
+    # full chain. Both admitted filters have numerical compilation regressions.
+    assert capability.full_chain_xla_diagnostic_ready is jit_compile
 
 
 def test_simple_nonlinear_adapter_matches_prior_plus_svd_ukf_likelihood() -> None:

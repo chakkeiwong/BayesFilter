@@ -130,6 +130,10 @@ class SSMValidationTarget:
         self.data_tensor = _observations(profile, data)
         self.data = [float(item) for item in tf.reshape(self.data_tensor, [-1]).numpy().tolist()]
         supplied = dict(parameters or {})
+        allowed = {"persistence_cap"} if profile.family == "lgssm" else {"filter_id"}
+        unknown = set(supplied) - allowed
+        if unknown:
+            raise ValueError("unsupported state-space fixture parameters: " + ", ".join(sorted(unknown)))
         if profile.family == "lgssm":
             cap = float(supplied.pop("persistence_cap", profile.persistence_cap))
             if not 0.0 < cap < 1.0 or not math.isfinite(cap):

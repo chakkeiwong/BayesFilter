@@ -1,7 +1,60 @@
 # Inference validation suites
 
+The October 2 [acceptance repair plan](../plans/bayesfilter-hmc-acceptance-decision-repair-plan-2026-10-02.md)
+and [robustness matrix](../plans/bayesfilter-hmc-acceptance-robustness-matrix-2026-10-02.md)
+define the experimental v7 tests. `bayesfilter.testing.acceptance_validation_inventory`
+maps root causes to exact test sources and model configurations. An inventory
+entry is not a passing result. The CLI
+`python -m bayesfilter.testing.acceptance_decision_validation` provides
+`preflight`, `calibrate`, and `models` commands with explicit frozen JSON
+configurations. Calibration checks known finite-trial expectations; model runs
+call the public tuner and record terminal outcomes, all attempts, verification,
+export and checkpoint reload. The official tuning chapter in `docs/main.tex`
+and its [agent reference](../reference/hmc-tuning-interface.md) explain the same
+procedure. Neither CPU engineering tests nor acceptance qualification certify
+posterior convergence or a new default.
+
+Fast regressions cover `test_hmc_acceptance_protocol.py`,
+`test_hmc_acceptance_statistics.py`,
+`test_hmc_acceptance_accounting.py`, `test_hmc_acceptance_adversarial.py`,
+`test_hmc_acceptance_inventory.py`, and `test_hmc_acceptance_calibration.py`.
+`test_hmc_acceptance_ssm_recovery.py` adds actual QR LGSSM and nonlinear SSM
+fresh-process recovery, with uninterrupted same-stream numerical references.
+They are included in `hmc-regression-tests.txt`. The numerical trial,
+fresh-process recovery, prepared-model and scalar-layout checks are in
+`hmc-acceptance-integration-tests.txt`; run with
+`python -m pytest @docs/validation/hmc-acceptance-integration-tests.txt` in the
+same CPU reference environment described below. These include informative
+positive QR/nonlinear SSMs and exact/residual maps, explicit low-budget
+abstention, and a qualified mixture whose separate posterior assessment fails
+because of a missed mode. They are larger than the fast arithmetic checks.
+The selection also covers emitted-analysis and trial-seed reuse, fresh scoped
+member/checkpoint replay with corruption controls, and fixed-denominator
+confirmation reporting with independent binomial references. These checks
+also cover live target-probe graph reuse with changed data, model constants,
+callbacks, source, geometry and starts. They
+protect the recent cost repairs and the interpretation of future confirmation;
+they do not replace independent full-search replications.
+Keep multi-seed delivery, full-cap statistical calibration and GPU/posterior
+checks in the separate bounded validation tier described by the matrix. The
+`models` CLI is deliberately CPU-only; GPU delivery uses the reviewed GPU
+runner and verifies native evidence-chunk placement, memory growth and XLA.
+
 The active continuation is the
 [HMC repair master program](../plans/bayesfilter-hmc-repair-master-program-2026-09-16.md).
+Its current [scoped v7 release plan](../plans/bayesfilter-hmc-v7-release-plan-2026-10-02.md)
+requires full searches in addition to the earlier prepared single-pair checks.
+`scripts/prepare_hmc_v7_release_source.py --output <new-directory> --build-custom-op`
+assembles the tracked baseline plus explicit HMC overlays and builds the native
+TensorFlow dependency in that tree. Use the selected TensorFlow environment to
+run it; the source and build manifests identify all inputs. This is an isolated
+validation assembly, not a claim that uncommitted overlays are already released.
+`test_hmc_acceptance_numerical_envelope.py` checks independent high-precision
+bounds; `test_hmc_acceptance_release_validation.py` covers v7 preparation and
+repair/verification recovery; `test_hmc_acceptance_posterior_integration.py`
+checks repeated exact-reference sequential handoffs. CPU is an explicit
+reference tier. The release pricing script requires trusted GPU execution and
+its documented budget; it cannot launch confirmation or mark release readiness.
 Its [M0--M6 result](../plans/bayesfilter-hmc-repair-master-result-2026-09-17.md)
 records the earlier bounded repairs. The [M7 execution note](../plans/bayesfilter-hmc-repair-m7-result-2026-09-17.md)
 records verification, frozen GPU results, remaining work and cumulative budget.
@@ -75,6 +128,75 @@ campaign.
 
 Run from the repository using the existing `tfgpu` environment:
 
+For the selected existing CPU regression tests (pytest 8.2 or newer):
+
+```bash
+CUDA_VISIBLE_DEVICES=-1 BAYESFILTER_TEST_DEVICE_SCOPE=cpu \
+TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=2 OMP_NUM_THREADS=2 \
+python -m pytest @docs/validation/hmc-regression-tests.txt
+```
+
+This selection checks candidate lifecycle, graph reuse, timeout/accounting,
+posterior diagnostics, actual Kalman/nonlinear filter adapters, and one
+prepared-route tuning/reload/posterior mechanics case. Its 127 tests passed in
+161 enclosing seconds on September 25, 2026; runtime is machine-dependent.
+The selected pipeline case uses the dense `lgssm_location` likelihood and does
+not substitute for the actual-filter bridge. The bridge and stressed SSM
+profiles are covered by the separate selection below. This regression
+selection does not establish GPU readiness or calibration.
+
+The actual-filter bridge has a separate bounded CPU selection:
+
+```bash
+CUDA_VISIBLE_DEVICES=-1 BAYESFILTER_TEST_DEVICE_SCOPE=cpu \
+TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=2 OMP_NUM_THREADS=2 \
+python -m pytest @docs/validation/hmc-ssm-regression-tests.txt
+```
+
+It exercises the QR Kalman and deterministic sigma-point adapters through both
+ordinary and prepared public tuning routes, named persistence/noise/horizon
+profiles, independent mechanics references, reload, retained-candidate
+inventory, the K0--K7 campaign targets, reference-grid sensitivity, negative
+controls and the unavailable-reference schema. The CPU selection checks
+graph/XLA numerical equivalence in an intentionally GPU-hidden process; it
+does not establish trusted GPU execution or posterior accuracy.
+The September 26 broad selection passed 142 tests in 707.7 enclosing seconds;
+24 overlapping focused checks passed after the final controller and K0 fixture
+repairs. Tiny warmup limits deliberately leave most posterior assessments
+inconclusive. The exact receipts and frozen launch command are in the
+[preparation result](../plans/bayesfilter-hmc-state-space-preparation-result-2026-09-26.md)
+and [48-hour plan](../plans/bayesfilter-hmc-state-space-48h-plan-2026-09-25.md#launch-after-c1-settlement).
+
+The complete unpriced 48-hour inventory is
+`docs/validation/state-space-48h.json`. `plan` is safe before the C1 service
+settles; `run` must use a fresh versioned output root only after the terminal C1
+receipt and additive GPU ledger are reconciled. The suite encodes the complete
+K0--K7 32-slot inventory: K0--K5 each have two datasets and two sampler seeds,
+K6 has four seeds on its checked multivariate fixture, and K7 has two datasets
+and two seeds. Each slot retains every verified tuning candidate; K0 and K7
+assess two predeclared distinct-L members and other slots assess one. The
+nonlinear K7 route is a declared sigma-point target and still needs trusted
+GPU/XLA preflight; its posterior comparison is against the same approximation,
+while true-model integration is a separate short-horizon diagnostic.
+
+The executable preparation and launch controller is
+`scripts/prepare_hmc_state_space_campaign.py`. `prepare` creates frozen
+datasets, reference sensitivity receipts, comparator diagnostics and unpriced
+stage suites. `freeze` records the source used for GPU work. Invoke the frozen
+copy of the launcher for GPU stages so live-checkout edits cannot change the
+controller. After C1 has a
+terminal receipt, `run --stage preflight-mechanics`, `run --stage
+preflight-pipeline`, `run --stage pricing`, and `run --stage main` use the
+existing inference-validation executor, workload-aware process supervision,
+the additive grant ledger and fresh versioned outputs. A complete uncensored
+pilot for each execution shape is required before a main slot is funded;
+unaffordable slots remain in the original denominator. `report` preserves all
+planned slot dispositions. No stage treats R-hat, ESS or MCSE as tuning
+membership. Do not run the unpriced inventory directly: the campaign controller
+writes the funded main suite after checking pilot receipts and the settled grant.
+
+For the separately budgeted validation suites:
+
 ```bash
 python -m bayesfilter.testing.inference_validation list
 python -m bayesfilter.testing.inference_validation plan docs/validation/fast-cpu.json
@@ -119,6 +241,52 @@ a second time. Isolation is optional, and unsupported engines fail validation.
 An abnormal process with a completed assessment is retained for audit and is
 neither automatically rerun nor counted as a successful replication. Partial
 work may resume using native checkpoints, with previous attempts charged.
+
+An explicit `timeout_policy.extension_mode="observed_intervals"` retains
+trusted contention intervals observed during execution and publishes earned
+allowance before the cooperative deadline, provided durable numerical progress
+is recent. Extra time remains bounded by both `max_extension_seconds` and the
+enclosing budget. This measures a scheduling allowance, not lost GPU capacity.
+The compatibility default remains `latest_sample`. Optional
+`gpu_admission_wait_seconds` bounds admission waiting. Its compatibility mode
+`gpu_admission_mode="idle"` waits for foreign compute processes to leave.
+`gpu_admission_mode="shared"` permits them when trusted device telemetry shows
+available memory. Unknown telemetry cannot establish availability. Waiting
+consumes the enclosing budget; shared admission does not promise throughput.
+
+`max_contention_retries` permits a declared number of automatic checkpoint
+retries after an incomplete resource stop with observed contention. All attempts
+consume the original base-plus-extension cap, and a retry cannot renew it.
+Final assessments and numerical failures are not retried. The state-space
+campaign uses shared admission and at most one recovery attempt under the
+[September 29 repair](../plans/bayesfilter-hmc-shared-gpu-recovery-2026-09-29.md).
+
+An exhausted local fit cap can receive an explicit additional allocation from
+the remaining campaign budget through
+`campaign_recovery.continue_frozen_fit`. The original numerical worker, design,
+seeds and checkpoint paths stay fixed; all prior attempts count toward the
+enlarged cumulative cap. Completed assessments are reused, and numerical
+failures remain a separate diagnosis. The executable
+`scripts/run_hmc_ssm_pilot_repair.py` applies this mechanism to the preserved
+state-space pilots under the [pilot repair plan](../plans/bayesfilter-hmc-ssm-pilot-repair-2026-09-29.md).
+`scripts/run_hmc_ssm_priced_main.py` checks complete cumulative prices against
+the original numerical workload before explicitly reallocating main-lane time.
+It keeps all 32 original slots in the inventory, checks the latest-start cutoff
+before each cell, and reports unfunded or unstarted slots. A timed-out tail,
+changed reference workload, or successful preparation alone cannot set a price.
+Its continued prices include original and resumed work. The regression list
+includes actual K0/K7 CPU checkpoint continuations and tests of exhausted caps,
+immutable evidence, numerical-failure exclusion and remaining campaign limits.
+Its ten C1 original-seed recoveries are already complete and remain separate.
+
+The active [October 2 continuation](../plans/bayesfilter-hmc-ssm-progress-continuation-plan-2026-10-02.md)
+uses `scripts/run_hmc_ssm_pooled_campaign.py` for one queue of unfinished pilots
+and main fits. Progressing jobs can receive more than three turns within the
+global allowance; completed pilots unlock matching main workloads after each
+turn. The prior stage-boundary caps are historical. Nine completed main fits
+are preserved, and every unstarted/incomplete slot stays in the 32-slot report.
+The current ledger and service are recorded in the master `program-progress.json`;
+do not allocate against a superseded historical ledger.
 
 An optional bounded sibling study uses `member_rule="shortest_verified_l"`,
 `posterior_members="selected"` and explicit `posterior_member_count`. It selects

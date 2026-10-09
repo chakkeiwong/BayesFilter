@@ -9,6 +9,7 @@ train NeuTra, run HMC, tune a sampler, or establish posterior correctness.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Mapping
 
 import tensorflow as tf
@@ -169,6 +170,8 @@ def make_simple_nonlinear_generic_target_fixture(
         dtype=tf.float64,
         target_scope=target_scope,
         evidence_path="bayesfilter/testing/simple_nonlinear_generic_target_adapter_tf.py",
+        xla_hmc_ready=True,
+        full_chain_xla_diagnostic_ready=bool(jit_compile),
         nonclaims=SIMPLE_NONLINEAR_GENERIC_TARGET_NONCLAIMS,
     )
     return SimpleNonlinearGenericTargetFixture(
@@ -366,8 +369,51 @@ def simple_nonlinear_sigma_point_log_likelihood_and_grad(
     if backend not in {"tf_svd_ukf", "tf_svd_cubature"}:
         raise ValueError(f"simple nonlinear filter backend is not admitted: {backend}")
     theta_tensor = _rank2_theta(theta)
-    model, derivatives = make_batched_model_b_svd_ukf_components(theta_tensor)
     observations = model_b_observations_tf() if observations is None else observations
+    observations = tf.convert_to_tensor(observations, dtype=tf.float64)
+    alpha = tf.convert_to_tensor(MODEL_B_ALPHA, dtype=tf.float64)
+    observation_sigma = tf.convert_to_tensor(MODEL_B_OBSERVATION_SIGMA, dtype=tf.float64)
+    if (tf.executing_eagerly() and jit_compile
+            and observations.shape.rank == 2 and observations.shape.is_fully_defined()):
+        # Host-side probes must not build a new XLA recurrence for every start.
+        # Pass every mutable numerical input; only the executable is reused.
+        return _eager_likelihood_graph(
+            backend, int(theta_tensor.shape[0]), tuple(observations.shape)
+        )(theta_tensor, observations, alpha, observation_sigma)
+    return _simple_nonlinear_likelihood(
+        theta_tensor, observations, alpha, observation_sigma,
+        backend=backend, jit_compile=jit_compile,
+    )
+
+
+@lru_cache(maxsize=16)
+def _eager_likelihood_graph(backend: str, batch_size: int, observation_shape: tuple[int, ...]):
+    """Bound tracing for host inspection while preserving the inner XLA boundary.
+
+    The non-XLA outer graph is an explicit inspection exception reviewed in
+    the October 2 v7 release plan. HMC traces the implementation directly into
+    its own XLA graph. Numerical inputs, including model constants, are never
+    captured here. The LRU bounds graph retention, not the target's support.
+    """
+    @tf.function(input_signature=[
+        tf.TensorSpec([batch_size, 3], tf.float64),
+        tf.TensorSpec(observation_shape, tf.float64),
+        tf.TensorSpec([], tf.float64), tf.TensorSpec([], tf.float64),
+    ], autograph=False, jit_compile=False)
+    def evaluate(theta, observations, alpha, observation_sigma):
+        return _simple_nonlinear_likelihood(
+            theta, observations, alpha, observation_sigma,
+            backend=backend, jit_compile=True,
+        )
+    return evaluate
+
+
+def _simple_nonlinear_likelihood(
+    theta, observations, alpha, observation_sigma, *, backend: str, jit_compile: bool,
+):
+    model, derivatives = make_batched_model_b_svd_ukf_components(
+        theta, alpha=alpha, observation_sigma=observation_sigma,
+    )
     value, score, diagnostics = tf_batched_svd_sigma_point_value_and_score(
         observations,
         model,
@@ -450,10 +496,17 @@ def _filter_log_likelihood_fn(
 
 def make_batched_model_b_svd_ukf_components(
     theta: Any,
+    *,
+    alpha: Any = None,
+    observation_sigma: Any = None,
 ) -> tuple[TFBatchedStructuralStateSpace, TFBatchedStructuralFirstDerivatives]:
     """Build batched Model B structural tensors and first derivatives."""
 
     theta_tensor = _rank2_theta(theta)
+    alpha = tf.convert_to_tensor(MODEL_B_ALPHA if alpha is None else alpha, dtype=tf.float64)
+    observation_sigma = tf.convert_to_tensor(
+        MODEL_B_OBSERVATION_SIGMA if observation_sigma is None else observation_sigma, dtype=tf.float64,
+    )
     rho = theta_tensor[:, 0]
     sigma = theta_tensor[:, 1]
     beta = theta_tensor[:, 2]
@@ -467,7 +520,7 @@ def make_batched_model_b_svd_ukf_components(
         eps = innovation[:, :, 0]
         m_next = rho[:, tf.newaxis] * previous[:, :, 0] + sigma[:, tf.newaxis] * eps
         k_next = (
-            MODEL_B_ALPHA * previous[:, :, 1]
+            alpha * previous[:, :, 1]
             + beta[:, tf.newaxis] * tf.math.tanh(m_next)
         )
         return tf.stack([m_next, k_next], axis=2)
@@ -481,7 +534,7 @@ def make_batched_model_b_svd_ukf_components(
         next_points: tf.Tensor,
     ) -> tf.Tensor:
         del innovation
-        expected = MODEL_B_ALPHA * previous[:, :, 1] + beta[:, tf.newaxis] * tf.math.tanh(
+        expected = alpha * previous[:, :, 1] + beta[:, tf.newaxis] * tf.math.tanh(
             next_points[:, :, 0]
         )
         return (next_points[:, :, 1] - expected)[:, :, tf.newaxis]
@@ -501,7 +554,7 @@ def make_batched_model_b_svd_ukf_components(
         row_k = tf.stack(
             [
                 beta[:, tf.newaxis] * sech2 * rho[:, tf.newaxis],
-                tf.fill(tf.shape(m_next), MODEL_B_ALPHA),
+                tf.fill(tf.shape(m_next), alpha),
             ],
             axis=2,
         )
@@ -562,7 +615,7 @@ def make_batched_model_b_svd_ukf_components(
         ),
         observation_covariance=tf.fill(
             [batch_size, observation_dim, observation_dim],
-            tf.square(MODEL_B_OBSERVATION_SIGMA),
+            tf.square(observation_sigma),
         ),
         transition_fn=transition,
         observation_fn=observe,

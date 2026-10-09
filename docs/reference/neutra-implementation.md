@@ -7,10 +7,30 @@ and mechanism APIs retain compatibility facades that call this core. New
 transport mathematics belongs in the core; a new target or campaign supplies
 configuration and a batch-native target callback.
 
+## Current training-study default: full NAF
+
+Owner direction on October 6, 2026 promotes `naf_dsf` with `author_cmade` to
+the default for the current approximate-forward-KL → reverse-KL and randomized
+geometry work. The campaign's `flow_config` now selects
+`NeuTraTransportConfig.huang_dsf`; `kind="iaf"` remains an explicit source-profile
+baseline. The initial study uses three stages, two width-64 hidden layers and
+four sigmoid components. These numerical choices still require calibration
+with approximate data. Generic artifact constructors and q20 consumers retain
+their existing semantics.
+
+The [attribution results](../plans/bayesfilter-neutra-nonlinearity-attribution-results-2026-10-06.md)
+support a finite-procedure scalar-nonlinearity benefit, including a bounded
+transfer check. They do not prove universal multivariate IAF failure or validate
+the new approximate-teacher procedure. The
+[active master](../plans/bayesfilter-neutra-naf-forward-reverse-master-2026-10-06.md)
+records the completed test; it uses the same numerical authority and preserves the
+forward map when subsequent RKL loses coverage.
+
 ## Canonical architecture and historical boundary
 
-**Owner directive, 2026-09-25: `bayesfilter_neutra_iaf_author_v1` is the canonical
-NeuTra architecture. All superseded local implementations are HISTORICAL —
+**Owner directive, 2026-09-25, retained outside the October 6 study scope:
+`bayesfilter_neutra_iaf_author_v1` is the canonical IAF architecture.
+All superseded local implementations are HISTORICAL —
 UNFAITHFUL TO THE AUTHOR'S CODE.** The
 [migration notice](../plans/bayesfilter-neutra-canonical-architecture-policy-2026-09-25.md)
 covers old constructors, configurations, checkpoints, archived copies and
@@ -47,8 +67,8 @@ cited Vaitl/Roeder mechanism, and the TensorFlow port uses stateless seeds and
 grouped output storage. Thus canonical means the owner-designated, documented
 source-based architecture, not bitwise reproduction of one paper experiment.
 
-The configured full conditional DSF/NAF remains a separately identified research
-alternative with the source correspondence below. The preliminary scalar canary
+The configured full conditional DSF/NAF is the default for the current training
+study, with the source correspondence below. The preliminary scalar canary
 is historical and must not be called that full NAF. Old affine/dense artifact
 schemas and legacy scale conventions remain readable for historical purposes;
 conversion or successful checks cannot relabel them as canonical.
@@ -113,8 +133,12 @@ parameters propagate invalid values instead of silently changing the map.
 To invert one coordinate, the extrema of `(y-b_k)/a_k` bracket its root:
 at the lower endpoint every sigmoid is at most `sigmoid(y)`, and at the upper
 endpoint every sigmoid is at least that value. TensorFlow bisection stops only
-after both output residual and input bracket tests pass. The outer coordinate
-solve is another TensorFlow loop. An exhausted inverse yields nonfinite output.
+after both output residual and input bracket tests pass. Internal stopping uses
+half the requested tolerances, leaving margin for last-bit differences between
+XLA's loop and final evaluations; the final acceptance tolerances are unchanged.
+The October 5 failure replay and regression are recorded in the representation
+check plan. The outer coordinate solve is another TensorFlow loop. An exhausted
+inverse yields nonfinite output.
 The default tolerances are `atol=rtol=1e-11` for float64 and sixteen FP32
 machine epsilons (`1.9073486328125e-6`) for float32, with at most 100 bisections.
 These are checked engineering settings, not guarantees for every tail or scale;

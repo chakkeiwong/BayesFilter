@@ -1,0 +1,148 @@
+{
+  "started_utc": "2026-10-07T03:39:50.141737+00:00",
+  "git_commit": "70a6d7e9611a9f859a2519f37f236b61cac35c1e",
+  "branch": "preserve/shared-main-before-fab-20260926",
+  "scope": "LaTeX chapter, bibliography, symbolic/document audits and PDF builds; no sampling experiment",
+  "environment": "installed mathdevmcp CLI and TeX Live; CPU-only symbolic checks",
+  "gpu": "N/A; no accelerator initialized",
+  "seeds": "N/A; symbolic and deterministic document work",
+  "data": "N/A; source PDFs and code recorded in literature source-manifest.json",
+  "plan": "docs/plans/bayesfilter-modern-hmc-monograph-chapter-2026-10-07.md",
+  "baseline_sha256": {
+    "main.tex": "ee617b6cb651a198abb15c87a9b0c8cec2cd851be1ed9fa0b3eb6751220dd921",
+    "references.bib": "543e9984889c94f97f3a830c2d0c0be94ab56ed450f8cdbe807c7bad9ddabd41",
+    "preamble.tex": "c9db561fcc6b765677a0bcd3a2e36e8d2e554220af33b8435fee5f3a5a978c71"
+  },
+  "completed_utc": "2026-10-07T07:36:38.545191+00:00",
+  "calendar_elapsed_seconds": 14208.403454,
+  "elapsed_time_interpretation": "Calendar elapsed, including session inactivity; not measured CPU time. No sampler or GPU budget consumed.",
+  "status": "document_delivery_complete_with_explicit_audit_limits",
+  "result": "docs/reviews/bayesfilter-modern-hmc-monograph-audit-2026-10-07.md",
+  "chapter_sha256": "98324375370438910effb252fa4229708d2200d66d374b494aaf7c6f30a72b03",
+  "outputs": {
+    "chapter": {
+      "pages": 39,
+      "path": "docs/plans/artifacts/modern-hmc-monograph-2026-10-07/r1/chapter-build/modern_hmc_survey.pdf",
+      "sha256": "805a4d922ef5500a9b54d220a3bde1337c8b41e87b3cbe1d95315600379ddaf2",
+      "unresolved_or_duplicate_reference_warnings": 0,
+      "delivery_rendered_pages": [
+        21,
+        35,
+        36
+      ],
+      "overfull_box_count": 0
+    },
+    "book": {
+      "pages": 691,
+      "path": "docs/plans/artifacts/modern-hmc-monograph-2026-10-07/r1/book-build/main.pdf",
+      "sha256": "2ab37dbded14cfb4d9d37075534b06ef9ae055271ebddafeeca14acb9baf1305",
+      "unresolved_or_duplicate_reference_warnings": 0,
+      "delivery_rendered_pages": [
+        18,
+        594,
+        625
+      ],
+      "overfull_box_count": 219
+    }
+  },
+  "mathdev": {
+    "final_label_audit": "docs/plans/artifacts/modern-hmc-monograph-2026-10-07/r1/mathdev/final-r3/label-audits.json",
+    "coverage": {
+      "literal_equation_labels": 113,
+      "localized_unique_labels": 113,
+      "audited_labels": 113
+    },
+    "status_counts": {
+      "unverified": 95,
+      "inconclusive": 18
+    },
+    "label_audit_wall_seconds": 10.807846901006997,
+    "symbolic_checks": 34,
+    "symbolic_status_counts": {
+      "equivalent": 34
+    },
+    "negative_control": "mismatch",
+    "whole_document_formally_certified": false,
+    "high_level_failures_preserved": true
+  },
+  "baseline_preservation": {
+    "preamble_unchanged": true,
+    "bibliography_prefix_preserved": true,
+    "new_bibliography_keys": [
+      "hoffman2021chees",
+      "sountsov2022snaper",
+      "hoffman2022meads",
+      "rioudurand2023malt",
+      "rioudurand2023adaptive",
+      "robnik2025mams",
+      "robnik2026laps",
+      "robnik2025mclmc",
+      "robnik2026unadjusted",
+      "zhang2022pathfinder",
+      "sountsov2024hardware",
+      "sarkka2020parallel",
+      "corenflos2024particlemala",
+      "turok2026drghmc",
+      "nishimura2020discontinuous",
+      "margossian2024nested"
+    ],
+    "main_diff": "docs/plans/artifacts/modern-hmc-monograph-2026-10-07/r1/main-vs-baseline.diff"
+  },
+  "commands": [
+    {
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "command": "CUDA_VISIBLE_DEVICES=-1 timeout 900 /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/plans/artifacts/modern-hmc-monograph-2026-10-07/r1/mathdev/audit_labels.py --output-tag final-r3",
+      "exit_code": 0
+    },
+    {
+      "cwd": "/home/ubuntu/python/BayesFilter",
+      "command": "CUDA_VISIBLE_DEVICES=-1 timeout 900 /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/plans/artifacts/modern-hmc-monograph-2026-10-07/r1/mathdev/check_identities.py --output-tag final-r3",
+      "exit_code": 0
+    },
+    {
+      "cwd": "/home/ubuntu/python/BayesFilter/docs",
+      "command": "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs: latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=plans/artifacts/modern-hmc-monograph-2026-10-07/r1/chapter-build modern_hmc_survey.tex",
+      "exit_code": 0
+    },
+    {
+      "cwd": "/home/ubuntu/python/BayesFilter/docs",
+      "command": "BIBINPUTS=/home/ubuntu/python/BayesFilter/docs: latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=plans/artifacts/modern-hmc-monograph-2026-10-07/r1/book-build main.tex",
+      "exit_code": 0
+    }
+  ],
+  "build_source_manifest": "docs/plans/artifacts/modern-hmc-monograph-2026-10-07/r1/build-source-manifest.json",
+  "visual_inspection": {
+    "chapter_contact_sheet_pages": 39,
+    "book_selected_pages": [
+      1,
+      18,
+      594,
+      609,
+      616,
+      625,
+      678,
+      689
+    ],
+    "final_repair_pages": {
+      "chapter": [
+        21,
+        35,
+        36
+      ],
+      "book": [
+        18
+      ]
+    },
+    "result": "Repaired contents number spacing and new chapter overflow; no clipped content seen in reviewed pages. Human reader feedback pending."
+  },
+  "artifact_hashes": {
+    "docs/main.tex": "62ccd6d2f3d945949e1a76b6f8ba92340dbf71859f97861892ece7f1106dc74c",
+    "docs/references.bib": "a8b0355c348072250671177a548ebfe15dd117343561e04a9b33a98425b4f524",
+    "docs/modern_hmc_survey.tex": "694b05ea26cf448ab5d7a7d786cc585227627d38dad6b2ed22916bc4f8dfc90e",
+    "docs/plans/bayesfilter-modern-hmc-monograph-chapter-2026-10-07.md": "682c43153ef4a5ba8dc36724ae70492c1e17b7363339e67b07b23371c290971a",
+    "docs/reviews/bayesfilter-modern-hmc-monograph-audit-2026-10-07.md": "c7a1c2978ff0919bea842c670d140a583425cc6aeda71be323a58020c17b6320",
+    ".localresources/hmc-methods-review-20261007/source-manifest.json": "b81f082e5eb1be9bd3ad38ab5f72b12d28d33828aae1898642f2f414d532a061",
+    "docs/plans/artifacts/modern-hmc-monograph-2026-10-07/r1/mathdev/final-r3/label-audits.json": "8e3dd6502b7409e61e8e81fc370198381787d5cfac27f501d6fbd81ecb4b90cb",
+    "docs/plans/artifacts/modern-hmc-monograph-2026-10-07/r1/mathdev/final-r3/symbolic-obligations.json": "9456d594e7b1a5da39a51d63d92f6c725d27829c7d0b90d870b38f25203f340d"
+  }
+}

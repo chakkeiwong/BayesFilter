@@ -31,13 +31,25 @@ Focused harness checks: 36 passed (22.82 s). Final reporter checks: four passed
 (0.08 s), under ledh-independent-reporting-checks-20261009-01/. These overlap
 prior implementation checks and are not separate scientific replications.
 
-Current stage: final findings integrated and both PDFs built and inspected.
-Monograph 650 pages, standalone 25 pages; no unresolved citations/references.
-Build and visual receipts: ledh-independent-validation-docs-20261009-final/.
-Next exact action: commit compact evidence and documentation, then synchronize
-Git branches as authorized below. Large author .mat/derived/tail payloads remain local under
-scoped ignores. The owner authorized merge to main, fetch/merge origin/main,
-push main and merge main back into sqmc-development. Verify clean worktrees
-and identical refs. Main worktree: /tmp/bayesfilter-sqmc-main-integration-20260924.
-Preserve unrelated worktrees. No new tuning or research direction is authorized
-by a documentation or Git operation.
+Current stage: campaign, documentation and merged-source validation complete.
+Development completion commit: 9b12f6b6f. Main first merged that branch at
+285b43e111124b0f3337f81032905591b9a54324, then incorporated origin/main
+b1ccb8678c1ca68811eaa301bd4e1fd368e4bc23. The sole conflict was bibliography
+metadata; all 220 keys remain, with two corrected entries checked against
+publisher DOI records. No LEDH numerical source overlapped the remote changes.
+
+Merged build: monograph 746 pages, 217 overfull-box warnings; standalone
+25 pages, no overfull boxes. Neither has unresolved citations/references.
+All 40 focused integration checks passed: 38 initially, two after restoring
+the missing local author-source cache. No algorithm edit was needed.
+Integration evidence: docs/plans/artifacts/ledh-main-integration-20261009-01/.
+Earlier build receipts: ledh-independent-validation-docs-20261009-final/.
+
+Next exact action: complete or verify the authorized Git synchronization.
+Its final receipt is /tmp/bayesfilter-ledh-final-sync-20261009.json; completion
+requires main, origin/main, sqmc-development and the actual remote main to
+identify one commit, with both participating worktrees clean. If that receipt
+reports completion and matches current refs, no task action remains. Main
+worktree: /tmp/bayesfilter-sqmc-main-integration-20260924. Preserve unrelated
+worktrees. Large author .mat/derived/tail payloads remain local under scoped
+ignores. No new tuning or research direction follows from this closeout.

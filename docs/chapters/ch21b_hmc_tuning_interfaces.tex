@@ -306,6 +306,16 @@ promotion veto does not suppress a supported smaller-epsilon repair.
 A trajectory alert can propose only declared additional $L$ values, as separate
 candidates. It never silently changes an existing candidate's $L$.
 
+For the replicated v7 policy, controller policy version 4 closes the initial
+primary pilot/measurement cohort before dispatching optional measurement
+extensions or repair descendants. After a candidate is screened, its pending
+independent verification ladder has priority over those optional descendants.
+This prevents a long repair branch from starving fresh verification under a
+wall-time budget; it does not skip a primary peer, grant membership before
+verification, alter evidence allocation, or rank candidates. Resumed version-3
+checkpoints retain their recorded ordering. Versions 1 and 2 remain readable
+historical results but cannot resume under version 3 or 4.
+
 The distinction between proposal and evidence matters for fixed-length HMC.
 For a transition from $x$, the acceptance probability is
 \begin{equation}
@@ -342,7 +352,7 @@ compatibility intervals support an operational screen, not a claim of nominal
 confidence coverage across repeated looks. A cap does not turn an inconclusive
 candidate into a verified member.
 
-\section{Acceptance, numerical health, and posterior diagnostics}
+\section[Acceptance and posterior diagnostics]{Acceptance, numerical health, and posterior diagnostics}
 
 % BEGIN ACCEPTANCE UNCERTAINTY EXPLANATION
 Acceptance probabilities fluctuate even under a fixed kernel. A temporal block
@@ -387,6 +397,84 @@ BGS replays are separate from posterior convergence, and R-hat remains
 reporting-only during tuning.
 % END ACCEPTANCE UNCERTAINTY EXPLANATION
 
+\subsection{Experimental fixed-horizon repeated trials}
+
+The explicitly selected v7 policy, \path{HMCReplicatedAcceptancePolicy}, uses
+the same two public tuners and candidate-set controller. It has not replaced
+the v5 default or the optional v6 screen. Both the search configuration and
+the numerical execution configuration must declare the same policy.
+
+For a frozen kernel and labeled start $i$, repetition $r$ discards a fixed
+prefix of $W$ transitions and measures the following $T$ acceptance
+probabilities. Define
+\[
+ Y_{ri}=\frac{1}{T}\sum_{t=W+1}^{W+T}\min\{1,\exp(\ell_{rit})\},
+ \qquad \mu_i=\mathbb{E}[Y_{ri}\mid q_{i0},\text{frozen kernel}],
+\]
+where $\ell_{rit}$ is the log Metropolis acceptance ratio. Every repetition
+restarts the complete frozen start bank with a fresh recorded random stream.
+Thus the independent observations are whole start-bank repetitions; the four
+starts need not have equal $\mu_i$, and their scores within a repetition need
+not be independent. The bounded scores estimate finite-horizon acceptance
+from the declared starts. They do not establish a stationary acceptance rate
+or adequate burn-in.
+
+In this policy, evidence-rung multipliers increase the number of repetitions
+while keeping $W$ and $T$ fixed. New trials append to existing evidence;
+chunks within a trial continue its state. All $T$ measurements count, including
+the remainder when temporal windows have unequal lengths. This differs from
+the legacy draw-length extension described above.
+
+Qualification requires simultaneous containment of every start's expectation
+interval within the declared broad qualification region. The narrower
+preferred region supplies supported directions for epsilon repair from the
+weighted mean. A pooled mean cannot conceal a start outside qualification.
+A supported start violation requests preparation investigation; insufficient
+information remains inconclusive. Independent verification uses fresh streams
+and a separately declared family error allocation. The search and verification
+levels are separate statements, not one combined error level.
+
+Numerical health still determines whether a candidate can be retained.
+Temporal contrasts investigate preparation and R-hat remains reporting-only;
+neither is an acceptance-admission requirement. Every verified member is
+retained. Reconstruction checks raw trials, endpoints, seeds and the cost of
+each attempted native chunk. A lost native call can be retried under the same
+stream and charged again, but it supplies at most one completed trial score.
+
+The explicit release-validation profile sets
+\path{min_normalized_return_displacement=0.0}, so that first-to-last distance
+is reporting-only. Two close endpoints can occur by chance along a moving
+path; they alone do not establish immobility. Adjacent movement, repeated
+states, persistent short-cycle returns, divergence and finite state/target
+checks remain active, including discarded-prefix health. Regression checks
+preserve the original failed Gaussian trial and frozen-path and cycle controls.
+The explicit profile has a distinct policy identity and needs fresh tuning.
+Legacy defaults and historical outcomes retain their original meaning, and
+these health checks do not certify mixing or posterior convergence.
+
+Detailed trial health remains in the numerical records; controller observations
+summarize its counts without discarding those records. Intermediate checkpoint
+writes reuse unchanged persisted evidence. Single-trial work boundaries, all
+dispatch exits, explicit saves, export and reload retain full validation.
+Internal batched dispatch may reuse unchanged history between work items;
+failed and paused exits still validate it fully. Attempted work is recorded
+before the native call, including a call whose result is lost.
+
+The float64 interval implementation uses a conservative arithmetic guard.
+Independent high-precision references check selected endpoint and
+threshold-adjacent cases at 64, 1,024 and 16,384 repetitions on CPU/XLA and
+GPU/XLA. These finite checks do not constitute an error theorem for all
+inputs or hardware, or establish full-search delivery and affordability.
+
+The framework-free preflight computes required work before evaluating the
+target. Actual state-space pricing must then establish whether the fixed-trial
+allocation is affordable and useful. Known-law calibration, numerical recovery,
+model delivery, GPU parity and independent posterior assessment answer
+different questions. Passing the first two cannot by itself establish the
+remaining three or justify a new default.
+
+\subsection{Legacy compatibility and shared numerical health}
+
 The default \path{HMCAcceptancePolicy} uses four independent chain means,
 temporal blocks, and a 90\% compatibility interval. Its first allocation
 requires at least four blocks of sixteen decisions per chain. After health,
@@ -419,6 +507,14 @@ $\widehat R$ is reporting-only during tuning. High, missing, nonfinite or
 failed-to-compute values cannot reject, rank, repair or delay a candidate.
 ESS and short-chain timing are descriptive diagnostics. They do not silently
 replace the acceptance/health screen or discard a viable member.
+Posterior reports identify the sample window actually assessed, its declared
+requirements, each check and each failed check. This distinguishes incompatible
+chains, inadequate bulk or tail information, missing binary outcomes, unmet
+precision and an additional consumer veto. Window counts are separate from
+cumulative burn-in counts. The sequential controller enforces consecutive
+warmup passes; a passing window alone does not satisfy a multiple-check policy.
+These explanatory fields do not change any admission or stopping threshold.
+
 Posterior warmup and cumulative model-coordinate $\widehat R$/ESS assessment
 remain separate requirements for inference.
 
@@ -449,8 +545,9 @@ Dropping either Jacobian term changes the target or its derivative.  Such a
 calculation is wrong relative to the transformed-target claim.
 
 
-The fixed-transport preparation reconstructs the full diagonal-affine or
-dense-IAF map from \path{frozen_transport_payload}, checks its live identity,
+The fixed-transport preparation reconstructs a supported diagonal-affine,
+legacy dense-IAF or configured IAF/conditional-DSF map from
+\path{frozen_transport_payload}, checks its live identity,
 and uses identity mass in latent coordinates. Starts are supplied in those
 coordinates. Every proposed $(L,\epsilon)$ then enters the same measurement,
 repair and fresh-verification procedure. Arbitrary transport callbacks without
@@ -604,6 +701,34 @@ A hard process limit must be applied externally. When preparation and search
 time limits are both supplied, the smaller limit applies.
 The first-call timing includes any tracing/compilation rather than pretending
 that it measures steady-state kernel cost.
+
+For all-member handoff, \path{export_hmc_candidate_retained_runners} exports
+every verified ID and \path{load_hmc_candidate_retained_runners} reloads those
+paths. The existing compact member files share one evidence bundle. Common
+evidence is checked once per call; every member's identity and verified endpoint
+is checked separately. Individual-member loading remains compatible. Later
+runs and exports revalidate the binding, so grouped loading creates no persistent
+trust cache. Partial delivery cannot price a complete search.
+Native finite-value and Metropolis-state checks use a compiled reduction and
+transfer their Boolean results together. Diagnostic vectors are materialized
+once at the reporting boundary. The health rules and serialized values are
+preserved; saved-trace parity does not establish full-search affordability.
+
+For the v7 policy, \path{HMCCandidateExecutionConfig.replicated_trial_batch_size}
+optionally groups independent repetitions in one exact-score batched call.
+The default is one and the implementation bounds the group at 32. Each complete
+discarded-prefix-plus-measured path must fit within one chunk. The target
+evaluates the combined rows, while every repetition preserves its original
+TFP stateless seed schedule, momentum, Metropolis randomness and health/score
+record. Horizons, repetition counts and candidate identities do not merge.
+All attempted repetitions are charged before execution; a lost call consumes
+budget and retries the same streams. Charges are saved as a group before the
+call and returned rows together afterwards; a serialization failure saves its
+completed prefix before propagating. Batch size is bound into the execution
+identity, so old checkpoints cannot resume under changed settings. Serial,
+threaded and position-field routes reject this option. Native numerical parity,
+durable recovery and complete-search affordability require separate checks;
+batching does not by itself establish a supported v7 release.
 
 Select a member by explicit ID and supply its result and numerical binding to
 \path{build_retained_bound_hmc_archive_runner_from_candidate_set_result}.
@@ -793,6 +918,17 @@ it is distinct from prior-predictive simulation-based calibration. A longer
 fixed-count arm can also have inaccurate uncertainty estimates, so disagreement
 with nominal coverage does not by itself identify optional stopping as the cause.
 
+Qualified posterior delivery, interval coverage, and their joint event answer
+different questions. A covered interval reported at a precision cap contributes
+to coverage, but the fit has not delivered the requested precision. The
+validation report records all three events for every declared quantity and
+keeps missing fits in the planned denominator. A stopping design may declare
+a minimum success probability and compare it with a pointwise exact-binomial
+lower confidence bound. Conditional coverage among available intervals remains
+descriptive; these pointwise screens give no simultaneous or sequential
+coverage guarantee. Multiple selected kernels are reported in separate member
+slots, with one independent observation per complete fit in each slot.
+
 The September 2026 campaign observed this distinction directly. A Gaussian
 mixture run passed its local posterior checks after 6,500 discarded and 2,000
 retained transitions per chain, but all retained draws occupied the right mode.
@@ -902,6 +1038,9 @@ interaction that loses outer calls. This is host cost attribution, not device
 kernel timing. The run index records profile availability. A completed fit is
 never repeated to replace a missing profile, and profiling failures do not
 replace numerical outcomes.
+Profiling also consumes wall time and can change which work fits within a
+finite execution budget. Hold its setting fixed in cost comparisons and price
+the setting intended for confirmation.
 
 Repeated validation fits can use a fresh process for each complete fit, with
 an explicit per-fit timeout inside the total experiment budget. This bounds
@@ -913,6 +1052,117 @@ denominator. Numerical search, accuracy, stopping and reference-mean designs ena
 optional mode with \path{options.isolate_fits} and
 \path{options.fit_process_timeout_seconds}. The setting does not change the
 HMC transition, tuning criteria or posterior thresholds.
+
+For exact-score validation pipelines, \path{--reuse-leapfrog-graphs} carries
+the optional compiled-runner policy through the cell and isolated child. It
+defaults to off; the reference-mean engine already uses reuse. The run index
+and child manifest record the choice, and resume rejects a changed execution
+policy. A development wrapper's reuse setting must be supplied explicitly
+when moving to the isolated executor.
+
+Sequential suites may use \path{--share-unused-budget} to carry unused time
+from settled cells to later cells. The sum of the original cell allocations
+remains the ceiling; unstarted cells retain their own allocations, and a
+resumed cell cannot reclaim time already spent elsewhere. Parallel sharing
+is rejected. This avoids stranding a completed cell's spare time while a
+later fit is cut short by its local forecast.
+
+Machine workload affects how long a numerical chunk takes. An isolated design
+may therefore declare a finite contention allowance in
+\path{options.timeout_policy.max_extension_seconds}, which defaults to zero.
+The supervisor grants that allowance only when recent committed numerical work
+and fresh workload evidence are both present. For GPU work it matches the
+selected device UUID to compute-process telemetry and excludes the worker's
+own process group. GPU utilization alone is insufficient. Missing telemetry or
+an ambiguous numeric device selection cannot justify an extension. Normalized
+CPU load is a saturation heuristic, not proof that another process caused the
+slowdown. These observations describe execution conditions, not sampler quality.
+
+The parent publishes an atomic execution allowance. Preparation, candidate
+measurement and verification, and posterior sampling check it between numerical
+chunks. Its deadline is separate from the frozen tuning configuration, so a
+workload extension preserves candidate identities and random streams. An active
+TensorFlow call cannot be stopped at such a boundary until it returns; the hard
+process cap remains necessary. Startup, telemetry, retries and cleanup all count
+against the allocation, and the inherited outer deadline reserves time for the
+coordinator's report. An optional no-progress stall interval must allow for
+measured compilation and chunk times; it is disabled by default.
+
+A shared GPU need not become empty before useful work can proceed. The
+validation policy \path{gpu_admission_mode="shared"} admits work with trusted
+device telemetry and available memory even when another compute process is
+present. The compatibility mode \path{gpu_admission_mode="idle"} waits for
+those processes to leave. Both modes require memory growth and bounded
+admission waiting; neither guarantees a fixed share of device throughput.
+
+An explicit \path{max_contention_retries} permits bounded automatic recovery
+after an incomplete cooperative budget stop or supervised timeout with observed
+contention. The retry resumes the same source, design and committed numerical
+checkpoints. It spends only the unspent portion of the original fit allowance,
+including its contention reserve and all startup costs, and cannot renew that
+reserve. The attempt limit also applies across coordinator restarts. Completed
+posterior assessments, numerical errors and invalid artifacts do not trigger
+this recovery. Complete-fit pricing includes every recovery attempt.
+
+When the original fit cap is exhausted, a campaign may explicitly reassign
+some of its remaining time. The separate campaign continuation coordinator
+runs the original frozen numerical worker with the same design, seeds and
+checkpoint paths. The saved execution also binds the exact
+\texttt{CUDA\_VISIBLE\_DEVICES} selection; the same GPU model on another device
+is not interchangeable for checkpoint continuation. The coordinator checks
+this binding before launch. A device-binding startup failure can be repaired
+only after unchanged evidence and absence of numerical progress are verified,
+the original GPU selection is restored, and failed attempts remain charged.
+It records an enlarged cumulative allocation, counts all
+earlier attempts, checks that completed evidence remains unchanged, and enforces
+the enclosing deadline and additional-attempt limit. Only an incomplete resource
+stop with durable progress is eligible. Completed assessments are reused,
+including unfavorable results; numerical failures require separate diagnosis.
+The complete fit cost includes every attempt. This reallocation spends the
+existing campaign budget and never restarts its clock.
+
+The common-pool dispatcher connects this continuation to the campaign queue.
+It schedules individual fits across models and returns a resource-stopped fit
+with durable progress to the queue after its peers. Each allocation is bounded
+by the absolute deadline. A finite attempt limit is optional; the state-space
+continuation instead allows further turns while durable evidence and elapsed
+time advance. These time quanta govern scheduling; they do not change numerical
+stopping rules. Unfinished pilots and main fits share one queue, and the
+coordinator refreshes complete workload costs and eligibility after each turn.
+A completed matching pilot can therefore admit waiting fits without a separate
+stage boundary. Each child receives only its next bounded allocation beyond
+recorded prior cost. A price must match the declared numerical workload,
+including its reference resolution. Posterior success is not a pricing
+criterion, and completed unfavorable assessments remain final. Unstarted and
+incomplete fits remain in the original inventory.
+
+Stopped-interval assessment distinguishes analytic functionals from numerical
+quadrature references. For a checked quadrature reference, the diagnostic report
+compares the nominal MCSE interval with the reference value plus or minus its
+recorded resolution and domain sensitivity. It reports containment, partial
+overlap or disjointness. The sensitivity is neither a certified integration
+error bound nor a confidence interval, so these comparisons cannot contribute
+to exact-reference coverage counts or establish sequential coverage. An absent
+joint posterior reference remains unavailable. The report can use saved final
+checks without rerunning a chain or overwriting its original assessment.
+
+Supervision records preserve the progress observations, workload samples,
+extension decision and termination reason. Budget exhaustion after any declared
+recovery makes the fit unavailable and allows the next independent fit to run. Exhausted fit
+allocations remain in the original denominator and are not restarted by ordinary
+resume; additional time requires the separate campaign allocation above. Receipts
+distinguish a shorter cell allowance from an exhausted fit allowance. A
+cell-limited partial fit can resume on the same source/design within its
+unspent cumulative fit time. When only a running preparation progress file
+exists, the coordinator preserves that file before replaying the same
+preparation seed; it does not treat the progress log as a checkpoint.
+Completed results are preserved. A stall, corrupt
+checkpoint, missing assessment or unexpected process failure stops the cell
+for diagnosis. Cooperative posterior stops retain committed chunks and a pause
+record, allowing a later explicitly funded invocation to replay the same
+streams without mistaking an incomplete member for a finished result. Changing
+the execution policy creates a new validation design; historical confirmation
+results cannot be silently relabelled as results of that new policy.
 
 A bounded sibling study can instead predeclare several members using
 \path{member_rule="shortest_verified_l"},
@@ -927,8 +1177,19 @@ hypothesis, not an established mixing ranking, and posterior outcomes cannot
 choose a winner from the same assessment draws.
 
 The executable suite definitions are documented in
-\path{docs/validation/README.md}. The following table is generated from their
-saved reports. C, H and P denote current-source executions, historical-source
+\path{docs/validation/README.md}. The state-space K0--K7 inventory calls the
+actual QR and SVD Kalman filters and a nonlinear sigma-point filter. It covers
+unknown location, persistence and noise scales, near-unit persistence, small
+observation noise, longer series and a multivariate model. Independent dense
+Gaussian, Kalman-recursion and checked low-dimensional integration references
+test the declared targets. The nonlinear reference describes the same
+sigma-point approximation; a separate short-horizon integration diagnoses
+approximation error. The multivariate parameter posterior has no established
+independent oracle. CPU mechanics and public-procedure regressions do not
+establish GPU execution, posterior calibration or a new tuning default.
+
+The following table is generated from the saved suite
+reports. C, H and P denote current-source executions, historical-source
 executions and planned designs, including retries. These are counts of designs,
 not models declared correct or independent replications. CPU reference work and
 GPU/XLA work remain separate. A completed controller call with no retained draws

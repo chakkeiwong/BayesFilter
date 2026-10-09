@@ -1,0 +1,20 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "16-19",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "--disable-warnings",
+    "tests/test_hmc_checkpoint_hashing.py",
+    "tests/test_hmc_acceptance_accounting.py",
+    "tests/test_hmc_acceptance_trials.py",
+    "--junitxml=docs/plans/artifacts/hmc-v7-release-2026-10-02/checks-05/results.xml"
+  ],
+  "exit_code": 1,
+  "wall_seconds": 137.49851253489032,
+  "resource": "cpu_reference",
+  "gpu_intentionally_hidden": true
+}

@@ -1,0 +1,68 @@
+{
+  "schema": "bayesfilter.hmc_v7_full_search_prices.v1",
+  "cases": [
+    "lgssm_qr"
+  ],
+  "source_manifest_sha256": "da6609ba97030ef5765b7c2592d7004bd8bebd5e1e7d1948542197f46e7b390e",
+  "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "budget_seconds": 3100,
+  "search_cap_seconds": 1800,
+  "closeout_cap_seconds": 1200,
+  "attempts": [
+    {
+      "case": "lgssm_qr",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-emission-01/runner.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-19/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-emission-01/lgssm_qr",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--config",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-emission-01/lgssm_qr-config.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 2318.3778330478817,
+      "result": {
+        "status": "complete",
+        "full_search_delivered": true,
+        "positive_member_delivery": true,
+        "expectation_met": true,
+        "completion_status": "complete",
+        "verified_members": 22,
+        "candidates": 42,
+        "repairs": 20,
+        "sample_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "allocator": {
+          "current": 3186688,
+          "peak": 9700352
+        },
+        "wall_seconds": 2316.225898736855,
+        "evidence_accounting": {
+          "unique_complete_trials": 12096,
+          "valid_complete_trials": 12096,
+          "invalid_complete_trials": 0,
+          "completed_trial_transitions": 3290112,
+          "attempted_transitions": 3290112,
+          "gradient_work": 40282112,
+          "attempted_work_outside_complete_trials": 0,
+          "charged_chunks": 12096,
+          "independent_trial_streams": 12096
+        },
+        "default_promotion": false,
+        "release_ready": false
+      }
+    }
+  ],
+  "status": "complete",
+  "release_ready": false,
+  "confirmation_authorized_by_price": false,
+  "wall_seconds": 2318.380342589924,
+  "unstarted_cases": [],
+  "point_forecast_32_per_family_seconds": 74188.09065753222,
+  "forecast_scope": "descriptive single-price extrapolation; not a runtime guarantee or confirmation design"
+}

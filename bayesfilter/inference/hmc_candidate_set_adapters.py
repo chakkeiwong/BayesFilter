@@ -238,14 +238,29 @@ def run_typed_hmc_candidate_set(
     controller = _resume_controller or HMCTuningCandidateSetController(adapter.scope, config)
     execution = adapter._execution_binding
     runtime = execution if execution is not None else adapter._checkpoint_runtime
+    if execution is not None:
+        from .hmc_acceptance_trials import validate_execution_protocol
+        validate_execution_protocol(config, execution.config)
+    elif runtime is not None and hasattr(runtime, "config"):
+        from .hmc_acceptance_trials import validate_execution_protocol
+        validate_execution_protocol(config, runtime.config)
+    if config.replicated_acceptance_policy is not None and runtime is not None:
+        previous = getattr(runtime, "_replicated_evidence_rungs", None)
+        if previous is not None and previous != config.evidence_rungs:
+            raise ValueError("cannot change the repeated-trial look schedule")
+        runtime._replicated_evidence_rungs = config.evidence_rungs
+        from .hmc_acceptance_trials import initialize_seed_registry
+        initialize_seed_registry(runtime, controller.result())
     if config.max_gradient_work is not None and execution is None and adapter.work_cost is None:
         raise ValueError("a gradient-work budget requires an adapter work-cost model")
     checkpoint = None
+    incremental_dispatch = False
     if output_dir is not None:
         def checkpoint(result):
             if execution is not None:
                 from bayesfilter.inference.hmc_candidate_set_checkpoint import write_numerical_tuning_checkpoint
-                write_numerical_tuning_checkpoint(execution, result, output_dir)
+                write_numerical_tuning_checkpoint(execution, result, output_dir,
+                    _incremental=incremental_dispatch or getattr(execution, "_incremental_checkpoint", False))
             elif runtime is not None:
                 runtime.write_checkpoint(result, root)
             else:
@@ -265,14 +280,24 @@ def run_typed_hmc_candidate_set(
         runtime._charge_chunk = controller.charge_numerical_chunk
         runtime._deadline = (None if config.max_wall_time_seconds is None else
             time.monotonic() + max(0.0, config.max_wall_time_seconds - controller._elapsed_seconds))
+    incremental_dispatch = (output_dir is not None and execution is not None
+                            and execution.config.replicated_trial_batch_size > 1)
     try:
         result = controller.run(observe, max_work_items=max_work_items, checkpoint=checkpoint,
                                 work_cost=adapter.work_cost if execution is None else execution.work_cost)
     finally:
-        if runtime is not None:
-            runtime._checkpoint_callback = None
-            runtime._charge_chunk = None
-            runtime._deadline = None
+        validate_history = incremental_dispatch
+        incremental_dispatch = False
+        try:
+            # Internal batch dispatch may reuse persisted immutable history.
+            # Every exit, including a failed or paused run, checks it in full.
+            if validate_history:
+                controller._save_checkpoint()
+        finally:
+            if runtime is not None:
+                runtime._checkpoint_callback = None
+                runtime._charge_chunk = None
+                runtime._deadline = None
     receipt = None
     if output_dir is not None:
         receipt = write_candidate_set_result(

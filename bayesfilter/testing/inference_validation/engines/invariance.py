@@ -29,13 +29,14 @@ def _run_single(design,root,deadline=None):
         if deadline is not None and time.monotonic() >= deadline:
             raise TimeoutError("invariance experiment deadline exhausted")
     check_deadline()
-    target=ValidationTarget(design.scenario.target,design.scenario.parameters,
+    data = design.options.get("data")
+    target=ValidationTarget(design.scenario.target,design.scenario.parameters,data,
         control=design.scenario.control if design.scenario.control in {"wrong_score","omit_jacobian"} else "baseline",
         jit_compile=design.device=="gpu")
     n,m=design.replications,design.rank_draws
     if n<2: raise ValueError("invariance requires two or more independent replications")
-    anchor=analytic.draw(target.target_id,n,seed_for(design.seed,design.design_id,"anchor"),target.parameters)
-    direct=analytic.draw(target.target_id,n,seed_for(design.seed,design.design_id,"direct"),target.parameters)
+    anchor=analytic.draw(target.target_id,n,seed_for(design.seed,design.design_id,"anchor"),target.parameters,data)
+    direct=analytic.draw(target.target_id,n,seed_for(design.seed,design.design_id,"direct"),target.parameters,data)
     insertion_rng=np.random.default_rng(seed_for(design.seed,design.design_id,"insertion"))
     insert=insertion_rng.integers(m+1,size=n)
     step=FrozenTransition(target,chains=n,step_size=design.step_size,leapfrog_steps=design.leapfrog_steps,

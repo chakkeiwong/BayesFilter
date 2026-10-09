@@ -28,6 +28,11 @@ def _all_finite(value: Any) -> bool:
     return bool(tf.reduce_all(tf.math.is_finite(_float64_tensor(value))))
 
 
+def _host_vector(value: Any) -> tuple:
+    """Materialize an existing vector once, without NumPy computation."""
+    return tuple(value.numpy().tolist()) if hasattr(value, "numpy") else tuple(value)
+
+
 def _all_close(actual: Any, expected: Any, *, rtol: float, atol: float) -> bool:
     """Replay boundary with the original asymmetric reference tolerance."""
 
@@ -197,23 +202,26 @@ def target_status_telemetry_has_failure(
         raise ValueError("target valid_pre_regularized_score must be boolean")
     if not floors.dtype.is_integer or floors.dtype.is_bool:
         raise ValueError("target floor_count_value must be integer-valued")
-    status_nonvalid = (status != 0) | (~valid)
-    if bool(
-        tf.reduce_any(tf.logical_and(~status_nonvalid, floors < 0)).numpy()
-    ):
-        raise ValueError("valid target floor_count_value must be nonnegative")
+    conditioning = []
     for name in TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS:
         if name not in tensors:
             continue
         value = tensors[name]
-        if not value.dtype.is_numeric:
+        # Keep the historical error order for multiply malformed telemetry:
+        # negative floors, then each conditioning field's dtype/finiteness.
+        conditioning.append(value if value.dtype.is_numeric else tf.zeros_like(valid, tf.float64))
+    from .hmc_candidate_health import target_status_program
+    flags = target_status_program(status.dtype.name, floors.dtype.name,
+        tuple(value.dtype.name for value in conditioning), len(expected_shape))(
+            status, valid, floors, *conditioning).numpy().tolist()
+    if flags[1]:
+        raise ValueError("valid target floor_count_value must be nonnegative")
+    for name, invalid in zip(TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS, flags[2:]):
+        if not tensors[name].dtype.is_numeric:
             raise ValueError(f"target {name} must be numeric")
-        finite = _finite_tensor_mask(value)
-        if bool(
-            tf.reduce_any(tf.logical_and(~status_nonvalid, ~finite)).numpy()
-        ):
+        if invalid:
             raise ValueError(f"valid target {name} must be finite")
-    return bool(tf.reduce_any(status_nonvalid).numpy())
+    return flags[0]
 
 
 def _evaluate_retained_target_health(
@@ -1242,7 +1250,16 @@ def hmc_acceptance_evidence_v2_migration_view(
     }
 
 
-def evaluate_hmc_acceptance_evidence(
+@dataclass(frozen=True)
+class _AcceptanceHealthContext:
+    evidence: HMCAcceptanceEvidence
+    summary: Mapping[str, Any]
+    draw_count: int
+    chain_count: int
+    path_return_failed: bool
+
+
+def _evaluate_hmc_health_context(
     *,
     samples: Any,
     log_accept_ratio: Any,
@@ -1254,13 +1271,8 @@ def evaluate_hmc_acceptance_evidence(
     candidate_local_health_failures: tuple[str, ...] = (),
     shared_invalidity_reasons: tuple[str, ...] = (),
     cost_stop_reasons: tuple[str, ...] = (),
-) -> HMCAcceptanceEvidence:
-    """Evaluate a checkpoint while keeping validity and tuning roles separate.
-
-    ``candidate_local_health_failures`` is a legacy caller parameter. Its
-    values are classified as candidate-data or shared invalidity by provenance;
-    they never bypass the v3 role model or supply a repair direction.
-    """
+) -> HMCAcceptanceEvidence | _AcceptanceHealthContext:
+    """Validate one trajectory without an acceptance interval or decision."""
 
     import tensorflow as tf
 
@@ -1317,14 +1329,17 @@ def evaluate_hmc_acceptance_evidence(
         ),
         allowed=_CANDIDATE_DATA_INVALIDITY_REASON_CODES,
     )
-    if not _all_finite(sample_array):
+    from .hmc_candidate_health import retained_finite_program
+    finite = retained_finite_program()(sample_array, log_accept,
+        target_value if target_value is not None else tf.zeros([0, 0], tf.float64)).numpy().tolist()
+    if not finite[0]:
         shared_from_provenance += ("nonfinite_retained_samples",)
     candidate_invalidity = list(local_from_provenance)
     if not divergence_provenance_valid:
         candidate_invalidity.append("native_divergence_provenance_inconsistent")
-    if not _all_finite(log_accept):
+    if not finite[1]:
         candidate_invalidity.append("nonfinite_log_accept_ratio")
-    if target_value is not None and not _all_finite(target_value):
+    if target_value is not None and not finite[2]:
         candidate_invalidity.append("nonfinite_target_log_prob")
     shared = tuple(dict.fromkeys((*declared_shared, *shared_from_provenance)))
     if shared:
@@ -1351,9 +1366,10 @@ def evaluate_hmc_acceptance_evidence(
         tf.constant(policy.chain_count, tf.int32),
         tf.constant(policy.max_abs_log_accept_energy_proxy, tf.float64),
     )
-    realized_acceptance_rate_by_chain = summary["realized_by_chain"]
+    realized_acceptance_rate_by_chain = _host_vector(summary["realized_by_chain"])
     realized_acceptance_rate = float(summary["realized"])
-    movement, repeated, normalized_return, path_return = summary["movement"]
+    movement, repeated, normalized_return, path_return = (
+        _host_vector(vector) for vector in summary["movement"])
     proxy = _signed_proxy_summary(log_accept, policy, summary=summary["proxy"])
     proxy_exceeded = (
         proxy["max_abs_log_accept_energy_proxy"]
@@ -1416,41 +1432,105 @@ def evaluate_hmc_acceptance_evidence(
         or draw_count < policy.min_decisions_per_chain
     ):
         raise ValueError("cost stop requires the minimum acceptance evidence")
-    if chain_count != policy.chain_count or draw_count < policy.min_decisions_per_chain:
-        return HMCAcceptanceEvidence(
-            evidence_validity="valid",
-            acceptance_decision="inconclusive_evidence",
-            pooled_mean=float(summary["pooled"]),
-            chain_mean_uncertainty_interval=None,
-            chain_mean_uncertainty_method=None,
-            chain_mean_uncertainty_level=None,
-            chain_means=tuple(float(item) for item in summary["chain_means"]),
-            block_means_by_chain=(),
-            realized_acceptance_rate=realized_acceptance_rate,
-            realized_acceptance_rate_by_chain=tuple(
-                float(item) for item in realized_acceptance_rate_by_chain
-            ),
-            movement_rate_by_chain=tuple(float(item) for item in movement),
-            repeated_state_fraction_by_chain=tuple(float(item) for item in repeated),
-            normalized_return_displacement_by_chain=tuple(
-                float(item) for item in normalized_return
-            ),
-            path_return_fraction_by_chain=tuple(
-                float(item) for item in path_return
-            ),
-            usable_decisions_per_chain=0,
-            excluded_remainder_per_chain=draw_count,
-            native_divergence_status=status,
-            native_divergence_count=divergence_count,
-            **proxy,
-            policy=policy,
-            candidate_promotion_vetoes=promotion_vetoes,
-            candidate_health_alerts=alerts,
-            diagnostic_followups=followups,
-            cost_stop_reasons=requested_cost_stops,
-            explanatory_notes=("minimum_chain_or_decision_evidence_missing",),
-        )
+    health = HMCAcceptanceEvidence(
+        evidence_validity="valid",
+        acceptance_decision="inconclusive_evidence",
+        pooled_mean=float(summary["pooled"]),
+        chain_mean_uncertainty_interval=None,
+        chain_mean_uncertainty_method=None,
+        chain_mean_uncertainty_level=None,
+        chain_means=_host_vector(summary["chain_means"]),
+        block_means_by_chain=(),
+        realized_acceptance_rate=realized_acceptance_rate,
+        realized_acceptance_rate_by_chain=tuple(
+            float(item) for item in realized_acceptance_rate_by_chain
+        ),
+        movement_rate_by_chain=tuple(float(item) for item in movement),
+        repeated_state_fraction_by_chain=tuple(float(item) for item in repeated),
+        normalized_return_displacement_by_chain=tuple(
+            float(item) for item in normalized_return
+        ),
+        path_return_fraction_by_chain=tuple(
+            float(item) for item in path_return
+        ),
+        usable_decisions_per_chain=0,
+        excluded_remainder_per_chain=draw_count,
+        native_divergence_status=status,
+        native_divergence_count=divergence_count,
+        **proxy,
+        policy=policy,
+        candidate_promotion_vetoes=promotion_vetoes,
+        candidate_health_alerts=alerts,
+        diagnostic_followups=followups,
+        cost_stop_reasons=requested_cost_stops,
+        explanatory_notes=("health_only_no_acceptance_decision",),
+    )
+    return _AcceptanceHealthContext(health, summary, draw_count, chain_count, path_return_failed)
 
+
+def evaluate_hmc_trial_health(
+    *,
+    samples: Any,
+    log_accept_ratio: Any,
+    is_accepted: Any,
+    policy: HMCAcceptancePolicy,
+    target_log_prob: Any | None = None,
+    native_divergence_status: str = "not_exposed_by_kernel",
+    native_divergence_count: int | None = None,
+    candidate_local_health_failures: tuple[str, ...] = (),
+    shared_invalidity_reasons: tuple[str, ...] = (),
+    cost_stop_reasons: tuple[str, ...] = (),
+) -> HMCAcceptanceEvidence:
+    """Shared trajectory health; acceptance and temporal diagnostics cannot gate it.
+
+    The returned decision is deliberately unavailable or inconclusive. Measured
+    trial scores and any statistical qualification are computed separately.
+    Backend-specific prefix, score and Metropolis checks remain the caller's
+    responsibility and enter through the declared invalidity arguments.
+    """
+    result = _evaluate_hmc_health_context(
+        samples=samples, log_accept_ratio=log_accept_ratio, is_accepted=is_accepted,
+        policy=policy, target_log_prob=target_log_prob,
+        native_divergence_status=native_divergence_status,
+        native_divergence_count=native_divergence_count,
+        candidate_local_health_failures=candidate_local_health_failures,
+        shared_invalidity_reasons=shared_invalidity_reasons,
+        cost_stop_reasons=cost_stop_reasons)
+    return result.evidence if isinstance(result, _AcceptanceHealthContext) else result
+
+
+def evaluate_hmc_acceptance_evidence(
+    *,
+    samples: Any,
+    log_accept_ratio: Any,
+    is_accepted: Any,
+    policy: HMCAcceptancePolicy,
+    target_log_prob: Any | None = None,
+    native_divergence_status: str = "not_exposed_by_kernel",
+    native_divergence_count: int | None = None,
+    candidate_local_health_failures: tuple[str, ...] = (),
+    shared_invalidity_reasons: tuple[str, ...] = (),
+    cost_stop_reasons: tuple[str, ...] = (),
+) -> HMCAcceptanceEvidence:
+    """Legacy v5/v6 composition of shared health and historical statistics."""
+    from dataclasses import replace
+
+    result = _evaluate_hmc_health_context(
+        samples=samples, log_accept_ratio=log_accept_ratio, is_accepted=is_accepted,
+        policy=policy, target_log_prob=target_log_prob,
+        native_divergence_status=native_divergence_status,
+        native_divergence_count=native_divergence_count,
+        candidate_local_health_failures=candidate_local_health_failures,
+        shared_invalidity_reasons=shared_invalidity_reasons,
+        cost_stop_reasons=cost_stop_reasons)
+    if isinstance(result, HMCAcceptanceEvidence):
+        return result
+    health, summary = result.evidence, result.summary
+    draw_count, chain_count = result.draw_count, result.chain_count
+    path_return_failed = result.path_return_failed
+    movement, repeated, normalized_return, path_return = summary["movement"]
+    if chain_count != policy.chain_count or draw_count < policy.min_decisions_per_chain:
+        return replace(health, explanatory_notes=("minimum_chain_or_decision_evidence_missing",))
     usable = (draw_count // policy.block_count) * policy.block_count
     block_size = usable // policy.block_count
     if block_size < policy.min_block_size:
@@ -1477,8 +1557,8 @@ def evaluate_hmc_acceptance_evidence(
         decision,
         resonance_failed=path_return_failed,
     )
-    return HMCAcceptanceEvidence(
-        evidence_validity="valid",
+    return replace(
+        health,
         acceptance_decision=decision,
         pooled_mean=pooled,
         chain_mean_uncertainty_interval=interval,
@@ -1488,29 +1568,12 @@ def evaluate_hmc_acceptance_evidence(
         block_means_by_chain=tuple(
             tuple(float(item) for item in row) for row in block_means
         ),
-        realized_acceptance_rate=realized_acceptance_rate,
-        realized_acceptance_rate_by_chain=tuple(
-            float(item) for item in realized_acceptance_rate_by_chain
-        ),
-        movement_rate_by_chain=tuple(float(item) for item in movement),
-        repeated_state_fraction_by_chain=tuple(float(item) for item in repeated),
-        normalized_return_displacement_by_chain=tuple(
-            float(item) for item in normalized_return
-        ),
-        path_return_fraction_by_chain=tuple(float(item) for item in path_return),
         usable_decisions_per_chain=usable,
         excluded_remainder_per_chain=draw_count - usable,
-        native_divergence_status=status,
-        native_divergence_count=divergence_count,
-        **proxy,
-        policy=policy,
-        candidate_promotion_vetoes=promotion_vetoes,
         tuning_repair_triggers=repair_triggers,
-        candidate_health_alerts=alerts,
-        diagnostic_followups=followups,
-        cost_stop_reasons=requested_cost_stops,
         explanatory_notes=("binary_acceptance_is_explanatory_only",),
     )
+
 
 
 def _movement_summaries(
@@ -1713,8 +1776,8 @@ def _signed_proxy_summary(
         summary = _signed_proxy_tensors(
             _float64_tensor(log_accept_ratio), policy.max_abs_log_accept_energy_proxy
         )
-    negative_counts = summary["negative"]
-    positive_counts = summary["positive"]
+    negative_counts = _host_vector(summary["negative"])
+    positive_counts = _host_vector(summary["positive"])
     draw_count = int(log_accept_ratio.shape[0])
     denominator = float(draw_count)
     return {
@@ -2322,30 +2385,19 @@ def _trajectory_pathology_flags(
     normalized_return: Any,
     path_return: Any,
 ) -> tuple[bool, bool]:
-    import tensorflow as tf
-
-    movement = _float64_tensor(movement)
-    repeated = _float64_tensor(repeated)
-    normalized_return = _float64_tensor(normalized_return)
-    path_return = _float64_tensor(path_return)
-    movement_failed = bool(
-        tf.reduce_any(movement < policy.min_movement_rate)
-        or tf.reduce_any(repeated > policy.max_repeated_state_fraction)
-        or tf.reduce_any(normalized_return < policy.min_normalized_return_displacement)
-    )
+    movement, repeated, normalized_return, path_return = (
+        _host_vector(value) for value in (movement, repeated, normalized_return, path_return))
+    movement_failed = (
+        any(value < policy.min_movement_rate for value in movement)
+        or any(value > policy.max_repeated_state_fraction for value in repeated)
+        or any(value < policy.min_normalized_return_displacement for value in normalized_return))
     # A stuck chain is trivially equal to itself at every lag. Reserve the
     # resonance label for recurrent paths that make real adjacent-state moves.
-    moving_chain = (
-        (movement >= policy.min_movement_rate)
-        & (repeated <= policy.max_repeated_state_fraction)
-    )
-    path_return_failed = bool(
-        int(tf.size(path_return))
-        and tf.reduce_any(
-            (path_return > _PATH_RETURN_MAX_FRACTION)
-            & moving_chain
-        )
-    )
+    moving_chain = [m >= policy.min_movement_rate and r <= policy.max_repeated_state_fraction
+                    for m, r in zip(movement, repeated, strict=True)]
+    path_return_failed = bool(path_return) and any(
+        value > _PATH_RETURN_MAX_FRACTION and moving
+        for value, moving in zip(path_return, moving_chain, strict=True))
     return movement_failed, path_return_failed
 
 
