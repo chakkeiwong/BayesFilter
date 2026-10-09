@@ -98,6 +98,8 @@ def build_maps(model,theta,ancestors,d_ancestors,observation,controls):
     upd=quadrature_update_with_parameter_tangent(mean[None],p[None],dmean[None],dp[None],
         model.observation_fn,model.observation_tangent_fn,r,observation,d_observation_covariance=dr,jitter=0.)
     up,pc,dup,dpc,vu=upd
+    # The shared quadrature authority returns validity per cloud.
+    vu = tf.reduce_all(vu)
     ag,dag,vg,guide_margin=recolour(pc[0],dpc[0],p,dp)
     cg=up[0]-mv(ag,mean); dcg=dup[0]-mv(dag,mean)-mv(ag,dmean)
     eye=tf.eye(d,dtype=dtype); eye_n=tf.broadcast_to(eye,[n,d,d])
