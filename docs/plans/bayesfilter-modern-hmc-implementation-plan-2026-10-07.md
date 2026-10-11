@@ -17,8 +17,9 @@ records the unchanged science contract; the
 preserves the original failed diagnostic and assesses all nine MAMS members in
 a new output directory. The refreshed twenty-cell inventory, repaired report,
 provenance and budget ledger are in `N5/method-reference-repair-01/`.
-The campaign now has **154011.092 seconds (42.78 aggregate worker-hours)**
-unallocated after the existing overhead reserve and the bounded D4R3 charge.
+The campaign now has **151019.616 seconds (41.95 aggregate worker-hours)**
+unallocated after the existing overhead reserve, the bounded D4R3 charge and
+the conservatively settled D4R4a cost preflight.
 The other 45 D4a proposals, fairer classical
 search, independent paired-seed replications and broader nonlinear validation
 remain open. The next development step is **D4R, generic trajectory adaptation**,
@@ -45,32 +46,37 @@ despite passing local checks. Seven mutation/oracle tests and 35 independent
 adapter tests passed. There is no method ranking, global-coverage claim or
 release promotion. The execution audit records the exact command, source
 snapshot, hardware probe, charged 722.673-second supervisor run, and remaining
-confirmation requirements. D4R4 remains open; its full-model source closure
-includes untracked shared-worktree files, and independent references,
+confirmation requirements. D4R4 remains open: independent references,
 model-coordinate observables, paired baselines and priced bounds must be frozen
-before the next serious launch. Before that launch, price D4R4 and refresh D4c/F from measured per-member
-cost; preserve all unlaunched denominators. N6 LAPS and conditional N7 alternatives remain
+before a posterior launch. D4R4a priced all four full models in two bounded
+attempts. Refresh D4c/F from those measured per-member costs; preserve all
+unlaunched denominators. N6 LAPS and conditional N7 alternatives remain
 separate method-development branches, followed by N8 consumer/book/release
 review. No method ranking, exact nonlinear truth, optional release or default
 promotion follows from this one-seed SGQF cohort.
-The [D4R4a cost-only plan](bayesfilter-mams-d4r4a-full-model-pricing-2026-10-12.md)
-isolates full-model adaptive-pilot pricing from posterior comparison. Four
-saved reference loaders reject changed inference/tuning source hashes despite
-unchanged target inputs; four current finite-target value/score parity tests
-pass, but old reference authority is not silently restored. Saved local
-factors enter D4R4a only as disclosed warm-start hypotheses with fresh target
-checks. D4R4b still requires a versioned reference provenance bridge or new
-references, matched baselines, model quantities and paired uncertainty.
-The first committed D4R4a attempt completed both PP targets (two short prices
-each), then stopped on missing paired SIR conditioning telemetry in the
-isolated source; structural remained unstarted. The
-[execution record](bayesfilter-mams-d4r4a-execution-2026-10-12.md) preserves the
-652.049-second charge, source-integration diagnosis and the unchanged-budget
-SIR/structural retry plan. The focused repair adds no sampler gate and changes
-no likelihood or score; all four real full-horizon price consumers must pass
-in an isolated staged tree before that retry. Pilot window reliability was
-insufficient for learned length updates on both PP targets, so their usable
-cost rows do not establish adequate duration adaptation.
+The [D4R4a result](bayesfilter-mams-d4r4a-full-model-pricing-result-2026-10-12.md)
+closes full-model cost preflight: the shared discarded MAMS proposer completed
+two short prices on each of PP-SGQF, PP-UKF, SIR and structural UKF; all eight
+short paths passed numerical health. The first committed snapshot omitted
+SIR's paired condition diagnostic, causing a proper preparation veto; the
+scoped source repair and all four isolated full-horizon price smokes passed.
+The bounded SIR/structural retry finished with total GPU supervisor charge
+1,191.476 seconds across both attempts. No model delivered a reliable learned
+length from the two 64-draw diagnostic windows. These are cost-only rows from
+two recorded source commits, not a same-source posterior or method comparison.
+The old posterior reference loaders still reject the committed source closure;
+saved local factors remain unadmitted warm-start hypotheses. D4R4b must first
+complete a versioned reference compatibility audit or new references, and
+price a longer discarded-window ladder before freezing an adequately searched
+classical/MAMS cohort, model quantities and paired uncertainty design.
+The [D4R4b preconfirmation plan](bayesfilter-mams-d4r4b-preconfirmation-2026-10-12.md)
+now makes those first dependencies executable: a versioned reference-source
+audit and an all-model 256/64 diagnostic-window rung, with a conditional
+1024/256 rung preserving original target seed indices. It suballocates 3,600
+local-check seconds and two 7,200-second GPU allocations from the settled
+balance; 133,019.616 seconds remain provisionally unallocated while reserved.
+The cost consumer gains explicit window/lag/seed-index arguments, with unchanged
+historical 64/16 defaults; it remains a caller of the shared MAMS proposer.
 Historical status snapshots below are dated records, not active instructions.
 
 **Owner scope correction, 10 October:** NUTS is excluded, including diagnostic

@@ -55,8 +55,8 @@ def test_full_model_price_runs_shared_discarded_proposer_and_native_path(tmp_pat
     geometry_fixture(directory, fixture)
     monkeypatch.setattr(price, "geometry_directory", lambda root, target: directory)
     original = price.pilot_config
-    monkeypatch.setattr(price, "pilot_config", lambda binding, seed: replace(
-        original(binding, seed), initial_epsilon=.03, initial_mean_duration=.09,
+    monkeypatch.setattr(price, "pilot_config", lambda binding, seed, **window: replace(
+        original(binding, seed, **window), initial_epsilon=.03, initial_mean_duration=.09,
         max_requested_duration=.18, max_steps_cap=32,
         epsilon_adaptation_windows=1, probe_transitions=1,
         fixed_settling_transitions=1, fixed_window_transitions=8,
@@ -76,6 +76,28 @@ def test_full_model_price_runs_shared_discarded_proposer_and_native_path(tmp_pat
     assert design["parameter_dim"] == fixture.adapter.parameter_dim
     pilot = json.loads((output / "pilot/pilot-result.json").read_text())
     assert result["rows"][0]["seed"] not in [row["seed"] for row in pilot["seeds"]]
+
+
+def test_window_design_and_subset_seed_map():
+    from types import SimpleNamespace
+    binding = SimpleNamespace(initial_active_state=tf.zeros([4, 3], tf.float64))
+    config = price.pilot_config(binding, 5400, fixed_window_transitions=256,
+                                max_autocorrelation_lag=64)
+    assert config.fixed_window_transitions == 256
+    assert config.max_autocorrelation_lag == 64
+    assert config.fixed_window_count == 2
+    assert price.target_seed_map(("NL-SIR", "NL-STR"), 5600, (2, 3)) == {
+        "NL-SIR": 25600, "NL-STR": 35600}
+    assert price.target_seed_map(("NL-SIR", "NL-STR"), 5600) == {
+        "NL-SIR": 5600, "NL-STR": 15600}
+    price.validate_window_design(256, 64)
+    price.validate_window_design(1024, 256)
+    with pytest.raises(ValueError, match="window design"):
+        price.validate_window_design(256, 66)
+    with pytest.raises(ValueError, match="target indices"):
+        price.target_seed_map(("NL-SIR", "NL-STR"), 5600, (2, 2))
+    with pytest.raises(ValueError, match="target indices"):
+        price.target_seed_map(("NL-SIR", "NL-STR"), 5600, (0, 1))
 
 
 def test_supervisor_finalizer_preserves_all_priced_and_unstarted_rows(tmp_path):

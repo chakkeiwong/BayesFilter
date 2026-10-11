@@ -526,3 +526,28 @@ are predeclared. Existing full-model scripts and preparation modules include
 untracked shared-worktree files, so the eight-target committed snapshot is
 not silently treated as a runnable full-model source closure. This is a
 planning dependency, not permission to stop the authorized repair program.
+
+## 9. D4R4a close and next-phase dependency, 12 October
+
+The [D4R4a cost result](bayesfilter-mams-d4r4a-full-model-pricing-result-2026-10-12.md)
+priced the shared discarded proposer on all four full-data nonlinear targets.
+Eight frozen short native policies passed numerical health, with complete
+candidate/source/seed inventories. The first attempt exposed a committed-source
+SIR status mismatch, repaired without changing its value or score; the second
+attempt completed SIR and structural. The total GPU supervisor charge was
+1,191.476036 seconds; a conservative 1,800-second local-check charge leaves
+151,019.615518 aggregate worker-seconds after the original overhead reserve.
+
+All four pilot targets reported unusable source and slow-observable length
+updates under two 64-draw windows and lag 16. Therefore the proposed durations
+were only the declared `sqrt(d)`/factor-two neighborhood. This negative
+diagnostic does not reject MAMS, but it prevents claiming that the full-model
+length-adaptation mechanism succeeded. D4R4b first needs (i) a versioned
+reference/source compatibility decision or fresh references, (ii) a priced
+longer-window diagnostic ladder with explicit reliability outcomes, and then
+(iii) a budget-feasible frozen qualification/posterior cohort and adequately
+searched classical comparators. R-hat, ESS and MCSE remain posterior-only.
+The old reference source closure differs from the committed price snapshot,
+so a finite short path is not reference evidence. The current candidate has
+failed neither target math nor sampler health; the observed failure is short
+diagnostic-window information and archival-reference provenance.

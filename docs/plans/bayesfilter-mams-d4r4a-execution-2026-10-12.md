@@ -1,8 +1,8 @@
 # D4R4a adaptive MAMS full-model pricing execution
 
 Plan: [full-model pricing](bayesfilter-mams-d4r4a-full-model-pricing-2026-10-12.md).
-Date: 12 October 2026. Status: **Attempt 01 terminal; scoped SIR telemetry
-repair and isolated four-model checks in progress before bounded retry**. No posterior
+Date: 12 October 2026. Status: **both GPU attempts terminal; four-target
+cost and short-path audit passed after scoped SIR repair**. No posterior
 or reference promotion follows from this phase.
 
 ## Skeptical implementation audit before launch
@@ -157,6 +157,62 @@ only `innovation_condition_estimate`. The recorded comparison is
 `N5/generic-adaptation/checks-01/sir-status-repair-value-score-parity.json`.
 Finite-point equality and the inspected status-only source diff support this
 localized repair; they do not requalify the historical posterior references.
+
+The repair commit is `9c33936693d3f96816bd84fd723cd7dfa65e0bd6`,
+tree `33aa725c438c025913c0ee3d8e5b71dab3e2a41a`. Attempt 02 runs from its
+immutable archive at `N5/generic-adaptation/source-9c3393669/`, with the same
+compiled operator SHA-256 as Attempt 01. The archived source compiles. A fresh
+trusted GPU 1 TensorFlow probe passed at 2026-10-11 17:38:39 UTC, confirming
+device execution and memory growth. The retry began at 17:48:54 UTC; parent
+PID 1955033, worker PID 1955035, session `40374`. Its manifest records XLA,
+the source commit/tree, GPU 1 and preinitialization memory growth. It entered
+SIR adaptation, so the previously failing source-validation boundary is
+cleared. No SIR result or structural cost claim is made before terminal audit.
+
+Actual retry command, from the immutable `source-9c3393669` directory:
+
+```bash
+env CUDA_VISIBLE_DEVICES=1 TF_FORCE_GPU_ALLOW_GROWTH=true TF_CPP_MIN_LOG_LEVEL=2 \
+  /home/ubuntu/anaconda3/envs/tfgpu/bin/python scripts/price_mams_adaptation_full_models.py \
+  --geometry-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5 \
+  --output /home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/full-model-pricing-02 \
+  --targets NL-SIR NL-STR --seed 25200 --max-wall-seconds 6547
+```
+
+The retry log is `N5/generic-adaptation/full-model-pricing-02.log`. The
+remaining allowance is shared with Attempt 01, not a new 6547-second campaign.
+
+## Terminal outcome and budget settlement
+
+Attempt 02 completed normally with a 539.426640639082-second supervisor
+charge. SIR and structural each completed two candidate prices, with no
+hard short-path veto. The independent terminal auditor verified all 177
+source hashes, operator and geometry inputs, pilot work and seed accounting,
+all four price bundles, GPU/XLA execution metadata and the per-target
+candidate denominator. Attempt 01's terminal audit checked its 177 source
+hashes and all four recorded PP bundles while preserving the SIR preparation
+failure and unstarted structural row. The combined audit checked 80 distinct
+seed pairs across the selected four completed target rows and explicitly
+records the two source commits. It does not combine those rows into a
+same-source method comparison.
+
+Both attempts charged 1,191.476036146283 GPU supervisor seconds; the unused
+6,008.523963853717 seconds of the original 7,200-second allocation are
+released. Conservatively charging all 1,800 reserved local-check seconds
+leaves 151,019.61551755294 aggregate worker-seconds in the existing campaign,
+after its preexisting overhead reserve. No new budget was granted or needed.
+The actual 32-transition calls ranged from 3.018 to 14.838 seconds; the
+complete per-target cost and work table is in the
+[result note](bayesfilter-mams-d4r4a-full-model-pricing-result-2026-10-12.md).
+
+All eight final short paths were healthy, but every source and slow-observable
+length estimate was unusable under the configured two 64-draw windows and
+maximum lag 16. The only returned durations came from the declared
+`sqrt(d)`/factor-two neighborhood. This pilot cannot establish successful
+length learning. The old full-model posterior references still fail their
+strict source checks against either committed price snapshot. They remain
+excluded from this cost result and must receive a versioned compatibility
+audit or replacement before dependent posterior comparisons.
 
 The reference audit was repeated against the **actual committed launch
 snapshot**, rather than the earlier dirty working tree. The saved PP-SGQF,

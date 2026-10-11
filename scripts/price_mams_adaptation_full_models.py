@@ -73,14 +73,32 @@ def prepare(target: str, root: Path, seed: int, *, use_xla: bool):
         epsilon_domain=(.001, 4.), max_repairs_per_family=1)
 
 
-def pilot_config(binding, seed: int):
+def validate_window_design(transitions: int, max_lag: int):
+    if (type(transitions) is not int or type(max_lag) is not int
+            or max_lag < 2 or max_lag % 2 or transitions < 4*max_lag):
+        raise ValueError("window design requires an even lag >=2 and draws >=4*lag")
+
+
+def target_seed_map(targets, seed, target_indices=None):
+    indices = tuple(range(len(targets))) if target_indices is None else tuple(target_indices)
+    if (len(set(targets)) != len(targets) or any(t not in TARGETS for t in targets)
+            or len(indices) != len(targets) or len(set(indices)) != len(indices)
+            or any(type(i) is not int or not 0 <= i < len(TARGETS) for i in indices)
+            or (target_indices is not None
+                and any(i != TARGETS.index(target) for target, i in zip(targets, indices)))):
+        raise ValueError("unique supported targets and matching distinct target indices required")
+    return {target: seed + 10000*index for target, index in zip(targets, indices)}
+
+
+def pilot_config(binding, seed: int, *, fixed_window_transitions=64, max_autocorrelation_lag=16):
     from bayesfilter.inference.hmc_mams_trajectory_proposals import MAMSPilotConfig
+    validate_window_design(fixed_window_transitions, max_autocorrelation_lag)
     dimension = int(binding.initial_active_state.shape[-1])
     return MAMSPilotConfig(initial_epsilon=.2,
         initial_mean_duration=math.sqrt(dimension), epsilon_domain=(.001, 4.),
         max_steps_cap=128, epsilon_adaptation_windows=6, probe_transitions=4,
-        fixed_settling_transitions=32, fixed_window_transitions=64,
-        fixed_window_count=2, max_autocorrelation_lag=16,
+        fixed_settling_transitions=32, fixed_window_transitions=fixed_window_transitions,
+        fixed_window_count=2, max_autocorrelation_lag=max_autocorrelation_lag,
         target_accept_probability=.9, log_epsilon_gain=math.log(2),
         source_length_coefficient=.3, window_agreement_factor=3.,
         duration_factors=(1., 2.), epsilon_factors=(1.,),
@@ -91,7 +109,8 @@ def pilot_config(binding, seed: int):
         seed=(20261012, seed+200))
 
 
-def run_case(target, output, seed, deadline, *, use_xla, source_hashes, geometry_root):
+def run_case(target, output, seed, deadline, *, use_xla, source_hashes, geometry_root,
+             fixed_window_transitions=64, max_autocorrelation_lag=16):
     import tensorflow as tf
     from bayesfilter.inference.hmc_candidate_set_tuning import HMCTuningCandidateRecord
     from bayesfilter.inference.hmc_mams_trajectory_proposals import (
@@ -118,7 +137,8 @@ def run_case(target, output, seed, deadline, *, use_xla, source_hashes, geometry
                 and bool(tf.reduce_all(status["valid_pre_regularized_score"]))
                 and bool(tf.reduce_all(status["floor_count_value"] == 0))):
             raise ValueError("current full-model target is invalid at prepared starts")
-        pilot = pilot_config(binding, seed)
+        pilot = pilot_config(binding, seed, fixed_window_transitions=fixed_window_transitions,
+                             max_autocorrelation_lag=max_autocorrelation_lag)
         write_json(output / "design.json", dict(target=target, data_sha256=metadata["data_sha256"],
             horizon=metadata["horizon"], parameter_dim=metadata["parameter_dim"],
             geometry_sha256=metadata["geometry_sha256"],
@@ -210,9 +230,12 @@ def worker(args):
 
     args.output.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
-    manifest = dict(command=[sys.executable, *sys.argv], plan=PLAN,
+    manifest = dict(command=[sys.executable, *sys.argv], plan=args.plan,
         environment=sys.executable, **source_revision(), seed=args.seed,
-        targets=list(args.targets), started_utc=datetime.now(timezone.utc).isoformat(),
+        targets=list(args.targets), target_seeds=target_seed_map(args.targets, args.seed, args.target_indices),
+        fixed_window_transitions=args.fixed_window_transitions,
+        max_autocorrelation_lag=args.max_autocorrelation_lag,
+        started_utc=datetime.now(timezone.utc).isoformat(),
         max_wall_seconds=args.max_wall_seconds,
         gpu_intentionally_hidden=args.cpu_reference,
         status="starting", result_file=str(args.output / "result.json"))
@@ -237,12 +260,14 @@ def worker(args):
             use_xla=not args.cpu_reference,
             tf32_enabled=tf.config.experimental.tensor_float_32_execution_enabled())
         write_json(args.output / "manifest.json", manifest)
-        def case_runner(target, output, seed, deadline, *, use_xla, source_hashes):
+        def case_runner(target, output, _matrix_seed, deadline, *, use_xla, source_hashes):
             for name, digest in geometry_inputs.items():
                 if hashlib.sha256(Path(name).read_bytes()).hexdigest() != digest:
                     raise ValueError("geometry input changed during pricing: " + name)
-            return run_case(target, output, seed, deadline, use_xla=use_xla,
-                            source_hashes=source_hashes, geometry_root=args.geometry_root)
+            return run_case(target, output, manifest["target_seeds"][target], deadline, use_xla=use_xla,
+                            source_hashes=source_hashes, geometry_root=args.geometry_root,
+                            fixed_window_transitions=args.fixed_window_transitions,
+                            max_autocorrelation_lag=args.max_autocorrelation_lag)
         result = execute_matrix(args.targets, args.output, args.seed,
             started + args.max_wall_seconds, use_xla=not args.cpu_reference,
             source_hashes=hashes, case_runner=case_runner)
@@ -266,7 +291,12 @@ def supervise(args):
     command = [sys.executable, str(Path(__file__).resolve()), "--worker",
         "--output", str(args.output.resolve()), "--geometry-root", str(args.geometry_root.resolve()),
         "--targets", *args.targets,
-        "--seed", str(args.seed), "--max-wall-seconds", str(args.max_wall_seconds-grace)]
+        "--seed", str(args.seed), "--max-wall-seconds", str(args.max_wall_seconds-grace),
+        "--fixed-window-transitions", str(args.fixed_window_transitions),
+        "--max-autocorrelation-lag", str(args.max_autocorrelation_lag),
+        "--plan", args.plan]
+    if args.target_indices is not None:
+        command.extend(["--target-indices", *(str(i) for i in args.target_indices)])
     if args.cpu_reference:
         command.append("--cpu-reference")
     started = time.monotonic()
@@ -298,12 +328,19 @@ def main():
     parser.add_argument("--geometry-root", required=True, type=Path)
     parser.add_argument("--targets", nargs="+", required=True, choices=TARGETS)
     parser.add_argument("--seed", required=True, type=int)
+    parser.add_argument("--target-indices", nargs="+", type=int,
+                        help="Original matrix indices for seed preservation in a target subset")
+    parser.add_argument("--fixed-window-transitions", type=int, default=64)
+    parser.add_argument("--max-autocorrelation-lag", type=int, default=16)
+    parser.add_argument("--plan", default=PLAN, help="Recorded experiment plan path")
     parser.add_argument("--max-wall-seconds", required=True, type=float)
     parser.add_argument("--cpu-reference", action="store_true")
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if len(set(args.targets)) != len(args.targets) or not 0 < args.max_wall_seconds <= 7200:
         raise ValueError("unique targets and a bounded positive allocation required")
+    validate_window_design(args.fixed_window_transitions, args.max_autocorrelation_lag)
+    target_seed_map(args.targets, args.seed, args.target_indices)
     if os.environ.get("TF_FORCE_GPU_ALLOW_GROWTH", "").lower() != "true":
         raise ValueError("GPU memory growth must be configured before framework import")
     if args.cpu_reference and os.environ.get("CUDA_VISIBLE_DEVICES") != "-1":
