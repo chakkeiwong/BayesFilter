@@ -53,6 +53,14 @@ cost; preserve all unlaunched denominators. N6 LAPS and conditional N7 alternati
 separate method-development branches, followed by N8 consumer/book/release
 review. No method ranking, exact nonlinear truth, optional release or default
 promotion follows from this one-seed SGQF cohort.
+The [D4R4a cost-only plan](bayesfilter-mams-d4r4a-full-model-pricing-2026-10-12.md)
+isolates full-model adaptive-pilot pricing from posterior comparison. Four
+saved reference loaders reject changed inference/tuning source hashes despite
+unchanged target inputs; four current finite-target value/score parity tests
+pass, but old reference authority is not silently restored. Saved local
+factors enter D4R4a only as disclosed warm-start hypotheses with fresh target
+checks. D4R4b still requires a versioned reference provenance bridge or new
+references, matched baselines, model quantities and paired uncertainty.
 Historical status snapshots below are dated records, not active instructions.
 
 **Owner scope correction, 10 October:** NUTS is excluded, including diagnostic

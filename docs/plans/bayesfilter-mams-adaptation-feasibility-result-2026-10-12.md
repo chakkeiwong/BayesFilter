@@ -106,6 +106,28 @@ untouched confirmation.
 ## Refreshed next phase
 
 The full nonlinear comparison cannot be promoted from these short timings.
+Read-only D4R4 preflight on 12 October found that all four saved full-model
+posterior-reference loaders reject the current checkout: each archived source
+closure includes five changed inference/tuning files (`__init__.py`,
+`hmc_candidate_set_artifacts.py`, `hmc_candidate_set_execution.py`,
+`hmc_candidate_set_tuning.py`, `tuning_contract.py`). Their recorded input
+files and target-source files still match. Three saved local-geometry source
+closures also include a changed geometry diagnostic script. Inspection of the
+five common diffs found new MAMS exports, repair records and controller rules,
+not an altered reference integrand. Four current CPU parity regressions passed
+against independent full-horizon value/score calculations (PP-UKF, PP-SGQF,
+SIR and structural UKF), but finite probe points alone cannot reissue the
+old reference artifact. The prior reference directories remain historical
+until a versioned source-compatibility bridge with full dependency audit is
+checked, or new references are computed. This is a provenance gate for
+posterior comparison, not a reason to reject cost-only pilot pricing.
+
+The old full-model MAMS driver also uses a nine-point frozen grid, an inherited
+epsilon upper bound of 1 and zero repair descendants. It cannot be relabeled
+as execution of the new adaptation. A new full-model consumer must call the
+shared discarded proposer and public candidate-set tuner, while treating any
+saved local factor only as a named warm-start geometry hypothesis.
+
 Before another serious launch, D4R4 must (1) assemble a committed source
 closure for SGQF, UKF, SIR and structural adapters; (2) check each finite
 target and score against its independent reference; (3) specify transformed
