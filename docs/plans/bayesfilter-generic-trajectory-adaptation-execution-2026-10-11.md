@@ -138,3 +138,29 @@ cannot expose residual geometry or missed modes. The partially whitened
 funnel and local-start mixture test that limitation. Full model observables,
 independent filter references and paired replications remain necessary for
 D4R4; bounded feasibility cannot close them.
+
+## Terminal update, 12 October 2026
+
+The reviewed bounded run finished normally on trusted GPU 1/XLA in 722.673
+supervisor seconds. Its [result and phase refresh](bayesfilter-mams-adaptation-feasibility-result-2026-10-12.md)
+records 25/25 verified/exported/assessed members across eight targets,
+21 short local posterior checks passed, four incomplete, and zero numerical
+hard vetoes. All four mixture members passed local checks but observed zero
+left-mode mass against the known value about 0.3. This is a failure of global
+coverage, not of numerical qualification; R-hat remained posterior-only.
+Terminal audit matched 174 source/operator hashes, the Git tree, candidate
+membership and 325 distinct recorded seed pairs. An additional isolated
+CPU-only suite passed 42 adapter/mutation tests; an optional separate generic
+full-chain fixture could not import an untracked source module and yielded
+no numerical result. The full local-work reserve and enclosing GPU elapsed
+time are charged once, leaving 154,011.091554 aggregate worker-seconds.
+
+The plan survived a terminal skeptical review for its bounded engineering
+question: the baseline was the public tuner and known analytic laws, no
+proxy diagnostic was promoted to posterior truth, every incomplete member
+remained in the denominator, and stop conditions, source provenance and
+hardware matched the design. Its one seed and short chain caps do not answer
+the D4R4 comparative question. Full-model source closure, independent
+references, model quantities, method-matched prices, paired replications
+and uncertainty analysis remain the next required execution design. No
+unpriced full-model run was launched from the shared untracked scripts.

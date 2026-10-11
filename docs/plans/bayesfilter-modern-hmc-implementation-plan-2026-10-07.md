@@ -17,8 +17,9 @@ records the unchanged science contract; the
 preserves the original failed diagnostic and assesses all nine MAMS members in
 a new output directory. The refreshed twenty-cell inventory, repaired report,
 provenance and budget ledger are in `N5/method-reference-repair-01/`.
-The campaign has 158333.765 seconds (43.98 hours) unallocated after the
-existing overhead reserve. The other 45 D4a proposals, fairer classical
+The campaign now has **154011.092 seconds (42.78 aggregate worker-hours)**
+unallocated after the existing overhead reserve and the bounded D4R3 charge.
+The other 45 D4a proposals, fairer classical
 search, independent paired-seed replications and broader nonlinear validation
 remain open. The next development step is **D4R, generic trajectory adaptation**,
 defined in the [reviewed repair subplan](bayesfilter-generic-trajectory-adaptation-repair-2026-10-11.md).
@@ -35,15 +36,19 @@ accumulation mechanics pass. The [execution audit](bayesfilter-generic-trajector
 tracks the remaining analytic/observable tests and D4R3–D4R4 confirmation.
 These engineering checks establish neither mixing nor a robustness gain.
 The final isolated regression suite passed 99 tests. A public Gaussian CPU
-smoke retained and assessed all three verified policies. D4R3 now has an
-[executable bounded design](bayesfilter-mams-adaptation-bounded-validation-2026-10-11.md)
-for six analytic geometries plus LGSSM and nonlinear accumulation, capped at
-two aggregate worker-hours; one additional hour conservatively covers local
-regressions. After these reservations, 147533.7646589242 seconds remain
-unallocated pending actual settlement. The execution audit records the exact
-command, source snapshot, hardware probe, tests and incomplete confirmation
-requirements. Mutation coverage and D4R4 are not closed by this feasibility run.
-Before another long launch, reconcile the budget, price D4R and refresh D4c/F from measured per-member
+smoke retained and assessed all three verified policies. The
+[bounded D4R3 result](bayesfilter-mams-adaptation-feasibility-result-2026-10-12.md)
+now records the completed eight-target GPU/XLA run: all 25 candidates were
+verified and assessed, 21 passed the intentionally short local posterior
+checks, four remained incomplete, and all four mixture members missed a mode
+despite passing local checks. Seven mutation/oracle tests and 35 independent
+adapter tests passed. There is no method ranking, global-coverage claim or
+release promotion. The execution audit records the exact command, source
+snapshot, hardware probe, charged 722.673-second supervisor run, and remaining
+confirmation requirements. D4R4 remains open; its full-model source closure
+includes untracked shared-worktree files, and independent references,
+model-coordinate observables, paired baselines and priced bounds must be frozen
+before the next serious launch. Before that launch, price D4R4 and refresh D4c/F from measured per-member
 cost; preserve all unlaunched denominators. N6 LAPS and conditional N7 alternatives remain
 separate method-development branches, followed by N8 consumer/book/release
 review. No method ranking, exact nonlinear truth, optional release or default

@@ -1,5 +1,9 @@
 # Bounded MAMS adaptation validation
 
+Terminal status, 12 October 2026: the eight-target run completed within the
+two-hour cap. Its actual evidence, negative mixture control, test outcomes and
+settled budget are in the [result note](bayesfilter-mams-adaptation-feasibility-result-2026-10-12.md).
+
 This executes D4R3 and prices the first D4R4 paths. The question is whether the
 same discarded proposer survives contrasting target geometries, preserves
 fresh qualification and every verified member, and exposes inadequate

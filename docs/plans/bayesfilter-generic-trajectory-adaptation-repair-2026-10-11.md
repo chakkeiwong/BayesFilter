@@ -1,6 +1,8 @@
 # Generic trajectory adaptation repair for HMC and MAMS
 
-Date: 11 October 2026. Status: **D4R1 implemented; D4R2/D4R3 validation in progress**.
+Date: 11 October 2026. Status, refreshed 12 October: **D4R1–D4R2 implemented;
+the bounded D4R3 feasibility stage complete; remaining D4R3 calibration and
+D4R4 confirmation open**.
 This is the D4R repair subplan of the
 [modern-method master](bayesfilter-modern-hmc-implementation-plan-2026-10-07.md).
 It answers the owner's request for a repair that generalizes beyond
@@ -494,3 +496,33 @@ alternative explanation and what fresh result would overturn the conclusion.
 The source adaptation is heuristic proposal machinery. Neither those sources
 nor the present artifacts prove universal robust tuning; the multi-model
 validation is the missing evidence this repair is designed to obtain.
+
+## 8. October 12 phase refresh
+
+The [bounded D4R3 result](bayesfilter-mams-adaptation-feasibility-result-2026-10-12.md)
+completes the planned eight-target GPU/XLA feasibility run: 25/25 created
+candidates were independently verified, exported, reloaded and assessed. Four
+short posterior assessments were inconclusive, while all four separated-mixture
+members passed local diagnostics yet missed the exact 0.3 left-mode mass. This
+is a reference/coverage failure, not a tuning-membership failure or shared
+implementation veto. The mutation and independent adapter suite passed 42
+tests after correcting stale capability assertions; the earlier scoped suite
+passed 99. The settled campaign balance is 154,011.091554 seconds after
+conservative local-work and GPU charges.
+
+Skeptical terminal review: the run's exact analytic baselines and negative
+control answer a feasibility question, not the unperformed causal comparison.
+No descriptive pilot duration, local R-hat, short-chain ESS, runtime or exact
+moment difference is promoted into a method ranking. One seed, short caps,
+identity/local geometry, and absent full-model observables/references are
+material limitations. GPU/XLA, memory growth, source closure and stream
+identity were recorded and checked; no shared numerical or artifact defect
+requires invalidation. Oscillation/antithetic controls, calibrated tail
+quantities and model-coordinate funnel checks remain D4R3 work. The next
+full-model command cannot answer D4R4 until
+the actual source closure is committed, independent finite-filter references
+and quantities are bound, costs are priced, and paired baselines/uncertainty
+are predeclared. Existing full-model scripts and preparation modules include
+untracked shared-worktree files, so the eight-target committed snapshot is
+not silently treated as a runnable full-model source closure. This is a
+planning dependency, not permission to stop the authorized repair program.
