@@ -1,8 +1,8 @@
 # D4R4a adaptive MAMS full-model pricing execution
 
 Plan: [full-model pricing](bayesfilter-mams-d4r4a-full-model-pricing-2026-10-12.md).
-Date: 12 October 2026. Status: **source and CPU preflight complete; trusted
-GPU/XLA cost-only launch pending the scoped source snapshot**. No posterior
+Date: 12 October 2026. Status: **Attempt 01 terminal; scoped SIR telemetry
+repair and isolated four-model checks in progress before bounded retry**. No posterior
 or reference promotion follows from this phase.
 
 ## Skeptical implementation audit before launch
@@ -65,7 +65,7 @@ meet this plan.
   at full horizons (20, 20, 20, 100). The saved factors remained labeled
   `warm_start_only`; no reference or posterior inference was made.
 
-The new source commit and source snapshot are the next actions. Reserve at
+The source commit and source snapshot are complete. Reserve at
 most 1,800 seconds for this local phase and 7,200 seconds for one bounded
 GPU attempt and localized recovery under the unchanged scientific contract.
 The pre-reservation settled balance is 154,011.091554 seconds; the provisional
@@ -80,6 +80,98 @@ path. The trusted TensorFlow probe at 2026-10-11 17:05:49 UTC selected idle
 host GPU 1, executed a device operation, and verified memory growth on its
 visible device. This probe is readiness evidence only. A fresh committed
 archive, not this staged `/tmp` directory, is required for the serious launch.
+
+## Committed launch and resumed review
+
+Source commit: `ca3c26034565aabb6eaab329714edb7bf0d8101c`; tree:
+`a66c30783705570992e50b2e833928399f114a1e`. The immutable source is
+`N5/generic-adaptation/source-ca3c26034/`, archived from that commit with
+`bayesfilter`, `scripts` and `tests`. The separately copied compiled operator
+hash is `2feb93135f2359e60aca446f52f8468b104199b4d398d4fe6057030df20f23d6`.
+Snapshot compilation checks pass; it is not modified during execution.
+
+The resumed skeptical review checked the actual supervisor and worker: the
+7,200-second parent cap includes the 60-second cooperative allowance, all four
+target rows survive interruption, each generated proposal is listed before
+pricing, and old posterior reference means are never loaded. The review
+passes for cost and short-path health only. The strict reference mismatch
+still prevents a posterior comparison.
+
+A fresh trusted GPU probe passed at 2026-10-11 17:09:53 UTC (12 October
+01:09:53 Asia/Shanghai); host GPU 1 was idle and TensorFlow 2.20.0 performed
+a device operation with memory growth verified. Worker PID 1927342, parent
+PID 1927340, began at 17:11:41 UTC / 01:11:41 Asia/Shanghai. The manifest
+records GPU 1, XLA enabled, TF 2.20.0, TFP 0.25.0, and verified preinitialization
+memory growth. The first XLA cluster compiled. Initial preparation is still
+work in progress, not a terminal pilot failure. Session: `70657`.
+
+Actual command, from the immutable snapshot directory:
+
+```bash
+env CUDA_VISIBLE_DEVICES=1 TF_FORCE_GPU_ALLOW_GROWTH=true TF_CPP_MIN_LOG_LEVEL=2 \
+  /home/ubuntu/anaconda3/envs/tfgpu/bin/python scripts/price_mams_adaptation_full_models.py \
+  --geometry-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5 \
+  --output /home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/full-model-pricing-01 \
+  --targets NL-PP-SGQF NL-PP-UKF NL-SIR NL-STR --seed 5200 --max-wall-seconds 7200
+```
+
+Standard output and error go to `N5/generic-adaptation/full-model-pricing-01.log`.
+The actual command includes this redirection. The terminal audit must charge
+supervisor elapsed once, inspect every target and proposal, compare source,
+operator and geometry hashes, and refresh the next phase from observed costs.
+
+Attempt 01 terminated after 652.0493955072016 supervisor seconds. PP-SGQF
+completed in 380.479 seconds with two healthy 32-transition short paths;
+PP-UKF completed in 245.900 seconds with two healthy short paths. SIR failed
+during preparation after 19.060 seconds:
+`target_status_telemetry conditioning fields must be both present or both absent`.
+Structural remained `not_started_repair_required`. The SIR archived source
+contains the companion condition statistic, but the committed cost-run
+snapshot omitted its still-uncommitted implementation. Thus the prior CPU
+checks, which ran from the dirty working tree, were not an adequate isolated
+four-model preflight. This is an infrastructure/source-integration defect,
+not a failed MAMS pilot or evidence against SIR sampling.
+
+The localized repair is described in the plan. It includes the existing SIR
+status-only condition-number recurrence and expands the full-horizon tiny
+proposer/native-price regression to all four models. A new isolated source
+commit and fresh `full-model-pricing-02` root will run SIR and structural
+only, with original per-target seeds. The remaining GPU allowance is
+`floor(7200 - 652.0493955072016) = 6547` seconds. Attempt 01 and its
+successful PP rows remain intact. No changed math target, data, method,
+promotion criterion, hardware class or privacy boundary is authorized by
+this repair; failure to establish the status-only property would veto retry.
+
+The isolated staged tree `16ab3cac2d8186b5be8f05d0bb216deb592698ae`
+included the SIR telemetry repair, all four true-horizon price smokes, the
+unchanged MAMS implementation and the copied compiled operator. With GPUs
+hidden, nine focused tests passed in 459.66 seconds: one warm-start guard,
+four real full-horizon tiny proposer/native-price paths, one interrupted
+inventory regression, two SIR value/score checks and one paired-field
+validator check. JUnit evidence is at
+`N5/generic-adaptation/checks-01/full-model-sir-repair-isolated.xml`.
+The original and repaired SIR programs were also run in separate CPU-only
+processes at two fixed full-horizon parameter points. Their value, score,
+status code and validity mask were exactly equal; the repaired result added
+only `innovation_condition_estimate`. The recorded comparison is
+`N5/generic-adaptation/checks-01/sir-status-repair-value-score-parity.json`.
+Finite-point equality and the inspected status-only source diff support this
+localized repair; they do not requalify the historical posterior references.
+
+The reference audit was repeated against the **actual committed launch
+snapshot**, rather than the earlier dirty working tree. The saved PP-SGQF,
+PP-UKF and structural references have nine changed source files each; SIR
+has ten. The changes include other agents' uncommitted NeuTra and nonlinear
+files that are present in the working tree but absent from this launch commit.
+Four or five untracked diagnostic reference/driver files in each old source
+closure are also absent from the cost-only snapshot. Observation input hashes
+still match for all four. The SIR target-source difference adds an innovation
+condition-number diagnostic without changing its returned value or score, but
+the full source-compatibility bridge has **not** been established. These
+differences do not invalidate this declared cost-only snapshot, whose exact
+target source and geometry-input hashes are in its manifest. They prevent
+reuse of those old references for a posterior claim until a versioned
+dependency audit or fresh references pass on the chosen D4R4b source.
 
 | Decision | Primary criterion | Veto status | Uncertainty | Next action | Not concluded |
 | --- | --- | --- | --- | --- | --- |

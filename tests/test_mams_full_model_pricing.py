@@ -48,8 +48,9 @@ def test_old_geometry_is_explicit_warm_start_for_current_mams_target(tmp_path, m
     assert binding.scope.max_repairs_per_family == 1
 
 
-def test_full_model_price_runs_shared_discarded_proposer_and_native_path(tmp_path, monkeypatch):
-    fixture = modern_nonlinear.make_nonlinear_comparison_target("NL-PP-UKF", jit_compile=False)
+@pytest.mark.parametrize("target", price.TARGETS)
+def test_full_model_price_runs_shared_discarded_proposer_and_native_path(tmp_path, monkeypatch, target):
+    fixture = modern_nonlinear.make_nonlinear_comparison_target(target, jit_compile=False)
     directory = tmp_path / "geometry"
     geometry_fixture(directory, fixture)
     monkeypatch.setattr(price, "geometry_directory", lambda root, target: directory)
@@ -62,7 +63,7 @@ def test_full_model_price_runs_shared_discarded_proposer_and_native_path(tmp_pat
         max_autocorrelation_lag=2, duration_factors=(1.,), max_candidates=1,
         max_pilot_gradient_work=100000, max_pilot_wall_seconds=300.))
     output = tmp_path / "price"
-    result = price.run_case("NL-PP-UKF", output, 913, time.monotonic()+300,
+    result = price.run_case(target, output, 913, time.monotonic()+300,
         use_xla=False, source_hashes={}, geometry_root=tmp_path)
     assert result["status"] == "completed"
     assert result["tuning_artifact_authority"] is False
@@ -71,7 +72,8 @@ def test_full_model_price_runs_shared_discarded_proposer_and_native_path(tmp_pat
     assert result["rows"][0]["status"] in {"healthy_short_path", "candidate_veto"}
     assert result["rows"][0]["metadata"]["value_score_row_evaluations"] > 0
     design = json.loads((output / "design.json").read_text())
-    assert design["horizon"] == 20 and design["parameter_dim"] == 6
+    assert design["horizon"] == (100 if target == "NL-STR" else 20)
+    assert design["parameter_dim"] == fixture.adapter.parameter_dim
     pilot = json.loads((output / "pilot/pilot-result.json").read_text())
     assert result["rows"][0]["seed"] not in [row["seed"] for row in pilot["seeds"]]
 

@@ -61,6 +61,16 @@ pass, but old reference authority is not silently restored. Saved local
 factors enter D4R4a only as disclosed warm-start hypotheses with fresh target
 checks. D4R4b still requires a versioned reference provenance bridge or new
 references, matched baselines, model quantities and paired uncertainty.
+The first committed D4R4a attempt completed both PP targets (two short prices
+each), then stopped on missing paired SIR conditioning telemetry in the
+isolated source; structural remained unstarted. The
+[execution record](bayesfilter-mams-d4r4a-execution-2026-10-12.md) preserves the
+652.049-second charge, source-integration diagnosis and the unchanged-budget
+SIR/structural retry plan. The focused repair adds no sampler gate and changes
+no likelihood or score; all four real full-horizon price consumers must pass
+in an isolated staged tree before that retry. Pilot window reliability was
+insufficient for learned length updates on both PP targets, so their usable
+cost rows do not establish adequate duration adaptation.
 Historical status snapshots below are dated records, not active instructions.
 
 **Owner scope correction, 10 October:** NUTS is excluded, including diagnostic

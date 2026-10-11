@@ -30,9 +30,14 @@ No posterior R-hat/ESS/MCSE is used or computed for tuning membership here.
 ## Source and default audit
 
 The four archived full-model posterior references fail their exact source-hash
-loaders because five inference/tuning modules changed after generation; saved
-observation inputs and target-source files still match. Three local-geometry
-archives also contain a changed geometry driver. Four current full-horizon
+loaders. Against the earlier working tree, five inference/tuning modules had
+changed after generation; against the actual committed cost-run snapshot, nine
+sources differ for PP/structural and ten for SIR, and some untracked diagnostic
+reference sources are absent. Saved observation inputs still match. The
+additional SIR source edit adds a status diagnostic without changing the
+returned value or score; other differences require an explicit dependency
+audit. Three local-geometry archives also contain a changed geometry driver.
+Four current full-horizon
 value/score parity tests passed against independent evaluators, but probe
 parity alone cannot reissue a numerical reference. Therefore this phase does
 not load or use those reference means. A later versioned source-compatibility
@@ -126,3 +131,46 @@ env CUDA_VISIBLE_DEVICES=<gpu> TF_FORCE_GPU_ALLOW_GROWTH=true TF_CPP_MIN_LOG_LEV
   --output /home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/full-model-pricing-01 \
   --targets NL-PP-SGQF NL-PP-UKF NL-SIR NL-STR --seed 5200 --max-wall-seconds 7200
 ```
+
+## Localized source-integration repair, 12 October
+
+Attempt 01 terminated after 652.049396 supervisor seconds. Both PP targets
+completed their pilots and two short prices each. SIR failed during binding
+preparation because the committed target emits `min_innovation_eigenvalue`
+without the required companion `innovation_condition_estimate`; structural
+was preserved as unstarted. This is a source-integration failure before SIR
+adaptation, not a MAMS failure. The working tree already contains a narrowly
+scoped SIR telemetry repair, but the isolated source commit did not include
+it. Earlier all-model preparation checks used the working tree; the isolated
+price smoke tested only PP-UKF. That environment mismatch made the preflight
+insufficient.
+
+Repair the source snapshot by including the existing SIR diagnostic recurrence:
+report the largest innovation-covariance spectral condition number across the
+filter horizon. The mathematical definition is
+`max_t(lambda_max(S_t) / lambda_min(S_t))` for the positive-definite innovation
+covariance `S_t`. Carrying this extra loop diagnostic does not change the
+likelihood or its score. Do not weaken the paired-field validator or remove
+conditioning telemetry. Extend the real full-horizon tiny proposer/native-price
+test to **all four targets**, run it from an isolated staged tree, and retain
+the existing SIR value-only/score parity check. Tests use the already declared
+CPU diagnostic exception with GPUs hidden.
+
+The skeptical repair audit identifies the wrong preflight environment, leaves
+the numerical target/data/method and evidence criteria unchanged, and requires
+the actual staged source to pass the previously failing SIR consumer path.
+The repair passes this audit. A bounded retry is authorized by the original
+campaign and uses a fresh output root. Preserve Attempt 01, including the four
+successful PP price rows and the SIR/unstarted-structural denominator.
+
+After the focused checks and source commit, run only `NL-SIR NL-STR` with base
+seed `25200`. The matrix's declared 10000-per-target spacing preserves original
+target seeds 25200 and 35200; SIR never consumed adaptation or price streams in
+Attempt 01. Give the retry at most **6547 seconds**, derived by rounding down
+`7200 - 652.0493955072016`. This includes the same cooperative shutdown reserve
+and stays inside the original total GPU allocation. Any further source defect
+requires a terminal repair decision; do not silently add a third attempt.
+The original 1800-second local implementation/check reserve remains the bound
+for the focused repair checks. Final reporting must distinguish the two source
+commits and combine the target inventory without treating the rows as a single
+unchanged-source run or a posterior comparison.
