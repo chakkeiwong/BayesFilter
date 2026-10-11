@@ -19,8 +19,8 @@ class ResidualFunnelTarget(ValidationTarget):
     log(3) cancels the v~N(0,9) normalizing scale. Residual child curvature
     exp(2*delta) lies in [exp(-1), exp(1)].
     """
-    def __init__(self):
-        super().__init__("funnel_noncentered", jit_compile=True)
+    def __init__(self, *, jit_compile=True):
+        super().__init__("funnel_noncentered", jit_compile=jit_compile)
 
     def log_density(self, q):
         delta = .5*tf.tanh(q[..., :1]/2.)

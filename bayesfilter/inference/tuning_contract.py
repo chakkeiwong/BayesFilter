@@ -971,7 +971,7 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         capability_status="tested_supported",
         artifact_authority=True,
         algorithm_family=(
-            "ordinary_exact_value_score_broad_fixed_metric_hmc; typed "
+            "ordinary_exact_value_score_broad_fixed_metric_hmc; experimental typed randomized HMC and full-refresh MAMS; typed "
             "position-field config is a conditional mechanics branch"
         ),
         target_contract=(
@@ -991,14 +991,17 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         ),
         trajectory_policy=(
             "shared primary L grid (3, 5, 9, 13, 18, 25), explicit optional "
-            "all-survivor refinement and expansion; retain every verified pair"
+            "all-survivor refinement and expansion; retain every verified pair; "
+            "typed full-refresh MAMS accepts discarded duration/epsilon proposals "
+            "and explicit preserve_mean_duration repair without posterior gates"
         ),
         fresh_verification_policy=(
             "fresh fixed-kernel verification; default TFP runner requires typed "
             "acceptance, health, and minimum draws; rank-normalized split/folded "
             f"R-hat is retained as an explanatory diagnostic with threshold "
             f"metadata ({HMC_TUNING_ORDINARY_RHAT_THRESHOLD:.2f}), not a tuning "
-            "handoff gate"
+            "handoff gate; explicit experimental v7 uses independent fixed-horizon "
+            "start-bank repetitions with separate search/verification error allocations"
         ),
         ess_admission_policy=(
             "disabled for ordinary tuning admission; retained posterior ESS is separate"
@@ -1028,13 +1031,18 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "arbitrary bare runner callback",
             "engineering_probe_covariance_multiplier as a public ordinary mode",
             "transferring epsilon qualification across different L candidates",
+            "modern profiles as statistically qualified or claim-eligible release evidence",
             "fixed nonlinear transport without its transformed target contract",
             "retained posterior convergence claim",
         ),
         nonclaims=_PUBLIC_TUNER_NONCLAIMS,
         evidence_anchors=(
             "tests/test_hmc_candidate_set_execution.py::test_member_export_reload_and_continuation_match_direct_runner",
+            "tests/test_modern_hmc_pipeline.py::test_both_public_entrypoints_retain_and_reload_every_modern_member",
             "tests/test_hmc_candidate_set_execution.py::test_real_windowed_preparation_preserves_both_affine_layers",
+            "tests/test_hmc_acceptance_trials.py::test_replicated_gaussian_delivers_multiple_members_with_checked_exports",
+            "tests/test_hmc_acceptance_accounting.py",
+            "tests/test_hmc_acceptance_ssm_recovery.py",
             "tests/test_hmc_tuning_documentation_contract.py::test_ordinary_capability_matches_public_signature",
             "tests/test_hmc_whole_procedure_repair.py::test_public_ordinary_configuration_uses_common_search_and_retains_multiple_members",
             "tests/test_hmc_kernel_tuning_public_api.py::test_public_ordinary_config_rejects_typed_runner_binding",
@@ -1051,7 +1059,7 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
         interface_kind="public_tuner",
         capability_status="tested_supported",
         artifact_authority=True,
-        algorithm_family="frozen_nonlinear_transport_fixed_trajectory_hmc",
+        algorithm_family="frozen_nonlinear_transport_fixed_trajectory_hmc; experimental typed randomized HMC and full-refresh MAMS",
         target_contract=(
             "identity-bound frozen transport with exact transformed value including Jacobian and matching score"
         ),
@@ -1062,10 +1070,13 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "and bounded independently verified repairs"
         ),
         trajectory_policy=(
-            "all declared (epsilon, L) pairs measured; all-survivor refinement and retention"
+            "all declared (epsilon, L) pairs measured; all-survivor refinement and retention; "
+            "typed full-refresh MAMS supports discarded duration/epsilon proposals "
+            "and explicit preserve_mean_duration repair"
         ),
         fresh_verification_policy=(
-            "fresh fixed-kernel verification for every survivor; declared evidence rungs; R-hat reporting-only"
+            "fresh fixed-kernel verification for every survivor; declared evidence rungs; R-hat reporting-only; "
+            "explicit experimental v7 appends independent repetitions at fixed prefix and horizon"
         ),
         ess_admission_policy=(
             "disabled for kernel tuning admission; cumulative posterior ESS is separate"
@@ -1089,12 +1100,15 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "arbitrary position-only force without a frozen transport",
             "ordinary mass adaptation claim",
             "reuse after transport identity changes",
+            "modern profiles as statistically qualified or claim-eligible release evidence",
             "legacy directional diagnostic policy as an artifact-authority handoff",
         ),
         nonclaims=_PUBLIC_TUNER_NONCLAIMS,
         evidence_anchors=(
             "tests/test_hmc_whole_procedure_repair.py::test_public_fixed_transport_config_enters_common_scheduler",
+            "tests/test_modern_hmc_pipeline.py::test_both_public_entrypoints_retain_and_reload_every_modern_member",
             "tests/test_fixed_transport_hmc_binding.py",
+            "tests/test_hmc_acceptance_trials.py::test_replicated_gaussian_delivers_multiple_members_with_checked_exports",
         ),
         mass_capability="fixed",
         step_size_capability="owned",

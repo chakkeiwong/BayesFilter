@@ -25,6 +25,29 @@ class ValidationTarget:
         self.data = list(data) if data is not None else None
         self.control = control
         self.parameter_dim = self.spec.dimension
+        self._ssm = None
+        if target_id.startswith("ssm_campaign_"):
+            from .ssm_campaign_targets import CampaignSSMTarget
+            self._ssm = CampaignSSMTarget(target_id, self.parameters, self.data,
+                control=control, jit_compile=jit_compile)
+            self.parameters = dict(self._ssm.parameters)
+            self.data = self._ssm.data
+            self.parameter_dim = self._ssm.parameter_dim
+            self.batch_rank_policy = self._ssm.batch_rank_policy
+            self._ssm.spec = self.spec
+            return
+        if target_id.startswith("ssm_"):
+            from .ssm_targets import make_ssm_validation_target
+            self._ssm = make_ssm_validation_target(
+                target_id, self.parameters, self.data, control=control,
+                jit_compile=jit_compile,
+            )
+            self.parameters = dict(self._ssm.parameters)
+            self.data = list(self._ssm.data)
+            self.parameter_dim = self._ssm.parameter_dim
+            self.batch_rank_policy = self._ssm.batch_rank_policy
+            self._ssm.spec = self.spec
+            return
         if control == "location_shift":
             severity = self.parameters.get("location_shift_posterior_sd")
             if (target_id != "normal_conjugate" or not self.data
@@ -60,10 +83,14 @@ class ValidationTarget:
             autograph=False, jit_compile=jit_compile)
 
     def adapter_signature(self):
+        if self._ssm is not None:
+            return self._ssm.adapter_signature()
         return digest({"law": "inference_validation_target.v1", "target": self.target_id,
                        "parameters": self.parameters, "data": self.data, "control": self.control})
 
     def value_score_capability(self):
+        if self._ssm is not None:
+            return self._ssm.value_score_capability()
         from bayesfilter.inference.posterior_adapter import ValueScoreCapability
         return ValueScoreCapability(value_score_authority="graph_native", xla_hmc_ready=True,
             full_chain_xla_diagnostic_ready=True, target_scope="inference_validation",
@@ -71,10 +98,14 @@ class ValidationTarget:
             nonclaims=("validation fixture only; exact law checked by independent reference",))
 
     def parameter_names(self):
+        if self._ssm is not None:
+            return self._ssm.parameter_names()
         return self.spec.parameters if len(self.spec.parameters) == self.parameter_dim else tuple(
             f"z{i}" for i in range(self.parameter_dim))
 
     def to_model(self, q):
+        if self._ssm is not None:
+            return self._ssm.to_model(q)
         if self.target_id == "funnel_noncentered":
             return tf.concat([q[..., :1], tf.exp(q[..., :1] / 2) * q[..., 1:]], -1)
         if self.spec.support == "positive":
@@ -103,6 +134,8 @@ class ValidationTarget:
         return -.5 * tf.square(x / scale) - tf.math.log(scale) - .5 * math.log(2 * math.pi)
 
     def log_density(self, q):
+        if self._ssm is not None:
+            return self._ssm.log_density(q)
         kind = self.target_id
         if self.control == "location_shift":
             # Deliberately translate BOTH prior and likelihood. Completing the
@@ -174,6 +207,8 @@ class ValidationTarget:
         raise ValueError(kind)
 
     def _batch_score(self, q):
+        if self._ssm is not None:
+            return self._ssm._batch_score(q)
         with tf.GradientTape() as tape:
             tape.watch(q)
             value = self.log_density(q)
@@ -183,12 +218,16 @@ class ValidationTarget:
         return value, score
 
     def log_prob_and_grad(self, position):
+        if self._ssm is not None:
+            return self._ssm.log_prob_and_grad(position)
         q = tf.convert_to_tensor(position, tf.float64)
         vector = q.shape.rank == 1
         value, score = self._batch(q[None] if vector else q)
         return (value[0], score[0]) if vector else (value, score)
 
     def target_status_telemetry(self, position):
+        if self._ssm is not None:
+            return self._ssm.target_status_telemetry(position)
         q = tf.convert_to_tensor(position, tf.float64)
         finite = tf.reduce_all(tf.math.is_finite(q), -1)
         return {"status_code": tf.where(finite, 0, 1), "valid_pre_regularized_score": finite,

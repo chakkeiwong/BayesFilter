@@ -2968,6 +2968,11 @@ class ReusableFullChainHMCRunner:
                 step_size=step_size,
                 num_leapfrog_steps=leapfrog_count,
             )
+            if getattr(self.adapter, 'proposal_rejection_policy', None) == 'sticky_numerical_rejection_v1':
+                if config.tuning_policy.uses_dual_averaging or config.require_finite_transitions:
+                    raise ValueError('guarded proposal lane requires fixed step and its own health contract')
+                from bayesfilter.inference.hmc_proposal_rejection import guarded_exact_hmc
+                kernel = guarded_exact_hmc(self.adapter, step_size, leapfrog_count)
             if config.tuning_policy.uses_dual_averaging:
                 kernel = _hmc_dual_averaging_kernel(kernel, config, step_size)
             if (config.capture_candidate_health and config.target_status_trace_policy == "per_chain_step"
@@ -6642,6 +6647,13 @@ def _trace_fn_for_config(
                 results = results.inner_results
             proposed = results.proposed_results
             accepted = results.accepted_results
+            if hasattr(proposed, 'failure_code'):
+                trace['proposal_failure_code'] = proposed.failure_code
+                trace['proposal_failure_step'] = proposed.failure_step
+                trace['proposal_failure_position'] = proposed.failure_position
+                trace['proposal_value_nonfinite'] = proposed.failure_value_nonfinite
+                trace['proposal_score_nonfinite'] = proposed.failure_score_nonfinite
+                trace['accepted_target_score_finite'] = tf.reduce_all(tf.math.is_finite(accepted.grads_target_log_prob[0]),axis=-1)
             scores = tf.nest.flatten((proposed.grads_target_log_prob, accepted.grads_target_log_prob))
             trace["target_score_finite"] = tf.reduce_all(tf.stack([
                 tf.reduce_all(tf.math.is_finite(score), axis=-1) for score in scores

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .hmc_transition_spec import candidate_gradient_work
+
 from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision
 
 import hashlib
@@ -15,6 +17,8 @@ from bayesfilter.inference.hmc_candidate_set_tuning import (
     HMCCandidateSetScope,
     HMCTuningCandidateRecord,
     HMCWorkItem,
+    HMCVerificationReceipt,
+    HMCControllerConfig,
     HMCTuningCandidateSetController,
     HMCTuningCandidateSetResult,
     _sha256,
@@ -80,6 +84,7 @@ def _validate_result_payload(
         "screened",
         "validating",
         "inconclusive_at_cap",
+        "preparation_review_required",
         "promotion_failed",
         "verified",
     }
@@ -91,6 +96,7 @@ def _validate_result_payload(
     config = payload.get("config")
     if not isinstance(config, Mapping):
         raise ValueError("candidate-set artifact has invalid controller config")
+    checked_config = HMCControllerConfig.from_payload(config)
     total_budget = int(config.get("total_budget_units", 0))
     used_budget = int(payload.get("budget_used_units", 0))
     remaining_budget = int(payload.get("remaining_budget_units", -1))
@@ -179,6 +185,23 @@ def _validate_result_payload(
         if checked_work.candidate_id not in by_id:
             raise ValueError("candidate-set work item references an unknown candidate")
         candidate = by_id[checked_work.candidate_id]
+        policy = checked_config.replicated_acceptance_policy
+        if (policy is not None) != (checked_work.trial_range is not None):
+            raise ValueError("work evidence unit differs from controller policy")
+        if policy is not None:
+            rungs = checked_config.evidence_rungs
+            rung = checked_work.evidence_rung
+            if rung >= len(rungs):
+                raise ValueError("work evidence rung exceeds policy")
+            expected = (0 if rung == 0 else policy.repetition_target(rungs[rung-1]),
+                        policy.repetition_target(rungs[rung]))
+            if checked_work.evidence_multiplier != rungs[rung] or checked_work.trial_range != expected:
+                raise ValueError("work trial range differs from controller policy")
+            if rung:
+                predecessor = work_by_id.get(checked_work.predecessor_work_id)
+                if (predecessor is None or predecessor["candidate_id"] != checked_work.candidate_id
+                        or predecessor["stage"] != checked_work.stage or predecessor["evidence_rung"] != rung-1):
+                    raise ValueError("work trial predecessor mismatch")
         if checked_work.candidate_record_hash != candidate["candidate_record_hash"]:
             raise ValueError("candidate-set work item candidate hash mismatch")
         if checked_work.candidate_family_id != candidate["candidate_family_id"]:
@@ -222,9 +245,13 @@ def _validate_result_payload(
         if receipt.get("mass_signature") != candidate.get("mass_signature"):
             raise ValueError("verification receipt mass mismatch")
         attempt_id = str(receipt.get("verification_attempt_id", ""))
+        checked_receipt = HMCVerificationReceipt.from_payload(receipt)
         if not attempt_id or attempt_id in receipt_ids:
             raise ValueError("duplicate verification attempt identity")
         work = work_by_attempt.get(attempt_id)
+        if work is not None and checked_receipt.trial_range != (
+                tuple(work["trial_range"]) if "trial_range" in work else None):
+            raise ValueError("receipt trial allocation differs from work")
         if (
             work is None
             or work.get("candidate_id") != candidate_id
@@ -311,6 +338,29 @@ def _validate_result_payload(
                 raise ValueError(f"repair {field} identity mismatch")
         if child.get("leapfrog_steps") != action.get("exact_l"):
             raise ValueError("repair exact L mismatch")
+        if checked_config.repair_trajectory_policy == "preserve_mean_duration":
+            if action.get("schema") != "bayesfilter.hmc_repair_action.v2":
+                raise ValueError("duration-preserving repair needs versioned lineage")
+            if action.get("parent_exact_l") != parent.get("leapfrog_steps"):
+                raise ValueError("repair parent count mismatch")
+            from bayesfilter.inference.hmc_trajectory_duration import compile_mean_duration
+            parent_action = action_by_child.get(parent["candidate_id"])
+            if parent.get("parent_candidate_id") is not None and parent_action is None:
+                raise ValueError("duration-preserving repairs must follow their recorded parent action")
+            requested = (parent_action["requested_mean_duration"] if parent_action is not None
+                         else float(parent["epsilon"]) * (int(parent["leapfrog_steps"]) + 1) / 2)
+            if action.get("requested_mean_duration") != requested:
+                raise ValueError("repair requested duration mismatch")
+            compiled = compile_mean_duration(
+                profile=checked_scope.transition_profile,
+                epsilon=float(child["epsilon"]),
+                requested_mean_duration=requested,
+                max_steps_cap=checked_config.repair_mean_duration_max_steps)
+            if compiled.frozen.max_steps != child.get("leapfrog_steps"):
+                raise ValueError("repair child does not preserve requested mean duration")
+        elif (action.get("schema") != "bayesfilter.hmc_repair_action.v1"
+              or child.get("leapfrog_steps") != parent.get("leapfrog_steps")):
+            raise ValueError("legacy repair must retain the parent count")
         if child.get("mass_signature") != action.get("mass_signature"):
             raise ValueError("repair mass identity mismatch")
         if action.get("old_epsilon") != parent.get("epsilon"):
@@ -377,7 +427,7 @@ def _validate_result_payload(
             if (work is None or type(index) is not int or index < 0
                     or type(transitions) is not int or transitions <= 0):
                 raise ValueError("invalid attempted chunk accounting identity or extent")
-            if event.get("gradient_work") != transitions * (by_id[work["candidate_id"]]["leapfrog_steps"] + 1):
+            if event.get("gradient_work") != transitions * candidate_gradient_work(by_id[work["candidate_id"]]):
                 raise ValueError("attempted chunk cost disagrees with candidate")
         if event.get("event") == "work_charged":
             charged += units

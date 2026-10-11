@@ -28,8 +28,22 @@ adaptation. D4R separates requested physical travel from epsilon, implements
 discarded method-specific proposals and frozen-scale exploration diagnostics,
 then tests them across analytic and state-space targets. All verified members
 remain retained; no R-hat or posterior-precision gate is added to tuning.
-D4R is planned, not implemented or validated. Before another long launch,
-reconcile the budget, price D4R and refresh D4c/F from measured per-member
+D4R1 is implemented: explicit duration compilation, discarded MAMS proposals,
+fixed-policy diagnostics and versioned duration-preserving repairs. D4R2 has
+recovery and both public consumer routes; Gaussian, LGSSM and nonlinear
+accumulation mechanics pass. The [execution audit](bayesfilter-generic-trajectory-adaptation-execution-2026-10-11.md)
+tracks the remaining analytic/observable tests and D4R3–D4R4 confirmation.
+These engineering checks establish neither mixing nor a robustness gain.
+The final isolated regression suite passed 99 tests. A public Gaussian CPU
+smoke retained and assessed all three verified policies. D4R3 now has an
+[executable bounded design](bayesfilter-mams-adaptation-bounded-validation-2026-10-11.md)
+for six analytic geometries plus LGSSM and nonlinear accumulation, capped at
+two aggregate worker-hours; one additional hour conservatively covers local
+regressions. After these reservations, 147533.7646589242 seconds remain
+unallocated pending actual settlement. The execution audit records the exact
+command, source snapshot, hardware probe, tests and incomplete confirmation
+requirements. Mutation coverage and D4R4 are not closed by this feasibility run.
+Before another long launch, reconcile the budget, price D4R and refresh D4c/F from measured per-member
 cost; preserve all unlaunched denominators. N6 LAPS and conditional N7 alternatives remain
 separate method-development branches, followed by N8 consumer/book/release
 review. No method ranking, exact nonlinear truth, optional release or default

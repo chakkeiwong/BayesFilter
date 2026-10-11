@@ -10,6 +10,8 @@ evidence of convergence.
 
 from __future__ import annotations
 
+from .hmc_transition_spec import candidate_gradient_work
+
 import hashlib
 import json
 import math
@@ -40,6 +42,7 @@ REPAIR_REASONS = frozenset(
 _DIRECTIONAL = {"repair_step_higher", "repair_step_lower"}
 _STAGE_ORDER = {"pilot": -1, "measurement": 0, "verification": 1}
 CONTROLLER_POLICY_VERSION = 3
+REPLICATED_CONTROLLER_POLICY_VERSION = 4
 
 
 def _integer(value: Any, name: str, minimum: int = 1) -> int:
@@ -85,6 +88,19 @@ def _sha256(value: Mapping[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _json_native_sha256(value: Any) -> str:
+    """Hash a JSON-native tree without renormalizing every scalar leaf.
+
+    Numerical records are normalized at their execution/serialization boundary.
+    This is not a replacement for generic API identity hashing: unsupported
+    objects and nonfinite numbers fail instead of receiving string fallbacks.
+    Lists and tuples have the same JSON representation as in ``_sha256``.
+    """
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":"),
+                         allow_nan=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _tuple_ints(values: Sequence[int], name: str) -> tuple[int, ...]:
     result = tuple(_integer(value, name) for value in values)
     if not result or any(value <= 0 for value in result):
@@ -118,8 +134,12 @@ class HMCCandidateSetScope:
     # None preserves historical mechanics records; numerical bindings require
     # an explicit boolean, which becomes part of every candidate's identity.
     use_xla: bool | None = None
+    transition_profile: Any = None
 
     def __post_init__(self) -> None:
+        from .hmc_transition_spec import HMCTransitionProfile
+        if self.transition_profile is not None and not isinstance(self.transition_profile, HMCTransitionProfile):
+            raise TypeError("transition_profile must be HMCTransitionProfile")
         if self.use_xla is not None and type(self.use_xla) is not bool:
             raise TypeError("use_xla must be an explicit boolean or None")
         for name in (
@@ -156,7 +176,8 @@ class HMCCandidateSetScope:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_tuning_scope.v1",
+            "schema": "bayesfilter.hmc_tuning_scope.v2" if self.transition_profile is not None else "bayesfilter.hmc_tuning_scope.v1",
+            **({"transition_profile": self.transition_profile.payload()} if self.transition_profile is not None else {}),
             "scope_id": self.scope_id,
             "search_id": self.search_id,
             "target_signature": self.target_signature,
@@ -179,7 +200,10 @@ class HMCCandidateSetScope:
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateSetScope":
-        if payload.get("schema") != "bayesfilter.hmc_tuning_scope.v1":
+        from .hmc_transition_spec import HMCTransitionProfile
+        profile = payload.get("transition_profile")
+        expected_schema = "bayesfilter.hmc_tuning_scope.v2" if profile is not None else "bayesfilter.hmc_tuning_scope.v1"
+        if payload.get("schema") != expected_schema:
             raise ValueError("unsupported HMC tuning scope schema")
         return cls(
             scope_id=payload["scope_id"],
@@ -206,12 +230,13 @@ class HMCCandidateSetScope:
             repair_factor=payload.get("repair_factor", 2.0),
             max_repairs_per_family=payload.get("max_repairs_per_family", 2),
             use_xla=payload.get("use_xla"),
+            transition_profile=HMCTransitionProfile.from_payload(profile) if profile is not None else None,
         )
 
 
 @dataclass(frozen=True)
 class HMCTuningCandidateRecord:
-    """One exact immutable ``(L, epsilon)`` setting."""
+    """One immutable setting, including an optional explicit transition law."""
 
     candidate_id: str
     candidate_family_id: str
@@ -235,6 +260,7 @@ class HMCTuningCandidateRecord:
     transition_identity: str
     candidate_record_hash: str
     use_xla: bool | None = None
+    transition_spec: Any = None
 
     @classmethod
     def create(
@@ -258,8 +284,11 @@ class HMCTuningCandidateRecord:
             raise ValueError("creation_ordinal must be positive")
         family = candidate_family_id or f"{scope.scope_id}:{scope.search_id}:family:{ordinal:06d}"
         candidate_id = f"{scope.scope_id}:{scope.search_id}:candidate:{ordinal:06d}"
+        spec = (scope.transition_profile.freeze(epsilon=value, max_steps=steps)
+                if scope.transition_profile is not None else None)
         payload = {
-            "schema": "bayesfilter.hmc_candidate_record.v1",
+            "schema": "bayesfilter.hmc_candidate_record.v2" if spec is not None else "bayesfilter.hmc_candidate_record.v1",
+            **({"transition_spec": spec.payload()} if spec is not None else {}),
             "candidate_id": candidate_id,
             "candidate_family_id": family,
             "parent_candidate_id": parent_candidate_id,
@@ -305,11 +334,13 @@ class HMCTuningCandidateRecord:
             transition_identity=scope.transition_identity,
             candidate_record_hash=_sha256(payload),
             use_xla=scope.use_xla,
+            transition_spec=spec,
         )
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_candidate_record.v1",
+            "schema": "bayesfilter.hmc_candidate_record.v2" if self.transition_spec is not None else "bayesfilter.hmc_candidate_record.v1",
+            **({"transition_spec": self.transition_spec.payload()} if self.transition_spec is not None else {}),
             "candidate_id": self.candidate_id,
             "candidate_family_id": self.candidate_family_id,
             "parent_candidate_id": self.parent_candidate_id,
@@ -373,8 +404,16 @@ class HMCVerificationReceipt:
     promotion_vetoes: tuple[str, ...] = ()
     repair_eligible: bool = False
     diagnostic_alerts: tuple[str, ...] = ()
+    trial_range: tuple[int, int] | None = None
 
     def __post_init__(self) -> None:
+        if self.trial_range is not None:
+            value = tuple(self.trial_range)
+            if len(value) != 2 or any(type(v) is not int for v in value) or not 0 <= value[0] < value[1]:
+                raise ValueError("invalid receipt trial range")
+            if tuple(self.draw_range) != (0, 0):
+                raise ValueError("independent trials cannot be represented as one continuous draw range")
+            object.__setattr__(self, "trial_range", value)
         if self.draw_range[0] < 0 or self.draw_range[1] < self.draw_range[0]:
             raise ValueError("draw_range must be ordered and non-negative")
         if self.acceptance is not None and not math.isfinite(float(self.acceptance)):
@@ -388,7 +427,9 @@ class HMCVerificationReceipt:
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_verification_receipt.v1",
+            "schema": "bayesfilter.hmc_verification_receipt.v2" if self.trial_range is not None else "bayesfilter.hmc_verification_receipt.v1",
+            **({"trial_range": self.trial_range, "evidence_unit": "independent_fixed_horizon_trial"}
+               if self.trial_range is not None else {}),
             "verification_attempt_id": self.verification_attempt_id,
             "candidate_id": self.candidate_id,
             "candidate_record_hash": self.candidate_record_hash,
@@ -413,8 +454,13 @@ class HMCVerificationReceipt:
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "HMCVerificationReceipt":
-        if payload.get("schema") != "bayesfilter.hmc_verification_receipt.v1":
+        if payload.get("schema") not in {"bayesfilter.hmc_verification_receipt.v1", "bayesfilter.hmc_verification_receipt.v2"}:
             raise ValueError("unsupported HMC verification receipt schema")
+        if payload.get("schema") == "bayesfilter.hmc_verification_receipt.v2":
+            if payload.get("evidence_unit") != "independent_fixed_horizon_trial" or payload.get("trial_range") is None:
+                raise ValueError("replicated receipt requires its evidence unit and trial range")
+        elif any(k in payload for k in ("trial_range", "evidence_unit")):
+            raise ValueError("legacy receipt cannot be relabeled as trial evidence")
         HMCCandidateDecision.from_observation(payload)
         return cls(
             verification_attempt_id=payload["verification_attempt_id"],
@@ -435,6 +481,7 @@ class HMCVerificationReceipt:
             promotion_vetoes=tuple(payload.get("promotion_vetoes", ())),
             repair_eligible=payload.get("repair_eligible", False),
             diagnostic_alerts=tuple(payload.get("diagnostic_alerts", ())),
+            trial_range=payload.get("trial_range"),
         )
 
 
@@ -457,10 +504,15 @@ class HMCRepairAction:
     ]
     not_executed_reason: str | None = None
     allocation_source: str | None = None
+    parent_exact_l: int | None = None
+    requested_mean_duration: float | None = None
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_repair_action.v1",
+            "schema": "bayesfilter.hmc_repair_action.v2" if self.parent_exact_l is not None else "bayesfilter.hmc_repair_action.v1",
+            **({"parent_exact_l": self.parent_exact_l,
+                "requested_mean_duration": self.requested_mean_duration}
+               if self.parent_exact_l is not None else {}),
             "repair_action_id": self.repair_action_id,
             "parent_candidate_id": self.parent_candidate_id,
             "child_candidate_id": self.child_candidate_id,
@@ -480,8 +532,14 @@ class HMCRepairAction:
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "HMCRepairAction":
-        if payload.get("schema") != "bayesfilter.hmc_repair_action.v1":
+        schema = payload.get("schema")
+        if schema not in {"bayesfilter.hmc_repair_action.v1", "bayesfilter.hmc_repair_action.v2"}:
             raise ValueError("unsupported HMC repair action schema")
+        if schema.endswith(".v2"):
+            _integer(payload.get("parent_exact_l"), "parent_exact_l")
+            _finite_positive(payload.get("requested_mean_duration"), "requested_mean_duration")
+        elif any(name in payload for name in ("parent_exact_l", "requested_mean_duration")):
+            raise ValueError("legacy repair action cannot claim duration preservation")
         return cls(
             repair_action_id=payload["repair_action_id"],
             parent_candidate_id=payload["parent_candidate_id"],
@@ -498,6 +556,8 @@ class HMCRepairAction:
             qualified_repair_status=payload["qualified_repair_status"],
             not_executed_reason=payload.get("not_executed_reason"),
             allocation_source=payload.get("allocation_source"),
+            parent_exact_l=payload.get("parent_exact_l"),
+            requested_mean_duration=payload.get("requested_mean_duration"),
         )
 
 
@@ -517,6 +577,8 @@ class HMCWorkItem:
     reservation_units: int = 1
     evidence_rung: int = 0
     evidence_multiplier: int = 1
+    trial_range: tuple[int, int] | None = None
+    predecessor_work_id: str | None = None
 
     def __post_init__(self) -> None:
         _integer(self.evidence_rung, "evidence_rung", 0)
@@ -524,10 +586,21 @@ class HMCWorkItem:
         _integer(self.reservation_units, "reservation_units")
         if self.stage not in _STAGE_ORDER:
             raise ValueError("unknown work stage")
+        if self.trial_range is not None:
+            bounds = tuple(self.trial_range)
+            if len(bounds) != 2 or any(type(v) is not int for v in bounds) or not 0 <= bounds[0] < bounds[1]:
+                raise ValueError("trial_range must be an ordered nonnegative half-open range")
+            if (bounds[0] == 0) != (self.predecessor_work_id is None):
+                raise ValueError("continued trial evidence requires its predecessor")
+            object.__setattr__(self, "trial_range", bounds)
+        elif self.predecessor_work_id is not None:
+            raise ValueError("legacy work cannot claim a trial predecessor")
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_work_item.v1",
+            "schema": "bayesfilter.hmc_work_item.v2" if self.trial_range is not None else "bayesfilter.hmc_work_item.v1",
+            **({"trial_range": self.trial_range, "predecessor_work_id": self.predecessor_work_id,
+                "evidence_unit": "independent_fixed_horizon_trial"} if self.trial_range is not None else {}),
             "work_item_id": self.work_item_id,
             "candidate_id": self.candidate_id,
             "candidate_record_hash": self.candidate_record_hash,
@@ -546,8 +619,14 @@ class HMCWorkItem:
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "HMCWorkItem":
-        if payload.get("schema") != "bayesfilter.hmc_work_item.v1":
+        replicated = payload.get("schema") == "bayesfilter.hmc_work_item.v2"
+        if payload.get("schema") not in {"bayesfilter.hmc_work_item.v1", "bayesfilter.hmc_work_item.v2"}:
             raise ValueError("unsupported HMC work-item schema")
+        if replicated:
+            if payload.get("evidence_unit") != "independent_fixed_horizon_trial" or payload.get("trial_range") is None:
+                raise ValueError("replicated work requires an explicit evidence unit and range")
+        elif any(k in payload for k in ("trial_range", "predecessor_work_id", "evidence_unit")):
+            raise ValueError("legacy work cannot be relabeled as trial evidence")
         return cls(
             work_item_id=payload["work_item_id"],
             candidate_id=payload["candidate_id"],
@@ -563,6 +642,8 @@ class HMCWorkItem:
             reservation_units=payload.get("reservation_units", 1),
             evidence_rung=payload.get("evidence_rung", 0),
             evidence_multiplier=payload.get("evidence_multiplier", 1),
+            trial_range=payload.get("trial_range"),
+            predecessor_work_id=payload.get("predecessor_work_id"),
         )
 
 
@@ -587,8 +668,21 @@ class HMCControllerConfig:
     max_gradient_work: int | None = None
     max_wall_time_seconds: float | None = None
     explore_failed_intervals: bool = False
+    replicated_acceptance_policy: Any = None
+    repair_trajectory_policy: str = "fixed_count"
+    repair_mean_duration_max_steps: int | None = None
 
     def __post_init__(self) -> None:
+        if self.repair_trajectory_policy not in {"fixed_count", "preserve_mean_duration"}:
+            raise ValueError("unsupported repair trajectory policy")
+        if self.repair_trajectory_policy == "preserve_mean_duration":
+            _integer(self.repair_mean_duration_max_steps, "repair_mean_duration_max_steps")
+            if self.replicated_acceptance_policy is None:
+                raise ValueError("duration-preserving repair requires replicated acceptance evidence")
+            if self.explore_failed_intervals:
+                raise ValueError("duration-preserving repair does not support legacy same-count interval exploration")
+        elif self.repair_mean_duration_max_steps is not None:
+            raise ValueError("fixed-count repair cannot declare a mean-duration step cap")
         object.__setattr__(self, "primary_l_grid", _tuple_ints(self.primary_l_grid, "primary_l_grid"))
         if not self.epsilon_by_l:
             if self.initial_epsilon is None:
@@ -635,6 +729,10 @@ class HMCControllerConfig:
         for name in ("refinement_l_grid", "expansion_l_grid"):
             values = getattr(self, name)
             object.__setattr__(self, name, _tuple_ints(values, name) if values else ())
+        if self.repair_trajectory_policy == "preserve_mean_duration" and (
+                self.pilot_enabled or self.refinement_rounds
+                or self.refinement_l_grid or self.expansion_l_grid):
+            raise ValueError("duration-preserving repair cannot combine with legacy fixed-count pilot/refinement")
         factors = tuple(_finite_positive(v, "epsilon_refinement_factor") for v in self.epsilon_refinement_factors)
         if len(set(factors)) != len(factors) or 1.0 in factors:
             raise ValueError("refinement factors must be distinct and change epsilon")
@@ -643,10 +741,25 @@ class HMCControllerConfig:
             _integer(self.max_gradient_work, "max_gradient_work")
         if self.max_wall_time_seconds is not None:
             _finite_positive(self.max_wall_time_seconds, "max_wall_time_seconds")
+        if self.replicated_acceptance_policy is not None:
+            from .hmc_acceptance_protocol import replicated_evidence_preflight
+            report = replicated_evidence_preflight(self.replicated_acceptance_policy,
+                evidence_rungs=self.evidence_rungs, candidate_cap=self.max_candidates,
+                leapfrog_steps=tuple(l for l, eps in self.epsilon_by_l for _ in eps),
+                max_gradient_work=self.max_gradient_work, pilot_enabled=self.pilot_enabled)
+            if not report["first_cohort_fundable"]:
+                raise ValueError("replicated primary cohort and fresh verification cannot be funded")
 
     def payload(self) -> Mapping[str, Any]:
         return {
-            "schema": "bayesfilter.hmc_controller_config.v1",
+            "schema": ("bayesfilter.hmc_controller_config.v3" if self.repair_trajectory_policy == "preserve_mean_duration"
+                       else "bayesfilter.hmc_controller_config.v2" if self.replicated_acceptance_policy is not None
+                       else "bayesfilter.hmc_controller_config.v1"),
+            **({"replicated_acceptance_policy": self.replicated_acceptance_policy.payload()}
+               if self.replicated_acceptance_policy is not None else {}),
+            **({"repair_trajectory_policy": self.repair_trajectory_policy,
+                "repair_mean_duration_max_steps": self.repair_mean_duration_max_steps}
+               if self.repair_trajectory_policy == "preserve_mean_duration" else {}),
             "primary_l_grid": self.primary_l_grid,
             "epsilon_by_l": self.epsilon_by_l,
             "total_budget_units": self.total_budget_units,
@@ -662,9 +775,25 @@ class HMCControllerConfig:
 
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "HMCControllerConfig":
-        if payload.get("schema") != "bayesfilter.hmc_controller_config.v1":
+        schema = payload.get("schema")
+        if schema not in {"bayesfilter.hmc_controller_config.v1", "bayesfilter.hmc_controller_config.v2",
+                          "bayesfilter.hmc_controller_config.v3"}:
             raise ValueError("unsupported HMC controller config schema")
+        policy = None
+        if schema in {"bayesfilter.hmc_controller_config.v2", "bayesfilter.hmc_controller_config.v3"}:
+            from .hmc_acceptance_protocol import HMCReplicatedAcceptancePolicy
+            policy = HMCReplicatedAcceptancePolicy.from_payload(payload["replicated_acceptance_policy"])
+        elif "replicated_acceptance_policy" in payload:
+            raise ValueError("legacy controller cannot be relabeled as trial evidence")
+        if schema != "bayesfilter.hmc_controller_config.v3" and any(
+                name in payload for name in ("repair_trajectory_policy", "repair_mean_duration_max_steps")):
+            raise ValueError("legacy controller cannot be relabeled as duration preserving")
+        if schema == "bayesfilter.hmc_controller_config.v3" and payload.get("repair_trajectory_policy") != "preserve_mean_duration":
+            raise ValueError("duration-preserving controller policy is missing")
         return cls(
+            replicated_acceptance_policy=policy,
+            repair_trajectory_policy=payload.get("repair_trajectory_policy", "fixed_count"),
+            repair_mean_duration_max_steps=payload.get("repair_mean_duration_max_steps"),
             primary_l_grid=tuple(payload["primary_l_grid"]),
             epsilon_by_l=tuple(
                 (item[0], tuple(item[1])) for item in payload["epsilon_by_l"]
@@ -864,8 +993,14 @@ class HMCTuningCandidateSetController:
     """Deterministic single-scope controller used by numerical adapters."""
 
     def __init__(self, scope: HMCCandidateSetScope, config: HMCControllerConfig) -> None:
+        if config.repair_trajectory_policy == "preserve_mean_duration" and (
+                scope.transition_profile is None
+                or scope.transition_profile.trajectory != "uniform_duration"):
+            raise ValueError("duration-preserving repair requires a typed uniform-duration scope")
         self.scope = scope
         self.config = config
+        self._controller_policy_version = (REPLICATED_CONTROLLER_POLICY_VERSION
+            if config.replicated_acceptance_policy is not None else CONTROLLER_POLICY_VERSION)
         self._candidates: dict[str, HMCTuningCandidateRecord] = {}
         self._states: dict[str, str] = {}
         self._work_items: dict[str, HMCWorkItem] = {}
@@ -910,7 +1045,8 @@ class HMCTuningCandidateSetController:
 
         if payload.get("schema") != HMC_CANDIDATE_SET_RESULT_SCHEMA:
             raise ValueError("unsupported HMC candidate-set result schema")
-        if payload.get("search_state", {}).get("controller_policy_version") != CONTROLLER_POLICY_VERSION:
+        policy_version = payload.get("search_state", {}).get("controller_policy_version")
+        if policy_version not in {CONTROLLER_POLICY_VERSION, REPLICATED_CONTROLLER_POLICY_VERSION}:
             raise ValueError("historical controller results are readable but cannot resume under a changed search policy")
         scope_payload = payload.get("scope")
         config_payload = payload.get("config")
@@ -918,9 +1054,16 @@ class HMCTuningCandidateSetController:
             raise ValueError("candidate-set result is missing scope or config")
         scope = HMCCandidateSetScope.from_payload(scope_payload)
         config = HMCControllerConfig.from_payload(config_payload)
+        if config.repair_trajectory_policy == "preserve_mean_duration" and (
+                scope.transition_profile is None
+                or scope.transition_profile.trajectory != "uniform_duration"):
+            raise ValueError("duration-preserving replay requires a typed uniform-duration scope")
+        if policy_version == REPLICATED_CONTROLLER_POLICY_VERSION and config.replicated_acceptance_policy is None:
+            raise ValueError("replicated scheduling requires a replicated acceptance policy")
         controller = object.__new__(cls)
         controller.scope = scope
         controller.config = config
+        controller._controller_policy_version = policy_version
         controller._candidates = {}
         controller._states = {
             str(key): str(value)
@@ -1132,6 +1275,12 @@ class HMCTuningCandidateSetController:
         return tuple(DirectionalEpsilonEvidence(receipt.epsilon, receipt.decision, receipt.candidate_id)
                      for receipt in latest.values() if receipt.decision_evidence.repair_eligible)
 
+    def _directional_evidence_family(self, family_id: str) -> tuple[DirectionalEpsilonEvidence, ...]:
+        latest = {receipt.candidate_id: receipt for receipt in self._receipts
+                  if self._candidates[receipt.candidate_id].candidate_family_id == family_id}
+        return tuple(DirectionalEpsilonEvidence(receipt.epsilon, receipt.decision, receipt.candidate_id)
+                     for receipt in latest.values() if receipt.decision_evidence.repair_eligible)
+
     def _refine_survivors(self) -> bool:
         if self._refinement_round >= self.config.refinement_rounds:
             return False
@@ -1325,6 +1474,20 @@ class HMCTuningCandidateSetController:
         evidence_rung: int = 0,
     ) -> HMCWorkItem | None:
         self._work_ordinal += 1
+        trial_range = None
+        predecessor = None
+        policy = self.config.replicated_acceptance_policy
+        if policy is not None:
+            if evidence_rung:
+                previous = [item for item in self._work_items.values()
+                    if item.candidate_id == candidate.candidate_id and item.stage == stage
+                    and item.evidence_rung == evidence_rung - 1]
+                if len(previous) != 1:
+                    raise ValueError("replicated evidence is missing its unique predecessor")
+                predecessor = previous[0].work_item_id
+            trial_range = (0 if evidence_rung == 0 else policy.repetition_target(
+                self.config.evidence_rungs[evidence_rung-1]),
+                policy.repetition_target(self.config.evidence_rungs[evidence_rung]))
         attempt_id = None
         if stage == "verification":
             next_attempt = self._verification_ordinal.get(candidate.candidate_id, 0) + 1
@@ -1343,6 +1506,8 @@ class HMCTuningCandidateSetController:
             verification_attempt_id=attempt_id,
             evidence_rung=evidence_rung,
             evidence_multiplier=self.config.evidence_rungs[evidence_rung],
+            trial_range=trial_range,
+            predecessor_work_id=predecessor,
         )
         self._work_items[work.work_item_id] = work
         self._accounting.append({"event": "work_reserved", "work_item_id": work.work_item_id, "candidate_id": candidate.candidate_id, "units": work.reservation_units})
@@ -1372,6 +1537,18 @@ class HMCTuningCandidateSetController:
         ]
         if not ready:
             return ()
+        if self._controller_policy_version == REPLICATED_CONTROLLER_POLICY_VERSION:
+            # Close the initial broad measurement cohort before verification.
+            # Once screened, a member's verification cannot be starved by
+            # unrelated extensions or successive repair descendants.
+            primary = [work for work in ready if work.stage in {"pilot", "measurement"}
+                       and work.evidence_rung == 0
+                       and self._candidates[work.candidate_id].parent_candidate_id is None]
+            verification = [work for work in ready if work.stage == "verification"]
+            if primary:
+                ready = primary
+            elif verification:
+                ready = verification
         min_stage = min(_STAGE_ORDER[work.stage] for work in ready)
         stage_ready = [work for work in ready if _STAGE_ORDER[work.stage] == min_stage]
         min_priority = min(work.priority for work in stage_ready)
@@ -1464,6 +1641,10 @@ class HMCTuningCandidateSetController:
         stream = str(observation.get("stream_id", f"{work.work_item_id}:stream"))
         draw = tuple(int(item) for item in observation.get("draw_range", (0, 0)))
         seed = tuple(int(item) for item in observation.get("seed_lineage", (candidate.creation_ordinal, work.ordinal)))
+        if work.trial_range is not None and (
+                tuple(observation.get("trial_range", ())) != work.trial_range
+                or observation.get("evidence_unit") != "independent_fixed_horizon_trial"):
+            raise ValueError("observation must identify its independent trial allocation")
         return HMCVerificationReceipt(
             verification_attempt_id=attempt,
             candidate_id=candidate.candidate_id,
@@ -1483,6 +1664,7 @@ class HMCTuningCandidateSetController:
             promotion_vetoes=tuple(observation["promotion_vetoes"]),
             repair_eligible=observation["repair_eligible"],
             diagnostic_alerts=tuple(observation.get("diagnostic_alerts", ())),
+            trial_range=work.trial_range,
         )
 
     def _request_repair(self, candidate: HMCTuningCandidateRecord, receipt: HMCVerificationReceipt,
@@ -1496,10 +1678,34 @@ class HMCTuningCandidateSetController:
                 "candidate_family_id": candidate.candidate_family_id, "reason": "max_repairs_per_family"})
             return
         lo, hi = self.scope.epsilon_domain
+        preserve_duration = self.config.repair_trajectory_policy == "preserve_mean_duration"
+        evidence = (self._directional_evidence_family(candidate.candidate_family_id)
+                    if preserve_duration else self._directional_evidence(candidate.leapfrog_steps))
+        visited = ({c.epsilon for c in self.candidates if c.candidate_family_id == candidate.candidate_family_id}
+                   if preserve_duration else {c.epsilon for c in self.candidates if c.leapfrog_steps == candidate.leapfrog_steps})
         new_epsilon = exploration_epsilon if exploration_epsilon is not None else directional_proposal(epsilon=candidate.epsilon, direction=direction,
-            evidence=self._directional_evidence(candidate.leapfrog_steps),
-            visited={c.epsilon for c in self.candidates if c.leapfrog_steps == candidate.leapfrog_steps},
+            evidence=evidence, visited=visited,
             domain=self.scope.epsilon_domain, factor=self.scope.repair_factor)
+        child_steps = candidate.leapfrog_steps
+        requested_mean_duration = None
+        duration_error = False
+        if preserve_duration:
+            parent_repair = next((action for action in self._repairs.values()
+                                  if action.child_candidate_id == candidate.candidate_id), None)
+            if candidate.parent_candidate_id is not None and parent_repair is None:
+                raise ValueError("duration-preserving repair parent has no recorded request")
+            requested_mean_duration = (parent_repair.requested_mean_duration if parent_repair is not None
+                                       else candidate.epsilon * (candidate.leapfrog_steps + 1) / 2)
+            if new_epsilon is not None and lo <= new_epsilon <= hi:
+                from .hmc_trajectory_duration import compile_mean_duration
+                try:
+                    compiled = compile_mean_duration(
+                        profile=self.scope.transition_profile, epsilon=new_epsilon,
+                        requested_mean_duration=requested_mean_duration,
+                        max_steps_cap=self.config.repair_mean_duration_max_steps)
+                    child_steps = compiled.frozen.max_steps
+                except ValueError:
+                    duration_error = True
         reason = None
         if len(self._candidates) >= self.config.max_candidates:
             reason = "max_candidates"
@@ -1508,7 +1714,9 @@ class HMCTuningCandidateSetController:
             reason = "epsilon_domain" if candidate.epsilon == boundary else "no_unvisited_epsilon"
         elif not lo <= new_epsilon <= hi:
             reason = "epsilon_domain"
-        elif new_epsilon == candidate.epsilon or self._find_pair(candidate.leapfrog_steps, new_epsilon) is not None:
+        elif duration_error:
+            reason = "trajectory_support"
+        elif new_epsilon == candidate.epsilon or self._find_pair(child_steps, new_epsilon) is not None:
             reason = "duplicate_epsilon"
         if reason is not None:
             self._states[candidate.candidate_id] = "promotion_failed"
@@ -1517,7 +1725,7 @@ class HMCTuningCandidateSetController:
         self._creation_ordinal += 1
         child = HMCTuningCandidateRecord.create(
             self.scope,
-            leapfrog_steps=candidate.leapfrog_steps,
+            leapfrog_steps=child_steps,
             epsilon=new_epsilon,
             creation_ordinal=self._creation_ordinal,
             candidate_family_id=candidate.candidate_family_id,
@@ -1535,12 +1743,14 @@ class HMCTuningCandidateSetController:
             source_verification_hash=_sha256(receipt.payload()),
             old_epsilon=candidate.epsilon,
             new_epsilon=new_epsilon,
-            exact_l=candidate.leapfrog_steps,
+            exact_l=child_steps,
             mass_signature=candidate.mass_signature,
             direction=direction,  # type: ignore[arg-type]
             execution_status="not_started",
             verification_status="pending",
             qualified_repair_status="not_executed_with_reason",
+            parent_exact_l=candidate.leapfrog_steps if preserve_duration else None,
+            requested_mean_duration=requested_mean_duration,
         )
         self._repairs[action_id] = action
         self._deferred_repairs.append(action_id)
@@ -1577,6 +1787,8 @@ class HMCTuningCandidateSetController:
         terminal = True
         if can_repair:
             self._request_repair(candidate, receipt)
+        elif decision == "inconclusive_preparation" and not parsed["hard_vetoes"]:
+            self._states[candidate.candidate_id] = "preparation_review_required"
         elif decision == "repair_trajectory" and not parsed["hard_vetoes"]:
             self._states[candidate.candidate_id] = "promotion_failed"
             # New L hypotheses are independent candidates, never same-L repairs.
@@ -1627,6 +1839,8 @@ class HMCTuningCandidateSetController:
         clock = getattr(self, "_elapsed_clock", None)
         if clock is not None:
             self._elapsed_seconds = clock[0] + time.monotonic() - clock[1]
+        if getattr(self, "_defer_checkpoint", False):
+            return
         if self._checkpoint is not None:
             result = self.result()
             # An interrupted dispatch consumes its attempted budget and can be
@@ -1636,15 +1850,19 @@ class HMCTuningCandidateSetController:
             self._checkpoint(replace(result, work_items=works))
 
     def charge_numerical_chunk(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord,
-                               *, transitions: int, chunk_index: int) -> None:
+                               *, transitions: int, chunk_index: int, seed=None,
+                               trial_ordinal=None, trial_chunk_index=None) -> None:
         """Charge an attempted native call before it can execute or be lost."""
-        gradient = _integer(transitions, "transitions") * (candidate.leapfrog_steps + 1)
+        from .hmc_transition_spec import candidate_gradient_work
+        gradient = _integer(transitions, "transitions") * candidate_gradient_work(candidate)
         if (self.config.max_gradient_work is not None
                 and self._gradient_work + gradient > self.config.max_gradient_work):
             raise HMCBudgetExhausted("gradient-work cap prevents the next numerical chunk")
         self._gradient_work += gradient
         self._accounting.append({"event": "numerical_chunk_charged", "work_item_id": work.work_item_id,
             "transitions": transitions, "gradient_work": gradient, "chunk_index": chunk_index,
+            **({"seed": tuple(seed), "trial_ordinal": trial_ordinal,
+                "trial_chunk_index": trial_chunk_index} if seed is not None else {}),
             "cost_basis": "conservative_attempted_native_chunk"})
         self._save_checkpoint()
 
@@ -1653,11 +1871,41 @@ class HMCTuningCandidateSetController:
         self._accounting.append({"event": "work_budget_deferred", "work_item_id": work.work_item_id,
                                  "candidate_id": work.candidate_id, "reason": reason})
 
+    def _fresh_verification_gradient_reserve(self, current: HMCWorkItem, work_cost) -> int:
+        """Keep the first independent verification affordable before optional work."""
+        policy = self.config.replicated_acceptance_policy
+        if policy is None or self.config.max_gradient_work is None:
+            return 0
+        reserve = 0
+        for candidate in self.candidates:
+            if self._states[candidate.candidate_id] in {
+                    "promotion_failed", "preparation_review_required", "verified", "inconclusive_at_cap",
+                    "proposal_budget_pending"}:
+                continue
+            if candidate.candidate_id != current.candidate_id and not any(
+                    row["candidate_id"] == candidate.candidate_id and row["stage"] == "measurement"
+                    for row in self._observations):
+                # An unstarted, expensive proposal cannot reserve another
+                # candidate's remaining verification allocation.
+                continue
+            first = next((w for w in self._work_items.values() if w.candidate_id == candidate.candidate_id
+                          and w.stage == "verification" and w.evidence_rung == 0), None)
+            if first is not None:
+                if first.status != "completed" and first.work_item_id != current.work_item_id:
+                    reserve += int(work_cost(first, candidate)["gradient_work"])
+            elif not (current.candidate_id == candidate.candidate_id and current.stage == "verification"):
+                reserve += (policy.discarded_prefix+policy.trial_num_results)*policy.chain_count*policy.base_repetitions*candidate_gradient_work(candidate)
+        return reserve
+
     def run(self, outcome_provider: OutcomeProvider, *, max_work_items: int | None = None,
             checkpoint: Callable | None = None, work_cost: Callable | None = None) -> HMCTuningCandidateSetResult:
         """Dispatch closed cohorts with durable observations and bounded retries."""
+        from bayesfilter.runtime.execution_budget import execution_budget_available
         if not callable(outcome_provider):
             raise TypeError("outcome_provider must be callable")
+        if (self.config.replicated_acceptance_policy is not None
+                and self.config.max_gradient_work is not None and not callable(work_cost)):
+            raise ValueError("replicated gradient budgeting requires an explicit work cost")
         if max_work_items is not None:
             _integer(max_work_items, "max_work_items", 0)
         if self._scope_invalid:
@@ -1692,14 +1940,17 @@ class HMCTuningCandidateSetController:
                     candidate = self._candidates[work.candidate_id]
                     cost = dict(work_cost(work, candidate)) if work_cost is not None else {}
                     gradient = _integer(cost.get("gradient_work", 0), "gradient_work", 0)
+                    verification_reserve = self._fresh_verification_gradient_reserve(work, work_cost)
+                    if verification_reserve:
+                        cost["fresh_verification_gradient_reserve"] = verification_reserve
                     elapsed = elapsed_before + time.monotonic() - started
-                    if ((max_work_items is not None and dispatched >= max_work_items)
-                            or (self.config.max_wall_time_seconds is not None and
-                                elapsed >= self.config.max_wall_time_seconds)):
+                    if (not execution_budget_available(elapsed_seconds=elapsed,
+                            wall_time_limit_seconds=self.config.max_wall_time_seconds)
+                            or (max_work_items is not None and dispatched >= max_work_items)):
                         self._stop_reason = "budget_bound"
                         return self.result()
                     if (self.config.max_gradient_work is not None
-                            and self._gradient_work + gradient > self.config.max_gradient_work):
+                            and self._gradient_work + gradient + verification_reserve > self.config.max_gradient_work):
                         self._defer_unfunded_work(work, "remaining_gradient_work")
                         continue
                     if not self._charge_work(work, candidate):
@@ -1807,7 +2058,7 @@ class HMCTuningCandidateSetController:
             observations=tuple(self._observations),
             search_state={"refinement_round": self._refinement_round, "gradient_work": self._gradient_work,
                           "elapsed_seconds": self._elapsed_seconds,
-                          "controller_policy_version": CONTROLLER_POLICY_VERSION},
+                          "controller_policy_version": self._controller_policy_version},
         )
 
 

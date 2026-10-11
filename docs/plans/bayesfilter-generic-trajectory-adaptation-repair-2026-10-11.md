@@ -1,12 +1,13 @@
 # Generic trajectory adaptation repair for HMC and MAMS
 
-Date: 11 October 2026. Status: **design reviewed; implementation pending**.
+Date: 11 October 2026. Status: **D4R1 implemented; D4R2/D4R3 validation in progress**.
 This is the D4R repair subplan of the
 [modern-method master](bayesfilter-modern-hmc-implementation-plan-2026-10-07.md).
 It answers the owner's request for a repair that generalizes beyond
-predator–prey. No numerical policy, kernel, guide, historical result or
-candidate membership is changed by this document. No experiment was launched
-to prepare it. The official guide remains the monograph and its agent-facing
+predator–prey. Implementation and checks are recorded in the
+[execution audit](bayesfilter-generic-trajectory-adaptation-execution-2026-10-11.md).
+Frozen transition semantics and historical candidate membership are unchanged.
+The official guide remains the monograph and its agent-facing
 interface reference; this document is an implementation plan.
 
 ## 1. Diagnosis and scope

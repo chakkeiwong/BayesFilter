@@ -59,8 +59,15 @@ def assess_posterior(samples, names, *, policy, stage, rhat, extra=None, quantit
     samples = tf.convert_to_tensor(samples, tf.float64)
     if samples.shape.rank != 3 or any(d is None for d in samples.shape):
         raise ValueError("posterior samples require static [draw, chain, quantity]")
+    sample_counts = {
+        "draws_per_chain": int(samples.shape[0]),
+        "chain_count": int(samples.shape[1]),
+        "total_draws": int(samples.shape[0]) * int(samples.shape[1]),
+        "scope": "assessed_window_only",
+    }
     if int(samples.shape[0]) < 4:
         return {"passed": False, "stage": stage, "status": "insufficient_draws",
+                "sample_counts": sample_counts, "failed_checks": ("minimum_draws",),
                 "precision": {"status": "precision_unavailable", "passed": False}}
     names = tuple(names)
     if len(set(names)) != len(names) or len(names) != samples.shape[-1]:
@@ -125,6 +132,7 @@ def assess_posterior(samples, names, *, policy, stage, rhat, extra=None, quantit
     finite = bool(tf.reduce_all(tf.math.is_finite(values)))
     if not finite:
         return {"passed": False, "modern_rhat": rhat, "health_failures": ("nonfinite_monitored_quantity",),
+                "sample_counts": sample_counts, "failed_checks": ("finite_monitored_quantities",),
                 "precision": {"status": "precision_unavailable", "passed": False}, "stage": stage}
     ess = rank_normalized_bulk_tail_ess(tf.transpose(values, (1, 0, 2)))
     def safe_array(x):
@@ -144,11 +152,21 @@ def assess_posterior(samples, names, *, policy, stage, rhat, extra=None, quantit
         event_ess[name] = safe_array(ess["bulk"])[index]
     information_tail = tf.stack([ess["bulk"][i] if n in event_ess else ess["tail"][i]
                                  for i, n in enumerate(names)])
-    information = ((bulk_floor == 0. or bool(tf.reduce_all(tf.math.is_finite(ess["bulk"]) & (ess["bulk"] >= bulk_floor))))
-                   and (tail_floor == 0. or bool(tf.reduce_all(tf.math.is_finite(information_tail) & (information_tail >= tail_floor))))
-                   and event_valid)
+    bulk_passed = bulk_floor == 0. or bool(tf.reduce_all(
+        tf.math.is_finite(ess["bulk"]) & (ess["bulk"] >= bulk_floor)))
+    tail_passed = tail_floor == 0. or bool(tf.reduce_all(
+        tf.math.is_finite(information_tail) & (information_tail >= tail_floor)))
+    information = bulk_passed and tail_passed and event_valid
     mean = mean_precision(values)
     precision = precision_report(values, names, policy.precision if stage == "retained" else None)
+    checks = {
+        "rhat": bool(rhat["passed"]),
+        "bulk_ess": bulk_passed,
+        "tail_ess": tail_passed,
+        "binary_outcomes_observed": event_valid,
+        "precision": bool(precision["passed"]),
+        "consumer_diagnostic": extra is None or bool(extra["passed"] and not extra.get("hard_vetoes")),
+    }
     # Preserve existing summary fields for consumers. The common decision and
     # its evidence below are authoritative; a callback cannot override them.
     return {**(rhat if extra is None else extra),
@@ -156,6 +174,18 @@ def assess_posterior(samples, names, *, policy, stage, rhat, extra=None, quantit
             "passed": bool(rhat["passed"] and information and precision["passed"]
                            and (extra is None or (extra["passed"] and not extra.get("hard_vetoes")))),
             "modern_rhat": rhat, "information_passed": information,
+            "sample_counts": sample_counts,
+            "checks": checks,
+            "failed_checks": tuple(name for name, passed in checks.items() if not passed),
+            "requirements": {
+                "rhat_max": rhat.get("rhat_threshold"),
+                "bulk_ess_min": bulk_floor,
+                "tail_ess_min": tail_floor,
+                "binary_quantity_names": policy.binary_quantity_names,
+                "precision_required": stage == "retained" and policy.precision is not None,
+                "consecutive_warmup_checks_required": policy.warmup_consecutive_checks,
+                "persistence_scope": "enforced_by_sequential_controller",
+            },
             "bulk_tail_ess_method": STAN_ESS_VERSION,
             "quantity_names": names, "bulk_ess": safe_array(ess["bulk"]), "tail_ess": safe_array(ess["tail"]),
             "binary_event_ess": event_ess,

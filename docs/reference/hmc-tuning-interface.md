@@ -1,10 +1,25 @@
 # HMC Tuning Interface
 
-Last checked: 2026-09-23. This reference describes the common candidate-set
+Last checked: 2026-10-11. This reference describes the common candidate-set
 procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
 HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
 classifies public tuners, preparation helpers, chain runners, and historical
 readers. A chain runner is not a tuner.
+
+**NUTS is excluded from BayesFilter**, including diagnostic comparators and
+campaign requirements. Its retired entry points reject execution; historical
+readers and literature citations do not provide tuning or sampling authority.
+Use fixed HMC or the explicitly experimental randomized HMC, SNAPER proposals
+and MAMS routes described below. The current comparison inventory is
+`bayesfilter.testing.inference_validation.modern_hmc_scope`; the older matrix
+is preserved only because saved numerical source closures bind its bytes.
+
+The K0--K7 state-space validation inventory and its executable stages are
+documented in [the validation README](../validation/README.md). Those targets
+call the actual Kalman and sigma-point filters through these same public
+tuners. Reference checks and CPU regressions are separate from GPU qualification
+and posterior calibration; K6 has no independent joint posterior oracle, and
+K7's sampler reference describes its declared sigma-point approximation.
 
 ## One procedure, with target-specific preparation
 
@@ -28,6 +43,26 @@ shared evidence/budget settings. Historical helper implementations and result
 readers remain for inspecting earlier evidence; they are not public tuning
 alternatives. Existing consumers must migrate from a single `final_kernel_payload`
 to explicit candidate IDs.
+
+The October 1 NeuTra repair campaign explicitly selects
+`HMCAcceptancePolicy(temporal_conflict_method="paired_chain_block_contrasts_v1")`.
+This optional v6 policy compares paired temporal-block differences across four
+independent chains, with six Bonferroni-adjusted Student contrasts at a working
+familywise level of .01 and a material-change requirement equal to the practical
+acceptance-band width. The existing raw-block rule remains the v5 default.
+Both policies retain numerical and movement vetoes; acceptance compatibility
+does not replace sequential warm-up or posterior convergence checks. The
+paired rule passed the campaign's stationary/dependent reference calibration,
+not a universal HMC false-positive guarantee. See
+`docs/plans/bayesfilter-neutra-causal-repair-plan-2026-10-01.md` for the scope,
+calibration and fresh-verification requirements. Old payloads are not silently
+reinterpreted under the new rule.
+
+The broader [October 1 uncertainty validation](../plans/bayesfilter-acceptance-uncertainty-validation-result-2026-10-01.md)
+also tests opposing drifts within chains, which this pooled v6 contrast misses.
+Its campaign-specific calibration does not establish within-chain temporal
+stability. The separate experimental batch-means/lugsail diagnostic described
+below also failed promotion under strong dependence.
 
 The registry schema is `bayesfilter.hmc_tuning_capability_registry.v2`; the
 position-field runner schema is `bayesfilter.hmc_tuning_runner_binding.v2`.
@@ -62,6 +97,108 @@ older `partial` fixtures bound only the applied log-scale and retain unbounded
 tail stiffness. These are analytic test maps, with no transport-training claim;
 the tuning chapter derives their transformed densities.
 
+### Experimental randomized HMC and fully refreshed MAMS
+
+Prepared exact-score bindings can explicitly set
+`HMCCandidateExecutionConfig.transition_profile` to
+`HMCTransitionProfile("hmc", "uniform_duration")` or
+`HMCTransitionProfile("mams", "uniform_duration")`. The `"fixed"` trajectory
+option is available for matched comparisons. Use the same ordinary or
+fixed-transport public tuner with `HMCControllerConfig` and the binding's
+`typed_adapter`. Automatic preparation configs reject modern profiles: an HMC
+warm-up step-size bound cannot silently become a MAMS step-size bound. Prepare
+geometry first and declare the new integrator's epsilon hypotheses explicitly.
+These profiles currently require batched chains, one trial per
+native call (`replicated_trial_batch_size=1`), and the explicit v8 lower-bound
+replicated policy described below. The position-field branch rejects them.
+MAMS additionally requires dimension greater than one and uses identity geometry
+in the prepared coordinates, with independent full direction refreshment at
+every outer transition. Persistent or within-trajectory stochastic MAMS, LAPS,
+and MALT are not implemented by these profiles.
+
+For `uniform_duration`, the candidate's legacy `leapfrog_steps` field means the
+**maximum** count, not a realized fixed length. Each chain and transition draws
+an independent uniform duration on `[0, epsilon * max_steps)`, using
+`max(1, ceil(duration / epsilon))` steps. `FrozenTransitionSpec` preserves the
+family, integrator, duration law, rounding, correction, and refreshment policy.
+Changing epsilon also changes the maximum duration and creates a new candidate.
+This first implementation supports an integer maximum count; it does not expose
+an arbitrary continuous maximum duration independently of epsilon.
+
+Momentum/direction, duration and Metropolis decisions use separate stateless
+streams. The full-refresh profiles need only positions at outer-transition
+boundaries; the numerical runner also supports same-seed continuation by a
+recorded `transition_offset`. Retained archives use the existing fresh-chunk
+stream and predecessor checks. Export/reload verifies the whole transition
+specification. Work preflight, reservation and replay conservatively include
+both value/score and separate status evaluations, including masked batch rows;
+actual calls and realized lengths are reported separately.
+
+`propose_trajectory_candidates(binding, TrajectoryPilotConfig(...))` supplies
+optional discarded ChEES-rate or SNAPER proposals for randomized HMC. Every
+pilot parameter must be explicit. Its `epsilon_by_l` can initialize a new shared
+search on that same binding; adaptation grants no tuning authority. The current
+TFP 0.25 adaptation fixes metric variance to one, so it cannot adapt geometry a
+second time. Its pilot uses shared IID trajectory jitter, while the frozen
+candidate uses independent jitter across chains; these are explicitly different
+policies. All pilot draws are discarded and every proposed setting needs fresh
+measurement and verification.
+
+`propose_mams_trajectory_candidates(binding, MAMSPilotConfig(...))` is an
+optional discarded proposer for the fully refreshed uniform-count MAMS profile.
+Every numerical setting is explicit. It brackets epsilon at approximately
+fixed requested mean duration, then diagnoses separate continuous frozen-policy
+windows. It always includes the declared duration neighborhood. Usable
+coordinate IACT estimates may nominate the paper's length hypothesis; separately
+labeled squared-coordinate, radial and frozen-projection diagnostics may nominate
+a slow-observable sibling. Missing, constant or lag-limited estimates remain
+unavailable and never become tuning gates. The source coefficient is a
+hypothesis under our different integer-count law, not a calibrated default.
+
+`compile_mean_duration` translates a request into the existing frozen policy.
+For counts uniform on `1,...,K`, the actual mean is `epsilon*(K+1)/2`.
+Compilation rounds to the nearest count, ties upward, and records quantization;
+it rejects unsupported requests instead of silently clipping. The transition
+law and Metropolis correction are unchanged.
+
+The explicit controller option `repair_trajectory_policy="preserve_mean_duration"`
+with `repair_mean_duration_max_steps` recompiles a repair child's maximum count
+when epsilon changes. The first repair fixes its family's request to the primary
+candidate's realized mean; subsequent descendants preserve that same request,
+avoiding accumulated rounding drift. This may differ from the pilot's original
+continuous request by its recorded quantization. Config schema v3 and repair
+action schema v2 record these semantics; old configurations retain fixed-count
+repairs. Each child still needs fresh measurement and independent verification.
+This option requires a typed uniform-duration profile and replicated evidence;
+legacy same-count pilots/refinement cannot be combined with it.
+
+Supply a fresh `output_dir` to preserve pilot progress and completed tensor
+windows. `resume_from` recovers into another fresh directory with identical
+binding, source, backend and configuration. Completed calls replay; interrupted
+attempts stay charged and retries consume the remaining allocation. The wall
+cap is checked at window boundaries, so a compiled window can overrun it; use
+measured window costs and the campaign supervisor for serious runs.
+`bayesfilter.testing.inference_validation.mams_adaptation_consumer` connects
+this proposer to the existing public tuners and exports every verified member.
+It is a research consumer, not a third tuning authority.
+
+These are **experimental implementations**. The checked mechanics runner can
+export and replay verified members, but the claim-bearing retained builder
+rejects modern profiles pending scoped statistical, posterior and GPU
+qualification. CPU reference tests and short nonlinear runs do not establish
+convergence, efficiency or release readiness. Current evidence and remaining
+work are tracked in the [implementation execution record](../plans/bayesfilter-modern-hmc-execution-2026-10-07.md).
+
+Short CPU/XLA versus GPU/XLA checks now pass for randomized HMC and MAMS
+on LGSSM and nonlinear accumulation. A GPU/XLA LGSSM run through the public
+tuner also verified, exported and reloaded both declared members. These are
+scoped engineering checks; the nonlinear posterior comparison remains open.
+In the tested TensorFlow environment, the same seed produces different draws
+in non-XLA and XLA execution, even with an explicit Philox algorithm. Preserve
+backend and compilation mode in replay identity. Arithmetic parity checks
+must use matched random inputs or matching compiled modes; seed equality
+alone does not establish identical trajectories across modes.
+
 ## Search, qualification, and retention
 
 1. Prepare and freeze the target, geometry, coordinate transform, four-chain
@@ -79,13 +216,23 @@ the tuning chapter derives their transformed densities.
    budget is explicitly deferred, allowing affordable mandatory work to finish.
    Its evidence allocation is preserved, and the search remains incomplete.
    A first passing member does not end the cohort.
+   For the replicated v7 policy, controller policy version 4 completes the
+   initial primary pilot/measurement cohort before dispatching optional
+   extensions or repair descendants. Once a candidate is screened, its pending
+   independent verification ladder is dispatched before those optional descendants.
+   This deterministic work order does not skip a primary peer, award membership
+   before verification, change evidence allocation, or rank candidates. Legacy
+   v3 checkpoints retain their recorded order when resumed. Versions v1--v2
+   remain readable historical results; they cannot resume under v3 or v4.
 4. Give each measurement survivor its own fresh fixed-kernel verification.
    Measurement, verification, and evidence extensions use separate recorded
    streams. Neither adaptation nor tuning draws enter posterior estimates.
 5. Preserve valid directional decisions. A supported smaller epsilon may repair
    rejection-induced immobility while the immobile parent remains unpromotable.
-   Every epsilon repair is an immutable same-L child preserving mass, target,
-   starts and coordinates. The child must be measured and independently verified.
+   The legacy epsilon repair is an immutable same-L child preserving mass, target,
+   starts and coordinates. The explicit duration-preserving policy described
+   above recompiles the maximum count. Every child must be measured and
+   independently verified.
 6. Extend inconclusive measurement or verification using the predeclared finite
    `evidence_rungs`. These are multipliers of the corresponding base draw count;
    the convenience sequence is `(1, 2, 4)`. Each rung is a fresh run of the same
@@ -113,6 +260,124 @@ limits are serialized. Refinement factors `(0.8, 1.25)` are reciprocal proposal
 hypotheses, not target-specific defaults. Multiple epsilons at one L remain
 separate candidates. No descriptive acceptance distance, ESS, runtime or R-hat
 ranking removes a viable member.
+
+### Experimental fixed-horizon repeated-trial policy (v7)
+
+`HMCReplicatedAcceptancePolicy`, from
+`bayesfilter.inference.hmc_acceptance_protocol`, is an explicit experimental
+alternative within the same two public tuners. It has not replaced the v5
+default or optional v6 policy. Select it in both
+`HMCControllerConfig.replicated_acceptance_policy` and
+`HMCCandidateExecutionConfig.acceptance_policy`; mismatched search and execution
+policies fail before numerical work. The statistical helper and validation CLI
+cannot issue tuning artifacts.
+
+The policy freezes four labeled starts, their weights, a discarded prefix W,
+and a measured horizon T. Each independent repetition resets the entire start
+bank and uses a fresh recorded stream. Its score for each start is the mean of
+all T Metropolis acceptance probabilities. The target is the expected
+fixed-horizon score conditional on the frozen starts and kernel. It is not a
+stationary acceptance expectation or a burn-in adequacy statement. Starts can
+have different expectations, and components within a repetition can be
+dependent. Whole repetitions supply the independent information.
+
+For v7, `evidence_rungs` multiply the number of repetitions, **not W or T**.
+Larger rungs append new trials to the existing evidence. Consecutive chunks
+continue one trial and cannot be counted as independent repetitions. This
+differs from the legacy draw-length extension in step 6 above. Changing the
+start bank, W, T, map, metric or numerical source creates a different scope.
+
+Qualification requires simultaneous containment of every start's expectation
+interval in `qualification_region`. The narrower `preferred_region` proposes
+epsilon repairs when the pooled interval supports a direction. A pooled mean
+cannot hide a start that violates qualification. A supported start violation
+or an inconsistent confidence set requests preparation review; insufficient
+evidence remains inconclusive. Fresh verification has its own independent
+streams and family error allocation. Search and verification error levels are
+separate statements, not a single combined level.
+
+Numerical health remains a veto, including invalid discarded-prefix states.
+Temporal contrasts are preparation-investigation diagnostics and R-hat is
+reporting-only; neither changes v7 acceptance admission. All verified members
+are retained. Checkpoint and retained-runner validation reconstruct raw trials,
+exclude used tuning streams, and check charged native work against each frozen
+chunk extent. Recovery may repeat a lost native call and charge it again, but
+cannot treat its retry as a new independent score.
+
+The explicit release-validation profile sets
+`min_normalized_return_displacement=0.0`, making first-to-last distance
+reporting-only. A moving path can end close to its start by chance; that pair
+of endpoints alone does not establish immobility. Adjacent movement, repeated
+states, persistent short-cycle returns, divergences and finite state/target
+checks remain active, including discarded-prefix health. The original failed
+Gaussian trial is preserved as a regression, alongside frozen-path and cycle
+controls. This profile has its own policy identity and requires fresh tuning;
+legacy defaults and historical outcomes retain their original meaning. These
+checks do not certify mixing or posterior convergence.
+
+`HMCCandidateExecutionConfig(replicated_trial_batch_size=B)` optionally executes
+up to B independent v7 trials together for exact-score batched targets. The
+default is 1; the current implementation bounds B at 32. This requires a whole
+discarded-prefix-plus-measured path to fit in each chunk. It does not shorten
+the horizon, change the number of repetitions, or batch different candidates.
+Each trial keeps its original TFP stateless stream, start bank and per-trial
+health/score record. Target rows are evaluated together; momentum and MH
+randomness remain separate. Every attempted trial is charged before the grouped
+call, and lost work remains charged on retry. The charge group is saved before
+the call; returned rows are saved together, including a completed prefix if
+serialization fails. Internal batch dispatch can reuse unchanged persisted
+history. Every dispatch exit, explicit save, export and reload validates that
+history fully, including paused and failed exits. The batch size belongs to the
+new execution identity; old checkpoints are not resumed under changed settings.
+Serial/threaded and position-field routes reject this option. Native parity,
+recovery and full-search cost are distinct checks; batching alone does not
+change v7's experimental release status.
+
+Detailed per-trial health remains in the immutable numerical records. New
+`hmc_replicated_acceptance_evidence.v2` observations contain `health_summary`
+counts instead of duplicating those details; v1 records remain readable.
+Within-work checkpoint saves reuse unchanged persisted records. Completed-work,
+handled-error/pause, explicit-save, export and reload boundaries still validate evidence;
+every attempted native call is charged durably before execution.
+
+Float64 interval inversion uses a conservative arithmetic guard. Independent
+80-digit references check selected endpoint and threshold-adjacent vectors at
+64, 1,024 and 16,384 repetitions on CPU/XLA and GPU/XLA with the four-bet grid.
+These finite checks do not prove an error bound for all inputs or hardware.
+The scoped release plan separately requires full-search delivery, cost and
+reproducibility evidence; passing arithmetic checks alone does not change v7's
+experimental status or the current default.
+
+Run the framework-free `acceptance_decision_validation preflight` before a
+costly experiment, then price the actual target. Feasible work counts do not
+guarantee sufficient precision or useful delivery. The declared qualification
+band, horizon, repetition ladder and method are experimental choices requiring
+their own provenance. The validation matrix and executable model inventory are
+linked from `docs/validation/README.md`. CPU regression success does not prove
+GPU parity, posterior accuracy, or default readiness.
+
+### Experimental lower-bound qualification (v8)
+
+The modern profiles require
+`HMCReplicatedAcceptancePolicy(qualification_mode="lower_bound", ...)`, with
+`qualification_region=(declared_floor, 1.0)`. Search and execution must declare
+the same policy. It retains v7's independent fixed-horizon start-bank trials,
+fresh verification and all-member retention, but asks whether every start's
+simultaneous lower bound exceeds the declared floor. The floor, horizon,
+replications and error allocation are explicit experimental choices, not new
+defaults. Fixed HMC can use this same policy in a fair kernel comparison.
+
+Qualification is checked **before** preferred-region repair. A candidate with
+supported high acceptance can qualify even when its acceptance exceeds the
+optimizer's preferred target. Movement, recurrence, numerical health and budget
+requirements still apply. R-hat, posterior ESS and MCSE cannot reject, rank,
+repair, delay or terminate this tuning search. Posterior assessment remains a
+separate stage.
+
+The v8 identifier prevents silent reinterpretation of v7's two-sided region.
+Legacy payloads retain their existing schemas and meaning. Statistical
+calibration and complete-fit delivery for the new profile remain release work;
+the lower-bound rule alone is not evidence of efficient sampling.
 
 A multiplicative epsilon repair can jump from high acceptance directly to
 nonfinite trajectories. The nonfinite result supplies no valid acceptance
@@ -381,7 +646,7 @@ retain their meanings. R-hat remains reporting-only during tuning.
 | Evidence | Tuning role |
 | --- | --- |
 | Valid acceptance evidence with no promotion veto | Qualifies the exact measured kernel; fresh verification remains required. |
-| Supported directional acceptance failure | Proposes a smaller or larger same-L child. |
+| Supported directional acceptance failure | Proposes a smaller or larger epsilon child; the configured repair policy determines its count. |
 | Repeated states, insufficient movement or recurrence | Vetoes current promotion; may coexist with an eligible directional repair. |
 | Available native divergence | Vetoes current promotion; finite valid acceptance evidence can still support a directional child repair. |
 | Candidate-local invalid target, score or transition health | Rejects that candidate and preserves the reason. |
@@ -581,6 +846,14 @@ mandatory; setting `require_all_chain_movement=False` is rejected by the config.
 
 ## Retained sampling and posterior assessment
 
+For all-member handoff, `export_hmc_candidate_retained_runners` exports every
+verified ID, and `load_hmc_candidate_retained_runners` reloads the returned paths.
+These helpers use the existing compact member files and shared evidence bundle.
+They check common evidence once per call and each member's identity and verified
+endpoint separately. The single-member loader remains compatible. Every later
+run or export revalidates; grouped loading creates no persistent trust cache.
+Partial search exports remain partial delivery and cannot price a complete search.
+
 Choose a candidate ID explicitly and pass its result and numerical binding to
 `build_retained_bound_hmc_archive_runner_from_candidate_set_result`. The two
 frozen-kernel builder variants share verification checks; the claim-eligible
@@ -596,6 +869,11 @@ Numerical analyses are cached by their current content hash, while live source,
 geometry, target and evidence mutation checks remain active. Predecessor archive
 validation uses an iterative walk. History hashing and target-scale memory costs
 remain; the implementation does not claim constant-cost restart.
+Native finite-value and Metropolis-state checks use a compiled reduction and
+transfer their Boolean results together. Diagnostic vectors are materialized
+once at the reporting boundary. These execution changes preserve the health
+rules and serialized values; saved-trace parity does not establish full-search
+affordability.
 The entire live evidence inventory is checked for shared invalidity, including
 evidence recorded after the supplied result. An earlier result cannot restore
 membership after the same binding records a shared transition failure.
@@ -658,6 +936,15 @@ For estimator experiments, `options.posterior_precision_settings` accepts
 omitting them preserves their defaults. The stopped and fixed-count reports
 use the same declared mean estimator and batch settings. Inadequate batches
 remain unavailable; exposing a setting does not establish its calibration.
+
+Each posterior assessment reports `sample_counts` for the window actually
+checked, `requirements`, individual `checks`, and `failed_checks`. This
+distinguishes incompatible chains, inadequate bulk/tail information, an
+unobserved binary outcome, unmet precision, and an additional consumer veto.
+Window counts are not cumulative burn-in counts. Consecutive warmup passes
+are enforced by the sequential controller and reported in its history; one
+passing window alone does not meet a multiple-check requirement. These fields
+explain the existing decision without changing tuning or posterior thresholds.
 
 Validation fit directories now bind the library source, complete design, data, fit/stream IDs
 and runner-reuse setting before reading completed summaries or numerical
@@ -860,6 +1147,129 @@ from an abnormal exit is preserved for inspection and is not automatically
 rerun or counted as a successful replication. This optional validation setting
 does not alter the tuner, member selection, numerical defaults or HMC kernels.
 
+The validation CLI accepts `--reuse-leapfrog-graphs` for exact-score pipeline
+designs. It propagates the existing optional runner policy through each cell
+and isolated child, including fresh automatic preparation. Its default is off;
+the reference-mean engine already uses reuse. The run index and child manifest
+record the choice, and resume refuses a changed execution policy. Price the
+same policy that confirmation will execute: a development wrapper's graph
+reuse does not automatically carry over to an isolated worker.
+
+For sequential suites, `--share-unused-budget` carries unused settled-cell
+time forward within the sum of the original cell budgets. It does not borrow
+an unstarted cell's allocation, increase the cumulative total, or credit the
+same unused time again on resume. Parallel sharing is rejected. Full planned
+denominators and per-fit limits still apply. Explicit cell allowances remain
+important when independent forecasts underestimate runtime variability.
+
+Isolated fits also accept `options.timeout_policy`. Its optional
+`max_extension_seconds` is an explicitly budgeted contention allowance;
+the default is zero. An extension requires recent durable numerical progress
+and fresh workload evidence. On GPU, the supervisor matches process telemetry
+to the selected `CUDA_VISIBLE_DEVICES=GPU-...` UUID and looks for a foreign
+compute process. High utilization alone, a heartbeat, numeric CUDA ordinals,
+or unavailable telemetry cannot justify an extension. On CPU, normalized host
+load is only a declared saturation heuristic. Neither signal proves the cause
+of a slowdown or says anything about sampler validity.
+
+The parent publishes an atomic execution allowance which preparation, tuning
+chunks and posterior chunks check at safe boundaries. This allowance is separate
+from the frozen numerical configuration: extending it does not change candidate
+identities or random streams. An executing TensorFlow call cannot be interrupted
+cooperatively, so the hard process cap remains. Every second, including startup,
+probes, retries and cleanup, counts against the fit and outer cell allocation;
+the child inherits the parent's deadline and reserves time for its final report.
+OS scheduling and process reaping can exceed a deadline slightly; receipts
+report `deadline_overrun_seconds` and charge that elapsed time rather than
+granting it as another extension.
+`stall_timeout_seconds` optionally bounds time without durable progress and is
+disabled by default; configure it to allow measured compilation and chunk times.
+
+The v7 confirmation worker accepts an explicit `--allowance` from its bounded
+supervisor. This replaces its internal wall clocks, including the controller
+and between-chunk clock, while retaining its configured numerical work limits.
+Without that option, the configured wall limit still applies. A monitor that
+only writes heartbeats does not activate this behavior. The progress reader
+recognizes both v1 and v2 tuning checkpoints and completed export, evidence
+reconstruction and member-reload operations. Repeated completion records or
+copied old checkpoints do not earn additional time.
+
+Under `extension_mode="observed_intervals"`, trusted contention intervals can
+earn bounded extra time while useful work continues, including during closeout.
+This is a scheduling allowance, not an estimate of lost GPU compute. Both the
+extension cap and the enclosing campaign deadline remain binding. Resume uses
+the source that issued the checkpoint; changing source creates a different
+scope and must not be presented as preservation of the old random streams.
+
+GPU availability does not require exclusive use. Validation campaigns can set
+`timeout_policy.gpu_admission_mode="shared"` with a bounded
+`gpu_admission_wait_seconds`. Trusted device visibility and available memory
+permit admission even when other compute processes are present. The compatibility
+mode `"idle"` still waits for them to leave. Memory growth is required in both
+modes, and neither admission policy guarantees a fixed share of GPU throughput.
+
+`timeout_policy.max_contention_retries` optionally permits bounded automatic
+recovery (default zero). A retry requires a cooperative budget stop or supervised
+timeout with observed contention, no final assessment and unspent base-plus-
+contention allowance. It reloads the same source/design and native checkpoints.
+All attempts and cold-start overhead consume that one original fit cap; a retry
+cannot renew the extension. The attempt limit survives coordinator restarts.
+Numerical errors, invalid artifacts and completed posterior failures are never
+automatic contention-retry triggers. Use complete enclosing fit costs, including
+any recovery, when pricing work for a shared machine.
+
+A campaign can explicitly reassign remaining time after that local cap is
+exhausted. `campaign_recovery.continue_frozen_fit` runs the original frozen
+numerical worker with its unchanged design, seeds and checkpoint paths. The
+saved execution also binds the exact `CUDA_VISIBLE_DEVICES` selection; another
+GPU of the same model is not interchangeable for an existing checkpoint.
+The coordinator checks this binding before launch. A diagnosed device-binding
+startup rejection may be repaired only with unchanged checkpoint/evidence,
+no new numerical progress, the original GPU selection restored, and all failed
+attempt costs retained.
+The coordinator records the enlarged cumulative allocation separately, counts every
+earlier attempt, and enforces an additional-attempt limit and enclosing deadline.
+Only an incomplete resource stop with durable progress is eligible. Completed
+assessments, including unfavorable ones, are reused. Numerical failures require
+their own diagnosis. Completed evidence checksums are verified before reporting
+success; complete-fit prices include the original work and every continuation.
+This operation needs an explicit allocation inside the existing campaign budget;
+an ordinary retry cannot create it or restart the campaign clock.
+
+`campaign_pool.run_pool` connects this continuation to a bounded common pool.
+It schedules individual fits, returns a progressing resource-stopped fit to
+the queue after its peers, and enforces the absolute deadline. Callers may set
+a finite attempt limit; the October 2 state-space continuation instead uses
+`max_attempts=None` with durable-progress and advancing-clock checks. A quantum
+is a scheduling allowance, not a numerical stopping rule. The state-space
+coordinator `scripts/run_hmc_ssm_pooled_campaign.py` carries unfinished pilots
+and main fits in one queue and refreshes prices and eligibility after each turn.
+Completed matching pilots unlock unstarted main slots during the same run.
+The child receives the next bounded allocation beyond its recorded prior cost;
+there is no separate three-attempt lifetime cap. A matching workload supplies a cost observation;
+posterior success is not a pricing criterion. Completed unfavorable assessments
+remain terminal even when their shorter work cannot price a full workload.
+An incomplete or unstarted slot stays in the original denominator.
+
+Per-attempt `*-supervision.json`, `*-allowance.json` and `*-exit.json` records
+preserve progress, telemetry, extension decisions and termination reasons.
+Cooperative stops additionally write `*-budget.json`. Budget exhaustion after
+any declared recovery continues to the next independent fit, preserving unavailable fits in the full
+denominator; exhausted fit allocations are not relaunched on ordinary resume.
+An explicit campaign allocation uses the separate continuation path above. Receipts
+identify whether the cell or the fit limited the allowance. A cell-limited
+partial fit may resume under identical source/design and unused cumulative
+fit time. If only a running preparation progress file exists, the coordinator
+archives it before replaying the same preparation seed; it does not fabricate
+a resumable preparation checkpoint. Completed results are preserved. Stalls, corrupt
+checkpoints, missing assessments and unexpected process failures stop the cell
+for diagnosis. A partial posterior stop preserves committed chunks and a pause
+record without sealing a terminal member result. Numerical count caps, candidate
+retention, acceptance criteria and posterior-only R-hat/ESS/MCSE remain unchanged.
+Changing policy fields inside a design changes its identity and cannot silently
+upgrade a frozen campaign. A separately recorded campaign allocation leaves
+that original numerical design unchanged.
+
 Fixed-kernel invariance tests use the reversible random-position construction
 or independent two-sample experiments. Adapting warmup draws cannot replace
 those experiments. Identity and recurrent kernels demonstrate why invariance
@@ -958,6 +1368,27 @@ including energy. Adjacent chain states do not qualify as iid endpoints.
 Stopped/fixed reports give both all-planned and available-interval coverage;
 conditional repeated fits of one dataset are distinct from prior-predictive
 SBC. A finite MCSE or a posterior runtime-check pass does not certify coverage.
+
+Stopped intervals retain exact-reference coverage only where an analytic
+functional is available. For checked state-space quadrature references, a
+separate `numerical_reference` report compares the nominal MCSE interval with
+the reference value plus/minus its recorded resolution/domain sensitivity.
+Containment, partial overlap and disjointness are reported separately. That
+sensitivity is neither a certified integration bound nor a confidence interval;
+these comparisons do not enter exact-reference coverage counts or establish
+sequential coverage. K6's missing joint posterior oracle remains unavailable.
+Saved final checks can be reassessed without rerunning HMC or altering their
+original assessment files.
+
+The pipeline's `delivery_coverage` report separates qualified posterior
+delivery, interval coverage, and their joint event for each predeclared
+quantity. A covered interval at a precision cap contributes to interval
+coverage but not to qualified delivery. Missing fits remain unsuccessful in
+the planned denominator. Declaring `options.coverage_floor` in a stopping
+design adds pointwise exact-binomial lower-bound screens; other designs have
+no implicit coverage threshold. Conditional coverage among available intervals
+is descriptive. With multiple selected siblings the report is separate for
+each ordinal member slot; siblings never increase the independent fit count.
 
 The active repair sequence, budgets and remaining evidence requirements are in
 the [master program](../plans/bayesfilter-hmc-repair-master-program-2026-09-16.md).
