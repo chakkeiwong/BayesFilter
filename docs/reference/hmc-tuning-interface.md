@@ -1065,6 +1065,19 @@ Repeated MCSE checks provide an operational accuracy screen, not anytime-valid
 confidence coverage. Finite-chain calibration does not justify a universal new
 stopping default. Declared target-specific posterior checks remain necessary.
 
+The [October 12 fixed and stopped reference study](../plans/bayesfilter-mcse-stopping-calibration-result-2026-10-12.md)
+completed 128 replications for each stationary Gaussian/Student-t condition at
+correlation 0, .9 and -.9. Its exact Gaussian calculation also shows downward
+bias under antithetic dependence: at 10000 draws, the unmasked configured
+lugsail estimate averages about .8936 times the finite-length mean variance.
+Two antithetic Student-t fixed-endpoint estimates were unavailable; both remain
+in the reported denominator. Neither even batch lengths nor the existing
+autocorrelation estimator was promoted as a replacement. Deterministic
+CPU/XLA covariance tests now exercise the actual batch kernel, including
+remainders and the rule that a positive pool cannot hide a negative per-chain
+estimate. This evidence concerns retained uncertainty, not tuning membership
+or warm-up sufficiency.
+
 `checkpoint_store` accepts `DurableTensorCheckpoint` to preserve numerical
 chunks. Restart the call with the same member, policy, seeds, names, coordinate
 transform and quantity definition; completed transitions reload and diagnostics
