@@ -163,6 +163,13 @@ price allocation and 3600-second local allowance are reserved from the settled
 including validation/export and per-trial overhead sensitivity. The complete
 twenty-cell comparison is not presumed affordable; unfunded cells and paired
 replications remain explicit. No new numerical default is introduced.
+The [MCSE/stopping diagnostic](bayesfilter-mcse-stopping-calibration-2026-10-12.md)
+also now has an executable four-estimator study of exact stationary Gaussian
+and Student-t reference chains under positive/negative dependence. It compares
+fixed endpoints with the actual retained assessment's first passing look,
+preserves nonstoppers and invalid variance estimates, and uses 1800 seconds
+within the same local reserve. This diagnoses estimator support; it does not
+change a default or certify warm-up or arbitrary sampler correctness.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model
