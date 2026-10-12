@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-10-11. This reference describes the common candidate-set
+Last checked: 2026-10-12. This reference describes the common candidate-set
 procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
 HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
 classifies public tuners, preparation helpers, chain runners, and historical
@@ -181,6 +181,16 @@ measured window costs and the campaign supervisor for serious runs.
 `bayesfilter.testing.inference_validation.mams_adaptation_consumer` connects
 this proposer to the existing public tuners and exports every verified member.
 It is a research consumer, not a third tuning authority.
+
+The analytic validation consumer also records original model quantities,
+moderate-tail probabilities and approximate lugsail reference intervals via
+`mams_analytic_diagnostics`. Its exact and partially whitened funnel controls
+now describe the same scale-three model. Missing or degenerate uncertainty is
+inconclusive; non-rejection is not proof of posterior accuracy. Binary events
+use the existing declared probability-diagnostic policy. These checks run only
+in posterior assessment and diagnostic reporting and cannot remove a verified
+tuning member. The [analytic-control plan](../plans/bayesfilter-mams-analytic-controls-2026-10-12.md)
+states their calibration scope and limits.
 
 These are **experimental implementations**. The checked mechanics runner can
 export and replay verified members, but the claim-bearing retained builder

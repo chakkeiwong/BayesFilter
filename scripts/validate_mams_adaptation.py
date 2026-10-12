@@ -17,7 +17,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-PLAN = "docs/plans/bayesfilter-mams-adaptation-bounded-validation-2026-10-11.md"
+PLAN = "docs/plans/bayesfilter-mams-analytic-controls-2026-10-12.md"
 TARGETS = ("gaussian", "rotated_gaussian", "student_t", "funnel_noncentered",
            "residual_funnel", "mixture", "LGSSM", "NL-ACC")
 
@@ -133,11 +133,16 @@ def fixture(target, use_xla):
         return f.adapter, starts, sources, metadata
     from bayesfilter.testing.inference_validation.targets import ValidationTarget
     from bayesfilter.testing.acceptance_uncertainty_models import ResidualFunnelTarget
+    from bayesfilter.testing.inference_validation.mams_analytic_diagnostics import ExactWhitenedFunnelTarget
     parameters = {"rotated_gaussian": {"condition": 25., "angle": .6},
                   "student_t": {"df": 5.}, "funnel_noncentered": {"scale": 1.},
                   "mixture": {"weight": .3, "separation": 5.}}.get(target, {})
-    adapter = (ResidualFunnelTarget(jit_compile=use_xla) if target == "residual_funnel" else
-               ValidationTarget(target, parameters, jit_compile=use_xla))
+    if target == "residual_funnel":
+        adapter = ResidualFunnelTarget(jit_compile=use_xla)
+    elif target == "funnel_noncentered":
+        adapter = ExactWhitenedFunnelTarget(jit_compile=use_xla)
+    else:
+        adapter = ValidationTarget(target, parameters, jit_compile=use_xla)
     d = adapter.parameter_dim
     starts = tf.constant([[-1., -.5, .4], [-.3, .2, -.6], [.4, -.2, .8], [1., .5, -.4]],
                          tf.float64)[:, :d]
@@ -146,8 +151,10 @@ def fixture(target, use_xla):
         # limitation even if within-mode diagnostics look stationary.
         starts += tf.constant([5., 0.], tf.float64)
     sources = ["bayesfilter/testing/inference_validation/targets.py",
-               "bayesfilter/testing/acceptance_uncertainty_models.py"]
+               "bayesfilter/testing/acceptance_uncertainty_models.py",
+               "bayesfilter/testing/inference_validation/mams_analytic_diagnostics.py"]
     return adapter, starts, sources, dict(target_id=target, parameters=parameters,
+        model_funnel_scale=3. if target in ("funnel_noncentered", "residual_funnel") else None,
         data_sha256="N/A: analytic law without observations",
         initialization="local positive-mode bank" if target == "mixture" else "fixed contrasting bank")
 
@@ -187,12 +194,15 @@ def _run_case(target, output, seed, deadline, progress, *, use_xla, source_hashe
     from bayesfilter.inference.hmc_mams_trajectory_proposals import MAMSPilotConfig
     from bayesfilter.inference.posterior_adapter import value_score_capability
     from bayesfilter.testing.inference_validation.mams_adaptation_consumer import run_adapted_mams_search
+    from bayesfilter.testing.inference_validation.mams_analytic_diagnostics import (
+        QUANTITIES_ID, analytic_quantities, analytic_reference_report)
     from bayesfilter.runtime.durable_tensor_checkpoint import DurableTensorCheckpoint
     from bayesfilter.runtime.execution_budget import execution_budget, require_execution_budget
 
     started = time.monotonic()
     adapter, starts, sources, metadata = fixture(target, use_xla)
     d = adapter.parameter_dim
+    quantities = analytic_quantities(target, adapter, use_xla=use_xla)
     identity = tf.eye(d, dtype=tf.float64)
     mass = PrecomputedMassArtifact(position=tf.zeros(d, tf.float64), covariance=identity,
         factor=identity, adapter_signature=adapter.adapter_signature(),
@@ -231,6 +241,7 @@ def _run_case(target, output, seed, deadline, progress, *, use_xla, source_hashe
     write_json(output/"design.json", dict(metadata=metadata, initial_state=starts.numpy().tolist(),
         target_signature=adapter.adapter_signature(), binding_hash=binding.binding_hash,
         pilot=asdict(pilot), search=search.payload(), source_hashes=source_hashes,
+        quantities=quantities.payload(),
         scientific_promotion_authority=False))
     rows = progress["rows"]
     progress["status"] = "tuning"
@@ -253,13 +264,11 @@ def _run_case(target, output, seed, deadline, progress, *, use_xla, source_hashe
             row["status"] = "posterior_running"
             write_json(output / "progress.json", progress)
             member = members[row["candidate_id"]]
-            names = tuple("q"+str(i) for i in range(d))
-            extra_names = tuple("q"+str(i)+"_square" for i in range(d))
-            quantities = lambda x: {name: tf.square(x[...,i]) for i,name in enumerate(extra_names)}
+            names = quantities.parameter_names
             assessment = HMCPosteriorAssessmentPolicy(retained_bulk_ess_min=100., retained_tail_ess_min=100.,
-                quantities_id="d4r3_coordinates_and_squares_v1",
+                quantities_id=QUANTITIES_ID, binary_quantity_names=quantities.binary_names,
                 precision=HMCPrecisionPolicy(tuple(HMCPrecisionTarget(n,mcse_sd_ratio_max=.1)
-                    for n in names+extra_names),method="lugsail",jit_compile=use_xla))
+                    for n in quantities.precision_names),method="lugsail",jit_compile=use_xla))
             config = SequentialNeuTraHMCConfig(step_size=member.step_size,
                 num_leapfrog_steps=member.num_leapfrog_steps, warmup_seed=(20261011,seed+1000+index*2),
                 retained_seed=(20261011,seed+1001+index*2), warmup_chunk_results=256,
@@ -271,27 +280,19 @@ def _run_case(target, output, seed, deadline, progress, *, use_xla, source_hashe
             with DurableTensorCheckpoint(destination/"chunks",dict(member_hash=member.member_hash,
                     policy=config.payload(chain_count=4))) as store:
                 result=run_hmc_posterior(member=member,config=config,parameter_names=names,
-                                         quantities_fn=quantities,checkpoint_store=store)
+                                         quantities_fn=quantities.posterior_quantities,checkpoint_store=store)
             samples=result.get("private_retained_raw")
-            reference={}
+            reference=analytic_reference_report(samples, quantities, use_xla=use_xla)
             if samples is not None and int(samples.shape[0]):
                 reference["observed_mean"]=tf.reduce_mean(samples,(0,1)).numpy().tolist()
                 reference["observed_second_moment"]=tf.reduce_mean(tf.square(samples),(0,1)).numpy().tolist()
-                if target in ("gaussian","funnel_noncentered","student_t"):
-                    reference.update(exact_mean=[0.]*d,exact_second_moment=[5/3 if target=="student_t" else 1.]*d)
-                if target=="rotated_gaussian":
-                    c, s = math.cos(.6), math.sin(.6)
-                    reference.update(exact_mean=[0.,0.],exact_second_moment=[c*c+25*s*s,s*s+25*c*c])
-                if target=="mixture":
-                    reference.update(exact_mean=[2.,0.],exact_second_moment=[26.,1.],
-                                     observed_left_mass=float(tf.reduce_mean(tf.cast(samples[...,0]<0,tf.float64))),
-                                     exact_left_mass=.3*.5*(1+math.erf(5/math.sqrt(2)))+.7*.5*math.erfc(5/math.sqrt(2)))
                 tf.io.write_file(str(destination/"retained.tensor"),tf.io.serialize_tensor(samples))
-                reference["quantity_coordinates"]="supplied adapter coordinates; not centered-funnel model quantities"
             public={k:v for k,v in result.items() if not k.startswith("private_")}
             write_json(destination/"result.json",public)
             row.update(status="diagnostic_posterior_checks_passed" if result["passed"] else "posterior_incomplete",
-                       reference=reference,reference_interpretation="descriptive; no calibrated comparison")
+                       reference=reference,
+                       posterior_reference_screen_passed=bool(result["passed"] and reference["status"]=="no_discrepancy_detected"),
+                       reference_interpretation=reference["uncertainty"])
             progress["elapsed_seconds"] = time.monotonic()-started
             write_json(output/"progress.json",progress)
     progress.update(status="completed" if run.result.completion_status == "complete" else "qualification_incomplete",

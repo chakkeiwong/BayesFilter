@@ -85,6 +85,11 @@ the completed 165.772-second CPU reference check and active GPU rung.
 PP-SGQF has usable source and slow-observable estimates with four priced
 proposals; PP-UKF is running. This does not close posterior validation or the
 remaining D4R3 antithetic, tail and original-coordinate funnel controls.
+The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
+now makes those controls executable within 1,800 seconds of the existing local
+allowance. Its audit found an incorrect inherited partial-funnel model map and
+different model scales in the exact/partial fixtures. Repairing both precedes
+the new quantity checks; historical feasibility rows are not reinterpreted.
 Historical status snapshots below are dated records, not active instructions.
 
 **Owner scope correction, 10 October:** NUTS is excluded, including diagnostic

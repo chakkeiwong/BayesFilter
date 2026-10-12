@@ -27,8 +27,14 @@ class ResidualFunnelTarget(ValidationTarget):
         u = tf.exp(delta)*q[..., 1:]
         return -.5*tf.reduce_sum(tf.concat([q[..., :1]**2, u*u], -1), -1) + 2*delta[..., 0]
 
+    def to_model(self, q):
+        v = 3.*q[..., :1]
+        delta = .5*tf.tanh(q[..., :1]/2.)
+        return tf.concat([v, tf.exp(v/2.+delta)*q[..., 1:]], -1)
+
     def adapter_signature(self):
-        return digest({"analytic_residual_funnel": "v1", "scale": 3., "amplitude": .5})
+        return digest({"analytic_residual_funnel": "v2", "scale": 3., "amplitude": .5,
+                       "model_chart": "v=3*z0;x=exp(v/2+delta)*zchild"})
 
 
 MODEL_CASES = (
