@@ -7,7 +7,7 @@ for engineering validation. They are experimental; the implementation is not
 a posterior, efficiency or release result. Current tests, repairs and remaining
 phases are recorded in the [active execution record](bayesfilter-modern-hmc-execution-2026-10-07.md).
 
-**Active phase, refreshed 11 October:** D2f, D3, E3, D4a and the first D4b1
+**Active phase, refreshed 12 October:** D2f, D3, E3, D4a and the first D4b1
 full SGQF cohort are terminal. All 15 frozen SGQF proposals completed fresh
 tuning verification. SNAPER delivered 6/6 posterior and separate finite-target
 reference screens; MAMS delivered 5/9, with one inconclusive warm-up and three
@@ -64,11 +64,14 @@ The bounded SIR/structural retry finished with total GPU supervisor charge
 1,191.476 seconds across both attempts. No model delivered a reliable learned
 length from the two 64-draw diagnostic windows. These are cost-only rows from
 two recorded source commits, not a same-source posterior or method comparison.
-The old posterior reference loaders still reject the committed source closure;
-saved local factors remain unadmitted warm-start hypotheses. D4R4b must first
-complete a versioned reference compatibility audit or new references, and
-price a longer discarded-window ladder before freezing an adequately searched
-classical/MAMS cohort, model quantities and paired uncertainty design.
+The old strict posterior reference loaders retain their historical source
+checks. D4R4b has now completed a separate versioned compatibility audit for
+all four references against `source-163d24b34`: source differences were
+inspected, full-horizon values/scores and quantity charts passed parity, and
+the final integration rungs passed reaggregation. Saved local factors remain
+unadmitted warm-start hypotheses. Finish the longer discarded-window ladder
+before freezing an adequately searched classical/MAMS cohort, model
+quantities and paired uncertainty design.
 The [D4R4b preconfirmation plan](bayesfilter-mams-d4r4b-preconfirmation-2026-10-12.md)
 now makes those first dependencies executable: a versioned reference-source
 audit and an all-model 256/64 diagnostic-window rung, with a conditional
@@ -77,6 +80,11 @@ local-check seconds and two 7,200-second GPU allocations from the settled
 balance; 133,019.616 seconds remain provisionally unallocated while reserved.
 The cost consumer gains explicit window/lag/seed-index arguments, with unchanged
 historical 64/16 defaults; it remains a caller of the shared MAMS proposer.
+The [execution record](bayesfilter-mams-d4r4b-execution-2026-10-12.md) records
+the completed 165.772-second CPU reference check and active GPU rung.
+PP-SGQF has usable source and slow-observable estimates with four priced
+proposals; PP-UKF is running. This does not close posterior validation or the
+remaining D4R3 antithetic, tail and original-coordinate funnel controls.
 Historical status snapshots below are dated records, not active instructions.
 
 **Owner scope correction, 10 October:** NUTS is excluded, including diagnostic

@@ -1,7 +1,8 @@
 # D4R4b preconfirmation execution record
 
 Plan: [D4R4b preconfirmation](bayesfilter-mams-d4r4b-preconfirmation-2026-10-12.md).
-Date: 12 October 2026. Status: first discarded-window rung prepared; no
+Date: 12 October 2026. Status: reference compatibility complete; first
+discarded-window rung running. No
 posterior or tuning-membership authority follows from this cost diagnostic.
 
 ## Prelaunch review and source
@@ -85,3 +86,59 @@ reference points and four starts using the first-rung seeds for every target.
 The output root is `N5/generic-adaptation/preconfirmation-01/reference-01/`;
 the sibling log preserves failures and progress. No reference compatibility
 is claimed until the current native numerical checks finish.
+
+## B0 terminal result and continuation review
+
+The CPU reference diagnostic finished at 2026-10-12 00:22:58 UTC in
+165.772147 seconds. The driver was the immutable `reference-driver-b1cb4e51c`
+archive; the evaluated target remained `source-163d24b34`. The exact command,
+source/operator identities, environment, seeds, quantities and four reports
+are preserved in
+[the terminal manifest](artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/preconfirmation-01/reference-01/manifest.json).
+GPUs were deliberately hidden. This is independent reference evidence, not a
+GPU qualification run.
+
+| Target | Maximum absolute value difference | Maximum scaled score difference, FD steps `1e-4` / `1e-5` | Result |
+| --- | ---: | ---: | --- |
+| PP-SGQF | 2.70e-13 | 1.59e-7 / 4.26e-9 | Compatible |
+| PP-UKF | 1.49e-12 | 1.59e-7 / 3.49e-9 | Compatible |
+| SIR | 6.82e-13 | 1.94e-5 / 1.87e-7 | Compatible |
+| Structural UKF | 2.26e-11 | 1.20e-6 / 1.10e-8 | Compatible |
+
+All four source audits, eight-point native parity checks, quantity-chart
+checks and final-two-rung reference reaggregations passed. The SIR coarse-step
+score error is close to its inherited `2e-5` bound; its much smaller error at
+the finer step is consistent with finite-difference truncation. No tolerance
+was changed. These checks supplement the inspected dependency argument; they
+do not prove global numerical equivalence from eight points alone. The bridge
+applies to this exact current source/data/quantity identity. Later numerical
+source changes require another compatibility check.
+
+| Decision | Primary criterion | Veto diagnostic | Main uncertainty | Next justified action | Not concluded |
+| --- | --- | --- | --- | --- | --- |
+| Complete B0 | Audited integrand/source identity, quantity definitions, parity and reference refinement all pass | No reference continuation veto remains for the audited source | Empirical integration refinement has no rigorous global error bound | Finish B1, then freeze a priced qualification and posterior comparison using the compatible references | Sampler convergence, robust adaptation, exact nonlinear likelihood truth |
+
+| Inference status | Finding |
+| --- | --- |
+| Hard veto screen | No source, data, chart, quantity, native-status or refinement veto in the four checked references. |
+| Statistically supported ranking | None; this is a reference compatibility check. |
+| Descriptive-only differences | Finite-point errors in the table. |
+| Default-readiness | Unchanged; MAMS remains experimental. |
+| Next evidence needed | Complete longer-window costs; remaining analytic controls; fresh qualification and paired posterior comparisons. |
+
+The reference run consumes 165.772147 seconds of the existing 3,600-second
+local allowance. Keep the full allowance reserved until phase settlement;
+do not charge this time again outside it. The running GPU rung remains inside
+its existing 7,200-second supervisor allocation. PP-SGQF has completed with
+both length estimates usable, four frozen proposals and four healthy short
+prices. This is availability and cost evidence only. PP-UKF is running; later
+targets retain their place in the declared order.
+
+The continuation audit found no reason to interrupt that run. It also checked
+the master's remaining D4R3 requirements: antithetic/oscillation controls,
+calibrated tail quantities and funnel quantities in original model coordinates
+are still missing. Those checks must be implemented under an explicit bounded
+design before robustness interpretation. The strongest alternative explanation
+for the positive pilot is adequate local exploration within an incomplete
+region; a compatible reference makes that explanation testable, but does not
+itself disprove it.
