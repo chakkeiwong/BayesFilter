@@ -189,6 +189,17 @@ primary pair after a budget stop; it never assumes the final count equals
 the proposal count. Epsilon uses the actual binding domain. Every verified
 root or child is exported and checked on reload.
 
+For the four full-data nonlinear research targets,
+`scripts/run_modern_hmc_frozen_full_model.py` consumes an explicit frozen
+design and uses that same caller. The design declares execution, qualification,
+repair and optional posterior settings. The method label must match the
+actual transition; it does not establish that adaptation was performed.
+Posterior assessment visits every verified identity, including descendants,
+and uses a separately audited finite-filter reference. Reference agreement
+uses the declared precision settings and never changes tuning membership.
+Resource stops retain completed outcomes and unstarted members. This driver
+is a research consumer, with no additional tuning or release authority.
+
 The analytic validation consumer also records original model quantities,
 moderate-tail probabilities and approximate lugsail reference intervals via
 `mams_analytic_diagnostics`. Its exact and partially whitened funnel controls

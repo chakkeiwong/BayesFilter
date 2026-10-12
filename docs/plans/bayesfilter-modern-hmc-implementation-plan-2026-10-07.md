@@ -97,9 +97,18 @@ The [adaptive consumer repair](bayesfilter-modern-hmc-adaptive-consumer-repair-2
 now supplies a common frozen-cohort caller for the existing public tuners.
 The MAMS consumer uses it, and 24 focused CPU mechanics tests cover both
 coordinate routes, epsilon above one, an actual duration-preserving repair
-child, fixed HMC, budget stops and state-space integrations. A new full-model
-driver and the complete priced baseline/replication design still remain;
-these consumer checks do not close D4R4 confirmation.
+child, fixed HMC, budget stops and state-space integrations. The new explicit
+full-model driver is now implemented with eighteen additional regressions,
+including all four full-data preparations, repair-descendant inventories,
+posterior peer continuation and supervisor interruption. Deployment from a
+committed snapshot, refreshed reference compatibility and the complete priced
+baseline/replication design remain; these consumer checks do not close D4R4
+confirmation. The structural longer-window GPU run continues within its
+7200-second allocation. A second workload began sharing GPU 1 after launch;
+long intervals between completed windows are not treated as a deadlock solely
+on elapsed time. Known local diagnostic usage is 1537.897999 of the reserved
+3600 seconds, including an interrupted working-tree CLI attempt that must be
+repeated from immutable source.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model
