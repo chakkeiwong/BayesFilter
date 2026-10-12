@@ -367,6 +367,8 @@ def main():
         tick = time.monotonic()
         target = row["target"]
         directory = args.geometry_root / REFERENCES[target]
+        row.update(status="running", stage="source_and_native_preparation")
+        write(args.output / "manifest.json", manifest)
         try:
             sources = audit_sources(directory, args.current_source, args.repository)
             seed = 5400 + 10000*list(REFERENCES).index(target)
@@ -386,6 +388,8 @@ def main():
                 operator, Path("bayesfilter/ops/symmetric_sylvester_op.cc"))})
             summary = reference_summary(directory, target=target,
                 data_sha256=fixture.metadata["data_sha256"], data=fixture.observations.numpy().tolist())
+            row["stage"] = "native_reference_parity"
+            write(args.output / "manifest.json", manifest)
             parity = check_parity(directory, target, fixture, metadata["start_positions"].numpy().tolist())
             report = dict(schema="bayesfilter.mams_reference_compatibility.v1", target=target,
                 status="compatible" if parity["passed"] else "parity_failed",
