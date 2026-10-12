@@ -203,13 +203,24 @@ models, paired replications, statistical confirmation and release remain open.
 The original waiting continuation service was stopped before any child launch
 to repair that planning veto; `continuation-01/settlement.json` records zero
 child cost. The replacement uses the fresh `continuation-02` directory and
-`bayesfilter-modern-priced-continuation-20261012-02.service`. It waits for the
-original GPU price supervisor to settle and writes the allocation before any
-dependent launch. Thirty-three focused budget/report tests pass, including
+`bayesfilter-modern-priced-continuation-20261012-02.service`. Pricing is now
+terminal: all 26 roots and 52 native calls completed at 13:56 UTC on October 12,
+charging 6851.941203 GPU-worker seconds. The terminal audit passed source,
+receipt, common-start, stream and memory-policy checks, with no numerical-health
+veto in the short calls. The continuation recorded a 123019.624951-second
+(34.17-hour) allocation and launched the immutable MAMS consumer on host GPU 1.
+Its manifest confirms memory growth, TF32 and XLA; fresh public qualification
+is active. Five 64-transition measurement trials across four chains were
+checkpointed by 14:09 UTC; no candidate was verified at that observation.
+All four roots and four reserved repairs remain in the design.
+The 39.60-hour minimum-count forecast exceeds the allocation; this is bounded
+feasibility with possible incomplete coverage, not a promised completion time.
+Thirty-three focused budget/report tests pass, including
 launch under an oversized conservative forecast, actual exhaustion and partial
-child outcomes. The price worker is unaffected by this repair.
+child outcomes. Broader method/model comparisons and fresh replications remain
+unfunded; no candidate has acquired posterior or release status from pricing.
 The [priced execution record](bayesfilter-modern-hmc-priced-execution-2026-10-12.md)
-tracks the completed MCSE study, running prices and continuation service.
+tracks the completed MCSE study, terminal prices and active MAMS qualification.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model

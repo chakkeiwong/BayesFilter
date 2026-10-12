@@ -1,9 +1,20 @@
 # Priced full-model continuation of the generic trajectory repair
 
-Date: 12 October 2026. Status: reviewed for implementation and cost diagnostics;
-posterior allocations must be recorded from those prices before launch.
+Date: 12 October 2026. Status: pricing completed and audited; the bounded MAMS
+feasibility allocation is recorded and fresh qualification is running on GPU 1.
 This continues D4R4 of the modern-HMC master. It does not change a numerical
 default, create a tuning authority or introduce NUTS.
+
+Current execution: all 26 roots / 52 native price calls completed at 13:56 UTC,
+charging 6851.941203 seconds of the 7200-second price reservation. The audited
+allocation is `priced-comparison-01/continuation-02/allocation.json` under the
+N5 generic-adaptation root below. It reserves 123019.624951 seconds for the
+unchanged four-root MAMS design, including its four possible repairs. The
+3600-second local reserve and 348.058797 unused price seconds remain held;
+unallocated worker time is zero after the MAMS reservation. This is the scoped
+feasibility branch below. The larger comparison and paired replications are
+unfunded. See the [execution record](bayesfilter-modern-hmc-priced-execution-2026-10-12.md)
+for the live service, evidence and next checks.
 
 ## Research question and evidence contract
 

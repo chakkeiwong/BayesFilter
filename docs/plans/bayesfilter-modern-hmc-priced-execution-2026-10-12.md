@@ -6,6 +6,16 @@ and the [MCSE reference study](bayesfilter-mcse-stopping-calibration-2026-10-12.
 Numerical source remains the committed `full-model-source-e68cdf1c4` snapshot.
 No numerical tuning, transition, posterior or reference default changes here.
 
+Current checkpoint, 14:09 UTC: pricing and its audit are complete; the MAMS
+consumer is running fresh qualification on GPU 1. The active service is
+`bayesfilter-modern-priced-continuation-20261012-02.service`, with artifacts in
+`continuation-02` under the output root below. Earlier waiting/pricing entries
+are historical checkpoints. Five 64-transition measurement trials across four
+chains have completed and been checkpointed. No candidate is verified yet.
+The next check is the first completed measurement stage, followed by fresh
+verification, any planned repairs and posterior outcomes within the recorded
+34.17-hour child allocation.
+
 The active output root is
 `docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/priced-comparison-01`.
 The original GPU price process (supervisor 2238414, worker 2238416) and CPU-only
@@ -153,3 +163,66 @@ overruns, all-member preservation and resource-stopped child outcomes. The
 actual remaining ceiling is unchanged at 123019.624951 seconds before any
 price overrun. No source, seed, model, statistical gate or posterior check
 was changed. This is a planning-policy repair within the existing campaign.
+
+## Terminal pricing and actual MAMS launch
+
+Pricing finished at 13:56:11 UTC: eight fixed-HMC roots, eight randomized-HMC
+roots, six SNAPER roots and four adapted MAMS roots, each with two native calls.
+All 52 calls returned without a recorded numerical-health veto. The supervisor
+charged 6851.941203 seconds; the unused 348.058797 seconds stay held, preventing
+double spending. `continuation-02/price-audit.json` verifies all 52 distinct
+streams, source and compiled-operator hashes, native receipts, complete cohort,
+common starts and memory policy. The final price JSON SHA-256 is
+`e74d6cac0c283898fd76df27862231446ccdfe71f8a30600cb3686884957c5c5`.
+
+The continuation wrote its allocation and launched the immutable consumer at
+about 13:56:12 UTC. Controller, supervisor and worker PIDs were 2304792,
+2306449 and 2306450 at inspection. The child's manifest records source commit
+`e68cdf1c4c6b75c16f92b86a3363a1e24690d22c`, host `CUDA_VISIBLE_DEVICES=1`,
+verified memory growth on the visible GPU, TensorFlow 2.20.0, TFP 0.25.0,
+TF32 and XLA. The log records successful XLA compilation. Preparation completed
+and the manifest entered `qualifying` at 14:00:50 UTC; the search design was
+written at 14:03 UTC. At 14:09 UTC, five native measurement trials (ordinals
+0--4) had completed, each with sample shape `[64,4,6]`. The launch audit checked
+their binding, compilation, device and durable receipts, along with all 197
+declared source/input hashes. It does not replace the public controller's
+statistical and numerical-health assessment. The intermediate tuning checkpoint
+can say `partial_budget` while the worker is still qualifying; this is not a
+terminal resource stop. No duplicate child was launched.
+
+The allocated ceiling is 123019.624951 seconds (34.17 hours). The MAMS
+minimum-count scenario is 142574.539112 seconds (39.60 hours), including all
+reserved repairs and conservative cold-call/overhead costs. That forecast is
+not an expected finish time or a measured lower bound. A positive actual
+balance funds a useful attempt; full completion remains uncertain. All four
+roots, four reserved descendants and unfinished denominators remain in scope.
+The supervisor enforces the actual allocation and the consumer preserves
+partial outcomes. No acceptance, convergence, precision or reference threshold
+was relaxed.
+
+The parent manifest's `price_status` and `last_checked_utc` still reflect its
+last prelaunch poll. Its top-level `status=running`, saved price audit and
+child manifest establish the current phase; do not interpret the stale poll
+field as an active price worker or restart the numerical child to refresh it.
+`launch-audit-01.json` preserves a separate timestamped observation without
+editing live manifests. `local-accounting-02.json` adds the measured
+0.616564-second regression charge while retaining the local reserve.
+
+| Decision | Primary criterion | Veto diagnostics | Main uncertainty | Next justified action | Limit |
+| --- | --- | --- | --- | --- | --- |
+| Continue bounded MAMS feasibility | Complete pricing inventory and audit pass; actual allocation positive | No price health veto; source, device, receipt and design checks pass | Shared load, qualification/repair cost and posterior sufficiency | Monitor the full frozen cohort and preserve every outcome | Pricing establishes no tuning membership or posterior validity |
+
+| Inference status | Finding |
+| --- | --- |
+| Hard veto screen | None in the 52 short prices; qualification and posterior vetoes are assessed afresh |
+| Statistically supported ranking | None |
+| Descriptive-only differences | Native call times and planning cost scenarios |
+| Default-readiness | Not established; no default changed |
+| Next evidence needed | Fresh qualification and posterior/reference results, followed by funded matched methods/models and independent replications for broader claims |
+
+Post-launch skeptical review: observed process activity and successful compilation
+establish execution, not sampler validity. The cheapest prices cannot justify
+omitting slow roots. The allocation decision survives the prior forecast flaw
+because partial outcomes are explicit and the actual cap is enforced. Geometry,
+mixing and the documented antithetic MCSE weakness remain alternative explanations
+for a later posterior failure; none is repaired by a passing price audit.
