@@ -102,3 +102,59 @@ the TensorFlow retracing notice reflects these predeclared shapes. The serious
 run keeps the fixed 1800-second allocation and reports partial replication
 counts if shared CPU load prevents all 128. The smoke and tests are charged
 to the same local reserve.
+
+## Terminal audit and finite-sample explanation
+
+The bounded run stopped normally at 1800.208412 seconds with 119--120 complete
+replications per condition and one explicitly interrupted Student-t record.
+Keep these denominators; do not rerun until an arbitrary total happens to pass.
+The terminal analysis reaggregates all records, checks seeds and numerical
+source hashes, and reports pointwise intervals without promoting an estimator.
+
+A cheap deterministic companion will explain the antithetic behavior against
+the exact stationary Gaussian covariance. For `a=floor(n/b)` complete batches
+and `V(k)=Var(mean of k consecutive observations in one chain)`, the expectation
+of the actual batch-means long-run variance estimate is
+`b*a/(a-1)*(V(b)-V(a*b))`. This follows by centering the batch means on their
+own mean: `E[sum (Y_j-Ybar)^2]=a*Var(Y_1)-a*Var(Ybar)`; their individual variance
+is `V(b)` and the mean of all complete batches has variance `V(a*b)`.
+Apply the actual lugsail linear combination at `b` and `floor(b/3)` and compare
+with the exact fixed-n mean variance. Check this formula against a direct small
+covariance-matrix sum before reporting the n=1000,...,10000 values.
+
+This is an independent CPU reference calculation inside the existing local
+allowance, with no new stochastic run or numerical default. Its primary check
+is equality with the covariance oracle. The unmasked estimator expectation is
+not the conditional expectation among valid estimates and cannot establish
+interval coverage after stopping. In particular, positive expected variance
+does not rule out a negative estimate in an individual chain. Preserve the
+script and JSON in `priced-comparison-01/mcse-analysis-01`. The source, baseline,
+moment assumptions and these limits pass the skeptical pre-execution audit.
+
+### Complete the originally declared replication count
+
+The first terminal audit passed 77 numerical source hashes, every record/seed
+and denominator, and twelve independent covariance checks. It also identified
+a reason to finish the predeclared 128 rather than interpret only the timed
+prefix: per-replication computation can depend on its first passing look, so a
+wall-time cutoff can depend on outcomes. Pointwise fixed-count binomial
+intervals do not become guaranteed intervals under that stopping mechanism.
+
+Allow one continuation of at most 600 CPU-reference seconds inside the same
+3600-second local reserve. The observed rate is about 15 seconds per complete
+replication across six conditions; eight to nine missing replications suggest
+about two minutes. Six hundred seconds is a convenience allocation with load
+headroom, not a completion guarantee. Preserve `mcse-calibration-01` unchanged,
+copy its completed records into `mcse-calibration-02` with parent hashes, and
+generate only missing law/rho/replication identities under the original seed
+72110, numerical snapshot, 10000 draws, ten looks and four estimator policies.
+The single interrupted record is recomputed with that same seed. No completed
+replication is discarded or rerun; no pilot seed becomes confirmation evidence.
+
+Implement checked continuation in the existing diagnostic driver and test
+changed source, seed, laws, count and duplicate/nonprefix records before launch.
+The final fixed-count result must reaggregate all 128 identities per condition;
+charge both attempts' elapsed time. If the continuation also exhausts its cap,
+preserve the remaining gap and qualify the pointwise uncertainty accordingly.
+This localized harness continuation changes neither the scientific comparison
+nor the total campaign budget, and requires no new campaign permission.

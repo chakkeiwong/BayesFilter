@@ -78,6 +78,41 @@ def summarize(records, planned):
     return result
 
 
+def carry_completed_replicates(report, previous):
+    """Reuse every completed record only under the identical statistical design."""
+    if previous["status"] != "budget_exhausted":
+        raise ValueError("continuation requires a terminal budget-exhausted diagnostic")
+    for key in ("seed", "replications", "methods", "looks", "chains", "source_sha256", "source",
+                "versions", "stationary_initialization", "gpu_intentionally_hidden", "use_xla"):
+        # JSON turns the original tuples into lists; compare their serialized form.
+        if json.dumps(previous[key], sort_keys=True) != json.dumps(report[key], sort_keys=True):
+            raise ValueError("continuation changed " + key)
+    old_cells = previous["cells"]
+    if [(c["law"], c["rho"], c["planned"]) for c in old_cells] != [
+            (c["law"], c["rho"], c["planned"]) for c in report["cells"]]:
+        raise ValueError("continuation changed condition inventory")
+    prior_seconds = previous.get("cumulative_elapsed_seconds", previous["elapsed_seconds"])
+    if not math.isfinite(prior_seconds) or prior_seconds < 0:
+        raise ValueError("invalid prior compute charge")
+    carried = []
+    for index, (current, old) in enumerate(zip(report["cells"], old_cells)):
+        records = old["records"]
+        if len(records) > report["replications"]:
+            raise ValueError("completed records exceed planned denominator")
+        for replication, record in enumerate(records):
+            if (record["replication"] != replication
+                    or record["seed"] != [report["seed"], index//2, replication]
+                    or set(record["methods"]) != set(METHODS)
+                    or any(r["fixed"] is None or r["fixed"]["draws"] != LOOKS[-1]
+                           for r in record["methods"].values())):
+                raise ValueError("completed records must be a unique complete prefix with original seeds")
+        current["records"] = list(records)
+        current["summary"] = summarize(records, report["replications"])
+        carried.append(len(records))
+    report.update(carried_completed_records=carried, prior_elapsed_seconds=prior_seconds,
+                  attempt_count=previous.get("attempt_count", 1)+1)
+
+
 def assess(values, method, rhat, *, truth, gaussian_rho=None):
     from bayesfilter.inference.hmc_precision import HMCPrecisionPolicy, HMCPrecisionTarget
     from bayesfilter.inference.hmc_posterior_assessment import HMCPosteriorAssessmentPolicy, assess_posterior
@@ -111,6 +146,8 @@ def main():
     parser.add_argument("--replications",type=int,required=True)
     parser.add_argument("--seed",type=int,required=True)
     parser.add_argument("--max-wall-seconds",type=float,required=True)
+    parser.add_argument("--resume-from",type=Path,
+                        help="Preserve completed records from a terminal bounded attempt.")
     args=parser.parse_args()
     if (os.environ.get("CUDA_VISIBLE_DEVICES")!="-1"
             or os.environ.get("TF_FORCE_GPU_ALLOW_GROWTH","").lower()!="true"):
@@ -142,17 +179,24 @@ def main():
         looks=LOOKS,methods=METHODS,chains=4,max_wall_seconds=args.max_wall_seconds,
         numerical_data="exact synthetic stationary reference laws",
         stationary_initialization=True,warmup_evaluated=False,actual_hmc_transitions=False,
+        prior_elapsed_seconds=0.,attempt_count=1,
         posterior_default_promotion=False,nominal_coverage_established=False,method_ranking=None,
         cpu_threads={k:os.environ.get(k) for k in ("TF_NUM_INTEROP_THREADS","TF_NUM_INTRAOP_THREADS","OMP_NUM_THREADS")},
         cells=[dict(law=law,rho=rho,records=[],planned=args.replications)
                for rho in RHOS for law in ("gaussian","student_t5")])
+    if args.resume_from is not None:
+        parent = args.resume_from.resolve()/"result.json"
+        carry_completed_replicates(report, json.loads(parent.read_text()))
+        report["resume_from"] = dict(result_file=str(parent), result_sha256=hashlib.sha256(parent.read_bytes()).hexdigest())
     write(args.output/"manifest.json",{k:v for k,v in report.items() if k!="cells"})
     write(args.output/"result.json",report)
     try:
-        for replication in range(args.replications):
+        for replication in range(min(len(c["records"]) for c in report["cells"]), args.replications):
             for rho_index,rho in enumerate(RHOS):
                 if time.monotonic()-started>=args.max_wall_seconds:
                     break
+                if all(len(c["records"]) > replication for c in report["cells"][2*rho_index:2*rho_index+2]):
+                    continue
                 seed=[args.seed,rho_index,replication]
                 rng=np.random.default_rng(np.random.SeedSequence(seed))
                 noise=rng.normal(size=(LOOKS[-1],4))
@@ -160,6 +204,8 @@ def main():
                 latent=signal.lfilter([1.],[1.,-rho],noise,axis=0)
                 for law_index,law in enumerate(("gaussian","student_t5")):
                     cell=report["cells"][2*rho_index+law_index]
+                    if len(cell["records"]) > replication:
+                        continue
                     x=latent if law=="gaussian" else stats.t.ppf(stats.norm.cdf(latent),5)
                     if not np.isfinite(x).all():
                         raise ValueError("nonfinite exact marginal transform")
@@ -195,6 +241,8 @@ def main():
         for name,expected in hashes.items():
             if hashlib.sha256(Path(name).read_bytes()).hexdigest()!=expected:
                 raise ValueError("numerical source changed: "+name)
+        if args.resume_from is not None and hashlib.sha256(parent.read_bytes()).hexdigest() != report["resume_from"]["result_sha256"]:
+            raise ValueError("parent diagnostic changed during continuation")
     except BaseException as exc:
         report.update(status="repair_required",error_type=type(exc).__name__,error=str(exc))
         raise
@@ -202,6 +250,7 @@ def main():
         for cell in report["cells"]:
             cell["summary"]=summarize(cell["records"],args.replications)
         report.update(elapsed_seconds=time.monotonic()-started,finished_utc=datetime.now(timezone.utc).isoformat())
+        report["cumulative_elapsed_seconds"] = report["prior_elapsed_seconds"] + report["elapsed_seconds"]
         write(args.output/"result.json",report)
         write(args.output/"manifest.json",{k:v for k,v in report.items() if k!="cells"})
     print(json.dumps(dict(status=report["status"],seconds=report["elapsed_seconds"],
