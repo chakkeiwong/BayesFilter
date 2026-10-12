@@ -4,6 +4,16 @@ import json
 import pytest
 
 from scripts.price_modern_hmc_frozen_design import cost_envelope, finalize, planned_rows
+from scripts.prepare_modern_hmc_priced_comparison import repair_settings
+
+
+def test_fixed_hmc_does_not_request_unsupported_uniform_duration_repair():
+    assert repair_settings("fixed_hmc")==dict(repair_trajectory_policy="fixed_count")
+    for name in ("randomized_hmc","snaper","mams"):
+        assert repair_settings(name)==dict(repair_trajectory_policy="preserve_mean_duration",
+                                          repair_mean_duration_max_steps=128)
+    with pytest.raises(ValueError):
+        repair_settings("nuts")
 
 
 def design():

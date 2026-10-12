@@ -93,7 +93,11 @@ Reserve every family's repair in the statistical candidate allowance: 16 fixed,
 16 randomized, 12 SNAPER and 8 MAMS. Both measurement and independent
 verification accumulate 32,64,128 trials; increments are 32,32,64 within each
 stage. Do not sum cumulative looks as fresh work. Use the existing
-`preserve_mean_duration` repair policy and no legacy pilot/refinement scheduler.
+`preserve_mean_duration` repair policy for randomized HMC, SNAPER and MAMS;
+fixed HMC uses its supported `fixed_count` repair. In that arm an epsilon
+repair changes physical travel, recorded in the child identity. There is no
+claim that every method uses an identical adaptation mechanism. No legacy
+pilot/refinement scheduler is enabled.
 Price the full reserved repair count conservatively, without assuming rejected
 roots or descendants vanish from cost or inventory.
 
@@ -168,3 +172,19 @@ Budget/source invalidity stops execution; a failed candidate triggers its planne
 repair or later diagnosis and does not stop the research direction. This plan
 passes for implementation and Stage A. Stage B's allocation remains a required
 data-dependent plan update, not a request for another human permission.
+
+## Execution audit correction
+
+The first builder mistakenly requested duration-preserving repair for fixed
+HMC. The current controller explicitly rejects that combination; its guard is
+correct. Deterministic acceptance attainability alone did not detect this
+separate support error. The corrected builder emits fixed-count repair only
+for fixed HMC, and a regression rejects reintroducing the mismatch. New
+qualification uses `designs-02`, preserving `designs` as the original proposal.
+Root trajectory prices in the active `prices-01` remain valid because that
+stage never executes the repair/controller; root execution configurations,
+starts and frozen pairs are identical. Any reuse checks those equalities and
+recomputes cost from the corrected search. No original evidence is overwritten.
+The initial repair-count expansion remains conservative for fixed-count
+children; it is a scenario, not a measured bound. Qualification, including
+descendants, is still fresh.

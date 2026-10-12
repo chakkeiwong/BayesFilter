@@ -46,6 +46,15 @@ def posterior_settings(method_index):
         reference_mcse_multiplier=3., reference_normalized_tolerance=.1)
 
 
+def repair_settings(method):
+    if method not in METHODS:
+        raise ValueError("unsupported comparison method")
+    # The current controller deliberately restricts physical-duration repair
+    # to uniform trajectories. Fixed HMC retains its supported count repair.
+    return (dict(repair_trajectory_policy="fixed_count") if method=="fixed_hmc" else
+            dict(repair_trajectory_policy="preserve_mean_duration", repair_mean_duration_max_steps=128))
+
+
 def build_designs(n5, source):
     """Must run with source first on sys.path, before any library import."""
     from bayesfilter.inference import HMCControllerConfig, HMCCandidateExecutionConfig
@@ -106,7 +115,7 @@ def build_designs(n5, source):
         search = HMCControllerConfig(primary_l_grid=tuple(l for l, _ in groups), epsilon_by_l=groups,
             total_budget_units=cap*6, repair_reserve_units=roots*6, candidate_reserve_units=6,
             replicated_acceptance_policy=policy, evidence_rungs=(1,2,4), max_candidates=cap,
-            repair_trajectory_policy="preserve_mean_duration", repair_mean_duration_max_steps=128,
+            **repair_settings(method),
             pilot_enabled=False, refinement_rounds=0, explore_failed_intervals=False)
         # Attainability is target-independent. The GPU worker separately checks
         # its actual compilation context; this CPU design check is not GPU evidence.
