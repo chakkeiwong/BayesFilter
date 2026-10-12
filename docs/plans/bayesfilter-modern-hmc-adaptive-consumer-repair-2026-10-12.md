@@ -5,9 +5,11 @@ the [window ladder](bayesfilter-mams-d4r4b-preconfirmation-2026-10-12.md) and
 the full-model comparison in the [master](bayesfilter-modern-hmc-implementation-plan-2026-10-07.md).
 The structural 1024/256 diagnostic is terminal with audited partial evidence.
 The consumer and attainability repairs pass 59 focused tests; the corrected
-GPU deployment has a 5580-second allocation. The current budget is in
-`preconfirmation-01/settlement-01.json`; the final section records the next
-command and its limits. No numerical sampler or tuning-admission default
+GPU deployment completed verification and checked export/reload in 1859.353110
+seconds. All four references are compatible with its exact source, and 33
+reference-reader regressions pass. The current budget is in
+`preconfirmation-01/settlement-03.json`; the final section records the next
+work and its limits. No numerical sampler or tuning-admission default
 changes here. Earlier execution entries below preserve their dated context.
 
 ## Question, baseline and scope
@@ -456,3 +458,110 @@ snapshot and original metadata bytes. Repair the diagnostic reader to validate
 both explicit digest shapes before target preparation, with malformed/changed
 binary regressions, then retry in `reference-consumer-05` within the remaining
 local reserve. This changes no numerical comparator or tolerance.
+
+Before sizing the scientific comparison, calculate a deterministic sensitivity
+table for the actual one-sided statistic at the inherited scientific floor
+.5 and family errors .05. Use constant trial scores at the preferred-region
+endpoints .65/.75, their center .70, and .85/.95/1 as explicitly hypothetical
+high-acceptance controls. Counts 32/64/128/256 extend the existing 32-trial
+baseline geometrically; candidate caps 4/8/12 represent four primary proposals
+with zero/one/two reserved repair opportunities each. Apply each complete rung
+schedule and both fresh stages. These deterministic arrays answer whether
+near-constant scores of that size could pass. They do not estimate power or
+establish an acceptance distribution for any model. Keep this computation
+CPU-only and under the remaining local reserve. The table informs the next
+priced design; it does not change the floor, choose a sampler or authorize
+launching all listed configurations.
+
+All four references are now compatible with `e68cdf1c4` in the fresh
+`reference-consumer-05` audit (169.092375 wall seconds), using diagnostic
+driver `2f1c250c7`. Neither source guard nor operator validation was skipped.
+The earlier source and metadata failures remain charged. The GPU deployment
+has completed all sixteen measurement trials with a passing public decision;
+fresh verification and export/reload remain pending at this checkpoint.
+
+The deterministic sensitivity table completed in 5.758019 wall seconds.
+The smallest passing rung among the declared counts is:
+
+| Total candidate allowance | Constant .65 | Constant .70 | Constant .75 | Constant .85 | Constant .95/1 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 4 | 64 | 64 | 64 | 32 | 32 |
+| 8 | 128 | 64 | 64 | 32 | 32 |
+| 12 | 128 | 64 | 64 | 64 | 32 |
+
+Thus an inherited 32-trial scientific design can be unresolved at preferred
+acceptance even when all trial scores are identical. Candidate/repair error
+allocations materially affect cost. The next full comparison must price
+32/64/128 scheduled rungs as hypotheses and reserve fresh verification at
+each candidate's actual evidence requirement; using the final-stage count
+alone as the complete cost would undercount fresh verification attempts.
+Within a stage the controller reuses completed trials and charges only the
+increment to the next rung. Verification starts its own independent stream
+at the base rung; do not add all cumulative rung sizes as if every look reran
+the preceding trials. Include preparation, export/reload and failed calls in
+elapsed cost separately from the native transition totals.
+Actual stochastic power and cross-start heterogeneity remain unevaluated.
+No numerical default changes and no model ranking follow from this table.
+
+## Terminal result and next phase
+
+The corrected deployment completed normally in **1859.353110 supervisor
+seconds** (30.99 minutes), within the 5580-second allocation. It ran from
+immutable `e68cdf1c4` on trusted host GPU 0, with XLA and verified memory
+growth. The public tuner completed sixteen independent measurement trials and
+sixteen fresh verification trials, retained its one verified member, exported
+the member and completed the library's checked reload. No posterior was run.
+
+The separate CPU terminal audit passed 190 source/input hashes, checkpoint and
+evidence checksums, all 32 unique trial streams, all returned native traces,
+32768 charged/expected work units, and the member/evidence-bundle checksums and
+membership identity. That read-only audit does not claim to have replayed a
+GPU sampler on CPU. The actual GPU consumer completed the checked reload.
+It took 2.484656 local wall seconds and preserves its script and report at
+`consumer-checks-01/deployment-terminal-audit-02.*`.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next justified action | Not concluded |
+| --- | --- | --- | --- | --- | --- |
+| Close full-model consumer deployment check | Fresh measurement, verification and checked export/reload completed | No source, seed, work, health or export veto | One broad-floor, short-travel mechanics fixture | Use this consumer for an explicitly priced comparison | Good mixing or successful MAMS adaptation |
+| Retain four reference bridges for this source | Full-horizon value/score/quantity checks and archived refinement pass | No remaining bridge veto for `e68cdf1c4` | Finite parity points and empirical integration sensitivity | Reuse only with the exact bound source/data; audit later source changes | Exact nonlinear likelihood or rigorous reference error bound |
+| Close localized implementation/reporting repair | 59 consumer/attainability/reporting tests; 33 reference-reader tests; 55 selected tests repeated in isolation | No unresolved failure in these checked paths | Broader stochastic and cross-model behavior | Freeze affordable comparison and calibration design | Entire master complete or release readiness |
+
+| Inference status | Finding |
+| --- | --- |
+| Hard veto screen | Corrected deployment completed healthy evidence and preserved its only verified member. |
+| Statistically supported ranking | None; there was no comparative experiment. |
+| Descriptive-only differences | Runtime and acceptance means; the separate sensitivity table is deterministic, not power evidence. |
+| Default-readiness | Not established; modern profiles remain experimental. |
+| Next evidence needed | Adequately searched fixed/randomized HMC, SNAPER and adaptive MAMS, full model/tail posterior assessments, fresh paired replications, MCSE/stopping calibration. |
+
+Post-run skeptical audit: the strongest misleading interpretation would be
+calling this high-acceptance count-one fixture evidence that MAMS now mixes
+well. It tested deployment, not adaptation or the original 10000-transition
+precision problem. That question remains open. Likewise, compatible references
+do not make a sampler correct, and passing deterministic evidence bounds does
+not establish power. The current mechanics result would be overturned by an
+input/evidence mutation, incorrect native accounting, or inability of a
+verified member to pass checked reload; the terminal audit checks those risks.
+The weakest part of the broader repair remains the unfinished comparative
+posterior and estimator calibration evidence.
+
+The next numerical phase must first produce a complete priced design: generate
+classical fixed/randomized proposals over an explicit broad duration/epsilon
+domain, retain the SNAPER and adaptive MAMS proposal provenance, reserve family
+repairs and 32/64/128 evidence rungs as testable hypotheses, include incremental
+measurement and independently accumulated verification costs, and account for
+all posterior members and failed attempts. Freeze model/tail observables,
+posterior precision/reference policy, paired fresh seeds, full denominators,
+uncertainty analysis and remaining-budget allocation before launching. The
+structural longer-window rung remains partial and must not be relabelled a
+complete adapted cohort. If the twenty-cell comparison cannot fit, preserve
+the unfunded cells and report bounded feasibility rather than superiority.
+Separately complete the antithetic/stopped-chain MCSE calibration; the checked
+lugsail counterexample prevents assuming universal conservatism. D4R5/N8's
+final consumer/book/release audit follows those results.
+
+`settlement-03.json` charges every failed attempt, releases the unused local
+and deployment reserves, and leaves **133819.624951 seconds (37.17 aggregate
+worker-hours)** unallocated. No worker or reservation from this phase remains
+active. The full research program remains open; this phase closes the concrete
+consumer, impossible-budget and terminal-reporting defects.

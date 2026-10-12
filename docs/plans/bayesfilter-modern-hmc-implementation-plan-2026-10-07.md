@@ -23,8 +23,10 @@ conservatively settled D4R4a cost preflight. After settling both D4R4b GPU
 rungs and the first full-model consumer deployment, **135145.833 seconds
 (37.54 aggregate worker-hours)** were unallocated, with the local 3600-second
 reserve still held. Both GPU runs are terminal. A corrected deployment now
-reserves 5580 seconds, leaving **129565.833 seconds (35.99 worker-hours)**
-unallocated; see `preconfirmation-01/settlement-01.json` and the consumer plan.
+has also completed in 1859.353110 seconds. Final settlement releases unused
+reserves and leaves **133819.625 seconds (37.17 worker-hours)** unallocated;
+see `preconfirmation-01/settlement-03.json` and the consumer plan. No worker
+from this phase remains active.
 The other 45 D4a proposals, fairer classical
 search, independent paired-seed replications and broader nonlinear validation
 remain open. The current development and validation phase is **D4R, generic trajectory adaptation**,
@@ -125,13 +127,31 @@ charged and preserved. The guide's exact antithetic AR(1) calculation explains
 why lugsail need not be conservative; it changes no numerical default.
 The attainability repair is implemented and all 59 focused regressions pass.
 The archived deployment's eight trials and 8192 work units pass the read-only
-source/seed/trace audit. A fresh sixteen-trial-per-stage GPU check is allocated
-5580 seconds, derived from the measured eight-trial cost with explicit load
-contingency. Its question is public verification and export/reload, not mixing
-or a method ranking. Known local diagnostic use is now 2659.466401 seconds.
+source/seed/trace audit. The corrected sixteen-trial-per-stage GPU check has
+completed fresh verification and checked export/reload of its one verified
+member. Its independent terminal audit passes 190 source/input hashes, all
+32 trial streams, native traces and 32768 charged work units. Its question
+was deployment, not mixing or a method ranking. Known local diagnostic use
+settled at 3066.854670 seconds; the unused reserve has been released.
 The plan requires a fresh priced comparison design and stopped-chain/MCSE
 calibration after settling that deployment; neither is silently replaced by
 this short engineering fixture.
+The four references now pass fresh compatibility against `e68cdf1c4` in
+`reference-consumer-05`, after two preserved source/metadata-reader failures.
+The scientific-floor sensitivity table shows why 32 repetitions cannot be
+assumed adequate: near-constant .70 acceptance requires the 64-trial rung
+under the inspected allowances, and .65 can require 128 when repairs reserve
+more candidate error budget. The next priced comparison must include those
+scheduled-rung and fresh-verification costs; a mathematical attainability
+check alone is not a power calculation. The corrected GPU deployment has
+completed normally in 30.99 minutes. Thirty-three reference-reader tests
+also pass; 55 selected consumer tests were repeated successfully from the
+isolated committed source. The [terminal consumer result](bayesfilter-modern-hmc-adaptive-consumer-repair-2026-10-12.md#terminal-result-and-next-phase)
+records the decision, limits, budget and complete next-phase requirements.
+The next deliverable is an affordable, explicitly priced paired comparison
+with adequate classical searches and model/tail posterior checks, plus the
+remaining MCSE/stopping calibration. This successful deployment does not close
+the original MAMS mixing/precision question or establish a release.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model
