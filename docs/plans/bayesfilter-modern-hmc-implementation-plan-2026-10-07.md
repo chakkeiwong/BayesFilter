@@ -171,6 +171,19 @@ fixed endpoints with the actual retained assessment's first passing look,
 preserves nonstoppers and invalid variance estimates, and uses 1800 seconds
 within the same local reserve. This diagnoses estimator support; it does not
 change a default or certify warm-up or arbitrary sampler correctness.
+The terminal-pricing continuation is now implemented and has passed 53 focused
+receipt, budget, launch-boundary and MCSE-accounting tests. It checks the full
+design when reusing prices after the narrow fixed-HMC repair correction and
+preserves all roots, native receipts and statistical denominators. The completed
+fixed-HMC cost scenarios already exceed the remaining balance for the full
+comparison. After all prices finish, the continuation writes a measured-cost
+allocation for the complete adapted MAMS cohort only if its declared minimum
+scenario fits. It uses the unchanged immutable consumer, fresh qualification
+and posterior/reference checks. Otherwise it records an under-budgeted outcome.
+This is the previously declared scoped feasibility branch; broader methods,
+models, paired replications, statistical confirmation and release remain open.
+The [priced execution record](bayesfilter-modern-hmc-priced-execution-2026-10-12.md)
+tracks the two active diagnostics and the continuation service.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model

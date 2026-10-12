@@ -188,3 +188,78 @@ recomputes cost from the corrected search. No original evidence is overwritten.
 The initial repair-count expansion remains conservative for fixed-count
 children; it is a scenario, not a measured bound. Qualification, including
 descendants, is still fresh.
+
+## Terminal pricing review and continuation
+
+The terminal report will check the saved native checkpoints, numerical source,
+compiled operator, common starts, complete root inventory and GPU/XLA/memory
+policy before deriving costs. Reuse with `designs-02` must compare the complete
+designs: the only permitted difference is the documented fixed-HMC repair
+encoding (v3 duration repair to v2 fixed-count repair). A changed target, start,
+root, execution policy or data/geometry cannot inherit these prices. This is a
+read-only evidence check, not a new tuning or sampler implementation.
+
+Report each first and repeated native call separately and retain numerical
+vetoes in all cost denominators. Use the existing conservative maximum-call
+envelope at load factors 1, 2 and 4. These remain sensitivity scenarios; two
+calls do not estimate a runtime quantile. Per-trial non-native overhead is
+reported separately, with the completed deployment as a measured planning
+comparator. Include preparation, verification/export and posterior-assessment
+cost uncertainty. If a price allocation ends before the full inventory, report
+the missing prices explicitly and continue them in a new bounded attempt
+within the campaign balance before claiming a complete four-method envelope.
+
+Skeptical continuation audit: a root-only price remains valid after the narrow
+fixed-count correction, but accepting arbitrary design changes would be wrong.
+Checking pairs alone would miss changed starts or execution policy. The report
+therefore checks those inputs and the saved call receipts as well. A pricing
+veto can prevent interpreting a candidate, but cannot silently remove its
+planned work. This review passes for terminal-report implementation and focused
+accounting regressions, charged to the existing local reserve. A posterior
+allocation still requires the completed price report and a recorded budget
+decision; no statistical criteria are changed by the report.
+
+The completed fixed-HMC prices already rule out funding the conservative full
+four-method envelope from the current balance: its own maximum-count scenario
+is 278.45 hours at load factor one. This number includes deliberate repeated
+cold-call and repair overpricing; it is not a measured completion time. The
+prior corrected deployment spent 1859.353110 seconds, of which 999.189142 were
+native calls across 32 trials. Use the remaining 860.163968/32 = 26.880124
+seconds/trial as a separate overhead sensitivity, explicitly amortizing setup,
+verification and export. Adding the new preparation cost double-counts some
+setup conservatively. This does not assert a universal per-trial cost.
+
+To continue without leaving the GPU queue idle after terminal prices, the
+continuation driver will write the audited report and an allocation before
+launching the existing immutable full-model consumer. Its rule is fixed now:
+keep the full four-method price denominator; reserve the existing local and
+pricing allowances; subtract any pricing overrun from the 123019.624951
+unallocated seconds; and consider **all four adapted MAMS roots and their four
+reserved repair children**. If their load-one minimum-path scenario does not
+fit that ceiling, record an under-budgeted outcome and do not pretend a full
+delivery study is funded. Otherwise allocate at most that ceiling, or the
+load-four maximum-count scenario when smaller. Unless the latter fits, label
+the launch bounded feasibility, with resource censoring possible. Qualification
+and posterior criteria, streams, source, reference and design stay unchanged.
+The three classical/SNAPER cells, later models and paired replications remain
+unfunded in this allocation; their results cannot be inferred from MAMS.
+
+The driver waits for the pricing supervisor's terminal settlement and uses
+the existing trusted idle/shared-GPU selector. Capacity checks may retry for
+at most one hour before recording a resource outcome; this is a convenience
+queue bound, not a sampler timeout. Thirty-second polling is operational only.
+Waiting consumes no GPU reservation; its elapsed time is recorded separately
+from occupied child-worker seconds. Native child execution retains its existing
+hard total allocation and durable checkpoints. Invalid prices, design/source
+mismatch or unexpected device-probe errors stop dependent work. The terminal
+child outcome, including failure or censoring, is preserved for the next repair.
+No failed candidate is removed to make the allocation appear sufficient.
+
+Skeptical audit of automatic continuation: the price report is a prerequisite,
+not a statistical selector. The fallback method was specified before observing
+these prices to address the original MAMS failure. The calculation never spends
+released reserves twice, never treats a wall limit as expected completion, and
+does not promise paired confirmation from a single target/seed. The ordinary
+snapshot consumer still performs every membership, export, posterior and
+reference check. Focused decision/accounting tests are required before enabling
+this continuation. All launches remain within the already authorized campaign.
