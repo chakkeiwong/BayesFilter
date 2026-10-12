@@ -142,3 +142,22 @@ design before robustness interpretation. The strongest alternative explanation
 for the positive pilot is adequate local exploration within an incomplete
 region; a compatible reference makes that explanation testable, but does not
 itself disprove it.
+
+## Analytic controls while B1 runs
+
+The [analytic-control plan](bayesfilter-mams-analytic-controls-2026-10-12.md)
+and [result](bayesfilter-mams-analytic-controls-result-2026-10-12.md) record
+the repaired partial-funnel map, a matching exact-map model, declared model/tail
+quantities and oscillation controls. Forty-two distinct regressions passed.
+The 23.603492-second CPU/XLA calibration completed 384 positive and 192 negative
+reference replications; all negative controls were detected. Strong antithetic
+dependence often left lugsail MCSE unavailable, so general calibration and
+posterior-policy promotion remain open. This is reference diagnostic work,
+not a GPU sampler comparison. Known local usage is now 699.295639 seconds
+inside the unchanged 3600-second reserve.
+
+PP-UKF has now completed with both pilot estimates usable, four proposals and
+four healthy short prices. The all-model first rung is still active on SIR;
+structural remains in order. A trusted automatic capacity check at
+2026-10-12 00:51:33 UTC reported `no_idle_policy_permitted_gpu`. That is current
+contention, not a hardware or method failure. No extra GPU job was launched.

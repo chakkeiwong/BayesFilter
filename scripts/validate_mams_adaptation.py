@@ -146,6 +146,10 @@ def fixture(target, use_xla):
     d = adapter.parameter_dim
     starts = tf.constant([[-1., -.5, .4], [-.3, .2, -.6], [.4, -.2, .8], [1., .5, -.4]],
                          tf.float64)[:, :d]
+    if target == "residual_funnel":
+        # Match the exact chart's model starts, not its latent coordinates.
+        starts = tf.concat([starts[:, :1], starts[:, 1:]*tf.exp(
+            -.5*tf.tanh(starts[:, :1]/2.))], axis=-1)
     if target == "mixture":
         # Deliberately local bank: independent mode mass must expose the
         # limitation even if within-mode diagnostics look stationary.
@@ -156,7 +160,9 @@ def fixture(target, use_xla):
     return adapter, starts, sources, dict(target_id=target, parameters=parameters,
         model_funnel_scale=3. if target in ("funnel_noncentered", "residual_funnel") else None,
         data_sha256="N/A: analytic law without observations",
-        initialization="local positive-mode bank" if target == "mixture" else "fixed contrasting bank")
+        initialization=("local positive-mode bank" if target == "mixture" else
+                        "matched scale-three model bank" if target in ("funnel_noncentered", "residual_funnel")
+                        else "fixed contrasting bank"))
 
 
 def run_case(target, output, seed, deadline, *, use_xla, source_hashes):

@@ -91,6 +91,10 @@ non-rejection. Unsupported state-space references remain explicitly absent.
 4. Add reference-report regressions for wrong charts, dropped tails, constant
    indicators, nonfinite/short chains, quantity-family counting, and absent
    model references. Exercise the actual posterior callback/precision names.
+   Include a symmetric, bounded finite bank normalized to mean zero and second
+   moment `5/3`, with no observations beyond two. This isolates the tail check
+   from the mean/variance checks; ordinary clipping changes both. Match funnel
+   starts in model coordinates by applying the inverse partial chart.
 5. Run a bounded diagnostic calibration on exact draws and known stationary
    Gaussian-copula AR(1) draws, with independent replicates and preserved chain
    axes. Rho in `{0,.9,-.9}` is a declared sensitivity grid, not a sampler
@@ -141,4 +145,50 @@ Jacobian; the negative controls rejected the wrong map and refused a fabricated
 zero tail MCSE. These are engineering checks. Run the same tests and the
 existing proposer regressions from the committed source before calibration.
 Calibration is subcapped at 1,200 seconds of the 1,800-second allowance; this
-is a resource allocation, not a expected runtime or a deadlock threshold.
+is a resource allocation, not an expected runtime or a deadlock threshold.
+
+## Post-calibration continuation audit
+
+The calibration finished in 23.603492 seconds; 40 committed-source regressions
+and two final review regressions passed. It did not establish nominal MCSE
+coverage, and antithetic MCSE availability is an open diagnostic issue. The
+next smallest independent check is actual public-tuner/export/reload/posterior
+wiring with the newly declared quantities. This can expose a callback, schema,
+coordinate or stopping failure that an exact-reference calculation cannot.
+
+While both GPUs are occupied, run the three small analytic fixtures as an
+explicit CPU graph reference/debug exception, with GPUs hidden and XLA off
+through the existing `--cpu-reference` switch. This is not a production-target
+or GPU qualification run. Use unchanged feasibility settings from the October
+11 bounded plan: four chains, 64-draw fixed pilot windows, fresh 32-by-64
+measurement and verification repetitions, at most four primary/eight total
+policies, 512--1024 warm-up and at most 1024 retained transitions per chain.
+These inherited short allocations test wiring, not broad posterior adequacy.
+The new model/tail quantities and matched funnel model starts are frozen in
+the next source commit before execution.
+
+Use root seed 5800, a disjoint convenience block, and fresh output
+`preconfirmation-01/analytic-pipeline-01`. Subcap this run at 900 supervisor
+seconds inside the existing 1800-second local-control suballocation. Known
+usage is 75.253492 seconds, so this fits after settling the completed tests
+and calibration; the old 1200-second unused calibration reservation is not
+charged again. No new campaign allocation is needed.
+
+```bash
+env CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true \
+  TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=2 TF_CPP_MIN_LOG_LEVEL=2 \
+  /home/ubuntu/anaconda3/envs/tfgpu/bin/python scripts/validate_mams_adaptation.py \
+  --output /home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/preconfirmation-01/analytic-pipeline-01 \
+  --targets student_t funnel_noncentered residual_funnel --seed 5800 \
+  --cpu-reference --max-wall-seconds 900
+```
+
+The engineering endpoint is all three target dispositions, every created and
+verified member retained, correct callback/quantity identities, separate
+posterior/reference outcomes and source/stream provenance. A short posterior
+failure or unavailable MCSE is expected evidence, not a reason to remove a
+tuning member or stop valid peers. A shared source/target/identity defect is a
+continuation veto and repair trigger. No method ranking or nominal coverage
+claim follows even if every diagnostic passes. The audit passes for this
+bounded exception: it answers the wiring question on actual public paths,
+fits the existing reserve and leaves the GPU/XLA evidence requirement intact.

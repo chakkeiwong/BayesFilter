@@ -55,6 +55,13 @@ def test_exact_and_partial_charts_give_identical_model_quantities():
     assert exact.values.experimental_get_tracing_count() == 1
 
 
+def test_exact_and_partial_funnel_start_at_the_same_model_points():
+    exact, left, _, _ = fixture("funnel_noncentered", False)
+    partial, right, _, _ = fixture("residual_funnel", False)
+    np.testing.assert_allclose(exact.to_model(left), partial.to_model(right), rtol=2e-15)
+    assert not np.array_equal(left, right)
+
+
 def test_student_tail_probability_and_finite_moment_roles():
     for df in (3., 5.):
         target = ValidationTarget("student_t", {"df": df}, jit_compile=False)
@@ -83,6 +90,26 @@ def test_truncated_tails_cannot_pass_as_precise_zero_probability():
     assert report["family_size"] == 6  # Unavailable tails remain in denominator.
     assert report["status"] != "no_discrepancy_detected"
     assert not report["accuracy_established"]
+
+
+def test_missing_tails_are_exposed_even_with_exact_mean_and_second_moment():
+    # A finite symmetric bank with E_emp[q]=0 and E_emp[q^2]=5/3.
+    # It deliberately has no |q|>2 events, unlike Student-t(5). This is a
+    # deterministic mechanism fixture, not an iid calibration sample.
+    grid = np.linspace(1., 1.5, 4096)
+    bank = np.concatenate([-grid, grid])
+    bank *= math.sqrt((5/3)/np.mean(bank**2))
+    rng = np.random.default_rng(545)
+    q = np.stack([rng.permutation(bank).reshape(2048, 4) for _ in range(2)], axis=-1)
+    assert np.max(np.abs(q)) < 2.
+    contract = analytic_quantities("student_t", ValidationTarget("student_t", {"df": 5.}), use_xla=False)
+    report = analytic_reference_report(q, contract, use_xla=False)
+    rows = {r["name"]: r for r in report["rows"]}
+    for name in ("q0", "q1", "q0_square", "q1_square"):
+        assert rows[name]["error"] == pytest.approx(0., abs=2e-14)
+        assert rows[name]["finding"] == "no_discrepancy_detected"
+    assert report["status"] == "inconclusive"
+    assert all(rows[n]["finding"] == "inconclusive" for n in contract.binary_names)
 
 
 def test_wrong_model_chart_is_detected_despite_correct_latent_draws():

@@ -6,6 +6,11 @@ D4R4 confirmation open**. D4R4b reference compatibility is now complete for
 all four finite-filter targets against `source-163d24b34`; the longer-window
 GPU rung is running. The [current execution record](bayesfilter-mams-d4r4b-execution-2026-10-12.md)
 preserves the bounded audit, result and continuation requirements.
+The [analytic-control result](bayesfilter-mams-analytic-controls-result-2026-10-12.md)
+records the repaired common funnel model, original-coordinate/tail quantities,
+oscillation controls and completed reference calibration. Engineering checks
+pass; antithetic lugsail availability, calibration uncertainty and fresh
+public-pipeline posterior assessments remain open.
 This is the D4R repair subplan of the
 [modern-method master](bayesfilter-modern-hmc-implementation-plan-2026-10-07.md).
 It answers the owner's request for a repair that generalizes beyond
